@@ -11,8 +11,8 @@ suite("dates", () => {
 })
 suite("Errors", () => {
     test("date", () => {
-        const d = type("d'1987/1/1'<Date<d'1990.1.1'")
-        attest(d(new Date("1990.1.1")).data).snap("Mon Jan 01 1990")
+        const d = type("d'1987/1/1' < Date < d'1990.1.1' ")
+        attest(d(new Date("1989.1.1")).data).snap()
     })
     //idea for date.now?
     // test("empty", () => {

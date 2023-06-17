@@ -9,8 +9,7 @@ import type { evaluate, isUnknown } from "../../utils/generics.js"
 import type { List, listable } from "../../utils/lists.js"
 import type {
     AbstractableConstructor,
-    Constructor,
-    instanceOf
+    Constructor
 } from "../../utils/objectKinds.js"
 import { isArray } from "../../utils/objectKinds.js"
 import { Disjoint } from "../disjoint.js"
@@ -75,7 +74,22 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             )
         },
         compile: (children, state) => {
-            return children.map((child) => child.compile(state)).join("\n")
+            let result = ""
+            const initialChild = children.at(0)
+            const basis = initialChild?.isBasis() ? initialChild : undefined
+            if (basis) {
+                state.bases.push(basis)
+            }
+            for (const child of children) {
+                const childResult = child.compile(state)
+                if (childResult) {
+                    result = result ? `${result}\n${childResult}` : childResult
+                }
+            }
+            if (basis) {
+                state.bases.pop()
+            }
+            return result
         },
         intersect: (l, r): PredicateNode | Disjoint => {
             // if (
@@ -130,12 +144,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
     },
     (base) => {
         const initialRule = base.rule.at(0)
-        const basis =
-            initialRule?.hasKind("domain") ||
-            initialRule?.hasKind("value") ||
-            initialRule?.hasKind("class")
-                ? initialRule
-                : undefined
+        const basis = initialRule?.isBasis() ? initialRule : undefined
         const constraints = (
             basis ? base.rule.slice(1) : base.rule
         ) as ConstraintNode[]
@@ -166,46 +175,6 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
         }
     }
 )
-
-// compileTraverse(s: CompilationState) {
-//     // let result constraint of this.rule) {
-//     //     result= this.basis?.compileTraverse(s) ?? ""
-//     // for (const  += "\n" + constraint.compileTraverse(s)
-//     // }
-//     s
-//     return "true" //result
-// }
-
-// pruneDiscriminant(path: string[], kind: DiscriminantKind): PredicateNode {
-//     if (path.length === 0) {
-//         if (kind === "domain" && this.basis.hasKind("value")) {
-//             // if the basis specifies an exact value but was used to
-//             // discriminate based on a domain, we can't prune it
-//             return this
-//         }
-//         // create a new PredicateNode with the basis removed
-//         return new PredicateNode(this.constraints)
-//     }
-//     const prunedProps = this.getConstraint("props")!.pruneDiscriminant(
-//         path,
-//         kind
-//     )
-//     const rules: PredicateRules = []
-//     for (const rule of this.rule) {
-//         if (rule.kind === "basis") {
-//             if (rule.level !== "domain" || rule.domain !== "object") {
-//                 rules.push(this.basis as never)
-//             }
-//         } else if (rule.kind === "props") {
-//             if (prunedProps !== emptyPropsNode) {
-//                 rules.push(prunedProps)
-//             }
-//         } else {
-//             rules.push(rule)
-//         }
-//     }
-//     return new PredicateNode(rules)
-// }
 
 // keyof() {
 //     if (!this.basis) {
@@ -373,7 +342,7 @@ type inferNonFunctionalConstraints<input extends PredicateInput> =
 type constraintsOf<basis extends BasisInput> = basis extends Domain
     ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
     : basis extends Constructor
-    ? functionalConstraints<instanceOf<Constructor>> & classConstraints<basis>
+    ? functionalConstraints<InstanceType<Constructor>> & classConstraints<basis>
     : basis extends readonly ["===", infer value]
     ? // Exact values cannot be filtered, but can be morphed
       Pick<functionalConstraints<value>, "morph">

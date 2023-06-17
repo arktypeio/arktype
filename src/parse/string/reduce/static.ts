@@ -27,7 +27,10 @@ export type StaticState = {
     unscanned: string
 }
 
-type StaticOpenLeftBound = { limit: NumberLiteral; comparator: MinComparator }
+type StaticOpenLeftBound = {
+    limit: NumberLiteral | DateLiteral
+    comparator: MinComparator
+}
 
 export type AutocompletePrefix = `${Prefix} `
 
@@ -122,45 +125,10 @@ export namespace state {
               scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
-    export type reduceLeftDateBound<
-        s extends StaticState,
-        limit extends DateLiteral,
-        comparator extends Comparator,
-        unscanned extends string
-    > = comparator extends "<" | "<="
-        ? s["branches"]["range"] extends {}
-            ? state.error<
-                  writeMultipleLeftBoundsMessage<
-                      s["branches"]["range"]["limit"],
-                      s["branches"]["range"]["comparator"],
-                      limit,
-                      InvertedComparators[comparator]
-                  >
-              >
-            : from<{
-                  root: undefined
-                  branches: {
-                      prefixes: s["branches"]["prefixes"]
-                      range: {
-                          limit: limit
-                          comparator: InvertedComparators[comparator]
-                      }
-                      "&": s["branches"]["&"]
-                      "|": s["branches"]["|"]
-                  }
-                  groups: s["groups"]
-                  finalizer: s["finalizer"]
-                  scanned: updateScanned<
-                      s["scanned"],
-                      s["unscanned"],
-                      unscanned
-                  >
-                  unscanned: unscanned
-              }>
-        : state.error<writeUnpairableComparatorMessage<comparator>>
+
     export type reduceLeftBound<
         s extends StaticState,
-        limit extends NumberLiteral,
+        limit extends NumberLiteral | DateLiteral,
         comparator extends Comparator,
         unscanned extends string
     > = comparator extends "<" | "<="

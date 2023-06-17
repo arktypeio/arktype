@@ -1,5 +1,7 @@
+import type { Discriminant } from "../nodes/composite/discriminate.js"
+import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { TypeConfig } from "../type.js"
-import { type Domain, hasDomain } from "../utils/domains.js"
+import { hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
@@ -54,7 +56,8 @@ export const compileSerializedValue = (value: unknown) => {
 
 export class CompilationState {
     path = new Path()
-    lastkind: Domain = "undefined"
+    bases: BasisNode[] = []
+    discriminants: Discriminant[] = []
     unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 
@@ -62,6 +65,10 @@ export class CompilationState {
 
     get data() {
         return compilePathAccess(this.path)
+    }
+
+    get lastBasis() {
+        return this.bases.at(-1)
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
@@ -80,12 +87,36 @@ export class CompilationState {
         rule: ProblemRules[code],
         condition: string
     ) {
+        const pathString = this.path.join()
+        if (
+            code === "domain" &&
+            rule === "object" &&
+            this.discriminants.some((d) => d.path.join().startsWith(pathString))
+        ) {
+            // if we've already checked a path at least as long as the current one,
+            // we don't need to revalidate that we're in an object
+            return ""
+        }
+        if (
+            (code === "domain" || code === "value") &&
+            this.discriminants.some(
+                (d) =>
+                    d.path.join() === pathString &&
+                    (code === "domain"
+                        ? d.kind === "domain" || d.kind === "value"
+                        : d.kind === "value")
+            )
+        ) {
+            // if the discriminant has already checked the domain at the current path
+            // (or an exact value, implying a domain), we don't need to recheck it
+            return ""
+        }
         return `if (!(${condition})) {
             ${
                 this.kind === "allows"
                     ? "return false"
                     : this.problem(code, rule)
             }
-        }`
+}`
     }
 }

@@ -19,6 +19,8 @@ export type inferString<def extends string, $> = inferAst<
     $
 >
 
+// TODO: figure out naiveParse fox subscopes
+
 /**
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
@@ -32,10 +34,12 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     : fullStringParse<def, $>
 
 export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode =>
-    ctx.scope.maybeResolve(def, ctx) ??
-    ((def.endsWith("[]") &&
-        ctx.scope.maybeResolve(def.slice(0, -2), ctx)?.array()) ||
-        fullStringParse(def, ctx))
+    fullStringParse(def, ctx)
+// TODO: reenable or remove
+// ctx.scope.maybeResolve(def, ctx) ??
+// ((def.endsWith("[]") &&
+//     ctx.scope.maybeResolve(def.slice(0, -2), ctx)?.array()) ||
+//     fullStringParse(def, ctx))
 
 export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)

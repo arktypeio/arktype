@@ -1,17 +1,15 @@
-import type { PredicateNode } from "../nodes/composite/predicate.js"
-import type { TypeNode } from "../nodes/composite/type.js"
-import { builtins, typeNode } from "../nodes/composite/type.js"
-import type { SerializedPath } from "../nodes/disjoint.js"
-import { Disjoint } from "../nodes/disjoint.js"
-import type { BasisNode } from "../nodes/primitive/basis/basis.js"
-import type { ValueNode } from "../nodes/primitive/basis/value.js"
-import type { Domain } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
-import type { evaluate } from "../utils/generics.js"
-import { entriesOf, isKeyOf } from "../utils/records.js"
-import type { keySet } from "../utils/records.js"
-import type { SerializedPrimitive } from "../utils/serialize.js"
-import { compileSerializedValue } from "./compile.js"
+import { compileSerializedValue } from "../../compile/compile.js"
+import type { Domain } from "../../utils/domains.js"
+import { throwInternalError } from "../../utils/errors.js"
+import type { evaluate } from "../../utils/generics.js"
+import type { keySet } from "../../utils/records.js"
+import { entriesOf, isKeyOf } from "../../utils/records.js"
+import type { SerializedPrimitive } from "../../utils/serialize.js"
+import { Disjoint } from "../disjoint.js"
+import type { SerializedPath } from "../disjoint.js"
+import type { BasisNode } from "../primitive/basis/basis.js"
+import type { ValueNode } from "../primitive/basis/value.js"
+import type { PredicateNode } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -25,7 +23,7 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
 export type DiscriminatedCases<
     kind extends DiscriminantKind = DiscriminantKind
 > = {
-    [caseKey in CaseKey<kind>]: TypeNode
+    [caseKey in CaseKey<kind>]: Discriminant | PredicateNode[]
 }
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
@@ -54,11 +52,17 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
     ] as [path: string[], kind: DiscriminantKind]
 }
 
+const discriminantCache = new Map<PredicateNode[], Discriminant | null>()
+
 export const discriminate = (
     branches: PredicateNode[]
-): Discriminant | undefined => {
+): Discriminant | null => {
     if (branches.length < 2) {
-        return
+        return null
+    }
+    const cached = discriminantCache.get(branches)
+    if (cached !== undefined) {
+        return cached
     }
     const casesBySpecifier: CasesBySpecifier = {}
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
@@ -79,6 +83,7 @@ export const discriminate = (
                 if (kind === "domain") {
                     lSerialized = (disjoint.l as BasisNode).domain
                     rSerialized = (disjoint.r as BasisNode).domain
+                    // TODO: fix
                 } else if (kind === "value") {
                     lSerialized = compileSerializedValue(
                         (disjoint.l as ValueNode).rule
@@ -117,31 +122,26 @@ export const discriminate = (
         .sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
         .at(-1)
     if (!bestDiscriminantEntry) {
-        return
+        discriminantCache.set(branches, null)
+        return null
     }
     const [specifier, predicateCases] = bestDiscriminantEntry
     const [path, kind] = parseDiscriminantKey(specifier)
-    const discriminatedCases: DiscriminatedCases = {}
+    const cases: DiscriminatedCases = {}
     for (const k in predicateCases) {
-        let caseBranches: PredicateNode[] = []
-        for (const branch of predicateCases[k]) {
-            // TODO: fix
-            const pruned = branch //.pruneDiscriminant(path, kind)
-            if (pruned === null) {
-                caseBranches = builtins.unknown().rule
-                break
-            }
-            caseBranches.push(pruned)
-        }
-        discriminatedCases[k] = typeNode(caseBranches)
+        const subdiscriminant = discriminate(predicateCases[k])
+        cases[k] = subdiscriminant ?? predicateCases[k]
     }
-    return {
+    const discriminant: Discriminant = {
         kind,
         path,
-        cases: discriminatedCases
+        cases
     }
+    discriminantCache.set(branches, discriminant)
+    return discriminant
 }
 
+// TODO: if deeply includes morphs?
 export const writeUndiscriminatableMorphUnionMessage = <path extends string>(
     path: path
 ) =>

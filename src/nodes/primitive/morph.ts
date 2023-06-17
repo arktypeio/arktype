@@ -23,7 +23,3 @@ export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
             .join("=>")}`
     })
 )
-
-// compileTraverse(s: CompilationState) {
-//     return s.ifNotThen("false", s.problem("custom", "morphs"))
-// }

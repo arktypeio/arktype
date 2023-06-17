@@ -95,7 +95,8 @@ export const parseRightBound = (
     comparator: Comparator
 ) => {
     const limitToken = s.scanner.shiftUntilNextTerminator()
-    const looksLikeDate = /d(['"]).*(\1)/.test(limitToken)
+    const looksLikeDate = /d(['\"]).*(\1)/.test(limitToken)
+    //todoshawn
     const limit = looksLikeDate
         ? tryParseWellFormedDate(limitToken, `idk ${limitToken} looks bad`)
         : tryParseWellFormedNumber(
@@ -155,7 +156,7 @@ export type parseRightBound<
                   >
                 : state.error<writeUnpairableComparatorMessage<comparator>>
             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-        : state.error<"231">
+        : state.error<writeUnboundableMessage<scanned>>
     : never
 
 export const writeInvalidLimitMessage = <

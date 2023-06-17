@@ -1,6 +1,6 @@
+import { hasArkKind } from "../compile/registry.js"
 import type { TypeNode } from "../nodes/composite/type.js"
 import { node } from "../nodes/composite/type.js"
-import { isNode } from "../nodes/node.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type { domainOf, Primitive } from "../utils/domains.js"
@@ -29,7 +29,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
     const objectKind = objectKindOf(def)
     switch (objectKind) {
         case "Object":
-            if (isNode(def) && def.hasKind("type")) {
+            if (hasArkKind(def, "node") && def.hasKind("type")) {
                 return def
             }
             return parseRecord(def as Dict, ctx)
@@ -62,7 +62,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends Inferred<infer t> | InferredThunk<infer t>
+    : def extends CastTo<infer t> | ThunkCast<infer t>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -74,7 +74,9 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, $> = def extends Terminal
+export type validateDefinition<def, $> = null extends undefined
+    ? `'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`
+    : def extends Terminal
     ? def
     : def extends string
     ? validateString<def, $>
@@ -101,8 +103,8 @@ export type validateDeclared<declared, def, $> = def extends validateDefinition<
 
 type validateInference<def, declared, $> = def extends
     | RegExp
-    | Inferred<unknown>
-    | InferredThunk
+    | CastTo<unknown>
+    | ThunkCast
     | TupleExpression
     ? validateShallowInference<def, declared, $>
     : def extends readonly unknown[]
@@ -142,18 +144,18 @@ type declarationMismatch<def, declared, $> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = RegExp | Inferred<unknown> | ((...args: never[]) => unknown)
+type Terminal = RegExp | CastTo<unknown> | ((...args: never[]) => unknown)
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
 // easiest solution seems to be just having it declared as a value so it doesn't break when we import at runtime
 export const inferred = Symbol("inferred")
 
-export type Inferred<as> = {
-    [inferred]?: as
+export type CastTo<t> = {
+    [inferred]?: t
 }
 
-export type InferredThunk<t = unknown> = () => Inferred<t>
+export type ThunkCast<t = unknown> = () => CastTo<t>
 
 type BadDefinitionType = Exclude<Primitive, string>
 

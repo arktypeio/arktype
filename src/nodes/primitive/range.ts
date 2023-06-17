@@ -1,3 +1,4 @@
+import { throwInternalError } from "../../utils/errors.js"
 import { isKeyOf } from "../../utils/records.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
@@ -77,13 +78,30 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 // reduce a range like `1<=number<=1` to `number==1`
                 rule = [{ comparator: "==", limit: rule[0].limit }]
             }
+            const size = s.lastBasis
+                ? s.lastBasis.domain === "number"
+                    ? s.data
+                    : s.lastBasis.domain === "string"
+                    ? `${s.data}.length`
+                    : s.lastBasis.hasKind("class")
+                    ? s.lastBasis.extendsOneOf(Date)
+                        ? `Number(${s.data})`
+                        : s.lastBasis.extendsOneOf(Array)
+                        ? `${s.data}.length`
+                        : throwInternalError(
+                              `Unexpected basis for range constraint ${s.lastBasis}`
+                          )
+                    : throwInternalError(
+                          `Unexpected basis for range constraint ${s.lastBasis}`
+                      )
+                : `${s.data}.length ?? Number(${s.data})`
             // sorted as lower, upper by definition
             return rule
                 .map((bound) =>
                     s.check(
                         "range",
                         bound,
-                        `(${s.data}.length ?? Number(${s.data})) ${
+                        `${size} ${
                             bound.comparator === "==" ? "===" : bound.comparator
                         } ${bound.limit}`
                     )

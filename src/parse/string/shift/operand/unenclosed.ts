@@ -1,8 +1,10 @@
+import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
-import type { GenericProps } from "../../../../type.js"
+import type { Generic, GenericProps } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"
+import { throwParseError } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
 import type {
     BigintLiteral,
@@ -12,10 +14,11 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
+import { stringify } from "../../../../utils/serialize.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
-import type { Inferred } from "../../../definition.js"
-import type {
-    ParsedArgs,
+import type { CastTo } from "../../../definition.js"
+import type { ParsedArgs } from "../../../generic.js"
+import {
     parseGenericArgs,
     writeInvalidGenericParametersMessage
 } from "../../../generic.js"
@@ -60,6 +63,28 @@ export type parseUnenclosed<
         : never
     : never
 
+export const parseGenericInstantiation = (
+    name: string,
+    g: Generic,
+    s: DynamicState
+) => {
+    s.scanner.shiftUntilNonWhitespace()
+    const lookahead = s.scanner.shift()
+    if (lookahead !== "<") {
+        return s.error(
+            writeInvalidGenericParametersMessage(name, g.parameters, [])
+        )
+    }
+    const parsedArgs = parseGenericArgs(
+        name,
+        g.parameters,
+        s.scanner.unscanned,
+        s.ctx
+    )
+    s.scanner.jumpToIndex(-parsedArgs.unscanned.length)
+    return g(...parsedArgs.result).root
+}
+
 export type parseGenericInstantiation<
     name extends string,
     g extends GenericProps,
@@ -67,14 +92,7 @@ export type parseGenericInstantiation<
     $
     // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
-    ? parseGenericArgs<
-          name,
-          g["parameters"],
-          unscanned,
-          $,
-          [],
-          []
-      > extends infer result
+    ? parseGenericArgs<name, g["parameters"], unscanned, $> extends infer result
         ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
             ? state.setRoot<
                   s,
@@ -89,13 +107,26 @@ export type parseGenericInstantiation<
       >
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
-    s.ctx.scope.maybeResolve(token, s.ctx) ??
+    maybeParseKeyword(s, token) ??
     maybeParseUnenclosedLiteral(token) ??
     s.error(
         token === ""
             ? writeMissingOperandMessage(s)
             : writeUnresolvableMessage(token)
     )
+
+const maybeParseKeyword = (
+    s: DynamicState,
+    token: string
+): TypeNode | undefined => {
+    const resolution = s.ctx.scope.maybeResolve(token, s.ctx)
+    if (hasArkKind(resolution, "node")) {
+        return resolution
+    } else if (hasArkKind(resolution, "generic")) {
+        return parseGenericInstantiation(token, resolution, s)
+    }
+    return throwParseError(`Unexpected resolution ${stringify(resolution)}`)
+}
 
 const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
@@ -118,7 +149,7 @@ type tryResolve<
           string}.${infer reference}`
     ? $[subscope] extends Scope
         ? reference extends keyof $[subscope]["infer"]
-            ? Inferred<$[subscope]["infer"][reference]>
+            ? CastTo<$[subscope]["infer"][reference]>
             : unresolvableError<s, reference, $[subscope]["infer"], [subscope]>
         : error<writeInvalidSubscopeReferenceMessage<subscope>>
     : token extends NumberLiteral

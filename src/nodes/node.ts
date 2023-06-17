@@ -1,10 +1,12 @@
 import { CompilationState, In } from "../compile/compile.js"
+import { arkKind } from "../compile/registry.js"
 import type { inferred } from "../parse/definition.js"
 import { CompiledFunction } from "../utils/functions.js"
 import type { evaluate } from "../utils/generics.js"
 import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
+import type { BasisKind } from "./primitive/basis/basis.js"
 
 type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     kind: node["kind"]
@@ -47,6 +49,7 @@ interface PreconstructedBase<rule, intersectsWith> {
     >
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
+    isBasis(): this is NodeKinds[BasisKind]
 }
 
 type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any, any>>
@@ -61,11 +64,6 @@ export type BaseNode<
 > = PreconstructedBase<rule, intersectsWith> & BaseNodeExtensionProps
 
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
-
-export const isNode = (value: unknown): value is BaseNode =>
-    (value as any)?.[arkKind] === "node"
-
-export const arkKind = Symbol("ArkTypeInternalKind")
 
 export type NodeConstructor<node extends BaseNode, input> = (
     rule: node["rule"] | input
@@ -92,10 +90,15 @@ export const defineNodeKind = <
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<BaseNode> = {}
+        const isBasis =
+            def.kind === "domain" ||
+            def.kind === "class" ||
+            def.kind === "value"
         const base: PreconstructedBase<node["rule"], never> & ThisType<node> = {
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
+            isBasis: () => isBasis,
             condition,
             rule,
             compile: (state: CompilationState) => def.compile(rule, state),

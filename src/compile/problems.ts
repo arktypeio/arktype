@@ -7,9 +7,8 @@ import type { arraySubclassToReadonly } from "../utils/lists.js"
 import { Path } from "../utils/lists.js"
 import type {
     AbstractableConstructor,
-    Constructor,
-    DefaultObjectKind,
-    instanceOf
+    BuiltinObjectKind,
+    Constructor
 } from "../utils/objectKinds.js"
 import {
     getExactBuiltinConstructorName,
@@ -119,7 +118,7 @@ const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 export const domainsToDescriptions = (domains: Domain[]) =>
     domains.map((objectKind) => domainDescriptions[objectKind])
 
-export const objectKindsToDescriptions = (kinds: DefaultObjectKind[]) =>
+export const objectKindsToDescriptions = (kinds: BuiltinObjectKind[]) =>
     kinds.map((objectKind) => objectKindDescriptions[objectKind])
 
 export const describeBranches = (descriptions: string[]) => {
@@ -292,7 +291,7 @@ type ProblemClasses = typeof problemsByCode
 
 export type ProblemCode = keyof ProblemClasses
 
-export type ProblemFrom<code extends ProblemCode> = instanceOf<
+export type ProblemFrom<code extends ProblemCode> = InstanceType<
     ProblemClasses[code]
 >
 

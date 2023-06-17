@@ -1,5 +1,5 @@
 import { CompilationState, In } from "./compile/compile.js"
-import { registry } from "./compile/registry.js"
+import { arkKind, registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
@@ -26,8 +26,12 @@ import type {
 import type { bindThis, Scope } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
-import type { conform, id, Literalable } from "./utils/generics.js"
-import type { AbstractableConstructor } from "./utils/objectKinds.js"
+import type { conform, Literalable } from "./utils/generics.js"
+import type {
+    AbstractableConstructor,
+    BuiltinObjectKind,
+    BuiltinObjects
+} from "./utils/objectKinds.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
 
@@ -39,14 +43,19 @@ type TypeOverloads<$> = {
         $
     >
 
-    // TODO: this type within expression?
     // Spread version of a tuple expression
     <zero, one, two>(
         expression0: zero extends IndexZeroOperator
             ? zero
-            : validateDefinition<zero, bindThis<$, zero>>,
+            : validateDefinition<
+                  zero,
+                  bindThis<$, tupleExpression<zero, one, two>>
+              >,
         expression1: zero extends IndexZeroOperator
-            ? validateDefinition<one, bindThis<$, one>>
+            ? validateDefinition<
+                  one,
+                  bindThis<$, tupleExpression<zero, one, two>>
+              >
             : conform<one, IndexOneOperator>,
         ...expression2: one extends TupleInfixOperator
             ? [
@@ -55,7 +64,10 @@ type TypeOverloads<$> = {
                       : one extends "=>"
                       ? // TODO: centralize
                         Morph<extractOut<inferDefinition<zero, $>>, unknown>
-                      : validateDefinition<two, bindThis<$, two>>
+                      : validateDefinition<
+                            two,
+                            bindThis<$, tupleExpression<zero, one, two>>
+                        >
               ]
             : []
     ): Type<
@@ -255,6 +267,30 @@ type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
         : never
 } & Omit<$, params[number]>
 
+export const generic = (
+    parameters: string[],
+    definition: unknown,
+    scope: Scope
+) =>
+    Object.assign(
+        (...args: unknown[]) =>
+            new Type(
+                definition,
+                scope.merge(
+                    Object.fromEntries(
+                        parameters.map((param, i) => [param, args[i]])
+                    ) as never
+                )
+            ),
+        {
+            [arkKind]: "generic",
+            $: undefined,
+            parameters,
+            definition,
+            scope
+        } satisfies GenericProps
+    )
+
 // Comparing to Generic directly doesn't work well, so we use this similarly to
 // the [inferred] symbol for Type
 export type GenericProps<
@@ -262,7 +298,7 @@ export type GenericProps<
     def = unknown,
     $ = any
 > = {
-    [id]: "generic"
+    [arkKind]: "generic"
     $: $
     parameters: params
     definition: def
@@ -306,9 +342,13 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
         ? i
         : o
     : t extends object
-    ? t extends
-          | ((...args: never[]) => unknown)
-          | (abstract new (...args: never[]) => unknown)
+    ? t extends TerminallyInferredObjectKind
         ? t
         : { [k in keyof t]: extractMorphs<t[k], io> }
     : t
+
+/** Objects we don't want to expand during inference like Date or Promise */
+type TerminallyInferredObjectKind = BuiltinObjects[Exclude<
+    BuiltinObjectKind,
+    "Object" | "Array"
+>]

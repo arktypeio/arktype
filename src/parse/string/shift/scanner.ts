@@ -37,12 +37,24 @@ export class Scanner<Lookahead extends string = string> {
     }
 
     shiftUntilNextTerminator() {
-        this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
+        this.shiftUntilNonWhitespace()
         return this.shiftUntil(Scanner.lookaheadIsTerminator)
+    }
+
+    shiftUntilNonWhitespace() {
+        return this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
+    }
+
+    jumpToIndex(i: number) {
+        this.i = i < 0 ? this.chars.length - i : i
     }
 
     get unscanned() {
         return this.chars.slice(this.i, this.chars.length).join("")
+    }
+
+    get scanned() {
+        return this.chars.slice(0, this.i).join("")
     }
 
     lookaheadIs<Char extends Lookahead>(char: Char): this is Scanner<Char> {

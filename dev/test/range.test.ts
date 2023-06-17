@@ -58,9 +58,16 @@ suite("range", () => {
             test("<,<=", () => {
                 const t = type("-5<number<=5")
                 attest(t.infer).typed as number
-                attest(t.root.condition).snap(
-                    'typeof $arkRoot === "number" && ($arkRoot.length ?? Number($arkRoot)) > -5 && ($arkRoot.length ?? Number($arkRoot)) <= 5'
-                )
+                attest(t.root.condition)
+                    .snap(`if (!(typeof $arkRoot === "number")) {
+            return false
+        }
+if (!($arkRoot > -5)) {
+            return false
+        }
+if (!($arkRoot <= 5)) {
+            return false
+        }`)
                 // attest(t.node).snap({
                 //     number: {
                 //         range: {
@@ -228,6 +235,12 @@ suite("range", () => {
             })
             test("array", () => {
                 attest(type("87<=boolean[]<89").infer).typed as boolean[]
+            })
+            test("multiple boundable categories", () => {
+                const t = type("(string|boolean[]|number)>0")
+                attest(t.infer).typed as string | boolean[] | number
+                const expected = type("string>0|boolean[]>0|number>0")
+                attest(t.condition).equals(expected.condition)
             })
 
             suite("errors", () => {

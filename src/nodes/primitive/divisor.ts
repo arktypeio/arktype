@@ -19,8 +19,6 @@ export const divisorNode = defineNodeKind<DivisorNode>(
     (base) => ({ description: `a multiple of ${base.rule}` })
 )
 
-// compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
-
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
     let previous

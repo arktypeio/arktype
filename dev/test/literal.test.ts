@@ -16,7 +16,7 @@ suite("literal", () => {
             // attest(t.node).equals({ symbol: { value: s } })
             attest(t(s).data).equals(s)
             attest(t("test").problems?.summary).snap(
-                "Must be (symbol test) (was 'test')"
+                'Must be (symbol test) (was "test")'
             )
         })
     })

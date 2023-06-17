@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
 import { node } from "../../src/nodes/composite/type.js"
 import type { Out } from "../../src/parse/ast/morph.js"
 import {
@@ -46,6 +46,20 @@ suite("tuple expression definition", () => {
                 type([{ s: "strng" }, "|", "number"])
             }).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
         })
+        test("this", () => {
+            const t = type([{ a: "string" }, "|", { b: "this" }])
+            attest(t.infer).types.toString.snap()
+            const types = scope({
+                a: {
+                    a: "string"
+                },
+                b: {
+                    b: "expected"
+                },
+                expected: "a|b"
+            }).export()
+            attest(t.condition).equals(types.expected.condition)
+        })
     })
 })
 
@@ -62,7 +76,13 @@ suite("args tuple expression", () => {
     })
     test("infix", () => {
         const t = type({ a: "string" }, "|", { b: "boolean" })
-        attest(t.infer).typed as string | number
+        attest(t.infer).typed as
+            | {
+                  a: string
+              }
+            | {
+                  b: boolean
+              }
         attest(t.condition).equals(
             type({ a: "string" }).or({ b: "boolean" }).condition
         )
@@ -80,5 +100,12 @@ suite("args tuple expression", () => {
             (In): In is { a: "foo" } => In.a === "foo"
         )
         attest(t.infer).typed as { a: "foo" }
+    })
+    test("this", () => {
+        const t = type({ a: "string" }, "|", { b: "this" })
+        attest(t.infer).types.toString.snap()
+        attest(t.condition).equals(
+            type([{ a: "string" }, "|", { b: "this" }]).condition
+        )
     })
 })

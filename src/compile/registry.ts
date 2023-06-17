@@ -1,3 +1,5 @@
+import type { Node } from "../nodes/kinds.js"
+import type { Generic } from "../type.js"
 import type { autocomplete } from "../utils/generics.js"
 import type { AbstractableConstructor } from "../utils/objectKinds.js"
 import { compilePropAccess } from "./compile.js"
@@ -11,6 +13,19 @@ export type RegisteredKinds = {
     value: object | symbol
     constructor: AbstractableConstructor
 }
+
+export type ArkKinds = {
+    node: Node
+    generic: Generic
+}
+export const arkKind = Symbol("ArkTypeInternalKind")
+
+export type ArkKind = keyof ArkKinds
+
+export const hasArkKind = <kind extends ArkKind>(
+    value: unknown,
+    kind: kind
+): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
 
 export type InternalId = "problems" | "result"
 

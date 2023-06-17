@@ -5,6 +5,7 @@ import type {
 } from "../../../nodes/primitive/range.js"
 import { invertedComparators } from "../../../nodes/primitive/range.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import type { DateLiteral } from "../shift/operand/date.js"
 
 export type Prefix = "keyof"
 
@@ -64,8 +65,8 @@ export const writeMultipleLeftBoundsMessage = <
     `An expression may have at most one left bound (parsed ${openLimit}${invertedComparators[openComparator]}, ${limit}${invertedComparators[comparator]})`
 
 export type writeMultipleLeftBoundsMessage<
-    openLimit extends NumberLiteral,
+    openLimit extends NumberLiteral | DateLiteral,
     openComparator extends MinComparator,
-    limit extends NumberLiteral,
+    limit extends NumberLiteral | DateLiteral,
     comparator extends MinComparator
 > = `An expression may have at most one left bound (parsed ${openLimit}${InvertedComparators[openComparator]}, ${limit}${InvertedComparators[comparator]})`
