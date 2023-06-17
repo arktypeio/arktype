@@ -25,7 +25,8 @@ import type {
     GenericProps,
     KeyCheckKind,
     TypeConfig,
-    TypeParser
+    TypeParser,
+    UnknownGeneric
 } from "./type.js"
 import { createTypeParser, generic, Type } from "./type.js"
 import { domainOf } from "./utils/domains.js"
@@ -281,7 +282,7 @@ export class Scope<r extends Resolutions = any> {
     maybeResolve(
         name: string,
         ctx: ParseContext
-    ): TypeNode | Generic | Scope | undefined {
+    ): TypeNode | UnknownGeneric | Scope | undefined {
         const cached = this.resolutions[name]
         if (cached) {
             if (cached === this.thisType) {

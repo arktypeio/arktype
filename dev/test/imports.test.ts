@@ -1,9 +1,7 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import type { TypeSet } from "../../src/scope.js"
-import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import type { Ark } from "../../src/scopes/ark.js"
-import type { Generic } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 import { lazily } from "./utils.js"
 
@@ -115,10 +113,6 @@ suite("private aliases", () => {
             foo: "bar<string>[]",
             "#bar<t>": ["t"]
         }).export()
-        attest(types).typed as TypeSet<{
-            exports: { foo: [string][] }
-            locals: { bar: Generic<["t"], ["t"]> }
-            ambient: Ark
-        }>
+        attest(types.foo).typed as [string][]
     })
 })

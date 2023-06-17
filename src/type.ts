@@ -304,13 +304,13 @@ export type GenericProps<
     scope: Scope
 }
 
-export type Generic<
-    params extends string[] = string[],
-    def = unknown,
-    $ = any
-> = (<args>(
+export type UnknownGeneric = Generic<string[], unknown, any>
+
+// TODO: Fix external reference
+export type Generic<params extends string[], def, $> = (<args>(
     /** @ts-expect-error can't constrain this to be an array without breaking narrowing */
     ...args: {
+        // TODO: this doesn't work if you don't provide all defs?
         [i in keyof args]: conform<
             args[i],
             validateDefinition<args[i], bindThis<$, def>>

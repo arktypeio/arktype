@@ -2,7 +2,7 @@ import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
-import type { Generic, GenericProps } from "../../../../type.js"
+import type { GenericProps, UnknownGeneric } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"
 import { throwParseError } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
@@ -65,7 +65,7 @@ export type parseUnenclosed<
 
 export const parseGenericInstantiation = (
     name: string,
-    g: Generic,
+    g: UnknownGeneric,
     s: DynamicState
 ) => {
     s.scanner.shiftUntilNonWhitespace()

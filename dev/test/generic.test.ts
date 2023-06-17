@@ -171,17 +171,16 @@ suite("generics", () => {
         })
 
         test("self-reference no params", () => {
-            // TODO: fix
-            // attest(() =>
-            //     scope({
-            //         "nest<t>": {
-            //             // @ts-expect-error
-            //             nest: "nest"
-            //         }
-            //     }).export()
-            // ).throwsAndHasTypeError(
-            //     writeInvalidGenericArgsMessage("nest", ["t"], [])
-            // )
+            attest(() =>
+                scope({
+                    "nest<t>": {
+                        // @ts-expect-error
+                        nest: "nest"
+                    }
+                }).export()
+            ).throwsAndHasTypeError(
+                writeInvalidGenericArgsMessage("nest", ["t"], [])
+            )
         })
 
         test("declaration and instantiation leading and trailing whitespace", () => {
