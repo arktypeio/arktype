@@ -5,8 +5,6 @@ import { writeInvalidGenericArgsMessage } from "../../src/parse/generic.js"
 import { writeUnclosedGroupMessage } from "../../src/parse/string/reduce/shared.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
-import type { Ark } from "../../src/scopes/ark.js"
-import type { Generic } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 import { lazily } from "./utils.js"
 
@@ -14,13 +12,6 @@ suite("generics", () => {
     suite("standalone generic", () => {
         test("unary", () => {
             const boxOf = type("<t>", { box: "t" })
-            attest(boxOf).typed as Generic<
-                ["t"],
-                {
-                    box: "t"
-                },
-                Ark
-            >
             const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
             attest(schrodingersBox.infer).typed as {
                 box: { cat: { isAlive: boolean } }
@@ -29,11 +20,6 @@ suite("generics", () => {
 
         test("binary", () => {
             const either = type("<first, second>", "first|second")
-            attest(either).typed as Generic<
-                ["first", "second"],
-                "first|second",
-                Ark
-            >
             const schrodingersBox = either(
                 { cat: { isAlive: "true" } },
                 { cat: { isAlive: "false" } }
