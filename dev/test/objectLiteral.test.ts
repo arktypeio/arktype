@@ -33,7 +33,6 @@ suite("object literal", () => {
             [x: number]: string
         }
     })
-
     test("multiple indexed", () => {
         const o = type({
             "[string]": "string | number",
@@ -44,7 +43,6 @@ suite("object literal", () => {
             [x: number]: number
         }
     })
-
     test("all key kinds", () => {
         const o = type({
             "[string]": "string",
