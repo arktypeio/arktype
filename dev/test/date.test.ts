@@ -26,7 +26,7 @@ suite("Errors", () => {
             "Error: Date string was not able to be parsed."
         )
     })
-    //This should not be ok anymore I guess todoshawn
+    //TODOshawn need to figure out not allowing numbers as a limit
     test("Date Bounded by number literal", () => {
         const d = type("Date > 2")
         attest(d(new Date()).data).snap()

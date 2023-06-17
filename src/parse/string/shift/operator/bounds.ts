@@ -96,7 +96,6 @@ export const parseRightBound = (
 ) => {
     const limitToken = s.scanner.shiftUntilNextTerminator()
     const looksLikeDate = /d(['\"]).*(\1)/.test(limitToken)
-    //todoshawn
     const limit = looksLikeDate
         ? tryParseWellFormedDate(limitToken, `idk ${limitToken} looks bad`)
         : tryParseWellFormedNumber(
