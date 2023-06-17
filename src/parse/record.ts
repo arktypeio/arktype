@@ -8,6 +8,7 @@ import type { evaluate } from "../utils/generics.js"
 import type { Dict } from "../utils/records.js"
 import type { inferDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
+import type { inferString } from "./string/string.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
     const named: NamedPropRule[] = []
@@ -42,50 +43,55 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
 
 const objectBasisNode = domainNode("object")
 
-type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
-    ? `${name}${Scanner.EscapeToken}?`
-    : k
-
 export type inferRecord<def extends Dict, $> = evaluate<
     {
-        [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
-            def[withPossiblePreviousEscapeCharacter<requiredKeyName>],
-            $
-        >
+        [k in keyof def as parseKey<k> extends {
+            kind: infer kind extends "required" | "indexed"
+            value: infer value
+        }
+            ? (kind extends "required" ? value : inferDefinition<value, $>) &
+                  PropertyKey
+            : never]: inferDefinition<def[k], $>
     } & {
-        [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
-            def[`${optionalKeyName}?`],
-            $
-        >
+        [k in keyof def as parseKey<k> extends {
+            kind: "optional"
+            value: infer value extends string
+        }
+            ? value
+            : never]?: inferDefinition<def[k], $>
     }
 >
 
-type KeyParseResult<name extends string, isOptional extends boolean> = [
-    name,
-    isOptional
-]
+type ParsedKeyKind = "required" | "optional" | "indexed"
 
-export type extractRecordKeyName<k> = parseKey<k>[0]
+type KeyParseResult = {
+    kind: ParsedKeyKind
+    value: string
+}
 
-type parseKey<k> = k extends optionalKeyWithName<infer name>
+type parsedKey<result extends KeyParseResult> = result
+
+type parseKey<k> = k extends `${infer name}?`
     ? name extends `${infer baseName}${Scanner.EscapeToken}`
-        ? [`${baseName}?`, false]
-        : [name, true]
-    : [k, false]
-
-type optionalKeyWithName<name extends string = string> = `${name}?`
-
-type optionalKeyOf<def> = {
-    [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, true>
-        ? name
-        : never
-}[keyof def] &
-    // ensure keyof is fully evaluated for inferred types
-    unknown
-
-type requiredKeyOf<def> = {
-    [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, false>
-        ? name
-        : never
-}[keyof def] &
-    unknown
+        ? parsedKey<{
+              kind: "required"
+              value: `${baseName}?`
+          }>
+        : parsedKey<{
+              kind: "optional"
+              value: name
+          }>
+    : k extends `[${infer index}]`
+    ? parsedKey<{
+          kind: "indexed"
+          value: index
+      }>
+    : k extends `${Scanner.EscapeToken}[${infer baseName}]`
+    ? parsedKey<{
+          kind: "required"
+          value: `[${baseName}]`
+      }>
+    : parsedKey<{
+          kind: "required"
+          value: k & string
+      }>

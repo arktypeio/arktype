@@ -20,7 +20,7 @@ import type { CastTo } from "../../../definition.js"
 import type { ParsedArgs } from "../../../generic.js"
 import {
     parseGenericArgs,
-    writeInvalidGenericParametersMessage
+    writeInvalidGenericArgsMessage
 } from "../../../generic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type {
@@ -71,9 +71,7 @@ export const parseGenericInstantiation = (
     s.scanner.shiftUntilNonWhitespace()
     const lookahead = s.scanner.shift()
     if (lookahead !== "<") {
-        return s.error(
-            writeInvalidGenericParametersMessage(name, g.parameters, [])
-        )
+        return s.error(writeInvalidGenericArgsMessage(name, g.parameters, []))
     }
     const parsedArgs = parseGenericArgs(
         name,
@@ -102,9 +100,7 @@ export type parseGenericInstantiation<
             : // propagate error
               result
         : never
-    : state.error<
-          writeInvalidGenericParametersMessage<name, g["parameters"], []>
-      >
+    : state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
     maybeParseKeyword(s, token) ??

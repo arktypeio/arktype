@@ -53,6 +53,9 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
     {
         kind: "type",
         parse: (input) => {
+            if (hasArkKind(input, "node")) {
+                return input.rule
+            }
             if (!isParsedTypeRule(input)) {
                 input = isArray(input)
                     ? input.map((branch) => predicateNode(branch))
@@ -335,7 +338,7 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
 }
 
 export type TypeNodeParser = {
-    <const branches extends readonly PredicateInput[]>(
+    <branches extends PredicateInput[]>(
         ...branches: {
             [i in keyof branches]: conform<
                 branches[i],
@@ -372,20 +375,22 @@ export type inferBranches<branches extends readonly PredicateInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
 
-export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
-    input extends unknown[] ? input[number] : input
->
+export type inferTypeInput<input extends TypeInput> =
+    input extends readonly PredicateInput[]
+        ? inferBranches<input>
+        : input extends PredicateInput
+        ? inferPredicateDefinition<input>
+        : input extends TypeNode<infer t>
+        ? t
+        : never
 
-export type TypeInput = PredicateInput | PredicateInput[]
+export type TypeInput = TypeNode | PredicateInput | PredicateInput[]
 
 export type validatedTypeNodeInput<
-    branches extends readonly PredicateInput[],
+    input extends readonly PredicateInput[],
     bases extends BasisInput[]
 > = {
-    [i in keyof branches]: exact<
-        branches[i],
-        PredicateInput<bases[i & keyof bases]>
-    >
+    [i in keyof input]: exact<input[i], PredicateInput<bases[i & keyof bases]>>
 }
 
 export type extractBases<

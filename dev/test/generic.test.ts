@@ -1,6 +1,7 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
+import { writeInvalidGenericArgsMessage } from "../../src/parse/generic.js"
 import { writeUnclosedGroupMessage } from "../../src/parse/string/reduce/shared.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
@@ -167,6 +168,19 @@ suite("generics", () => {
             }).export()
             attest(types.reference.infer.swap.swap.order).typed as [0, 1]
             attest(types.reference.infer.swap.swap.swap.order).typed as [1, 0]
+        })
+
+        test("self-reference no params", () => {
+            attest(() =>
+                scope({
+                    "nest<t>": {
+                        // @ts-expect-error
+                        nest: "nest"
+                    }
+                }).export()
+            ).throwsAndHasTypeError(
+                writeInvalidGenericArgsMessage("nest", ["t"], [])
+            )
         })
 
         test("declaration and instantiation leading and trailing whitespace", () => {

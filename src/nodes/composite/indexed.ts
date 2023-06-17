@@ -5,7 +5,7 @@ import type { TypeInput, TypeNode } from "./type.js"
 import { builtins, node } from "./type.js"
 
 export type IndexedPropInput = {
-    key: PredicateInput<"string">
+    key: TypeInput
     value: TypeInput
 }
 

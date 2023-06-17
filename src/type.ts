@@ -291,8 +291,7 @@ export const generic = (
         } satisfies GenericProps
     )
 
-// Comparing to Generic directly doesn't work well, so we use this similarly to
-// the [inferred] symbol for Type
+// Comparing to Generic directly doesn't work well, so we compare to only its props
 export type GenericProps<
     params extends string[] = string[],
     def = unknown,

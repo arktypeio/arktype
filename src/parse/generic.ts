@@ -124,7 +124,7 @@ const parseGenericArgsRecurse = (
             }
         } else {
             return s.error(
-                writeInvalidGenericParametersMessage(name, params, argDefs)
+                writeInvalidGenericArgsMessage(name, params, argDefs)
             )
         }
     } else if (nextUnscanned[0] === ",") {
@@ -164,11 +164,7 @@ type parseGenericArgsRecurse<
             ? nextAsts["length"] extends params["length"]
                 ? ParsedArgs<nextAsts, nextUnscanned>
                 : state.error<
-                      writeInvalidGenericParametersMessage<
-                          name,
-                          params,
-                          nextDefs
-                      >
+                      writeInvalidGenericArgsMessage<name, params, nextDefs>
                   >
             : finalArgState["finalizer"] extends ","
             ? parseGenericArgsRecurse<
@@ -185,7 +181,7 @@ type parseGenericArgsRecurse<
         : never
     : never
 
-export const writeInvalidGenericParametersMessage = <
+export const writeInvalidGenericArgsMessage = <
     name extends string,
     params extends string[],
     argDefs extends string[]
@@ -194,18 +190,18 @@ export const writeInvalidGenericParametersMessage = <
     params: params,
     argDefs: argDefs
 ) =>
-    `${name}${params.join(", ")} requires exactly ${
-        params.length
-    } parameters (got ${argDefs.length}: ${argDefs.join(", ")})`
+    `${name}${params.join(", ")} requires exactly ${params.length} args (got ${
+        argDefs.length
+    }: ${argDefs.join(", ")})`
 
-export type writeInvalidGenericParametersMessage<
+export type writeInvalidGenericArgsMessage<
     name extends string,
     params extends string[],
     argDefs extends string[]
 > = `${name}<${join<
     params,
     ", "
->}> requires exactly ${params["length"]} parameters (got ${argDefs["length"]}: ${join<
+>}> requires exactly ${params["length"]} args (got ${argDefs["length"]}: ${join<
     argDefs,
     ","
 >})`
