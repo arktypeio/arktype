@@ -79,6 +79,34 @@ suite("generics", () => {
             }
             attest(t.infer).typed as Expected
         })
+        test("this in arg", () => {
+            const boxOf = type("<t>", {
+                box: "t"
+            })
+            const t = boxOf({
+                a: "string|this"
+            })
+            type Expected =
+                | string
+                | {
+                      a: Expected
+                  }
+            attest(t.infer.box.a).typed as Expected
+        })
+        test("too few args", () => {
+            const pair = type("<t, u>", ["t", "u"])
+            // @ts-expect-error
+            attest(() => pair("string")).types.errors(
+                "Expected 2 arguments, but got 1"
+            )
+        })
+        test("too many args", () => {
+            const pair = type("<t, u>", ["t", "u"])
+            // @ts-expect-error
+            attest(() => pair("string", "boolean", "number")).types.errors(
+                "Expected 2 arguments, but got 3"
+            )
+        })
     })
 
     suite("in-scope", () => {
@@ -157,9 +185,9 @@ suite("generics", () => {
             }).export()
             attest(types.reference.infer.swap.swap.order).typed as [0, 1]
             attest(types.reference.infer.swap.swap.swap.order).typed as [1, 0]
-            const fromCall = types.alternate("true", "false")
-            attest(fromCall.infer.swap.swap.order).typed as [true, false]
-            attest(fromCall.infer.swap.swap.swap.order).typed as [false, true]
+            const fromCall = types.alternate("'off'", "'on'")
+            attest(fromCall.infer.swap.swap.order).typed as ["off", "on"]
+            attest(fromCall.infer.swap.swap.swap.order).typed as ["on", "off"]
         })
 
         test("self-reference no params", () => {

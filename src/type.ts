@@ -90,12 +90,13 @@ type TypeOverloads<$> = {
         params: `<${validateParameterString<params>}>`,
         def: validateDefinition<
             def,
-            bindThis<$, def> & {
+            // TODO: should this always be included with args?
+            bindThis<$, def>,
+            {
                 [param in parseGenericParams<params>[number]]: unknown
-            },
-            {}
+            }
         >
-    ): Generic<parseGenericParams<params>, def, bindThis<$, def>>
+    ): Generic<parseGenericParams<params>, def, $>
 }
 
 type tupleExpression<zero, one, two> = one extends TupleInfixOperator
@@ -270,14 +271,6 @@ type validateParameterString<params extends string> =
         ? message
         : params
 
-type bindGenericInstantiation<params extends string[], $, argDefs> = {
-    [i in keyof params as params[i & `${number}`]]: inferDefinition<
-        argDefs[i & keyof argDefs],
-        bindThis<$, argDefs[i & keyof argDefs]>,
-        {}
-    >
-}
-
 export const generic = (
     parameters: string[],
     definition: unknown,
@@ -318,21 +311,31 @@ export type GenericProps<
 
 export type UnknownGeneric = Generic<string[], unknown, any>
 
-// TODO: Fix external reference
+// TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 export type Generic<params extends string[], def, $> = (<args>(
-    /** @ts-expect-error can't constrain this to be an array without breaking narrowing */
-    ...args: {
-        // TODO: this doesn't work if you don't provide all defs?
-        [i in keyof args]: conform<
-            args[i],
-            validateDefinition<args[i], bindThis<$, def>, {}>
-        >
-    }
+    ...args: conform<
+        args,
+        {
+            [i in keyof params]: validateDefinition<
+                args[i & keyof args],
+                bindThis<$, args[i & keyof args]>,
+                {}
+            >
+        }
+    >
 ) => Type<
     inferDefinition<def, $, bindGenericInstantiation<params, $, args>>,
     $
 >) &
     GenericProps<params, def, $>
+
+type bindGenericInstantiation<params extends string[], $, args> = {
+    [i in keyof params & `${number}` as params[i]]: inferDefinition<
+        args[i & keyof args],
+        bindThis<$, args[i & keyof args]>,
+        {}
+    >
+}
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 
