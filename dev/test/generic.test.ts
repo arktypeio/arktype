@@ -3,6 +3,7 @@ import { scope, type } from "../../src/main.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 import { writeInvalidGenericArgsMessage } from "../../src/parse/generic.js"
 import { writeUnclosedGroupMessage } from "../../src/parse/string/reduce/shared.js"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
 import { attest } from "../attest/main.js"
@@ -69,15 +70,13 @@ suite("generics", () => {
             attest(stringArray.infer).typed as string[]
         })
 
-        test("this in def", () => {
-            const nestableBoxOf = type("<t>", {
-                box: "t | this"
-            })
-            const t = nestableBoxOf("string")
-            type Expected = {
-                box: string | Expected
-            }
-            attest(t.infer).typed as Expected
+        test("this not resolvable in generic def", () => {
+            attest(() =>
+                // @ts-expect-error
+                type("<t>", {
+                    box: "t | this"
+                })
+            ).throwsAndHasTypeError(writeUnresolvableMessage("this"))
         })
         test("this in arg", () => {
             const boxOf = type("<t>", {

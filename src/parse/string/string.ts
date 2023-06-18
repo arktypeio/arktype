@@ -21,12 +21,10 @@ export const parseString = (def: string, ctx: ParseContext) =>
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-export type parseString<def extends string, $, args> = def extends
-    | keyof $
-    | keyof args
+export type parseString<def extends string, $, args> = def extends keyof $
     ? def
     : def extends `${infer child}[]`
-    ? child extends keyof $ | keyof args
+    ? child extends keyof $
         ? [child, "[]"]
         : fullStringParse<def, $, args>
     : fullStringParse<def, $, args>

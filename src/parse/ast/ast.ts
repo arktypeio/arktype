@@ -38,9 +38,7 @@ export type inferExpression<
                 // resolved using the same scope as that of the input args.
                 $
               : // Otherwise, use the scope that was explicitly associated with it.
-                // If "this" is in the arg scope (i.e. the generic is being instantiated as a standalone type)
-                // include the same "this" value in the generic definition's scope
-                ast[0]["$"] & { [_ in "this" & keyof $]: $[_] },
+                ast[0]["$"],
           {
               // Using keyof g["parameters"] & number here results in the element types
               // being mixed- another reason TS should not have separate `${number}` and number keys!
@@ -171,9 +169,7 @@ type validateInfix<ast extends InfixExpression, $, args> = validateAst<
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
-export type inferTerminal<token, $, args> = token extends keyof args
-    ? args[token]
-    : token extends keyof $
+export type inferTerminal<token, $, args> = token extends keyof args | keyof $
     ? resolve<token, $, args>
     : token extends CastTo<infer t>
     ? t

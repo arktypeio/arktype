@@ -73,7 +73,7 @@ type validateAliases<aliases, $> = {
         : never
 }
 
-export type bindThis<$, def> = $ & { this: Def<def> }
+export type bindThis<def> = { this: Def<def> }
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
@@ -145,15 +145,17 @@ export type ScopeOptions = {
     keys?: KeyCheckKind
 }
 
-export type resolve<reference extends keyof $, $, args> = [
-    $[reference]
-] extends [never]
-    ? never
-    : isAny<$[reference]> extends true
-    ? any
-    : $[reference] extends Def<infer def>
-    ? inferDefinition<def, $, args>
-    : $[reference]
+export type resolve<reference extends keyof $ | keyof args, $, args> = (
+    reference extends keyof args ? args[reference] : $[reference & keyof $]
+) extends infer resolution
+    ? [resolution] extends [never]
+        ? never
+        : isAny<resolution> extends true
+        ? any
+        : resolution extends Def<infer def>
+        ? inferDefinition<def, $, args>
+        : resolution
+    : never
 
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
