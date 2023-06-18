@@ -16,13 +16,13 @@ const clone = (from: string, to: string): void =>
 
 const writeManifest =
     (overrides: Record<string, unknown>) =>
-        (sourceDir: string, targetDir: string) => {
-            const manifest = readJson(join(sourceDir, "package.json"))
-            writeJson(join(targetDir, "package.json"), {
-                ...manifest,
-                ...overrides
-            })
-        }
+    (sourceDir: string, targetDir: string) => {
+        const manifest = readJson(join(sourceDir, "package.json"))
+        writeJson(join(targetDir, "package.json"), {
+            ...manifest,
+            ...overrides
+        })
+    }
 
 const Sources = {
     utils: ["dev", "utils"],
@@ -31,18 +31,15 @@ const Sources = {
 
 const replacementDictionary = {
     attest: `@arktype/attest`,
-    utils: `@arktype/utils`,
+    utils: `@arktype/utils`
 } as const
 
-const ignorePaths = [
-    "node_modules",
-    "src/index",
-    "package.json"
-]
+const ignorePaths = ["node_modules", "src/index", "package.json"]
 
-const fixBuildPaths
-    : (buildPath: string) => void
-    = rewritePaths(ignorePaths, replacementDictionary)
+const fixBuildPaths: (buildPath: string) => void = rewritePaths(
+    ignorePaths,
+    replacementDictionary
+)
 
 const buildFormat = (module: ModuleKind) => {
     const moduleKindDir = ModuleKindToDir[module]
