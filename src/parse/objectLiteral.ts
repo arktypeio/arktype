@@ -4,7 +4,6 @@ import { propsNode } from "../nodes/composite/props.js"
 import { typeNode } from "../nodes/composite/type.js"
 import { domainNode } from "../nodes/primitive/basis/domain.js"
 import type { ParseContext } from "../scope.js"
-import type { Ark } from "../scopes/ark.js"
 import type { error } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { Dict } from "../utils/records.js"
@@ -45,19 +44,27 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 
 const objectBasisNode = domainNode("object")
 
-export type inferObjectLiteral<def extends Dict, $> = evaluate<
+export type inferObjectLiteral<def extends Dict, $, args> = evaluate<
     {
-        [k in keyof def as nonOptionalKeyFrom<k, $>]: inferDefinition<def[k], $>
+        [k in keyof def as nonOptionalKeyFrom<k, $, args>]: inferDefinition<
+            def[k],
+            $,
+            args
+        >
     } & {
-        [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<def[k], $>
+        [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
+            def[k],
+            $,
+            args
+        >
     }
 >
 
-type nonOptionalKeyFrom<k, $> = parseKey<k> extends {
+type nonOptionalKeyFrom<k, $, args> = parseKey<k> extends {
     kind: infer kind extends "required" | "indexed"
     value: infer value
 }
-    ? (kind extends "required" ? value : inferDefinition<value, $>) &
+    ? (kind extends "required" ? value : inferDefinition<value, $, args>) &
           PropertyKey
     : never
 
@@ -68,16 +75,16 @@ type optionalKeyFrom<k> = parseKey<k> extends {
     ? value
     : never
 
-export type validateObjectLiteral<def, $> = {
+export type validateObjectLiteral<def, $, args> = {
     [k in keyof def]: k extends IndexedKey<infer indexDef>
-        ? validateString<indexDef, $> extends error<infer message>
+        ? validateString<indexDef, $, args> extends error<infer message>
             ? message
-            : inferDefinition<indexDef, $> extends PropertyKey
+            : inferDefinition<indexDef, $, args> extends PropertyKey
             ? // if the indexDef is syntactically and semantically valid,
               // move on to the validating the value definition
-              validateDefinition<def[k], $>
+              validateDefinition<def[k], $, args>
             : writeInvalidPropertyKeyMessage<indexDef>
-        : validateDefinition<def[k], $>
+        : validateDefinition<def[k], $, args>
 }
 
 export const writeInvalidPropertyKeyMessage = <indexDef extends string>(

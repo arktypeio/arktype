@@ -21,17 +21,20 @@ export const parseString = (def: string, ctx: ParseContext) =>
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-export type parseString<def extends string, $> = def extends keyof $
+export type parseString<def extends string, $, args> = def extends
+    | keyof $
+    | keyof args
     ? def
     : def extends `${infer child}[]`
-    ? child extends keyof $
+    ? child extends keyof $ | keyof args
         ? [child, "[]"]
-        : fullStringParse<def, $>
-    : fullStringParse<def, $>
+        : fullStringParse<def, $, args>
+    : fullStringParse<def, $, args>
 
-export type inferString<def extends string, $> = inferAst<
-    parseString<def, $>,
-    $
+export type inferString<def extends string, $, args> = inferAst<
+    parseString<def, $, args>,
+    $,
+    args
 >
 
 export const fullStringParse = (def: string, ctx: ParseContext) => {
@@ -43,8 +46,8 @@ export const fullStringParse = (def: string, ctx: ParseContext) => {
         : result
 }
 
-type fullStringParse<def extends string, $> = extractFinalizedResult<
-    parseUntilFinalizer<state.initialize<def>, $>
+type fullStringParse<def extends string, $, args> = extractFinalizedResult<
+    parseUntilFinalizer<state.initialize<def>, $, args>
 >
 
 export const parseUntilFinalizer = (s: DynamicState) => {
@@ -56,14 +59,17 @@ export const parseUntilFinalizer = (s: DynamicState) => {
 
 export type parseUntilFinalizer<
     s extends StaticState,
-    $
-> = s["finalizer"] extends undefined ? parseUntilFinalizer<next<s, $>, $> : s
+    $,
+    args
+> = s["finalizer"] extends undefined
+    ? parseUntilFinalizer<next<s, $, args>, $, args>
+    : s
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
-type next<s extends StaticState, $> = s["root"] extends undefined
-    ? parseOperand<s, $>
+type next<s extends StaticState, $, args> = s["root"] extends undefined
+    ? parseOperand<s, $, args>
     : parseOperator<s>
 
 export type extractFinalizedResult<s extends StaticState> =

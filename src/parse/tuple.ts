@@ -99,37 +99,52 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
 
 type InfixExpression = [unknown, InfixOperator, ...unknown[]]
 
-export type validateTuple<def extends List, $> = def extends IndexZeroExpression
-    ? validatePrefixExpression<def, $>
+export type validateTuple<
+    def extends List,
+    $,
+    args
+> = def extends IndexZeroExpression
+    ? validatePrefixExpression<def, $, args>
     : def extends PostfixExpression
-    ? validatePostfixExpression<def, $>
+    ? validatePostfixExpression<def, $, args>
     : def extends InfixExpression
-    ? validateInfixExpression<def, $>
+    ? validateInfixExpression<def, $, args>
     : def extends
           | readonly ["", ...unknown[]]
           | readonly [unknown, "", ...unknown[]]
     ? [
-          def[0] extends "" ? keyof $ | IndexZeroOperator | Prefix : def[0],
-          def[1] extends "" ? keyof $ | IndexOneOperator | Prefix : def[1]
+          def[0] extends ""
+              ? keyof $ | keyof args | IndexZeroOperator | Prefix
+              : def[0],
+          def[1] extends ""
+              ? keyof $ | keyof args | IndexOneOperator | Prefix
+              : def[1]
       ]
-    : validateTupleLiteral<def, $>
+    : validateTupleLiteral<def, $, args>
 
 export type validateTupleLiteral<
     def extends List,
     $,
+    args,
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
     ? validateTupleLiteral<
           tail,
           $,
+          args,
           [
               ...result,
               head extends variadicExpression<infer operand>
-                  ? validateDefinition<operand, $> extends infer syntacticResult
+                  ? validateDefinition<
+                        operand,
+                        $,
+                        args
+                    > extends infer syntacticResult
                       ? syntacticResult extends operand
                           ? semanticallyValidateRestElement<
                                 operand,
-                                $
+                                $,
+                                args
                             > extends infer semanticResult
                               ? semanticResult extends operand
                                   ? tail extends []
@@ -139,14 +154,15 @@ export type validateTupleLiteral<
                               : never
                           : syntacticResult
                       : never
-                  : validateDefinition<head, $>
+                  : validateDefinition<head, $, args>
           ]
       >
     : result
 
-type semanticallyValidateRestElement<operand, $> = inferDefinition<
+type semanticallyValidateRestElement<operand, $, args> = inferDefinition<
     operand,
-    $
+    $,
+    args
 > extends infer result
     ? result extends never
         ? writeNonArrayRestMessage<operand>
@@ -173,17 +189,19 @@ type prematureRestMessage = typeof prematureRestMessage
 type inferTupleLiteral<
     def extends List,
     $,
+    args,
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
     ? inferDefinition<
           head extends variadicExpression<infer operand> ? operand : head,
-          $
+          $,
+          args
       > extends infer element
         ? head extends variadicExpression
             ? element extends readonly unknown[]
-                ? inferTupleLiteral<tail, $, [...result, ...element]>
+                ? inferTupleLiteral<tail, $, args, [...result, ...element]>
                 : never
-            : inferTupleLiteral<tail, $, [...result, element]>
+            : inferTupleLiteral<tail, $, args, [...result, element]>
         : never
     : result
 
@@ -196,23 +214,27 @@ type variadicStringExpression<operandDef extends string = string> =
 
 type variadicTupleExpression<operandDef = unknown> = ["...", operandDef]
 
-export type inferTuple<def extends List, $> = def extends TupleExpression
-    ? inferTupleExpression<def, $>
-    : inferTupleLiteral<def, $>
+export type inferTuple<def extends List, $, args> = def extends TupleExpression
+    ? inferTupleExpression<def, $, args>
+    : inferTupleLiteral<def, $, args>
 
 export type inferTupleExpression<
     def extends TupleExpression,
-    $
+    $,
+    args
 > = def[1] extends "[]"
-    ? inferDefinition<def[0], $>[]
+    ? inferDefinition<def[0], $, args>[]
     : def[1] extends "&"
-    ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
+    ? inferIntersection<
+          inferDefinition<def[0], $, args>,
+          inferDefinition<def[2], $, args>
+      >
     : def[1] extends "|"
-    ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
+    ? inferDefinition<def[0], $, args> | inferDefinition<def[2], $, args>
     : def[1] extends ":"
-    ? inferNarrow<inferDefinition<def[0], $>, def[2]>
+    ? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
     : def[1] extends "=>"
-    ? parseMorph<def[0], def[2], $>
+    ? parseMorph<def[0], def[2], $, args>
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
@@ -220,17 +242,18 @@ export type inferTupleExpression<
         ? t
         : never
     : def[0] extends "keyof"
-    ? inferKeyOfExpression<def[1], $>
+    ? inferKeyOfExpression<def[1], $, args>
     : never
 
 export type validatePrefixExpression<
     def extends IndexZeroExpression,
-    $
+    $,
+    args
 > = def["length"] extends 1
     ? [writeMissingRightOperandMessage<def[0]>]
     : [
           def[0] extends "keyof"
-              ? inferDefinition<def, $> extends never
+              ? inferDefinition<def, $, args> extends never
                   ? writeUnsatisfiableExpressionError<astToString<def>>
                   : def[0]
               : def[0],
@@ -239,36 +262,38 @@ export type validatePrefixExpression<
               : def[0] extends "instanceof"
               ? AbstractableConstructor
               : def[0] extends "keyof"
-              ? validateDefinition<def[1], $>
+              ? validateDefinition<def[1], $, args>
               : never
       ]
 
-export type validatePostfixExpression<def extends PostfixExpression, $> = [
-    validateDefinition<def[0], $>,
-    "[]"
-]
+export type validatePostfixExpression<
+    def extends PostfixExpression,
+    $,
+    args
+> = [validateDefinition<def[0], $, args>, "[]"]
 
 export type validateInfixExpression<
     def extends InfixExpression,
-    $
+    $,
+    args
 > = def["length"] extends 2
     ? [def[0], writeMissingRightOperandMessage<def[1]>]
     : [
-          validateDefinition<def[0], $>,
+          validateDefinition<def[0], $, args>,
           def[1] extends "&"
-              ? inferDefinition<def, $> extends never
+              ? inferDefinition<def, $, args> extends never
                   ? writeUnsatisfiableExpressionError<"intersection">
                   : def["1"]
               : def[1],
           def[1] extends "|"
-              ? validateDefinition<def[2], $>
+              ? validateDefinition<def[2], $, args>
               : def[1] extends "&"
-              ? validateDefinition<def[2], $>
+              ? validateDefinition<def[2], $, args>
               : def[1] extends ":"
-              ? Narrow<extractIn<inferDefinition<def[0], $>>>
+              ? Narrow<extractIn<inferDefinition<def[0], $, args>>>
               : def[1] extends "=>"
-              ? Morph<extractOut<inferDefinition<def[0], $>>, unknown>
-              : validateDefinition<def[2], $>
+              ? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
+              : validateDefinition<def[2], $, args>
       ]
 
 export type UnparsedTupleExpressionInput = {
@@ -281,8 +306,8 @@ export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
     ctx.scope.parse(def[1], ctx).keyof()
 
-export type inferKeyOfExpression<operandDef, $> = evaluate<
-    keyof inferDefinition<operandDef, $>
+export type inferKeyOfExpression<operandDef, $, args> = evaluate<
+    keyof inferDefinition<operandDef, $, args>
 >
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
@@ -335,9 +360,9 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export type parseMorph<inDef, morph, $> = morph extends Morph
+export type parseMorph<inDef, morph, $, args> = morph extends Morph
     ? (
-          In: extractIn<inferDefinition<inDef, $>>
+          In: extractIn<inferDefinition<inDef, $, args>>
       ) => Out<inferMorphOut<ReturnType<morph>>>
     : never
 

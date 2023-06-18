@@ -56,19 +56,19 @@ type validateAliases<aliases, $> = {
         ? result["params"] extends []
             ? aliases[k] extends Scope | Type | GenericProps
                 ? aliases[k]
-                : validateDefinition<aliases[k], $ & bootstrap<aliases>>
+                : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
             : result["params"] extends GenericParamsParseError
             ? // use the full nominal type here to avoid an overlap between the
               // error message and a possible value for the property
               result["params"][0]
             : validateDefinition<
                   aliases[k],
-                  $ &
-                      bootstrap<aliases> & {
-                          // once we support constraints on generic parameters, we'd use
-                          // the base type here: https://github.com/arktypeio/arktype/issues/796
-                          [param in result["params"][number]]: unknown
-                      }
+                  $ & bootstrap<aliases>,
+                  {
+                      // once we support constraints on generic parameters, we'd use
+                      // the base type here: https://github.com/arktypeio/arktype/issues/796
+                      [param in result["params"][number]]: unknown
+                  }
               >
         : never
 }
@@ -115,7 +115,7 @@ type bootstrapAliases<aliases> = {
 
 type inferBootstrapped<r extends Resolutions> = evaluate<{
     [k in keyof r["exports"]]: r["exports"][k] extends Def<infer def>
-        ? inferDefinition<def, $<r>>
+        ? inferDefinition<def, $<r>, {}>
         : r["exports"][k] extends GenericProps<infer params, infer def>
         ? Generic<params, def, $<r>>
         : // otherwise should be a subscope
@@ -145,14 +145,14 @@ export type ScopeOptions = {
     keys?: KeyCheckKind
 }
 
-export type resolve<reference extends keyof $, $> = [$[reference]] extends [
-    never
-]
+export type resolve<reference extends keyof $, $, args> = [
+    $[reference]
+] extends [never]
     ? never
     : isAny<$[reference]> extends true
     ? any
     : $[reference] extends Def<infer def>
-    ? inferDefinition<def, $>
+    ? inferDefinition<def, $, args>
     : $[reference]
 
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
@@ -208,16 +208,16 @@ export class Scope<r extends Resolutions = any> {
         // TODO: fix, should work with subscope
         this.resolutions = { ...this.ambient } as never
         this.config = opts
-        this.thisType = new Type(builtins.this(), this)
+        this.thisType = new Type(builtins.this(), this) as never
     }
 
     static root: ScopeParser<{}, {}> = (aliases) => {
         return new Scope(aliases, {}) as never
     }
 
-    type: TypeParser<$<r>> = createTypeParser(this as never)
+    type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
-    declare: DeclarationParser<$<r>> = () => ({ type: this.type })
+    declare: DeclarationParser<$<r>> = () => ({ type: this.type } as never)
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
         aliases: Dict,

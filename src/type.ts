@@ -42,8 +42,8 @@ export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
 type TypeOverloads<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.
-    <def>(def: validateDefinition<def, bindThis<$, def>>): Type<
-        inferDefinition<def, bindThis<$, def>>,
+    <def>(def: validateDefinition<def, bindThis<$, def>, {}>): Type<
+        inferDefinition<def, bindThis<$, def>, {}>,
         $
     >
 
@@ -53,31 +53,35 @@ type TypeOverloads<$> = {
             ? zero
             : validateDefinition<
                   zero,
-                  bindThis<$, tupleExpression<zero, one, two>>
+                  bindThis<$, tupleExpression<zero, one, two>>,
+                  {}
               >,
         expression1: zero extends IndexZeroOperator
             ? validateDefinition<
                   one,
-                  bindThis<$, tupleExpression<zero, one, two>>
+                  bindThis<$, tupleExpression<zero, one, two>>,
+                  {}
               >
             : conform<one, IndexOneOperator>,
         ...expression2: one extends TupleInfixOperator
             ? [
                   one extends ":"
-                      ? Narrow<extractIn<inferDefinition<zero, $>>>
+                      ? Narrow<extractIn<inferDefinition<zero, $, {}>>>
                       : one extends "=>"
                       ? // TODO: centralize
-                        Morph<extractOut<inferDefinition<zero, $>>, unknown>
+                        Morph<extractOut<inferDefinition<zero, $, {}>>, unknown>
                       : validateDefinition<
                             two,
-                            bindThis<$, tupleExpression<zero, one, two>>
+                            bindThis<$, tupleExpression<zero, one, two>>,
+                            {}
                         >
               ]
             : []
     ): Type<
         inferDefinition<
             tupleExpression<zero, one, two>,
-            bindThis<$, tupleExpression<zero, one, two>>
+            bindThis<$, tupleExpression<zero, one, two>>,
+            {}
         >,
         $
     >
@@ -88,7 +92,8 @@ type TypeOverloads<$> = {
             def,
             bindThis<$, def> & {
                 [param in parseGenericParams<params>[number]]: unknown
-            }
+            },
+            {}
         >
     ): Generic<parseGenericParams<params>, def, bindThis<$, def>>
 }
@@ -108,8 +113,8 @@ type TypeProps<$> = {
 
 export type DeclarationParser<$> = <preinferred>() => {
     type: <def>(
-        def: validateDeclared<preinferred, def, bindThis<$, def>>
-    ) => Type<inferDefinition<def, bindThis<$, def>>, $>
+        def: validateDeclared<preinferred, def, bindThis<$, def>, {}>
+    ) => Type<inferDefinition<def, bindThis<$, def>, {}>, $>
 }
 
 export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
@@ -133,7 +138,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 }
 
 export type DefinitionParser<$> = <def>(
-    def: validateDefinition<def, bindThis<$, def>>
+    def: validateDefinition<def, bindThis<$, def>, {}>
 ) => def
 
 registry().registerInternal("state", TraversalState)
@@ -183,18 +188,18 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         def: validateChainedExpression<
             def,
             bindThis<$, def>,
-            inferIntersection<t, inferDefinition<def, bindThis<$, def>>>
+            inferIntersection<t, inferDefinition<def, bindThis<$, def>, {}>>
         >
-    ): Type<inferIntersection<t, inferDefinition<def, bindThis<$, def>>>> {
+    ): Type<inferIntersection<t, inferDefinition<def, bindThis<$, def>, {}>>> {
         return new Type(
-            this.root.and(this.scope.parseTypeRoot(def)),
+            this.root.and(this.scope.parseTypeRoot(def as never)),
             this.scope
         ) as never
     }
 
     or<def>(
-        def: validateDefinition<def, bindThis<$, def>>
-    ): Type<t | inferDefinition<def, bindThis<$, def>>, $> {
+        def: validateDefinition<def, bindThis<$, def>, {}>
+    ): Type<t | inferDefinition<def, bindThis<$, def>, {}>, $> {
         return new Type(
             this.root.or(this.scope.parseTypeRoot(def)),
             this.scope
@@ -206,12 +211,12 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     ): Type<(In: this["inferIn"]) => Out<inferMorphOut<ReturnType<morph>>>>
     morph<morph extends Morph<extractOut<t>>, def>(
         morph: morph,
-        outValidator: validateDefinition<def, bindThis<$, def>>
+        outValidator: validateDefinition<def, bindThis<$, def>, {}>
     ): Type<
         (In: this["inferIn"]) => Out<
             // TODO: validate overlapping
             // inferMorphOut<ReturnType<morph>> &
-            extractOut<inferDefinition<def, bindThis<$, def>>>
+            extractOut<inferDefinition<def, bindThis<$, def>, {}>>
         >
     >
     morph(morph: Morph, outValidator?: unknown) {
@@ -253,24 +258,25 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 }
 
 type validateChainedExpression<def, $, inferred> =
-    def extends validateDefinition<def, $>
+    def extends validateDefinition<def, $, {}>
         ? // As of TS 5.1, trying to infer the message here directly breaks everything
           inferred extends error
             ? inferred
             : def
-        : validateDefinition<def, $>
+        : validateDefinition<def, $, {}>
 
 type validateParameterString<params extends string> =
     parseGenericParams<params> extends GenericParamsParseError<infer message>
         ? message
         : params
 
-type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
+type bindGenericInstantiation<params extends string[], $, argDefs> = {
     [i in keyof params as params[i & `${number}`]]: inferDefinition<
         argDefs[i & keyof argDefs],
-        bindThis<$, argDefs[i & keyof argDefs]>
+        bindThis<$, argDefs[i & keyof argDefs]>,
+        {}
     >
-} & Omit<$, params[number]>
+}
 
 export const generic = (
     parameters: string[],
@@ -319,11 +325,11 @@ export type Generic<params extends string[], def, $> = (<args>(
         // TODO: this doesn't work if you don't provide all defs?
         [i in keyof args]: conform<
             args[i],
-            validateDefinition<args[i], bindThis<$, def>>
+            validateDefinition<args[i], bindThis<$, def>, {}>
         >
     }
 ) => Type<
-    inferDefinition<def, bindGenericInstantiationToScope<params, args, $>>,
+    inferDefinition<def, $, bindGenericInstantiation<params, $, args>>,
     $
 >) &
     GenericProps<params, def, $>

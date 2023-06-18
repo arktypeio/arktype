@@ -12,12 +12,12 @@ import type { astToString } from "./utils.js"
  * "N<S<N", with comparators restricted to < or <=
  **/
 
-export type validateBound<l, r, $> = l extends NumberLiteral
-    ? validateAst<r, $>
+export type validateBound<l, r, $, args> = l extends NumberLiteral
+    ? validateAst<r, $, args>
     : l extends [infer leftAst, Comparator, unknown]
     ? error<writeDoubleRightBoundMessage<astToString<leftAst>>>
-    : isBoundable<inferAst<l, $>> extends true
-    ? validateAst<l, $>
+    : isBoundable<inferAst<l, $, args>> extends true
+    ? validateAst<l, $, args>
     : error<writeUnboundableMessage<astToString<l>>>
 
 export const writeDoubleRightBoundMessage = <root extends string>(

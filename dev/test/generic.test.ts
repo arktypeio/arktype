@@ -145,22 +145,22 @@ suite("generics", () => {
         // With index definitions, this creates a very large number of
         // instantiations and is inferred as some variant of any at its leaves
         // Commenting out pending: https://github.com/arktypeio/arktype/issues/797
-        // test("self-reference", () => {
-        //     const types = scope({
-        //         "alternate<a, b>": {
-        //             // ensures old generic params aren't intersected with
-        //             // updated values (would be never)
-        //             swap: "alternate<b, a>",
-        //             order: ["a", "b"]
-        //         },
-        //         reference: "alternate<0, 1>"
-        //     }).export()
-        //     attest(types.reference.infer.swap.swap.order).typed as [0, 1]
-        //     attest(types.reference.infer.swap.swap.swap.order).typed as [1, 0]
-        //     const fromCall = types.alternate("true", "false")
-        //     attest(fromCall.infer.swap.swap.order).typed as [true, false]
-        //     attest(fromCall.infer.swap.swap.swap.order).typed as [false, true]
-        // })
+        test("self-reference", () => {
+            const types = scope({
+                "alternate<a, b>": {
+                    // ensures old generic params aren't intersected with
+                    // updated values (would be never)
+                    swap: "alternate<b, a>",
+                    order: ["a", "b"]
+                },
+                reference: "alternate<0, 1>"
+            }).export()
+            attest(types.reference.infer.swap.swap.order).typed as [0, 1]
+            attest(types.reference.infer.swap.swap.swap.order).typed as [1, 0]
+            const fromCall = types.alternate("true", "false")
+            attest(fromCall.infer.swap.swap.order).typed as [true, false]
+            attest(fromCall.infer.swap.swap.swap.order).typed as [false, true]
+        })
 
         test("self-reference no params", () => {
             attest(() =>

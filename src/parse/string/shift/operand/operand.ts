@@ -22,13 +22,17 @@ export const parseOperand = (s: DynamicState): void =>
 
 export type parseOperand<
     s extends StaticState,
-    $
+    $,
+    args
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
     ? lookahead extends "("
         ? state.reduceGroupOpen<s, unscanned>
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
         : lookahead extends Scanner.WhiteSpaceToken
-        ? parseOperand<state.scanTo<s, unscanned>, $>
-        : parseUnenclosed<s, $>
-    : state.error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>
+        ? parseOperand<state.scanTo<s, unscanned>, $, args>
+        : parseUnenclosed<s, $, args>
+    : state.error<`${s["scanned"]}${
+          | (keyof $ & string)
+          | (keyof args & string)
+          | AutocompletePrefix}`>

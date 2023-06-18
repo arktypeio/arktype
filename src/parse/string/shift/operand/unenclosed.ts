@@ -41,13 +41,14 @@ export const parseUnenclosed = (s: DynamicState) => {
 
 export type parseUnenclosed<
     s extends StaticState,
-    $
+    $,
+    args
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
 > extends Scanner.shiftResult<infer token, infer unscanned>
     ? token extends "keyof"
         ? state.addPrefix<s, "keyof", unscanned>
-        : tryResolve<s, token, $> extends infer result
+        : tryResolve<s, token, $, args> extends infer result
         ? result extends error<infer message>
             ? state.error<message>
             : result extends keyof $
@@ -56,7 +57,8 @@ export type parseUnenclosed<
                       token,
                       $[result],
                       state.scanTo<s, unscanned>,
-                      $
+                      $,
+                      args
                   >
                 : state.setRoot<s, result, unscanned>
             : state.setRoot<s, result, unscanned>
@@ -87,10 +89,17 @@ export type parseGenericInstantiation<
     name extends string,
     g extends GenericProps,
     s extends StaticState,
-    $
+    $,
+    args
     // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
-    ? parseGenericArgs<name, g["parameters"], unscanned, $> extends infer result
+    ? parseGenericArgs<
+          name,
+          g["parameters"],
+          unscanned,
+          $,
+          args
+      > extends infer result
         ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
             ? state.setRoot<
                   s,
@@ -138,8 +147,11 @@ const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
 type tryResolve<
     s extends StaticState,
     token extends string,
-    $
-> = token extends keyof $
+    $,
+    args
+> = token extends keyof args
+    ? token
+    : token extends keyof $
     ? token
     : token extends `${infer subscope extends keyof $ &
           string}.${infer reference}`
@@ -152,7 +164,7 @@ type tryResolve<
     ? token
     : token extends BigintLiteral
     ? token
-    : unresolvableError<s, token, $>
+    : unresolvableError<s, token, $, args>
 
 export type writeInvalidSubscopeReferenceMessage<name extends string> =
     `'${name}' must reference a scope to be accessed using dot syntax`
@@ -161,20 +173,31 @@ export type unresolvableError<
     s extends StaticState,
     token extends string,
     $,
+    args,
     subscopePath extends string[] = []
-> = Extract<validReference<$, subscopePath>, `${token}${string}`> extends never
+> = Extract<
+    validReference<$, args, subscopePath>,
+    `${token}${string}`
+> extends never
     ? error<writeUnresolvableMessage<token>>
     : error<`${s["scanned"]}${join<
           [
               ...subscopePath,
-              Extract<validReference<$, subscopePath>, `${token}${string}`>
+              Extract<
+                  validReference<$, args, subscopePath>,
+                  `${token}${string}`
+              >
           ],
           "."
       >}`>
 
 // AutocompletePrefixes like "keyof" are not accessible from a subscope
-type validReference<$, subscopePath extends string[]> = subscopePath extends []
-    ? keyof $ | AutocompletePrefix
+type validReference<
+    $,
+    args,
+    subscopePath extends string[]
+> = subscopePath extends []
+    ? keyof $ | keyof args | AutocompletePrefix
     : keyof $
 
 export const writeUnresolvableMessage = <token extends string>(
