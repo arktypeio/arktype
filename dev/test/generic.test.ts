@@ -1,7 +1,10 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
-import { writeInvalidGenericArgsMessage } from "../../src/parse/generic.js"
+import {
+    emptyGenericParameterMessage,
+    writeInvalidGenericArgsMessage
+} from "../../src/parse/generic.js"
 import { writeUnclosedGroupMessage } from "../../src/parse/string/reduce/shared.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
@@ -40,19 +43,10 @@ suite("generics", () => {
             // https://github.com/arktypeio/arktype/issues/751
         })
 
-        test("referenced in scope", () => {
-            const t = type("<t>", "t[]")
-            const types = scope({
-                arrayOf: t
-            }).export()
-            const stringArray = types.arrayOf("string")
-            attest(stringArray.infer).typed as string[]
-        })
-
         test("referenced in scope inline", () => {
             const $ = scope({
                 one: "1",
-                orOne: () => $.type("<t>", "t|1")
+                orOne: () => $.type("<t>", "t|one")
             })
             const types = $.export()
             const bit = types.orOne("0")
@@ -60,14 +54,12 @@ suite("generics", () => {
         })
 
         test("referenced from other scope", () => {
-            // This should work to inline directly without a thunk, but
-            // causes an infinite recursion:
-            // https://github.com/arktypeio/arktype/issues/787
             const types = scope({
-                arrayOf: () => type("<t>", "t[]")
+                arrayOf: type("<t>", "t[]")
             }).export()
             const stringArray = types.arrayOf("string")
             attest(stringArray.infer).typed as string[]
+            attest(stringArray.condition).equals(type("string[]").condition)
         })
 
         test("this not resolvable in generic def", () => {
@@ -169,9 +161,6 @@ suite("generics", () => {
             attest(t.infer).typed as { box: "bar" | "baz" }
         })
 
-        // With index definitions, this creates a very large number of
-        // instantiations and is inferred as some variant of any at its leaves
-        // Commenting out pending: https://github.com/arktypeio/arktype/issues/797
         test("self-reference", () => {
             const types = scope({
                 "alternate<a, b>": {
@@ -231,9 +220,7 @@ suite("generics", () => {
                         // @ts-expect-error
                         "box<t,,u>": "string"
                     })
-                ).throwsAndHasTypeError(
-                    "An empty string is not a valid generic parameter name"
-                )
+                ).throwsAndHasTypeError(emptyGenericParameterMessage)
             })
             test("unclosed instantiation", () => {
                 // @ts-expect-error
@@ -252,7 +239,7 @@ suite("generics", () => {
                     // @ts-expect-error
                     $.type("box<0,box<2|3>>")
                 ).throwsAndHasTypeError(
-                    "box<t, u> requires exactly 2 parameters (got 1: 2|3)"
+                    writeInvalidGenericArgsMessage("box", ["t", "u"], ["2|3"])
                 )
             })
             test("too many args", () => {
@@ -260,7 +247,11 @@ suite("generics", () => {
                     // @ts-expect-error
                     $.type("box<0, box<1, 2, 3>>")
                 ).throwsAndHasTypeError(
-                    "box<t, u> requires exactly 2 parameters (got 3: 1, 2, 3)"
+                    writeInvalidGenericArgsMessage(
+                        "box",
+                        ["t", "u"],
+                        ["1", " 2", " 3"]
+                    )
                 )
             })
             test("syntactic error in arg", () => {

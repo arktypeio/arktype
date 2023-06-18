@@ -155,7 +155,12 @@ type parseGenericArgsRecurse<
     args
 > extends infer finalArgState extends StaticState
     ? {
-          defs: [...argDefs, finalArgState["scanned"]]
+          defs: [
+              ...argDefs,
+              finalArgState["scanned"] extends `${infer def}${"," | ">"}`
+                  ? def
+                  : finalArgState["scanned"]
+          ]
           asts: [...argAsts, finalArgState["root"]]
           unscanned: finalArgState["unscanned"]
       } extends {
