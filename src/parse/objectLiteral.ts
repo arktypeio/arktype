@@ -68,10 +68,6 @@ type optionalKeyFrom<k> = parseKey<k> extends {
     ? value
     : never
 
-// export type inferObjectLiteral<def extends Dict, $> = evaluate<{
-//     [k in keyof def]: inferDefinition<def[k], $>
-// }>
-
 export type validateObjectLiteral<def, $> = {
     [k in keyof def]: k extends IndexedKey<infer indexDef>
         ? validateString<indexDef, $> extends error<infer message>
