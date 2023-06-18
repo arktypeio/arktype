@@ -1,5 +1,6 @@
 import * as FS from "node:fs"
 import * as Path from "node:path"
+import { printUnifiedDiff } from "print-diff"
 
 export type Matchers = ReadonlyArray<Matcher>
 export type Matcher = {
@@ -49,15 +50,10 @@ const replaceAll: (matchers: Matchers) => (input: string) => string =
         )
 
         if (
-            input.includes(`utils/src`) ||
-            (input.includes(`attest/src`) && input !== out)
+            input.includes(`/utils/`) ||
+            (input.includes(`/attest/`) && input !== out)
         ) {
-            console.group(`find replace`)
-            console.log(`\n\n\n`)
-            console.log(`///////////////// INPUT ////////////////`, input)
-            console.log(`//////////////// OUTPUT ////////////////`, input)
-            console.log(`\n\n\n`)
-            console.groupEnd()
+            printUnifiedDiff(input, out)
         }
 
         return out
