@@ -44,15 +44,15 @@ const fixBuildPaths: (buildPath: string) => void = rewritePaths(
 const buildFormat = (module: ModuleKind) => {
     const moduleKindDir = ModuleKindToDir[module]
     const outDir = join(outRoot, moduleKindDir)
-    const outUtils = join(outDir, ...Sources.utils, "src")
-    const outAttest = join(outDir, ...Sources.attest, "src")
-    const outUtilsTarget = join(
+    const utilsSrc = join(outDir, ...Sources.utils, "src")
+    const attestSrc = join(outDir, ...Sources.attest, "src")
+    const utilsTarget = join(
         packageRoot,
         ...Sources.utils,
         "dist",
         moduleKindDir
     )
-    const outAttestTarget = join(
+    const attestTarget = join(
         packageRoot,
         ...Sources.attest,
         "dist",
@@ -82,15 +82,15 @@ const buildFormat = (module: ModuleKind) => {
         const outDev = join(outDir, "dev")
         // not sure which setting to change to get it to compile here in the first place
         clone(outSrc, outDir)
-        clone(outUtils, outUtilsTarget)
-        clone(outAttest, outAttestTarget)
+        clone(utilsSrc, utilsTarget)
+        clone(attestSrc, attestTarget)
 
         writePackageManifest(repoDirs.root, outDir)
-        writePackageManifest(repoDirs.attest, outAttestTarget)
-        writePackageManifest(repoDirs.utils, outUtilsTarget)
+        writePackageManifest(repoDirs.attest, attestTarget)
+        writePackageManifest(repoDirs.utils, utilsTarget)
 
         fixBuildPaths(outDir)
-        fixBuildPaths(outAttestTarget)
+        fixBuildPaths(attestTarget)
         /**
          * We don't need to rewrite any of the paths in `utils` at the moment,
          * since it doesn't (currently) depend on any local packages
@@ -99,8 +99,8 @@ const buildFormat = (module: ModuleKind) => {
 
         nuke(outSrc)
         nuke(outDev)
-        nuke(outUtils)
-        nuke(outAttest)
+        nuke(utilsSrc)
+        nuke(attestSrc)
     } finally {
         rmSync(tempTsConfigPath, { force: true })
     }

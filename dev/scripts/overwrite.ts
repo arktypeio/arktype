@@ -23,9 +23,7 @@ const readdirSync = (path: string) =>
     FS.readdirSync(path, { withFileTypes: true })
 
 const writeFile = (filePath: string, data: string): void =>
-    FS.writeFile(filePath, data, { encoding: "utf-8" }, () => {
-        // console.log(`Successfully wrote file "${filePath}"`)
-    })
+    FS.writeFile(filePath, data, { encoding: "utf-8" }, () => {})
 
 const readFile = (
     filePath: string,
@@ -49,6 +47,9 @@ const replaceAll: (matchers: Matchers) => (input: string) => string =
             input
         )
 
+        /**
+         * TODO: Delete this `if` block before opening PR
+         */
         if (
             input.includes(`/utils/`) ||
             (input.includes(`/attest/`) && input !== out)
@@ -77,8 +78,6 @@ const traverse: (
             } else if (dirent.isFile()) {
                 return acc.concat(path)
             } else if (dirent.isDirectory()) {
-                return go(path, acc)
-            } else if (dirent.isSymbolicLink()) {
                 return go(path, acc)
             } else {
                 return acc
