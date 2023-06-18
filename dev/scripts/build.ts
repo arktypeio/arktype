@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { readJson, writeJson } from "../attest/src/fs.js"
 import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
+import { rewritePaths } from "./overwrite.js"
 
 const packageRoot = process.cwd()
 const outRoot = join(packageRoot, "dist")
@@ -15,18 +16,33 @@ const clone = (from: string, to: string): void =>
 
 const writeManifest =
     (overrides: Record<string, unknown>) =>
-    (sourceDir: string, targetDir: string) => {
-        const manifest = readJson(join(sourceDir, "package.json"))
-        writeJson(join(targetDir, "package.json"), {
-            ...manifest,
-            ...overrides
-        })
-    }
+        (sourceDir: string, targetDir: string) => {
+            const manifest = readJson(join(sourceDir, "package.json"))
+            writeJson(join(targetDir, "package.json"), {
+                ...manifest,
+                ...overrides
+            })
+        }
 
 const Sources = {
     utils: ["dev", "utils"],
     attest: ["dev", "attest"]
 } as const
+
+const replacementDictionary = {
+    attest: `@arktype/attest`,
+    utils: `@arktype/utils`,
+} as const
+
+const ignorePaths = [
+    "node_modules",
+    "src/index",
+    "package.json"
+]
+
+const fixBuildPaths
+    : (buildPath: string) => void
+    = rewritePaths(ignorePaths, replacementDictionary)
 
 const buildFormat = (module: ModuleKind) => {
     const moduleKindDir = ModuleKindToDir[module]
@@ -45,6 +61,7 @@ const buildFormat = (module: ModuleKind) => {
         "dist",
         moduleKindDir
     )
+
     const tempTsConfig = {
         ...baseTsConfig,
         include: ["src", Sources.utils.join("/"), Sources.attest.join("/")],
@@ -72,8 +89,12 @@ const buildFormat = (module: ModuleKind) => {
         clone(outAttest, outAttestTarget)
 
         writePackageManifest(repoDirs.root, outDir)
-        writePackageManifest(repoDirs.utils, outUtilsTarget)
         writePackageManifest(repoDirs.attest, outAttestTarget)
+        // writePackageManifest(repoDirs.utils, outUtilsTarget)
+
+        fixBuildPaths(outDir)
+        fixBuildPaths(outUtilsTarget)
+        fixBuildPaths(outAttestTarget)
 
         nuke(outSrc)
         nuke(outDev)
@@ -88,7 +109,7 @@ type ModuleKind = (typeof ModuleKind)[keyof typeof ModuleKind]
 const ModuleKind = {
     CommonJS: "CommonJS",
     ESNext: "ESNext"
-}
+} as const
 const ModuleKindToDir = {
     [ModuleKind.CommonJS]: "cjs",
     [ModuleKind.ESNext]: "mjs"
