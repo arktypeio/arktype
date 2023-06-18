@@ -151,7 +151,12 @@ type declarationMismatch<def, declared, $, args> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = RegExp | CastTo<unknown> | ((...args: never[]) => unknown)
+type Terminal =
+    | RegExp
+    | CastTo<unknown>
+    // This needs to be (...args: any[]) => any for TS 4.9
+    // Starting in TS5.0, (...args: never[]) => unknown is fine
+    | ((...args: any[]) => any)
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
