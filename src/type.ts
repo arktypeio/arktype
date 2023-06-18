@@ -42,10 +42,7 @@ export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
 type TypeOverloads<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.
-    <def>(def: validateDefinition<def, $, bindThis<def>>): Type<
-        inferDefinition<def, $, bindThis<def>>,
-        $
-    >
+    <def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
 
     // Spread version of a tuple expression
     <zero, one, two>(
@@ -66,10 +63,27 @@ type TypeOverloads<$> = {
         ...expression2: one extends TupleInfixOperator
             ? [
                   one extends ":"
-                      ? Narrow<extractIn<inferDefinition<zero, $, {}>>>
+                      ? Narrow<
+                            extractIn<
+                                inferDefinition<
+                                    zero,
+                                    $,
+                                    bindThis<tupleExpression<zero, one, two>>
+                                >
+                            >
+                        >
                       : one extends "=>"
                       ? // TODO: centralize
-                        Morph<extractOut<inferDefinition<zero, $, {}>>, unknown>
+                        Morph<
+                            extractOut<
+                                inferDefinition<
+                                    zero,
+                                    $,
+                                    bindThis<tupleExpression<zero, one, two>>
+                                >
+                            >,
+                            unknown
+                        >
                       : validateDefinition<
                             two,
                             $,
@@ -188,19 +202,16 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         def: validateChainedExpression<
             def,
             $,
-            bindThis<def>,
-            inferIntersection<t, inferDefinition<def, $, bindThis<def>>>
+            inferIntersection<t, inferTypeRoot<def, $>>
         >
-    ): Type<inferIntersection<t, inferDefinition<def, $, bindThis<def>>>> {
+    ): Type<inferIntersection<t, inferTypeRoot<def, $>>> {
         return new Type(
             this.root.and(this.scope.parseTypeRoot(def as never)),
             this.scope
         ) as never
     }
 
-    or<def>(
-        def: validateDefinition<def, $, bindThis<def>>
-    ): Type<t | inferDefinition<def, $, bindThis<def>>, $> {
+    or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
         return new Type(
             this.root.or(this.scope.parseTypeRoot(def)),
             this.scope
@@ -212,12 +223,12 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     ): Type<(In: this["inferIn"]) => Out<inferMorphOut<ReturnType<morph>>>>
     morph<morph extends Morph<extractOut<t>>, def>(
         morph: morph,
-        outValidator: validateDefinition<def, $, bindThis<def>>
+        outValidator: validateTypeRoot<def, $>
     ): Type<
         (In: this["inferIn"]) => Out<
             // TODO: validate overlapping
             // inferMorphOut<ReturnType<morph>> &
-            extractOut<inferDefinition<def, $, bindThis<def>>>
+            extractOut<inferTypeRoot<def, $>>
         >
     >
     morph(morph: Morph, outValidator?: unknown) {
@@ -258,13 +269,19 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     }
 }
 
-type validateChainedExpression<def, $, args, inferred> =
-    def extends validateDefinition<def, $, args>
-        ? // As of TS 5.1, trying to infer the message here directly breaks everything
-          inferred extends error
-            ? inferred
-            : def
-        : validateDefinition<def, $, args>
+export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
+
+export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
+
+type validateChainedExpression<def, $, inferred> = def extends validateTypeRoot<
+    def,
+    $
+>
+    ? // As of TS 5.1, trying to infer the message here directly breaks everything
+      inferred extends error
+        ? inferred
+        : def
+    : validateTypeRoot<def, $>
 
 type validateParameterString<params extends string> =
     parseGenericParams<params> extends GenericParamsParseError<infer message>
@@ -316,11 +333,7 @@ export type Generic<params extends string[], def, $> = (<args>(
     ...args: conform<
         args,
         {
-            [i in keyof params]: validateDefinition<
-                args[i & keyof args],
-                $,
-                bindThis<args[i & keyof args]>
-            >
+            [i in keyof params]: validateTypeRoot<args[i & keyof args], $>
         }
     >
 ) => Type<
@@ -330,10 +343,9 @@ export type Generic<params extends string[], def, $> = (<args>(
     GenericProps<params, def, $>
 
 type bindGenericInstantiation<params extends string[], $, args> = {
-    [i in keyof params & `${number}` as params[i]]: inferDefinition<
+    [i in keyof params & `${number}` as params[i]]: inferTypeRoot<
         args[i & keyof args],
-        $,
-        bindThis<args[i & keyof args]>
+        $
     >
 }
 
