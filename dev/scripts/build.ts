@@ -87,11 +87,15 @@ const buildFormat = (module: ModuleKind) => {
 
         writePackageManifest(repoDirs.root, outDir)
         writePackageManifest(repoDirs.attest, outAttestTarget)
-        // writePackageManifest(repoDirs.utils, outUtilsTarget)
+        writePackageManifest(repoDirs.utils, outUtilsTarget)
 
         fixBuildPaths(outDir)
-        fixBuildPaths(outUtilsTarget)
         fixBuildPaths(outAttestTarget)
+        /**
+         * We don't need to rewrite any of the paths in `utils` at the moment,
+         * since it doesn't (currently) depend on any local packages
+         */
+        // fixBuildPaths(outUtilsTarget)
 
         nuke(outSrc)
         nuke(outDev)
