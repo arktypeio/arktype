@@ -41,7 +41,7 @@ export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
     equals<other>(other: TypeNode<other>): this is TypeNode<other>
     extends<other>(other: TypeNode<other>): this is TypeNode<t & other>
     keyof(): TypeNode<keyof t>
-    getPath(...path: (string | TypeNode<string>)[]): TypeNode
+    getPath(...path: (string | TypeNode)[]): TypeNode
 }
 
 const isParsedTypeRule = (
@@ -339,15 +339,18 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
 
 export type TypeNodeParser = {
     <branches extends PredicateInput[]>(
-        ...branches: {
-            [i in keyof branches]: conform<
-                branches[i],
-                validatedTypeNodeInput<branches, extractBases<branches>>[i]
-            >
-        }
+        ...branches: conform<
+            branches,
+            {
+                [i in keyof branches]: conform<
+                    branches[i],
+                    validatedTypeNodeInput<branches, extractBases<branches>>[i]
+                >
+            }
+        >
     ): TypeNode<inferBranches<branches>>
 
-    literal<const branches extends readonly unknown[]>(
+    literal<branches extends readonly unknown[]>(
         ...branches: branches
     ): TypeNode<branches[number]>
 }

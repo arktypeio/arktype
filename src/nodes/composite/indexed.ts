@@ -1,7 +1,7 @@
 import { throwInternalError } from "../../utils/errors.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
 import type { PredicateInput } from "./predicate.js"
-import type { TypeInput, TypeNode } from "./type.js"
+import { TypeInput, typeNode, TypeNode } from "./type.js"
 import { builtins, node } from "./type.js"
 
 export type IndexedPropInput = {
@@ -94,10 +94,10 @@ export const arrayIndexInput = <index extends number = 0>(
         regex: createArrayIndexMatcher(firstVariadicIndex)
     } as const satisfies PredicateInput<"string">)
 
-export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>
+export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode =>
     firstVariadicIndex === 0
         ? builtins.nonVariadicArrayIndex()
-        : node(arrayIndexInput(firstVariadicIndex))
+        : typeNode(arrayIndexInput(firstVariadicIndex))
 
 // export const compileArray = (
 //     indexMatcher: ArrayIndexMatcherSource,
