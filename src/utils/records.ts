@@ -55,7 +55,7 @@ export type fromEntries<entries, result = {}> = entries extends readonly [
     ? fromEntries<tail, result & { [_ in k]: v }>
     : evaluate<result>
 
-export const fromEntries = <entries extends readonly Entry[]>(
+export const fromEntries = <const entries extends readonly Entry[]>(
     entries: entries
 ) => Object.fromEntries(entries) as fromEntries<entries>
 

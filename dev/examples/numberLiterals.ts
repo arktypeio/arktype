@@ -14,8 +14,8 @@ const staticLiteral = type("2")
 //    ^?
 
 // TODO: Test (doesn't work with 4.9?)
-// // @ts-expect-error
-// const dynamicLiteral = type(`${min}`)
+// @ts-expect-error
+const dynamicLiteral = type(`${min}`)
 
 // Or if you define a malformed literal that TypeScript won't narrow:
 
