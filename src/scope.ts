@@ -1,6 +1,6 @@
 import type { ProblemCode } from "./compile/problems.js"
+import { hasArkKind } from "./compile/registry.js"
 import type { TypeNode } from "./main.js"
-import { builtins } from "./nodes/composite/type.js"
 import type {
     CastTo,
     inferDefinition,
@@ -25,8 +25,7 @@ import type {
     GenericProps,
     KeyCheckKind,
     TypeConfig,
-    TypeParser,
-    UnknownGeneric
+    TypeParser
 } from "./type.js"
 import { createTypeParser, generic, Type } from "./type.js"
 import { domainOf } from "./utils/domains.js"
@@ -159,8 +158,10 @@ export type resolve<reference extends keyof $ | keyof args, $, args> = (
 
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
+type exportedName<r extends Resolutions> = keyof r["exports"] & string
+
 export type TypeSet<r extends Resolutions = any> = {
-    [k in keyof r["exports"]]: [r["exports"][k]] extends [never]
+    [k in exportedName<r>]: [r["exports"][k]] extends [never]
         ? Type<never, $<r>>
         : isAny<r["exports"][k]> extends true
         ? Type<any, $<r>>
@@ -180,7 +181,7 @@ export type Resolutions = {
 export type ParseContext = {
     path: Path
     scope: Scope
-    args?: Record<string, TypeNode>
+    args: null | Record<string, TypeNode>
 }
 
 export class Scope<r extends Resolutions = any> {
@@ -193,10 +194,9 @@ export class Scope<r extends Resolutions = any> {
     // mutated and then re-parsed
     private parseCache: Record<string, TypeNode> = {}
     private resolutions: Record<string, Type | TypeSet>
-    private thisType: Type
 
     aliases: Record<string, unknown> = {}
-    private exportedNames: (keyof r["exports"])[] = []
+    private exportedNames: exportedName<r>[] = []
     private ambient: TypeSet
 
     constructor(input: Dict, opts: ScopeOptions) {
@@ -213,7 +213,6 @@ export class Scope<r extends Resolutions = any> {
         // TODO: fix, should work with subscope
         this.resolutions = { ...this.ambient } as never
         this.config = opts
-        this.thisType = new Type(builtins.this(), this) as never
     }
 
     static root: ScopeParser<{}, {}> = (aliases) => {
@@ -254,9 +253,20 @@ export class Scope<r extends Resolutions = any> {
         return this.export()[name] as never
     }
 
+    parseRoot(def: unknown, args: Record<string, TypeNode>) {
+        return this.parse(def, {
+            path: new Path(),
+            scope: this,
+            args
+        })
+    }
+
     parse(def: unknown, ctx: ParseContext): TypeNode {
         if (typeof def === "string") {
-            // TODO: cache seems unsafe with `this`
+            if (ctx.args === null) {
+                return parseString(def, ctx)
+            }
+            // TODO: cache seems unsafe with args
             if (!this.parseCache[def]) {
                 this.parseCache[def] = parseString(def, ctx)
             }
@@ -272,46 +282,29 @@ export class Scope<r extends Resolutions = any> {
     maybeResolve(
         name: string,
         ctx: ParseContext
-    ): Type | UnknownGeneric | Scope | undefined {
+    ): Type | Generic | TypeSet | undefined {
         const cached = this.resolutions[name]
         if (cached) {
-            if (cached === this.thisType) {
-                if (ctx.path.length === 0) {
-                    // TODO: Seen?
-                    return throwParseError(
-                        writeShallowCycleErrorMessage(name, [])
-                    )
-                }
-                // TODO: doesn't seem right for cyclic? only recursive?
-                return cached
-            }
-            // TODO: when is this cache safe? could contain this reference?
-            return cached as never
+            return cached
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
             return
         }
-        this.resolutions[name] = this.thisType
-        const resolution = this.parseRoot(aliasDef)
-        this.resolutions[name] = new Type(resolution, this)
-        return resolution as never
+        if (hasArkKind(aliasDef, "generic")) {
+            return aliasDef
+        }
+        if (aliasDef instanceof Scope) {
+            return aliasDef.export()
+        }
+        const resolution = new Type(this.parseRoot(aliasDef, {}), this)
+        this.resolutions[name] = resolution
+        return resolution
     }
 
-    parseRoot(def: unknown) {
-        return this.parse(def, {
-            path: new Path(),
-            scope: this,
-            args: {}
-        })
-    }
-
-    /** @internal */
-    parseTypeRoot(def: unknown) {
-        this.resolutions["this"] = this.thisType
-        const result = this.parseRoot(def)
-        delete this.resolutions["this"]
-        return result
+    maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
+        const result = this.maybeResolve(name, ctx)
+        return result instanceof Type ? result.root : undefined
     }
 
     import<names extends (keyof r["exports"])[]>(
@@ -337,10 +330,11 @@ export class Scope<r extends Resolutions = any> {
         if (!this.hasBeenExported) {
             const ctx: ParseContext = {
                 path: new Path(),
-                scope: this
+                scope: this,
+                args: null
             }
             for (const name of this.exportedNames) {
-                this.maybeResolve(name as never, ctx)
+                this.maybeResolve(name, ctx)
             }
             this.hasBeenExported = true
         }

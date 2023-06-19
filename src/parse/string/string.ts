@@ -1,3 +1,4 @@
+import type { TypeNode } from "../../nodes/composite/type.js"
 import type { ParseContext } from "../../scope.js"
 import { type error, throwParseError } from "../../utils/errors.js"
 import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
@@ -9,14 +10,11 @@ import { parseOperand } from "./shift/operand/operand.js"
 import type { writeUnexpectedCharacterMessage } from "./shift/operator/operator.js"
 import { parseOperator } from "./shift/operator/operator.js"
 
-export const parseString = (def: string, ctx: ParseContext) =>
-    fullStringParse(def, ctx)
-
-// TODO: reenable or remove
-// ctx.scope.maybeResolve(def, ctx) ??
-// ((def.endsWith("[]") &&
-//     ctx.scope.maybeResolve(def.slice(0, -2), ctx)?.array()) ||
-//     fullStringParse(def, ctx))
+export const parseString = (def: string, ctx: ParseContext): TypeNode =>
+    ctx.scope.maybeResolveNode(def, ctx) ??
+    ((def.endsWith("[]") &&
+        ctx.scope.maybeResolveNode(def.slice(0, -2), ctx)?.array()) ||
+        fullStringParse(def, ctx))
 
 /**
  * Try to parse the definition from right to left using the most common syntax.

@@ -1,3 +1,4 @@
+import { suite, test } from "mocha"
 import { arktypes, scope } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 

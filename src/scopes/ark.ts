@@ -8,22 +8,22 @@ import type {
 import type { InferredJsObjects } from "./jsObjects.js"
 import { jsObjectTypes } from "./jsObjects.js"
 import type { InferredTsGenerics } from "./tsGenerics.js"
-import { tsGenericTypes } from "./tsGenerics.js"
 import type { InferredTsKeywords } from "./tsKeywords.js"
 import { tsKeywordTypes } from "./tsKeywords.js"
 import type { InferredValidation } from "./validation/validation.js"
 import { validationTypes } from "./validation/validation.js"
+// import { tsGenericTypes } from "./tsGenerics.js"
 
 export type ArkResolutions = { exports: Ark; locals: {}; ambient: Ark }
 
 export const ark: Scope<ArkResolutions> = Scope.root({
     ...tsKeywordTypes,
     ...jsObjectTypes,
-    ...validationTypes,
-    ...tsGenericTypes
-    // again, unfortunately TS won't handle comparing generics well here, so we
-    // have to cast. that said, since each individual root scope is checked,
-    // this is low risk
+    ...validationTypes
+    // ...tsGenericTypes
+    // // again, unfortunately TS won't handle comparing generics well here, so we
+    // // have to cast. that said, since each individual root scope is checked,
+    // // this is low risk
 }).toAmbient() as never
 
 export const arktypes: TypeSet<ArkResolutions> = ark.export()

@@ -4,7 +4,7 @@ import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
-import { node } from "./nodes/composite/type.js"
+import { builtins, node } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type {
     inferDefinition,
@@ -170,7 +170,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     allows: this["root"]["allows"]
 
     constructor(public definition: unknown, public scope: Scope) {
-        const root = scope.parseTypeRoot(definition) as TypeNode<t>
+        const root = parseTypeRoot(definition, scope) as TypeNode<t>
         super(
             In,
             `const state = new ${registry().reference("state")}();
@@ -206,14 +206,14 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         >
     ): Type<inferIntersection<t, inferTypeRoot<def, $>>> {
         return new Type(
-            this.root.and(this.scope.parseTypeRoot(def as never)),
+            this.root.and(parseTypeRoot(def, this.scope)),
             this.scope
         ) as never
     }
 
     or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
         return new Type(
-            this.root.or(this.scope.parseTypeRoot(def)),
+            this.root.or(parseTypeRoot(def, this.scope)),
             this.scope
         ) as never
     }
@@ -269,6 +269,16 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     }
 }
 
+const boundThis = Object.freeze({
+    this: builtins.this()
+} as const)
+
+const parseTypeRoot = (
+    def: unknown,
+    scope: Scope,
+    args: BoundArgs = boundThis
+) => scope.parseRoot(def, args)
+
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
 export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
@@ -298,15 +308,11 @@ export const generic = (
             const argNodes = Object.fromEntries(
                 parameters.map((param, i) => [
                     param,
-                    scope.parseTypeRoot(args[i])
+                    parseTypeRoot(args[i], scope)
                 ])
             )
-            const t = new Type(
-                Object.fromEntries(
-                    parameters.map((param, i) => [param, args[i]])
-                ) as never,
-                scope
-            )
+            const root = parseTypeRoot(definition, scope, argNodes)
+            return new Type(root, scope)
         },
         {
             [arkKind]: "generic",
@@ -331,10 +337,14 @@ export type GenericProps<
     scope: Scope
 }
 
-export type UnknownGeneric = Generic<string[], unknown, any>
+export type BoundArgs = Record<string, TypeNode>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
-export type Generic<params extends string[], def, $> = (<args>(
+export type Generic<
+    params extends string[] = string[],
+    def = unknown,
+    $ = any
+> = (<args>(
     ...args: conform<
         args,
         {
