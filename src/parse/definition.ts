@@ -24,10 +24,9 @@ import type {
     validateObjectLiteral
 } from "./objectLiteral.js"
 import { parseObjectLiteral } from "./objectLiteral.js"
-import type { AutocompletePrefix } from "./string/reduce/static.js"
-import type { inferString } from "./string/string.js"
-import { parseTuple } from "./tuple.js"
+import type { BaseCompletions, inferString } from "./string/string.js"
 import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
+import { parseTuple } from "./tuple.js"
 
 export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
     const objectKind = objectKindOf(def)
@@ -95,7 +94,7 @@ export type validateDefinition<def, $, args> = null extends undefined
     : isUnknown<def> extends true
     ? // this allows the initial list of autocompletions to be populated when a user writes "type()",
       // before having specified a definition
-      ((keyof $ | keyof args | AutocompletePrefix) & string) | {}
+      BaseCompletions<$, args> | {}
     : validateObjectLiteral<def, $, args>
 
 export type validateDeclared<declared, def, $, args> =

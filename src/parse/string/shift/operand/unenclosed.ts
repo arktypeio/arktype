@@ -23,11 +23,8 @@ import {
     writeInvalidGenericArgsMessage
 } from "../../../generic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type {
-    AutocompletePrefix,
-    state,
-    StaticState
-} from "../../reduce/static.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
@@ -191,14 +188,11 @@ export type unresolvableError<
           "."
       >}`>
 
-// AutocompletePrefixes like "keyof" are not accessible from a subscope
 type validReference<
     $,
     args,
     subscopePath extends string[]
-> = subscopePath extends []
-    ? keyof $ | keyof args | AutocompletePrefix
-    : keyof $
+> = subscopePath extends [] ? BaseCompletions<$, args> : keyof $
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token

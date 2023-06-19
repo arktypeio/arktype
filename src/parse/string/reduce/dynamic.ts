@@ -10,7 +10,7 @@ import { throwInternalError, throwParseError } from "../../../utils/errors.js"
 import type { requireKeys } from "../../../utils/records.js"
 import { isKeyOf } from "../../../utils/records.js"
 import { Scanner } from "../shift/scanner.js"
-import type { Prefix } from "./shared.js"
+import type { StringifiablePrefixOperator } from "./shared.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -20,7 +20,7 @@ import {
 } from "./shared.js"
 
 type BranchState = {
-    prefixes: Prefix[]
+    prefixes: StringifiablePrefixOperator[]
     range?: RangeNode
     intersection?: TypeNode
     union?: TypeNode
@@ -117,7 +117,7 @@ export class DynamicState {
         this.branches = topBranchState
     }
 
-    addPrefix(prefix: Prefix) {
+    addPrefix(prefix: StringifiablePrefixOperator) {
         this.branches.prefixes.push(prefix)
     }
 

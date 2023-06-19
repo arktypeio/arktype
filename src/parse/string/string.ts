@@ -3,6 +3,7 @@ import { type error, throwParseError } from "../../utils/errors.js"
 import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
 import type { DynamicStateWithRoot } from "./reduce/dynamic.js"
 import { DynamicState } from "./reduce/dynamic.js"
+import type { StringifiablePrefixOperator } from "./reduce/shared.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
 import type { writeUnexpectedCharacterMessage } from "./shift/operator/operator.js"
@@ -34,6 +35,12 @@ export type inferString<def extends string, $, args> = inferAst<
     $,
     args
 >
+
+export type BaseCompletions<$, args, otherSuggestions extends string = never> =
+    | (keyof $ & string)
+    | (keyof args & string)
+    | StringifiablePrefixOperator
+    | otherSuggestions
 
 export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)

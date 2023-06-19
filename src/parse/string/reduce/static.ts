@@ -9,7 +9,7 @@ import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
-    Prefix,
+    StringifiablePrefixOperator,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnclosedGroupMessage,
@@ -28,10 +28,10 @@ export type StaticState = {
 
 type StaticOpenLeftBound = { limit: NumberLiteral; comparator: MinComparator }
 
-export type AutocompletePrefix = `${Prefix} `
+export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
-    prefixes: Prefix[]
+    prefixes: StringifiablePrefixOperator[]
     range: StaticOpenLeftBound | undefined
     "&": unknown
     "|": unknown
@@ -86,7 +86,7 @@ export namespace state {
 
     export type addPrefix<
         s extends StaticState,
-        prefix extends Prefix,
+        prefix extends StringifiablePrefixOperator,
         unscanned extends string
     > = from<{
         root: s["root"]

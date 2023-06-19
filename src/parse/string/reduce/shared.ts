@@ -6,7 +6,7 @@ import type {
 import { invertedComparators } from "../../../nodes/primitive/range.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 
-export type Prefix = "keyof"
+export type StringifiablePrefixOperator = "keyof"
 
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned

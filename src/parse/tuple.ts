@@ -23,8 +23,8 @@ import {
 import type { inferIntersection } from "./ast/intersections.js"
 import type { astToString } from "./ast/utils.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
-import type { Prefix } from "./string/reduce/shared.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
+import type { BaseCompletions } from "./string/string.js"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     const tupleExpressionResult = isIndexOneExpression(def)
@@ -114,10 +114,10 @@ export type validateTuple<
           | readonly [unknown, "", ...unknown[]]
     ? [
           def[0] extends ""
-              ? keyof $ | keyof args | IndexZeroOperator | Prefix
+              ? BaseCompletions<$, args, IndexZeroOperator>
               : def[0],
           def[1] extends ""
-              ? keyof $ | keyof args | IndexOneOperator | Prefix
+              ? BaseCompletions<$, args, IndexOneOperator>
               : def[1]
       ]
     : validateTupleLiteral<def, $, args>
