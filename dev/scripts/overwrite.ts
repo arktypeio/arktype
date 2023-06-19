@@ -2,7 +2,10 @@ import * as FS from "node:fs"
 import * as Path from "node:path"
 import { printUnifiedDiff } from "print-diff"
 
-export type ReplacementDictionary = Record<string, { pattern: RegExp, replacement: `"${string}"` }>
+export type ReplacementDictionary = Record<
+    string,
+    { pattern: RegExp; replacement: `"${string}"` }
+>
 export type Matchers = ReadonlyArray<Matcher>
 export type Matcher = {
     pattern: RegExp
@@ -13,7 +16,7 @@ const readdirSync = (path: string) =>
     FS.readdirSync(path, { withFileTypes: true })
 
 const writeFile = (filePath: string, data: string): void =>
-    FS.writeFile(filePath, data, { encoding: "utf-8" }, () => { })
+    FS.writeFile(filePath, data, { encoding: "utf-8" }, () => {})
 
 const readFile = (
     filePath: string,
@@ -30,25 +33,18 @@ const readFile = (
     })
 }
 
-const replaceAll
-    : (matchers: Matchers) => (input: string) => string
-    = (matchers) => (input) => {
-        const out = matchers.reduce(
-            (acc, matcher) => {
-                return acc.replaceAll(matcher.pattern, matcher.replacement)
-            },
-            input
-        )
+const replaceAll: (matchers: Matchers) => (input: string) => string =
+    (matchers) => (input) => {
+        const out = matchers.reduce((acc, matcher) => {
+            return acc.replaceAll(matcher.pattern, matcher.replacement)
+        }, input)
 
         /**
          * TODO: Delete this `if` block before opening PR
          */
         if (
             input.includes(`/utils/`) ||
-            (input.includes(`/attest/`)
-                &&
-                input !== out
-            )
+            (input.includes(`/attest/`) && input !== out)
         ) {
             printUnifiedDiff(input, out)
         }
@@ -60,15 +56,13 @@ const replaceAll
  * Returns an array of absolute file paths in a directory tree, excluding any paths
  * that contain any of the given `ignorePaths`. Uses a recursive depth-first search.
  */
-const traverse: (
-    ignorePaths: readonly string[]
-) => (rootPath: string) => readonly string[] = (ignorePaths) => (rootPath) => {
-    const go = (
-        parentPath: string,
-        acc: readonly string[]
-    ): readonly string[] =>
-        readdirSync(parentPath).flatMap((dirent) => {
-            const path = Path.join(parentPath, dirent.name)
+const traverse = (
+    dirPath: string,
+    ignorePaths: readonly string[] = []
+): readonly string[] => {
+    const go = (root: string, acc: readonly string[]): readonly string[] =>
+        readdirSync(root).flatMap((dirent) => {
+            const path = Path.join(root, dirent.name)
             if (ignorePaths.some((pattern) => path.includes(pattern))) {
                 return acc
             } else if (dirent.isFile()) {
@@ -80,7 +74,7 @@ const traverse: (
             }
         })
 
-    return go(rootPath, [])
+    return go(dirPath, [])
 }
 
 /**
@@ -88,26 +82,22 @@ const traverse: (
  * each file's contents according to the provided `Matcher["find"]`
  * and `Matcher["replace"]`.
  */
-const overwrite: (matchers: Matchers) => (files: readonly string[]) => void =
-    (matchers) => (files) => {
+const overwrite =
+    (matchers: Matchers) =>
+    (files: readonly string[] = []): void =>
         void files.map((file) =>
-            readFile(file, (data) => {
-                // console.log(`FILE,`, file)
-                const out = replaceAll(matchers)(data)
-                // console.log(`DATA,`, data)
-                // console.log(`OUT,`, out)
-                return writeFile(file, out)
-            })
+            readFile(file, (data) =>
+                writeFile(file, replaceAll(matchers)(data))
+            )
         )
-    }
 
-export const rewritePaths: (
-    ignorePaths: readonly string[],
-    matchDictionary: ReplacementDictionary
-) => (buildPath: string) => void =
-    (ignorePaths, matchDictionary) => (buildPath) => {
-        const files = traverse(ignorePaths)(buildPath)
+export const rewritePaths =
+    (
+        matchDictionary: ReplacementDictionary,
+        ignorePaths: readonly string[] = []
+    ) =>
+    (dirPath: string): void => {
+        const files = traverse(dirPath, ignorePaths)
         const matchers: Matchers = Object.values(matchDictionary)
-
         overwrite(matchers)(files)
     }

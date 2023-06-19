@@ -9,6 +9,8 @@ import type { ReplacementDictionary } from "./overwrite.js"
 const packageRoot = process.cwd()
 const outRoot = join(packageRoot, "dist")
 const packageJson = readJson(join(packageRoot, "package.json"))
+const tempTsConfigBaseName = "tsconfig.temp"
+const tempTsConfigPath = join(packageRoot, `${tempTsConfigBaseName}.json`)
 
 const nuke = (target: string) =>
     rmSync(target, { recursive: true, force: true })
@@ -17,13 +19,13 @@ const clone = (from: string, to: string): void =>
 
 const writeManifest =
     (overrides: Record<string, unknown>) =>
-        (sourceDir: string, targetDir: string) => {
-            const manifest = readJson(join(sourceDir, "package.json"))
-            writeJson(join(targetDir, "package.json"), {
-                ...manifest,
-                ...overrides
-            })
-        }
+    (sourceDir: string, targetDir: string) => {
+        const manifest = readJson(join(sourceDir, "package.json"))
+        writeJson(join(targetDir, "package.json"), {
+            ...manifest,
+            ...overrides
+        })
+    }
 
 const Sources = {
     utils: ["dev", "utils"],
@@ -31,21 +33,30 @@ const Sources = {
 } as const
 
 const replacementDictionary: ReplacementDictionary = {
-    attest: { pattern: /"(\.\.\/)+(.+)(attest\/).+.js"/g, replacement: `"@arktype/attest"` },
-    utils: { pattern: /"(\.\.\/)+(.+)(utils\/).+.js"/g, replacement: `"@arktype/utils"` },
+    attest: {
+        pattern: /"(\.\.\/)+(.+)(attest\/).+.js"/g,
+        replacement: `"@arktype/attest"`
+    },
+    utils: {
+        pattern: /"(\.\.\/)+(.+)(utils\/).+.js"/g,
+        replacement: `"@arktype/utils"`
+    }
 } as const
 
-const ignorePaths = ["node_modules", "src/index", "package.json"]
+const ignorePaths = [
+    "node_modules",
+    "package.json",
+    `${tempTsConfigBaseName}.tsbuildinfo`
+]
 
 const fixBuildPaths: (buildPath: string) => void = rewritePaths(
-    ignorePaths,
-    replacementDictionary
+    replacementDictionary,
+    ignorePaths
 )
 
 const buildFormat = (module: ModuleKind) => {
     const moduleKindDir = ModuleKindToDir[module]
     const outDir = join(outRoot, moduleKindDir)
-    // console.log(`\n\n\n\n\nOUTDIR\n\n\n`, outDir)
     const utilsSrc = join(outDir, ...Sources.utils, "src")
     const attestSrc = join(outDir, ...Sources.attest, "src")
     const utilsTarget = join(
@@ -81,11 +92,6 @@ const buildFormat = (module: ModuleKind) => {
     try {
         shell(`pnpm tsc --project ${tempTsConfigPath}`)
         const outSrc = join(outDir, "src")
-
-        // console.log(`OUTSRC`, outSrc)
-        // console.log(`ATTEST_TARGET`, attestTarget)
-        // console.log(`UTILS_TARGET`, utilsTarget)
-
         const outDev = join(outDir, "dev")
         // not sure which setting to change to get it to compile here in the first place
         clone(outSrc, outDir)
@@ -96,18 +102,18 @@ const buildFormat = (module: ModuleKind) => {
         writePackageManifest(repoDirs.attest, attestTarget)
         writePackageManifest(repoDirs.utils, utilsTarget)
 
-        /**
-         * We don't need to rewrite any of the paths in `utils` at the moment,
-         * since it doesn't (currently) depend on any local packages
-         */
-        // fixBuildPaths(utilsTarget)
-
         nuke(outSrc)
         nuke(outDev)
         nuke(utilsSrc)
         nuke(attestSrc)
+
         fixBuildPaths(outDir)
         fixBuildPaths(attestTarget)
+        /**
+         * We don't need to rewrite any of the paths in `dev/utils/dist` at the
+         * moment, since it doesn't (currently) depend on any local packages
+         */
+        // fixBuildPaths(utilsTarget)
     } finally {
         rmSync(tempTsConfigPath, { force: true })
     }
@@ -132,7 +138,6 @@ console.log(`🔨 Building ${packageJson.name}...`)
 rmSync(outRoot, { recursive: true, force: true })
 const baseTsConfig = readJson(join(repoDirs.configs, "tsconfig.base.json"))
 const { compilerOptions } = baseTsConfig
-const tempTsConfigPath = join(packageRoot, "tsconfig.temp.json")
 buildFormat(ModuleKind.ESNext)
 buildFormat(ModuleKind.CommonJS)
 console.log(`📦 Successfully built ${packageJson.name}!`)
