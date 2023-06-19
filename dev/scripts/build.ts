@@ -34,11 +34,11 @@ const Sources = {
 
 const replacementDictionary: ReplacementDictionary = {
     attest: {
-        pattern: /"(\.\.\/)+(.+)(attest\/).+.js"/g,
+        pattern: /"(\.\.\/)+[^"]*attest\/[^"]*\.js"/g,
         replacement: `"@arktype/attest"`
     },
     utils: {
-        pattern: /"(\.\.\/)+(.+)(utils\/).+.js"/g,
+        pattern: /"(\.\.\/)+[^"]*utils\/[^"]*\.js"/g,
         replacement: `"@arktype/utils"`
     }
 } as const
@@ -128,12 +128,10 @@ const ModuleKindToDir = {
     [ModuleKind.CommonJS]: "cjs",
     [ModuleKind.ESNext]: "mjs"
 } as const
-
 const ModuleKindToPackageType = {
     [ModuleKind.CommonJS]: "commonjs",
     [ModuleKind.ESNext]: "module"
 } as const
-
 console.log(`🔨 Building ${packageJson.name}...`)
 rmSync(outRoot, { recursive: true, force: true })
 const baseTsConfig = readJson(join(repoDirs.configs, "tsconfig.base.json"))
