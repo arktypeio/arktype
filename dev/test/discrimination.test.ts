@@ -33,7 +33,7 @@ suite("discrimination", () => {
         })
     test("nested", () => {
         const t = getPlaces().type("ocean|sky|rainForest|desert")
-        attest(t.root.condition).snap(`switch($arkRoot?.color) {
+        attest(t.condition).snap(`switch($arkRoot?.color) {
     case "blue": {
     switch($arkRoot?.climate) {
     case "dry": {

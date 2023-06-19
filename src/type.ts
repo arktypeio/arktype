@@ -204,7 +204,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
             $,
             inferIntersection<t, inferTypeRoot<def, $>>
         >
-    ): Type<inferIntersection<t, inferTypeRoot<def, $>>> {
+    ): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
         return new Type(
             this.root.and(parseTypeRoot(def, this.scope)),
             this.scope
@@ -220,7 +220,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
     morph<morph extends Morph<extractOut<t>>>(
         morph: morph
-    ): Type<(In: this["inferIn"]) => Out<inferMorphOut<ReturnType<morph>>>>
+    ): Type<(In: this["inferIn"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
     morph<morph extends Morph<extractOut<t>>, def>(
         morph: morph,
         outValidator: validateTypeRoot<def, $>
@@ -229,7 +229,8 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
             // TODO: validate overlapping
             // inferMorphOut<ReturnType<morph>> &
             extractOut<inferTypeRoot<def, $>>
-        >
+        >,
+        $
     >
     morph(morph: Morph, outValidator?: unknown) {
         // TODO: tuple expression for out validator
@@ -260,11 +261,11 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         return result.problems ? result.problems.throw() : result.data
     }
 
-    equals<other>(other: Type<other>): this is Type<other> {
+    equals<other>(other: Type<other>): this is Type<other, $> {
         return this.root === (other.root as unknown)
     }
 
-    extends<other>(other: Type<other>): this is Type<other> {
+    extends<other>(other: Type<other>): this is Type<other, $> {
         return this.root.extends(other.root)
     }
 }

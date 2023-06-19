@@ -1,5 +1,6 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { node, type } from "../../src/main.js"
+import type { Range } from "../../src/nodes/primitive/range.js"
 import {
     writeDoubleRightBoundMessage,
     writeUnboundableMessage
@@ -13,91 +14,90 @@ import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bound
 import { writeMalformedNumericLiteralMessage } from "../../src/utils/numericLiterals.js"
 import { attest } from "../attest/main.js"
 
+const expectedBoundsCondition = (...range: Range) =>
+    node({ basis: "number", range }).condition
+
 suite("range", () => {
     suite("parse", () => {
         suite("single", () => {
             test(">", () => {
                 const t = type("number>0")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: { range: { min: { limit: 0, comparator: ">" } } }
-                // })
+                attest(t.allows(-1)).equals(false)
+                attest(t.allows(0)).equals(false)
+                attest(t.allows(1)).equals(true)
             })
             test("<", () => {
                 const t = type("number<10")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: {
-                //         range: { max: { limit: 10, comparator: "<" } }
-                //     }
-                // })
+                attest(t.condition).equals(
+                    expectedBoundsCondition({ comparator: "<", limit: 10 })
+                )
             })
             test("<=", () => {
                 const t = type("number<=-49")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: {
-                //         range: { max: { limit: -49, comparator: "<=" } }
-                //     }
-                // })
+                attest(t.condition).equals(
+                    expectedBoundsCondition({ comparator: "<=", limit: -49 })
+                )
             })
             test("==", () => {
                 const t = type("number==3211993")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: {
-                //         range: {
-                //             limit: 3211993,
-                //             comparator: "=="
-                //         }
-                //     }
-                // })
+                attest(t.condition).equals(
+                    expectedBoundsCondition({
+                        comparator: "==",
+                        limit: 3211993
+                    })
+                )
             })
         })
         suite("double", () => {
             test("<,<=", () => {
                 const t = type("-5<number<=5")
                 attest(t.infer).typed as number
-                attest(t.root.condition)
-                    .snap(`if (!(typeof $arkRoot === "number")) {
-            return false
-        }
-if (!($arkRoot > -5)) {
-            return false
-        }
-if (!($arkRoot <= 5)) {
-            return false
-        }`)
-                // attest(t.node).snap({
-                //     number: {
-                //         range: {
-                //             min: { limit: -5, comparator: ">" },
-                //             max: { limit: 5, comparator: "<=" }
-                //         }
-                //     }
-                // })
+                attest(t.allows(-6)).equals(false)
+                attest(t.allows(-5)).equals(false)
+                attest(t.allows(-4)).equals(true)
+                attest(t.allows(4)).equals(true)
+                attest(t.allows(5)).equals(true)
+                attest(t.allows(5.01)).equals(false)
+                attest(t.condition).equals(
+                    expectedBoundsCondition(
+                        {
+                            comparator: ">",
+                            limit: -5
+                        },
+                        {
+                            comparator: "<=",
+                            limit: 5
+                        }
+                    )
+                )
             })
             test("<=,<", () => {
                 const t = type("-3.23<=number<4.654")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: {
-                //         range: {
-                //             min: { limit: -3.23, comparator: ">=" },
-                //             max: { limit: 4.654, comparator: "<" }
-                //         }
-                //     }
-                // })
+                attest(t.condition).equals(
+                    expectedBoundsCondition(
+                        {
+                            comparator: ">=",
+                            limit: -3.23
+                        },
+                        {
+                            comparator: "<",
+                            limit: 4.654
+                        }
+                    )
+                )
             })
         })
         test("whitespace following comparator", () => {
             const t = type("number > 3")
             attest(t.infer).typed as number
-            // attest(t.node).snap({
-            //     number: {
-            //         range: { min: { limit: 3, comparator: ">" } }
-            //     }
-            // })
+            attest(t.condition).equals(
+                expectedBoundsCondition({ comparator: ">", limit: 3 })
+            )
         })
         suite("intersection", () => {
             suite("equality range", () => {
