@@ -127,6 +127,8 @@ const maybeParseKeyword = (
         return resolution.root
     } else if (hasArkKind(resolution, "generic")) {
         return parseGenericInstantiation(token, resolution, s)
+    } else if (resolution === undefined) {
+        return
     }
     return throwParseError(`Unexpected resolution ${stringify(resolution)}`)
 }

@@ -299,7 +299,7 @@ export class Scope<r extends Resolutions = any> {
         }
         const resolution = new Type(this.parseRoot(aliasDef, {}), this)
         this.resolutions[name] = resolution
-        return resolution
+        return resolution as never
     }
 
     maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
@@ -307,7 +307,7 @@ export class Scope<r extends Resolutions = any> {
         return result instanceof Type ? result.root : undefined
     }
 
-    import<names extends (keyof r["exports"])[]>(
+    import<names extends exportedName<r>[]>(
         ...names: names
     ): destructuredImportContext<
         r,
@@ -322,7 +322,7 @@ export class Scope<r extends Resolutions = any> {
     }
 
     private hasBeenExported = false
-    export<names extends (keyof r["exports"])[]>(
+    export<names extends exportedName<r>[]>(
         ...names: names
     ): TypeSet<
         names extends [] ? r : destructuredExportContext<r, names[number]>
@@ -350,7 +350,7 @@ export class Scope<r extends Resolutions = any> {
 
 type destructuredExportContext<
     r extends Resolutions,
-    name extends keyof r["exports"]
+    name extends exportedName<r>
 > = {
     exports: { [k in name]: r["exports"][k] }
     locals: r["locals"] & {
@@ -361,7 +361,7 @@ type destructuredExportContext<
 
 type destructuredImportContext<
     r extends Resolutions,
-    name extends keyof r["exports"]
+    name extends exportedName<r>
 > = {
     [k in name as `#${k & string}`]: CastTo<r["exports"][k]>
 }
