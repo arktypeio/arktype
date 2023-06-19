@@ -294,15 +294,20 @@ export const generic = (
     scope: Scope
 ) =>
     Object.assign(
-        (...args: unknown[]) =>
-            new Type(
-                definition,
-                scope.merge(
-                    Object.fromEntries(
-                        parameters.map((param, i) => [param, args[i]])
-                    ) as never
-                )
-            ),
+        (...args: unknown[]) => {
+            const argNodes = Object.fromEntries(
+                parameters.map((param, i) => [
+                    param,
+                    scope.parseTypeRoot(args[i])
+                ])
+            )
+            const t = new Type(
+                Object.fromEntries(
+                    parameters.map((param, i) => [param, args[i]])
+                ) as never,
+                scope
+            )
+        },
         {
             [arkKind]: "generic",
             // TODO: remove at runtime

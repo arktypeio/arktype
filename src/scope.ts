@@ -180,6 +180,7 @@ export type Resolutions = {
 export type ParseContext = {
     path: Path
     scope: Scope
+    args?: Record<string, TypeNode>
 }
 
 export class Scope<r extends Resolutions = any> {
@@ -188,7 +189,9 @@ export class Scope<r extends Resolutions = any> {
 
     config: TypeConfig
 
-    private parseCache: Map<unknown, TypeNode> = new Map()
+    // for now we only cache string definitions, since objects could possibly be
+    // mutated and then re-parsed
+    private parseCache: Record<string, TypeNode> = {}
     private resolutions: Record<string, Type | TypeSet>
     private thisType: Type
 
@@ -232,20 +235,6 @@ export class Scope<r extends Resolutions = any> {
         })
     }) as never
 
-    merge: ScopeParser<r["exports"], r["ambient"]> = ((
-        aliases: Dict,
-        config: TypeConfig = {}
-    ) => {
-        return new Scope(
-            { ...this.aliases, ...aliases },
-            {
-                ...this.config,
-                ...config,
-                ambient: this.ambient
-            }
-        )
-    }) as never
-
     define: DefinitionParser<$<r>> = (def) => def as never
 
     toAmbient(): Scope<{
@@ -265,28 +254,25 @@ export class Scope<r extends Resolutions = any> {
         return this.export()[name] as never
     }
 
-    parse(def: unknown, ctx: ParseContext) {
-        const cached = this.parseCache.get(def)
-        if (cached) {
-            // TODO: seems unsafe with `this`
-            return cached
+    parse(def: unknown, ctx: ParseContext): TypeNode {
+        if (typeof def === "string") {
+            // TODO: cache seems unsafe with `this`
+            if (!this.parseCache[def]) {
+                this.parseCache[def] = parseString(def, ctx)
+            }
+            return this.parseCache[def]
         }
-        const result =
-            typeof def === "string"
-                ? parseString(def, ctx)
-                : (typeof def === "object" && def !== null) ||
-                  typeof def === "function"
-                ? parseObject(def, ctx)
-                : throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
-        this.parseCache.set(def, result)
-        return result
+        return (typeof def === "object" && def !== null) ||
+            typeof def === "function"
+            ? parseObject(def, ctx)
+            : throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
     }
 
     /** @internal */
     maybeResolve(
         name: string,
         ctx: ParseContext
-    ): TypeNode | UnknownGeneric | Scope | undefined {
+    ): Type | UnknownGeneric | Scope | undefined {
         const cached = this.resolutions[name]
         if (cached) {
             if (cached === this.thisType) {
@@ -297,10 +283,10 @@ export class Scope<r extends Resolutions = any> {
                     )
                 }
                 // TODO: doesn't seem right for cyclic? only recursive?
-                return cached.root
+                return cached
             }
             // TODO: when is this cache safe? could contain this reference?
-            return cached.root as never
+            return cached as never
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
@@ -309,13 +295,14 @@ export class Scope<r extends Resolutions = any> {
         this.resolutions[name] = this.thisType
         const resolution = this.parseRoot(aliasDef)
         this.resolutions[name] = new Type(resolution, this)
-        return resolution
+        return resolution as never
     }
 
     parseRoot(def: unknown) {
         return this.parse(def, {
             path: new Path(),
-            scope: this
+            scope: this,
+            args: {}
         })
     }
 
@@ -341,13 +328,13 @@ export class Scope<r extends Resolutions = any> {
         ) as never
     }
 
-    private exported = false
+    private hasBeenExported = false
     export<names extends (keyof r["exports"])[]>(
         ...names: names
     ): TypeSet<
         names extends [] ? r : destructuredExportContext<r, names[number]>
     > {
-        if (!this.exported) {
+        if (!this.hasBeenExported) {
             const ctx: ParseContext = {
                 path: new Path(),
                 scope: this
@@ -355,7 +342,7 @@ export class Scope<r extends Resolutions = any> {
             for (const name of this.exportedNames) {
                 this.maybeResolve(name as never, ctx)
             }
-            this.exported = true
+            this.hasBeenExported = true
         }
         const namesToExport = names.length ? names : this.exportedNames
         return Object.fromEntries(

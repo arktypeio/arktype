@@ -3,6 +3,7 @@ import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { GenericProps, UnknownGeneric } from "../../../../type.js"
+import { Type } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"
 import { throwParseError } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
@@ -122,8 +123,8 @@ const maybeParseKeyword = (
     token: string
 ): TypeNode | undefined => {
     const resolution = s.ctx.scope.maybeResolve(token, s.ctx)
-    if (hasArkKind(resolution, "node")) {
-        return resolution
+    if (resolution instanceof Type) {
+        return resolution.root
     } else if (hasArkKind(resolution, "generic")) {
         return parseGenericInstantiation(token, resolution, s)
     }
