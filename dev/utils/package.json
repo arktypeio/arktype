@@ -20,9 +20,6 @@
         "dist",
         "!*.tsbuildinfo"
     ],
-    "dependencies": {
-        "ts-morph": "18.0.0"
-    },
     "devDependencies": {
         "ts-node": "10.9.1",
         "mocha": "10.2.0",
