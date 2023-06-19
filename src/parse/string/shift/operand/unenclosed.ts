@@ -79,6 +79,7 @@ export const parseGenericInstantiation = (
         s.scanner.unscanned,
         s.ctx
     )
+    // set the scanner position to where the args scanner left off
     s.scanner.jumpToIndex(-parsedArgs.unscanned.length)
     return g(...parsedArgs.result).root
 }

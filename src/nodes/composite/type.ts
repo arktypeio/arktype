@@ -218,6 +218,9 @@ const compileIndiscriminable = (
     branches: PredicateNode[],
     s: CompilationState
 ) => {
+    if (branches.length === 0) {
+        return `${s.problem("custom", "nothing")}`
+    }
     if (branches.length === 1) {
         return branches[0].compile(s)
     }
