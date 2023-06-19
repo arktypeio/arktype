@@ -4,6 +4,7 @@ import { readJson, writeJson } from "../attest/src/fs.js"
 import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 import { rewritePaths } from "./overwrite.js"
+import type { ReplacementDictionary } from "./overwrite.js"
 
 const packageRoot = process.cwd()
 const outRoot = join(packageRoot, "dist")
@@ -16,22 +17,22 @@ const clone = (from: string, to: string): void =>
 
 const writeManifest =
     (overrides: Record<string, unknown>) =>
-    (sourceDir: string, targetDir: string) => {
-        const manifest = readJson(join(sourceDir, "package.json"))
-        writeJson(join(targetDir, "package.json"), {
-            ...manifest,
-            ...overrides
-        })
-    }
+        (sourceDir: string, targetDir: string) => {
+            const manifest = readJson(join(sourceDir, "package.json"))
+            writeJson(join(targetDir, "package.json"), {
+                ...manifest,
+                ...overrides
+            })
+        }
 
 const Sources = {
     utils: ["dev", "utils"],
     attest: ["dev", "attest"]
 } as const
 
-const replacementDictionary = {
-    attest: `@arktype/attest`,
-    utils: `@arktype/utils`
+const replacementDictionary: ReplacementDictionary = {
+    attest: { pattern: /"(\.\.\/)+(.+)(attest\/).+.js"/g, replacement: `"@arktype/attest"` },
+    utils: { pattern: /"(\.\.\/)+(.+)(utils\/).+.js"/g, replacement: `"@arktype/utils"` },
 } as const
 
 const ignorePaths = ["node_modules", "src/index", "package.json"]
@@ -44,6 +45,7 @@ const fixBuildPaths: (buildPath: string) => void = rewritePaths(
 const buildFormat = (module: ModuleKind) => {
     const moduleKindDir = ModuleKindToDir[module]
     const outDir = join(outRoot, moduleKindDir)
+    // console.log(`\n\n\n\n\nOUTDIR\n\n\n`, outDir)
     const utilsSrc = join(outDir, ...Sources.utils, "src")
     const attestSrc = join(outDir, ...Sources.attest, "src")
     const utilsTarget = join(
@@ -79,6 +81,11 @@ const buildFormat = (module: ModuleKind) => {
     try {
         shell(`pnpm tsc --project ${tempTsConfigPath}`)
         const outSrc = join(outDir, "src")
+
+        // console.log(`OUTSRC`, outSrc)
+        // console.log(`ATTEST_TARGET`, attestTarget)
+        // console.log(`UTILS_TARGET`, utilsTarget)
+
         const outDev = join(outDir, "dev")
         // not sure which setting to change to get it to compile here in the first place
         clone(outSrc, outDir)
@@ -89,18 +96,18 @@ const buildFormat = (module: ModuleKind) => {
         writePackageManifest(repoDirs.attest, attestTarget)
         writePackageManifest(repoDirs.utils, utilsTarget)
 
-        fixBuildPaths(outDir)
-        fixBuildPaths(attestTarget)
         /**
          * We don't need to rewrite any of the paths in `utils` at the moment,
          * since it doesn't (currently) depend on any local packages
          */
-        // fixBuildPaths(outUtilsTarget)
+        // fixBuildPaths(utilsTarget)
 
         nuke(outSrc)
         nuke(outDev)
         nuke(utilsSrc)
         nuke(attestSrc)
+        fixBuildPaths(outDir)
+        fixBuildPaths(attestTarget)
     } finally {
         rmSync(tempTsConfigPath, { force: true })
     }

@@ -2,28 +2,18 @@ import * as FS from "node:fs"
 import * as Path from "node:path"
 import { printUnifiedDiff } from "print-diff"
 
+export type ReplacementDictionary = Record<string, { pattern: RegExp, replacement: `"${string}"` }>
 export type Matchers = ReadonlyArray<Matcher>
 export type Matcher = {
-    find: RegExp
-    replace: string
+    pattern: RegExp
+    replacement: string
 }
-
-const makeImportPathPattern = (find: string) =>
-    new RegExp(`"(../)+(${find})(/.*)"`, "g")
-
-const makeMatcher = ([find, replace]: [string, string]): Matcher => ({
-    find: makeImportPathPattern(find),
-    replace: `"${replace}"`
-})
-
-export const makeMatchers = (dictionary: Record<string, string>): Matchers =>
-    Object.entries(dictionary).map(makeMatcher)
 
 const readdirSync = (path: string) =>
     FS.readdirSync(path, { withFileTypes: true })
 
 const writeFile = (filePath: string, data: string): void =>
-    FS.writeFile(filePath, data, { encoding: "utf-8" }, () => {})
+    FS.writeFile(filePath, data, { encoding: "utf-8" }, () => { })
 
 const readFile = (
     filePath: string,
@@ -40,10 +30,13 @@ const readFile = (
     })
 }
 
-const replaceAll: (matchers: Matchers) => (input: string) => string =
-    (matchers) => (input) => {
+const replaceAll
+    : (matchers: Matchers) => (input: string) => string
+    = (matchers) => (input) => {
         const out = matchers.reduce(
-            (acc, matcher) => acc.replaceAll(matcher.find, matcher.replace),
+            (acc, matcher) => {
+                return acc.replaceAll(matcher.pattern, matcher.replacement)
+            },
             input
         )
 
@@ -52,7 +45,10 @@ const replaceAll: (matchers: Matchers) => (input: string) => string =
          */
         if (
             input.includes(`/utils/`) ||
-            (input.includes(`/attest/`) && input !== out)
+            (input.includes(`/attest/`)
+                &&
+                input !== out
+            )
         ) {
             printUnifiedDiff(input, out)
         }
@@ -93,19 +89,25 @@ const traverse: (
  * and `Matcher["replace"]`.
  */
 const overwrite: (matchers: Matchers) => (files: readonly string[]) => void =
-    (matchers) => (files) =>
+    (matchers) => (files) => {
         void files.map((file) =>
             readFile(file, (data) => {
+                // console.log(`FILE,`, file)
                 const out = replaceAll(matchers)(data)
+                // console.log(`DATA,`, data)
+                // console.log(`OUT,`, out)
                 return writeFile(file, out)
             })
         )
+    }
 
 export const rewritePaths: (
     ignorePaths: readonly string[],
-    matchDictionary: Record<string, string>
+    matchDictionary: ReplacementDictionary
 ) => (buildPath: string) => void =
     (ignorePaths, matchDictionary) => (buildPath) => {
         const files = traverse(ignorePaths)(buildPath)
-        overwrite(makeMatchers(matchDictionary))(files)
+        const matchers: Matchers = Object.values(matchDictionary)
+
+        overwrite(matchers)(files)
     }
