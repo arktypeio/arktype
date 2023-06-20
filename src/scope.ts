@@ -307,7 +307,8 @@ export class Scope<r extends Resolutions = any> {
         }
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
-            : def instanceof Scope
+            : // TODO: should we allow scope thunks? Could be cyclic?
+            def instanceof Scope
             ? def.export()
             : new Type(this.parseRoot(def, {}), this)
         this.resolutions[name] = resolution
