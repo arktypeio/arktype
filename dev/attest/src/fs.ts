@@ -1,12 +1,15 @@
+import type { NoParamCallback } from "node:fs";
 import {
     cpSync,
     existsSync,
     lstatSync,
     mkdirSync,
     readdirSync,
+    readFile as readFile_,
     readFileSync,
     rmSync,
     statSync,
+    writeFile as writeFile_,
     writeFileSync
 } from "node:fs"
 import { homedir } from "node:os"
@@ -29,10 +32,30 @@ export const ensureDir = (path: string) => {
     return path
 }
 
+
 export const readFile = (path: string) => readFileSync(path).toString()
+
+export const readFileAsync = (
+    filePath: string,
+    onSuccess: (data: string) => void
+): void => {
+    readFile_(filePath, { encoding: "utf-8" }, (err, data) => {
+        if (err !== null) {
+            return console.error(
+                `Received an error while attempting to read file "${filePath}". \nError Received: \n${err}`
+            )
+        } else {
+            return onSuccess(data)
+        }
+    })
+}
+
 
 export const writeFile = (path: string, contents: string) =>
     writeFileSync(path, contents)
+
+export const writeFileAsync = (filePath: string, data: string, onError: NoParamCallback = () => { }): void =>
+    writeFile_(filePath, data, { encoding: "utf-8" }, onError)
 
 export const readJson = (path: string) =>
     JSON.parse(readFileSync(path, { encoding: "utf8" }))
@@ -53,6 +76,7 @@ export const rewriteJson = (path: string, transform: JsonTransformer) =>
 
 export type WalkOptions = {
     ignoreDirsMatching?: RegExp
+    ignoreFilesMatching?: RegExp
     excludeFiles?: boolean
     excludeDirs?: boolean
     exclude?: (path: string) => boolean
@@ -63,7 +87,11 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
     readdirSync(dir).reduce((paths: string[], item: string) => {
         const path = join(dir, item)
         const isDir = lstatSync(path).isDirectory()
+        const isFile = lstatSync(path).isFile()
         if (isDir && options.ignoreDirsMatching?.test(path)) {
+            return paths
+        }
+        if (isFile && options.ignoreFilesMatching?.test(path)) {
             return paths
         }
         const excludeCurrent =

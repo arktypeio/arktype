@@ -13,13 +13,13 @@ const tempTsConfigPath = join(packageRoot, `${tempTsConfigBaseName}.json`)
 
 const writeManifest =
     (overrides: Record<string, unknown>) =>
-    (sourceDir: string, targetDir: string) => {
-        const manifest = readJson(join(sourceDir, "package.json"))
-        writeJson(join(targetDir, "package.json"), {
-            ...manifest,
-            ...overrides
-        })
-    }
+        (sourceDir: string, targetDir: string) => {
+            const manifest = readJson(join(sourceDir, "package.json"))
+            writeJson(join(targetDir, "package.json"), {
+                ...manifest,
+                ...overrides
+            })
+        }
 
 const Sources = {
     utils: ["dev", "utils"],
@@ -38,14 +38,15 @@ const replacementDictionary: ReplacementDictionary = {
 } as const
 
 const ignorePaths = [
-    "node_modules",
     "package.json",
     `${tempTsConfigBaseName}.tsbuildinfo`
 ]
 
+const ignoreFilesMatching = new RegExp(`(${ignorePaths.join("|")})`)
+
 const fixBuildPaths: (buildPath: string) => void = rewritePaths(
     replacementDictionary,
-    ignorePaths
+    ignoreFilesMatching,
 )
 
 const buildFormat = (module: "CommonJS" | "ESNext") => {
