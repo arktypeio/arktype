@@ -4,6 +4,6 @@
     "type": "module",
     "devDependencies": {
         "ts-morph": "18.0.0",
-        "@arktype/attest": "workspace:^0.0.0"
+        "@arktype/attest": "workspace:*"
     }
 }

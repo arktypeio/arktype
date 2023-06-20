@@ -22,7 +22,7 @@
     ],
     "dependencies": {
         "ts-morph": "18.0.0",
-        "@arktype/utils": "workspace:^0.0.0"
+        "@arktype/utils": "workspace:*"
     },
     "devDependencies": {
         "ts-node": "10.9.1",
