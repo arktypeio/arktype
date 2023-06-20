@@ -37,9 +37,9 @@ const replacementDictionary: ReplacementDictionary = {
     }
 } as const
 
-const ignorePaths = ["package.json", `${tempTsConfigBaseName}.tsbuildinfo`]
-
-const ignoreFilesMatching = new RegExp(`(${ignorePaths.join("|")})`)
+const ignoreFilesMatching = new RegExp(
+    `package.json|${tempTsConfigBaseName}.tsbuildinfo`
+)
 
 const fixBuildPaths: (buildPath: string) => void = rewritePaths(
     replacementDictionary,
