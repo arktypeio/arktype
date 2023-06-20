@@ -1,3 +1,4 @@
+import { isThunk } from "../dev/utils/main.js"
 import { domainOf } from "../dev/utils/src/domains.js"
 import { throwParseError } from "../dev/utils/src/errors.js"
 import type { evaluate, isAny, nominal } from "../dev/utils/src/generics.js"
@@ -198,7 +199,7 @@ export class Scope<r extends Resolutions = any> {
     // for now we only cache string definitions, since objects could possibly be
     // mutated and then re-parsed
     private parseCache: Record<string, TypeNode> = {}
-    private resolutions: Record<string, Type | TypeSet>
+    private resolutions: Record<string, Type | TypeSet | Generic>
 
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
@@ -292,17 +293,18 @@ export class Scope<r extends Resolutions = any> {
         if (cached) {
             return cached
         }
-        const aliasDef = this.aliases[name]
-        if (!aliasDef) {
+        let def = this.aliases[name]
+        if (!def) {
             return
         }
-        if (hasArkKind(aliasDef, "generic")) {
-            return aliasDef
+        if (isThunk(def)) {
+            def = def()
         }
-        if (aliasDef instanceof Scope) {
-            return aliasDef.export()
-        }
-        const resolution = new Type(this.parseRoot(aliasDef, {}), this)
+        const resolution = hasArkKind(def, "generic")
+            ? def
+            : def instanceof Scope
+            ? def.export()
+            : new Type(this.parseRoot(def, {}), this)
         this.resolutions[name] = resolution
         return resolution
     }

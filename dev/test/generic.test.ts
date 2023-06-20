@@ -167,6 +167,11 @@ suite("generics", () => {
             // bound and > that closes a generic instantiation
             const t = $.type("box<number>5, string>=7>")
             attest(t.infer).typed as { box: string | number }
+            attest(t.condition).equals(
+                type({
+                    box: "number>5|string>=7"
+                }).condition
+            )
         })
 
         test("parameter supercedes alias with same name", () => {

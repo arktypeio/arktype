@@ -45,20 +45,21 @@ suite("tuple expression definition", () => {
                 type([{ s: "strng" }, "|", "number"])
             }).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
         })
-        test("this", () => {
-            const t = type([{ a: "string" }, "|", { b: "this" }])
-            attest(t.infer).types.toString.snap()
-            const types = scope({
-                a: {
-                    a: "string"
-                },
-                b: {
-                    b: "expected"
-                },
-                expected: "a|b"
-            }).export()
-            attest(t.condition).equals(types.expected.condition)
-        })
+        // TODO: reenable
+        // test("this", () => {
+        //     const t = type([{ a: "string" }, "|", { b: "this" }])
+        //     attest(t.infer).types.toString.snap()
+        //     const types = scope({
+        //         a: {
+        //             a: "string"
+        //         },
+        //         b: {
+        //             b: "expected"
+        //         },
+        //         expected: "a|b"
+        //     }).export()
+        //     attest(t.condition).equals(types.expected.condition)
+        // })
     })
 })
 

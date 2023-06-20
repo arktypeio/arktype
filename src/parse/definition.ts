@@ -51,14 +51,6 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
             if (def instanceof Type) {
                 return def.root
             }
-            // TODO: only handle thunks at scope root?
-            if (isThunk(def)) {
-                const returned = def()
-                if (returned instanceof Type) {
-                    // TODO: configs?
-                    return returned.root
-                }
-            }
             return throwParseError(writeBadDefinitionTypeMessage("Function"))
         default:
             return throwParseError(
