@@ -1,9 +1,15 @@
 import { join } from "node:path"
-import { cpR, readJson, rmRf, rmSync, writeJson } from "../attest/src/fs.js"
+import type { ReplacementDictionary } from "../attest/src/fs.js"
+import {
+    cpR,
+    findReplaceAll,
+    readJson,
+    rmRf,
+    rmSync,
+    writeJson
+} from "../attest/src/fs.js"
 import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
-import { rewritePaths } from "./overwrite.js"
-import type { ReplacementDictionary } from "./overwrite.js"
 
 const packageRoot = process.cwd()
 const outRoot = join(packageRoot, "dist")
@@ -41,7 +47,7 @@ const ignoreFilesMatching = new RegExp(
     `package.json|${tempTsConfigBaseName}.tsbuildinfo`
 )
 
-const fixBuildPaths: (buildPath: string) => void = rewritePaths(
+const fixBuildPaths: (buildPath: string) => void = findReplaceAll(
     replacementDictionary,
     ignoreFilesMatching
 )

@@ -1,15 +1,12 @@
-import type { NoParamCallback } from "node:fs"
 import {
     cpSync,
     existsSync,
     lstatSync,
     mkdirSync,
     readdirSync,
-    readFile as readFile_,
     readFileSync,
     rmSync,
     statSync,
-    writeFile as writeFile_,
     writeFileSync
 } from "node:fs"
 import { homedir } from "node:os"
@@ -34,29 +31,8 @@ export const ensureDir = (path: string) => {
 
 export const readFile = (path: string) => readFileSync(path).toString()
 
-export const readFileAsync = (
-    filePath: string,
-    onSuccess: (data: string) => void
-): void => {
-    readFile_(filePath, { encoding: "utf-8" }, (err, data) => {
-        if (err !== null) {
-            return console.error(
-                `Received an error while attempting to read file "${filePath}". \nError Received: \n${err}`
-            )
-        } else {
-            return onSuccess(data)
-        }
-    })
-}
-
 export const writeFile = (path: string, contents: string) =>
     writeFileSync(path, contents)
-
-export const writeFileAsync = (
-    filePath: string,
-    data: string,
-    onError: NoParamCallback = () => {}
-): void => writeFile_(filePath, data, { encoding: "utf-8" }, onError)
 
 export const readJson = (path: string) =>
     JSON.parse(readFileSync(path, { encoding: "utf8" }))
@@ -187,3 +163,53 @@ export type SourceFileEntry = [path: string, contents: string]
 
 export const getSourceFileEntries = (dir = "."): SourceFileEntry[] =>
     getSourceFilePaths(dir).map((path) => [path, readFile(path)])
+
+export type ReplacementDictionary = Record<
+    string,
+    { pattern: RegExp; replacement: `"${string}"` }
+>
+export type Matchers = ReadonlyArray<Matcher>
+export type Matcher = {
+    pattern: RegExp
+    replacement: string
+}
+
+/**
+ * Given a set of {@link Matchers} and an input string,
+ * replace all will replace
+ */
+const findReplace: (matchers: Matchers) => (input: string) => string =
+    (matchers) => (input) =>
+        matchers.reduce(
+            (acc, m) => acc.replaceAll(m.pattern, m.replacement),
+            input
+        )
+
+/**
+ * Applies a set of {@link Matchers} to a list of files and rewrites
+ * each file's contents according to the provided `Matcher["find"]`
+ * and `Matcher["replace"]`.
+ */
+const findReplaceMany =
+    (matchers: Matchers) =>
+        (files: readonly string[] = []): void =>
+            void files.forEach((file) => {
+                writeFile(file, findReplace(matchers)(readFile(file)))
+            })
+
+/**
+ * Given a directory and a set of {@link Matchers}, recursively walks
+ * the directory and applies every set of changes in the dictionary
+ * to all files except those matching `ignoreFilesMatching`.
+ */
+export const findReplaceAll =
+    (matchDictionary: ReplacementDictionary, ignoreFilesMatching: RegExp) =>
+        (dirPath: string): void => {
+            const files = walkPaths(dirPath, {
+                excludeDirs: true,
+                ignoreFilesMatching
+            })
+
+            const matchers: Matchers = Object.values(matchDictionary)
+            findReplaceMany(matchers)(files)
+        }
