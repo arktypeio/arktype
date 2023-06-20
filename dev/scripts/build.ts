@@ -48,18 +48,13 @@ const fixBuildPaths: (buildPath: string) => void = rewritePaths(
     ignorePaths
 )
 
-const buildFormat = (module: ModuleKind) => {
-    const moduleKindDir = ModuleKindToDir[module]
+const buildFormat = (module: "CommonJS" | "ESNext") => {
+    const moduleKindDir = module === "CommonJS" ? "cjs" : "mjs"
+    const packageType = module === "CommonJS" ? "commonjs" : "module"
     const outDir = join(outRoot, moduleKindDir)
     const utilsSrc = join(outDir, ...Sources.utils, "src")
     const attestSrc = join(outDir, ...Sources.attest, "src")
-    const utilsTarget = join(
-        // packageRoot,
-        // ...Sources.utils,
-        repoDirs.utils,
-        "dist",
-        moduleKindDir
-    )
+    const utilsTarget = join(repoDirs.utils, "dist", moduleKindDir)
     const attestTarget = join(repoDirs.attest, "dist", moduleKindDir)
 
     const tempTsConfig = {
@@ -73,9 +68,7 @@ const buildFormat = (module: ModuleKind) => {
         }
     }
 
-    const writePackageManifest = writeManifest({
-        type: ModuleKindToPackageType[module]
-    })
+    const writePackageManifest = writeManifest({ type: packageType })
 
     writeJson(tempTsConfigPath, tempTsConfig)
 
@@ -109,23 +102,10 @@ const buildFormat = (module: ModuleKind) => {
     }
 }
 
-type ModuleKind = (typeof ModuleKind)[keyof typeof ModuleKind]
-const ModuleKind = {
-    CommonJS: "CommonJS",
-    ESNext: "ESNext"
-} as const
-const ModuleKindToDir = {
-    [ModuleKind.CommonJS]: "cjs",
-    [ModuleKind.ESNext]: "mjs"
-} as const
-const ModuleKindToPackageType = {
-    [ModuleKind.CommonJS]: "commonjs",
-    [ModuleKind.ESNext]: "module"
-} as const
 console.log(`🔨 Building ${packageJson.name}...`)
 rmRf(outRoot)
 const baseTsConfig = readJson(join(repoDirs.configs, "tsconfig.base.json"))
 const { compilerOptions } = baseTsConfig
-buildFormat(ModuleKind.ESNext)
-buildFormat(ModuleKind.CommonJS)
+buildFormat("CommonJS")
+buildFormat("ESNext")
 console.log(`📦 Successfully built ${packageJson.name}!`)
