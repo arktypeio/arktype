@@ -1,6 +1,5 @@
-import { cpSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import { readJson, writeJson } from "../attest/src/fs.js"
+import { cpR, readJson, rmRf, rmSync, writeJson } from "../attest/src/fs.js"
 import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 import { rewritePaths } from "./overwrite.js"
@@ -11,11 +10,6 @@ const outRoot = join(packageRoot, "dist")
 const packageJson = readJson(join(packageRoot, "package.json"))
 const tempTsConfigBaseName = "tsconfig.temp"
 const tempTsConfigPath = join(packageRoot, `${tempTsConfigBaseName}.json`)
-
-const nuke = (target: string) =>
-    rmSync(target, { recursive: true, force: true })
-const clone = (from: string, to: string): void =>
-    cpSync(from, to, { recursive: true, force: true })
 
 const writeManifest =
     (overrides: Record<string, unknown>) =>
@@ -60,17 +54,13 @@ const buildFormat = (module: ModuleKind) => {
     const utilsSrc = join(outDir, ...Sources.utils, "src")
     const attestSrc = join(outDir, ...Sources.attest, "src")
     const utilsTarget = join(
-        packageRoot,
-        ...Sources.utils,
+        // packageRoot,
+        // ...Sources.utils,
+        repoDirs.utils,
         "dist",
         moduleKindDir
     )
-    const attestTarget = join(
-        packageRoot,
-        ...Sources.attest,
-        "dist",
-        moduleKindDir
-    )
+    const attestTarget = join(repoDirs.attest, "dist", moduleKindDir)
 
     const tempTsConfig = {
         ...baseTsConfig,
@@ -94,18 +84,18 @@ const buildFormat = (module: ModuleKind) => {
         const outSrc = join(outDir, "src")
         const outDev = join(outDir, "dev")
         // not sure which setting to change to get it to compile here in the first place
-        clone(outSrc, outDir)
-        clone(utilsSrc, utilsTarget)
-        clone(attestSrc, attestTarget)
+        cpR(outSrc, outDir)
+        cpR(utilsSrc, utilsTarget)
+        cpR(attestSrc, attestTarget)
 
         writePackageManifest(repoDirs.root, outDir)
         writePackageManifest(repoDirs.attest, attestTarget)
         writePackageManifest(repoDirs.utils, utilsTarget)
 
-        nuke(outSrc)
-        nuke(outDev)
-        nuke(utilsSrc)
-        nuke(attestSrc)
+        rmRf(outSrc)
+        rmRf(outDev)
+        rmRf(utilsSrc)
+        rmRf(attestSrc)
 
         fixBuildPaths(outDir)
         fixBuildPaths(attestTarget)
@@ -133,7 +123,7 @@ const ModuleKindToPackageType = {
     [ModuleKind.ESNext]: "module"
 } as const
 console.log(`🔨 Building ${packageJson.name}...`)
-rmSync(outRoot, { recursive: true, force: true })
+rmRf(outRoot)
 const baseTsConfig = readJson(join(repoDirs.configs, "tsconfig.base.json"))
 const { compilerOptions } = baseTsConfig
 buildFormat(ModuleKind.ESNext)

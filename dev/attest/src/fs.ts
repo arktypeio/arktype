@@ -1,9 +1,11 @@
 import {
+    cpSync,
     existsSync,
     lstatSync,
     mkdirSync,
     readdirSync,
     readFileSync,
+    rmSync,
     statSync,
     writeFileSync
 } from "node:fs"
@@ -13,6 +15,8 @@ import * as process from "node:process"
 import { fileURLToPath, URL } from "node:url"
 import { caller } from "./caller.js"
 import { shell } from "./shell.js"
+
+export { rmSync } from "node:fs"
 
 export const ensureDir = (path: string) => {
     if (existsSync(path)) {
@@ -35,6 +39,12 @@ export const readJson = (path: string) =>
 
 export const writeJson = (path: string, data: object) =>
     writeFileSync(path, JSON.stringify(data, null, 4) + "\n")
+
+export const rmRf = (target: string) =>
+    rmSync(target, { recursive: true, force: true })
+
+export const cpR = (from: string, to: string): void =>
+    cpSync(from, to, { recursive: true, force: true })
 
 export type JsonTransformer = (data: object) => object
 
