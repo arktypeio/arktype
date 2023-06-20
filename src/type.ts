@@ -13,7 +13,7 @@ import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
-import { node } from "./nodes/composite/type.js"
+import { builtins, node } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type {
     inferDefinition,
@@ -150,10 +150,10 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
         ) {
             // if there are exactly two args, the first of which looks like <${string}>,
             // treat as a generic
-            return generic(
-                parseGenericParams(args[0].slice(1, -1)),
-                args[1],
-                scope
+            const params = parseGenericParams(args[0].slice(1, -1))
+            const def = args[1]
+            return validateUninstantiatedGeneric(
+                generic(params, def, scope) as never
             ) as never
         }
         // otherwise, treat as a tuple expression. technically, this also allows
@@ -318,12 +318,26 @@ type validateParameterString<params extends string> =
         ? message
         : params
 
+export const validateUninstantiatedGeneric = (g: Generic) => {
+    // the unconstrained instantiation of the generic is not used for now
+    // other than to eagerly validate that the def does not contain any errors
+    g.scope.parseRoot(
+        g.definition,
+        Object.fromEntries(
+            // once we support constraints on generic parameters, we'd use
+            // the base type here: https://github.com/arktypeio/arktype/issues/796
+            g.parameters.map((name) => [name, builtins.unknown()])
+        )
+    )
+    return g
+}
+
 export const generic = (
     parameters: string[],
     definition: unknown,
     scope: Scope
-) =>
-    Object.assign(
+) => {
+    return Object.assign(
         (...args: unknown[]) => {
             const argNodes = Object.fromEntries(
                 parameters.map((param, i) => [
@@ -343,6 +357,7 @@ export const generic = (
             scope
         } satisfies GenericProps
     )
+}
 
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export type GenericProps<

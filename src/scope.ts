@@ -34,7 +34,12 @@ import type {
     TypeConfig,
     TypeParser
 } from "./type.js"
-import { createTypeParser, generic, Type } from "./type.js"
+import {
+    createTypeParser,
+    generic,
+    Type,
+    validateUninstantiatedGeneric
+} from "./type.js"
 
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
@@ -269,7 +274,7 @@ export class Scope<r extends Resolutions = any> {
 
     parse(def: unknown, ctx: ParseContext): TypeNode {
         if (typeof def === "string") {
-            if (ctx.args !== null) {
+            if (ctx.args !== undefined) {
                 // we can only rely on the cache if there are no contextual
                 // resolutions like "this" or generic args
                 return parseString(def, ctx)
@@ -297,11 +302,11 @@ export class Scope<r extends Resolutions = any> {
         if (!def) {
             return
         }
-        if (isThunk(def)) {
+        if (isThunk(def) && !hasArkKind(def, "generic")) {
             def = def()
         }
         const resolution = hasArkKind(def, "generic")
-            ? def
+            ? validateUninstantiatedGeneric(def)
             : def instanceof Scope
             ? def.export()
             : new Type(this.parseRoot(def, {}), this)

@@ -73,6 +73,7 @@ suite("generics", () => {
             const types = $.export()
             const bit = types.orOne("0")
             attest(bit.infer).typed as 0 | 1
+            attest(bit.condition).equals(type("0|1").condition)
         })
 
         test("referenced from other scope", () => {
