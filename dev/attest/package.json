@@ -16,10 +16,7 @@
             "require": "./dist/cjs/main.js"
         }
     },
-    "files": [
-        "dist",
-        "!*.tsbuildinfo"
-    ],
+    "files": ["dist", "!*.tsbuildinfo"],
     "dependencies": {
         "ts-morph": "18.0.0",
         "@arktype/utils": "workspace:^0.0.0"
@@ -31,9 +28,6 @@
     },
     "scripts": {
         "build": "ts-node ../scripts/build.ts",
-        "clean": "pnpm run \"/^clean:.*/\"",
-        "clean:deps": "rm -rf mode_modules",
-        "clean:build": "rm -rf dist",
         "test": "pnpm mocha"
     }
 }
