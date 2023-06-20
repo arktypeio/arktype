@@ -9,7 +9,6 @@ import type { ValueNode } from "./primitive/basis/value.js"
 import type { RangeNode } from "./primitive/range.js"
 
 type DisjointKinds = {
-    // TODO:  should this be a domain node?
     domain?: {
         l: BasisNode
         r: BasisNode

@@ -1,4 +1,4 @@
-import { CompilationState, In } from "../compile/compile.js"
+import { CompilationState, InputParameterName } from "../compile/state.js"
 import { arkKind } from "../compile/registry.js"
 import type { inferred } from "../parse/definition.js"
 import { CompiledFunction } from "../utils/functions.js"
@@ -103,7 +103,7 @@ export const defineNodeKind = <
             rule,
             compile: (state: CompilationState) => def.compile(rule, state),
             allows: new CompiledFunction(
-                In,
+                InputParameterName,
                 `${condition}
             return true`
             ),

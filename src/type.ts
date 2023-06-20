@@ -1,10 +1,10 @@
-import { CompilationState, In } from "./compile/compile.js"
 import { arkKind, registry } from "./compile/registry.js"
+import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
-import { builtins, node } from "./nodes/composite/type.js"
+import { node } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type {
     inferDefinition,
@@ -27,7 +27,8 @@ import type {
     Out,
     TupleInfixOperator
 } from "./parse/tuple.js"
-import type { bindThis, Scope } from "./scope.js"
+import type { Scope } from "./scope.js"
+import { bindThis } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
 import type { conform, Literalable } from "./utils/generics.js"
@@ -172,10 +173,10 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseTypeRoot(definition, scope) as TypeNode<t>
         super(
-            In,
+            InputParameterName,
             `const state = new ${registry().reference("state")}();
         ${root.compile(new CompilationState("traverse"))}
-        return state.finalize(${In});`
+        return state.finalize(${InputParameterName});`
         )
         this.root = root
         this.condition = root.condition
@@ -270,15 +271,8 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     }
 }
 
-const boundThis = Object.freeze({
-    this: builtins.this()
-} as const)
-
-const parseTypeRoot = (
-    def: unknown,
-    scope: Scope,
-    args: BoundArgs = boundThis
-) => scope.parseRoot(def, args)
+const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
+    scope.parseRoot(def, args ?? bindThis())
 
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 

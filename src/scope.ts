@@ -1,6 +1,7 @@
 import type { ProblemCode } from "./compile/problems.js"
-import { hasArkKind } from "./compile/registry.js"
+import { arkKind, hasArkKind } from "./compile/registry.js"
 import type { TypeNode } from "./main.js"
+import { builtins } from "./nodes/composite/type.js"
 import type {
     CastTo,
     inferDefinition,
@@ -73,6 +74,10 @@ type validateAliases<aliases, $> = {
 }
 
 export type bindThis<def> = { this: Def<def> }
+
+export const bindThis = () => ({
+    this: builtins.this()
+})
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
@@ -263,10 +268,11 @@ export class Scope<r extends Resolutions = any> {
 
     parse(def: unknown, ctx: ParseContext): TypeNode {
         if (typeof def === "string") {
-            if (ctx.args === null) {
+            if (ctx.args !== null) {
+                // we can only rely on the cache if there are no contextual
+                // resolutions like "this" or generic args
                 return parseString(def, ctx)
             }
-            // TODO: cache seems unsafe with args
             if (!this.parseCache[def]) {
                 this.parseCache[def] = parseString(def, ctx)
             }

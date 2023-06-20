@@ -1,5 +1,9 @@
+import type { CompilationState } from "../../compile/state.js"
+import { InputParameterName } from "../../compile/state.js"
 import { throwInternalError } from "../../utils/errors.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
+import type { NamedPropRule } from "./named.js"
+import { compileNamedProp, compileNamedProps } from "./named.js"
 import type { PredicateInput } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins, node } from "./type.js"
@@ -99,56 +103,47 @@ export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>
         ? builtins.nonVariadicArrayIndex()
         : node(arrayIndexInput(firstVariadicIndex))
 
-// export const compileArray = (
-//     indexMatcher: ArrayIndexMatcherSource,
-//     elementNode: TypeNode,
-//     namedProps: NamedPropRule[],
-//     s: CompilationState
-// ) => {
-//     const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
-//     const namedCheck = joinIntersectionConditions(
-//         namedProps.map((named) => compileNamedProp())
-//     )
-//     const elementCondition = elementNode.condition
-//         .replaceAll(IndexIn, `${IndexIn}Inner`)
-//         .replaceAll(In, `${In}[${IndexIn}]`)
-//     // TODO: don't recheck named
-//     return `(() => {
-//     let valid = ${namedCheck};
-//     for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
-//         valid = ${elementCondition} && valid;
-//     }
-//     return valid
-// })()`
-// }
+export const compileArray = (
+    indexMatcher: ArrayIndexMatcherSource,
+    elementNode: TypeNode,
+    namedProps: NamedPropRule[],
+    s: CompilationState
+) => {
+    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
+    const namedCheck = namedProps
+        .map((named) => compileNamedProp(named, s))
+        .join("\n")
+    const i = s.getNextIndexKeyAndPush("i")
+    const elementCondition = elementNode.compile(s)
+    s.popKey()
+    return `${namedCheck};
+for(let ${i} = ${firstVariadicIndex}; ${i} < ${s.data}.length; ${i}++) {
+    ${elementCondition}
+}`
+}
 
-// export const compileIndexed = (
-//     namedProps: NamedPropRule[],
-//     indexedProps: IndexedPropRule[]
-// ) => {
-//     const namedCheck = namedProps.map(compileNamedProp)
-//     const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
-//     // TODO: don't recheck named
-//     return `(() => {
-//     let valid = ${namedCheck};
-//     for(const ${KeyIn} in ${In}) {
-//         ${indexedChecks}
-//     }
-//     return valid
-// })()`
-// }
-
-// const compileIndexedProp = (prop: IndexedPropRule) => {
-//     const valueCheck = `valid = ${prop.value.condition
-//         .replaceAll(KeyIn, `${KeyIn}Inner`)
-//         .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
-//     if (prop.key === builtins.string()) {
-//         // if the index signature is just for "string", we don't need to check it explicitly
-//         return valueCheck
-//     }
-//     return `if(${prop.key.condition
-//         .replaceAll(KeyIn, `${KeyIn}Inner`)
-//         .replaceAll(In, KeyIn)}) {
-//         ${valueCheck}
-//     }`
-// }
+export const compileIndexed = (
+    namedProps: NamedPropRule[],
+    indexedProps: IndexedPropRule[],
+    s: CompilationState
+) => {
+    const k = s.getNextIndexKeyAndPush("k")
+    const indexedChecks = indexedProps
+        .map((prop) =>
+            prop.key === builtins.string()
+                ? // if the index signature is just for "string", we don't need to check it explicitly
+                  prop.value.compile(s)
+                : // Ensure condition is checked on the key variable as opposed to the input
+                  `if(${prop.key.condition.replaceAll(InputParameterName, k)}){
+    ${prop.value.compile(s)}
+}`
+        )
+        .join("\n")
+    s.popKey()
+    // TODO: don't recheck named
+    return `${compileNamedProps(namedProps, s)}
+    for(const ${k} in ${s.data}) {
+        ${indexedChecks}
+    }
+`
+}

@@ -1,6 +1,6 @@
-import type { CompilationState } from "../../compile/compile.js"
-import { compilePathAccess } from "../../compile/compile.js"
 import { hasArkKind } from "../../compile/registry.js"
+import type { CompilationState } from "../../compile/state.js"
+import { compilePropAccess, InputParameterName } from "../../compile/state.js"
 import type { inferred } from "../../parse/definition.js"
 import { cached } from "../../utils/functions.js"
 import type { conform, exact, Literalable } from "../../utils/generics.js"
@@ -163,9 +163,11 @@ const compileDiscriminant = (
     if (isRootLiteral) {
         return compileDiscriminatedLiteral(discriminant.cases, s)
     }
-    const compiledPath = compilePathAccess(discriminant.path, {
-        optional: true
-    })
+    let compiledPath = InputParameterName
+    for (const segment of discriminant.path) {
+        // we need to access the path as optional so we don't throw if it isn't present
+        compiledPath += compilePropAccess(segment, true)
+    }
     const condition =
         discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
     let compiledCases = ""

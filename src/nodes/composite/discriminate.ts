@@ -1,4 +1,3 @@
-import { compileSerializedValue } from "../../compile/compile.js"
 import type { Domain } from "../../utils/domains.js"
 import { throwInternalError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
@@ -83,14 +82,9 @@ export const discriminate = (
                 if (kind === "domain") {
                     lSerialized = (disjoint.l as BasisNode).domain
                     rSerialized = (disjoint.r as BasisNode).domain
-                    // TODO: fix
                 } else if (kind === "value") {
-                    lSerialized = compileSerializedValue(
-                        (disjoint.l as ValueNode).rule
-                    )
-                    rSerialized = compileSerializedValue(
-                        (disjoint.r as ValueNode).rule
-                    )
+                    lSerialized = (disjoint.l as ValueNode).serialized
+                    rSerialized = (disjoint.r as ValueNode).serialized
                 } else {
                     return throwInternalError(
                         `Unexpected attempt to discriminate disjoint kind '${kind}'`

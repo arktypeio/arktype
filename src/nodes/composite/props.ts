@@ -7,9 +7,13 @@ import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
-import { extractArrayIndexRegex } from "./indexed.js"
+import {
+    compileArray,
+    compileIndexed,
+    extractArrayIndexRegex
+} from "./indexed.js"
 import type { NamedKeyRule, NamedPropInput, NamedPropRule } from "./named.js"
-import { compileNamedProp, intersectNamedProp } from "./named.js"
+import { compileNamedProps, intersectNamedProp } from "./named.js"
 import type { TypeNode } from "./type.js"
 import { builtins, typeNode } from "./type.js"
 
@@ -55,18 +59,22 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
         },
         compile: (rule, s) => {
             const [named, indexed] = spliterate(rule, isNamed)
-            return named.map((named) => compileNamedProp(named, s)).join("\n")
-            // if (indexed.length === 0) {
-            //     return named.map((named) => compileNamedProp(named, s))
-            // }
-            // if (indexed.length === 1) {
-            //     // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
-            //     const indexMatcher = extractArrayIndexRegex(indexed[0].key)
-            //     if (indexMatcher) {
-            //         return [compileArray(indexMatcher, indexed[0].value, named)]
-            //     }
-            // }
-            // return [compileIndexed(named, indexed)]
+            if (indexed.length === 0) {
+                return compileNamedProps(named, s)
+            }
+            if (indexed.length === 1) {
+                // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
+                const indexMatcher = extractArrayIndexRegex(indexed[0].key)
+                if (indexMatcher) {
+                    return compileArray(
+                        indexMatcher,
+                        indexed[0].value,
+                        named,
+                        s
+                    )
+                }
+            }
+            return compileIndexed(named, indexed, s)
         },
         intersect: (l, r) => intersectProps(l, r)
     },

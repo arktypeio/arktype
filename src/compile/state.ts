@@ -1,85 +1,70 @@
 import type { Discriminant } from "../nodes/composite/discriminate.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
-import type { TypeConfig } from "../type.js"
 import { hasDomain } from "../utils/domains.js"
-import { Path } from "../utils/lists.js"
+import { isArray } from "../utils/objectKinds.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
-export type TraversalConfig = {
-    [k in keyof TypeConfig]-?: TypeConfig[k][]
-}
-
-const initializeCompilationConfig = (): TraversalConfig => ({
-    mustBe: [],
-    keys: []
-})
-
-export const In = "$arkRoot"
-
-const IndexIn = "$arkIndex"
-
-const KeyIn = "$arkKey"
-
-export const prependIndex = (path: string) =>
-    `${In}[${IndexIn}]${path.slice(In.length)}`
-
-export type CompilePathAccessOptions = {
-    root?: string
-    optional?: boolean
-}
-
-export const compilePathAccess = (
-    segments: string[],
-    opts?: CompilePathAccessOptions
-) => {
-    let result = opts?.root ?? In
-    for (const segment of segments) {
-        result += compilePropAccess(segment, opts?.optional)
-    }
-    return result
-}
-
-export const compilePropAccess = (key: string, optional = false) => {
-    return /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(key)
-        ? `${optional ? "?" : ""}.${key}`
-        : `${optional ? "?." : ""}[${JSON.stringify(key)}]`
-}
-
-export const compileSerializedValue = (value: unknown) => {
-    return hasDomain(value, "object") || typeof value === "symbol"
-        ? registry().register("value", typeof value, value)
-        : serializePrimitive(value as SerializablePrimitive)
-}
+// TODO: change to just root?
+export const InputParameterName = "$arkRoot"
 
 export class CompilationState {
-    path = new Path()
+    private path: CompiledPathSegment[] = []
     bases: BasisNode[] = []
     discriminants: Discriminant[] = []
-    unionDepth = 0
-    traversalConfig = initializeCompilationConfig()
 
     constructor(private kind: "allows" | "traverse") {}
 
     get data() {
-        return compilePathAccess(this.path)
+        let result = InputParameterName
+        for (const k of this.path) {
+            if (typeof k === "string") {
+                result += compilePropAccess(k)
+            } else {
+                result += `[${k[0]}]`
+            }
+        }
+        return result
+    }
+
+    private getNextIndex(prefix: IndexVariablePrefix) {
+        let name: IndexVariableName = prefix
+        let suffix = 2
+        for (const k of this.path) {
+            if (isArray(k) && k[0].startsWith(prefix)) {
+                name = `${prefix}${suffix++}`
+            }
+        }
+        return name
     }
 
     get lastBasis() {
         return this.bases.at(-1)
     }
 
+    pushNamedKey(name: string) {
+        this.path.push(name)
+    }
+
+    getNextIndexKeyAndPush(prefix: IndexVariablePrefix) {
+        const k = this.getNextIndex(prefix)
+        this.path.push(k)
+        return k
+    }
+
+    popKey() {
+        return this.path.pop()
+    }
+
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `${
-            this.unionDepth ? "return " : ""
-        }state.addProblem("${code}", ${
+        return `state.addProblem("${code}", ${
+            // TODO: Fix
             typeof rule === "function"
                 ? rule.name
-                : // TODO: Fix
-                  compileSerializedValue(rule)
-        }, ${this.data}, ${this.path.json})` as const
+                : compileSerializedValue(rule)
+        }, ${this.data}, ${JSON.stringify(this.path)})` as const
     }
 
     check<code extends ProblemCode>(
@@ -120,3 +105,20 @@ export class CompilationState {
 }`
     }
 }
+
+type CompiledPathSegment = string | [IndexVariableName]
+
+type IndexVariablePrefix = "i" | "k"
+
+type IndexVariableName = `${IndexVariablePrefix}${"" | number}`
+
+export const compileSerializedValue = (value: unknown) => {
+    return hasDomain(value, "object") || typeof value === "symbol"
+        ? registry().register("value", typeof value, value)
+        : serializePrimitive(value as SerializablePrimitive)
+}
+
+export const compilePropAccess = (name: string, optional = false) =>
+    /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
+        ? `${optional ? "?" : ""}.${name}`
+        : `${optional ? "?." : ""}[${JSON.stringify(name)}]`
