@@ -1,5 +1,5 @@
 import { printUnifiedDiff } from "print-diff"
-import { walkPaths } from "../attest/main.js";
+import { walkPaths } from "../attest/main.js"
 import { readFileAsync, writeFileAsync } from "../attest/src/main.js"
 
 export type ReplacementDictionary = Record<
@@ -39,24 +39,21 @@ const replaceAll: (matchers: Matchers) => (input: string) => string =
  */
 const overwrite =
     (matchers: Matchers) =>
-        (files: readonly string[] = []): void =>
-            void files.map((file) =>
-                readFileAsync(file, (data) =>
-                    writeFileAsync(file, replaceAll(matchers)(data))
-                )
+    (files: readonly string[] = []): void =>
+        void files.map((file) =>
+            readFileAsync(file, (data) =>
+                writeFileAsync(file, replaceAll(matchers)(data))
             )
+        )
 
 export const rewritePaths =
-    (
-        matchDictionary: ReplacementDictionary,
-        ignoreFilesMatching: RegExp
-    ) =>
-        (dirPath: string): void => {
-            const files = walkPaths(dirPath, {
-                excludeDirs: true,
-                ignoreFilesMatching,
-            })
+    (matchDictionary: ReplacementDictionary, ignoreFilesMatching: RegExp) =>
+    (dirPath: string): void => {
+        const files = walkPaths(dirPath, {
+            excludeDirs: true,
+            ignoreFilesMatching
+        })
 
-            const matchers: Matchers = Object.values(matchDictionary)
-            overwrite(matchers)(files)
-        }
+        const matchers: Matchers = Object.values(matchDictionary)
+        overwrite(matchers)(files)
+    }

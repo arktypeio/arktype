@@ -1,4 +1,4 @@
-import type { NoParamCallback } from "node:fs";
+import type { NoParamCallback } from "node:fs"
 import {
     cpSync,
     existsSync,
@@ -32,7 +32,6 @@ export const ensureDir = (path: string) => {
     return path
 }
 
-
 export const readFile = (path: string) => readFileSync(path).toString()
 
 export const readFileAsync = (
@@ -50,12 +49,14 @@ export const readFileAsync = (
     })
 }
 
-
 export const writeFile = (path: string, contents: string) =>
     writeFileSync(path, contents)
 
-export const writeFileAsync = (filePath: string, data: string, onError: NoParamCallback = () => { }): void =>
-    writeFile_(filePath, data, { encoding: "utf-8" }, onError)
+export const writeFileAsync = (
+    filePath: string,
+    data: string,
+    onError: NoParamCallback = () => {}
+): void => writeFile_(filePath, data, { encoding: "utf-8" }, onError)
 
 export const readJson = (path: string) =>
     JSON.parse(readFileSync(path, { encoding: "utf8" }))
