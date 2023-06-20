@@ -5,13 +5,10 @@ import type {
 } from "../../../../nodes/primitive/range.js"
 import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
-import {
-    tryParseWellFormedDate,
-    tryParseWellFormedNumber
-} from "../../../../utils/numericLiterals.js"
+import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
 import type { keySet } from "../../../../utils/records.js"
 import { isKeyOf } from "../../../../utils/records.js"
-import type { writeUnboundableMessage } from "../../../ast/bound.js"
+import type { unboundableMessage } from "../../../ast/bound.js"
 import type {
     DynamicState,
     DynamicStateWithRoot
@@ -19,6 +16,7 @@ import type {
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { DateLiteral } from "../operand/date.js"
+import { getValidDateFromInputOrThrow } from "../operand/date.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseBound = (
@@ -30,6 +28,11 @@ export const parseBound = (
     if (typeof value === "number") {
         s.ejectRoot()
         return s.reduceLeftBound(value, comparator)
+    }
+    //todoshawn maybe change
+    if (value instanceof Date) {
+        s.ejectRoot()
+        return s.reduceLeftBound(value.valueOf(), comparator)
     }
     return parseRightBound(s, comparator)
 }
@@ -43,9 +46,8 @@ export type parseBound<
           infer comparator extends Comparator,
           infer nextUnscanned
       >
-        ? s["root"] extends NumberLiteral
-            ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
-            : s["root"] extends DateLiteral
+        ? //todoshawn if stuff is breaking look here
+          s["root"] extends NumberLiteral
             ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
             : parseRightBound<s, comparator, nextUnscanned>
         : shiftResultOrError
@@ -97,7 +99,7 @@ export const parseRightBound = (
     const limitToken = s.scanner.shiftUntilNextTerminator()
     const looksLikeDate = /d(['"]).*(\1)/.test(limitToken)
     const limit = looksLikeDate
-        ? tryParseWellFormedDate(limitToken, `idk ${limitToken} looks bad`)
+        ? getValidDateFromInputOrThrow(limitToken).valueOf()
         : tryParseWellFormedNumber(
               limitToken,
               writeInvalidLimitMessage(
@@ -155,7 +157,7 @@ export type parseRightBound<
                   >
                 : state.error<writeUnpairableComparatorMessage<comparator>>
             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-        : state.error<"231">
+        : state.error<unboundableMessage<scanned>>
     : never
 
 export const writeInvalidLimitMessage = <

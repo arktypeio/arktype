@@ -1,6 +1,7 @@
 import type { Comparator, SizedData } from "../../nodes/primitive/range.js"
 import type { error } from "../../utils/errors.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
+import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 
@@ -12,13 +13,15 @@ import type { astToString } from "./utils.js"
  * "N<S<N", with comparators restricted to < or <=
  **/
 
-export type validateBound<l, r, $> = l extends NumberLiteral
-    ? validateAst<r, $>
+export type validateBound<l, r, $> = l extends NumberLiteral | DateLiteral
+    ? isValidBound<l, inferAst<r, $>> extends true
+        ? validateAst<r, $>
+        : error<unboundableMessage<astToString<r>, astToString<l>>>
     : l extends [infer leftAst, Comparator, unknown]
     ? error<writeDoubleRightBoundMessage<astToString<leftAst>>>
-    : isBoundable<inferAst<l, $>> extends true
+    : isValidBound<inferAst<l, $>, r> extends true
     ? validateAst<l, $>
-    : error<writeUnboundableMessage<astToString<l>>>
+    : error<unboundableMessage<astToString<l>, astToString<r>>>
 
 export const writeDoubleRightBoundMessage = <root extends string>(
     root: root
@@ -28,12 +31,36 @@ export const writeDoubleRightBoundMessage = <root extends string>(
 type writeDoubleRightBoundMessage<root extends string> =
     `Expression ${root} must have at most one right bound`
 
-type isBoundable<data> = [data] extends [SizedData] ? true : false
+type isValidBound<rootType, bound> = bound extends NumberLiteral
+    ? [rootType] extends [SizedData]
+        ? true
+        : false
+    : bound extends DateLiteral
+    ? rootType extends Date
+        ? true
+        : false
+    : false
 
-export const writeUnboundableMessage = <root extends string>(
-    root: root
-): writeUnboundableMessage<root> =>
-    `Bounded expression ${root} must be a number, string, Array, or Date`
+export type unboundableMessage<
+    root extends string,
+    bound extends string
+> = root extends "Date"
+    ? writeUnboundableMessage<root, bound, `Date`>
+    : writeUnboundableMessage<root, bound, "number, string, Array">
 
-export type writeUnboundableMessage<root extends string> =
-    `Bounded expression ${root} must be a number, string, Array, or Date`
+export const writeUnboundableMessage = <
+    root extends string,
+    bound extends string,
+    validBounds extends string
+>(
+    root: root,
+    validBounds: validBounds,
+    bound: bound
+): writeUnboundableMessage<root, bound, validBounds> =>
+    `Bounded expression ${root} must be bounded by a ${validBounds} (was ${bound})`
+
+export type writeUnboundableMessage<
+    root extends string,
+    bound extends string,
+    validBounds extends string
+> = `Bounded expression ${root} must be bounded by a ${validBounds} (was ${bound})`

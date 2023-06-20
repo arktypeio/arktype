@@ -47,9 +47,13 @@ export const compilePropAccess = (key: string, optional = false) => {
 }
 
 export const compileSerializedValue = (value: unknown) => {
-    return hasDomain(value, "object") || typeof value === "symbol"
-        ? registry().register("value", typeof value, value)
-        : serializePrimitive(value as SerializablePrimitive)
+    if (hasDomain(value, "object") || typeof value === "symbol") {
+        if (value instanceof Date) {
+            return serializePrimitive(value.toDateString())
+        }
+        return registry().register("value", typeof value, value)
+    }
+    return serializePrimitive(value as SerializablePrimitive)
 }
 
 export class CompilationState {

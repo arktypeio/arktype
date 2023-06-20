@@ -43,7 +43,7 @@ export const invertedComparators = {
 
 export type InvertedComparators = typeof invertedComparators
 
-export type SizedData = string | number | readonly unknown[] | Date
+export type SizedData = string | number | readonly unknown[]
 
 export type Bound<comparator extends Comparator = Comparator> = {
     limit: number
