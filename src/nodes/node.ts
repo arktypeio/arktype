@@ -1,5 +1,5 @@
-import { CompilationState, InputParameterName } from "../compile/state.js"
 import { arkKind } from "../compile/registry.js"
+import { CompilationState, InputParameterName } from "../compile/state.js"
 import type { inferred } from "../parse/definition.js"
 import { CompiledFunction } from "../utils/functions.js"
 import type { evaluate } from "../utils/generics.js"

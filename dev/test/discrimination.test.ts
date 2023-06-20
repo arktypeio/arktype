@@ -3,22 +3,29 @@ import { scope, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 suite("discrimination", () => {
-    test("shallow", () => {
+    test("2 literal branches", () => {
+        // should not use a switch with <=2 branches to avoid visual clutter
+        const t = type("'a'|'b'")
+        attest(t.condition).snap(`if( $arkRoot !== "a" && $arkRoot !== "b") {
+    return false
+}`)
+        attest(t.allows("a")).equals(true)
+        attest(t.allows("b")).equals(true)
+        attest(t.allows("c")).equals(false)
+    })
+    test(">2 literal branches", () => {
         const t = type("'a'|'b'|'c'")
         attest(t.condition).snap(`switch($arkRoot) {
-    case "a": {
-    
-    break
-}case "b": {
-    
-    break
-}case "c": {
-    
-    break
-}default: {
-    return false
-}
+        case "a":
+    case "b":
+    case "c":        break
+    default:
+        return false
 }`)
+        attest(t.allows("a")).equals(true)
+        attest(t.allows("b")).equals(true)
+        attest(t.allows("c")).equals(true)
+        attest(t.allows("d")).equals(false)
     })
     const getPlaces = () =>
         scope({
@@ -42,19 +49,19 @@ suite("discrimination", () => {
 if (!($arkRoot.isSky === true)) {
             return false
 }
-    break
+     break
 }case "wet": {
     
 
 if (!($arkRoot.isOcean === true)) {
             return false
 }
-    break
+     break
 }default: {
     return false
 }
 }
-    break
+     break
 }case "brown": {
     if (!($arkRoot.climate === "dry")) {
             return false
@@ -63,7 +70,7 @@ if (!($arkRoot.isOcean === true)) {
 if (!($arkRoot.isDesert === true)) {
             return false
 }
-    break
+     break
 }case "green": {
     if (!($arkRoot.climate === "wet")) {
             return false
@@ -72,7 +79,7 @@ if (!($arkRoot.isDesert === true)) {
 if (!($arkRoot.isRainForest === true)) {
             return false
 }
-    break
+     break
 }default: {
     return false
 }

@@ -50,7 +50,7 @@ export class CompilationState {
 
     getNextIndexKeyAndPush(prefix: IndexVariablePrefix) {
         const k = this.getNextIndex(prefix)
-        this.path.push(k)
+        this.path.push([k])
         return k
     }
 

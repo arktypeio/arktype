@@ -186,7 +186,7 @@ export type Resolutions = {
 export type ParseContext = {
     path: Path
     scope: Scope
-    args: null | Record<string, TypeNode>
+    args: Record<string, TypeNode> | undefined
 }
 
 export class Scope<r extends Resolutions = any> {
@@ -258,7 +258,7 @@ export class Scope<r extends Resolutions = any> {
         return this.export()[name] as never
     }
 
-    parseRoot(def: unknown, args: Record<string, TypeNode>) {
+    parseRoot(def: unknown, args?: Record<string, TypeNode>) {
         return this.parse(def, {
             path: new Path(),
             scope: this,
@@ -305,7 +305,7 @@ export class Scope<r extends Resolutions = any> {
         }
         const resolution = new Type(this.parseRoot(aliasDef, {}), this)
         this.resolutions[name] = resolution
-        return resolution as never
+        return resolution
     }
 
     maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
@@ -337,7 +337,7 @@ export class Scope<r extends Resolutions = any> {
             const ctx: ParseContext = {
                 path: new Path(),
                 scope: this,
-                args: null
+                args: undefined
             }
             for (const name of this.exportedNames) {
                 this.maybeResolve(name, ctx)
@@ -346,10 +346,7 @@ export class Scope<r extends Resolutions = any> {
         }
         const namesToExport = names.length ? names : this.exportedNames
         return Object.fromEntries(
-            namesToExport.map((name) => [
-                name,
-                this.resolutions[name as string]
-            ])
+            namesToExport.map((name) => [name, this.resolutions[name]])
         ) as never
     }
 }

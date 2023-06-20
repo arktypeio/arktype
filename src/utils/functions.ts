@@ -18,18 +18,9 @@ export const isThunk = (def: unknown): def is () => unknown =>
 export const CompiledFunction = class extends Function {
     constructor(...args: [string, ...string[]]) {
         const params = args.slice(0, -1)
-        const paramString = params.join(", ")
         const body = args.at(-1)!
         try {
-            super(
-                ...params,
-                // add a name, allowing recursion:
-                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/Function#description
-                `const self = (${paramString}) => {
-                ${body}
-            }
-            return self(${paramString})`
-            )
+            super(...params, body)
         } catch (e) {
             return throwInternalError(
                 `Encountered an unexpected error while compiling your definition:
