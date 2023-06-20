@@ -20,6 +20,13 @@ suite("generics", () => {
             attest(schrodingersBox.infer).typed as {
                 box: { cat: { isAlive: boolean } }
             }
+            attest(schrodingersBox.condition).equals(
+                type({
+                    box: {
+                        cat: { isAlive: "boolean" }
+                    }
+                }).condition
+            )
         })
 
         test("binary", () => {
@@ -41,6 +48,21 @@ suite("generics", () => {
                   }
             // ideally this would be reduced to { cat: { isAlive: boolean } }:
             // https://github.com/arktypeio/arktype/issues/751
+            attest(schrodingersBox.condition).equals(
+                type(
+                    {
+                        cat: {
+                            isAlive: "true"
+                        }
+                    },
+                    "|",
+                    {
+                        cat: {
+                            isAlive: "false"
+                        }
+                    }
+                ).condition
+            )
         })
 
         test("referenced in scope inline", () => {
@@ -77,12 +99,10 @@ suite("generics", () => {
             const t = boxOf({
                 a: "string|this"
             })
-            type Expected =
-                | string
-                | {
-                      a: Expected
-                  }
-            attest(t.infer.box.a).typed as Expected
+            type Expected = {
+                a: Expected | string
+            }
+            attest(t.infer).typed as { box: Expected }
         })
         test("too few args", () => {
             const pair = type("<t, u>", ["t", "u"])

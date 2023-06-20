@@ -21,7 +21,9 @@ export const parseString = (def: string, ctx: ParseContext): TypeNode =>
  * This can be much more efficient for simple definitions.
  */
 export type parseString<def extends string, $, args> = def extends keyof $
-    ? def
+    ? // def could also be an arg here, in which case the arg resolution will
+      // end up having precedence during inference as normal.
+      def
     : def extends `${infer child}[]`
     ? child extends keyof $
         ? [child, "[]"]

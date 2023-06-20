@@ -192,10 +192,10 @@ const findReplace: (matchers: Matchers) => (input: string) => string =
  */
 const findReplaceMany =
     (matchers: Matchers) =>
-        (files: readonly string[] = []): void =>
-            void files.forEach((file) => {
-                writeFile(file, findReplace(matchers)(readFile(file)))
-            })
+    (files: readonly string[] = []): void =>
+        void files.forEach((file) => {
+            writeFile(file, findReplace(matchers)(readFile(file)))
+        })
 
 /**
  * Given a directory and a set of {@link Matchers}, recursively walks
@@ -204,12 +204,12 @@ const findReplaceMany =
  */
 export const findReplaceAll =
     (matchDictionary: ReplacementDictionary, ignoreFilesMatching: RegExp) =>
-        (dirPath: string): void => {
-            const files = walkPaths(dirPath, {
-                excludeDirs: true,
-                ignoreFilesMatching
-            })
+    (dirPath: string): void => {
+        const files = walkPaths(dirPath, {
+            excludeDirs: true,
+            ignoreFilesMatching
+        })
 
-            const matchers: Matchers = Object.values(matchDictionary)
-            findReplaceMany(matchers)(files)
-        }
+        const matchers: Matchers = Object.values(matchDictionary)
+        findReplaceMany(matchers)(files)
+    }

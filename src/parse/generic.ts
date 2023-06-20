@@ -114,10 +114,11 @@ const parseGenericArgsRecurse = (
     argNodes: TypeNode[]
 ): ParsedArgs<TypeNode[]> => {
     const s = parseUntilFinalizer(new DynamicState(unscanned, ctx))
-    argDefs.push(s.scanner.scanned)
+    // remove the finalizing token from the argDef
+    argDefs.push(s.scanner.scanned.slice(0, -1))
     argNodes.push(s.root)
     const nextUnscanned = s.scanner.unscanned
-    if (nextUnscanned[0] === ">") {
+    if (s.finalizer === ">") {
         if (argNodes.length === params.length) {
             return {
                 result: argNodes,
@@ -128,7 +129,7 @@ const parseGenericArgsRecurse = (
                 writeInvalidGenericArgsMessage(name, params, argDefs)
             )
         }
-    } else if (nextUnscanned[0] === ",") {
+    } else if (s.finalizer === ",") {
         return parseGenericArgsRecurse(
             name,
             params,

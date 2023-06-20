@@ -5,7 +5,6 @@ import type { Comparator } from "../../../nodes/primitive/range.js"
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
-    finalized = false
 
     constructor(def: string) {
         this.chars = [...def]
@@ -19,6 +18,10 @@ export class Scanner<Lookahead extends string = string> {
 
     get lookahead() {
         return (this.chars[this.i] ?? "") as Lookahead
+    }
+
+    get lastIndex() {
+        return this.chars.length - 1
     }
 
     shiftUntil(condition: Scanner.UntilCondition): string {
@@ -46,7 +49,7 @@ export class Scanner<Lookahead extends string = string> {
     }
 
     jumpToIndex(i: number) {
-        this.i = i < 0 ? this.chars.length - i : i
+        this.i = i < 0 ? this.lastIndex + i : i
     }
 
     get unscanned() {

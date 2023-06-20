@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { error } from "../dev/utils/src/errors.js"
 import { CompiledFunction } from "../dev/utils/src/functions.js"
 import type { conform, Literalable } from "../dev/utils/src/generics.js"
@@ -20,10 +21,8 @@ import type {
     validateDefinition
 } from "./parse/definition.js"
 import { inferred } from "./parse/definition.js"
-import type {
-    GenericParamsParseError,
-    parseGenericParams
-} from "./parse/generic.js"
+import type { GenericParamsParseError } from "./parse/generic.js"
+import { parseGenericParams } from "./parse/generic.js"
 import type {
     IndexOneOperator,
     IndexZeroOperator,
@@ -132,9 +131,35 @@ export type DeclarationParser<$> = <preinferred>() => {
     ) => Type<inferDefinition<def, $, bindThis<def>>, $>
 }
 
+type TypeArgs =
+    | [def: unknown]
+    | [expression0: unknown, expression1: unknown, expression2?: unknown]
+    | [params: `<${string}>`, def: unknown]
+
 export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
     const parser: TypeOverloads<$> = (...args: unknown[]) => {
-        return new Type(args[0], scope) as never
+        if (args.length === 1) {
+            // treat as a simple definition
+            return new Type(args[0], scope) as never
+        }
+        if (
+            args.length === 2 &&
+            typeof args[0] === "string" &&
+            args[0][0] === "<" &&
+            args[0].at(-1) === ">"
+        ) {
+            // if there are exactly two args, the first of which looks like <${string}>,
+            // treat as a generic
+            return generic(
+                parseGenericParams(args[0].slice(1, -1)),
+                args[1],
+                scope
+            ) as never
+        }
+        // otherwise, treat as a tuple expression. technically, this also allows
+        // non-expression tuple definitions to be parsed, but it's not a support
+        // part of the API as specified by the associated types
+        return new Type(args, scope) as never
     }
     const props: TypeProps<$> = {
         literal: (...possibleValues) =>

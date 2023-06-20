@@ -284,7 +284,6 @@ export class Scope<r extends Resolutions = any> {
             : throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
     }
 
-    /** @internal */
     maybeResolve(
         name: string,
         ctx: ParseContext
@@ -405,7 +404,7 @@ export const parseScopeKey = (k: string): ParsedScopeKey => {
     }
     return {
         isLocal,
-        name: name.slice(firstParamIndex),
+        name: name.slice(0, firstParamIndex),
         params: parseGenericParams(k.slice(firstParamIndex + 1, -1))
     }
 }

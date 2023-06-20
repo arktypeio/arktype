@@ -1,13 +1,13 @@
-import { throwParseError } from "../../../../../dev/utils/src/errors.js"
 import type { error } from "../../../../../dev/utils/src/errors.js"
+import { throwParseError } from "../../../../../dev/utils/src/errors.js"
 import type { join } from "../../../../../dev/utils/src/lists.js"
-import {
-    tryParseWellFormedBigint,
-    tryParseWellFormedNumber
-} from "../../../../../dev/utils/src/numericLiterals.js"
 import type {
     BigintLiteral,
     NumberLiteral
+} from "../../../../../dev/utils/src/numericLiterals.js"
+import {
+    tryParseWellFormedBigint,
+    tryParseWellFormedNumber
 } from "../../../../../dev/utils/src/numericLiterals.js"
 import { stringify } from "../../../../../dev/utils/src/serialize.js"
 import { hasArkKind } from "../../../../compile/registry.js"
@@ -79,8 +79,11 @@ export const parseGenericInstantiation = (
         s.scanner.unscanned,
         s.ctx
     )
+    const remainingChars = parsedArgs.unscanned.length
     // set the scanner position to where the args scanner left off
-    s.scanner.jumpToIndex(-parsedArgs.unscanned.length)
+    s.scanner.jumpToIndex(
+        remainingChars === 0 ? s.scanner.lastIndex : -remainingChars
+    )
     return g(...parsedArgs.result).root
 }
 
@@ -123,6 +126,9 @@ const maybeParseKeyword = (
     s: DynamicState,
     token: string
 ): TypeNode | undefined => {
+    if (s.ctx.args?.[token]) {
+        return s.ctx.args[token]
+    }
     const resolution = s.ctx.scope.maybeResolve(token, s.ctx)
     if (resolution instanceof Type) {
         return resolution.root
