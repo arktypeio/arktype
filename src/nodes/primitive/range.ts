@@ -1,5 +1,5 @@
 import { In } from "../../compile/compile.js"
-import { isKeyOf } from "../../utils/records.js"
+import { isKeyOf } from "../../../dev/utils/src/records.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"

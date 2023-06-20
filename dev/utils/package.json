@@ -1,5 +1,5 @@
 {
-    "name": "@arktype/attest",
+    "name": "@arktype/utils",
     "version": "0.0.0",
     "private": true,
     "author": {
@@ -20,10 +20,6 @@
         "dist",
         "!*.tsbuildinfo"
     ],
-    "dependencies": {
-        "ts-morph": "18.0.0",
-        "@arktype/utils": "workspace:*"
-    },
     "devDependencies": {
         "ts-node": "10.9.1",
         "mocha": "10.2.0",

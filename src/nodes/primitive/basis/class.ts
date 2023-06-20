@@ -1,12 +1,12 @@
 import { In } from "../../../compile/compile.js"
 import { registry } from "../../../compile/registry.js"
-import { cached } from "../../../utils/functions.js"
-import type { AbstractableConstructor } from "../../../utils/objectKinds.js"
+import { cached } from "../../../../dev/utils/src/functions.js"
+import type { AbstractableConstructor } from "../../../../dev/utils/src/objectKinds.js"
 import {
     constructorExtends,
     getExactBuiltinConstructorName,
     prototypeKeysOf
-} from "../../../utils/objectKinds.js"
+} from "../../../../dev/utils/src/objectKinds.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"

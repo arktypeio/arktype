@@ -4,10 +4,10 @@ import type {
     MaxComparator
 } from "../../../../nodes/primitive/range.js"
 import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
-import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
-import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
-import type { keySet } from "../../../../utils/records.js"
-import { isKeyOf } from "../../../../utils/records.js"
+import type { NumberLiteral } from "../../../../../dev/utils/src/numericLiterals.js"
+import { tryParseWellFormedNumber } from "../../../../../dev/utils/src/numericLiterals.js"
+import type { keySet } from "../../../../../dev/utils/src/records.js"
+import { isKeyOf } from "../../../../../dev/utils/src/records.js"
 import type {
     DynamicState,
     DynamicStateWithRoot

@@ -5,7 +5,7 @@ import { arktypes, scope, type } from "../../src/main.js"
 import type { Out } from "../../src/parse/ast/morph.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import { Path } from "../../src/utils/lists.js"
+import { Path } from "../utils/src/lists.js"
 import { attest } from "../attest/main.js"
 
 suite("morph", () => {

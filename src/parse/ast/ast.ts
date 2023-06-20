@@ -1,13 +1,13 @@
-import type { Comparator } from "../../nodes/primitive/range.js"
-import type { resolve, UnparsedScope } from "../../scope.js"
-import type { GenericProps } from "../../type.js"
-import type { error } from "../../utils/errors.js"
-import type { List } from "../../utils/lists.js"
 import type {
     BigintLiteral,
     NumberLiteral,
     writeMalformedNumericLiteralMessage
-} from "../../utils/numericLiterals.js"
+} from "../../../dev/utils/src/numericLiterals.js"
+import type { error } from "../../../dev/utils/src/errors.js"
+import type { List } from "../../../dev/utils/src/lists.js"
+import type { Comparator } from "../../nodes/primitive/range.js"
+import type { resolve, UnparsedScope } from "../../scope.js"
+import type { GenericProps } from "../../type.js"
 import type { inferDefinition, Inferred } from "../definition.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"

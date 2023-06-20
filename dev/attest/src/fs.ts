@@ -1,9 +1,11 @@
 import {
+    cpSync,
     existsSync,
     lstatSync,
     mkdirSync,
     readdirSync,
     readFileSync,
+    rmSync,
     statSync,
     writeFileSync
 } from "node:fs"
@@ -13,6 +15,8 @@ import * as process from "node:process"
 import { fileURLToPath, URL } from "node:url"
 import { caller } from "./caller.js"
 import { shell } from "./shell.js"
+
+export { rmSync } from "node:fs"
 
 export const ensureDir = (path: string) => {
     if (existsSync(path)) {
@@ -36,6 +40,12 @@ export const readJson = (path: string) =>
 export const writeJson = (path: string, data: object) =>
     writeFileSync(path, JSON.stringify(data, null, 4) + "\n")
 
+export const rmRf = (target: string) =>
+    rmSync(target, { recursive: true, force: true })
+
+export const cpR = (from: string, to: string): void =>
+    cpSync(from, to, { recursive: true, force: true })
+
 export type JsonTransformer = (data: object) => object
 
 export const rewriteJson = (path: string, transform: JsonTransformer) =>
@@ -43,6 +53,7 @@ export const rewriteJson = (path: string, transform: JsonTransformer) =>
 
 export type WalkOptions = {
     ignoreDirsMatching?: RegExp
+    ignoreFilesMatching?: RegExp
     excludeFiles?: boolean
     excludeDirs?: boolean
     exclude?: (path: string) => boolean
@@ -53,7 +64,11 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
     readdirSync(dir).reduce((paths: string[], item: string) => {
         const path = join(dir, item)
         const isDir = lstatSync(path).isDirectory()
+        const isFile = lstatSync(path).isFile()
         if (isDir && options.ignoreDirsMatching?.test(path)) {
+            return paths
+        }
+        if (isFile && options.ignoreFilesMatching?.test(path)) {
             return paths
         }
         const excludeCurrent =
@@ -148,3 +163,53 @@ export type SourceFileEntry = [path: string, contents: string]
 
 export const getSourceFileEntries = (dir = "."): SourceFileEntry[] =>
     getSourceFilePaths(dir).map((path) => [path, readFile(path)])
+
+export type ReplacementDictionary = Record<
+    string,
+    { pattern: RegExp; replacement: `"${string}"` }
+>
+export type Matchers = ReadonlyArray<Matcher>
+export type Matcher = {
+    pattern: RegExp
+    replacement: string
+}
+
+/**
+ * Given a set of {@link Matchers} and an input string,
+ * replace all will replace
+ */
+const findReplace: (matchers: Matchers) => (input: string) => string =
+    (matchers) => (input) =>
+        matchers.reduce(
+            (acc, m) => acc.replaceAll(m.pattern, m.replacement),
+            input
+        )
+
+/**
+ * Applies a set of {@link Matchers} to a list of files and rewrites
+ * each file's contents according to the provided `Matcher["find"]`
+ * and `Matcher["replace"]`.
+ */
+const findReplaceMany =
+    (matchers: Matchers) =>
+        (files: readonly string[] = []): void =>
+            void files.forEach((file) => {
+                writeFile(file, findReplace(matchers)(readFile(file)))
+            })
+
+/**
+ * Given a directory and a set of {@link Matchers}, recursively walks
+ * the directory and applies every set of changes in the dictionary
+ * to all files except those matching `ignoreFilesMatching`.
+ */
+export const findReplaceAll =
+    (matchDictionary: ReplacementDictionary, ignoreFilesMatching: RegExp) =>
+        (dirPath: string): void => {
+            const files = walkPaths(dirPath, {
+                excludeDirs: true,
+                ignoreFilesMatching
+            })
+
+            const matchers: Matchers = Object.values(matchDictionary)
+            findReplaceMany(matchers)(files)
+        }

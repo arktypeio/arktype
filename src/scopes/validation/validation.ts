@@ -3,7 +3,7 @@ import { Scope } from "../../scope.js"
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
-} from "../../utils/numericLiterals.js"
+} from "../../../dev/utils/src/numericLiterals.js"
 import { creditCard } from "./creditCard.js"
 import { parsedDate } from "./date.js"
 

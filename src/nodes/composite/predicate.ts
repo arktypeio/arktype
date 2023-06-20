@@ -1,19 +1,22 @@
+import type {
+    AbstractableConstructor,
+    Constructor,
+    instanceOf
+} from "../../../dev/utils/src/objectKinds.js"
+import { isArray } from "../../../dev/utils/src/objectKinds.js"
+import type { Domain, inferDomain } from "../../../dev/utils/src/domains.js"
+import { domainOf } from "../../../dev/utils/src/domains.js"
+import {
+    throwInternalError,
+    throwParseError
+} from "../../../dev/utils/src/errors.js"
+import type { evaluate, isUnknown } from "../../../dev/utils/src/generics.js"
+import type { List, listable } from "../../../dev/utils/src/lists.js"
 import { precedenceByKind } from "../../compile/compile.js"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import type { inferMorphOut, Morph, Out } from "../../parse/ast/morph.js"
 import type { GuardedNarrow, Narrow } from "../../parse/ast/narrow.js"
-import type { Domain, inferDomain } from "../../utils/domains.js"
-import { domainOf } from "../../utils/domains.js"
-import { throwInternalError, throwParseError } from "../../utils/errors.js"
-import type { evaluate, isUnknown } from "../../utils/generics.js"
-import type { List, listable } from "../../utils/lists.js"
-import type {
-    AbstractableConstructor,
-    Constructor,
-    instanceOf
-} from "../../utils/objectKinds.js"
-import { isArray } from "../../utils/objectKinds.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
 import { createNodeOfKind } from "../kinds.js"

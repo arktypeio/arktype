@@ -1,9 +1,13 @@
 import type { Discriminant } from "../../compile/discriminate.js"
 import { discriminate } from "../../compile/discriminate.js"
 import type { inferred } from "../../parse/definition.js"
-import { cached } from "../../utils/functions.js"
-import type { conform, exact, Literalable } from "../../utils/generics.js"
-import { isArray } from "../../utils/objectKinds.js"
+import { cached } from "../../../dev/utils/src/functions.js"
+import type {
+    conform,
+    exact,
+    Literalable
+} from "../../../dev/utils/src/generics.js"
+import { isArray } from "../../../dev/utils/src/objectKinds.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { alphabetizeByCondition, defineNodeKind, isNode } from "../node.js"

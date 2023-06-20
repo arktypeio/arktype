@@ -4,7 +4,7 @@ import type {
     MinComparator
 } from "../../../nodes/primitive/range.js"
 import { invertedComparators } from "../../../nodes/primitive/range.js"
-import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import type { NumberLiteral } from "../../../../dev/utils/src/numericLiterals.js"
 
 export type Prefix = "keyof"
 

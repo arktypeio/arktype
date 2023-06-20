@@ -1,11 +1,11 @@
-import type { Domain, inferDomain } from "../../../utils/domains.js"
-import { throwInternalError } from "../../../utils/errors.js"
-import type { evaluate } from "../../../utils/generics.js"
+import type { Domain, inferDomain } from "../../../../dev/utils/src/domains.js"
+import { throwInternalError } from "../../../../dev/utils/src/errors.js"
+import type { evaluate } from "../../../../dev/utils/src/generics.js"
 import type {
     AbstractableConstructor,
     Constructor
-} from "../../../utils/objectKinds.js"
-import { constructorExtends } from "../../../utils/objectKinds.js"
+} from "../../../../dev/utils/src/objectKinds.js"
+import { constructorExtends } from "../../../../dev/utils/src/objectKinds.js"
 import type { DisjointKindEntries } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { BaseNode } from "../../node.js"

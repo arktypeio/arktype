@@ -1,3 +1,5 @@
+import type { Dict } from "../dev/utils/src/records.js"
+import type { evaluate, nominal } from "../dev/utils/src/generics.js"
 import type { ProblemCode } from "./compile/problems.js"
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type {
@@ -22,8 +24,6 @@ import type {
     TypeParser
 } from "./type.js"
 import { createTypeParser, Type } from "./type.js"
-import type { evaluate, nominal } from "./utils/generics.js"
-import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{

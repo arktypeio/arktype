@@ -1,3 +1,11 @@
+import { throwParseError } from "../../../dev/utils/src/errors.js"
+import type { evaluate, isAny } from "../../../dev/utils/src/generics.js"
+import type { List } from "../../../dev/utils/src/lists.js"
+import {
+    type Constructor,
+    isArray
+} from "../../../dev/utils/src/objectKinds.js"
+import { stringify } from "../../../dev/utils/src/serialize.js"
 import { arrayIndexTypeNode } from "../../nodes/composite/indexed.js"
 import { predicateNode } from "../../nodes/composite/predicate.js"
 import type { NodeEntry } from "../../nodes/composite/props.js"
@@ -6,11 +14,6 @@ import type { TypeNode } from "../../nodes/composite/type.js"
 import { builtins, typeNode } from "../../nodes/composite/type.js"
 import { arrayClassNode } from "../../nodes/primitive/basis/class.js"
 import type { extractIn, extractOut, TypeConfig } from "../../type.js"
-import { throwParseError } from "../../utils/errors.js"
-import type { evaluate, isAny } from "../../utils/generics.js"
-import type { List } from "../../utils/lists.js"
-import { type Constructor, isArray } from "../../utils/objectKinds.js"
-import { stringify } from "../../utils/serialize.js"
 import type {
     inferDefinition,
     ParseContext,

@@ -5,9 +5,12 @@ import {
     minComparators,
     rangeNode
 } from "../../../nodes/primitive/range.js"
-import { throwInternalError, throwParseError } from "../../../utils/errors.js"
-import type { requireKeys } from "../../../utils/records.js"
-import { isKeyOf } from "../../../utils/records.js"
+import {
+    throwInternalError,
+    throwParseError
+} from "../../../../dev/utils/src/errors.js"
+import type { requireKeys } from "../../../../dev/utils/src/records.js"
+import { isKeyOf } from "../../../../dev/utils/src/records.js"
 import type { ParseContext } from "../../definition.js"
 import { Scanner } from "../shift/scanner.js"
 import type { Prefix } from "./shared.js"

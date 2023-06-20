@@ -1,17 +1,17 @@
+import type {
+    BigintLiteral,
+    NumberLiteral
+} from "../../../../../dev/utils/src/numericLiterals.js"
+import {
+    tryParseWellFormedBigint,
+    tryParseWellFormedNumber
+} from "../../../../../dev/utils/src/numericLiterals.js"
+import type { error } from "../../../../../dev/utils/src/errors.js"
+import type { join } from "../../../../../dev/utils/src/lists.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { GenericProps } from "../../../../type.js"
-import type { error } from "../../../../utils/errors.js"
-import type { join } from "../../../../utils/lists.js"
-import type {
-    BigintLiteral,
-    NumberLiteral
-} from "../../../../utils/numericLiterals.js"
-import {
-    tryParseWellFormedBigint,
-    tryParseWellFormedNumber
-} from "../../../../utils/numericLiterals.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { Inferred } from "../../../definition.js"
 import type {

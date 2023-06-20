@@ -1,7 +1,7 @@
 import type { CheckResult, TraversalState } from "../../compile/traverse.js"
 import type { Problem } from "../../main.js"
 import type { extractIn } from "../../type.js"
-import { throwParseError } from "../../utils/errors.js"
+import { throwParseError } from "../../../dev/utils/src/errors.js"
 import type { inferDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { PostfixParser } from "./tuple.js"
