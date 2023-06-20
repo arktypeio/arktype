@@ -11,7 +11,7 @@ import {
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
-import { writeMalformedNumericLiteralMessage } from "../../src/utils/numericLiterals.js"
+import { writeMalformedNumericLiteralMessage } from "../utils/src/numericLiterals.js"
 import { attest } from "../attest/main.js"
 
 const expectedBoundsCondition = (...range: Range) =>

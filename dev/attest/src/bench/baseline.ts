@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs"
 import process from "node:process"
-import { snapshot } from "../../../../src/utils/serialize.js"
+import { snapshot } from "../../../utils/src/serialize.js"
 import { getConfig } from "../config.js"
 import { queueSnapshotUpdate } from "../snapshot.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"

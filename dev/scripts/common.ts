@@ -5,6 +5,7 @@ const root = fromHere("..", "..")
 const dev = join(root, "dev")
 const attest = join(dev, "attest")
 const configs = join(dev, "configs")
+const utils = join(dev, "utils")
 const arktypeIo = join(dev, "arktype.io")
 const docsDir = join(arktypeIo, "docs")
 const srcRoot = join(root, "src")
@@ -18,5 +19,6 @@ export const repoDirs = {
     arktypeIo,
     docsDir,
     srcRoot,
-    outRoot
+    outRoot,
+    utils
 }

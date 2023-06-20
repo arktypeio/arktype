@@ -1,6 +1,6 @@
+import type { error } from "../../../dev/utils/src/errors.js"
+import type { NumberLiteral } from "../../../dev/utils/src/numericLiterals.js"
 import type { Comparator, SizedData } from "../../nodes/primitive/range.js"
-import type { error } from "../../utils/errors.js"
-import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 

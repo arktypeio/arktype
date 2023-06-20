@@ -1,8 +1,8 @@
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import type { CastTo, Type } from "../../src/main.js"
-import type { Constructor } from "../../src/utils/objectKinds.js"
 import { attest } from "../attest/main.js"
+import type { Constructor } from "../utils/src/objectKinds.js"
 
 suite("inferred", () => {
     test("primitive", () => {

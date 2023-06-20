@@ -1,9 +1,9 @@
+import { hasDomain } from "../../dev/utils/src/domains.js"
+import { isArray } from "../../dev/utils/src/objectKinds.js"
+import type { SerializablePrimitive } from "../../dev/utils/src/serialize.js"
+import { serializePrimitive } from "../../dev/utils/src/serialize.js"
 import type { Discriminant } from "../nodes/composite/discriminate.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
-import { hasDomain } from "../utils/domains.js"
-import { isArray } from "../utils/objectKinds.js"
-import type { SerializablePrimitive } from "../utils/serialize.js"
-import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 

@@ -1,4 +1,4 @@
-import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 

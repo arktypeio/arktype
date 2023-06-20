@@ -1,3 +1,9 @@
+import { throwParseError } from "../../dev/utils/src/errors.js"
+import type { evaluate, isAny } from "../../dev/utils/src/generics.js"
+import type { List } from "../../dev/utils/src/lists.js"
+import type { AbstractableConstructor } from "../../dev/utils/src/objectKinds.js"
+import { isArray } from "../../dev/utils/src/objectKinds.js"
+import { stringify } from "../../dev/utils/src/serialize.js"
 import type { CheckResult, TraversalState } from "../compile/traverse.js"
 import type { Problem } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
@@ -9,12 +15,6 @@ import { builtins, typeNode } from "../nodes/composite/type.js"
 import { arrayClassNode } from "../nodes/primitive/basis/class.js"
 import type { ParseContext } from "../scope.js"
 import type { extractIn, extractOut } from "../type.js"
-import { throwParseError } from "../utils/errors.js"
-import type { evaluate, isAny } from "../utils/generics.js"
-import type { List } from "../utils/lists.js"
-import type { AbstractableConstructor } from "../utils/objectKinds.js"
-import { isArray } from "../utils/objectKinds.js"
-import { stringify } from "../utils/serialize.js"
 import {
     type InfixOperator,
     type PostfixExpression,

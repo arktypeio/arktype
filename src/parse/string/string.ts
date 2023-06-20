@@ -1,6 +1,6 @@
+import { type error, throwParseError } from "../../../dev/utils/src/errors.js"
 import type { TypeNode } from "../../nodes/composite/type.js"
 import type { ParseContext } from "../../scope.js"
-import { type error, throwParseError } from "../../utils/errors.js"
 import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
 import type { DynamicStateWithRoot } from "./reduce/dynamic.js"
 import { DynamicState } from "./reduce/dynamic.js"

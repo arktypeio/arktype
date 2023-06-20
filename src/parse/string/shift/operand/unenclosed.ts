@@ -1,21 +1,21 @@
+import { throwParseError } from "../../../../../dev/utils/src/errors.js"
+import type { error } from "../../../../../dev/utils/src/errors.js"
+import type { join } from "../../../../../dev/utils/src/lists.js"
+import {
+    tryParseWellFormedBigint,
+    tryParseWellFormedNumber
+} from "../../../../../dev/utils/src/numericLiterals.js"
+import type {
+    BigintLiteral,
+    NumberLiteral
+} from "../../../../../dev/utils/src/numericLiterals.js"
+import { stringify } from "../../../../../dev/utils/src/serialize.js"
 import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import { Type } from "../../../../type.js"
-import type { error } from "../../../../utils/errors.js"
-import { throwParseError } from "../../../../utils/errors.js"
-import type { join } from "../../../../utils/lists.js"
-import type {
-    BigintLiteral,
-    NumberLiteral
-} from "../../../../utils/numericLiterals.js"
-import {
-    tryParseWellFormedBigint,
-    tryParseWellFormedNumber
-} from "../../../../utils/numericLiterals.js"
-import { stringify } from "../../../../utils/serialize.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { CastTo } from "../../../definition.js"
 import type { ParsedArgs } from "../../../generic.js"

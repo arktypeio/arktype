@@ -1,3 +1,9 @@
+import {
+    throwInternalError,
+    throwParseError
+} from "../../../../dev/utils/src/errors.js"
+import type { requireKeys } from "../../../../dev/utils/src/records.js"
+import { isKeyOf } from "../../../../dev/utils/src/records.js"
 import type { TypeNode } from "../../../nodes/composite/type.js"
 import type { Comparator, RangeNode } from "../../../nodes/primitive/range.js"
 import {
@@ -6,9 +12,6 @@ import {
     rangeNode
 } from "../../../nodes/primitive/range.js"
 import type { ParseContext } from "../../../scope.js"
-import { throwInternalError, throwParseError } from "../../../utils/errors.js"
-import type { requireKeys } from "../../../utils/records.js"
-import { isKeyOf } from "../../../utils/records.js"
 import { Scanner } from "../shift/scanner.js"
 import type { StringifiablePrefixOperator } from "./shared.js"
 import {

@@ -1,5 +1,5 @@
+import { throwInternalError } from "../../../dev/utils/src/errors.js"
 import type { CompilationState } from "../../compile/state.js"
-import { throwInternalError } from "../../utils/errors.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins } from "./type.js"

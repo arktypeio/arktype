@@ -1,23 +1,27 @@
-import { hasArkKind } from "../compile/registry.js"
-import type { TypeNode } from "../nodes/composite/type.js"
-import { node } from "../nodes/composite/type.js"
-import type { ParseContext } from "../scope.js"
-import { Type } from "../type.js"
-import type { domainOf, Primitive } from "../utils/domains.js"
-import type { error } from "../utils/errors.js"
-import { throwParseError } from "../utils/errors.js"
-import { isThunk } from "../utils/functions.js"
+import type { domainOf, Primitive } from "../../dev/utils/src/domains.js"
+import type { error } from "../../dev/utils/src/errors.js"
+import { throwParseError } from "../../dev/utils/src/errors.js"
+import { isThunk } from "../../dev/utils/src/functions.js"
 import type {
     defined,
     equals,
     evaluate,
     isAny,
     isUnknown
-} from "../utils/generics.js"
-import type { List } from "../utils/lists.js"
-import { objectKindOf } from "../utils/objectKinds.js"
-import type { Dict, optionalKeyOf, requiredKeyOf } from "../utils/records.js"
-import { stringify } from "../utils/serialize.js"
+} from "../../dev/utils/src/generics.js"
+import type { List } from "../../dev/utils/src/lists.js"
+import { objectKindOf } from "../../dev/utils/src/objectKinds.js"
+import type {
+    Dict,
+    optionalKeyOf,
+    requiredKeyOf
+} from "../../dev/utils/src/records.js"
+import { stringify } from "../../dev/utils/src/serialize.js"
+import { hasArkKind } from "../compile/registry.js"
+import type { TypeNode } from "../nodes/composite/type.js"
+import { node } from "../nodes/composite/type.js"
+import type { ParseContext } from "../scope.js"
+import { Type } from "../type.js"
 import type { validateString } from "./ast/ast.js"
 import type {
     inferObjectLiteral,

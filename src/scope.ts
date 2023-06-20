@@ -1,5 +1,10 @@
+import { domainOf } from "../dev/utils/src/domains.js"
+import { throwParseError } from "../dev/utils/src/errors.js"
+import type { evaluate, isAny, nominal } from "../dev/utils/src/generics.js"
+import { Path } from "../dev/utils/src/lists.js"
+import type { Dict } from "../dev/utils/src/records.js"
 import type { ProblemCode } from "./compile/problems.js"
-import { arkKind, hasArkKind } from "./compile/registry.js"
+import { hasArkKind } from "./compile/registry.js"
 import type { TypeNode } from "./main.js"
 import { builtins } from "./nodes/composite/type.js"
 import type {
@@ -29,11 +34,6 @@ import type {
     TypeParser
 } from "./type.js"
 import { createTypeParser, generic, Type } from "./type.js"
-import { domainOf } from "./utils/domains.js"
-import { throwParseError } from "./utils/errors.js"
-import type { evaluate, isAny, nominal } from "./utils/generics.js"
-import { Path } from "./utils/lists.js"
-import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{

@@ -1,20 +1,20 @@
-import type { Bound, SizedData } from "../nodes/primitive/range.js"
-import { comparatorDescriptions } from "../nodes/primitive/range.js"
-import type { Domain } from "../utils/domains.js"
-import { domainDescriptions, domainOf } from "../utils/domains.js"
-import type { conform } from "../utils/generics.js"
-import type { arraySubclassToReadonly } from "../utils/lists.js"
-import { Path } from "../utils/lists.js"
+import { domainDescriptions, domainOf } from "../../dev/utils/src/domains.js"
+import type { Domain } from "../../dev/utils/src/domains.js"
+import type { conform } from "../../dev/utils/src/generics.js"
+import { Path } from "../../dev/utils/src/lists.js"
+import type { arraySubclassToReadonly } from "../../dev/utils/src/lists.js"
+import {
+    getExactBuiltinConstructorName,
+    objectKindDescriptions
+} from "../../dev/utils/src/objectKinds.js"
 import type {
     AbstractableConstructor,
     BuiltinObjectKind,
     Constructor
-} from "../utils/objectKinds.js"
-import {
-    getExactBuiltinConstructorName,
-    objectKindDescriptions
-} from "../utils/objectKinds.js"
-import { stringify } from "../utils/serialize.js"
+} from "../../dev/utils/src/objectKinds.js"
+import { stringify } from "../../dev/utils/src/serialize.js"
+import { comparatorDescriptions } from "../nodes/primitive/range.js"
+import type { Bound, SizedData } from "../nodes/primitive/range.js"
 import type { InternalId } from "./registry.js"
 
 export class ArkTypeError extends TypeError {

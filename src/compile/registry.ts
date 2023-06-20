@@ -1,7 +1,7 @@
+import type { autocomplete } from "../../dev/utils/src/generics.js"
+import type { AbstractableConstructor } from "../../dev/utils/src/objectKinds.js"
 import type { Node } from "../nodes/kinds.js"
 import type { Generic } from "../type.js"
-import type { autocomplete } from "../utils/generics.js"
-import type { AbstractableConstructor } from "../utils/objectKinds.js"
 import { compilePropAccess } from "./state.js"
 import type { TraversalState } from "./traverse.js"
 

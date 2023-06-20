@@ -5,7 +5,7 @@ import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/composi
 import type { Out } from "../../src/parse/tuple.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import { Path } from "../../src/utils/lists.js"
+import { Path } from "../utils/src/lists.js"
 import { attest } from "../attest/main.js"
 
 suite("morph", () => {

@@ -1,3 +1,11 @@
+import type { error } from "../dev/utils/src/errors.js"
+import { CompiledFunction } from "../dev/utils/src/functions.js"
+import type { conform, Literalable } from "../dev/utils/src/generics.js"
+import type {
+    AbstractableConstructor,
+    BuiltinObjectKind,
+    BuiltinObjects
+} from "../dev/utils/src/objectKinds.js"
 import { arkKind, registry } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { CheckResult } from "./compile/traverse.js"
@@ -29,14 +37,6 @@ import type {
 } from "./parse/tuple.js"
 import type { Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
-import type { error } from "./utils/errors.js"
-import { CompiledFunction } from "./utils/functions.js"
-import type { conform, Literalable } from "./utils/generics.js"
-import type {
-    AbstractableConstructor,
-    BuiltinObjectKind,
-    BuiltinObjects
-} from "./utils/objectKinds.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
 
