@@ -7,7 +7,6 @@ import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
-// TODO: change to just root?
 export const InputParameterName = "$arkRoot"
 
 export class CompilationState {
@@ -64,7 +63,10 @@ export class CompilationState {
             typeof rule === "function"
                 ? rule.name
                 : compileSerializedValue(rule)
-        }, ${this.data}, ${JSON.stringify(this.path)})` as const
+        }, ${this.data}, [${this.path.map((segment) =>
+            // if the segment is a variable reference, don't quote it
+            typeof segment === "string" ? JSON.stringify(segment) : segment[0]
+        )}])` as const
     }
 
     check<code extends ProblemCode>(
