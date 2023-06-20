@@ -35,7 +35,10 @@ const readFile = (
 
 const replaceAll: (matchers: Matchers) => (input: string) => string =
     (matchers) => (input) => {
-        const out = matchers.reduce((acc, m) => acc.replaceAll(m.pattern, m.replacement), input)
+        const out = matchers.reduce(
+            (acc, m) => acc.replaceAll(m.pattern, m.replacement),
+            input
+        )
 
         /**
          * TODO: Delete this `if` block before merging PR

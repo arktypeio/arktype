@@ -16,7 +16,10 @@
             "require": "./dist/cjs/main.js"
         }
     },
-    "files": ["dist", "!*.tsbuildinfo"],
+    "files": [
+        "dist",
+        "!*.tsbuildinfo"
+    ],
     "devDependencies": {
         "ts-node": "10.9.1",
         "mocha": "10.2.0",

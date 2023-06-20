@@ -16,7 +16,10 @@
             "require": "./dist/cjs/main.js"
         }
     },
-    "files": ["dist", "!*.tsbuildinfo"],
+    "files": [
+        "dist",
+        "!*.tsbuildinfo"
+    ],
     "dependencies": {
         "ts-morph": "18.0.0",
         "@arktype/utils": "workspace:^0.0.0"
