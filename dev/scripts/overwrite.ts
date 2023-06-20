@@ -1,4 +1,3 @@
-import { printUnifiedDiff } from "print-diff"
 import { walkPaths } from "../attest/main.js"
 import { readFileAsync, writeFileAsync } from "../attest/src/main.js"
 
@@ -13,24 +12,11 @@ export type Matcher = {
 }
 
 const replaceAll: (matchers: Matchers) => (input: string) => string =
-    (matchers) => (input) => {
-        const out = matchers.reduce(
+    (matchers) => (input) =>
+        matchers.reduce(
             (acc, m) => acc.replaceAll(m.pattern, m.replacement),
             input
         )
-
-        /**
-         * TODO: Delete this `if` block before merging PR
-         */
-        if (
-            input.includes(`/utils/`) ||
-            (input.includes(`/attest/`) && input !== out)
-        ) {
-            printUnifiedDiff(input, out)
-        }
-
-        return out
-    }
 
 /**
  * Applies a set of {@link Matchers} to a list of files and rewrites
