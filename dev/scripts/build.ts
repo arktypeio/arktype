@@ -90,11 +90,6 @@ const buildFormat = (module: "CommonJS" | "ESNext") => {
 
         fixBuildPaths(outDir)
         fixBuildPaths(attestTarget)
-        /**
-         * We don't need to rewrite any of the paths in `dev/utils/dist` at the
-         * moment, since it doesn't (currently) depend on any local packages
-         */
-        // fixBuildPaths(utilsTarget)
     } finally {
         rmSync(tempTsConfigPath, { force: true })
     }
