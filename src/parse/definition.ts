@@ -1,7 +1,6 @@
 import type { domainOf, Primitive } from "../../dev/utils/src/domains.js"
 import type { error } from "../../dev/utils/src/errors.js"
 import { throwParseError } from "../../dev/utils/src/errors.js"
-import { isThunk } from "../../dev/utils/src/functions.js"
 import type {
     defined,
     equals,

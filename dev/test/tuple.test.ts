@@ -44,14 +44,8 @@ suite("tuple", () => {
         test("spreads simple arrays", () => {
             const wellRested = type(["string", "...number[]"])
             attest(wellRested.infer).typed as [string, ...number[]]
-            attest(wellRested.condition)
-                .snap(`$arkRoot instanceof Array && typeof $arkRoot["0"] === "string" && (() => {
-            let valid = true;
-            for(let $arkIndex = 1; $arkIndex < $arkRoot.length; $arkIndex++) {
-                valid = typeof $arkRoot[$arkIndex] === "number" && valid;
-            }
-            return valid
-        })()`)
+            attest(wellRested(["foo"]).data).equals(["foo"])
+            attest(wellRested(["foo", 1, 2]).data).equals(["foo", 1, 2])
         })
         test("tuple expression", () => {
             const wellRestedTuple = type([
@@ -69,21 +63,28 @@ suite("tuple", () => {
                 ...(RegExp | Date)[]
             ]
             attest(greatSpread.condition)
-                .snap(`$arkRoot instanceof Array && ((typeof $arkRoot["0"] === "object" && $arkRoot["0"] !== null) || typeof $arkRoot["0"] === "function") && (() => {
-        switch($arkRoot["0"].a) {
-            case true: {
-                return true;
-            }case false: {
-                return true;
-            }
-        }
-    })() && (() => {
-            let valid = true;
-            for(let $arkIndex = 1; $arkIndex < $arkRoot.length; $arkIndex++) {
-                valid = ($arkRoot[$arkIndex] instanceof globalThis.$ark.Date || $arkRoot[$arkIndex] instanceof globalThis.$ark.RegExp) && valid;
-            }
-            return valid
-        })()`)
+                .snap(`if (!($arkRoot instanceof Array)) {
+            return false
+}
+if (!(((typeof $arkRoot["0"] === "object" && $arkRoot["0"] !== null) || typeof $arkRoot["0"] === "function"))) {
+            return false
+}
+if( $arkRoot["0"].a !== false && $arkRoot["0"].a !== true) {
+    return false
+};
+for(let i = 1; i < $arkRoot.length; i++) {
+    (() => {
+if (!($arkRoot[i] instanceof Date)) {
+            return false
+}
+return true
+})() || (() => {
+if (!($arkRoot[i] instanceof RegExp)) {
+            return false
+}
+return true
+})()
+}`)
         })
         test("allows array keyword", () => {
             const types = scope({

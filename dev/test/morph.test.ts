@@ -51,6 +51,16 @@ suite("morph", () => {
             Ark
         >
     })
+    test("any as out", () => {
+        const t = type("string", "=>", (s) => s as any)
+        attest(t.inferIn).typed as string
+        attest(t.infer).typed as any
+    })
+    test("never as out", () => {
+        const t = type("string", "=>", (s) => s as never)
+        attest(t.inferIn).typed as string
+        attest(t.infer).typed as never
+    })
     test("return problem", () => {
         const divide100By = type([
             "number",

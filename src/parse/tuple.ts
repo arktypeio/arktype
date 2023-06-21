@@ -6,6 +6,7 @@ import { isArray } from "../../dev/utils/src/objectKinds.js"
 import { stringify } from "../../dev/utils/src/serialize.js"
 import type { CheckResult, TraversalState } from "../compile/traverse.js"
 import type { Problem } from "../main.js"
+import { type } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
 import type { NodeEntry } from "../nodes/composite/props.js"
@@ -366,12 +367,15 @@ export type parseMorph<inDef, morph, $, args> = morph extends Morph
       ) => Out<inferMorphOut<ReturnType<morph>>>
     : never
 
-export type MorphAst<i = any, o = unknown> = (In: i) => Out<o>
+export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
-export type Out<o = unknown> = ["=>", o]
+export type Out<o = any> = ["=>", o]
 
-export type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
-    ? t
+export type inferMorphOut<out> = out extends CheckResult<infer t>
+    ? out extends null
+        ? // avoid treating any/never as CheckResult
+          out
+        : t
     : Exclude<out, Problem>
 
 export const writeMalformedFunctionalExpressionMessage = (

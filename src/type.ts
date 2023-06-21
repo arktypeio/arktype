@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { error } from "../dev/utils/src/errors.js"
 import { CompiledFunction } from "../dev/utils/src/functions.js"
-import type { conform, Literalable } from "../dev/utils/src/generics.js"
+import type { conform, isAny, Literalable } from "../dev/utils/src/generics.js"
 import type {
     AbstractableConstructor,
     BuiltinObjectKind,
@@ -11,6 +11,7 @@ import { arkKind, registry } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
+import { type } from "./main.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { builtins, node } from "./nodes/composite/type.js"
@@ -128,13 +129,8 @@ type TypeProps<$> = {
 export type DeclarationParser<$> = <preinferred>() => {
     type: <def>(
         def: validateDeclared<preinferred, def, $, bindThis<def>>
-    ) => Type<inferDefinition<def, $, bindThis<def>>, $>
+    ) => Type<preinferred, $>
 }
-
-type TypeArgs =
-    | [def: unknown]
-    | [expression0: unknown, expression1: unknown, expression2?: unknown]
-    | [params: `<${string}>`, def: unknown]
 
 export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
     const parser: TypeOverloads<$> = (...args: unknown[]) => {
@@ -157,7 +153,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
             ) as never
         }
         // otherwise, treat as a tuple expression. technically, this also allows
-        // non-expression tuple definitions to be parsed, but it's not a support
+        // non-expression tuple definitions to be parsed, but it's not a supported
         // part of the API as specified by the associated types
         return new Type(args, scope) as never
     }
