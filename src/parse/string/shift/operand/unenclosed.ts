@@ -114,7 +114,7 @@ export type parseGenericInstantiation<
     : state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
-    maybeParseKeyword(s, token) ??
+    maybeParseReference(s, token) ??
     maybeParseUnenclosedLiteral(token) ??
     s.error(
         token === ""
@@ -122,7 +122,7 @@ const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
             : writeUnresolvableMessage(token)
     )
 
-const maybeParseKeyword = (
+const maybeParseReference = (
     s: DynamicState,
     token: string
 ): TypeNode | undefined => {
@@ -134,6 +134,7 @@ const maybeParseKeyword = (
         return resolution.root
     } else if (hasArkKind(resolution, "generic")) {
         return parseGenericInstantiation(token, resolution, s)
+    } else if (typeof resolution === "string") {
     } else if (resolution === undefined) {
         return
     }

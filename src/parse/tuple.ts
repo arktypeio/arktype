@@ -363,6 +363,7 @@ export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type parseMorph<inDef, morph, $, args> = morph extends Morph
     ? (
+          // TODO: should this be extractOut
           In: extractIn<inferDefinition<inDef, $, args>>
       ) => Out<inferMorphOut<ReturnType<morph>>>
     : never

@@ -1,5 +1,5 @@
 import { isThunk } from "../dev/utils/main.js"
-import { domainOf } from "../dev/utils/src/domains.js"
+import { domainOf, hasDomain } from "../dev/utils/src/domains.js"
 import { throwParseError } from "../dev/utils/src/errors.js"
 import type { evaluate, isAny, nominal } from "../dev/utils/src/generics.js"
 import { Path } from "../dev/utils/src/lists.js"
@@ -204,7 +204,7 @@ export class Scope<r extends Resolutions = any> {
     // for now we only cache string definitions, since objects could possibly be
     // mutated and then re-parsed
     private parseCache: Record<string, TypeNode> = {}
-    private resolutions: Record<string, Type | TypeSet | Generic>
+    private resolutions: Record<string, Type | TypeSet | Generic | string>
 
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
@@ -284,8 +284,7 @@ export class Scope<r extends Resolutions = any> {
             }
             return this.parseCache[def]
         }
-        return (typeof def === "object" && def !== null) ||
-            typeof def === "function"
+        return hasDomain(def, "object")
             ? parseObject(def, ctx)
             : throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
     }
@@ -293,7 +292,7 @@ export class Scope<r extends Resolutions = any> {
     maybeResolve(
         name: string,
         ctx: ParseContext
-    ): Type | Generic | TypeSet | undefined {
+    ): Type | Generic | TypeSet | string | undefined {
         const cached = this.resolutions[name]
         if (cached) {
             return cached
@@ -305,6 +304,7 @@ export class Scope<r extends Resolutions = any> {
         if (isThunk(def) && !hasArkKind(def, "generic")) {
             def = def()
         }
+        this.resolutions[name] = name
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
             : // TODO: should we allow scope thunks? Could be cyclic?

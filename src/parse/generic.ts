@@ -200,9 +200,11 @@ export const writeInvalidGenericArgsMessage = <
     params: params,
     argDefs: argDefs
 ) =>
-    `${name}${params.join(", ")} requires exactly ${params.length} args (got ${
-        argDefs.length
-    }: ${argDefs.join(", ")})`
+    `${name}<${params.join(", ")}> requires exactly ${
+        params.length
+    } args (got ${argDefs.length}${
+        argDefs.length === 0 ? "" : ": " + argDefs.join(", ")
+    })`
 
 export type writeInvalidGenericArgsMessage<
     name extends string,
@@ -211,7 +213,6 @@ export type writeInvalidGenericArgsMessage<
 > = `${name}<${join<
     params,
     ", "
->}> requires exactly ${params["length"]} args (got ${argDefs["length"]}: ${join<
-    argDefs,
-    ","
->})`
+>}> requires exactly ${params["length"]} args (got ${argDefs["length"]}${argDefs["length"] extends 0
+    ? ""
+    : `: ${join<argDefs, ",">}`})`
