@@ -8,7 +8,6 @@ import type {
 } from "../../dev/utils/src/main.js"
 import {
     domainOf,
-    hasDomain,
     isArray,
     objectKindOf,
     stringify,

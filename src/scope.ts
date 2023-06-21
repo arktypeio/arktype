@@ -1,3 +1,4 @@
+import type { Dict, evaluate, isAny, nominal } from "../dev/utils/src/main.js"
 import {
     domainOf,
     hasDomain,
@@ -6,7 +7,6 @@ import {
     throwInternalError,
     throwParseError
 } from "../dev/utils/src/main.js"
-import type { Dict, evaluate, isAny, nominal } from "../dev/utils/src/main.js"
 import type { ProblemCode } from "./compile/problems.js"
 import { hasArkKind } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"
@@ -35,13 +35,13 @@ import type {
     Generic,
     GenericProps,
     KeyCheckKind,
+    Type,
     TypeConfig,
     TypeParser
 } from "./type.js"
 import {
     createTypeParser,
     generic,
-    Type,
     validateUninstantiatedGeneric
 } from "./type.js"
 
@@ -207,7 +207,7 @@ export class Scope<r extends Resolutions = any> {
     config: TypeConfig
 
     private parseCache: Record<string, TypeNode> = {}
-    private resolutions: Record<string, Type | TypeSet | Generic | string>
+    private resolutions: Record<string, TypeNode | TypeSet | Generic | string>
 
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
@@ -224,7 +224,8 @@ export class Scope<r extends Resolutions = any> {
             }
         }
         this.ambient = opts.ambient ?? null
-        this.resolutions = opts.ambient?.export() ?? {}
+        // TODO: don't include non-exported
+        this.resolutions = { ...opts.ambient?.resolutions } ?? {}
         this.config = opts
     }
 
@@ -295,9 +296,12 @@ export class Scope<r extends Resolutions = any> {
     maybeResolve(
         name: string,
         ctx: ParseContext
-    ): Type | Generic | TypeSet | string | undefined {
+    ): TypeNode | Generic | TypeSet | undefined {
         const cached = this.resolutions[name]
         if (cached) {
+            if (typeof cached === "string") {
+                return throwInternalError(`Working on cyclic resolutions`)
+            }
             return cached
         }
         let def = this.aliases[name]
@@ -313,14 +317,15 @@ export class Scope<r extends Resolutions = any> {
             : // TODO: should we allow scope thunks? Could be cyclic?
             def instanceof Scope
             ? def.export()
-            : new Type(this.parseRoot(def, {}), this)
+            : this.parseRoot(def)
         this.resolutions[name] = resolution
         return resolution
     }
 
+    // TODO: maybe remove this
     maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
         const result = this.maybeResolve(name, ctx)
-        return result instanceof Type ? result.root : undefined
+        return hasArkKind(result, "node") ? result : undefined
     }
 
     compile() {

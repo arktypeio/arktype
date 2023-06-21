@@ -1,17 +1,20 @@
-import type { BigintLiteral , error ,
+import type {
+    BigintLiteral,
+    error,
     join,
     NumberLiteral
 } from "../../../../../dev/utils/src/main.js"
-import { stringify ,
+import {
+    stringify,
     throwParseError,
-    tryParseWellFormedBigint
-, tryParseWellFormedNumber } from "../../../../../dev/utils/src/main.js"
+    tryParseWellFormedBigint,
+    tryParseWellFormedNumber
+} from "../../../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
-import { Type } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { CastTo } from "../../../definition.js"
 import type { ParsedArgs } from "../../../generic.js"
@@ -126,12 +129,13 @@ const maybeParseReference = (
         return s.ctx.args[token]
     }
     const resolution = s.ctx.scope.maybeResolve(token, s.ctx)
-    if (resolution instanceof Type) {
-        return resolution.root
-    } else if (hasArkKind(resolution, "generic")) {
+    if (hasArkKind(resolution, "node")) {
+        return resolution
+    }
+    if (hasArkKind(resolution, "generic")) {
         return parseGenericInstantiation(token, resolution, s)
-    } else if (typeof resolution === "string") {
-    } else if (resolution === undefined) {
+    }
+    if (resolution === undefined) {
         return
     }
     return throwParseError(`Unexpected resolution ${stringify(resolution)}`)
