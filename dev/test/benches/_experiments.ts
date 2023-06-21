@@ -1,7 +1,5 @@
-import type { validateDefinition } from "../../../src/parse/definition.js"
 import type { Ark } from "../../../src/scopes/ark.js"
 import type { inferTypeRoot, validateTypeRoot } from "../../../src/type.js"
-import type { conform } from "../../utils/src/generics.js"
 
 export type FunctionParser<$> = {
     <ret = unknown>(_?: ":", ret?: validateTypeRoot<ret, $>): <

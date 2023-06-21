@@ -60,12 +60,17 @@ export const fromEntries = <const entries extends readonly Entry[]>(
 ) => Object.fromEntries(entries) as fromEntries<entries>
 
 /** Mimics the result of Object.keys(...) */
-export type keysOf<O> = Extract<
-    {
-        [K in keyof O]: K extends string ? K : K extends number ? `${K}` : never
-    }[keyof O],
-    string
->
+export type keysOf<o> = o extends readonly unknown[]
+    ? number extends o["length"]
+        ? `${number}`
+        : keyof o & `${number}`
+    : {
+          [K in keyof o]: K extends string
+              ? K
+              : K extends number
+              ? `${K}`
+              : never
+      }[keyof o]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>[]
 
