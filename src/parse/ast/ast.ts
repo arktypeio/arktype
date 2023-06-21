@@ -1,4 +1,4 @@
-import type { error, List } from "../../../dev/utils/main.js"
+import type { error, List } from "../../../dev/utils/src/main.js"
 import type {
     BigintLiteral,
     NumberLiteral,
