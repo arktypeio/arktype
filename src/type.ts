@@ -54,12 +54,16 @@ type TypeOverloads<$> = {
                   $,
                   bindThis<tupleExpression<zero, one, two>>
               >,
-        expression1: zero extends IndexZeroOperator
+        expression1: zero extends "keyof"
             ? validateDefinition<
                   one,
                   $,
                   bindThis<tupleExpression<zero, one, two>>
               >
+            : zero extends "instanceof"
+            ? conform<one, AbstractableConstructor>
+            : zero extends "==="
+            ? conform<one, unknown>
             : conform<one, IndexOneOperator>,
         ...expression2: one extends TupleInfixOperator
             ? [

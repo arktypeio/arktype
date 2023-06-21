@@ -4,6 +4,7 @@ import type {
     NumberLiteral,
     writeMalformedNumericLiteralMessage
 } from "../../../dev/utils/src/numericLiterals.js"
+import { type } from "../../main.js"
 import type { Comparator } from "../../nodes/primitive/range.js"
 import type { resolve, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
@@ -161,10 +162,10 @@ type validateInfix<ast extends InfixExpression, $, args> = validateAst<
     $,
     args
 > extends error<infer message>
-    ? message
+    ? error<message>
     : validateAst<ast[2], $, args> extends error<infer message>
-    ? message
-    : ast
+    ? error<message>
+    : undefined
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 

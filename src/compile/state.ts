@@ -69,6 +69,12 @@ export class CompilationState {
         )}])` as const
     }
 
+    invalid<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
+        return this.kind === "allows"
+            ? "return false"
+            : this.problem(code, rule)
+    }
+
     check<code extends ProblemCode>(
         code: code,
         rule: ProblemRules[code],
@@ -99,11 +105,7 @@ export class CompilationState {
             return ""
         }
         return `if (!(${condition})) {
-            ${
-                this.kind === "allows"
-                    ? "return false"
-                    : this.problem(code, rule)
-            }
+            ${this.invalid(code, rule)}
 }`
     }
 }

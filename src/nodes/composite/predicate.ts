@@ -110,6 +110,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
             //     )
             // }
+            // TODO: can props imply object basis for compilation?
             const basis = l.basis
                 ? r.basis
                     ? l.basis.intersect(r.basis)

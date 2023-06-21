@@ -225,7 +225,7 @@ const compileIndiscriminable = (
     s: CompilationState
 ) => {
     if (branches.length === 0) {
-        return `${s.problem("custom", "nothing")}`
+        return s.invalid("custom", "nothing")
     }
     if (branches.length === 1) {
         return branches[0].compile(s)

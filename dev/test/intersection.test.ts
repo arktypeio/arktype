@@ -1,6 +1,8 @@
 import { suite, test } from "mocha"
+import type { TypeNode } from "../../src/main.js"
 import { type } from "../../src/main.js"
 import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
+import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -48,12 +50,6 @@ suite("intersection", () => {
         const t = type("unknown&boolean&false")
         attest(t.infer).typed as false
         // attest(t.node).snap("false")
-    })
-    suite("literals", () => {
-        test("class+literal", () => {})
-        test("domain+literal", () => {})
-        test("literal+literal", () => {})
-        test("constraints + literal", () => {})
     })
     test("helper", () => {
         const t = type({ a: "string" }).and({ b: "boolean" })
@@ -116,6 +112,18 @@ suite("intersection", () => {
             //     .types.errors(
             //         writeUnsatisfiableExpressionError("string & number")
             //     )
+        })
+        test("left semantic error", () => {
+            // @ts-expect-error
+            attest(() => type("boolean%2&true")).throwsAndHasTypeError(
+                writeIndivisibleMessage("boolean")
+            )
+        })
+        test("right semantic error", () => {
+            // @ts-expect-error
+            attest(() => type("true&boolean%2")).throwsAndHasTypeError(
+                writeIndivisibleMessage("boolean")
+            )
         })
         test("chained semantic validation", () => {
             // @ts-expect-error

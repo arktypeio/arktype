@@ -1,11 +1,12 @@
 import { domainOf, hasDomain } from "../dev/utils/src/domains.js"
-import { throwParseError } from "../dev/utils/src/errors.js"
+import { throwInternalError, throwParseError } from "../dev/utils/src/errors.js"
 import type { evaluate, isAny, nominal } from "../dev/utils/src/generics.js"
 import { Path } from "../dev/utils/src/lists.js"
 import { isThunk } from "../dev/utils/src/main.js"
 import type { Dict } from "../dev/utils/src/records.js"
 import type { ProblemCode } from "./compile/problems.js"
 import { hasArkKind } from "./compile/registry.js"
+import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { TypeNode } from "./main.js"
 import { builtins } from "./nodes/composite/type.js"
 import type {
@@ -150,7 +151,7 @@ type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
 type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export type ScopeOptions = {
-    ambient?: TypeSet
+    ambient?: Scope | null
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
@@ -201,14 +202,12 @@ export class Scope<r extends Resolutions = any> {
 
     config: TypeConfig
 
-    // for now we only cache string definitions, since objects could possibly be
-    // mutated and then re-parsed
     private parseCache: Record<string, TypeNode> = {}
     private resolutions: Record<string, Type | TypeSet | Generic | string>
 
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
-    private ambient: TypeSet
+    private ambient: Scope | null
 
     constructor(input: Dict, opts: ScopeOptions) {
         for (const k in input) {
@@ -220,9 +219,9 @@ export class Scope<r extends Resolutions = any> {
                 this.exportedNames.push(parsedKey.name as never)
             }
         }
-        this.ambient = opts.ambient ?? {}
+        this.ambient = opts.ambient ?? null
         // TODO: fix, should work with subscope
-        this.resolutions = { ...this.ambient } as never
+        this.resolutions = opts.ambient?.export() ?? {} //  { ...this.ambient } as never
         this.config = opts
     }
 
@@ -254,7 +253,7 @@ export class Scope<r extends Resolutions = any> {
     }> {
         return new Scope(this.aliases, {
             ...this.config,
-            ambient: this.export()
+            ambient: this
         })
     }
 
@@ -318,6 +317,28 @@ export class Scope<r extends Resolutions = any> {
     maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
         const result = this.maybeResolve(name, ctx)
         return result instanceof Type ? result.root : undefined
+    }
+
+    compile() {
+        let result = ""
+        for (const name in this.aliases) {
+            const ctx: ParseContext = {
+                path: new Path(),
+                scope: this,
+                args: undefined
+            }
+            const resolution = this.maybeResolveNode(name, ctx)
+            if (!resolution) {
+                return throwInternalError(
+                    `Unexpectedly failed to resolve '${name}'`
+                )
+            }
+            result += `const $${name} = (${InputParameterName}) => {
+                ${resolution.compile(new CompilationState("allows"))}
+            }\n`
+        }
+        result += this.ambient
+        return result
     }
 
     import<names extends exportedName<r>[]>(

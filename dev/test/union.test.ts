@@ -1,6 +1,7 @@
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { node } from "../../src/nodes/composite/type.js"
+import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -51,6 +52,16 @@ suite("union", () => {
         //     object: [{ props: { a: "string" } }, { props: { b: "boolean" } }]
         // })
     })
+    test("nested tuple union", () => {
+        const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
+        attest(t.infer).typed as string | number | bigint | boolean
+        // attest(t.node).snap({
+        //     string: true,
+        //     number: true,
+        //     boolean: true,
+        //     bigint: true
+        // })
+    })
     suite("errors", () => {
         test("bad reference", () => {
             // @ts-expect-error
@@ -76,15 +87,17 @@ suite("union", () => {
                 type("boolean[]|(string|number|)|object")
             ).throws(writeMissingRightOperandMessage("|", ")|object"))
         })
-        test("nested tuple union", () => {
-            const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
-            attest(t.infer).typed as string | number | bigint | boolean
-            // attest(t.node).snap({
-            //     string: true,
-            //     number: true,
-            //     boolean: true,
-            //     bigint: true
-            // })
+        test("left semantic error", () => {
+            // @ts-expect-error
+            attest(() => type("boolean%2|string")).throwsAndHasTypeError(
+                writeIndivisibleMessage("boolean")
+            )
+        })
+        test("right semantic error", () => {
+            // @ts-expect-error
+            attest(() => type("string|boolean%2")).throwsAndHasTypeError(
+                writeIndivisibleMessage("boolean")
+            )
         })
         test("chained bad reference", () => {
             // @ts-expect-error
