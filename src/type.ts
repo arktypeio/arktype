@@ -47,25 +47,17 @@ type TypeOverloads<$> = {
 
     // Spread version of a tuple expression
     <zero, one, two>(
-        expression0: zero extends IndexZeroOperator
+        token0: zero extends IndexZeroOperator
             ? zero
-            : validateDefinition<
-                  zero,
-                  $,
-                  bindThis<tupleExpression<zero, one, two>>
-              >,
-        expression1: zero extends "keyof"
-            ? validateDefinition<
-                  one,
-                  $,
-                  bindThis<tupleExpression<zero, one, two>>
-              >
+            : validateDefinition<zero, $, bindThisToExpression<zero, one, two>>,
+        token1: zero extends "keyof"
+            ? validateDefinition<one, $, bindThisToExpression<zero, one, two>>
             : zero extends "instanceof"
             ? conform<one, AbstractableConstructor>
             : zero extends "==="
             ? conform<one, unknown>
             : conform<one, IndexOneOperator>,
-        ...expression2: one extends TupleInfixOperator
+        ...token2: one extends TupleInfixOperator
             ? [
                   one extends ":"
                       ? Narrow<
@@ -73,7 +65,7 @@ type TypeOverloads<$> = {
                                 inferDefinition<
                                     zero,
                                     $,
-                                    bindThis<tupleExpression<zero, one, two>>
+                                    bindThisToExpression<zero, one, two>
                                 >
                             >
                         >
@@ -84,7 +76,7 @@ type TypeOverloads<$> = {
                                 inferDefinition<
                                     zero,
                                     $,
-                                    bindThis<tupleExpression<zero, one, two>>
+                                    bindThisToExpression<zero, one, two>
                                 >
                             >,
                             unknown
@@ -92,18 +84,11 @@ type TypeOverloads<$> = {
                       : validateDefinition<
                             two,
                             $,
-                            bindThis<tupleExpression<zero, one, two>>
+                            bindThisToExpression<zero, one, two>
                         >
               ]
             : []
-    ): Type<
-        inferDefinition<
-            tupleExpression<zero, one, two>,
-            $,
-            bindThis<tupleExpression<zero, one, two>>
-        >,
-        $
-    >
+    ): Type<inferTypeRoot<tupleExpression<zero, one, two>, $>, $>
 
     <params extends string, def>(
         params: `<${validateParameterString<params>}>`,
@@ -116,6 +101,10 @@ type TypeOverloads<$> = {
         >
     ): Generic<parseGenericParams<params>, def, $>
 }
+
+type bindThisToExpression<zero, one, two> = bindThis<
+    tupleExpression<zero, one, two>
+>
 
 type tupleExpression<zero, one, two> = one extends TupleInfixOperator
     ? [zero, one, two]

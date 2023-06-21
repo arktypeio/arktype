@@ -337,7 +337,9 @@ export class Scope<r extends Resolutions = any> {
                 ${resolution.compile(new CompilationState("allows"))}
             }\n`
         }
-        result += this.ambient
+        if (this.ambient) {
+            result += this.ambient.compile()
+        }
         return result
     }
 
