@@ -2,6 +2,7 @@ import {
     fromEntries,
     hasKeys,
     isArray,
+    isThunk,
     spliterate
 } from "../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../compile/registry.js"
@@ -184,14 +185,16 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
 const parsePropsInput = (input: PropsInput) => {
     const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
     const rule: NodeEntry[] = []
-    for (const k in namedInput) {
+    for (const name in namedInput) {
+        const prop = namedInput[name]
+        const value = isThunk(prop.value) ? prop.value() : prop.value
         rule.push({
             key: {
-                name: k,
-                prerequisite: namedInput[k].prerequisite ?? false,
-                optional: namedInput[k].optional ?? false
+                name,
+                prerequisite: prop.prerequisite ?? false,
+                optional: prop.optional ?? false
             },
-            value: typeNode(namedInput[k].value)
+            value: hasArkKind(value, "node") ? value : typeNode(value)
         })
     }
     for (const prop of indexedInput) {

@@ -55,9 +55,6 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
     {
         kind: "type",
         parse: (input) => {
-            if (hasArkKind(input, "node")) {
-                return input.rule
-            }
             if (!isParsedTypeRule(input)) {
                 input = isArray(input)
                     ? input.map((branch) => predicateNode(branch))
@@ -390,7 +387,7 @@ export type inferTypeInput<input extends TypeInput> =
         ? t
         : never
 
-export type TypeInput = TypeNode | PredicateInput | PredicateInput[]
+export type TypeInput = PredicateInput | PredicateInput[]
 
 export type validatedTypeNodeInput<
     input extends readonly PredicateInput[],

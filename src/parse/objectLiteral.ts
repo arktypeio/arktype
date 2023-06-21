@@ -1,6 +1,6 @@
 import type { Dict, error, evaluate } from "../../dev/utils/src/main.js"
-import type { NamedPropRule } from "../nodes/composite/named.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
+import type { NamedPropsInput } from "../nodes/composite/props.js"
 import { propsNode } from "../nodes/composite/props.js"
 import { typeNode } from "../nodes/composite/type.js"
 import { domainNode } from "../nodes/primitive/basis/domain.js"
@@ -10,7 +10,7 @@ import type { inferDefinition, validateDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
-    const named: NamedPropRule[] = []
+    const named: NamedPropsInput = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let optional = false
@@ -25,14 +25,11 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
             }
         }
         ctx.path.push(keyName)
-        named.push({
-            key: {
-                name: keyName,
-                prerequisite: false,
-                optional
-            },
-            value: ctx.scope.parse(def[definitionKey], ctx)
-        })
+        named[keyName] = {
+            prerequisite: false,
+            optional,
+            value: () => ctx.scope.parse(def[definitionKey], ctx)
+        }
         ctx.path.pop()
     }
     const props = propsNode(named)

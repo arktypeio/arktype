@@ -47,6 +47,7 @@ interface PreconstructedBase<rule, intersectsWith> {
         string,
         this | intersectsWith | Disjoint | undefined
     >
+    // TODO: can this work as is with late resolution?
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
     isBasis(): this is NodeKinds[BasisKind]

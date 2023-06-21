@@ -1,15 +1,17 @@
 import type {
     evaluate,
     List,
-    NumberLiteral
+    NumberLiteral,
+    Thunk
 } from "../../../dev/utils/src/main.js"
 import type {
     IndexedPropInput,
     NonVariadicIndexMatcherSource,
     VariadicIndexMatcherSource
 } from "./indexed.js"
+import type { PropValueInput } from "./named.js"
 import type { NamedPropsInput, PropsInput, PropsInputTuple } from "./props.js"
-import type { inferTypeInput } from "./type.js"
+import type { inferTypeInput, TypeInput, TypeNode } from "./type.js"
 
 export type inferPropsInput<input extends PropsInput> =
     input extends PropsInputTuple<infer named, infer indexed>
@@ -58,11 +60,21 @@ type inferObjectLiteralProps<named extends NamedPropsInput> = {} extends named
     ? unknown
     : evaluate<
           {
-              [k in requiredKeyOf<named>]: inferTypeInput<named[k]["value"]>
+              [k in requiredKeyOf<named>]: inferPropValue<named[k]["value"]>
           } & {
-              [k in optionalKeyOf<named>]?: inferTypeInput<named[k]["value"]>
+              [k in optionalKeyOf<named>]?: inferPropValue<named[k]["value"]>
           }
       >
+
+type inferPropValue<value extends PropValueInput> = value extends Thunk<
+    infer ret
+>
+    ? inferResolvedPropValue<ret>
+    : inferResolvedPropValue<value>
+
+type inferResolvedPropValue<value> = value extends TypeNode<infer t>
+    ? t
+    : inferTypeInput<value & TypeInput>
 
 type stringifiedNumericKeyOf<t> = `${Extract<keyof t, number | NumberLiteral>}`
 
@@ -72,7 +84,7 @@ type inferNonVariadicTupleProps<
 > = `${result["length"]}` extends stringifiedNumericKeyOf<named>
     ? inferNonVariadicTupleProps<
           named,
-          [...result, inferTypeInput<named[`${result["length"]}`]["value"]>]
+          [...result, inferPropValue<named[`${result["length"]}`]["value"]>]
       >
     : result
 

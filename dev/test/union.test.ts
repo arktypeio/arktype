@@ -89,14 +89,14 @@ suite("union", () => {
         })
         test("left semantic error", () => {
             // @ts-expect-error
-            attest(() => type("boolean%2|string")).throwsAndHasTypeError(
-                writeIndivisibleMessage("boolean")
+            attest(() => type("symbol%2|string")).throwsAndHasTypeError(
+                writeIndivisibleMessage("symbol")
             )
         })
         test("right semantic error", () => {
             // @ts-expect-error
-            attest(() => type("string|boolean%2")).throwsAndHasTypeError(
-                writeIndivisibleMessage("boolean")
+            attest(() => type("string|symbol%2")).throwsAndHasTypeError(
+                writeIndivisibleMessage("symbol")
             )
         })
         test("chained bad reference", () => {

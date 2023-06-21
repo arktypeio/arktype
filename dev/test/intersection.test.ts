@@ -115,14 +115,14 @@ suite("intersection", () => {
         })
         test("left semantic error", () => {
             // @ts-expect-error
-            attest(() => type("boolean%2&true")).throwsAndHasTypeError(
-                writeIndivisibleMessage("boolean")
+            attest(() => type("string%2&'foo'")).throwsAndHasTypeError(
+                writeIndivisibleMessage("string")
             )
         })
         test("right semantic error", () => {
             // @ts-expect-error
-            attest(() => type("true&boolean%2")).throwsAndHasTypeError(
-                writeIndivisibleMessage("boolean")
+            attest(() => type("'foo'&string%2")).throwsAndHasTypeError(
+                writeIndivisibleMessage("string")
             )
         })
         test("chained semantic validation", () => {

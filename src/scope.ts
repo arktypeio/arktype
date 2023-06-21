@@ -224,8 +224,13 @@ export class Scope<r extends Resolutions = any> {
             }
         }
         this.ambient = opts.ambient ?? null
-        // TODO: don't include non-exported
-        this.resolutions = { ...opts.ambient?.resolutions } ?? {}
+        this.resolutions = {}
+        if (this.ambient) {
+            this.ambient.export()
+            for (const name of this.ambient.exportedNames) {
+                this.resolutions[name] = this.ambient.resolutions[name]
+            }
+        }
         this.config = opts
     }
 
@@ -243,9 +248,9 @@ export class Scope<r extends Resolutions = any> {
         config: TypeConfig = {}
     ) => {
         return new Scope(aliases, {
+            ambient: this.ambient,
             ...this.config,
-            ...config,
-            ambient: this.ambient
+            ...config
         })
     }) as never
 
@@ -257,8 +262,8 @@ export class Scope<r extends Resolutions = any> {
         ambient: r["exports"]
     }> {
         return new Scope(this.aliases, {
-            ...this.config,
-            ambient: this
+            ambient: this,
+            ...this.config
         })
     }
 
