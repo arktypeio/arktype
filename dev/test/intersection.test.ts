@@ -1,5 +1,4 @@
 import { suite, test } from "mocha"
-import type { TypeNode } from "../../src/main.js"
 import { type } from "../../src/main.js"
 import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
