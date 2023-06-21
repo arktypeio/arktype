@@ -1,9 +1,7 @@
 {
     "extends": "./dev/configs/tsconfig.base.json",
     "compilerOptions": {
-        "noErrorTruncation": false,
-        // TODO: disable
-        "noImplicitAny": false
+        "noErrorTruncation": false
     },
     "exclude": ["dev/arktype.io", "node_modules", "dist"]
 }

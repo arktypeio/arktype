@@ -1,5 +1,6 @@
+// @ts-nocheck
 import { format } from "prettier"
-import { scope, tsKeywords, type } from "./src/main.js"
+import { scope } from "./src/main.js"
 
 const $ = scope({
     user: {

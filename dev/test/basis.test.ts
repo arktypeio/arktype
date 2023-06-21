@@ -5,8 +5,8 @@ import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
 import { attest } from "../attest/main.js"
 
 suite("basis intersections", () => {
-    test("class&literal", () => {
-        const a = []
+    test("class & literal", () => {
+        const a = [0]
         const literal = type("===", a)
         const cls = type("instanceof", Array)
         attest(literal.and(cls).root).equals(literal.root).typed as TypeNode<
@@ -16,8 +16,8 @@ suite("basis intersections", () => {
             never[]
         >
     })
-    test("unsatisfiable class&literal", () => {
-        const a = []
+    test("unsatisfiable class & literal", () => {
+        const a = [0]
         const literal = type("===", a)
         const cls = type("instanceof", Date)
         // not a type error because TS treats it structurally, but is unsatisfiable
@@ -28,7 +28,7 @@ suite("basis intersections", () => {
             writeUnsatisfiableExpressionError("")
         )
     })
-    test("domain&literal", () => {
+    test("domain & literal", () => {
         const literal = type("'foo'")
         const domain = type("string")
         attest(literal.and(domain).root).equals(literal.root)
@@ -36,7 +36,7 @@ suite("basis intersections", () => {
         attest(domain.and(literal).root).equals(literal.root)
             .typed as TypeNode<"foo">
     })
-    test("unsatisfiable domain&literal", () => {
+    test("unsatisfiable domain & literal", () => {
         const literal = type("'foo'")
         const domain = type("number")
         // @ts-expect-error
@@ -48,7 +48,7 @@ suite("basis intersections", () => {
             writeUnsatisfiableExpressionError("")
         )
     })
-    test("domain&class", () => {
+    test("domain & class", () => {
         const domain = type("object")
         const cls = type("instanceof", Date)
         attest(domain.and(cls).root).equals(cls.root).typed as TypeNode<Date>

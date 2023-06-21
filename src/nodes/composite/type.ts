@@ -376,8 +376,7 @@ export const builtins = {
     unknown: cached(() => node({})),
     nonVariadicArrayIndex: cached(() => node(arrayIndexInput())),
     string: cached(() => node({ basis: "string" })),
-    array: cached(() => node({ basis: Array })),
-    this: cached(() => node({ basis: "object", narrow: thisNarrow }))
+    array: cached(() => node({ basis: Array }))
 } satisfies Record<string, () => TypeNode>
 
 export type inferBranches<branches extends readonly PredicateInput[]> = {

@@ -83,7 +83,8 @@ type validateAliases<aliases, $> = {
 export type bindThis<def> = { this: Def<def> }
 
 export const bindThis = () => ({
-    this: builtins.this()
+    // TODO: fix
+    this: builtins.unknown()
 })
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
@@ -220,8 +221,7 @@ export class Scope<r extends Resolutions = any> {
             }
         }
         this.ambient = opts.ambient ?? null
-        // TODO: fix, should work with subscope
-        this.resolutions = opts.ambient?.export() ?? {} //  { ...this.ambient } as never
+        this.resolutions = opts.ambient?.export() ?? {}
         this.config = opts
     }
 
@@ -231,6 +231,7 @@ export class Scope<r extends Resolutions = any> {
 
     type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
+    // TODO: decide if this API will be used for non-validated types
     declare: DeclarationParser<$<r>> = () => ({ type: this.type } as never)
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
