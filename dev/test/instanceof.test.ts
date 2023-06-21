@@ -1,5 +1,6 @@
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
+import { writeInvalidConstructorMessage } from "../../src/parse/tuple.js"
 import { Type } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 
@@ -44,6 +45,19 @@ suite("instanceof", () => {
             attest(ark(a).data).equals(a)
             attest(ark({}).problems?.summary).snap(
                 "Must be an instance of Ark (was Object)"
+            )
+        })
+    })
+    suite("root expression", () => {
+        test("constructor", () => {
+            const t = type("instanceof", Error)
+            attest(t.infer).typed as Error
+            attest(t.condition).equals(type(["instanceof", Error]).condition)
+        })
+        test("non-constructor", () => {
+            // @ts-expect-error just an assignability failure so we can't validate an error message
+            attest(() => type("instanceof", new Error())).throws(
+                writeInvalidConstructorMessage("Error")
             )
         })
     })

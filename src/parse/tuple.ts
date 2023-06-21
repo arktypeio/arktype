@@ -1,12 +1,16 @@
 import { throwParseError } from "../../dev/utils/src/errors.js"
 import type { evaluate, isAny } from "../../dev/utils/src/generics.js"
 import type { List } from "../../dev/utils/src/lists.js"
-import type { AbstractableConstructor } from "../../dev/utils/src/objectKinds.js"
-import { isArray } from "../../dev/utils/src/objectKinds.js"
+import { domainOf, hasDomain } from "../../dev/utils/src/main.js"
+import type { Domain } from "../../dev/utils/src/main.js"
+import type {
+    AbstractableConstructor,
+    BuiltinObjectKind
+} from "../../dev/utils/src/objectKinds.js"
+import { isArray, objectKindOf } from "../../dev/utils/src/objectKinds.js"
 import { stringify } from "../../dev/utils/src/serialize.js"
 import type { CheckResult, TraversalState } from "../compile/traverse.js"
 import type { Problem } from "../main.js"
-import { type } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
 import type { NodeEntry } from "../nodes/composite/props.js"
@@ -433,9 +437,12 @@ const prefixParsers: {
 } = {
     keyof: parseKeyOfTuple,
     instanceof: (def) => {
-        if (typeof def[1] !== "function") {
+        const objectKind = objectKindOf(def[1])
+        if (objectKind !== "Function") {
             return throwParseError(
-                `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
+                writeInvalidConstructorMessage(
+                    objectKind ? objectKind : domainOf(def[1])
+                )
             )
         }
         return typeNode({
@@ -447,3 +454,9 @@ const prefixParsers: {
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
     prefixParsers[def[0] as IndexZeroOperator] !== undefined
+
+export const writeInvalidConstructorMessage = <
+    actual extends Domain | BuiltinObjectKind
+>(
+    actual: actual
+) => `Expected a constructor following 'instanceof' operator (was ${actual}).`

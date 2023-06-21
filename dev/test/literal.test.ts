@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { node, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 suite("literal", () => {
@@ -10,14 +10,27 @@ suite("literal", () => {
             attest(t.condition).equals(type("5").condition)
         })
         test("non-serializable", () => {
-            const s = Symbol("test")
+            const s = Symbol()
             const t = type(["===", s])
             attest(t.infer).typed as symbol
             // attest(t.node).equals({ symbol: { value: s } })
             attest(t(s).data).equals(s)
             attest(t("test").problems?.summary).snap(
-                'Must be (symbol test) (was "test")'
+                'Must be (symbol anonymous) (was "test")'
             )
+        })
+    })
+    suite("root expression", () => {
+        test("serializable", () => {
+            const t = type("===", true)
+            attest(t.infer).typed as true
+            attest(t.condition).equals(type("true").condition)
+        })
+        test("non-serializable", () => {
+            const s = Symbol()
+            const t = type("===", s)
+            attest(t.infer).typed as Error
+            attest(t.condition).equals(node({ basis: ["===", s] }).condition)
         })
     })
     suite("method", () => {
