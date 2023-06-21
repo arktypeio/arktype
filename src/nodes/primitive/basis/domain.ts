@@ -1,5 +1,5 @@
-import type { Domain } from "../../../../dev/utils/src/domains.js"
-import { getBaseDomainKeys } from "../../../../dev/utils/src/objectKinds.js"
+import type { Domain } from "../../../../dev/utils/src/main.js"
+import { getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"

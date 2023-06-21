@@ -1,4 +1,4 @@
-import type { NumberLiteral } from "../../../../dev/utils/src/numericLiterals.js"
+import type { NumberLiteral } from "../../../../dev/utils/src/main.js"
 import type {
     Comparator,
     InvertedComparators,

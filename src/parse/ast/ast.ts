@@ -1,9 +1,8 @@
-import type { error, List } from "../../../dev/utils/src/main.js"
-import type {
-    BigintLiteral,
+import type { BigintLiteral, error ,
+    List,
     NumberLiteral,
     writeMalformedNumericLiteralMessage
-} from "../../../dev/utils/src/numericLiterals.js"
+} from "../../../dev/utils/src/main.js"
 import { type } from "../../main.js"
 import type { Comparator } from "../../nodes/primitive/range.js"
 import type { resolve, UnparsedScope } from "../../scope.js"

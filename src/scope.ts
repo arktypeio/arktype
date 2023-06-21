@@ -1,9 +1,12 @@
-import { domainOf, hasDomain } from "../dev/utils/src/domains.js"
-import { throwInternalError, throwParseError } from "../dev/utils/src/errors.js"
-import type { evaluate, isAny, nominal } from "../dev/utils/src/generics.js"
-import { Path } from "../dev/utils/src/lists.js"
-import { isThunk } from "../dev/utils/src/main.js"
-import type { Dict } from "../dev/utils/src/records.js"
+import {
+    domainOf,
+    hasDomain,
+    isThunk,
+    Path,
+    throwInternalError,
+    throwParseError
+} from "../dev/utils/src/main.js"
+import type { Dict, evaluate, isAny, nominal } from "../dev/utils/src/main.js"
 import type { ProblemCode } from "./compile/problems.js"
 import { hasArkKind } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"

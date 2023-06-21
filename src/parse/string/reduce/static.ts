@@ -1,6 +1,8 @@
-import type { error } from "../../../../dev/utils/src/errors.js"
-import type { defined } from "../../../../dev/utils/src/generics.js"
-import type { NumberLiteral } from "../../../../dev/utils/src/numericLiterals.js"
+import type {
+    defined,
+    error,
+    NumberLiteral
+} from "../../../../dev/utils/src/main.js"
 import type {
     Comparator,
     InvertedComparators,

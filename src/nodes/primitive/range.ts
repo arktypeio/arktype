@@ -1,5 +1,4 @@
-import { throwInternalError } from "../../../dev/utils/src/errors.js"
-import { isKeyOf } from "../../../dev/utils/src/records.js"
+import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"

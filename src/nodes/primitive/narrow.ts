@@ -1,5 +1,5 @@
-import type { listable } from "../../../dev/utils/src/lists.js"
-import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/lists.js"
+import type { listable } from "../../../dev/utils/src/main.js"
+import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/main.js"
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/tuple.js"
 import type { BaseNode } from "../node.js"

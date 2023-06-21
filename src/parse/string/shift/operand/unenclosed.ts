@@ -1,15 +1,11 @@
-import type { error } from "../../../../../dev/utils/src/errors.js"
-import { throwParseError } from "../../../../../dev/utils/src/errors.js"
-import type { join } from "../../../../../dev/utils/src/lists.js"
-import type {
-    BigintLiteral,
+import type { BigintLiteral , error ,
+    join,
     NumberLiteral
-} from "../../../../../dev/utils/src/numericLiterals.js"
-import {
-    tryParseWellFormedBigint,
-    tryParseWellFormedNumber
-} from "../../../../../dev/utils/src/numericLiterals.js"
-import { stringify } from "../../../../../dev/utils/src/serialize.js"
+} from "../../../../../dev/utils/src/main.js"
+import { stringify ,
+    throwParseError,
+    tryParseWellFormedBigint
+, tryParseWellFormedNumber } from "../../../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"

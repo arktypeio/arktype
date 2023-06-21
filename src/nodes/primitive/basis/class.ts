@@ -1,10 +1,10 @@
-import { cached } from "../../../../dev/utils/src/functions.js"
-import type { AbstractableConstructor } from "../../../../dev/utils/src/objectKinds.js"
+import type { AbstractableConstructor } from "../../../../dev/utils/src/main.js"
 import {
+    cached,
     constructorExtends,
     getExactBuiltinConstructorName,
     prototypeKeysOf
-} from "../../../../dev/utils/src/objectKinds.js"
+} from "../../../../dev/utils/src/main.js"
 import { registry } from "../../../compile/registry.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"

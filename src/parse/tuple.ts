@@ -1,14 +1,19 @@
-import { throwParseError } from "../../dev/utils/src/errors.js"
-import type { evaluate, isAny } from "../../dev/utils/src/generics.js"
-import type { List } from "../../dev/utils/src/lists.js"
-import { domainOf, hasDomain } from "../../dev/utils/src/main.js"
-import type { Domain } from "../../dev/utils/src/main.js"
 import type {
     AbstractableConstructor,
-    BuiltinObjectKind
-} from "../../dev/utils/src/objectKinds.js"
-import { isArray, objectKindOf } from "../../dev/utils/src/objectKinds.js"
-import { stringify } from "../../dev/utils/src/serialize.js"
+    BuiltinObjectKind,
+    Domain,
+    evaluate,
+    isAny,
+    List
+} from "../../dev/utils/src/main.js"
+import {
+    domainOf,
+    hasDomain,
+    isArray,
+    objectKindOf,
+    stringify,
+    throwParseError
+} from "../../dev/utils/src/main.js"
 import type { CheckResult, TraversalState } from "../compile/traverse.js"
 import type { Problem } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"

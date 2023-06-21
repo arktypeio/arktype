@@ -1,4 +1,4 @@
-import type { Literalable } from "../../../dev/utils/src/generics.js"
+import type { Literalable } from "../../../dev/utils/src/main.js"
 
 export type astToString<
     ast,

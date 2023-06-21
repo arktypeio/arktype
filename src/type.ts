@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { error } from "../dev/utils/src/errors.js"
-import { CompiledFunction } from "../dev/utils/src/functions.js"
-import type { conform, isAny, Literalable } from "../dev/utils/src/generics.js"
+import { CompiledFunction } from "../dev/utils/src/main.js"
 import type {
     AbstractableConstructor,
     BuiltinObjectKind,
-    BuiltinObjects
-} from "../dev/utils/src/objectKinds.js"
+    BuiltinObjects,
+    conform,
+    error,
+    isAny,
+    Literalable
+} from "../dev/utils/src/main.js"
 import { arkKind, registry } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { CheckResult } from "./compile/traverse.js"

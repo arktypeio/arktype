@@ -1,9 +1,14 @@
-import type { Domain } from "../../../dev/utils/src/domains.js"
-import { throwInternalError } from "../../../dev/utils/src/errors.js"
-import type { evaluate } from "../../../dev/utils/src/generics.js"
-import type { keySet } from "../../../dev/utils/src/records.js"
-import { entriesOf, isKeyOf } from "../../../dev/utils/src/records.js"
-import type { SerializedPrimitive } from "../../../dev/utils/src/serialize.js"
+import {
+    entriesOf,
+    isKeyOf,
+    throwInternalError
+} from "../../../dev/utils/src/main.js"
+import type {
+    Domain,
+    evaluate,
+    keySet,
+    SerializedPrimitive
+} from "../../../dev/utils/src/main.js"
 import { Disjoint } from "../disjoint.js"
 import type { SerializedPath } from "../disjoint.js"
 import type { BasisNode } from "../primitive/basis/basis.js"

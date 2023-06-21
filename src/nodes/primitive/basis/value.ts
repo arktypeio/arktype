@@ -1,6 +1,8 @@
-import { domainOf } from "../../../../dev/utils/src/domains.js"
-import { prototypeKeysOf } from "../../../../dev/utils/src/objectKinds.js"
-import { stringify } from "../../../../dev/utils/src/serialize.js"
+import {
+    domainOf,
+    prototypeKeysOf,
+    stringify
+} from "../../../../dev/utils/src/main.js"
 import { compileSerializedValue } from "../../../compile/state.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"

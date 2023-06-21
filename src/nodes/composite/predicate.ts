@@ -1,16 +1,19 @@
-import { domainOf } from "../../../dev/utils/src/domains.js"
-import type { Domain, inferDomain } from "../../../dev/utils/src/domains.js"
-import {
-    throwInternalError,
-    throwParseError
-} from "../../../dev/utils/src/errors.js"
-import type { evaluate, isUnknown } from "../../../dev/utils/src/generics.js"
-import type { List, listable } from "../../../dev/utils/src/lists.js"
 import type {
     AbstractableConstructor,
-    Constructor
-} from "../../../dev/utils/src/objectKinds.js"
-import { isArray } from "../../../dev/utils/src/objectKinds.js"
+    Constructor,
+    Domain,
+    evaluate,
+    inferDomain,
+    isUnknown,
+    List,
+    listable
+} from "../../../dev/utils/src/main.js"
+import {
+    domainOf,
+    isArray,
+    throwInternalError,
+    throwParseError
+} from "../../../dev/utils/src/main.js"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import type {

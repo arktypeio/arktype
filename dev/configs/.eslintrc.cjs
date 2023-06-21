@@ -58,61 +58,66 @@ module.exports = defineConfig({
                 }
             }
         ],
-        "import/no-restricted-paths": [
-            "error",
-            {
-                zones: [
-                    {
-                        target: "./src",
-                        from: "./node_modules"
-                    }
-                ]
-            }
-        ],
-        "no-restricted-imports": [
-            "error",
-            "node:assert",
-            "node:buffer",
-            "node:child_process",
-            "node:cluster",
-            "node:crypto",
-            "node:dgram",
-            "node:dns",
-            "node:domain",
-            "node:events",
-            "node:freelist",
-            "node:fs",
-            "node:http",
-            "node:https",
-            "node:module",
-            "node:net",
-            "node:os",
-            "node:path",
-            "node:node:punycode",
-            "node:querystring",
-            "node:readline",
-            "node:repl",
-            "node:smalloc",
-            "node:stream",
-            "node:string_decoder",
-            "node:sys",
-            "node:timers",
-            "node:tls",
-            "node:tracing",
-            "node:tty",
-            "node:url",
-            "node:util",
-            "node:vm",
-            "node:zlib"
-        ],
-        // Generally too strict but can be enabled for hints about actual circular import problems
-        // "import/no-cycle": "warn",
         // Sort destructured variables within a single import statement
         "sort-imports": [
             "warn",
             {
                 ignoreCase: true,
                 ignoreDeclarationSort: true
+            }
+        ],
+        // Currently not working, see:
+        // https://github.com/arktypeio/arktype/issues/803
+        "import/no-restricted-paths": [
+            "error",
+            {
+                zones: [
+                    {
+                        target: "./src",
+                        from: [
+                            "./node_modules/**/*",
+                            "./dev/utils/src/**/*",
+                            "./dev/attest/**/*",
+                            "node:assert",
+                            "node:buffer",
+                            "node:child_process",
+                            "node:cluster",
+                            "node:crypto",
+                            "node:dgram",
+                            "node:dns",
+                            "node:domain",
+                            "node:events",
+                            "node:freelist",
+                            "node:fs",
+                            "node:http",
+                            "node:https",
+                            "node:module",
+                            "node:net",
+                            "node:os",
+                            "node:path",
+                            "node:node:punycode",
+                            "node:querystring",
+                            "node:readline",
+                            "node:repl",
+                            "node:smalloc",
+                            "node:stream",
+                            "node:string_decoder",
+                            "node:sys",
+                            "node:timers",
+                            "node:tls",
+                            "node:tracing",
+                            "node:tty",
+                            "node:url",
+                            "node:util",
+                            "node:vm",
+                            "node:zlib"
+                        ],
+                        except: [
+                            "./dev/attest/src/main.js",
+                            "./dev/utils/src/main.js"
+                        ]
+                    }
+                ]
             }
         ],
         /**

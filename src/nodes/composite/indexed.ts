@@ -1,5 +1,7 @@
-import { throwInternalError } from "../../../dev/utils/src/errors.js"
-import { tryParseWellFormedInteger } from "../../../dev/utils/src/numericLiterals.js"
+import {
+    throwInternalError,
+    tryParseWellFormedInteger
+} from "../../../dev/utils/src/main.js"
 import type { CompilationState } from "../../compile/state.js"
 import { InputParameterName } from "../../compile/state.js"
 import type { NamedPropRule } from "./named.js"

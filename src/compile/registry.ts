@@ -1,5 +1,4 @@
-import type { autocomplete } from "../../dev/utils/src/generics.js"
-import type { AbstractableConstructor } from "../../dev/utils/src/objectKinds.js"
+import type { AbstractableConstructor , autocomplete } from "../../dev/utils/src/main.js"
 import type { Node } from "../nodes/kinds.js"
 import type { Generic } from "../type.js"
 import { compilePropAccess } from "./state.js"

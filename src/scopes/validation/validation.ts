@@ -1,7 +1,7 @@
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
-} from "../../../dev/utils/src/numericLiterals.js"
+} from "../../../dev/utils/src/main.js"
 import { node } from "../../nodes/composite/type.js"
 import type { Out } from "../../parse/tuple.js"
 import { Scope } from "../../scope.js"

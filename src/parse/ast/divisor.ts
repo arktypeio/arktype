@@ -1,4 +1,4 @@
-import type { error } from "../../../dev/utils/src/errors.js"
+import type { error } from "../../../dev/utils/src/main.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 

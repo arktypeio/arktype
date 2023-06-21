@@ -1,7 +1,11 @@
-import type { NumberLiteral } from "../../../../../dev/utils/src/numericLiterals.js"
-import { tryParseWellFormedNumber } from "../../../../../dev/utils/src/numericLiterals.js"
-import type { keySet } from "../../../../../dev/utils/src/records.js"
-import { isKeyOf } from "../../../../../dev/utils/src/records.js"
+import type {
+    keySet,
+    NumberLiteral
+} from "../../../../../dev/utils/src/main.js"
+import {
+    isKeyOf,
+    tryParseWellFormedNumber
+} from "../../../../../dev/utils/src/main.js"
 import { Disjoint } from "../../../../nodes/disjoint.js"
 import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
 import type {

@@ -1,18 +1,12 @@
-import { domainDescriptions, domainOf } from "../../dev/utils/src/domains.js"
-import type { Domain } from "../../dev/utils/src/domains.js"
-import type { conform } from "../../dev/utils/src/generics.js"
-import { Path } from "../../dev/utils/src/lists.js"
-import type { arraySubclassToReadonly } from "../../dev/utils/src/lists.js"
-import {
-    getExactBuiltinConstructorName,
-    objectKindDescriptions
-} from "../../dev/utils/src/objectKinds.js"
-import type {
-    AbstractableConstructor,
-    BuiltinObjectKind,
-    Constructor
-} from "../../dev/utils/src/objectKinds.js"
-import { stringify } from "../../dev/utils/src/serialize.js"
+import type { AbstractableConstructor , arraySubclassToReadonly , BuiltinObjectKind ,
+    conform,
+    Constructor,
+    Domain
+} from "../../dev/utils/src/main.js"
+import { domainDescriptions ,
+    domainOf,
+    getExactBuiltinConstructorName
+, objectKindDescriptions, Path , stringify } from "../../dev/utils/src/main.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
 import type { Bound, SizedData } from "../nodes/primitive/range.js"
 import type { InternalId } from "./registry.js"

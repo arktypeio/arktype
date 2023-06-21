@@ -1,6 +1,8 @@
-import type { evaluate } from "../../../dev/utils/src/generics.js"
-import type { List } from "../../../dev/utils/src/lists.js"
-import type { NumberLiteral } from "../../../dev/utils/src/numericLiterals.js"
+import type {
+    evaluate,
+    List,
+    NumberLiteral
+} from "../../../dev/utils/src/main.js"
 import type {
     IndexedPropInput,
     NonVariadicIndexMatcherSource,

@@ -1,6 +1,4 @@
-import type { error } from "../../dev/utils/src/errors.js"
-import type { evaluate } from "../../dev/utils/src/generics.js"
-import type { Dict } from "../../dev/utils/src/records.js"
+import type { Dict, error, evaluate } from "../../dev/utils/src/main.js"
 import type { NamedPropRule } from "../nodes/composite/named.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
 import { propsNode } from "../nodes/composite/props.js"

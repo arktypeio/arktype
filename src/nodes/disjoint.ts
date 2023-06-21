@@ -1,13 +1,13 @@
 import {
+    stringify,
     throwInternalError,
     throwParseError
-} from "../../dev/utils/src/errors.js"
+} from "../../dev/utils/src/main.js"
 import {
     entriesOf,
     type entryOf,
     fromEntries
-} from "../../dev/utils/src/records.js"
-import { stringify } from "../../dev/utils/src/serialize.js"
+} from "../../dev/utils/src/main.js"
 import type { PredicateNode } from "./composite/predicate.js"
 import type { TypeNode } from "./composite/type.js"
 import type { BasisNode } from "./primitive/basis/basis.js"

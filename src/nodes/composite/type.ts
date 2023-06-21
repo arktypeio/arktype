@@ -1,10 +1,9 @@
-import { cached } from "../../../dev/utils/src/functions.js"
 import type {
     conform,
     exact,
     Literalable
-} from "../../../dev/utils/src/generics.js"
-import { isArray } from "../../../dev/utils/src/objectKinds.js"
+} from "../../../dev/utils/src/main.js"
+import { cached, isArray } from "../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../compile/registry.js"
 import type { CompilationState } from "../../compile/state.js"
 import { compilePropAccess, InputParameterName } from "../../compile/state.js"

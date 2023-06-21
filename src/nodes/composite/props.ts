@@ -1,6 +1,9 @@
-import { spliterate } from "../../../dev/utils/src/lists.js"
-import { isArray } from "../../../dev/utils/src/objectKinds.js"
-import { fromEntries, hasKeys } from "../../../dev/utils/src/records.js"
+import {
+    fromEntries,
+    hasKeys,
+    isArray,
+    spliterate
+} from "../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../compile/registry.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
