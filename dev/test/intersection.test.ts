@@ -20,9 +20,7 @@ suite("intersection", () => {
         // 2. "0" | "1" | "2"
         const t = type("'0'|'1'&string|'2'")
         attest(t.infer).typed as "0" | "1" | "2"
-        // attest(t.node).snap({
-        //     string: [{ value: "0" }, { value: "1" }, { value: "2" }]
-        // })
+        attest(t.condition).equals(type.literal("0", "1", "2").condition)
     })
     test("tuple expression", () => {
         const t = type([{ a: "string" }, "&", { b: "number" }])
