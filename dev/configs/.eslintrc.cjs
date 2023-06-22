@@ -29,9 +29,15 @@ module.exports = defineConfig({
         curly: "warn",
         eqeqeq: "warn",
         "object-shorthand": ["warn"],
+        "no-unused-vars": "off",
         "@typescript-eslint/no-unused-vars": [
             "warn",
-            { ignoreRestSiblings: true }
+            {
+                ignoreRestSiblings: true,
+                args: "after-used",
+                argsIgnorePattern: "^__",
+                varsIgnorePattern: "^__"
+            }
         ],
         "@typescript-eslint/default-param-last": "warn",
         "@typescript-eslint/consistent-type-imports": "warn",
@@ -66,57 +72,66 @@ module.exports = defineConfig({
                 ignoreDeclarationSort: true
             }
         ],
-        // Currently not working, see:
-        // https://github.com/arktypeio/arktype/issues/803
-        "import/no-restricted-paths": [
+        "no-restricted-imports": "off",
+        "@typescript-eslint/no-restricted-imports": [
             "error",
             {
-                zones: [
+                patterns: [
                     {
-                        target: "./src",
-                        from: [
-                            "./node_modules/**/*",
-                            "./dev/utils/src/**/*",
-                            "./dev/attest/**/*",
-                            "node:assert",
-                            "node:buffer",
-                            "node:child_process",
-                            "node:cluster",
-                            "node:crypto",
-                            "node:dgram",
-                            "node:dns",
-                            "node:domain",
-                            "node:events",
-                            "node:freelist",
-                            "node:fs",
-                            "node:http",
-                            "node:https",
-                            "node:module",
-                            "node:net",
-                            "node:os",
-                            "node:path",
-                            "node:node:punycode",
-                            "node:querystring",
-                            "node:readline",
-                            "node:repl",
-                            "node:smalloc",
-                            "node:stream",
-                            "node:string_decoder",
-                            "node:sys",
-                            "node:timers",
-                            "node:tls",
-                            "node:tracing",
-                            "node:tty",
-                            "node:url",
-                            "node:util",
-                            "node:vm",
-                            "node:zlib"
+                        group: [
+                            "../../dev/utils/src/*",
+                            "!../../dev/utils/src/main.js"
                         ],
-                        except: [
-                            "./dev/attest/src/main.js",
-                            "./dev/utils/src/main.js"
-                        ]
+                        message:
+                            'Deep importing from "dev/utils/*" is not allowed, please import directly from "dev/utils/src/main.js" instead'
+                    },
+                    {
+                        group: [
+                            "../../dev/attest/*",
+                            "!../../dev/attest/src/main.js"
+                        ],
+                        message:
+                            'Deep importing from "dev/attest/*" is not allowed, please import from "dev/attest/src/main.js" instead'
                     }
+                ],
+                paths: [
+                    "error",
+                    "dist",
+                    "node_modules",
+                    "dist",
+                    "node:assert",
+                    "node:buffer",
+                    "node:child_process",
+                    "node:cluster",
+                    "node:crypto",
+                    "node:dgram",
+                    "node:dns",
+                    "node:domain",
+                    "node:events",
+                    "node:freelist",
+                    "node:fs",
+                    "node:http",
+                    "node:https",
+                    "node:module",
+                    "node:net",
+                    "node:os",
+                    "node:path",
+                    "node:node:punycode",
+                    "node:querystring",
+                    "node:readline",
+                    "node:repl",
+                    "node:smalloc",
+                    "node:stream",
+                    "node:string_decoder",
+                    "node:sys",
+                    "node:timers",
+                    "node:tls",
+                    "node:tracing",
+                    "node:tty",
+                    "node:url",
+                    "node:util",
+                    "node:vm",
+                    "node:zlib"
                 ]
             }
         ],
@@ -171,7 +186,7 @@ module.exports = defineConfig({
         {
             files: ["./dev/**"],
             rules: {
-                "no-restricted-imports": "off"
+                "@typescript-eslint/no-restricted-imports": "off"
             }
         }
     ]
