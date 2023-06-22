@@ -75,7 +75,7 @@ suite("intersection", () => {
         )
     })
     test("multiple types with union array", () => {
-        const __t = type([["number", "string"], "&", "('one'|1)[]"])
+        const t = type([["number", "string"], "&", "('one'|1)[]"])
         // attest(t.node).snap({
         //     object: {
         //         instance: "(function Array)",

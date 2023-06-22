@@ -4,7 +4,7 @@ import { bench } from "../../attest/main.js"
 
 bench("arktype", () => {
     // Union is automatically discriminated using shallow or deep keys
-    const __user = type({
+    const user = type({
         kind: "'admin'",
         "powers?": "string[]"
     })

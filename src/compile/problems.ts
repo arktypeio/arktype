@@ -1,19 +1,12 @@
-import type {
-    AbstractableConstructor,
-    arraySubclassToReadonly,
-    BuiltinObjectKind,
+import type { AbstractableConstructor , arraySubclassToReadonly , BuiltinObjectKind ,
     conform,
     Constructor,
     Domain
 } from "../../dev/utils/src/main.js"
-import {
-    domainDescriptions,
+import { domainDescriptions ,
     domainOf,
-    getExactBuiltinConstructorName,
-    objectKindDescriptions,
-    Path,
-    stringify
-} from "../../dev/utils/src/main.js"
+    getExactBuiltinConstructorName
+, objectKindDescriptions, Path , stringify } from "../../dev/utils/src/main.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
 import type { Bound, SizedData } from "../nodes/primitive/range.js"
 import type { InternalId } from "./registry.js"

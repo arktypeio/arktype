@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import type { Out } from "../../src/main.js"
-import { scope as __scope, node, type } from "../../src/main.js"
+import { node, scope, type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage

@@ -1,9 +1,5 @@
 import type { SerializablePrimitive } from "../../dev/utils/src/main.js"
-import {
-    hasDomain,
-    isArray,
-    serializePrimitive
-} from "../../dev/utils/src/main.js"
+import { hasDomain , isArray , serializePrimitive } from "../../dev/utils/src/main.js"
 import type { Discriminant } from "../nodes/composite/discriminate.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"

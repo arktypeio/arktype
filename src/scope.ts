@@ -300,7 +300,7 @@ export class Scope<r extends Resolutions = any> {
 
     maybeResolve(
         name: string,
-        __ctx: ParseContext
+        ctx: ParseContext
     ): TypeNode | Generic | TypeSet | undefined {
         const cached = this.resolutions[name]
         if (cached) {

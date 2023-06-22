@@ -12,7 +12,7 @@ suite("key traversal", () => {
         attest(t(dataWithExtraneousB).data).equals(dataWithExtraneousB)
     })
     test("invalid union", () => {
-        const __o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
+        const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
             keys: "strict"
         })
         // attest(o({ a: 2 }).problems?.summary).snap(

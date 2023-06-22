@@ -87,7 +87,7 @@ if (!($arkRoot.isRainForest === true)) {
     })
 
     test("undiscriminatable", () => {
-        const __t = getPlaces().type([
+        const t = getPlaces().type([
             "ocean",
             "|",
             {
@@ -98,20 +98,20 @@ if (!($arkRoot.isRainForest === true)) {
         ])
     })
     test("default case", () => {
-        const __t = getPlaces().type([
+        const t = getPlaces().type([
             "ocean|rainForest",
             "|",
             { temperature: "'hot'" }
         ])
     })
     test("discriminatable default", () => {
-        const __t = getPlaces().type([
+        const t = getPlaces().type([
             { temperature: "'cold'" },
             "|",
             ["ocean|rainForest", "|", { temperature: "'hot'" }]
         ])
     })
     test("won't discriminate between possibly empty arrays", () => {
-        const __t = type("string[]|boolean[]")
+        const t = type("string[]|boolean[]")
     })
 })
