@@ -4,7 +4,7 @@ import { scope } from "./src/main.js"
 
 const $ = scope({
     user: {
-        name: "user"
+        friends: "user[]"
     }
 })
 

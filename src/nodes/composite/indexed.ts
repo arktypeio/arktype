@@ -3,7 +3,6 @@ import {
     tryParseWellFormedInteger
 } from "../../../dev/utils/src/main.js"
 import type { CompilationState } from "../../compile/state.js"
-import { InputParameterName } from "../../compile/state.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp, compileNamedProps } from "./named.js"
 import type { PredicateInput } from "./predicate.js"
@@ -64,7 +63,7 @@ export const extractArrayIndexRegex = (keyNode: TypeNode) => {
     if (keyNode.branches.length !== 1) {
         return
     }
-    const regexNode = keyNode.branches()[0].getConstraint("regex")
+    const regexNode = keyNode.branches[0].getConstraint("regex")
     if (!regexNode || regexNode.rule.length !== 1) {
         return
     }

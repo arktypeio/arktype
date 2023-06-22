@@ -1,7 +1,7 @@
 import { throwInternalError } from "../../../dev/utils/src/main.js"
 import type { CompilationState } from "../../compile/state.js"
 import { Disjoint } from "../disjoint.js"
-import type { TypeInput, TypeNode, UnresolvedTypeNode } from "./type.js"
+import type { TypeInput, TypeNode } from "./type.js"
 import { builtins } from "./type.js"
 
 export const intersectNamedProp = (

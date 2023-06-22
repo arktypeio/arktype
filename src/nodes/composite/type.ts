@@ -31,7 +31,7 @@ import { propsNode } from "./props.js"
 export interface TypeNode<t = unknown>
     extends BaseNode<UnresolvedTypeNode | PredicateNode[]> {
     [inferred]: t
-    branches(): PredicateNode[]
+    branches: PredicateNode[]
     discriminant: Discriminant | null
     valueNode: ValueNode | undefined
     array(): TypeNode<t[]>
@@ -72,7 +72,8 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
         },
         compile: (rule, s) => {
             if (hasKey(rule, "resolve")) {
-                return `$${rule.alias}(${InputParameterName})`
+                // TODO: ensure alias name is universally unique here for caching
+                return s.check("custom", "valid", `$${rule.alias}(${s.data})`)
             }
             const discriminant = discriminate(rule)
             return discriminant
@@ -80,13 +81,11 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                 : compileIndiscriminable(rule, s)
         },
         intersect: (l, r): TypeNode | Disjoint => {
-            const lBranches = l.branches()
-            const rBranches = r.branches()
             if (l.branches.length === 1 && r.branches.length === 1) {
-                const result = lBranches[0].intersect(rBranches[0])
+                const result = l.branches[0].intersect(r.branches[0])
                 return result instanceof Disjoint ? result : typeNode([result])
             }
-            const resultBranches = intersectBranches(lBranches, rBranches)
+            const resultBranches = intersectBranches(l.branches, r.branches)
             return resultBranches.length
                 ? typeNode(resultBranches)
                 : Disjoint.from("union", l, r)
@@ -95,10 +94,10 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
     (base) => {
         let cachedBranches: PredicateNode[] | undefined
         return {
-            branches: () => {
+            get branches() {
                 if (!cachedBranches) {
                     cachedBranches = hasKey(base.rule, "resolve")
-                        ? base.rule.resolve().branches()
+                        ? base.rule.resolve().branches
                         : base.rule
                 }
                 return cachedBranches
@@ -110,12 +109,11 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                 : base.rule.alias,
             // discriminate is cached so we don't have to worry about this running multiple times
             get discriminant() {
-                return discriminate(this.branches())
+                return discriminate(this.branches)
             },
             get valueNode() {
-                const branches = this.branches()
                 return this.branches.length === 1
-                    ? branches[0].valueNode
+                    ? this.branches[0].valueNode
                     : undefined
             },
             array(): any {
@@ -129,12 +127,12 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                 return Array.isArray(this.rule) || cachedBranches !== undefined
             },
             isNever() {
-                return this.branches().length === 0
+                return this.branches.length === 0
             },
             isUnknown() {
                 return (
-                    this.branches().length === 1 &&
-                    this.branches()[0].rule.length === 0
+                    this.branches.length === 1 &&
+                    this.branches[0].rule.length === 0
                 )
             },
             and(other): any {
@@ -146,12 +144,12 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                     return this
                 }
                 return typeNode(
-                    reduceBranches([...this.branches(), ...other.branches()])
+                    reduceBranches([...this.branches, ...other.branches])
                 )
             },
             constrain(kind, def): any {
                 return typeNode(
-                    this.branches().map((branch) => branch.constrain(kind, def))
+                    this.branches.map((branch) => branch.constrain(kind, def))
                 )
             },
             equals(other) {
@@ -164,7 +162,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                 return this
             },
             getPath(...path): any {
-                let current: PredicateNode[] = this.branches()
+                let current: PredicateNode[] = this.branches
                 let next: PredicateNode[] = []
                 while (path.length) {
                     const key = path.shift()!
@@ -173,10 +171,10 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                         if (propsAtKey) {
                             const branchesAtKey =
                                 typeof key === "string"
-                                    ? propsAtKey.byName?.[key]?.value.branches()
-                                    : propsAtKey.indexed
-                                          .find((entry) => entry.key === key)
-                                          ?.value.branches()
+                                    ? propsAtKey.byName?.[key]?.value.branches
+                                    : propsAtKey.indexed.find(
+                                          (entry) => entry.key === key
+                                      )?.value.branches
                             if (branchesAtKey) {
                                 next.push(...branchesAtKey)
                             }
