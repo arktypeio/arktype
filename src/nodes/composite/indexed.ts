@@ -61,10 +61,10 @@ export const createArrayIndexMatcher = <index extends number>(
         : VariadicIndexMatcherSource
 
 export const extractArrayIndexRegex = (keyNode: TypeNode) => {
-    if (keyNode.rule.length !== 1) {
+    if (keyNode.branches.length !== 1) {
         return
     }
-    const regexNode = keyNode.rule[0].getConstraint("regex")
+    const regexNode = keyNode.branches()[0].getConstraint("regex")
     if (!regexNode || regexNode.rule.length !== 1) {
         return
     }
@@ -136,7 +136,8 @@ export const compileIndexed = (
                 ? // if the index signature is just for "string", we don't need to check it explicitly
                   prop.value.compile(s)
                 : // Ensure condition is checked on the key variable as opposed to the input
-                  `if(${prop.key.condition.replaceAll(InputParameterName, k)}){
+                  // TODO: fix ${prop.key.condition.replaceAll(InputParameterName, k)}
+                  `if(false){
     ${prop.value.compile(s)}
 }`
         )

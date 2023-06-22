@@ -1,5 +1,5 @@
 import { CompiledFunction } from "../../dev/utils/src/main.js"
-import type { evaluate } from "../../dev/utils/src/main.js"
+import type { evaluate, Thunk } from "../../dev/utils/src/main.js"
 import { arkKind } from "../compile/registry.js"
 import { CompilationState, InputParameterName } from "../compile/state.js"
 import type { inferred } from "../parse/definition.js"
@@ -67,7 +67,7 @@ export type BaseNode<
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
 
 export type NodeConstructor<node extends BaseNode, input> = (
-    rule: node["rule"] | input
+    input: node["rule"] | input
 ) => node
 
 export const alphabetizeByCondition = <nodes extends BaseNode[]>(
@@ -123,7 +123,7 @@ export const defineNodeKind = <
                 return result
             }
         }
-        const instance = Object.assign(base, addProps(base as node), {
+        const instance = Object.assign(addProps(base as node), base, {
             toString(this: node) {
                 return this.description
             }

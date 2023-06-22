@@ -1,9 +1,10 @@
 import type {
     conform,
     exact,
-    Literalable
+    Literalable,
+    Thunk
 } from "../../../dev/utils/src/main.js"
-import { cached, isArray } from "../../../dev/utils/src/main.js"
+import { cached, hasKey, isArray } from "../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../compile/registry.js"
 import type { CompilationState } from "../../compile/state.js"
 import { compilePropAccess, InputParameterName } from "../../compile/state.js"
@@ -27,8 +28,10 @@ import type {
 import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
-export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
+export interface TypeNode<t = unknown>
+    extends BaseNode<UnresolvedTypeNode | PredicateNode[]> {
     [inferred]: t
+    branches(): PredicateNode[]
     discriminant: Discriminant | null
     valueNode: ValueNode | undefined
     array(): TypeNode<t[]>
@@ -46,15 +49,20 @@ export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }
 
-const isParsedTypeRule = (
-    input: TypeInput | PredicateNode[]
-): input is PredicateNode[] =>
-    isArray(input) && (input.length === 0 || hasArkKind(input[0], "node"))
+export type MaybeResolvedTypeNode = TypeNode | UnresolvedTypeNode
+
+export type UnresolvedTypeNode = {
+    alias: string
+    resolve: Thunk<TypeNode>
+}
 
 export const typeNode = defineNodeKind<TypeNode, TypeInput>(
     {
         kind: "type",
         parse: (input) => {
+            if (hasKey(input, "resolve")) {
+                return input
+            }
             if (!isParsedTypeRule(input)) {
                 input = isArray(input)
                     ? input.map((branch) => predicateNode(branch))
@@ -62,93 +70,125 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             }
             return alphabetizeByCondition(reduceBranches(input))
         },
-        compile: (branches, s) => {
-            const discriminant = discriminate(branches)
+        compile: (rule, s) => {
+            if (hasKey(rule, "resolve")) {
+                return `$${rule.alias}(${InputParameterName})`
+            }
+            const discriminant = discriminate(rule)
             return discriminant
                 ? compileDiscriminant(discriminant, s)
-                : compileIndiscriminable(branches, s)
+                : compileIndiscriminable(rule, s)
         },
         intersect: (l, r): TypeNode | Disjoint => {
-            if (l.rule.length === 1 && r.rule.length === 1) {
-                const result = l.rule[0].intersect(r.rule[0])
+            const lBranches = l.branches()
+            const rBranches = r.branches()
+            if (l.branches.length === 1 && r.branches.length === 1) {
+                const result = lBranches[0].intersect(rBranches[0])
                 return result instanceof Disjoint ? result : typeNode([result])
             }
-            const resultBranches = intersectBranches(l.rule, r.rule)
+            const resultBranches = intersectBranches(lBranches, rBranches)
             return resultBranches.length
                 ? typeNode(resultBranches)
                 : Disjoint.from("union", l, r)
         }
     },
-    (base) => ({
-        description:
-            base.rule.length === 0
-                ? "never"
-                : base.rule.map((branch) => branch.toString()).join(" or "),
-        // discriminate is cached so we don't have to worry about this running multiple times
-        discriminant: discriminate(base.rule),
-        valueNode: base.rule.length === 1 ? base.rule[0].valueNode : undefined,
-        array(): any {
-            const props = propsNode([
-                { key: arrayIndexTypeNode(), value: this }
-            ])
-            const predicate = predicateNode([arrayClassNode(), props])
-            return typeNode([predicate])
-        },
-        isNever() {
-            return this.rule.length === 0
-        },
-        isUnknown() {
-            return this.rule.length === 1 && this.rule[0].rule.length === 0
-        },
-        and(other): any {
-            const result = this.intersect(other as never)
-            return result instanceof Disjoint ? result.throw() : result
-        },
-        or(other): any {
-            if (this === (other as unknown)) {
+    (base) => {
+        let cachedBranches: PredicateNode[] | undefined
+        return {
+            branches: () => {
+                if (!cachedBranches) {
+                    cachedBranches = hasKey(base.rule, "resolve")
+                        ? base.rule.resolve().branches()
+                        : base.rule
+                }
+                return cachedBranches
+            },
+            description: isArray(base.rule)
+                ? base.rule.length === 0
+                    ? "never"
+                    : base.rule.map((branch) => branch.toString()).join(" or ")
+                : base.rule.alias,
+            // discriminate is cached so we don't have to worry about this running multiple times
+            get discriminant() {
+                return discriminate(this.branches())
+            },
+            get valueNode() {
+                const branches = this.branches()
+                return this.branches.length === 1
+                    ? branches[0].valueNode
+                    : undefined
+            },
+            array(): any {
+                const props = propsNode([
+                    { key: arrayIndexTypeNode(), value: this }
+                ])
+                const predicate = predicateNode([arrayClassNode(), props])
+                return typeNode([predicate])
+            },
+            isResolved() {
+                return Array.isArray(this.rule) || cachedBranches !== undefined
+            },
+            isNever() {
+                return this.branches().length === 0
+            },
+            isUnknown() {
+                return (
+                    this.branches().length === 1 &&
+                    this.branches()[0].rule.length === 0
+                )
+            },
+            and(other): any {
+                const result = this.intersect(other as never)
+                return result instanceof Disjoint ? result.throw() : result
+            },
+            or(other): any {
+                if (this === (other as unknown)) {
+                    return this
+                }
+                return typeNode(
+                    reduceBranches([...this.branches(), ...other.branches()])
+                )
+            },
+            constrain(kind, def): any {
+                return typeNode(
+                    this.branches().map((branch) => branch.constrain(kind, def))
+                )
+            },
+            equals(other) {
+                return this === other
+            },
+            extends(other) {
+                return this.intersect(other as never) === this
+            },
+            keyof(): any {
                 return this
-            }
-            return typeNode(reduceBranches([...this.rule, ...other.rule]))
-        },
-        constrain(kind, def): any {
-            return typeNode(
-                this.rule.map((branch) => branch.constrain(kind, def))
-            )
-        },
-        equals(other) {
-            return this === other
-        },
-        extends(other) {
-            return this.intersect(other as never) === this
-        },
-        keyof(): any {
-            return this
-        },
-        getPath(...path): any {
-            let current: PredicateNode[] = this.rule
-            let next: PredicateNode[] = []
-            while (path.length) {
-                const key = path.shift()!
-                for (const branch of current) {
-                    const propsAtKey = branch.getConstraint("props")
-                    if (propsAtKey) {
-                        const branchesAtKey =
-                            typeof key === "string"
-                                ? propsAtKey.byName?.[key]?.value.rule
-                                : propsAtKey.indexed.find(
-                                      (entry) => entry.key === key
-                                  )?.value.rule
-                        if (branchesAtKey) {
-                            next.push(...branchesAtKey)
+            },
+            getPath(...path): any {
+                let current: PredicateNode[] = this.branches()
+                let next: PredicateNode[] = []
+                while (path.length) {
+                    const key = path.shift()!
+                    for (const branch of current) {
+                        const propsAtKey = branch.getConstraint("props")
+                        if (propsAtKey) {
+                            const branchesAtKey =
+                                typeof key === "string"
+                                    ? propsAtKey.byName?.[key]?.value.branches()
+                                    : propsAtKey.indexed
+                                          .find((entry) => entry.key === key)
+                                          ?.value.branches()
+                            if (branchesAtKey) {
+                                next.push(...branchesAtKey)
+                            }
                         }
                     }
+                    current = next
+                    next = []
                 }
-                current = next
-                next = []
+                return typeNode(current)
             }
-            return typeNode(current)
         }
-    })
+    }
 )
 
 const compileDiscriminant = (
@@ -307,6 +347,18 @@ const intersectBranches = (
     }
     return finalBranches
 }
+
+const isParsedTypeRule = (
+    input: TypeInput | PredicateNode[]
+): input is PredicateNode[] =>
+    isArray(input) && (input.length === 0 || hasArkKind(input[0], "node"))
+
+export const isUnresolvedNode = (
+    node: MaybeResolvedTypeNode
+): node is UnresolvedTypeNode => hasKey(node, "resolve")
+
+export const maybeResolve = (node: MaybeResolvedTypeNode): TypeNode =>
+    isUnresolvedNode(node) ? node.resolve() : node
 
 const reduceBranches = (branchNodes: PredicateNode[]) => {
     if (branchNodes.length < 2) {

@@ -28,7 +28,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
         named[keyName] = {
             prerequisite: false,
             optional,
-            value: () => ctx.scope.parse(def[definitionKey], ctx)
+            value: ctx.scope.parse(def[definitionKey], ctx)
         }
         ctx.path.pop()
     }

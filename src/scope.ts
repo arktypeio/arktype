@@ -11,7 +11,7 @@ import type { ProblemCode } from "./compile/problems.js"
 import { hasArkKind } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { TypeNode } from "./main.js"
-import { builtins } from "./nodes/composite/type.js"
+import { builtins, typeNode } from "./nodes/composite/type.js"
 import type {
     CastTo,
     inferDefinition,
@@ -207,7 +207,7 @@ export class Scope<r extends Resolutions = any> {
     config: TypeConfig
 
     private parseCache: Record<string, TypeNode> = {}
-    private resolutions: Record<string, TypeNode | TypeSet | Generic | string>
+    private resolutions: Record<string, TypeNode | TypeSet | Generic>
 
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
@@ -304,9 +304,6 @@ export class Scope<r extends Resolutions = any> {
     ): TypeNode | Generic | TypeSet | undefined {
         const cached = this.resolutions[name]
         if (cached) {
-            if (typeof cached === "string") {
-                return throwInternalError(`Working on cyclic resolutions`)
-            }
             return cached
         }
         let def = this.aliases[name]
@@ -316,7 +313,10 @@ export class Scope<r extends Resolutions = any> {
         if (isThunk(def) && !hasArkKind(def, "generic")) {
             def = def()
         }
-        this.resolutions[name] = name
+        this.resolutions[name] = typeNode({
+            alias: name,
+            resolve: () => this.maybeResolveNode(name, ctx)!
+        })
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
             : // TODO: should we allow scope thunks? Could be cyclic?
