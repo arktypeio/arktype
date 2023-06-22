@@ -7,7 +7,8 @@ import type {
     conform,
     error,
     isAny,
-    Literalable
+    Literalable,
+    Primitive
 } from "../dev/utils/src/main.js"
 import { arkKind, registry } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"
@@ -49,17 +50,17 @@ type TypeOverloads<$> = {
 
     // Spread version of a tuple expression
     <zero, one, two>(
-        token0: zero extends IndexZeroOperator
+        _0: zero extends IndexZeroOperator
             ? zero
             : validateDefinition<zero, $, bindThisToExpression<zero, one, two>>,
-        token1: zero extends "keyof"
+        _1: zero extends "keyof"
             ? validateDefinition<one, $, bindThisToExpression<zero, one, two>>
             : zero extends "instanceof"
             ? conform<one, AbstractableConstructor>
             : zero extends "==="
             ? conform<one, unknown>
             : conform<one, IndexOneOperator>,
-        ...token2: one extends TupleInfixOperator
+        ..._2: one extends TupleInfixOperator
             ? [
                   one extends ":"
                       ? Narrow<
@@ -397,9 +398,13 @@ export type TypeConfig = {
     mustBe?: string
 }
 
-export type extractIn<t> = extractMorphs<t, "in">
+export type extractIn<t> = extractMorphs<t, "in"> extends t
+    ? t
+    : extractMorphs<t, "in">
 
-export type extractOut<t> = extractMorphs<t, "out">
+export type extractOut<t> = extractMorphs<t, "out"> extends t
+    ? t
+    : extractMorphs<t, "out">
 
 type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
     infer i,
@@ -408,11 +413,9 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
     ? io extends "in"
         ? i
         : o
-    : t extends object
-    ? t extends TerminallyInferredObjectKind
-        ? t
-        : { [k in keyof t]: extractMorphs<t[k], io> }
-    : t
+    : t extends TerminallyInferredObjectKind | Primitive
+    ? t
+    : { [k in keyof t]: extractMorphs<t[k], io> }
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind = BuiltinObjects[Exclude<

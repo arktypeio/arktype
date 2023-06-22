@@ -1,6 +1,8 @@
 import { hasDomain } from "./domains.js"
 import type { defined, evaluate } from "./generics.js"
 import type { List } from "./lists.js"
+import { isArray } from "./objectKinds.js"
+import type { intersectUnion } from "./unionToTuple.js"
 
 export type Dict<k extends string = string, v = unknown> = {
     readonly [_ in k]: v
@@ -58,6 +60,28 @@ export type fromEntries<entries, result = {}> = entries extends readonly [
 export const fromEntries = <const entries extends readonly Entry[]>(
     entries: entries
 ) => Object.fromEntries(entries) as fromEntries<entries>
+
+export const transform = <
+    const o extends object,
+    transformed extends Entry | readonly Entry[]
+>(
+    o: o,
+    flatMapEntry: (entry: entryOf<o>) => transformed
+) =>
+    Object.fromEntries(
+        entriesOf(o).flatMap((entry) => {
+            const result = flatMapEntry(entry)
+            return isArray(result[0]) ? result : [result]
+        })
+    ) as evaluate<
+        intersectUnion<
+            fromEntries<
+                transformed extends readonly Entry[]
+                    ? transformed
+                    : [transformed]
+            >
+        >
+    >
 
 /** Mimics the result of Object.keys(...) */
 export type keysOf<o> = o extends readonly unknown[]

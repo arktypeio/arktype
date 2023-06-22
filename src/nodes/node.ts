@@ -1,5 +1,5 @@
+import type { evaluate } from "../../dev/utils/src/main.js"
 import { CompiledFunction } from "../../dev/utils/src/main.js"
-import type { evaluate, Thunk } from "../../dev/utils/src/main.js"
 import { arkKind } from "../compile/registry.js"
 import { CompilationState, InputParameterName } from "../compile/state.js"
 import type { inferred } from "../parse/definition.js"
