@@ -17,7 +17,7 @@ const getCyclicScope = () =>
 
 type Package = ReturnType<typeof getCyclicScope>["infer"]["package"]
 
-const getCyclicData = () => {
+const __getCyclicData = () => {
     const packageData = {
         name: "arktype",
         dependencies: [{ name: "typescript" }],

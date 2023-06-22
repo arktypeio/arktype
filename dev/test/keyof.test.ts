@@ -1,9 +1,5 @@
 import { suite, test } from "mocha"
-import { type, TypeNode } from "../../src/main.js"
-import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
-import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import type { Ark } from "../../src/scopes/ark.js"
-import type { Type } from "../../src/type.js"
+import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 suite("keyof", () => {

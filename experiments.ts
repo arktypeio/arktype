@@ -12,37 +12,37 @@ const result = $.compile()
 
 console.log(format(result, { parser: "typescript" }))
 
-const $any = ($arkRoot) => {}
-const $bigint = ($arkRoot) => {
+const __$any = (__$arkRoot) => {}
+const __$bigint = ($arkRoot) => {
     if (!(typeof $arkRoot === "bigint")) {
         return false
     }
 }
-const $boolean = ($arkRoot) => {
+const __$boolean = ($arkRoot) => {
     if ($arkRoot !== false && $arkRoot !== true) {
         return false
     }
 }
-const $false = ($arkRoot) => {
+const __$false = ($arkRoot) => {
     if (!($arkRoot === false)) {
         return false
     }
 }
-const $never = ($arkRoot) => {
+const __$never = (__$arkRoot) => {
     return false
 }
 
-const $null = ($arkRoot) => {
+const __$null = ($arkRoot) => {
     if (!($arkRoot === null)) {
         return false
     }
 }
-const $number = ($arkRoot) => {
+const __$number = ($arkRoot) => {
     if (!(typeof $arkRoot === "number")) {
         return false
     }
 }
-const $object = ($arkRoot) => {
+const __$object = ($arkRoot) => {
     if (
         !(
             (typeof $arkRoot === "object" && $arkRoot !== null) ||
@@ -52,28 +52,28 @@ const $object = ($arkRoot) => {
         return false
     }
 }
-const $string = ($arkRoot) => {
+const __$string = ($arkRoot) => {
     if (!(typeof $arkRoot === "string")) {
         return false
     }
 }
-const $symbol = ($arkRoot) => {
+const __$symbol = ($arkRoot) => {
     if (!(typeof $arkRoot === "symbol")) {
         return false
     }
 }
-const $true = ($arkRoot) => {
+const __$true = ($arkRoot) => {
     if (!($arkRoot === true)) {
         return false
     }
 }
-const $unknown = ($arkRoot) => {}
-const $void = ($arkRoot) => {
+const __$unknown = (__$arkRoot) => {}
+const __$void = ($arkRoot) => {
     if (!($arkRoot === undefined)) {
         return false
     }
 }
-const $undefined = ($arkRoot) => {
+const __$undefined = ($arkRoot) => {
     if (!($arkRoot === undefined)) {
         return false
     }

@@ -1,6 +1,6 @@
-import { suite, test } from "mocha"
-import { scope, type } from "../../src/main.js"
-import { attest } from "../attest/main.js"
+import { test as __test, suite } from "mocha"
+import { scope as __scope, type as __type } from "../../src/main.js"
+import { attest as __attest } from "../attest/main.js"
 
 suite("config traversal", () => {
     // test("tuple expression", () => {

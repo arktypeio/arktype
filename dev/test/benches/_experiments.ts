@@ -97,25 +97,25 @@ declare const fn: FunctionParser<Ark>
 // const z = fn("string", "number")((s, n) => `${n}` === s)
 {
     // 0 params
-    const implicitReturn = fn()(() => 5)
+    const __implicitReturn = fn()(() => 5)
     //    ^?
-    const explicitReturn = fn(":", "number")(() => 5)
+    const __explicitReturn = fn(":", "number")(() => 5)
     //    ^?
 }
 
 {
     // 1 param
-    const implicitReturn = fn("string")((s) => s.length)
+    const __implicitReturn = fn("string")((s) => s.length)
     //    ^?
-    const explicitReturn = fn("string", ":", "number")((s) => s.length)
+    const __explicitReturn = fn("string", ":", "number")((s) => s.length)
     //    ^?
 }
 
 {
     // 2 params
-    const implicitReturn = fn("string", "number")((s, n) => s === `${n}`)
+    const __implicitReturn = fn("string", "number")((s, n) => s === `${n}`)
     //    ^?
-    const explicitReturn = fn(
+    const __explicitReturn = fn(
         //    ^?
         "string",
         "number",

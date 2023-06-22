@@ -1,4 +1,10 @@
-import type { error , evaluate, isAny , List, pathToString } from "../../../dev/utils/src/main.js"
+import type {
+    error,
+    evaluate,
+    isAny,
+    List,
+    pathToString
+} from "../../../dev/utils/src/main.js"
 import type { MorphAst, Out } from "../tuple.js"
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>

@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { scope, tsKeywords, type } from "../../src/main.js"
+import { tsKeywords as __tsKeywords, scope, type } from "../../src/main.js"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
