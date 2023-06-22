@@ -97,7 +97,6 @@ module.exports = defineConfig({
                 paths: [
                     "error",
                     "dist",
-                    "node_modules",
                     "dist",
                     "node:assert",
                     "node:buffer",
