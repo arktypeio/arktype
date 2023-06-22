@@ -187,14 +187,16 @@ const parsePropsInput = (input: PropsInput) => {
     const rule: NodeEntry[] = []
     for (const name in namedInput) {
         const prop = namedInput[name]
-        const value = isThunk(prop.value) ? prop.value() : prop.value
         rule.push({
             key: {
                 name,
                 prerequisite: prop.prerequisite ?? false,
                 optional: prop.optional ?? false
             },
-            value: hasArkKind(value, "node") ? value : typeNode(value)
+            value:
+                hasArkKind(prop.value, "node") || isThunk(prop.value)
+                    ? prop.value
+                    : typeNode(prop.value)
         })
     }
     for (const prop of indexedInput) {

@@ -22,6 +22,9 @@ export type Thunk<ret = unknown> = () => ret
 
 export type thunkable<t> = t | Thunk<t>
 
+export const resolveIfThunk = <t>(value: t) =>
+    (isThunk(value) ? value() : value) as t extends Thunk<infer ret> ? ret : t
+
 export const CompiledFunction = class extends Function {
     constructor(...args: [string, ...string[]]) {
         const params = args.slice(0, -1)

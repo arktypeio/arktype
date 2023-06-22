@@ -1,5 +1,8 @@
 import type { thunkable } from "../../../dev/utils/src/main.js"
-import { throwInternalError } from "../../../dev/utils/src/main.js"
+import {
+    resolveIfThunk,
+    throwInternalError
+} from "../../../dev/utils/src/main.js"
 import type { CompilationState } from "../../compile/state.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput, TypeNode } from "./type.js"
@@ -19,7 +22,7 @@ export const intersectNamedProp = (
         prerequisite: l.key.prerequisite || r.key.prerequisite,
         optional: l.key.optional && r.key.optional
     }
-    const value = l.value.intersect(r.value)
+    const value = resolveIfThunk(l.value).intersect(resolveIfThunk(r.value))
     if (value instanceof Disjoint) {
         if (key.optional) {
             return {
@@ -42,7 +45,9 @@ export const compileNamedProps = (
 
 export const compileNamedProp = (prop: NamedPropRule, s: CompilationState) => {
     s.pushNamedKey(prop.key.name)
-    const compiledValue = prop.value.compile(s)
+    // TODO: can't always resolve here
+    const value = resolveIfThunk(prop.value)
+    const compiledValue = value.compile(s)
     s.popKey()
     const result = prop.key.optional
         ? `if('${prop.key.name}' in ${s.data}) {
@@ -52,7 +57,7 @@ export const compileNamedProp = (prop: NamedPropRule, s: CompilationState) => {
     return result
 }
 
-export type PropValueInput = thunkable<TypeNode | TypeInput>
+export type PropValueInput = thunkable<TypeNode> | TypeInput
 
 export type NamedPropInput = {
     value: PropValueInput
@@ -62,7 +67,7 @@ export type NamedPropInput = {
 
 export type NamedPropRule = {
     key: NamedKeyRule
-    value: TypeNode
+    value: thunkable<TypeNode>
 }
 
 export type NamedKeyRule = {
