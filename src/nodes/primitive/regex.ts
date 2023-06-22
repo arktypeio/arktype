@@ -1,4 +1,4 @@
-import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
@@ -26,12 +26,3 @@ export const regexNode = defineNodeKind<RegexNode, string | string[]>(
         return { description }
     }
 )
-
-// return this.children
-// .map((source) =>
-//     s.ifNotThen(
-//         RegexNode.compileExpression(source),
-//         s.problem("regex", source)
-//     )
-// )
-// .join("\n")

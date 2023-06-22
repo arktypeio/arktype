@@ -1,5 +1,6 @@
 export * from "./domains.js"
 export * from "./errors.js"
+export * from "./functions.js"
 export * from "./generics.js"
 export * from "./lists.js"
 export * from "./numericLiterals.js"

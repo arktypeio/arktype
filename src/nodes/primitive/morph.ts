@@ -1,6 +1,6 @@
-import type { Morph } from "../../parse/ast/morph.js"
-import type { listable } from "../../utils/lists.js"
-import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import type { listable } from "../../../dev/utils/src/lists.js"
+import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/lists.js"
+import type { Morph } from "../../parse/tuple.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
@@ -23,7 +23,3 @@ export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
             .join("=>")}`
     })
 )
-
-// compileTraverse(s: CompilationState) {
-//     return s.ifNotThen("false", s.problem("custom", "morphs"))
-// }

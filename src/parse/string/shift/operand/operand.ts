@@ -1,10 +1,7 @@
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type {
-    AutocompletePrefix,
-    state,
-    StaticState
-} from "../../reduce/static.js"
-import type { Scanner } from "../scanner.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { BaseCompletions } from "../../string.js"
+import { Scanner } from "../scanner.js"
 import type {
     EndEnclosingChar,
     QuoteEnclosingChar,
@@ -20,7 +17,7 @@ export const parseOperand = (s: DynamicState): void =>
         ? s.shiftedByOne().reduceGroupOpen()
         : s.scanner.lookaheadIsIn(enclosingChar)
         ? parseEnclosed(s, s.scanner.shift())
-        : s.scanner.lookahead === " " || s.scanner.lookahead === "\n"
+        : s.scanner.lookaheadIsIn(Scanner.whiteSpaceTokens)
         ? parseOperand(s.shiftedByOne())
         : s.scanner.lookahead === "d"
         ? s.shiftedByOne().scanner.lookaheadIsIn(enclosingChar)
@@ -30,20 +27,21 @@ export const parseOperand = (s: DynamicState): void =>
 
 export type parseOperand<
     s extends StaticState,
-    $
+    $,
+    args
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
     ? lookahead extends "("
         ? state.reduceGroupOpen<s, unscanned>
         : lookahead extends EndEnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
         : lookahead extends Scanner.WhiteSpaceToken
-        ? parseOperand<state.scanTo<s, unscanned>, $>
+        ? parseOperand<state.scanTo<s, unscanned>, $, args>
         : lookahead extends "d"
         ? unscanned extends Scanner.shift<
               infer enclosing extends QuoteEnclosingChar,
               infer nextUnscanned
           >
             ? parseEnclosed<s, `d${enclosing}`, nextUnscanned>
-            : parseUnenclosed<s, $>
-        : parseUnenclosed<s, $>
-    : state.error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>
+            : parseUnenclosed<s, $, args>
+        : parseUnenclosed<s, $, args>
+    : state.error<`${s["scanned"]}${BaseCompletions<$, args>}`>

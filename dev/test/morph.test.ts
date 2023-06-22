@@ -1,12 +1,12 @@
 import { suite, test } from "mocha"
-import { writeUndiscriminatableMorphUnionMessage } from "../../src/compile/discriminate.js"
 import type { Problem } from "../../src/main.js"
 import { arktypes, scope, type } from "../../src/main.js"
-import type { Out } from "../../src/parse/ast/morph.js"
+import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/composite/discriminate.js"
+import type { Out } from "../../src/parse/tuple.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
+import { Path } from "../utils/src/lists.js"
 
 suite("morph", () => {
     test("base", () => {

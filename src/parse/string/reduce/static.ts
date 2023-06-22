@@ -1,16 +1,17 @@
+import type { error } from "../../../../dev/utils/src/errors.js"
+import type { defined } from "../../../../dev/utils/src/generics.js"
+import type { NumberLiteral } from "../../../../dev/utils/src/numericLiterals.js"
 import type {
     Comparator,
     InvertedComparators,
     MaxComparator,
     MinComparator
 } from "../../../nodes/primitive/range.js"
-import type { error } from "../../../utils/errors.js"
-import type { defined } from "../../../utils/generics.js"
-import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { DateLiteral } from "../shift/operand/date.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
-    Prefix,
+    StringifiablePrefixOperator,
+    ValidLiterals,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnclosedGroupMessage,
@@ -27,12 +28,15 @@ export type StaticState = {
     unscanned: string
 }
 
-type StaticOpenLeftBound = { limit: NumberLiteral; comparator: MinComparator }
+type StaticOpenLeftBound = {
+    limit: ValidLiterals
+    comparator: MinComparator
+}
 
-export type AutocompletePrefix = `${Prefix} `
+export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
-    prefixes: Prefix[]
+    prefixes: StringifiablePrefixOperator[]
     range: StaticOpenLeftBound | undefined
     "&": unknown
     "|": unknown
@@ -87,7 +91,7 @@ export namespace state {
 
     export type addPrefix<
         s extends StaticState,
-        prefix extends Prefix,
+        prefix extends StringifiablePrefixOperator,
         unscanned extends string
     > = from<{
         root: s["root"]
@@ -125,7 +129,7 @@ export namespace state {
 
     export type reduceLeftBound<
         s extends StaticState,
-        limit extends NumberLiteral,
+        limit extends ValidLiterals,
         comparator extends Comparator,
         unscanned extends string
     > = comparator extends "<" | "<="
@@ -162,10 +166,10 @@ export namespace state {
 
     export type reduceRange<
         s extends StaticState,
-        minLimit extends NumberLiteral | DateLiteral,
+        minLimit extends ValidLiterals,
         minComparator extends MinComparator,
         maxComparator extends MaxComparator,
-        maxLimit extends NumberLiteral | DateLiteral,
+        maxLimit extends ValidLiterals,
         unscanned extends string
     > = state.from<{
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]

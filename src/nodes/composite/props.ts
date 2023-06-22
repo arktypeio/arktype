@@ -1,14 +1,19 @@
-import { spliterate } from "../../utils/lists.js"
-import { isArray } from "../../utils/objectKinds.js"
-import { fromEntries, hasKeys } from "../../utils/records.js"
+import { spliterate } from "../../../dev/utils/src/lists.js"
+import { isArray } from "../../../dev/utils/src/objectKinds.js"
+import { fromEntries, hasKeys } from "../../../dev/utils/src/records.js"
+import { hasArkKind } from "../../compile/registry.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
-import { defineNodeKind, isNode } from "../node.js"
+import { defineNodeKind } from "../node.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
-import { extractArrayIndexRegex } from "./indexed.js"
+import {
+    compileArray,
+    compileIndexed,
+    extractArrayIndexRegex
+} from "./indexed.js"
 import type { NamedKeyRule, NamedPropInput, NamedPropRule } from "./named.js"
-import { compileNamedProp, intersectNamedProp } from "./named.js"
+import { compileNamedProps, intersectNamedProp } from "./named.js"
 import type { TypeNode } from "./type.js"
 import { builtins, typeNode } from "./type.js"
 
@@ -29,7 +34,7 @@ export type PropsInput = NamedPropsInput | PropsInputTuple
 export const isParsedPropsRule = (
     input: PropsInput | PropsRule
 ): input is PropsRule =>
-    isArray(input) && (input.length === 0 || isNode(input[0].value))
+    isArray(input) && (input.length === 0 || hasArkKind(input[0].value, "node"))
 
 export const propsNode = defineNodeKind<PropsNode, PropsInput>(
     {
@@ -54,18 +59,22 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
         },
         compile: (rule, s) => {
             const [named, indexed] = spliterate(rule, isNamed)
-            return named.map((named) => compileNamedProp(named, s)).join("\n")
-            // if (indexed.length === 0) {
-            //     return named.map((named) => compileNamedProp(named, s))
-            // }
-            // if (indexed.length === 1) {
-            //     // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
-            //     const indexMatcher = extractArrayIndexRegex(indexed[0].key)
-            //     if (indexMatcher) {
-            //         return [compileArray(indexMatcher, indexed[0].value, named)]
-            //     }
-            // }
-            // return [compileIndexed(named, indexed)]
+            if (indexed.length === 0) {
+                return compileNamedProps(named, s)
+            }
+            if (indexed.length === 1) {
+                // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
+                const indexMatcher = extractArrayIndexRegex(indexed[0].key)
+                if (indexMatcher) {
+                    return compileArray(
+                        indexMatcher,
+                        indexed[0].value,
+                        named,
+                        s
+                    )
+                }
+            }
+            return compileIndexed(named, indexed, s)
         },
         intersect: (l, r) => intersectProps(l, r)
     },
@@ -157,7 +166,9 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
     if (
         named.some(
             ({ key }) =>
-                !isNode(key) && key.name === "length" && key.prerequisite
+                !hasArkKind(key, "node") &&
+                key.name === "length" &&
+                key.prerequisite
         )
     ) {
         // if the index key is from and unbounded array and we have a tuple length,
@@ -199,29 +210,6 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
     return JSON.stringify(fromEntries(entries))
 }
 
-// pruneDiscriminant(path: string[], kind: DiscriminantKind): PropsNode {
-//     const [key, ...nextPath] = path
-//     const indexToPrune = this.named.findIndex((prop) => prop.key.name === key)
-//     if (indexToPrune === -1) {
-//         return throwInternalError(`Unexpectedly failed to prune key ${key}`)
-//     }
-//     const prunedValue = this.named[indexToPrune].value.pruneDiscriminant(
-//         nextPath,
-//         kind
-//     )
-//     const prunedProps: PropRule[] = [...this.named]
-//     if (prunedValue === unknownTypeNode) {
-//         prunedProps.splice(indexToPrune, 1)
-//     } else {
-//         prunedProps[indexToPrune] = {
-//             ...prunedProps[indexToPrune],
-//             value: prunedValue
-//         }
-//     }
-//     prunedProps.push(...this.indexed)
-//     return new PropsNode(prunedProps)
-// }
-
 // keyof() {
 //     return this.namedKeyOf().or(this.indexedKeyOf())
 // }
@@ -242,14 +230,16 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
 //     return this.named.map((prop) => prop.key.name)
 // }
 
-const isIndexed = (rule: NodeEntry): rule is IndexedPropRule => isNode(rule.key)
+const isIndexed = (rule: NodeEntry): rule is IndexedPropRule =>
+    hasArkKind(rule.key, "node")
 
-const isNamed = (rule: NodeEntry): rule is NamedPropRule => !isNode(rule.key)
+const isNamed = (rule: NodeEntry): rule is NamedPropRule => !isIndexed(rule)
 
 const kindPrecedence = (key: KeyRule) =>
-    isNode(key) ? 2 : key.prerequisite ? -1 : key.optional ? 1 : 0
+    hasArkKind(key, "node") ? 2 : key.prerequisite ? -1 : key.optional ? 1 : 0
 
-const keyNameToString = (key: KeyRule) => (isNode(key) ? `${key}` : key.name)
+const keyNameToString = (key: KeyRule) =>
+    hasArkKind(key, "node") ? `${key}` : key.name
 
 export type PropsInputTuple<
     named extends NamedPropsInput = NamedPropsInput,

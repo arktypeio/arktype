@@ -1,32 +1,30 @@
-import { arrayIndexTypeNode } from "../../nodes/composite/indexed.js"
-import { predicateNode } from "../../nodes/composite/predicate.js"
-import type { NodeEntry } from "../../nodes/composite/props.js"
-import { propsNode } from "../../nodes/composite/props.js"
-import type { TypeNode } from "../../nodes/composite/type.js"
-import { builtins, typeNode } from "../../nodes/composite/type.js"
-import { arrayClassNode } from "../../nodes/primitive/basis/class.js"
-import type { ParseContext } from "../../scope.js"
-import type { extractIn, extractOut, TypeConfig } from "../../type.js"
-import { throwParseError } from "../../utils/errors.js"
-import type { evaluate, isAny } from "../../utils/generics.js"
-import type { List } from "../../utils/lists.js"
-import { isArray } from "../../utils/objectKinds.js"
-import type { AbstractableConstructor } from "../../utils/objectKinds.js"
-import { stringify } from "../../utils/serialize.js"
-import type { inferDefinition, validateDefinition } from "../definition.js"
-import type { Prefix } from "../string/reduce/shared.js"
-import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
+import { throwParseError } from "../../dev/utils/src/errors.js"
+import type { evaluate, isAny } from "../../dev/utils/src/generics.js"
+import type { List } from "../../dev/utils/src/lists.js"
+import type { AbstractableConstructor } from "../../dev/utils/src/objectKinds.js"
+import { isArray } from "../../dev/utils/src/objectKinds.js"
+import { stringify } from "../../dev/utils/src/serialize.js"
+import type { CheckResult, TraversalState } from "../compile/traverse.js"
+import type { Problem } from "../main.js"
+import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
+import { predicateNode } from "../nodes/composite/predicate.js"
+import type { NodeEntry } from "../nodes/composite/props.js"
+import { propsNode } from "../nodes/composite/props.js"
+import type { TypeNode } from "../nodes/composite/type.js"
+import { builtins, typeNode } from "../nodes/composite/type.js"
+import { arrayClassNode } from "../nodes/primitive/basis/class.js"
+import type { ParseContext } from "../scope.js"
+import type { extractIn, extractOut } from "../type.js"
 import {
     type InfixOperator,
     type PostfixExpression,
     writeUnsatisfiableExpressionError
-} from "./ast.js"
-import type { inferIntersection } from "./intersections.js"
-import type { Morph, parseMorph } from "./morph.js"
-import { parseMorphTuple } from "./morph.js"
-import type { inferNarrow, Narrow } from "./narrow.js"
-import { parseNarrowTuple } from "./narrow.js"
-import type { astToString } from "./utils.js"
+} from "./ast/ast.js"
+import type { inferIntersection } from "./ast/intersections.js"
+import type { astToString } from "./ast/utils.js"
+import type { inferDefinition, validateDefinition } from "./definition.js"
+import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
+import type { BaseCompletions } from "./string/string.js"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     const tupleExpressionResult = isIndexOneExpression(def)
@@ -101,37 +99,52 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
 
 type InfixExpression = [unknown, InfixOperator, ...unknown[]]
 
-export type validateTuple<def extends List, $> = def extends IndexZeroExpression
-    ? validatePrefixExpression<def, $>
+export type validateTuple<
+    def extends List,
+    $,
+    args
+> = def extends IndexZeroExpression
+    ? validatePrefixExpression<def, $, args>
     : def extends PostfixExpression
-    ? validatePostfixExpression<def, $>
+    ? validatePostfixExpression<def, $, args>
     : def extends InfixExpression
-    ? validateInfixExpression<def, $>
+    ? validateInfixExpression<def, $, args>
     : def extends
           | readonly ["", ...unknown[]]
           | readonly [unknown, "", ...unknown[]]
     ? [
-          def[0] extends "" ? keyof $ | IndexZeroOperator | Prefix : def[0],
-          def[1] extends "" ? keyof $ | IndexOneOperator | Prefix : def[1]
+          def[0] extends ""
+              ? BaseCompletions<$, args, IndexZeroOperator>
+              : def[0],
+          def[1] extends ""
+              ? BaseCompletions<$, args, IndexOneOperator>
+              : def[1]
       ]
-    : validateTupleLiteral<def, $>
+    : validateTupleLiteral<def, $, args>
 
 export type validateTupleLiteral<
     def extends List,
     $,
+    args,
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
     ? validateTupleLiteral<
           tail,
           $,
+          args,
           [
               ...result,
               head extends variadicExpression<infer operand>
-                  ? validateDefinition<operand, $> extends infer syntacticResult
+                  ? validateDefinition<
+                        operand,
+                        $,
+                        args
+                    > extends infer syntacticResult
                       ? syntacticResult extends operand
                           ? semanticallyValidateRestElement<
                                 operand,
-                                $
+                                $,
+                                args
                             > extends infer semanticResult
                               ? semanticResult extends operand
                                   ? tail extends []
@@ -141,14 +154,15 @@ export type validateTupleLiteral<
                               : never
                           : syntacticResult
                       : never
-                  : validateDefinition<head, $>
+                  : validateDefinition<head, $, args>
           ]
       >
     : result
 
-type semanticallyValidateRestElement<operand, $> = inferDefinition<
+type semanticallyValidateRestElement<operand, $, args> = inferDefinition<
     operand,
-    $
+    $,
+    args
 > extends infer result
     ? result extends never
         ? writeNonArrayRestMessage<operand>
@@ -175,17 +189,19 @@ type prematureRestMessage = typeof prematureRestMessage
 type inferTupleLiteral<
     def extends List,
     $,
+    args,
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
     ? inferDefinition<
           head extends variadicExpression<infer operand> ? operand : head,
-          $
+          $,
+          args
       > extends infer element
         ? head extends variadicExpression
             ? element extends readonly unknown[]
-                ? inferTupleLiteral<tail, $, [...result, ...element]>
+                ? inferTupleLiteral<tail, $, args, [...result, ...element]>
                 : never
-            : inferTupleLiteral<tail, $, [...result, element]>
+            : inferTupleLiteral<tail, $, args, [...result, element]>
         : never
     : result
 
@@ -198,23 +214,27 @@ type variadicStringExpression<operandDef extends string = string> =
 
 type variadicTupleExpression<operandDef = unknown> = ["...", operandDef]
 
-export type inferTuple<def extends List, $> = def extends TupleExpression
-    ? inferTupleExpression<def, $>
-    : inferTupleLiteral<def, $>
+export type inferTuple<def extends List, $, args> = def extends TupleExpression
+    ? inferTupleExpression<def, $, args>
+    : inferTupleLiteral<def, $, args>
 
 export type inferTupleExpression<
     def extends TupleExpression,
-    $
+    $,
+    args
 > = def[1] extends "[]"
-    ? inferDefinition<def[0], $>[]
+    ? inferDefinition<def[0], $, args>[]
     : def[1] extends "&"
-    ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
+    ? inferIntersection<
+          inferDefinition<def[0], $, args>,
+          inferDefinition<def[2], $, args>
+      >
     : def[1] extends "|"
-    ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
+    ? inferDefinition<def[0], $, args> | inferDefinition<def[2], $, args>
     : def[1] extends ":"
-    ? inferNarrow<inferDefinition<def[0], $>, def[2]>
+    ? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
     : def[1] extends "=>"
-    ? parseMorph<def[0], def[2], $>
+    ? parseMorph<def[0], def[2], $, args>
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
@@ -222,17 +242,18 @@ export type inferTupleExpression<
         ? t
         : never
     : def[0] extends "keyof"
-    ? inferKeyOfExpression<def[1], $>
+    ? inferKeyOfExpression<def[1], $, args>
     : never
 
 export type validatePrefixExpression<
     def extends IndexZeroExpression,
-    $
+    $,
+    args
 > = def["length"] extends 1
     ? [writeMissingRightOperandMessage<def[0]>]
     : [
           def[0] extends "keyof"
-              ? inferDefinition<def, $> extends never
+              ? inferDefinition<def, $, args> extends never
                   ? writeUnsatisfiableExpressionError<astToString<def>>
                   : def[0]
               : def[0],
@@ -241,36 +262,38 @@ export type validatePrefixExpression<
               : def[0] extends "instanceof"
               ? AbstractableConstructor
               : def[0] extends "keyof"
-              ? validateDefinition<def[1], $>
+              ? validateDefinition<def[1], $, args>
               : never
       ]
 
-export type validatePostfixExpression<def extends PostfixExpression, $> = [
-    validateDefinition<def[0], $>,
-    "[]"
-]
+export type validatePostfixExpression<
+    def extends PostfixExpression,
+    $,
+    args
+> = [validateDefinition<def[0], $, args>, "[]"]
 
 export type validateInfixExpression<
     def extends InfixExpression,
-    $
+    $,
+    args
 > = def["length"] extends 2
     ? [def[0], writeMissingRightOperandMessage<def[1]>]
     : [
-          validateDefinition<def[0], $>,
+          validateDefinition<def[0], $, args>,
           def[1] extends "&"
-              ? inferDefinition<def, $> extends never
+              ? inferDefinition<def, $, args> extends never
                   ? writeUnsatisfiableExpressionError<"intersection">
                   : def["1"]
               : def[1],
           def[1] extends "|"
-              ? validateDefinition<def[2], $>
+              ? validateDefinition<def[2], $, args>
               : def[1] extends "&"
-              ? validateDefinition<def[2], $>
+              ? validateDefinition<def[2], $, args>
               : def[1] extends ":"
-              ? Narrow<extractIn<inferDefinition<def[0], $>>>
+              ? Narrow<extractIn<inferDefinition<def[0], $, args>>>
               : def[1] extends "=>"
-              ? Morph<extractOut<inferDefinition<def[0], $>>, unknown>
-              : validateDefinition<def[2], $>
+              ? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
+              : validateDefinition<def[2], $, args>
       ]
 
 export type UnparsedTupleExpressionInput = {
@@ -283,8 +306,8 @@ export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
     ctx.scope.parse(def[1], ctx).keyof()
 
-export type inferKeyOfExpression<operandDef, $> = evaluate<
-    keyof inferDefinition<operandDef, $>
+export type inferKeyOfExpression<operandDef, $, args> = evaluate<
+    keyof inferDefinition<operandDef, $, args>
 >
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
@@ -311,12 +334,6 @@ export type PrefixParser<token extends IndexZeroOperator> = (
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
-export const writeMalformedFunctionalExpressionMessage = (
-    operator: FunctionalTupleOperator,
-    rightDef: unknown
-) =>
-    `Expression requires a function following '${operator}' (was ${typeof rightDef})`
-
 export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
 export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
@@ -331,6 +348,62 @@ export type IndexOneExpression<
 
 const isIndexOneExpression = (def: List): def is IndexOneExpression =>
     indexOneParsers[def[1] as IndexOneOperator] !== undefined
+
+export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
+    if (typeof def[2] !== "function") {
+        return throwParseError(
+            writeMalformedFunctionalExpressionMessage("=>", def[2])
+        )
+    }
+    return ctx.scope.parse(def[0], ctx).constrain("morph", def[2] as Morph)
+}
+
+export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
+
+export type parseMorph<inDef, morph, $, args> = morph extends Morph
+    ? (
+          In: extractIn<inferDefinition<inDef, $, args>>
+      ) => Out<inferMorphOut<ReturnType<morph>>>
+    : never
+
+export type MorphAst<i = any, o = unknown> = (In: i) => Out<o>
+
+export type Out<o = unknown> = ["=>", o]
+
+export type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
+    ? t
+    : Exclude<out, Problem>
+
+export const writeMalformedFunctionalExpressionMessage = (
+    operator: FunctionalTupleOperator,
+    value: unknown
+) =>
+    `${
+        operator === ":" ? "Narrow" : "Morph"
+    } expression requires a function following '${operator}' (was ${typeof value})`
+
+export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
+    if (typeof def[2] !== "function") {
+        return throwParseError(
+            writeMalformedFunctionalExpressionMessage(":", def[2])
+        )
+    }
+    return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Narrow)
+}
+
+export type Narrow<data = any> = (data: data, state: TraversalState) => boolean
+
+export type NarrowCast<data = any, narrowed extends data = data> = (
+    data: data,
+    state: TraversalState
+) => data is narrowed
+
+export type inferNarrow<In, predicate> = predicate extends (
+    data: any,
+    ...args: any[]
+) => data is infer narrowed
+    ? narrowed
+    : In
 
 const indexOneParsers: {
     [token in IndexOneOperator]: PostfixParser<token>

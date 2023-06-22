@@ -1,12 +1,13 @@
+import type { NumberLiteral } from "../../../../dev/utils/src/numericLiterals.js"
 import type {
     Comparator,
     InvertedComparators,
     MinComparator
 } from "../../../nodes/primitive/range.js"
 import { invertedComparators } from "../../../nodes/primitive/range.js"
-import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import type { DateLiteral } from "../shift/operand/date.js"
 
-export type Prefix = "keyof"
+export type StringifiablePrefixOperator = "keyof"
 
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned
@@ -33,7 +34,7 @@ export const writeOpenRangeMessage = <
     `Left bounds are only valid when paired with right bounds (try ...${comparator}${min})`
 
 export type writeOpenRangeMessage<
-    min extends NumberLiteral,
+    min extends ValidLiterals,
     comparator extends MinComparator
 > = `Left bounds are only valid when paired with right bounds (try ...${comparator}${min})`
 
@@ -69,3 +70,5 @@ export type writeMultipleLeftBoundsMessage<
     limit extends NumberLiteral,
     comparator extends MinComparator
 > = `An expression may have at most one left bound (parsed ${openLimit}${InvertedComparators[openComparator]}, ${limit}${InvertedComparators[comparator]})`
+
+export type ValidLiterals = NumberLiteral | DateLiteral

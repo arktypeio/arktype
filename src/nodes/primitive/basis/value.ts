@@ -1,16 +1,18 @@
-import { compileSerializedValue } from "../../../compile/compile.js"
-import { domainOf } from "../../../utils/domains.js"
-import { prototypeKeysOf } from "../../../utils/objectKinds.js"
-import { stringify } from "../../../utils/serialize.js"
+import { domainOf } from "../../../../dev/utils/src/domains.js"
+import { prototypeKeysOf } from "../../../../dev/utils/src/objectKinds.js"
+import { stringify } from "../../../../dev/utils/src/serialize.js"
+import { compileSerializedValue } from "../../../compile/state.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface ValueNode extends BasisNode<unknown> {}
+export interface ValueNode extends BasisNode<unknown> {
+    serialized: string
+}
 
-const compareFunction: Record<string, Function> = {
+const equalityCheck: Record<string, Function> = {
     default: (rule: unknown, data: string) => `${data} === ${rule}`,
-    date: (rule: Date, data: Date) => `${data}.toDateString() === ${rule}`
+    date: (rule: Date, date: Date) => `${date}.toDateString() === ${rule}`
 }
 
 export const valueNode = defineNodeKind<ValueNode>(
@@ -24,12 +26,13 @@ export const valueNode = defineNodeKind<ValueNode>(
                 "value",
                 rule,
                 rule instanceof Date
-                    ? compareFunction["date"](compiledRule, s.data)
-                    : compareFunction["default"](compiledRule, s.data)
+                    ? equalityCheck["date"](compiledRule, s.data)
+                    : equalityCheck["default"](compiledRule, s.data)
             )
         }
     },
     (base) => ({
+        serialized: compileSerializedValue(base.rule),
         domain: domainOf(base.rule),
         literalKeys:
             base.rule === null || base.rule === undefined

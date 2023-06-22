@@ -1,7 +1,7 @@
+import type { listable } from "../../../dev/utils/src/lists.js"
+import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/lists.js"
 import { registry } from "../../compile/registry.js"
-import type { Narrow } from "../../parse/ast/narrow.js"
-import type { listable } from "../../utils/lists.js"
-import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import type { Narrow } from "../../parse/tuple.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
@@ -34,7 +34,3 @@ export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
         description: `narrowed by ${base.rule.map((narrow) => narrow.name)}`
     })
 )
-
-//     compileTraverse(s: CompilationState) {
-//         return s.ifNotThen("false", s.problem("custom", "filters"))
-//     }

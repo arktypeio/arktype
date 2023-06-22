@@ -1,5 +1,5 @@
+import { Path } from "../../dev/utils/src/lists.js"
 import type { TypeConfig } from "../type.js"
-import { Path } from "../utils/lists.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
 import { Problems, problemsByCode } from "./problems.js"
 import type { PossiblyInternalObject } from "./registry.js"
@@ -65,7 +65,7 @@ export class TraversalState {
     ) {
         // TODO: fix
         const problem = new problemsByCode[code](
-            ...(args as [any, any, any])
+            ...(args as never[])
         ) as any as Problem
         return this.problems.add(problem)
     }

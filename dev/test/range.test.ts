@@ -1,5 +1,7 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { node, type } from "../../src/main.js"
+import type { Range } from "../../src/nodes/primitive/range.js"
+import { rangeNode } from "../../src/nodes/primitive/range.js"
 import {
     writeDoubleRightBoundMessage,
     writeUnboundableMessage
@@ -10,8 +12,13 @@ import {
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
-import { writeMalformedNumericLiteralMessage } from "../../src/utils/numericLiterals.js"
 import { attest } from "../attest/main.js"
+import { writeMalformedNumericLiteralMessage } from "../utils/src/numericLiterals.js"
+
+export const expectedBoundsCondition = (...range: Range) =>
+    node({ basis: "number", range }).condition
+export const expectedDateBoundsCondition = (...range: Range) =>
+    node({ basis: Date, range }).condition
 
 suite("range", () => {
     suite("parse", () => {
@@ -19,78 +26,81 @@ suite("range", () => {
             test(">", () => {
                 const t = type("number>0")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: { range: { min: { limit: 0, comparator: ">" } } }
-                // })
+                attest(t.allows(-1)).equals(false)
+                attest(t.allows(0)).equals(false)
+                attest(t.allows(1)).equals(true)
             })
             test("<", () => {
                 const t = type("number<10")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: {
-                //         range: { max: { limit: 10, comparator: "<" } }
-                //     }
-                // })
+                attest(t.condition).equals(
+                    expectedBoundsCondition({ comparator: "<", limit: 10 })
+                )
             })
             test("<=", () => {
                 const t = type("number<=-49")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: {
-                //         range: { max: { limit: -49, comparator: "<=" } }
-                //     }
-                // })
+                attest(t.condition).equals(
+                    expectedBoundsCondition({ comparator: "<=", limit: -49 })
+                )
             })
             test("==", () => {
                 const t = type("number==3211993")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: {
-                //         range: {
-                //             limit: 3211993,
-                //             comparator: "=="
-                //         }
-                //     }
-                // })
+                attest(t.condition).equals(
+                    expectedBoundsCondition({
+                        comparator: "==",
+                        limit: 3211993
+                    })
+                )
             })
         })
         suite("double", () => {
             test("<,<=", () => {
                 const t = type("-5<number<=5")
                 attest(t.infer).typed as number
-                attest(t.root.condition).snap(
-                    'typeof $arkRoot === "number" && ($arkRoot.length ?? Number($arkRoot)) > -5 && ($arkRoot.length ?? Number($arkRoot)) <= 5'
+                attest(t.allows(-6)).equals(false)
+                attest(t.allows(-5)).equals(false)
+                attest(t.allows(-4)).equals(true)
+                attest(t.allows(4)).equals(true)
+                attest(t.allows(5)).equals(true)
+                attest(t.allows(5.01)).equals(false)
+                attest(t.condition).equals(
+                    expectedBoundsCondition(
+                        {
+                            comparator: ">",
+                            limit: -5
+                        },
+                        {
+                            comparator: "<=",
+                            limit: 5
+                        }
+                    )
                 )
-                // attest(t.node).snap({
-                //     number: {
-                //         range: {
-                //             min: { limit: -5, comparator: ">" },
-                //             max: { limit: 5, comparator: "<=" }
-                //         }
-                //     }
-                // })
             })
             test("<=,<", () => {
                 const t = type("-3.23<=number<4.654")
                 attest(t.infer).typed as number
-                // attest(t.node).snap({
-                //     number: {
-                //         range: {
-                //             min: { limit: -3.23, comparator: ">=" },
-                //             max: { limit: 4.654, comparator: "<" }
-                //         }
-                //     }
-                // })
+                attest(t.condition).equals(
+                    expectedBoundsCondition(
+                        {
+                            comparator: ">=",
+                            limit: -3.23
+                        },
+                        {
+                            comparator: "<",
+                            limit: 4.654
+                        }
+                    )
+                )
             })
         })
         test("whitespace following comparator", () => {
             const t = type("number > 3")
             attest(t.infer).typed as number
-            // attest(t.node).snap({
-            //     number: {
-            //         range: { min: { limit: 3, comparator: ">" } }
-            //     }
-            // })
+            attest(t.condition).equals(
+                expectedBoundsCondition({ comparator: ">", limit: 3 })
+            )
         })
         suite("intersection", () => {
             suite("equality range", () => {
@@ -229,6 +239,12 @@ suite("range", () => {
             test("array", () => {
                 attest(type("87<=boolean[]<89").infer).typed as boolean[]
             })
+            test("multiple boundable categories", () => {
+                const t = type("(string|boolean[]|number)>0")
+                attest(t.infer).typed as string | boolean[] | number
+                const expected = type("string>0|boolean[]>0|number>0")
+                attest(t.condition).equals(expected.condition)
+            })
 
             suite("errors", () => {
                 test("unknown", () => {
@@ -248,8 +264,66 @@ suite("range", () => {
                         // @ts-expect-error
                         type("1<(number|object)<10")
                     ).throwsAndHasTypeError(
-                        "must be a number, string, Array, or Date"
+                        "Error: Bounded expression object must be bounded by a number, string or Array"
                     )
+                })
+            })
+        })
+        suite("date range", () => {
+            suite("parse", () => {
+                suite("single", () => {
+                    test(">", () => {
+                        const t = type("Date>d'2001/5/5'")
+                        attest(t.infer).typed as Date
+                    })
+                    test("<", () => {
+                        const t = type("Date<d'2023/1/12'")
+                        attest(t.infer).typed as Date
+                        attest(t.condition).equals(
+                            expectedDateBoundsCondition({
+                                comparator: "<",
+                                limit: new Date("2023/1/12")
+                            })
+                        )
+                    })
+                    test("<=", () => {
+                        const t = type("Date<=d'2021/1/12'")
+                        attest(t.infer).typed as Date
+                        attest(t.condition).equals(
+                            expectedDateBoundsCondition({
+                                comparator: "<=",
+                                limit: new Date("2021/1/12")
+                            })
+                        )
+                    })
+                    test("==", () => {
+                        const t = type("Date==d'2020-1-1'")
+                        attest(t.infer).typed as Date
+                        attest(t.condition).equals(
+                            expectedDateBoundsCondition({
+                                comparator: "==",
+                                limit: new Date("2020-1-1")
+                            })
+                        )
+                    })
+                })
+                suite("double", () => {
+                    test("<,<=", () => {
+                        const t = type("d'2020/1/1'<Date<=d'2024/1/1'")
+                        attest(t.infer).typed as Date
+                        attest(t.condition).equals(
+                            expectedBoundsCondition(
+                                {
+                                    comparator: ">",
+                                    limit: new Date("2020/1/1")
+                                },
+                                {
+                                    comparator: "<=",
+                                    limit: new Date("2024/1/1")
+                                }
+                            )
+                        )
+                    })
                 })
             })
         })

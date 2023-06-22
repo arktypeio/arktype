@@ -2,7 +2,7 @@ import { typeNode } from "../../../../main.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
-import { getValidDateFromInputOrThrow } from "./date.js"
+import { dateEnclosing, tryParseDate, writeInvalidDateMessage } from "./date.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -30,8 +30,8 @@ export const parseEnclosed = (
     if (s.scanner.shift() === "/") {
         s.root = typeNode({ basis: "string", regex: token })
     } else {
-        const value = /d['"]/.test(enclosing)
-            ? getValidDateFromInputOrThrow(token)
+        const value = dateEnclosing(enclosing)
+            ? tryParseDate(token, writeInvalidDateMessage(token))
             : token
         s.root = typeNode({ basis: ["===", value] })
     }

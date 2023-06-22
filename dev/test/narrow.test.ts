@@ -2,9 +2,9 @@ import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import type { equals } from "../../src/utils/generics.js"
-import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
+import type { equals } from "../utils/src/generics.js"
+import { Path } from "../utils/src/lists.js"
 
 suite("narrow", () => {
     test("implicit problem", () => {
@@ -98,7 +98,7 @@ suite("narrow", () => {
             .morph((s) => s.length)
             .narrow((n): n is 5 => n === 5)
         attest(t).typed as Type<(In: string) => 5, Ark>
-        attest(t.root.condition).snap(
+        attest(t.condition).snap(
             'typeof $arkRoot === "string" && false && false'
         )
     })

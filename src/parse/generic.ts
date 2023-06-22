@@ -1,11 +1,15 @@
-import type { error } from "../utils/errors.js"
-import type { nominal } from "../utils/generics.js"
-import type { join } from "../utils/lists.js"
-import type { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
+import type { error } from "../../dev/utils/src/errors.js"
+import { throwParseError } from "../../dev/utils/src/errors.js"
+import type { nominal } from "../../dev/utils/src/generics.js"
+import type { join } from "../../dev/utils/src/lists.js"
+import type { TypeNode } from "../main.js"
+import type { ParseContext } from "../scope.js"
+import { DynamicState } from "./string/reduce/dynamic.js"
+import { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
 import type { state, StaticState } from "./string/reduce/static.js"
-import type { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
-import type { Scanner } from "./string/shift/scanner.js"
-import type { parseUntilFinalizer } from "./string/string.js"
+import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
+import { Scanner } from "./string/shift/scanner.js"
+import { parseUntilFinalizer } from "./string/string.js"
 
 export type GenericDeclaration<
     name extends string = string,
@@ -17,15 +21,38 @@ export type GenericParamsParseError<message extends string = string> = [
     nominal<message, "InvalidGenericParameters">
 ]
 
+export const parseGenericParams = (def: string) =>
+    parseGenericParamsRecurse(new Scanner(def))
+
 export type parseGenericParams<def extends string> = parseParamsRecurse<
     def,
     "",
     []
 > extends infer result extends string[]
     ? "" extends result[number]
-        ? GenericParamsParseError<`An empty string is not a valid generic parameter name`>
+        ? GenericParamsParseError<emptyGenericParameterMessage>
         : result
     : never
+
+export const emptyGenericParameterMessage = `An empty string is not a valid generic parameter name`
+
+export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
+
+const parseGenericParamsRecurse = (scanner: Scanner): string[] => {
+    const param = scanner.shiftUntilNextTerminator()
+    if (param === "") {
+        throwParseError(emptyGenericParameterMessage)
+    }
+    scanner.shiftUntilNonWhitespace()
+    const nextNonWhitespace = scanner.shift()
+    return nextNonWhitespace === ""
+        ? [param]
+        : nextNonWhitespace === ","
+        ? [param, ...parseGenericParamsRecurse(scanner)]
+        : throwParseError(
+              writeUnexpectedCharacterMessage(nextNonWhitespace, ",")
+          )
+}
 
 type parseParamsRecurse<
     unscanned extends string,
@@ -55,24 +82,86 @@ type parseParamsRecurse<
     ? result
     : [...result, param]
 
-export type ParsedArgs<asts extends unknown[], unscanned extends string> = [
-    asts,
-    unscanned
-]
+export type ParsedArgs<
+    result extends unknown[] = unknown[],
+    unscanned extends string = string
+> = {
+    result: result
+    unscanned: unscanned
+}
+
+export const parseGenericArgs = (
+    name: string,
+    params: string[],
+    unscanned: string,
+    ctx: ParseContext
+) => parseGenericArgsRecurse(name, params, unscanned, ctx, [], [])
 
 export type parseGenericArgs<
     name extends string,
     params extends string[],
     unscanned extends string,
     $,
+    args
+> = parseGenericArgsRecurse<name, params, unscanned, $, args, [], []>
+
+const parseGenericArgsRecurse = (
+    name: string,
+    params: string[],
+    unscanned: string,
+    ctx: ParseContext,
+    argDefs: string[],
+    argNodes: TypeNode[]
+): ParsedArgs<TypeNode[]> => {
+    const s = parseUntilFinalizer(new DynamicState(unscanned, ctx))
+    // remove the finalizing token from the argDef
+    argDefs.push(s.scanner.scanned.slice(0, -1))
+    argNodes.push(s.root)
+    const nextUnscanned = s.scanner.unscanned
+    if (s.finalizer === ">") {
+        if (argNodes.length === params.length) {
+            return {
+                result: argNodes,
+                unscanned: nextUnscanned
+            }
+        } else {
+            return s.error(
+                writeInvalidGenericArgsMessage(name, params, argDefs)
+            )
+        }
+    } else if (s.finalizer === ",") {
+        return parseGenericArgsRecurse(
+            name,
+            params,
+            nextUnscanned,
+            ctx,
+            argDefs,
+            argNodes
+        )
+    }
+    return s.error(writeUnclosedGroupMessage(">"))
+}
+
+type parseGenericArgsRecurse<
+    name extends string,
+    params extends string[],
+    unscanned extends string,
+    $,
+    args,
     argDefs extends string[],
     argAsts extends unknown[]
 > = parseUntilFinalizer<
     state.initialize<unscanned>,
-    $
+    $,
+    args
 > extends infer finalArgState extends StaticState
     ? {
-          defs: [...argDefs, finalArgState["scanned"]]
+          defs: [
+              ...argDefs,
+              finalArgState["scanned"] extends `${infer def}${"," | ">"}`
+                  ? def
+                  : finalArgState["scanned"]
+          ]
           asts: [...argAsts, finalArgState["root"]]
           unscanned: finalArgState["unscanned"]
       } extends {
@@ -84,18 +173,15 @@ export type parseGenericArgs<
             ? nextAsts["length"] extends params["length"]
                 ? ParsedArgs<nextAsts, nextUnscanned>
                 : state.error<
-                      writeInvalidGenericParametersMessage<
-                          name,
-                          params,
-                          nextDefs
-                      >
+                      writeInvalidGenericArgsMessage<name, params, nextDefs>
                   >
             : finalArgState["finalizer"] extends ","
-            ? parseGenericArgs<
+            ? parseGenericArgsRecurse<
                   name,
                   params,
                   nextUnscanned,
                   $,
+                  args,
                   nextDefs,
                   nextAsts
               >
@@ -105,16 +191,27 @@ export type parseGenericArgs<
         : never
     : never
 
-export type writeInvalidGenericParametersMessage<
+export const writeInvalidGenericArgsMessage = <
     name extends string,
     params extends string[],
     argDefs extends string[]
-> = `${name}<${params["length"] extends 1
-    ? params[0]
-    : join<
-          params,
-          ", "
-      >}> requires exactly ${params["length"]} parameters (got ${argDefs["length"]}: ${join<
+>(
+    name: name,
+    params: params,
+    argDefs: argDefs
+) =>
+    `${name}${params.join(", ")} requires exactly ${params.length} args (got ${
+        argDefs.length
+    }: ${argDefs.join(", ")})`
+
+export type writeInvalidGenericArgsMessage<
+    name extends string,
+    params extends string[],
+    argDefs extends string[]
+> = `${name}<${join<
+    params,
+    ", "
+>}> requires exactly ${params["length"]} args (got ${argDefs["length"]}: ${join<
     argDefs,
     ","
 >})`

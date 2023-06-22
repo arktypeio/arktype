@@ -34,7 +34,9 @@ export type equals<t, u> = (<_>() => _ extends t ? 1 : 2) extends <
     ? true
     : false
 
-export declare const id: unique symbol
+export const id = Symbol("id")
+
+export type id = typeof id
 
 export type nominal<t, id extends string> = t & {
     readonly [id]: id

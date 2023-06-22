@@ -1,5 +1,5 @@
-import type { CompilationState } from "../../compile/compile.js"
-import { throwInternalError } from "../../utils/errors.js"
+import { throwInternalError } from "../../../dev/utils/src/errors.js"
+import type { CompilationState } from "../../compile/state.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins } from "./type.js"
@@ -34,10 +34,15 @@ export const intersectNamedProp = (
     }
 }
 
+export const compileNamedProps = (
+    props: NamedPropRule[],
+    s: CompilationState
+) => props.map((prop) => compileNamedProp(prop, s)).join("\n")
+
 export const compileNamedProp = (prop: NamedPropRule, s: CompilationState) => {
-    s.path.push(prop.key.name)
+    s.pushNamedKey(prop.key.name)
     const compiledValue = prop.value.compile(s)
-    s.path.pop()
+    s.popKey()
     const result = prop.key.optional
         ? `if('${prop.key.name}' in ${s.data}) {
             ${compiledValue}

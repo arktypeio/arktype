@@ -3,22 +3,29 @@ import { scope, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 suite("discrimination", () => {
-    test("shallow", () => {
-        const t = type("'a'|'b'|'c'")
-        attest(t.allows.toString()).snap(`function anonymous($arkRoot
-) {
-return (() => {
-        switch($arkRoot) {
-            case "a": {
-                return true;
-            }case "b": {
-                return true;
-            }case "c": {
-                return true;
-            }
-        }
-    })()
+    test("2 literal branches", () => {
+        // should not use a switch with <=2 branches to avoid visual clutter
+        const t = type("'a'|'b'")
+        attest(t.condition).snap(`if( $arkRoot !== "a" && $arkRoot !== "b") {
+    return false
 }`)
+        attest(t.allows("a")).equals(true)
+        attest(t.allows("b")).equals(true)
+        attest(t.allows("c")).equals(false)
+    })
+    test(">2 literal branches", () => {
+        const t = type("'a'|'b'|'c'")
+        attest(t.condition).snap(`switch($arkRoot) {
+        case "a":
+    case "b":
+    case "c":        break
+    default:
+        return false
+}`)
+        attest(t.allows("a")).equals(true)
+        attest(t.allows("b")).equals(true)
+        attest(t.allows("c")).equals(true)
+        attest(t.allows("d")).equals(false)
     })
     const getPlaces = () =>
         scope({
@@ -33,25 +40,50 @@ return (() => {
         })
     test("nested", () => {
         const t = getPlaces().type("ocean|sky|rainForest|desert")
-        attest(t.root.condition).snap(`(() => {
-        switch($arkRoot.color) {
-            case "blue": {
-                return (() => {
-        switch($arkRoot.climate) {
-            case "wet": {
-                return $arkRoot.isOcean === true;
-            }case "dry": {
-                return $arkRoot.isSky === true;
-            }
-        }
-    })();
-            }case "green": {
-                return $arkRoot.climate === "wet" && $arkRoot.isRainForest === true;
-            }case "brown": {
-                return $arkRoot.climate === "dry" && $arkRoot.isDesert === true;
-            }
-        }
-    })()`)
+        attest(t.condition).snap(`switch($arkRoot?.color) {
+    case "blue": {
+    switch($arkRoot?.climate) {
+    case "dry": {
+    
+
+if (!($arkRoot.isSky === true)) {
+            return false
+}
+     break
+}case "wet": {
+    
+
+if (!($arkRoot.isOcean === true)) {
+            return false
+}
+     break
+}default: {
+    return false
+}
+}
+     break
+}case "brown": {
+    if (!($arkRoot.climate === "dry")) {
+            return false
+}
+
+if (!($arkRoot.isDesert === true)) {
+            return false
+}
+     break
+}case "green": {
+    if (!($arkRoot.climate === "wet")) {
+            return false
+}
+
+if (!($arkRoot.isRainForest === true)) {
+            return false
+}
+     break
+}default: {
+    return false
+}
+}`)
     })
 
     test("undiscriminatable", () => {

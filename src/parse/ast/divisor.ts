@@ -1,12 +1,14 @@
-import type { error } from "../../utils/errors.js"
+import type { error } from "../../../dev/utils/src/errors.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 
 /**
 "N%D", where "N" is a number and "D" is a non-zero integer
  */
-export type validateDivisor<l, $> = isDivisible<inferAst<l, $>> extends true
-    ? validateAst<l, $>
+export type validateDivisor<l, $, args> = isDivisible<
+    inferAst<l, $, args>
+> extends true
+    ? validateAst<l, $, args>
     : error<writeIndivisibleMessage<astToString<l>>>
 
 type isDivisible<data> = [data] extends [number] ? true : false

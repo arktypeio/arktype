@@ -3,17 +3,28 @@ import { scope, type } from "../../src/main.js"
 import {
     prematureRestMessage,
     writeNonArrayRestMessage
-} from "../../src/parse/ast/tuple.js"
+} from "../../src/parse/tuple.js"
 import { attest } from "../attest/main.js"
 
 suite("tuple", () => {
     test("shallow", () => {
         const t = type(["string", "number"])
         attest(t.infer).typed as [string, number]
-        attest(t.root.condition).snap(
-            // TODO: array index accesses should be numeric
-            '$arkRoot instanceof Array && $arkRoot.length === 2 && typeof $arkRoot["0"] === "string" && typeof $arkRoot["1"] === "number"'
-        )
+        attest(t.allows(["", 0])).equals(true)
+        attest(t.allows([true, 0])).equals(false)
+        attest(t.allows([0, false])).equals(false)
+        // too short
+        attest(t.allows([""])).equals(false)
+        // too long
+        attest(t.allows(["", 0, 1])).equals(false)
+        // non-array
+        attest(
+            t.allows({
+                length: 2,
+                0: "",
+                1: 0
+            })
+        ).equals(false)
     })
     test("nested", () => {
         const t = type([["string", "number"], [{ a: "boolean", b: ["null"] }]])
@@ -26,12 +37,14 @@ suite("tuple", () => {
                 }
             ]
         ]
+        attest(t.allows([["", 0], [{ a: true, b: [null] }]])).equals(true)
+        attest(t.allows([["", 0], [{ a: true, b: [undefined] }]])).equals(false)
     })
     suite("variadic", () => {
         test("spreads simple arrays", () => {
             const wellRested = type(["string", "...number[]"])
             attest(wellRested.infer).typed as [string, ...number[]]
-            attest(wellRested.root.condition)
+            attest(wellRested.condition)
                 .snap(`$arkRoot instanceof Array && typeof $arkRoot["0"] === "string" && (() => {
             let valid = true;
             for(let $arkIndex = 1; $arkIndex < $arkRoot.length; $arkIndex++) {
@@ -55,7 +68,7 @@ suite("tuple", () => {
                 },
                 ...(RegExp | Date)[]
             ]
-            attest(greatSpread.root.condition)
+            attest(greatSpread.condition)
                 .snap(`$arkRoot instanceof Array && ((typeof $arkRoot["0"] === "object" && $arkRoot["0"] !== null) || typeof $arkRoot["0"] === "function") && (() => {
         switch($arkRoot["0"].a) {
             case true: {
@@ -111,11 +124,11 @@ suite("tuple", () => {
             )
         })
         test("array", () => {
-            const tupleAndArray = type([{ a: "string" }]).and([
+            const tupleAndArray = type([{ a: "string" }, "[]"]).and([
                 { b: "boolean" }
             ])
             // Check to make sure the intersection is evaluated
-            attest(tupleAndArray).types.toString.snap()
+            attest(tupleAndArray.infer).types.toString.snap()
             const arrayAndTuple = type([
                 [{ b: "boolean" }, "[]"],
                 "&",

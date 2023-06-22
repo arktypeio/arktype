@@ -1,4 +1,5 @@
-import { isKeyOf } from "../../utils/records.js"
+import { throwInternalError } from "../../../dev/utils/src/errors.js"
+import { isKeyOf } from "../../../dev/utils/src/records.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
@@ -46,7 +47,7 @@ export type InvertedComparators = typeof invertedComparators
 export type SizedData = string | number | readonly unknown[]
 
 export type Bound<comparator extends Comparator = Comparator> = {
-    limit: number
+    limit: number | Date
     comparator: comparator
 }
 
@@ -63,12 +64,26 @@ export interface RangeNode extends BaseNode<Range> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
 }
-
+const maybeChangeRuleLimits = (rule: Range) => {
+    // if (rule[0].limit instanceof Date) {
+    //     for (const index in rule) {
+    //         const limit = rule[index].limit
+    //         rule[index] = limit.valueOf() ?? limit
+    //     }
+    // }
+    const lim0 = rule[0].limit
+    rule[0].limit = lim0.valueOf() ?? lim0
+    const lim1 = rule[1]?.limit
+    if (lim1) {
+        rule[1]!.limit = lim1?.valueOf() ?? lim1
+    }
+}
 export const rangeNode = defineNodeKind<RangeNode>(
     {
         kind: "range",
         parse: (input) => input,
         compile: (rule, s) => {
+            maybeChangeRuleLimits(rule)
             if (
                 rule[0].limit === rule[1]?.limit &&
                 rule[0].comparator === ">=" &&
@@ -77,13 +92,30 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 // reduce a range like `1<=number<=1` to `number==1`
                 rule = [{ comparator: "==", limit: rule[0].limit }]
             }
+            const size = s.lastBasis
+                ? s.lastBasis.domain === "number"
+                    ? s.data
+                    : s.lastBasis.domain === "string"
+                    ? `${s.data}.length`
+                    : s.lastBasis.hasKind("class")
+                    ? s.lastBasis.extendsOneOf(Date)
+                        ? `Number(${s.data})`
+                        : s.lastBasis.extendsOneOf(Array)
+                        ? `${s.data}.length`
+                        : throwInternalError(
+                              `Unexpected basis for range constraint ${s.lastBasis}`
+                          )
+                    : throwInternalError(
+                          `Unexpected basis for range constraint ${s.lastBasis}`
+                      )
+                : `${s.data}.length ?? Number(${s.data})`
             // sorted as lower, upper by definition
             return rule
                 .map((bound) =>
                     s.check(
                         "range",
                         bound,
-                        `(${s.data}.length ?? Number(${s.data})) ${
+                        `${size} ${
                             bound.comparator === "==" ? "===" : bound.comparator
                         } ${bound.limit}`
                     )

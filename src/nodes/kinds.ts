@@ -1,4 +1,4 @@
-import { cached } from "../utils/functions.js"
+import { cached } from "../../dev/utils/src/main.js"
 import type { PredicateNode } from "./composite/predicate.js"
 import { predicateNode } from "./composite/predicate.js"
 import { propsNode } from "./composite/props.js"

@@ -1,9 +1,11 @@
-import { node } from "../../nodes/composite/type.js"
-import { Scope } from "../../scope.js"
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
-} from "../../utils/numericLiterals.js"
+} from "../../../dev/utils/src/numericLiterals.js"
+import { node } from "../../nodes/composite/type.js"
+import type { Out } from "../../parse/tuple.js"
+import { Scope } from "../../scope.js"
+import type { RootScope } from "../utils.js"
 import { creditCard } from "./creditCard.js"
 import { parsedDate } from "./date.js"
 
@@ -84,7 +86,24 @@ const json = node({
 // "semver": "a valid semantic version",
 // "json": "a JSON-parsable string",
 // "integer": "an integer"
-export const validation = Scope.root({
+
+export type InferredValidation = {
+    alpha: string
+    alphanumeric: string
+    lowercase: string
+    uppercase: string
+    creditCard: string
+    email: string
+    uuid: string
+    parsedNumber: (In: string) => Out<number>
+    parsedInteger: (In: string) => Out<number>
+    parsedDate: (In: string) => Out<Date>
+    semver: string
+    json: (In: string) => Out<unknown>
+    integer: number
+}
+
+export const validation: RootScope<InferredValidation> = Scope.root({
     // Character sets
     alpha: /^[A-Za-z]*$/,
     alphanumeric: /^[A-Za-z\d]*$/,

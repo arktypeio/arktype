@@ -12,6 +12,10 @@ type({
     a: "string|number"
 })
 
+export const tsGenerics = Scope.root({
+    "Record<K, V>": node({ basis: "object" })
+})
+
 type(["string|number", "[]"])
 
 const a = "string"

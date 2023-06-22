@@ -1,11 +1,10 @@
+import type { Dict } from "../../../../dev/utils/src/records.js"
+import { isKeyOf } from "../../../../dev/utils/src/records.js"
 import type { Comparator } from "../../../nodes/primitive/range.js"
-import type { Dict } from "../../../utils/records.js"
-import { isKeyOf } from "../../../utils/records.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
-    finalized = false
 
     constructor(def: string) {
         this.chars = [...def]
@@ -19,6 +18,10 @@ export class Scanner<Lookahead extends string = string> {
 
     get lookahead() {
         return (this.chars[this.i] ?? "") as Lookahead
+    }
+
+    get lastIndex() {
+        return this.chars.length - 1
     }
 
     shiftUntil(condition: Scanner.UntilCondition): string {
@@ -37,12 +40,24 @@ export class Scanner<Lookahead extends string = string> {
     }
 
     shiftUntilNextTerminator() {
-        this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
+        this.shiftUntilNonWhitespace()
         return this.shiftUntil(Scanner.lookaheadIsTerminator)
+    }
+
+    shiftUntilNonWhitespace() {
+        return this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
+    }
+
+    jumpToIndex(i: number) {
+        this.i = i < 0 ? this.lastIndex + i : i
     }
 
     get unscanned() {
         return this.chars.slice(this.i, this.chars.length).join("")
+    }
+
+    get scanned() {
+        return this.chars.slice(0, this.i).join("")
     }
 
     lookaheadIs<Char extends Lookahead>(char: Char): this is Scanner<Char> {

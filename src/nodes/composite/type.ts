@@ -1,30 +1,37 @@
-import type { Discriminant } from "../../compile/discriminate.js"
-import { discriminate } from "../../compile/discriminate.js"
+import { cached } from "../../../dev/utils/src/functions.js"
+import type {
+    conform,
+    exact,
+    Literalable
+} from "../../../dev/utils/src/generics.js"
+import { isArray } from "../../../dev/utils/src/objectKinds.js"
+import { hasArkKind } from "../../compile/registry.js"
+import type { CompilationState } from "../../compile/state.js"
+import { compilePropAccess, InputParameterName } from "../../compile/state.js"
 import type { inferred } from "../../parse/definition.js"
-import { cached } from "../../utils/functions.js"
-import type { conform, exact, Literalable } from "../../utils/generics.js"
-import { isArray } from "../../utils/objectKinds.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
-import { alphabetizeByCondition, defineNodeKind, isNode } from "../node.js"
+import { alphabetizeByCondition, defineNodeKind } from "../node.js"
 import type { BasisInput } from "../primitive/basis/basis.js"
 import { arrayClassNode } from "../primitive/basis/class.js"
-import { valueNode } from "../primitive/basis/value.js"
 import type { ValueNode } from "../primitive/basis/value.js"
+import { valueNode } from "../primitive/basis/value.js"
 import { thisNarrow } from "../primitive/narrow.js"
+import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
+import { discriminate } from "./discriminate.js"
 import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
-import { predicateNode } from "./predicate.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
     PredicateInput,
     PredicateNode
 } from "./predicate.js"
+import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
 export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
     [inferred]: t
-    discriminant: Discriminant | undefined
+    discriminant: Discriminant | null
     valueNode: ValueNode | undefined
     array(): TypeNode<t[]>
     isNever(): this is TypeNode<never>
@@ -44,12 +51,15 @@ export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
 const isParsedTypeRule = (
     input: TypeInput | PredicateNode[]
 ): input is PredicateNode[] =>
-    isArray(input) && (input.length === 0 || isNode(input[0]))
+    isArray(input) && (input.length === 0 || hasArkKind(input[0], "node"))
 
 export const typeNode = defineNodeKind<TypeNode, TypeInput>(
     {
         kind: "type",
         parse: (input) => {
+            if (hasArkKind(input, "node")) {
+                return input.rule
+            }
             if (!isParsedTypeRule(input)) {
                 input = isArray(input)
                     ? input.map((branch) => predicateNode(branch))
@@ -58,18 +68,10 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             return alphabetizeByCondition(reduceBranches(input))
         },
         compile: (branches, s) => {
-            if (branches.length === 1) {
-                return branches[0].compile(s)
-            }
-            const compiledBranches = branches
-                .map(
-                    (branch) => `(() => {
-          ${branch.compile(s)}
-          return true
-      })`
-                )
-                .join(" || ")
-            return `${compiledBranches}`
+            const discriminant = discriminate(branches)
+            return discriminant
+                ? compileDiscriminant(discriminant, s)
+                : compileIndiscriminable(branches, s)
         },
         intersect: (l, r): TypeNode | Disjoint => {
             if (l.rule.length === 1 && r.rule.length === 1) {
@@ -87,6 +89,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             base.rule.length === 0
                 ? "never"
                 : base.rule.map((branch) => branch.toString()).join(" or "),
+        // discriminate is cached so we don't have to worry about this running multiple times
         discriminant: discriminate(base.rule),
         valueNode: base.rule.length === 1 ? base.rule[0].valueNode : undefined,
         array(): any {
@@ -152,6 +155,90 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
         }
     })
 )
+
+const compileDiscriminant = (
+    discriminant: Discriminant,
+    s: CompilationState
+) => {
+    const isRootLiteral =
+        discriminant.path.length === 0 &&
+        discriminant.kind === "value" &&
+        !discriminant.cases.default
+    if (isRootLiteral) {
+        return compileDiscriminatedLiteral(discriminant.cases, s)
+    }
+    let compiledPath = InputParameterName
+    for (const segment of discriminant.path) {
+        // we need to access the path as optional so we don't throw if it isn't present
+        compiledPath += compilePropAccess(segment, true)
+    }
+    const condition =
+        discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
+    let compiledCases = ""
+    for (const k in discriminant.cases) {
+        const caseCondition = k === "default" ? "default" : `case ${k}`
+        const caseBranches = discriminant.cases[k]
+        s.discriminants.push(discriminant)
+        const caseChecks = isArray(caseBranches)
+            ? compileIndiscriminable(caseBranches, s)
+            : compileDiscriminant(caseBranches, s)
+        s.discriminants.pop()
+        compiledCases += `${caseCondition}: {
+    ${caseChecks ? `${caseChecks}\n     break` : "break"}
+}`
+    }
+    if (!discriminant.cases.default) {
+        // TODO: error message for traversal
+        compiledCases += `default: {
+    return false
+}`
+    }
+    return `switch(${condition}) {
+    ${compiledCases}
+}`
+}
+
+const compileDiscriminatedLiteral = (
+    cases: DiscriminatedCases,
+    s: CompilationState
+) => {
+    // TODO: error messages for traversal
+    const caseKeys = Object.keys(cases)
+    if (caseKeys.length === 2) {
+        return `if( ${s.data} !== ${caseKeys[0]} && ${s.data} !== ${caseKeys[1]}) {
+    return false
+}`
+    }
+    // for >2 literals, we fall through all cases, breaking on the last
+    const compiledCases =
+        caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
+    // if none of the cases are met, the check fails (this is optimal for perf)
+    return `switch(${s.data}) {
+    ${compiledCases}
+    default:
+        return false
+}`
+}
+
+const compileIndiscriminable = (
+    branches: PredicateNode[],
+    s: CompilationState
+) => {
+    if (branches.length === 0) {
+        return `${s.problem("custom", "nothing")}`
+    }
+    if (branches.length === 1) {
+        return branches[0].compile(s)
+    }
+    return branches
+        .map(
+            (branch) => `(() => {
+${branch.compile(s)}
+return true
+})()`
+        )
+        .join(" || ")
+}
 
 const intersectBranches = (
     l: PredicateNode[],
@@ -226,52 +313,6 @@ const intersectBranches = (
     return finalBranches
 }
 
-// const compileSwitch = (discriminant: Discriminant): string => {
-//     const compiledPath = compilePathAccess(discriminant.path, {
-//         optional: true
-//     })
-//     const condition =
-//         discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
-//     let compiledCases = ""
-//     let k: CaseKey
-//     for (k in discriminant.cases) {
-//         const caseCondition = k === "default" ? "default" : `case ${k}`
-//         const caseNode = discriminant.cases[k]
-//         compiledCases += `${caseCondition}: {
-//             return ${caseNode.rule};
-//         }`
-//     }
-//     return `(() => {
-//     switch(${condition}) {
-//         ${compiledCases}
-//     }
-// })()`
-// }
-
-// const compileTraverse = (s: CompilationState): string => {
-//     switch (this.rule.length) {
-//         case 0:
-//             return "throw new Error();"
-//         case 1:
-//             return this.rule[0].compileTraverse(s)
-//         default:
-//             s.unionDepth++
-//             const result = `state.pushUnion();
-//                     ${this.rule
-//                         .map(
-//                             (rules) => `(() => {
-//                         ${rules.compileTraverse(s)}
-//                         })()`
-//                         )
-//                         .join(" && ")};
-//                     state.popUnion(${this.rule.length}, ${s.data}, ${
-//                 s.path.json
-//             });`
-//             s.unionDepth--
-//             return result
-//     }
-// }
-
 const reduceBranches = (branchNodes: PredicateNode[]) => {
     if (branchNodes.length < 2) {
         return branchNodes
@@ -305,17 +346,8 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
     return branchNodes.filter((_, i) => uniquenessByIndex[i])
 }
 
-// function pruneDiscriminant(path: string[], kind: DiscriminantKind) {
-//     const prunedBranches: PredicateNode[] = []
-//     for (const branch of this.rule) {
-//         const pruned = branch.pruneDiscriminant(path, kind)
-//         prunedBranches.push(pruned)
-//     }
-//     return new TypeNode(prunedBranches)
-// }
-
 export type TypeNodeParser = {
-    <const branches extends readonly PredicateInput[]>(
+    <branches extends PredicateInput[]>(
         ...branches: {
             [i in keyof branches]: conform<
                 branches[i],
@@ -352,20 +384,22 @@ export type inferBranches<branches extends readonly PredicateInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
 
-export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
-    input extends unknown[] ? input[number] : input
->
+export type inferTypeInput<input extends TypeInput> =
+    input extends readonly PredicateInput[]
+        ? inferBranches<input>
+        : input extends PredicateInput
+        ? inferPredicateDefinition<input>
+        : input extends TypeNode<infer t>
+        ? t
+        : never
 
-export type TypeInput = PredicateInput | PredicateInput[]
+export type TypeInput = TypeNode | PredicateInput | PredicateInput[]
 
 export type validatedTypeNodeInput<
-    branches extends readonly PredicateInput[],
+    input extends readonly PredicateInput[],
     bases extends BasisInput[]
 > = {
-    [i in keyof branches]: exact<
-        branches[i],
-        PredicateInput<bases[i & keyof bases]>
-    >
+    [i in keyof input]: exact<input[i], PredicateInput<bases[i & keyof bases]>>
 }
 
 export type extractBases<

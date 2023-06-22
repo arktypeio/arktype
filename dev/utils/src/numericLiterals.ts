@@ -27,7 +27,8 @@ export const wellFormedNumberMatcher =
 const isWellFormedNumber = (s: string) => wellFormedNumberMatcher.test(s)
 
 const numberLikeMatcher = /^-?\d*\.?\d*$/
-const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
+export const isNumberLike = (s: string) =>
+    s.length !== 0 && numberLikeMatcher.test(s)
 
 /**
  *  Matches a well-formatted integer according to the following rules:
@@ -160,10 +161,3 @@ export const tryParseWellFormedBigint = (def: string) => {
         )
     }
 }
-
-export type DateInput = ConstructorParameters<typeof Date>[0]
-
-export const d = (dateInput: DateInput) =>
-    dateInput instanceof Date
-        ? dateInput.valueOf()
-        : new Date(dateInput).valueOf()

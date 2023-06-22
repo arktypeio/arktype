@@ -1,5 +1,8 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
+import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
+import { writeInvalidPropertyKeyMessage } from "../../src/parse/objectLiteral.js"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
 suite("object literal", () => {
@@ -10,25 +13,93 @@ suite("object literal", () => {
     test("required", () => {
         const o = type({ a: "string", b: "boolean" })
         attest(o.infer).typed as { a: string; b: boolean }
-        attest(o.root.condition).snap(
-            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && typeof $arkRoot.a === "string" && ($arkRoot.b === false || $arkRoot.b === true)'
-        )
     })
     test("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean" })
         attest(o.infer).typed as { a?: string; b: boolean }
-        attest(o.root.condition).snap(
-            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && ($arkRoot.b === false || $arkRoot.b === true) && !(\'a\' in $arkRoot) || typeof $arkRoot.a === "string"'
-        )
     })
+    test("index", () => {
+        const o = type({ "[string]": "string" })
+        attest(o).typed as { [x: string]: string }
+    })
+    test("enumerable indexed union", () => {
+        const o = type({ "['foo' | 'bar']": "string" })
+        attest(o).typed as {
+            foo: string
+            bar: string
+        }
+    })
+    test("non-enumerable indexed union", () => {
+        const o = type({ "[string | symbol]": "string" })
+        attest(o).typed as {
+            [x: string]: string
+            [x: symbol]: string
+        }
+    })
+    test("multiple indexed", () => {
+        const o = type({
+            "[string]": "string",
+            "[symbol]": "number"
+        })
+        attest(o).typed as {
+            [x: string]: string
+            [x: symbol]: number
+        }
+    })
+    test("all key kinds", () => {
+        const o = type({
+            "[string]": "string",
+            required: "'foo'",
+            "optional?": "'bar'"
+        })
+        attest(o.infer).typed as {
+            [x: string]: string
+            required: "foo"
+            optional?: "bar"
+        }
+    })
+    test("index key from scope", () => {
+        const types = scope({
+            key: "symbol|'foo'|'bar'|'baz'",
+            obj: {
+                "[key]": "string"
+            }
+        }).export()
+        type Key = symbol | "foo" | "bar" | "baz"
+        attest(types.key.infer).typed as Key
+        attest(types.obj.infer).typed as Record<Key, string>
+    })
+    test("syntax error in index definition", () => {
+        attest(() =>
+            type({
+                // @ts-expect-error
+                "[unresolvable]": "string"
+            })
+        ).throwsAndHasTypeError(writeUnresolvableMessage("unresolvable"))
+    })
+
+    test("semantic error in index definition", () => {
+        attest(() =>
+            type({
+                // @ts-expect-error
+                "[symbol<5]": "string"
+            })
+        ).throwsAndHasTypeError(writeUnboundableMessage("symbol"))
+    })
+
+    test("invalid key type for index definition", () => {
+        attest(() =>
+            type({
+                // @ts-expect-error
+                "[object]": "string"
+            })
+        ).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("object"))
+    })
+
     test("nested", () => {
         const t = type({ "a?": { b: "boolean" } })
         attest(t.infer).typed as { a?: { b: boolean } }
-        attest(t.root.condition).snap(
-            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && !(\'a\' in $arkRoot) || ((typeof $arkRoot.a === "object" && $arkRoot.a !== null) || typeof $arkRoot.a === "function") && ($arkRoot.a.b === false || $arkRoot.a.b === true)'
-        )
     })
-
     test("intersections", () => {
         const a = { "a?": "string" } as const
         const b = { b: "string" } as const
@@ -59,6 +130,10 @@ suite("object literal", () => {
     test("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }
+    })
+    test("escaped index", () => {
+        const o = type({ "\\[string]": "string" })
+        attest(o.infer).typed as { "[string]": string }
     })
     test("multiple bad strict", () => {
         const t = type({ a: "string", b: "boolean" }).configure({

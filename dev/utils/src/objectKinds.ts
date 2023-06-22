@@ -5,7 +5,7 @@ import { isKeyOf } from "./records.js"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const defaultObjectKinds = {
+export const builtinObjectKinds = {
     Array,
     Date,
     Error,
@@ -22,39 +22,19 @@ export const defaultObjectKinds = {
     Promise
 } as const satisfies ObjectKindSet
 
-export type InferredObjectKinds = {
-    [kind in DefaultObjectKind]: inferObjectKind<kind>
-}
-
-export type inferObjectKind<
-    kind extends keyof kinds,
-    kinds extends ObjectKindSet = DefaultObjectKindSet
-> = kind extends "Function"
-    ? (...args: any[]) => unknown
-    : kind extends "Object"
-    ? Record<string, unknown>
-    : instanceOf<kinds[kind]>
-
-export type BuiltinClassName = Exclude<
-    DefaultObjectKind,
-    "Object" | "Function" | "Array"
->
-
-type BuiltinClassesByName = {
-    [kind in BuiltinClassName]: instanceOf<DefaultObjectKindSet[kind]>
-}
-
-export type BuiltinClass = BuiltinClassesByName[BuiltinClassName]
-
 export type ObjectKindSet = Record<string, Constructor>
 
-export type DefaultObjectKindSet = typeof defaultObjectKinds
+export type BuiltinObjectConstructors = typeof builtinObjectKinds
 
-export type DefaultObjectKind = keyof DefaultObjectKindSet
+export type BuiltinObjectKind = keyof BuiltinObjectConstructors
+
+export type BuiltinObjects = {
+    [kind in BuiltinObjectKind]: InstanceType<BuiltinObjectConstructors[kind]>
+}
 
 export type objectKindOf<
     data,
-    kinds extends ObjectKindSet = DefaultObjectKindSet
+    kinds extends ObjectKindSet = BuiltinObjectConstructors
 > = unknown extends data
     ? undefined | keyof kinds
     : data extends object
@@ -63,7 +43,7 @@ export type objectKindOf<
         : {
               [kind in keyof kinds]: kinds[kind] extends Constructor<data>
                   ? kind
-                  : data extends (...args: any[]) => unknown
+                  : data extends (...args: never[]) => unknown
                   ? "Function"
                   : "Object"
           }[keyof kinds]
@@ -71,7 +51,7 @@ export type objectKindOf<
 
 export const objectKindOf = <
     data,
-    kinds extends ObjectKindSet = DefaultObjectKindSet
+    kinds extends ObjectKindSet = BuiltinObjectConstructors
 >(
     data: data,
     kinds?: kinds
@@ -79,7 +59,7 @@ export const objectKindOf = <
     if (domainOf(data) !== "object") {
         return undefined
     }
-    const kindSet: ObjectKindSet = kinds ?? defaultObjectKinds
+    const kindSet: ObjectKindSet = kinds ?? builtinObjectKinds
     let prototype: Partial<Object> = Object.getPrototypeOf(data)
     while (
         prototype?.constructor &&
@@ -93,12 +73,12 @@ export const objectKindOf = <
 
 export const hasObjectKind = <
     kind extends keyof kinds,
-    kinds extends ObjectKindSet = DefaultObjectKindSet
+    kinds extends ObjectKindSet = BuiltinObjectConstructors
 >(
     data: unknown,
     kind: kind,
     kinds?: kinds
-): data is inferObjectKind<kind, kinds> => objectKindOf(data, kinds) === kind
+): data is InstanceType<kinds[kind]> => objectKindOf(data, kinds) === kind
 
 export const isArray = (data: unknown): data is readonly unknown[] =>
     Array.isArray(data)
@@ -119,29 +99,26 @@ export const objectKindDescriptions = {
     Promise: "a Promise",
     WeakMap: "a WeakMap",
     WeakSet: "a WeakSet"
-} as const satisfies Record<DefaultObjectKind, string>
+} as const satisfies Record<BuiltinObjectKind, string>
 
 // this will only return an object kind if it's the root constructor
 // example TypeError would return undefined not 'Error'
 export const getExactBuiltinConstructorName = (
     constructor: unknown
-): DefaultObjectKind | undefined => {
+): BuiltinObjectKind | undefined => {
     const constructorName: string | undefined = Object(constructor).name
     return constructorName &&
-        isKeyOf(constructorName, defaultObjectKinds) &&
-        defaultObjectKinds[constructorName] === constructor
+        isKeyOf(constructorName, builtinObjectKinds) &&
+        builtinObjectKinds[constructorName] === constructor
         ? constructorName
         : undefined
 }
 
-export type Constructor<instance = {}> = new (...args: any[]) => instance
+export type Constructor<instance = {}> = new (...args: never[]) => instance
 
 export type AbstractableConstructor<instance = {}> = abstract new (
-    ...args: any[]
+    ...args: never[]
 ) => instance
-
-export type instanceOf<classType extends AbstractableConstructor> =
-    classType extends AbstractableConstructor<infer Instance> ? Instance : never
 
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {

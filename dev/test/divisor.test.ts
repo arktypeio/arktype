@@ -15,17 +15,15 @@ suite("divisibility", () => {
             // })
             attest(divisibleByTwo.infer).typed as number
         })
-        test("whitespace after modulo", () => {
+        test("whitespace after %", () => {
             attest(type("number % 5").infer).typed as number
         })
         test("with bound", () => {
-            const t = type("number<3&number%8")
-            // attest(t.node).snap({
-            //     number: {
-            //         range: { max: { limit: 3, comparator: "<" } },
-            //         divisor: 8
-            //     }
-            // })
+            const t = type("number%8<3")
+            attest(t.condition).equals(
+                type("number%8").and("number<3").condition
+            )
+            attest(t.root.description).snap("a multiple of 8 and <3")
         })
         test("allows non-narrowed divisor", () => {
             const z = 5 as number
@@ -49,7 +47,6 @@ suite("divisibility", () => {
             )
         })
         test("unknown", () => {
-            type("unknown")
             // @ts-expect-error
             attest(() => type("unknown%2")).throwsAndHasTypeError(
                 writeIndivisibleMessage("unknown")
@@ -73,34 +70,23 @@ suite("divisibility", () => {
     suite("intersection", () => {
         test("identical", () => {
             const t = type("number%2&number%2")
-            // attest(t.node).snap({
-            //     number: { divisor: 2 }
-            // })
+            attest(t.condition).equals(type("number%2").condition)
         })
         test("purely divisible", () => {
             const t = type("number%4&number%2")
-            // attest(t.node).snap({
-            //     number: { divisor: 4 }
-            // })
+            attest(t.condition).equals(type("number%4").condition)
         })
         test("common divisor", () => {
             const t = type("number%6&number%4")
-            // attest(t.node).snap({
-            //     number: { divisor: 12 }
-            // })
+            attest(t.condition).equals(type("number%12").condition)
         })
         test("relatively prime", () => {
             const t = type("number%2&number%3")
-            attest(t.root.condition).snap(
-                'typeof $arkRoot === "number" && $arkRoot % 6 === 0'
-            )
-            // attest(t.node).snap({
-            //     number: { divisor: 6 }
-            // })
+            attest(t.condition).equals(type("number%6").condition)
         })
         test("valid literal", () => {
             const t = type("number%5&0")
-            // attest(t.node).snap({ number: { value: 0 } })
+            attest(t.condition).equals(type("0").condition)
         })
         test("invalid literal", () => {
             attest(() => type("number%3&8")).throws(

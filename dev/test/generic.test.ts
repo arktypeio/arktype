@@ -1,11 +1,14 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
+import {
+    emptyGenericParameterMessage,
+    writeInvalidGenericArgsMessage
+} from "../../src/parse/generic.js"
 import { writeUnclosedGroupMessage } from "../../src/parse/string/reduce/shared.js"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
-import type { Ark } from "../../src/scopes/ark.js"
-import type { Generic } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 import { lazily } from "./utils.js"
 
@@ -13,26 +16,21 @@ suite("generics", () => {
     suite("standalone generic", () => {
         test("unary", () => {
             const boxOf = type("<t>", { box: "t" })
-            attest(boxOf).typed as Generic<
-                ["t"],
-                {
-                    box: "t"
-                },
-                Ark
-            >
             const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
             attest(schrodingersBox.infer).typed as {
                 box: { cat: { isAlive: boolean } }
             }
+            attest(schrodingersBox.condition).equals(
+                type({
+                    box: {
+                        cat: { isAlive: "boolean" }
+                    }
+                }).condition
+            )
         })
 
         test("binary", () => {
             const either = type("<first, second>", "first|second")
-            attest(either).typed as Generic<
-                ["first", "second"],
-                "first|second",
-                Ark
-            >
             const schrodingersBox = either(
                 { cat: { isAlive: "true" } },
                 { cat: { isAlive: "false" } }
@@ -50,47 +48,76 @@ suite("generics", () => {
                   }
             // ideally this would be reduced to { cat: { isAlive: boolean } }:
             // https://github.com/arktypeio/arktype/issues/751
-        })
-
-        test("referenced in scope", () => {
-            const t = type("<t>", "t[]")
-            const types = scope({
-                arrayOf: t
-            }).export()
-            const stringArray = types.arrayOf("string")
-            attest(stringArray.infer).typed as string[]
+            attest(schrodingersBox.condition).equals(
+                type(
+                    {
+                        cat: {
+                            isAlive: "true"
+                        }
+                    },
+                    "|",
+                    {
+                        cat: {
+                            isAlive: "false"
+                        }
+                    }
+                ).condition
+            )
         })
 
         test("referenced in scope inline", () => {
             const $ = scope({
                 one: "1",
-                orOne: () => $.type("<t>", "t|1")
+                orOne: () => $.type("<t>", "t|one")
             })
             const types = $.export()
             const bit = types.orOne("0")
             attest(bit.infer).typed as 0 | 1
+            attest(bit.condition).equals(type("0|1").condition)
         })
 
         test("referenced from other scope", () => {
-            // This should work to inline directly without a thunk, but
-            // causes an infinite recursion:
-            // https://github.com/arktypeio/arktype/issues/787
             const types = scope({
-                arrayOf: () => type("<t>", "t[]")
+                arrayOf: type("<t>", "t[]")
             }).export()
             const stringArray = types.arrayOf("string")
             attest(stringArray.infer).typed as string[]
+            attest(stringArray.condition).equals(type("string[]").condition)
         })
 
-        test("this in def", () => {
-            const nestableBoxOf = type("<t>", {
-                box: "t | this"
+        test("this not resolvable in generic def", () => {
+            attest(() =>
+                // @ts-expect-error
+                type("<t>", {
+                    box: "t | this"
+                })
+            ).throwsAndHasTypeError(writeUnresolvableMessage("this"))
+        })
+        test("this in arg", () => {
+            const boxOf = type("<t>", {
+                box: "t"
             })
-            const t = nestableBoxOf("string")
+            const t = boxOf({
+                a: "string|this"
+            })
             type Expected = {
-                box: string | Expected
+                a: Expected | string
             }
-            attest(t.infer).typed as Expected
+            attest(t.infer).typed as { box: Expected }
+        })
+        test("too few args", () => {
+            const pair = type("<t, u>", ["t", "u"])
+            // @ts-expect-error
+            attest(() => pair("string")).types.errors(
+                "Expected 2 arguments, but got 1"
+            )
+        })
+        test("too many args", () => {
+            const pair = type("<t, u>", ["t", "u"])
+            // @ts-expect-error
+            attest(() => pair("string", "boolean", "number")).types.errors(
+                "Expected 2 arguments, but got 3"
+            )
         })
     })
 
@@ -141,6 +168,11 @@ suite("generics", () => {
             // bound and > that closes a generic instantiation
             const t = $.type("box<number>5, string>=7>")
             attest(t.infer).typed as { box: string | number }
+            attest(t.condition).equals(
+                type({
+                    box: "number>5|string>=7"
+                }).condition
+            )
         })
 
         test("parameter supercedes alias with same name", () => {
@@ -167,6 +199,22 @@ suite("generics", () => {
             }).export()
             attest(types.reference.infer.swap.swap.order).typed as [0, 1]
             attest(types.reference.infer.swap.swap.swap.order).typed as [1, 0]
+            const fromCall = types.alternate("'off'", "'on'")
+            attest(fromCall.infer.swap.swap.order).typed as ["off", "on"]
+            attest(fromCall.infer.swap.swap.swap.order).typed as ["on", "off"]
+        })
+
+        test("self-reference no params", () => {
+            attest(() =>
+                scope({
+                    "nest<t>": {
+                        // @ts-expect-error
+                        nest: "nest"
+                    }
+                }).export()
+            ).throwsAndHasTypeError(
+                writeInvalidGenericArgsMessage("nest", ["t"], [])
+            )
         })
 
         test("declaration and instantiation leading and trailing whitespace", () => {
@@ -198,9 +246,7 @@ suite("generics", () => {
                         // @ts-expect-error
                         "box<t,,u>": "string"
                     })
-                ).throwsAndHasTypeError(
-                    "An empty string is not a valid generic parameter name"
-                )
+                ).throwsAndHasTypeError(emptyGenericParameterMessage)
             })
             test("unclosed instantiation", () => {
                 // @ts-expect-error
@@ -219,7 +265,7 @@ suite("generics", () => {
                     // @ts-expect-error
                     $.type("box<0,box<2|3>>")
                 ).throwsAndHasTypeError(
-                    "box<t, u> requires exactly 2 parameters (got 1: 2|3)"
+                    writeInvalidGenericArgsMessage("box", ["t", "u"], ["2|3"])
                 )
             })
             test("too many args", () => {
@@ -227,7 +273,11 @@ suite("generics", () => {
                     // @ts-expect-error
                     $.type("box<0, box<1, 2, 3>>")
                 ).throwsAndHasTypeError(
-                    "box<t, u> requires exactly 2 parameters (got 3: 1, 2, 3)"
+                    writeInvalidGenericArgsMessage(
+                        "box",
+                        ["t", "u"],
+                        ["1", " 2", " 3"]
+                    )
                 )
             })
             test("syntactic error in arg", () => {

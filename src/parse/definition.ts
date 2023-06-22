@@ -1,38 +1,45 @@
-import type { TypeNode } from "../nodes/composite/type.js"
-import { node } from "../nodes/composite/type.js"
-import { isNode } from "../nodes/node.js"
-import type { ParseContext } from "../scope.js"
-import { Type } from "../type.js"
-import type { domainOf, Primitive } from "../utils/domains.js"
-import { throwParseError } from "../utils/errors.js"
-import { isThunk } from "../utils/functions.js"
+import type { domainOf, Primitive } from "../../dev/utils/src/domains.js"
+import type { error } from "../../dev/utils/src/errors.js"
+import { throwParseError } from "../../dev/utils/src/errors.js"
+import { isThunk } from "../../dev/utils/src/functions.js"
 import type {
     defined,
     equals,
     evaluate,
     isAny,
     isUnknown
-} from "../utils/generics.js"
-import type { List } from "../utils/lists.js"
-import { objectKindOf } from "../utils/objectKinds.js"
-import type { Dict, optionalKeyOf, requiredKeyOf } from "../utils/records.js"
-import { stringify } from "../utils/serialize.js"
+} from "../../dev/utils/src/generics.js"
+import type { List } from "../../dev/utils/src/lists.js"
+import { objectKindOf } from "../../dev/utils/src/objectKinds.js"
+import type {
+    Dict,
+    optionalKeyOf,
+    requiredKeyOf
+} from "../../dev/utils/src/records.js"
+import { stringify } from "../../dev/utils/src/serialize.js"
+import { hasArkKind } from "../compile/registry.js"
+import type { TypeNode } from "../nodes/composite/type.js"
+import { node } from "../nodes/composite/type.js"
+import type { ParseContext } from "../scope.js"
+import { Type } from "../type.js"
 import type { validateString } from "./ast/ast.js"
-import type { inferTuple, TupleExpression, validateTuple } from "./ast/tuple.js"
-import { parseTuple } from "./ast/tuple.js"
-import type { inferRecord } from "./record.js"
-import { parseRecord } from "./record.js"
-import type { AutocompletePrefix } from "./string/reduce/static.js"
-import type { inferString } from "./string/string.js"
+import type {
+    inferObjectLiteral,
+    validateObjectLiteral
+} from "./objectLiteral.js"
+import { parseObjectLiteral } from "./objectLiteral.js"
+import type { BaseCompletions, inferString } from "./string/string.js"
+import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
+import { parseTuple } from "./tuple.js"
 
 export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
     const objectKind = objectKindOf(def)
     switch (objectKind) {
         case "Object":
-            if (isNode(def) && def.hasKind("type")) {
+            if (hasArkKind(def, "node") && def.hasKind("type")) {
                 return def
             }
-            return parseRecord(def as Dict, ctx)
+            return parseObjectLiteral(def as Dict, ctx)
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
@@ -44,14 +51,6 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
             if (def instanceof Type) {
                 return def.root
             }
-            // TODO: only handle thunks at scope root?
-            if (isThunk(def)) {
-                const returned = def()
-                if (returned instanceof Type) {
-                    // TODO: configs?
-                    return returned.root
-                }
-            }
             return throwParseError(writeBadDefinitionTypeMessage("Function"))
         default:
             return throwParseError(
@@ -60,26 +59,30 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
     }
 }
 
-export type inferDefinition<def, $> = isAny<def> extends true
+export type inferDefinition<def, $, args> = isAny<def> extends true
     ? never
-    : def extends Inferred<infer t> | InferredThunk<infer t>
+    : def extends CastTo<infer t> | ThunkCast<infer t>
     ? t
     : def extends string
-    ? inferString<def, $>
+    ? inferString<def, $, args>
     : def extends List
-    ? inferTuple<def, $>
+    ? inferTuple<def, $, args>
     : def extends RegExp
     ? string
     : def extends Dict
-    ? inferRecord<def, $>
+    ? inferObjectLiteral<def, $, args>
     : never
 
-export type validateDefinition<def, $> = def extends Terminal
+export type validateDefinition<def, $, args> = null extends undefined
+    ? `'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`
+    : def extends Terminal
     ? def
     : def extends string
-    ? validateString<def, $>
+    ? validateString<def, $, args> extends error<infer message>
+        ? message
+        : def
     : def extends List
-    ? validateTuple<def, $>
+    ? validateTuple<def, $, args>
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
@@ -87,73 +90,74 @@ export type validateDefinition<def, $> = def extends Terminal
     : isUnknown<def> extends true
     ? // this allows the initial list of autocompletions to be populated when a user writes "type()",
       // before having specified a definition
-      (keyof $ & string) | AutocompletePrefix | {}
-    : {
-          [k in keyof def]: validateDefinition<def[k], $>
-      }
+      BaseCompletions<$, args> | {}
+    : validateObjectLiteral<def, $, args>
 
-export type validateDeclared<declared, def, $> = def extends validateDefinition<
-    def,
-    $
->
-    ? validateInference<def, declared, $>
-    : validateDefinition<def, $>
+export type validateDeclared<declared, def, $, args> =
+    def extends validateDefinition<def, $, args>
+        ? validateInference<def, declared, $, args>
+        : validateDefinition<def, $, args>
 
-type validateInference<def, declared, $> = def extends
+type validateInference<def, declared, $, args> = def extends
     | RegExp
-    | Inferred<unknown>
-    | InferredThunk
+    | CastTo<unknown>
+    | ThunkCast
     | TupleExpression
-    ? validateShallowInference<def, declared, $>
+    ? validateShallowInference<def, declared, $, args>
     : def extends readonly unknown[]
     ? declared extends readonly unknown[]
         ? {
               [i in keyof declared]: i extends keyof def
-                  ? validateInference<def[i], declared[i], $>
+                  ? validateInference<def[i], declared[i], $, args>
                   : unknown
           }
-        : evaluate<declarationMismatch<def, declared, $>>
+        : evaluate<declarationMismatch<def, declared, $, args>>
     : def extends object
     ? evaluate<
           {
               [k in requiredKeyOf<declared>]: k extends keyof def
-                  ? validateInference<def[k], declared[k], $>
+                  ? validateInference<def[k], declared[k], $, args>
                   : unknown
           } & {
               [k in optionalKeyOf<declared> &
                   string as `${k}?`]: `${k}?` extends keyof def
-                  ? validateInference<def[`${k}?`], defined<declared[k]>, $>
+                  ? validateInference<
+                        def[`${k}?`],
+                        defined<declared[k]>,
+                        $,
+                        args
+                    >
                   : unknown
           }
       >
-    : validateShallowInference<def, declared, $>
+    : validateShallowInference<def, declared, $, args>
 
-type validateShallowInference<def, declared, $> = equals<
-    inferDefinition<def, $>,
+type validateShallowInference<def, declared, $, args> = equals<
+    inferDefinition<def, $, args>,
     declared
 > extends true
     ? def
-    : evaluate<declarationMismatch<def, declared, $>>
+    : evaluate<declarationMismatch<def, declared, $, args>>
 
-type declarationMismatch<def, declared, $> = {
+type declarationMismatch<def, declared, $, args> = {
     declared: declared
-    inferred: inferDefinition<def, $>
+    inferred: inferDefinition<def, $, args>
 }
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = RegExp | Inferred<unknown> | ((...args: never[]) => unknown)
+type Terminal = RegExp | CastTo<unknown> | ((...args: never[]) => unknown)
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
 // easiest solution seems to be just having it declared as a value so it doesn't break when we import at runtime
 export const inferred = Symbol("inferred")
 
-export type Inferred<as> = {
-    [inferred]?: as
+export type CastTo<t> = {
+    [inferred]?: t
 }
 
-export type InferredThunk<t = unknown> = () => Inferred<t>
+export type ThunkCast<t = unknown> = () => CastTo<t>
 
 type BadDefinitionType = Exclude<Primitive, string>
 

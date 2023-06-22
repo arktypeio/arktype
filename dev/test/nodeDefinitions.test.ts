@@ -2,7 +2,7 @@ import { suite, test } from "mocha"
 import type { TypeNode } from "../../src/main.js"
 import { arrayIndexInput } from "../../src/nodes/composite/indexed.js"
 import { node } from "../../src/nodes/composite/type.js"
-import type { Out } from "../../src/parse/ast/morph.js"
+import type { Out } from "../../src/parse/tuple.js"
 import { attest } from "../attest/main.js"
 
 suite("node definitions", () => {
@@ -83,12 +83,12 @@ suite("node definitions", () => {
                 {
                     key: arrayIndexInput(2),
                     value: {
-                        basis: "boolean"
+                        basis: "symbol"
                     }
                 }
             ]
         })
-        attest(t).typed as TypeNode<[string, number, ...boolean[]]>
+        attest(t).typed as TypeNode<[string, number, ...symbol[]]>
     })
     test("non-variadic tuple", () => {
         const t = node({
@@ -99,7 +99,7 @@ suite("node definitions", () => {
                         basis: "object",
                         props: {
                             a: { value: { basis: "string" } },
-                            b: { value: { basis: "boolean" } }
+                            b: { value: { basis: "number" } }
                         }
                     }
                 },
@@ -118,7 +118,7 @@ suite("node definitions", () => {
             [
                 {
                     a: string
-                    b: boolean
+                    b: number
                 },
                 "arktype"
             ]
@@ -194,7 +194,7 @@ suite("node definitions", () => {
                 narrow: (b: boolean) => b === true
             })
         ).throws(
-            "narrow constraint may only be applied to a non-literal type (was true)"
+            "narrow constraint may only be applied to a non-literal type (was the value true)"
         )
     })
 })

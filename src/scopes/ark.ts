@@ -1,4 +1,3 @@
-import type { Out } from "../parse/ast/morph.js"
 import type { ScopeParser, TypeSet } from "../scope.js"
 import { Scope } from "../scope.js"
 import type {
@@ -6,9 +5,14 @@ import type {
     DefinitionParser,
     TypeParser
 } from "../type.js"
+import type { InferredJsObjects } from "./jsObjects.js"
 import { jsObjectTypes } from "./jsObjects.js"
+import type { InferredTsGenerics } from "./tsGenerics.js"
+import type { InferredTsKeywords } from "./tsKeywords.js"
 import { tsKeywordTypes } from "./tsKeywords.js"
+import type { InferredValidation } from "./validation/validation.js"
 import { validationTypes } from "./validation/validation.js"
+// import { tsGenericTypes } from "./tsGenerics.js"
 
 export type ArkResolutions = { exports: Ark; locals: {}; ambient: Ark }
 
@@ -16,53 +20,32 @@ export const ark: Scope<ArkResolutions> = Scope.root({
     ...tsKeywordTypes,
     ...jsObjectTypes,
     ...validationTypes
-}).toAmbient()
+    // ...tsGenericTypes
+    // // again, unfortunately TS won't handle comparing generics well here, so we
+    // // have to cast. that said, since each individual root scope is checked,
+    // // this is low risk
+}).toAmbient() as never
 
 export const arktypes: TypeSet<ArkResolutions> = ark.export()
 
-// This is just copied from the inference of the default scope. Creating an explicit
-// type like this makes validation for the default type and scope functions feel
-// significantly more responsive.
+// using a mapped type like this is much more efficient than an intersection
+// here the purpose of this type, which is redundant with the inferred
+// definition of ark, is to allow types derived from the default scope to be
+// calulated more efficiently
 export type Ark = {
-    // tsKeywords
-    any: any
-    bigint: bigint
-    boolean: boolean
-    false: false
-    never: never
-    null: null
-    number: number
-    object: object
-    string: string
-    symbol: symbol
-    true: true
-    unknown: unknown
-    void: void
-    undefined: undefined
-    // validation
-    integer: number
-    alpha: string
-    alphanumeric: string
-    lowercase: string
-    uppercase: string
-    creditCard: string
-    email: string
-    uuid: string
-    semver: string
-    json: (In: string) => Out<unknown>
-    parsedNumber: (In: string) => Out<number>
-    parsedInteger: (In: string) => Out<number>
-    parsedDate: (In: string) => Out<Date>
-    // jsObjects
-    Function: Function
-    Date: Date
-    Error: Error
-    Map: Map<unknown, unknown>
-    RegExp: RegExp
-    Set: Set<unknown>
-    WeakMap: WeakMap<object, unknown>
-    WeakSet: WeakSet<object>
-    Promise: Promise<unknown>
+    [k in
+        | keyof InferredTsKeywords
+        | keyof InferredJsObjects
+        | keyof InferredValidation
+        | keyof InferredTsGenerics]: k extends keyof InferredTsKeywords
+        ? InferredTsKeywords[k]
+        : k extends keyof InferredJsObjects
+        ? InferredJsObjects[k]
+        : k extends keyof InferredValidation
+        ? InferredValidation[k]
+        : k extends keyof InferredTsGenerics
+        ? InferredTsGenerics[k]
+        : never
 }
 
 export const scope: ScopeParser<{}, Ark> = ark.scope as never
