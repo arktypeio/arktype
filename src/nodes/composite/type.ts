@@ -3,7 +3,7 @@ import type {
     exact,
     Literalable
 } from "../../../dev/utils/src/main.js"
-import { cached, isArray, resolveIfThunk } from "../../../dev/utils/src/main.js"
+import { cached, isArray } from "../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../compile/registry.js"
 import type { CompilationState } from "../../compile/state.js"
 import { compilePropAccess, InputParameterName } from "../../compile/state.js"
@@ -134,9 +134,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                     if (propsAtKey) {
                         const branchesAtKey =
                             typeof key === "string"
-                                ? resolveIfThunk(
-                                      propsAtKey.byName?.[key]?.value
-                                  ).rule
+                                ? propsAtKey.byName?.[key]?.value.rule
                                 : propsAtKey.indexed.find(
                                       (entry) => entry.key === key
                                   )?.value.rule
