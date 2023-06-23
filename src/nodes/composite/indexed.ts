@@ -19,10 +19,12 @@ export type IndexedPropRule = {
     value: TypeNode
 }
 
-const arrayIndexMatcherSuffix = `(?:0|(?:[1-9]\\d*))$`
+const arrayIndexSourceSuffix = `(?:0|(?:[1-9]\\d*))$`
+
+const arrayIndexLiteralSuffix = `${arrayIndexSourceSuffix}/`
 
 export type ArrayIndexMatcherSource =
-    `${string}${typeof arrayIndexMatcherSuffix}`
+    `${string}${typeof arrayIndexSourceSuffix}`
 
 const excludedIndexMatcherStart = "^(?!("
 const excludedIndexMatcherEnd = ")$)"
@@ -38,14 +40,14 @@ const excludedIndicesSource = (firstVariadic: number) => {
     for (let i = firstVariadic - 2; i >= 0; i--) {
         excludedIndices += `|${i}`
     }
-    return `${excludedIndexMatcherStart}${excludedIndices}${excludedIndexMatcherEnd}${arrayIndexMatcherSuffix}` as const
+    return `${excludedIndexMatcherStart}${excludedIndices}${excludedIndexMatcherEnd}${arrayIndexSourceSuffix}` as const
 }
 
 export type VariadicIndexMatcherSource = ReturnType<
     typeof excludedIndicesSource
 >
 
-const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSuffix}` as const
+const nonVariadicIndexMatcherSource = `^${arrayIndexSourceSuffix}` as const
 
 export type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
 
@@ -67,11 +69,11 @@ export const extractArrayIndexRegex = (keyNode: TypeNode) => {
     if (!regexNode || regexNode.rule.length !== 1) {
         return
     }
-    const source = regexNode.rule[0]
-    if (!source.endsWith(arrayIndexMatcherSuffix)) {
+    const regexLiteral = regexNode.rule[0]
+    if (!regexLiteral.endsWith(arrayIndexLiteralSuffix)) {
         return
     }
-    return source as ArrayIndexMatcherSource
+    return regexLiteral as ArrayIndexMatcherSource
 }
 
 export const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {

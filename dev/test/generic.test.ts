@@ -289,8 +289,8 @@ suite("generics", () => {
             test("semantic error in arg", () => {
                 attest(() =>
                     // @ts-expect-error
-                    $.type("box<1,boolean%2>")
-                ).throwsAndHasTypeError(writeIndivisibleMessage("boolean"))
+                    $.type("box<1,string%2>")
+                ).throwsAndHasTypeError(writeIndivisibleMessage("string"))
             })
         })
     })

@@ -7,8 +7,10 @@ import { DynamicState } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
-import type { writeUnexpectedCharacterMessage } from "./shift/operator/operator.js"
-import { parseOperator } from "./shift/operator/operator.js"
+import {
+    parseOperator,
+    writeUnexpectedCharacterMessage
+} from "./shift/operator/operator.js"
 
 export const parseString = (def: string, ctx: ParseContext): TypeNode =>
     ctx.scope.maybeResolveNode(def, ctx) ??
@@ -46,6 +48,11 @@ export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)
     parseOperand(s)
     const result = parseUntilFinalizer(s).root
+    s.scanner.shiftUntilNonWhitespace()
+    if (s.scanner.lookahead) {
+        // throw a parse error if non-whitespace characters made it here without being parsed
+        throwParseError(writeUnexpectedCharacterMessage(s.scanner.lookahead))
+    }
     return result.isNever()
         ? throwParseError(writeUnsatisfiableExpressionError(def))
         : result
