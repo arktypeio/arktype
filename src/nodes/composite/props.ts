@@ -88,9 +88,7 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
         return {
             description,
             named,
-            byName: Object.fromEntries(
-                named.map((prop) => [prop.key.name, prop] as const)
-            ),
+            byName: fromEntries(named.map((prop) => [prop.key.name, prop])),
             indexed
         }
     }

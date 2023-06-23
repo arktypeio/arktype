@@ -87,6 +87,34 @@ suite("intersection", () => {
         //     }
         // })
     })
+    test("chained deep intersections", () => {
+        const b = type({ b: "boolean" }, "=>", (o) => [o.b])
+
+        const t = type({
+            a: ["string", "=>", (s) => s.length]
+        })
+            .and({
+                // unable to inline this due to:
+                // https://github.com/arktypeio/arktype/issues/806
+                b
+            })
+            .and({
+                b: { b: "true" },
+                c: "'hello'"
+            })
+        attest(t.inferIn).typed as {
+            a: string
+            b: {
+                b: true
+            }
+            c: "hello"
+        }
+        attest(t.infer).typed as {
+            a: number
+            b: boolean[]
+            c: "hello"
+        }
+    })
     suite("errors", () => {
         test("bad reference", () => {
             // @ts-expect-error
@@ -101,14 +129,9 @@ suite("intersection", () => {
             )
         })
         test("implicit never", () => {
-            // TODO: can preserve for top-level never?             // @ts-expect-error
-            // attest(() => type("string&number"))
-            //     .throws(
-            //         'Intersection at $arkRoot of "number" and "string" results in an unsatisfiable type'
-            //     )
-            //     .types.errors(
-            //         writeUnsatisfiableExpressionError("string & number")
-            //     )
+            attest(() => type("string&number")).throws(
+                'Intersection at $arkRoot of "number" and "string" results in an unsatisfiable type'
+            )
         })
         test("left semantic error", () => {
             // @ts-expect-error
@@ -137,14 +160,9 @@ suite("intersection", () => {
             ).throwsAndHasTypeError(writeUnresolvableMessage("what"))
         })
         test("at path", () => {
-            attest(() =>
-                // @ts-expect-error
-                type({ a: "string" }).and({ a: "number" })
+            attest(() => type({ a: "string" }).and({ a: "number" })).throws(
+                "Intersection at $arkRoot.a of string and number results in an unsatisfiable type"
             )
-                .throws(
-                    "Intersection at $arkRoot.a of string and number results in an unsatisfiable type"
-                )
-                .types.errors(writeUnsatisfiableExpressionError("intersection"))
         })
     })
 })

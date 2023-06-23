@@ -5,7 +5,8 @@ import {
     isThunk,
     Path,
     throwInternalError,
-    throwParseError
+    throwParseError,
+    transform
 } from "../dev/utils/src/main.js"
 import type { ProblemCode } from "./compile/problems.js"
 import { hasArkKind } from "./compile/registry.js"
@@ -327,7 +328,6 @@ export class Scope<r extends Resolutions = any> {
         return resolution
     }
 
-    // TODO: maybe remove this
     maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
         const result = this.maybeResolve(name, ctx)
         return hasArkKind(result, "node") ? result : undefined
@@ -363,12 +363,10 @@ export class Scope<r extends Resolutions = any> {
         r,
         names extends [] ? keyof r["exports"] : names[number]
     > {
-        return Object.fromEntries(
-            Object.entries(this.export(...names)).map(([name, resolution]) => [
-                `#${name}`,
-                resolution
-            ])
-        ) as never
+        return transform(this.export(...names), ([alias, value]) => [
+            `#${alias}`,
+            value
+        ]) as never
     }
 
     private hasBeenExported = false

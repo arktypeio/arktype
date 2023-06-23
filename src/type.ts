@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { CompiledFunction } from "../dev/utils/src/main.js"
+import { CompiledFunction, transform } from "../dev/utils/src/main.js"
 import type {
     AbstractableConstructor,
     BuiltinObjectKind,
@@ -331,12 +331,10 @@ export const generic = (
 ) => {
     return Object.assign(
         (...args: unknown[]) => {
-            const argNodes = Object.fromEntries(
-                parameters.map((param, i) => [
-                    param,
-                    parseTypeRoot(args[i], scope)
-                ])
-            )
+            const argNodes = transform(parameters, ([i, param]) => [
+                param,
+                parseTypeRoot(args[i], scope)
+            ])
             const root = parseTypeRoot(definition, scope, argNodes)
             return new Type(root, scope)
         },

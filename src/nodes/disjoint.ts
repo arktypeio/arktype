@@ -1,7 +1,8 @@
 import {
     stringify,
     throwInternalError,
-    throwParseError
+    throwParseError,
+    transform
 } from "../../dev/utils/src/main.js"
 import {
     entriesOf,
@@ -123,15 +124,14 @@ export class Disjoint {
 
     invert() {
         const invertedEntries = entriesOf(this.sources).map(
-            ([path, disjoints]): DisjointSourceEntry => [
-                path,
-                Object.fromEntries(
-                    entriesOf(disjoints).map(
-                        ([kind, disjoint]) =>
-                            [kind, { l: disjoint.r, r: disjoint.l }] as const
-                    )
-                )
-            ]
+            ([path, disjoints]) =>
+                [
+                    path,
+                    transform(disjoints, ([kind, disjoint]) => [
+                        kind,
+                        { l: disjoint.r, r: disjoint.l }
+                    ])
+                ] as DisjointSourceEntry
         )
         return new Disjoint(fromEntries(invertedEntries))
     }
