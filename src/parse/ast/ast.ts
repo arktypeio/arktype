@@ -1,7 +1,6 @@
 import type {
     BigintLiteral,
     error,
-    join,
     List,
     NumberLiteral,
     writeMalformedNumericLiteralMessage
@@ -87,7 +86,10 @@ export type validateAst<ast, $, args> = ast extends string
         : validateAst<operand, $, args>
     : ast extends GenericInstantiationAst
     ? validateGenericArgs<ast["2"], $, args>
-    : never
+    : error<writeUnexpectedExpressionMessage<astToString<ast>>>
+
+type writeUnexpectedExpressionMessage<expression extends string> =
+    `Unexpectedly failed to parse the expression resulting from ${expression}`
 
 type validateGenericArgs<argAsts extends unknown[], $, args> = argAsts extends [
     infer head,

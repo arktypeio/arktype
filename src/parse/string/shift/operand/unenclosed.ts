@@ -16,7 +16,6 @@ import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
-import type { CastTo } from "../../../definition.js"
 import type { ParsedArgs } from "../../../generic.js"
 import {
     parseGenericArgs,
@@ -157,21 +156,21 @@ type tryResolve<
     token extends string,
     $,
     args
-> = token extends keyof args
+> = token extends keyof $
     ? token
-    : token extends keyof $
+    : token extends keyof args
+    ? token
+    : token extends NumberLiteral
+    ? token
+    : token extends BigintLiteral
     ? token
     : token extends `${infer subscope extends keyof $ &
           string}.${infer reference}`
     ? $[subscope] extends Scope
         ? reference extends keyof $[subscope]["infer"]
-            ? CastTo<$[subscope]["infer"][reference]>
+            ? token
             : unresolvableError<s, reference, $[subscope]["infer"], [subscope]>
         : error<writeInvalidSubscopeReferenceMessage<subscope>>
-    : token extends NumberLiteral
-    ? token
-    : token extends BigintLiteral
-    ? token
     : unresolvableError<s, token, $, args>
 
 export type writeInvalidSubscopeReferenceMessage<name extends string> =
