@@ -1,7 +1,6 @@
 import { suite, test } from "mocha"
 import { node, type } from "../../src/main.js"
 import type { Range } from "../../src/nodes/primitive/range.js"
-import { rangeNode } from "../../src/nodes/primitive/range.js"
 import {
     writeDoubleRightBoundMessage,
     writeUnboundableMessage
@@ -11,6 +10,7 @@ import {
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
+import { writeInvalidDateMessage } from "../../src/parse/string/shift/operand/date.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
 import { attest } from "../attest/main.js"
 import { writeMalformedNumericLiteralMessage } from "../utils/src/numericLiterals.js"
@@ -270,95 +270,72 @@ suite("range", () => {
             })
         })
         suite("date range", () => {
-            suite("parse", () => {
-                suite("single", () => {
-                    test(">", () => {
-                        const t = type("Date>d'2001/5/5'")
-                        attest(t.infer).typed as Date
-                    })
-                    test("<", () => {
-                        const t = type("Date<d'2023/1/12'")
-                        attest(t.infer).typed as Date
-                        attest(t.condition).equals(
-                            expectedDateBoundsCondition({
-                                comparator: "<",
-                                limit: new Date("2023/1/12")
-                            })
-                        )
-                    })
-                    test("<=", () => {
-                        const t = type("Date<=d'2021/1/12'")
-                        attest(t.infer).typed as Date
-                        attest(t.condition).equals(
-                            expectedDateBoundsCondition({
-                                comparator: "<=",
-                                limit: new Date("2021/1/12")
-                            })
-                        )
-                    })
-                    test("==", () => {
-                        const t = type("Date==d'2020-1-1'")
-                        attest(t.infer).typed as Date
-                        attest(t.condition).equals(
-                            expectedDateBoundsCondition({
-                                comparator: "==",
-                                limit: new Date("2020-1-1")
-                            })
-                        )
-                    })
+            suite("single", () => {
+                test(">", () => {
+                    const t = type("Date>d'2001/5/5'")
+                    attest(t.infer).typed as Date
                 })
-                suite("double", () => {
-                    test("<,<=", () => {
-                        const t = type("d'2020/1/1'<Date<=d'2024/1/1'")
-                        attest(t.infer).typed as Date
-                        attest(t.condition).equals(
-                            expectedBoundsCondition(
-                                {
-                                    comparator: ">",
-                                    limit: new Date("2020/1/1")
-                                },
-                                {
-                                    comparator: "<=",
-                                    limit: new Date("2024/1/1")
-                                }
-                            )
+                test("<", () => {
+                    const t = type("Date<d'2023/1/12'")
+                    attest(t.infer).typed as Date
+                    attest(t.condition).equals(
+                        expectedDateBoundsCondition({
+                            comparator: "<",
+                            limit: new Date("2023/1/12")
+                        })
+                    )
+                })
+                test("<=", () => {
+                    const t = type("Date<=d'2021/1/12'")
+                    attest(t.infer).typed as Date
+                    attest(t.condition).equals(
+                        expectedDateBoundsCondition({
+                            comparator: "<=",
+                            limit: new Date("2021/1/12")
+                        })
+                    )
+                })
+                test("==", () => {
+                    const t = type("Date==d'2020-1-1'")
+                    attest(t.infer).typed as Date
+                    attest(t.condition).equals(
+                        expectedDateBoundsCondition({
+                            comparator: "==",
+                            limit: new Date("2020-1-1")
+                        })
+                    )
+                })
+            })
+            suite("double", () => {
+                test("<,<=", () => {
+                    const t = type("d'2020/1/1'<Date<=d'2024/1/1'")
+                    attest(t.infer).typed as Date
+                    attest(t.condition).equals(
+                        expectedBoundsCondition(
+                            {
+                                comparator: ">",
+                                limit: new Date("2020/1/1")
+                            },
+                            {
+                                comparator: "<=",
+                                limit: new Date("2024/1/1")
+                            }
                         )
-                    })
+                    )
+                })
+            })
+            suite("errors", () => {
+                test("Not a date", () => {
+                    const t = type("d'12345671234'")
+                })
+                test("Non-date bound", () => {
+                    attest(() =>
+                        type("Date<d'12342521321'")
+                    ).throwsAndHasTypeError(
+                        writeInvalidDateMessage("12342521321")
+                    )
                 })
             })
         })
-        // Reenable
-        //         suite("date", () => {
-        //             test("single bound", () => {
-        //                 const t = type(`Date>${d("1/1/2019")}`)
-        //                 attest(t(new Date("1/1/2020")).data).snap("Wed Jan 01 2020")
-
-        //                 attest(t(new Date("1/1/2018")).problems?.summary).snap(
-        //                     "Must be more than Tue Jan 01 2019 (was Mon Jan 01 2018)"
-        //                 )
-
-        //                 attest(t(new Date("10/24/1996").valueOf()).problems.summary)
-        //                     .snap(`{"value":846140400000} must be...
-        // • a Date
-        // • more than 1546329600000`)
-        //             })
-        //             test("equality", () => {
-        //                 const t = type(`Date == ${d("1/1/1")}`)
-        //                 attest(t(new Date("1/1/1")).data).snap("Mon Jan 01 2001")
-
-        //                 attest(t(new Date("1/1/2")).problems?.summary).snap(
-        //                     "Must be exactly Mon Jan 01 2001 (was Tue Jan 01 2002)"
-        //                 )
-        //             })
-
-        //             test("double bounded", () => {
-        //                 const t = type(`${d("1/1/2018")}<Date<${d("1/1/2019")}`)
-
-        //                 attest(t(new Date("1/2/2018")).data).snap("Tue Jan 02 2018")
-        //                 attest(t(new Date("1/1/2020")).problems?.summary).snap(
-        //                     "Must be less than Tue Jan 01 2019 (was Wed Jan 01 2020)"
-        //                 )
-        //             })
-        //         })
     })
 })

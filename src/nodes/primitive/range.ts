@@ -46,8 +46,11 @@ export type InvertedComparators = typeof invertedComparators
 
 export type SizedData = string | number | readonly unknown[]
 
-export type Bound<comparator extends Comparator = Comparator> = {
-    limit: number | Date
+export type Bound<
+    comparator extends Comparator = Comparator,
+    limit extends number | Date = number | Date
+> = {
+    limit: limit
     comparator: comparator
 }
 
@@ -63,27 +66,14 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 export interface RangeNode extends BaseNode<Range> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
-}
-const maybeChangeRuleLimits = (rule: Range) => {
-    // if (rule[0].limit instanceof Date) {
-    //     for (const index in rule) {
-    //         const limit = rule[index].limit
-    //         rule[index] = limit.valueOf() ?? limit
-    //     }
-    // }
-    const lim0 = rule[0].limit
-    rule[0].limit = lim0.valueOf() ?? lim0
-    const lim1 = rule[1]?.limit
-    if (lim1) {
-        rule[1]!.limit = lim1?.valueOf() ?? lim1
-    }
+    numericMin: Bound<MinComparator, number> | undefined
+    numericMax: Bound<MaxComparator, number> | undefined
 }
 export const rangeNode = defineNodeKind<RangeNode>(
     {
         kind: "range",
         parse: (input) => input,
         compile: (rule, s) => {
-            maybeChangeRuleLimits(rule)
             if (
                 rule[0].limit === rule[1]?.limit &&
                 rule[0].comparator === ">=" &&

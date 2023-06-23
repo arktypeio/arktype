@@ -27,6 +27,7 @@ import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 import type {
     BasisInput,
+    BasisKind,
     BasisNode,
     inferBasis
 } from "../primitive/basis/basis.js"
@@ -63,10 +64,12 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 children = basis ? [basis] : []
                 for (const kind of constraintKindNames) {
                     if (input[kind]) {
-                        assertAllowsConstraint(basis, kind)
-                        children.push(
-                            createNodeOfKind(kind, input[kind] as never)
+                        const node = createNodeOfKind(
+                            kind,
+                            input[kind] as never
                         )
+                        assertAllowsConstraint(basis, node)
+                        children.push(node)
                     }
                 }
             }
@@ -172,8 +175,9 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 ) as never,
             valueNode: basis?.hasKind("value") ? basis : undefined,
             constrain(kind, input): PredicateNode {
-                assertAllowsConstraint(this.basis, kind)
+                //todoshawn
                 const constraint = createNodeOfKind(kind, input as never)
+                assertAllowsConstraint(this.basis, constraint)
                 const result = this.intersect(predicateNode([constraint]))
                 if (result instanceof Disjoint) {
                     return result.throw()
@@ -195,12 +199,12 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
 //todoshawn have to do something around here
 export const assertAllowsConstraint = (
     basis: BasisNode | undefined,
-    kind: ConstraintKind
+    node: ConstraintNode
 ) => {
     if (basis?.hasKind("value")) {
-        if (kind !== "morph") {
+        if (node["kind"] !== "morph") {
             throwInvalidConstraintError(
-                kind,
+                node.kind,
                 "a non-literal type",
                 basis.toString()
             )
@@ -208,19 +212,27 @@ export const assertAllowsConstraint = (
         return
     }
     const domain = basis?.domain ?? "unknown"
-    switch (kind) {
+    switch (node.kind) {
         case "divisor":
             if (domain !== "number") {
                 throwParseError(writeIndivisibleMessage(domain))
             }
             return
         case "range":
+            const bounds = node["rule"] as Range
+            const onlyNumbers = bounds.forEach(
+                (bound) => typeof bound.limit === "number"
+            )
             if (domain !== "string" && domain !== "number") {
+                // const bounds = node["rule"] as Range
+
+                // basis.extendsOneOf(Date)
                 const hasSizedClassBasis =
                     basis?.hasKind("class") && basis.extendsOneOf(Array, Date)
                 if (!hasSizedClassBasis) {
                     throwParseError(writeUnboundableMessage(domain))
                 }
+            } else {
             }
             return
         case "regex":
@@ -238,12 +250,12 @@ export const assertAllowsConstraint = (
         case "morph":
             return
         default:
-            throwInternalError(`Unexpxected rule kind '${kind}'`)
+            throwInternalError(`Unexpxected rule kind '${node.kind}'`)
     }
 }
 
 export const writeInvalidConstraintMessage = (
-    kind: ConstraintKind,
+    kind: string,
     typeMustBe: string,
     typeWas: string
 ) => {
@@ -270,7 +282,6 @@ export type PredicateChildren =
     | ConstraintNode[]
 
 export type ConstraintNode = ConstraintKinds[ConstraintKind]
-
 type ConstraintKinds = Pick<
     NodeKinds,
     "range" | "divisor" | "regex" | "props" | "narrow" | "morph"

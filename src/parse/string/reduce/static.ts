@@ -1,17 +1,15 @@
 import type { error } from "../../../../dev/utils/src/errors.js"
 import type { defined } from "../../../../dev/utils/src/generics.js"
-import type { NumberLiteral } from "../../../../dev/utils/src/numericLiterals.js"
 import type {
     Comparator,
     InvertedComparators,
     MaxComparator,
     MinComparator
 } from "../../../nodes/primitive/range.js"
-import type { DateLiteral } from "../shift/operand/date.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
     StringifiablePrefixOperator,
-    ValidLiterals,
+    ValidLiteral,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnclosedGroupMessage,
@@ -29,7 +27,7 @@ export type StaticState = {
 }
 
 type StaticOpenLeftBound = {
-    limit: ValidLiterals
+    limit: ValidLiteral
     comparator: MinComparator
 }
 
@@ -129,7 +127,7 @@ export namespace state {
 
     export type reduceLeftBound<
         s extends StaticState,
-        limit extends ValidLiterals,
+        limit extends ValidLiteral,
         comparator extends Comparator,
         unscanned extends string
     > = comparator extends "<" | "<="
@@ -166,10 +164,10 @@ export namespace state {
 
     export type reduceRange<
         s extends StaticState,
-        minLimit extends ValidLiterals,
+        minLimit extends ValidLiteral,
         minComparator extends MinComparator,
         maxComparator extends MaxComparator,
-        maxLimit extends ValidLiterals,
+        maxLimit extends ValidLiteral,
         unscanned extends string
     > = state.from<{
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
@@ -188,7 +186,7 @@ export namespace state {
     export type reduceSingleBound<
         s extends StaticState,
         comparator extends Comparator,
-        limit extends NumberLiteral | DateLiteral,
+        limit extends ValidLiteral,
         unscanned extends string
     > = state.from<{
         root: [s["root"], comparator, limit]

@@ -7,12 +7,11 @@ import type {
     Comparator,
     MaxComparator
 } from "../../../../nodes/primitive/range.js"
-import type { writeUnboundableMessage } from "../../../ast/bound.js"
 import type {
     DynamicState,
     DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
-import type { ValidLiterals } from "../../reduce/shared.js"
+import type { ValidLiteral } from "../../reduce/shared.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import {
@@ -28,13 +27,9 @@ export const parseBound = (
 ) => {
     const comparator = shiftComparator(s, start)
     const value = s.root.valueNode?.rule
-    if (typeof value === "number") {
+    if (typeof value === "number" || value instanceof Date) {
         s.ejectRoot()
         return s.reduceLeftBound(value, comparator)
-    }
-    if (value instanceof Date) {
-        s.ejectRoot()
-        return s.reduceLeftBound(value.valueOf(), comparator)
     }
     return parseRightBound(s, comparator)
 }
@@ -48,8 +43,14 @@ export type parseBound<
           infer comparator extends Comparator,
           infer nextUnscanned
       >
-        ? s["root"] extends ValidLiterals
+        ? s["root"] extends ValidLiteral
             ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
+            : //If the left bound is a literal we want to give an error
+            // otherwise the resulting error message becomes misleading
+            s["root"] extends `'${string}'` | `"${string}"`
+            ? state.error<
+                  writeInvalidLimitMessage<comparator, s["root"], "left">
+              >
             : parseRightBound<s, comparator, nextUnscanned>
         : shiftResultOrError
     : never
@@ -99,15 +100,13 @@ export const parseRightBound = (
 ) => {
     const limitToken = s.scanner.shiftUntilNextTerminator()
     const limit = dateEnclosing(limitToken)
-        ? tryParseDate(
-              limitToken,
-              writeInvalidDateMessage(limitToken)
-          ).valueOf()
+        ? tryParseDate(limitToken, writeInvalidDateMessage(limitToken))
         : tryParseWellFormedNumber(
               limitToken,
               writeInvalidLimitMessage(
                   comparator,
-                  limitToken + s.scanner.unscanned
+                  limitToken + s.scanner.unscanned,
+                  "right"
               )
           )
     if (!s.branches.range) {
@@ -134,7 +133,7 @@ export type parseRightBound<
 > = Scanner.shiftUntilNextTerminator<
     Scanner.skipWhitespace<unscanned>
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? scanned extends ValidLiterals
+    ? scanned extends ValidLiteral
         ? s["branches"]["range"] extends {}
             ? comparator extends MaxComparator
                 ? state.reduceRange<
@@ -147,19 +146,28 @@ export type parseRightBound<
                   >
                 : state.error<writeUnpairableComparatorMessage<comparator>>
             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-        : state.error<writeUnboundableMessage<scanned>>
+        : state.error<writeInvalidLimitMessage<comparator, scanned, "right">>
     : never
 
 export const writeInvalidLimitMessage = <
     comparator extends Comparator,
-    limit extends string
+    limit extends string,
+    boundKind extends BoundKind
 >(
     comparator: comparator,
-    limit: limit
-): writeInvalidLimitMessage<comparator, limit> =>
-    `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
+    limit: limit,
+    boundKind: boundKind
+): writeInvalidLimitMessage<comparator, limit, boundKind> =>
+    `Comparator ${comparator} must be ${
+        boundKind === "left" ? "preceded" : ("followed" as any)
+    } by a corresponding literal (was '${limit}')`
 
 export type writeInvalidLimitMessage<
     comparator extends Comparator,
-    limit extends string
-> = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
+    limit extends string,
+    boundKind extends BoundKind
+> = `Comparator ${comparator} must be ${boundKind extends "left"
+    ? "preceded"
+    : "followed"} by a corresponding literal (was '${limit}')`
+
+export type BoundKind = "left" | "right"

@@ -8,7 +8,12 @@ export const dateEnclosing = (s: string) => /^d/.test(s)
 
 export const extractDate = (s: string) => s.slice(2, -1)
 
-export const writeInvalidDateMessage = (s: string) =>
+export const writeInvalidDateMessage = <s extends string>(
+    s: s
+): writeInvalidDateMessage<s> =>
+    `new Date(${s}) resulted in an Invalid Date. (Suggested format: YYYY/MM/DD)`
+
+export type writeInvalidDateMessage<s extends string> =
     `new Date(${s}) resulted in an Invalid Date. (Suggested format: YYYY/MM/DD)`
 
 export type DateInput = ConstructorParameters<typeof Date>[0]
