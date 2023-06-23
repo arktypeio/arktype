@@ -3,6 +3,7 @@ import {
     tryParseWellFormedInteger
 } from "../../../dev/utils/src/main.js"
 import type { CompilationState } from "../../compile/state.js"
+import { sourceFromRegexLiteral } from "../primitive/regex.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp, compileNamedProps } from "./named.js"
 import type { PredicateInput } from "./predicate.js"
@@ -21,7 +22,7 @@ export type IndexedPropRule = {
 
 const arrayIndexSourceSuffix = `(?:0|(?:[1-9]\\d*))$`
 
-const arrayIndexLiteralSuffix = `${arrayIndexSourceSuffix}/`
+const arrayIndexLiteralSuffix = `${arrayIndexSourceSuffix}/` as const
 
 export type ArrayIndexMatcherSource =
     `${string}${typeof arrayIndexSourceSuffix}`
@@ -73,7 +74,7 @@ export const extractArrayIndexRegex = (keyNode: TypeNode) => {
     if (!regexLiteral.endsWith(arrayIndexLiteralSuffix)) {
         return
     }
-    return regexLiteral as ArrayIndexMatcherSource
+    return sourceFromRegexLiteral(regexLiteral) as ArrayIndexMatcherSource
 }
 
 export const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {

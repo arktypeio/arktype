@@ -35,25 +35,10 @@ import type { inferDefinition, validateDefinition } from "./definition.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
-    const tupleExpressionResult = isIndexOneExpression(def)
-        ? indexOneParsers[def[1]](def as never, ctx)
-        : isIndexZeroExpression(def)
-        ? prefixParsers[def[0]](def as never, ctx)
-        : undefined
-    if (tupleExpressionResult) {
-        return tupleExpressionResult.isNever()
-            ? throwParseError(
-                  writeUnsatisfiableExpressionError(
-                      def
-                          .map((def) =>
-                              typeof def === "string" ? def : stringify(def)
-                          )
-                          .join(" ")
-                  )
-              )
-            : tupleExpressionResult
-    }
+export const parseTuple = (def: List, ctx: ParseContext) =>
+    maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
+
+export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
     const props: NodeEntry[] = []
     let isVariadic = false
     for (let i = 0; i < def.length; i++) {
@@ -104,6 +89,30 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     const predicate = predicateNode([arrayClassNode(), propsNode(props)])
     return typeNode([predicate])
+}
+
+export const maybeParseTupleExpression = (
+    def: List,
+    ctx: ParseContext
+): TypeNode | undefined => {
+    const tupleExpressionResult = isIndexOneExpression(def)
+        ? indexOneParsers[def[1]](def as never, ctx)
+        : isIndexZeroExpression(def)
+        ? prefixParsers[def[0]](def as never, ctx)
+        : undefined
+    if (tupleExpressionResult) {
+        return tupleExpressionResult.isNever()
+            ? throwParseError(
+                  writeUnsatisfiableExpressionError(
+                      def
+                          .map((def) =>
+                              typeof def === "string" ? def : stringify(def)
+                          )
+                          .join(" ")
+                  )
+              )
+            : tupleExpressionResult
+    }
 }
 
 type InfixExpression = [unknown, InfixOperator, ...unknown[]]

@@ -10,6 +10,9 @@ export type SerializedRegexLiteral = `/${string}/${string}`
 
 export type RegexNode = BaseNode<SerializedRegexLiteral[]>
 
+export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
+    literal.slice(1, literal.lastIndexOf("/"))
+
 export const regexNode = defineNodeKind<
     RegexNode,
     SerializedRegexLiteral | SerializedRegexLiteral[]
@@ -26,12 +29,5 @@ export const regexNode = defineNodeKind<
         intersect: (l, r): RegexNode =>
             regexNode(intersectUniqueLists(l.rule, r.rule))
     },
-    (base) => {
-        const literals = base.rule.map((_) => `/${_}/`)
-        const description =
-            literals.length === 1
-                ? literals[0]
-                : `expressions ${literals.join(", ")}`
-        return { description }
-    }
+    (base) => ({ description: base.rule.join(" and ") })
 )

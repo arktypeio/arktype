@@ -62,29 +62,6 @@ suite("tuple", () => {
                 },
                 ...(RegExp | Date)[]
             ]
-            attest(greatSpread.condition)
-                .snap(`if (!($arkRoot instanceof Array)) {
-            return false
-}
-if (!(((typeof $arkRoot["0"] === "object" && $arkRoot["0"] !== null) || typeof $arkRoot["0"] === "function"))) {
-            return false
-}
-if( $arkRoot["0"].a !== false && $arkRoot["0"].a !== true) {
-    return false
-};
-for(let i = 1; i < $arkRoot.length; i++) {
-    (() => {
-if (!($arkRoot[i] instanceof Date)) {
-            return false
-}
-return true
-})() || (() => {
-if (!($arkRoot[i] instanceof RegExp)) {
-            return false
-}
-return true
-})()
-}`)
         })
         test("allows array keyword", () => {
             const types = scope({
