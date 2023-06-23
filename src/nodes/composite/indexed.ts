@@ -49,7 +49,7 @@ const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSuffix}` as const
 
 export type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
 
-export const createArrayIndexMatcher = <index extends number>(
+export const arrayIndexMatcherSource = <index extends number>(
     firstVariadic: index
 ) =>
     (firstVariadic === 0
@@ -96,7 +96,7 @@ export const arrayIndexInput = <index extends number = 0>(
 ) =>
     ({
         basis: "string",
-        regex: createArrayIndexMatcher(firstVariadicIndex)
+        regex: `/${arrayIndexMatcherSource(firstVariadicIndex)}/`
     } as const satisfies PredicateInput<"string">)
 
 export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>

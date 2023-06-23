@@ -40,6 +40,7 @@ import { domainNode } from "../primitive/basis/domain.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { Range } from "../primitive/range.js"
+import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { inferPropsInput } from "./infer.js"
 import type { PropsInput } from "./props.js"
 
@@ -366,7 +367,7 @@ type domainConstraints<basis extends Domain> = basis extends "object"
       }
     : basis extends "string"
     ? {
-          regex?: listable<string>
+          regex?: listable<SerializedRegexLiteral>
           range?: Range
       }
     : basis extends "number"

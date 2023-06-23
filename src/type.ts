@@ -299,8 +299,7 @@ type validateChainedExpression<def, $, inferred> = def extends validateTypeRoot<
     def,
     $
 >
-    ? // As of TS 5.1, trying to infer the message here directly breaks everything
-      inferred extends error
+    ? inferred extends error
         ? inferred
         : def
     : validateTypeRoot<def, $>

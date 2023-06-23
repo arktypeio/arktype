@@ -1,6 +1,7 @@
 import type {
     BigintLiteral,
     error,
+    join,
     List,
     NumberLiteral,
     writeMalformedNumericLiteralMessage
@@ -167,7 +168,7 @@ type validateInfix<ast extends InfixExpression, $, args> = validateAst<
     ? error<message>
     : undefined
 
-export type RegexLiteral<expression extends string = string> = `/${expression}/`
+export type RegexLiteral<source extends string = string> = `/${source}/`
 
 export type inferTerminal<token, $, args> = token extends keyof args | keyof $
     ? resolve<token, $, args>

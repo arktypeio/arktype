@@ -1,4 +1,5 @@
 import { node } from "../../nodes/composite/type.js"
+import { serializeRegex } from "../../nodes/primitive/regex.js"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string) => {
@@ -32,7 +33,7 @@ const creditCardMatcher =
 // TODO:   { mustBe: "a valid credit card number" }
 export const creditCard = node({
     basis: "string",
-    regex: creditCardMatcher.source,
+    regex: serializeRegex(creditCardMatcher),
     narrow: (s, state) =>
         isLuhnValid(s) ||
         // TODO: Fix

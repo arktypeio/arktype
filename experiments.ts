@@ -1,6 +1,13 @@
-import { declare, scope, type } from "./src/main.js"
+// @ts-nocheck
+import { format } from "prettier"
+import { scope, type } from "./src/main.js"
 
-type MyExternalType = {
-    foo: string
-    bar?: number
-}
+const $ = scope({
+    user: {
+        friends: "user[]"
+    }
+})
+
+const result = $.compile()
+
+console.log(format(result, { parser: "typescript" }))

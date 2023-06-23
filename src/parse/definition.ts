@@ -20,6 +20,7 @@ import {
 import { hasArkKind } from "../compile/registry.js"
 import type { TypeNode } from "../nodes/composite/type.js"
 import { node } from "../nodes/composite/type.js"
+import { serializeRegex } from "../nodes/primitive/regex.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type { validateString } from "./ast/ast.js"
@@ -41,11 +42,12 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
             }
             return parseObjectLiteral(def as Dict, ctx)
         case "Array":
+            ;/.*/.flags
             return parseTuple(def as List, ctx)
         case "RegExp":
             return node({
                 basis: "string",
-                regex: (def as RegExp).source
+                regex: serializeRegex(def as RegExp)
             })
         case "Function":
             if (def instanceof Type) {
