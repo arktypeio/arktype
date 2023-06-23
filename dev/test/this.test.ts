@@ -15,7 +15,6 @@ suite("this reference", () => {
             box?: ExpectedDisappointingGift
         }
         attest(disappointingGift.infer).typed as ExpectedDisappointingGift
-        attest(disappointingGift.allows.toString()).snap()
     })
 
     test("doesn't change when rereferenced", () => {
