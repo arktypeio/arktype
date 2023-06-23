@@ -133,7 +133,7 @@ export type parseRightBound<
                   >
                 : state.error<writeUnpairableComparatorMessage<comparator>>
             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-        : never
+        : state.error<writeInvalidLimitMessage<comparator, scanned>>
     : never
 
 export const writeInvalidLimitMessage = <

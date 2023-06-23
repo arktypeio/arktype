@@ -2,13 +2,11 @@ import { suite, test } from "mocha"
 import type { Scope, TypeSet } from "../../src/main.js"
 import { scope, type } from "../../src/main.js"
 import {
-    writeMissingSubscopeAccessMessage,
     writeNonScopeDotMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
-import { lazily } from "./utils.js"
 
 const sub = () => scope({ alias: "number" })
 

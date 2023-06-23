@@ -107,10 +107,8 @@ suite("tuple", () => {
             ])
             // Check to make sure the intersection is evaluated
             attest(tupleAndArray.infer).types.toString.snap()
-            const arrayAndTuple = type([
-                [{ b: "boolean" }, "[]"],
-                "&",
-                [{ a: "string" }]
+            const arrayAndTuple = type([{ b: "boolean" }, "[]"], "&", [
+                { a: "string" }
             ])
             const expected = type([{ a: "string", b: "boolean" }])
             attest(tupleAndArray.condition).equals(expected.condition)
