@@ -120,7 +120,7 @@ export const compileArray = (
     const i = s.getNextIndexKeyAndPush("i")
     const elementCondition = elementNode.compile(s)
     s.popKey()
-    return `${namedCheck};
+    return `${namedCheck}
 for(let ${i} = ${firstVariadicIndex}; ${i} < ${s.data}.length; ${i}++) {
     ${elementCondition}
 }`
@@ -131,6 +131,7 @@ export const compileIndexed = (
     indexedProps: IndexedPropRule[],
     s: CompilationState
 ) => {
+    throw new Error()
     const k = s.getNextIndexKeyAndPush("k")
     const indexedChecks = indexedProps
         .map((prop) =>

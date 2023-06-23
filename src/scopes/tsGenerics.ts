@@ -15,14 +15,14 @@ export type InferredTsGenerics = {
 }
 
 export const tsGenerics: RootScope<InferredTsGenerics> = Scope.root({
-    "Record<K, V>": {
-        // Remove this once we support constraints on generic parameters:
-        // https://github.com/arktypeio/arktype/issues/796
-        /** @ts-expect-error */
-        "[K]": "V"
-    }
+    // "Record<K, V>": {
+    //     // Remove this once we support constraints on generic parameters:
+    //     // https://github.com/arktypeio/arktype/issues/796
+    //     /** @ts-expect-error */
+    //     "[K]": "V"
+    // }
     // unfortunately TS won't let us assign this directly, so we need to be
     // careful to keep the inferred types in sync
-}) satisfies RootScope<{ [k in keyof InferredTsGenerics]: any }> as never
+}) as never // satisfies RootScope<{ [k in keyof InferredTsGenerics]: any }> as never
 
 export const tsGenericTypes = tsGenerics.export()

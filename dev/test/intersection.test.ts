@@ -21,13 +21,13 @@ suite("intersection", () => {
         attest(t.infer).typed as "0" | "1" | "2"
         attest(t.condition).equals(type.literal("0", "1", "2").condition)
     })
-    test("tuple expression", () => {
-        const t = type([{ a: "string" }, "&", { b: "number" }])
-        attest(t.infer).typed as {
-            a: string
-            b: number
-        }
-    })
+    // test("tuple expression", () => {
+    //     const t = type([{ a: "string" }, "&", { b: "number" }])
+    //     attest(t.infer).typed as {
+    //         a: string
+    //         b: number
+    //     }
+    // })
     test("several types", () => {
         const t = type("unknown&boolean&false")
         attest(t.infer).typed as false

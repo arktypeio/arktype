@@ -83,7 +83,7 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
     },
     (base) => {
         const named = base.rule.filter(isNamed)
-        const indexed = base.rule.filter(isIndexed)
+        const indexed = base.rule.filter(isIndexed).map((_) => Object.freeze(_))
         const description = describeProps(named, indexed)
         return {
             description,
@@ -102,8 +102,10 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
             indexed.push({ key, value })
         } else {
             const result = indexed[matchingIndex].value.intersect(value)
-            indexed[matchingIndex].value =
-                result instanceof Disjoint ? builtins.never() : result
+            indexed[matchingIndex] = {
+                key,
+                value: result instanceof Disjoint ? builtins.never() : result
+            }
         }
     }
     const byName = { ...l.byName, ...r.byName }

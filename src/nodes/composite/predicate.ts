@@ -140,7 +140,11 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 if (lNode) {
                     if (rNode) {
                         const result = lNode.intersect(rNode as never)
-                        // TODO: don't return here
+                        // we may be missing out on deep discriminants here if e.g.
+                        // there is a range Disjoint between two arrays, each of which
+                        // contains objects that are discriminable. if we need to find
+                        // these, we should avoid returning here and instead collect Disjoints
+                        // similarly to in PropsNode
                         if (result instanceof Disjoint) {
                             return result
                         }
@@ -177,7 +181,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 ) as never,
             valueNode: basis?.hasKind("value") ? basis : undefined,
             constrain(kind, input): PredicateNode {
-                assertAllowsConstraint(this.basis, kind)
+                assertAllowsConstraint(basis, kind)
                 const constraint = createNodeOfKind(kind, input as never)
                 const result = this.intersect(predicateNode([constraint]))
                 if (result instanceof Disjoint) {

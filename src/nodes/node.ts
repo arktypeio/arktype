@@ -85,6 +85,7 @@ export const defineNodeKind = <
         [condition: string]: node | undefined
     } = {}
     return (input) => {
+        // TODO: find a better way to make it obvious if things get misaligned
         const rule = def.parse(input)
         const condition = def.compile(rule, new CompilationState("allows"))
         if (nodeCache[condition]) {
@@ -95,7 +96,7 @@ export const defineNodeKind = <
             def.kind === "domain" ||
             def.kind === "class" ||
             def.kind === "value"
-        const base: PreconstructedBase<node["rule"], never> & ThisType<node> = {
+        const base: PreconstructedBase<node["rule"], never> = {
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
@@ -109,14 +110,17 @@ export const defineNodeKind = <
             return true`
             ),
             intersectionCache,
-            intersect(other) {
-                if (this === other) {
-                    return this
+            intersect: (other) => {
+                if (instance === other) {
+                    return instance
                 }
                 if (intersectionCache[other.condition]) {
                     return intersectionCache[other.condition]!
                 }
-                const result: BaseNode | Disjoint = def.intersect(this, other)
+                const result: BaseNode | Disjoint = def.intersect(
+                    instance,
+                    other
+                )
                 intersectionCache[other.condition] = result
                 other.intersectionCache[condition] =
                     result instanceof Disjoint ? result.invert() : result
@@ -124,9 +128,7 @@ export const defineNodeKind = <
             }
         }
         const instance = Object.assign(addProps(base as node), base, {
-            toString(this: node) {
-                return this.description
-            }
+            toString: () => instance.description
         }) as node
         nodeCache[condition] = instance
         return instance
