@@ -6,11 +6,12 @@ import type {
     writeMalformedNumericLiteralMessage
 } from "../../../dev/utils/src/main.js"
 import type { Comparator } from "../../nodes/primitive/range.js"
-import type { resolve, UnparsedScope } from "../../scope.js"
+import type { resolve, Scope, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { CastTo, inferDefinition } from "../definition.js"
 import type { writeInvalidGenericArgsMessage } from "../generic.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+import type { writeMissingSubscopeAccessMessage } from "../string/shift/operand/unenclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
@@ -123,6 +124,8 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
       // efficient to check for them here in case the string was naively parsed
       $[def] extends GenericProps
         ? error<writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>>
+        : $[def] extends Scope
+        ? error<writeMissingSubscopeAccessMessage<def>>
         : undefined
     : undefined
 

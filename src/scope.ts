@@ -27,6 +27,10 @@ import type {
     GenericParamsParseError
 } from "./parse/generic.js"
 import { parseGenericParams } from "./parse/generic.js"
+import {
+    writeNonScopeDotMessage,
+    writeUnresolvableMessage
+} from "./parse/string/shift/operand/unenclosed.js"
 import { parseString } from "./parse/string/string.js"
 import type {
     DeclarationParser,
@@ -208,6 +212,7 @@ export class Scope<r extends Resolutions = any> {
     config: TypeConfig
 
     private parseCache: Record<string, TypeNode> = {}
+    // TODO: remove TypeSet here
     private resolutions: Record<string, TypeNode | TypeSet | Generic>
 
     aliases: Record<string, unknown> = {}
@@ -268,7 +273,7 @@ export class Scope<r extends Resolutions = any> {
         })
     }
 
-    extract<name extends keyof r["exports"] & string>(
+    get<name extends keyof r["exports"] & string>(
         name: name
     ): Type<r["exports"][name], $<r>> {
         return this.export()[name] as never
@@ -299,6 +304,7 @@ export class Scope<r extends Resolutions = any> {
             : throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
     }
 
+    // TODO: refactor to only return TypeNode or generic
     maybeResolve(
         name: string,
         ctx: ParseContext
@@ -309,6 +315,24 @@ export class Scope<r extends Resolutions = any> {
         }
         let def = this.aliases[name]
         if (!def) {
+            const dotIndex = name.indexOf(".")
+            if (dotIndex !== -1) {
+                const dotPrefix = name.slice(0, dotIndex)
+                const prefixDef = this.aliases[dotPrefix]
+                if (prefixDef instanceof Scope) {
+                    const aliasAccess = name.slice(dotIndex + 1)
+                    const resolution = prefixDef.maybeResolve(aliasAccess, ctx)
+                    if (!resolution) {
+                        return throwParseError(writeUnresolvableMessage(name))
+                    }
+                    return resolution
+                }
+                if (prefixDef !== undefined) {
+                    return throwParseError(writeNonScopeDotMessage(dotPrefix))
+                }
+                // if the name includes ".", but the prefix is not an alias, it
+                // might be something like a decimal literal, so just fall through to return
+            }
             return
         }
         if (isThunk(def) && !hasArkKind(def, "generic")) {
@@ -318,9 +342,10 @@ export class Scope<r extends Resolutions = any> {
             alias: name,
             resolve: () => this.maybeResolveNode(name, ctx)!
         })
+        // TODO: add bad scope reference error (no alias)
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
-            : // TODO: should we allow scope thunks? Could be cyclic?
+            : // TODO: don't allow scopes here, remove thunk scopes?
             def instanceof Scope
             ? def.export()
             : this.parseRoot(def)
