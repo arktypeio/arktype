@@ -60,12 +60,6 @@ export type BaseNode<
     intersectsWith = never
 > = PreconstructedBase<rule, intersectsWith> & BaseNodeExtensionProps
 
-type IntersectionCache<node extends BaseNode = BaseNode> = {
-    [lCondition: string]: {
-        [rCondition: string]: ReturnType<node["intersect"]>
-    }
-}
-
 export type NodeConstructor<node extends BaseNode, input> = (
     input: node["rule"] | input
 ) => node
@@ -73,6 +67,8 @@ export type NodeConstructor<node extends BaseNode, input> = (
 export const alphabetizeByCondition = <nodes extends BaseNode[]>(
     nodes: nodes
 ) => nodes.sort((l, r) => (l.condition > r.condition ? 1 : -1))
+
+const intersectionCache: Record<string, BaseNode | Disjoint> = {}
 
 export const defineNodeKind = <
     node extends BaseNode<any, any>,
@@ -84,7 +80,9 @@ export const defineNodeKind = <
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
-    const intersectionCache: IntersectionCache = {}
+    const isBasis =
+        def.kind === "domain" || def.kind === "class" || def.kind === "value"
+    const intersectionKind = isBasis ? "basis" : def.kind
     return (input) => {
         // TODO: find a better way to make it obvious if things get misaligned
         const rule = def.parse(input)
@@ -92,11 +90,6 @@ export const defineNodeKind = <
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
-        intersectionCache[condition] = {}
-        const isBasis =
-            def.kind === "domain" ||
-            def.kind === "class" ||
-            def.kind === "value"
         const base: PreconstructedBase<node["rule"], never> = {
             [arkKind]: "node",
             kind: def.kind,
@@ -114,15 +107,18 @@ export const defineNodeKind = <
                 if (instance === other) {
                     return instance
                 }
-                if (intersectionCache[condition][other.condition]) {
-                    return intersectionCache[condition][other.condition]!
+                const cacheKey = `${intersectionKind}${condition}${other.condition}`
+                if (intersectionCache[cacheKey]) {
+                    return intersectionCache[cacheKey]
                 }
                 const result: BaseNode | Disjoint = def.intersect(
                     instance,
                     other
                 )
-                intersectionCache[condition][other.condition] = result
-                intersectionCache[other.condition][condition] =
+                intersectionCache[cacheKey] = result
+                intersectionCache[
+                    `${intersectionKind}${other.condition}${condition}`
+                ] =
                     // also cache the result with other's condition as the key.
                     // if it was a Disjoint, it has to be inverted so that l,r
                     // still line up correctly
