@@ -7,6 +7,7 @@ import type {
     Domain,
     evaluate,
     keySet,
+    mutable,
     SerializedPrimitive
 } from "../../../dev/utils/src/main.js"
 import { Disjoint } from "../disjoint.js"
@@ -18,17 +19,18 @@ import type { PredicateNode } from "./predicate.js"
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
-    readonly path: string[]
-    readonly kind: kind
-    readonly cases: DiscriminatedCases<kind>
-}
+export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> =
+    Readonly<{
+        readonly path: string[]
+        readonly kind: kind
+        readonly cases: DiscriminatedCases<kind>
+    }>
 
 export type DiscriminatedCases<
     kind extends DiscriminantKind = DiscriminantKind
-> = {
+> = Readonly<{
     [caseKey in CaseKey<kind>]: Discriminant | PredicateNode[]
-}
+}>
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
 
@@ -126,7 +128,7 @@ export const discriminate = (
     }
     const [specifier, predicateCases] = bestDiscriminantEntry
     const [path, kind] = parseDiscriminantKey(specifier)
-    const cases: DiscriminatedCases = {}
+    const cases: mutable<DiscriminatedCases> = {}
     for (const k in predicateCases) {
         const subdiscriminant = discriminate(predicateCases[k])
         cases[k] = subdiscriminant ?? predicateCases[k]

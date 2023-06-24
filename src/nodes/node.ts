@@ -21,7 +21,7 @@ type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     ) => ReturnType<node["intersect"]>
 }
 
-export type NodeChildren = BaseNode[] | NodeEntry[]
+export type NodeChildren = readonly BaseNode[] | readonly NodeEntry[]
 
 type NodeExtension<node extends BaseNode> = (
     base: basePropsOf<node>
@@ -37,11 +37,11 @@ type extendedPropsOf<node extends BaseNode> = Omit<
     ThisType<node>
 
 interface PreconstructedBase<rule, intersectsWith> {
-    [arkKind]: "node"
-    kind: NodeKind
-    rule: rule
+    readonly [arkKind]: "node"
+    readonly kind: NodeKind
+    readonly rule: rule
+    readonly condition: string
     compile(state: CompilationState): string
-    condition: string
     intersect(other: intersectsWith | this): intersectsWith | this | Disjoint
     // TODO: can this work as is with late resolution?
     allows(data: unknown): boolean
@@ -84,7 +84,6 @@ export const defineNodeKind = <
         def.kind === "domain" || def.kind === "class" || def.kind === "value"
     const intersectionKind = isBasis ? "basis" : def.kind
     return (input) => {
-        // TODO: find a better way to make it obvious if things get misaligned
         const rule = def.parse(input)
         const condition = def.compile(rule, new CompilationState("allows"))
         if (nodeCache[condition]) {

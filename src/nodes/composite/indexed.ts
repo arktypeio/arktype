@@ -10,15 +10,15 @@ import type { PredicateInput } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins, node } from "./type.js"
 
-export type IndexedPropInput = {
+export type IndexedPropInput = Readonly<{
     key: TypeInput
     value: TypeInput
-}
+}>
 
-export type IndexedPropRule = {
+export type IndexedPropRule = Readonly<{
     key: TypeNode
     value: TypeNode
-}
+}>
 
 const arrayIndexSourceSuffix = `(?:0|(?:[1-9]\\d*))$`
 

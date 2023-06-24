@@ -53,19 +53,19 @@ export const compileNamedProp = (prop: NamedPropRule, s: CompilationState) => {
 
 export type PropValueInput = TypeNode | TypeInput
 
-export type NamedPropInput = {
+export type NamedPropInput = Readonly<{
     value: PropValueInput
     optional?: boolean
     prerequisite?: boolean
-}
+}>
 
-export type NamedPropRule = {
+export type NamedPropRule = Readonly<{
     key: NamedKeyRule
     value: TypeNode
-}
+}>
 
-export type NamedKeyRule = {
+export type NamedKeyRule = Readonly<{
     name: string
     optional: boolean
     prerequisite: boolean
-}
+}>

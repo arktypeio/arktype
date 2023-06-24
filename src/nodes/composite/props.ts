@@ -1,3 +1,4 @@
+import type { Dict } from "../../../dev/utils/src/main.js"
 import {
     fromEntries,
     hasKeys,
@@ -252,4 +253,4 @@ export type PropsInputTuple<
     indexed extends IndexedPropInput[] = IndexedPropInput[]
 > = readonly [named: named, ...indexed: indexed]
 
-export type NamedPropsInput = Record<string, NamedPropInput>
+export type NamedPropsInput = Dict<string, NamedPropInput>

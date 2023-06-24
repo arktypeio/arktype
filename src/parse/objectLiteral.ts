@@ -1,4 +1,9 @@
-import type { Dict, error, evaluate } from "../../dev/utils/src/main.js"
+import type {
+    Dict,
+    error,
+    evaluate,
+    mutable
+} from "../../dev/utils/src/main.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
 import type { NamedPropsInput } from "../nodes/composite/props.js"
 import { propsNode } from "../nodes/composite/props.js"
@@ -10,7 +15,7 @@ import type { inferDefinition, validateDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
-    const named: NamedPropsInput = {}
+    const named: mutable<NamedPropsInput> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let optional = false
