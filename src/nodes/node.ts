@@ -1,5 +1,5 @@
 import type { evaluate } from "../../dev/utils/src/main.js"
-import { CompiledFunction } from "../../dev/utils/src/main.js"
+import { CompiledFunction, deepFreeze } from "../../dev/utils/src/main.js"
 import { arkKind } from "../compile/registry.js"
 import { CompilationState, InputParameterName } from "../compile/state.js"
 import type { inferred } from "../parse/definition.js"
@@ -43,10 +43,6 @@ interface PreconstructedBase<rule, intersectsWith> {
     compile(state: CompilationState): string
     condition: string
     intersect(other: intersectsWith | this): intersectsWith | this | Disjoint
-    intersectionCache: Record<
-        string,
-        this | intersectsWith | Disjoint | undefined
-    >
     // TODO: can this work as is with late resolution?
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
@@ -64,7 +60,11 @@ export type BaseNode<
     intersectsWith = never
 > = PreconstructedBase<rule, intersectsWith> & BaseNodeExtensionProps
 
-type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
+type IntersectionCache<node extends BaseNode = BaseNode> = {
+    [lCondition: string]: {
+        [rCondition: string]: ReturnType<node["intersect"]>
+    }
+}
 
 export type NodeConstructor<node extends BaseNode, input> = (
     input: node["rule"] | input
@@ -84,6 +84,7 @@ export const defineNodeKind = <
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
+    const intersectionCache: IntersectionCache = {}
     return (input) => {
         // TODO: find a better way to make it obvious if things get misaligned
         const rule = def.parse(input)
@@ -91,7 +92,7 @@ export const defineNodeKind = <
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
-        const intersectionCache: IntersectionCache<BaseNode> = {}
+        intersectionCache[condition] = {}
         const isBasis =
             def.kind === "domain" ||
             def.kind === "class" ||
@@ -109,27 +110,31 @@ export const defineNodeKind = <
                 `${condition}
             return true`
             ),
-            intersectionCache,
             intersect: (other) => {
                 if (instance === other) {
                     return instance
                 }
-                if (intersectionCache[other.condition]) {
-                    return intersectionCache[other.condition]!
+                if (intersectionCache[condition][other.condition]) {
+                    return intersectionCache[condition][other.condition]!
                 }
                 const result: BaseNode | Disjoint = def.intersect(
                     instance,
                     other
                 )
-                intersectionCache[other.condition] = result
-                other.intersectionCache[condition] =
+                intersectionCache[condition][other.condition] = result
+                intersectionCache[other.condition][condition] =
+                    // also cache the result with other's condition as the key.
+                    // if it was a Disjoint, it has to be inverted so that l,r
+                    // still line up correctly
                     result instanceof Disjoint ? result.invert() : result
                 return result
             }
         }
-        const instance = Object.assign(addProps(base as node), base, {
-            toString: () => instance.description
-        }) as node
+        const instance = deepFreeze(
+            Object.assign(addProps(base as node), base, {
+                toString: () => instance.description
+            })
+        ) as node
         nodeCache[condition] = instance
         return instance
     }
