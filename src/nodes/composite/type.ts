@@ -33,7 +33,7 @@ export interface TypeNode<t = unknown>
     [inferred]: t
     branches: PredicateNode[]
     discriminant: Discriminant | null
-    valueNode: ValueNode | undefined
+    value: ValueNode | undefined
     array(): TypeNode<t[]>
     isNever(): this is TypeNode<never>
     isUnknown(): this is TypeNode<unknown>
@@ -111,9 +111,9 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             get discriminant() {
                 return discriminate(this.branches)
             },
-            get valueNode() {
+            get value() {
                 return this.branches.length === 1
-                    ? this.branches[0].valueNode
+                    ? this.branches[0].value
                     : undefined
             },
             array(): any {
@@ -193,11 +193,7 @@ const compileDiscriminant = (
     discriminant: Discriminant,
     s: CompilationState
 ) => {
-    const isRootLiteral =
-        discriminant.path.length === 0 &&
-        discriminant.kind === "value" &&
-        !discriminant.cases.default
-    if (isRootLiteral) {
+    if (discriminant.isPureRootLiteral) {
         return compileDiscriminatedLiteral(discriminant.cases, s)
     }
     let compiledPath = InputParameterName

@@ -1,20 +1,17 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { CompiledFunction, transform } from "../dev/utils/src/main.js"
 import type {
     AbstractableConstructor,
     BuiltinObjectKind,
     BuiltinObjects,
     conform,
     error,
-    isAny,
     Literalable,
     Primitive
 } from "../dev/utils/src/main.js"
+import { CompiledFunction, transform } from "../dev/utils/src/main.js"
 import { arkKind, registry } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
-import { type } from "./main.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { builtins, node } from "./nodes/composite/type.js"
@@ -339,13 +336,11 @@ export const generic = (
         },
         {
             [arkKind]: "generic",
-            // TODO: remove at runtime
-            $: undefined,
             parameters,
             definition,
             scope
-        } satisfies GenericProps
-    )
+        } satisfies Omit<GenericProps, "$">
+    ) as unknown as Generic
 }
 
 // Comparing to Generic directly doesn't work well, so we compare to only its props

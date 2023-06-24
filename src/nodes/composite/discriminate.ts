@@ -1,7 +1,8 @@
 import {
     entriesOf,
     isKeyOf,
-    throwInternalError
+    throwInternalError,
+    transform
 } from "../../../dev/utils/src/main.js"
 import type {
     Domain,
@@ -24,6 +25,7 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> =
         readonly path: string[]
         readonly kind: kind
         readonly cases: DiscriminatedCases<kind>
+        readonly isPureRootLiteral: boolean
     }>
 
 export type DiscriminatedCases<
@@ -69,6 +71,21 @@ export const discriminate = (
     const cached = discriminantCache.get(branches)
     if (cached !== undefined) {
         return cached
+    }
+    const pureValueBranches = branches.flatMap((branch) =>
+        branch.value ? branch.value : []
+    )
+    if (pureValueBranches.length === branches.length) {
+        const cases: DiscriminatedCases = transform(
+            pureValueBranches,
+            ([i, valueNode]) => [valueNode.serialized, [branches[i]]]
+        )
+        return {
+            path: [],
+            kind: "value",
+            cases,
+            isPureRootLiteral: true
+        }
     }
     const casesBySpecifier: CasesBySpecifier = {}
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
@@ -136,7 +153,8 @@ export const discriminate = (
     const discriminant: Discriminant = {
         kind,
         path,
-        cases
+        cases,
+        isPureRootLiteral: false
     }
     discriminantCache.set(branches, discriminant)
     return discriminant

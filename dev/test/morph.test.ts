@@ -13,6 +13,18 @@ suite("morph", () => {
         const t = type("boolean").morph((data) => `${data}`)
         attest(t).typed as Type<(In: boolean) => string>
         attest(t.infer).typed as string
+        attest(t.inferIn).typed as boolean
+        attest(t.condition).snap(`switch($arkRoot) {
+    case false: {
+    $arkRoot = globalThis.$ark.morph($arkRoot)
+     break
+}case true: {
+    $arkRoot = globalThis.$ark.morph($arkRoot)
+     break
+}default: {
+    return false
+}
+}`)
         const result = t(true)
         if (result.problems) {
             return result.problems.throw()

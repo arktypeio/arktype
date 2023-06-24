@@ -45,10 +45,10 @@ import type { inferPropsInput } from "./infer.js"
 import type { PropsInput } from "./props.js"
 
 export interface PredicateNode extends BaseNode<PredicateChildren> {
-    basis: BasisNode | undefined
+    basis: BasisNode | null
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
-    valueNode: ValueNode | undefined
+    value: ValueNode | undefined
     constrain<kind extends ConstraintKind>(
         kind: kind,
         input: ConstraintsInput[kind]
@@ -123,15 +123,11 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             if (basis instanceof Disjoint) {
                 return basis
             }
-            if (l.valueNode) {
-                return r.allows(l.valueNode.rule)
-                    ? l
-                    : Disjoint.from("assignability", l.valueNode, r)
+            if (l.value && !r.allows(l.value.rule)) {
+                return Disjoint.from("assignability", r, l.value)
             }
-            if (r.valueNode) {
-                return l.allows(r.valueNode.rule)
-                    ? r
-                    : Disjoint.from("assignability", l, r.valueNode)
+            if (r.value && !l.allows(r.value.rule)) {
+                return Disjoint.from("assignability", l, r.value)
             }
             const rules: PredicateChildren = basis ? [basis] : []
             for (const kind of constraintKindNames) {
@@ -161,7 +157,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
     },
     (base) => {
         const initialRule = base.rule.at(0)
-        const basis = initialRule?.isBasis() ? initialRule : undefined
+        const basis = initialRule?.isBasis() ? initialRule : null
         const constraints = (
             basis ? base.rule.slice(1) : base.rule
         ) as ConstraintNode[]
@@ -179,7 +175,11 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 constraints.find(
                     (constraint) => constraint.kind === k
                 ) as never,
-            valueNode: basis?.hasKind("value") ? basis : undefined,
+            value:
+                // we only want simple unmorphed values
+                basis?.hasKind("value") && base.rule.length === 1
+                    ? basis
+                    : undefined,
             constrain(kind, input): PredicateNode {
                 assertAllowsConstraint(basis, kind)
                 const constraint = createNodeOfKind(kind, input as never)
@@ -203,7 +203,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
 // }
 
 export const assertAllowsConstraint = (
-    basis: BasisNode | undefined,
+    basis: BasisNode | null,
     kind: ConstraintKind
 ) => {
     if (basis?.hasKind("value")) {
@@ -290,7 +290,7 @@ export type PredicateChildKind = "basis" | ConstraintKind
 export type ConstraintKind = keyof ConstraintKinds
 
 export type PredicateInput<
-    basis extends BasisInput | undefined = BasisInput | undefined
+    basis extends BasisInput | null = BasisInput | null
 > =
     | Record<string, never>
     | evaluate<
@@ -300,7 +300,7 @@ export type PredicateInput<
       >
 
 export type ConstraintsInput<
-    basis extends BasisInput | undefined = BasisInput | undefined
+    basis extends BasisInput | null = BasisInput | null
 > = BasisInput extends basis
     ? {
           [k in ConstraintKind]?: unknownConstraintInput<k>
