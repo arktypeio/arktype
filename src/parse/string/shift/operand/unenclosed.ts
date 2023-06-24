@@ -16,7 +16,6 @@ import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
-import type { CastTo } from "../../../definition.js"
 import type { ParsedArgs } from "../../../generic.js"
 import {
     parseGenericArgs,
