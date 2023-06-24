@@ -30,7 +30,6 @@ import {
     writeUnsatisfiableExpressionError
 } from "./ast/ast.js"
 import type { inferIntersection } from "./ast/intersections.js"
-import type { astToString } from "./ast/utils.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
@@ -270,11 +269,7 @@ export type validatePrefixExpression<
 > = def["length"] extends 1
     ? [writeMissingRightOperandMessage<def[0]>]
     : [
-          def[0] extends "keyof"
-              ? inferDefinition<def, $, args> extends never
-                  ? writeUnsatisfiableExpressionError<astToString<def>>
-                  : def[0]
-              : def[0],
+          def[0],
           def[0] extends "==="
               ? def[1]
               : def[0] extends "instanceof"
@@ -298,11 +293,7 @@ export type validateInfixExpression<
     ? [def[0], writeMissingRightOperandMessage<def[1]>]
     : [
           validateDefinition<def[0], $, args>,
-          def[1] extends "&"
-              ? inferDefinition<def, $, args> extends never
-                  ? writeUnsatisfiableExpressionError<"intersection">
-                  : def["1"]
-              : def[1],
+          def[1],
           def[1] extends "|"
               ? validateDefinition<def[2], $, args>
               : def[1] extends "&"

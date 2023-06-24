@@ -1,7 +1,7 @@
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { writeInvalidConstructorMessage } from "../../src/parse/tuple.js"
-import { Type } from "../../src/type.js"
+import type { Type } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 
 suite("instanceof", () => {
@@ -54,28 +54,15 @@ suite("instanceof", () => {
             attest(t.infer).typed as Error
             attest(t.condition).equals(type(["instanceof", Error]).condition)
         })
+        test("instance branches", () => {
+            const t = type("instanceof", Date, Map)
+            attest(t.infer).typed as Date | Map<unknown, unknown>
+            attest(t.condition).equals(type("Date|Map").condition)
+        })
         test("non-constructor", () => {
             // @ts-expect-error just an assignability failure so we can't validate an error message
             attest(() => type("instanceof", new Error())).throws(
                 writeInvalidConstructorMessage("Error")
-            )
-        })
-    })
-    suite("method", () => {
-        test("single", () => {
-            const t = type.instanceof(Type)
-            attest(t.infer).typed as Type<unknown, unknown>
-            attest(t.condition).snap("$arkRoot instanceof globalThis.$ark.Type")
-        })
-        test("instance branches", () => {
-            const t = type.instanceof(Date, Map)
-            attest(t.infer).typed as Date | Map<unknown, unknown>
-            attest(t.condition).equals(type("Date|Map").condition)
-        })
-        test("type error on non-constructor", () => {
-            // @ts-expect-error
-            attest(type.instanceof({})).types.errors(
-                "Argument of type '{}' is not assignable to parameter of type 'AbstractableConstructor'."
             )
         })
     })

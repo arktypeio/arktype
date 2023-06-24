@@ -1,12 +1,26 @@
-import type { evaluate } from "../../dev/utils/src/main.js"
+import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
 import { CompiledFunction, deepFreeze } from "../../dev/utils/src/main.js"
 import { arkKind } from "../compile/registry.js"
 import { CompilationState, InputParameterName } from "../compile/state.js"
+import type { TypeNode } from "../main.js"
 import type { inferred } from "../parse/definition.js"
 import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
+
+type NodeConfig = {
+    intersectsWith?: unknown
+    keyed?: boolean
+}
+
+type DefaultNodeConfig = extend<
+    Required<NodeConfig>,
+    {
+        intersectsWith: never
+        keyed: false
+    }
+>
 
 type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     kind: node["kind"]
@@ -36,13 +50,15 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 > &
     ThisType<node>
 
-interface PreconstructedBase<rule, intersectsWith> {
+interface PreconstructedBase<rule, config extends NodeConfig> {
     readonly [arkKind]: "node"
     readonly kind: NodeKind
     readonly rule: rule
     readonly condition: string
     compile(state: CompilationState): string
-    intersect(other: intersectsWith | this): intersectsWith | this | Disjoint
+    intersect(
+        other: config["intersectsWith"] | this
+    ): config["intersectsWith"] | this | Disjoint
     // TODO: can this work as is with late resolution?
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
@@ -51,14 +67,19 @@ interface PreconstructedBase<rule, intersectsWith> {
 
 type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any, any>>
 
-export type BaseNodeExtensionProps = {
+type NodeExtensionProps<config extends NodeConfig = NodeConfig> = {
     description: string
-}
+} & (config["keyed"] extends true
+    ? {
+          keyof(): TypeNode
+      }
+    : {})
 
 export type BaseNode<
     rule = unknown,
-    intersectsWith = never
-> = PreconstructedBase<rule, intersectsWith> & BaseNodeExtensionProps
+    config extends NodeConfig = {}
+> = PreconstructedBase<rule, merge<DefaultNodeConfig, config>> &
+    NodeExtensionProps<merge<DefaultNodeConfig, config>>
 
 export type NodeConstructor<node extends BaseNode, input> = (
     input: node["rule"] | input

@@ -52,7 +52,8 @@ export type BasisNodeDefinition = {
     rule: unknown
 }
 
-export interface BasisNode<rule = unknown> extends BaseNode<rule, BasisNode> {
+export interface BasisNode<rule = unknown>
+    extends BaseNode<rule, { intersectsWith: BasisNode; keyed: true }> {
     kind: BasisKind
     domain: Domain
     literalKeys: PropertyKey[]

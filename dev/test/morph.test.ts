@@ -369,11 +369,8 @@ suite("morph", () => {
         attest(() =>
             type("string")
                 .morph((s) => s.length)
-                // @ts-expect-error
                 .and(type("string").morph((s) => s.length))
-        ).throwsAndHasTypeError(
-            "Intersection of morphs results in an unsatisfiable type"
-        )
+        ).throws("Intersection of morphs results in an unsatisfiable type")
     })
     test("union helper undiscriminated", () => {
         attest(() =>

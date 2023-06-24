@@ -20,7 +20,6 @@ suite("basis intersections", () => {
         const a = [0]
         const literal = type("===", a)
         const cls = type("instanceof", Date)
-        // not a type error because TS treats it structurally, but is unsatisfiable
         attest(() => literal.and(cls)).throws(
             writeUnsatisfiableExpressionError("")
         )
@@ -39,12 +38,10 @@ suite("basis intersections", () => {
     test("unsatisfiable domain & literal", () => {
         const literal = type("'foo'")
         const domain = type("number")
-        // @ts-expect-error
-        attest(() => literal.and(domain)).throwsAndHasTypeError(
+        attest(() => literal.and(domain)).throws(
             writeUnsatisfiableExpressionError("")
         )
-        // @ts-expect-error
-        attest(() => domain.and(literal)).throwsAndHasTypeError(
+        attest(() => domain.and(literal)).throws(
             writeUnsatisfiableExpressionError("")
         )
     })

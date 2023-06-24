@@ -87,8 +87,8 @@ suite("generics", () => {
 
         test("this not resolvable in generic def", () => {
             attest(() =>
-                // @ts-expect-error
                 type("<t>", {
+                    // @ts-expect-error
                     box: "t | this"
                 })
             ).throwsAndHasTypeError(writeUnresolvableMessage("this"))

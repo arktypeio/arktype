@@ -34,6 +34,7 @@ export interface TypeNode<t = unknown>
     branches: PredicateNode[]
     discriminant: Discriminant | null
     value: ValueNode | undefined
+    isResolved(): boolean
     array(): TypeNode<t[]>
     isNever(): this is TypeNode<never>
     isUnknown(): this is TypeNode<unknown>
@@ -159,7 +160,10 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                 return this.intersect(other as never) === this
             },
             keyof(): any {
-                return this
+                return this.branches.reduce(
+                    (result, branch) => result.and(branch.keyof()),
+                    builtins.unknown()
+                )
             },
             getPath(...path): any {
                 let current: PredicateNode[] = this.branches

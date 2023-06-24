@@ -167,11 +167,12 @@ export class DynamicState {
     previousOperator() {
         return this.branches.range?.min
             ? this.branches.range.min.comparator
-            : this.branches.prefixes.at(-1) ?? this.branches.intersection
-            ? "&"
-            : this.branches.union
-            ? "|"
-            : undefined
+            : this.branches.prefixes.at(-1) ??
+                  (this.branches.intersection
+                      ? "&"
+                      : this.branches.union
+                      ? "|"
+                      : undefined)
     }
 
     shiftedByOne() {

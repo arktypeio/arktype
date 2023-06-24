@@ -3,8 +3,7 @@ import type {
     BuiltinObjectKind,
     BuiltinObjects,
     conform,
-    error,
-    Literalable,
+    NonEmptyList,
     Primitive
 } from "../dev/utils/src/main.js"
 import { CompiledFunction, transform } from "../dev/utils/src/main.js"
@@ -25,70 +24,69 @@ import { inferred } from "./parse/definition.js"
 import type { GenericParamsParseError } from "./parse/generic.js"
 import { parseGenericParams } from "./parse/generic.js"
 import type {
-    IndexOneOperator,
-    IndexZeroOperator,
     inferMorphOut,
     inferNarrow,
     Morph,
     MorphAst,
     Narrow,
-    Out,
-    TupleInfixOperator
+    Out
 } from "./parse/tuple.js"
 import type { Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
 
-export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
-
-type TypeOverloads<$> = {
+export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.
     <def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
 
-    // Spread version of a tuple expression
-    <zero, one, two>(
-        _0: zero extends IndexZeroOperator
-            ? zero
-            : validateDefinition<zero, $, bindThisToExpression<zero, one, two>>,
-        _1: zero extends "keyof"
-            ? validateDefinition<one, $, bindThisToExpression<zero, one, two>>
-            : zero extends "instanceof"
-            ? conform<one, AbstractableConstructor>
-            : zero extends "==="
-            ? conform<one, unknown>
-            : conform<one, IndexOneOperator>,
-        ..._2: one extends TupleInfixOperator
-            ? [
-                  one extends ":"
-                      ? Narrow<
-                            extractIn<
-                                inferDefinition<
-                                    zero,
-                                    $,
-                                    bindThisToExpression<zero, one, two>
-                                >
-                            >
-                        >
-                      : one extends "=>"
-                      ? // TODO: centralize
-                        Morph<
-                            extractOut<
-                                inferDefinition<
-                                    zero,
-                                    $,
-                                    bindThisToExpression<zero, one, two>
-                                >
-                            >,
-                            unknown
-                        >
-                      : validateDefinition<
-                            two,
-                            $,
-                            bindThisToExpression<zero, one, two>
-                        >
-              ]
-            : []
-    ): Type<inferTypeRoot<tupleExpression<zero, one, two>, $>, $>
+    <def>(_: "keyof", def: validateTypeRoot<def, $>): Type<
+        keyof inferTypeRoot<def, $>,
+        $
+    >
+
+    <constructors extends NonEmptyList<AbstractableConstructor>>(
+        _: "instanceof",
+        ...oneOf: constructors
+    ): Type<InstanceType<constructors[number]>, $>
+
+    <const values extends NonEmptyList>(_: "===", ...oneOf: values): Type<
+        values[number],
+        $
+    >
+
+    // TODO: ensure consistent `this` usage
+    <def, narrow extends Narrow<extractIn<inferTypeRoot<def, $>>>>(
+        def: validateTypeRoot<def, $>,
+        _: ":",
+        narrow: narrow
+    ): Type<inferNarrow<inferTypeRoot<def, $>, narrow>, $>
+
+    <def, morph extends Morph<extractOut<inferTypeRoot<def, $>>>>(
+        def: validateTypeRoot<def, $>,
+        _: "=>",
+        morph: morph
+    ): Type<
+        // TODO: Ensure consistent
+        (
+            In: extractIn<inferTypeRoot<def, $>>
+        ) => Out<inferMorphOut<ReturnType<morph>>>,
+        $
+    >
+
+    <l, r>(l: validateTypeRoot<l, $>, _: "&", r: validateTypeRoot<r, $>): Type<
+        inferIntersection<inferTypeRoot<l, $>, inferTypeRoot<r, $>>,
+        $
+    >
+
+    <l, r>(l: validateTypeRoot<l, $>, _: "|", r: validateTypeRoot<r, $>): Type<
+        inferTypeRoot<l, $> | inferTypeRoot<r, $>,
+        $
+    >
+
+    <def>(def: validateTypeRoot<def, $>, _: "[]"): Type<
+        inferTypeRoot<def, $>[],
+        $
+    >
 
     <params extends string, def>(
         params: `<${validateParameterString<params>}>`,
@@ -102,23 +100,6 @@ type TypeOverloads<$> = {
     ): Generic<parseGenericParams<params>, def, $>
 }
 
-type bindThisToExpression<zero, one, two> = bindThis<
-    tupleExpression<zero, one, two>
->
-
-type tupleExpression<zero, one, two> = one extends TupleInfixOperator
-    ? [zero, one, two]
-    : [zero, one]
-
-type TypeProps<$> = {
-    literal: <branches extends readonly Literalable[]>(
-        ...possibleValues: branches
-    ) => Type<branches[number], $>
-    instanceof: <branches extends readonly AbstractableConstructor[]>(
-        ...possibleConstructors: branches
-    ) => Type<InstanceType<branches[number]>, $>
-}
-
 export type DeclarationParser<$> = <preinferred>() => {
     type: <def>(
         def: validateDeclared<preinferred, def, $, bindThis<def>>
@@ -126,7 +107,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 }
 
 export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
-    const parser: TypeOverloads<$> = (...args: unknown[]) => {
+    const parser: TypeParser<$> = (...args: unknown[]) => {
         if (args.length === 1) {
             // treat as a simple definition
             return new Type(args[0], scope) as never
@@ -145,25 +126,28 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
                 generic(params, def, scope) as never
             ) as never
         }
+        // special tuple cases for "===" and "instanceof" to allow branching
+        if (args[0] === "===") {
+            return new Type(node.literal(...args.slice(1)), scope) as never
+        }
+        if (args[0] === "instanceof") {
+            return new Type(
+                node(
+                    ...args.slice(1).map(
+                        (ctor): PredicateInput => ({
+                            basis: ctor as AbstractableConstructor
+                        })
+                    )
+                ),
+                scope
+            ) as never
+        }
         // otherwise, treat as a tuple expression. technically, this also allows
         // non-expression tuple definitions to be parsed, but it's not a supported
         // part of the API as specified by the associated types
         return new Type(args, scope) as never
     }
-    const props: TypeProps<$> = {
-        literal: (...possibleValues) =>
-            new Type(node.literal(...possibleValues), scope),
-        instanceof: (...possibleConstructors) =>
-            new Type(
-                node(
-                    ...possibleConstructors.map(
-                        (ctor): PredicateInput => ({ basis: ctor })
-                    )
-                ),
-                scope
-            )
-    }
-    return Object.assign(parser, props)
+    return parser
 }
 
 export type DefinitionParser<$> = <def>(
@@ -172,6 +156,7 @@ export type DefinitionParser<$> = <def>(
 
 registry().registerInternal("state", TraversalState)
 
+// TODO:  require scope be passed to type?
 export class Type<t = unknown, $ = any> extends CompiledFunction<
     (data: unknown) => CheckResult<extractOut<t>>
 > {
@@ -214,11 +199,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
     // TODO: Morph intersections, ordering
     and<def>(
-        def: validateChainedExpression<
-            def,
-            $,
-            inferIntersection<t, inferTypeRoot<def, $>>
-        >
+        def: validateTypeRoot<def, $>
     ): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
         return new Type(
             this.root.and(parseTypeRoot(def, this.scope)),
@@ -291,15 +272,6 @@ const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
 export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
-
-type validateChainedExpression<def, $, inferred> = def extends validateTypeRoot<
-    def,
-    $
->
-    ? inferred extends error
-        ? inferred
-        : def
-    : validateTypeRoot<def, $>
 
 type validateParameterString<params extends string> =
     parseGenericParams<params> extends GenericParamsParseError<infer message>

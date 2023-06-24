@@ -1,5 +1,6 @@
 import type { Dict } from "../../../dev/utils/src/main.js"
 import {
+    cached,
     fromEntries,
     hasKeys,
     isArray,
@@ -19,7 +20,7 @@ import {
 import type { NamedKeyRule, NamedPropInput, NamedPropRule } from "./named.js"
 import { compileNamedProps, intersectNamedProp } from "./named.js"
 import type { TypeNode } from "./type.js"
-import { builtins, typeNode } from "./type.js"
+import { builtins, node, typeNode } from "./type.js"
 
 export type KeyRule = NamedKeyRule | TypeNode
 
@@ -27,10 +28,14 @@ export type NodeEntry = NamedPropRule | IndexedPropRule
 
 export type PropsRule = NodeEntry[]
 
-export interface PropsNode extends BaseNode<NodeEntry[]> {
+export interface PropsNode extends BaseNode<NodeEntry[], { keyed: true }> {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>
+    keyof(): TypeNode
+    indexedKeyOf(): TypeNode
+    namedKeyOf(): TypeNode
+    literalKeys: (string | symbol)[]
 }
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
@@ -86,11 +91,20 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
         const named = base.rule.filter(isNamed)
         const indexed = base.rule.filter(isIndexed).map((_) => Object.freeze(_))
         const description = describeProps(named, indexed)
+        const literalKeys = named.map((prop) => prop.key.name)
+        const namedKeyOf = cached(() => node.literal(...literalKeys))
+        const indexedKeyOf = cached(() =>
+            typeNode(indexed.flatMap((entry) => entry.key.branches))
+        )
         return {
             description,
             named,
             byName: fromEntries(named.map((prop) => [prop.key.name, prop])),
-            indexed
+            indexed,
+            literalKeys,
+            keyof: cached(() => namedKeyOf().or(indexedKeyOf())),
+            indexedKeyOf,
+            namedKeyOf
         }
     }
 )
@@ -216,26 +230,6 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
     }
     return JSON.stringify(fromEntries(entries))
 }
-
-// keyof() {
-//     return this.namedKeyOf().or(this.indexedKeyOf())
-// }
-
-// indexedKeyOf() {
-//     return new TypeNode(
-//         this.indexed.flatMap((entry) => entry.key.rule)
-//     ) as TypeNode<PropertyKey>
-// }
-
-// namedKeyOf() {
-//     return TypeNode.exactly(
-//         ...this.namedKeyLiterals()
-//     ) as TypeNode<PropertyKey>
-// }
-
-// namedKeyLiterals() {
-//     return this.named.map((prop) => prop.key.name)
-// }
 
 const isIndexed = (rule: NodeEntry): rule is IndexedPropRule =>
     hasArkKind(rule.key, "node")

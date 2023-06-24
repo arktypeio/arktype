@@ -35,12 +35,12 @@ suite("literal", () => {
     })
     suite("method", () => {
         test("single literal", () => {
-            const t = type.literal("foo")
+            const t = type("===", "foo")
             attest(t.infer).typed as "foo"
             attest(t.condition).equals(type("'foo'").condition)
         })
         test("literal branches", () => {
-            const t = type.literal("foo", 5, true, null, 1n, undefined)
+            const t = type("===", "foo", 5, true, null, 1n, undefined)
             attest(t.infer).typed as true | "foo" | 5 | 1n | null | undefined
             attest(t.condition).equals(
                 type("'foo'|true|5|1n|null|undefined").condition

@@ -6,6 +6,7 @@ import {
     prototypeKeysOf
 } from "../../../../dev/utils/src/main.js"
 import { registry } from "../../../compile/registry.js"
+import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
@@ -29,15 +30,19 @@ export const classNode = defineNodeKind<ClassNode>(
             ),
         intersect: intersectBases
     },
-    (base) => ({
-        domain: "object",
-        literalKeys: prototypeKeysOf(base.rule.prototype),
-        extendsOneOf: (...baseConstructors: AbstractableConstructor[]) =>
-            baseConstructors.some((ctor) =>
-                constructorExtends(base.rule, ctor)
-            ),
-        description: base.rule.name
-    })
+    (base) => {
+        const literalKeys = prototypeKeysOf(base.rule.prototype)
+        return {
+            domain: "object",
+            literalKeys,
+            keyof: cached(() => node.literal(...literalKeys)),
+            extendsOneOf: (...baseConstructors: AbstractableConstructor[]) =>
+                baseConstructors.some((ctor) =>
+                    constructorExtends(base.rule, ctor)
+                ),
+            description: base.rule.name
+        }
+    }
 )
 
 export const arrayClassNode = cached(() => classNode(Array))

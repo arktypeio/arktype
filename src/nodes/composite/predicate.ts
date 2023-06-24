@@ -43,8 +43,10 @@ import type { Range } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { inferPropsInput } from "./infer.js"
 import type { PropsInput } from "./props.js"
+import { builtins } from "./type.js"
 
-export interface PredicateNode extends BaseNode<PredicateChildren> {
+export interface PredicateNode
+    extends BaseNode<PredicateChildren, { keyed: true }> {
     basis: BasisNode | null
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
@@ -188,19 +190,17 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                     return result.throw()
                 }
                 return result
+            },
+            keyof() {
+                if (!this.basis) {
+                    return builtins.never()
+                }
+                const propsKey = this.getConstraint("props")?.keyof()
+                return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
             }
         }
     }
 )
-
-// keyof() {
-//     if (!this.basis) {
-//         return neverTypeNode
-//     }
-//     const basisKey = this.basis.keyof()
-//     const propsKey = this.getConstraint("props")?.keyof()
-//     return propsKey?.or(basisKey) ?? basisKey
-// }
 
 export const assertAllowsConstraint = (
     basis: BasisNode | null,

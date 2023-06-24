@@ -82,9 +82,7 @@ export type validateAst<ast, $, args> = ast extends string
         ? validateDivisor<l, $, args>
         : undefined
     : ast extends readonly ["keyof", infer operand]
-    ? [keyof inferAst<operand, $, args>] extends [never]
-        ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
-        : validateAst<operand, $, args>
+    ? validateAst<operand, $, args>
     : ast extends GenericInstantiationAst
     ? validateGenericArgs<ast["2"], $, args>
     : error<writeUnexpectedExpressionMessage<astToString<ast>>>

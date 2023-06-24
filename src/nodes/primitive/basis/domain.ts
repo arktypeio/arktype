@@ -1,5 +1,6 @@
 import type { Domain } from "../../../../dev/utils/src/main.js"
-import { getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
+import { cached, getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
+import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
@@ -25,9 +26,13 @@ export const domainNode = defineNodeKind<DomainNode>(
             ),
         intersect: intersectBases
     },
-    (base) => ({
-        domain: base.rule,
-        literalKeys: getBaseDomainKeys(base.rule),
-        description: base.rule
-    })
+    (base) => {
+        const literalKeys = getBaseDomainKeys(base.rule)
+        return {
+            domain: base.rule,
+            literalKeys,
+            keyof: cached(() => node.literal(...literalKeys)),
+            description: base.rule
+        }
+    }
 )
