@@ -46,13 +46,16 @@ const objectBasisNode = domainNode("object")
 
 export type inferObjectLiteral<def extends Dict, $, args> = evaluate<
     {
-        [k in keyof def as nonOptionalKeyFrom<k, $, args>]: inferDefinition<
-            def[k],
+        // since def is a const parameter, we remove the readonly modifier here
+        // support for builtin readonly tracked here:
+        // https://github.com/arktypeio/arktype/issues/808
+        -readonly [k in keyof def as nonOptionalKeyFrom<
+            k,
             $,
             args
-        >
+        >]: inferDefinition<def[k], $, args>
     } & {
-        [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
+        -readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
             def[k],
             $,
             args

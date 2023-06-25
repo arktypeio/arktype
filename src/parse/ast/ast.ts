@@ -151,7 +151,7 @@ export type PostfixOperator = "[]"
 export type PostfixExpression<
     operator extends PostfixOperator = PostfixOperator,
     operand = unknown
-> = [operand, operator]
+> = readonly [operand, operator]
 
 export type InfixOperator = "|" | "&" | Comparator | "%" | ":" | "=>"
 

@@ -11,9 +11,8 @@ import { arkKind, registry } from "./compile/registry.js"
 import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
-import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
-import { builtins, node } from "./nodes/composite/type.js"
+import { builtins } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type {
     inferDefinition,
@@ -37,24 +36,31 @@ import { bindThis } from "./scope.js"
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.
-    <def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
+    <const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
 
-    <def>(_: "keyof", def: validateTypeRoot<def, $>): Type<
+    // For prefix operators ("keyof", "instanceof", "==="), storing the token
+    // associated with the overload as a generic constraint helps TS
+    // disambiguate signatures and avoids breaking autocompletion within object
+    // definitions
+    <token extends "keyof", def>(_: token, def: validateTypeRoot<def, $>): Type<
         keyof inferTypeRoot<def, $>,
         $
     >
 
-    <constructors extends NonEmptyList<AbstractableConstructor>>(
-        _: "instanceof",
+    <
+        token extends "instanceof",
+        const constructors extends NonEmptyList<AbstractableConstructor>
+    >(
+        _: token,
         ...oneOf: constructors
     ): Type<InstanceType<constructors[number]>, $>
 
-    <const values extends NonEmptyList>(_: "===", ...oneOf: values): Type<
-        values[number],
-        $
-    >
+    <token extends "===", const values extends NonEmptyList>(
+        _: token,
+        ...oneOf: values
+    ): Type<values[number], $>
 
-    // TODO: ensure consistent `this` usage
+    // // TODO: ensure consistent `this` usage
     <def, narrow extends Narrow<extractIn<inferTypeRoot<def, $>>>>(
         def: validateTypeRoot<def, $>,
         _: ":",
@@ -107,10 +113,10 @@ export type DeclarationParser<$> = <preinferred>() => {
 }
 
 export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
-    const parser: TypeParser<$> = (...args: unknown[]) => {
+    const parser = (...args: unknown[]): Type | Generic => {
         if (args.length === 1) {
             // treat as a simple definition
-            return new Type(args[0], scope) as never
+            return new Type(args[0], scope)
         }
         if (
             args.length === 2 &&
@@ -124,30 +130,14 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
             const def = args[1]
             return validateUninstantiatedGeneric(
                 generic(params, def, scope) as never
-            ) as never
-        }
-        // special tuple cases for "===" and "instanceof" to allow branching
-        if (args[0] === "===") {
-            return new Type(node.literal(...args.slice(1)), scope) as never
-        }
-        if (args[0] === "instanceof") {
-            return new Type(
-                node(
-                    ...args.slice(1).map(
-                        (ctor): PredicateInput => ({
-                            basis: ctor as AbstractableConstructor
-                        })
-                    )
-                ),
-                scope
-            ) as never
+            )
         }
         // otherwise, treat as a tuple expression. technically, this also allows
         // non-expression tuple definitions to be parsed, but it's not a supported
         // part of the API as specified by the associated types
-        return new Type(args, scope) as never
+        return new Type(args, scope)
     }
-    return parser
+    return parser as never
 }
 
 export type DefinitionParser<$> = <def>(

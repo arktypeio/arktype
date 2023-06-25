@@ -1,6 +1,7 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { node, type } from "../../src/main.js"
 import { writeInvalidConstructorMessage } from "../../src/parse/tuple.js"
+import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 
@@ -9,7 +10,7 @@ suite("instanceof", () => {
         test("base", () => {
             const t = type(["instanceof", Error])
             attest(t.infer).typed as Error
-            // attest(t.node).equals({ object: { instance: Error } })
+            attest(t.condition).equals(node({ basis: Error }).condition)
             const e = new Error()
             attest(t(e).data).equals(e)
             attest(t({}).problems?.summary).snap(
@@ -27,9 +28,9 @@ suite("instanceof", () => {
                 "Must be an instance of TypeError (was Error)"
             )
         })
-        test("builtins not evaluated", () => {
-            const t = type(["instanceof", Date])
-            attest(t.infer).types.toString("Date")
+        test("multiple branches", () => {
+            const t = type(["instanceof", Date, Array])
+            attest(t.infer).typed as Date | unknown[]
         })
         test("non-constructor", () => {
             // @ts-expect-error
@@ -38,13 +39,18 @@ suite("instanceof", () => {
             )
         })
         test("user-defined class", () => {
-            class Ark {}
-            const ark = type(["instanceof", Ark])
-            attest(ark).typed as Type<Ark>
-            const a = new Ark()
+            class ArkClass {
+                isArk = true
+            }
+            const ark = type(["instanceof", ArkClass])
+            attest(ark).typed as Type<ArkClass, Ark>
+            // not expanded since there are no morphs
+            attest(ark.infer).types.toString("ArkClass")
+            attest(ark.inferIn).types.toString("ArkClass")
+            const a = new ArkClass()
             attest(ark(a).data).equals(a)
             attest(ark({}).problems?.summary).snap(
-                "Must be an instance of Ark (was Object)"
+                "Must be an instance of ArkClass (was Object)"
             )
         })
     })

@@ -1,6 +1,7 @@
 import type {
     AbstractableConstructor,
     BuiltinObjectKind,
+    conform,
     Domain,
     evaluate,
     isAny,
@@ -14,13 +15,13 @@ import {
     throwParseError
 } from "../../dev/utils/src/main.js"
 import type { CheckResult, TraversalState } from "../compile/traverse.js"
-import type { Problem } from "../main.js"
+import { type Problem } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
 import type { NodeEntry } from "../nodes/composite/props.js"
 import { propsNode } from "../nodes/composite/props.js"
 import type { TypeNode } from "../nodes/composite/type.js"
-import { builtins, typeNode } from "../nodes/composite/type.js"
+import { builtins, node, typeNode } from "../nodes/composite/type.js"
 import { arrayClassNode } from "../nodes/primitive/basis/class.js"
 import type { ParseContext } from "../scope.js"
 import type { extractIn, extractOut } from "../type.js"
@@ -114,7 +115,10 @@ export const maybeParseTupleExpression = (
     }
 }
 
-type InfixExpression = [unknown, InfixOperator, ...unknown[]]
+// It is *extremely* important we use readonly any time we check a tuple against
+// something like this. Not doing so will always cause the check to fail, since
+// def is declared as a const parameter.
+type InfixExpression = readonly [unknown, InfixOperator, ...unknown[]]
 
 export type validateTuple<
     def extends List,
@@ -129,7 +133,7 @@ export type validateTuple<
     : def extends
           | readonly ["", ...unknown[]]
           | readonly [unknown, "", ...unknown[]]
-    ? [
+    ? readonly [
           def[0] extends ""
               ? BaseCompletions<$, args, IndexZeroOperator>
               : def[0],
@@ -144,7 +148,7 @@ export type validateTupleLiteral<
     $,
     args,
     result extends unknown[] = []
-> = def extends [infer head, ...infer tail]
+> = def extends readonly [infer head, ...infer tail]
     ? validateTupleLiteral<
           tail,
           $,
@@ -208,7 +212,7 @@ type inferTupleLiteral<
     $,
     args,
     result extends unknown[] = []
-> = def extends [infer head, ...infer tail]
+> = def extends readonly [infer head, ...infer tail]
     ? inferDefinition<
           head extends variadicExpression<infer operand> ? operand : head,
           $,
@@ -229,7 +233,10 @@ type variadicExpression<operandDef = unknown> =
 type variadicStringExpression<operandDef extends string = string> =
     `...${operandDef}`
 
-type variadicTupleExpression<operandDef = unknown> = ["...", operandDef]
+type variadicTupleExpression<operandDef = unknown> = readonly [
+    "...",
+    operandDef
+]
 
 export type inferTuple<def extends List, $, args> = def extends TupleExpression
     ? inferTupleExpression<def, $, args>
@@ -252,12 +259,13 @@ export type inferTupleExpression<
     ? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
     : def[1] extends "=>"
     ? parseMorph<def[0], def[2], $, args>
-    : def[0] extends "==="
-    ? def[1]
-    : def[0] extends "instanceof"
-    ? def[1] extends AbstractableConstructor<infer t>
-        ? t
-        : never
+    : def extends readonly ["===", ...infer values]
+    ? values[number]
+    : def extends readonly [
+          "instanceof",
+          ...infer constructors extends AbstractableConstructor[]
+      ]
+    ? InstanceType<constructors[number]>
     : def[0] extends "keyof"
     ? inferKeyOfExpression<def[1], $, args>
     : never
@@ -267,31 +275,30 @@ export type validatePrefixExpression<
     $,
     args
 > = def["length"] extends 1
-    ? [writeMissingRightOperandMessage<def[0]>]
-    : [
-          def[0],
-          def[0] extends "==="
-              ? def[1]
-              : def[0] extends "instanceof"
-              ? AbstractableConstructor
-              : def[0] extends "keyof"
-              ? validateDefinition<def[1], $, args>
-              : never
-      ]
+    ? readonly [writeMissingRightOperandMessage<def[0]>]
+    : def[0] extends "keyof"
+    ? readonly [def[0], validateDefinition<def[1], $, args>]
+    : def[0] extends "==="
+    ? readonly [def[0], ...unknown[]]
+    : def[0] extends "instanceof"
+    ? readonly [def[0], ...AbstractableConstructor[]]
+    : never
 
 export type validatePostfixExpression<
     def extends PostfixExpression,
     $,
     args
-> = [validateDefinition<def[0], $, args>, "[]"]
+    // conform here is needed to preserve completions for shallow tuple
+    // expressions at index 1 after TS 5.1
+> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
 
 export type validateInfixExpression<
     def extends InfixExpression,
     $,
     args
 > = def["length"] extends 2
-    ? [def[0], writeMissingRightOperandMessage<def[1]>]
-    : [
+    ? readonly [def[0], writeMissingRightOperandMessage<def[1]>]
+    : readonly [
           validateDefinition<def[0], $, args>,
           def[1],
           def[1] extends "|"
@@ -449,11 +456,21 @@ const prefixParsers: {
                 )
             )
         }
-        return typeNode({
-            basis: def[1] as AbstractableConstructor
-        })
+        return typeNode(
+            def
+                .slice(1)
+                .map((ctor) =>
+                    objectKindOf(ctor) === "Function"
+                        ? { basis: ctor as AbstractableConstructor }
+                        : throwParseError(
+                              writeInvalidConstructorMessage(
+                                  objectKindOf(ctor) ?? domainOf(def[1])
+                              )
+                          )
+                )
+        )
     },
-    "===": (def) => typeNode({ basis: ["===", def[1]] })
+    "===": (def) => node.literal(...def.slice(1))
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
