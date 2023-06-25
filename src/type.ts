@@ -42,10 +42,10 @@ export type TypeParser<$> = {
     // associated with the overload as a generic constraint helps TS
     // disambiguate signatures and avoids breaking autocompletion within object
     // definitions
-    <token extends "keyof", def>(_: token, def: validateTypeRoot<def, $>): Type<
-        keyof inferTypeRoot<def, $>,
-        $
-    >
+    <token extends "keyof", const def>(
+        _: token,
+        def: validateTypeRoot<def, $>
+    ): Type<keyof inferTypeRoot<def, $>, $>
 
     <
         token extends "instanceof",
@@ -61,13 +61,13 @@ export type TypeParser<$> = {
     ): Type<values[number], $>
 
     // // TODO: ensure consistent `this` usage
-    <def, narrow extends Narrow<extractIn<inferTypeRoot<def, $>>>>(
+    <const def, narrow extends Narrow<extractIn<inferTypeRoot<def, $>>>>(
         def: validateTypeRoot<def, $>,
         _: ":",
         narrow: narrow
     ): Type<inferNarrow<inferTypeRoot<def, $>, narrow>, $>
 
-    <def, morph extends Morph<extractOut<inferTypeRoot<def, $>>>>(
+    <const def, morph extends Morph<extractOut<inferTypeRoot<def, $>>>>(
         def: validateTypeRoot<def, $>,
         _: "=>",
         morph: morph
@@ -79,22 +79,24 @@ export type TypeParser<$> = {
         $
     >
 
-    <l, r>(l: validateTypeRoot<l, $>, _: "&", r: validateTypeRoot<r, $>): Type<
-        inferIntersection<inferTypeRoot<l, $>, inferTypeRoot<r, $>>,
-        $
-    >
+    <const l, const r>(
+        l: validateTypeRoot<l, $>,
+        _: "&",
+        r: validateTypeRoot<r, $>
+    ): Type<inferIntersection<inferTypeRoot<l, $>, inferTypeRoot<r, $>>, $>
 
-    <l, r>(l: validateTypeRoot<l, $>, _: "|", r: validateTypeRoot<r, $>): Type<
-        inferTypeRoot<l, $> | inferTypeRoot<r, $>,
-        $
-    >
+    <const l, const r>(
+        l: validateTypeRoot<l, $>,
+        _: "|",
+        r: validateTypeRoot<r, $>
+    ): Type<inferTypeRoot<l, $> | inferTypeRoot<r, $>, $>
 
-    <def>(def: validateTypeRoot<def, $>, _: "[]"): Type<
+    <const def>(def: validateTypeRoot<def, $>, _: "[]"): Type<
         inferTypeRoot<def, $>[],
         $
     >
 
-    <params extends string, def>(
+    <params extends string, const def>(
         params: `<${validateParameterString<params>}>`,
         def: validateDefinition<
             def,
@@ -107,7 +109,7 @@ export type TypeParser<$> = {
 }
 
 export type DeclarationParser<$> = <preinferred>() => {
-    type: <def>(
+    type: <const def>(
         def: validateDeclared<preinferred, def, $, bindThis<def>>
     ) => Type<preinferred, $>
 }
@@ -140,7 +142,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
     return parser as never
 }
 
-export type DefinitionParser<$> = <def>(
+export type DefinitionParser<$> = <const def>(
     def: validateDefinition<def, $, bindThis<def>>
 ) => def
 

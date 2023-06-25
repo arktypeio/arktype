@@ -51,7 +51,9 @@ import {
 } from "./type.js"
 
 export type ScopeParser<parent, ambient> = {
-    <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
+    <const aliases>(
+        aliases: validateAliases<aliases, parent & ambient>
+    ): Scope<{
         exports: inferBootstrapped<{
             exports: bootstrapExports<aliases>
             locals: bootstrapLocals<aliases> & parent
