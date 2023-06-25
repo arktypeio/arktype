@@ -188,7 +188,8 @@ export type TypeSet<r extends Resolutions = any> = {
         ? Type<never, $<r>>
         : isAny<r["exports"][k]> extends true
         ? Type<any, $<r>>
-        : r["exports"][k] extends Scope<infer subresolutions>
+        : // TODO: possible to infer TypeSet instead here? Would make it more intuitive to use export consitently
+        r["exports"][k] extends Scope<infer subresolutions>
         ? TypeSet<subresolutions>
         : r["exports"][k] extends GenericProps
         ? r["exports"][k]
