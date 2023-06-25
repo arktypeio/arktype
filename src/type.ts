@@ -109,7 +109,8 @@ export type TypeParser<$> = {
 }
 
 export type DeclarationParser<$> = <preinferred>() => {
-    type: <const def>(
+    // for some reason, making this a const parameter breaks preinferred validation
+    type: <def>(
         def: validateDeclared<preinferred, def, $, bindThis<def>>
     ) => Type<preinferred, $>
 }

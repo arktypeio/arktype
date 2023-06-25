@@ -44,7 +44,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 
 const objectBasisNode = domainNode("object")
 
-export type inferObjectLiteral<def extends Dict, $, args> = evaluate<
+export type inferObjectLiteral<def extends object, $, args> = evaluate<
     {
         // since def is a const parameter, we remove the readonly modifier here
         // support for builtin readonly tracked here:

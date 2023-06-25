@@ -66,11 +66,11 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
     ? t
     : def extends string
     ? inferString<def, $, args>
-    : def extends List
+    : def extends readonly unknown[]
     ? inferTuple<def, $, args>
     : def extends RegExp
     ? string
-    : def extends Dict
+    : def extends object
     ? inferObjectLiteral<def, $, args>
     : never
 
@@ -82,7 +82,7 @@ export type validateDefinition<def, $, args> = null extends undefined
     ? validateString<def, $, args> extends error<infer message>
         ? message
         : def
-    : def extends List
+    : def extends readonly unknown[]
     ? validateTuple<def, $, args>
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
