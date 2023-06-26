@@ -125,11 +125,16 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             if (basis instanceof Disjoint) {
                 return basis
             }
-            if (l.value && !r.allows(l.value.rule)) {
-                return Disjoint.from("assignability", r, l.value)
+            // TODO: keep morphs for exact values
+            if (l.value) {
+                return r.allows(l.value.rule)
+                    ? l
+                    : Disjoint.from("assignability", r, l.value)
             }
-            if (r.value && !l.allows(r.value.rule)) {
-                return Disjoint.from("assignability", l, r.value)
+            if (r.value) {
+                return l.allows(r.value.rule)
+                    ? r
+                    : Disjoint.from("assignability", l, r.value)
             }
             const rules: PredicateChildren = basis ? [basis] : []
             for (const kind of constraintKindNames) {
@@ -167,7 +172,9 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             base.rule.length === 0
                 ? "unknown"
                 : constraints.length
-                ? constraints.map((rule) => rule.toString()).join(" and ")
+                ? `(${constraints
+                      .map((rule) => rule.toString())
+                      .join(" and ")})`
                 : `${basis}`
         return {
             description,

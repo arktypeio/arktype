@@ -6,7 +6,7 @@ import {
 } from "../../dev/utils/src/main.js"
 import type { Node } from "../nodes/kinds.js"
 import type { Generic } from "../type.js"
-import { isValidVariableName } from "./state.js"
+import { isDotAccessible } from "./state.js"
 import type { TraversalState } from "./traverse.js"
 
 type RegisteredInternalkey = "state"
@@ -66,11 +66,11 @@ class Registry {
 const baseNameFor = (value: object | symbol) => {
     switch (typeof value) {
         case "function":
-            return isValidVariableName(value.name)
+            return isDotAccessible(value.name)
                 ? value.name
                 : "anonymousFunction"
         case "symbol":
-            return value.description && isValidVariableName(value.description)
+            return value.description && isDotAccessible(value.description)
                 ? value.description
                 : "anonymousSymbol"
         default:

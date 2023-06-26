@@ -121,9 +121,6 @@ export const compileSerializedValue = (value: unknown) => {
         : serializePrimitive(value as SerializablePrimitive)
 }
 
-export const isValidVariableName = (name: string) =>
-    isDotAccessible(name) && !(name in jsReservedKeywords)
-
 export const isDotAccessible = (name: string) =>
     /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
 
@@ -131,56 +128,3 @@ export const compilePropAccess = (name: string, optional = false) =>
     isDotAccessible(name)
         ? `${optional ? "?" : ""}.${name}`
         : `${optional ? "?." : ""}[${JSON.stringify(name)}]`
-
-// From https://262.ecma-international.org/11.0/#sec-keywords
-const jsReservedKeywords = Object.freeze({
-    await: true,
-    break: true,
-    case: true,
-    catch: true,
-    class: true,
-    const: true,
-    continue: true,
-    debugger: true,
-    default: true,
-    delete: true,
-    do: true,
-    else: true,
-    enum: true,
-    export: true,
-    extends: true,
-    false: true,
-    finally: true,
-    for: true,
-    function: true,
-    if: true,
-    import: true,
-    ininstanceof: true,
-    new: true,
-    null: true,
-    return: true,
-    super: true,
-    switch: true,
-    this: true,
-    throw: true,
-    true: true,
-    try: true,
-    typeof: true,
-    var: true,
-    void: true,
-    while: true,
-    with: true,
-    yield: true,
-    // Reserved in strict mode
-    implements: true,
-    interface: true,
-    package: true,
-    private: true,
-    protected: true,
-    public: true,
-    // Restricted in strict mode
-    arguments: true,
-    eval: true,
-    // Not reserved but shouldn't be used
-    undefined: true
-} as const)

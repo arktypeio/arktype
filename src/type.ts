@@ -272,6 +272,7 @@ export const generic = (
             parameters,
             definition,
             scope
+            // $ is only needed at compile-time
         } satisfies Omit<GenericProps, "$">
     ) as unknown as Generic
 }
