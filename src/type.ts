@@ -132,10 +132,15 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseTypeRoot(definition, scope) as TypeNode<t>
+        // TODO: only include extras that are needed by compilation
         super(
             InputParameterName,
             `const state = new ${registry().reference("state")}();
+        const morphs = [];
         ${root.compile(new CompilationState("traverse"))}
+        for(let i = 0; i < morphs.length; i++) {
+            morphs[i]()
+        }
         return state.finalize(${InputParameterName});`
         )
         this.root = root

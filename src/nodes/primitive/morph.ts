@@ -13,13 +13,18 @@ export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
         // Avoid alphabetical sorting since morphs are non-commutative,
         // i.e. a=>b and b=>a are distinct and valid
         parse: listFrom,
-        compile: (rule, s) =>
-            rule
-                .map((morph) => {
-                    const name = registry().register(morph)
-                    return `${s.data} = ${name}(${s.data})`
-                })
-                .join("\n"),
+        compile: (rule, s) => {
+            const compiled = rule.map((morph) => {
+                const reference = registry().register(morph)
+                return `${s.data} = ${reference}(${s.data})`
+            })
+            return s.kind === "allows"
+                ? // we don't run morphs on allows checks so for now just add this as a comment
+                  `/**${compiled.join("")}**/`
+                : `morphs.push(() => {
+                ${compiled}
+            })`
+        },
         intersect: (l, r): MorphNode =>
             morphNode(intersectUniqueLists(l.rule, r.rule))
     },

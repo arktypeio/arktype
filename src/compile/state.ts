@@ -16,7 +16,7 @@ export class CompilationState {
     bases: BasisNode[] = []
     discriminants: Discriminant[] = []
 
-    constructor(private kind: "allows" | "traverse") {}
+    constructor(public readonly kind: "allows" | "traverse") {}
 
     get data() {
         let result = InputParameterName

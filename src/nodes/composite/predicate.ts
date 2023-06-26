@@ -125,19 +125,25 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             if (basis instanceof Disjoint) {
                 return basis
             }
-            // TODO: keep morphs for exact values
-            if (l.value) {
-                return r.allows(l.value.rule)
-                    ? l
-                    : Disjoint.from("assignability", r, l.value)
-            }
-            if (r.value) {
-                return l.allows(r.value.rule)
-                    ? r
-                    : Disjoint.from("assignability", l, r.value)
+            // check l.basis instead of l.value since l.value will
+            // only be set if the value is "pure", i.e. has no morphs
+            if (l.basis?.hasKind("value")) {
+                if (!r.allows(l.basis.rule)) {
+                    return Disjoint.from("assignability", r, l.basis)
+                }
+            } else if (r.basis?.hasKind("value")) {
+                if (!l.allows(r.basis.rule)) {
+                    return Disjoint.from("assignability", l, r.basis)
+                }
             }
             const rules: PredicateChildren = basis ? [basis] : []
-            for (const kind of constraintKindNames) {
+            // if one of the conditions is value, we've already checked
+            // if it's allowed by the opposite predicate, so the only
+            // constraint we have to worry about is morphs.
+            const intersectedKinds = basis?.hasKind("value")
+                ? (["morph"] as const)
+                : constraintKindNames
+            for (const kind of intersectedKinds) {
                 const lNode = l.getConstraint(kind)
                 const rNode = r.getConstraint(kind)
                 if (lNode) {
