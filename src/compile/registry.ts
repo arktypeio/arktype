@@ -6,7 +6,7 @@ import {
 } from "../../dev/utils/src/main.js"
 import type { Node } from "../nodes/kinds.js"
 import type { Generic } from "../type.js"
-import { compilePropAccess } from "./state.js"
+import { isValidVariableName } from "./state.js"
 import type { TraversalState } from "./traverse.js"
 
 type RegisteredInternalkey = "state"
@@ -27,6 +27,8 @@ export const hasArkKind = <kind extends ArkKind>(
 export type InternalId = "problems" | "result"
 
 export type PossiblyInternalObject = { $arkId?: InternalId } | undefined | null
+
+export const registry = () => new Registry()
 
 class Registry {
     [k: string]: unknown
@@ -58,17 +60,19 @@ class Registry {
     }
 
     reference = <key extends autocomplete<RegisteredInternalkey>>(key: key) =>
-        `globalThis.$ark${compilePropAccess(key)}` as const
+        `globalThis.$ark.${key}` as const
 }
-
-export const registry = () => new Registry()
 
 const baseNameFor = (value: object | symbol) => {
     switch (typeof value) {
         case "function":
-            return value.name
+            return isValidVariableName(value.name)
+                ? value.name
+                : "anonymousFunction"
         case "symbol":
-            return value.description ?? "symbol"
+            return value.description && isValidVariableName(value.description)
+                ? value.description
+                : "anonymousSymbol"
         default:
             const objectKind = objectKindOf(value)
             if (!objectKind) {
@@ -78,6 +82,7 @@ const baseNameFor = (value: object | symbol) => {
                     )}`
                 )
             }
-            return objectKind.toLowerCase()
+            // convert to camelCase
+            return objectKind[1].toLowerCase() + objectKind.slice(1)
     }
 }
