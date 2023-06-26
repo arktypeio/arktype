@@ -26,7 +26,7 @@ export type KeyRule = NamedKeyRule | TypeNode
 
 export type NodeEntry = NamedPropRule | IndexedPropRule
 
-export type PropsRule = NodeEntry[]
+export type PropsRule = readonly NodeEntry[]
 
 export interface PropsNode extends BaseNode<NodeEntry[], { keyed: true }> {
     named: NamedPropRule[]
@@ -244,7 +244,7 @@ const keyNameToString = (key: KeyRule) =>
 
 export type PropsInputTuple<
     named extends NamedPropsInput = NamedPropsInput,
-    indexed extends IndexedPropInput[] = IndexedPropInput[]
+    indexed extends readonly IndexedPropInput[] = readonly IndexedPropInput[]
 > = readonly [named: named, ...indexed: indexed]
 
 export type NamedPropsInput = Dict<string, NamedPropInput>

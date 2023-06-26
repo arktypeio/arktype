@@ -48,9 +48,14 @@ export type VariadicIndexMatcherSource = ReturnType<
     typeof excludedIndicesSource
 >
 
+export type VariadicIndexMatcherLiteral = `/${VariadicIndexMatcherSource}/`
+
 const nonVariadicIndexMatcherSource = `^${arrayIndexSourceSuffix}` as const
 
 export type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
+
+export type NonVariadicIndexMatcherLiteral =
+    `/${NonVariadicIndexMatcherSource}/`
 
 export const arrayIndexMatcherSource = <index extends number>(
     firstVariadic: index

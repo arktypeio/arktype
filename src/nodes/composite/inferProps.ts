@@ -6,7 +6,9 @@ import type {
 } from "../../../dev/utils/src/main.js"
 import type {
     IndexedPropInput,
+    NonVariadicIndexMatcherLiteral,
     NonVariadicIndexMatcherSource,
+    VariadicIndexMatcherLiteral,
     VariadicIndexMatcherSource
 } from "./indexed.js"
 import type { PropValueInput } from "./named.js"
@@ -21,20 +23,20 @@ export type inferPropsInput<input extends PropsInput> =
         : never
 
 type inferIndexed<
-    indexed extends IndexedPropInput[],
+    indexed extends readonly IndexedPropInput[],
     result = unknown
-> = indexed extends [
+> = indexed extends readonly [
     infer entry extends IndexedPropInput,
     ...infer tail extends IndexedPropInput[]
 ]
     ? inferIndexed<
           tail,
-          entry["key"] extends { readonly regex: VariadicIndexMatcherSource }
+          entry["key"] extends { readonly regex: VariadicIndexMatcherLiteral }
               ? result extends List
                   ? [...result, ...inferTypeInput<entry["value"]>[]]
                   : never
               : entry["key"] extends {
-                    readonly regex: NonVariadicIndexMatcherSource
+                    readonly regex: NonVariadicIndexMatcherLiteral
                 }
               ? inferTypeInput<entry["value"]>[]
               : Record<
@@ -46,10 +48,10 @@ type inferIndexed<
 
 type inferNamedProps<
     named extends NamedPropsInput,
-    indexed extends IndexedPropInput[]
+    indexed extends readonly IndexedPropInput[]
 > = [named, indexed[0]["key"]] extends
     | [TupleLengthProps, unknown]
-    | [unknown, { readonly regex: VariadicIndexMatcherSource }]
+    | [unknown, { readonly regex: VariadicIndexMatcherLiteral }]
     ? inferNonVariadicTupleProps<named> &
           inferObjectLiteralProps<
               Omit<named, "length" | NumberLiteral | number>
@@ -74,7 +76,7 @@ type inferPropValue<value extends PropValueInput> = value extends Thunk<
 
 type inferResolvedPropValue<value> = value extends TypeNode<infer t>
     ? t
-    : inferTypeInput<value & TypeInput>
+    : inferTypeInput<Extract<value, TypeInput>>
 
 type stringifiedNumericKeyOf<t> = `${Extract<keyof t, number | NumberLiteral>}`
 

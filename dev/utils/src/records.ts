@@ -37,7 +37,7 @@ export type mutable<o> = {
 
 export type entryOf<o> = {
     [k in keyof o]-?: [k, o[k] & ({} | null)]
-}[o extends List ? keyof o & number : keyof o] &
+}[o extends readonly unknown[] ? keyof o & number : keyof o] &
     unknown
 
 export type entriesOf<o extends object> = evaluate<entryOf<o>[]>

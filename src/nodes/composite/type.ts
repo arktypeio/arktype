@@ -1,6 +1,7 @@
 import type {
     conform,
     exact,
+    List,
     Literalable,
     Thunk
 } from "../../../dev/utils/src/main.js"
@@ -392,7 +393,7 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
 }
 
 export type TypeNodeParser = {
-    <branches extends PredicateInput[]>(
+    <const branches extends PredicateInput[]>(
         ...branches: {
             [i in keyof branches]: conform<
                 branches[i],
@@ -407,14 +408,14 @@ export type TypeNodeParser = {
 }
 
 export const node: TypeNodeParser = Object.assign(
-    (...branches: PredicateInput[]) => typeNode(branches),
+    (...branches: readonly PredicateInput[]) => typeNode(branches) as never,
     {
-        literal: (...branches: Literalable[]) =>
+        literal: (...branches: readonly unknown[]) =>
             typeNode(
                 branches.map((literal) => predicateNode([valueNode(literal)]))
-            )
+            ) as never
     }
-) as never
+)
 
 export const builtins = {
     never: cached(() => node()),
@@ -437,10 +438,10 @@ export type inferTypeInput<input extends TypeInput> =
         ? t
         : never
 
-export type TypeInput = PredicateInput | PredicateInput[]
+export type TypeInput = PredicateInput | readonly PredicateInput[]
 
 export type validatedTypeNodeInput<
-    input extends readonly PredicateInput[],
+    input extends List<PredicateInput>,
     bases extends BasisInput[]
 > = {
     [i in keyof input]: exact<input[i], PredicateInput<bases[i & keyof bases]>>

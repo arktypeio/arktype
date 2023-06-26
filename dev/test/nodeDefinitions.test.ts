@@ -191,7 +191,7 @@ suite("node definitions", () => {
                 narrow: (b: boolean) => b === true
             })
         ).throws(
-            "narrow constraint may only be applied to a non-literal type (was the value true)"
+            "narrow constraint may only be applied to a non-literal type (was true)"
         )
     })
 })

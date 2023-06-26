@@ -41,7 +41,7 @@ import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { Range } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
-import type { inferPropsInput } from "./infer.js"
+import type { inferPropsInput } from "./inferProps.js"
 import type { PropsInput } from "./props.js"
 import { builtins } from "./type.js"
 
