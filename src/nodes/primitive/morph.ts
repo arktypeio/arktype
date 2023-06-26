@@ -16,7 +16,7 @@ export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
         compile: (rule, s) =>
             rule
                 .map((morph) => {
-                    const name = registry().register("morph", morph.name, morph)
+                    const name = registry().register(morph)
                     return `${s.data} = ${name}(${s.data})`
                 })
                 .join("\n"),

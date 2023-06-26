@@ -2,7 +2,6 @@ import type {
     conform,
     exact,
     List,
-    Literalable,
     Thunk
 } from "../../../dev/utils/src/main.js"
 import { cached, hasKey, isArray } from "../../../dev/utils/src/main.js"

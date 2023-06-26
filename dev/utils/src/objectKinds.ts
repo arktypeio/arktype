@@ -129,7 +129,7 @@ export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
         value !== undefined
     ) {
         for (const k of Object.getOwnPropertyNames(value)) {
-            if (k !== "constructor" && !result.includes(k)) {
+            if (k !== "class" && !result.includes(k)) {
                 result.push(k)
             }
         }

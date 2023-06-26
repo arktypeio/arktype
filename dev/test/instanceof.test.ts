@@ -55,7 +55,7 @@ suite("instanceof", () => {
         })
     })
     suite("root expression", () => {
-        test("constructor", () => {
+        test("class", () => {
             const t = type("instanceof", Error)
             attest(t.infer).typed as Error
             attest(t.condition).equals(type(["instanceof", Error]).condition)

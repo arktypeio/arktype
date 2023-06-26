@@ -7,9 +7,7 @@ import type {
 import type {
     IndexedPropInput,
     NonVariadicIndexMatcherLiteral,
-    NonVariadicIndexMatcherSource,
-    VariadicIndexMatcherLiteral,
-    VariadicIndexMatcherSource
+    VariadicIndexMatcherLiteral
 } from "./indexed.js"
 import type { PropValueInput } from "./named.js"
 import type { NamedPropsInput, PropsInput, PropsInputTuple } from "./props.js"

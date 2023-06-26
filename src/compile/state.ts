@@ -1,5 +1,9 @@
 import type { SerializablePrimitive } from "../../dev/utils/src/main.js"
-import { hasDomain , isArray , serializePrimitive } from "../../dev/utils/src/main.js"
+import {
+    hasDomain,
+    isArray,
+    serializePrimitive
+} from "../../dev/utils/src/main.js"
 import type { Discriminant } from "../nodes/composite/discriminate.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
@@ -56,12 +60,9 @@ export class CompilationState {
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `state.addProblem("${code}", ${
-            // TODO: Fix
-            typeof rule === "function"
-                ? rule.name
-                : compileSerializedValue(rule)
-        }, ${this.data}, [${this.path.map((segment) =>
+        return `state.addProblem("${code}", ${compileSerializedValue(rule)}, ${
+            this.data
+        }, [${this.path.map((segment) =>
             // if the segment is a variable reference, don't quote it
             typeof segment === "string" ? JSON.stringify(segment) : segment[0]
         )}])` as const
@@ -116,7 +117,7 @@ type IndexVariableName = `${IndexVariablePrefix}${"" | number}`
 
 export const compileSerializedValue = (value: unknown) => {
     return hasDomain(value, "object") || typeof value === "symbol"
-        ? registry().register("value", typeof value, value)
+        ? registry().register(value)
         : serializePrimitive(value as SerializablePrimitive)
 }
 

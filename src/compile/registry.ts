@@ -1,6 +1,8 @@
-import type {
-    AbstractableConstructor,
-    autocomplete
+import {
+    type autocomplete,
+    domainOf,
+    objectKindOf,
+    throwInternalError
 } from "../../dev/utils/src/main.js"
 import type { Node } from "../nodes/kinds.js"
 import type { Generic } from "../type.js"
@@ -8,13 +10,6 @@ import { compilePropAccess } from "./state.js"
 import type { TraversalState } from "./traverse.js"
 
 type RegisteredInternalkey = "state"
-
-export type RegisteredKinds = {
-    morph: (...args: never[]) => unknown
-    narrow: (...args: never[]) => unknown
-    value: object | symbol
-    constructor: AbstractableConstructor
-}
 
 export type ArkKinds = {
     node: Node
@@ -52,18 +47,14 @@ class Registry {
         this[key] = value as never
     }
 
-    register<kind extends keyof RegisteredKinds>(
-        kind: kind,
-        baseName: string,
-        value: RegisteredKinds[kind]
-    ) {
-        let k = `${kind}${baseName}`
+    register(value: object | symbol) {
+        let variableName = baseNameFor(value)
         let suffix = 2
-        while (k in this && this[k] !== value) {
-            k = `${baseName}${suffix++}`
+        while (variableName in this && this[variableName] !== value) {
+            variableName = `${variableName}${suffix++}`
         }
-        this[k] = value
-        return this.reference(k)
+        this[variableName] = value
+        return this.reference(variableName)
     }
 
     reference = <key extends autocomplete<RegisteredInternalkey>>(key: key) =>
@@ -71,3 +62,22 @@ class Registry {
 }
 
 export const registry = () => new Registry()
+
+const baseNameFor = (value: object | symbol) => {
+    switch (typeof value) {
+        case "function":
+            return value.name
+        case "symbol":
+            return value.description ?? "symbol"
+        default:
+            const objectKind = objectKindOf(value)
+            if (!objectKind) {
+                return throwInternalError(
+                    `Unexpected attempt to register serializable value of type ${domainOf(
+                        value
+                    )}`
+                )
+            }
+            return objectKind.toLowerCase()
+    }
+}
