@@ -3,7 +3,6 @@ import type {
     BuiltinObjectKind,
     BuiltinObjects,
     conform,
-    NonEmptyList,
     Primitive
 } from "../dev/utils/src/main.js"
 import { CompiledFunction, transform } from "../dev/utils/src/main.js"
@@ -23,12 +22,15 @@ import { inferred } from "./parse/definition.js"
 import type { GenericParamsParseError } from "./parse/generic.js"
 import { parseGenericParams } from "./parse/generic.js"
 import type {
+    IndexOneOperator,
+    IndexZeroOperator,
     inferMorphOut,
     inferNarrow,
     Morph,
     MorphAst,
     Narrow,
-    Out
+    Out,
+    TupleInfixOperator
 } from "./parse/tuple.js"
 import type { Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
@@ -38,63 +40,29 @@ export type TypeParser<$> = {
     // valid definition or a string representing an error message.
     <const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
 
-    // For prefix operators ("keyof", "instanceof", "==="), storing the token
-    // associated with the overload as a generic constraint helps TS
-    // disambiguate signatures and avoids breaking autocompletion within object
-    // definitions
-    <token extends "keyof", const def>(
-        _: token,
-        def: validateTypeRoot<def, $>
-    ): Type<keyof inferTypeRoot<def, $>, $>
-
-    <
-        token extends "instanceof",
-        const constructors extends NonEmptyList<AbstractableConstructor>
-    >(
-        _: token,
-        ...oneOf: constructors
-    ): Type<InstanceType<constructors[number]>, $>
-
-    <token extends "===", const values extends NonEmptyList>(
-        _: token,
-        ...oneOf: values
-    ): Type<values[number], $>
-
-    // // TODO: ensure consistent `this` usage
-    <const def, narrow extends Narrow<extractIn<inferTypeRoot<def, $>>>>(
-        def: validateTypeRoot<def, $>,
-        _: ":",
-        narrow: narrow
-    ): Type<inferNarrow<inferTypeRoot<def, $>, narrow>, $>
-
-    <const def, morph extends Morph<extractOut<inferTypeRoot<def, $>>>>(
-        def: validateTypeRoot<def, $>,
-        _: "=>",
-        morph: morph
-    ): Type<
-        // TODO: Ensure consistent
-        (
-            In: extractIn<inferTypeRoot<def, $>>
-        ) => Out<inferMorphOut<ReturnType<morph>>>,
-        $
-    >
-
-    <const l, const r>(
-        l: validateTypeRoot<l, $>,
-        _: "&",
-        r: validateTypeRoot<r, $>
-    ): Type<inferIntersection<inferTypeRoot<l, $>, inferTypeRoot<r, $>>, $>
-
-    <const l, const r>(
-        l: validateTypeRoot<l, $>,
-        _: "|",
-        r: validateTypeRoot<r, $>
-    ): Type<inferTypeRoot<l, $> | inferTypeRoot<r, $>, $>
-
-    <const def>(def: validateTypeRoot<def, $>, _: "[]"): Type<
-        inferTypeRoot<def, $>[],
-        $
-    >
+    // Spread version of a tuple expression
+    <const zero, const one, const rest extends readonly unknown[]>(
+        _0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
+        _1: zero extends "keyof"
+            ? validateTypeRoot<one, $>
+            : zero extends "instanceof"
+            ? conform<one, AbstractableConstructor>
+            : zero extends "==="
+            ? conform<one, unknown>
+            : conform<one, IndexOneOperator>,
+        ..._2: zero extends "==="
+            ? rest
+            : zero extends "instanceof"
+            ? conform<rest, readonly AbstractableConstructor[]>
+            : one extends TupleInfixOperator
+            ? one extends ":"
+                ? [Narrow<extractIn<inferTypeRoot<zero, $>>>]
+                : one extends "=>"
+                ? // TODO: centralize
+                  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
+                : [validateTypeRoot<rest[0], $>]
+            : []
+    ): Type<inferTypeRoot<[zero, one, ...rest], $>, $>
 
     <params extends string, const def>(
         params: `<${validateParameterString<params>}>`,

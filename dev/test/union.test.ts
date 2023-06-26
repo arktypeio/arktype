@@ -34,33 +34,17 @@ suite("union", () => {
         attest(t.infer).typed as string
         attest(t.condition).is(type("string").condition)
     })
-    test("union of true and false reduces to boolean", () => {})
-    test("tuple expression", () => {
-        const t = type([{ a: "string" }, "|", { b: "boolean" }])
-        attest(t.infer).typed as { a: string } | { b: boolean }
-    })
-    test("chained", () => {
-        const t = type({ a: "string" }).or({ b: "boolean" })
-        attest(t.infer).typed as
-            | {
-                  a: string
-              }
-            | {
-                  b: boolean
-              }
-        // attest(t.node).snap({
-        //     object: [{ props: { a: "string" } }, { props: { b: "boolean" } }]
-        // })
+    test("union of true and false reduces to boolean", () => {
+        const t = type("true|false")
+        attest(t.infer).types.toString("boolean")
+        attest(t.condition).equals(type("boolean").condition)
     })
     test("nested tuple union", () => {
         const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
         attest(t.infer).typed as string | number | bigint | boolean
-        // attest(t.node).snap({
-        //     string: true,
-        //     number: true,
-        //     boolean: true,
-        //     bigint: true
-        // })
+        attest(t.condition).equals(
+            type("string|bigint|number|boolean").condition
+        )
     })
     test("length stress", () => {
         // as of TS 5.1, can handle a max of 46 branches before an inifinitely
@@ -71,7 +55,63 @@ suite("union", () => {
         const t = type(
             "0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45"
         )
-        attest(t.infer).types.toString.snap()
+        // prettier-ignore
+        attest(t.infer).typed as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45
+    })
+    suite("expressions", () => {
+        const expected = () =>
+            node(
+                {
+                    basis: "object",
+                    props: {
+                        a: {
+                            value: { basis: "string" }
+                        }
+                    }
+                },
+                {
+                    basis: "object",
+                    props: {
+                        b: {
+                            value: [
+                                { basis: ["===", true] },
+                                { basis: ["===", false] }
+                            ]
+                        }
+                    }
+                }
+            ).condition
+        test("tuple", () => {
+            const t = type([{ a: "string" }, "|", { b: "boolean" }])
+            attest(t.infer).typed as { a: string } | { b: boolean }
+            attest(t.condition).equals(expected())
+        })
+        test("root", () => {
+            const t = type({ a: "string" }, "|", { b: "boolean" })
+            attest(t.infer).typed as { a: string } | { b: boolean }
+            attest(t.condition).equals(expected())
+        })
+        test("chained", () => {
+            const t = type({ a: "string" }).or({ b: "boolean" })
+            attest(t.infer).typed as
+                | {
+                      a: string
+                  }
+                | {
+                      b: boolean
+                  }
+            attest(t.condition).equals(expected())
+        })
+        test("root autocompletions", () => {
+            // @ts-expect-error
+            attest(() => type({ a: "s" }, "|", { b: "boolean" })).types.errors(
+                `Type '"s"' is not assignable to type '"string" | "symbol" | "semver"'`
+            )
+            // @ts-expect-error
+            attest(() => type({ a: "string" }, "|", { b: "b" })).types.errors(
+                `Type '"b"' is not assignable to type '"bigint" | "boolean"'`
+            )
+        })
     })
     suite("errors", () => {
         test("bad reference", () => {
