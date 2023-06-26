@@ -3,7 +3,7 @@ import { scope, type } from "../../src/main.js"
 import type { TypeSet } from "../../src/scope.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
-import { lazily } from "./utils.js"
+import { lazily } from "../utils/src/main.js"
 
 suite("scope imports", () => {
     const threeSixtyNoScope = lazily(() =>

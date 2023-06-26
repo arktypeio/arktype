@@ -132,8 +132,8 @@ export const compilePropAccess = (name: string, optional = false) =>
         ? `${optional ? "?" : ""}.${name}`
         : `${optional ? "?." : ""}[${JSON.stringify(name)}]`
 
+// From https://262.ecma-international.org/11.0/#sec-keywords
 const jsReservedKeywords = Object.freeze({
-    // From https://262.ecma-international.org/11.0/#sec-keywords
     await: true,
     break: true,
     case: true,
@@ -171,6 +171,16 @@ const jsReservedKeywords = Object.freeze({
     while: true,
     with: true,
     yield: true,
+    // Reserved in strict mode
+    implements: true,
+    interface: true,
+    package: true,
+    private: true,
+    protected: true,
+    public: true,
+    // Restricted in strict mode
+    arguments: true,
+    eval: true,
     // Not reserved but shouldn't be used
     undefined: true
 } as const)

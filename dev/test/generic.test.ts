@@ -10,7 +10,7 @@ import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/u
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
 import { attest } from "../attest/main.js"
-import { lazily } from "./utils.js"
+import { lazily } from "../utils/src/main.js"
 
 suite("generics", () => {
     suite("standalone generic", () => {
