@@ -1,5 +1,5 @@
 import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
-import { CompiledFunction, deepFreeze } from "../../dev/utils/src/main.js"
+import { CompiledFunction } from "../../dev/utils/src/main.js"
 import { arkKind } from "../compile/registry.js"
 import { CompilationState, InputParameterName } from "../compile/state.js"
 import type { TypeNode } from "../main.js"
@@ -146,11 +146,9 @@ export const defineNodeKind = <
                 return result
             }
         }
-        const instance = deepFreeze(
-            Object.assign(addProps(base as node), base, {
-                toString: () => instance.description
-            })
-        ) as node
+        const instance = Object.assign(addProps(base as node), base, {
+            toString: () => instance.description
+        }) as node
         nodeCache[condition] = instance
         return instance
     }

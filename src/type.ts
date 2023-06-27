@@ -117,7 +117,6 @@ export type DefinitionParser<$> = <const def>(
 
 registry().registerInternal("state", TraversalState)
 
-// TODO:  require scope be passed to type?
 export class Type<t = unknown, $ = any> extends CompiledFunction<
     (data: unknown) => CheckResult<extractOut<t>>
 > {
@@ -132,7 +131,6 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseTypeRoot(definition, scope) as TypeNode<t>
-        // TODO: only include extras that are needed by compilation
         super(
             InputParameterName,
             `const state = new ${registry().reference("state")}();

@@ -1,3 +1,4 @@
+import { registry } from "../../../src/compile/registry.js"
 import { type } from "../../../src/main.js"
 import { bench } from "../../attest/main.js"
 
@@ -50,143 +51,219 @@ const arkType = type({
     }
 })
 
-// const checkSingle = ($arkRoot: any) => {
-//     if (
-//         !(
-//             (typeof $arkRoot === "object" && $arkRoot !== null) ||
-//             typeof $arkRoot === "function"
-//         )
-//     ) {
-//         return false
-//     }
-//     if ($arkRoot.boolean !== false && $arkRoot.boolean !== true) {
-//         return false
-//     }
-//     if (
-//         !(
-//             (typeof $arkRoot.deeplyNested === "object" &&
-//                 $arkRoot.deeplyNested !== null) ||
-//             typeof $arkRoot.deeplyNested === "function"
-//         )
-//     ) {
-//         return false
-//     }
-//     if (
-//         $arkRoot.deeplyNested.bool !== false &&
-//         $arkRoot.deeplyNested.bool !== true
-//     ) {
-//         return false
-//     }
-//     if (!(typeof $arkRoot.deeplyNested.foo === "string")) {
-//         return false
-//     }
-//     if (!(typeof $arkRoot.deeplyNested.num === "number")) {
-//         return false
-//     }
-//     if (!(typeof $arkRoot.longString === "string")) {
-//         return false
-//     }
-//     if (!(typeof $arkRoot.maxNumber === "number")) {
-//         return false
-//     }
-//     if (!(typeof $arkRoot.negNumber === "number")) {
-//         return false
-//     }
-//     if (!(typeof $arkRoot.number === "number")) {
-//         return false
-//     }
-//     if (!(typeof $arkRoot.string === "string")) {
-//         return false
-//     }
-//     return true
-// }
+const checkSingle = ($arkRoot: any) => {
+    if (
+        !(
+            (typeof $arkRoot === "object" && $arkRoot !== null) ||
+            typeof $arkRoot === "function"
+        )
+    ) {
+        return false
+    }
+    if ($arkRoot.boolean !== false && $arkRoot.boolean !== true) {
+        return false
+    }
+    if (
+        !(
+            (typeof $arkRoot.deeplyNested === "object" &&
+                $arkRoot.deeplyNested !== null) ||
+            typeof $arkRoot.deeplyNested === "function"
+        )
+    ) {
+        return false
+    }
+    if (
+        $arkRoot.deeplyNested.bool !== false &&
+        $arkRoot.deeplyNested.bool !== true
+    ) {
+        return false
+    }
+    if (!(typeof $arkRoot.deeplyNested.foo === "string")) {
+        return false
+    }
+    if (!(typeof $arkRoot.deeplyNested.num === "number")) {
+        return false
+    }
+    if (!(typeof $arkRoot.longString === "string")) {
+        return false
+    }
+    if (!(typeof $arkRoot.maxNumber === "number")) {
+        return false
+    }
+    if (!(typeof $arkRoot.negNumber === "number")) {
+        return false
+    }
+    if (!(typeof $arkRoot.number === "number")) {
+        return false
+    }
+    if (!(typeof $arkRoot.string === "string")) {
+        return false
+    }
+    return true
+}
 
-// const scope = new Function(
-//     "alias",
-//     `
-//     const $ =  {
-//         isString($arkRoot) {
-//             if (!(typeof $arkRoot === "string")) {
-//                 return false
-//             }
-//             return true
-//         },
-//         isNumber($arkRoot) {
-//             if (!(typeof $arkRoot === "number")) {
-//                 return false
-//             }
-//             return true
-//         },
-//         isBoolean($arkRoot) {
-//             if (
-//                 $arkRoot !== false &&
-//                 $arkRoot !== true
-//             ) {
-//                 return false
-//             }
-//             return true
-//         },
-//         isObject($arkRoot) {
-//             if (
-//                 !(
-//                     (typeof $arkRoot=== "object" &&
-//                         $arkRoot !== null) ||
-//                     typeof $arkRoot === "function"
-//                 )
-//             ) {
-//                 return false
-//             }
-//             return true
-//         },
-//         deep($arkRoot) {
-//             if(!$.isObject($arkRoot)) {
-//                 return false
-//             }
-//             if (
-//                 !($.isBoolean($arkRoot.bool))
-//             ) {
-//                 return false
-//             }
-//             if (!($.isString($arkRoot.foo))) {
-//                 return false
-//             }
-//             if (!($.isNumber($arkRoot.num))) {
-//                 return false
-//             }
-//             return true
-//         },
-//         foo($arkRoot) {
-//             if (
-//                 !$.isObject($arkRoot)
-//             ) {
-//                 return false
-//             }
-//             if ( !$.isBoolean($arkRoot.boolean)) {
-//                 return false
-//             }
-//             if (!($.isString($arkRoot.longString))) {
-//                 return false
-//             }
-//             if (!$.isNumber($arkRoot.maxNumber)) {
-//                 return false
-//             }
-//             if (!$.isNumber($arkRoot.negNumber)) {
-//                 return false
-//             }
-//             if (!$.isNumber($arkRoot.number)) {
-//                 return false
-//             }
-//             if (!($.isString($arkRoot.string))) {
-//                 return false
-//             }
-//             return $.deep($arkRoot.deeplyNested)
-//         }
-//     }
-//     return $[alias]
-// `
-// )
+const scope = new Function(
+    "alias",
+    `
+    const $ =  {
+        isString($arkRoot) {
+            if (!(typeof $arkRoot === "string")) {
+                return false
+            }
+            return true
+        },
+        isNumber($arkRoot) {
+            if (!(typeof $arkRoot === "number")) {
+                return false
+            }
+            return true
+        },
+        isBoolean($arkRoot) {
+            if (
+                $arkRoot !== false &&
+                $arkRoot !== true
+            ) {
+                return false
+            }
+            return true
+        },
+        isObject($arkRoot) {
+            if (
+                !(
+                    (typeof $arkRoot=== "object" &&
+                        $arkRoot !== null) ||
+                    typeof $arkRoot === "function"
+                )
+            ) {
+                return false
+            }
+            return true
+        },
+        deep($arkRoot) {
+            if(!$.isObject($arkRoot)) {
+                return false
+            }
+            if (
+                !($.isBoolean($arkRoot.bool))
+            ) {
+                return false
+            }
+            if (!($.isString($arkRoot.foo))) {
+                return false
+            }
+            if (!($.isNumber($arkRoot.num))) {
+                return false
+            }
+            return true
+        },
+        foo($arkRoot) {
+            if (
+                !$.isObject($arkRoot)
+            ) {
+                return false
+            }
+            if ( !$.isBoolean($arkRoot.boolean)) {
+                return false
+            }
+            if (!($.isString($arkRoot.longString))) {
+                return false
+            }
+            if (!$.isNumber($arkRoot.maxNumber)) {
+                return false
+            }
+            if (!$.isNumber($arkRoot.negNumber)) {
+                return false
+            }
+            if (!$.isNumber($arkRoot.number)) {
+                return false
+            }
+            if (!($.isString($arkRoot.string))) {
+                return false
+            }
+            return $.deep($arkRoot.deeplyNested)
+        }
+    }
+    return $[alias]`
+)
 
-// const checkScoped = scope("foo")
+const $ = {
+    isString: ($arkRoot: any) => {
+        if (!(typeof $arkRoot === "string")) {
+            return false
+        }
+        return true
+    },
+    isNumber: ($arkRoot: any) => {
+        if (!(typeof $arkRoot === "number")) {
+            return false
+        }
+        return true
+    },
+    isBoolean: ($arkRoot: any) => {
+        if ($arkRoot !== false && $arkRoot !== true) {
+            return false
+        }
+        return true
+    },
+    isObject: ($arkRoot: any) => {
+        if (
+            !(
+                (typeof $arkRoot === "object" && $arkRoot !== null) ||
+                typeof $arkRoot === "function"
+            )
+        ) {
+            return false
+        }
+        return true
+    },
+    deep: ($arkRoot: any) => {
+        if (!$.isObject($arkRoot)) {
+            return false
+        }
+        if (!$.isBoolean($arkRoot.bool)) {
+            return false
+        }
+        if (!$.isString($arkRoot.foo)) {
+            return false
+        }
+        if (!$.isNumber($arkRoot.num)) {
+            return false
+        }
+        return true
+    },
+    foo: ($arkRoot: any) => {
+        if (!$.isObject($arkRoot)) {
+            return false
+        }
+        if (!$.isBoolean($arkRoot.boolean)) {
+            return false
+        }
+        if (!$.isString($arkRoot.longString)) {
+            return false
+        }
+        if (!$.isNumber($arkRoot.maxNumber)) {
+            return false
+        }
+        if (!$.isNumber($arkRoot.negNumber)) {
+            return false
+        }
+        if (!$.isNumber($arkRoot.number)) {
+            return false
+        }
+        if (!$.isString($arkRoot.string)) {
+            return false
+        }
+        return $.deep($arkRoot.deeplyNested)
+    }
+}
+
+const reference = registry().register($)
+
+const externalScope = new Function("alias", `return ${reference}[alias]`)
+
+const checkScoped = scope("foo")
+
+const checkExternal = externalScope("foo")
 
 // console.log(checkScoped(validInput))
 
@@ -198,13 +275,19 @@ const arkType = type({
 //     for (let i = 0; i < 1000; i++) {
 //         checkSingle(dataArray[i])
 //     }
-// }).median([6.59, "us"])
+// }).median([7.57, "us"])
 
 // bench("scoped", () => {
 //     for (let i = 0; i < 1000; i++) {
 //         checkScoped(dataArray[i])
 //     }
-// }).median([5.55, "us"])
+// }).median([5.51, "us"])
+
+// bench("external scoped", () => {
+//     for (let i = 0; i < 1000; i++) {
+//         checkExternal(dataArray[i])
+//     }
+// }).median([5.41, "us"])
 
 // bench("single", () => {
 //     checkSingle(validInput)

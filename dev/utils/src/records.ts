@@ -107,18 +107,3 @@ export type requiredKeyOf<o> = {
 }[keyof o]
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
-
-export const deepFreeze = <value>(value: value): value => {
-    if (Object.isFrozen(value)) {
-        return value
-    }
-    // Object.isFrozen is always true for non-objects
-    const obj = Object.freeze(value as Dict)
-    for (const k in obj) {
-        if (!Object.getOwnPropertyDescriptor(obj, k)?.get) {
-            // avoid getters when recursing
-            deepFreeze(obj[k])
-        }
-    }
-    return value
-}

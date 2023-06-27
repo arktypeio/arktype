@@ -1,7 +1,6 @@
 // @ts-ignore
 import { format } from "prettier"
-import { arkKind } from "./src/compile/registry.js"
-import { node, scope, type } from "./src/main.js"
+import { scope } from "./src/main.js"
 
 const $ = scope({
     user: {

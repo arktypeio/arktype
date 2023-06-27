@@ -25,6 +25,7 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> =
         readonly path: string[]
         readonly kind: kind
         readonly cases: DiscriminatedCases<kind>
+        // TODO: add default here?
         readonly isPureRootLiteral: boolean
     }>
 
