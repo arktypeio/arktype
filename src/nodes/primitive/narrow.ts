@@ -5,16 +5,12 @@ import type { Narrow } from "../../parse/tuple.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export const thisNarrow = () => true
-
 export interface NarrowNode extends BaseNode<readonly Narrow[]> {}
 
 export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
     {
         kind: "narrow",
-        // Depending on type-guards, altering the order in which narrows run could
-        // lead to a non-typsafe access, so they are preserved.
-        // TODO:  Figure out how this needs to work with intersections
+        // TODO:  Preserve the relative order of narrows
         parse: listFrom,
         compile: (rule, s) =>
             rule
