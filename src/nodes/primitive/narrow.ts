@@ -23,6 +23,8 @@ export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
             narrowNode(intersectUniqueLists(l.rule, r.rule))
     },
     (base) => ({
-        description: `narrowed by ${base.rule.map((narrow) => narrow.name)}`
+        description: `valid according to ${base.rule
+            .map((narrow) => narrow.name)
+            .join(", ")}`
     })
 )

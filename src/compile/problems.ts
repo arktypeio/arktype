@@ -7,13 +7,13 @@ import type {
     Domain
 } from "../../dev/utils/src/main.js"
 import {
-    domainDescriptions,
     domainOf,
     getExactBuiltinConstructorName,
     objectKindDescriptions,
     Path,
     stringify
 } from "../../dev/utils/src/main.js"
+import { domainDescriptions } from "../nodes/primitive/basis/domain.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
 import type { Bound, SizedData } from "../nodes/primitive/range.js"
 import type { InternalId } from "./registry.js"

@@ -29,5 +29,7 @@ export const regexNode = defineNodeKind<
         intersect: (l, r): RegexNode =>
             regexNode(intersectUniqueLists(l.rule, r.rule))
     },
-    (base) => ({ description: base.rule.join(" and ") })
+    (base) => ({
+        description: `matched by ${base.rule.join(", ")}`
+    })
 )

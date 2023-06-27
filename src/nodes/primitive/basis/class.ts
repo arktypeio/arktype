@@ -3,6 +3,7 @@ import {
     cached,
     constructorExtends,
     getExactBuiltinConstructorName,
+    objectKindDescriptions,
     prototypeKeysOf
 } from "../../../../dev/utils/src/main.js"
 import { registry } from "../../../compile/registry.js"
@@ -32,6 +33,10 @@ export const classNode = defineNodeKind<ClassNode>(
     },
     (base) => {
         const literalKeys = prototypeKeysOf(base.rule.prototype)
+        const possibleObjectKind = getExactBuiltinConstructorName(base.rule)
+        const description = possibleObjectKind
+            ? objectKindDescriptions[possibleObjectKind]
+            : `an instance of ${base.rule.name}`
         return {
             domain: "object",
             literalKeys,
@@ -40,7 +45,7 @@ export const classNode = defineNodeKind<ClassNode>(
                 baseConstructors.some((ctor) =>
                     constructorExtends(base.rule, ctor)
                 ),
-            description: base.rule.name
+            description
         }
     }
 )

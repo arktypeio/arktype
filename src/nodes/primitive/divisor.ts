@@ -16,7 +16,10 @@ export const divisorNode = defineNodeKind<DivisorNode>(
                 )
             )
     },
-    (base) => ({ description: `a multiple of ${base.rule}` })
+    (base) => ({
+        description:
+            base.rule === 1 ? "an integer" : `a multiple of ${base.rule}`
+    })
 )
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
