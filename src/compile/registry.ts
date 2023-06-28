@@ -84,6 +84,6 @@ const baseNameFor = (value: object | symbol) => {
                 )
             }
             // convert to camelCase
-            return objectKind[1].toLowerCase() + objectKind.slice(1)
+            return objectKind[0].toLowerCase() + objectKind.slice(1)
     }
 }

@@ -20,9 +20,9 @@ suite("keyof", () => {
         const t = type("keyof bigint")
         attest(t.infer).typed as keyof bigint
         const expected = node.literal(
-            "toLocaleString" as const,
-            "toString" as const,
-            "valueOf" as const,
+            "toLocaleString",
+            "toString",
+            "valueOf",
             Symbol.toStringTag
         )
         attest(t.condition).is(expected.condition)

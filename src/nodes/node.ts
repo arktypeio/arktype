@@ -1,9 +1,8 @@
 import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
 import { CompiledFunction } from "../../dev/utils/src/main.js"
-import { arkKind } from "../compile/registry.js"
+import { arkKind, registry } from "../compile/registry.js"
 import { CompilationState, InputParameterName } from "../compile/state.js"
 import type { inferred } from "../parse/definition.js"
-import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
@@ -34,8 +33,6 @@ type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     ) => ReturnType<node["intersect"]>
 }
 
-export type NodeChildren = readonly BaseNode[] | readonly NodeEntry[]
-
 type NodeExtension<node extends BaseNode> = (
     base: basePropsOf<node>
 ) => extendedPropsOf<node>
@@ -54,6 +51,7 @@ interface PreconstructedBase<config extends NodeConfig> {
     readonly kind: NodeKind
     readonly rule: config["rule"]
     readonly condition: string
+    alias: string
     compile(state: CompilationState): string
     intersect(
         other: config["intersectsWith"] | this
@@ -105,6 +103,7 @@ export const defineNodeKind = <
         const base: PreconstructedBase<DefaultNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
+            alias: "uninitialized",
             hasKind: (kind) => kind === def.kind,
             isBasis: () => isBasis,
             condition,
@@ -132,7 +131,7 @@ export const defineNodeKind = <
                     `${intersectionKind}${other.condition}${condition}`
                 ] =
                     // also cache the result with other's condition as the key.
-                    // if it was a Disjoint, it has to be inverted so that l,r
+                    // if it was a Disjoint, it has to be inverted so that l, r
                     // still line up correctly
                     result instanceof Disjoint ? result.invert() : result
                 return result
@@ -141,6 +140,9 @@ export const defineNodeKind = <
         const instance = Object.assign(addProps(base as node), base, {
             toString: () => instance.description
         }) as node
+        if (def.kind === "type") {
+            instance.alias = registry().register(instance)
+        }
         nodeCache[condition] = instance
         return instance
     }
