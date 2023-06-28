@@ -2,6 +2,7 @@ import { suite, test } from "mocha"
 import type { Scope, TypeSet } from "../../src/main.js"
 import { scope, type } from "../../src/main.js"
 import {
+    writeMissingSubscopeAccessMessage,
     writeNonScopeDotMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
@@ -72,13 +73,12 @@ suite("subscopes", () => {
             ambient: Ark
         }>
     })
-    // test("no alias reference", () => {
-    //     // TODO: fix, broken because of TypeSet being cached, shouldnt' be treated as resolution
-    //     // @ts-expect-error
-    //     attest(() => $().type("sub")).throwsAndHasTypeError(
-    //         writeMissingSubscopeAccessMessage("sub")
-    //     )
-    // })
+    test("no alias reference", () => {
+        // @ts-expect-error
+        attest(() => $().type("sub")).throwsAndHasTypeError(
+            writeMissingSubscopeAccessMessage("sub")
+        )
+    })
     test("bad alias reference", () => {
         // @ts-expect-error
         attest(() => $().type("sub.marine")).throwsAndHasTypeError(

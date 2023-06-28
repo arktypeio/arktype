@@ -5,6 +5,7 @@ import {
     throwInternalError
 } from "../../dev/utils/src/main.js"
 import type { Node } from "../nodes/kinds.js"
+import type { TypeSet } from "../scope.js"
 import type { Generic } from "../type.js"
 import { isDotAccessible } from "./state.js"
 import type { TraversalState } from "./traverse.js"
@@ -14,8 +15,17 @@ type RegisteredInternalkey = "state"
 export type ArkKinds = {
     node: Node
     generic: Generic
+    typeset: TypeSet
 }
 export const arkKind = Symbol("ArkTypeInternalKind")
+
+export const addArkKind = <kind extends ArkKind>(
+    value: Omit<ArkKinds[kind], arkKind> & { [arkKind]?: kind },
+    kind: kind
+): ArkKinds[kind] =>
+    Object.defineProperty(value, arkKind, { enumerable: false }) as never
+
+export type arkKind = typeof arkKind
 
 export type ArkKind = keyof ArkKinds
 
@@ -23,10 +33,6 @@ export const hasArkKind = <kind extends ArkKind>(
     value: unknown,
     kind: kind
 ): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
-
-export type InternalId = "problems" | "result"
-
-export type PossiblyInternalObject = { $arkId?: InternalId } | undefined | null
 
 export const registry = () => new Registry()
 

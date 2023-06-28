@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // @ts-ignore
 import { format } from "prettier"
 import { scope } from "./src/main.js"

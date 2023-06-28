@@ -2,14 +2,13 @@ import { Path } from "../../dev/utils/src/main.js"
 import type { TypeConfig } from "../type.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
 import { Problems, problemsByCode } from "./problems.js"
-import type { PossiblyInternalObject } from "./registry.js"
 
 export class CheckResult<out = unknown, valid extends boolean = boolean> {
     declare data: valid extends true ? out : never
     declare problems: valid extends true ? never : Problems
 
     constructor(result: unknown) {
-        if ((result as PossiblyInternalObject)?.$arkId === "problems") {
+        if ((result as any)?.$arkId === "problems") {
             this.problems = result as never
         } else {
             this.data = result as never

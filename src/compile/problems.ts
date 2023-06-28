@@ -16,7 +16,6 @@ import {
 import { domainDescriptions } from "../nodes/primitive/basis/domain.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
 import type { Bound, SizedData } from "../nodes/primitive/range.js"
-import type { InternalId } from "./registry.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -65,7 +64,6 @@ export abstract class Problem<requirement = unknown, data = unknown> {
 }
 
 class ProblemsArray extends Array<Problem> {
-    private readonly $arkId: InternalId = "problems"
     byPath: Record<string, Problem> = {}
     count = 0
 
