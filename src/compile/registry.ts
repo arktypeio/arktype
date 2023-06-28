@@ -50,17 +50,18 @@ class Registry {
     }
 
     register(value: object | symbol) {
-        let variableName = baseNameFor(value)
+        const baseName = baseNameFor(value)
+        let variableName = baseName
         let suffix = 2
         while (variableName in this && this[variableName] !== value) {
-            variableName = `${variableName}${suffix++}`
+            variableName = `${baseName}${suffix++}`
         }
         this[variableName] = value
         return this.reference(variableName)
     }
 
     reference = <key extends autocomplete<RegisteredInternalkey>>(key: key) =>
-        `globalThis.$ark.${key}` as const
+        `$ark.${key}` as const
 }
 
 const baseNameFor = (value: object | symbol) => {
