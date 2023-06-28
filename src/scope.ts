@@ -69,25 +69,23 @@ export type ScopeParser<parent, ambient> = {
 }
 
 type validateAliases<aliases, $> = {
-    [k in keyof aliases]: parseScopeKey<k> extends infer result extends ParsedScopeKey
-        ? result["params"] extends []
-            ? aliases[k] extends Preparsed
-                ? aliases[k]
-                : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
-            : result["params"] extends GenericParamsParseError
-            ? // use the full nominal type here to avoid an overlap between the
-              // error message and a possible value for the property
-              result["params"][0]
-            : validateDefinition<
-                  aliases[k],
-                  $ & bootstrap<aliases>,
-                  {
-                      // once we support constraints on generic parameters, we'd use
-                      // the base type here: https://github.com/arktypeio/arktype/issues/796
-                      [param in result["params"][number]]: unknown
-                  }
-              >
-        : never
+    [k in keyof aliases]: parseScopeKey<k>["params"] extends []
+        ? aliases[k] extends Preparsed
+            ? aliases[k]
+            : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
+        : parseScopeKey<k>["params"] extends GenericParamsParseError
+        ? // use the full nominal type here to avoid an overlap between the
+          // error message and a possible value for the property
+          parseScopeKey<k>["params"][0]
+        : validateDefinition<
+              aliases[k],
+              $ & bootstrap<aliases>,
+              {
+                  // once we support constraints on generic parameters, we'd use
+                  // the base type here: https://github.com/arktypeio/arktype/issues/796
+                  [param in parseScopeKey<k>["params"][number]]: unknown
+              }
+          >
 }
 
 export type bindThis<def> = { this: Def<def> }

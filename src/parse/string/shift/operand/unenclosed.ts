@@ -171,7 +171,7 @@ type tryResolve<
             ? token
             : unknown extends r["exports"]
             ? // not sure why I need the additional check here, but for now TS seems to
-              // hit this branch for a non - scope dot access rather than failing
+              // hit this branch for a non-scope dot access rather than failing
               // initially when we try to infer r. if this can be removed without breaking
               // any subscope test cases, do it!
               error<writeNonScopeDotMessage<subscope>>

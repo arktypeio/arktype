@@ -42,26 +42,6 @@ suite("thunk", () => {
         //     object: { props: { a: { object: { props: { a: "string" } } } } }
         // })
     })
-    // TODO: fix
-    // test("cyclic thunks in scope", () => {
-    //     const $ = scope({
-    //         a: () => $.type({ b: "b" }),
-    //         b: () => $.type({ a: "a" })
-    //     })
-    //     const types = $.export()
-    //     attest(types.a.infer).typed as {
-    //         b: {
-    //             a: any
-    //         }
-    //     }
-    //     // attest(types.a.node).snap({ object: { props: { b: "b" } } })
-    //     attest(types.b.infer).typed as {
-    //         a: {
-    //             b: any
-    //         }
-    //     }
-    //     // attest(types.b.node).snap({ object: { props: { a: "a" } } })
-    // })
     test("expression from thunk", () => {
         const $ = scope({
             a: () => $.type({ a: "string" }),
