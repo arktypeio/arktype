@@ -28,7 +28,7 @@ export type NodeEntry = NamedPropRule | IndexedPropRule
 
 export type PropsRule = readonly NodeEntry[]
 
-export interface PropsNode extends BaseNode<NodeEntry[], { keyed: true }> {
+export interface PropsNode extends BaseNode<{ rule: NodeEntry[] }> {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>

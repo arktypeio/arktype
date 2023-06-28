@@ -1,7 +1,7 @@
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface DivisorNode extends BaseNode<number> {}
+export interface DivisorNode extends BaseNode<{ rule: number }> {}
 
 export const divisorNode = defineNodeKind<DivisorNode>(
     {

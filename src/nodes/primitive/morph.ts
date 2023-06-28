@@ -5,7 +5,7 @@ import type { Morph } from "../../parse/tuple.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface MorphNode extends BaseNode<readonly Morph[]> {}
+export interface MorphNode extends BaseNode<{ rule: readonly Morph[] }> {}
 
 export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
     {

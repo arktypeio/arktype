@@ -43,14 +43,15 @@ import type { Range } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { inferPropsInput } from "./inferProps.js"
 import type { PropsInput } from "./props.js"
+import type { TypeNode } from "./type.js"
 import { builtins } from "./type.js"
 
-export interface PredicateNode
-    extends BaseNode<PredicateChildren, { keyed: true }> {
+export interface PredicateNode extends BaseNode<{ rule: PredicateChildren }> {
     basis: BasisNode | null
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
     value: ValueNode | undefined
+    keyof(): TypeNode
     constrain<kind extends ConstraintKind>(
         kind: kind,
         input: ConstraintsInput[kind]

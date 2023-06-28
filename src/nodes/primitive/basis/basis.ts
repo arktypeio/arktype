@@ -9,6 +9,7 @@ import {
     constructorExtends,
     throwInternalError
 } from "../../../../dev/utils/src/main.js"
+import type { TypeNode } from "../../composite/type.js"
 import type { DisjointKindEntries } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { BaseNode } from "../../node.js"
@@ -53,9 +54,10 @@ export type BasisNodeDefinition = {
 }
 
 export interface BasisNode<rule = unknown>
-    extends BaseNode<rule, { intersectsWith: BasisNode; keyed: true }> {
+    extends BaseNode<{ rule: rule; intersectsWith: BasisNode }> {
     kind: BasisKind
     domain: Domain
+    keyof(): TypeNode
     literalKeys: PropertyKey[]
 }
 

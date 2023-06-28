@@ -8,7 +8,8 @@ export const serializeRegex = (regex: RegExp) =>
 
 export type SerializedRegexLiteral = `/${string}/${string}`
 
-export type RegexNode = BaseNode<SerializedRegexLiteral[]>
+export interface RegexNode
+    extends BaseNode<{ rule: SerializedRegexLiteral[] }> {}
 
 export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
     literal.slice(1, literal.lastIndexOf("/"))

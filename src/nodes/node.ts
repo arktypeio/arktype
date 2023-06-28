@@ -2,7 +2,6 @@ import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
 import { CompiledFunction } from "../../dev/utils/src/main.js"
 import { arkKind } from "../compile/registry.js"
 import { CompilationState, InputParameterName } from "../compile/state.js"
-import type { TypeNode } from "../main.js"
 import type { inferred } from "../parse/definition.js"
 import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
@@ -10,15 +9,15 @@ import type { NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
 
 type NodeConfig = {
+    rule: unknown
     intersectsWith?: unknown
-    keyed?: boolean
 }
 
 type DefaultNodeConfig = extend<
     Required<NodeConfig>,
     {
+        rule: unknown
         intersectsWith: never
-        keyed: false
     }
 >
 
@@ -50,10 +49,10 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 > &
     ThisType<node>
 
-interface PreconstructedBase<rule, config extends NodeConfig> {
+interface PreconstructedBase<config extends NodeConfig> {
     readonly [arkKind]: "node"
     readonly kind: NodeKind
-    readonly rule: rule
+    readonly rule: config["rule"]
     readonly condition: string
     compile(state: CompilationState): string
     intersect(
@@ -65,21 +64,14 @@ interface PreconstructedBase<rule, config extends NodeConfig> {
     isBasis(): this is NodeKinds[BasisKind]
 }
 
-type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any, any>>
+type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any>>
 
-type NodeExtensionProps<config extends NodeConfig = NodeConfig> = {
+type NodeExtensionProps = {
     description: string
-} & (config["keyed"] extends true
-    ? {
-          keyof(): TypeNode
-      }
-    : {})
+}
 
-export type BaseNode<
-    rule = unknown,
-    config extends NodeConfig = {}
-> = PreconstructedBase<rule, merge<DefaultNodeConfig, config>> &
-    NodeExtensionProps<merge<DefaultNodeConfig, config>>
+export type BaseNode<config extends NodeConfig = DefaultNodeConfig> =
+    PreconstructedBase<merge<DefaultNodeConfig, config>> & NodeExtensionProps
 
 export type NodeConstructor<node extends BaseNode, input> = (
     input: node["rule"] | input
@@ -92,7 +84,7 @@ export const alphabetizeByCondition = <nodes extends BaseNode[]>(
 const intersectionCache: Record<string, BaseNode | Disjoint> = {}
 
 export const defineNodeKind = <
-    node extends BaseNode<any, any>,
+    node extends BaseNode<any>,
     parsableFrom = never
 >(
     def: BaseNodeImplementation<node, parsableFrom>,
@@ -110,7 +102,7 @@ export const defineNodeKind = <
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
-        const base: PreconstructedBase<node["rule"], never> = {
+        const base: PreconstructedBase<DefaultNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,

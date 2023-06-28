@@ -5,7 +5,7 @@ import type { Narrow } from "../../parse/tuple.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface NarrowNode extends BaseNode<readonly Narrow[]> {}
+export interface NarrowNode extends BaseNode<{ rule: readonly Narrow[] }> {}
 
 export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
     {

@@ -8,6 +8,7 @@ import { cached, hasKey, isArray } from "../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../compile/registry.js"
 import type { CompilationState } from "../../compile/state.js"
 import { compilePropAccess, InputParameterName } from "../../compile/state.js"
+import type { inferIntersection } from "../../parse/ast/intersections.js"
 import type { inferred } from "../../parse/definition.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
@@ -29,7 +30,7 @@ import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
 export interface TypeNode<t = unknown>
-    extends BaseNode<UnresolvedTypeNode | PredicateNode[]> {
+    extends BaseNode<{ rule: UnresolvedTypeNode | PredicateNode[] }> {
     [inferred]: t
     branches: PredicateNode[]
     discriminant: Discriminant | null
@@ -38,14 +39,14 @@ export interface TypeNode<t = unknown>
     array(): TypeNode<t[]>
     isNever(): this is TypeNode<never>
     isUnknown(): this is TypeNode<unknown>
-    and<other>(other: TypeNode<other>): TypeNode<t & other>
+    and<other>(other: TypeNode<other>): TypeNode<inferIntersection<t, other>>
     or<other>(other: TypeNode<other>): TypeNode<t | other>
     constrain<kind extends ConstraintKind>(
         kind: kind,
         definition: PredicateInput[kind]
     ): TypeNode<t>
     equals<other>(other: TypeNode<other>): this is TypeNode<other>
-    extends<other>(other: TypeNode<other>): this is TypeNode<t & other>
+    extends<other>(other: TypeNode<other>): this is TypeNode<t>
     keyof(): TypeNode<keyof t>
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }
