@@ -71,7 +71,7 @@ export type ScopeParser<parent, ambient> = {
 type validateAliases<aliases, $> = {
     [k in keyof aliases]: parseScopeKey<k> extends infer result extends ParsedScopeKey
         ? result["params"] extends []
-            ? aliases[k] extends Scope | Type | GenericProps
+            ? aliases[k] extends Preparsed
                 ? aliases[k]
                 : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
             : result["params"] extends GenericParamsParseError
@@ -116,7 +116,7 @@ type bootstrapExports<aliases> = bootstrapAliases<{
     [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
 }>
 
-type Preparsed = Scope | GenericProps
+type Preparsed = Type | Scope | GenericProps
 
 type bootstrapAliases<aliases> = {
     [k in Exclude<
