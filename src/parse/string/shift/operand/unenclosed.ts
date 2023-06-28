@@ -13,7 +13,7 @@ import {
 import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
-import type { Scope } from "../../../../scope.js"
+import type { TypeSet } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { ParsedArgs } from "../../../generic.js"
@@ -166,7 +166,7 @@ type tryResolve<
     ? token
     : token extends `${infer subscope extends keyof $ &
           string}.${infer reference}`
-    ? $[subscope] extends Scope<infer r>
+    ? $[subscope] extends TypeSet<infer r>
         ? reference extends keyof r["exports"]
             ? token
             : unknown extends r["exports"]
@@ -175,13 +175,7 @@ type tryResolve<
               // initially when we try to infer r. if this can be removed without breaking
               // any subscope test cases, do it!
               error<writeNonScopeDotMessage<subscope>>
-            : unresolvableError<
-                  s,
-                  reference,
-                  $[subscope]["infer"],
-                  args,
-                  [subscope]
-              >
+            : unresolvableError<s, reference, $[subscope], args, [subscope]>
         : error<writeNonScopeDotMessage<subscope>>
     : unresolvableError<s, token, $, args, []>
 

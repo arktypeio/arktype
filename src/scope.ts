@@ -1,4 +1,10 @@
-import type { Dict, evaluate, isAny, nominal } from "../dev/utils/src/main.js"
+import type {
+    Dict,
+    evaluate,
+    id,
+    isAny,
+    nominal
+} from "../dev/utils/src/main.js"
 import {
     domainOf,
     hasDomain,
@@ -114,12 +120,13 @@ type bootstrapExports<aliases> = bootstrapAliases<{
     [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
 }>
 
-type Preparsed = Type | Scope | GenericProps
+type Preparsed = Type | TypeSet | GenericProps
 
 type bootstrapAliases<aliases> = {
     [k in Exclude<
         keyof aliases,
-        GenericDeclaration
+        // avoid inferring nominal symbols, e.g. id from TypeSet
+        GenericDeclaration | symbol
     >]: aliases[k] extends Preparsed
         ? aliases[k]
         : aliases[k] extends (() => infer thunkReturn extends Preparsed)
@@ -182,16 +189,18 @@ type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 type exportedName<r extends Resolutions> = keyof r["exports"] & string
 
 export type TypeSet<r extends Resolutions = any> = {
-    [k in exportedName<r>]: [r["exports"][k]] extends [never]
-        ? Type<never, $<r>>
-        : isAny<r["exports"][k]> extends true
-        ? Type<any, $<r>>
-        : // TODO: possible to infer TypeSet instead here? Would make it more intuitive to use export consistently
-        r["exports"][k] extends Scope<infer subresolutions>
-        ? TypeSet<subresolutions>
-        : r["exports"][k] extends GenericProps
-        ? r["exports"][k]
-        : Type<r["exports"][k], $<r>>
+    // just adding the nominal id this way and mapping it is cheaper than an intersection
+    [k in exportedName<r> | id]: k extends string
+        ? [r["exports"][k]] extends [never]
+            ? Type<never, $<r>>
+            : isAny<r["exports"][k]> extends true
+            ? Type<any, $<r>>
+            : // TODO: possible to infer TypeSet instead here? Would make it more intuitive to use export consistently
+            r["exports"][k] extends TypeSet | GenericProps
+            ? r["exports"][k]
+            : Type<r["exports"][k], $<r>>
+        : // set the nominal symbol's value to something validation won't care about
+          CastTo<"typeset">
 }
 
 export type Resolutions = {
@@ -389,8 +398,9 @@ export class Scope<r extends Resolutions = any> {
         r,
         names extends [] ? keyof r["exports"] : names[number]
     > {
+        // TODO: add non-enumerable prop to typeset
         return transform(this.export(...names), ([alias, value]) => [
-            `#${alias}`,
+            `#${alias as string}`,
             value
         ]) as never
     }

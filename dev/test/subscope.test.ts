@@ -8,14 +8,12 @@ import {
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
 
-const sub = () => scope({ alias: "number" })
-
 // can't use a proxy for this without breaking instanceof Scope
 const $ = () =>
     scope({
         a: "string",
         b: "sub.alias",
-        sub: sub()
+        sub: scope({ alias: "number" }).export()
     })
 
 suite("subscopes", () => {
@@ -46,6 +44,33 @@ suite("subscopes", () => {
         attest(() => $().type("b.foo")).throwsAndHasTypeError(
             writeNonScopeDotMessage("b")
         )
+    })
+    test("thunk subscope", () => {
+        const $ = scope({
+            a: "string",
+            c: "a",
+            sub: () =>
+                $.scope({
+                    foo: "a",
+                    bar: "foo"
+                }).export()
+        })
+        attest($).typed as Scope<{
+            exports: {
+                a: string
+                c: string
+                sub: TypeSet<{
+                    exports: {
+                        foo: string
+                        bar: string
+                    }
+                    locals: {}
+                    ambient: Ark
+                }>
+            }
+            locals: {}
+            ambient: Ark
+        }>
     })
     // test("no alias reference", () => {
     //     // TODO: fix, broken because of TypeSet being cached, shouldnt' be treated as resolution
