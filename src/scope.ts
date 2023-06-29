@@ -1,10 +1,4 @@
-import type {
-    Dict,
-    evaluate,
-    id,
-    isAny,
-    nominal
-} from "../dev/utils/src/main.js"
+import type { Dict, evaluate, isAny, nominal } from "../dev/utils/src/main.js"
 import {
     domainOf,
     hasDomain,
@@ -395,13 +389,14 @@ export class Scope<r extends Resolutions = any> {
         r,
         names extends [] ? keyof r["exports"] : names[number]
     > {
-        // TODO: add non-enumerable prop to typeset
-        return transform(this.export(...names), ([alias, value]) => [
-            `#${alias as string}`,
-            value
-        ]) as never
+        return addArkKind(
+            transform(this.export(...names), ([alias, value]) => [
+                `#${alias as string}`,
+                value
+            ]),
+            "typeset"
+        ) as never
     }
-    // TODO: any type instantiations infinite
 
     private exportCache: Record<string, Type | Generic | TypeSet> | undefined
     export<names extends exportedName<r>[]>(

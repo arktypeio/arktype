@@ -40,4 +40,15 @@ suite("definitions", () => {
             writeBadDefinitionTypeMessage("symbol")
         )
     })
+    test("any", () => {
+        // for now we just let any hit the depth limit, see validateDefinition note
+        // @ts-expect-error
+        attest(() => type({ bad: {} as any })).types.errors(
+            `Type instantiation is excessively deep and possibly infinite`
+        )
+    })
+    test("unknown", () => {
+        // @ts-expect-error just results in base completions, so we just check there's an error
+        attest(() => type({ bad: {} as unknown })).types.errors("")
+    })
 })
