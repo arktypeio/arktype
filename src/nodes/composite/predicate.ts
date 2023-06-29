@@ -284,20 +284,28 @@ const assertValidLimit = (bounds: Range, boundType: "number" | "Date") => {
         const boundKind: BoundKind = index === "0" ? "right" : "left"
         if (boundType === "number") {
             if (typeof bounds[index].limit !== boundType) {
-                throwInvalidLimitError(bounds[index], boundKind)
+                throwParseError(
+                    writeInvalidLimitMessage(
+                        bounds[index].comparator,
+                        `${bounds[index].limit}`,
+                        boundKind
+                    )
+                )
             }
         } else {
             if (!hasDateEnclosing(bounds[index].limit)) {
-                throwInvalidLimitError(bounds[index], boundKind)
+                throwParseError(
+                    writeInvalidLimitMessage(
+                        bounds[index].comparator,
+                        `${bounds[index].limit}`,
+                        boundKind
+                    )
+                )
             }
         }
     }
 }
-const throwInvalidLimitError = (bound: Bound, boundKind: BoundKind) => {
-    const comparator = bound.comparator
-    const limit = bound.limit
-    throwParseError(writeInvalidLimitMessage(comparator, `${limit}`, boundKind))
-}
+
 export const writeInvalidConstraintMessage = (
     kind: string,
     typeMustBe: string,
