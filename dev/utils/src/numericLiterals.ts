@@ -27,8 +27,7 @@ export const wellFormedNumberMatcher =
 const isWellFormedNumber = (s: string) => wellFormedNumberMatcher.test(s)
 
 const numberLikeMatcher = /^-?\d*\.?\d*$/
-export const isNumberLike = (s: string) =>
-    s.length !== 0 && numberLikeMatcher.test(s)
+const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
 
 /**
  *  Matches a well-formatted integer according to the following rules:
