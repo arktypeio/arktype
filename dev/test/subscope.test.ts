@@ -19,7 +19,7 @@ const $ = lazily(() =>
 )
 
 suite("subscopes", () => {
-    // TODO: update names to refer to typesets
+    // TODO: update names to refer to modules
     test("base", () => {
         const types = $.export()
         attest(types).typed as TypeSet<{

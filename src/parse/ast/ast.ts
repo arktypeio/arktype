@@ -6,7 +6,7 @@ import type {
     writeMalformedNumericLiteralMessage
 } from "../../../dev/utils/src/main.js"
 import type { Comparator } from "../../nodes/primitive/range.js"
-import type { resolve, TypeSet, UnparsedScope } from "../../scope.js"
+import type { resolve, Module, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { CastTo, inferDefinition } from "../definition.js"
 import type { writeInvalidGenericArgsMessage } from "../generic.js"
@@ -122,7 +122,7 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
       // efficient to check for them here in case the string was naively parsed
       $[def] extends GenericProps
         ? error<writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>>
-        : $[def] extends TypeSet
+        : $[def] extends Module
         ? error<writeMissingSubscopeAccessMessage<def>>
         : undefined
     : undefined

@@ -13,7 +13,7 @@ import {
 import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
-import type { TypeSet } from "../../../../scope.js"
+import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { ParsedArgs } from "../../../generic.js"
@@ -166,7 +166,7 @@ type tryResolve<
     ? token
     : token extends `${infer subscope extends keyof $ &
           string}.${infer reference}`
-    ? $[subscope] extends TypeSet<infer r>
+    ? $[subscope] extends Module<infer r>
         ? reference extends keyof r["exports"]
             ? token
             : unknown extends r["exports"]

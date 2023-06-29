@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
-import type { TypeSet } from "../../src/scope.js"
+import type { Module } from "../../src/scope.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
 import { lazily } from "../utils/src/main.js"
@@ -79,7 +79,7 @@ suite("scope imports", () => {
             type("3|'no'|uuid|true").condition
         )
 
-        attest(outOfScope).typed as TypeSet<{
+        attest(outOfScope).typed as Module<{
             exports: {
                 hasCrept: true
                 public: string | true | 3
@@ -102,7 +102,7 @@ suite("private aliases", () => {
         }).export()
         attest(Object.keys(types)).equals(["foo"])
         attest(types.foo.condition).equals(type("boolean[]").condition)
-        attest(types).typed as TypeSet<{
+        attest(types).typed as Module<{
             exports: { foo: boolean[] }
             locals: { bar: boolean }
             ambient: Ark

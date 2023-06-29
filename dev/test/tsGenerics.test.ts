@@ -9,7 +9,7 @@ suite("tsGenerics", () => {
     //     }).export()
     //     attest(types.t.infer).typed as Record<string, number>
     // })
-    // test("in typeset", () => {
+    // test("in module", () => {
     //     const t = arktypes.Record("string", "number")
     //     attest(t.infer).typed as Record<string, number>
     // })

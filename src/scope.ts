@@ -116,7 +116,7 @@ type bootstrapExports<aliases> = bootstrapAliases<{
     [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
 }>
 
-type Preparsed = Type | TypeSet | GenericProps
+type Preparsed = Type | Module | GenericProps
 
 type bootstrapAliases<aliases> = {
     [k in Exclude<
@@ -184,19 +184,19 @@ type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
 type exportedName<r extends Resolutions> = keyof r["exports"] & string
 
-export type TypeSet<r extends Resolutions = any> = {
+export type Module<r extends Resolutions = any> = {
     // just adding the nominal id this way and mapping it is cheaper than an intersection
     [k in exportedName<r> | arkKind]: k extends string
         ? [r["exports"][k]] extends [never]
             ? Type<never, $<r>>
             : isAny<r["exports"][k]> extends true
             ? Type<any, $<r>>
-            : r["exports"][k] extends TypeSet | GenericProps
+            : r["exports"][k] extends Module | GenericProps
             ? r["exports"][k]
             : Type<r["exports"][k], $<r>>
         : // set the nominal symbol's value to something validation won't care about
           // since the inferred type will be omitted anyways
-          CastTo<"typeset">
+          CastTo<"module">
 }
 
 export type Resolutions = {
@@ -329,7 +329,7 @@ export class Scope<r extends Resolutions = any> {
             if (dotIndex !== -1) {
                 const dotPrefix = name.slice(0, dotIndex)
                 const prefixDef = this.aliases[dotPrefix]
-                if (hasArkKind(prefixDef, "typeset")) {
+                if (hasArkKind(prefixDef, "module")) {
                     const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
                     if (!resolution) {
                         return throwParseError(writeUnresolvableMessage(name))
@@ -354,7 +354,7 @@ export class Scope<r extends Resolutions = any> {
         })
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
-            : hasArkKind(def, "typeset")
+            : hasArkKind(def, "module")
             ? throwParseError(writeMissingSubscopeAccessMessage(name))
             : this.parseRoot(def)
         this.resolutions[name] = resolution
@@ -401,7 +401,7 @@ export class Scope<r extends Resolutions = any> {
                 `#${alias as string}`,
                 value
             ]),
-            "typeset"
+            "module"
         ) as never
     }
 
@@ -410,7 +410,7 @@ export class Scope<r extends Resolutions = any> {
     private exportCache: ExportCache | undefined
     export<names extends exportedName<r>[]>(
         ...names: names
-    ): TypeSet<
+    ): Module<
         names extends [] ? r : destructuredExportContext<r, names[number]>
     > {
         if (!this.exportCache) {
@@ -427,7 +427,7 @@ export class Scope<r extends Resolutions = any> {
                 if (isThunk(def)) {
                     def = def()
                 }
-                if (hasArkKind(def, "typeset")) {
+                if (hasArkKind(def, "module")) {
                     this.exportCache[name] = def
                 } else {
                     this.exportCache[name] = new Type(
@@ -436,7 +436,7 @@ export class Scope<r extends Resolutions = any> {
                     )
                 }
             }
-            this.exportedResolutions = resolutionsOfTypeSet(this.exportCache)
+            this.exportedResolutions = resolutionsOfModule(this.exportCache)
             Object.assign(this.resolutions, this.exportedResolutions)
         }
         const namesToExport = names.length ? names : this.exportedNames
@@ -445,19 +445,19 @@ export class Scope<r extends Resolutions = any> {
                 name,
                 this.exportCache![name]
             ]),
-            "typeset"
+            "module"
         )
     }
 }
 
-type ExportCache = Record<string, Type | Generic | TypeSet>
+type ExportCache = Record<string, Type | Generic | Module>
 
-const resolutionsOfTypeSet = (typeSet: ExportCache) => {
+const resolutionsOfModule = (typeSet: ExportCache) => {
     const result: MergedResolutions = {}
     for (const k in typeSet) {
         const v = typeSet[k]
-        if (hasArkKind(v, "typeset")) {
-            const innerResolutions = resolutionsOfTypeSet(v)
+        if (hasArkKind(v, "module")) {
+            const innerResolutions = resolutionsOfModule(v)
             const prefixedResolutions = transform(
                 innerResolutions,
                 ([innerK, innerV]) => [`${k}.${innerK}`, innerV]
