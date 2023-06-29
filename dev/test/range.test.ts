@@ -1,7 +1,10 @@
 import { suite, test } from "mocha"
 import { node, type } from "../../src/main.js"
 import type { Range } from "../../src/nodes/primitive/range.js"
-import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
+import {
+    writeDoubleRightBoundMessage,
+    writeUnboundableMessage
+} from "../../src/parse/ast/bound.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -206,8 +209,8 @@ suite("range", () => {
             })
             test("double right bound", () => {
                 // @ts-expect-error
-                attest(() => type("number>0<=200")).types.errors(
-                    "Argument of type '\"number>0<=200\"' is not assignable to parameter of type '\"Expression number must have at most one right bound\"'."
+                attest(() => type("number>0<=200")).throwsAndHasTypeError(
+                    writeDoubleRightBoundMessage("number>0<=200")
                 )
             })
             test("non-narrowed bounds", () => {

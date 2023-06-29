@@ -222,8 +222,8 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
 )
 
 export const assertAllowsConstraint = (
-    basis: BasisNode | null,
-    kind: ConstraintKind
+    basis: BasisNode | undefined,
+    node: ConstraintNode
 ) => {
     if (basis?.hasKind("value")) {
         if (node["kind"] !== "morph") {

@@ -19,7 +19,6 @@ import type {
     Bound,
     NumericallyBoundableData
 } from "../nodes/primitive/range.js"
-import type { InternalId } from "./registry.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems

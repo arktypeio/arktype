@@ -121,7 +121,7 @@ type IndexVariableName = `${IndexVariablePrefix}${"" | number}`
 
 export const compileSerializedValue = (value: unknown) => {
     if (hasDomain(value, "object") || typeof value === "symbol") {
-        return registry().register("value", typeof value, value)
+        return registry().register(value)
     }
     const modifiedValue = hasDateEnclosing(value)
         ? getDateFromLiteral(`${value}`).valueOf()
