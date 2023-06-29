@@ -13,11 +13,10 @@ export const extractDate = (s: string) => s.slice(2, -1)
 
 export const writeInvalidDateMessage = <s extends string>(
     s: s
-): writeInvalidDateMessage<s> =>
-    `new Date(${s}) resulted in an Invalid Date. (Suggested format: YYYY/MM/DD)`
+): writeInvalidDateMessage<s> => `new Date(${s}) resulted in an Invalid Date`
 
 export type writeInvalidDateMessage<s extends string> =
-    `new Date(${s}) resulted in an Invalid Date. (Suggested format: YYYY/MM/DD)`
+    `new Date(${s}) resulted in an Invalid Date`
 
 export type DateInput = ConstructorParameters<typeof Date>[0]
 
