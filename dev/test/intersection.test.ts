@@ -35,7 +35,7 @@ suite("intersection", () => {
         attest(t.infer).typed as string
         attest(t("shawn@arktype.io").data).snap("shawn@arktype.io")
         attest(t("shawn@arktype.oi").problems?.summary).snap(
-            "Must be a string matching /@arktype.io$/ (was 'shawn@arktype.oi')"
+            'Must be a string matching /@arktype.io$/ (was "shawn@arktype.oi")'
         )
     })
     test("multiple valid types", () => {

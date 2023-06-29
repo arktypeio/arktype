@@ -12,7 +12,7 @@ export interface ValueNode extends BasisNode<unknown> {
 
 const equalityCheck: Record<string, Function> = {
     default: (rule: unknown, data: string) => `${data} === ${rule}`,
-    date: (rule: Date, date: Date) => `${date}.toDateString() === ${rule}`
+    date: (rule: Date, date: Date) => `${date}.valueOf() === ${rule}`
 }
 
 export const valueNode = defineNodeKind<ValueNode>(
@@ -25,7 +25,7 @@ export const valueNode = defineNodeKind<ValueNode>(
             return s.check(
                 "value",
                 rule,
-                rule instanceof Date
+                typeof rule === "string"
                     ? equalityCheck["date"](compiledRule, s.data)
                     : equalityCheck["default"](compiledRule, s.data)
             )

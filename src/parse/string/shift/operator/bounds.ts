@@ -7,6 +7,7 @@ import type {
     Comparator,
     MaxComparator
 } from "../../../../nodes/primitive/range.js"
+import type { astToString } from "../../../ast/utils.js"
 import type {
     DynamicState,
     DynamicStateWithRoot
@@ -15,10 +16,11 @@ import type { ValidLiteral } from "../../reduce/shared.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import {
-    dateEnclosing,
+    hasDateEnclosing,
     tryParseDate,
     writeInvalidDateMessage
 } from "../operand/date.js"
+import { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseBound = (
@@ -27,7 +29,7 @@ export const parseBound = (
 ) => {
     const comparator = shiftComparator(s, start)
     const value = s.root.valueNode?.rule
-    if (typeof value === "number" || value instanceof Date) {
+    if (typeof value === "number" || typeof value === "string") {
         s.ejectRoot()
         return s.reduceLeftBound(value, comparator)
     }
@@ -37,7 +39,9 @@ export const parseBound = (
 export type parseBound<
     s extends StaticState,
     start extends ComparatorStartChar,
-    unscanned extends string
+    unscanned extends string,
+    $,
+    args
 > = shiftComparator<start, unscanned> extends infer shiftResultOrError
     ? shiftResultOrError extends Scanner.shiftResult<
           infer comparator extends Comparator,
@@ -51,7 +55,12 @@ export type parseBound<
             ? state.error<
                   writeInvalidLimitMessage<comparator, s["root"], "left">
               >
-            : parseRightBound<s, comparator, nextUnscanned>
+            : parseRightBound<
+                  state.scanTo<s, nextUnscanned>,
+                  comparator,
+                  $,
+                  args
+              >
         : shiftResultOrError
     : never
 
@@ -98,11 +107,23 @@ export const parseRightBound = (
     s: DynamicStateWithRoot,
     comparator: Comparator
 ) => {
-    const limitToken = s.scanner.shiftUntilNextTerminator()
-    const limit = dateEnclosing(limitToken)
-        ? tryParseDate(limitToken, writeInvalidDateMessage(limitToken))
+    //eject
+    const baseRoot = s.ejectRoot()
+    //parse
+    parseOperand(s)
+    //eject
+    const value = s.ejectRoot()
+    s.setRoot(baseRoot)
+    const limitToken = value.valueNode!.rule
+    // throwParseError(`${baseRoot}-${limitTokenn}`)
+    // const limitTokenn = s.scanner.shiftUntilNextTerminator()
+    const limit = hasDateEnclosing(limitToken)
+        ? tryParseDate(
+              `${limitToken}`,
+              writeInvalidDateMessage(`${limitToken}`)
+          )
         : tryParseWellFormedNumber(
-              limitToken,
+              `${limitToken}`,
               writeInvalidLimitMessage(
                   comparator,
                   limitToken + s.scanner.unscanned,
@@ -129,11 +150,10 @@ export const parseRightBound = (
 export type parseRightBound<
     s extends StaticState,
     comparator extends Comparator,
-    unscanned extends string
-> = Scanner.shiftUntilNextTerminator<
-    Scanner.skipWhitespace<unscanned>
-> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? scanned extends ValidLiteral
+    $,
+    args
+> = parseOperand<s, $, args> extends infer nextState extends StaticState
+    ? nextState["root"] extends ValidLiteral
         ? s["branches"]["range"] extends {}
             ? comparator extends MaxComparator
                 ? state.reduceRange<
@@ -141,14 +161,43 @@ export type parseRightBound<
                       s["branches"]["range"]["limit"],
                       s["branches"]["range"]["comparator"],
                       comparator,
-                      scanned,
-                      nextUnscanned
+                      nextState["root"],
+                      nextState["unscanned"]
                   >
                 : state.error<writeUnpairableComparatorMessage<comparator>>
-            : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-        : state.error<writeInvalidLimitMessage<comparator, scanned, "right">>
+            : state.reduceSingleBound<
+                  s,
+                  comparator,
+                  nextState["root"],
+                  nextState["unscanned"]
+              >
+        : state.error<
+              writeInvalidLimitMessage<
+                  comparator,
+                  astToString<nextState["root"]>,
+                  "right"
+              >
+          >
     : never
 
+// Scanner.shiftUntilNextTerminator<
+//     Scanner.skipWhitespace<unscanned>
+// > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
+//     ? scanned extends ValidLiteral
+//         ? s["branches"]["range"] extends {}
+//             ? comparator extends MaxComparator
+//                 ? state.reduceRange<
+//                       s,
+//                       s["branches"]["range"]["limit"],
+//                       s["branches"]["range"]["comparator"],
+//                       comparator,
+//                       scanned,
+//                       nextUnscanned
+//                   >
+//                 : state.error<writeUnpairableComparatorMessage<comparator>>
+//             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
+//         : state.error<writeInvalidLimitMessage<comparator, scanned, "right">>
+//     : never
 export const writeInvalidLimitMessage = <
     comparator extends Comparator,
     limit extends string,

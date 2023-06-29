@@ -103,7 +103,9 @@ suite("args tuple expression", () => {
     })
     test("this", () => {
         const t = type({ a: "string" }, "|", { b: "this" })
-        attest(t.infer).types.toString.snap()
+        attest(t.infer).types.toString.snap(
+            "{ a: string; } | { b: { a: string; } | any; }"
+        )
         attest(t.condition).equals(
             type([{ a: "string" }, "|", { b: "this" }]).condition
         )

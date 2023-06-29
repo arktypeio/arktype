@@ -1,24 +1,21 @@
 import { suite, test } from "mocha"
 import { node, type } from "../../src/main.js"
 import type { Range } from "../../src/nodes/primitive/range.js"
-import {
-    writeDoubleRightBoundMessage,
-    writeUnboundableMessage
-} from "../../src/parse/ast/bound.js"
+import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
-import { writeInvalidDateMessage } from "../../src/parse/string/shift/operand/date.js"
-import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
+import {
+    singleEqualsMessage,
+    writeInvalidLimitMessage
+} from "../../src/parse/string/shift/operator/bounds.js"
 import { attest } from "../attest/main.js"
 import { writeMalformedNumericLiteralMessage } from "../utils/src/numericLiterals.js"
 
 export const expectedBoundsCondition = (...range: Range) =>
     node({ basis: "number", range }).condition
-export const expectedDateBoundsCondition = (...range: Range) =>
-    node({ basis: Date, range }).condition
 
 suite("range", () => {
     suite("parse", () => {
@@ -210,7 +207,7 @@ suite("range", () => {
             test("double right bound", () => {
                 // @ts-expect-error
                 attest(() => type("number>0<=200")).types.errors(
-                    writeDoubleRightBoundMessage("'number'")
+                    "Argument of type '\"number>0<=200\"' is not assignable to parameter of type '\"Expression number must have at most one right bound\"'."
                 )
             })
             test("non-narrowed bounds", () => {
@@ -260,79 +257,25 @@ suite("range", () => {
                     )
                 })
                 test("overlapping", () => {
-                    attest(() =>
-                        // @ts-expect-error
-                        type("1<(number|object)<10")
-                    ).throwsAndHasTypeError(
-                        "Error: Bounded expression object must be bounded by a number, string or Array"
-                    )
-                })
-            })
-        })
-        suite("date range", () => {
-            suite("single", () => {
-                test(">", () => {
-                    const t = type("Date>d'2001/5/5'")
-                    attest(t.infer).typed as Date
-                })
-                test("<", () => {
-                    const t = type("Date<d'2023/1/12'")
-                    attest(t.infer).typed as Date
-                    attest(t.condition).equals(
-                        expectedDateBoundsCondition({
-                            comparator: "<",
-                            limit: new Date("2023/1/12")
-                        })
-                    )
-                })
-                test("<=", () => {
-                    const t = type("Date<=d'2021/1/12'")
-                    attest(t.infer).typed as Date
-                    attest(t.condition).equals(
-                        expectedDateBoundsCondition({
-                            comparator: "<=",
-                            limit: new Date("2021/1/12")
-                        })
-                    )
-                })
-                test("==", () => {
-                    const t = type("Date==d'2020-1-1'")
-                    attest(t.infer).typed as Date
-                    attest(t.condition).equals(
-                        expectedDateBoundsCondition({
-                            comparator: "==",
-                            limit: new Date("2020-1-1")
-                        })
-                    )
-                })
-            })
-            suite("double", () => {
-                test("<,<=", () => {
-                    const t = type("d'2020/1/1'<Date<=d'2024/1/1'")
-                    attest(t.infer).typed as Date
-                    attest(t.condition).equals(
-                        expectedBoundsCondition(
-                            {
-                                comparator: ">",
-                                limit: new Date("2020/1/1")
-                            },
-                            {
-                                comparator: "<=",
-                                limit: new Date("2024/1/1")
-                            }
+                    // @ts-expect-error
+                    attest(() => type("1<(number|object)<10"))
+                        .throws(writeUnboundableMessage("object"))
+                        // At compile time we don't have access to the specific branch that failed so we
+                        // summarize the expression
+                        .types.errors(
+                            writeUnboundableMessage("number | object")
                         )
-                    )
                 })
-            })
-            suite("errors", () => {
-                test("Not a date", () => {
-                    const t = type("d'12345671234'")
-                })
-                test("Non-date bound", () => {
+                test("date literal", () => {
                     attest(() =>
-                        type("Date<d'12342521321'")
+                        //@ts-expect-error
+                        type("number<d'2001/01/01'")
                     ).throwsAndHasTypeError(
-                        writeInvalidDateMessage("12342521321")
+                        writeInvalidLimitMessage("<", "d'2001/01/01'", "right")
+                    )
+                    //@ts-expect-error
+                    attest(() => type("d'2001/01/01'<number<2")).throws(
+                        "Intersection of >d'2001/01/01' and <2 results in an unsatisfiable type"
                     )
                 })
             })

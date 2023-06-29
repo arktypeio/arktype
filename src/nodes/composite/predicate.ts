@@ -13,6 +13,9 @@ import type {
 import { isArray } from "../../../dev/utils/src/objectKinds.js"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
+import { hasDateEnclosing } from "../../parse/string/shift/operand/date.js"
+import type { BoundKind } from "../../parse/string/shift/operator/bounds.js"
+import { writeInvalidLimitMessage } from "../../parse/string/shift/operator/bounds.js"
 import type {
     inferMorphOut,
     Morph,
@@ -27,7 +30,6 @@ import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 import type {
     BasisInput,
-    BasisKind,
     BasisNode,
     inferBasis
 } from "../primitive/basis/basis.js"
@@ -37,7 +39,7 @@ import type { DomainNode } from "../primitive/basis/domain.js"
 import { domainNode } from "../primitive/basis/domain.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
-import type { Range } from "../primitive/range.js"
+import type { Bound, Range } from "../primitive/range.js"
 import type { inferPropsInput } from "./infer.js"
 import type { PropsInput } from "./props.js"
 
@@ -175,7 +177,6 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 ) as never,
             valueNode: basis?.hasKind("value") ? basis : undefined,
             constrain(kind, input): PredicateNode {
-                //todoshawn
                 const constraint = createNodeOfKind(kind, input as never)
                 assertAllowsConstraint(this.basis, constraint)
                 const result = this.intersect(predicateNode([constraint]))
@@ -196,7 +197,6 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
 //     const propsKey = this.getConstraint("props")?.keyof()
 //     return propsKey?.or(basisKey) ?? basisKey
 // }
-//todoshawn have to do something around here
 export const assertAllowsConstraint = (
     basis: BasisNode | undefined,
     node: ConstraintNode
@@ -220,20 +220,21 @@ export const assertAllowsConstraint = (
             return
         case "range":
             const bounds = node["rule"] as Range
-            const onlyNumbers = bounds.forEach(
-                (bound) => typeof bound.limit === "number"
-            )
-            if (domain !== "string" && domain !== "number") {
-                // const bounds = node["rule"] as Range
 
-                // basis.extendsOneOf(Date)
+            if (domain !== "string" && domain !== "number") {
+                const isDateClassBasis =
+                    basis?.hasKind("class") && basis.extendsOneOf(Date)
+                if (isDateClassBasis) {
+                    assertValidLimit(bounds, "Date")
+                    return
+                }
                 const hasSizedClassBasis =
-                    basis?.hasKind("class") && basis.extendsOneOf(Array, Date)
+                    basis?.hasKind("class") && basis.extendsOneOf(Array)
                 if (!hasSizedClassBasis) {
                     throwParseError(writeUnboundableMessage(domain))
                 }
-            } else {
             }
+            assertValidLimit(bounds, "number")
             return
         case "regex":
             if (domain !== "string") {
@@ -254,6 +255,25 @@ export const assertAllowsConstraint = (
     }
 }
 
+const assertValidLimit = (bounds: Range, boundType: "number" | "Date") => {
+    for (const index in bounds) {
+        const boundKind: BoundKind = index === "0" ? "right" : "left"
+        if (boundType === "number") {
+            if (typeof bounds[index].limit !== boundType) {
+                throwInvalidLimitError(bounds[index], boundKind)
+            }
+        } else {
+            if (!hasDateEnclosing(bounds[index].limit)) {
+                throwInvalidLimitError(bounds[index], boundKind)
+            }
+        }
+    }
+}
+const throwInvalidLimitError = (bound: Bound, boundKind: BoundKind) => {
+    const comparator = bound.comparator
+    const limit = bound.limit
+    throwParseError(writeInvalidLimitMessage(comparator, `${limit}`, boundKind))
+}
 export const writeInvalidConstraintMessage = (
     kind: string,
     typeMustBe: string,

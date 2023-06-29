@@ -1,10 +1,13 @@
 import { throwParseError } from "../../../../../dev/utils/main.js"
 
-export type DateLiteral<value extends string = string> = `d${value}`
+export type DateLiteral<value extends string = string> =
+    | `d"${value}"`
+    | `d'${value}'`
 
 export const isValidDate = (d: Date) => d.toString() !== "Invalid Date"
 
-export const dateEnclosing = (s: string) => /^d/.test(s)
+export const hasDateEnclosing = (s: unknown) =>
+    typeof s === "string" && /^d/.test(s)
 
 export const extractDate = (s: string) => s.slice(2, -1)
 
@@ -18,10 +21,7 @@ export type writeInvalidDateMessage<s extends string> =
 
 export type DateInput = ConstructorParameters<typeof Date>[0]
 
-export const d = (dateInput: DateInput) =>
-    dateInput instanceof Date
-        ? dateInput.valueOf()
-        : new Date(dateInput).valueOf()
+export const getDateFromLiteral = (d: string) => new Date(extractDate(d))
 
 export const isWellFormedDate = (s: string) => {
     const extractedDate = extractDate(s)
@@ -38,10 +38,10 @@ export const tryParseDate = <ErrorOnFail extends boolean | string>(
 const parseDate = <ErrorOnFail extends boolean | string>(
     token: string,
     errorOnFail?: ErrorOnFail
-): ErrorOnFail extends true | string ? Date : Date | undefined => {
-    const date = new Date(token)
+): ErrorOnFail extends true | string ? string : string | undefined => {
+    const date = getDateFromLiteral(token)
     if (isValidDate(date)) {
-        return date
+        return token
     }
     return (
         errorOnFail

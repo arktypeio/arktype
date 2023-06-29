@@ -14,7 +14,10 @@ import type {
 } from "../../dev/utils/src/objectKinds.js"
 import { stringify } from "../../dev/utils/src/serialize.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
-import type { Bound, SizedData } from "../nodes/primitive/range.js"
+import type {
+    Bound,
+    NumericallyBoundableData
+} from "../nodes/primitive/range.js"
 import type { InternalId } from "./registry.js"
 
 export class ArkTypeError extends TypeError {
@@ -217,7 +220,7 @@ export class KeyProblem extends Problem<KeyProblemKind> {
     mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class RangeProblem extends Problem<Bound, SizedData> {
+export class RangeProblem extends Problem<Bound, NumericallyBoundableData> {
     readonly code = "range"
 
     get mustBe() {

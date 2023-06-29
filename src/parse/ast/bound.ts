@@ -3,7 +3,7 @@ import type { NumberLiteral } from "../../../dev/utils/src/numericLiterals.js"
 import type {
     Comparator,
     InvertedComparators,
-    SizedData
+    NumericallyBoundableData
 } from "../../nodes/primitive/range.js"
 import type { ValidLiteral } from "../string/reduce/shared.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
@@ -41,15 +41,23 @@ export type validateBound<
     $,
     args
 > = inferAst<boundedAst, $, args> extends infer bounded
-    ? limit extends NumberLiteral
-        ? [bounded] extends [SizedData]
+    ? [bounded] extends [NumericallyBoundableData]
+        ? limit extends NumberLiteral
             ? validateAst<boundedAst, $, args>
             : error<writeInvalidLimitMessage<comparator, limit, boundKind>>
-        : limit extends DateLiteral
-        ? bounded extends Date
+        : bounded extends Date
+        ? limit extends DateLiteral
             ? validateAst<boundedAst, $, args>
             : error<writeInvalidLimitMessage<comparator, limit, boundKind>>
-        : error<writeUnboundableMessage<astToString<boundedAst>>>
+        : error<
+              writeUnboundableMessage<
+                  astToString<
+                      boundKind extends "left"
+                          ? boundedAst[0 & keyof boundedAst]
+                          : boundedAst
+                  >
+              >
+          >
     : never
 
 export const writeDoubleRightBoundMessage = <root extends string>(
@@ -63,7 +71,7 @@ type writeDoubleRightBoundMessage<root extends string> =
 export const writeUnboundableMessage = <root extends string>(
     root: root
 ): writeUnboundableMessage<root> =>
-    `Bounded expression ${root} must be a number, string, Array, or Date`
+    `Bounded expression ${root} must be a number, string or Array`
 
 type writeUnboundableMessage<root extends string> =
-    `Bounded expression ${root} must be a number, string, Array, or Date`
+    `Bounded expression ${root} must be a number, string or Array`
