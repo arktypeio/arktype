@@ -32,6 +32,12 @@ export const parseEnclosed = (
     }
     // Shift the scanner one additional time for the second enclosing token
     if (s.scanner.shift() === "/") {
+        // fail parsing if the regex is invalid
+        try {
+            new RegExp(token)
+        } catch (e) {
+            s.error(`${e instanceof Error ? e.message : e}`)
+        }
         // flags are not currently supported for embedded regex literals
         s.root = typeNode({ basis: "string", regex: `/${token}/` })
     } else {

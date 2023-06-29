@@ -211,6 +211,8 @@ export type ParseContext = {
     args: Record<string, TypeNode> | undefined
 }
 
+type MergedResolutions = Record<string, TypeNode | Generic>
+
 export class Scope<r extends Resolutions = any> {
     declare infer: extractOut<r["exports"]>
     declare inferIn: extractIn<r["exports"]>
@@ -218,7 +220,7 @@ export class Scope<r extends Resolutions = any> {
     config: TypeConfig
 
     private parseCache: Record<string, TypeNode> = {}
-    private resolutions: Record<string, TypeNode | Generic>
+    private resolutions: MergedResolutions
 
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
@@ -235,12 +237,12 @@ export class Scope<r extends Resolutions = any> {
             }
         }
         this.ambient = opts.ambient ?? null
-        this.resolutions = {}
         if (this.ambient) {
+            // ensure exportedResolutions is populated
             this.ambient.export()
-            for (const name of this.ambient.exportedNames) {
-                this.resolutions[name] = this.ambient.resolutions[name]
-            }
+            this.resolutions = { ...this.ambient.exportedResolutions! }
+        } else {
+            this.resolutions = {}
         }
         this.config = opts
     }
@@ -284,12 +286,16 @@ export class Scope<r extends Resolutions = any> {
         return this.export()[name] as never
     }
 
-    parseRoot(def: unknown, args?: Record<string, TypeNode>) {
-        return this.parse(def, {
+    private createRootContext(args?: Record<string, TypeNode>) {
+        return {
             path: new Path(),
             scope: this,
             args
-        })
+        }
+    }
+
+    parseRoot(def: unknown, args?: Record<string, TypeNode>) {
+        return this.parse(def, this.createRootContext(args))
     }
 
     parse(def: unknown, ctx: ParseContext): TypeNode {
@@ -324,11 +330,12 @@ export class Scope<r extends Resolutions = any> {
                 const dotPrefix = name.slice(0, dotIndex)
                 const prefixDef = this.aliases[dotPrefix]
                 if (hasArkKind(prefixDef, "typeset")) {
-                    const resolution = prefixDef[name.slice(dotIndex + 1)]
+                    const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
                     if (!resolution) {
                         return throwParseError(writeUnresolvableMessage(name))
                     }
-                    return resolution.root
+                    this.resolutions[name] = resolution
+                    return resolution
                 }
                 if (prefixDef !== undefined) {
                     return throwParseError(writeNonScopeDotMessage(dotPrefix))
@@ -398,20 +405,23 @@ export class Scope<r extends Resolutions = any> {
         ) as never
     }
 
-    private exportCache: Record<string, Type | Generic | TypeSet> | undefined
+    // TODO: find a way to deduplicate from maybeResolve
+    private exportedResolutions: MergedResolutions | undefined
+    private exportCache: ExportCache | undefined
     export<names extends exportedName<r>[]>(
         ...names: names
     ): TypeSet<
         names extends [] ? r : destructuredExportContext<r, names[number]>
     > {
         if (!this.exportCache) {
-            this.exportCache = addArkKind({}, "typeset")
+            this.exportCache = {}
             for (const name of this.exportedNames) {
                 let def = this.aliases[name]
                 if (hasArkKind(def, "generic")) {
                     this.exportCache[name] = def
                     continue
                 }
+                // TODO: thunk generics?
                 // handle generics before invoking thunks, since they use
                 // varargs they will incorrectly be considered thunks
                 if (isThunk(def)) {
@@ -421,11 +431,13 @@ export class Scope<r extends Resolutions = any> {
                     this.exportCache[name] = def
                 } else {
                     this.exportCache[name] = new Type(
-                        this.parseRoot(def, {}),
+                        this.maybeResolve(name, this.createRootContext()),
                         this
                     )
                 }
             }
+            this.exportedResolutions = resolutionsOfTypeSet(this.exportCache)
+            Object.assign(this.resolutions, this.exportedResolutions)
         }
         const namesToExport = names.length ? names : this.exportedNames
         return addArkKind(
@@ -436,6 +448,28 @@ export class Scope<r extends Resolutions = any> {
             "typeset"
         )
     }
+}
+
+type ExportCache = Record<string, Type | Generic | TypeSet>
+
+const resolutionsOfTypeSet = (typeSet: ExportCache) => {
+    const result: MergedResolutions = {}
+    for (const k in typeSet) {
+        const v = typeSet[k]
+        if (hasArkKind(v, "typeset")) {
+            const innerResolutions = resolutionsOfTypeSet(v)
+            const prefixedResolutions = transform(
+                innerResolutions,
+                ([innerK, innerV]) => [`${k}.${innerK}`, innerV]
+            )
+            Object.assign(result, prefixedResolutions)
+        } else if (hasArkKind(v, "generic")) {
+            result[k] = v
+        } else {
+            result[k] = v.root
+        }
+    }
+    return result
 }
 
 type destructuredExportContext<

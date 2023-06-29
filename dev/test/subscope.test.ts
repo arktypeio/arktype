@@ -1,4 +1,5 @@
 import { suite, test } from "mocha"
+import { lazily } from "../../dev/utils/src/main.js"
 import type { Scope, TypeSet } from "../../src/main.js"
 import { scope, type } from "../../src/main.js"
 import {
@@ -9,22 +10,23 @@ import {
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
 
-// can't use a proxy for this without breaking instanceof Scope
-const $ = () =>
+const $ = lazily(() =>
     scope({
         a: "string",
         b: "sub.alias",
         sub: scope({ alias: "number" }).export()
     })
+)
 
 suite("subscopes", () => {
+    // TODO: update names to refer to typesets
     test("base", () => {
-        const types = $().export()
+        const types = $.export()
         attest(types).typed as TypeSet<{
             exports: {
                 a: string
                 b: number
-                sub: Scope<{
+                sub: TypeSet<{
                     exports: {
                         alias: number
                     }
@@ -42,7 +44,7 @@ suite("subscopes", () => {
     })
     test("non-scope dot access", () => {
         // @ts-expect-error
-        attest(() => $().type("b.foo")).throwsAndHasTypeError(
+        attest(() => $.type("b.foo")).throwsAndHasTypeError(
             writeNonScopeDotMessage("b")
         )
     })
@@ -75,13 +77,13 @@ suite("subscopes", () => {
     })
     test("no alias reference", () => {
         // @ts-expect-error
-        attest(() => $().type("sub")).throwsAndHasTypeError(
+        attest(() => $.type("sub")).throwsAndHasTypeError(
             writeMissingSubscopeAccessMessage("sub")
         )
     })
     test("bad alias reference", () => {
         // @ts-expect-error
-        attest(() => $().type("sub.marine")).throwsAndHasTypeError(
+        attest(() => $.type("sub.marine")).throwsAndHasTypeError(
             writeUnresolvableMessage("sub.marine")
         )
     })

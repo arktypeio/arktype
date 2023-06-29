@@ -43,7 +43,7 @@ suite("parse enclosed", () => {
     })
     test("invalid regex", () => {
         attest(() => type("/[/")).throws.snap(
-            `SyntaxError: Invalid regular expression: /[/: Unterminated character class`
+            "Error: Invalid regular expression: /[/: Unterminated character class"
         )
     })
     test("mixed quote types", () => {
