@@ -1,12 +1,24 @@
-import { CompiledFunction } from "../../dev/utils/src/functions.js"
-import type { evaluate } from "../../dev/utils/src/generics.js"
-import { arkKind } from "../compile/registry.js"
+import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
+import { CompiledFunction } from "../../dev/utils/src/main.js"
+import { arkKind, registry } from "../compile/registry.js"
 import { CompilationState, InputParameterName } from "../compile/state.js"
 import type { inferred } from "../parse/definition.js"
-import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
+
+type NodeConfig = {
+    rule: unknown
+    intersectsWith?: unknown
+}
+
+type DefaultNodeConfig = extend<
+    Required<NodeConfig>,
+    {
+        rule: unknown
+        intersectsWith: never
+    }
+>
 
 type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     kind: node["kind"]
@@ -21,8 +33,6 @@ type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     ) => ReturnType<node["intersect"]>
 }
 
-export type NodeChildren = BaseNode[] | NodeEntry[]
-
 type NodeExtension<node extends BaseNode> = (
     base: basePropsOf<node>
 ) => extendedPropsOf<node>
@@ -36,45 +46,43 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 > &
     ThisType<node>
 
-interface PreconstructedBase<rule, intersectsWith> {
-    [arkKind]: "node"
-    kind: NodeKind
-    rule: rule
+interface PreconstructedBase<config extends NodeConfig> {
+    readonly [arkKind]: "node"
+    readonly kind: NodeKind
+    readonly rule: config["rule"]
+    readonly condition: string
+    alias: string
     compile(state: CompilationState): string
-    condition: string
-    intersect(other: intersectsWith | this): intersectsWith | this | Disjoint
-    intersectionCache: Record<
-        string,
-        this | intersectsWith | Disjoint | undefined
-    >
+    intersect(
+        other: config["intersectsWith"] | this
+    ): config["intersectsWith"] | this | Disjoint
+    // TODO: can this work as is with late resolution?
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
     isBasis(): this is NodeKinds[BasisKind]
 }
 
-type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any, any>>
+type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any>>
 
-export type BaseNodeExtensionProps = {
+type NodeExtensionProps = {
     description: string
 }
 
-export type BaseNode<
-    rule = unknown,
-    intersectsWith = never
-> = PreconstructedBase<rule, intersectsWith> & BaseNodeExtensionProps
-
-type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
+export type BaseNode<config extends NodeConfig = DefaultNodeConfig> =
+    PreconstructedBase<merge<DefaultNodeConfig, config>> & NodeExtensionProps
 
 export type NodeConstructor<node extends BaseNode, input> = (
-    rule: node["rule"] | input
+    input: node["rule"] | input
 ) => node
 
 export const alphabetizeByCondition = <nodes extends BaseNode[]>(
     nodes: nodes
 ) => nodes.sort((l, r) => (l.condition > r.condition ? 1 : -1))
 
+const intersectionCache: Record<string, BaseNode | Disjoint> = {}
+
 export const defineNodeKind = <
-    node extends BaseNode<any, any>,
+    node extends BaseNode<any>,
     parsableFrom = never
 >(
     def: BaseNodeImplementation<node, parsableFrom>,
@@ -83,20 +91,19 @@ export const defineNodeKind = <
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
+    const isBasis =
+        def.kind === "domain" || def.kind === "class" || def.kind === "value"
+    const intersectionKind = isBasis ? "basis" : def.kind
     return (input) => {
         const rule = def.parse(input)
         const condition = def.compile(rule, new CompilationState("allows"))
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
-        const intersectionCache: IntersectionCache<BaseNode> = {}
-        const isBasis =
-            def.kind === "domain" ||
-            def.kind === "class" ||
-            def.kind === "value"
-        const base: PreconstructedBase<node["rule"], never> & ThisType<node> = {
+        const base: PreconstructedBase<DefaultNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
+            alias: "uninitialized",
             hasKind: (kind) => kind === def.kind,
             isBasis: () => isBasis,
             condition,
@@ -107,26 +114,35 @@ export const defineNodeKind = <
                 `${condition}
             return true`
             ),
-            intersectionCache,
-            intersect(other) {
-                if (this === other) {
-                    return this
+            intersect: (other) => {
+                if (instance === other) {
+                    return instance
                 }
-                if (intersectionCache[other.condition]) {
-                    return intersectionCache[other.condition]!
+                const cacheKey = `${intersectionKind}${condition}${other.condition}`
+                if (intersectionCache[cacheKey]) {
+                    return intersectionCache[cacheKey]
                 }
-                const result: BaseNode | Disjoint = def.intersect(this, other)
-                intersectionCache[other.condition] = result
-                other.intersectionCache[condition] =
+                const result: BaseNode | Disjoint = def.intersect(
+                    instance,
+                    other
+                )
+                intersectionCache[cacheKey] = result
+                intersectionCache[
+                    `${intersectionKind}${other.condition}${condition}`
+                ] =
+                    // also cache the result with other's condition as the key.
+                    // if it was a Disjoint, it has to be inverted so that l, r
+                    // still line up correctly
                     result instanceof Disjoint ? result.invert() : result
                 return result
             }
         }
-        const instance = Object.assign(base, addProps(base as node), {
-            toString(this: node) {
-                return this.description
-            }
+        const instance = Object.assign(addProps(base as node), base, {
+            toString: () => instance.description
         }) as node
+        if (def.kind === "type") {
+            instance.alias = registry().register(instance)
+        }
         nodeCache[condition] = instance
         return instance
     }

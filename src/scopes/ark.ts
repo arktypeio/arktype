@@ -14,6 +14,14 @@ import type { InferredValidation } from "./validation/validation.js"
 import { validationTypes } from "./validation/validation.js"
 // import { tsGenericTypes } from "./tsGenerics.js"
 
+/** Root scopes can be inferred automatically from node definitions, but
+ * explicitly typing them can improve responsiveness */
+export type RootScope<exports extends Record<string, unknown>> = Scope<{
+    exports: exports
+    locals: {}
+    ambient: {}
+}>
+
 export type ArkResolutions = { exports: Ark; locals: {}; ambient: Ark }
 
 export const ark: Scope<ArkResolutions> = Scope.root({

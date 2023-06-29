@@ -13,6 +13,7 @@ suite("morph", () => {
         const t = type("boolean").morph((data) => `${data}`)
         attest(t).typed as Type<(In: boolean) => string>
         attest(t.infer).typed as string
+        attest(t.inferIn).typed as boolean
         const result = t(true)
         if (result.problems) {
             return result.problems.throw()
@@ -50,6 +51,16 @@ suite("morph", () => {
             }>,
             Ark
         >
+    })
+    test("any as out", () => {
+        const t = type("string", "=>", (s) => s as any)
+        attest(t.inferIn).typed as string
+        attest(t.infer).typed as any
+    })
+    test("never as out", () => {
+        const t = type("string", "=>", (s) => s as never)
+        attest(t.inferIn).typed as string
+        attest(t.infer).typed as never
     })
     test("return problem", () => {
         const divide100By = type([
@@ -347,11 +358,8 @@ suite("morph", () => {
         attest(() =>
             type("string")
                 .morph((s) => s.length)
-                // @ts-expect-error
                 .and(type("string").morph((s) => s.length))
-        ).throwsAndHasTypeError(
-            "Intersection of morphs results in an unsatisfiable type"
-        )
+        ).throws("Intersection of morphs results in an unsatisfiable type")
     })
     test("union helper undiscriminated", () => {
         attest(() =>

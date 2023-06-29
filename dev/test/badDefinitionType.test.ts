@@ -40,4 +40,14 @@ suite("definitions", () => {
             writeBadDefinitionTypeMessage("symbol")
         )
     })
+    test("any", () => {
+        // @ts-expect-error
+        attest(() => type({ bad: {} as any })).types.errors(
+            `Type 'any' is not assignable to type 'never'`
+        )
+    })
+    test("unknown", () => {
+        // @ts-expect-error just results in base completions, so we just check there's an error
+        attest(() => type({ bad: {} as unknown })).types.errors("")
+    })
 })

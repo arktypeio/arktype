@@ -1,27 +1,31 @@
-import { throwInternalError } from "../../../dev/utils/src/errors.js"
-import { tryParseWellFormedInteger } from "../../../dev/utils/src/numericLiterals.js"
+import {
+    throwInternalError,
+    tryParseWellFormedInteger
+} from "../../../dev/utils/src/main.js"
 import type { CompilationState } from "../../compile/state.js"
-import { InputParameterName } from "../../compile/state.js"
+import { sourceFromRegexLiteral } from "../primitive/regex.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp, compileNamedProps } from "./named.js"
 import type { PredicateInput } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins, node } from "./type.js"
 
-export type IndexedPropInput = {
+export type IndexedPropInput = Readonly<{
     key: TypeInput
     value: TypeInput
-}
+}>
 
-export type IndexedPropRule = {
+export type IndexedPropRule = Readonly<{
     key: TypeNode
     value: TypeNode
-}
+}>
 
-const arrayIndexMatcherSuffix = `(?:0|(?:[1-9]\\d*))$`
+const arrayIndexSourceSuffix = `(?:0|(?:[1-9]\\d*))$`
+
+const arrayIndexLiteralSuffix = `${arrayIndexSourceSuffix}/` as const
 
 export type ArrayIndexMatcherSource =
-    `${string}${typeof arrayIndexMatcherSuffix}`
+    `${string}${typeof arrayIndexSourceSuffix}`
 
 const excludedIndexMatcherStart = "^(?!("
 const excludedIndexMatcherEnd = ")$)"
@@ -37,18 +41,23 @@ const excludedIndicesSource = (firstVariadic: number) => {
     for (let i = firstVariadic - 2; i >= 0; i--) {
         excludedIndices += `|${i}`
     }
-    return `${excludedIndexMatcherStart}${excludedIndices}${excludedIndexMatcherEnd}${arrayIndexMatcherSuffix}` as const
+    return `${excludedIndexMatcherStart}${excludedIndices}${excludedIndexMatcherEnd}${arrayIndexSourceSuffix}` as const
 }
 
 export type VariadicIndexMatcherSource = ReturnType<
     typeof excludedIndicesSource
 >
 
-const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSuffix}` as const
+export type VariadicIndexMatcherLiteral = `/${VariadicIndexMatcherSource}/`
+
+const nonVariadicIndexMatcherSource = `^${arrayIndexSourceSuffix}` as const
 
 export type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
 
-export const createArrayIndexMatcher = <index extends number>(
+export type NonVariadicIndexMatcherLiteral =
+    `/${NonVariadicIndexMatcherSource}/`
+
+export const arrayIndexMatcherSource = <index extends number>(
     firstVariadic: index
 ) =>
     (firstVariadic === 0
@@ -59,18 +68,18 @@ export const createArrayIndexMatcher = <index extends number>(
         : VariadicIndexMatcherSource
 
 export const extractArrayIndexRegex = (keyNode: TypeNode) => {
-    if (keyNode.rule.length !== 1) {
+    if (keyNode.branches.length !== 1) {
         return
     }
-    const regexNode = keyNode.rule[0].getConstraint("regex")
+    const regexNode = keyNode.branches[0].getConstraint("regex")
     if (!regexNode || regexNode.rule.length !== 1) {
         return
     }
-    const source = regexNode.rule[0]
-    if (!source.endsWith(arrayIndexMatcherSuffix)) {
+    const regexLiteral = regexNode.rule[0]
+    if (!regexLiteral.endsWith(arrayIndexLiteralSuffix)) {
         return
     }
-    return source as ArrayIndexMatcherSource
+    return sourceFromRegexLiteral(regexLiteral) as ArrayIndexMatcherSource
 }
 
 export const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
@@ -95,7 +104,7 @@ export const arrayIndexInput = <index extends number = 0>(
 ) =>
     ({
         basis: "string",
-        regex: createArrayIndexMatcher(firstVariadicIndex)
+        regex: `/${arrayIndexMatcherSource(firstVariadicIndex)}/`
     } as const satisfies PredicateInput<"string">)
 
 export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>
@@ -116,7 +125,7 @@ export const compileArray = (
     const i = s.getNextIndexKeyAndPush("i")
     const elementCondition = elementNode.compile(s)
     s.popKey()
-    return `${namedCheck};
+    return `${namedCheck}
 for(let ${i} = ${firstVariadicIndex}; ${i} < ${s.data}.length; ${i}++) {
     ${elementCondition}
 }`
@@ -127,6 +136,7 @@ export const compileIndexed = (
     indexedProps: IndexedPropRule[],
     s: CompilationState
 ) => {
+    throw new Error()
     const k = s.getNextIndexKeyAndPush("k")
     const indexedChecks = indexedProps
         .map((prop) =>
@@ -134,7 +144,8 @@ export const compileIndexed = (
                 ? // if the index signature is just for "string", we don't need to check it explicitly
                   prop.value.compile(s)
                 : // Ensure condition is checked on the key variable as opposed to the input
-                  `if(${prop.key.condition.replaceAll(InputParameterName, k)}){
+                  // TODO: fix ${prop.key.condition.replaceAll(InputParameterName, k)}
+                  `if(false){
     ${prop.value.compile(s)}
 }`
         )

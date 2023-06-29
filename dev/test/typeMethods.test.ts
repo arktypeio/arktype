@@ -5,7 +5,7 @@ import { define, scope, type, Type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
-suite("type utilities", () => {
+suite("type methods", () => {
     test("root discriminates", () => {
         const t = type("string")
         const { data, problems } = t("")

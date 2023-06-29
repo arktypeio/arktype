@@ -1,5 +1,5 @@
-import type { NumberLiteral } from "../../../../../dev/utils/src/numericLiterals.js"
-import { tryParseWellFormedInteger } from "../../../../../dev/utils/src/numericLiterals.js"
+import type { NumberLiteral } from "../../../../../dev/utils/src/main.js"
+import { tryParseWellFormedInteger } from "../../../../../dev/utils/src/main.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"

@@ -1,4 +1,4 @@
-import { type error, throwParseError } from "../../../dev/utils/src/errors.js"
+import { type error, throwParseError } from "../../../dev/utils/src/main.js"
 import type { TypeNode } from "../../nodes/composite/type.js"
 import type { ParseContext } from "../../scope.js"
 import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
@@ -7,8 +7,10 @@ import { DynamicState } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
-import type { writeUnexpectedCharacterMessage } from "./shift/operator/operator.js"
-import { parseOperator } from "./shift/operator/operator.js"
+import {
+    parseOperator,
+    writeUnexpectedCharacterMessage
+} from "./shift/operator/operator.js"
 
 export const parseString = (def: string, ctx: ParseContext): TypeNode =>
     ctx.scope.maybeResolveNode(def, ctx) ??
@@ -21,8 +23,8 @@ export const parseString = (def: string, ctx: ParseContext): TypeNode =>
  * This can be much more efficient for simple definitions.
  */
 export type parseString<def extends string, $, args> = def extends keyof $
-    ? // def could also be an arg here, in which case the arg resolution will
-      // end up having precedence during inference as normal.
+    ? // def could also be a generic reference here, in which case it will
+      // fail semantic validation because it has no args
       def
     : def extends `${infer child}[]`
     ? child extends keyof $
@@ -46,6 +48,11 @@ export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)
     parseOperand(s)
     const result = parseUntilFinalizer(s).root
+    s.scanner.shiftUntilNonWhitespace()
+    if (s.scanner.lookahead) {
+        // throw a parse error if non-whitespace characters made it here without being parsed
+        throwParseError(writeUnexpectedCharacterMessage(s.scanner.lookahead))
+    }
     return result.isNever()
         ? throwParseError(writeUnsatisfiableExpressionError(def))
         : result

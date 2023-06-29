@@ -1,5 +1,5 @@
-import type { Dict } from "../../../../dev/utils/src/records.js"
-import { isKeyOf } from "../../../../dev/utils/src/records.js"
+import type { Dict } from "../../../../dev/utils/src/main.js"
+import { isKeyOf } from "../../../../dev/utils/src/main.js"
 import type { Comparator } from "../../../nodes/primitive/range.js"
 
 export class Scanner<Lookahead extends string = string> {

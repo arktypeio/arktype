@@ -59,8 +59,8 @@ export const stringify = (data: unknown, indent?: number) => {
 
 const stringifyOpts = {
     onCycle: () => "(cycle)",
-    onSymbol: (v) => `(symbol${v.description && ` ${v.description}`})`,
-    onFunction: (v) => `(function${v.name && ` ${v.name}`})`
+    onSymbol: (v) => `(symbol ${v.description ?? "anonymous"})`,
+    onFunction: (v) => `(function ${v.name ?? "anonymous"})`
 } satisfies SerializationOptions
 
 const serializeRecurse = (

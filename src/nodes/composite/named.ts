@@ -1,4 +1,4 @@
-import { throwInternalError } from "../../../dev/utils/src/errors.js"
+import { throwInternalError } from "../../../dev/utils/src/main.js"
 import type { CompilationState } from "../../compile/state.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput, TypeNode } from "./type.js"
@@ -51,19 +51,21 @@ export const compileNamedProp = (prop: NamedPropRule, s: CompilationState) => {
     return result
 }
 
-export type NamedPropInput = {
-    value: TypeInput
+export type PropValueInput = TypeNode | TypeInput
+
+export type NamedPropInput = Readonly<{
+    value: PropValueInput
     optional?: boolean
     prerequisite?: boolean
-}
+}>
 
-export type NamedPropRule = {
+export type NamedPropRule = Readonly<{
     key: NamedKeyRule
     value: TypeNode
-}
+}>
 
-export type NamedKeyRule = {
+export type NamedKeyRule = Readonly<{
     name: string
     optional: boolean
     prerequisite: boolean
-}
+}>

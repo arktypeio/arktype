@@ -1,11 +1,12 @@
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
-} from "../../../dev/utils/src/numericLiterals.js"
+} from "../../../dev/utils/src/main.js"
 import { node } from "../../nodes/composite/type.js"
+import { serializeRegex } from "../../nodes/primitive/regex.js"
 import type { Out } from "../../parse/tuple.js"
 import { Scope } from "../../scope.js"
-import type { RootScope } from "../utils.js"
+import type { RootScope } from "../ark.js"
 import { creditCard } from "./creditCard.js"
 import { parsedDate } from "./date.js"
 
@@ -14,13 +15,13 @@ import { parsedDate } from "./date.js"
 // TODO: { mustBe: "a well-formed numeric string" }
 const parsedNumber = node({
     basis: "string",
-    regex: wellFormedNumberMatcher.source,
+    regex: serializeRegex(wellFormedNumberMatcher),
     morph: (s) => parseFloat(s)
 })
 
 const parsedInteger = node({
     basis: "string",
-    regex: wellFormedIntegerMatcher.source,
+    regex: serializeRegex(wellFormedIntegerMatcher),
     morph: (s) => parseInt(s)
     // TODO:
     // morph: (s, problems) => {
@@ -44,7 +45,7 @@ const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 //  "a valid email"
 const email = node({
     basis: "string",
-    regex: emailMatcher.source
+    regex: serializeRegex(emailMatcher)
 })
 
 const uuidMatcher =
@@ -54,7 +55,7 @@ const uuidMatcher =
 // "a valid UUID"
 const uuid = node({
     basis: "string",
-    regex: uuidMatcher.source
+    regex: serializeRegex(uuidMatcher)
 })
 
 const semverMatcher =
@@ -64,7 +65,7 @@ const semverMatcher =
 // "a valid semantic version (see https://semver.org/)"
 const semver = node({
     basis: "string",
-    regex: semverMatcher.source
+    regex: serializeRegex(semverMatcher)
 })
 
 // "a JSON-parsable string"

@@ -1,5 +1,4 @@
-import type { error } from "../../../dev/utils/src/errors.js"
-import type { NumberLiteral } from "../../../dev/utils/src/numericLiterals.js"
+import type { error, NumberLiteral } from "../../../dev/utils/src/main.js"
 import type {
     Comparator,
     InvertedComparators,

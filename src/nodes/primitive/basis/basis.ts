@@ -1,11 +1,15 @@
-import type { Domain, inferDomain } from "../../../../dev/utils/src/domains.js"
-import { throwInternalError } from "../../../../dev/utils/src/errors.js"
-import type { evaluate } from "../../../../dev/utils/src/generics.js"
 import type {
     AbstractableConstructor,
-    Constructor
-} from "../../../../dev/utils/src/objectKinds.js"
-import { constructorExtends } from "../../../../dev/utils/src/objectKinds.js"
+    Constructor,
+    Domain,
+    evaluate,
+    inferDomain
+} from "../../../../dev/utils/src/main.js"
+import {
+    constructorExtends,
+    throwInternalError
+} from "../../../../dev/utils/src/main.js"
+import type { TypeNode } from "../../composite/type.js"
 import type { DisjointKindEntries } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { BaseNode } from "../../node.js"
@@ -49,9 +53,11 @@ export type BasisNodeDefinition = {
     rule: unknown
 }
 
-export interface BasisNode<rule = unknown> extends BaseNode<rule, BasisNode> {
+export interface BasisNode<rule = unknown>
+    extends BaseNode<{ rule: rule; intersectsWith: BasisNode }> {
     kind: BasisKind
     domain: Domain
+    keyof(): TypeNode
     literalKeys: PropertyKey[]
 }
 

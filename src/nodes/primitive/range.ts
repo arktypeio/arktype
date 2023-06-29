@@ -1,5 +1,4 @@
-import { throwInternalError } from "../../../dev/utils/src/errors.js"
-import { isKeyOf } from "../../../dev/utils/src/records.js"
+import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
 import { getDateFromLiteral } from "../../parse/string/shift/operand/date.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
@@ -64,7 +63,7 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export interface RangeNode extends BaseNode<Range> {
+export interface RangeNode extends BaseNode<{ rule: Range }> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
     numericMin: Bound<MinComparator, number | string> | undefined

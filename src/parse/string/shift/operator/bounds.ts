@@ -28,7 +28,7 @@ export const parseBound = (
     start: ComparatorStartChar
 ) => {
     const comparator = shiftComparator(s, start)
-    const value = s.root.valueNode?.rule
+    const value = s.root.value?.rule
     if (typeof value === "number" || typeof value === "string") {
         s.ejectRoot()
         return s.reduceLeftBound(value, comparator)
@@ -107,16 +107,11 @@ export const parseRightBound = (
     s: DynamicStateWithRoot,
     comparator: Comparator
 ) => {
-    //eject
     const baseRoot = s.ejectRoot()
-    //parse
     parseOperand(s)
-    //eject
-    const value = s.ejectRoot()
+    const bound = s.ejectRoot()
     s.setRoot(baseRoot)
-    const limitToken = value.valueNode!.rule
-    // throwParseError(`${baseRoot}-${limitTokenn}`)
-    // const limitTokenn = s.scanner.shiftUntilNextTerminator()
+    const limitToken = bound.value?.rule
     const limit = hasDateEnclosing(limitToken)
         ? tryParseDate(
               `${limitToken}`,
@@ -180,24 +175,6 @@ export type parseRightBound<
           >
     : never
 
-// Scanner.shiftUntilNextTerminator<
-//     Scanner.skipWhitespace<unscanned>
-// > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-//     ? scanned extends ValidLiteral
-//         ? s["branches"]["range"] extends {}
-//             ? comparator extends MaxComparator
-//                 ? state.reduceRange<
-//                       s,
-//                       s["branches"]["range"]["limit"],
-//                       s["branches"]["range"]["comparator"],
-//                       comparator,
-//                       scanned,
-//                       nextUnscanned
-//                   >
-//                 : state.error<writeUnpairableComparatorMessage<comparator>>
-//             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-//         : state.error<writeInvalidLimitMessage<comparator, scanned, "right">>
-//     : never
 export const writeInvalidLimitMessage = <
     comparator extends Comparator,
     limit extends string,

@@ -1,16 +1,19 @@
-import { domainOf } from "../../../dev/utils/src/domains.js"
-import type { Domain, inferDomain } from "../../../dev/utils/src/domains.js"
-import {
-    throwInternalError,
-    throwParseError
-} from "../../../dev/utils/src/errors.js"
-import type { evaluate, isUnknown } from "../../../dev/utils/src/generics.js"
-import type { List, listable } from "../../../dev/utils/src/lists.js"
 import type {
     AbstractableConstructor,
-    Constructor
-} from "../../../dev/utils/src/objectKinds.js"
-import { isArray } from "../../../dev/utils/src/objectKinds.js"
+    Constructor,
+    Domain,
+    evaluate,
+    inferDomain,
+    isUnknown,
+    List,
+    listable
+} from "../../../dev/utils/src/main.js"
+import {
+    domainOf,
+    isArray,
+    throwInternalError,
+    throwParseError
+} from "../../../dev/utils/src/main.js"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import { hasDateEnclosing } from "../../parse/string/shift/operand/date.js"
@@ -40,14 +43,18 @@ import { domainNode } from "../primitive/basis/domain.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { Bound, Range } from "../primitive/range.js"
-import type { inferPropsInput } from "./infer.js"
+import type { SerializedRegexLiteral } from "../primitive/regex.js"
+import type { inferPropsInput } from "./inferProps.js"
 import type { PropsInput } from "./props.js"
+import type { TypeNode } from "./type.js"
+import { builtins } from "./type.js"
 
-export interface PredicateNode extends BaseNode<PredicateChildren> {
-    basis: BasisNode | undefined
+export interface PredicateNode extends BaseNode<{ rule: PredicateChildren }> {
+    basis: BasisNode | null
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
-    valueNode: ValueNode | undefined
+    value: ValueNode | undefined
+    keyof(): TypeNode
     constrain<kind extends ConstraintKind>(
         kind: kind,
         input: ConstraintsInput[kind]
@@ -115,6 +122,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
             //     )
             // }
+            // TODO: can props imply object basis for compilation?
             const basis = l.basis
                 ? r.basis
                     ? l.basis.intersect(r.basis)
@@ -123,24 +131,35 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             if (basis instanceof Disjoint) {
                 return basis
             }
-            if (l.valueNode) {
-                return r.allows(l.valueNode.rule)
-                    ? l
-                    : Disjoint.from("assignability", l.valueNode, r)
-            }
-            if (r.valueNode) {
-                return l.allows(r.valueNode.rule)
-                    ? r
-                    : Disjoint.from("assignability", l, r.valueNode)
+            // check l.basis instead of l.value since l.value will
+            // only be set if the value is "pure", i.e. has no morphs
+            if (l.basis?.hasKind("value")) {
+                if (!r.allows(l.basis.rule)) {
+                    return Disjoint.from("assignability", r, l.basis)
+                }
+            } else if (r.basis?.hasKind("value")) {
+                if (!l.allows(r.basis.rule)) {
+                    return Disjoint.from("assignability", l, r.basis)
+                }
             }
             const rules: PredicateChildren = basis ? [basis] : []
-            for (const kind of constraintKindNames) {
+            // if one of the conditions is value, we've already checked
+            // if it's allowed by the opposite predicate, so the only
+            // constraint we have to worry about is morphs.
+            const intersectedKinds = basis?.hasKind("value")
+                ? (["morph"] as const)
+                : constraintKindNames
+            for (const kind of intersectedKinds) {
                 const lNode = l.getConstraint(kind)
                 const rNode = r.getConstraint(kind)
                 if (lNode) {
                     if (rNode) {
                         const result = lNode.intersect(rNode as never)
-                        // TODO: don't return here
+                        // we may be missing out on deep discriminants here if e.g.
+                        // there is a range Disjoint between two arrays, each of which
+                        // contains objects that are discriminable. if we need to find
+                        // these, we should avoid returning here and instead collect Disjoints
+                        // similarly to in PropsNode
                         if (result instanceof Disjoint) {
                             return result
                         }
@@ -157,7 +176,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
     },
     (base) => {
         const initialRule = base.rule.at(0)
-        const basis = initialRule?.isBasis() ? initialRule : undefined
+        const basis = initialRule?.isBasis() ? initialRule : null
         const constraints = (
             basis ? base.rule.slice(1) : base.rule
         ) as ConstraintNode[]
@@ -165,7 +184,9 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             base.rule.length === 0
                 ? "unknown"
                 : constraints.length
-                ? constraints.map((rule) => rule.toString()).join(" and ")
+                ? `(${constraints
+                      .map((rule) => rule.toString())
+                      .join(" and ")})`
                 : `${basis}`
         return {
             description,
@@ -175,7 +196,11 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 constraints.find(
                     (constraint) => constraint.kind === k
                 ) as never,
-            valueNode: basis?.hasKind("value") ? basis : undefined,
+            value:
+                // we only want simple unmorphed values
+                basis?.hasKind("value") && base.rule.length === 1
+                    ? basis
+                    : undefined,
             constrain(kind, input): PredicateNode {
                 const constraint = createNodeOfKind(kind, input as never)
                 assertAllowsConstraint(this.basis, constraint)
@@ -184,22 +209,21 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                     return result.throw()
                 }
                 return result
+            },
+            keyof() {
+                if (!this.basis) {
+                    return builtins.never()
+                }
+                const propsKey = this.getConstraint("props")?.keyof()
+                return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
             }
         }
     }
 )
 
-// keyof() {
-//     if (!this.basis) {
-//         return neverTypeNode
-//     }
-//     const basisKey = this.basis.keyof()
-//     const propsKey = this.getConstraint("props")?.keyof()
-//     return propsKey?.or(basisKey) ?? basisKey
-// }
 export const assertAllowsConstraint = (
-    basis: BasisNode | undefined,
-    node: ConstraintNode
+    basis: BasisNode | null,
+    kind: ConstraintKind
 ) => {
     if (basis?.hasKind("value")) {
         if (node["kind"] !== "morph") {
@@ -312,7 +336,7 @@ export type PredicateChildKind = "basis" | ConstraintKind
 export type ConstraintKind = keyof ConstraintKinds
 
 export type PredicateInput<
-    basis extends BasisInput | undefined = BasisInput | undefined
+    basis extends BasisInput | null = BasisInput | null
 > =
     | Record<string, never>
     | evaluate<
@@ -322,7 +346,7 @@ export type PredicateInput<
       >
 
 export type ConstraintsInput<
-    basis extends BasisInput | undefined = BasisInput | undefined
+    basis extends BasisInput | null = BasisInput | null
 > = BasisInput extends basis
     ? {
           [k in ConstraintKind]?: unknownConstraintInput<k>
@@ -393,7 +417,7 @@ type domainConstraints<basis extends Domain> = basis extends "object"
       }
     : basis extends "string"
     ? {
-          regex?: listable<string>
+          regex?: listable<SerializedRegexLiteral>
           range?: Range
       }
     : basis extends "number"

@@ -32,7 +32,8 @@ export const parseEnclosed = (
     }
     // Shift the scanner one additional time for the second enclosing token
     if (s.scanner.shift() === "/") {
-        s.root = typeNode({ basis: "string", regex: token })
+        // flags are not currently supported for embedded regex literals
+        s.root = typeNode({ basis: "string", regex: `/${token}/` })
     } else {
         let modifiedToken = token
         if (hasDateEnclosing(enclosing)) {

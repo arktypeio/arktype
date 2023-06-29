@@ -23,7 +23,7 @@ suite("divisibility", () => {
             attest(t.condition).equals(
                 type("number%8").and("number<3").condition
             )
-            attest(t.root.description).snap("a multiple of 8 and <3")
+            attest(t.root.description).snap("(a multiple of 8 and <3)")
         })
         test("allows non-narrowed divisor", () => {
             const z = 5 as number
@@ -90,7 +90,7 @@ suite("divisibility", () => {
         })
         test("invalid literal", () => {
             attest(() => type("number%3&8")).throws(
-                "Intersection of a multiple of 3 and the value 8 results in an unsatisfiable type"
+                "Intersection of (a multiple of 3) and 8 results in an unsatisfiable type"
             )
         })
     })

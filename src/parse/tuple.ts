@@ -1,17 +1,27 @@
-import { throwParseError } from "../../dev/utils/src/errors.js"
-import type { evaluate, isAny } from "../../dev/utils/src/generics.js"
-import type { List } from "../../dev/utils/src/lists.js"
-import type { AbstractableConstructor } from "../../dev/utils/src/objectKinds.js"
-import { isArray } from "../../dev/utils/src/objectKinds.js"
-import { stringify } from "../../dev/utils/src/serialize.js"
+import type {
+    AbstractableConstructor,
+    BuiltinObjectKind,
+    conform,
+    Domain,
+    evaluate,
+    isAny,
+    List
+} from "../../dev/utils/src/main.js"
+import {
+    domainOf,
+    isArray,
+    objectKindOf,
+    stringify,
+    throwParseError
+} from "../../dev/utils/src/main.js"
 import type { CheckResult, TraversalState } from "../compile/traverse.js"
-import type { Problem } from "../main.js"
+import { type Problem } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
 import type { NodeEntry } from "../nodes/composite/props.js"
 import { propsNode } from "../nodes/composite/props.js"
 import type { TypeNode } from "../nodes/composite/type.js"
-import { builtins, typeNode } from "../nodes/composite/type.js"
+import { builtins, node, typeNode } from "../nodes/composite/type.js"
 import { arrayClassNode } from "../nodes/primitive/basis/class.js"
 import type { ParseContext } from "../scope.js"
 import type { extractIn, extractOut } from "../type.js"
@@ -21,30 +31,14 @@ import {
     writeUnsatisfiableExpressionError
 } from "./ast/ast.js"
 import type { inferIntersection } from "./ast/intersections.js"
-import type { astToString } from "./ast/utils.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
-    const tupleExpressionResult = isIndexOneExpression(def)
-        ? indexOneParsers[def[1]](def as never, ctx)
-        : isIndexZeroExpression(def)
-        ? prefixParsers[def[0]](def as never, ctx)
-        : undefined
-    if (tupleExpressionResult) {
-        return tupleExpressionResult.isNever()
-            ? throwParseError(
-                  writeUnsatisfiableExpressionError(
-                      def
-                          .map((def) =>
-                              typeof def === "string" ? def : stringify(def)
-                          )
-                          .join(" ")
-                  )
-              )
-            : tupleExpressionResult
-    }
+export const parseTuple = (def: List, ctx: ParseContext) =>
+    maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
+
+export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
     const props: NodeEntry[] = []
     let isVariadic = false
     for (let i = 0; i < def.length; i++) {
@@ -97,7 +91,34 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     return typeNode([predicate])
 }
 
-type InfixExpression = [unknown, InfixOperator, ...unknown[]]
+export const maybeParseTupleExpression = (
+    def: List,
+    ctx: ParseContext
+): TypeNode | undefined => {
+    const tupleExpressionResult = isIndexOneExpression(def)
+        ? indexOneParsers[def[1]](def as never, ctx)
+        : isIndexZeroExpression(def)
+        ? prefixParsers[def[0]](def as never, ctx)
+        : undefined
+    if (tupleExpressionResult) {
+        return tupleExpressionResult.isNever()
+            ? throwParseError(
+                  writeUnsatisfiableExpressionError(
+                      def
+                          .map((def) =>
+                              typeof def === "string" ? def : stringify(def)
+                          )
+                          .join(" ")
+                  )
+              )
+            : tupleExpressionResult
+    }
+}
+
+// It is *extremely* important we use readonly any time we check a tuple against
+// something like this. Not doing so will always cause the check to fail, since
+// def is declared as a const parameter.
+type InfixExpression = readonly [unknown, InfixOperator, ...unknown[]]
 
 export type validateTuple<
     def extends List,
@@ -112,7 +133,7 @@ export type validateTuple<
     : def extends
           | readonly ["", ...unknown[]]
           | readonly [unknown, "", ...unknown[]]
-    ? [
+    ? readonly [
           def[0] extends ""
               ? BaseCompletions<$, args, IndexZeroOperator>
               : def[0],
@@ -127,7 +148,7 @@ export type validateTupleLiteral<
     $,
     args,
     result extends unknown[] = []
-> = def extends [infer head, ...infer tail]
+> = def extends readonly [infer head, ...infer tail]
     ? validateTupleLiteral<
           tail,
           $,
@@ -191,7 +212,7 @@ type inferTupleLiteral<
     $,
     args,
     result extends unknown[] = []
-> = def extends [infer head, ...infer tail]
+> = def extends readonly [infer head, ...infer tail]
     ? inferDefinition<
           head extends variadicExpression<infer operand> ? operand : head,
           $,
@@ -212,7 +233,10 @@ type variadicExpression<operandDef = unknown> =
 type variadicStringExpression<operandDef extends string = string> =
     `...${operandDef}`
 
-type variadicTupleExpression<operandDef = unknown> = ["...", operandDef]
+type variadicTupleExpression<operandDef = unknown> = readonly [
+    "...",
+    operandDef
+]
 
 export type inferTuple<def extends List, $, args> = def extends TupleExpression
     ? inferTupleExpression<def, $, args>
@@ -235,12 +259,13 @@ export type inferTupleExpression<
     ? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
     : def[1] extends "=>"
     ? parseMorph<def[0], def[2], $, args>
-    : def[0] extends "==="
-    ? def[1]
-    : def[0] extends "instanceof"
-    ? def[1] extends AbstractableConstructor<infer t>
-        ? t
-        : never
+    : def extends readonly ["===", ...infer values]
+    ? values[number]
+    : def extends readonly [
+          "instanceof",
+          ...infer constructors extends AbstractableConstructor[]
+      ]
+    ? InstanceType<constructors[number]>
     : def[0] extends "keyof"
     ? inferKeyOfExpression<def[1], $, args>
     : never
@@ -250,41 +275,32 @@ export type validatePrefixExpression<
     $,
     args
 > = def["length"] extends 1
-    ? [writeMissingRightOperandMessage<def[0]>]
-    : [
-          def[0] extends "keyof"
-              ? inferDefinition<def, $, args> extends never
-                  ? writeUnsatisfiableExpressionError<astToString<def>>
-                  : def[0]
-              : def[0],
-          def[0] extends "==="
-              ? def[1]
-              : def[0] extends "instanceof"
-              ? AbstractableConstructor
-              : def[0] extends "keyof"
-              ? validateDefinition<def[1], $, args>
-              : never
-      ]
+    ? readonly [writeMissingRightOperandMessage<def[0]>]
+    : def[0] extends "keyof"
+    ? readonly [def[0], validateDefinition<def[1], $, args>]
+    : def[0] extends "==="
+    ? readonly [def[0], ...unknown[]]
+    : def[0] extends "instanceof"
+    ? readonly [def[0], ...AbstractableConstructor[]]
+    : never
 
 export type validatePostfixExpression<
     def extends PostfixExpression,
     $,
     args
-> = [validateDefinition<def[0], $, args>, "[]"]
+    // conform here is needed to preserve completions for shallow tuple
+    // expressions at index 1 after TS 5.1
+> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
 
 export type validateInfixExpression<
     def extends InfixExpression,
     $,
     args
 > = def["length"] extends 2
-    ? [def[0], writeMissingRightOperandMessage<def[1]>]
-    : [
+    ? readonly [def[0], writeMissingRightOperandMessage<def[1]>]
+    : readonly [
           validateDefinition<def[0], $, args>,
-          def[1] extends "&"
-              ? inferDefinition<def, $, args> extends never
-                  ? writeUnsatisfiableExpressionError<"intersection">
-                  : def["1"]
-              : def[1],
+          def[1],
           def[1] extends "|"
               ? validateDefinition<def[2], $, args>
               : def[1] extends "&"
@@ -362,16 +378,20 @@ export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type parseMorph<inDef, morph, $, args> = morph extends Morph
     ? (
+          // TODO: should this be extractOut
           In: extractIn<inferDefinition<inDef, $, args>>
       ) => Out<inferMorphOut<ReturnType<morph>>>
     : never
 
-export type MorphAst<i = any, o = unknown> = (In: i) => Out<o>
+export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
-export type Out<o = unknown> = ["=>", o]
+export type Out<o = any> = ["=>", o]
 
-export type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
-    ? t
+export type inferMorphOut<out> = out extends CheckResult<infer t>
+    ? out extends null
+        ? // avoid treating any/never as CheckResult
+          out
+        : t
     : Exclude<out, Problem>
 
 export const writeMalformedFunctionalExpressionMessage = (
@@ -428,17 +448,36 @@ const prefixParsers: {
 } = {
     keyof: parseKeyOfTuple,
     instanceof: (def) => {
-        if (typeof def[1] !== "function") {
+        const objectKind = objectKindOf(def[1])
+        if (objectKind !== "Function") {
             return throwParseError(
-                `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
+                writeInvalidConstructorMessage(
+                    objectKind ? objectKind : domainOf(def[1])
+                )
             )
         }
-        return typeNode({
-            basis: def[1] as AbstractableConstructor
-        })
+        return typeNode(
+            def
+                .slice(1)
+                .map((ctor) =>
+                    objectKindOf(ctor) === "Function"
+                        ? { basis: ctor as AbstractableConstructor }
+                        : throwParseError(
+                              writeInvalidConstructorMessage(
+                                  objectKindOf(ctor) ?? domainOf(def[1])
+                              )
+                          )
+                )
+        )
     },
-    "===": (def) => typeNode({ basis: ["===", def[1]] })
+    "===": (def) => node.literal(...def.slice(1))
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
     prefixParsers[def[0] as IndexZeroOperator] !== undefined
+
+export const writeInvalidConstructorMessage = <
+    actual extends Domain | BuiltinObjectKind
+>(
+    actual: actual
+) => `Expected a constructor following 'instanceof' operator (was ${actual}).`

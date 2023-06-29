@@ -55,7 +55,6 @@ suite("node definitions", () => {
                         basis: "object",
                         props: {
                             name: {
-                                kind: "required",
                                 value: { basis: "string" }
                             }
                         }
@@ -71,12 +70,10 @@ suite("node definitions", () => {
             props: [
                 {
                     0: {
-                        kind: "required",
                         value: { basis: "string" }
                     },
                     // works for numeric or string keys
                     "1": {
-                        kind: "required",
                         value: { basis: "number" }
                     }
                 },
@@ -131,7 +128,7 @@ suite("node definitions", () => {
             { basis: "number" },
             {
                 basis: "object",
-                props: { a: { kind: "required", value: { basis: "bigint" } } }
+                props: { a: { value: { basis: "bigint" } } }
             }
         )
         attest(t).typed as TypeNode<number | "foo" | "bar" | { a: bigint }>
@@ -194,7 +191,7 @@ suite("node definitions", () => {
                 narrow: (b: boolean) => b === true
             })
         ).throws(
-            "narrow constraint may only be applied to a non-literal type (was the value true)"
+            "narrow constraint may only be applied to a non-literal type (was true)"
         )
     })
 })

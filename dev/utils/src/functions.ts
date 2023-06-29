@@ -12,8 +12,15 @@ export const cached = <T>(thunk: () => T) => {
     }
 }
 
-export const isThunk = (def: unknown): def is () => unknown =>
-    typeof def === "function" && def.length === 0
+export const isThunk = <value>(
+    value: value
+): value is Extract<value, Thunk> extends never
+    ? value & Thunk
+    : Extract<value, Thunk> => typeof value === "function" && value.length === 0
+
+export type Thunk<ret = unknown> = () => ret
+
+export type thunkable<t> = t | Thunk<t>
 
 export const CompiledFunction = class extends Function {
     constructor(...args: [string, ...string[]]) {

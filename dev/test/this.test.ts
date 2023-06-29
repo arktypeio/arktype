@@ -15,43 +15,34 @@ suite("this reference", () => {
             box?: ExpectedDisappointingGift
         }
         attest(disappointingGift.infer).typed as ExpectedDisappointingGift
-        attest(disappointingGift.allows.toString())
-            .snap(`function anonymous($arkRoot
-) {
-const self = ($arkRoot) => {
-                return ((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && typeof $arkRoot.label === "string" && !('box' in $arkRoot) || ((typeof $arkRoot.box === "object" && $arkRoot.box !== null) || typeof $arkRoot.box === "function") && self($arkRoot.box)
-            }
-            return self($arkRoot)
-}`)
     })
 
-    // TODO: fix cyclic
-    // test("doesn't change when rereferenced", () => {
-    //     const initial = type({
-    //         initial: "this"
-    //     })
+    test("doesn't change when rereferenced", () => {
+        const initial = type({
+            initial: "this"
+        })
 
-    //     const reference = type({
-    //         reference: initial
-    //     })
-    //     type Initial = {
-    //         initial: Initial
-    //     }
-    //     type Expected = {
-    //         reference: Initial
-    //     }
+        const reference = type({
+            reference: initial
+        })
+        type Initial = {
+            initial: Initial
+        }
+        type Expected = {
+            reference: Initial
+        }
 
-    //     attest(reference.infer).typed as Expected
-    //     const types = scope({
-    //         initial: {
-    //             initial: "initial"
-    //         },
-    //         reference: {
-    //             reference: "initial"
-    //         }
-    //     }).export()
-    //     attest(reference.condition).equals(types.reference.condition)
-    // })
+        attest(reference.infer).typed as Expected
+        const types = scope({
+            initial: {
+                initial: "initial"
+            },
+            reference: {
+                reference: "initial"
+            }
+        }).export()
+        attest(reference.condition).equals(types.reference.condition)
+    })
 
     test("unresolvable in scope", () => {
         attest(() =>

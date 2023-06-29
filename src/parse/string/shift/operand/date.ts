@@ -1,4 +1,4 @@
-import { throwParseError } from "../../../../../dev/utils/main.js"
+import { throwParseError } from "../../../../../dev/utils/src/errors.js"
 
 export type DateLiteral<value extends string = string> =
     | `d"${value}"`

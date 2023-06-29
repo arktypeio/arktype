@@ -1,8 +1,11 @@
-import type { error } from "../../dev/utils/src/errors.js"
-import type { evaluate } from "../../dev/utils/src/generics.js"
-import type { Dict } from "../../dev/utils/src/records.js"
-import type { NamedPropRule } from "../nodes/composite/named.js"
+import type {
+    Dict,
+    error,
+    evaluate,
+    mutable
+} from "../../dev/utils/src/main.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
+import type { NamedPropsInput } from "../nodes/composite/props.js"
 import { propsNode } from "../nodes/composite/props.js"
 import { typeNode } from "../nodes/composite/type.js"
 import { domainNode } from "../nodes/primitive/basis/domain.js"
@@ -12,7 +15,7 @@ import type { inferDefinition, validateDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
-    const named: NamedPropRule[] = []
+    const named: mutable<NamedPropsInput> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let optional = false
@@ -27,14 +30,11 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
             }
         }
         ctx.path.push(keyName)
-        named.push({
-            key: {
-                name: keyName,
-                prerequisite: false,
-                optional
-            },
+        named[keyName] = {
+            prerequisite: false,
+            optional,
             value: ctx.scope.parse(def[definitionKey], ctx)
-        })
+        }
         ctx.path.pop()
     }
     const props = propsNode(named)
@@ -44,15 +44,18 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 
 const objectBasisNode = domainNode("object")
 
-export type inferObjectLiteral<def extends Dict, $, args> = evaluate<
+export type inferObjectLiteral<def extends object, $, args> = evaluate<
     {
-        [k in keyof def as nonOptionalKeyFrom<k, $, args>]: inferDefinition<
-            def[k],
+        // since def is a const parameter, we remove the readonly modifier here
+        // support for builtin readonly tracked here:
+        // https://github.com/arktypeio/arktype/issues/808
+        -readonly [k in keyof def as nonOptionalKeyFrom<
+            k,
             $,
             args
-        >
+        >]: inferDefinition<def[k], $, args>
     } & {
-        [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
+        -readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
             def[k],
             $,
             args

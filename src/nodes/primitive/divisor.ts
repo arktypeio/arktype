@@ -1,7 +1,7 @@
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface DivisorNode extends BaseNode<number> {}
+export interface DivisorNode extends BaseNode<{ rule: number }> {}
 
 export const divisorNode = defineNodeKind<DivisorNode>(
     {
@@ -16,7 +16,10 @@ export const divisorNode = defineNodeKind<DivisorNode>(
                 )
             )
     },
-    (base) => ({ description: `a multiple of ${base.rule}` })
+    (base) => ({
+        description:
+            base.rule === 1 ? "an integer" : `a multiple of ${base.rule}`
+    })
 )
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

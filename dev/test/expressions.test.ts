@@ -1,13 +1,13 @@
 import { suite, test } from "mocha"
 import type { Out } from "../../src/main.js"
-import { node, scope, type } from "../../src/main.js"
+import { node, type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
-suite("tuple expression definition", () => {
+suite("tuple expressions", () => {
     test("nested", () => {
         const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
         attest(t.infer).typed as string | number | bigint | boolean
@@ -63,11 +63,28 @@ suite("tuple expression definition", () => {
     })
 })
 
-suite("args tuple expression", () => {
-    test("prefix", () => {
-        const t = type("keyof", "Date")
-        attest(t.infer).typed as keyof Date
-        attest(t.condition).equals(node({ basis: Date }).keyof().condition)
+suite("root expression", () => {
+    test("=== single", () => {
+        const t = type("===", 5)
+        attest(t.infer).typed as 5
+        attest(t.condition).equals(type("5").condition)
+    })
+    test("=== branches", () => {
+        const t = type("===", "foo", "bar", "baz")
+        attest(t.infer).typed as "foo" | "bar" | "baz"
+        attest(t.condition).equals(node.literal("foo", "bar", "baz").condition)
+    })
+    test("instanceof single", () => {
+        const t = type("instanceof", RegExp)
+        attest(t.infer).typed as RegExp
+        attest(t.condition).equals(node({ basis: RegExp }).condition)
+    })
+    test("instanceof branches", () => {
+        const t = type("instanceof", Array, Date)
+        attest(t.infer).typed as unknown[] | Date
+        attest(t.condition).equals(
+            node({ basis: Array }, { basis: Date }).condition
+        )
     })
     test("postfix", () => {
         const t = type({ a: "string" }, "[]")
@@ -109,5 +126,11 @@ suite("args tuple expression", () => {
         attest(t.condition).equals(
             type([{ a: "string" }, "|", { b: "this" }]).condition
         )
+    })
+    test("tuple as second arg", () => {
+        // this case is not fundamentally unique but TS has a hard time
+        // narrowing tuples in contexts like this
+        const t = type("keyof", [{ a: "string" }, "&", { b: "boolean" }])
+        attest(t.infer).typed as "a" | "b"
     })
 })

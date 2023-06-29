@@ -1,23 +1,21 @@
-import type { error } from "../../../../../dev/utils/src/errors.js"
-import { throwParseError } from "../../../../../dev/utils/src/errors.js"
-import type { join } from "../../../../../dev/utils/src/lists.js"
 import type {
     BigintLiteral,
+    error,
+    join,
     NumberLiteral
-} from "../../../../../dev/utils/src/numericLiterals.js"
+} from "../../../../../dev/utils/src/main.js"
 import {
+    stringify,
+    throwParseError,
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "../../../../../dev/utils/src/numericLiterals.js"
-import { stringify } from "../../../../../dev/utils/src/serialize.js"
+} from "../../../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
-import type { Scope } from "../../../../scope.js"
+import type { TypeSet } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
-import { Type } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
-import type { CastTo } from "../../../definition.js"
 import type { ParsedArgs } from "../../../generic.js"
 import {
     parseGenericArgs,
@@ -114,7 +112,7 @@ export type parseGenericInstantiation<
     : state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
-    maybeParseKeyword(s, token) ??
+    maybeParseReference(s, token) ??
     maybeParseUnenclosedLiteral(token) ??
     s.error(
         token === ""
@@ -122,7 +120,7 @@ const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
             : writeUnresolvableMessage(token)
     )
 
-const maybeParseKeyword = (
+const maybeParseReference = (
     s: DynamicState,
     token: string
 ): TypeNode | undefined => {
@@ -130,12 +128,14 @@ const maybeParseKeyword = (
         return s.ctx.args[token]
     }
     const resolution = s.ctx.scope.maybeResolve(token, s.ctx)
-    if (resolution instanceof Type) {
-        return resolution.root
-    } else if (hasArkKind(resolution, "generic")) {
-        return parseGenericInstantiation(token, resolution, s)
-    } else if (resolution === undefined) {
+    if (hasArkKind(resolution, "node")) {
+        return resolution
+    }
+    if (resolution === undefined) {
         return
+    }
+    if (hasArkKind(resolution, "generic")) {
+        return parseGenericInstantiation(token, resolution, s)
     }
     return throwParseError(`Unexpected resolution ${stringify(resolution)}`)
 }
@@ -156,53 +156,74 @@ type tryResolve<
     token extends string,
     $,
     args
-> = token extends keyof args
+> = token extends keyof $
     ? token
-    : token extends keyof $
+    : token extends keyof args
     ? token
-    : token extends `${infer subscope extends keyof $ &
-          string}.${infer reference}`
-    ? $[subscope] extends Scope
-        ? reference extends keyof $[subscope]["infer"]
-            ? CastTo<$[subscope]["infer"][reference]>
-            : unresolvableError<s, reference, $[subscope]["infer"], [subscope]>
-        : error<writeInvalidSubscopeReferenceMessage<subscope>>
     : token extends NumberLiteral
     ? token
     : token extends BigintLiteral
     ? token
-    : unresolvableError<s, token, $, args>
+    : token extends `${infer subscope extends keyof $ &
+          string}.${infer reference}`
+    ? $[subscope] extends TypeSet<infer r>
+        ? reference extends keyof r["exports"]
+            ? token
+            : unknown extends r["exports"]
+            ? // not sure why I need the additional check here, but for now TS seems to
+              // hit this branch for a non-scope dot access rather than failing
+              // initially when we try to infer r. if this can be removed without breaking
+              // any subscope test cases, do it!
+              error<writeNonScopeDotMessage<subscope>>
+            : unresolvableError<s, reference, $[subscope], args, [subscope]>
+        : error<writeNonScopeDotMessage<subscope>>
+    : unresolvableError<s, token, $, args, []>
 
-export type writeInvalidSubscopeReferenceMessage<name extends string> =
+export const writeNonScopeDotMessage = <name extends string>(
+    name: name
+): writeNonScopeDotMessage<name> =>
     `'${name}' must reference a scope to be accessed using dot syntax`
 
+type writeNonScopeDotMessage<name extends string> =
+    `'${name}' must reference a scope to be accessed using dot syntax`
+
+export const writeMissingSubscopeAccessMessage = <name extends string>(
+    name: name
+): writeMissingSubscopeAccessMessage<name> =>
+    `Reference to subscope '${name}' must specify an alias`
+
+export type writeMissingSubscopeAccessMessage<name extends string> =
+    `Reference to subscope '${name}' must specify an alias`
+
+/** Provide valid completions for the current token, or fallback to an
+ * unresolvable error if there are none */
 export type unresolvableError<
     s extends StaticState,
     token extends string,
     $,
     args,
-    subscopePath extends string[] = []
-> = Extract<
-    validReference<$, args, subscopePath>,
-    `${token}${string}`
-> extends never
-    ? error<writeUnresolvableMessage<token>>
-    : error<`${s["scanned"]}${join<
-          [
-              ...subscopePath,
-              Extract<
-                  validReference<$, args, subscopePath>,
-                  `${token}${string}`
-              >
-          ],
-          "."
+    subscopePath extends string[]
+> = validReferenceFromToken<token, $, args, subscopePath> extends never
+    ? error<writeUnresolvableMessage<qualifiedReference<token, subscopePath>>>
+    : error<`${s["scanned"]}${qualifiedReference<
+          validReferenceFromToken<token, $, args, subscopePath>,
+          subscopePath
       >}`>
 
-type validReference<
+type qualifiedReference<
+    reference extends string,
+    subscopePath extends string[]
+> = join<[...subscopePath, reference], ".">
+
+type validReferenceFromToken<
+    token extends string,
     $,
     args,
     subscopePath extends string[]
-> = subscopePath extends [] ? BaseCompletions<$, args> : keyof $
+> = Extract<
+    subscopePath extends [] ? BaseCompletions<$, args> : keyof $,
+    `${token}${string}`
+>
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token

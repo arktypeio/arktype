@@ -1,25 +1,26 @@
-import type { domainOf, Primitive } from "../../dev/utils/src/domains.js"
-import type { error } from "../../dev/utils/src/errors.js"
-import { throwParseError } from "../../dev/utils/src/errors.js"
-import { isThunk } from "../../dev/utils/src/functions.js"
 import type {
     defined,
+    Dict,
+    domainOf,
     equals,
+    error,
     evaluate,
     isAny,
-    isUnknown
-} from "../../dev/utils/src/generics.js"
-import type { List } from "../../dev/utils/src/lists.js"
-import { objectKindOf } from "../../dev/utils/src/objectKinds.js"
-import type {
-    Dict,
+    isUnknown,
+    List,
     optionalKeyOf,
+    Primitive,
     requiredKeyOf
-} from "../../dev/utils/src/records.js"
-import { stringify } from "../../dev/utils/src/serialize.js"
+} from "../../dev/utils/src/main.js"
+import {
+    objectKindOf,
+    stringify,
+    throwParseError
+} from "../../dev/utils/src/main.js"
 import { hasArkKind } from "../compile/registry.js"
 import type { TypeNode } from "../nodes/composite/type.js"
 import { node } from "../nodes/composite/type.js"
+import { serializeRegex } from "../nodes/primitive/regex.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type { validateString } from "./ast/ast.js"
@@ -45,7 +46,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
         case "RegExp":
             return node({
                 basis: "string",
-                regex: (def as RegExp).source
+                regex: serializeRegex(def as RegExp)
             })
         case "Function":
             if (def instanceof Type) {
@@ -65,23 +66,27 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
     ? t
     : def extends string
     ? inferString<def, $, args>
-    : def extends List
+    : def extends readonly unknown[]
     ? inferTuple<def, $, args>
     : def extends RegExp
     ? string
-    : def extends Dict
+    : def extends object
     ? inferObjectLiteral<def, $, args>
     : never
 
 export type validateDefinition<def, $, args> = null extends undefined
     ? `'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`
-    : def extends Terminal
-    ? def
+    : [def] extends [Terminal]
+    ? unknown extends def
+        ? // if def is any, never is the only way we can make validation fail
+          // since any would be assignable to a standard error message
+          never
+        : def
     : def extends string
     ? validateString<def, $, args> extends error<infer message>
         ? message
         : def
-    : def extends List
+    : def extends readonly unknown[]
     ? validateTuple<def, $, args>
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<

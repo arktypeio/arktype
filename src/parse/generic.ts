@@ -1,7 +1,5 @@
-import type { error } from "../../dev/utils/src/errors.js"
-import { throwParseError } from "../../dev/utils/src/errors.js"
-import type { nominal } from "../../dev/utils/src/generics.js"
-import type { join } from "../../dev/utils/src/lists.js"
+import { throwParseError } from "../../dev/utils/src/main.js"
+import type { error, join, nominal } from "../../dev/utils/src/main.js"
 import type { TypeNode } from "../main.js"
 import type { ParseContext } from "../scope.js"
 import { DynamicState } from "./string/reduce/dynamic.js"
@@ -200,9 +198,11 @@ export const writeInvalidGenericArgsMessage = <
     params: params,
     argDefs: argDefs
 ) =>
-    `${name}${params.join(", ")} requires exactly ${params.length} args (got ${
-        argDefs.length
-    }: ${argDefs.join(", ")})`
+    `${name}<${params.join(", ")}> requires exactly ${
+        params.length
+    } args (got ${argDefs.length}${
+        argDefs.length === 0 ? "" : ": " + argDefs.join(", ")
+    })`
 
 export type writeInvalidGenericArgsMessage<
     name extends string,
@@ -211,7 +211,6 @@ export type writeInvalidGenericArgsMessage<
 > = `${name}<${join<
     params,
     ", "
->}> requires exactly ${params["length"]} args (got ${argDefs["length"]}: ${join<
-    argDefs,
-    ","
->})`
+>}> requires exactly ${params["length"]} args (got ${argDefs["length"]}${argDefs["length"] extends 0
+    ? ""
+    : `: ${join<argDefs, ",">}`})`

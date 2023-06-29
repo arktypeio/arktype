@@ -69,12 +69,8 @@ suite("narrow", () => {
             ]).infer
         ).typed as number | boolean[]
         attest(() => {
-            type([
-                "number|boolean[]",
-                ":",
-                // @ts-expect-error
-                (data: number | string[]) => !!data
-            ])
+            // @ts-expect-error
+            type(["number|boolean[]", ":", (data: number | string[]) => !!data])
         }).types.errors("Type 'boolean' is not assignable to type 'string'.")
     })
     test("narrow problem", () => {

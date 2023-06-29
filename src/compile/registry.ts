@@ -1,24 +1,31 @@
-import type { autocomplete } from "../../dev/utils/src/generics.js"
-import type { AbstractableConstructor } from "../../dev/utils/src/objectKinds.js"
+import {
+    type autocomplete,
+    domainOf,
+    objectKindOf,
+    throwInternalError
+} from "../../dev/utils/src/main.js"
 import type { Node } from "../nodes/kinds.js"
+import type { TypeSet } from "../scope.js"
 import type { Generic } from "../type.js"
-import { compilePropAccess } from "./state.js"
+import { isDotAccessible } from "./state.js"
 import type { TraversalState } from "./traverse.js"
 
 type RegisteredInternalkey = "state"
 
-export type RegisteredKinds = {
-    morph: (...args: never[]) => unknown
-    narrow: (...args: never[]) => unknown
-    value: object | symbol
-    constructor: AbstractableConstructor
-}
-
 export type ArkKinds = {
     node: Node
     generic: Generic
+    typeset: TypeSet
 }
 export const arkKind = Symbol("ArkTypeInternalKind")
+
+export const addArkKind = <kind extends ArkKind>(
+    value: Omit<ArkKinds[kind], arkKind> & { [arkKind]?: kind },
+    kind: kind
+): ArkKinds[kind] =>
+    Object.defineProperty(value, arkKind, { enumerable: false }) as never
+
+export type arkKind = typeof arkKind
 
 export type ArkKind = keyof ArkKinds
 
@@ -27,9 +34,7 @@ export const hasArkKind = <kind extends ArkKind>(
     kind: kind
 ): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
 
-export type InternalId = "problems" | "result"
-
-export type PossiblyInternalObject = { $arkId?: InternalId } | undefined | null
+export const registry = () => new Registry()
 
 class Registry {
     [k: string]: unknown
@@ -50,22 +55,41 @@ class Registry {
         this[key] = value as never
     }
 
-    register<kind extends keyof RegisteredKinds>(
-        kind: kind,
-        baseName: string,
-        value: RegisteredKinds[kind]
-    ) {
-        let k = `${kind}${baseName}`
+    register(value: object | symbol) {
+        const baseName = baseNameFor(value)
+        let variableName = baseName
         let suffix = 2
-        while (k in this && this[k] !== value) {
-            k = `${baseName}${suffix++}`
+        while (variableName in this && this[variableName] !== value) {
+            variableName = `${baseName}${suffix++}`
         }
-        this[k] = value
-        return this.reference(k)
+        this[variableName] = value
+        return this.reference(variableName)
     }
 
     reference = <key extends autocomplete<RegisteredInternalkey>>(key: key) =>
-        `globalThis.$ark${compilePropAccess(key)}` as const
+        `$ark.${key}` as const
 }
 
-export const registry = () => new Registry()
+const baseNameFor = (value: object | symbol) => {
+    switch (typeof value) {
+        case "function":
+            return isDotAccessible(value.name)
+                ? value.name
+                : "anonymousFunction"
+        case "symbol":
+            return value.description && isDotAccessible(value.description)
+                ? value.description
+                : "anonymousSymbol"
+        default:
+            const objectKind = objectKindOf(value)
+            if (!objectKind) {
+                return throwInternalError(
+                    `Unexpected attempt to register serializable value of type ${domainOf(
+                        value
+                    )}`
+                )
+            }
+            // convert to camelCase
+            return objectKind[0].toLowerCase() + objectKind.slice(1)
+    }
+}

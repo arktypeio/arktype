@@ -1,6 +1,11 @@
-import { spliterate } from "../../../dev/utils/src/lists.js"
-import { isArray } from "../../../dev/utils/src/objectKinds.js"
-import { fromEntries, hasKeys } from "../../../dev/utils/src/records.js"
+import type { Dict } from "../../../dev/utils/src/main.js"
+import {
+    cached,
+    fromEntries,
+    hasKeys,
+    isArray,
+    spliterate
+} from "../../../dev/utils/src/main.js"
 import { hasArkKind } from "../../compile/registry.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
@@ -15,18 +20,22 @@ import {
 import type { NamedKeyRule, NamedPropInput, NamedPropRule } from "./named.js"
 import { compileNamedProps, intersectNamedProp } from "./named.js"
 import type { TypeNode } from "./type.js"
-import { builtins, typeNode } from "./type.js"
+import { builtins, node, typeNode } from "./type.js"
 
 export type KeyRule = NamedKeyRule | TypeNode
 
 export type NodeEntry = NamedPropRule | IndexedPropRule
 
-export type PropsRule = NodeEntry[]
+export type PropsRule = readonly NodeEntry[]
 
-export interface PropsNode extends BaseNode<NodeEntry[]> {
+export interface PropsNode extends BaseNode<{ rule: NodeEntry[] }> {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>
+    keyof(): TypeNode
+    indexedKeyOf(): TypeNode
+    namedKeyOf(): TypeNode
+    literalKeys: (string | symbol)[]
 }
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
@@ -80,15 +89,22 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
     },
     (base) => {
         const named = base.rule.filter(isNamed)
-        const indexed = base.rule.filter(isIndexed)
+        const indexed = base.rule.filter(isIndexed).map((_) => Object.freeze(_))
         const description = describeProps(named, indexed)
+        const literalKeys = named.map((prop) => prop.key.name)
+        const namedKeyOf = cached(() => node.literal(...literalKeys))
+        const indexedKeyOf = cached(() =>
+            typeNode(indexed.flatMap((entry) => entry.key.branches))
+        )
         return {
             description,
             named,
-            byName: Object.fromEntries(
-                named.map((prop) => [prop.key.name, prop] as const)
-            ),
-            indexed
+            byName: fromEntries(named.map((prop) => [prop.key.name, prop])),
+            indexed,
+            literalKeys,
+            keyof: cached(() => namedKeyOf().or(indexedKeyOf())),
+            indexedKeyOf,
+            namedKeyOf
         }
     }
 )
@@ -101,8 +117,10 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
             indexed.push({ key, value })
         } else {
             const result = indexed[matchingIndex].value.intersect(value)
-            indexed[matchingIndex].value =
-                result instanceof Disjoint ? builtins.never() : result
+            indexed[matchingIndex] = {
+                key,
+                value: result instanceof Disjoint ? builtins.never() : result
+            }
         }
     }
     const byName = { ...l.byName, ...r.byName }
@@ -181,14 +199,17 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
 const parsePropsInput = (input: PropsInput) => {
     const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
     const rule: NodeEntry[] = []
-    for (const k in namedInput) {
+    for (const name in namedInput) {
+        const prop = namedInput[name]
         rule.push({
             key: {
-                name: k,
-                prerequisite: namedInput[k].prerequisite ?? false,
-                optional: namedInput[k].optional ?? false
+                name,
+                prerequisite: prop.prerequisite ?? false,
+                optional: prop.optional ?? false
             },
-            value: typeNode(namedInput[k].value)
+            value: hasArkKind(prop.value, "node")
+                ? prop.value
+                : typeNode(prop.value)
         })
     }
     for (const prop of indexedInput) {
@@ -210,26 +231,6 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
     return JSON.stringify(fromEntries(entries))
 }
 
-// keyof() {
-//     return this.namedKeyOf().or(this.indexedKeyOf())
-// }
-
-// indexedKeyOf() {
-//     return new TypeNode(
-//         this.indexed.flatMap((entry) => entry.key.rule)
-//     ) as TypeNode<PropertyKey>
-// }
-
-// namedKeyOf() {
-//     return TypeNode.exactly(
-//         ...this.namedKeyLiterals()
-//     ) as TypeNode<PropertyKey>
-// }
-
-// namedKeyLiterals() {
-//     return this.named.map((prop) => prop.key.name)
-// }
-
 const isIndexed = (rule: NodeEntry): rule is IndexedPropRule =>
     hasArkKind(rule.key, "node")
 
@@ -243,7 +244,7 @@ const keyNameToString = (key: KeyRule) =>
 
 export type PropsInputTuple<
     named extends NamedPropsInput = NamedPropsInput,
-    indexed extends IndexedPropInput[] = IndexedPropInput[]
+    indexed extends readonly IndexedPropInput[] = readonly IndexedPropInput[]
 > = readonly [named: named, ...indexed: indexed]
 
-export type NamedPropsInput = Record<string, NamedPropInput>
+export type NamedPropsInput = Dict<string, NamedPropInput>

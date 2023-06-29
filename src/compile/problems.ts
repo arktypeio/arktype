@@ -1,18 +1,19 @@
-import { domainDescriptions, domainOf } from "../../dev/utils/src/domains.js"
-import type { Domain } from "../../dev/utils/src/domains.js"
-import type { conform } from "../../dev/utils/src/generics.js"
-import { Path } from "../../dev/utils/src/lists.js"
-import type { arraySubclassToReadonly } from "../../dev/utils/src/lists.js"
-import {
-    getExactBuiltinConstructorName,
-    objectKindDescriptions
-} from "../../dev/utils/src/objectKinds.js"
 import type {
     AbstractableConstructor,
+    arraySubclassToReadonly,
     BuiltinObjectKind,
-    Constructor
-} from "../../dev/utils/src/objectKinds.js"
-import { stringify } from "../../dev/utils/src/serialize.js"
+    conform,
+    Constructor,
+    Domain
+} from "../../dev/utils/src/main.js"
+import {
+    domainOf,
+    getExactBuiltinConstructorName,
+    objectKindDescriptions,
+    Path,
+    stringify
+} from "../../dev/utils/src/main.js"
+import { domainDescriptions } from "../nodes/primitive/basis/domain.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
 import type {
     Bound,
@@ -67,7 +68,6 @@ export abstract class Problem<requirement = unknown, data = unknown> {
 }
 
 class ProblemsArray extends Array<Problem> {
-    private readonly $arkId: InternalId = "problems"
     byPath: Record<string, Problem> = {}
     count = 0
 

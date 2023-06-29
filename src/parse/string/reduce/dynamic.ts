@@ -1,9 +1,9 @@
+import type { requireKeys } from "../../../../dev/utils/src/main.js"
 import {
+    isKeyOf,
     throwInternalError,
     throwParseError
-} from "../../../../dev/utils/src/errors.js"
-import type { requireKeys } from "../../../../dev/utils/src/records.js"
-import { isKeyOf } from "../../../../dev/utils/src/records.js"
+} from "../../../../dev/utils/src/main.js"
 import type { TypeNode } from "../../../nodes/composite/type.js"
 import type { Comparator, RangeNode } from "../../../nodes/primitive/range.js"
 import {
@@ -170,11 +170,12 @@ export class DynamicState {
     previousOperator() {
         return this.branches.range?.min
             ? this.branches.range.min.comparator
-            : this.branches.prefixes.at(-1) ?? this.branches.intersection
-            ? "&"
-            : this.branches.union
-            ? "|"
-            : undefined
+            : this.branches.prefixes.at(-1) ??
+                  (this.branches.intersection
+                      ? "&"
+                      : this.branches.union
+                      ? "|"
+                      : undefined)
     }
 
     shiftedByOne() {

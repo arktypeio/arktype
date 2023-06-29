@@ -1,6 +1,7 @@
 import { hasDomain } from "./domains.js"
 import type { defined, evaluate } from "./generics.js"
-import type { List } from "./lists.js"
+import { isArray } from "./objectKinds.js"
+import type { intersectUnion } from "./unionToTuple.js"
 
 export type Dict<k extends string = string, v = unknown> = {
     readonly [_ in k]: v
@@ -19,10 +20,10 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: defined<o[requiredKey]>
 }
 
-export const hasKey = <o extends object, k extends keyof o>(
+export const hasKey = <o extends object, k extends PropertyKey>(
     o: o,
     k: k
-): o is requireKeys<o, k> => k in o
+): o is Extract<o, { [_ in k]: {} | null }> => k in o
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
@@ -35,7 +36,7 @@ export type mutable<o> = {
 
 export type entryOf<o> = {
     [k in keyof o]-?: [k, o[k] & ({} | null)]
-}[o extends List ? keyof o & number : keyof o] &
+}[o extends readonly unknown[] ? keyof o & number : keyof o] &
     unknown
 
 export type entriesOf<o extends object> = evaluate<entryOf<o>[]>
@@ -59,16 +60,40 @@ export const fromEntries = <const entries extends readonly Entry[]>(
     entries: entries
 ) => Object.fromEntries(entries) as fromEntries<entries>
 
+export const transform = <
+    const o extends object,
+    transformed extends Entry | readonly Entry[]
+>(
+    o: o,
+    flatMapEntry: (entry: entryOf<o>) => transformed
+) =>
+    Object.fromEntries(
+        entriesOf(o).flatMap((entry) => {
+            const result = flatMapEntry(entry)
+            return isArray(result[0]) ? result : [result]
+        })
+    ) as evaluate<
+        intersectUnion<
+            fromEntries<
+                transformed extends readonly Entry[]
+                    ? transformed
+                    : [transformed]
+            >
+        >
+    >
+
 /** Mimics the result of Object.keys(...) */
-export type keysOf<o> = [o] extends [object]
-    ? o extends readonly unknown[]
-        ? any[] extends o
-            ? `${number}`
-            : keyof o & `${number}`
-        : keyof o extends number
-        ? `${keyof o}`
-        : Exclude<keyof o, symbol>
-    : never
+export type keysOf<o> = o extends readonly unknown[]
+    ? number extends o["length"]
+        ? `${number}`
+        : keyof o & `${number}`
+    : {
+          [K in keyof o]: K extends string
+              ? K
+              : K extends number
+              ? `${K}`
+              : never
+      }[keyof o]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>[]
 

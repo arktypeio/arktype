@@ -1,6 +1,6 @@
 import { node } from "../nodes/composite/type.js"
 import { Scope } from "../scope.js"
-import type { RootScope } from "./utils.js"
+import type { RootScope } from "./ark.js"
 
 export type InferredJsObjects = {
     Function: Function

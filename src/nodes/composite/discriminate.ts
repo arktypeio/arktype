@@ -1,9 +1,16 @@
-import type { Domain } from "../../../dev/utils/src/domains.js"
-import { throwInternalError } from "../../../dev/utils/src/errors.js"
-import type { evaluate } from "../../../dev/utils/src/generics.js"
-import type { keySet } from "../../../dev/utils/src/records.js"
-import { entriesOf, isKeyOf } from "../../../dev/utils/src/records.js"
-import type { SerializedPrimitive } from "../../../dev/utils/src/serialize.js"
+import {
+    entriesOf,
+    isKeyOf,
+    throwInternalError,
+    transform
+} from "../../../dev/utils/src/main.js"
+import type {
+    Domain,
+    evaluate,
+    keySet,
+    mutable,
+    SerializedPrimitive
+} from "../../../dev/utils/src/main.js"
 import { Disjoint } from "../disjoint.js"
 import type { SerializedPath } from "../disjoint.js"
 import type { BasisNode } from "../primitive/basis/basis.js"
@@ -13,17 +20,20 @@ import type { PredicateNode } from "./predicate.js"
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
-    readonly path: string[]
-    readonly kind: kind
-    readonly cases: DiscriminatedCases<kind>
-}
+export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> =
+    Readonly<{
+        readonly path: string[]
+        readonly kind: kind
+        readonly cases: DiscriminatedCases<kind>
+        // TODO: add default here?
+        readonly isPureRootLiteral: boolean
+    }>
 
 export type DiscriminatedCases<
     kind extends DiscriminantKind = DiscriminantKind
-> = {
+> = Readonly<{
     [caseKey in CaseKey<kind>]: Discriminant | PredicateNode[]
-}
+}>
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
 
@@ -62,6 +72,21 @@ export const discriminate = (
     const cached = discriminantCache.get(branches)
     if (cached !== undefined) {
         return cached
+    }
+    const pureValueBranches = branches.flatMap((branch) =>
+        branch.value ? branch.value : []
+    )
+    if (pureValueBranches.length === branches.length) {
+        const cases: DiscriminatedCases = transform(
+            pureValueBranches,
+            ([i, valueNode]) => [valueNode.serialized, [branches[i]]]
+        )
+        return {
+            path: [],
+            kind: "value",
+            cases,
+            isPureRootLiteral: true
+        }
     }
     const casesBySpecifier: CasesBySpecifier = {}
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
@@ -121,7 +146,7 @@ export const discriminate = (
     }
     const [specifier, predicateCases] = bestDiscriminantEntry
     const [path, kind] = parseDiscriminantKey(specifier)
-    const cases: DiscriminatedCases = {}
+    const cases: mutable<DiscriminatedCases> = {}
     for (const k in predicateCases) {
         const subdiscriminant = discriminate(predicateCases[k])
         cases[k] = subdiscriminant ?? predicateCases[k]
@@ -129,7 +154,8 @@ export const discriminate = (
     const discriminant: Discriminant = {
         kind,
         path,
-        cases
+        cases,
+        isPureRootLiteral: false
     }
     discriminantCache.set(branches, discriminant)
     return discriminant

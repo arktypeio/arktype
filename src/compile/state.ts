@@ -1,7 +1,9 @@
-import { hasDomain } from "../../dev/utils/src/domains.js"
-import { isArray } from "../../dev/utils/src/objectKinds.js"
-import type { SerializablePrimitive } from "../../dev/utils/src/serialize.js"
-import { serializePrimitive } from "../../dev/utils/src/serialize.js"
+import type { SerializablePrimitive } from "../../dev/utils/src/main.js"
+import {
+    hasDomain,
+    isArray,
+    serializePrimitive
+} from "../../dev/utils/src/main.js"
 import type { Discriminant } from "../nodes/composite/discriminate.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import {
@@ -18,7 +20,7 @@ export class CompilationState {
     bases: BasisNode[] = []
     discriminants: Discriminant[] = []
 
-    constructor(private kind: "allows" | "traverse") {}
+    constructor(public readonly kind: "allows" | "traverse") {}
 
     get data() {
         let result = InputParameterName
@@ -62,15 +64,18 @@ export class CompilationState {
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `state.addProblem("${code}", ${
-            // TODO: Fix
-            typeof rule === "function"
-                ? rule.name
-                : compileSerializedValue(rule)
-        }, ${this.data}, [${this.path.map((segment) =>
+        return `state.addProblem("${code}", ${compileSerializedValue(rule)}, ${
+            this.data
+        }, [${this.path.map((segment) =>
             // if the segment is a variable reference, don't quote it
             typeof segment === "string" ? JSON.stringify(segment) : segment[0]
         )}])` as const
+    }
+
+    invalid<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
+        return this.kind === "allows"
+            ? "return false"
+            : this.problem(code, rule)
     }
 
     check<code extends ProblemCode>(
@@ -103,11 +108,7 @@ export class CompilationState {
             return ""
         }
         return `if (!(${condition})) {
-            ${
-                this.kind === "allows"
-                    ? "return false"
-                    : this.problem(code, rule)
-            }
+            ${this.invalid(code, rule)}
 }`
     }
 }
@@ -128,7 +129,10 @@ export const compileSerializedValue = (value: unknown) => {
     return serializePrimitive(modifiedValue as SerializablePrimitive)
 }
 
-export const compilePropAccess = (name: string, optional = false) =>
+export const isDotAccessible = (name: string) =>
     /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
+
+export const compilePropAccess = (name: string, optional = false) =>
+    isDotAccessible(name)
         ? `${optional ? "?" : ""}.${name}`
         : `${optional ? "?." : ""}[${JSON.stringify(name)}]`

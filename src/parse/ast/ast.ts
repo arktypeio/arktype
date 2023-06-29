@@ -1,16 +1,18 @@
-import type { error, List } from "../../../dev/utils/main.js"
 import type {
     BigintLiteral,
+    error,
+    List,
     NumberLiteral,
     writeMalformedNumericLiteralMessage
-} from "../../../dev/utils/src/numericLiterals.js"
+} from "../../../dev/utils/src/main.js"
 import type { Comparator } from "../../nodes/primitive/range.js"
-import type { resolve, UnparsedScope } from "../../scope.js"
+import type { resolve, TypeSet, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { CastTo, inferDefinition } from "../definition.js"
 import type { writeInvalidGenericArgsMessage } from "../generic.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+import type { writeMissingSubscopeAccessMessage } from "../string/shift/operand/unenclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateRange } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
@@ -81,12 +83,13 @@ export type validateAst<ast, $, args> = ast extends string
         ? validateDivisor<l, $, args>
         : undefined
     : ast extends readonly ["keyof", infer operand]
-    ? [keyof inferAst<operand, $, args>] extends [never]
-        ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
-        : validateAst<operand, $, args>
+    ? validateAst<operand, $, args>
     : ast extends GenericInstantiationAst
     ? validateGenericArgs<ast["2"], $, args>
-    : never
+    : error<writeUnexpectedExpressionMessage<astToString<ast>>>
+
+type writeUnexpectedExpressionMessage<expression extends string> =
+    `Unexpectedly failed to parse the expression resulting from ${expression}`
 
 type validateGenericArgs<argAsts extends unknown[], $, args> = argAsts extends [
     infer head,
@@ -120,6 +123,8 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
       // efficient to check for them here in case the string was naively parsed
       $[def] extends GenericProps
         ? error<writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>>
+        : $[def] extends TypeSet
+        ? error<writeMissingSubscopeAccessMessage<def>>
         : undefined
     : undefined
 
@@ -147,7 +152,7 @@ export type PostfixOperator = "[]"
 export type PostfixExpression<
     operator extends PostfixOperator = PostfixOperator,
     operand = unknown
-> = [operand, operator]
+> = readonly [operand, operator]
 
 export type InfixOperator = "|" | "&" | Comparator | "%" | ":" | "=>"
 
@@ -167,7 +172,7 @@ type validateInfix<ast extends InfixExpression, $, args> = validateAst<
     ? error<message>
     : undefined
 
-export type RegexLiteral<expression extends string = string> = `/${expression}/`
+export type RegexLiteral<source extends string = string> = `/${source}/`
 
 export type inferTerminal<token, $, args> = token extends keyof args | keyof $
     ? resolve<token, $, args>

@@ -1,13 +1,19 @@
-import { isThunk } from "../dev/utils/main.js"
-import { domainOf } from "../dev/utils/src/domains.js"
-import { throwParseError } from "../dev/utils/src/errors.js"
-import type { evaluate, isAny, nominal } from "../dev/utils/src/generics.js"
-import { Path } from "../dev/utils/src/lists.js"
-import type { Dict } from "../dev/utils/src/records.js"
+import type { Dict, evaluate, isAny, nominal } from "../dev/utils/src/main.js"
+import {
+    domainOf,
+    hasDomain,
+    isThunk,
+    Path,
+    throwInternalError,
+    throwParseError,
+    transform
+} from "../dev/utils/src/main.js"
 import type { ProblemCode } from "./compile/problems.js"
-import { hasArkKind } from "./compile/registry.js"
+import type { arkKind } from "./compile/registry.js"
+import { addArkKind, hasArkKind } from "./compile/registry.js"
+import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { TypeNode } from "./main.js"
-import { builtins } from "./nodes/composite/type.js"
+import { builtins, typeNode } from "./nodes/composite/type.js"
 import type {
     CastTo,
     inferDefinition,
@@ -22,6 +28,11 @@ import type {
     GenericParamsParseError
 } from "./parse/generic.js"
 import { parseGenericParams } from "./parse/generic.js"
+import {
+    writeMissingSubscopeAccessMessage,
+    writeNonScopeDotMessage,
+    writeUnresolvableMessage
+} from "./parse/string/shift/operand/unenclosed.js"
 import { parseString } from "./parse/string/string.js"
 import type {
     DeclarationParser,
@@ -42,7 +53,9 @@ import {
 } from "./type.js"
 
 export type ScopeParser<parent, ambient> = {
-    <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
+    <const aliases>(
+        aliases: validateAliases<aliases, parent & ambient>
+    ): Scope<{
         exports: inferBootstrapped<{
             exports: bootstrapExports<aliases>
             locals: bootstrapLocals<aliases> & parent
@@ -58,31 +71,30 @@ export type ScopeParser<parent, ambient> = {
 }
 
 type validateAliases<aliases, $> = {
-    [k in keyof aliases]: parseScopeKey<k> extends infer result extends ParsedScopeKey
-        ? result["params"] extends []
-            ? aliases[k] extends Scope | Type | GenericProps
-                ? aliases[k]
-                : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
-            : result["params"] extends GenericParamsParseError
-            ? // use the full nominal type here to avoid an overlap between the
-              // error message and a possible value for the property
-              result["params"][0]
-            : validateDefinition<
-                  aliases[k],
-                  $ & bootstrap<aliases>,
-                  {
-                      // once we support constraints on generic parameters, we'd use
-                      // the base type here: https://github.com/arktypeio/arktype/issues/796
-                      [param in result["params"][number]]: unknown
-                  }
-              >
-        : never
+    [k in keyof aliases]: parseScopeKey<k>["params"] extends []
+        ? aliases[k] extends Preparsed
+            ? aliases[k]
+            : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
+        : parseScopeKey<k>["params"] extends GenericParamsParseError
+        ? // use the full nominal type here to avoid an overlap between the
+          // error message and a possible value for the property
+          parseScopeKey<k>["params"][0]
+        : validateDefinition<
+              aliases[k],
+              $ & bootstrap<aliases>,
+              {
+                  // once we support constraints on generic parameters, we'd use
+                  // the base type here: https://github.com/arktypeio/arktype/issues/796
+                  [param in parseScopeKey<k>["params"][number]]: unknown
+              }
+          >
 }
 
 export type bindThis<def> = { this: Def<def> }
 
 export const bindThis = () => ({
-    this: builtins.this()
+    // TODO: fix
+    this: builtins.unknown()
 })
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
@@ -104,12 +116,13 @@ type bootstrapExports<aliases> = bootstrapAliases<{
     [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
 }>
 
-type Preparsed = Scope | GenericProps
+type Preparsed = Type | TypeSet | GenericProps
 
 type bootstrapAliases<aliases> = {
     [k in Exclude<
         keyof aliases,
-        GenericDeclaration
+        // avoid inferring nominal symbols, e.g. id from TypeSet
+        GenericDeclaration | symbol
     >]: aliases[k] extends Preparsed
         ? aliases[k]
         : aliases[k] extends (() => infer thunkReturn extends Preparsed)
@@ -150,7 +163,7 @@ type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
 type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export type ScopeOptions = {
-    ambient?: TypeSet
+    ambient?: Scope | null
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
@@ -172,15 +185,18 @@ type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 type exportedName<r extends Resolutions> = keyof r["exports"] & string
 
 export type TypeSet<r extends Resolutions = any> = {
-    [k in exportedName<r>]: [r["exports"][k]] extends [never]
-        ? Type<never, $<r>>
-        : isAny<r["exports"][k]> extends true
-        ? Type<any, $<r>>
-        : r["exports"][k] extends Scope<infer subresolutions>
-        ? TypeSet<subresolutions>
-        : r["exports"][k] extends GenericProps
-        ? r["exports"][k]
-        : Type<r["exports"][k], $<r>>
+    // just adding the nominal id this way and mapping it is cheaper than an intersection
+    [k in exportedName<r> | arkKind]: k extends string
+        ? [r["exports"][k]] extends [never]
+            ? Type<never, $<r>>
+            : isAny<r["exports"][k]> extends true
+            ? Type<any, $<r>>
+            : r["exports"][k] extends TypeSet | GenericProps
+            ? r["exports"][k]
+            : Type<r["exports"][k], $<r>>
+        : // set the nominal symbol's value to something validation won't care about
+          // since the inferred type will be omitted anyways
+          CastTo<"typeset">
 }
 
 export type Resolutions = {
@@ -201,14 +217,12 @@ export class Scope<r extends Resolutions = any> {
 
     config: TypeConfig
 
-    // for now we only cache string definitions, since objects could possibly be
-    // mutated and then re-parsed
     private parseCache: Record<string, TypeNode> = {}
-    private resolutions: Record<string, Type | TypeSet | Generic>
+    private resolutions: Record<string, TypeNode | Generic>
 
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
-    private ambient: TypeSet
+    private ambient: Scope | null
 
     constructor(input: Dict, opts: ScopeOptions) {
         for (const k in input) {
@@ -220,9 +234,14 @@ export class Scope<r extends Resolutions = any> {
                 this.exportedNames.push(parsedKey.name as never)
             }
         }
-        this.ambient = opts.ambient ?? {}
-        // TODO: fix, should work with subscope
-        this.resolutions = { ...this.ambient } as never
+        this.ambient = opts.ambient ?? null
+        this.resolutions = {}
+        if (this.ambient) {
+            this.ambient.export()
+            for (const name of this.ambient.exportedNames) {
+                this.resolutions[name] = this.ambient.resolutions[name]
+            }
+        }
         this.config = opts
     }
 
@@ -232,6 +251,7 @@ export class Scope<r extends Resolutions = any> {
 
     type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
+    // TODO: decide if this API will be used for non-validated types
     declare: DeclarationParser<$<r>> = () => ({ type: this.type } as never)
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
@@ -239,9 +259,9 @@ export class Scope<r extends Resolutions = any> {
         config: TypeConfig = {}
     ) => {
         return new Scope(aliases, {
+            ambient: this.ambient,
             ...this.config,
-            ...config,
-            ambient: this.ambient
+            ...config
         })
     }) as never
 
@@ -253,12 +273,12 @@ export class Scope<r extends Resolutions = any> {
         ambient: r["exports"]
     }> {
         return new Scope(this.aliases, {
-            ...this.config,
-            ambient: this.export()
+            ambient: this,
+            ...this.config
         })
     }
 
-    extract<name extends keyof r["exports"] & string>(
+    get<name extends keyof r["exports"] & string>(
         name: name
     ): Type<r["exports"][name], $<r>> {
         return this.export()[name] as never
@@ -284,8 +304,7 @@ export class Scope<r extends Resolutions = any> {
             }
             return this.parseCache[def]
         }
-        return (typeof def === "object" && def !== null) ||
-            typeof def === "function"
+        return hasDomain(def, "object")
             ? parseObject(def, ctx)
             : throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
     }
@@ -293,31 +312,75 @@ export class Scope<r extends Resolutions = any> {
     maybeResolve(
         name: string,
         ctx: ParseContext
-    ): Type | Generic | TypeSet | undefined {
+    ): TypeNode | Generic | undefined {
         const cached = this.resolutions[name]
         if (cached) {
             return cached
         }
         let def = this.aliases[name]
         if (!def) {
+            const dotIndex = name.indexOf(".")
+            if (dotIndex !== -1) {
+                const dotPrefix = name.slice(0, dotIndex)
+                const prefixDef = this.aliases[dotPrefix]
+                if (hasArkKind(prefixDef, "typeset")) {
+                    const resolution = prefixDef[name.slice(dotIndex + 1)]
+                    if (!resolution) {
+                        return throwParseError(writeUnresolvableMessage(name))
+                    }
+                    return resolution.root
+                }
+                if (prefixDef !== undefined) {
+                    return throwParseError(writeNonScopeDotMessage(dotPrefix))
+                }
+                // if the name includes ".", but the prefix is not an alias, it
+                // might be something like a decimal literal, so just fall through to return
+            }
             return
         }
         if (isThunk(def) && !hasArkKind(def, "generic")) {
             def = def()
         }
+        this.resolutions[name] = typeNode({
+            alias: name,
+            resolve: () => this.maybeResolveNode(name, ctx)!
+        })
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
-            : // TODO: should we allow scope thunks? Could be cyclic?
-            def instanceof Scope
-            ? def.export()
-            : new Type(this.parseRoot(def, {}), this)
+            : hasArkKind(def, "typeset")
+            ? throwParseError(writeMissingSubscopeAccessMessage(name))
+            : this.parseRoot(def)
         this.resolutions[name] = resolution
         return resolution
     }
 
     maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
         const result = this.maybeResolve(name, ctx)
-        return result instanceof Type ? result.root : undefined
+        return hasArkKind(result, "node") ? result : undefined
+    }
+
+    compile() {
+        let result = ""
+        for (const name in this.aliases) {
+            const ctx: ParseContext = {
+                path: new Path(),
+                scope: this,
+                args: undefined
+            }
+            const resolution = this.maybeResolveNode(name, ctx)
+            if (!resolution) {
+                return throwInternalError(
+                    `Unexpectedly failed to resolve '${name}'`
+                )
+            }
+            result += `const $${name} = (${InputParameterName}) => {
+                ${resolution.compile(new CompilationState("allows"))}
+            }\n`
+        }
+        if (this.ambient) {
+            result += this.ambient.compile()
+        }
+        return result
     }
 
     import<names extends exportedName<r>[]>(
@@ -326,35 +389,52 @@ export class Scope<r extends Resolutions = any> {
         r,
         names extends [] ? keyof r["exports"] : names[number]
     > {
-        return Object.fromEntries(
-            Object.entries(this.export(...names)).map(([name, resolution]) => [
-                `#${name}`,
-                resolution
-            ])
+        return addArkKind(
+            transform(this.export(...names), ([alias, value]) => [
+                `#${alias as string}`,
+                value
+            ]),
+            "typeset"
         ) as never
     }
 
-    private hasBeenExported = false
+    private exportCache: Record<string, Type | Generic | TypeSet> | undefined
     export<names extends exportedName<r>[]>(
         ...names: names
     ): TypeSet<
         names extends [] ? r : destructuredExportContext<r, names[number]>
     > {
-        if (!this.hasBeenExported) {
-            const ctx: ParseContext = {
-                path: new Path(),
-                scope: this,
-                args: undefined
-            }
+        if (!this.exportCache) {
+            this.exportCache = addArkKind({}, "typeset")
             for (const name of this.exportedNames) {
-                this.maybeResolve(name, ctx)
+                let def = this.aliases[name]
+                if (hasArkKind(def, "generic")) {
+                    this.exportCache[name] = def
+                    continue
+                }
+                // handle generics before invoking thunks, since they use
+                // varargs they will incorrectly be considered thunks
+                if (isThunk(def)) {
+                    def = def()
+                }
+                if (hasArkKind(def, "typeset")) {
+                    this.exportCache[name] = def
+                } else {
+                    this.exportCache[name] = new Type(
+                        this.parseRoot(def, {}),
+                        this
+                    )
+                }
             }
-            this.hasBeenExported = true
         }
         const namesToExport = names.length ? names : this.exportedNames
-        return Object.fromEntries(
-            namesToExport.map((name) => [name, this.resolutions[name]])
-        ) as never
+        return addArkKind(
+            transform(namesToExport, ([, name]) => [
+                name,
+                this.exportCache![name]
+            ]),
+            "typeset"
+        )
     }
 }
 

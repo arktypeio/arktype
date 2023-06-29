@@ -62,15 +62,3 @@ export const domainOf = <data>(data: data) => {
             : builtinType
     ) as domainOf<data>
 }
-
-/** Each domain's completion for the phrase "Must be _____" */
-export const domainDescriptions = {
-    bigint: "a bigint",
-    boolean: "boolean",
-    null: "null",
-    number: "a number",
-    object: "an object",
-    string: "a string",
-    symbol: "a symbol",
-    undefined: "undefined"
-} as const satisfies Record<Domain, string>
