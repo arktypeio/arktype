@@ -41,10 +41,9 @@ suite("definitions", () => {
         )
     })
     test("any", () => {
-        // for now we just let any hit the depth limit, see validateDefinition note
         // @ts-expect-error
         attest(() => type({ bad: {} as any })).types.errors(
-            `Type instantiation is excessively deep and possibly infinite`
+            `Type 'any' is not assignable to type 'never'`
         )
     })
     test("unknown", () => {
