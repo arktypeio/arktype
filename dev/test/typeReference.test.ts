@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
@@ -19,6 +19,13 @@ suite("type references", () => {
     test("deep type reference", () => {
         const t = type({ a: type("boolean") })
         attest(t.infer).typed as { a: boolean }
+    })
+
+    test("type reference in scope", () => {
+        const a = type({ a: "string" })
+        const types = scope({ a }).export()
+        attest(types.a.condition).equals(type({ a: "string" }).condition)
+        attest(types.a.infer).typed as { a: string }
     })
 
     test("bad deep type reference", () => {
