@@ -28,7 +28,6 @@ suite("generics", () => {
                 }).condition
             )
         })
-
         test("binary", () => {
             const either = type("<first, second>", "first|second")
             const schrodingersBox = either(
@@ -64,7 +63,6 @@ suite("generics", () => {
                 ).condition
             )
         })
-
         test("referenced in scope inline", () => {
             const $ = scope({
                 one: "1",
@@ -75,7 +73,6 @@ suite("generics", () => {
             attest(bit.infer).typed as 0 | 1
             attest(bit.condition).equals(type("0|1").condition)
         })
-
         test("referenced from other scope", () => {
             const types = scope({
                 arrayOf: type("<t>", "t[]")
@@ -84,7 +81,6 @@ suite("generics", () => {
             attest(stringArray.infer).typed as string[]
             attest(stringArray.condition).equals(type("string[]").condition)
         })
-
         test("this not resolvable in generic def", () => {
             attest(() =>
                 // @ts-expect-error
@@ -100,10 +96,11 @@ suite("generics", () => {
             const t = boxOf({
                 a: "string|this"
             })
-            type Expected = {
-                a: Expected | string
-            }
-            attest(t.infer).typed as { box: Expected }
+            const expectedContents = type({ a: "string|this" })
+            attest(t.condition).equals(
+                type({ box: expectedContents }).condition
+            )
+            attest(t.infer).types.toString.snap()
         })
         test("too few args", () => {
             const pair = type("<t, u>", ["t", "u"])
@@ -131,15 +128,19 @@ suite("generics", () => {
             })
         )
         const types = lazily(() => $.export())
-
         test("referenced in scope", () => {
+            attest(types.bitBox.condition).equals(
+                type({ box: "0|1" }).condition
+            )
             attest(types.bitBox).typed as {
                 box: 0 | 1
             }
         })
-
         test("nested", () => {
             const t = $.type("box<0|1, box<'one', 'zero'>>")
+            attest(t.condition).equals(
+                type("0|1", "|", { box: "'one'|'zero'" }).condition
+            )
             attest(t.infer).typed as {
                 box:
                     | 0
@@ -149,20 +150,25 @@ suite("generics", () => {
                       }
             }
         })
-
         test("in expression", () => {
             const t = $.type("string | box<0, 1> | boolean")
+            attest(t.condition).equals(
+                type("string|boolean", "|", { box: "0|1" }).condition
+            )
             attest(t.infer).typed as string | { box: 0 | 1 } | boolean
         })
-
         test("this in args", () => {
             const t = $.type("box<0,  this>")
             type Expected = {
                 box: 0 | Expected
             }
+            attest(t.condition).equals(
+                type({
+                    box: "0|this"
+                }).condition
+            )
             attest(t.infer).typed as Expected
         })
-
         test("right bounds", () => {
             // should be able to differentiate between > that is part of a right
             // bound and > that closes a generic instantiation
@@ -174,7 +180,6 @@ suite("generics", () => {
                 }).condition
             )
         })
-
         test("parameter supercedes alias with same name", () => {
             const types = scope({
                 "box<foo>": {
@@ -185,8 +190,8 @@ suite("generics", () => {
             }).export()
             const t = types.box("'baz'")
             attest(t.infer).typed as { box: "bar" | "baz" }
+            attest(t.condition).equals(type({ box: "'bar' | 'baz'" }).condition)
         })
-
         // TODO: fix
         // test("self-reference", () => {
         //     const types = scope({
@@ -204,7 +209,6 @@ suite("generics", () => {
         //     attest(fromCall.infer.swap.swap.order).typed as ["off", "on"]
         //     attest(fromCall.infer.swap.swap.swap.order).typed as ["on", "off"]
         // })
-
         test("self-reference no params", () => {
             attest(() =>
                 scope({
@@ -217,7 +221,6 @@ suite("generics", () => {
                 writeInvalidGenericArgsMessage("nest", ["t"], [])
             )
         })
-
         test("declaration and instantiation leading and trailing whitespace", () => {
             const types = scope({
                 "box< a , b >": {

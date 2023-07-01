@@ -121,7 +121,7 @@ type Preparsed = Type | Module | GenericProps
 type bootstrapAliases<aliases> = {
     [k in Exclude<
         keyof aliases,
-        // avoid inferring nominal symbols, e.g. id from TypeSet
+        // avoid inferring nominal symbols, e.g. arkKind from Module
         GenericDeclaration | symbol
     >]: aliases[k] extends Preparsed
         ? aliases[k]
@@ -140,7 +140,8 @@ type inferBootstrapped<r extends Resolutions> = evaluate<{
     [k in keyof r["exports"]]: r["exports"][k] extends Def<infer def>
         ? inferDefinition<def, $<r>, {}>
         : r["exports"][k] extends GenericProps<infer params, infer def>
-        ? Generic<params, def, $<r>>
+        ? // add the scope in which the generic was defined here
+          Generic<params, def, $<r>>
         : // otherwise should be a subscope
           r["exports"][k]
 }>

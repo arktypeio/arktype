@@ -247,11 +247,9 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
     // other than to eagerly validate that the def does not contain any errors
     g.scope.parseRoot(
         g.definition,
-        Object.fromEntries(
-            // once we support constraints on generic parameters, we'd use
-            // the base type here: https://github.com/arktypeio/arktype/issues/796
-            g.parameters.map((name) => [name, builtins.unknown()])
-        )
+        // once we support constraints on generic parameters, we'd use
+        // the base type here: https://github.com/arktypeio/arktype/issues/796
+        transform(g.parameters, ([, name]) => [name, builtins.unknown()])
     )
     return g
 }
@@ -300,18 +298,19 @@ export type Generic<
     params extends string[] = string[],
     def = unknown,
     $ = any
-> = (<args>(
-    ...args: conform<
-        args,
-        {
-            [i in keyof params]: validateTypeRoot<args[i & keyof args], $>
-        }
+> = {
+    <args>(
+        ...args: conform<
+            args,
+            {
+                [i in keyof params]: validateTypeRoot<args[i & keyof args], $>
+            }
+        >
+    ): Type<
+        inferDefinition<def, $, bindGenericInstantiation<params, $, args>>,
+        $
     >
-) => Type<
-    inferDefinition<def, $, bindGenericInstantiation<params, $, args>>,
-    $
->) &
-    GenericProps<params, def, $>
+} & GenericProps<params, def, $>
 
 type bindGenericInstantiation<params extends string[], $, args> = {
     [i in keyof params & `${number}` as params[i]]: inferTypeRoot<
