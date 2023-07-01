@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { scope, type } from "../../src/main.js"
+import { ark, scope, type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
@@ -23,8 +23,11 @@ suite("type references", () => {
 
     test("type reference in scope", () => {
         const a = type({ a: "string" })
-        const types = scope({ a }).export()
+        const $ = scope({ a })
+        const types = $.export()
         attest(types.a.condition).equals(type({ a: "string" }).condition)
+        attest(a.scope).is(ark)
+        attest(types.a.scope).is($)
         attest(types.a.infer).typed as { a: string }
     })
 

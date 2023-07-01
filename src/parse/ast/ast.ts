@@ -6,7 +6,7 @@ import type {
     writeMalformedNumericLiteralMessage
 } from "../../../dev/utils/src/main.js"
 import type { Comparator } from "../../nodes/primitive/range.js"
-import type { resolve, Module, UnparsedScope } from "../../scope.js"
+import type { Module, resolve, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { CastTo, inferDefinition } from "../definition.js"
 import type { writeInvalidGenericArgsMessage } from "../generic.js"

@@ -72,7 +72,8 @@ export type ScopeParser<parent, ambient> = {
 
 type validateAliases<aliases, $> = {
     [k in keyof aliases]: parseScopeKey<k>["params"] extends []
-        ? aliases[k] extends Preparsed
+        ? // Not including Type here directly breaks inference
+          aliases[k] extends Type | PreparsedResolution
             ? aliases[k]
             : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
         : parseScopeKey<k>["params"] extends GenericParamsParseError
@@ -116,16 +117,17 @@ type bootstrapExports<aliases> = bootstrapAliases<{
     [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
 }>
 
-type Preparsed = Type | Module | GenericProps
+/** These are legal as values of a scope but not as definitions in other contexts */
+type PreparsedResolution = Module | GenericProps
 
 type bootstrapAliases<aliases> = {
     [k in Exclude<
         keyof aliases,
         // avoid inferring nominal symbols, e.g. arkKind from Module
         GenericDeclaration | symbol
-    >]: aliases[k] extends Preparsed
+    >]: aliases[k] extends PreparsedResolution
         ? aliases[k]
-        : aliases[k] extends (() => infer thunkReturn extends Preparsed)
+        : aliases[k] extends (() => infer thunkReturn extends PreparsedResolution)
         ? thunkReturn
         : Def<aliases[k]>
 } & {
@@ -192,7 +194,7 @@ export type Module<r extends Resolutions = any> = {
             ? Type<never, $<r>>
             : isAny<r["exports"][k]> extends true
             ? Type<any, $<r>>
-            : r["exports"][k] extends Module | GenericProps
+            : r["exports"][k] extends PreparsedResolution
             ? r["exports"][k]
             : Type<r["exports"][k], $<r>>
         : // set the nominal symbol's value to something validation won't care about
