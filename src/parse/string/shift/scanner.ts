@@ -20,8 +20,8 @@ export class Scanner<Lookahead extends string = string> {
         return (this.chars[this.i] ?? "") as Lookahead
     }
 
-    get lastIndex() {
-        return this.chars.length - 1
+    get length() {
+        return this.chars.length
     }
 
     shiftUntil(condition: Scanner.UntilCondition): string {
@@ -49,11 +49,11 @@ export class Scanner<Lookahead extends string = string> {
     }
 
     jumpToIndex(i: number) {
-        this.i = i < 0 ? this.lastIndex + i : i
+        this.i = i < 0 ? this.length + i : i
     }
 
     get unscanned() {
-        return this.chars.slice(this.i, this.chars.length).join("")
+        return this.chars.slice(this.i, this.length).join("")
     }
 
     get scanned() {

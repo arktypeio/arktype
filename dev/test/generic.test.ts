@@ -45,7 +45,7 @@ suite("generics", () => {
                           isAlive: false
                       }
                   }
-            // ideally this would be reduced to { cat: { isAlive: boolean } }:
+            // ideally, this would be reduced to { cat: { isAlive: boolean } }:
             // https://github.com/arktypeio/arktype/issues/751
             attest(schrodingersBox.condition).equals(
                 type(
@@ -139,7 +139,7 @@ suite("generics", () => {
         test("nested", () => {
             const t = $.type("box<0|1, box<'one', 'zero'>>")
             attest(t.condition).equals(
-                type("0|1", "|", { box: "'one'|'zero'" }).condition
+                type({ box: ["0|1", "|", { box: "'one'|'zero'" }] }).condition
             )
             attest(t.infer).typed as {
                 box:
