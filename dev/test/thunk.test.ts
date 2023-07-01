@@ -57,13 +57,21 @@ suite("thunk", () => {
         //     object: { props: { a: "string", b: "boolean" } }
         // })
     })
+    test("shallow thunk in type", () => {
+        const t = type(() => type("string"))
+        attest(t.condition).equals(type("string").condition)
+        attest(t.infer).typed as string
+    })
+    test("deep thunk in type", () => {
+        const t = type({ a: () => type("string") })
+        attest(t.condition).equals(type({ a: "string" }).condition)
+        attest(t.infer).typed as string
+    })
     test("non-type thunk in scope", () => {
         const $ = scope({
             a: () => 42
         })
-        attest(() => $.export()).throws(
-            writeBadDefinitionTypeMessage("Function")
-        )
+        attest(() => $.export()).throws(writeBadDefinitionTypeMessage("number"))
     })
     test("parse error in thunk in scope", () => {
         const $ = scope({

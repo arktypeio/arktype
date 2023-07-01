@@ -29,8 +29,8 @@ import type {
 } from "./parse/generic.js"
 import { parseGenericParams } from "./parse/generic.js"
 import {
-    writeMissingSubscopeAccessMessage,
-    writeNonScopeDotMessage,
+    writeMissingSubmoduleAccessMessage,
+    writeNonSubmoduleDotMessage,
     writeUnresolvableMessage
 } from "./parse/string/shift/operand/unenclosed.js"
 import { parseString } from "./parse/string/string.js"
@@ -144,7 +144,7 @@ type inferBootstrapped<r extends Resolutions> = evaluate<{
         : r["exports"][k] extends GenericProps<infer params, infer def>
         ? // add the scope in which the generic was defined here
           Generic<params, def, $<r>>
-        : // otherwise should be a subscope
+        : // otherwise should be a submodule
           r["exports"][k]
 }>
 
@@ -341,7 +341,9 @@ export class Scope<r extends Resolutions = any> {
                     return resolution
                 }
                 if (prefixDef !== undefined) {
-                    return throwParseError(writeNonScopeDotMessage(dotPrefix))
+                    return throwParseError(
+                        writeNonSubmoduleDotMessage(dotPrefix)
+                    )
                 }
                 // if the name includes ".", but the prefix is not an alias, it
                 // might be something like a decimal literal, so just fall through to return
@@ -358,7 +360,7 @@ export class Scope<r extends Resolutions = any> {
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
             : hasArkKind(def, "module")
-            ? throwParseError(writeMissingSubscopeAccessMessage(name))
+            ? throwParseError(writeMissingSubmoduleAccessMessage(name))
             : this.parseRoot(def)
         this.resolutions[name] = resolution
         return resolution

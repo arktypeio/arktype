@@ -13,6 +13,7 @@ import type {
     requiredKeyOf
 } from "../../dev/utils/src/main.js"
 import {
+    isThunk,
     objectKindOf,
     stringify,
     throwParseError
@@ -49,8 +50,9 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
                 regex: serializeRegex(def as RegExp)
             })
         case "Function":
-            if (def instanceof Type) {
-                return def.root
+            const resolvedDef = isThunk(def) ? def() : def
+            if (resolvedDef instanceof Type) {
+                return resolvedDef.root
             }
             return throwParseError(writeBadDefinitionTypeMessage("Function"))
         default:

@@ -164,36 +164,36 @@ type tryResolve<
     ? token
     : token extends BigintLiteral
     ? token
-    : token extends `${infer subscope extends keyof $ &
+    : token extends `${infer submodule extends keyof $ &
           string}.${infer reference}`
-    ? $[subscope] extends Module<infer r>
+    ? $[submodule] extends Module<infer r>
         ? reference extends keyof r["exports"]
             ? token
             : unknown extends r["exports"]
             ? // not sure why I need the additional check here, but for now TS seems to
               // hit this branch for a non-scope dot access rather than failing
               // initially when we try to infer r. if this can be removed without breaking
-              // any subscope test cases, do it!
-              error<writeNonScopeDotMessage<subscope>>
-            : unresolvableError<s, reference, $[subscope], args, [subscope]>
-        : error<writeNonScopeDotMessage<subscope>>
+              // any submodule test cases, do it!
+              error<writeNonSubmoduleDotMessage<submodule>>
+            : unresolvableError<s, reference, $[submodule], args, [submodule]>
+        : error<writeNonSubmoduleDotMessage<submodule>>
     : unresolvableError<s, token, $, args, []>
 
-export const writeNonScopeDotMessage = <name extends string>(
+export const writeNonSubmoduleDotMessage = <name extends string>(
     name: name
-): writeNonScopeDotMessage<name> =>
+): writeNonSubmoduleDotMessage<name> =>
     `'${name}' must reference a scope to be accessed using dot syntax`
 
-type writeNonScopeDotMessage<name extends string> =
+type writeNonSubmoduleDotMessage<name extends string> =
     `'${name}' must reference a scope to be accessed using dot syntax`
 
-export const writeMissingSubscopeAccessMessage = <name extends string>(
+export const writeMissingSubmoduleAccessMessage = <name extends string>(
     name: name
-): writeMissingSubscopeAccessMessage<name> =>
-    `Reference to subscope '${name}' must specify an alias`
+): writeMissingSubmoduleAccessMessage<name> =>
+    `Reference to submodule '${name}' must specify an alias`
 
-export type writeMissingSubscopeAccessMessage<name extends string> =
-    `Reference to subscope '${name}' must specify an alias`
+export type writeMissingSubmoduleAccessMessage<name extends string> =
+    `Reference to submodule '${name}' must specify an alias`
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */
@@ -202,26 +202,26 @@ export type unresolvableError<
     token extends string,
     $,
     args,
-    subscopePath extends string[]
-> = validReferenceFromToken<token, $, args, subscopePath> extends never
-    ? error<writeUnresolvableMessage<qualifiedReference<token, subscopePath>>>
+    submodulePath extends string[]
+> = validReferenceFromToken<token, $, args, submodulePath> extends never
+    ? error<writeUnresolvableMessage<qualifiedReference<token, submodulePath>>>
     : error<`${s["scanned"]}${qualifiedReference<
-          validReferenceFromToken<token, $, args, subscopePath>,
-          subscopePath
+          validReferenceFromToken<token, $, args, submodulePath>,
+          submodulePath
       >}`>
 
 type qualifiedReference<
     reference extends string,
-    subscopePath extends string[]
-> = join<[...subscopePath, reference], ".">
+    submodulePath extends string[]
+> = join<[...submodulePath, reference], ".">
 
 type validReferenceFromToken<
     token extends string,
     $,
     args,
-    subscopePath extends string[]
+    submodulePath extends string[]
 > = Extract<
-    subscopePath extends [] ? BaseCompletions<$, args> : keyof $,
+    submodulePath extends [] ? BaseCompletions<$, args> : keyof $,
     `${token}${string}`
 >
 
