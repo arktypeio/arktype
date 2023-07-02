@@ -75,7 +75,7 @@ export class DynamicState {
         this.finalizer = finalizer
     }
 
-    reduceLeftBound(limit: number | string, comparator: Comparator) {
+    reduceLeftBound(limit: number | Date, comparator: Comparator) {
         const invertedComparator = invertedComparators[comparator]
         if (!isKeyOf(invertedComparator, minComparators)) {
             return this.error(writeUnpairableComparatorMessage(comparator))

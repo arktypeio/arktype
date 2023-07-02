@@ -16,7 +16,6 @@ import {
 } from "../../../dev/utils/src/main.js"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
-import { hasDateEnclosing } from "../../parse/string/shift/operand/date.js"
 import type { BoundKind } from "../../parse/string/shift/operator/bounds.js"
 import { writeInvalidLimitMessage } from "../../parse/string/shift/operator/bounds.js"
 import type {
@@ -42,7 +41,7 @@ import type { DomainNode } from "../primitive/basis/domain.js"
 import { domainNode } from "../primitive/basis/domain.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
-import type { Bound, Range } from "../primitive/range.js"
+import type { Range } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { inferPropsInput } from "./inferProps.js"
 import type { PropsInput } from "./props.js"
@@ -222,7 +221,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
 )
 
 export const assertAllowsConstraint = (
-    basis: BasisNode | undefined,
+    basis: BasisNode | null,
     node: ConstraintNode
 ) => {
     if (basis?.hasKind("value")) {
@@ -292,16 +291,15 @@ const assertValidLimit = (bounds: Range, boundType: "number" | "Date") => {
                     )
                 )
             }
-        } else {
-            if (!hasDateEnclosing(bounds[index].limit)) {
-                throwParseError(
-                    writeInvalidLimitMessage(
-                        bounds[index].comparator,
-                        `${bounds[index].limit}`,
-                        boundKind
-                    )
+        }
+        if (!(bounds[index].limit instanceof Date) && boundType === "Date") {
+            throwParseError(
+                writeInvalidLimitMessage(
+                    bounds[index].comparator,
+                    `${bounds[index].limit}`,
+                    boundKind
                 )
-            }
+            )
         }
     }
 }

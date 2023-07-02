@@ -41,12 +41,13 @@ export const parseEnclosed = (
         // flags are not currently supported for embedded regex literals
         s.root = typeNode({ basis: "string", regex: `/${token}/` })
     } else {
-        let modifiedToken = token
-        if (hasDateEnclosing(enclosing)) {
-            modifiedToken = `${enclosing}${modifiedToken}${openToCloseEnclosingChar[enclosing]}`
-            tryParseDate(modifiedToken, writeInvalidDateMessage(token))
-        }
-        s.root = typeNode({ basis: ["===", modifiedToken] })
+        const value = hasDateEnclosing(enclosing)
+            ? tryParseDate(
+                  `${enclosing}${token}${openToCloseEnclosingChar[enclosing]}`,
+                  writeInvalidDateMessage(token)
+              )
+            : token
+        s.root = typeNode({ basis: ["===", value] })
     }
 }
 

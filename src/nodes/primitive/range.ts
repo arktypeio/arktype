@@ -1,5 +1,4 @@
 import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
-import { getDateFromLiteral } from "../../parse/string/shift/operand/date.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
@@ -48,7 +47,7 @@ export type NumericallyBoundableData = string | number | readonly unknown[]
 
 export type Bound<
     comparator extends Comparator = Comparator,
-    limit extends number | string = number | string
+    limit extends number | Date = number | Date
 > = {
     limit: limit
     comparator: comparator
@@ -66,8 +65,8 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 export interface RangeNode extends BaseNode<{ rule: Range }> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
-    numericMin: Bound<MinComparator, number | string> | undefined
-    numericMax: Bound<MaxComparator, number | string> | undefined
+    numericMin: Bound<MinComparator, number | Date> | undefined
+    numericMax: Bound<MaxComparator, number | Date> | undefined
 }
 
 export const rangeNode = defineNodeKind<RangeNode>(
@@ -78,13 +77,9 @@ export const rangeNode = defineNodeKind<RangeNode>(
             const rule0 = rule[0].limit
             const rule1 = rule[1]?.limit
             const numericRule0 =
-                rule0 && typeof rule0 === "string"
-                    ? getDateFromLiteral(rule0).valueOf()
-                    : rule0
+                rule0 && rule0 instanceof Date ? rule0.valueOf() : rule0
             const numericRule1 =
-                rule1 && typeof rule1 === "string"
-                    ? getDateFromLiteral(rule1).valueOf()
-                    : rule1
+                rule1 && rule0 instanceof Date ? rule1.valueOf() : rule1
             if (
                 numericRule0 === numericRule1 &&
                 rule[0].comparator === ">=" &&
@@ -119,8 +114,8 @@ export const rangeNode = defineNodeKind<RangeNode>(
                         `${size} ${
                             bound.comparator === "==" ? "===" : bound.comparator
                         } ${
-                            typeof bound.limit === "string"
-                                ? new Date(bound.limit).valueOf()
+                            bound.limit instanceof Date
+                                ? bound.limit.valueOf()
                                 : bound.limit
                         }`
                     )
@@ -194,23 +189,22 @@ export const rangeNode = defineNodeKind<RangeNode>(
             (isKeyOf(base.rule[0].comparator, maxComparators)
                 ? (base.rule[0] as Bound<MaxComparator>)
                 : undefined)
-        console.log()
         return {
             description,
             min,
             max,
             numericMin:
-                min && typeof min.limit === "string"
+                min && min.limit instanceof Date
                     ? {
                           ...min,
-                          limit: getDateFromLiteral(min.limit).valueOf()
+                          limit: min.limit.valueOf()
                       }
                     : min,
             numericMax:
-                max && typeof max.limit === "string"
+                max && max.limit instanceof Date
                     ? {
                           ...max,
-                          limit: getDateFromLiteral(max.limit).valueOf()
+                          limit: max.limit.valueOf()
                       }
                     : max
         }

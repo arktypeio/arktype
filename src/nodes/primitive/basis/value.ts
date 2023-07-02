@@ -29,7 +29,7 @@ export const valueNode = defineNodeKind<ValueNode>(
             return s.check(
                 "value",
                 rule,
-                typeof rule === "string"
+                rule instanceof Date
                     ? equalityCheck["date"](compiledRule, s.data)
                     : equalityCheck["default"](compiledRule, s.data)
             )

@@ -209,8 +209,8 @@ suite("range", () => {
             })
             test("double right bound", () => {
                 // @ts-expect-error
-                attest(() => type("number>0<=200")).throwsAndHasTypeError(
-                    writeDoubleRightBoundMessage("number>0<=200")
+                attest(() => type("number>0<=200")).types.errors(
+                    writeDoubleRightBoundMessage("number")
                 )
             })
             test("non-narrowed bounds", () => {

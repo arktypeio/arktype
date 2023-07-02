@@ -6,10 +6,6 @@ import {
 } from "../../dev/utils/src/main.js"
 import type { Discriminant } from "../nodes/composite/discriminate.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
-import {
-    getDateFromLiteral,
-    hasDateEnclosing
-} from "../parse/string/shift/operand/date.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
@@ -120,12 +116,13 @@ type IndexVariablePrefix = "i" | "k"
 type IndexVariableName = `${IndexVariablePrefix}${"" | number}`
 
 export const compileSerializedValue = (value: unknown) => {
-    if (hasDomain(value, "object") || typeof value === "symbol") {
+    if (
+        (hasDomain(value, "object") || typeof value === "symbol") &&
+        !(value instanceof Date)
+    ) {
         return registry().register(value)
     }
-    const modifiedValue = hasDateEnclosing(value)
-        ? getDateFromLiteral(`${value}`).valueOf()
-        : value
+    const modifiedValue = value instanceof Date ? value.valueOf() : value
     return serializePrimitive(modifiedValue as SerializablePrimitive)
 }
 

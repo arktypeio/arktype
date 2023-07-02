@@ -18,6 +18,7 @@ suite("Date", () => {
         attest(dateString.infer).typed as Date
         attest(t.condition).equals(ISO.condition)
         attest(t.condition).equals(dateString.condition)
+        attest(t(new Date("2000/10/10")).data)
     })
     suite("date literal range", () => {
         suite("single", () => {
@@ -31,7 +32,7 @@ suite("Date", () => {
                 attest(t.condition).equals(
                     expectedDateBoundsCondition({
                         comparator: "<",
-                        limit: "d'2023/1/12'"
+                        limit: new Date("2023/1/12").valueOf()
                     })
                 )
             })
@@ -41,7 +42,7 @@ suite("Date", () => {
                 attest(t.condition).equals(
                     expectedDateBoundsCondition({
                         comparator: "<=",
-                        limit: "d'2021/1/12'"
+                        limit: new Date("2021/1/12")
                     })
                 )
             })
@@ -51,7 +52,7 @@ suite("Date", () => {
                 attest(t.condition).equals(
                     expectedDateBoundsCondition({
                         comparator: "==",
-                        limit: "d'2020-1-1'"
+                        limit: new Date("2020-1-1")
                     })
                 )
             })
@@ -64,27 +65,27 @@ suite("Date", () => {
                     expectedDateBoundsCondition(
                         {
                             comparator: ">",
-                            limit: "d'2001/10/10'"
+                            limit: new Date("2001/10/10")
                         },
                         {
                             comparator: "<",
-                            limit: "d'2005/10/10'"
+                            limit: new Date("2005/10/10")
                         }
                     )
                 )
             })
             test("<=,<", () => {
-                const t = type("d'1800/10/10'<=Date<d'1886/10/10'")
+                const t = type("d'1990/10/10'<=Date<d'2006/10/10'")
                 attest(t.infer).typed as Date
                 attest(t.condition).equals(
                     expectedDateBoundsCondition(
                         {
                             comparator: ">=",
-                            limit: "d'1800/10/10'"
+                            limit: new Date("1990/10/10")
                         },
                         {
                             comparator: "<",
-                            limit: "d'1886/10/10'"
+                            limit: new Date("2006/10/10")
                         }
                     )
                 )
@@ -96,11 +97,11 @@ suite("Date", () => {
                     expectedDateBoundsCondition(
                         {
                             comparator: ">",
-                            limit: "d'2020/1/1'"
+                            limit: new Date("2020/1/1")
                         },
                         {
                             comparator: "<=",
-                            limit: "d'2024/1/1'"
+                            limit: new Date("2024/1/1")
                         }
                     )
                 )
@@ -134,8 +135,8 @@ suite("Date", () => {
                 test("disjoint", () => {
                     attest(() =>
                         type("Date==d'2000/2/2'&Date==d'3000/1/1'")
-                    ).throws(
-                        "Error: Intersection of ==d'2000/2/2' and ==d'3000/1/1' results in an unsatisfiable type"
+                    ).throws.snap(
+                        "Error: Intersection of ==Wed Feb 02 2000 00:00:00 GMT-0500 (Eastern Standard Time) and ==Wed Jan 01 3000 00:00:00 GMT-0500 (Eastern Standard Time) results in an unsatisfiable type"
                     )
                 })
                 test("right equality range", () => {
@@ -144,8 +145,10 @@ suite("Date", () => {
                     ).equals(type("Date==d'2002/1/1'").condition)
                 })
                 test("Date and Number", () => {
-                    attest(() => type("Date>d'1990-01-01'&number>2")).throws(
-                        "Intersection of Date and number results in an unsatisfiable type"
+                    attest(() =>
+                        type("Date>d'1990-01-01'&number>2")
+                    ).throws.snap(
+                        "Error: Intersection of a Date and a number results in an unsatisfiable type"
                     )
                 })
                 test("left equality range", () => {
@@ -177,14 +180,14 @@ suite("Date", () => {
                     () =>
                         type("Date>d'2000/01/01'&Date<=d'2000/01/01'").condition
                 ).throws(
-                    "Intersection of >d'2000/01/01' and <=d'2000/01/01' results in an unsatisfiable type"
+                    "Intersection of >Sat Jan 01 2000 00:00:00 GMT-0500 (Eastern Standard Time) and <=Sat Jan 01 2000 00:00:00 GMT-0500 (Eastern Standard Time) results in an unsatisfiable type"
                 )
                 attest(() =>
                     type(
                         "d'1990/01/01'<Date<d'1992/02/02'&d'1993/01/01'<Date<d'2000/01/01'"
                     )
                 ).throws(
-                    "Intersection of the range bounded by >d'1990/01/01' and <d'1992/02/02' and the range bounded by >d'1993/01/01' and <d'2000/01/01' results in an unsatisfiable type"
+                    "Intersection of the range bounded by >Mon Jan 01 1990 00:00:00 GMT-0500 (Eastern Standard Time) and <Sun Feb 02 1992 00:00:00 GMT-0500 (Eastern Standard Time) and the range bounded by >Fri Jan 01 1993 00:00:00 GMT-0500 (Eastern Standard Time) and <Sat Jan 01 2000 00:00:00 GMT-0500 (Eastern Standard Time) results in an unsatisfiable type"
                 )
             })
             test("greater min is stricter", () => {

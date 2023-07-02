@@ -15,11 +15,7 @@ import type {
 import type { ValidLiteral } from "../../reduce/shared.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
-import {
-    hasDateEnclosing,
-    tryParseDate,
-    writeInvalidDateMessage
-} from "../operand/date.js"
+import { tryParseDate, writeInvalidDateMessage } from "../operand/date.js"
 import { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
 
@@ -29,7 +25,7 @@ export const parseBound = (
 ) => {
     const comparator = shiftComparator(s, start)
     const value = s.root.value?.rule
-    if (typeof value === "number" || typeof value === "string") {
+    if (typeof value === "number" || value instanceof Date) {
         s.ejectRoot()
         return s.reduceLeftBound(value, comparator)
     }
@@ -109,22 +105,24 @@ export const parseRightBound = (
 ) => {
     const baseRoot = s.ejectRoot()
     parseOperand(s)
-    const bound = s.ejectRoot()
+    const rootLimit = s.ejectRoot()
     s.setRoot(baseRoot)
-    const limitToken = bound.value?.rule
-    const limit = hasDateEnclosing(limitToken)
-        ? tryParseDate(
-              `${limitToken}`,
-              writeInvalidDateMessage(`${limitToken}`)
-          )
-        : tryParseWellFormedNumber(
-              `${limitToken}`,
-              writeInvalidLimitMessage(
-                  comparator,
-                  limitToken + s.scanner.unscanned,
-                  "right"
+    const limitToken = rootLimit.value?.rule
+
+    const limit =
+        limitToken instanceof Date
+            ? tryParseDate(
+                  `${limitToken}`,
+                  writeInvalidDateMessage(`${limitToken}`)
               )
-          )
+            : tryParseWellFormedNumber(
+                  `${limitToken}`,
+                  writeInvalidLimitMessage(
+                      comparator,
+                      limitToken + s.scanner.unscanned,
+                      "right"
+                  )
+              )
     if (!s.branches.range) {
         s.root = s.root.constrain("range", [{ comparator, limit }])
         return
