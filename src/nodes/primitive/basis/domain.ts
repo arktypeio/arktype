@@ -23,7 +23,7 @@ export const domainDescriptions = {
     undefined: "undefined"
 } as const satisfies Record<Domain, string>
 
-export interface DomainNode extends BasisNode<NonEnumerableDomain> {}
+export interface DomainNode extends BasisNode<"domain", NonEnumerableDomain> {}
 
 export const domainNode = defineNodeKind<DomainNode>(
     {

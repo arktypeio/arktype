@@ -55,9 +55,9 @@
         "@arktype/utils": "workspace:*"
     },
     "devDependencies": {
-        "typescript": "5.0",
-        "ts49": "npm:typescript@4.9",
-        "ts51": "npm:typescript@5.1",
+        "typescript": "5.0.4",
+        "ts49": "npm:typescript@4.9.3",
+        "ts51": "npm:typescript@5.1.6",
         "@changesets/changelog-github": "0.4.8",
         "@changesets/cli": "2.26.1",
         "@swc/cli": "0.1.62",

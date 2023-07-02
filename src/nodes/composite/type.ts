@@ -35,7 +35,10 @@ import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
 export interface TypeNode<t = unknown>
-    extends BaseNode<{ rule: UnresolvedTypeNode | PredicateNode[] }> {
+    extends BaseNode<{
+        kind: "type"
+        rule: UnresolvedTypeNode | PredicateNode[]
+    }> {
     [inferred]: t
     branches: PredicateNode[]
     discriminant: Discriminant | null
@@ -92,6 +95,11 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                 ? compileDiscriminant(discriminant, ctx)
                 : compileIndiscriminable(rule, ctx)
         },
+        getReferences: (branches) =>
+            hasKey(branches, "resolve")
+                ? // TODO: unresolved?
+                  []
+                : branches.flatMap((predicate) => [...predicate.references]),
         intersect: (l, r): TypeNode | Disjoint => {
             if (l.branches.length === 1 && r.branches.length === 1) {
                 const result = l.branches[0].intersect(r.branches[0])

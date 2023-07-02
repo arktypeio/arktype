@@ -207,12 +207,15 @@ export type Resolutions = {
 }
 
 export type ParseContext = {
+    baseName: string
     path: Path
     scope: Scope
     args: Record<string, TypeNode> | undefined
 }
 
 type MergedResolutions = Record<string, TypeNode | Generic>
+
+type ParseContextInput = Pick<ParseContext, "baseName" | "args">
 
 export class Scope<r extends Resolutions = any> {
     declare infer: extractOut<r["exports"]>
@@ -287,16 +290,16 @@ export class Scope<r extends Resolutions = any> {
         return this.export()[name] as never
     }
 
-    private createRootContext(args?: Record<string, TypeNode>) {
+    private createRootContext(input: ParseContextInput): ParseContext {
         return {
             path: new Path(),
             scope: this,
-            args
+            ...input
         }
     }
 
-    parseRoot(def: unknown, args?: Record<string, TypeNode>) {
-        return this.parse(def, this.createRootContext(args))
+    parseRoot(def: unknown, input: ParseContextInput) {
+        return this.parse(def, this.createRootContext(input))
     }
 
     parse(def: unknown, ctx: ParseContext): TypeNode {
@@ -359,7 +362,7 @@ export class Scope<r extends Resolutions = any> {
             ? validateUninstantiatedGeneric(def)
             : hasArkKind(def, "module")
             ? throwParseError(writeMissingSubmoduleAccessMessage(name))
-            : this.parseRoot(def)
+            : this.parseRoot(def, { baseName: name, args: {} })
         this.resolutions[name] = resolution
         return resolution
     }
@@ -410,7 +413,10 @@ export class Scope<r extends Resolutions = any> {
                     this.exportCache[name] = def
                 } else {
                     this.exportCache[name] = new Type(
-                        this.maybeResolve(name, this.createRootContext()),
+                        this.maybeResolve(
+                            name,
+                            this.createRootContext({ baseName: name, args: {} })
+                        ),
                         this
                     )
                 }

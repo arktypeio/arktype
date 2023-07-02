@@ -234,7 +234,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 }
 
 const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
-    scope.parseRoot(def, args ?? bindThis())
+    scope.parseRoot(def, { args: args ?? bindThis(), baseName: "type" })
 
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
@@ -252,7 +252,13 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
         g.definition,
         // once we support constraints on generic parameters, we'd use
         // the base type here: https://github.com/arktypeio/arktype/issues/796
-        transform(g.parameters, ([, name]) => [name, builtins.unknown()])
+        {
+            baseName: "generic",
+            args: transform(g.parameters, ([, name]) => [
+                name,
+                builtins.unknown()
+            ])
+        }
     )
     return g
 }

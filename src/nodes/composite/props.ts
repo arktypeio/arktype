@@ -28,7 +28,8 @@ export type NodeEntry = NamedPropRule | IndexedPropRule
 
 export type PropsRule = readonly NodeEntry[]
 
-export interface PropsNode extends BaseNode<{ rule: NodeEntry[] }> {
+export interface PropsNode
+    extends BaseNode<{ kind: "props"; rule: NodeEntry[] }> {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>
@@ -85,6 +86,12 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
             }
             return compileIndexed(named, indexed, ctx)
         },
+        getReferences: (entries) =>
+            entries.flatMap((entry) =>
+                hasArkKind(entry.key, "node")
+                    ? entry.key.references.concat(entry.value.references)
+                    : entry.value.references
+            ),
         intersect: (l, r) => intersectProps(l, r)
     },
     (base) => {

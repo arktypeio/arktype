@@ -13,7 +13,7 @@ import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface ClassNode extends BasisNode<AbstractableConstructor> {
+export interface ClassNode extends BasisNode<"class", AbstractableConstructor> {
     extendsOneOf: (...baseConstructors: AbstractableConstructor[]) => boolean
 }
 

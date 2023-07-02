@@ -1,8 +1,9 @@
+import type { extend } from "../../dev/utils/src/main.js"
 import { cached } from "../../dev/utils/src/main.js"
 import type { PredicateNode } from "./composite/predicate.js"
 import { predicateNode } from "./composite/predicate.js"
-import { propsNode } from "./composite/props.js"
 import type { PropsNode } from "./composite/props.js"
+import { propsNode } from "./composite/props.js"
 import type { TypeNode } from "./composite/type.js"
 import { typeNode } from "./composite/type.js"
 import type { NodeConstructor } from "./node.js"
@@ -77,6 +78,8 @@ const nodeKinds = cached(
             morph: morphNode
         } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k], never> })
 )
+
+export type CompositeNodeKind = extend<NodeKind, "type" | "predicate" | "props">
 
 type NodeConstructors = { [k in NodeKind]: ReturnType<typeof nodeKinds>[k] }
 

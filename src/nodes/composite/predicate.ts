@@ -46,7 +46,8 @@ import type { PropsInput } from "./props.js"
 import type { TypeNode } from "./type.js"
 import { builtins } from "./type.js"
 
-export interface PredicateNode extends BaseNode<{ rule: PredicateChildren }> {
+export interface PredicateNode
+    extends BaseNode<{ kind: "predicate"; rule: PredicateChildren }> {
     basis: BasisNode | null
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
@@ -106,6 +107,8 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             }
             return result
         },
+        getReferences: (children) =>
+            children.flatMap((child) => child.references),
         intersect: (l, r): PredicateNode | Disjoint => {
             // if (
             //     // s.lastOperator === "&" &&

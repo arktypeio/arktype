@@ -1,17 +1,19 @@
 import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
-import { CompiledFunction } from "../../dev/utils/src/main.js"
+import { CompiledFunction, hasKey } from "../../dev/utils/src/main.js"
 import type { CompilationContext } from "../compile/compile.js"
 import {
     createCompilationContext,
     InputParameterName
 } from "../compile/compile.js"
 import { arkKind, registry } from "../compile/registry.js"
+import type { TypeNode } from "../main.js"
 import type { inferred } from "../parse/definition.js"
 import { Disjoint } from "./disjoint.js"
-import type { NodeKind, NodeKinds } from "./kinds.js"
+import type { CompositeNodeKind, NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
 
 type NodeConfig = {
+    kind: NodeKind
     rule: unknown
     intersectsWith?: unknown
 }
@@ -19,6 +21,7 @@ type NodeConfig = {
 type DefaultNodeConfig = extend<
     Required<NodeConfig>,
     {
+        kind: NodeKind
         rule: unknown
         intersectsWith: never
     }
@@ -35,7 +38,11 @@ type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
     ) => ReturnType<node["intersect"]>
-}
+} & (node["kind"] extends CompositeNodeKind
+    ? {
+          getReferences: (rule: node["rule"]) => TypeNode[]
+      }
+    : {})
 
 type NodeExtension<node extends BaseNode> = (
     base: basePropsOf<node>
@@ -52,9 +59,11 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 
 interface PreconstructedBase<config extends NodeConfig> {
     readonly [arkKind]: "node"
-    readonly kind: NodeKind
+    readonly kind: config["kind"]
     readonly rule: config["rule"]
+    readonly source: string
     readonly condition: string
+    readonly references: TypeNode[]
     alias: string
     compile(ctx: CompilationContext): string
     intersect(
@@ -100,20 +109,28 @@ export const defineNodeKind = <
     const intersectionKind = isBasis ? "basis" : def.kind
     return (input) => {
         const rule = def.parse(input)
+        const source = def.compile(
+            rule,
+            createCompilationContext("out", "problems")
+        )
+        if (nodeCache[source]) {
+            return nodeCache[source]!
+        }
         const condition = def.compile(
             rule,
             createCompilationContext("true", "false")
         )
-        if (nodeCache[condition]) {
-            return nodeCache[condition]!
-        }
         const base: PreconstructedBase<DefaultNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
             alias: "uninitialized",
             hasKind: (kind) => kind === def.kind,
             isBasis: () => isBasis,
+            source,
             condition,
+            references: hasKey(def, "getReferences")
+                ? [...new Set(def.getReferences(rule))]
+                : [],
             rule,
             compile: (ctx: CompilationContext) => def.compile(rule, ctx),
             allows: new CompiledFunction(
@@ -125,7 +142,7 @@ export const defineNodeKind = <
                 if (instance === other) {
                     return instance
                 }
-                const cacheKey = `${intersectionKind}${condition}${other.condition}`
+                const cacheKey = `${intersectionKind}${source}${other.source}`
                 if (intersectionCache[cacheKey]) {
                     return intersectionCache[cacheKey]
                 }
@@ -135,9 +152,9 @@ export const defineNodeKind = <
                 )
                 intersectionCache[cacheKey] = result
                 intersectionCache[
-                    `${intersectionKind}${other.condition}${condition}`
+                    `${intersectionKind}${other.source}${source}`
                 ] =
-                    // also cache the result with other's condition as the key.
+                    // also cache the result with other's source as the key.
                     // if it was a Disjoint, it has to be inverted so that l, r
                     // still line up correctly
                     result instanceof Disjoint ? result.invert() : result
@@ -150,7 +167,7 @@ export const defineNodeKind = <
         if (def.kind === "type") {
             instance.alias = registry().register(instance)
         }
-        nodeCache[condition] = instance
+        nodeCache[source] = instance
         return instance
     }
 }

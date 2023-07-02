@@ -2,7 +2,8 @@ import { compileCheck, InputParameterName } from "../../compile/compile.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface DivisorNode extends BaseNode<{ rule: number }> {}
+export interface DivisorNode
+    extends BaseNode<{ kind: "divisor"; rule: number }> {}
 
 export const divisorNode = defineNodeKind<DivisorNode>(
     {
