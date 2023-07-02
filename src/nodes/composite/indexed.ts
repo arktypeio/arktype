@@ -2,7 +2,10 @@ import {
     throwInternalError,
     tryParseWellFormedInteger
 } from "../../../dev/utils/src/main.js"
-import type { CompilationState } from "../../compile/state.js"
+import {
+    type CompilationContext,
+    InputParameterName
+} from "../../compile/state.js"
 import { sourceFromRegexLiteral } from "../primitive/regex.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp, compileNamedProps } from "./named.js"
@@ -116,17 +119,17 @@ export const compileArray = (
     indexMatcher: ArrayIndexMatcherSource,
     elementNode: TypeNode,
     namedProps: NamedPropRule[],
-    s: CompilationState
+    ctx: CompilationContext
 ) => {
     const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
     const namedCheck = namedProps
-        .map((named) => compileNamedProp(named, s))
+        .map((named) => compileNamedProp(named, ctx))
         .join("\n")
-    const i = s.getNextIndexKeyAndPush("i")
-    const elementCondition = elementNode.compile(s)
-    s.popKey()
+    ctx.path.push(["i"])
+    const elementCondition = elementNode.compile(ctx)
+    ctx.path.pop()
     return `${namedCheck}
-for(let ${i} = ${firstVariadicIndex}; ${i} < ${s.data}.length; ${i}++) {
+for(let i = ${firstVariadicIndex}; i < ${InputParameterName}.length; i++) {
     ${elementCondition}
 }`
 }
@@ -134,26 +137,26 @@ for(let ${i} = ${firstVariadicIndex}; ${i} < ${s.data}.length; ${i}++) {
 export const compileIndexed = (
     namedProps: NamedPropRule[],
     indexedProps: IndexedPropRule[],
-    s: CompilationState
+    ctx: CompilationContext
 ) => {
     throw new Error()
-    const k = s.getNextIndexKeyAndPush("k")
+    const k = ctx.path.push(["k"])
     const indexedChecks = indexedProps
         .map((prop) =>
             prop.key === builtins.string()
                 ? // if the index signature is just for "string", we don't need to check it explicitly
-                  prop.value.compile(s)
+                  prop.value.compile(ctx)
                 : // Ensure condition is checked on the key variable as opposed to the input
                   // TODO: fix ${prop.key.condition.replaceAll(InputParameterName, k)}
                   `if(false){
-    ${prop.value.compile(s)}
+    ${prop.value.compile(ctx)}
 }`
         )
         .join("\n")
-    s.popKey()
+    ctx.path.pop()
     // TODO: don't recheck named
-    return `${compileNamedProps(namedProps, s)}
-    for(const ${k} in ${s.data}) {
+    return `${compileNamedProps(namedProps, ctx)}
+    for(const ${k} in ${InputParameterName}) {
         ${indexedChecks}
     }
 `

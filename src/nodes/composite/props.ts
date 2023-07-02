@@ -66,10 +66,10 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
                     : -1
             })
         },
-        compile: (rule, s) => {
+        compile: (rule, ctx) => {
             const [named, indexed] = spliterate(rule, isNamed)
             if (indexed.length === 0) {
-                return compileNamedProps(named, s)
+                return compileNamedProps(named, ctx)
             }
             if (indexed.length === 1) {
                 // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
@@ -79,11 +79,11 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
                         indexMatcher,
                         indexed[0].value,
                         named,
-                        s
+                        ctx
                     )
                 }
             }
-            return compileIndexed(named, indexed, s)
+            return compileIndexed(named, indexed, ctx)
         },
         intersect: (l, r) => intersectProps(l, r)
     },

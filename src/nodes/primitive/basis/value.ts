@@ -4,7 +4,11 @@ import {
     prototypeKeysOf,
     stringify
 } from "../../../../dev/utils/src/main.js"
-import { compileSerializedValue } from "../../../compile/state.js"
+import {
+    compileCheck,
+    compileSerializedValue,
+    InputParameterName
+} from "../../../compile/state.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
@@ -19,11 +23,12 @@ export const valueNode = defineNodeKind<ValueNode>(
         kind: "value",
         parse: (input) => input,
         intersect: intersectBases,
-        compile: (rule, s) =>
-            s.check(
+        compile: (rule, ctx) =>
+            compileCheck(
                 "value",
                 rule,
-                `${s.data} === ${compileSerializedValue(rule)}`
+                `${InputParameterName} === ${compileSerializedValue(rule)}`,
+                ctx
             )
     },
     (base) => {

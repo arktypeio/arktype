@@ -1,4 +1,5 @@
 import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
+import { compileCheck, InputParameterName } from "../../compile/state.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
@@ -68,7 +69,7 @@ export const rangeNode = defineNodeKind<RangeNode>(
     {
         kind: "range",
         parse: (input) => input,
-        compile: (rule, s) => {
+        compile: (rule, ctx) => {
             if (
                 rule[0].limit === rule[1]?.limit &&
                 rule[0].comparator === ">=" &&
@@ -77,32 +78,34 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 // reduce a range like `1<=number<=1` to `number==1`
                 rule = [{ comparator: "==", limit: rule[0].limit }]
             }
-            const size = s.lastBasis
-                ? s.lastBasis.domain === "number"
-                    ? s.data
-                    : s.lastBasis.domain === "string"
-                    ? `${s.data}.length`
-                    : s.lastBasis.hasKind("class")
-                    ? s.lastBasis.extendsOneOf(Date)
-                        ? `Number(${s.data})`
-                        : s.lastBasis.extendsOneOf(Array)
-                        ? `${s.data}.length`
+            const lastBasis = ctx.bases.at(-1)
+            const size = lastBasis
+                ? lastBasis.domain === "number"
+                    ? InputParameterName
+                    : lastBasis.domain === "string"
+                    ? `${InputParameterName}.length`
+                    : lastBasis.hasKind("class")
+                    ? lastBasis.extendsOneOf(Date)
+                        ? `Number(${InputParameterName})`
+                        : lastBasis.extendsOneOf(Array)
+                        ? `${InputParameterName}.length`
                         : throwInternalError(
-                              `Unexpected basis for range constraint ${s.lastBasis}`
+                              `Unexpected basis for range constraint ${lastBasis}`
                           )
                     : throwInternalError(
-                          `Unexpected basis for range constraint ${s.lastBasis}`
+                          `Unexpected basis for range constraint ${lastBasis}`
                       )
-                : `${s.data}.length ?? Number(${s.data})`
+                : `${InputParameterName}.length ?? Number(${InputParameterName})`
             // sorted as lower, upper by definition
             return rule
                 .map((bound) =>
-                    s.check(
+                    compileCheck(
                         "range",
                         bound,
                         `${size} ${
                             bound.comparator === "==" ? "===" : bound.comparator
-                        } ${bound.limit}`
+                        } ${bound.limit}`,
+                        ctx
                     )
                 )
                 .join("\n")

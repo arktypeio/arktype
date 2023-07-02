@@ -1,5 +1,6 @@
 import type { Domain } from "../../../../dev/utils/src/main.js"
 import { cached, getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
+import { compileCheck, InputParameterName } from "../../../compile/state.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
@@ -28,13 +29,14 @@ export const domainNode = defineNodeKind<DomainNode>(
     {
         kind: "domain",
         parse: (input) => input,
-        compile: (rule, s) =>
-            s.check(
+        compile: (rule, ctx) =>
+            compileCheck(
                 "domain",
                 rule,
                 rule === "object"
-                    ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`
-                    : `typeof ${s.data} === "${rule}"`
+                    ? `((typeof ${InputParameterName} === "object" && ${InputParameterName} !== null) || typeof ${InputParameterName} === "function")`
+                    : `typeof ${InputParameterName} === "${rule}"`,
+                ctx
             ),
         intersect: intersectBases
     },

@@ -7,6 +7,7 @@ import {
     prototypeKeysOf
 } from "../../../../dev/utils/src/main.js"
 import { registry } from "../../../compile/registry.js"
+import { compileCheck, InputParameterName } from "../../../compile/state.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
@@ -20,14 +21,15 @@ export const classNode = defineNodeKind<ClassNode>(
     {
         kind: "class",
         parse: (input) => input,
-        compile: (rule, s) =>
-            s.check(
+        compile: (rule, ctx) =>
+            compileCheck(
                 "class",
                 rule,
-                `${s.data} instanceof ${
+                `${InputParameterName} instanceof ${
                     getExactBuiltinConstructorName(rule) ??
                     registry().register(rule)
-                }`
+                }`,
+                ctx
             ),
         intersect: intersectBases
     },

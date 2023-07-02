@@ -1,7 +1,11 @@
 import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
 import { CompiledFunction } from "../../dev/utils/src/main.js"
 import { arkKind, registry } from "../compile/registry.js"
-import { CompilationState, InputParameterName } from "../compile/state.js"
+import type { CompilationContext } from "../compile/state.js"
+import {
+    createCompilationContext,
+    InputParameterName
+} from "../compile/state.js"
 import type { inferred } from "../parse/definition.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
@@ -26,7 +30,7 @@ type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
      *  then ensure rule is normalized such that equivalent
      *  inputs will compile to the same string. */
     parse: (rule: node["rule"] | parsableFrom) => node["rule"]
-    compile: (rule: node["rule"], s: CompilationState) => string
+    compile: (rule: node["rule"], ctx: CompilationContext) => string
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
@@ -52,7 +56,7 @@ interface PreconstructedBase<config extends NodeConfig> {
     readonly rule: config["rule"]
     readonly condition: string
     alias: string
-    compile(state: CompilationState): string
+    compile(ctx: CompilationContext): string
     intersect(
         other: config["intersectsWith"] | this
     ): config["intersectsWith"] | this | Disjoint
@@ -96,7 +100,10 @@ export const defineNodeKind = <
     const intersectionKind = isBasis ? "basis" : def.kind
     return (input) => {
         const rule = def.parse(input)
-        const condition = def.compile(rule, new CompilationState("allows"))
+        const condition = def.compile(
+            rule,
+            createCompilationContext("true", "false")
+        )
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
@@ -108,7 +115,7 @@ export const defineNodeKind = <
             isBasis: () => isBasis,
             condition,
             rule,
-            compile: (state: CompilationState) => def.compile(rule, state),
+            compile: (ctx: CompilationContext) => def.compile(rule, ctx),
             allows: new CompiledFunction(
                 InputParameterName,
                 `${condition}

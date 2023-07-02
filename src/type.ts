@@ -7,7 +7,10 @@ import type {
 } from "../dev/utils/src/main.js"
 import { CompiledFunction, transform } from "../dev/utils/src/main.js"
 import { arkKind, registry } from "./compile/registry.js"
-import { CompilationState, InputParameterName } from "./compile/state.js"
+import {
+    createCompilationContext,
+    InputParameterName
+} from "./compile/state.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { TypeNode } from "./nodes/composite/type.js"
@@ -135,7 +138,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
             InputParameterName,
             `const state = new ${registry().reference("state")}();
         const morphs = [];
-        ${root.compile(new CompilationState("traverse"))}
+        ${root.compile(createCompilationContext("out", "problems"))}
         for(let i = 0; i < morphs.length; i++) {
             morphs[i]()
         }

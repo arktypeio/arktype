@@ -12,8 +12,6 @@ const $ = scope({
 
 const types = $.export()
 
-console.log($.compile())
-
 console.log(types.user.root.alias)
 
 const name = types.user.root.getPath("name")

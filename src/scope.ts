@@ -4,14 +4,12 @@ import {
     hasDomain,
     isThunk,
     Path,
-    throwInternalError,
     throwParseError,
     transform
 } from "../dev/utils/src/main.js"
 import type { ProblemCode } from "./compile/problems.js"
 import type { arkKind } from "./compile/registry.js"
 import { addArkKind, hasArkKind } from "./compile/registry.js"
-import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { TypeNode } from "./main.js"
 import { builtins, typeNode } from "./nodes/composite/type.js"
 import type {
@@ -369,30 +367,6 @@ export class Scope<r extends Resolutions = any> {
     maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
         const result = this.maybeResolve(name, ctx)
         return hasArkKind(result, "node") ? result : undefined
-    }
-
-    compile() {
-        let result = ""
-        for (const name in this.aliases) {
-            const ctx: ParseContext = {
-                path: new Path(),
-                scope: this,
-                args: undefined
-            }
-            const resolution = this.maybeResolveNode(name, ctx)
-            if (!resolution) {
-                return throwInternalError(
-                    `Unexpectedly failed to resolve '${name}'`
-                )
-            }
-            result += `const $${name} = (${InputParameterName}) => {
-                ${resolution.compile(new CompilationState("allows"))}
-            }\n`
-        }
-        if (this.ambient) {
-            result += this.ambient.compile()
-        }
-        return result
     }
 
     import<names extends exportedName<r>[]>(

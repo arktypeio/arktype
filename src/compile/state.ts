@@ -1,9 +1,5 @@
 import type { SerializablePrimitive } from "../../dev/utils/src/main.js"
-import {
-    hasDomain,
-    isArray,
-    serializePrimitive
-} from "../../dev/utils/src/main.js"
+import { hasDomain, serializePrimitive } from "../../dev/utils/src/main.js"
 import type { Discriminant } from "../nodes/composite/discriminate.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
@@ -11,102 +7,84 @@ import { registry } from "./registry.js"
 
 export const InputParameterName = "$arkRoot"
 
-export class CompilationState {
-    private path: CompiledPathSegment[] = []
-    bases: BasisNode[] = []
-    discriminants: Discriminant[] = []
+export type CompiledSuccessKind = "true" | "in" | "out"
+export type CompiledFailureKind = "false" | "problems"
 
-    constructor(public readonly kind: "allows" | "traverse") {}
+export type CompilationContext = {
+    successKind: CompiledSuccessKind
+    failureKind: CompiledFailureKind
+    path: CompiledPathSegment[]
+    discriminants: Discriminant[]
+    bases: BasisNode[]
+}
 
-    get data() {
-        let result = InputParameterName
-        for (const k of this.path) {
-            if (typeof k === "string") {
-                result += compilePropAccess(k)
-            } else {
-                result += `[${k[0]}]`
-            }
-        }
-        return result
-    }
+export const createCompilationContext = (
+    successKind: CompiledSuccessKind,
+    failureKind: CompiledFailureKind
+): CompilationContext => ({
+    successKind,
+    failureKind,
+    path: [],
+    discriminants: [],
+    bases: []
+})
 
-    private getNextIndex(prefix: IndexVariablePrefix) {
-        let name: IndexVariableName = prefix
-        let suffix = 2
-        for (const k of this.path) {
-            if (isArray(k) && k[0].startsWith(prefix)) {
-                name = `${prefix}${suffix++}`
-            }
-        }
-        return name
-    }
+const compileAddProblem = <code extends ProblemCode>(
+    code: code,
+    rule: ProblemRules[code],
+    ctx: CompilationContext
+) => {
+    return `state.addProblem("${code}", ${compileSerializedValue(
+        rule
+    )}, ${InputParameterName}, [${ctx.path.map((segment) =>
+        // if the segment is a variable reference, don't quote it
+        typeof segment === "string" ? JSON.stringify(segment) : segment[0]
+    )}])` as const
+}
 
-    get lastBasis() {
-        return this.bases.at(-1)
-    }
+export const compileFailureResult = <code extends ProblemCode>(
+    code: code,
+    rule: ProblemRules[code],
+    ctx: CompilationContext
+) => {
+    return ctx.failureKind === "false"
+        ? "return false"
+        : compileAddProblem(code, rule, ctx)
+}
 
-    pushNamedKey(name: string) {
-        this.path.push(name)
-    }
-
-    getNextIndexKeyAndPush(prefix: IndexVariablePrefix) {
-        const k = this.getNextIndex(prefix)
-        this.path.push([k])
-        return k
-    }
-
-    popKey() {
-        return this.path.pop()
-    }
-
-    problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `state.addProblem("${code}", ${compileSerializedValue(rule)}, ${
-            this.data
-        }, [${this.path.map((segment) =>
-            // if the segment is a variable reference, don't quote it
-            typeof segment === "string" ? JSON.stringify(segment) : segment[0]
-        )}])` as const
-    }
-
-    invalid<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return this.kind === "allows"
-            ? "return false"
-            : this.problem(code, rule)
-    }
-
-    check<code extends ProblemCode>(
-        code: code,
-        rule: ProblemRules[code],
-        condition: string
+export const compileCheck = <code extends ProblemCode>(
+    code: code,
+    rule: ProblemRules[code],
+    condition: string,
+    ctx: CompilationContext
+) => {
+    const pathString = ctx.path.join()
+    if (
+        code === "domain" &&
+        rule === "object" &&
+        ctx.discriminants.some((d) => d.path.join().startsWith(pathString))
     ) {
-        const pathString = this.path.join()
-        if (
-            code === "domain" &&
-            rule === "object" &&
-            this.discriminants.some((d) => d.path.join().startsWith(pathString))
-        ) {
-            // if we've already checked a path at least as long as the current one,
-            // we don't need to revalidate that we're in an object
-            return ""
-        }
-        if (
-            (code === "domain" || code === "value") &&
-            this.discriminants.some(
-                (d) =>
-                    d.path.join() === pathString &&
-                    (code === "domain"
-                        ? d.kind === "domain" || d.kind === "value"
-                        : d.kind === "value")
-            )
-        ) {
-            // if the discriminant has already checked the domain at the current path
-            // (or an exact value, implying a domain), we don't need to recheck it
-            return ""
-        }
-        return `if (!(${condition})) {
-            ${this.invalid(code, rule)}
-}`
+        // if we've already checked a path at least as long as the current one,
+        // we don't need to revalidate that we're in an object
+        return ""
     }
+    if (
+        (code === "domain" || code === "value") &&
+        ctx.discriminants.some(
+            (d) =>
+                d.path.join() === pathString &&
+                (code === "domain"
+                    ? d.kind === "domain" || d.kind === "value"
+                    : d.kind === "value")
+        )
+    ) {
+        // if the discriminant has already checked the domain at the current path
+        // (or an exact value, implying a domain), we don't need to recheck it
+        return ""
+    }
+    return `if (!(${condition})) {
+        ${compileFailureResult(code, rule, ctx)}
+}`
 }
 
 type CompiledPathSegment = string | [IndexVariableName]
