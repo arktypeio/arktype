@@ -3,23 +3,27 @@ import { format } from "prettier"
 import { scope } from "./src/main.js"
 import { arrayIndexTypeNode } from "./src/nodes/composite/indexed.js"
 
-const types = scope({
+const $ = scope({
     user: {
         friends: "user[]",
         name: "string[]"
     }
-}).export()
+})
 
-// console.log(types.user.root.alias)
+const types = $.export()
 
-// const name = types.user.root.getPath("name")
+console.log($.compile())
 
-// console.log(name.alias)
+console.log(types.user.root.alias)
 
-// const nestedUser = types.user.root.getPath("friends", arrayIndexTypeNode())
+const name = types.user.root.getPath("name")
 
-// console.log(nestedUser.alias)
+console.log(name.alias)
 
-// console.log()
+const nestedUser = types.user.root.getPath("friends", arrayIndexTypeNode())
 
-// console.log(format(types.user.condition, { parser: "typescript" }))
+console.log(nestedUser.alias)
+
+console.log()
+
+console.log(format(types.user.condition, { parser: "typescript" }))
