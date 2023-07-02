@@ -89,8 +89,13 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
         getReferences: (entries) =>
             entries.flatMap((entry) =>
                 hasArkKind(entry.key, "node")
-                    ? entry.key.references.concat(entry.value.references)
-                    : entry.value.references
+                    ? [
+                          entry.key,
+                          ...entry.key.references,
+                          entry.value,
+                          ...entry.value.references
+                      ]
+                    : [entry.value, ...entry.value.references]
             ),
         intersect: (l, r) => intersectProps(l, r)
     },

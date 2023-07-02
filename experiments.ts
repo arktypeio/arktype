@@ -12,16 +12,6 @@ const $ = scope({
 
 const types = $.export()
 
-console.log(types.user.root.alias)
-
-const name = types.user.root.getPath("name")
-
-console.log(name.alias)
-
-const nestedUser = types.user.root.getPath("friends", arrayIndexTypeNode())
-
-console.log(nestedUser.alias)
-
-console.log()
+console.log($.compile())
 
 console.log(format(types.user.condition, { parser: "typescript" }))

@@ -7,11 +7,12 @@ import {
     throwParseError,
     transform
 } from "../dev/utils/src/main.js"
+import { InputParameterName } from "./compile/compile.js"
 import type { ProblemCode } from "./compile/problems.js"
 import type { arkKind } from "./compile/registry.js"
 import { addArkKind, hasArkKind } from "./compile/registry.js"
 import type { TypeNode } from "./main.js"
-import { builtins, typeNode } from "./nodes/composite/type.js"
+import { builtins, node, typeNode } from "./nodes/composite/type.js"
 import type {
     CastTo,
     inferDefinition,
@@ -229,6 +230,7 @@ export class Scope<r extends Resolutions = any> {
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
     private ambient: Scope | null
+    private references: TypeNode[] = []
 
     constructor(input: Dict, opts: ScopeOptions) {
         for (const k in input) {
@@ -385,6 +387,27 @@ export class Scope<r extends Resolutions = any> {
             ]) as never,
             "module"
         ) as never
+    }
+
+    compile() {
+        this.export()
+        const references: Set<TypeNode> = new Set()
+        for (const k in this.exportedResolutions!) {
+            const resolution = this.exportedResolutions[k]
+            if (hasArkKind(resolution, "node") && !references.has(resolution)) {
+                for (const reference of resolution.references) {
+                    references.add(reference)
+                }
+            }
+        }
+        return [...references]
+            .map(
+                (ref) => `const ${ref.alias} = (${InputParameterName}) => {
+    ${ref.condition}
+    return true
+}`
+            )
+            .join("\n")
     }
 
     // TODO: find a way to deduplicate from maybeResolve
