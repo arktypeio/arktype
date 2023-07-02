@@ -153,7 +153,8 @@ suite("generics", () => {
         test("in expression", () => {
             const t = $.type("string | box<0, 1> | boolean")
             attest(t.condition).equals(
-                type("string|boolean", "|", { box: "0|1" }).condition
+                // as const is required for TS <=5.0
+                type("string|boolean", "|", { box: "0|1" } as const).condition
             )
             attest(t.infer).typed as string | { box: 0 | 1 } | boolean
         })

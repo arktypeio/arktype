@@ -379,7 +379,7 @@ export class Scope<r extends Resolutions = any> {
             transform(this.export(...names), ([alias, value]) => [
                 `#${alias as string}`,
                 value
-            ]),
+            ]) as never,
             "module"
         ) as never
     }
@@ -423,7 +423,7 @@ export class Scope<r extends Resolutions = any> {
             transform(namesToExport, ([, name]) => [
                 name,
                 this.exportCache![name]
-            ]),
+            ]) as never,
             "module"
         )
     }

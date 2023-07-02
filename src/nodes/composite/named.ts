@@ -1,6 +1,7 @@
 import { throwInternalError } from "../../../dev/utils/src/main.js"
 import {
     type CompilationContext,
+    compilePropAccess,
     InputParameterName
 } from "../../compile/state.js"
 import { Disjoint } from "../disjoint.js"
@@ -47,7 +48,9 @@ export const compileNamedProp = (
     ctx: CompilationContext
 ) => {
     ctx.path.push(prop.key.name)
-    const compiledValue = prop.value.compile(ctx)
+    const compiledValue = `${
+        prop.value.alias
+    }(${InputParameterName}${compilePropAccess(prop.key.name)})`
     ctx.path.pop()
     const result = prop.key.optional
         ? `if('${prop.key.name}' in ${InputParameterName}) {

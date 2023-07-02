@@ -126,7 +126,7 @@ export const compileArray = (
         .map((named) => compileNamedProp(named, ctx))
         .join("\n")
     ctx.path.push(["i"])
-    const elementCondition = elementNode.compile(ctx)
+    const elementCondition = `${elementNode.alias}(${InputParameterName}[i])`
     ctx.path.pop()
     return `${namedCheck}
 for(let i = ${firstVariadicIndex}; i < ${InputParameterName}.length; i++) {
