@@ -1,4 +1,5 @@
 export { scope, type, arktypes, ark, define, declare } from "./scopes/ark.js"
+export type { TypeConfig, KeyCheckKind } from "./config.js"
 export type { CastTo } from "./parse/definition.js"
 export type { Out } from "./parse/tuple.js"
 export type { Scope, Module } from "./scope.js"

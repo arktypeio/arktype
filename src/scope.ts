@@ -8,11 +8,11 @@ import {
     transform
 } from "../dev/utils/src/main.js"
 import { InputParameterName } from "./compile/compile.js"
-import type { ProblemCode } from "./compile/problems.js"
 import type { arkKind } from "./compile/registry.js"
 import { addArkKind, hasArkKind } from "./compile/registry.js"
-import type { TypeNode } from "./main.js"
-import { builtins, node, typeNode } from "./nodes/composite/type.js"
+import type { ScopeConfig } from "./config.js"
+import type { TypeConfig, TypeNode } from "./main.js"
+import { builtins, typeNode } from "./nodes/composite/type.js"
 import type {
     CastTo,
     inferDefinition,
@@ -40,8 +40,6 @@ import type {
     extractOut,
     Generic,
     GenericProps,
-    KeyCheckKind,
-    TypeConfig,
     TypeParser
 } from "./type.js"
 import {
@@ -164,12 +162,6 @@ type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
 
 type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export type ScopeOptions = {
-    ambient?: Scope | null
-    codes?: Record<ProblemCode, { mustBe?: string }>
-    keys?: KeyCheckKind
-}
-
 export type resolve<reference extends keyof $ | keyof args, $, args> = (
     reference extends keyof args ? args[reference] : $[reference & keyof $]
 ) extends infer resolution
@@ -232,7 +224,7 @@ export class Scope<r extends Resolutions = any> {
     private ambient: Scope | null
     private references: TypeNode[] = []
 
-    constructor(input: Dict, opts: ScopeOptions) {
+    constructor(input: Dict, config: ScopeConfig) {
         for (const k in input) {
             const parsedKey = parseScopeKey(k)
             this.aliases[parsedKey.name] = parsedKey.params.length
@@ -242,7 +234,7 @@ export class Scope<r extends Resolutions = any> {
                 this.exportedNames.push(parsedKey.name as never)
             }
         }
-        this.ambient = opts.ambient ?? null
+        this.ambient = config.ambient ?? null
         if (this.ambient) {
             // ensure exportedResolutions is populated
             this.ambient.export()
@@ -250,7 +242,7 @@ export class Scope<r extends Resolutions = any> {
         } else {
             this.resolutions = {}
         }
-        this.config = opts
+        this.config = config
     }
 
     static root: ScopeParser<{}, {}> = (aliases) => {
