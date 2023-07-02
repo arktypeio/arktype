@@ -5,7 +5,7 @@ import {
     createCompilationContext,
     InputParameterName
 } from "../compile/compile.js"
-import { arkKind, registry } from "../compile/registry.js"
+import { arkKind } from "../compile/registry.js"
 import type { TypeNode } from "../main.js"
 import type { inferred } from "../parse/definition.js"
 import { Disjoint } from "./disjoint.js"
@@ -104,6 +104,7 @@ export const defineNodeKind = <
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
+    let anonymousSuffix = 1
     const isBasis =
         def.kind === "domain" || def.kind === "class" || def.kind === "value"
     const intersectionKind = isBasis ? "basis" : def.kind
@@ -123,7 +124,7 @@ export const defineNodeKind = <
         const base: PreconstructedBase<DefaultNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
-            alias: "uninitialized",
+            alias: `${def.kind}${anonymousSuffix++}`,
             hasKind: (kind) => kind === def.kind,
             isBasis: () => isBasis,
             source,
@@ -164,9 +165,6 @@ export const defineNodeKind = <
         const instance = Object.assign(addProps(base as node), base, {
             toString: () => instance.description
         }) as node
-        if (def.kind === "type") {
-            instance.alias = registry().register(instance)
-        }
         nodeCache[source] = instance
         return instance
     }
