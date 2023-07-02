@@ -1,6 +1,6 @@
 import type { Domain } from "../../../../dev/utils/src/main.js"
 import { cached, getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
-import { compileCheck, InputParameterName } from "../../../compile/state.js"
+import { compileCheck, InputParameterName } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"

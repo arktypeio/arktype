@@ -1,7 +1,7 @@
 import type { listable } from "../../../dev/utils/src/main.js"
 import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/main.js"
+import { InputParameterName } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
-import { InputParameterName } from "../../compile/state.js"
 import type { Morph } from "../../parse/tuple.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"

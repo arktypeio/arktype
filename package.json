@@ -55,6 +55,9 @@
         "@arktype/utils": "workspace:*"
     },
     "devDependencies": {
+        "typescript": "5.0",
+        "ts49": "npm:typescript@4.9",
+        "ts51": "npm:typescript@5.1",
         "@changesets/changelog-github": "0.4.8",
         "@changesets/cli": "2.26.1",
         "@swc/cli": "0.1.62",
@@ -76,9 +79,7 @@
         "mocha": "10.2.0",
         "prettier": "2.8.8",
         "prettier-plugin-jsdoc": "0.4.2",
-        "print-diff": "^2.0.0",
-        "ts-node": "10.9.1",
-        "typescript": "5.0"
+        "ts-node": "10.9.1"
     },
     "mocha": {
         "spec": [

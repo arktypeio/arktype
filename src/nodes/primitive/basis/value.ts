@@ -8,7 +8,7 @@ import {
     compileCheck,
     compileSerializedValue,
     InputParameterName
-} from "../../../compile/state.js"
+} from "../../../compile/compile.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"

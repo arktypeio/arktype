@@ -5,7 +5,7 @@ import {
 import {
     type CompilationContext,
     InputParameterName
-} from "../../compile/state.js"
+} from "../../compile/compile.js"
 import { sourceFromRegexLiteral } from "../primitive/regex.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp, compileNamedProps } from "./named.js"

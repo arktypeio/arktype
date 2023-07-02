@@ -13,6 +13,12 @@ suite("object literal", () => {
     test("required", () => {
         const o = type({ a: "string", b: "boolean" })
         attest(o.infer).typed as { a: string; b: boolean }
+        attest(o.condition)
+            .snap(`if (!(((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function"))) {
+        return false
+}
+$ark.object26($arkRoot.a)
+$ark.object36($arkRoot.b)`)
     })
     test("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean" })

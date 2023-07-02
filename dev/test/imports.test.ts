@@ -15,12 +15,12 @@ suite("scope imports", () => {
     )
     const yesScope = lazily(() => scope({ yes: "'yes'" }))
 
-    const threeSixtyNoSpace = lazily(() => threeSixtyNoScope.export())
-    const yesSpace = lazily(() => yesScope.export())
+    const threeSixtyNoModule = lazily(() => threeSixtyNoScope.export())
+    const yesModule = lazily(() => yesScope.export())
 
     test("single", () => {
         const $ = scope({
-            ...threeSixtyNoSpace
+            ...threeSixtyNoModule
         }).scope({ threeSixtyNo: "three|sixty|no" })
         attest($.infer).typed as {
             threeSixtyNo: 3 | 60 | "no"
@@ -29,8 +29,8 @@ suite("scope imports", () => {
 
     test("multiple", () => {
         const base = scope({
-            ...threeSixtyNoSpace,
-            ...yesSpace,
+            ...threeSixtyNoModule,
+            ...yesModule,
             extra: "true"
         })
 

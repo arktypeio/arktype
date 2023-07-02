@@ -1,4 +1,4 @@
-import { compileCheck, InputParameterName } from "../../compile/state.js"
+import { compileCheck, InputParameterName } from "../../compile/compile.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 

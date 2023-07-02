@@ -5,14 +5,14 @@ import type {
     Thunk
 } from "../../../dev/utils/src/main.js"
 import { cached, hasKey, isArray } from "../../../dev/utils/src/main.js"
-import { hasArkKind } from "../../compile/registry.js"
-import type { CompilationContext } from "../../compile/state.js"
+import type { CompilationContext } from "../../compile/compile.js"
 import {
     compileCheck,
     compileFailureResult,
     compilePropAccess,
     InputParameterName
-} from "../../compile/state.js"
+} from "../../compile/compile.js"
+import { hasArkKind } from "../../compile/registry.js"
 import type { inferIntersection } from "../../parse/ast/intersections.js"
 import type { inferred } from "../../parse/definition.js"
 import { Disjoint } from "../disjoint.js"

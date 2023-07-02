@@ -6,11 +6,11 @@ import type {
     Primitive
 } from "../dev/utils/src/main.js"
 import { CompiledFunction, transform } from "../dev/utils/src/main.js"
-import { arkKind, registry } from "./compile/registry.js"
 import {
     createCompilationContext,
     InputParameterName
-} from "./compile/state.js"
+} from "./compile/compile.js"
+import { arkKind, registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { TypeNode } from "./nodes/composite/type.js"

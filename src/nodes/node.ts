@@ -1,11 +1,11 @@
 import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
 import { CompiledFunction } from "../../dev/utils/src/main.js"
-import { arkKind, registry } from "../compile/registry.js"
-import type { CompilationContext } from "../compile/state.js"
+import type { CompilationContext } from "../compile/compile.js"
 import {
     createCompilationContext,
     InputParameterName
-} from "../compile/state.js"
+} from "../compile/compile.js"
+import { arkKind, registry } from "../compile/registry.js"
 import type { inferred } from "../parse/definition.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
