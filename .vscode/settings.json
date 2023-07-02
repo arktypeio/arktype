@@ -12,8 +12,6 @@
         "prefer-arrow-functions/prefer-arrow-functions"
     ],
     "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
-    "typescript.enablePromptUseWorkspaceTsdk": true,
-    "typescript.tsdk": "node_modules/typescript/lib",
     "typescript.preferences.importModuleSpecifierEnding": "js",
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "prettier.prettierPath": "./node_modules/prettier",
