@@ -16,12 +16,8 @@ export const divisorNode = definePrimitiveNode<DivisorNode>(
         kind: "divisor",
         parse: (input) => input,
         compileRule: (rule) => `${InputParameterName} % ${rule} === 0`,
-        intersect: (l, r): DivisorNode =>
-            divisorNode(
-                Math.abs(
-                    (l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-                )
-            )
+        intersect: (l, r) =>
+            Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
     },
     (base) => {
         const rule = base.children[0].rule

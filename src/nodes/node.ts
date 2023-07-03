@@ -18,7 +18,7 @@ export interface BaseNodeImplementation<node extends BaseNode> {
     /** Should convert any supported input formats to rule,
      *  then ensure rule is normalized such that equivalent
      *  inputs will compile to the same string. */
-    parse: (children: node["input"]) => node["children"]
+    parse: (input: node["input"]) => node["children"]
     compile: (children: node["children"], ctx: CompilationContext) => string
     intersect: (
         l: Parameters<node["intersect"]>[0],
@@ -52,9 +52,7 @@ interface PreconstructedBase<kind extends NodeKind, parsableInput> {
     readonly condition: string
     alias: string
     compile(ctx: CompilationContext): string
-    intersect(
-        other: intersectsWith<kind> | this
-    ): intersectsWith<kind> | this | Disjoint
+    intersect(other: intersectsWith<kind> | this): this["children"] | Disjoint
     // TODO: can this work as is with late resolution?
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
@@ -73,8 +71,8 @@ type NodeExtensionProps = {
 
 export type BaseNode<
     kind extends NodeKind = NodeKind,
-    inputFormats = unknown
-> = PreconstructedBase<kind, inputFormats> & NodeExtensionProps
+    parsableInput = unknown
+> = PreconstructedBase<kind, parsableInput> & NodeExtensionProps
 
 export type NodeConstructor<node extends BaseNode> = (
     input: node["input"],

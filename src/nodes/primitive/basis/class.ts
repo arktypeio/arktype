@@ -10,7 +10,7 @@ import { compileCheck, InputParameterName } from "../../../compile/compile.js"
 import { registry } from "../../../compile/registry.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
-import type { Constraint } from "../primitive.js"
+import { type Constraint, definePrimitiveNode } from "../primitive.js"
 import type { BaseBasis } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
@@ -20,11 +20,11 @@ export interface ClassNode extends BaseBasis<ClassConstraint> {
     extendsOneOf: (...baseConstructors: AbstractableConstructor[]) => boolean
 }
 
-export const classNode = defineNodeKind<ClassNode>(
+export const classNode = definePrimitiveNode<ClassNode>(
     {
         kind: "class",
         parse: (input) => input,
-        compile: (rule) =>
+        compileRule: (rule) =>
             `${InputParameterName} instanceof ${
                 getExactBuiltinConstructorName(rule) ??
                 registry().register(rule)

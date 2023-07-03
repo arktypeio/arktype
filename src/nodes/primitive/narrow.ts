@@ -20,11 +20,11 @@ export const narrowNode = definePrimitiveNode<NarrowNode>(
         parse: listFrom,
         compileRule: (rule) =>
             `${registry().register(rule)}(${InputParameterName})`,
-        intersect: (l, r): NarrowNode =>
+        intersect: (l, r) =>
             // as long as the narrows in l and r are individually safe to check
             // in the order they're specified, checking them in the order
             // resulting from this intersection should also be safe.
-            narrowNode(intersectUniqueLists(l.children, r.children))
+            intersectUniqueLists(l.children, r.children)
     },
     (base) => ({
         description: `valid according to ${base.children

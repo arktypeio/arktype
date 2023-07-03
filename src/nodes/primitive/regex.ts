@@ -25,7 +25,7 @@ export const regexNode = definePrimitiveNode<RegexNode>(
         parse: (input) => listFrom(input).sort(),
         compileRule: (rule) => `${rule}.test(${InputParameterName})`,
         intersect: (l, r): RegexNode =>
-            regexNode(intersectUniqueLists(l.children, r.children))
+            intersectUniqueLists(l.children, r.children)
     },
     (base) => ({
         description: `matched by ${base.children.join(", ")}`

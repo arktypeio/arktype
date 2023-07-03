@@ -16,7 +16,6 @@ import { hasArkKind } from "../../compile/registry.js"
 import type { inferIntersection } from "../../parse/ast/intersections.js"
 import type { inferred } from "../../parse/definition.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseNode } from "../node.js"
 import { alphabetizeByCondition, defineNodeKind } from "../node.js"
 import type { BasisInput } from "../primitive/basis/basis.js"
 import { arrayClassNode } from "../primitive/basis/class.js"
@@ -57,13 +56,6 @@ export interface TypeNode<t = unknown>
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }
 
-export type MaybeResolvedTypeNode = TypeNode | UnresolvedTypeNode
-
-export type UnresolvedTypeNode = {
-    alias: string
-    resolve: Thunk<TypeNode>
-}
-
 export const typeNode = defineNodeKind<TypeNode>(
     {
         kind: "type",
@@ -79,15 +71,6 @@ export const typeNode = defineNodeKind<TypeNode>(
             return alphabetizeByCondition(reduceBranches(input))
         },
         compile: (rule, ctx) => {
-            if (hasKey(rule, "resolve")) {
-                // TODO: ensure alias name is universally unique here for caching
-                return compileCheck(
-                    "custom",
-                    "valid",
-                    `$${rule.alias}(${InputParameterName})`,
-                    ctx
-                )
-            }
             const discriminant = discriminate(rule)
             return discriminant
                 ? compileDiscriminant(discriminant, ctx)
