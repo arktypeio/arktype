@@ -9,17 +9,37 @@ export const expectedDateBoundsCondition = (...range: Range) =>
     node({ basis: Date, range }).condition
 
 suite("Date", () => {
-    test("literal", () => {
-        const t = type("d'2000/05/05'")
-        const ISO = type("d'2000-05-05T04:00:00.000Z'")
-        const dateString = type("d'Fri May 05 2000'")
-        attest(t.infer).typed as Date
-        attest(ISO.infer).typed as Date
-        attest(dateString.infer).typed as Date
-        attest(t.condition).equals(ISO.condition)
-        attest(t.condition).equals(dateString.condition)
-        attest(t(new Date("2000/10/10")).data)
+    suite("literal", () => {
+        test("literal", () => {
+            const t = type("d'2000/05/05'")
+            attest(t.infer).typed as Date
+            attest(t.allows(new Date("2000/05/05"))).equals(true)
+            attest(t.allows(new Date("2000/06/05"))).equals(false)
+        })
+        test("ISO", () => {
+            const ISO = type("d'2000-05-05T04:00:00.000Z'")
+            attest(ISO.infer).typed as Date
+            attest(ISO.allows(new Date("2000/05/05"))).equals(true)
+            attest(ISO.allows(new Date("2000/07/05"))).equals(false)
+        })
+        test("allows spaces", () => {
+            const t = type("d' 2000/05/05 '")
+            attest(t(new Date("2000/05/05")).data).snap("Fri May 05 2000")
+        })
+        suite("errors", () => {
+            test("epoch", () => {
+                attest(() => type("d'12345671234'")).throws(
+                    writeInvalidDateMessage("12345671234")
+                )
+            })
+            test("not a date", () => {
+                attest(() => type("d'tuesday'")).throws(
+                    writeInvalidDateMessage("tuesday")
+                )
+            })
+        })
     })
+
     suite("date literal range", () => {
         suite("single", () => {
             test(">", () => {
@@ -32,7 +52,7 @@ suite("Date", () => {
                 attest(t.condition).equals(
                     expectedDateBoundsCondition({
                         comparator: "<",
-                        limit: new Date("2023/1/12").valueOf()
+                        limit: new Date("2023/1/12")
                     })
                 )
             })
@@ -45,6 +65,7 @@ suite("Date", () => {
                         limit: new Date("2021/1/12")
                     })
                 )
+                attest(t(new Date("2021/1/1")).data).snap("Fri Jan 01 2021")
             })
             test("==", () => {
                 const t = type("Date==d'2020-1-1'")
@@ -108,11 +129,6 @@ suite("Date", () => {
             })
         })
         suite("errors", () => {
-            test("epoch", () => {
-                attest(() => type("d'12345671234'")).throws(
-                    writeInvalidDateMessage("12345671234")
-                )
-            })
             test("invalid bound type", () => {
                 // @ts-expect-error
                 attest(() => type("Date<2")).throwsAndHasTypeError(

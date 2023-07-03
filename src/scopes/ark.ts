@@ -1,4 +1,4 @@
-import type { ScopeParser, TypeSet } from "../scope.js"
+import type { Module, ScopeParser } from "../scope.js"
 import { Scope } from "../scope.js"
 import type {
     DeclarationParser,
@@ -33,7 +33,7 @@ export const ark: Scope<ArkResolutions> = Scope.root({
     ...tsGenericTypes
 }).toAmbient() as never
 
-export const arktypes: TypeSet<ArkResolutions> = ark.export()
+export const arktypes: Module<ArkResolutions> = ark.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently

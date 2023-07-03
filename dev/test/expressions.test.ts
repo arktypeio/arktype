@@ -130,7 +130,12 @@ suite("root expression", () => {
     test("tuple as second arg", () => {
         // this case is not fundamentally unique but TS has a hard time
         // narrowing tuples in contexts like this
-        const t = type("keyof", [{ a: "string" }, "&", { b: "boolean" }])
+        const t = type("keyof", [
+            { a: "string" },
+            "&",
+            { b: "boolean" }
+            // as const is required for TS <=5.0
+        ] as const)
         attest(t.infer).typed as "a" | "b"
     })
 })

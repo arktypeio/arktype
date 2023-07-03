@@ -6,13 +6,14 @@ import {
     objectKindDescriptions,
     prototypeKeysOf
 } from "../../../../dev/utils/src/main.js"
+import { compileCheck, InputParameterName } from "../../../compile/compile.js"
 import { registry } from "../../../compile/registry.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface ClassNode extends BasisNode<AbstractableConstructor> {
+export interface ClassNode extends BasisNode<"class", AbstractableConstructor> {
     extendsOneOf: (...baseConstructors: AbstractableConstructor[]) => boolean
 }
 
@@ -20,14 +21,15 @@ export const classNode = defineNodeKind<ClassNode>(
     {
         kind: "class",
         parse: (input) => input,
-        compile: (rule, s) =>
-            s.check(
+        compile: (rule, ctx) =>
+            compileCheck(
                 "class",
                 rule,
-                `${s.data} instanceof ${
+                `${InputParameterName} instanceof ${
                     getExactBuiltinConstructorName(rule) ??
                     registry().register(rule)
-                }`
+                }`,
+                ctx
             ),
         intersect: intersectBases
     },

@@ -5,9 +5,9 @@ import {
     throwInternalError
 } from "../../dev/utils/src/main.js"
 import type { Node } from "../nodes/kinds.js"
-import type { TypeSet } from "../scope.js"
+import type { Module } from "../scope.js"
 import type { Generic } from "../type.js"
-import { isDotAccessible } from "./state.js"
+import { isDotAccessible } from "./compile.js"
 import type { TraversalState } from "./traverse.js"
 
 type RegisteredInternalkey = "state"
@@ -15,7 +15,7 @@ type RegisteredInternalkey = "state"
 export type ArkKinds = {
     node: Node
     generic: Generic
-    typeset: TypeSet
+    module: Module
 }
 export const arkKind = Symbol("ArkTypeInternalKind")
 

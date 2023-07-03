@@ -1,14 +1,14 @@
 import { suite, test } from "mocha"
-import { lazily } from "../../dev/utils/src/main.js"
-import type { Scope, TypeSet } from "../../src/main.js"
+import type { Module, Scope } from "../../src/main.js"
 import { scope, type } from "../../src/main.js"
 import {
-    writeMissingSubscopeAccessMessage,
-    writeNonScopeDotMessage,
+    writeMissingSubmoduleAccessMessage,
+    writeNonSubmoduleDotMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
+import { lazily } from "../utils/src/main.js"
 
 const $ = lazily(() =>
     scope({
@@ -18,15 +18,14 @@ const $ = lazily(() =>
     })
 )
 
-suite("subscopes", () => {
-    // TODO: update names to refer to typesets
+suite("submodules", () => {
     test("base", () => {
         const types = $.export()
-        attest(types).typed as TypeSet<{
+        attest(types).typed as Module<{
             exports: {
                 a: string
                 b: number
-                sub: TypeSet<{
+                sub: Module<{
                     exports: {
                         alias: number
                     }
@@ -45,10 +44,10 @@ suite("subscopes", () => {
     test("non-scope dot access", () => {
         // @ts-expect-error
         attest(() => $.type("b.foo")).throwsAndHasTypeError(
-            writeNonScopeDotMessage("b")
+            writeNonSubmoduleDotMessage("b")
         )
     })
-    test("thunk subscope", () => {
+    test("thunk submodule", () => {
         const $ = scope({
             a: "string",
             c: "a",
@@ -62,7 +61,7 @@ suite("subscopes", () => {
             exports: {
                 a: string
                 c: string
-                sub: TypeSet<{
+                sub: Module<{
                     exports: {
                         foo: string
                         bar: string
@@ -78,7 +77,7 @@ suite("subscopes", () => {
     test("no alias reference", () => {
         // @ts-expect-error
         attest(() => $.type("sub")).throwsAndHasTypeError(
-            writeMissingSubscopeAccessMessage("sub")
+            writeMissingSubmoduleAccessMessage("sub")
         )
     })
     test("bad alias reference", () => {

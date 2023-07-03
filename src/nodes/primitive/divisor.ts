@@ -1,14 +1,21 @@
+import { compileCheck, InputParameterName } from "../../compile/compile.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface DivisorNode extends BaseNode<{ rule: number }> {}
+export interface DivisorNode
+    extends BaseNode<{ kind: "divisor"; rule: number }> {}
 
 export const divisorNode = defineNodeKind<DivisorNode>(
     {
         kind: "divisor",
         parse: (input) => input,
-        compile: (rule, s) =>
-            s.check("divisor", rule, `${s.data} % ${rule} === 0`),
+        compile: (rule, ctx) =>
+            compileCheck(
+                "divisor",
+                rule,
+                `${InputParameterName} % ${rule} === 0`,
+                ctx
+            ),
         intersect: (l, r): DivisorNode =>
             divisorNode(
                 Math.abs(

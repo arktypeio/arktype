@@ -1,5 +1,9 @@
 import { throwInternalError } from "../../../dev/utils/src/main.js"
-import type { CompilationState } from "../../compile/state.js"
+import {
+    type CompilationContext,
+    compilePropAccess,
+    InputParameterName
+} from "../../compile/compile.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins } from "./type.js"
@@ -36,15 +40,20 @@ export const intersectNamedProp = (
 
 export const compileNamedProps = (
     props: NamedPropRule[],
-    s: CompilationState
-) => props.map((prop) => compileNamedProp(prop, s)).join("\n")
+    ctx: CompilationContext
+) => props.map((prop) => compileNamedProp(prop, ctx)).join("\n")
 
-export const compileNamedProp = (prop: NamedPropRule, s: CompilationState) => {
-    s.pushNamedKey(prop.key.name)
-    const compiledValue = prop.value.compile(s)
-    s.popKey()
+export const compileNamedProp = (
+    prop: NamedPropRule,
+    ctx: CompilationContext
+) => {
+    ctx.path.push(prop.key.name)
+    const compiledValue = `${
+        prop.value.alias
+    }(${InputParameterName}${compilePropAccess(prop.key.name)})`
+    ctx.path.pop()
     const result = prop.key.optional
-        ? `if('${prop.key.name}' in ${s.data}) {
+        ? `if('${prop.key.name}' in ${InputParameterName}) {
             ${compiledValue}
         }`
         : compiledValue

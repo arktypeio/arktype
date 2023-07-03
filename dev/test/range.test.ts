@@ -274,11 +274,15 @@ suite("range", () => {
                         //@ts-expect-error
                         type("number<d'2001/01/01'")
                     ).throwsAndHasTypeError(
-                        writeInvalidLimitMessage("<", "d'2001/01/01'", "right")
+                        writeInvalidLimitMessage(
+                            "<",
+                            new Date("2001/01/01").toString(),
+                            "right"
+                        )
                     )
                     //@ts-expect-error
                     attest(() => type("d'2001/01/01'<number<2")).throws(
-                        "Intersection of >d'2001/01/01' and <2 results in an unsatisfiable type"
+                        "Error: Intersection of >Mon Jan 01 2001 00:00:00 GMT-0500 (Eastern Standard Time) and <2 results in an unsatisfiable type"
                     )
                 })
             })

@@ -4,16 +4,15 @@ import {
     hasDomain,
     isThunk,
     Path,
-    throwInternalError,
     throwParseError,
     transform
 } from "../dev/utils/src/main.js"
+import { InputParameterName } from "./compile/compile.js"
 import type { ProblemCode } from "./compile/problems.js"
 import type { arkKind } from "./compile/registry.js"
 import { addArkKind, hasArkKind } from "./compile/registry.js"
-import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { TypeNode } from "./main.js"
-import { builtins, typeNode } from "./nodes/composite/type.js"
+import { builtins, node, typeNode } from "./nodes/composite/type.js"
 import type {
     CastTo,
     inferDefinition,
@@ -29,8 +28,8 @@ import type {
 } from "./parse/generic.js"
 import { parseGenericParams } from "./parse/generic.js"
 import {
-    writeMissingSubscopeAccessMessage,
-    writeNonScopeDotMessage,
+    writeMissingSubmoduleAccessMessage,
+    writeNonSubmoduleDotMessage,
     writeUnresolvableMessage
 } from "./parse/string/shift/operand/unenclosed.js"
 import { parseString } from "./parse/string/string.js"
@@ -72,7 +71,8 @@ export type ScopeParser<parent, ambient> = {
 
 type validateAliases<aliases, $> = {
     [k in keyof aliases]: parseScopeKey<k>["params"] extends []
-        ? aliases[k] extends Preparsed
+        ? // Not including Type here directly breaks inference
+          aliases[k] extends Type | PreparsedResolution
             ? aliases[k]
             : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
         : parseScopeKey<k>["params"] extends GenericParamsParseError
@@ -116,16 +116,17 @@ type bootstrapExports<aliases> = bootstrapAliases<{
     [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
 }>
 
-type Preparsed = Type | TypeSet | GenericProps
+/** These are legal as values of a scope but not as definitions in other contexts */
+type PreparsedResolution = Module | GenericProps
 
 type bootstrapAliases<aliases> = {
     [k in Exclude<
         keyof aliases,
-        // avoid inferring nominal symbols, e.g. id from TypeSet
+        // avoid inferring nominal symbols, e.g. arkKind from Module
         GenericDeclaration | symbol
-    >]: aliases[k] extends Preparsed
+    >]: aliases[k] extends PreparsedResolution
         ? aliases[k]
-        : aliases[k] extends (() => infer thunkReturn extends Preparsed)
+        : aliases[k] extends (() => infer thunkReturn extends PreparsedResolution)
         ? thunkReturn
         : Def<aliases[k]>
 } & {
@@ -140,8 +141,9 @@ type inferBootstrapped<r extends Resolutions> = evaluate<{
     [k in keyof r["exports"]]: r["exports"][k] extends Def<infer def>
         ? inferDefinition<def, $<r>, {}>
         : r["exports"][k] extends GenericProps<infer params, infer def>
-        ? Generic<params, def, $<r>>
-        : // otherwise should be a subscope
+        ? // add the scope in which the generic was defined here
+          Generic<params, def, $<r>>
+        : // otherwise should be a submodule
           r["exports"][k]
 }>
 
@@ -184,19 +186,19 @@ type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
 type exportedName<r extends Resolutions> = keyof r["exports"] & string
 
-export type TypeSet<r extends Resolutions = any> = {
+export type Module<r extends Resolutions = any> = {
     // just adding the nominal id this way and mapping it is cheaper than an intersection
     [k in exportedName<r> | arkKind]: k extends string
         ? [r["exports"][k]] extends [never]
             ? Type<never, $<r>>
             : isAny<r["exports"][k]> extends true
             ? Type<any, $<r>>
-            : r["exports"][k] extends TypeSet | GenericProps
+            : r["exports"][k] extends PreparsedResolution
             ? r["exports"][k]
             : Type<r["exports"][k], $<r>>
         : // set the nominal symbol's value to something validation won't care about
           // since the inferred type will be omitted anyways
-          CastTo<"typeset">
+          CastTo<"module">
 }
 
 export type Resolutions = {
@@ -206,12 +208,15 @@ export type Resolutions = {
 }
 
 export type ParseContext = {
+    baseName: string
     path: Path
     scope: Scope
     args: Record<string, TypeNode> | undefined
 }
 
 type MergedResolutions = Record<string, TypeNode | Generic>
+
+type ParseContextInput = Pick<ParseContext, "baseName" | "args">
 
 export class Scope<r extends Resolutions = any> {
     declare infer: extractOut<r["exports"]>
@@ -225,6 +230,7 @@ export class Scope<r extends Resolutions = any> {
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
     private ambient: Scope | null
+    private references: TypeNode[] = []
 
     constructor(input: Dict, opts: ScopeOptions) {
         for (const k in input) {
@@ -286,16 +292,16 @@ export class Scope<r extends Resolutions = any> {
         return this.export()[name] as never
     }
 
-    private createRootContext(args?: Record<string, TypeNode>) {
+    private createRootContext(input: ParseContextInput): ParseContext {
         return {
             path: new Path(),
             scope: this,
-            args
+            ...input
         }
     }
 
-    parseRoot(def: unknown, args?: Record<string, TypeNode>) {
-        return this.parse(def, this.createRootContext(args))
+    parseRoot(def: unknown, input: ParseContextInput) {
+        return this.parse(def, this.createRootContext(input))
     }
 
     parse(def: unknown, ctx: ParseContext): TypeNode {
@@ -329,7 +335,7 @@ export class Scope<r extends Resolutions = any> {
             if (dotIndex !== -1) {
                 const dotPrefix = name.slice(0, dotIndex)
                 const prefixDef = this.aliases[dotPrefix]
-                if (hasArkKind(prefixDef, "typeset")) {
+                if (hasArkKind(prefixDef, "module")) {
                     const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
                     if (!resolution) {
                         return throwParseError(writeUnresolvableMessage(name))
@@ -338,7 +344,9 @@ export class Scope<r extends Resolutions = any> {
                     return resolution
                 }
                 if (prefixDef !== undefined) {
-                    return throwParseError(writeNonScopeDotMessage(dotPrefix))
+                    return throwParseError(
+                        writeNonSubmoduleDotMessage(dotPrefix)
+                    )
                 }
                 // if the name includes ".", but the prefix is not an alias, it
                 // might be something like a decimal literal, so just fall through to return
@@ -354,9 +362,9 @@ export class Scope<r extends Resolutions = any> {
         })
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
-            : hasArkKind(def, "typeset")
-            ? throwParseError(writeMissingSubscopeAccessMessage(name))
-            : this.parseRoot(def)
+            : hasArkKind(def, "module")
+            ? throwParseError(writeMissingSubmoduleAccessMessage(name))
+            : this.parseRoot(def, { baseName: name, args: {} })
         this.resolutions[name] = resolution
         return resolution
     }
@@ -364,30 +372,6 @@ export class Scope<r extends Resolutions = any> {
     maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
         const result = this.maybeResolve(name, ctx)
         return hasArkKind(result, "node") ? result : undefined
-    }
-
-    compile() {
-        let result = ""
-        for (const name in this.aliases) {
-            const ctx: ParseContext = {
-                path: new Path(),
-                scope: this,
-                args: undefined
-            }
-            const resolution = this.maybeResolveNode(name, ctx)
-            if (!resolution) {
-                return throwInternalError(
-                    `Unexpectedly failed to resolve '${name}'`
-                )
-            }
-            result += `const $${name} = (${InputParameterName}) => {
-                ${resolution.compile(new CompilationState("allows"))}
-            }\n`
-        }
-        if (this.ambient) {
-            result += this.ambient.compile()
-        }
-        return result
     }
 
     import<names extends exportedName<r>[]>(
@@ -400,9 +384,30 @@ export class Scope<r extends Resolutions = any> {
             transform(this.export(...names), ([alias, value]) => [
                 `#${alias as string}`,
                 value
-            ]),
-            "typeset"
+            ]) as never,
+            "module"
         ) as never
+    }
+
+    compile() {
+        this.export()
+        const references: Set<TypeNode> = new Set()
+        for (const k in this.exportedResolutions!) {
+            const resolution = this.exportedResolutions[k]
+            if (hasArkKind(resolution, "node") && !references.has(resolution)) {
+                for (const reference of resolution.references) {
+                    references.add(reference)
+                }
+            }
+        }
+        return [...references]
+            .map(
+                (ref) => `const ${ref.alias} = (${InputParameterName}) => {
+    ${ref.condition}
+    return true
+}`
+            )
+            .join("\n")
     }
 
     // TODO: find a way to deduplicate from maybeResolve
@@ -410,7 +415,7 @@ export class Scope<r extends Resolutions = any> {
     private exportCache: ExportCache | undefined
     export<names extends exportedName<r>[]>(
         ...names: names
-    ): TypeSet<
+    ): Module<
         names extends [] ? r : destructuredExportContext<r, names[number]>
     > {
         if (!this.exportCache) {
@@ -427,16 +432,19 @@ export class Scope<r extends Resolutions = any> {
                 if (isThunk(def)) {
                     def = def()
                 }
-                if (hasArkKind(def, "typeset")) {
+                if (hasArkKind(def, "module")) {
                     this.exportCache[name] = def
                 } else {
                     this.exportCache[name] = new Type(
-                        this.maybeResolve(name, this.createRootContext()),
+                        this.maybeResolve(
+                            name,
+                            this.createRootContext({ baseName: name, args: {} })
+                        ),
                         this
                     )
                 }
             }
-            this.exportedResolutions = resolutionsOfTypeSet(this.exportCache)
+            this.exportedResolutions = resolutionsOfModule(this.exportCache)
             Object.assign(this.resolutions, this.exportedResolutions)
         }
         const namesToExport = names.length ? names : this.exportedNames
@@ -444,20 +452,20 @@ export class Scope<r extends Resolutions = any> {
             transform(namesToExport, ([, name]) => [
                 name,
                 this.exportCache![name]
-            ]),
-            "typeset"
+            ]) as never,
+            "module"
         )
     }
 }
 
-type ExportCache = Record<string, Type | Generic | TypeSet>
+type ExportCache = Record<string, Type | Generic | Module>
 
-const resolutionsOfTypeSet = (typeSet: ExportCache) => {
+const resolutionsOfModule = (typeSet: ExportCache) => {
     const result: MergedResolutions = {}
     for (const k in typeSet) {
         const v = typeSet[k]
-        if (hasArkKind(v, "typeset")) {
-            const innerResolutions = resolutionsOfTypeSet(v)
+        if (hasArkKind(v, "module")) {
+            const innerResolutions = resolutionsOfModule(v)
             const prefixedResolutions = transform(
                 innerResolutions,
                 ([innerK, innerV]) => [`${k}.${innerK}`, innerV]

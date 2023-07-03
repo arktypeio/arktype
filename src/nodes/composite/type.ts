@@ -5,9 +5,14 @@ import type {
     Thunk
 } from "../../../dev/utils/src/main.js"
 import { cached, hasKey, isArray } from "../../../dev/utils/src/main.js"
+import type { CompilationContext } from "../../compile/compile.js"
+import {
+    compileCheck,
+    compileFailureResult,
+    compilePropAccess,
+    InputParameterName
+} from "../../compile/compile.js"
 import { hasArkKind } from "../../compile/registry.js"
-import type { CompilationState } from "../../compile/state.js"
-import { compilePropAccess, InputParameterName } from "../../compile/state.js"
 import type { inferIntersection } from "../../parse/ast/intersections.js"
 import type { inferred } from "../../parse/definition.js"
 import { Disjoint } from "../disjoint.js"
@@ -30,7 +35,10 @@ import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
 export interface TypeNode<t = unknown>
-    extends BaseNode<{ rule: UnresolvedTypeNode | PredicateNode[] }> {
+    extends BaseNode<{
+        kind: "type"
+        rule: UnresolvedTypeNode | PredicateNode[]
+    }> {
     [inferred]: t
     branches: PredicateNode[]
     discriminant: Discriminant | null
@@ -72,16 +80,26 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             }
             return alphabetizeByCondition(reduceBranches(input))
         },
-        compile: (rule, s) => {
+        compile: (rule, ctx) => {
             if (hasKey(rule, "resolve")) {
                 // TODO: ensure alias name is universally unique here for caching
-                return s.check("custom", "valid", `$${rule.alias}(${s.data})`)
+                return compileCheck(
+                    "custom",
+                    "valid",
+                    `$${rule.alias}(${InputParameterName})`,
+                    ctx
+                )
             }
             const discriminant = discriminate(rule)
             return discriminant
-                ? compileDiscriminant(discriminant, s)
-                : compileIndiscriminable(rule, s)
+                ? compileDiscriminant(discriminant, ctx)
+                : compileIndiscriminable(rule, ctx)
         },
+        getReferences: (branches) =>
+            hasKey(branches, "resolve")
+                ? // TODO: unresolved?
+                  []
+                : branches.flatMap((predicate) => [...predicate.references]),
         intersect: (l, r): TypeNode | Disjoint => {
             if (l.branches.length === 1 && r.branches.length === 1) {
                 const result = l.branches[0].intersect(r.branches[0])
@@ -196,10 +214,10 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
 
 const compileDiscriminant = (
     discriminant: Discriminant,
-    s: CompilationState
+    ctx: CompilationContext
 ) => {
     if (discriminant.isPureRootLiteral) {
-        return compileDiscriminatedLiteral(discriminant.cases, s)
+        return compileDiscriminatedLiteral(discriminant.cases, ctx)
     }
     let compiledPath = InputParameterName
     for (const segment of discriminant.path) {
@@ -212,11 +230,11 @@ const compileDiscriminant = (
     for (const k in discriminant.cases) {
         const caseCondition = k === "default" ? "default" : `case ${k}`
         const caseBranches = discriminant.cases[k]
-        s.discriminants.push(discriminant)
+        ctx.discriminants.push(discriminant)
         const caseChecks = isArray(caseBranches)
-            ? compileIndiscriminable(caseBranches, s)
-            : compileDiscriminant(caseBranches, s)
-        s.discriminants.pop()
+            ? compileIndiscriminable(caseBranches, ctx)
+            : compileDiscriminant(caseBranches, ctx)
+        ctx.discriminants.pop()
         compiledCases += `${caseCondition}: {
     ${caseChecks ? `${caseChecks}\n     break` : "break"}
 }`
@@ -234,12 +252,12 @@ const compileDiscriminant = (
 
 const compileDiscriminatedLiteral = (
     cases: DiscriminatedCases,
-    s: CompilationState
+    ctx: CompilationContext
 ) => {
     // TODO: error messages for traversal
     const caseKeys = Object.keys(cases)
     if (caseKeys.length === 2) {
-        return `if( ${s.data} !== ${caseKeys[0]} && ${s.data} !== ${caseKeys[1]}) {
+        return `if( ${InputParameterName} !== ${caseKeys[0]} && ${InputParameterName} !== ${caseKeys[1]}) {
     return false
 }`
     }
@@ -247,7 +265,7 @@ const compileDiscriminatedLiteral = (
     const compiledCases =
         caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
     // if none of the cases are met, the check fails (this is optimal for perf)
-    return `switch(${s.data}) {
+    return `switch(${InputParameterName}) {
     ${compiledCases}
     default:
         return false
@@ -256,18 +274,18 @@ const compileDiscriminatedLiteral = (
 
 const compileIndiscriminable = (
     branches: PredicateNode[],
-    s: CompilationState
+    ctx: CompilationContext
 ) => {
     if (branches.length === 0) {
-        return s.invalid("custom", "nothing")
+        return compileFailureResult("custom", "nothing", ctx)
     }
     if (branches.length === 1) {
-        return branches[0].compile(s)
+        return branches[0].compile(ctx)
     }
     return branches
         .map(
             (branch) => `(() => {
-${branch.compile(s)}
+${branch.compile(ctx)}
 return true
 })()`
         )

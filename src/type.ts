@@ -6,8 +6,11 @@ import type {
     Primitive
 } from "../dev/utils/src/main.js"
 import { CompiledFunction, transform } from "../dev/utils/src/main.js"
+import {
+    createCompilationContext,
+    InputParameterName
+} from "./compile/compile.js"
 import { arkKind, registry } from "./compile/registry.js"
-import { CompilationState, InputParameterName } from "./compile/state.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { TypeNode } from "./nodes/composite/type.js"
@@ -135,7 +138,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
             InputParameterName,
             `const state = new ${registry().reference("state")}();
         const morphs = [];
-        ${root.compile(new CompilationState("traverse"))}
+        ${root.compile(createCompilationContext("out", "problems"))}
         for(let i = 0; i < morphs.length; i++) {
             morphs[i]()
         }
@@ -231,7 +234,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 }
 
 const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
-    scope.parseRoot(def, args ?? bindThis())
+    scope.parseRoot(def, { args: args ?? bindThis(), baseName: "type" })
 
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
@@ -247,11 +250,15 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
     // other than to eagerly validate that the def does not contain any errors
     g.scope.parseRoot(
         g.definition,
-        Object.fromEntries(
-            // once we support constraints on generic parameters, we'd use
-            // the base type here: https://github.com/arktypeio/arktype/issues/796
-            g.parameters.map((name) => [name, builtins.unknown()])
-        )
+        // once we support constraints on generic parameters, we'd use
+        // the base type here: https://github.com/arktypeio/arktype/issues/796
+        {
+            baseName: "generic",
+            args: transform(g.parameters, ([, name]) => [
+                name,
+                builtins.unknown()
+            ])
+        }
     )
     return g
 }
@@ -300,18 +307,19 @@ export type Generic<
     params extends string[] = string[],
     def = unknown,
     $ = any
-> = (<args>(
-    ...args: conform<
-        args,
-        {
-            [i in keyof params]: validateTypeRoot<args[i & keyof args], $>
-        }
+> = {
+    <args>(
+        ...args: conform<
+            args,
+            {
+                [i in keyof params]: validateTypeRoot<args[i & keyof args], $>
+            }
+        >
+    ): Type<
+        inferDefinition<def, $, bindGenericInstantiation<params, $, args>>,
+        $
     >
-) => Type<
-    inferDefinition<def, $, bindGenericInstantiation<params, $, args>>,
-    $
->) &
-    GenericProps<params, def, $>
+} & GenericProps<params, def, $>
 
 type bindGenericInstantiation<params extends string[], $, args> = {
     [i in keyof params & `${number}` as params[i]]: inferTypeRoot<

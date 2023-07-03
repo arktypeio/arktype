@@ -4,19 +4,24 @@ import {
     prototypeKeysOf,
     stringify
 } from "../../../../dev/utils/src/main.js"
-import { compileSerializedValue } from "../../../compile/state.js"
+import {
+    compileCheck,
+    compileSerializedValue,
+    InputParameterName
+} from "../../../compile/compile.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface ValueNode extends BasisNode<unknown> {
+export interface ValueNode extends BasisNode<"value", unknown> {
     serialized: string
 }
 
 const equalityCheck: Record<string, Function> = {
-    default: (rule: unknown, data: string) => `${data} === ${rule}`,
-    date: (rule: Date, date: Date) => `${date}.valueOf() === ${rule}`
+    default: (rule: unknown) => `${InputParameterName} === ${rule}`,
+    date: (rule: Date) =>
+        `${InputParameterName}.valueOf() === ${rule}.valueOf()`
 }
 
 export const valueNode = defineNodeKind<ValueNode>(
@@ -24,14 +29,15 @@ export const valueNode = defineNodeKind<ValueNode>(
         kind: "value",
         parse: (input) => input,
         intersect: intersectBases,
-        compile: (rule, s) => {
+        compile: (rule, ctx) => {
             const compiledRule = compileSerializedValue(rule)
-            return s.check(
+            return compileCheck(
                 "value",
                 rule,
                 rule instanceof Date
-                    ? equalityCheck["date"](compiledRule, s.data)
-                    : equalityCheck["default"](compiledRule, s.data)
+                    ? equalityCheck["date"](compiledRule)
+                    : equalityCheck["default"](compiledRule),
+                ctx
             )
         }
     },

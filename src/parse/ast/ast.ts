@@ -6,13 +6,13 @@ import type {
     writeMalformedNumericLiteralMessage
 } from "../../../dev/utils/src/main.js"
 import type { Comparator } from "../../nodes/primitive/range.js"
-import type { resolve, TypeSet, UnparsedScope } from "../../scope.js"
+import type { Module, resolve, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { CastTo, inferDefinition } from "../definition.js"
 import type { writeInvalidGenericArgsMessage } from "../generic.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
-import type { writeMissingSubscopeAccessMessage } from "../string/shift/operand/unenclosed.js"
+import type { writeMissingSubmoduleAccessMessage } from "../string/shift/operand/unenclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateRange } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
@@ -123,8 +123,8 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
       // efficient to check for them here in case the string was naively parsed
       $[def] extends GenericProps
         ? error<writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>>
-        : $[def] extends TypeSet
-        ? error<writeMissingSubscopeAccessMessage<def>>
+        : $[def] extends Module
+        ? error<writeMissingSubmoduleAccessMessage<def>>
         : undefined
     : undefined
 

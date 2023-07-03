@@ -1,4 +1,5 @@
 import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
+import { compileCheck, InputParameterName } from "../../compile/compile.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
@@ -62,18 +63,19 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export interface RangeNode extends BaseNode<{ rule: Range }> {
+export interface RangeNode extends BaseNode<{ kind: "range"; rule: Range }> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
     numericMin: Bound<MinComparator, number | Date> | undefined
     numericMax: Bound<MaxComparator, number | Date> | undefined
+    value: number | Date
 }
 
 export const rangeNode = defineNodeKind<RangeNode>(
     {
         kind: "range",
         parse: (input) => input,
-        compile: (rule, s) => {
+        compile: (rule, ctx) => {
             const rule0 = rule[0].limit
             const rule1 = rule[1]?.limit
             const numericRule0 =
@@ -88,27 +90,28 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 // reduce a range like `1<=number<=1` to `number==1`
                 rule = [{ comparator: "==", limit: rule[0].limit }]
             }
-            const size = s.lastBasis
-                ? s.lastBasis.domain === "number"
-                    ? s.data
-                    : s.lastBasis.domain === "string"
-                    ? `${s.data}.length`
-                    : s.lastBasis.hasKind("class")
-                    ? s.lastBasis.extendsOneOf(Date)
-                        ? `Number(${s.data})`
-                        : s.lastBasis.extendsOneOf(Array)
-                        ? `${s.data}.length`
+            const lastBasis = ctx.bases.at(-1)
+            const size = lastBasis
+                ? lastBasis.domain === "number"
+                    ? InputParameterName
+                    : lastBasis.domain === "string"
+                    ? `${InputParameterName}.length`
+                    : lastBasis.hasKind("class")
+                    ? lastBasis.extendsOneOf(Date)
+                        ? `Number(${InputParameterName})`
+                        : lastBasis.extendsOneOf(Array)
+                        ? `${InputParameterName}.length`
                         : throwInternalError(
-                              `Unexpected basis for range constraint ${s.lastBasis}`
+                              `Unexpected basis for range constraint ${lastBasis}`
                           )
                     : throwInternalError(
-                          `Unexpected basis for range constraint ${s.lastBasis}`
+                          `Unexpected basis for range constraint ${lastBasis}`
                       )
-                : `${s.data}.length ?? Number(${s.data})`
+                : `${InputParameterName}.length ?? Number(${InputParameterName})`
             // sorted as lower, upper by definition
             return rule
                 .map((bound) =>
-                    s.check(
+                    compileCheck(
                         "range",
                         bound,
                         `${size} ${
@@ -117,28 +120,33 @@ export const rangeNode = defineNodeKind<RangeNode>(
                             bound.limit instanceof Date
                                 ? bound.limit.valueOf()
                                 : bound.limit
-                        }`
+                        }`,
+                        ctx
                     )
                 )
                 .join("\n")
         },
         intersect: (l, r): RangeNode | Disjoint => {
-            if (typeof l.rule[0].limit !== typeof r.rule[0].limit) {
+            if (typeof l.value !== typeof r.value) {
                 return Disjoint.from("range", l, r)
             }
+            const leftValue =
+                (l.value as any) instanceof Date ? l.value.valueOf() : l.value
+            const rightValue =
+                (r.value as any) instanceof Date ? r.value.valueOf() : r.value
+
             if (isEqualityRangeNode(l)) {
                 if (isEqualityRangeNode(r)) {
-                    return l === r ? l : Disjoint.from("range", l, r)
+                    return leftValue === rightValue
+                        ? l
+                        : Disjoint.from("range", l, r)
                 }
-                return r.allows(l.rule[0].limit)
-                    ? l
-                    : Disjoint.from("range", l, r)
+                return r.allows(leftValue) ? l : Disjoint.from("range", l, r)
             }
             if (isEqualityRangeNode(r)) {
-                return l.allows(r.rule[0].limit)
-                    ? r
-                    : Disjoint.from("range", l, r)
+                return l.allows(rightValue) ? r : Disjoint.from("range", l, r)
             }
+
             const stricterMin = compareStrictness(
                 "min",
                 l.numericMin,
@@ -206,7 +214,8 @@ export const rangeNode = defineNodeKind<RangeNode>(
                           ...max,
                           limit: max.limit.valueOf()
                       }
-                    : max
+                    : max,
+            value: base.rule[0].limit
         }
     }
 )

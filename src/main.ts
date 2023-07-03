@@ -1,7 +1,7 @@
 export { scope, type, arktypes, ark, define, declare } from "./scopes/ark.js"
 export type { CastTo } from "./parse/definition.js"
 export type { Out } from "./parse/tuple.js"
-export type { Scope, TypeSet } from "./scope.js"
+export type { Scope, Module } from "./scope.js"
 export { Type } from "./type.js"
 export type { validateTypeRoot, inferTypeRoot } from "./type.js"
 export { jsObjects } from "./scopes/jsObjects.js"
