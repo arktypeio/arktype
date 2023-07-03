@@ -13,6 +13,7 @@ import {
 import { arkKind, registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
+import type { TypeConfig } from "./config.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { builtins } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
@@ -326,13 +327,6 @@ type bindGenericInstantiation<params extends string[], $, args> = {
         args[i & keyof args],
         $
     >
-}
-
-export type KeyCheckKind = "loose" | "strict" | "distilled"
-
-export type TypeConfig = {
-    keys?: KeyCheckKind
-    mustBe?: string
 }
 
 export type extractIn<t> = extractMorphs<t, "in"> extends t

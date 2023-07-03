@@ -1,4 +1,11 @@
-import type { evaluate, extend, merge } from "../../dev/utils/src/main.js"
+import type {
+    Dict,
+    evaluate,
+    extend,
+    merge,
+    optionalKeyOf,
+    requiredKeyOf
+} from "../../dev/utils/src/main.js"
 import { CompiledFunction, hasKey } from "../../dev/utils/src/main.js"
 import type { CompilationContext } from "../compile/compile.js"
 import {
@@ -15,16 +22,20 @@ import type { BasisKind } from "./primitive/basis/basis.js"
 type NodeConfig = {
     kind: NodeKind
     rule: unknown
+    meta?: Dict
     intersectsWith?: unknown
 }
 
-type DefaultNodeConfig = extend<
-    Required<NodeConfig>,
+type DefaultNodeConfig = evaluate<
     {
-        kind: NodeKind
-        rule: unknown
-        intersectsWith: never
-    }
+        [k in requiredKeyOf<NodeConfig>]: NodeConfig[k]
+    } & extend<
+        { [k in optionalKeyOf<NodeConfig>]: unknown },
+        {
+            meta: {}
+            intersectsWith: never
+        }
+    >
 >
 
 type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {

@@ -88,7 +88,10 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
         },
         getReferences: (entries) =>
             entries.flatMap((entry) =>
-                hasArkKind(entry.key, "node")
+                hasArkKind(entry.key, "node") &&
+                // since array indices have a special compilation process, we
+                // don't need to store a reference their type
+                !extractArrayIndexRegex(entry.key)
                     ? [
                           entry.key,
                           ...entry.key.references,
@@ -101,7 +104,7 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
     },
     (base) => {
         const named = base.rule.filter(isNamed)
-        const indexed = base.rule.filter(isIndexed).map((_) => Object.freeze(_))
+        const indexed = base.rule.filter(isIndexed)
         const description = describeProps(named, indexed)
         const literalKeys = named.map((prop) => prop.key.name)
         const namedKeyOf = cached(() => node.literal(...literalKeys))
