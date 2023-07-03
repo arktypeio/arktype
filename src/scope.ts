@@ -174,6 +174,19 @@ export type resolve<reference extends keyof $ | keyof args, $, args> = (
         : resolution
     : never
 
+export type moduleKeyOf<$> = {
+    [k in keyof $]: $[k] extends Module ? k & string : never
+}[keyof $]
+
+export type tryInferSubmoduleReference<$, token> =
+    token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}`
+        ? subalias extends keyof $[submodule]
+            ? $[submodule][subalias] extends Type<infer t>
+                ? t
+                : never
+            : never
+        : never
+
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
 type exportedName<r extends Resolutions> = keyof r["exports"] & string

@@ -66,20 +66,20 @@ suite("scope imports", () => {
             hasCrept: "true"
         })
 
-        const outOfScope = scope({
+        const types = scope({
             ...threeSixtyNoScope.import("three", "no"),
             ...scopeCreep.export(),
             public: "hasCrept|three|no|private",
             "#private": "uuid"
         }).export()
 
-        attest(Object.keys(outOfScope)).equals(["hasCrept", "public"])
+        attest(Object.keys(types)).equals(["hasCrept", "public"])
 
-        attest(outOfScope.public.condition).equals(
+        attest(types.public.condition).equals(
             type("3|'no'|uuid|true").condition
         )
 
-        attest(outOfScope).typed as Module<{
+        attest(types).typed as Module<{
             exports: {
                 hasCrept: true
                 public: string | true | 3

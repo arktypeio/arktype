@@ -6,7 +6,12 @@ import type {
     writeMalformedNumericLiteralMessage
 } from "../../../dev/utils/src/main.js"
 import type { Comparator } from "../../nodes/primitive/range.js"
-import type { Module, resolve, UnparsedScope } from "../../scope.js"
+import type {
+    Module,
+    resolve,
+    tryInferSubmoduleReference,
+    UnparsedScope
+} from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { CastTo, inferDefinition } from "../definition.js"
 import type { writeInvalidGenericArgsMessage } from "../generic.js"
@@ -185,4 +190,7 @@ export type inferTerminal<token, $, args> = token extends keyof args | keyof $
     ? value
     : token extends BigintLiteral<infer value>
     ? value
-    : never
+    : // TODO: test instantiation impact once type errors are fixed
+      // doing this last allows us to infer never if it isn't valid rather than check
+      // if it's a valid submodule reference ahead of time
+      tryInferSubmoduleReference<$, token>

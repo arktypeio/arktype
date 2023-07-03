@@ -41,7 +41,7 @@ suite("submodules", () => {
         attest(types.sub.alias.condition).is(expected)
         attest(types.b.condition).is(expected)
     })
-    test("non-scope dot access", () => {
+    test("non-submodule dot access", () => {
         // @ts-expect-error
         attest(() => $.type("b.foo")).throwsAndHasTypeError(
             writeNonSubmoduleDotMessage("b")

@@ -18,6 +18,10 @@ export type Constraint<
     meta: meta
 }
 
+export const composeConstraintIntersection = <
+    constraint extends Constraint
+>() => {}
+
 type BaseConstraints = readonly Constraint[]
 
 // if a single constraint is valid, allow it to be passed on its own as input
