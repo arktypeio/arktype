@@ -111,7 +111,7 @@ suite("range", () => {
                 })
                 test("disjoint", () => {
                     attest(() => type("number==2&number==3")).throws(
-                        "Intersection of ==2 and ==3 results in an unsatisfiable type"
+                        "Intersection of exactly 2 and exactly 3 results in an unsatisfiable type"
                     )
                 })
                 test("right equality range", () => {
@@ -142,10 +142,10 @@ suite("range", () => {
             })
             test("non-overlapping", () => {
                 attest(() => type("number>3&number<=3")).throws(
-                    "Intersection of >3 and <=3 results in an unsatisfiable type"
+                    "Intersection of more than 3 and at most 3 results in an unsatisfiable type"
                 )
                 attest(() => type("-2<number<-1&1<number<2")).throws(
-                    "Intersection of the range bounded by >-2 and <-1 and the range bounded by >1 and <2 results in an unsatisfiable type"
+                    "Intersection of the range bounded by more than -2 and less than -1 and the range bounded by more than 1 and less than 2 results in an unsatisfiable type"
                 )
             })
             test("greater min is stricter", () => {
@@ -204,7 +204,7 @@ suite("range", () => {
             })
             test("empty range", () => {
                 attest(() => type("3<=number<2")).throws(
-                    "Intersection of >=3 and <2 results in an unsatisfiable type"
+                    "Intersection of at least 3 and less than 2 results in an unsatisfiable type"
                 )
             })
             test("double right bound", () => {
@@ -269,7 +269,7 @@ suite("range", () => {
                             writeUnboundableMessage("number | object")
                         )
                 })
-                test("date literal", () => {
+                test("other literal type", () => {
                     attest(() =>
                         //@ts-expect-error
                         type("number<d'2001/01/01'")
@@ -282,7 +282,7 @@ suite("range", () => {
                     )
                     //@ts-expect-error
                     attest(() => type("d'2001/01/01'<number<2")).throws(
-                        "Error: Intersection of >Mon Jan 01 2001 00:00:00 GMT-0500 (Eastern Standard Time) and <2 results in an unsatisfiable type"
+                        "Intersection of after Mon Jan 01 2001 and less than 2 results in an unsatisfiable type"
                     )
                 })
             })

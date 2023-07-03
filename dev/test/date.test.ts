@@ -15,16 +15,18 @@ suite("Date", () => {
             attest(t.infer).typed as Date
             attest(t.allows(new Date("2000/05/05"))).equals(true)
             attest(t.allows(new Date("2000/06/05"))).equals(false)
+            attest(t.allows(new Date("non date"))).equals(false)
         })
         test("ISO", () => {
             const ISO = type("d'2000-05-05T04:00:00.000Z'")
             attest(ISO.infer).typed as Date
             attest(ISO.allows(new Date("2000/05/05"))).equals(true)
             attest(ISO.allows(new Date("2000/07/05"))).equals(false)
+            attest(ISO.allows(new Date("dwa"))).equals(false)
         })
         test("allows spaces", () => {
-            const t = type("d' 2000/05/05 '")
-            attest(t(new Date("2000/05/05")).data).snap("Fri May 05 2000")
+            const t = type("d' 2021/05/01  '")
+            attest(t.allows(new Date("2021/05/01"))).equals(true)
         })
         suite("errors", () => {
             test("epoch", () => {
@@ -151,8 +153,8 @@ suite("Date", () => {
                 test("disjoint", () => {
                     attest(() =>
                         type("Date==d'2000/2/2'&Date==d'3000/1/1'")
-                    ).throws.snap(
-                        "Error: Intersection of ==Wed Feb 02 2000 00:00:00 GMT-0500 (Eastern Standard Time) and ==Wed Jan 01 3000 00:00:00 GMT-0500 (Eastern Standard Time) results in an unsatisfiable type"
+                    ).throws(
+                        "Intersection of the day Wed Feb 02 2000 and the day Wed Jan 01 3000 results in an unsatisfiable type"
                     )
                 })
                 test("right equality range", () => {
@@ -161,10 +163,8 @@ suite("Date", () => {
                     ).equals(type("Date==d'2002/1/1'").condition)
                 })
                 test("Date and Number", () => {
-                    attest(() =>
-                        type("Date>d'1990-01-01'&number>2")
-                    ).throws.snap(
-                        "Error: Intersection of a Date and a number results in an unsatisfiable type"
+                    attest(() => type("Date>d'1990-01-01'&number>2")).throws(
+                        "Intersection of a Date and a number results in an unsatisfiable type"
                     )
                 })
                 test("left equality range", () => {
@@ -195,15 +195,15 @@ suite("Date", () => {
                 attest(
                     () =>
                         type("Date>d'2000/01/01'&Date<=d'2000/01/01'").condition
-                ).throws(
-                    "Intersection of >Sat Jan 01 2000 00:00:00 GMT-0500 (Eastern Standard Time) and <=Sat Jan 01 2000 00:00:00 GMT-0500 (Eastern Standard Time) results in an unsatisfiable type"
+                ).throws.snap(
+                    "Error: Intersection of after Sat Jan 01 2000 and at or before Sat Jan 01 2000 results in an unsatisfiable type"
                 )
                 attest(() =>
                     type(
                         "d'1990/01/01'<Date<d'1992/02/02'&d'1993/01/01'<Date<d'2000/01/01'"
                     )
-                ).throws(
-                    "Intersection of the range bounded by >Mon Jan 01 1990 00:00:00 GMT-0500 (Eastern Standard Time) and <Sun Feb 02 1992 00:00:00 GMT-0500 (Eastern Standard Time) and the range bounded by >Fri Jan 01 1993 00:00:00 GMT-0500 (Eastern Standard Time) and <Sat Jan 01 2000 00:00:00 GMT-0500 (Eastern Standard Time) results in an unsatisfiable type"
+                ).throws.snap(
+                    "Error: Intersection of the range bounded by after Mon Jan 01 1990 and before Sun Feb 02 1992 and the range bounded by after Fri Jan 01 1993 and before Sat Jan 01 2000 results in an unsatisfiable type"
                 )
             })
             test("greater min is stricter", () => {

@@ -1,3 +1,4 @@
+import { isDate } from "node:util/types"
 import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
 import { compileCheck, InputParameterName } from "../../compile/compile.js"
 import { Disjoint } from "../disjoint.js"
@@ -26,13 +27,37 @@ export const comparators = {
 
 export type Comparator = keyof typeof comparators
 
-export const comparatorDescriptions = {
+export const numericComparatorDescriptions = {
     "<": "less than",
     ">": "more than",
     "<=": "at most",
     ">=": "at least",
     "==": "exactly"
 } as const satisfies Record<Comparator, string>
+
+export const dateComparatorDescriptions = {
+    "<": "before",
+    ">": "after",
+    "<=": "at or before",
+    ">=": "at or after",
+    "==": "the day"
+}
+
+const writeDescription = (rule: Bound) => {
+    return `${
+        isDate(rule.limit)
+            ? dateComparatorDescriptions[rule.comparator]
+            : numericComparatorDescriptions[rule.comparator]
+    } ${isDate(rule.limit) ? rule.limit.toDateString() : rule.limit}`
+}
+
+const getDescription = (l: Bound, r: Bound | undefined) => {
+    const leftDescription = writeDescription(l)
+    const rightDescription = r ? writeDescription(r) : r
+    return rightDescription
+        ? `the range bounded by ${leftDescription} and ${rightDescription}`
+        : leftDescription
+}
 
 export const invertedComparators = {
     "<": ">",
@@ -76,14 +101,12 @@ export const rangeNode = defineNodeKind<RangeNode>(
         kind: "range",
         parse: (input) => input,
         compile: (rule, ctx) => {
-            const rule0 = rule[0].limit
-            const rule1 = rule[1]?.limit
-            const numericRule0 =
-                rule0 && rule0 instanceof Date ? rule0.valueOf() : rule0
-            const numericRule1 =
-                rule1 && rule0 instanceof Date ? rule1.valueOf() : rule1
+            const l = rule[0].limit
+            const r = rule[1]?.limit
+            const numericL = l && isDate(l) ? l.valueOf() : l
+            const numericR = r && isDate(r) ? r.valueOf() : r
             if (
-                numericRule0 === numericRule1 &&
+                numericL === numericR &&
                 rule[0].comparator === ">=" &&
                 rule[1]?.comparator === "<="
             ) {
@@ -117,7 +140,7 @@ export const rangeNode = defineNodeKind<RangeNode>(
                         `${size} ${
                             bound.comparator === "==" ? "===" : bound.comparator
                         } ${
-                            bound.limit instanceof Date
+                            isDate(bound.limit)
                                 ? bound.limit.valueOf()
                                 : bound.limit
                         }`,
@@ -130,10 +153,8 @@ export const rangeNode = defineNodeKind<RangeNode>(
             if (typeof l.value !== typeof r.value) {
                 return Disjoint.from("range", l, r)
             }
-            const leftValue =
-                (l.value as any) instanceof Date ? l.value.valueOf() : l.value
-            const rightValue =
-                (r.value as any) instanceof Date ? r.value.valueOf() : r.value
+            const leftValue = isDate(l.value) ? l.value.valueOf() : l.value
+            const rightValue = isDate(r.value) ? r.value.valueOf() : r.value
 
             if (isEqualityRangeNode(l)) {
                 if (isEqualityRangeNode(r)) {
@@ -185,10 +206,7 @@ export const rangeNode = defineNodeKind<RangeNode>(
         }
     },
     (base) => {
-        const leftDescription = `${base.rule[0].comparator}${base.rule[0].limit}`
-        const description = base.rule[1]
-            ? `the range bounded by ${leftDescription} and ${base.rule[1].comparator}${base.rule[1].limit}`
-            : leftDescription
+        const description = getDescription(base.rule[0], base.rule[1])
         const min = isKeyOf(base.rule[0].comparator, minComparators)
             ? (base.rule[0] as Bound<MinComparator>)
             : undefined
@@ -202,14 +220,14 @@ export const rangeNode = defineNodeKind<RangeNode>(
             min,
             max,
             numericMin:
-                min && min.limit instanceof Date
+                min && isDate(min.limit)
                     ? {
                           ...min,
                           limit: min.limit.valueOf()
                       }
                     : min,
             numericMax:
-                max && max.limit instanceof Date
+                max && isDate(max.limit)
                     ? {
                           ...max,
                           limit: max.limit.valueOf()

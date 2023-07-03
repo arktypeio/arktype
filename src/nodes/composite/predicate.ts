@@ -1,3 +1,4 @@
+import { isDate } from "node:util/types"
 import type {
     AbstractableConstructor,
     Constructor,
@@ -295,7 +296,7 @@ const assertValidLimit = (bounds: Range, boundType: "number" | "Date") => {
                 )
             }
         }
-        if (!(bounds[index].limit instanceof Date) && boundType === "Date") {
+        if (!isDate(bounds[index].limit) && boundType === "Date") {
             throwParseError(
                 writeInvalidLimitMessage(
                     bounds[index].comparator,

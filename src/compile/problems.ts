@@ -14,7 +14,7 @@ import {
     stringify
 } from "../../dev/utils/src/main.js"
 import { domainDescriptions } from "../nodes/primitive/basis/domain.js"
-import { comparatorDescriptions } from "../nodes/primitive/range.js"
+import { numericComparatorDescriptions } from "../nodes/primitive/range.js"
 import type {
     Bound,
     NumericallyBoundableData
@@ -223,7 +223,7 @@ export class RangeProblem extends Problem<Bound, NumericallyBoundableData> {
     readonly code = "range"
 
     get mustBe() {
-        return `${comparatorDescriptions[this.rule.comparator]} ${
+        return `${numericComparatorDescriptions[this.rule.comparator]} ${
             this.data.value instanceof Date
                 ? new Date(this.rule.limit).toDateString()
                 : this.rule.limit
