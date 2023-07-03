@@ -11,6 +11,7 @@ import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
+import type { BaseComposite } from "./composite.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import {
     compileArray,
@@ -26,10 +27,10 @@ export type KeyRule = NamedKeyRule | TypeNode
 
 export type NodeEntry = NamedPropRule | IndexedPropRule
 
-export type PropsRule = readonly NodeEntry[]
+export type PropsEntries = readonly NodeEntry[]
 
 export interface PropsNode
-    extends BaseNode<{ kind: "props"; rule: NodeEntry[] }> {
+    extends BaseComposite<"props", PropsEntries, PropsInput> {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>
@@ -42,11 +43,11 @@ export interface PropsNode
 export type PropsInput = NamedPropsInput | PropsInputTuple
 
 export const isParsedPropsRule = (
-    input: PropsInput | PropsRule
-): input is PropsRule =>
+    input: PropsInput | PropsEntries
+): input is PropsEntries =>
     isArray(input) && (input.length === 0 || hasArkKind(input[0].value, "node"))
 
-export const propsNode = defineNodeKind<PropsNode, PropsInput>(
+export const propsNode = defineNodeKind<PropsNode>(
     {
         kind: "props",
         parse: (input) => {
@@ -103,8 +104,8 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
         intersect: (l, r) => intersectProps(l, r)
     },
     (base) => {
-        const named = base.rule.filter(isNamed)
-        const indexed = base.rule.filter(isIndexed)
+        const named = base.children.filter(isNamed)
+        const indexed = base.children.filter(isIndexed)
         const description = describeProps(named, indexed)
         const literalKeys = named.map((prop) => prop.key.name)
         const namedKeyOf = cached(() => node.literal(...literalKeys))
@@ -213,7 +214,7 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
 
 const parsePropsInput = (input: PropsInput) => {
     const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
-    const rule: NodeEntry[] = []
+    const children: NodeEntry[] = []
     for (const name in namedInput) {
         const prop = namedInput[name]
         rule.push({
@@ -246,10 +247,10 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
     return JSON.stringify(fromEntries(entries))
 }
 
-const isIndexed = (rule: NodeEntry): rule is IndexedPropRule =>
+const isIndexed = (children: NodeEntry): rule is IndexedPropRule =>
     hasArkKind(rule.key, "node")
 
-const isNamed = (rule: NodeEntry): rule is NamedPropRule => !isIndexed(rule)
+const isNamed = (children: NodeEntry): rule is NamedPropRule => !isIndexed(rule)
 
 const kindPrecedence = (key: KeyRule) =>
     hasArkKind(key, "node") ? 2 : key.prerequisite ? -1 : key.optional ? 1 : 0

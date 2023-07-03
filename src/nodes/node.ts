@@ -1,61 +1,32 @@
-import type {
-    Dict,
-    evaluate,
-    extend,
-    merge,
-    optionalKeyOf,
-    requiredKeyOf
-} from "../../dev/utils/src/main.js"
-import { CompiledFunction, hasKey } from "../../dev/utils/src/main.js"
+import type { evaluate } from "../../dev/utils/src/main.js"
+import { CompiledFunction } from "../../dev/utils/src/main.js"
 import type { CompilationContext } from "../compile/compile.js"
 import {
     createCompilationContext,
     InputParameterName
 } from "../compile/compile.js"
 import { arkKind } from "../compile/registry.js"
-import type { TypeNode } from "../main.js"
 import type { inferred } from "../parse/definition.js"
+import type { ParseContext } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
-import type { CompositeNodeKind, NodeKind, NodeKinds } from "./kinds.js"
-import type { BasisKind } from "./primitive/basis/basis.js"
+import type { Node, NodeKind, NodeKinds } from "./kinds.js"
+import type { BaseBasisNode, BasisKind } from "./primitive/basis/basis.js"
+import type { Constraint } from "./primitive/primitive.js"
 
-type NodeConfig = {
-    kind: NodeKind
-    rule: unknown
-    meta?: Dict
-    intersectsWith?: unknown
-}
-
-type DefaultNodeConfig = evaluate<
-    {
-        [k in requiredKeyOf<NodeConfig>]: NodeConfig[k]
-    } & extend<
-        { [k in optionalKeyOf<NodeConfig>]: unknown },
-        {
-            meta: {}
-            intersectsWith: never
-        }
-    >
->
-
-type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
+export interface BaseNodeImplementation<node extends BaseNode> {
     kind: node["kind"]
     /** Should convert any supported input formats to rule,
      *  then ensure rule is normalized such that equivalent
      *  inputs will compile to the same string. */
-    parse: (rule: node["rule"] | parsableFrom) => node["rule"]
-    compile: (rule: node["rule"], ctx: CompilationContext) => string
+    parse: (children: node["input"]) => node["children"]
+    compile: (children: node["children"], ctx: CompilationContext) => string
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
     ) => ReturnType<node["intersect"]>
-} & (node["kind"] extends CompositeNodeKind
-    ? {
-          getReferences: (rule: node["rule"]) => TypeNode[]
-      }
-    : {})
+}
 
-type NodeExtension<node extends BaseNode> = (
+export type NodeExtensions<node extends BaseNode> = (
     base: basePropsOf<node>
 ) => extendedPropsOf<node>
 
@@ -68,35 +39,46 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 > &
     ThisType<node>
 
-interface PreconstructedBase<config extends NodeConfig> {
+export type NodeChild = Constraint | Node
+
+export type NodeChildren = readonly NodeChild[]
+
+interface PreconstructedBase<kind extends NodeKind, parsableInput> {
     readonly [arkKind]: "node"
-    readonly kind: config["kind"]
-    readonly rule: config["rule"]
+    readonly kind: kind
+    readonly input: this["children"] | parsableInput
+    readonly children: NodeChildren
     readonly source: string
     readonly condition: string
-    readonly references: TypeNode[]
     alias: string
     compile(ctx: CompilationContext): string
     intersect(
-        other: config["intersectsWith"] | this
-    ): config["intersectsWith"] | this | Disjoint
+        other: intersectsWith<kind> | this
+    ): intersectsWith<kind> | this | Disjoint
     // TODO: can this work as is with late resolution?
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
     isBasis(): this is NodeKinds[BasisKind]
 }
 
-type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any>>
+type intersectsWith<kind extends NodeKind> = kind extends BasisKind
+    ? BaseBasisNode
+    : never
+
+type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any, any>>
 
 type NodeExtensionProps = {
     description: string
 }
 
-export type BaseNode<config extends NodeConfig = DefaultNodeConfig> =
-    PreconstructedBase<merge<DefaultNodeConfig, config>> & NodeExtensionProps
+export type BaseNode<
+    kind extends NodeKind = NodeKind,
+    inputFormats = unknown
+> = PreconstructedBase<kind, inputFormats> & NodeExtensionProps
 
-export type NodeConstructor<node extends BaseNode, input> = (
-    input: node["rule"] | input
+export type NodeConstructor<node extends BaseNode> = (
+    input: node["input"],
+    ctx: ParseContext
 ) => node
 
 export const alphabetizeByCondition = <nodes extends BaseNode[]>(
@@ -105,13 +87,10 @@ export const alphabetizeByCondition = <nodes extends BaseNode[]>(
 
 const intersectionCache: Record<string, BaseNode | Disjoint> = {}
 
-export const defineNodeKind = <
-    node extends BaseNode<any>,
-    parsableFrom = never
->(
-    def: BaseNodeImplementation<node, parsableFrom>,
-    addProps: NodeExtension<node>
-): NodeConstructor<node, parsableFrom> => {
+export const defineNodeKind = <node extends BaseNode<any>>(
+    def: BaseNodeImplementation<node>,
+    extensions: NodeExtensions<node>
+): NodeConstructor<node> => {
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
@@ -120,31 +99,29 @@ export const defineNodeKind = <
         def.kind === "domain" || def.kind === "class" || def.kind === "value"
     const intersectionKind = isBasis ? "basis" : def.kind
     return (input) => {
-        const rule = def.parse(input)
+        const children = def.parse(input)
         const source = def.compile(
-            rule,
+            children,
             createCompilationContext("out", "problems")
         )
         if (nodeCache[source]) {
             return nodeCache[source]!
         }
         const condition = def.compile(
-            rule,
+            children,
             createCompilationContext("true", "false")
         )
-        const base: PreconstructedBase<DefaultNodeConfig> = {
+        const base: PreconstructedBase<NodeKind, unknown> = {
             [arkKind]: "node",
             kind: def.kind,
+            input,
             alias: `${def.kind}${anonymousSuffix++}`,
             hasKind: (kind) => kind === def.kind,
             isBasis: () => isBasis,
             source,
             condition,
-            references: hasKey(def, "getReferences")
-                ? [...new Set(def.getReferences(rule))]
-                : [],
-            rule,
-            compile: (ctx: CompilationContext) => def.compile(rule, ctx),
+            children,
+            compile: (ctx: CompilationContext) => def.compile(children, ctx),
             allows: new CompiledFunction(
                 InputParameterName,
                 `${condition}
@@ -173,7 +150,7 @@ export const defineNodeKind = <
                 return result
             }
         }
-        const instance = Object.assign(addProps(base as node), base, {
+        const instance = Object.assign(extensions(base as node), base, {
             toString: () => instance.description
         }) as node
         nodeCache[source] = instance

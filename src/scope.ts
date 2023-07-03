@@ -12,7 +12,7 @@ import type { arkKind } from "./compile/registry.js"
 import { addArkKind, hasArkKind } from "./compile/registry.js"
 import type { ScopeConfig } from "./config.js"
 import type { TypeConfig, TypeNode } from "./main.js"
-import { builtins, typeNode } from "./nodes/composite/type.js"
+import { builtins } from "./nodes/composite/type.js"
 import type {
     CastTo,
     inferDefinition,
@@ -348,10 +348,7 @@ export class Scope<r extends Resolutions = any> {
         if (isThunk(def) && !hasArkKind(def, "generic")) {
             def = def()
         }
-        this.resolutions[name] = typeNode({
-            alias: name,
-            resolve: () => this.maybeResolveNode(name, ctx)!
-        })
+        // TODO: initialize here?
         const resolution = hasArkKind(def, "generic")
             ? validateUninstantiatedGeneric(def)
             : hasArkKind(def, "module")

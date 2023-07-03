@@ -25,7 +25,7 @@ export const parseBound = (
     start: ComparatorStartChar
 ) => {
     const comparator = shiftComparator(s, start)
-    const value = s.root.value?.rule
+    const value = s.root.value?.children
     if (typeof value === "number") {
         s.ejectRoot()
         return s.reduceLeftBound(value, comparator)
@@ -109,7 +109,7 @@ export const parseRightBound = (
     if (intersectionResult instanceof Disjoint) {
         return intersectionResult.throw()
     }
-    s.root = s.root.constrain("range", intersectionResult.rule)
+    s.root = s.root.constrain("range", intersectionResult.children)
     delete s.branches.range
 }
 

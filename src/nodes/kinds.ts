@@ -15,8 +15,8 @@ import type { ValueNode } from "./primitive/basis/value.js"
 import { valueNode } from "./primitive/basis/value.js"
 import type { DivisorNode } from "./primitive/divisor.js"
 import { divisorNode } from "./primitive/divisor.js"
-import type { MorphNode } from "./primitive/morph.js"
-import { morphNode } from "./primitive/morph.js"
+// import type { MorphNode } from "./primitive/morph.js"
+// import { morphNode } from "./primitive/morph.js"
 import type { NarrowNode } from "./primitive/narrow.js"
 import { narrowNode } from "./primitive/narrow.js"
 import type { RangeNode } from "./primitive/range.js"
@@ -35,7 +35,7 @@ export type NodeKinds = {
     regex: RegexNode
     props: PropsNode
     narrow: NarrowNode
-    morph: MorphNode
+    // morph: MorphNode
 }
 
 export type NodeKind = keyof NodeKinds
@@ -57,9 +57,9 @@ export const precedenceByKind = {
     // deep checks
     props: 3,
     // narrows
-    narrow: 4,
-    // morphs
-    morph: 5
+    narrow: 4
+    // // morphs
+    // morph: 5
 } as const satisfies Record<NodeKind, number>
 
 const nodeKinds = cached(
@@ -74,16 +74,20 @@ const nodeKinds = cached(
             divisor: divisorNode,
             regex: regexNode,
             props: propsNode,
-            narrow: narrowNode,
-            morph: morphNode
-        } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k], never> })
+            narrow: narrowNode
+            // morph: morphNode
+        } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k]> })
 )
 
 export type CompositeNodeKind = extend<NodeKind, "type" | "predicate" | "props">
 
+export type PrimitiveNodeKind = Exclude<NodeKind, CompositeNodeKind>
+
 type NodeConstructors = { [k in NodeKind]: ReturnType<typeof nodeKinds>[k] }
 
-export type NodeInputs = { [k in NodeKind]: Parameters<NodeConstructors[k]>[0] }
+export type NodeInputs = {
+    [k in NodeKind]: Parameters<NodeConstructors[k]>[0]
+}
 
 export const createNodeOfKind = <kind extends NodeKind>(
     kind: kind,

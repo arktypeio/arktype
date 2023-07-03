@@ -1,9 +1,9 @@
 import type { Domain } from "../../../../dev/utils/src/main.js"
 import { cached, getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
-import { compileCheck, InputParameterName } from "../../../compile/compile.js"
+import { InputParameterName } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
-import { defineNodeKind } from "../../node.js"
-import type { BasisNode } from "./basis.js"
+import { type Constraint, definePrimitiveNode } from "../primitive.js"
+import type { BaseBasis } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
 export type NonEnumerableDomain = Exclude<
@@ -23,30 +23,27 @@ export const domainDescriptions = {
     undefined: "undefined"
 } as const satisfies Record<Domain, string>
 
-export interface DomainNode extends BasisNode<"domain", NonEnumerableDomain> {}
+export type DomainConstraint = Constraint<"domain", NonEnumerableDomain, {}>
 
-export const domainNode = defineNodeKind<DomainNode>(
+export interface DomainNode extends BaseBasis<DomainConstraint> {}
+
+export const domainNode = definePrimitiveNode<DomainNode>(
     {
         kind: "domain",
         parse: (input) => input,
-        compile: (rule, ctx) =>
-            compileCheck(
-                "domain",
-                rule,
-                rule === "object"
-                    ? `((typeof ${InputParameterName} === "object" && ${InputParameterName} !== null) || typeof ${InputParameterName} === "function")`
-                    : `typeof ${InputParameterName} === "${rule}"`,
-                ctx
-            ),
+        compileRule: (rule) =>
+            rule === "object"
+                ? `((typeof ${InputParameterName} === "object" && ${InputParameterName} !== null) || typeof ${InputParameterName} === "function")`
+                : `typeof ${InputParameterName} === "${rule}"`,
         intersect: intersectBases
     },
     (base) => {
-        const literalKeys = getBaseDomainKeys(base.rule)
+        const literalKeys = getBaseDomainKeys(base.children)
         return {
-            domain: base.rule,
+            domain: base.children,
             literalKeys,
             keyof: cached(() => node.literal(...literalKeys)),
-            description: domainDescriptions[base.rule]
+            description: domainDescriptions[base.children]
         }
     }
 )

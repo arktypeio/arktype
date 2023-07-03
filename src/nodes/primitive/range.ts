@@ -1,8 +1,8 @@
 import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
 import { compileCheck, InputParameterName } from "../../compile/compile.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
+import type { Constraint, PrimitiveNode } from "./primitive.js"
 
 export const minComparators = {
     ">": true,
@@ -46,21 +46,26 @@ export type InvertedComparators = typeof invertedComparators
 
 export type SizedData = string | number | readonly unknown[] | Date
 
+export type RangeConstraint<comparator extends Comparator = Comparator> =
+    Constraint<"range", Bound<comparator>, {}>
+
 export type Bound<comparator extends Comparator = Comparator> = {
-    limit: number
-    comparator: comparator
+    readonly limit: number
+    readonly comparator: comparator
 }
 
-export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
+export type Range =
+    | readonly [RangeConstraint]
+    | readonly [RangeConstraint<MinComparator>, RangeConstraint<MaxComparator>]
 
-// const units =
 // s.lastDomain === "string"
+// const units =
 //     ? "characters"
 //     : s.lastDomain === "object"
 //     ? "items long"
 //     : ""
 
-export interface RangeNode extends BaseNode<{ kind: "range"; rule: Range }> {
+export interface RangeNode extends PrimitiveNode<Range> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
 }
@@ -115,12 +120,12 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 if (isEqualityRangeNode(r)) {
                     return l === r ? l : Disjoint.from("range", l, r)
                 }
-                return r.allows(l.rule[0].limit)
+                return r.allows(l.children[0].limit)
                     ? l
                     : Disjoint.from("range", l, r)
             }
             if (isEqualityRangeNode(r)) {
-                return l.allows(r.rule[0].limit)
+                return l.allows(r.children[0].limit)
                     ? r
                     : Disjoint.from("range", l, r)
             }
@@ -146,19 +151,19 @@ export const rangeNode = defineNodeKind<RangeNode>(
         }
     },
     (base) => {
-        const leftDescription = `${base.rule[0].comparator}${base.rule[0].limit}`
-        const description = base.rule[1]
-            ? `the range bounded by ${leftDescription} and ${base.rule[1].comparator}${base.rule[1].limit}`
+        const leftDescription = `${base.children[0].comparator}${base.children[0].limit}`
+        const description = base.children[1]
+            ? `the range bounded by ${leftDescription} and ${base.children[1].comparator}${base.children[1].limit}`
             : leftDescription
         return {
             description,
-            min: isKeyOf(base.rule[0].comparator, minComparators)
-                ? (base.rule[0] as Bound<MinComparator>)
+            min: isKeyOf(base.children[0].comparator, minComparators)
+                ? (base.children[0] as Bound<MinComparator>)
                 : undefined,
             max:
-                base.rule[1] ??
-                (isKeyOf(base.rule[0].comparator, maxComparators)
-                    ? (base.rule[0] as Bound<MaxComparator>)
+                base.children[1] ??
+                (isKeyOf(base.children[0].comparator, maxComparators)
+                    ? (base.children[0] as Bound<MaxComparator>)
                     : undefined)
         }
     }
@@ -166,8 +171,8 @@ export const rangeNode = defineNodeKind<RangeNode>(
 
 const isEqualityRangeNode = (
     node: RangeNode
-): node is RangeNode & { rule: [Bound<"==">] } =>
-    node.rule[0].comparator === "=="
+): node is RangeNode & { children: [Bound<"==">] } =>
+    node.children[0].comparator === "=="
 
 export const compareStrictness = (
     kind: "min" | "max",

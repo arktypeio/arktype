@@ -84,11 +84,14 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
                 prerequisite: true,
                 optional: false
             },
-            value: typeNode({ basis: ["===", def.length] })
+            value: typeNode({ basis: ["===", def.length] }, ctx)
         })
     }
-    const predicate = predicateNode([arrayClassNode(), propsNode(props)])
-    return typeNode([predicate])
+    const predicate = predicateNode(
+        [arrayClassNode(), propsNode(props, ctx)],
+        ctx
+    )
+    return typeNode([predicate], ctx)
 }
 
 export const maybeParseTupleExpression = (
@@ -447,7 +450,7 @@ const prefixParsers: {
     [token in IndexZeroOperator]: PrefixParser<token>
 } = {
     keyof: parseKeyOfTuple,
-    instanceof: (def) => {
+    instanceof: (def, ctx) => {
         const objectKind = objectKindOf(def[1])
         if (objectKind !== "Function") {
             return throwParseError(
@@ -467,7 +470,8 @@ const prefixParsers: {
                                   objectKindOf(ctor) ?? domainOf(def[1])
                               )
                           )
-                )
+                ),
+            ctx
         )
     },
     "===": (def) => node.literal(...def.slice(1))

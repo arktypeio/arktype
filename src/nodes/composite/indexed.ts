@@ -75,10 +75,10 @@ export const extractArrayIndexRegex = (keyNode: TypeNode) => {
         return
     }
     const regexNode = keyNode.branches[0].getConstraint("regex")
-    if (!regexNode || regexNode.rule.length !== 1) {
+    if (!regexNode || regexNode.children.length !== 1) {
         return
     }
-    const regexLiteral = regexNode.rule[0]
+    const regexLiteral = regexNode.children[0]
     if (!regexLiteral.endsWith(arrayIndexLiteralSuffix)) {
         return
     }

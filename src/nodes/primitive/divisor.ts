@@ -1,21 +1,21 @@
-import { compileCheck, InputParameterName } from "../../compile/compile.js"
-import type { BaseNode } from "../node.js"
-import { defineNodeKind } from "../node.js"
+import { InputParameterName } from "../../compile/compile.js"
+import {
+    type Constraint,
+    definePrimitiveNode,
+    type PrimitiveNode
+} from "./primitive.js"
 
-export interface DivisorNode
-    extends BaseNode<{ kind: "divisor"; rule: number }> {}
+export type DivisorConstraint = Constraint<"divisor", number, {}>
 
-export const divisorNode = defineNodeKind<DivisorNode>(
+export interface DivisorNode extends PrimitiveNode<[DivisorConstraint]> {
+    rule: number
+}
+
+export const divisorNode = definePrimitiveNode<DivisorNode>(
     {
         kind: "divisor",
         parse: (input) => input,
-        compile: (rule, ctx) =>
-            compileCheck(
-                "divisor",
-                rule,
-                `${InputParameterName} % ${rule} === 0`,
-                ctx
-            ),
+        compileRule: (rule) => `${InputParameterName} % ${rule} === 0`,
         intersect: (l, r): DivisorNode =>
             divisorNode(
                 Math.abs(
@@ -23,10 +23,13 @@ export const divisorNode = defineNodeKind<DivisorNode>(
                 )
             )
     },
-    (base) => ({
-        description:
-            base.rule === 1 ? "an integer" : `a multiple of ${base.rule}`
-    })
+    (base) => {
+        const rule = base.children[0].rule
+        return {
+            rule,
+            description: rule === 1 ? "an integer" : `a multiple of ${rule}`
+        }
+    }
 )
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

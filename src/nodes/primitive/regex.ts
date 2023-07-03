@@ -1,7 +1,10 @@
 import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/main.js"
-import { compileCheck, InputParameterName } from "../../compile/compile.js"
-import type { BaseNode } from "../node.js"
-import { defineNodeKind } from "../node.js"
+import { InputParameterName } from "../../compile/compile.js"
+import {
+    type Constraint,
+    definePrimitiveNode,
+    type PrimitiveNode
+} from "./primitive.js"
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>
@@ -9,34 +12,22 @@ export const serializeRegex = (regex: RegExp) =>
 
 export type SerializedRegexLiteral = `/${string}/${string}`
 
-export interface RegexNode
-    extends BaseNode<{ kind: "regex"; rule: SerializedRegexLiteral[] }> {}
+export type RegexConstraint = Constraint<"regex", SerializedRegexLiteral, {}>
+
+export interface RegexNode extends PrimitiveNode<readonly RegexConstraint[]> {}
 
 export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
     literal.slice(1, literal.lastIndexOf("/"))
 
-export const regexNode = defineNodeKind<
-    RegexNode,
-    SerializedRegexLiteral | SerializedRegexLiteral[]
->(
+export const regexNode = definePrimitiveNode<RegexNode>(
     {
         kind: "regex",
         parse: (input) => listFrom(input).sort(),
-        compile: (rule, ctx) =>
-            rule
-                .map((literal) =>
-                    compileCheck(
-                        "regex",
-                        literal,
-                        `${literal}.test(${InputParameterName})`,
-                        ctx
-                    )
-                )
-                .join("\n"),
+        compileRule: (rule) => `${rule}.test(${InputParameterName})`,
         intersect: (l, r): RegexNode =>
-            regexNode(intersectUniqueLists(l.rule, r.rule))
+            regexNode(intersectUniqueLists(l.children, r.children))
     },
     (base) => ({
-        description: `matched by ${base.rule.join(", ")}`
+        description: `matched by ${base.children.join(", ")}`
     })
 )

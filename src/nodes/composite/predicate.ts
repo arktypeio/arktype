@@ -29,6 +29,7 @@ import { createNodeOfKind, precedenceByKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 import type {
+    BaseBasis,
     BasisInput,
     BasisNode,
     inferBasis
@@ -41,13 +42,14 @@ import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { Range } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
+import type { BaseComposite } from "./composite.js"
 import type { inferPropsInput } from "./inferProps.js"
 import type { PropsInput } from "./props.js"
 import type { TypeNode } from "./type.js"
 import { builtins } from "./type.js"
 
 export interface PredicateNode
-    extends BaseNode<{ kind: "predicate"; rule: PredicateChildren }> {
+    extends BaseComposite<"predicate", PredicateChildren, PredicateInput> {
     basis: BasisNode | null
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
@@ -59,7 +61,7 @@ export interface PredicateNode
     ): PredicateNode
 }
 
-export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
+export const predicateNode = defineNodeKind<PredicateNode>(
     {
         kind: "predicate",
         parse: (input) => {
@@ -107,8 +109,6 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             }
             return result
         },
-        getReferences: (children) =>
-            children.flatMap((child) => child.references),
         intersect: (l, r): PredicateNode | Disjoint => {
             // if (
             //     // s.lastOperator === "&" &&
@@ -132,11 +132,11 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             // check l.basis instead of l.value since l.value will
             // only be set if the value is "pure", i.e. has no morphs
             if (l.basis?.hasKind("value")) {
-                if (!r.allows(l.basis.rule)) {
+                if (!r.allows(l.basis.children)) {
                     return Disjoint.from("assignability", r, l.basis)
                 }
             } else if (r.basis?.hasKind("value")) {
-                if (!l.allows(r.basis.rule)) {
+                if (!l.allows(r.basis.children)) {
                     return Disjoint.from("assignability", l, r.basis)
                 }
             }
@@ -173,13 +173,13 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
         }
     },
     (base) => {
-        const initialRule = base.rule.at(0)
+        const initialRule = base.children.at(0)
         const basis = initialRule?.isBasis() ? initialRule : null
         const constraints = (
-            basis ? base.rule.slice(1) : base.rule
+            basis ? base.children.slice(1) : base.children
         ) as ConstraintNode[]
         const description =
-            base.rule.length === 0
+            base.children.length === 0
                 ? "unknown"
                 : constraints.length
                 ? `(${constraints
@@ -196,7 +196,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 ) as never,
             value:
                 // we only want simple unmorphed values
-                basis?.hasKind("value") && base.rule.length === 1
+                basis?.hasKind("value") && base.children.length === 1
                     ? basis
                     : undefined,
             constrain(kind, input): PredicateNode {
@@ -285,8 +285,7 @@ const constraintKindNames = [
     "range",
     "regex",
     "props",
-    "narrow",
-    "morph"
+    "narrow"
 ] as const satisfies List<ConstraintKind>
 
 export type ListableInputKind = "regex" | "narrow" | "morph"
@@ -299,7 +298,7 @@ export type ConstraintNode = ConstraintKinds[ConstraintKind]
 
 type ConstraintKinds = Pick<
     NodeKinds,
-    "range" | "divisor" | "regex" | "props" | "narrow" | "morph"
+    "range" | "divisor" | "regex" | "props" | "narrow"
 >
 
 export type PredicateChildKind = "basis" | ConstraintKind
@@ -329,18 +328,20 @@ export type ConstraintsInput<
 type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
     ? PropsInput
     :
-          | ConstraintKinds[kind]["rule"]
+          | ConstraintKinds[kind]["children"]
           // Add the unlisted version as a valid input for these kinds
           | (kind extends ListableInputKind
-                ? ConstraintKinds[kind]["rule"][number]
+                ? ConstraintKinds[kind]["children"][number]
                 : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =
-    input["morph"] extends Morph<any, infer out>
-        ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
-        : input["morph"] extends readonly [...any[], Morph<any, infer out>]
-        ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
-        : inferPredicateInput<input>
+    // input["morph"] extends Morph<any, infer out>
+    //     ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
+    //     : input["morph"] extends readonly [...any[], Morph<any, infer out>]
+    // ?
+    // (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
+    //     :
+    inferPredicateInput<input>
 
 type inferPredicateInput<input extends PredicateInput> =
     input["narrow"] extends NarrowCast<any, infer narrowed>

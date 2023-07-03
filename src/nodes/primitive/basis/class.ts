@@ -10,10 +10,13 @@ import { compileCheck, InputParameterName } from "../../../compile/compile.js"
 import { registry } from "../../../compile/registry.js"
 import { node } from "../../../main.js"
 import { defineNodeKind } from "../../node.js"
-import type { BasisNode } from "./basis.js"
+import type { Constraint } from "../primitive.js"
+import type { BaseBasis } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface ClassNode extends BasisNode<"class", AbstractableConstructor> {
+export type ClassConstraint = Constraint<"class", AbstractableConstructor, {}>
+
+export interface ClassNode extends BaseBasis<ClassConstraint> {
     extendsOneOf: (...baseConstructors: AbstractableConstructor[]) => boolean
 }
 
@@ -21,31 +24,26 @@ export const classNode = defineNodeKind<ClassNode>(
     {
         kind: "class",
         parse: (input) => input,
-        compile: (rule, ctx) =>
-            compileCheck(
-                "class",
-                rule,
-                `${InputParameterName} instanceof ${
-                    getExactBuiltinConstructorName(rule) ??
-                    registry().register(rule)
-                }`,
-                ctx
-            ),
+        compile: (rule) =>
+            `${InputParameterName} instanceof ${
+                getExactBuiltinConstructorName(rule) ??
+                registry().register(rule)
+            }`,
         intersect: intersectBases
     },
     (base) => {
-        const literalKeys = prototypeKeysOf(base.rule.prototype)
-        const possibleObjectKind = getExactBuiltinConstructorName(base.rule)
+        const literalKeys = prototypeKeysOf(base.children.prototype)
+        const possibleObjectKind = getExactBuiltinConstructorName(base.children)
         const description = possibleObjectKind
             ? objectKindDescriptions[possibleObjectKind]
-            : `an instance of ${base.rule.name}`
+            : `an instance of ${base.children.name}`
         return {
             domain: "object",
             literalKeys,
             keyof: cached(() => node.literal(...literalKeys)),
             extendsOneOf: (...baseConstructors: AbstractableConstructor[]) =>
                 baseConstructors.some((ctor) =>
-                    constructorExtends(base.rule, ctor)
+                    constructorExtends(base.children, ctor)
                 ),
             description
         }

@@ -1,7 +1,7 @@
 import type { SerializablePrimitive } from "../../dev/utils/src/main.js"
 import { hasDomain, serializePrimitive } from "../../dev/utils/src/main.js"
 import type { Discriminant } from "../nodes/composite/discriminate.js"
-import type { BasisNode } from "../nodes/primitive/basis/basis.js"
+import type { BaseBasis } from "../nodes/primitive/basis/basis.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
@@ -15,7 +15,7 @@ export type CompilationContext = {
     failureKind: CompiledFailureKind
     path: CompiledPathSegment[]
     discriminants: Discriminant[]
-    bases: BasisNode[]
+    bases: BaseBasis[]
 }
 
 export const createCompilationContext = (

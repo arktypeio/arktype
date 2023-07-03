@@ -1,13 +1,11 @@
 import {
+    entriesOf,
+    type entryOf,
+    fromEntries,
     stringify,
     throwInternalError,
     throwParseError,
     transform
-} from "../../dev/utils/src/main.js"
-import {
-    entriesOf,
-    type entryOf,
-    fromEntries
 } from "../../dev/utils/src/main.js"
 import type { PredicateNode } from "./composite/predicate.js"
 import type { TypeNode } from "./composite/type.js"

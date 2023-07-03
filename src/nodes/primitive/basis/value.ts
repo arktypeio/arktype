@@ -5,43 +5,42 @@ import {
     stringify
 } from "../../../../dev/utils/src/main.js"
 import {
-    compileCheck,
     compileSerializedValue,
     InputParameterName
 } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
-import { defineNodeKind } from "../../node.js"
-import type { BasisNode } from "./basis.js"
+import { type Constraint, definePrimitiveNode } from "../primitive.js"
+import type { BaseBasis } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface ValueNode extends BasisNode<"value", unknown> {
+export type ValueConstraint = Constraint<"value", unknown, {}>
+
+export interface ValueNode extends BaseBasis<ValueConstraint> {
     serialized: string
 }
 
-export const valueNode = defineNodeKind<ValueNode>(
+export const valueNode = definePrimitiveNode<ValueNode>(
     {
         kind: "value",
         parse: (input) => input,
         intersect: intersectBases,
-        compile: (rule, ctx) =>
-            compileCheck(
-                "value",
-                rule,
-                `${InputParameterName} === ${compileSerializedValue(rule)}`,
-                ctx
-            )
+        compileRule: (rule) =>
+            `${InputParameterName} === ${compileSerializedValue(rule)}`
     },
     (base) => {
         const literalKeys =
-            base.rule === null || base.rule === undefined
+            base.children === null || base.children === undefined
                 ? []
-                : [...prototypeKeysOf(base.rule), ...Object.keys(base.rule)]
+                : [
+                      ...prototypeKeysOf(base.children),
+                      ...Object.keys(base.children)
+                  ]
         return {
-            serialized: compileSerializedValue(base.rule),
-            domain: domainOf(base.rule),
+            serialized: compileSerializedValue(base.children),
+            domain: domainOf(base.children),
             literalKeys,
             keyof: cached(() => node.literal(...literalKeys)),
-            description: stringify(base.rule)
+            description: stringify(base.children)
         }
     }
 )

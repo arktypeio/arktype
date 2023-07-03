@@ -22,6 +22,7 @@ import type { BasisInput } from "../primitive/basis/basis.js"
 import { arrayClassNode } from "../primitive/basis/class.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
+import type { BaseComposite } from "./composite.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
@@ -35,10 +36,7 @@ import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
 export interface TypeNode<t = unknown>
-    extends BaseNode<{
-        kind: "type"
-        rule: UnresolvedTypeNode | PredicateNode[]
-    }> {
+    extends BaseComposite<"type", PredicateNode[], TypeInput> {
     [inferred]: t
     branches: PredicateNode[]
     discriminant: Discriminant | null
@@ -66,7 +64,7 @@ export type UnresolvedTypeNode = {
     resolve: Thunk<TypeNode>
 }
 
-export const typeNode = defineNodeKind<TypeNode, TypeInput>(
+export const typeNode = defineNodeKind<TypeNode>(
     {
         kind: "type",
         parse: (input) => {
@@ -116,17 +114,19 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
         return {
             get branches() {
                 if (!cachedBranches) {
-                    cachedBranches = hasKey(base.rule, "resolve")
-                        ? base.rule.resolve().branches
-                        : base.rule
+                    cachedBranches = hasKey(base.children, "resolve")
+                        ? base.children.resolve().branches
+                        : base.children
                 }
                 return cachedBranches
             },
-            description: isArray(base.rule)
-                ? base.rule.length === 0
+            description: isArray(base.children)
+                ? base.children.length === 0
                     ? "never"
-                    : base.rule.map((branch) => branch.toString()).join(" or ")
-                : base.rule.alias,
+                    : base.children
+                          .map((branch) => branch.toString())
+                          .join(" or ")
+                : base.children.alias,
             // discriminate is cached so we don't have to worry about this running multiple times
             get discriminant() {
                 return discriminate(this.branches)
@@ -144,7 +144,9 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                 return typeNode([predicate])
             },
             isResolved() {
-                return Array.isArray(this.rule) || cachedBranches !== undefined
+                return (
+                    Array.isArray(this.children) || cachedBranches !== undefined
+                )
             },
             isNever() {
                 return this.branches.length === 0
@@ -152,7 +154,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             isUnknown() {
                 return (
                     this.branches.length === 1 &&
-                    this.branches[0].rule.length === 0
+                    this.branches[0].children.length === 0
                 )
             },
             and(other): any {

@@ -12,7 +12,7 @@ import {
 import type { TypeNode } from "../../composite/type.js"
 import type { DisjointKindEntries } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
-import type { BaseNode } from "../../node.js"
+import type { Constraint, PrimitiveNode } from "../primitive.js"
 import type { ClassNode } from "./class.js"
 import type { DomainNode, NonEnumerableDomain } from "./domain.js"
 import type { ValueNode } from "./value.js"
@@ -47,27 +47,26 @@ export const basisPrecedenceByKind: Record<BasisKind, number> = {
     domain: 2
 }
 
-export type BasisNodeSubclass = BasisNodesByKind[BasisKind]
-
-export type BasisNodeDefinition = {
-    rule: unknown
-}
-
-export interface BasisNode<kind extends BasisKind = BasisKind, rule = unknown>
-    extends BaseNode<{ kind: kind; rule: rule; intersectsWith: BasisNode }> {
+export interface BaseBasis<constraint extends Constraint>
+    extends PrimitiveNode<[constraint]> {
+    rule: constraint["rule"]
     domain: Domain
     keyof(): TypeNode
     literalKeys: PropertyKey[]
 }
 
+export type BaseBasisNode = BaseBasis<Constraint>
+
+export type BasisNode = BasisNodesByKind[BasisKind]
+
 export const intersectBases = (
-    l: BasisNode,
-    r: BasisNode
-): BasisNode | Disjoint => {
+    l: BaseBasisNode,
+    r: BaseBasisNode
+): BaseBasisNode | Disjoint => {
     if (l.hasKind("class") && r.hasKind("class")) {
-        return constructorExtends(l.rule, r.rule)
+        return constructorExtends(l.children, r.children)
             ? l
-            : constructorExtends(r.rule, l.rule)
+            : constructorExtends(r.children, l.children)
             ? r
             : Disjoint.from("class", l, r)
     }
