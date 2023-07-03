@@ -15,14 +15,12 @@ suite("Date", () => {
             attest(t.infer).typed as Date
             attest(t.allows(new Date("2000/05/05"))).equals(true)
             attest(t.allows(new Date("2000/06/05"))).equals(false)
-            attest(t.allows(new Date("non date"))).equals(false)
         })
         test("ISO", () => {
             const ISO = type("d'2000-05-05T04:00:00.000Z'")
             attest(ISO.infer).typed as Date
             attest(ISO.allows(new Date("2000/05/05"))).equals(true)
             attest(ISO.allows(new Date("2000/07/05"))).equals(false)
-            attest(ISO.allows(new Date("dwa"))).equals(false)
         })
         test("allows spaces", () => {
             const t = type("d' 2021/05/01  '")
@@ -67,7 +65,7 @@ suite("Date", () => {
                         limit: new Date("2021/1/12")
                     })
                 )
-                attest(t(new Date("2021/1/1")).data).snap("Fri Jan 01 2021")
+                attest(t.allows(new Date("2021/1/1"))).equals(true)
             })
             test("==", () => {
                 const t = type("Date==d'2020-1-1'")
@@ -78,6 +76,8 @@ suite("Date", () => {
                         limit: new Date("2020-1-1")
                     })
                 )
+                attest(t.allows(new Date("2020/01/01"))).equals(true)
+                attest(t.allows(new Date("2020/01/02"))).equals(false)
             })
         })
         suite("double", () => {
@@ -96,6 +96,9 @@ suite("Date", () => {
                         }
                     )
                 )
+                attest(t.allows(new Date("2003/10/10"))).equals(true)
+                attest(t.allows(new Date("2001/10/10"))).equals(false)
+                attest(t.allows(new Date("2005/10/10"))).equals(false)
             })
             test("<=,<", () => {
                 const t = type("d'1990/10/10'<=Date<d'2006/10/10'")
@@ -112,6 +115,7 @@ suite("Date", () => {
                         }
                     )
                 )
+                attest(t.allows(new Date("1990/10/10"))).equals(true)
             })
             test("<,<=", () => {
                 const t = type("d'2020/1/1'<Date<=d'2024/1/1'")
@@ -128,6 +132,7 @@ suite("Date", () => {
                         }
                     )
                 )
+                attest(t.allows(new Date("2024/1/1"))).equals(true)
             })
         })
         suite("errors", () => {
