@@ -298,7 +298,7 @@ suite("range", () => {
                         //@ts-expect-error
                         attest(() => type("d'2001/01/01'<number<2"))
                             .throws(
-                                writeIncompatibleRangeMessage("date", "number")
+                                writeIncompatibleRangeMessage("date", "numeric")
                             )
                             .types.errors(
                                 writeInvalidLimitMessage(
@@ -320,7 +320,7 @@ suite("range", () => {
                             type("0<Date<d'1999/9/8'")
                         )
                             .throws(
-                                writeIncompatibleRangeMessage("number", "date")
+                                writeIncompatibleRangeMessage("numeric", "date")
                             )
                             .types.errors(
                                 writeInvalidLimitMessage("<", "0", "left")

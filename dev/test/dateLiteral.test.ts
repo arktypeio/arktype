@@ -27,11 +27,9 @@ suite("date literal", () => {
         attest(t.allows(now)).equals(true)
         attest(t.allows(new Date(now.valueOf() + 1)))
     })
-    suite("errors", () => {
-        test("invalid date", () => {
-            attest(() => type("d'tuesday'")).throws(
-                writeInvalidDateMessage("tuesday")
-            )
-        })
+    test("invalid date", () => {
+        attest(() => type("d'tuesday'")).throws(
+            writeInvalidDateMessage("tuesday")
+        )
     })
 })

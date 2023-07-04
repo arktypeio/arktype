@@ -28,12 +28,12 @@ export const parseEnclosed = (
     }
     // Shift the scanner one additional time for the second enclosing token
     const token = `${enclosing}${enclosed}${s.scanner.shift()}`
-
     if (enclosing === "/") {
         // fail parsing if the regex is invalid
         try {
             new RegExp(enclosed)
         } catch (e) {
+            // rethrow as a ParseError
             s.error(`${e instanceof Error ? e.message : e}`)
         }
         // flags are not currently supported for embedded regex literals
@@ -42,7 +42,10 @@ export const parseEnclosed = (
         s.root = typeNode({ basis: ["===", enclosed] })
     } else {
         s.root = typeNode({
-            basis: ["===", tryParseDate(token, writeInvalidDateMessage(token))]
+            basis: [
+                "===",
+                tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
+            ]
         })
     }
 }

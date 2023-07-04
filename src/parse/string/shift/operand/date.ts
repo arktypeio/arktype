@@ -1,4 +1,5 @@
 import { throwParseError } from "../../../../../dev/utils/src/errors.js"
+import { tryParseWellFormedNumber } from "../../../../../dev/utils/src/main.js"
 
 export type DateLiteral<source extends string = string> =
     | `d"${source}"`
@@ -26,23 +27,30 @@ export type writeInvalidDateMessage<source extends string> =
 
 export type DateInput = ConstructorParameters<typeof Date>[0]
 
-export const tryParseDate = <ErrorOnFail extends boolean | string>(
-    token: string,
-    errorOnFail?: ErrorOnFail
-) => (isDateLiteral(token) ? maybeParseDate(token, errorOnFail) : undefined)
+export const tryParseDate = <errorOnFail extends boolean | string>(
+    source: string,
+    errorOnFail?: errorOnFail
+) => maybeParseDate(source, errorOnFail)
 
 const maybeParseDate = <errorOnFail extends boolean | string>(
-    token: DateLiteral,
+    source: string,
     errorOnFail?: errorOnFail
 ): Date | (errorOnFail extends true | string ? never : undefined) => {
-    const date = new Date(extractDateLiteralSource(token))
-    if (isValidDate(date)) {
-        return date
+    const stringParsedDate = new Date(source)
+    if (isValidDate(stringParsedDate)) {
+        return stringParsedDate
+    }
+    const epochMillis = tryParseWellFormedNumber(source)
+    if (epochMillis !== undefined) {
+        const numberParsedDate = new Date(epochMillis)
+        if (isValidDate(numberParsedDate)) {
+            return numberParsedDate
+        }
     }
     return errorOnFail
         ? throwParseError(
               errorOnFail === true
-                  ? writeInvalidDateMessage(token)
+                  ? writeInvalidDateMessage(source)
                   : errorOnFail
           )
         : (undefined as never)
