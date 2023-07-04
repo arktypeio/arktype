@@ -16,21 +16,13 @@ import {
 } from "../../../dev/utils/src/main.js"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
-import type {
-    inferMorphOut,
-    Morph,
-    Narrow,
-    NarrowCast,
-    Out
-} from "../../parse/tuple.js"
+import type { Morph, Narrow, NarrowCast } from "../../parse/tuple.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
 import { createNodeOfKind, precedenceByKind } from "../kinds.js"
-import type { BaseNode } from "../node.js"
 import { defineNode } from "../node.js"
 import type {
     BasisInput,
-    BasisNode,
     BasisNode,
     inferBasis
 } from "../primitive/basis/basis.js"
@@ -43,13 +35,20 @@ import { valueNode } from "../primitive/basis/value.js"
 import type { Range } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { CompositeNode } from "./composite.js"
+import { defineComposite } from "./composite.js"
 import type { inferPropsInput } from "./inferProps.js"
 import type { PropsInput } from "./props.js"
 import type { TypeNode } from "./type.js"
 import { builtins } from "./type.js"
 
-export interface PredicateNode
-    extends CompositeNode<"predicate", PredicateChildren, PredicateInput> {
+export type PredicateNodeConfig = defineComposite<{
+    kind: "predicate"
+    input: PredicateInput
+    rule: PredicateChildren
+    meta: {}
+}>
+
+export interface PredicateNode extends CompositeNode<PredicateNodeConfig> {
     basis: BasisNode | null
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
@@ -61,7 +60,7 @@ export interface PredicateNode
     ): PredicateNode
 }
 
-export const predicateNode = defineNode<PredicateNode>(
+export const predicateNode = defineComposite<PredicateNode>(
     {
         kind: "predicate",
         parse: (input) => {
@@ -109,17 +108,7 @@ export const predicateNode = defineNode<PredicateNode>(
             }
             return result
         },
-        intersect: (l, r): PredicateNode | Disjoint => {
-            // if (
-            //     // s.lastOperator === "&" &&
-            //     rules.morphs?.some(
-            //         (morph, i) => morph !== branch.tree.morphs?.[i]
-            //     )
-            // ) {
-            //     throwParseError(
-            //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
-            //     )
-            // }
+        intersect: (l, r) => {
             // TODO: can props imply object basis for compilation?
             const basis = l.basis
                 ? r.basis
@@ -132,11 +121,11 @@ export const predicateNode = defineNode<PredicateNode>(
             // check l.basis instead of l.value since l.value will
             // only be set if the value is "pure", i.e. has no morphs
             if (l.basis?.hasKind("value")) {
-                if (!r.allows(l.basis.children)) {
+                if (!r.allows(l.basis.rule)) {
                     return Disjoint.from("assignability", r, l.basis)
                 }
             } else if (r.basis?.hasKind("value")) {
-                if (!l.allows(r.basis.children)) {
+                if (!l.allows(r.basis.rule)) {
                     return Disjoint.from("assignability", l, r.basis)
                 }
             }
@@ -173,13 +162,13 @@ export const predicateNode = defineNode<PredicateNode>(
         }
     },
     (base) => {
-        const initialRule = base.children.at(0)
+        const initialRule = base.rule.at(0)
         const basis = initialRule?.isBasis() ? initialRule : null
         const constraints = (
-            basis ? base.children.slice(1) : base.children
+            basis ? base.rule.slice(1) : base.rule
         ) as ConstraintNode[]
         const description =
-            base.children.length === 0
+            base.rule.length === 0
                 ? "unknown"
                 : constraints.length
                 ? `(${constraints
@@ -196,7 +185,7 @@ export const predicateNode = defineNode<PredicateNode>(
                 ) as never,
             value:
                 // we only want simple unmorphed values
-                basis?.hasKind("value") && base.children.length === 1
+                basis?.hasKind("value") && base.rule.length === 1
                     ? basis
                     : undefined,
             constrain(kind, input): PredicateNode {
@@ -219,18 +208,27 @@ export const predicateNode = defineNode<PredicateNode>(
     }
 )
 
+// if (
+//     // s.lastOperator === "&" &&
+//     rules.morphs?.some(
+//         (morph, i) => morph !== branch.tree.morphs?.[i]
+//     )
+// ) {
+//     throwParseError(
+//         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
+//     )
+// }
+
 export const assertAllowsConstraint = (
     basis: BasisNode | null,
     kind: ConstraintKind
 ) => {
     if (basis?.hasKind("value")) {
-        if (kind !== "morph") {
-            throwInvalidConstraintError(
-                kind,
-                "a non-literal type",
-                basis.toString()
-            )
-        }
+        throwInvalidConstraintError(
+            kind,
+            "a non-literal type",
+            basis.toString()
+        )
         return
     }
     const domain = basis?.domain ?? "unknown"
@@ -260,8 +258,6 @@ export const assertAllowsConstraint = (
             }
             return
         case "narrow":
-            return
-        case "morph":
             return
         default:
             throwInternalError(`Unexpxected rule kind '${kind}'`)
@@ -328,10 +324,10 @@ export type ConstraintsInput<
 type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
     ? PropsInput
     :
-          | ConstraintKinds[kind]["children"]
+          | ConstraintKinds[kind]["rule"]
           // Add the unlisted version as a valid input for these kinds
           | (kind extends ListableInputKind
-                ? ConstraintKinds[kind]["children"][number]
+                ? ConstraintKinds[kind]["rule"][number]
                 : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =

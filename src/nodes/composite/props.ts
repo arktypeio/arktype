@@ -9,9 +9,9 @@ import {
 import { hasArkKind } from "../../compile/registry.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseNode } from "../node.js"
 import { defineNode } from "../node.js"
 import type { CompositeNode } from "./composite.js"
+import { defineComposite } from "./composite.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import {
     compileArray,
@@ -29,8 +29,14 @@ export type NodeEntry = NamedPropRule | IndexedPropRule
 
 export type PropsEntries = readonly NodeEntry[]
 
-export interface PropsNode
-    extends CompositeNode<"props", PropsEntries, PropsInput> {
+export type PropsNodeConfig = defineComposite<{
+    kind: "props"
+    input: PropsInput
+    rule: PropsEntries
+    meta: {}
+}>
+
+export interface PropsNode extends CompositeNode<PropsNodeConfig> {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>
@@ -47,7 +53,7 @@ export const isParsedPropsRule = (
 ): input is PropsEntries =>
     isArray(input) && (input.length === 0 || hasArkKind(input[0].value, "node"))
 
-export const propsNode = defineNode<PropsNode>(
+export const propsNode = defineComposite<PropsNode>(
     {
         kind: "props",
         parse: (input) => {
@@ -104,8 +110,8 @@ export const propsNode = defineNode<PropsNode>(
         intersect: (l, r) => intersectProps(l, r)
     },
     (base) => {
-        const named = base.children.filter(isNamed)
-        const indexed = base.children.filter(isIndexed)
+        const named = base.rule.filter(isNamed)
+        const indexed = base.rule.filter(isIndexed)
         const description = describeProps(named, indexed)
         const literalKeys = named.map((prop) => prop.key.name)
         const namedKeyOf = cached(() => node.literal(...literalKeys))

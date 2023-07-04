@@ -73,7 +73,6 @@ export interface RangeNode extends PrimitiveNode<Range> {
 export const rangeNode = defineNode<RangeNode>(
     {
         kind: "range",
-        parse: (input) => input,
         compile: (rule, ctx) => {
             if (
                 rule[0].limit === rule[1]?.limit &&

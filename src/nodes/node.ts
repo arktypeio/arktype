@@ -8,7 +8,7 @@ import {
 import { arkKind } from "../compile/registry.js"
 import type { inferred } from "../parse/definition.js"
 import type { ParseContext } from "../scope.js"
-import { Disjoint } from "./disjoint.js"
+import type { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
 
@@ -71,8 +71,6 @@ export const alphabetizeByCondition = <nodes extends BaseNode[]>(
     nodes: nodes
 ) => nodes.sort((l, r) => (l.condition > r.condition ? 1 : -1))
 
-const intersectionCache: Record<string, BaseNode | Disjoint> = {}
-
 export const defineNode = <node extends BaseNode<any>>(
     def: BaseNodeImplementation<node>,
     extensions: NodeExtensions<node>
@@ -83,7 +81,6 @@ export const defineNode = <node extends BaseNode<any>>(
     let anonymousSuffix = 1
     const isBasis =
         def.kind === "domain" || def.kind === "class" || def.kind === "value"
-    const intersectionKind = isBasis ? "basis" : def.kind
     return (input) => {
         const rule = def.parse(input)
         const source = def.compile(
@@ -112,29 +109,7 @@ export const defineNode = <node extends BaseNode<any>>(
                 InputParameterName,
                 `${condition}
             return true`
-            ),
-            intersect: (other) => {
-                if (instance === other) {
-                    return instance
-                }
-                const cacheKey = `${intersectionKind}${source}${other.source}`
-                if (intersectionCache[cacheKey]) {
-                    return intersectionCache[cacheKey]
-                }
-                const result: BaseNode | Disjoint = def.intersect(
-                    instance,
-                    other
-                )
-                intersectionCache[cacheKey] = result
-                intersectionCache[
-                    `${intersectionKind}${other.source}${source}`
-                ] =
-                    // also cache the result with other's source as the key.
-                    // if it was a Disjoint, it has to be inverted so that l, r
-                    // still line up correctly
-                    result instanceof Disjoint ? result.invert() : result
-                return result
-            }
+            )
         }
         const instance = Object.assign(extensions(base as node), base, {
             toString: () => instance.description

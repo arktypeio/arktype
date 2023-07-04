@@ -16,6 +16,7 @@ import { arrayClassNode } from "../primitive/basis/class.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { CompositeNode } from "./composite.js"
+import { defineComposite } from "./composite.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
@@ -28,8 +29,14 @@ import type {
 import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
-export interface TypeNode<t = unknown>
-    extends CompositeNode<"type", PredicateNode[], TypeInput> {
+export type TypeNodeConfig = defineComposite<{
+    kind: "type"
+    input: TypeInput
+    rule: PredicateNode[]
+    meta: {}
+}>
+
+export interface TypeNode<t = unknown> extends CompositeNode<TypeNodeConfig> {
     [inferred]: t
     branches: PredicateNode[]
     discriminant: Discriminant | null
@@ -50,7 +57,7 @@ export interface TypeNode<t = unknown>
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }
 
-export const typeNode = defineNode<TypeNode>(
+export const typeNode = defineComposite<TypeNode>(
     {
         kind: "type",
         parse: (input) => {
@@ -75,7 +82,7 @@ export const typeNode = defineNode<TypeNode>(
                 ? // TODO: unresolved?
                   []
                 : branches.flatMap((predicate) => [...predicate.references]),
-        intersect: (l, r): TypeNode | Disjoint => {
+        intersect: (l, r) => {
             if (l.branches.length === 1 && r.branches.length === 1) {
                 const result = l.branches[0].intersect(r.branches[0])
                 return result instanceof Disjoint ? result : typeNode([result])
@@ -91,19 +98,17 @@ export const typeNode = defineNode<TypeNode>(
         return {
             get branches() {
                 if (!cachedBranches) {
-                    cachedBranches = hasKey(base.children, "resolve")
-                        ? base.children.resolve().branches
-                        : base.children
+                    cachedBranches = hasKey(base.rule, "resolve")
+                        ? base.rule.resolve().branches
+                        : base.rule
                 }
                 return cachedBranches
             },
-            description: isArray(base.children)
-                ? base.children.length === 0
+            description: isArray(base.rule)
+                ? base.rule.length === 0
                     ? "never"
-                    : base.children
-                          .map((branch) => branch.toString())
-                          .join(" or ")
-                : base.children.alias,
+                    : base.rule.map((branch) => branch.toString()).join(" or ")
+                : base.rule.alias,
             // discriminate is cached so we don't have to worry about this running multiple times
             get discriminant() {
                 return discriminate(this.branches)
