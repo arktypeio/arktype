@@ -8,7 +8,7 @@ import type {
 import type { Scanner } from "../shift/scanner.js"
 import type {
     StringifiablePrefixOperator,
-    ValidLiteral,
+    LimitLiteral,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnclosedGroupMessage,
@@ -26,7 +26,7 @@ export type StaticState = {
 }
 
 type StaticOpenLeftBound = {
-    limit: ValidLiteral
+    limit: LimitLiteral
     comparator: MinComparator
 }
 
@@ -126,7 +126,7 @@ export namespace state {
 
     export type reduceLeftBound<
         s extends StaticState,
-        limit extends ValidLiteral,
+        limit extends LimitLiteral,
         comparator extends Comparator,
         unscanned extends string
     > = comparator extends "<" | "<="
@@ -163,10 +163,10 @@ export namespace state {
 
     export type reduceRange<
         s extends StaticState,
-        minLimit extends ValidLiteral,
+        minLimit extends LimitLiteral,
         minComparator extends MinComparator,
         maxComparator extends MaxComparator,
-        maxLimit extends ValidLiteral,
+        maxLimit extends LimitLiteral,
         unscanned extends string
     > = state.from<{
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
@@ -185,7 +185,7 @@ export namespace state {
     export type reduceSingleBound<
         s extends StaticState,
         comparator extends Comparator,
-        limit extends ValidLiteral,
+        limit extends LimitLiteral,
         unscanned extends string
     > = state.from<{
         root: [s["root"], comparator, limit]

@@ -19,7 +19,7 @@ import { divisorNode } from "./primitive/divisor.js"
 // import { morphNode } from "./primitive/morph.js"
 import type { NarrowNode } from "./primitive/narrow.js"
 import { narrowNode } from "./primitive/narrow.js"
-import type { RangeNode } from "./primitive/range.js"
+import type { BoundNode } from "./primitive/range.js"
 import { rangeNode } from "./primitive/range.js"
 import type { RegexNode } from "./primitive/regex.js"
 import { regexNode } from "./primitive/regex.js"
@@ -30,7 +30,7 @@ export type NodeKinds = {
     domain: DomainNode
     class: ClassNode
     value: ValueNode
-    range: RangeNode
+    range: BoundNode
     divisor: DivisorNode
     regex: RegexNode
     props: PropsNode

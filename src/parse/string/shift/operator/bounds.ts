@@ -11,7 +11,7 @@ import type {
     DynamicState,
     DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
-import type { ValidLiteral } from "../../reduce/shared.js"
+import type { LimitLiteral } from "../../reduce/shared.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import { parseOperand } from "../operand/operand.js"
@@ -41,14 +41,8 @@ export type parseBound<
           infer comparator extends Comparator,
           infer nextUnscanned
       >
-        ? s["root"] extends ValidLiteral
+        ? s["root"] extends LimitLiteral
             ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
-            : //If the left bound is a literal we want to give an error
-            // otherwise the resulting error message becomes misleading
-            s["root"] extends `'${string}'` | `"${string}"`
-            ? state.error<
-                  writeInvalidLimitMessage<comparator, s["root"], "left">
-              >
             : parseRightBound<
                   state.scanTo<s, nextUnscanned>,
                   comparator,
@@ -145,7 +139,7 @@ export type parseRightBound<
     $,
     args
 > = parseOperand<s, $, args> extends infer nextState extends StaticState
-    ? nextState["root"] extends ValidLiteral
+    ? nextState["root"] extends LimitLiteral
         ? s["branches"]["range"] extends {}
             ? comparator extends MaxComparator
                 ? state.reduceRange<

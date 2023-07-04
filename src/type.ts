@@ -39,7 +39,6 @@ import type {
 import type { Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
 
-// TODO: check shallow string inference with 5.2+
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.

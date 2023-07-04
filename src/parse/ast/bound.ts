@@ -4,7 +4,7 @@ import type {
     InvertedComparators,
     NumericallyBoundableData
 } from "../../nodes/primitive/range.js"
-import type { ValidLiteral } from "../string/reduce/shared.js"
+import type { LimitLiteral } from "../string/reduce/shared.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {
     BoundKind,
@@ -19,7 +19,7 @@ export type validateRange<
     r,
     $,
     args
-> = l extends ValidLiteral
+> = l extends LimitLiteral
     ? validateBound<
           r,
           InvertedComparators[comparator],
@@ -70,7 +70,7 @@ type writeDoubleRightBoundMessage<root extends string> =
 export const writeUnboundableMessage = <root extends string>(
     root: root
 ): writeUnboundableMessage<root> =>
-    `Bounded expression ${root} must be a number, string or Array`
+    `Bounded expression ${root} must be a number, string, Array, or Date`
 
 type writeUnboundableMessage<root extends string> =
-    `Bounded expression ${root} must be a number, string or Array`
+    `Bounded expression ${root} must be a number, string, Array, or Date`

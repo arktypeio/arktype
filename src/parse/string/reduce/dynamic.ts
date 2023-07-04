@@ -1,7 +1,7 @@
 import type { requireKeys } from "@arktype/utils"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/utils"
 import type { TypeNode } from "../../../nodes/composite/type.js"
-import type { Comparator, RangeNode } from "../../../nodes/primitive/range.js"
+import type { BoundNode, Comparator } from "../../../nodes/primitive/range.js"
 import {
     invertedComparators,
     minComparators,
@@ -9,7 +9,7 @@ import {
 } from "../../../nodes/primitive/range.js"
 import type { ParseContext } from "../../../scope.js"
 import { Scanner } from "../shift/scanner.js"
-import type { StringifiablePrefixOperator, ValidLiteral } from "./shared.js"
+import type { LimitLiteral, StringifiablePrefixOperator } from "./shared.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -20,7 +20,7 @@ import {
 
 type BranchState = {
     prefixes: StringifiablePrefixOperator[]
-    range?: RangeNode
+    range?: BoundNode
     intersection?: TypeNode
     union?: TypeNode
 }
@@ -79,10 +79,11 @@ export class DynamicState {
         if (this.branches.range) {
             const min = this.branches.range.min!
             return this.error(
+                // TODO: fix casts
                 writeMultipleLeftBoundsMessage(
-                    `${min.limit}` as ValidLiteral,
+                    `${min.limit}` as LimitLiteral,
                     min.comparator,
-                    `${limit}` as ValidLiteral,
+                    `${limit}` as LimitLiteral,
                     invertedComparator
                 )
             )
@@ -149,7 +150,7 @@ export class DynamicState {
             const min = this.branches.range.min!
             return this.error(
                 writeOpenRangeMessage(
-                    `${min.limit}` as ValidLiteral,
+                    `${min.limit}` as LimitLiteral,
                     min.comparator
                 )
             )

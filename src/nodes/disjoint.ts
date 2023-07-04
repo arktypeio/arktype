@@ -12,7 +12,7 @@ import type { TypeNode } from "./composite/type.js"
 import type { BasisNode } from "./primitive/basis/basis.js"
 import type { ClassNode } from "./primitive/basis/class.js"
 import type { ValueNode } from "./primitive/basis/value.js"
-import type { RangeNode } from "./primitive/range.js"
+import type { BoundNode } from "./primitive/range.js"
 
 type DisjointKinds = {
     domain?: {
@@ -24,8 +24,8 @@ type DisjointKinds = {
         r: ValueNode
     }
     range?: {
-        l: RangeNode
-        r: RangeNode
+        l: BoundNode
+        r: BoundNode
     }
     class?: {
         l: ClassNode
