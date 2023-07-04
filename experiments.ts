@@ -1,6 +1,6 @@
 // @ts-ignore
 import { format } from "prettier"
-import { scope } from "./src/main.js"
+import { scope, type } from "./src/main.js"
 
 const $ = scope({
     user: {
@@ -10,11 +10,8 @@ const $ = scope({
 })
 
 const node = (...args: any[]) => args
-const type = node
 
-const t = node({
-    basis: "string"
-})
+type({ a: "string" })
 
 const types = $.export()
 

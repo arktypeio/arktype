@@ -27,9 +27,9 @@ import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
 import { createNodeOfKind, precedenceByKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
-import { defineNodeKind } from "../node.js"
+import { defineNode } from "../node.js"
 import type {
-    BaseBasis,
+    BasisNode,
     BasisInput,
     BasisNode,
     inferBasis
@@ -42,14 +42,14 @@ import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { Range } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
-import type { BaseComposite } from "./composite.js"
+import type { CompositeNode } from "./composite.js"
 import type { inferPropsInput } from "./inferProps.js"
 import type { PropsInput } from "./props.js"
 import type { TypeNode } from "./type.js"
 import { builtins } from "./type.js"
 
 export interface PredicateNode
-    extends BaseComposite<"predicate", PredicateChildren, PredicateInput> {
+    extends CompositeNode<"predicate", PredicateChildren, PredicateInput> {
     basis: BasisNode | null
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
@@ -61,7 +61,7 @@ export interface PredicateNode
     ): PredicateNode
 }
 
-export const predicateNode = defineNodeKind<PredicateNode>(
+export const predicateNode = defineNode<PredicateNode>(
     {
         kind: "predicate",
         parse: (input) => {

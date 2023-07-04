@@ -13,7 +13,7 @@ import type {
 } from "../../../dev/utils/src/main.js"
 import { Disjoint } from "../disjoint.js"
 import type { SerializedPath } from "../disjoint.js"
-import type { BaseBasis } from "../primitive/basis/basis.js"
+import type { BasisNode } from "../primitive/basis/basis.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import type { PredicateNode } from "./predicate.js"
 
@@ -105,8 +105,8 @@ export const discriminate = (
                 let lSerialized: string
                 let rSerialized: string
                 if (kind === "domain") {
-                    lSerialized = (disjoint.l as BaseBasis).domain
-                    rSerialized = (disjoint.r as BaseBasis).domain
+                    lSerialized = (disjoint.l as BasisNode).domain
+                    rSerialized = (disjoint.r as BasisNode).domain
                 } else if (kind === "value") {
                     lSerialized = (disjoint.l as ValueNode).serialized
                     rSerialized = (disjoint.r as ValueNode).serialized

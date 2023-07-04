@@ -1,8 +1,8 @@
 import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
 import { compileCheck, InputParameterName } from "../../compile/compile.js"
 import { Disjoint } from "../disjoint.js"
-import { defineNodeKind } from "../node.js"
-import type { Constraint, PrimitiveNode } from "./primitive.js"
+import { defineNode } from "../node.js"
+import type { PrimitiveNode, PrimitiveNodeConfig } from "./primitive.js"
 
 export const minComparators = {
     ">": true,
@@ -47,7 +47,7 @@ export type InvertedComparators = typeof invertedComparators
 export type SizedData = string | number | readonly unknown[] | Date
 
 export type RangeConstraint<comparator extends Comparator = Comparator> =
-    Constraint<"range", Bound<comparator>, {}>
+    PrimitiveNodeConfig<"range", Bound<comparator>, {}>
 
 export type Bound<comparator extends Comparator = Comparator> = {
     readonly limit: number
@@ -70,7 +70,7 @@ export interface RangeNode extends PrimitiveNode<Range> {
     max: Bound<MaxComparator> | undefined
 }
 
-export const rangeNode = defineNodeKind<RangeNode>(
+export const rangeNode = defineNode<RangeNode>(
     {
         kind: "range",
         parse: (input) => input,

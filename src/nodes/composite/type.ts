@@ -10,12 +10,12 @@ import { hasArkKind } from "../../compile/registry.js"
 import type { inferIntersection } from "../../parse/ast/intersections.js"
 import type { inferred } from "../../parse/definition.js"
 import { Disjoint } from "../disjoint.js"
-import { alphabetizeByCondition, defineNodeKind } from "../node.js"
+import { alphabetizeByCondition, defineNode } from "../node.js"
 import type { BasisInput } from "../primitive/basis/basis.js"
 import { arrayClassNode } from "../primitive/basis/class.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
-import type { BaseComposite } from "./composite.js"
+import type { CompositeNode } from "./composite.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
@@ -29,7 +29,7 @@ import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
 export interface TypeNode<t = unknown>
-    extends BaseComposite<"type", PredicateNode[], TypeInput> {
+    extends CompositeNode<"type", PredicateNode[], TypeInput> {
     [inferred]: t
     branches: PredicateNode[]
     discriminant: Discriminant | null
@@ -50,7 +50,7 @@ export interface TypeNode<t = unknown>
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }
 
-export const typeNode = defineNodeKind<TypeNode>(
+export const typeNode = defineNode<TypeNode>(
     {
         kind: "type",
         parse: (input) => {

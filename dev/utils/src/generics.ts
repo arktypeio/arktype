@@ -42,7 +42,7 @@ export type nominal<t, id extends string> = t & {
     readonly [id]: id
 }
 
-export type extend<t, u extends t> = u
+export type extend<t, u extends { [k in keyof t]: t[k] }> = u
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type subsume<t extends u, u> = u

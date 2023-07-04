@@ -1,29 +1,28 @@
 import { InputParameterName } from "../../compile/compile.js"
-import {
-    type Constraint,
-    definePrimitiveNode,
-    type PrimitiveNode
-} from "./primitive.js"
+import { defineNode } from "../node.js"
+import type { definePrimitive, PrimitiveNode } from "./primitive.js"
 
-export type DivisorConstraint = Constraint<"divisor", number, {}>
-
-export interface DivisorNode extends PrimitiveNode<[DivisorConstraint]> {
+export type DivisorConfig = definePrimitive<{
+    kind: "divisor"
     rule: number
-}
+    meta: {}
+    intersection: number
+}>
 
-export const divisorNode = definePrimitiveNode<DivisorNode>(
+export interface DivisorNode extends PrimitiveNode<DivisorConfig> {}
+
+// intersect: (l, r) =>
+//     Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
+
+export const divisorNode = defineNode<DivisorNode>(
     {
         kind: "divisor",
-        parse: (input) => input,
-        compileRule: (rule) => `${InputParameterName} % ${rule} === 0`,
-        intersect: (l, r) =>
-            Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
+        compile: (rule) => `${InputParameterName} % ${rule} === 0`
     },
     (base) => {
-        const rule = base.children[0].rule
         return {
-            rule,
-            description: rule === 1 ? "an integer" : `a multiple of ${rule}`
+            description:
+                base.rule === 1 ? "an integer" : `a multiple of ${base.rule}`
         }
     }
 )

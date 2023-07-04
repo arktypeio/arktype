@@ -2,9 +2,9 @@ import type { Domain } from "../../../../dev/utils/src/main.js"
 import { cached, getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
 import { InputParameterName } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
-import { type Constraint, definePrimitiveNode } from "../primitive.js"
-import type { BaseBasis } from "./basis.js"
-import { intersectBases } from "./basis.js"
+import { defineNode } from "../../node.js"
+import type { definePrimitive } from "../primitive.js"
+import type { BasisNode } from "./basis.js"
 
 export type NonEnumerableDomain = Exclude<
     Domain,
@@ -23,27 +23,30 @@ export const domainDescriptions = {
     undefined: "undefined"
 } as const satisfies Record<Domain, string>
 
-export type DomainConstraint = Constraint<"domain", NonEnumerableDomain, {}>
+export type DomainConfig = definePrimitive<{
+    kind: "domain"
+    rule: NonEnumerableDomain
+    meta: {}
+    intersection: NonEnumerableDomain
+}>
 
-export interface DomainNode extends BaseBasis<DomainConstraint> {}
+export interface DomainNode extends BasisNode<DomainConfig> {}
 
-export const domainNode = definePrimitiveNode<DomainNode>(
+export const domainNode = defineNode<DomainNode>(
     {
         kind: "domain",
-        parse: (input) => input,
-        compileRule: (rule) =>
+        compile: (rule) =>
             rule === "object"
                 ? `((typeof ${InputParameterName} === "object" && ${InputParameterName} !== null) || typeof ${InputParameterName} === "function")`
-                : `typeof ${InputParameterName} === "${rule}"`,
-        intersect: intersectBases
+                : `typeof ${InputParameterName} === "${rule}"`
     },
     (base) => {
-        const literalKeys = getBaseDomainKeys(base.children)
+        const literalKeys = getBaseDomainKeys(base.rule)
         return {
-            domain: base.children,
+            domain: base.rule,
             literalKeys,
             keyof: cached(() => node.literal(...literalKeys)),
-            description: domainDescriptions[base.children]
+            description: domainDescriptions[base.rule]
         }
     }
 )

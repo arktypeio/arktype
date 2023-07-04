@@ -9,38 +9,38 @@ import {
     InputParameterName
 } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
-import { type Constraint, definePrimitiveNode } from "../primitive.js"
-import type { BaseBasis } from "./basis.js"
-import { intersectBases } from "./basis.js"
+import { defineNode } from "../../node.js"
+import type { definePrimitive } from "../primitive.js"
+import type { BasisNode } from "./basis.js"
 
-export type ValueConstraint = Constraint<"value", unknown, {}>
+export type ValueConfig = definePrimitive<{
+    kind: "value"
+    rule: unknown
+    meta: {}
+    intersection: unknown
+}>
 
-export interface ValueNode extends BaseBasis<ValueConstraint> {
+export interface ValueNode extends BasisNode<ValueConfig> {
     serialized: string
 }
 
-export const valueNode = definePrimitiveNode<ValueNode>(
+export const valueNode = defineNode<ValueNode>(
     {
         kind: "value",
-        parse: (input) => input,
-        intersect: intersectBases,
-        compileRule: (rule) =>
+        compile: (rule) =>
             `${InputParameterName} === ${compileSerializedValue(rule)}`
     },
     (base) => {
         const literalKeys =
-            base.children === null || base.children === undefined
+            base.rule === null || base.rule === undefined
                 ? []
-                : [
-                      ...prototypeKeysOf(base.children),
-                      ...Object.keys(base.children)
-                  ]
+                : [...prototypeKeysOf(base.rule), ...Object.keys(base.rule)]
         return {
-            serialized: compileSerializedValue(base.children),
-            domain: domainOf(base.children),
+            serialized: compileSerializedValue(base.rule),
+            domain: domainOf(base.rule),
             literalKeys,
             keyof: cached(() => node.literal(...literalKeys)),
-            description: stringify(base.children)
+            description: stringify(base.rule)
         }
     }
 )

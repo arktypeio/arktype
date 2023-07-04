@@ -1,34 +1,31 @@
-import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/main.js"
 import { InputParameterName } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/tuple.js"
-import {
-    type Constraint,
-    definePrimitiveNode,
-    type PrimitiveNode
-} from "./primitive.js"
+import { defineNode } from "../node.js"
+import type { definePrimitive, PrimitiveNode } from "./primitive.js"
 
-export type NarrowConstraint = Constraint<"narrow", Narrow, {}>
+export type NarrowConfig = definePrimitive<{
+    kind: "narrow"
+    rule: Narrow
+    meta: {}
+    intersection: readonly Narrow[]
+}>
 
-export interface NarrowNode
-    extends PrimitiveNode<readonly NarrowConstraint[]> {}
+export interface NarrowNode extends PrimitiveNode<NarrowConfig> {}
 
-export const narrowNode = definePrimitiveNode<NarrowNode>(
+// intersect: (l, r) =>
+//     // as long as the narrows in l and r are individually safe to check
+//     // in the order they're specified, checking them in the order
+//     // resulting from this intersection should also be safe.
+//     intersectUniqueLists(l.children, r.children)
+
+// TODO: allow changed order to be the same type
+export const narrowNode = defineNode<NarrowNode>(
     {
         kind: "narrow",
-        // TODO: allow changed order to be the same type
-        parse: listFrom,
-        compileRule: (rule) =>
-            `${registry().register(rule)}(${InputParameterName})`,
-        intersect: (l, r) =>
-            // as long as the narrows in l and r are individually safe to check
-            // in the order they're specified, checking them in the order
-            // resulting from this intersection should also be safe.
-            intersectUniqueLists(l.children, r.children)
+        compile: (rule) => `${registry().register(rule)}(${InputParameterName})`
     },
     (base) => ({
-        description: `valid according to ${base.children
-            .map((constraint) => constraint.rule.name)
-            .join(", ")}`
+        description: `valid according to ${base.rule.name}`
     })
 )

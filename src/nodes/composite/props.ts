@@ -10,8 +10,8 @@ import { hasArkKind } from "../../compile/registry.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
-import { defineNodeKind } from "../node.js"
-import type { BaseComposite } from "./composite.js"
+import { defineNode } from "../node.js"
+import type { CompositeNode } from "./composite.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import {
     compileArray,
@@ -30,7 +30,7 @@ export type NodeEntry = NamedPropRule | IndexedPropRule
 export type PropsEntries = readonly NodeEntry[]
 
 export interface PropsNode
-    extends BaseComposite<"props", PropsEntries, PropsInput> {
+    extends CompositeNode<"props", PropsEntries, PropsInput> {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>
@@ -47,7 +47,7 @@ export const isParsedPropsRule = (
 ): input is PropsEntries =>
     isArray(input) && (input.length === 0 || hasArkKind(input[0].value, "node"))
 
-export const propsNode = defineNodeKind<PropsNode>(
+export const propsNode = defineNode<PropsNode>(
     {
         kind: "props",
         parse: (input) => {

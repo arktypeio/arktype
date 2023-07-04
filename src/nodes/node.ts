@@ -1,4 +1,4 @@
-import type { evaluate } from "../../dev/utils/src/main.js"
+import type { Dict, evaluate } from "../../dev/utils/src/main.js"
 import { CompiledFunction } from "../../dev/utils/src/main.js"
 import type { CompilationContext } from "../compile/compile.js"
 import {
@@ -9,21 +9,18 @@ import { arkKind } from "../compile/registry.js"
 import type { inferred } from "../parse/definition.js"
 import type { ParseContext } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
-import type { Node, NodeKind, NodeKinds } from "./kinds.js"
-import type { BaseBasisNode, BasisKind } from "./primitive/basis/basis.js"
-import type { Constraint } from "./primitive/primitive.js"
+import type { NodeKind, NodeKinds } from "./kinds.js"
+import type { BasisKind } from "./primitive/basis/basis.js"
+
+export interface BaseNodeConfig {
+    kind: NodeKind
+    rule: unknown
+    meta: Dict
+}
 
 export interface BaseNodeImplementation<node extends BaseNode> {
     kind: node["kind"]
-    /** Should convert any supported input formats to rule,
-     *  then ensure rule is normalized such that equivalent
-     *  inputs will compile to the same string. */
-    parse: (input: node["input"]) => node["children"]
-    compile: (children: node["children"], ctx: CompilationContext) => string
-    intersect: (
-        l: Parameters<node["intersect"]>[0],
-        r: Parameters<node["intersect"]>[0]
-    ) => ReturnType<node["intersect"]>
+    compile: (rule: node["rule"], ctx: CompilationContext) => string
 }
 
 export type NodeExtensions<node extends BaseNode> = (
@@ -39,40 +36,29 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 > &
     ThisType<node>
 
-export type NodeChild = Constraint | Node
-
-export type NodeChildren = readonly NodeChild[]
-
-interface PreconstructedBase<kind extends NodeKind, parsableInput> {
+interface PreconstructedBase<config extends BaseNodeConfig> {
     readonly [arkKind]: "node"
-    readonly kind: kind
-    readonly input: this["children"] | parsableInput
-    readonly children: NodeChildren
+    readonly kind: config["kind"]
+    readonly input: config["rule"] | config["input"]
+    readonly rule: config["rule"]
     readonly source: string
     readonly condition: string
     alias: string
     compile(ctx: CompilationContext): string
-    intersect(other: intersectsWith<kind> | this): this["children"] | Disjoint
     // TODO: can this work as is with late resolution?
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
     isBasis(): this is NodeKinds[BasisKind]
 }
 
-type intersectsWith<kind extends NodeKind> = kind extends BasisKind
-    ? BaseBasisNode
-    : never
-
-type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any, any>>
+type BuiltinBaseKey = evaluate<keyof PreconstructedBase<BaseNodeConfig>>
 
 type NodeExtensionProps = {
     description: string
 }
 
-export type BaseNode<
-    kind extends NodeKind = NodeKind,
-    parsableInput = unknown
-> = PreconstructedBase<kind, parsableInput> & NodeExtensionProps
+export type BaseNode<config extends BaseNodeConfig = BaseNodeConfig> =
+    PreconstructedBase<config> & NodeExtensionProps
 
 export type NodeConstructor<node extends BaseNode> = (
     input: node["input"],
@@ -85,7 +71,7 @@ export const alphabetizeByCondition = <nodes extends BaseNode[]>(
 
 const intersectionCache: Record<string, BaseNode | Disjoint> = {}
 
-export const defineNodeKind = <node extends BaseNode<any>>(
+export const defineNode = <node extends BaseNode<any>>(
     def: BaseNodeImplementation<node>,
     extensions: NodeExtensions<node>
 ): NodeConstructor<node> => {
@@ -109,7 +95,7 @@ export const defineNodeKind = <node extends BaseNode<any>>(
             children,
             createCompilationContext("true", "false")
         )
-        const base: PreconstructedBase<NodeKind, unknown> = {
+        const base: PreconstructedBase<BaseNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
             input,

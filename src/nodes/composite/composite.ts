@@ -1,26 +1,32 @@
-import type { CompositeNodeKind, Node } from "../kinds.js"
-import { type BaseNode, type BaseNodeImplementation } from "../node.js"
+import type { Disjoint } from "../disjoint.js"
+import type {
+    BaseNode,
+    BaseNodeConfig,
+    BaseNodeImplementation
+} from "../node.js"
 import type { TypeNode } from "./type.js"
 
-export type CompositeNodeConfig = {
-    kind: CompositeNodeKind
-    children: readonly Node[]
-}
-export interface CompositeNodeImplementation<node extends UnknownComposite>
+export interface CompositeNodeImplementation<node extends CompositeNode>
     extends BaseNodeImplementation<node> {
     getReferences: (children: node["children"]) => TypeNode[]
+    /** Should convert any supported input formats to rule,
+     *  then ensure rule is normalized such that equivalent
+     *  inputs will compile to the same string. */
+    parse: (input: node["input"]) => node["rule"]
+    intersect: (
+        l: Parameters<node["intersect"]>[0],
+        r: Parameters<node["intersect"]>[0]
+    ) => ReturnType<node["intersect"]>
 }
 
-export interface BaseComposite<
-    kind extends CompositeNodeKind,
-    children extends readonly Node[],
-    inputFormats
-> extends BaseNode<kind, inputFormats> {
-    readonly children: children
+export interface CompositeNodeConfig extends BaseNodeConfig {
+    input: unknown
+    rule: this["input"]
 }
 
-type UnknownComposite = BaseComposite<
-    CompositeNodeKind,
-    readonly Node[],
-    unknown
->
+export interface CompositeNode<
+    config extends CompositeNodeConfig = CompositeNodeConfig
+> extends BaseNode<config> {
+    readonly children: BaseNode[]
+    intersect(other: this): this["children"] | Disjoint
+}

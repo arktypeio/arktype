@@ -1,10 +1,6 @@
-import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/main.js"
 import { InputParameterName } from "../../compile/compile.js"
-import {
-    type Constraint,
-    definePrimitiveNode,
-    type PrimitiveNode
-} from "./primitive.js"
+import { defineNode } from "../node.js"
+import type { definePrimitive, PrimitiveNode } from "./primitive.js"
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>
@@ -12,22 +8,24 @@ export const serializeRegex = (regex: RegExp) =>
 
 export type SerializedRegexLiteral = `/${string}/${string}`
 
-export type RegexConstraint = Constraint<"regex", SerializedRegexLiteral, {}>
-
-export interface RegexNode extends PrimitiveNode<readonly RegexConstraint[]> {}
-
 export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
     literal.slice(1, literal.lastIndexOf("/"))
 
-export const regexNode = definePrimitiveNode<RegexNode>(
+export type RegexNodeConfig = definePrimitive<{
+    kind: "regex"
+    rule: SerializedRegexLiteral
+    intersection: readonly SerializedRegexLiteral[]
+    meta: {}
+}>
+
+export interface RegexNode extends PrimitiveNode<RegexNodeConfig> {}
+
+export const regexNode = defineNode<RegexNode>(
     {
         kind: "regex",
-        parse: (input) => listFrom(input).sort(),
-        compileRule: (rule) => `${rule}.test(${InputParameterName})`,
-        intersect: (l, r): RegexNode =>
-            intersectUniqueLists(l.children, r.children)
+        compile: (rule) => `${rule}.test(${InputParameterName})`
     },
     (base) => ({
-        description: `matched by ${base.children.join(", ")}`
+        description: `matched by ${base.rule}`
     })
 )
