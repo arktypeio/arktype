@@ -1,4 +1,4 @@
-import type { conform, exact, List } from "@arktype/utils"
+import type { conform, exact, List, listable } from "@arktype/utils"
 import { cached, hasKey, isArray } from "@arktype/utils"
 import type { CompilationContext } from "../../compile/compile.js"
 import {
@@ -61,9 +61,6 @@ export const typeNode = defineComposite<TypeNode>(
     {
         kind: "type",
         parse: (input) => {
-            if (hasKey(input, "resolve")) {
-                return input
-            }
             if (!isParsedTypeRule(input)) {
                 input = isArray(input)
                     ? input.map((branch) => predicateNode(branch))
@@ -425,7 +422,7 @@ export type inferTypeInput<input extends TypeInput> =
         ? t
         : never
 
-export type TypeInput = PredicateInput | readonly PredicateInput[]
+export type TypeInput = listable<PredicateInput>
 
 export type validatedTypeNodeInput<
     input extends List<PredicateInput>,

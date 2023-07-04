@@ -10,11 +10,11 @@ import type { TypeNode } from "./type.js"
 
 export interface CompositeNodeImplementation<node extends CompositeNode>
     extends BaseNodeImplementation<node> {
-    getReferences: (children: node["rule"]) => TypeNode[]
     /** Should convert any supported input formats to rule,
      *  then ensure rule is normalized such that equivalent
      *  inputs will compile to the same string. */
     parse: (input: node["input"]) => node["rule"]
+    getReferences: (rule: node["rule"]) => TypeNode[]
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
@@ -33,12 +33,11 @@ const intersectionCache: Record<string, BaseNode | Disjoint> = {}
 export const defineComposite = <node extends CompositeNode>(
     def: CompositeNodeImplementation<node>,
     extension: NodeExtensions<node>
-) =>
-    defineNode(def, (base) => {
-        const instance = extension(base)
-        return Object.assign(instance, {
+) => {
+    const createNode = defineNode(def, (base) => {
+        const instance = Object.assign(extension(base), {
             references: def.getReferences(base.rule),
-            intersect: (other) => {
+            intersect: (other: node) => {
                 if (instance === other) {
                     return instance
                 }
@@ -46,10 +45,7 @@ export const defineComposite = <node extends CompositeNode>(
                 if (intersectionCache[cacheKey]) {
                     return intersectionCache[cacheKey]
                 }
-                const result: BaseNode | Disjoint = def.intersect(
-                    instance,
-                    other
-                )
+                const result = def.intersect(instance, other) as node | Disjoint
                 intersectionCache[cacheKey] = result
                 intersectionCache[`${def.kind}${other.source}${base.source}`] =
                     // also cache the result with other's source as the key.
@@ -58,12 +54,16 @@ export const defineComposite = <node extends CompositeNode>(
                     result instanceof Disjoint ? result.invert() : result
                 return result
             }
-        })
+        }) as node
+        return instance
     })
+    return (input: node["input"]) => createNode(def.parse(input))
+}
 
 export interface CompositeNode<
     config extends CompositeNodeConfig = CompositeNodeConfig
 > extends BaseNode<config> {
+    input: config["input"]
     references: TypeNode[]
     intersect(other: this): this["rule"] | Disjoint
 }

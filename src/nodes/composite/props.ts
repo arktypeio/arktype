@@ -219,10 +219,10 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
 
 const parsePropsInput = (input: PropsInput) => {
     const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
-    const children: NodeEntry[] = []
+    const entries: NodeEntry[] = []
     for (const name in namedInput) {
         const prop = namedInput[name]
-        rule.push({
+        entries.push({
             key: {
                 name,
                 prerequisite: prop.prerequisite ?? false,
@@ -234,12 +234,12 @@ const parsePropsInput = (input: PropsInput) => {
         })
     }
     for (const prop of indexedInput) {
-        rule.push({
+        entries.push({
             key: typeNode(prop.key),
             value: typeNode(prop.value)
         })
     }
-    return rule
+    return entries
 }
 
 const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
@@ -252,10 +252,10 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
     return JSON.stringify(fromEntries(entries))
 }
 
-const isIndexed = (children: NodeEntry): rule is IndexedPropRule =>
-    hasArkKind(rule.key, "node")
+const isIndexed = (entry: NodeEntry): entry is IndexedPropRule =>
+    hasArkKind(entry.key, "node")
 
-const isNamed = (children: NodeEntry): rule is NamedPropRule => !isIndexed(rule)
+const isNamed = (entry: NodeEntry): entry is NamedPropRule => !isIndexed(entry)
 
 const kindPrecedence = (key: KeyRule) =>
     hasArkKind(key, "node") ? 2 : key.prerequisite ? -1 : key.optional ? 1 : 0

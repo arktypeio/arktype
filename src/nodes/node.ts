@@ -38,15 +38,12 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 interface PreconstructedBase<config extends BaseNodeConfig> {
     readonly [arkKind]: "node"
     readonly kind: config["kind"]
-    readonly input: "input" extends keyof config
-        ? config["input"]
-        : config["rule"]
     readonly rule: config["rule"]
     readonly source: string
     readonly condition: string
     alias: string
     compile(ctx: CompilationContext): string
-    // TODO: can this work as is with late resolution?
+    // TODO: test with cyclic nodes
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
     isBasis(): this is NodeKinds[BasisKind]
@@ -62,7 +59,7 @@ export type BaseNode<config extends BaseNodeConfig = BaseNodeConfig> =
     PreconstructedBase<config> & NodeExtensionProps
 
 export type NodeConstructor<node extends BaseNode> = (
-    input: node["input"],
+    input: node["rule"],
     ctx: ParseContext
 ) => node
 
@@ -80,8 +77,7 @@ export const defineNode = <node extends BaseNode<any>>(
     let anonymousSuffix = 1
     const isBasis =
         def.kind === "domain" || def.kind === "class" || def.kind === "value"
-    return (input) => {
-        const rule = def.parse(input)
+    return (rule) => {
         const source = def.compile(
             rule,
             createCompilationContext("out", "problems")
@@ -96,7 +92,6 @@ export const defineNode = <node extends BaseNode<any>>(
         const base: PreconstructedBase<BaseNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
-            input,
             alias: `${def.kind}${anonymousSuffix++}`,
             hasKind: (kind) => kind === def.kind,
             isBasis: () => isBasis,
