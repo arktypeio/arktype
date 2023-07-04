@@ -3,9 +3,9 @@ import type { state, StaticState } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import { Scanner } from "../scanner.js"
 import type {
-    EndEnclosingChar,
-    QuoteEnclosingChar,
-    StartEnclosingChar
+    EnclosingEndToken,
+    EnclosingQuote,
+    EnclosingStartToken
 } from "./enclosed.js"
 import { enclosingChar, parseEnclosed } from "./enclosed.js"
 import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
@@ -21,7 +21,7 @@ export const parseOperand = (s: DynamicState): void =>
         ? parseOperand(s.shiftedByOne())
         : s.scanner.lookahead === "d"
         ? s.shiftedByOne().scanner.lookaheadIsIn(enclosingChar)
-            ? parseEnclosed(s, `d${s.scanner.shift()}` as StartEnclosingChar)
+            ? parseEnclosed(s, `d${s.scanner.shift()}` as EnclosingStartToken)
             : parseUnenclosed(s)
         : parseUnenclosed(s)
 
@@ -32,13 +32,13 @@ export type parseOperand<
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
     ? lookahead extends "("
         ? state.reduceGroupOpen<s, unscanned>
-        : lookahead extends EndEnclosingChar
+        : lookahead extends EnclosingEndToken
         ? parseEnclosed<s, lookahead, unscanned>
         : lookahead extends Scanner.WhiteSpaceToken
         ? parseOperand<state.scanTo<s, unscanned>, $, args>
         : lookahead extends "d"
         ? unscanned extends Scanner.shift<
-              infer enclosing extends QuoteEnclosingChar,
+              infer enclosing extends EnclosingQuote,
               infer nextUnscanned
           >
             ? parseEnclosed<s, `d${enclosing}`, nextUnscanned>

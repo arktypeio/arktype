@@ -1,65 +1,49 @@
-import { isDate } from "node:util/types"
 import { throwParseError } from "../../../../../dev/utils/src/errors.js"
-import type { RangeNode } from "../../../../nodes/primitive/range.js"
-import { writeIncompatibleLimitMessage } from "../../../../nodes/primitive/range.js"
 
-export type DateLiteral<value extends string = string> =
-    | `d"${value}"`
-    | `d'${value}'`
+export type DateLiteral<source extends string = string> =
+    | `d"${source}"`
+    | `d'${source}'`
+
+export const isDateLiteral = (s: string): s is DateLiteral =>
+    s[0] === "d" && (s[1] === "'" || s[1] === '"') && s.at(-1) === s[1]
 
 export const isValidDate = (d: Date) => d.toString() !== "Invalid Date"
 
-export const hasDateEnclosing = (s: unknown): s is DateLiteral =>
-    /^d/.test(s as DateLiteral)
+export const extractDateLiteralSource = <literal extends DateLiteral>(
+    literal: literal
+) => literal.slice(2, -1) as extractDateLiteralSource<literal>
 
-export const extractDate = (s: string) => s.slice(2, -1)
+type extractDateLiteralSource<literal extends DateLiteral> =
+    literal extends DateLiteral<infer source> ? source : never
 
-export const writeInvalidDateMessage = <s extends string>(
-    s: s
-): writeInvalidDateMessage<s> => `new Date(${s}) resulted in an Invalid Date`
+export const writeInvalidDateMessage = <source extends string>(
+    source: source
+): writeInvalidDateMessage<source> =>
+    `'${source}' could not be parsed by the Date constructor`
 
-export type writeInvalidDateMessage<s extends string> =
-    `new Date(${s}) resulted in an Invalid Date`
+export type writeInvalidDateMessage<source extends string> =
+    `'${source}' could not be parsed by the Date constructor`
 
 export type DateInput = ConstructorParameters<typeof Date>[0]
 
 export const tryParseDate = <ErrorOnFail extends boolean | string>(
     token: string,
     errorOnFail?: ErrorOnFail
-) => parseDate(token, errorOnFail)
+) => (isDateLiteral(token) ? maybeParseDate(token, errorOnFail) : undefined)
 
-const parseDate = <ErrorOnFail extends boolean | string>(
-    token: string,
-    errorOnFail?: ErrorOnFail
-): ErrorOnFail extends true | string ? Date : Date | undefined => {
-    const date = new Date(extractDate(token))
+const maybeParseDate = <errorOnFail extends boolean | string>(
+    token: DateLiteral,
+    errorOnFail?: errorOnFail
+): Date | (errorOnFail extends true | string ? never : undefined) => {
+    const date = new Date(extractDateLiteralSource(token))
     if (isValidDate(date)) {
         return date
     }
-    return (
-        errorOnFail
-            ? throwParseError(
-                  errorOnFail === true
-                      ? writeInvalidDateMessage(token)
-                      : errorOnFail
-              )
-            : undefined
-    ) as any
-}
-
-export const assertNonMismatchLimits = (rangeNode: RangeNode) =>
-    rangeNode.rule.length === 1
-        ? isDate(rangeNode.rule[0].limit)
-            ? "date"
-            : "number"
-        : isDate(rangeNode.rule[0].limit) && isDate(rangeNode.rule[1].limit)
-        ? "date"
-        : typeof rangeNode.rule[0].limit === "number" &&
-          typeof rangeNode.rule[1].limit === "number"
-        ? "number"
-        : throwParseError(
-              writeIncompatibleLimitMessage(
-                  typeof rangeNode.rule[0],
-                  typeof rangeNode.rule[1]
-              )
+    return errorOnFail
+        ? throwParseError(
+              errorOnFail === true
+                  ? writeInvalidDateMessage(token)
+                  : errorOnFail
           )
+        : (undefined as never)
+}

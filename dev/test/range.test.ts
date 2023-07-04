@@ -1,7 +1,7 @@
 import { suite, test } from "mocha"
 import { node, type } from "../../src/main.js"
 import type { Range } from "../../src/nodes/primitive/range.js"
-import { writeIncompatibleLimitMessage } from "../../src/nodes/primitive/range.js"
+import { writeIncompatibleRangeMessage } from "../../src/nodes/primitive/range.js"
 import {
     writeDoubleRightBoundMessage,
     writeUnboundableMessage
@@ -298,7 +298,7 @@ suite("range", () => {
                         //@ts-expect-error
                         attest(() => type("d'2001/01/01'<number<2"))
                             .throws(
-                                writeIncompatibleLimitMessage("date", "number")
+                                writeIncompatibleRangeMessage("date", "number")
                             )
                             .types.errors(
                                 writeInvalidLimitMessage(
@@ -320,7 +320,7 @@ suite("range", () => {
                             type("0<Date<d'1999/9/8'")
                         )
                             .throws(
-                                writeIncompatibleLimitMessage("number", "date")
+                                writeIncompatibleRangeMessage("number", "date")
                             )
                             .types.errors(
                                 writeInvalidLimitMessage("<", "0", "left")
@@ -331,122 +331,69 @@ suite("range", () => {
         })
     })
 
-    suite("date range", () => {
-        suite("single", () => {
-            test(">", () => {
-                const t = type("Date>d'2001/5/5'")
-                attest(t.infer).typed as Date
-            })
-            test("<", () => {
-                const t = type("Date<d'2023/1/12'")
-                attest(t.infer).typed as Date
-                attest(t.condition).equals(
-                    expectedDateBoundsCondition({
+    suite("dates", () => {
+        test("single", () => {
+            const t = type("Date<d'2023/1/12'")
+            attest(t.infer).typed as Date
+            attest(t.condition).equals(
+                expectedDateBoundsCondition({
+                    comparator: "<",
+                    limit: new Date("2023/1/12")
+                })
+            )
+        })
+        test("equality", () => {
+            const t = type("Date==d'2020-1-1'")
+            attest(t.infer).typed as Date
+            attest(t.condition).equals(
+                expectedDateBoundsCondition({
+                    comparator: "==",
+                    limit: new Date("2020-1-1")
+                })
+            )
+            attest(t.allows(new Date("2020/01/01"))).equals(true)
+            attest(t.allows(new Date("2020/01/02"))).equals(false)
+        })
+        test("double", () => {
+            const t = type("d'2001/10/10'<Date<d'2005/10/10'")
+            attest(t.infer).typed as Date
+            attest(t.condition).equals(
+                expectedDateBoundsCondition(
+                    {
+                        comparator: ">",
+                        limit: new Date("2001/10/10")
+                    },
+                    {
                         comparator: "<",
-                        limit: new Date("2023/1/12")
-                    })
+                        limit: new Date("2005/10/10")
+                    }
                 )
-            })
-            test("<=", () => {
-                const t = type("Date<=d'2021/1/12'")
-                attest(t.infer).typed as Date
-                attest(t.condition).equals(
-                    expectedDateBoundsCondition({
-                        comparator: "<=",
-                        limit: new Date("2021/1/12")
-                    })
-                )
-                attest(t.allows(new Date("2021/1/1"))).equals(true)
-            })
-            test("==", () => {
-                const t = type("Date==d'2020-1-1'")
-                attest(t.infer).typed as Date
-                attest(t.condition).equals(
-                    expectedDateBoundsCondition({
-                        comparator: "==",
-                        limit: new Date("2020-1-1")
-                    })
-                )
-                attest(t.allows(new Date("2020/01/01"))).equals(true)
-                attest(t.allows(new Date("2020/01/02"))).equals(false)
-            })
+            )
+            attest(t.allows(new Date("2003/10/10"))).equals(true)
+            attest(t.allows(new Date("2001/10/10"))).equals(false)
+            attest(t.allows(new Date("2005/10/10"))).equals(false)
         })
-        suite("double", () => {
-            test("<,<", () => {
-                const t = type("d'2001/10/10'<Date<d'2005/10/10'")
-                attest(t.infer).typed as Date
-                attest(t.condition).equals(
-                    expectedDateBoundsCondition(
-                        {
-                            comparator: ">",
-                            limit: new Date("2001/10/10")
-                        },
-                        {
-                            comparator: "<",
-                            limit: new Date("2005/10/10")
-                        }
-                    )
-                )
-                attest(t.allows(new Date("2003/10/10"))).equals(true)
-                attest(t.allows(new Date("2001/10/10"))).equals(false)
-                attest(t.allows(new Date("2005/10/10"))).equals(false)
-            })
-            test("<=,<", () => {
-                const t = type("d'1990/10/10'<=Date<d'2006/10/10'")
-                attest(t.infer).typed as Date
-                attest(t.condition).equals(
-                    expectedDateBoundsCondition(
-                        {
-                            comparator: ">=",
-                            limit: new Date("1990/10/10")
-                        },
-                        {
-                            comparator: "<",
-                            limit: new Date("2006/10/10")
-                        }
-                    )
-                )
-                attest(t.allows(new Date("1990/10/10"))).equals(true)
-            })
-            test("<,<=", () => {
-                const t = type("d'2020/1/1'<Date<=d'2024/1/1'")
-                attest(t.infer).typed as Date
-                attest(t.condition).equals(
-                    expectedDateBoundsCondition(
-                        {
-                            comparator: ">",
-                            limit: new Date("2020/1/1")
-                        },
-                        {
-                            comparator: "<=",
-                            limit: new Date("2024/1/1")
-                        }
-                    )
-                )
-                attest(t.allows(new Date("2024/1/1"))).equals(true)
-            })
+        test("dynamic", () => {
+            const now = new Date()
+            const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
+            attest(t.infer).typed as Date
+            attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
+            attest(t.allows(now)).equals(true)
+            attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
         })
-        suite("errors", () => {
-            test("Date and Number", () => {
-                attest(() => type("Date>d'1990-01-01'&number>2")).throws(
-                    "Intersection of a Date and a number results in an unsatisfiable type"
+        test("non-overlapping intersection", () => {
+            attest(
+                () => type("Date>d'2000/01/01'&Date<=d'2000/01/01'").condition
+            ).throws(
+                "Intersection of after 2000-01-01T05:00:00.000Z and at or before 2000-01-01T05:00:00.000Z results in an unsatisfiable type"
+            )
+            attest(() =>
+                type(
+                    "d'1990/01/01'<Date<d'1992/02/02'&d'1993/01/01'<Date<d'2000/01/01'"
                 )
-            })
-            test("non-overlapping", () => {
-                attest(
-                    () =>
-                        type("Date>d'2000/01/01'&Date<=d'2000/01/01'").condition
-                ).throws(
-                    "Intersection of after 2000-01-01T05:00:00.000Z and at or before 2000-01-01T05:00:00.000Z results in an unsatisfiable type"
-                )
-                attest(() =>
-                    type(
-                        "d'1990/01/01'<Date<d'1992/02/02'&d'1993/01/01'<Date<d'2000/01/01'"
-                    )
-                ).throws(
-                    "Intersection of the range bounded by after 1990-01-01T05:00:00.000Z and before 1992-02-02T05:00:00.000Z and the range bounded by after 1993-01-01T05:00:00.000Z and before 2000-01-01T05:00:00.000Z results in an unsatisfiable type"
-                )
-            })
+            ).throws(
+                "Intersection of the range bounded by after 1990-01-01T05:00:00.000Z and before 1992-02-02T05:00:00.000Z and the range bounded by after 1993-01-01T05:00:00.000Z and before 2000-01-01T05:00:00.000Z results in an unsatisfiable type"
+            )
         })
     })
 })

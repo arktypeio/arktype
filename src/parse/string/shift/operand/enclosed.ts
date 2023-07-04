@@ -1,12 +1,10 @@
-import { typeNode } from "../../../../main.js"
+import { isKeyOf } from "../../../../../dev/utils/src/main.js"
+import { typeNode } from "../../../../nodes/composite/type.js"
+import type { RegexLiteral } from "../../../ast/ast.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
-import {
-    hasDateEnclosing,
-    tryParseDate,
-    writeInvalidDateMessage
-} from "./date.js"
+import { tryParseDate, writeInvalidDateMessage } from "./date.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -20,90 +18,82 @@ export type SingleQuotedStringLiteral<Text extends string = string> =
 
 export const parseEnclosed = (
     s: DynamicState,
-    enclosing: StartEnclosingChar
+    enclosing: EnclosingStartToken
 ) => {
-    const token = s.scanner.shiftUntil(
-        untilLookaheadIsClosing[
-            openToCloseEnclosingChar[enclosing] as EndEnclosingChar
-        ]
+    const enclosed = s.scanner.shiftUntil(
+        untilLookaheadIsClosing[enclosingTokens[enclosing]]
     )
     if (s.scanner.lookahead === "") {
-        return s.error(writeUnterminatedEnclosedMessage(token, enclosing))
+        return s.error(writeUnterminatedEnclosedMessage(enclosed, enclosing))
     }
     // Shift the scanner one additional time for the second enclosing token
-    if (s.scanner.shift() === "/") {
+    const token = `${enclosing}${enclosed}${s.scanner.shift()}`
+
+    if (enclosing === "/") {
         // fail parsing if the regex is invalid
         try {
-            new RegExp(token)
+            new RegExp(enclosed)
         } catch (e) {
             s.error(`${e instanceof Error ? e.message : e}`)
         }
         // flags are not currently supported for embedded regex literals
-        s.root = typeNode({ basis: "string", regex: `/${token}/` })
+        s.root = typeNode({ basis: "string", regex: token as RegexLiteral })
+    } else if (isKeyOf(enclosing, enclosingQuote)) {
+        s.root = typeNode({ basis: ["===", enclosed] })
     } else {
-        const value = hasDateEnclosing(enclosing)
-            ? tryParseDate(
-                  `${enclosing}${token}${openToCloseEnclosingChar[enclosing]}`,
-                  writeInvalidDateMessage(token)
-              )
-            : token
-        s.root = typeNode({ basis: ["===", value] })
+        s.root = typeNode({
+            basis: ["===", tryParseDate(token, writeInvalidDateMessage(token))]
+        })
     }
 }
 
-type getClosingEnclosed<enclosing extends StartEnclosingChar> =
-    enclosing extends `d${infer quote extends QuoteEnclosingChar}`
-        ? quote
-        : enclosing
-
 export type parseEnclosed<
     s extends StaticState,
-    enclosing extends StartEnclosingChar,
+    enclosingStart extends EnclosingStartToken,
     unscanned extends string
 > = Scanner.shiftUntil<
     unscanned,
-    getClosingEnclosed<enclosing>
+    EnclosingTokens[enclosingStart]
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? nextUnscanned extends ""
-        ? state.error<writeUnterminatedEnclosedMessage<scanned, enclosing>>
+        ? state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
         : state.setRoot<
               s,
-              `${enclosing}${scanned}${getClosingEnclosed<enclosing>}`,
+              `${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`,
               nextUnscanned extends Scanner.shift<string, infer unscanned>
                   ? unscanned
                   : ""
           >
     : never
 
-export const quoteEnclosingChar = {
+export const enclosingQuote = {
     "'": 1,
     '"': 1
-}
+} as const
+
+export type EnclosingQuote = keyof typeof enclosingQuote
 
 export const enclosingChar = {
     "/": 1,
-    ...quoteEnclosingChar
-}
+    ...enclosingQuote
+} as const
 
-export const openToCloseEnclosingChar: { [k: string]: string } = {
+export const enclosingTokens = {
     "d'": "'",
     'd"': '"',
     "'": "'",
     '"': '"',
     "/": "/"
-}
+} as const
 
-const startingChars = {
-    "d'": 1,
-    'd"': 1,
-    ...enclosingChar
-}
-export type StartEnclosingChar = keyof typeof startingChars
-export type EndEnclosingChar = keyof typeof enclosingChar
-export type QuoteEnclosingChar = keyof typeof quoteEnclosingChar
+export type EnclosingTokens = typeof enclosingTokens
+
+export type EnclosingStartToken = keyof EnclosingTokens
+
+export type EnclosingEndToken = EnclosingTokens[keyof EnclosingTokens]
 
 export const untilLookaheadIsClosing: Record<
-    EndEnclosingChar,
+    EnclosingEndToken,
     Scanner.UntilCondition
 > = {
     "'": (scanner) => scanner.lookahead === `'`,
@@ -111,7 +101,7 @@ export const untilLookaheadIsClosing: Record<
     "/": (scanner) => scanner.lookahead === `/`
 }
 
-const enclosingCharDescriptions: Record<string, string> = {
+const enclosingCharDescriptions = {
     '"': "double-quote",
     "'": "single-quote",
     "/": "forward slash"
@@ -121,16 +111,16 @@ type enclosingCharDescriptions = typeof enclosingCharDescriptions
 
 export const writeUnterminatedEnclosedMessage = <
     fragment extends string,
-    enclosing extends StartEnclosingChar
+    enclosingStart extends EnclosingStartToken
 >(
     fragment: fragment,
-    enclosing: enclosing
-): writeUnterminatedEnclosedMessage<fragment, enclosing> =>
-    `${enclosing}${fragment} requires a closing ${
-        enclosingCharDescriptions[openToCloseEnclosingChar[enclosing]]
+    enclosingStart: enclosingStart
+): writeUnterminatedEnclosedMessage<fragment, enclosingStart> =>
+    `${enclosingStart}${fragment} requires a closing ${
+        enclosingCharDescriptions[enclosingTokens[enclosingStart]]
     }`
 
 export type writeUnterminatedEnclosedMessage<
     fragment extends string,
-    enclosing extends StartEnclosingChar
-> = `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[getClosingEnclosed<enclosing>]}`
+    enclosingStart extends EnclosingStartToken
+> = `${enclosingStart}${fragment} requires a closing ${enclosingCharDescriptions[EnclosingTokens[enclosingStart]]}`

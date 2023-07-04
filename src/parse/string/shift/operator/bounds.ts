@@ -1,12 +1,11 @@
-import { tryParseWellFormedNumber } from "../../../../../dev/utils/src/numericLiterals.js"
 import type { keySet } from "../../../../../dev/utils/src/records.js"
 import { isKeyOf } from "../../../../../dev/utils/src/records.js"
 import { Disjoint } from "../../../../nodes/disjoint.js"
-import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
 import type {
     Comparator,
     MaxComparator
 } from "../../../../nodes/primitive/range.js"
+import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
 import type { astToString } from "../../../ast/utils.js"
 import type {
     DynamicState,
@@ -15,7 +14,6 @@ import type {
 import type { ValidLiteral } from "../../reduce/shared.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
-import { tryParseDate, writeInvalidDateMessage } from "../operand/date.js"
 import { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
 
@@ -103,41 +101,42 @@ export const parseRightBound = (
     s: DynamicStateWithRoot,
     comparator: Comparator
 ) => {
-    const baseRoot = s.ejectRoot()
+    // store the node that will be bounded
+    const previousRoot = s.ejectRoot()
+    const previousScannerIndex = s.scanner.location
     parseOperand(s)
-    const rootLimit = s.ejectRoot()
-    s.setRoot(baseRoot)
-    const limitToken = rootLimit.value?.rule
-
-    const limit =
-        limitToken instanceof Date
-            ? tryParseDate(
-                  `${limitToken}`,
-                  writeInvalidDateMessage(`${limitToken}`)
-              )
-            : tryParseWellFormedNumber(
-                  `${limitToken}`,
-                  writeInvalidLimitMessage(
-                      comparator,
-                      limitToken + s.scanner.unscanned,
-                      "right"
-                  )
-              )
+    // after parsing the next operand, use the locations to get the
+    // token from which it was parsed
+    const limitToken = s.scanner.sliceChars(
+        previousScannerIndex,
+        s.scanner.location
+    )
+    const limitNode = s.ejectRoot()
+    const limit = limitNode.value?.rule
+    if (typeof limit !== "number" && !(limit instanceof Date)) {
+        return s.error(
+            // use the reconstructed token for the invalid operand in the error message
+            writeInvalidLimitMessage(comparator, limitToken, "right")
+        )
+    }
     if (!s.branches.range) {
-        s.root = s.root.constrain("range", [{ comparator, limit }])
+        // apply the new bound to the previous root and restore it as the state's root
+        s.setRoot(previousRoot.constrain("range", [{ comparator, limit }]))
         return
     }
     if (!isKeyOf(comparator, maxComparators)) {
         return s.error(writeUnpairableComparatorMessage(comparator))
     }
-    const intersectionResult = s.branches.range.intersect(
+    const doubleBoundRange = s.branches.range.intersect(
         rangeNode([{ comparator, limit }])
     )
-    if (intersectionResult instanceof Disjoint) {
-        return intersectionResult.throw()
+    if (doubleBoundRange instanceof Disjoint) {
+        return doubleBoundRange.throw()
     }
-    s.root = s.root.constrain("range", intersectionResult.rule)
+    // remove the included left-bound from state
     delete s.branches.range
+    // restore the previous root, now constrained by the newly parsed double-bounded Range
+    s.setRoot(previousRoot.constrain("range", doubleBoundRange.rule))
 }
 
 export type parseRightBound<
