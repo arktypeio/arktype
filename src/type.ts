@@ -235,7 +235,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 }
 
 const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
-    scope.parseRoot(def, { args: args ?? bindThis(), baseName: "type" })
+    scope.parseDefinition(def, { args: args ?? bindThis(), baseName: "type" })
 
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
@@ -249,7 +249,7 @@ type validateParameterString<params extends string> =
 export const validateUninstantiatedGeneric = (g: Generic) => {
     // the unconstrained instantiation of the generic is not used for now
     // other than to eagerly validate that the def does not contain any errors
-    g.scope.parseRoot(
+    g.scope.parseDefinition(
         g.definition,
         // once we support constraints on generic parameters, we'd use
         // the base type here: https://github.com/arktypeio/arktype/issues/796

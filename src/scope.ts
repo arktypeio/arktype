@@ -50,36 +50,34 @@ import {
 } from "./type.js"
 
 export type ScopeParser<parent, ambient> = {
-    <const aliases>(
-        aliases: validateAliases<aliases, parent & ambient>
-    ): Scope<{
+    <const def>(def: validateScope<def, parent & ambient>): Scope<{
         exports: inferBootstrapped<{
-            exports: bootstrapExports<aliases>
-            locals: bootstrapLocals<aliases> & parent
+            exports: bootstrapExports<def>
+            locals: bootstrapLocals<def> & parent
             ambient: ambient
         }>
         locals: inferBootstrapped<{
-            exports: bootstrapLocals<aliases>
-            locals: bootstrapExports<aliases> & parent
+            exports: bootstrapLocals<def>
+            locals: bootstrapExports<def> & parent
             ambient: ambient
         }>
         ambient: ambient
     }>
 }
 
-type validateAliases<aliases, $> = {
-    [k in keyof aliases]: parseScopeKey<k>["params"] extends []
+type validateScope<def, $> = {
+    [k in keyof def]: parseScopeKey<k>["params"] extends []
         ? // Not including Type here directly breaks inference
-          aliases[k] extends Type | PreparsedResolution
-            ? aliases[k]
-            : validateDefinition<aliases[k], $ & bootstrap<aliases>, {}>
+          def[k] extends Type | PreparsedResolution
+            ? def[k]
+            : validateDefinition<def[k], $ & bootstrap<def>, {}>
         : parseScopeKey<k>["params"] extends GenericParamsParseError
         ? // use the full nominal type here to avoid an overlap between the
           // error message and a possible value for the property
           parseScopeKey<k>["params"][0]
         : validateDefinition<
-              aliases[k],
-              $ & bootstrap<aliases>,
+              def[k],
+              $ & bootstrap<def>,
               {
                   // once we support constraints on generic parameters, we'd use
                   // the base type here: https://github.com/arktypeio/arktype/issues/796
@@ -101,17 +99,16 @@ type Def<def = {}> = nominal<def, "unparsed">
 /** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
 export type UnparsedScope = "$"
 
-type bootstrap<aliases> = bootstrapLocals<aliases> & bootstrapExports<aliases>
+type bootstrap<def> = bootstrapLocals<def> & bootstrapExports<def>
 
-type bootstrapLocals<aliases> = bootstrapAliases<{
+type bootstrapLocals<def> = bootstrapAliases<{
     // intersection seems redundant but it is more efficient for TS to avoid
     // mapping all the keys
-    [k in keyof aliases &
-        PrivateDeclaration as extractPrivateKey<k>]: aliases[k]
+    [k in keyof def & PrivateDeclaration as extractPrivateKey<k>]: def[k]
 }>
 
-type bootstrapExports<aliases> = bootstrapAliases<{
-    [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
+type bootstrapExports<def> = bootstrapAliases<{
+    [k in Exclude<keyof def, PrivateDeclaration>]: def[k]
 }>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
@@ -136,13 +133,13 @@ type bootstrapAliases<aliases> = {
 }
 
 type inferBootstrapped<r extends Resolutions> = evaluate<{
-    [k in keyof r["exports"]]: r["exports"][k] extends Def<infer def>
+    [name in keyof r["exports"]]: r["exports"][name] extends Def<infer def>
         ? inferDefinition<def, $<r>, {}>
-        : r["exports"][k] extends GenericProps<infer params, infer def>
+        : r["exports"][name] extends GenericProps<infer params, infer def>
         ? // add the scope in which the generic was defined here
           Generic<params, def, $<r>>
         : // otherwise should be a submodule
-          r["exports"][k]
+          r["exports"][name]
 }>
 
 type extractGenericName<k> = k extends GenericDeclaration<infer name>
@@ -237,12 +234,12 @@ export class Scope<r extends Resolutions = any> {
     private ambient: Scope | null
     private references: TypeNode[] = []
 
-    constructor(input: Dict, config: ScopeConfig) {
-        for (const k in input) {
+    constructor(def: Dict, config: ScopeConfig) {
+        for (const k in def) {
             const parsedKey = parseScopeKey(k)
             this.aliases[parsedKey.name] = parsedKey.params.length
-                ? generic(parsedKey.params, input[k], this)
-                : input[k]
+                ? generic(parsedKey.params, def[k], this)
+                : def[k]
             if (!parsedKey.isLocal) {
                 this.exportedNames.push(parsedKey.name as never)
             }
@@ -268,10 +265,10 @@ export class Scope<r extends Resolutions = any> {
     declare: DeclarationParser<$<r>> = () => ({ type: this.type } as never)
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
-        aliases: Dict,
+        def: Dict,
         config: TypeConfig = {}
     ) => {
-        return new Scope(aliases, {
+        return new Scope(def, {
             ambient: this.ambient,
             ...this.config,
             ...config
@@ -291,6 +288,7 @@ export class Scope<r extends Resolutions = any> {
         })
     }
 
+    // TODO: name?
     get<name extends keyof r["exports"] & string>(
         name: name
     ): Type<r["exports"][name], $<r>> {
@@ -305,7 +303,7 @@ export class Scope<r extends Resolutions = any> {
         }
     }
 
-    parseRoot(def: unknown, input: ParseContextInput) {
+    parseDefinition(def: unknown, input: ParseContextInput) {
         return this.parse(def, this.createRootContext(input))
     }
 
@@ -326,37 +324,14 @@ export class Scope<r extends Resolutions = any> {
             : throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
     }
 
-    maybeResolve(
-        name: string,
-        ctx: ParseContext
-    ): TypeNode | Generic | undefined {
+    maybeResolve(name: string): TypeNode | Generic | undefined {
         const cached = this.resolutions[name]
         if (cached) {
             return cached
         }
         let def = this.aliases[name]
         if (!def) {
-            const dotIndex = name.indexOf(".")
-            if (dotIndex !== -1) {
-                const dotPrefix = name.slice(0, dotIndex)
-                const prefixDef = this.aliases[dotPrefix]
-                if (hasArkKind(prefixDef, "module")) {
-                    const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
-                    if (!resolution) {
-                        return throwParseError(writeUnresolvableMessage(name))
-                    }
-                    this.resolutions[name] = resolution
-                    return resolution
-                }
-                if (prefixDef !== undefined) {
-                    return throwParseError(
-                        writeNonSubmoduleDotMessage(dotPrefix)
-                    )
-                }
-                // if the name includes ".", but the prefix is not an alias, it
-                // might be something like a decimal literal, so just fall through to return
-            }
-            return
+            return this.maybeResolveSubalias(name)
         }
         if (isThunk(def) && !hasArkKind(def, "generic")) {
             def = def()
@@ -366,13 +341,41 @@ export class Scope<r extends Resolutions = any> {
             ? validateUninstantiatedGeneric(def)
             : hasArkKind(def, "module")
             ? throwParseError(writeMissingSubmoduleAccessMessage(name))
-            : this.parseRoot(def, { baseName: name, args: {} })
+            : this.parseDefinition(
+                  def,
+                  this.createRootContext({ baseName: name, args: {} })
+              )
         this.resolutions[name] = resolution
         return resolution
     }
 
-    maybeResolveNode(name: string, ctx: ParseContext): TypeNode | undefined {
-        const result = this.maybeResolve(name, ctx)
+    /** If name is a valid reference to a submodule alias, return its resolution  */
+    private maybeResolveSubalias(name: string) {
+        const dotIndex = name.indexOf(".")
+        if (dotIndex === -1) {
+            return
+        }
+        const dotPrefix = name.slice(0, dotIndex)
+        const prefixDef = this.aliases[dotPrefix]
+        if (hasArkKind(prefixDef, "module")) {
+            const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
+            // if the first part of name is a submodule but the suffix is
+            // unresolvable, we can throw immediately
+            if (!resolution) {
+                return throwParseError(writeUnresolvableMessage(name))
+            }
+            this.resolutions[name] = resolution
+            return resolution
+        }
+        if (prefixDef !== undefined) {
+            return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
+        }
+        // if the name includes ".", but the prefix is not an alias, it
+        // might be something like a decimal literal, so just fall through to return
+    }
+
+    maybeResolveNode(name: string): TypeNode | undefined {
+        const result = this.maybeResolve(name)
         return hasArkKind(result, "node") ? result : undefined
     }
 
@@ -412,7 +415,6 @@ export class Scope<r extends Resolutions = any> {
             .join("\n")
     }
 
-    // TODO: find a way to deduplicate from maybeResolve
     private exportedResolutions: MergedResolutions | undefined
     private exportCache: ExportCache | undefined
     export<names extends exportedName<r>[]>(
@@ -438,10 +440,7 @@ export class Scope<r extends Resolutions = any> {
                     this.exportCache[name] = def
                 } else {
                     this.exportCache[name] = new Type(
-                        this.maybeResolve(
-                            name,
-                            this.createRootContext({ baseName: name, args: {} })
-                        ),
+                        this.maybeResolve(name),
                         this
                     )
                 }
@@ -505,12 +504,11 @@ export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
         ":"
     )}`
 
-export const writeDuplicateAliasesMessage = <name extends string>(
+export const writeDuplicateNameMessage = <name extends string>(
     name: name
-): writeDuplicateAliasesMessage<name> => `Alias '${name}' is already defined`
+): writeDuplicateNameMessage<name> => `Duplicate name '${name}'`
 
-type writeDuplicateAliasesMessage<name extends string> =
-    `Alias '${name}' is already defined`
+type writeDuplicateNameMessage<name extends string> = `Duplicate name '${name}'`
 
 export type ParsedScopeKey = {
     isLocal: boolean
@@ -531,7 +529,7 @@ export const parseScopeKey = (k: string): ParsedScopeKey => {
     }
     if (k.at(-1) !== ">") {
         throwParseError(
-            `'>' must be the last character of a generic declaration in a scope.`
+            `'>' must be the last character of a generic declaration in a scope`
         )
     }
     return {

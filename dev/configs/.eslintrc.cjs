@@ -147,7 +147,8 @@ module.exports = defineConfig({
             files: [
                 "./dev/scripts/**",
                 "./dev/examples/**",
-                "./dev/configs/**"
+                "./dev/configs/**",
+                "./dev/arkdark/**"
             ],
             rules: {
                 "@typescript-eslint/no-restricted-imports": "off"
