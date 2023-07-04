@@ -1,19 +1,3 @@
-export class Path extends Array<string> {
-    static fromString(s: string, delimiter = "/") {
-        return s === delimiter ? new Path() : new Path(...s.split(delimiter))
-    }
-
-    toString(delimiter = "/") {
-        return this.length ? this.join(delimiter) : delimiter
-    }
-
-    get json() {
-        return JSON.stringify(this)
-    }
-}
-
-export type ReadonlyPath = arraySubclassToReadonly<Path>
-
 export type pathToString<
     segments extends string[],
     delimiter extends string = "/"

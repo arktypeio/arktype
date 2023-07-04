@@ -1,5 +1,4 @@
 import { attest } from "@arktype/attest"
-import { Path } from "@arktype/utils"
 import type { Problem } from "arktype"
 import { arktypes, scope, type } from "arktype"
 import { suite, test } from "mocha"
@@ -67,7 +66,7 @@ suite("morph", () => {
             "number",
             "=>",
             (n, problems) =>
-                n === 0 ? problems.mustBe("non-zero", n, new Path()) : 100 / n
+                n === 0 ? problems.mustBe("non-zero", n, []) : 100 / n
         ])
         attest(divide100By).typed as Type<(In: number) => number>
         attest(divide100By(5).data).equals(20)
@@ -375,7 +374,7 @@ suite("morph", () => {
             (s, problems) => {
                 const result = parseInt(s)
                 if (Number.isNaN(result)) {
-                    return problems.mustBe("an integer string", s, new Path())
+                    return problems.mustBe("an integer string", s, [])
                 }
                 return result
             }

@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import type { equals } from "@arktype/utils"
-import { Path } from "@arktype/utils"
 import { type } from "arktype"
 import { suite, test } from "mocha"
 import type { Ark } from "../../src/scopes/ark.js"
@@ -26,7 +25,7 @@ suite("narrow", () => {
             "number",
             ":",
             (n, problems) =>
-                n % 3 === 0 || !problems.mustBe("divisible by 3", n, new Path())
+                n % 3 === 0 || !problems.mustBe("divisible by 3", n, [])
         ])
         attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
     })
@@ -42,8 +41,8 @@ suite("narrow", () => {
                 if (a === b) {
                     return true
                 }
-                problems.mustBe("equal to b", a, new Path("a"))
-                problems.mustBe("equal to a", b, new Path("b"))
+                problems.mustBe("equal to b", a, ["a"])
+                problems.mustBe("equal to a", b, ["b"])
                 return false
             }
         ])
@@ -80,7 +79,7 @@ suite("narrow", () => {
             (s, problems) =>
                 s === [...s].reverse().join("")
                     ? true
-                    : !problems.mustBe("a palindrome", s, new Path())
+                    : !problems.mustBe("a palindrome", s, [])
         ])
         attest(palindrome).typed as Type<string>
         attest(palindrome("dad").data).snap("dad")

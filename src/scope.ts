@@ -3,7 +3,6 @@ import {
     domainOf,
     hasDomain,
     isThunk,
-    Path,
     throwParseError,
     transform
 } from "@arktype/utils"
@@ -211,7 +210,7 @@ export type Resolutions = {
 
 export type ParseContext = {
     baseName: string
-    path: Path
+    path: string[]
     scope: Scope
     args: Record<string, TypeNode> | undefined
 }
@@ -282,6 +281,7 @@ export class Scope<r extends Resolutions = any> {
         locals: r["locals"]
         ambient: r["exports"]
     }> {
+        // TODO: private?
         return new Scope(this.aliases, {
             ambient: this,
             ...this.config
@@ -297,7 +297,7 @@ export class Scope<r extends Resolutions = any> {
 
     private createRootContext(input: ParseContextInput): ParseContext {
         return {
-            path: new Path(),
+            path: [],
             scope: this,
             ...input
         }

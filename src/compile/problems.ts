@@ -10,7 +10,6 @@ import {
     domainOf,
     getExactBuiltinConstructorName,
     objectKindDescriptions,
-    Path,
     stringify
 } from "@arktype/utils"
 import { domainDescriptions } from "../nodes/primitive/basis/domain.js"
@@ -31,13 +30,11 @@ export class ArkTypeError extends TypeError {
 
 export abstract class Problem<requirement = unknown, data = unknown> {
     data: DataWrapper<data>
-    path: Path
 
     abstract readonly code: ProblemCode
     abstract mustBe: string
 
-    constructor(public rule: requirement, data: data, segments: string[]) {
-        this.path = new Path(...segments)
+    constructor(public rule: requirement, data: data, public path: string[]) {
         this.data = new DataWrapper(data)
     }
 
@@ -50,7 +47,7 @@ export abstract class Problem<requirement = unknown, data = unknown> {
             ? capitalize(this.reason)
             : this.path.length === 1 && typeof this.path[0] === "number"
             ? `Item at index ${this.path[0]} ${this.reason}`
-            : `${this.path} ${this.reason}`
+            : `${this.path.join(".")} ${this.reason}`
     }
 
     get reason() {

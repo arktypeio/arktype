@@ -1,4 +1,3 @@
-import { Path } from "@arktype/utils"
 import type { TypeConfig } from "../config.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
 import { Problems, problemsByCode } from "./problems.js"
@@ -17,7 +16,7 @@ export class CheckResult<out = unknown, valid extends boolean = boolean> {
 }
 
 export class TraversalState {
-    basePath = new Path()
+    basePath = []
     problemsStack: Problems[] = [new Problems()]
     // TODO: add morphs here
     entriesToPrune: [data: Record<string, unknown>, key: string][] = []
@@ -54,7 +53,7 @@ export class TraversalState {
 
     // TODO: add at custom path
 
-    mustBe(mustBe: string, data: unknown, path: Path) {
+    mustBe(mustBe: string, data: unknown, path: string[]) {
         return this.addProblem("custom", mustBe, data, path)
     }
 
