@@ -1,4 +1,7 @@
+import { isDate } from "node:util/types"
 import { throwParseError } from "../../../../../dev/utils/src/errors.js"
+import type { RangeNode } from "../../../../nodes/primitive/range.js"
+import { writeIncompatibleLimitMessage } from "../../../../nodes/primitive/range.js"
 
 export type DateLiteral<value extends string = string> =
     | `d"${value}"`
@@ -43,3 +46,20 @@ const parseDate = <ErrorOnFail extends boolean | string>(
             : undefined
     ) as any
 }
+
+export const assertNonMismatchLimits = (rangeNode: RangeNode) =>
+    rangeNode.rule.length === 1
+        ? isDate(rangeNode.rule[0].limit)
+            ? "date"
+            : "number"
+        : isDate(rangeNode.rule[0].limit) && isDate(rangeNode.rule[1].limit)
+        ? "date"
+        : typeof rangeNode.rule[0].limit === "number" &&
+          typeof rangeNode.rule[1].limit === "number"
+        ? "number"
+        : throwParseError(
+              writeIncompatibleLimitMessage(
+                  typeof rangeNode.rule[0],
+                  typeof rangeNode.rule[1]
+              )
+          )

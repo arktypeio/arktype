@@ -43,6 +43,7 @@ import { domainNode } from "../primitive/basis/domain.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { Range } from "../primitive/range.js"
+import { invertedComparators } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { inferPropsInput } from "./inferProps.js"
 import type { PropsInput } from "./props.js"
@@ -278,28 +279,26 @@ export const assertAllowsConstraint = (
         case "morph":
             return
         default:
-            throwInternalError(`Unexpxected rule kind '${node.kind}'`)
+            throwInternalError(
+                `Unexpected rule kind '${(node as ConstraintNode).kind}'`
+            )
     }
 }
 
 const assertValidLimit = (bounds: Range, boundType: "number" | "Date") => {
     for (const index in bounds) {
-        const boundKind: BoundKind = index === "0" ? "right" : "left"
-        if (boundType === "number") {
-            if (typeof bounds[index].limit !== boundType) {
-                throwParseError(
-                    writeInvalidLimitMessage(
-                        bounds[index].comparator,
-                        `${bounds[index].limit}`,
-                        boundKind
-                    )
-                )
-            }
-        }
-        if (!isDate(bounds[index].limit) && boundType === "Date") {
+        const boundKind: BoundKind =
+            bounds.length === 1 ? "right" : index === "0" ? "left" : "right"
+        const isDateMismatch =
+            !isDate(bounds[index].limit) && boundType === "Date"
+        const isNumberMismatch =
+            typeof bounds[index].limit !== "number" && boundType === "number"
+        if (isNumberMismatch || isDateMismatch) {
             throwParseError(
                 writeInvalidLimitMessage(
-                    bounds[index].comparator,
+                    boundKind === "left"
+                        ? invertedComparators[bounds[index].comparator]
+                        : bounds[index].comparator,
                     `${bounds[index].limit}`,
                     boundKind
                 )
@@ -309,7 +308,7 @@ const assertValidLimit = (bounds: Range, boundType: "number" | "Date") => {
 }
 
 export const writeInvalidConstraintMessage = (
-    kind: string,
+    kind: ConstraintKind,
     typeMustBe: string,
     typeWas: string
 ) => {
