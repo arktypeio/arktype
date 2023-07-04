@@ -1,18 +1,22 @@
 import { InputParameterName } from "../../compile/compile.js"
 import { defineNode } from "../node.js"
-import type { definePrimitive, PrimitiveNode } from "./primitive.js"
+import type {
+    definePrimitive,
+    PrimitiveIntersection,
+    PrimitiveNode
+} from "./primitive.js"
 
 export type DivisorConfig = definePrimitive<{
     kind: "divisor"
     rule: number
     meta: {}
-    intersection: number
+    intersectionGroup: number
 }>
 
 export interface DivisorNode extends PrimitiveNode<DivisorConfig> {}
 
-// intersect: (l, r) =>
-//     Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
+export const intersectDivisors: PrimitiveIntersection<DivisorConfig> = (l, r) =>
+    Math.abs((l * r) / greatestCommonDivisor(l, r))
 
 export const divisorNode = defineNode<DivisorNode>(
     {

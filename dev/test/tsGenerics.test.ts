@@ -1,6 +1,6 @@
+import { attest } from "@arktype/attest"
+import { arktypes, scope } from "arktype"
 import { suite, test } from "mocha"
-import { arktypes, scope } from "../../src/main.js"
-import { attest } from "../attest/main.js"
 
 suite("tsGenerics", () => {
     // test("in scope", () => {

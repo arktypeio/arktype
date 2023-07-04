@@ -47,20 +47,28 @@ export const basisPrecedenceByKind: Record<BasisKind, number> = {
     domain: 2
 }
 
-export interface BasisNode<config extends PrimitiveNodeConfig>
-    extends PrimitiveNode<config> {
+export interface BasisNodeConfig extends PrimitiveNodeConfig {
     kind: BasisKind
+    intersectionGroup: BasisNodeInstance
+}
+
+export type defineBasis<
+    config extends Omit<BasisNodeConfig, "intersectionGroup">
+> = evaluate<config & { intersectionGroup: BasisNodeInstance }>
+
+export interface BasisNode<config extends BasisNodeConfig = BasisNodeConfig>
+    extends PrimitiveNode<config> {
     domain: Domain
     keyof(): TypeNode
     literalKeys: PropertyKey[]
 }
 
-export type BaseBasisNode = BasisNode<PrimitiveNodeConfig>
+export type BasisNodeInstance = BasisNodesByKind[BasisKind]
 
 export const intersectBases = (
-    l: BaseBasisNode,
-    r: BaseBasisNode
-): BaseBasisNode | Disjoint => {
+    l: BasisNodeInstance,
+    r: BasisNodeInstance
+): BasisNodeInstance | Disjoint => {
     if (l.hasKind("class") && r.hasKind("class")) {
         return constructorExtends(l.rule, r.rule)
             ? l

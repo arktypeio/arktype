@@ -1,11 +1,11 @@
+import { attest } from "@arktype/attest"
+import type { Out } from "arktype"
+import { node, type } from "arktype"
 import { suite, test } from "mocha"
-import type { Out } from "../../src/main.js"
-import { node, type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "../attest/main.js"
 
 suite("tuple expressions", () => {
     test("nested", () => {

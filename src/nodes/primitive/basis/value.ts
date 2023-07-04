@@ -10,14 +10,12 @@ import {
 } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
 import { defineNode } from "../../node.js"
-import type { definePrimitive } from "../primitive.js"
-import type { BasisNode } from "./basis.js"
+import type { BasisNode, defineBasis } from "./basis.js"
 
-export type ValueConfig = definePrimitive<{
+export type ValueConfig = defineBasis<{
     kind: "value"
     rule: unknown
     meta: {}
-    intersection: unknown
 }>
 
 export interface ValueNode extends BasisNode<ValueConfig> {

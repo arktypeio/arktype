@@ -1,7 +1,7 @@
+import { attest } from "@arktype/attest"
+import { type } from "arktype"
+import type { CastTo, Type } from "arktype"
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
-import type { CastTo, Type } from "../../src/main.js"
-import { attest } from "../attest/main.js"
 import type { Constructor } from "../utils/src/objectKinds.js"
 
 suite("inferred", () => {

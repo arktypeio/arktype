@@ -13,7 +13,8 @@
         "exactOptionalPropertyTypes": true,
         "noErrorTruncation": false,
         "stripInternal": true,
-        "lib": ["ESNext"]
+        "lib": ["ESNext"],
+        "customConditions": ["arktype-dev"]
     },
     "ts-node": {
         "esm": true,

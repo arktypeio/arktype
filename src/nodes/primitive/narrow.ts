@@ -1,15 +1,23 @@
+import { intersectUniqueLists } from "@arktype/utils"
 import { InputParameterName } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/tuple.js"
 import { defineNode } from "../node.js"
-import type { definePrimitive, PrimitiveNode } from "./primitive.js"
+import type {
+    definePrimitive,
+    PrimitiveIntersection,
+    PrimitiveNode
+} from "./primitive.js"
 
 export type NarrowConfig = definePrimitive<{
     kind: "narrow"
     rule: Narrow
     meta: {}
-    intersection: readonly Narrow[]
+    intersectionGroup: readonly Narrow[]
 }>
+
+export const intersectNarrow: PrimitiveIntersection<NarrowConfig> =
+    intersectUniqueLists
 
 export interface NarrowNode extends PrimitiveNode<NarrowConfig> {}
 

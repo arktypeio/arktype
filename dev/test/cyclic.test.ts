@@ -1,6 +1,6 @@
+import { attest } from "@arktype/attest"
+import { scope } from "arktype"
 import { suite, test } from "mocha"
-import { scope } from "../../src/main.js"
-import { attest } from "../attest/main.js"
 
 const getCyclicScope = () =>
     scope({

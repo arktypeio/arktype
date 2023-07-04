@@ -1,6 +1,6 @@
 import { registry } from "../../../src/compile/registry.js"
-import { type } from "../../../src/main.js"
-import { bench } from "../../attest/main.js"
+import { bench } from "../@arktype/attest"
+import { type } from "../arktype"
 
 const validInput = {
     number: 1,

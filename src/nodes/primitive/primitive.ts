@@ -5,15 +5,15 @@ import { type BaseNode, type BaseNodeConfig } from "../node.js"
 
 export interface PrimitiveNodeConfig extends BaseNodeConfig {
     kind: PrimitiveNodeKind
-    intersection: listable<this["rule"]>
+    intersectionGroup: listable<this["rule"]>
 }
 
 export type definePrimitive<config extends PrimitiveNodeConfig> = config
 
 export type PrimitiveIntersection<config extends PrimitiveNodeConfig> = (
-    l: config["intersection"],
-    r: config["intersection"]
-) => config["intersection"] | Disjoint
+    l: config["intersectionGroup"],
+    r: config["intersectionGroup"]
+) => config["intersectionGroup"] | Disjoint
 
 export interface PrimitiveNode<
     config extends PrimitiveNodeConfig = PrimitiveNodeConfig

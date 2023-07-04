@@ -1,6 +1,6 @@
+import { attest } from "@arktype/attest"
+import { declare, type } from "arktype"
 import { suite, test } from "mocha"
-import { declare, type } from "../../src/main.js"
-import { attest } from "../attest/main.js"
 
 suite("declared", () => {
     test("shallow", () => {

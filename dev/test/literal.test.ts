@@ -1,6 +1,6 @@
+import { attest } from "@arktype/attest"
+import { node, type } from "arktype"
 import { suite, test } from "mocha"
-import { node, type } from "../../src/main.js"
-import { attest } from "../attest/main.js"
 
 suite("literal", () => {
     suite("tuple expression", () => {

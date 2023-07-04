@@ -1,8 +1,8 @@
+import { attest } from "@arktype/attest"
+import { type } from "arktype"
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
-import { attest } from "../attest/main.js"
 
 suite("divisibility", () => {
     suite("parse", () => {

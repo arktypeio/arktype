@@ -1,6 +1,6 @@
 import { cpSync } from "node:fs"
 import { join } from "node:path"
-import { fromHere } from "../attest/main.js"
+import { fromHere } from "@arktype/attest"
 
 const arktypeio = fromHere("..", "arktype.io")
 const CNAME = join(arktypeio, "CNAME")

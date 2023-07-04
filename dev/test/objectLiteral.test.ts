@@ -1,9 +1,9 @@
+import { attest } from "@arktype/attest"
+import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { scope, type } from "../../src/main.js"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import { writeInvalidPropertyKeyMessage } from "../../src/parse/objectLiteral.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "../attest/main.js"
 
 suite("object literal", () => {
     test("empty", () => {

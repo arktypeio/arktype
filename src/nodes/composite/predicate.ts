@@ -29,8 +29,8 @@ import { createNodeOfKind, precedenceByKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import { defineNode } from "../node.js"
 import type {
-    BasisNode,
     BasisInput,
+    BasisNode,
     BasisNode,
     inferBasis
 } from "../primitive/basis/basis.js"

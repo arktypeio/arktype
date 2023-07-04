@@ -1,6 +1,6 @@
+import { attest } from "@arktype/attest"
+import { type } from "arktype"
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
-import { attest } from "../attest/main.js"
 
 suite("regex", () => {
     suite("intersection", () => {

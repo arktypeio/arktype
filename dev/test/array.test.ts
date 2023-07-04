@@ -1,12 +1,12 @@
+import { attest } from "@arktype/attest"
+import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { scope, type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../../src/parse/string/shift/operator/operator.js"
 import {
     prematureRestMessage,
     writeNonArrayRestMessage
 } from "../../src/parse/tuple.js"
-import { attest } from "../attest/main.js"
 
 suite("array", () => {
     suite("base", () => {

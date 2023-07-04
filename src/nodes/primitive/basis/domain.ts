@@ -3,8 +3,7 @@ import { cached, getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
 import { InputParameterName } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
 import { defineNode } from "../../node.js"
-import type { definePrimitive } from "../primitive.js"
-import type { BasisNode } from "./basis.js"
+import type { BasisNode, defineBasis } from "./basis.js"
 
 export type NonEnumerableDomain = Exclude<
     Domain,
@@ -23,11 +22,10 @@ export const domainDescriptions = {
     undefined: "undefined"
 } as const satisfies Record<Domain, string>
 
-export type DomainConfig = definePrimitive<{
+export type DomainConfig = defineBasis<{
     kind: "domain"
     rule: NonEnumerableDomain
     meta: {}
-    intersection: NonEnumerableDomain
 }>
 
 export interface DomainNode extends BasisNode<DomainConfig> {}

@@ -1,14 +1,14 @@
 import { join } from "node:path"
-import type { ReplacementDictionary } from "../attest/src/fs.js"
+import type { ReplacementDictionary } from "@arktype/attest"
 import {
     cpR,
     findReplaceAll,
     readJson,
     rmRf,
     rmSync,
+    shell,
     writeJson
-} from "../attest/src/fs.js"
-import { shell } from "../attest/src/shell.js"
+} from "@arktype/attest"
 import { repoDirs } from "./common.js"
 
 const packageRoot = process.cwd()

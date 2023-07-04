@@ -1,8 +1,8 @@
+import { attest } from "@arktype/attest"
+import type { TypeNode } from "arktype"
+import { type } from "arktype"
 import { suite, test } from "mocha"
-import type { TypeNode } from "../../src/main.js"
-import { type } from "../../src/main.js"
 import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
-import { attest } from "../attest/main.js"
 
 suite("basis intersections", () => {
     test("class & literal", () => {

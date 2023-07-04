@@ -12,6 +12,7 @@
     "types": "./dist/cjs/main.d.ts",
     "exports": {
         ".": {
+            "arktype-dev": "./src/main.js",
             "import": "./dist/mjs/main.js",
             "require": "./dist/cjs/main.js"
         }

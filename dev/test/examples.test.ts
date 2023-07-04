@@ -1,5 +1,5 @@
+import { attest } from "@arktype/attest"
 import { suite, test } from "mocha"
-import { attest } from "../attest/main.js"
 
 suite("snippets", () => {
     test("demo", async () => {

@@ -1,8 +1,8 @@
+import { attest } from "@arktype/attest"
+import { type } from "arktype"
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import { attest } from "../attest/main.js"
 import type { equals } from "../utils/src/generics.js"
 import { Path } from "../utils/src/lists.js"
 

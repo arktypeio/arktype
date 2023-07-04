@@ -1,4 +1,4 @@
-import { fromHere } from "../attest/main.js"
+import { fromHere } from "@arktype/attest"
 import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 

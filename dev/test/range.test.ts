@@ -1,5 +1,6 @@
+import { attest } from "@arktype/attest"
+import { node, type } from "arktype"
 import { suite, test } from "mocha"
-import { node, type } from "../../src/main.js"
 import type { Range } from "../../src/nodes/primitive/range.js"
 import {
     writeDoubleRightBoundMessage,
@@ -11,7 +12,6 @@ import {
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
-import { attest } from "../attest/main.js"
 import { writeMalformedNumericLiteralMessage } from "../utils/src/numericLiterals.js"
 
 const expectedBoundsCondition = (...range: Range) =>

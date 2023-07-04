@@ -13,7 +13,7 @@
     ],
     "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
     "typescript.preferences.importModuleSpecifierEnding": "js",
-    "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "prettier.prettierPath": "./node_modules/prettier",
     "mochaExplorer.nodeArgv": [
