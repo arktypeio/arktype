@@ -49,6 +49,7 @@ export const basisPrecedenceByKind: Record<BasisKind, number> = {
 
 export interface BasisNode<config extends PrimitiveNodeConfig>
     extends PrimitiveNode<config> {
+    kind: BasisKind
     domain: Domain
     keyof(): TypeNode
     literalKeys: PropertyKey[]

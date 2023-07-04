@@ -20,7 +20,8 @@ const arkDarkPalette = {
     keywordsAndTokens: "#eb9f2e",
     primitives: "#408fde",
     types: "#40decc",
-    functions: "#80cff8"
+    functions: "#80cff8",
+    errors: "#9558f8"
 }
 
 export type ArkDarkPalette = typeof arkDarkPalette

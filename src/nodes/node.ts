@@ -39,7 +39,9 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 interface PreconstructedBase<config extends BaseNodeConfig> {
     readonly [arkKind]: "node"
     readonly kind: config["kind"]
-    readonly input: config["rule"] | config["input"]
+    readonly input: "input" extends keyof config
+        ? config["input"]
+        : config["rule"]
     readonly rule: config["rule"]
     readonly source: string
     readonly condition: string
@@ -83,16 +85,16 @@ export const defineNode = <node extends BaseNode<any>>(
         def.kind === "domain" || def.kind === "class" || def.kind === "value"
     const intersectionKind = isBasis ? "basis" : def.kind
     return (input) => {
-        const children = def.parse(input)
+        const rule = def.parse(input)
         const source = def.compile(
-            children,
+            rule,
             createCompilationContext("out", "problems")
         )
         if (nodeCache[source]) {
             return nodeCache[source]!
         }
         const condition = def.compile(
-            children,
+            rule,
             createCompilationContext("true", "false")
         )
         const base: PreconstructedBase<BaseNodeConfig> = {
@@ -104,8 +106,8 @@ export const defineNode = <node extends BaseNode<any>>(
             isBasis: () => isBasis,
             source,
             condition,
-            children,
-            compile: (ctx: CompilationContext) => def.compile(children, ctx),
+            rule,
+            compile: (ctx: CompilationContext) => def.compile(rule, ctx),
             allows: new CompiledFunction(
                 InputParameterName,
                 `${condition}

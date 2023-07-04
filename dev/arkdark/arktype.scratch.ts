@@ -16,7 +16,7 @@ export const tsGenerics = Scope.root({
     "Record<K, V>": node({ basis: "object" })
 })
 
-type(["string|number", "[]"])
+type(["string|numer", "[]"])
 
 const a = "string"
 const b = "boolean"
