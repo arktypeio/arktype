@@ -113,20 +113,20 @@ type bootstrapExports<def> = bootstrapAliases<{
 /** These are legal as values of a scope but not as definitions in other contexts */
 type PreparsedResolution = Module | GenericProps
 
-type bootstrapAliases<aliases> = {
+type bootstrapAliases<def> = {
     [k in Exclude<
-        keyof aliases,
+        keyof def,
         // avoid inferring nominal symbols, e.g. arkKind from Module
         GenericDeclaration | symbol
-    >]: aliases[k] extends PreparsedResolution
-        ? aliases[k]
-        : aliases[k] extends (() => infer thunkReturn extends PreparsedResolution)
+    >]: def[k] extends PreparsedResolution
+        ? def[k]
+        : def[k] extends (() => infer thunkReturn extends PreparsedResolution)
         ? thunkReturn
-        : Def<aliases[k]>
+        : Def<def[k]>
 } & {
-    [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
+    [k in keyof def & GenericDeclaration as extractGenericName<k>]: Generic<
         parseGenericParams<extractGenericParameters<k>>,
-        aliases[k],
+        def[k],
         UnparsedScope
     >
 }
@@ -228,6 +228,8 @@ export class Scope<r extends Resolutions = any> {
     private parseCache: Record<string, TypeNode> = {}
     private resolutions: MergedResolutions
 
+    /** The set of names defined at the root-level of the scope mapped to their
+     * corresponding definitions.**/
     aliases: Record<string, unknown> = {}
     private exportedNames: exportedName<r>[] = []
     private ambient: Scope | null
