@@ -1,11 +1,11 @@
-import type { AbstractableConstructor } from "../../../../dev/utils/src/main.js"
+import type { AbstractableConstructor } from "@arktype/utils"
 import {
     cached,
     constructorExtends,
     getExactBuiltinConstructorName,
     objectKindDescriptions,
     prototypeKeysOf
-} from "../../../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { InputParameterName } from "../../../compile/compile.js"
 import { registry } from "../../../compile/registry.js"
 import { node } from "../../../main.js"

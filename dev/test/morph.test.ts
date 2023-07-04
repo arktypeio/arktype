@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { Path } from "@arktype/utils"
 import type { Problem } from "arktype"
 import { arktypes, scope, type } from "arktype"
 import { suite, test } from "mocha"
@@ -6,7 +7,6 @@ import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/composi
 import type { Out } from "../../src/parse/tuple.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import { Path } from "../utils/src/lists.js"
 
 suite("morph", () => {
     test("base", () => {

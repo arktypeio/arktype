@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
+import type { equals } from "@arktype/utils"
+import { Path } from "@arktype/utils"
 import { type } from "arktype"
 import { suite, test } from "mocha"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import type { equals } from "../utils/src/generics.js"
-import { Path } from "../utils/src/lists.js"
 
 suite("narrow", () => {
     test("implicit problem", () => {

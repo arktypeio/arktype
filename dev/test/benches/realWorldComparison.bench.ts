@@ -1,7 +1,7 @@
 // @ts-ignore
 import { z } from "zod"
-import { bench } from "../@arktype/attest"
-import { scope, type } from "../arktype"
+import { bench } from "@arktype/attest"
+import { scope, type } from "arktype"
 
 bench("arktype", () => {
     const authenticatorTransportFutureSchema = type(

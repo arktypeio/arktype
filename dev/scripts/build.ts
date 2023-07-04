@@ -1,14 +1,5 @@
 import { join } from "node:path"
-import type { ReplacementDictionary } from "@arktype/attest"
-import {
-    cpR,
-    findReplaceAll,
-    readJson,
-    rmRf,
-    rmSync,
-    shell,
-    writeJson
-} from "@arktype/attest"
+import { cpR, readJson, rmRf, rmSync, shell, writeJson } from "@arktype/attest"
 import { repoDirs } from "./common.js"
 
 const packageRoot = process.cwd()
@@ -31,26 +22,6 @@ const Sources = {
     utils: ["dev", "utils"],
     attest: ["dev", "attest"]
 } as const
-
-const replacementDictionary: ReplacementDictionary = {
-    attest: {
-        pattern: /"(\.\.\/)+[^"]*attest\/[^"]*\.js"/g,
-        replacement: `"@arktype/attest"`
-    },
-    utils: {
-        pattern: /"(\.\.\/)+[^"]*utils\/[^"]*\.js"/g,
-        replacement: `"@arktype/utils"`
-    }
-} as const
-
-const ignoreFilesMatching = new RegExp(
-    `package.json|${tempTsConfigBaseName}.tsbuildinfo`
-)
-
-const fixBuildPaths: (buildPath: string) => void = findReplaceAll(
-    replacementDictionary,
-    ignoreFilesMatching
-)
 
 const buildFormat = (module: "CommonJS" | "ESNext") => {
     const moduleKindDir = module === "CommonJS" ? "cjs" : "mjs"
@@ -93,9 +64,6 @@ const buildFormat = (module: "CommonJS" | "ESNext") => {
         rmRf(outDev)
         rmRf(utilsSrc)
         rmRf(attestSrc)
-
-        fixBuildPaths(outDir)
-        fixBuildPaths(attestTarget)
     } finally {
         rmSync(tempTsConfigPath, { force: true })
     }

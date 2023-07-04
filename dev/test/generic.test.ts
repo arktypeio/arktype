@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { lazily } from "@arktype/utils"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
@@ -10,7 +11,6 @@ import { writeUnclosedGroupMessage } from "../../src/parse/string/reduce/shared.
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
-import { lazily } from "../utils/src/main.js"
 
 suite("generics", () => {
     suite("standalone generic", () => {
