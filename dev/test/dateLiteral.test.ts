@@ -18,7 +18,7 @@ suite("date literal", () => {
         attest(ISO.allows(new Date("2000/07/05"))).equals(false)
     })
     test("allows spaces", () => {
-        const t = type("d' 2021/05/01  '")
+        const t = type("d' 2021  /  05  /  01  '")
         attest(t.allows(new Date("2021/05/01"))).equals(true)
     })
     test("epoch", () => {
