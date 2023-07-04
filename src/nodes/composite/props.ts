@@ -1,15 +1,14 @@
-import type { Dict } from "../../../dev/utils/src/main.js"
+import type { Dict } from "@arktype/utils"
 import {
     cached,
     fromEntries,
     hasKeys,
     isArray,
     spliterate
-} from "../../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { hasArkKind } from "../../compile/registry.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import { defineNode } from "../node.js"
 import type { CompositeNode } from "./composite.js"
 import { defineComposite } from "./composite.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"

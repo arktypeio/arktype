@@ -1,4 +1,4 @@
-import type { Literalable } from "../../../dev/utils/src/main.js"
+import type { Literalable } from "@arktype/utils"
 
 export type astToString<
     ast,

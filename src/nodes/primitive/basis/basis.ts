@@ -4,11 +4,8 @@ import type {
     Domain,
     evaluate,
     inferDomain
-} from "../../../../dev/utils/src/main.js"
-import {
-    constructorExtends,
-    throwInternalError
-} from "../../../../dev/utils/src/main.js"
+} from "@arktype/utils"
+import { constructorExtends, throwInternalError } from "@arktype/utils"
 import type { TypeNode } from "../../composite/type.js"
 import type { DisjointKindEntries } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"

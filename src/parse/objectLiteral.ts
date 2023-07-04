@@ -1,9 +1,4 @@
-import type {
-    Dict,
-    error,
-    evaluate,
-    mutable
-} from "../../dev/utils/src/main.js"
+import type { Dict, error, evaluate, mutable } from "@arktype/utils"
 import { predicateNode } from "../nodes/composite/predicate.js"
 import type { NamedPropsInput } from "../nodes/composite/props.js"
 import { propsNode } from "../nodes/composite/props.js"

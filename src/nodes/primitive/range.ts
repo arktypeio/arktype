@@ -1,4 +1,4 @@
-import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
+import { isKeyOf, throwInternalError } from "@arktype/utils"
 import { compileCheck, InputParameterName } from "../../compile/compile.js"
 import { Disjoint } from "../disjoint.js"
 import { defineNode } from "../node.js"

@@ -6,14 +6,14 @@ import type {
     evaluate,
     isAny,
     List
-} from "../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import {
     domainOf,
     isArray,
     objectKindOf,
     stringify,
     throwParseError
-} from "../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import type { CheckResult, TraversalState } from "../compile/traverse.js"
 import { type Problem } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"

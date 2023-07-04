@@ -1,4 +1,4 @@
-import type { Dict, evaluate, isAny, nominal } from "../dev/utils/src/main.js"
+import type { Dict, evaluate, isAny, nominal } from "@arktype/utils"
 import {
     domainOf,
     hasDomain,
@@ -6,7 +6,7 @@ import {
     Path,
     throwParseError,
     transform
-} from "../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { InputParameterName } from "./compile/compile.js"
 import type { arkKind } from "./compile/registry.js"
 import { addArkKind, hasArkKind } from "./compile/registry.js"

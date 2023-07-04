@@ -1,5 +1,5 @@
-import type { SerializablePrimitive } from "../../dev/utils/src/main.js"
-import { hasDomain, serializePrimitive } from "../../dev/utils/src/main.js"
+import type { SerializablePrimitive } from "@arktype/utils"
+import { hasDomain, serializePrimitive } from "@arktype/utils"
 import type { Discriminant } from "../nodes/composite/discriminate.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"

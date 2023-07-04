@@ -1,8 +1,4 @@
-import type {
-    defined,
-    error,
-    NumberLiteral
-} from "../../../../dev/utils/src/main.js"
+import type { defined, error, NumberLiteral } from "@arktype/utils"
 import type {
     Comparator,
     InvertedComparators,

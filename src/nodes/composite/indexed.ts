@@ -1,7 +1,4 @@
-import {
-    throwInternalError,
-    tryParseWellFormedInteger
-} from "../../../dev/utils/src/main.js"
+import { throwInternalError, tryParseWellFormedInteger } from "@arktype/utils"
 import {
     type CompilationContext,
     InputParameterName

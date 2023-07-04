@@ -1,4 +1,4 @@
-import type { error, NumberLiteral } from "../../../dev/utils/src/main.js"
+import type { error, NumberLiteral } from "@arktype/utils"
 import type { Comparator, SizedData } from "../../nodes/primitive/range.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"

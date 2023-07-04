@@ -7,20 +7,19 @@ import type {
     isUnknown,
     List,
     listable
-} from "../../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import {
     domainOf,
     isArray,
     throwInternalError,
     throwParseError
-} from "../../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import type { Morph, Narrow, NarrowCast } from "../../parse/tuple.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
 import { createNodeOfKind, precedenceByKind } from "../kinds.js"
-import { defineNode } from "../node.js"
 import type {
     BasisInput,
     BasisNode,
@@ -90,6 +89,10 @@ export const predicateNode = defineComposite<PredicateNode>(
                     : -1
             )
         },
+        getReferences: (children) =>
+            children.flatMap((child) =>
+                child.hasKind("props") ? child.references : []
+            ),
         compile: (children, state) => {
             let result = ""
             const initialChild = children.at(0)
@@ -158,7 +161,7 @@ export const predicateNode = defineComposite<PredicateNode>(
                     rules.push(rNode)
                 }
             }
-            return predicateNode(rules)
+            return rules
         }
     },
     (base) => {

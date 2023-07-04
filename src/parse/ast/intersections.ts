@@ -1,4 +1,4 @@
-import type { evaluate, isAny, List } from "../../../dev/utils/src/main.js"
+import type { evaluate, isAny, List } from "@arktype/utils"
 import type { MorphAst, Out } from "../tuple.js"
 
 export type inferIntersection<l, r> = [l] extends [never]

@@ -1,4 +1,4 @@
-import { throwInternalError } from "../../../dev/utils/src/main.js"
+import { throwInternalError } from "@arktype/utils"
 import {
     type CompilationContext,
     compilePropAccess,

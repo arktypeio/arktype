@@ -1,9 +1,5 @@
-import type { requireKeys } from "../../../../dev/utils/src/main.js"
-import {
-    isKeyOf,
-    throwInternalError,
-    throwParseError
-} from "../../../../dev/utils/src/main.js"
+import type { requireKeys } from "@arktype/utils"
+import { isKeyOf, throwInternalError, throwParseError } from "@arktype/utils"
 import type { TypeNode } from "../../../nodes/composite/type.js"
 import type { Comparator, RangeNode } from "../../../nodes/primitive/range.js"
 import {

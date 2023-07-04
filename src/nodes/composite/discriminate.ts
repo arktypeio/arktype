@@ -3,14 +3,14 @@ import {
     isKeyOf,
     throwInternalError,
     transform
-} from "../../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import type {
     Domain,
     evaluate,
     keySet,
     mutable,
     SerializedPrimitive
-} from "../../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { Disjoint } from "../disjoint.js"
 import type { SerializedPath } from "../disjoint.js"
 import type { BasisNode } from "../primitive/basis/basis.js"

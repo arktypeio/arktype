@@ -5,14 +5,14 @@ import type {
     conform,
     Constructor,
     Domain
-} from "../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import {
     domainOf,
     getExactBuiltinConstructorName,
     objectKindDescriptions,
     Path,
     stringify
-} from "../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { domainDescriptions } from "../nodes/primitive/basis/domain.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
 import type { Bound, SizedData } from "../nodes/primitive/range.js"

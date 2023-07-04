@@ -1,7 +1,7 @@
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
-} from "../../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { node } from "../../nodes/composite/type.js"
 import { serializeRegex } from "../../nodes/primitive/regex.js"
 import type { Out } from "../../parse/tuple.js"

@@ -1,5 +1,5 @@
-import { throwParseError } from "../../dev/utils/src/main.js"
-import type { error, join, nominal } from "../../dev/utils/src/main.js"
+import { throwParseError } from "@arktype/utils"
+import type { error, join, nominal } from "@arktype/utils"
 import type { TypeNode } from "../main.js"
 import type { ParseContext } from "../scope.js"
 import { DynamicState } from "./string/reduce/dynamic.js"

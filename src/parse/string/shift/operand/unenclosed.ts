@@ -1,15 +1,10 @@
-import type {
-    BigintLiteral,
-    error,
-    join,
-    NumberLiteral
-} from "../../../../../dev/utils/src/main.js"
+import type { BigintLiteral, error, join, NumberLiteral } from "@arktype/utils"
 import {
     stringify,
     throwParseError,
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "../../../../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"

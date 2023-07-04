@@ -11,13 +11,13 @@ import type {
     optionalKeyOf,
     Primitive,
     requiredKeyOf
-} from "../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import {
     isThunk,
     objectKindOf,
     stringify,
     throwParseError
-} from "../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import { hasArkKind } from "../compile/registry.js"
 import type { TypeNode } from "../nodes/composite/type.js"
 import { node } from "../nodes/composite/type.js"

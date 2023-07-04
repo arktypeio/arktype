@@ -1,10 +1,7 @@
-import type { error } from "../../../dev/utils/src/main.js"
+import type { error } from "@arktype/utils"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 
-/**
-"N%D", where "N" is a number and "D" is a non-zero integer
- */
 export type validateDivisor<l, $, args> = isDivisible<
     inferAst<l, $, args>
 > extends true

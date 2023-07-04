@@ -1,4 +1,4 @@
-import type { listable } from "../../../dev/utils/src/main.js"
+import type { listable } from "@arktype/utils"
 import type { Disjoint } from "../disjoint.js"
 import type { PrimitiveNodeKind } from "../kinds.js"
 import { type BaseNode, type BaseNodeConfig } from "../node.js"

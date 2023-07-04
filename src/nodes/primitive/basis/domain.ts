@@ -1,5 +1,5 @@
-import type { Domain } from "../../../../dev/utils/src/main.js"
-import { cached, getBaseDomainKeys } from "../../../../dev/utils/src/main.js"
+import type { Domain } from "@arktype/utils"
+import { cached, getBaseDomainKeys } from "@arktype/utils"
 import { InputParameterName } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
 import { defineNode } from "../../node.js"

@@ -6,7 +6,7 @@ import {
     throwInternalError,
     throwParseError,
     transform
-} from "../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import type { PredicateNode } from "./composite/predicate.js"
 import type { TypeNode } from "./composite/type.js"
 import type { BasisNode } from "./primitive/basis/basis.js"

@@ -1,5 +1,5 @@
-import type { conform, exact, List } from "../../../dev/utils/src/main.js"
-import { cached, hasKey, isArray } from "../../../dev/utils/src/main.js"
+import type { conform, exact, List } from "@arktype/utils"
+import { cached, hasKey, isArray } from "@arktype/utils"
 import type { CompilationContext } from "../../compile/compile.js"
 import {
     compileFailureResult,
@@ -10,7 +10,7 @@ import { hasArkKind } from "../../compile/registry.js"
 import type { inferIntersection } from "../../parse/ast/intersections.js"
 import type { inferred } from "../../parse/definition.js"
 import { Disjoint } from "../disjoint.js"
-import { alphabetizeByCondition, defineNode } from "../node.js"
+import { alphabetizeByCondition } from "../node.js"
 import type { BasisInput } from "../primitive/basis/basis.js"
 import { arrayClassNode } from "../primitive/basis/class.js"
 import type { ValueNode } from "../primitive/basis/value.js"
@@ -85,25 +85,17 @@ export const typeNode = defineComposite<TypeNode>(
         intersect: (l, r) => {
             if (l.branches.length === 1 && r.branches.length === 1) {
                 const result = l.branches[0].intersect(r.branches[0])
-                return result instanceof Disjoint ? result : typeNode([result])
+                return result instanceof Disjoint ? result : [result]
             }
             const resultBranches = intersectBranches(l.branches, r.branches)
             return resultBranches.length
-                ? typeNode(resultBranches)
+                ? resultBranches
                 : Disjoint.from("union", l, r)
         }
     },
     (base) => {
         let cachedBranches: PredicateNode[] | undefined
         return {
-            get branches() {
-                if (!cachedBranches) {
-                    cachedBranches = hasKey(base.rule, "resolve")
-                        ? base.rule.resolve().branches
-                        : base.rule
-                }
-                return cachedBranches
-            },
             description: isArray(base.rule)
                 ? base.rule.length === 0
                     ? "never"
@@ -353,13 +345,6 @@ const isParsedTypeRule = (
     input: TypeInput | PredicateNode[]
 ): input is PredicateNode[] =>
     isArray(input) && (input.length === 0 || hasArkKind(input[0], "node"))
-
-export const isUnresolvedNode = (
-    node: MaybeResolvedTypeNode
-): node is UnresolvedTypeNode => hasKey(node, "resolve")
-
-export const maybeResolve = (node: MaybeResolvedTypeNode): TypeNode =>
-    isUnresolvedNode(node) ? node.resolve() : node
 
 const reduceBranches = (branchNodes: PredicateNode[]) => {
     if (branchNodes.length < 2) {

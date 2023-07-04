@@ -3,7 +3,7 @@ import {
     domainOf,
     objectKindOf,
     throwInternalError
-} from "../../dev/utils/src/main.js"
+} from "@arktype/utils"
 import type { Node } from "../nodes/kinds.js"
 import type { Module } from "../scope.js"
 import type { Generic } from "../type.js"

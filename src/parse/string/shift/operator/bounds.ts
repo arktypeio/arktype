@@ -1,11 +1,5 @@
-import type {
-    keySet,
-    NumberLiteral
-} from "../../../../../dev/utils/src/main.js"
-import {
-    isKeyOf,
-    tryParseWellFormedNumber
-} from "../../../../../dev/utils/src/main.js"
+import type { keySet, NumberLiteral } from "@arktype/utils"
+import { isKeyOf, tryParseWellFormedNumber } from "@arktype/utils"
 import { Disjoint } from "../../../../nodes/disjoint.js"
 import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
 import type {

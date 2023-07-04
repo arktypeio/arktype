@@ -1,4 +1,4 @@
-import type { NumberLiteral } from "../../../../dev/utils/src/main.js"
+import type { NumberLiteral } from "@arktype/utils"
 import type {
     Comparator,
     InvertedComparators,

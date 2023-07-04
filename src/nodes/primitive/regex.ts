@@ -1,4 +1,4 @@
-import { intersectUniqueLists } from "../../../dev/utils/src/main.js"
+import { intersectUniqueLists } from "@arktype/utils"
 import { InputParameterName } from "../../compile/compile.js"
 import { defineNode } from "../node.js"
 import type {

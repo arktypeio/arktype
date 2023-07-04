@@ -1,9 +1,4 @@
-import {
-    cached,
-    domainOf,
-    prototypeKeysOf,
-    stringify
-} from "../../../../dev/utils/src/main.js"
+import { cached, domainOf, prototypeKeysOf, stringify } from "@arktype/utils"
 import {
     compileSerializedValue,
     InputParameterName

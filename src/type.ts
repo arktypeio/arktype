@@ -4,8 +4,8 @@ import type {
     BuiltinObjects,
     conform,
     Primitive
-} from "../dev/utils/src/main.js"
-import { CompiledFunction, transform } from "../dev/utils/src/main.js"
+} from "@arktype/utils"
+import { CompiledFunction, transform } from "@arktype/utils"
 import {
     createCompilationContext,
     InputParameterName

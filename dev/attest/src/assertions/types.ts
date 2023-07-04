@@ -1,4 +1,4 @@
-import type { snapshot } from "../../../utils/src/serialize.js"
+import type { snapshot } from "@arktype/utils"
 
 export type rootAssertions<
     t,

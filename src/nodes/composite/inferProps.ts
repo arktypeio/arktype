@@ -1,9 +1,4 @@
-import type {
-    evaluate,
-    List,
-    NumberLiteral,
-    Thunk
-} from "../../../dev/utils/src/main.js"
+import type { evaluate, List, NumberLiteral, Thunk } from "@arktype/utils"
 import type {
     IndexedPropInput,
     NonVariadicIndexMatcherLiteral,

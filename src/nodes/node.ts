@@ -1,5 +1,5 @@
-import type { Dict, evaluate } from "../../dev/utils/src/main.js"
-import { CompiledFunction } from "../../dev/utils/src/main.js"
+import type { Dict, evaluate } from "@arktype/utils"
+import { CompiledFunction } from "@arktype/utils"
 import type { CompilationContext } from "../compile/compile.js"
 import {
     createCompilationContext,
@@ -8,7 +8,6 @@ import {
 import { arkKind } from "../compile/registry.js"
 import type { inferred } from "../parse/definition.js"
 import type { ParseContext } from "../scope.js"
-import type { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
 
