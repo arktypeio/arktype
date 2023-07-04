@@ -11,7 +11,7 @@ suite("keywords", () => {
         })
         test("Date", () => {
             // should not expand built-in classes
-            attest(type("Date").infer).types.toString.snap()
+            attest(type("Date").infer).types.toString.snap("Date")
         })
     })
     suite("tsKeywords", () => {

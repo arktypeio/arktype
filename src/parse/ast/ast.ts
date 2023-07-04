@@ -15,10 +15,11 @@ import type {
 import type { GenericProps } from "../../type.js"
 import type { CastTo, inferDefinition } from "../definition.js"
 import type { writeInvalidGenericArgsMessage } from "../generic.js"
+import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { writeMissingSubmoduleAccessMessage } from "../string/shift/operand/unenclosed.js"
 import type { parseString } from "../string/string.js"
-import type { validateBound } from "./bound.js"
+import type { validateRange } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
 import type { inferIntersection } from "./intersections.js"
 import type { astToString } from "./utils.js"
@@ -82,7 +83,7 @@ export type validateAst<ast, $, args> = ast extends string
     ? operator extends "&" | "|"
         ? validateInfix<ast, $, args>
         : operator extends Comparator
-        ? validateBound<l, r, $, args>
+        ? validateRange<l, operator, r, $, args>
         : operator extends "%"
         ? validateDivisor<l, $, args>
         : undefined
@@ -186,6 +187,8 @@ export type inferTerminal<token, $, args> = token extends keyof args | keyof $
     ? Text
     : token extends RegexLiteral
     ? string
+    : token extends DateLiteral
+    ? Date
     : token extends NumberLiteral<infer value>
     ? value
     : token extends BigintLiteral<infer value>

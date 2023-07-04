@@ -14,8 +14,11 @@ import {
     stringify
 } from "@arktype/utils"
 import { domainDescriptions } from "../nodes/primitive/basis/domain.js"
-import { comparatorDescriptions } from "../nodes/primitive/range.js"
-import type { Bound, SizedData } from "../nodes/primitive/range.js"
+import { numericComparatorDescriptions } from "../nodes/primitive/range.js"
+import type {
+    Bound,
+    NumericallyBoundableData
+} from "../nodes/primitive/range.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -216,11 +219,11 @@ export class KeyProblem extends Problem<KeyProblemKind> {
     mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class RangeProblem extends Problem<Bound, SizedData> {
+export class RangeProblem extends Problem<Bound, NumericallyBoundableData> {
     readonly code = "range"
 
     get mustBe() {
-        return `${comparatorDescriptions[this.rule.comparator]} ${
+        return `${numericComparatorDescriptions[this.rule.comparator]} ${
             this.data.value instanceof Date
                 ? new Date(this.rule.limit).toDateString()
                 : this.rule.limit

@@ -1,4 +1,4 @@
-import type { defined, error, NumberLiteral } from "@arktype/utils"
+import type { defined, error } from "@arktype/utils"
 import type {
     Comparator,
     InvertedComparators,
@@ -8,6 +8,7 @@ import type {
 import type { Scanner } from "../shift/scanner.js"
 import type {
     StringifiablePrefixOperator,
+    ValidLiteral,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnclosedGroupMessage,
@@ -24,7 +25,10 @@ export type StaticState = {
     unscanned: string
 }
 
-type StaticOpenLeftBound = { limit: NumberLiteral; comparator: MinComparator }
+type StaticOpenLeftBound = {
+    limit: ValidLiteral
+    comparator: MinComparator
+}
 
 export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
@@ -122,7 +126,7 @@ export namespace state {
 
     export type reduceLeftBound<
         s extends StaticState,
-        limit extends NumberLiteral,
+        limit extends ValidLiteral,
         comparator extends Comparator,
         unscanned extends string
     > = comparator extends "<" | "<="
@@ -159,10 +163,10 @@ export namespace state {
 
     export type reduceRange<
         s extends StaticState,
-        minLimit extends NumberLiteral,
+        minLimit extends ValidLiteral,
         minComparator extends MinComparator,
         maxComparator extends MaxComparator,
-        maxLimit extends NumberLiteral,
+        maxLimit extends ValidLiteral,
         unscanned extends string
     > = state.from<{
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
@@ -181,7 +185,7 @@ export namespace state {
     export type reduceSingleBound<
         s extends StaticState,
         comparator extends Comparator,
-        limit extends NumberLiteral,
+        limit extends ValidLiteral,
         unscanned extends string
     > = state.from<{
         root: [s["root"], comparator, limit]

@@ -3,6 +3,7 @@ import { writeMalformedNumericLiteralMessage } from "@arktype/utils"
 import { node, type } from "arktype"
 import { suite, test } from "mocha"
 import type { Range } from "../../src/nodes/primitive/range.js"
+import { writeIncompatibleRangeMessage } from "../../src/nodes/primitive/range.js"
 import {
     writeDoubleRightBoundMessage,
     writeUnboundableMessage
@@ -12,10 +13,16 @@ import {
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
-import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
+import {
+    singleEqualsMessage,
+    writeInvalidLimitMessage
+} from "../../src/parse/string/shift/operator/bounds.js"
 
-const expectedBoundsCondition = (...range: Range) =>
+export const expectedBoundsCondition = (...range: Range) =>
     node({ basis: "number", range }).condition
+
+export const expectedDateBoundsCondition = (...range: Range) =>
+    node({ basis: Date, range }).condition
 
 suite("range", () => {
     suite("parse", () => {
@@ -108,7 +115,7 @@ suite("range", () => {
                 })
                 test("disjoint", () => {
                     attest(() => type("number==2&number==3")).throws(
-                        "Intersection of ==2 and ==3 results in an unsatisfiable type"
+                        "Intersection of exactly 2 and exactly 3 results in an unsatisfiable type"
                     )
                 })
                 test("right equality range", () => {
@@ -139,10 +146,10 @@ suite("range", () => {
             })
             test("non-overlapping", () => {
                 attest(() => type("number>3&number<=3")).throws(
-                    "Intersection of >3 and <=3 results in an unsatisfiable type"
+                    "Intersection of more than 3 and at most 3 results in an unsatisfiable type"
                 )
                 attest(() => type("-2<number<-1&1<number<2")).throws(
-                    "Intersection of the range bounded by >-2 and <-1 and the range bounded by >1 and <2 results in an unsatisfiable type"
+                    "Intersection of the range bounded by more than -2 and less than -1 and the range bounded by more than 1 and less than 2 results in an unsatisfiable type"
                 )
             })
             test("greater min is stricter", () => {
@@ -201,13 +208,13 @@ suite("range", () => {
             })
             test("empty range", () => {
                 attest(() => type("3<=number<2")).throws(
-                    "Intersection of >=3 and <2 results in an unsatisfiable type"
+                    "Intersection of at least 3 and less than 2 results in an unsatisfiable type"
                 )
             })
             test("double right bound", () => {
                 // @ts-expect-error
                 attest(() => type("number>0<=200")).types.errors(
-                    writeDoubleRightBoundMessage("'number'")
+                    writeDoubleRightBoundMessage("number")
                 )
             })
             test("non-narrowed bounds", () => {
@@ -257,47 +264,136 @@ suite("range", () => {
                     )
                 })
                 test("overlapping", () => {
-                    attest(() =>
+                    // @ts-expect-error
+                    attest(() => type("1<(number|object)<10"))
+                        .throws(writeUnboundableMessage("object"))
+                        // At compile time we don't have access to the specific branch that failed so we
+                        // summarize the expression
+                        .types.errors(
+                            writeUnboundableMessage("number | object")
+                        )
+                })
+                suite("invalid literal bound type", () => {
+                    test("number with right Date bound", () => {
+                        attest(() =>
+                            //@ts-expect-error
+                            type("number<d'2001/01/01'")
+                        )
+                            .throws(
+                                writeInvalidLimitMessage(
+                                    "<",
+                                    "Mon Jan 01 2001 00:00:00 GMT-0500 (Eastern Standard Time)",
+                                    "right"
+                                )
+                            )
+                            .types.errors(
+                                writeInvalidLimitMessage(
+                                    "<",
+                                    "d'2001/01/01'",
+                                    "right"
+                                )
+                            )
+                    })
+                    test("number with left Date bound", () => {
+                        //@ts-expect-error
+                        attest(() => type("d'2001/01/01'<number<2"))
+                            .throws(
+                                writeIncompatibleRangeMessage("date", "numeric")
+                            )
+                            .types.errors(
+                                writeInvalidLimitMessage(
+                                    "<",
+                                    "d'2001/01/01'",
+                                    "left"
+                                )
+                            )
+                    })
+                    test("Date with right number bound", () => {
                         // @ts-expect-error
-                        type("1<(number|object)<10")
-                    ).throwsAndHasTypeError(
-                        "must be a number, string, Array, or Date"
-                    )
+                        attest(() => type("Date<2")).throwsAndHasTypeError(
+                            writeInvalidLimitMessage("<", "2", "right")
+                        )
+                    })
+                    test("Date with left number bound", () => {
+                        attest(() =>
+                            // @ts-expect-error
+                            type("0<Date<d'1999/9/8'")
+                        )
+                            .throws(
+                                writeIncompatibleRangeMessage("numeric", "date")
+                            )
+                            .types.errors(
+                                writeInvalidLimitMessage("<", "0", "left")
+                            )
+                    })
                 })
             })
         })
-        // Reenable
-        //         suite("date", () => {
-        //             test("single bound", () => {
-        //                 const t = type(`Date>${d("1/1/2019")}`)
-        //                 attest(t(new Date("1/1/2020")).data).snap("Wed Jan 01 2020")
+    })
 
-        //                 attest(t(new Date("1/1/2018")).problems?.summary).snap(
-        //                     "Must be more than Tue Jan 01 2019 (was Mon Jan 01 2018)"
-        //                 )
-
-        //                 attest(t(new Date("10/24/1996").valueOf()).problems.summary)
-        //                     .snap(`{"value":846140400000} must be...
-        // • a Date
-        // • more than 1546329600000`)
-        //             })
-        //             test("equality", () => {
-        //                 const t = type(`Date == ${d("1/1/1")}`)
-        //                 attest(t(new Date("1/1/1")).data).snap("Mon Jan 01 2001")
-
-        //                 attest(t(new Date("1/1/2")).problems?.summary).snap(
-        //                     "Must be exactly Mon Jan 01 2001 (was Tue Jan 01 2002)"
-        //                 )
-        //             })
-
-        //             test("double bounded", () => {
-        //                 const t = type(`${d("1/1/2018")}<Date<${d("1/1/2019")}`)
-
-        //                 attest(t(new Date("1/2/2018")).data).snap("Tue Jan 02 2018")
-        //                 attest(t(new Date("1/1/2020")).problems?.summary).snap(
-        //                     "Must be less than Tue Jan 01 2019 (was Wed Jan 01 2020)"
-        //                 )
-        //             })
-        //         })
+    suite("dates", () => {
+        test("single", () => {
+            const t = type("Date<d'2023/1/12'")
+            attest(t.infer).typed as Date
+            attest(t.condition).equals(
+                expectedDateBoundsCondition({
+                    comparator: "<",
+                    limit: new Date("2023/1/12")
+                })
+            )
+        })
+        test("equality", () => {
+            const t = type("Date==d'2020-1-1'")
+            attest(t.infer).typed as Date
+            attest(t.condition).equals(
+                expectedDateBoundsCondition({
+                    comparator: "==",
+                    limit: new Date("2020-1-1")
+                })
+            )
+            attest(t.allows(new Date("2020/01/01"))).equals(true)
+            attest(t.allows(new Date("2020/01/02"))).equals(false)
+        })
+        test("double", () => {
+            const t = type("d'2001/10/10'<Date<d'2005/10/10'")
+            attest(t.infer).typed as Date
+            attest(t.condition).equals(
+                expectedDateBoundsCondition(
+                    {
+                        comparator: ">",
+                        limit: new Date("2001/10/10")
+                    },
+                    {
+                        comparator: "<",
+                        limit: new Date("2005/10/10")
+                    }
+                )
+            )
+            attest(t.allows(new Date("2003/10/10"))).equals(true)
+            attest(t.allows(new Date("2001/10/10"))).equals(false)
+            attest(t.allows(new Date("2005/10/10"))).equals(false)
+        })
+        test("dynamic", () => {
+            const now = new Date()
+            const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
+            attest(t.infer).typed as Date
+            attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
+            attest(t.allows(now)).equals(true)
+            attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
+        })
+        test("non-overlapping intersection", () => {
+            attest(
+                () => type("Date>d'2000/01/01'&Date<=d'2000/01/01'").condition
+            ).throws(
+                "Intersection of after 2000-01-01T05:00:00.000Z and at or before 2000-01-01T05:00:00.000Z results in an unsatisfiable type"
+            )
+            attest(() =>
+                type(
+                    "d'1990/01/01'<Date<d'1992/02/02'&d'1993/01/01'<Date<d'2000/01/01'"
+                )
+            ).throws(
+                "Intersection of the range bounded by after 1990-01-01T05:00:00.000Z and before 1992-02-02T05:00:00.000Z and the range bounded by after 1993-01-01T05:00:00.000Z and before 2000-01-01T05:00:00.000Z results in an unsatisfiable type"
+            )
+        })
     })
 })

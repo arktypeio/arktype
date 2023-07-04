@@ -21,7 +21,9 @@ export const valueNode = defineNode<ValueNode>(
     {
         kind: "value",
         compile: (rule) =>
-            `${InputParameterName} === ${compileSerializedValue(rule)}`
+            rule instanceof Date
+                ? `${InputParameterName}.valueOf() === ${rule.valueOf()}`
+                : `${InputParameterName} === ${compileSerializedValue(rule)}`
     },
     (base) => {
         const literalKeys =

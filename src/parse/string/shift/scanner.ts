@@ -52,12 +52,20 @@ export class Scanner<Lookahead extends string = string> {
         this.i = i < 0 ? this.length + i : i
     }
 
+    get location() {
+        return this.i
+    }
+
     get unscanned() {
         return this.chars.slice(this.i, this.length).join("")
     }
 
     get scanned() {
         return this.chars.slice(0, this.i).join("")
+    }
+
+    sliceChars(start: number, end?: number) {
+        return this.chars.slice(start, end).join("")
     }
 
     lookaheadIs<Char extends Lookahead>(char: Char): this is Scanner<Char> {

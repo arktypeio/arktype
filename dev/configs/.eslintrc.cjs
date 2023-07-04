@@ -94,46 +94,10 @@ module.exports = defineConfig({
                             'Deep importing from "dev/attest/*" is not allowed, please import from "dev/attest/src/main.js" instead'
                     }
                 ],
-                paths: [
-                    "error",
-                    "dist",
-                    "dist",
-                    "node:assert",
-                    "node:buffer",
-                    "node:child_process",
-                    "node:cluster",
-                    "node:crypto",
-                    "node:dgram",
-                    "node:dns",
-                    "node:domain",
-                    "node:events",
-                    "node:freelist",
-                    "node:fs",
-                    "node:http",
-                    "node:https",
-                    "node:module",
-                    "node:net",
-                    "node:os",
-                    "node:path",
-                    "node:node:punycode",
-                    "node:querystring",
-                    "node:readline",
-                    "node:repl",
-                    "node:smalloc",
-                    "node:stream",
-                    "node:string_decoder",
-                    "node:sys",
-                    "node:timers",
-                    "node:tls",
-                    "node:tracing",
-                    "node:tty",
-                    "node:url",
-                    "node:util",
-                    "node:vm",
-                    "node:zlib"
-                ]
+                paths: ["dist", "node_modules"]
             }
         ],
+        "import/no-nodejs-modules": "warn",
         /**
          * Allow more flexible typing
          */
@@ -150,9 +114,7 @@ module.exports = defineConfig({
          */
         "@typescript-eslint/no-namespace": "off",
         // More of a pain during dev (or testing) than it's worth to prevent something that is trivially caught in PR
-        "@typescript-eslint/no-empty-function": "off",
-        // We don't use switches unless we are returning from them anyways
-        "no-case-declarations": "off"
+        "@typescript-eslint/no-empty-function": "off"
     },
     overrides: [
         /**
@@ -160,7 +122,6 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
-
             rules: {
                 /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,
@@ -183,7 +144,11 @@ module.exports = defineConfig({
             }
         },
         {
-            files: ["./dev/**"],
+            files: [
+                "./dev/scripts/**",
+                "./dev/examples/**",
+                "./dev/configs/**"
+            ],
             rules: {
                 "@typescript-eslint/no-restricted-imports": "off"
             }

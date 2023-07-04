@@ -5,6 +5,7 @@ import type {
     MinComparator
 } from "../../../nodes/primitive/range.js"
 import { invertedComparators } from "../../../nodes/primitive/range.js"
+import type { DateLiteral } from "../shift/operand/date.js"
 
 export type StringifiablePrefixOperator = "keyof"
 
@@ -24,7 +25,7 @@ export type writeUnclosedGroupMessage<missingChar extends string> =
     `Missing ${missingChar}`
 
 export const writeOpenRangeMessage = <
-    min extends NumberLiteral,
+    min extends ValidLiteral,
     comparator extends MinComparator
 >(
     min: min,
@@ -33,7 +34,7 @@ export const writeOpenRangeMessage = <
     `Left bounds are only valid when paired with right bounds (try ...${comparator}${min})`
 
 export type writeOpenRangeMessage<
-    min extends NumberLiteral,
+    min extends ValidLiteral,
     comparator extends MinComparator
 > = `Left bounds are only valid when paired with right bounds (try ...${comparator}${min})`
 
@@ -46,9 +47,9 @@ export const writeUnpairableComparatorMessage = <comparator extends Comparator>(
     `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
 
 export const writeMultipleLeftBoundsMessage = <
-    openLimit extends NumberLiteral,
+    openLimit extends ValidLiteral,
     openComparator extends MinComparator,
-    limit extends NumberLiteral,
+    limit extends ValidLiteral,
     comparator extends MinComparator
 >(
     openLimit: openLimit,
@@ -64,8 +65,10 @@ export const writeMultipleLeftBoundsMessage = <
     `An expression may have at most one left bound (parsed ${openLimit}${invertedComparators[openComparator]}, ${limit}${invertedComparators[comparator]})`
 
 export type writeMultipleLeftBoundsMessage<
-    openLimit extends NumberLiteral,
+    openLimit extends ValidLiteral,
     openComparator extends MinComparator,
-    limit extends NumberLiteral,
+    limit extends ValidLiteral,
     comparator extends MinComparator
 > = `An expression may have at most one left bound (parsed ${openLimit}${InvertedComparators[openComparator]}, ${limit}${InvertedComparators[comparator]})`
+
+export type ValidLiteral = NumberLiteral | DateLiteral

@@ -16,6 +16,8 @@ import {
 } from "@arktype/utils"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
+import type { BoundKind } from "../../parse/string/shift/operator/bounds.js"
+import { writeInvalidLimitMessage } from "../../parse/string/shift/operator/bounds.js"
 import type { Morph, Narrow, NarrowCast } from "../../parse/tuple.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
@@ -32,6 +34,7 @@ import { domainNode } from "../primitive/basis/domain.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { Range } from "../primitive/range.js"
+import { invertedComparators } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { CompositeNode } from "./composite.js"
 import { defineComposite } from "./composite.js"
@@ -71,10 +74,12 @@ export const predicateNode = defineComposite<PredicateNode>(
                 children = basis ? [basis] : []
                 for (const kind of constraintKindNames) {
                     if (input[kind]) {
-                        assertAllowsConstraint(basis, kind)
-                        children.push(
-                            createNodeOfKind(kind, input[kind] as never)
+                        const node = createNodeOfKind(
+                            kind,
+                            input[kind] as never
                         )
+                        assertAllowsConstraint(basis, node)
+                        children.push(node)
                     }
                 }
             }
@@ -192,8 +197,8 @@ export const predicateNode = defineComposite<PredicateNode>(
                     ? basis
                     : undefined,
             constrain(kind, input): PredicateNode {
-                assertAllowsConstraint(basis, kind)
                 const constraint = createNodeOfKind(kind, input as never)
+                assertAllowsConstraint(this.basis, constraint)
                 const result = this.intersect(predicateNode([constraint]))
                 if (result instanceof Disjoint) {
                     return result.throw()
@@ -224,32 +229,41 @@ export const predicateNode = defineComposite<PredicateNode>(
 
 export const assertAllowsConstraint = (
     basis: BasisNode | null,
-    kind: ConstraintKind
+    node: ConstraintNode
 ) => {
     if (basis?.hasKind("value")) {
         throwInvalidConstraintError(
-            kind,
+            node.kind,
             "a non-literal type",
             basis.toString()
         )
         return
     }
     const domain = basis?.domain ?? "unknown"
-    switch (kind) {
+    switch (node.kind) {
         case "divisor":
             if (domain !== "number") {
                 throwParseError(writeIndivisibleMessage(domain))
             }
             return
-        case "range":
+        case "range": {
+            const bounds = node["rule"] as Range
             if (domain !== "string" && domain !== "number") {
+                const isDateClassBasis =
+                    basis?.hasKind("class") && basis.extendsOneOf(Date)
+                if (isDateClassBasis) {
+                    assertValidLimit(bounds, "Date")
+                    return
+                }
                 const hasSizedClassBasis =
-                    basis?.hasKind("class") && basis.extendsOneOf(Array, Date)
+                    basis?.hasKind("class") && basis.extendsOneOf(Array)
                 if (!hasSizedClassBasis) {
                     throwParseError(writeUnboundableMessage(domain))
                 }
             }
+            assertValidLimit(bounds, "number")
             return
+        }
         case "regex":
             if (domain !== "string") {
                 throwInvalidConstraintError("regex", "a string", domain)
@@ -263,7 +277,9 @@ export const assertAllowsConstraint = (
         case "narrow":
             return
         default:
-            throwInternalError(`Unexpxected rule kind '${kind}'`)
+            throwInternalError(
+                `Unexpected rule kind '${(node as ConstraintNode).kind}'`
+            )
     }
 }
 
@@ -294,7 +310,6 @@ export type PredicateChildren =
     | ConstraintNode[]
 
 export type ConstraintNode = ConstraintKinds[ConstraintKind]
-
 type ConstraintKinds = Pick<
     NodeKinds,
     "range" | "divisor" | "regex" | "props" | "narrow"
@@ -403,7 +418,9 @@ type functionalConstraints<input> = {
     morph?: listable<Morph<input>>
 }
 
-type classConstraints<base extends Constructor> = base extends typeof Array
+type classConstraints<base extends Constructor> = base extends
+    | typeof Array
+    | typeof Date
     ? {
           props?: PropsInput
           range?: Range
