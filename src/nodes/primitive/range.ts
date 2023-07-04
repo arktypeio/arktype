@@ -1,5 +1,11 @@
-import { isKeyOf, throwInternalError } from "../../../dev/utils/src/main.js"
+import { isDate } from "node:util/types"
+import {
+    isKeyOf,
+    throwInternalError,
+    throwParseError
+} from "../../../dev/utils/src/main.js"
 import { compileCheck, InputParameterName } from "../../compile/compile.js"
+import { assertNonMismatchLimits } from "../../parse/string/shift/operand/date.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
@@ -26,13 +32,37 @@ export const comparators = {
 
 export type Comparator = keyof typeof comparators
 
-export const comparatorDescriptions = {
-    "<": "less than",
-    ">": "more than",
-    "<=": "at most",
-    ">=": "at least",
-    "==": "exactly"
+export const numericComparatorDescriptions = {
+    "<": "less than ",
+    ">": "more than ",
+    "<=": "at most ",
+    ">=": "at least ",
+    "==": "exactly "
 } as const satisfies Record<Comparator, string>
+
+export const dateComparatorDescriptions = {
+    "<": "before ",
+    ">": "after ",
+    "<=": "at or before ",
+    ">=": "at or after ",
+    "==": ""
+}
+
+const describeBound = (rule: Bound) => {
+    return `${
+        isDate(rule.limit)
+            ? dateComparatorDescriptions[rule.comparator]
+            : numericComparatorDescriptions[rule.comparator]
+    }${isDate(rule.limit) ? rule.limit.toISOString() : rule.limit}`
+}
+
+const describeRange = (l: Bound, r: Bound | undefined) => {
+    const leftDescription = describeBound(l)
+    const rightDescription = r ? describeBound(r) : r
+    return rightDescription
+        ? `the range bounded by ${leftDescription} and ${rightDescription}`
+        : leftDescription
+}
 
 export const invertedComparators = {
     "<": ">",
@@ -44,10 +74,16 @@ export const invertedComparators = {
 
 export type InvertedComparators = typeof invertedComparators
 
-export type SizedData = string | number | readonly unknown[] | Date
+export const writeIncompatibleLimitMessage = (l: string, r: string) =>
+    `${l} and ${r} are not compatible limits`
 
-export type Bound<comparator extends Comparator = Comparator> = {
-    limit: number
+export type NumericallyBoundableData = string | number | readonly unknown[]
+
+export type Bound<
+    comparator extends Comparator = Comparator,
+    limit extends number | Date = number | Date
+> = {
+    limit: limit
     comparator: comparator
 }
 
@@ -63,6 +99,10 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 export interface RangeNode extends BaseNode<{ kind: "range"; rule: Range }> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
+    numericMin: Bound<MinComparator, number> | undefined
+    numericMax: Bound<MaxComparator, number> | undefined
+    validValue: number | undefined
+    rangeKind: "numeric" | "date"
 }
 
 export const rangeNode = defineNodeKind<RangeNode>(
@@ -70,10 +110,12 @@ export const rangeNode = defineNodeKind<RangeNode>(
         kind: "range",
         parse: (input) => input,
         compile: (rule, ctx) => {
+            const l = rule[0].limit.valueOf()
+            const r = rule[1]?.limit.valueOf()
             if (
-                rule[0].limit === rule[1]?.limit &&
+                l === r &&
                 rule[0].comparator === ">=" &&
-                rule[1].comparator === "<="
+                rule[1]?.comparator === "<="
             ) {
                 // reduce a range like `1<=number<=1` to `number==1`
                 rule = [{ comparator: "==", limit: rule[0].limit }]
@@ -104,31 +146,49 @@ export const rangeNode = defineNodeKind<RangeNode>(
                         bound,
                         `${size} ${
                             bound.comparator === "==" ? "===" : bound.comparator
-                        } ${bound.limit}`,
+                        } ${bound.limit.valueOf()}`,
                         ctx
                     )
                 )
                 .join("\n")
         },
         intersect: (l, r): RangeNode | Disjoint => {
+            const leftLimitType = assertNonMismatchLimits(l)
+            const rightLimitType = assertNonMismatchLimits(r)
+            if (leftLimitType !== rightLimitType) {
+                throwParseError(
+                    writeIncompatibleLimitMessage(leftLimitType, rightLimitType)
+                )
+            }
             if (isEqualityRangeNode(l)) {
                 if (isEqualityRangeNode(r)) {
-                    return l === r ? l : Disjoint.from("range", l, r)
+                    return l.validValue === r.validValue
+                        ? l
+                        : Disjoint.from("range", l, r)
                 }
-                return r.allows(l.rule[0].limit)
-                    ? l
-                    : Disjoint.from("range", l, r)
+                return r.allows(l.validValue) ? l : Disjoint.from("range", l, r)
             }
             if (isEqualityRangeNode(r)) {
-                return l.allows(r.rule[0].limit)
-                    ? r
-                    : Disjoint.from("range", l, r)
+                return l.allows(r.validValue) ? r : Disjoint.from("range", l, r)
             }
-            const stricterMin = compareStrictness("min", l.min, r.min)
-            const stricterMax = compareStrictness("max", l.max, r.max)
+
+            const stricterMin = compareStrictness(
+                "min",
+                l.numericMin,
+                r.numericMin
+            )
+            const stricterMax = compareStrictness(
+                "max",
+                l.numericMax,
+                r.numericMax
+            )
             if (stricterMin === "l") {
                 if (stricterMax === "r") {
-                    return compareStrictness("min", l.min, r.max) === "l"
+                    return compareStrictness(
+                        "min",
+                        l.numericMin,
+                        r.numericMax
+                    ) === "l"
                         ? Disjoint.from("range", l, r)
                         : rangeNode([l.min!, r.max!])
                 }
@@ -136,7 +196,11 @@ export const rangeNode = defineNodeKind<RangeNode>(
             }
             if (stricterMin === "r") {
                 if (stricterMax === "l") {
-                    return compareStrictness("min", l.max, r.min) === "r"
+                    return compareStrictness(
+                        "min",
+                        l.numericMax,
+                        r.numericMin
+                    ) === "r"
                         ? Disjoint.from("range", l, r)
                         : rangeNode([r.min!, l.max!])
                 }
@@ -146,20 +210,30 @@ export const rangeNode = defineNodeKind<RangeNode>(
         }
     },
     (base) => {
-        const leftDescription = `${base.rule[0].comparator}${base.rule[0].limit}`
-        const description = base.rule[1]
-            ? `the range bounded by ${leftDescription} and ${base.rule[1].comparator}${base.rule[1].limit}`
-            : leftDescription
+        const description = describeRange(base.rule[0], base.rule[1])
+        const min = isKeyOf(base.rule[0].comparator, minComparators)
+            ? (base.rule[0] as Bound<MinComparator>)
+            : undefined
+        const max =
+            base.rule[1] ??
+            (isKeyOf(base.rule[0].comparator, maxComparators)
+                ? (base.rule[0] as Bound<MaxComparator>)
+                : undefined)
         return {
             description,
-            min: isKeyOf(base.rule[0].comparator, minComparators)
-                ? (base.rule[0] as Bound<MinComparator>)
+            min,
+            max,
+            numericMin: min
+                ? { ...min, limit: min?.limit.valueOf() }
                 : undefined,
-            max:
-                base.rule[1] ??
-                (isKeyOf(base.rule[0].comparator, maxComparators)
-                    ? (base.rule[0] as Bound<MaxComparator>)
-                    : undefined)
+            numericMax: max
+                ? { ...max, limit: max?.limit.valueOf() }
+                : undefined,
+            rangeKind: isDate(base.rule[0].limit) ? "date" : "numeric",
+            validValue:
+                base.rule[0].comparator === "=="
+                    ? base.rule[0].limit.valueOf()
+                    : undefined
         }
     }
 )

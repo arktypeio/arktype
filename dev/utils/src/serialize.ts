@@ -45,11 +45,13 @@ export const print = (data: unknown, indent?: number) =>
 export const stringify = (data: unknown, indent?: number) => {
     switch (domainOf(data)) {
         case "object":
-            return JSON.stringify(
-                serializeRecurse(data, stringifyOpts, []),
-                null,
-                indent
-            )
+            return data instanceof Date
+                ? data.toDateString()
+                : JSON.stringify(
+                      serializeRecurse(data, stringifyOpts, []),
+                      null,
+                      indent
+                  )
         case "symbol":
             return stringifyOpts.onSymbol(data as symbol)
         default:

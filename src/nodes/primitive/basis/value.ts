@@ -18,18 +18,28 @@ export interface ValueNode extends BasisNode<"value", unknown> {
     serialized: string
 }
 
+const equalityCheck: Record<string, Function> = {
+    default: (rule: unknown) => `${InputParameterName} === ${rule}`,
+    date: (rule: Date) =>
+        `${InputParameterName}.valueOf() === ${rule}.valueOf()`
+}
+
 export const valueNode = defineNodeKind<ValueNode>(
     {
         kind: "value",
         parse: (input) => input,
         intersect: intersectBases,
-        compile: (rule, ctx) =>
-            compileCheck(
+        compile: (rule, ctx) => {
+            const compiledRule = compileSerializedValue(rule)
+            return compileCheck(
                 "value",
                 rule,
-                `${InputParameterName} === ${compileSerializedValue(rule)}`,
+                rule instanceof Date
+                    ? equalityCheck["date"](compiledRule)
+                    : equalityCheck["default"](compiledRule),
                 ctx
             )
+        }
     },
     (base) => {
         const literalKeys =

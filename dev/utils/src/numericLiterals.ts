@@ -160,10 +160,3 @@ export const tryParseWellFormedBigint = (def: string) => {
         )
     }
 }
-
-export type DateInput = ConstructorParameters<typeof Date>[0]
-
-export const d = (dateInput: DateInput) =>
-    dateInput instanceof Date
-        ? dateInput.valueOf()
-        : new Date(dateInput).valueOf()
