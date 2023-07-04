@@ -1,7 +1,7 @@
+import { attest } from "@arktype/attest"
+import { type } from "arktype"
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
 import { writeInvalidDateMessage } from "../../src/parse/string/shift/operand/date.js"
-import { attest } from "../attest/main.js"
 
 suite("date literal", () => {
     test("base", () => {
