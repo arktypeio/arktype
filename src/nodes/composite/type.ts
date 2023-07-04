@@ -32,13 +32,12 @@ import { propsNode } from "./props.js"
 export type TypeNodeConfig = defineComposite<{
     kind: "type"
     input: TypeInput
-    rule: PredicateNode[]
+    rule: readonly PredicateNode[]
     meta: {}
 }>
 
 export interface TypeNode<t = unknown> extends CompositeNode<TypeNodeConfig> {
     [inferred]: t
-    branches: PredicateNode[]
     discriminant: Discriminant | null
     value: ValueNode | undefined
     isResolved(): boolean
@@ -80,11 +79,11 @@ export const typeNode = defineComposite<TypeNode>(
                   []
                 : branches.flatMap((predicate) => [...predicate.references]),
         intersect: (l, r) => {
-            if (l.branches.length === 1 && r.branches.length === 1) {
-                const result = l.branches[0].intersect(r.branches[0])
+            if (l.rule.length === 1 && r.rule.length === 1) {
+                const result = l.rule[0].intersect(r.rule[0])
                 return result instanceof Disjoint ? result : [result]
             }
-            const resultBranches = intersectBranches(l.branches, r.branches)
+            const resultBranches = intersectBranches(l.rule, r.rule)
             return resultBranches.length
                 ? resultBranches
                 : Disjoint.from("union", l, r)
@@ -93,19 +92,16 @@ export const typeNode = defineComposite<TypeNode>(
     (base) => {
         let cachedBranches: PredicateNode[] | undefined
         return {
-            description: isArray(base.rule)
-                ? base.rule.length === 0
+            description:
+                base.rule.length === 0
                     ? "never"
-                    : base.rule.map((branch) => branch.toString()).join(" or ")
-                : base.rule.alias,
+                    : base.rule.map((branch) => branch.toString()).join(" or "),
             // discriminate is cached so we don't have to worry about this running multiple times
             get discriminant() {
-                return discriminate(this.branches)
+                return discriminate(this.rule)
             },
             get value() {
-                return this.branches.length === 1
-                    ? this.branches[0].value
-                    : undefined
+                return this.rule.length === 1 ? this.rule[0].value : undefined
             },
             array(): any {
                 const props = propsNode([
@@ -115,18 +111,13 @@ export const typeNode = defineComposite<TypeNode>(
                 return typeNode([predicate])
             },
             isResolved() {
-                return (
-                    Array.isArray(this.children) || cachedBranches !== undefined
-                )
+                return Array.isArray(this.rule) || cachedBranches !== undefined
             },
             isNever() {
-                return this.branches.length === 0
+                return this.rule.length === 0
             },
             isUnknown() {
-                return (
-                    this.branches.length === 1 &&
-                    this.branches[0].children.length === 0
-                )
+                return this.rule.length === 1 && this.rule[0].rule.length === 0
             },
             and(other): any {
                 const result = this.intersect(other as never)
@@ -136,13 +127,11 @@ export const typeNode = defineComposite<TypeNode>(
                 if (this === (other as unknown)) {
                     return this
                 }
-                return typeNode(
-                    reduceBranches([...this.branches, ...other.branches])
-                )
+                return typeNode(reduceBranches([...this.rule, ...other.rule]))
             },
             constrain(kind, def): any {
                 return typeNode(
-                    this.branches.map((branch) => branch.constrain(kind, def))
+                    this.rule.map((branch) => branch.constrain(kind, def))
                 )
             },
             equals(other) {
@@ -152,13 +141,13 @@ export const typeNode = defineComposite<TypeNode>(
                 return this.intersect(other as never) === this
             },
             keyof(): any {
-                return this.branches.reduce(
+                return this.rule.reduce(
                     (result, branch) => result.and(branch.keyof()),
                     builtins.unknown()
                 )
             },
             getPath(...path): any {
-                let current: PredicateNode[] = this.branches
+                let current: PredicateNode[] = this.rule
                 let next: PredicateNode[] = []
                 while (path.length) {
                     const key = path.shift()!
@@ -167,12 +156,12 @@ export const typeNode = defineComposite<TypeNode>(
                         if (propsAtKey) {
                             const branchesAtKey =
                                 typeof key === "string"
-                                    ? propsAtKey.byName?.[key]?.value.branches
+                                    ? propsAtKey.byName?.[key]?.value.rule
                                     : propsAtKey.indexed.find(
                                           (entry) => entry.key === key
-                                      )?.value.branches
+                                      )?.value.rule
                             if (branchesAtKey) {
-                                next.push(...branchesAtKey)
+                                next.push(...ruleAtKey)
                             }
                         }
                     }
@@ -378,7 +367,7 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
 
 export type TypeNodeParser = {
     <const branches extends PredicateInput[]>(
-        ...branches: {
+        ...rule: {
             [i in keyof branches]: conform<
                 branches[i],
                 validatedTypeNodeInput<branches, extractBases<branches>>[i]
@@ -387,14 +376,14 @@ export type TypeNodeParser = {
     ): TypeNode<inferBranches<branches>>
 
     literal<const branches extends readonly unknown[]>(
-        ...branches: branches
+        ...rule: branches
     ): TypeNode<branches[number]>
 }
 
 export const node: TypeNodeParser = Object.assign(
-    (...branches: readonly PredicateInput[]) => typeNode(branches) as never,
+    (...rule: readonly PredicateInput[]) => typeNode(branches) as never,
     {
-        literal: (...branches: readonly unknown[]) =>
+        literal: (...rule: readonly unknown[]) =>
             typeNode(
                 branches.map((literal) => predicateNode([valueNode(literal)]))
             ) as never
