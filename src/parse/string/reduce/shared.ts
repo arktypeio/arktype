@@ -3,8 +3,8 @@ import type {
     Comparator,
     InvertedComparators,
     MinComparator
-} from "../../../nodes/primitive/range.js"
-import { invertedComparators } from "../../../nodes/primitive/range.js"
+} from "../../../nodes/primitive/bound.js"
+import { invertedComparators } from "../../../nodes/primitive/bound.js"
 import type { DateLiteral } from "../shift/operand/date.js"
 
 export type StringifiablePrefixOperator = "keyof"

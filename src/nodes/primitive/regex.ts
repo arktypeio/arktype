@@ -1,5 +1,6 @@
 import { intersectUniqueLists } from "@arktype/utils"
 import { InputParameterName } from "../../compile/compile.js"
+import type { BaseNodeMeta } from "../node.js"
 import { defineNode } from "../node.js"
 import type {
     definePrimitive,
@@ -19,11 +20,13 @@ export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
 export const intersectRegex: PrimitiveIntersection<RegexConfig> =
     intersectUniqueLists
 
+export interface RegexMeta extends BaseNodeMeta {}
+
 export type RegexConfig = definePrimitive<{
     kind: "regex"
     rule: SerializedRegexLiteral
     intersectionGroup: readonly SerializedRegexLiteral[]
-    meta: {}
+    meta: RegexMeta
 }>
 
 export interface RegexNode extends PrimitiveNode<RegexConfig> {}

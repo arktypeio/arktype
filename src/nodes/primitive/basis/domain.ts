@@ -2,6 +2,7 @@ import type { Domain } from "@arktype/utils"
 import { cached, getBaseDomainKeys } from "@arktype/utils"
 import { InputParameterName } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
+import type { BaseNodeMeta } from "../../node.js"
 import { defineNode } from "../../node.js"
 import type { BasisNode, defineBasis } from "./basis.js"
 
@@ -22,10 +23,12 @@ export const domainDescriptions = {
     undefined: "undefined"
 } as const satisfies Record<Domain, string>
 
+export interface DomainMeta extends BaseNodeMeta {}
+
 export type DomainConfig = defineBasis<{
     kind: "domain"
     rule: NonEnumerableDomain
-    meta: {}
+    meta: DomainMeta
 }>
 
 export interface DomainNode extends BasisNode<DomainConfig> {}

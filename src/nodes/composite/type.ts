@@ -12,6 +12,7 @@ import type { inferred } from "../../parse/definition.js"
 import type { ParseContext } from "../../scope.js"
 import { Scope } from "../../scope.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseNodeMeta } from "../node.js"
 import { alphabetizeByCondition } from "../node.js"
 import type { BasisInput } from "../primitive/basis/basis.js"
 import { classNode } from "../primitive/basis/class.js"
@@ -31,11 +32,13 @@ import type {
 import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
+export interface TypeMeta extends BaseNodeMeta {}
+
 export type TypeNodeConfig = defineComposite<{
     kind: "type"
     input: TypeInput | TypeRule
     rule: TypeRule
-    meta: {}
+    meta: TypeMeta
 }>
 
 export type TypeRule = UnresolvedTypeNode | readonly PredicateNode[]
@@ -70,14 +73,14 @@ export interface TypeNode<t = unknown> extends CompositeNode<TypeNodeConfig> {
 export const typeNode = defineComposite<TypeNode>(
     {
         kind: "type",
-        parse: (input, ctx) => {
+        parse: (input, meta) => {
             if (hasKey(input, "resolve")) {
                 return input
             }
             if (!isParsedTypeRule(input)) {
                 input = isArray(input)
-                    ? input.map((branch) => predicateNode(branch, ctx))
-                    : [predicateNode(input, ctx)]
+                    ? input.map((branch) => predicateNode(branch, meta))
+                    : [predicateNode(input, meta)]
             }
             // TODO: figure out a better way to handle sorting (in composite?)
             return alphabetizeByCondition(reduceBranches([...input]))
@@ -102,11 +105,11 @@ export const typeNode = defineComposite<TypeNode>(
                 // TODO: intersect context
                 return result instanceof Disjoint
                     ? result
-                    : typeNode([result], l.context)
+                    : typeNode([result], l.meta)
             }
             const resultBranches = intersectBranches(l.branches, r.branches)
             return resultBranches.length
-                ? typeNode(resultBranches, l.context)
+                ? typeNode(resultBranches, l.meta)
                 : Disjoint.from("union", l, r)
         }
     },
@@ -138,13 +141,13 @@ export const typeNode = defineComposite<TypeNode>(
             array(): any {
                 const props = propsNode(
                     [{ key: arrayIndexTypeNode(), value: this }],
-                    base.context
+                    base.meta
                 )
                 const predicate = predicateNode(
-                    [classNode(Array, base.context), props],
-                    base.context
+                    [classNode(Array, base.meta), props],
+                    base.meta
                 )
-                return typeNode([predicate], base.context)
+                return typeNode([predicate], base.meta)
             },
             isNever() {
                 return this.branches.length === 0
@@ -165,7 +168,7 @@ export const typeNode = defineComposite<TypeNode>(
                 }
                 return typeNode(
                     reduceBranches([...this.branches, ...other.branches]),
-                    base.context
+                    base.meta
                 )
             },
             constrain: (): any => {
@@ -208,7 +211,7 @@ export const typeNode = defineComposite<TypeNode>(
                     current = next
                     next = []
                 }
-                return typeNode(current, base.context)
+                return typeNode(current, base.meta)
             }
         }
     }

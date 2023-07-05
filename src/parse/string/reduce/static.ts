@@ -4,7 +4,7 @@ import type {
     InvertedComparators,
     MaxComparator,
     MinComparator
-} from "../../../nodes/primitive/range.js"
+} from "../../../nodes/primitive/bound.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
     LimitLiteral,

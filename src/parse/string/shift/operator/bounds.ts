@@ -3,7 +3,7 @@ import { isKeyOf } from "@arktype/utils"
 import type {
     Comparator,
     MaxComparator
-} from "../../../../nodes/primitive/range.js"
+} from "../../../../nodes/primitive/bound.js"
 import type { astToString } from "../../../ast/utils.js"
 import type {
     DynamicState,

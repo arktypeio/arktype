@@ -22,10 +22,10 @@ import type {
     NarrowCast,
     Out
 } from "../../parse/tuple.js"
-import type { ParseContext } from "../../scope.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
 import { createNodeOfKind, precedenceByKind } from "../kinds.js"
+import type { BaseNodeMeta } from "../node.js"
 import type {
     BasisInput,
     BasisNode,
@@ -37,7 +37,7 @@ import type { DomainNode } from "../primitive/basis/domain.js"
 import { domainNode } from "../primitive/basis/domain.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
-import type { Range } from "../primitive/range.js"
+import type { Range } from "../primitive/bound.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { CompositeNode } from "./composite.js"
 import { defineComposite } from "./composite.js"
@@ -46,11 +46,13 @@ import type { PropsInput } from "./props.js"
 import type { TypeNode } from "./type.js"
 import { builtins } from "./type.js"
 
+export interface PredicateMeta extends BaseNodeMeta {}
+
 export type PredicateNodeConfig = defineComposite<{
     kind: "predicate"
     input: PredicateInput | PredicateChildren
     rule: PredicateChildren
-    meta: {}
+    meta: PredicateMeta
 }>
 
 export interface PredicateNode extends CompositeNode<PredicateNodeConfig> {
@@ -68,19 +70,19 @@ export interface PredicateNode extends CompositeNode<PredicateNodeConfig> {
 export const predicateNode = defineComposite<PredicateNode>(
     {
         kind: "predicate",
-        parse: (input, ctx) => {
+        parse: (input, meta) => {
             let children: PredicateChildren
             if (isArray(input)) {
                 children = input
             } else {
-                const basis = input.basis && basisNodeFrom(input.basis, ctx)
+                const basis = input.basis && basisNodeFrom(input.basis, meta)
                 children = basis ? [basis] : []
                 for (const kind of constraintKindNames) {
                     if (input[kind]) {
                         const node = createNodeOfKind(
                             kind,
                             input[kind] as never,
-                            ctx
+                            meta
                         )
                         assertAllowsConstraint(basis, node)
                         children.push(node)
@@ -169,7 +171,7 @@ export const predicateNode = defineComposite<PredicateNode>(
                 }
             }
             // TODO: bad context source
-            return predicateNode(rules, l.context)
+            return predicateNode(rules, l.meta)
         }
     },
     (base) => {
@@ -203,11 +205,11 @@ export const predicateNode = defineComposite<PredicateNode>(
                 const constraint = createNodeOfKind(
                     kind,
                     input as never,
-                    base.context
+                    base.meta
                 )
                 assertAllowsConstraint(this.basis, constraint)
                 const result = this.intersect(
-                    predicateNode([constraint], base.context)
+                    predicateNode([constraint], base.meta)
                 )
                 if (result instanceof Disjoint) {
                     return result.throw()
@@ -449,15 +451,16 @@ export type basisNodeFrom<input extends BasisInput> = input extends Domain
 
 export const basisNodeFrom = (
     input: BasisInput,
-    ctx: ParseContext
+    // TODO: should be correlated with/part of input?
+    meta: BaseNodeMeta
 ): DomainNode | ClassNode | ValueNode => {
     switch (typeof input) {
         case "string":
-            return domainNode(input, ctx)
+            return domainNode(input, meta)
         case "object":
-            return valueNode(input[1], ctx)
+            return valueNode(input[1], meta)
         case "function":
-            return classNode(input, ctx)
+            return classNode(input, meta)
         default:
             return throwInternalError(
                 `Unexpectedly got a basis input of type ${domainOf(input)}`

@@ -5,7 +5,7 @@ import type {
     NumberLiteral,
     writeMalformedNumericLiteralMessage
 } from "@arktype/utils"
-import type { Comparator } from "../../nodes/primitive/range.js"
+import type { Comparator } from "../../nodes/primitive/bound.js"
 import type {
     Module,
     resolve,

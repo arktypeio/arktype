@@ -9,13 +9,16 @@ import {
 import { InputParameterName } from "../../../compile/compile.js"
 import { registry } from "../../../compile/registry.js"
 import { node } from "../../../main.js"
+import type { BaseNodeMeta } from "../../node.js"
 import { defineNode } from "../../node.js"
 import type { BasisNode, defineBasis } from "./basis.js"
+
+export interface ClassMeta extends BaseNodeMeta {}
 
 export type ClassConfig = defineBasis<{
     kind: "class"
     rule: AbstractableConstructor
-    meta: {}
+    meta: ClassMeta
 }>
 
 export interface ClassNode extends BasisNode<ClassConfig> {

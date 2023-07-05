@@ -1,4 +1,5 @@
 import { InputParameterName } from "../../compile/compile.js"
+import type { BaseNodeMeta } from "../node.js"
 import { defineNode } from "../node.js"
 import type {
     definePrimitive,
@@ -6,10 +7,12 @@ import type {
     PrimitiveNode
 } from "./primitive.js"
 
+export interface DivisorMeta extends BaseNodeMeta {}
+
 export type DivisorConfig = definePrimitive<{
     kind: "divisor"
     rule: number
-    meta: {}
+    meta: DivisorMeta
     intersectionGroup: number
 }>
 

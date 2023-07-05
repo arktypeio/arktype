@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import { writeMalformedNumericLiteralMessage } from "@arktype/utils"
 import { node, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeIncompatibleRangeMessage } from "../../src/nodes/primitive/range.js"
+import { writeIncompatibleRangeMessage } from "../../src/nodes/primitive/bound.js"
 import {
     writeDoubleRightBoundMessage,
     writeUnboundableMessage

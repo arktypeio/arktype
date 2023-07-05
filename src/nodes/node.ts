@@ -1,4 +1,4 @@
-import type { Dict, evaluate } from "@arktype/utils"
+import type { evaluate } from "@arktype/utils"
 import { CompiledFunction } from "@arktype/utils"
 import type { CompilationContext } from "../compile/compile.js"
 import {
@@ -7,14 +7,17 @@ import {
 } from "../compile/compile.js"
 import { arkKind } from "../compile/registry.js"
 import type { inferred } from "../parse/definition.js"
-import type { ParseContext } from "../scope.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
+
+export interface BaseNodeMeta {
+    baseName: string
+}
 
 export interface BaseNodeConfig {
     kind: NodeKind
     rule: unknown
-    meta: Dict
+    meta: BaseNodeMeta
 }
 
 export interface BaseNodeImplementation<node extends BaseNode> {
@@ -45,7 +48,7 @@ interface PreconstructedBase<config extends BaseNodeConfig> {
     readonly source: string
     readonly condition: string
     readonly alias: string
-    readonly context: ParseContext
+    readonly meta: config["meta"]
     compile(ctx: CompilationContext): string
     // TODO: test with cyclic nodes
     allows(data: unknown): boolean
@@ -64,7 +67,7 @@ export type BaseNode<config extends BaseNodeConfig = BaseNodeConfig> =
 
 export type NodeConstructor<node extends BaseNode> = (
     input: "input" extends keyof node ? node["input"] : node["rule"],
-    ctx: ParseContext
+    meta: node["meta"]
 ) => node
 
 export const alphabetizeByCondition = <nodes extends BaseNode[]>(
@@ -80,7 +83,7 @@ export const defineNode = <node extends BaseNode<any>>(
     } = {}
     const isBasis =
         def.kind === "domain" || def.kind === "class" || def.kind === "value"
-    return (rule, ctx) => {
+    return (rule, meta) => {
         const source = def.compile(
             rule,
             createCompilationContext("out", "problems")
@@ -92,19 +95,16 @@ export const defineNode = <node extends BaseNode<any>>(
             rule,
             createCompilationContext("true", "false")
         )
-        const baseAlias = `${ctx.baseName}${ctx.path
-            .map((k) => `${k[0].toUpperCase()}${k.slice(1)}`)
-            .join("")}`
-        let alias = baseAlias
+        let alias = meta.alias
         let suffix = 2
         while (alias in nodeCache) {
-            alias = `${baseAlias}${suffix++}`
+            alias = `${meta.alias}${suffix++}`
         }
         const base: PreconstructedBase<BaseNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
             alias,
-            context: { ...ctx },
+            meta: { ...meta },
             hasKind: (kind) => kind === def.kind,
             isBasis: () => isBasis,
             source,

@@ -3,7 +3,7 @@ import type {
     Comparator,
     InvertedComparators,
     NumericallyBoundableData
-} from "../../nodes/primitive/range.js"
+} from "../../nodes/primitive/bound.js"
 import type { LimitLiteral } from "../string/reduce/shared.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {

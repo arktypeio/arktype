@@ -2,6 +2,7 @@ import { intersectUniqueLists } from "@arktype/utils"
 import { InputParameterName } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/tuple.js"
+import type { BaseNodeMeta } from "../node.js"
 import { defineNode } from "../node.js"
 import type {
     definePrimitive,
@@ -9,10 +10,12 @@ import type {
     PrimitiveNode
 } from "./primitive.js"
 
+export interface NarrowMeta extends BaseNodeMeta {}
+
 export type NarrowConfig = definePrimitive<{
     kind: "narrow"
     rule: Narrow
-    meta: {}
+    meta: NarrowMeta
     intersectionGroup: readonly Narrow[]
 }>
 

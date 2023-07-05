@@ -4,13 +4,16 @@ import {
     InputParameterName
 } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
+import type { BaseNodeMeta } from "../../node.js"
 import { defineNode } from "../../node.js"
 import type { BasisNode, defineBasis } from "./basis.js"
+
+export interface ValueMeta extends BaseNodeMeta {}
 
 export type ValueConfig = defineBasis<{
     kind: "value"
     rule: unknown
-    meta: {}
+    meta: ValueMeta
 }>
 
 export interface ValueNode extends BasisNode<ValueConfig> {

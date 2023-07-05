@@ -1,6 +1,5 @@
 import type { extend } from "@arktype/utils"
 import { cached } from "@arktype/utils"
-import type { ParseContext } from "../scope.js"
 import type { PredicateNode } from "./composite/predicate.js"
 import { predicateNode } from "./composite/predicate.js"
 import type { PropsNode } from "./composite/props.js"
@@ -14,14 +13,14 @@ import type { DomainNode } from "./primitive/basis/domain.js"
 import { domainNode } from "./primitive/basis/domain.js"
 import type { ValueNode } from "./primitive/basis/value.js"
 import { valueNode } from "./primitive/basis/value.js"
+import type { BoundNode } from "./primitive/bound.js"
+import { rangeNode } from "./primitive/bound.js"
 import type { DivisorNode } from "./primitive/divisor.js"
 import { divisorNode } from "./primitive/divisor.js"
 // import type { MorphNode } from "./primitive/morph.js"
 // import { morphNode } from "./primitive/morph.js"
 import type { NarrowNode } from "./primitive/narrow.js"
 import { narrowNode } from "./primitive/narrow.js"
-import type { BoundNode } from "./primitive/range.js"
-import { rangeNode } from "./primitive/range.js"
 import type { RegexNode } from "./primitive/regex.js"
 import { regexNode } from "./primitive/regex.js"
 
@@ -93,5 +92,5 @@ export type NodeInputs = {
 export const createNodeOfKind = <kind extends NodeKind>(
     kind: kind,
     input: NodeInputs[kind],
-    ctx: ParseContext
-) => nodeKinds()[kind](input as never, ctx) as NodeKinds[kind]
+    meta: NodeKinds[kind]["meta"]
+) => nodeKinds()[kind](input as never, meta) as NodeKinds[kind]

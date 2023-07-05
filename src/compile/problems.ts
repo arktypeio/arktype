@@ -13,11 +13,11 @@ import {
     stringify
 } from "@arktype/utils"
 import { domainDescriptions } from "../nodes/primitive/basis/domain.js"
-import { numericComparatorDescriptions } from "../nodes/primitive/range.js"
+import { numericComparatorDescriptions } from "../nodes/primitive/bound.js"
 import type {
     Bound,
     NumericallyBoundableData
-} from "../nodes/primitive/range.js"
+} from "../nodes/primitive/bound.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems

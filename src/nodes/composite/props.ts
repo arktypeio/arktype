@@ -7,9 +7,9 @@ import {
     spliterate
 } from "@arktype/utils"
 import { hasArkKind } from "../../compile/registry.js"
-import type { ParseContext } from "../../scope.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseNodeMeta } from "../node.js"
 import type { CompositeNode } from "./composite.js"
 import { defineComposite } from "./composite.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
@@ -29,11 +29,13 @@ export type NodeEntry = NamedPropRule | IndexedPropRule
 
 export type PropsEntries = readonly NodeEntry[]
 
+export interface PropsMeta extends BaseNodeMeta {}
+
 export type PropsNodeConfig = defineComposite<{
     kind: "props"
     input: PropsInput | PropsEntries
     rule: PropsEntries
-    meta: {}
+    meta: PropsMeta
 }>
 
 export interface PropsNode extends CompositeNode<PropsNodeConfig> {
@@ -56,11 +58,11 @@ export const isParsedPropsRule = (
 export const propsNode = defineComposite<PropsNode>(
     {
         kind: "props",
-        parse: (input, ctx) => {
+        parse: (input, meta) => {
             // TODO: better strategy for sorting
             const rule = isParsedPropsRule(input)
                 ? input
-                : parsePropsInput(input, ctx)
+                : parsePropsInput(input, meta)
             return [...rule].sort((l, r) => {
                 // Sort keys first by precedence (prerequisite,required,optional,indexed),
                 // then alphebetically by key
@@ -119,7 +121,7 @@ export const propsNode = defineComposite<PropsNode>(
         const indexedKeyOf = cached(() =>
             typeNode(
                 indexed.flatMap((entry) => entry.key.branches),
-                base.context
+                base.meta
             )
         )
         return {
@@ -220,10 +222,10 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
         indexed = indexed.filter((entry) => !extractArrayIndexRegex(entry.key))
     }
     // TODO: review other intersections to make sure meta is handled correclty
-    return propsNode([...named, ...indexed], l.context)
+    return propsNode([...named, ...indexed], l.meta)
 }
 
-const parsePropsInput = (input: PropsInput, ctx: ParseContext) => {
+const parsePropsInput = (input: PropsInput, meta: PropsMeta) => {
     const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
     const entries: NodeEntry[] = []
     for (const name in namedInput) {
@@ -236,13 +238,13 @@ const parsePropsInput = (input: PropsInput, ctx: ParseContext) => {
             },
             value: hasArkKind(prop.value, "node")
                 ? prop.value
-                : typeNode(prop.value, ctx)
+                : typeNode(prop.value, meta)
         })
     }
     for (const prop of indexedInput) {
         entries.push({
-            key: typeNode(prop.key, ctx),
-            value: typeNode(prop.value, ctx)
+            key: typeNode(prop.key, meta),
+            value: typeNode(prop.value, meta)
         })
     }
     return entries

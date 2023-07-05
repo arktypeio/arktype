@@ -1,6 +1,6 @@
 import type { Dict } from "@arktype/utils"
 import { isKeyOf } from "@arktype/utils"
-import type { Comparator } from "../../../nodes/primitive/range.js"
+import type { Comparator } from "../../../nodes/primitive/bound.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]

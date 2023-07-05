@@ -1,7 +1,7 @@
 import type { requireKeys } from "@arktype/utils"
 import { throwInternalError, throwParseError } from "@arktype/utils"
 import type { TypeNode } from "../../../nodes/composite/type.js"
-import type { BoundNode, Comparator } from "../../../nodes/primitive/range.js"
+import type { BoundNode, Comparator } from "../../../nodes/primitive/bound.js"
 import type { ParseContext } from "../../../scope.js"
 import { Scanner } from "../shift/scanner.js"
 import type { StringifiablePrefixOperator } from "./shared.js"

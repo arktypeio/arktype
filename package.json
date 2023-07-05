@@ -8,7 +8,7 @@
         "url": "https://arktype.io"
     },
     "engines": {
-        "node": ">=16 <20"
+        "node": ">=16"
     },
     "repository": {
         "type": "git",

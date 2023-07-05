@@ -1,5 +1,6 @@
-import { throwInternalError } from "../../../dev/utils/src/main.js"
+import { throwInternalError } from "@arktype/utils"
 import { InputParameterName } from "../../compile/compile.js"
+import type { BaseNodeMeta } from "../node.js"
 import { defineNode } from "../node.js"
 import type {
     definePrimitive,
@@ -19,11 +20,13 @@ export type Range =
     | readonly [Bound]
     | readonly [Bound<MinComparator>, Bound<MaxComparator>]
 
+export interface BoundMeta extends BaseNodeMeta {}
+
 export type BoundConfig = definePrimitive<{
     kind: "range"
     rule: Bound
     intersectionGroup: Range
-    meta: {}
+    meta: BoundMeta
 }>
 
 // s.lastDomain === "string"
