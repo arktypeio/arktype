@@ -8,6 +8,7 @@ import type {
 import type { Scanner } from "../shift/scanner.js"
 import type {
     LimitLiteral,
+    OpenLeftBound,
     StringifiablePrefixOperator,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -25,16 +26,11 @@ export type StaticState = {
     unscanned: string
 }
 
-type StaticOpenLeftBound = {
-    limit: LimitLiteral
-    comparator: MinComparator
-}
-
 export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
     prefixes: StringifiablePrefixOperator[]
-    range: StaticOpenLeftBound | undefined
+    leftBound: OpenLeftBound | undefined
     "&": unknown
     "|": unknown
 }
@@ -60,7 +56,7 @@ export namespace state {
 
     type initialBranches = branchesFrom<{
         prefixes: []
-        range: undefined
+        leftBound: undefined
         "&": undefined
         "|": undefined
     }>
@@ -94,7 +90,7 @@ export namespace state {
         root: s["root"]
         branches: {
             prefixes: [...s["branches"]["prefixes"], prefix]
-            range: s["branches"]["range"]
+            leftBound: s["branches"]["leftBound"]
             "&": s["branches"]["&"]
             "|": s["branches"]["|"]
         }
@@ -108,13 +104,13 @@ export namespace state {
         s extends StaticState,
         token extends "|" | "&",
         unscanned extends string
-    > = s["branches"]["range"] extends {}
-        ? openRangeError<s["branches"]["range"]>
+    > = s["branches"]["leftBound"] extends {}
+        ? openRangeError<s["branches"]["leftBound"]>
         : from<{
               root: undefined
               branches: {
                   prefixes: []
-                  range: undefined
+                  leftBound: undefined
                   "&": token extends "&" ? mergeToIntersection<s> : undefined
                   "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
               }
@@ -130,11 +126,11 @@ export namespace state {
         comparator extends Comparator,
         unscanned extends string
     > = comparator extends "<" | "<="
-        ? s["branches"]["range"] extends {}
+        ? s["branches"]["leftBound"] extends {}
             ? state.error<
                   writeMultipleLeftBoundsMessage<
-                      s["branches"]["range"]["limit"],
-                      s["branches"]["range"]["comparator"],
+                      s["branches"]["leftBound"]["limit"],
+                      s["branches"]["leftBound"]["comparator"],
                       limit,
                       InvertedComparators[comparator]
                   >
@@ -143,7 +139,7 @@ export namespace state {
                   root: undefined
                   branches: {
                       prefixes: s["branches"]["prefixes"]
-                      range: {
+                      leftBound: {
                           limit: limit
                           comparator: InvertedComparators[comparator]
                       }
@@ -172,7 +168,7 @@ export namespace state {
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
         branches: {
             prefixes: s["branches"]["prefixes"]
-            range: undefined
+            leftBound: undefined
             "&": s["branches"]["&"]
             "|": s["branches"]["|"]
         }
@@ -191,7 +187,7 @@ export namespace state {
         root: [s["root"], comparator, limit]
         branches: {
             prefixes: s["branches"]["prefixes"]
-            range: undefined
+            leftBound: undefined
             "&": s["branches"]["&"]
             "|": s["branches"]["|"]
         }
@@ -226,8 +222,8 @@ export namespace state {
     export type finalizeGroup<
         s extends StaticState,
         unscanned extends string
-    > = s["branches"]["range"] extends {}
-        ? openRangeError<s["branches"]["range"]>
+    > = s["branches"]["leftBound"] extends {}
+        ? openRangeError<s["branches"]["leftBound"]>
         : s["groups"] extends popGroup<infer stack, infer top>
         ? from<{
               groups: stack
@@ -255,8 +251,8 @@ export namespace state {
         s extends StaticState,
         finalizer extends Scanner.FinalizingLookahead
     > = s["groups"] extends []
-        ? s["branches"]["range"] extends {}
-            ? openRangeError<s["branches"]["range"]>
+        ? s["branches"]["leftBound"] extends {}
+            ? openRangeError<s["branches"]["leftBound"]>
             : from<{
                   root: mergeToUnion<s>
                   groups: s["groups"]
@@ -267,12 +263,12 @@ export namespace state {
               }>
         : state.error<writeUnclosedGroupMessage<")">>
 
-    type openRangeError<range extends defined<BranchState["range"]>> =
+    type openRangeError<range extends defined<BranchState["leftBound"]>> =
         state.error<writeOpenRangeMessage<range["limit"], range["comparator"]>>
 
     export type previousOperator<s extends StaticState> =
-        s["branches"]["range"] extends {}
-            ? s["branches"]["range"]["comparator"]
+        s["branches"]["leftBound"] extends {}
+            ? s["branches"]["leftBound"]["comparator"]
             : s["branches"]["prefixes"] extends [
                   ...unknown[],
                   infer tail extends string

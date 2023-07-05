@@ -14,7 +14,7 @@ import { domainNode } from "./primitive/basis/domain.js"
 import type { ValueNode } from "./primitive/basis/value.js"
 import { valueNode } from "./primitive/basis/value.js"
 import type { BoundNode } from "./primitive/bound.js"
-import { rangeNode } from "./primitive/bound.js"
+import { boundNode } from "./primitive/bound.js"
 import type { DivisorNode } from "./primitive/divisor.js"
 import { divisorNode } from "./primitive/divisor.js"
 // import type { MorphNode } from "./primitive/morph.js"
@@ -70,13 +70,13 @@ const nodeKinds = cached(
             domain: domainNode,
             class: classNode,
             value: valueNode,
-            range: rangeNode,
+            range: boundNode,
             divisor: divisorNode,
             regex: regexNode,
             props: propsNode,
             narrow: narrowNode
             // morph: morphNode
-        }) satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k]> }
+        } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k]> })
 )
 
 export type CompositeNodeKind = extend<NodeKind, "type" | "predicate" | "props">

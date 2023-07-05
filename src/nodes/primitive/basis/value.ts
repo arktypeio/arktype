@@ -4,11 +4,15 @@ import {
     InputParameterName
 } from "../../../compile/compile.js"
 import { node } from "../../../main.js"
+import type { DateLiteral } from "../../../parse/string/shift/operand/date.js"
+import { extractDateLiteralSource } from "../../../parse/string/shift/operand/date.js"
 import type { BaseNodeMeta } from "../../node.js"
 import { defineNode } from "../../node.js"
 import type { BasisNode, defineBasis } from "./basis.js"
 
-export interface ValueMeta extends BaseNodeMeta {}
+export interface ValueMeta extends BaseNodeMeta {
+    parsedFrom?: DateLiteral
+}
 
 export type ValueConfig = defineBasis<{
     kind: "value"
@@ -38,7 +42,9 @@ export const valueNode = defineNode<ValueNode>(
             domain: domainOf(base.rule),
             literalKeys,
             keyof: cached(() => node.literal(...literalKeys)),
-            description: stringify(base.rule)
+            description: base.meta.parsedFrom
+                ? extractDateLiteralSource(base.meta.parsedFrom)
+                : stringify(base.rule)
         }
     }
 )

@@ -71,6 +71,7 @@ module.exports = defineConfig({
                 ignoreDeclarationSort: true
             }
         ],
+        // TODO: Ensure this works correctly
         "import/no-relative-packages": "warn",
         "import/no-nodejs-modules": "warn",
         /**

@@ -23,9 +23,14 @@ export const parseBound = (
 ) => {
     const comparator = shiftComparator(s, start)
     const value = s.root.value?.rule
-    if (typeof value === "number" || value instanceof Date) {
-        s.ejectRoot()
-        return s.reduceLeftBound(value, comparator)
+    if (typeof value === "number") {
+        s.unsetRoot()
+        return s.reduceLeftBound(`${value}`, comparator)
+    } else if (value instanceof Date) {
+        s.unsetRoot()
+        const literal =
+            s.root.value?.meta.parsedFrom ?? `d'${value.toISOString()}'`
+        return s.reduceLeftBound(literal, comparator)
     }
     return parseRightBound(s, comparator)
 }
@@ -144,12 +149,12 @@ export type parseRightBound<
     args
 > = parseOperand<s, $, args> extends infer nextState extends StaticState
     ? nextState["root"] extends LimitLiteral
-        ? s["branches"]["range"] extends {}
+        ? s["branches"]["leftBound"] extends {}
             ? comparator extends MaxComparator
                 ? state.reduceRange<
                       s,
-                      s["branches"]["range"]["limit"],
-                      s["branches"]["range"]["comparator"],
+                      s["branches"]["leftBound"]["limit"],
+                      s["branches"]["leftBound"]["comparator"],
                       comparator,
                       nextState["root"],
                       nextState["unscanned"]

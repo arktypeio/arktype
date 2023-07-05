@@ -1,5 +1,6 @@
 import { throwInternalError } from "@arktype/utils"
 import { InputParameterName } from "../../compile/compile.js"
+import type { DateLiteral } from "../../parse/string/shift/operand/date.js"
 import type { BaseNodeMeta } from "../node.js"
 import { defineNode } from "../node.js"
 import type {
@@ -10,7 +11,7 @@ import type {
 
 export type Bound<
     comparator extends Comparator = Comparator,
-    limit extends number | Date = number | Date
+    limit extends number | DateLiteral = number | DateLiteral
 > = {
     limit: limit
     comparator: comparator
@@ -124,7 +125,7 @@ export const intersectRanges: PrimitiveIntersection<BoundConfig> = (l) => {
 //         ? base.rule[0].limit.valueOf()
 //         : undefined
 
-export const rangeNode = defineNode<BoundNode>(
+export const boundNode = defineNode<BoundNode>(
     {
         kind: "range",
         compile: (bound, ctx) => {
@@ -136,7 +137,7 @@ export const rangeNode = defineNode<BoundNode>(
                     ? `${InputParameterName}.length`
                     : lastBasis.hasKind("class")
                     ? lastBasis.extendsOneOf(Date)
-                        ? `Number(${InputParameterName})`
+                        ? `${InputParameterName}.valueOf()`
                         : lastBasis.extendsOneOf(Array)
                         ? `${InputParameterName}.length`
                         : throwInternalError(
@@ -145,7 +146,8 @@ export const rangeNode = defineNode<BoundNode>(
                     : throwInternalError(
                           `Unexpected basis for range constraint ${lastBasis}`
                       )
-                : `${InputParameterName}.length ?? Number(${InputParameterName})`
+                : // TODO: remove
+                  `${InputParameterName}.length ?? Number(${InputParameterName})`
             return `${size} ${
                 bound.comparator === "==" ? "===" : bound.comparator
             } ${bound.limit.valueOf()}`
@@ -158,7 +160,7 @@ export const rangeNode = defineNode<BoundNode>(
 )
 
 type LimitsByBoundKind = {
-    date: Date
+    date: DateLiteral
     numeric: number
 }
 
@@ -258,19 +260,11 @@ export const dateComparatorDescriptions = {
 } as const satisfies Record<Comparator, string>
 
 const describeBound = (bound: Bound) =>
-    boundHasKind(bound, "date")
-        ? `${
-              dateComparatorDescriptions[bound.comparator]
-          } ${bound.limit.toISOString()}`
-        : `${numericComparatorDescriptions[bound.comparator]} ${bound.limit}`
-
-const describeRange = (l: Bound, r: Bound | undefined) => {
-    const leftDescription = describeBound(l)
-    const rightDescription = r ? describeBound(r) : r
-    return rightDescription
-        ? `the range bounded by ${leftDescription} and ${rightDescription}`
-        : leftDescription
-}
+    `${
+        boundHasKind(bound, "date")
+            ? dateComparatorDescriptions[bound.comparator]
+            : numericComparatorDescriptions[bound.comparator]
+    } ${bound.limit}`
 
 export const invertedComparators = {
     "<": ">",
@@ -283,6 +277,6 @@ export const invertedComparators = {
 export type InvertedComparators = typeof invertedComparators
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
-    `Range kinds ${l} and ${r} are incompatible`
+    `Bound kinds ${l} and ${r} are incompatible`
 
 export type NumericallyBoundableData = string | number | readonly unknown[]

@@ -9,6 +9,11 @@ import type { DateLiteral } from "../shift/operand/date.js"
 
 export type StringifiablePrefixOperator = "keyof"
 
+export type OpenLeftBound = {
+    limit: LimitLiteral
+    comparator: MinComparator
+}
+
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned
 ): writeUnmatchedGroupCloseMessage<unscanned> =>

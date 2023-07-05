@@ -84,6 +84,15 @@ $ark.object36($arkRoot.b)`)
         ).throwsAndHasTypeError(writeUnresolvableMessage("unresolvable"))
     })
 
+    test("does not allow syntax error message as value", () => {
+        attest(() =>
+            type({
+                // @ts-expect-error
+                "[unresolvable]": "'unresolvable' is unresolvable"
+            })
+        ).throwsAndHasTypeError(writeUnresolvableMessage("unresolvable"))
+    })
+
     test("semantic error in index definition", () => {
         attest(() =>
             type({
@@ -98,6 +107,16 @@ $ark.object36($arkRoot.b)`)
             type({
                 // @ts-expect-error
                 "[object]": "string"
+            })
+        ).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("object"))
+    })
+
+    test("does not allow invalid key type error as value", () => {
+        attest(() =>
+            type({
+                // @ts-expect-error
+                "[object]":
+                    "Indexed key definition 'object' must be a string, number or symbol"
             })
         ).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("object"))
     })

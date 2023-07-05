@@ -74,13 +74,20 @@ type optionalKeyFrom<k> = parseKey<k> extends {
 export type validateObjectLiteral<def, $, args> = {
     [k in keyof def]: k extends IndexedKey<infer indexDef>
         ? validateString<indexDef, $, args> extends error<infer message>
-            ? message
+            ? // add a nominal type here to avoid allowing the error message as input
+              indexParseError<message>
             : inferDefinition<indexDef, $, args> extends PropertyKey
             ? // if the indexDef is syntactically and semantically valid,
               // move on to the validating the value definition
               validateDefinition<def[k], $, args>
-            : writeInvalidPropertyKeyMessage<indexDef>
+            : indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
         : validateDefinition<def[k], $, args>
+}
+
+declare const indexParseSymbol: unique symbol
+
+export type indexParseError<message extends string = string> = {
+    [indexParseSymbol]: message
 }
 
 export const writeInvalidPropertyKeyMessage = <indexDef extends string>(

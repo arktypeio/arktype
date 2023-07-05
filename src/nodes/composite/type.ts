@@ -65,7 +65,7 @@ export interface TypeNode<t = unknown> extends CompositeNode<TypeNodeConfig> {
         definition: PredicateInput[kind]
     ): TypeNode<t>
     equals<other>(other: TypeNode<other>): this is TypeNode<other>
-    extends<other>(other: TypeNode<other>): this is TypeNode<t>
+    extends<other>(other: TypeNode<other>): this is TypeNode<other>
     keyof(): TypeNode<keyof t>
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }

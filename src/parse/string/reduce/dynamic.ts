@@ -1,20 +1,30 @@
 import type { requireKeys } from "@arktype/utils"
-import { throwInternalError, throwParseError } from "@arktype/utils"
+import { isKeyOf, throwInternalError, throwParseError } from "@arktype/utils"
 import type { TypeNode } from "../../../nodes/composite/type.js"
-import type { BoundNode, Comparator } from "../../../nodes/primitive/bound.js"
+import type { Comparator } from "../../../nodes/primitive/bound.js"
+import {
+    invertedComparators,
+    minComparators
+} from "../../../nodes/primitive/bound.js"
 import type { ParseContext } from "../../../scope.js"
 import { Scanner } from "../shift/scanner.js"
-import type { StringifiablePrefixOperator } from "./shared.js"
+import type {
+    LimitLiteral,
+    OpenLeftBound,
+    StringifiablePrefixOperator
+} from "./shared.js"
 import {
+    writeMultipleLeftBoundsMessage,
     writeUnclosedGroupMessage,
-    writeUnmatchedGroupCloseMessage
+    writeUnmatchedGroupCloseMessage,
+    writeUnpairableComparatorMessage
 } from "./shared.js"
 
 type BranchState = {
     prefixes: StringifiablePrefixOperator[]
-    range?: BoundNode
-    intersection?: TypeNode
-    union?: TypeNode
+    leftBound?: OpenLeftBound
+    "&"?: TypeNode
+    "|"?: TypeNode
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
@@ -43,19 +53,12 @@ export class DynamicState {
         return this.root !== undefined
     }
 
-    setRoot(root: TypeNode) {
-        this.root = root
+    unsetRoot() {
+        this.root = undefined
     }
 
-    ejectRoot() {
-        if (!this.root) {
-            return throwInternalError(
-                `Unexpected attempt to eject an unset root.`
-            )
-        }
-        const root = this.root
-        this.root = undefined
-        return root
+    setRoot(root: TypeNode) {
+        this.root = root
     }
 
     finalize(finalizer: Scanner.FinalizingLookahead) {
@@ -66,37 +69,32 @@ export class DynamicState {
         this.finalizer = finalizer
     }
 
-    reduceLeftBound(limit: number | Date, comparator: Comparator) {
-        // const invertedComparator = invertedComparators[comparator]
-        // if (!isKeyOf(invertedComparator, minComparators)) {
-        //     return this.error(writeUnpairableComparatorMessage(comparator))
-        // }
-        // if (this.branches.range) {
-        //     const min = this.branches.range.min!
-        //     return this.error(
-        //         // TODO: fix casts
-        //         writeMultipleLeftBoundsMessage(
-        //             `${min.limit}` as LimitLiteral,
-        //             min.comparator,
-        //             `${limit}` as LimitLiteral,
-        //             invertedComparator
-        //         )
-        //     )
-        // }
-        // this.branches.range = rangeNode(
-        //     [{ comparator: invertedComparator, limit }],
-        //     this.ctx
-        // )
+    reduceLeftBound(limit: LimitLiteral, comparator: Comparator) {
+        const invertedComparator = invertedComparators[comparator]
+        if (!isKeyOf(invertedComparator, minComparators)) {
+            return this.error(writeUnpairableComparatorMessage(comparator))
+        }
+        if (this.branches.leftBound) {
+            return this.error(
+                writeMultipleLeftBoundsMessage(
+                    this.branches.leftBound.limit,
+                    this.branches.leftBound.comparator,
+                    limit,
+                    invertedComparator
+                )
+            )
+        }
+        this.branches.leftBound = { comparator: invertedComparator, limit }
     }
 
     finalizeBranches() {
         this.assertRangeUnset()
-        if (this.branches.union) {
+        if (this.branches["|"]) {
             this.pushRootToBranch("|")
-            this.root = this.branches.union
-        } else if (this.branches.intersection) {
+            this.root = this.branches["|"]
+        } else if (this.branches["&"]) {
             this.pushRootToBranch("&")
-            this.root = this.branches.intersection
+            this.root = this.branches["&"]
         } else {
             this.applyPrefixes()
         }
@@ -130,15 +128,14 @@ export class DynamicState {
     pushRootToBranch(token: "|" | "&") {
         this.assertRangeUnset()
         this.applyPrefixes()
-        const root = this.ejectRoot()
-        this.branches.intersection =
-            this.branches.intersection?.and(root) ?? root
+        const root = this.root!
+        this.branches["&"] = this.branches["&"]?.and(root) ?? root
         if (token === "|") {
-            this.branches.union =
-                this.branches.union?.or(this.branches.intersection) ??
-                this.branches.intersection
-            delete this.branches.intersection
+            this.branches["|"] =
+                this.branches["|"]?.or(this.branches["&"]) ?? this.branches["&"]
+            delete this.branches["&"]
         }
+        this.root = undefined
     }
 
     private assertRangeUnset() {
@@ -166,11 +163,7 @@ export class DynamicState {
         //     :
         return (
             this.branches.prefixes.at(-1) ??
-            (this.branches.intersection
-                ? "&"
-                : this.branches.union
-                ? "|"
-                : undefined)
+            (this.branches["&"] ? "&" : this.branches["|"] ? "|" : undefined)
         )
     }
 

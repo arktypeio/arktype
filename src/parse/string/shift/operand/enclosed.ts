@@ -1,9 +1,12 @@
-import { isKeyOf } from "../../../../../dev/utils/src/main.js"
+import { isKeyOf } from "@arktype/utils"
+import { predicateNode } from "../../../../nodes/composite/predicate.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
+import { valueNode } from "../../../../nodes/primitive/basis/value.js"
 import type { RegexLiteral } from "../../../ast/ast.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
+import type { DateLiteral } from "./date.js"
 import { tryParseDate, writeInvalidDateMessage } from "./date.js"
 
 export type StringLiteral<Text extends string = string> =
@@ -44,13 +47,20 @@ export const parseEnclosed = (
     } else if (isKeyOf(enclosing, enclosingQuote)) {
         s.root = typeNode({ basis: ["===", enclosed] }, s.ctx)
     } else {
+        const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
+        // TODO: cleanup once we have new node input format
         s.root = typeNode(
-            {
-                basis: [
-                    "===",
-                    tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-                ]
-            },
+            [
+                predicateNode(
+                    [
+                        valueNode(date, {
+                            baseName: s.ctx.baseName,
+                            parsedFrom: token as DateLiteral
+                        })
+                    ],
+                    s.ctx
+                )
+            ],
             s.ctx
         )
     }
