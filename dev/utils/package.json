@@ -21,11 +21,6 @@
         "dist",
         "!*.tsbuildinfo"
     ],
-    "devDependencies": {
-        "ts-node": "10.9.1",
-        "mocha": "10.2.0",
-        "typescript": "5.0.4"
-    },
     "scripts": {
         "build": "ts ../scripts/build.ts",
         "test": "pnpm mocha"
