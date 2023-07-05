@@ -1,4 +1,4 @@
-import type { error, NumberLiteral } from "@arktype/utils"
+import type { error } from "@arktype/utils"
 import type {
     Comparator,
     InvertedComparators,

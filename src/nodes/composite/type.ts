@@ -171,12 +171,11 @@ export const typeNode = defineComposite<TypeNode>(
                     base.meta
                 )
             },
-            constrain: (): any => {
-                return this as never
-                // return typeNode(
-                //     this.branches.map((branch) => branch.constrain(kind, def)),
-                //     base.context
-                // )
+            constrain(kind, def): any {
+                return typeNode(
+                    this.branches.map((branch) => branch.constrain(kind, def)),
+                    base.meta
+                )
             },
             equals(other) {
                 return this === other

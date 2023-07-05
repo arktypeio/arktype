@@ -114,53 +114,6 @@ class F {
     }
 }
 
-export const parseOperator = (s: DynamicStateWithRoot): void => {
-    const lookahead = s.scanner.shift()
-    return lookahead === ""
-        ? s.finalize("")
-        : lookahead === "["
-        ? s.scanner.shift() === "]"
-            ? s.setRoot(s.root.array())
-            : s.error(incompleteArrayTokenMessage)
-        : lookahead === "|" || lookahead === "&"
-        ? s.pushRootToBranch(lookahead)
-        : lookahead === ")"
-        ? s.finalizeGroup()
-        : Scanner.lookaheadIsFinalizing(lookahead, s.scanner.unscanned)
-        ? s.finalize(lookahead)
-        : isKeyOf(lookahead, comparatorStartChars)
-        ? parseBound(s, lookahead)
-        : lookahead === "%"
-        ? parseDivisor(s)
-        : lookahead === " "
-        ? parseOperator(s)
-        : s.error(writeUnexpectedCharacterMessage(lookahead))
-}
-
-// export type parseOperator<s extends StaticState> =
-//     s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
-//         ? lookahead extends "["
-//             ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
-//                 ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
-//                 : state.error<incompleteArrayTokenMessage>
-//             : lookahead extends "|" | "&"
-//             ? state.reduceBranch<s, lookahead, unscanned>
-//             : lookahead extends ")"
-//             ? state.finalizeGroup<s, unscanned>
-//             : Scanner.lookaheadIsFinalizing<lookahead, unscanned> extends true
-//             ? state.finalize<
-//                   state.scanTo<s, unscanned>,
-//                   lookahead & Scanner.FinalizingLookahead
-//               >
-//             : lookahead extends ComparatorStartChar
-//             ? parseBound<s, lookahead, unscanned>
-//             : lookahead extends "%"
-//             ? parseDivisor<s, unscanned>
-//             : lookahead extends Scanner.WhiteSpaceToken
-//             ? parseOperator<state.scanTo<s, unscanned>>
-//             : state.error<writeUnexpectedCharacterMessage<lookahead>>
-//         : state.finalize<s, "">
-
 // This is used to generate highlighting.png
 const highlighted = type({
     literals: "'foo' | 'bar' | true",

@@ -16,6 +16,7 @@ import { Scanner } from "../shift/scanner.js"
 import type { StringifiablePrefixOperator } from "./shared.js"
 import {
     writeMultipleLeftBoundsMessage,
+    writeOpenRangeMessage,
     writeUnclosedGroupMessage,
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
@@ -146,15 +147,14 @@ export class DynamicState {
     }
 
     private assertRangeUnset() {
-        // if (this.branches.range) {
-        //     const min = this.branches.range.min!
-        //     return this.error(
-        //         writeOpenRangeMessage(
-        //             `${min.limit}` as LimitLiteral,
-        //             min.comparator
-        //         )
-        //     )
-        // }
+        if (this.branches.leftBound) {
+            return this.error(
+                writeOpenRangeMessage(
+                    this.branches.leftBound.limit,
+                    this.branches.leftBound.comparator
+                )
+            )
+        }
     }
 
     reduceGroupOpen() {

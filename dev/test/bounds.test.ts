@@ -6,7 +6,7 @@ import { writeIncompatibleRangeMessage } from "../../src/nodes/primitive/bound.j
 import {
     writeDoubleRightBoundMessage,
     writeUnboundableMessage
-} from "../../src/parse/ast/bound.js"
+} from "../../src/parse/ast/bounds.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
