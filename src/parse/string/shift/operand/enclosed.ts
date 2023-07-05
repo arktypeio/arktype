@@ -1,7 +1,10 @@
-import { typeNode } from "../../../../main.js"
+import { isKeyOf } from "../../../../../dev/utils/src/main.js"
+import { typeNode } from "../../../../nodes/composite/type.js"
+import type { RegexLiteral } from "../../../ast/ast.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
+import { tryParseDate, writeInvalidDateMessage } from "./date.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -13,54 +16,89 @@ export type DoubleQuotedStringLiteral<Text extends string = string> =
 export type SingleQuotedStringLiteral<Text extends string = string> =
     `'${Text}'`
 
-export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
-    const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing])
+export const parseEnclosed = (
+    s: DynamicState,
+    enclosing: EnclosingStartToken
+) => {
+    const enclosed = s.scanner.shiftUntil(
+        untilLookaheadIsClosing[enclosingTokens[enclosing]]
+    )
     if (s.scanner.lookahead === "") {
-        return s.error(writeUnterminatedEnclosedMessage(token, enclosing))
+        return s.error(writeUnterminatedEnclosedMessage(enclosed, enclosing))
     }
     // Shift the scanner one additional time for the second enclosing token
-    if (s.scanner.shift() === "/") {
+    const token = `${enclosing}${enclosed}${s.scanner.shift()}`
+    if (enclosing === "/") {
         // fail parsing if the regex is invalid
         try {
-            new RegExp(token)
+            new RegExp(enclosed)
         } catch (e) {
+            // rethrow as a ParseError
             s.error(`${e instanceof Error ? e.message : e}`)
         }
         // flags are not currently supported for embedded regex literals
-        s.root = typeNode({ basis: "string", regex: `/${token}/` })
+        s.root = typeNode({ basis: "string", regex: token as RegexLiteral })
+    } else if (isKeyOf(enclosing, enclosingQuote)) {
+        s.root = typeNode({ basis: ["===", enclosed] })
     } else {
-        s.root = typeNode({ basis: ["===", token] })
+        s.root = typeNode({
+            basis: [
+                "===",
+                tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
+            ]
+        })
     }
 }
 
 export type parseEnclosed<
     s extends StaticState,
-    enclosing extends EnclosingChar,
+    enclosingStart extends EnclosingStartToken,
     unscanned extends string
-> = Scanner.shiftUntil<unscanned, enclosing> extends Scanner.shiftResult<
-    infer scanned,
-    infer nextUnscanned
->
+> = Scanner.shiftUntil<
+    unscanned,
+    EnclosingTokens[enclosingStart]
+> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? nextUnscanned extends ""
-        ? state.error<writeUnterminatedEnclosedMessage<scanned, enclosing>>
+        ? state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
         : state.setRoot<
               s,
-              `${enclosing}${scanned}${enclosing}`,
+              `${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`,
               nextUnscanned extends Scanner.shift<string, infer unscanned>
                   ? unscanned
                   : ""
           >
     : never
 
-export const enclosingChar = {
+export const enclosingQuote = {
     "'": 1,
-    '"': 1,
-    "/": 1
-}
+    '"': 1
+} as const
 
-export type EnclosingChar = keyof typeof enclosingChar
+export type EnclosingQuote = keyof typeof enclosingQuote
 
-const untilLookaheadIsClosing: Record<EnclosingChar, Scanner.UntilCondition> = {
+export const enclosingChar = {
+    "/": 1,
+    ...enclosingQuote
+} as const
+
+export const enclosingTokens = {
+    "d'": "'",
+    'd"': '"',
+    "'": "'",
+    '"': '"',
+    "/": "/"
+} as const
+
+export type EnclosingTokens = typeof enclosingTokens
+
+export type EnclosingStartToken = keyof EnclosingTokens
+
+export type EnclosingEndToken = EnclosingTokens[keyof EnclosingTokens]
+
+export const untilLookaheadIsClosing: Record<
+    EnclosingEndToken,
+    Scanner.UntilCondition
+> = {
     "'": (scanner) => scanner.lookahead === `'`,
     '"': (scanner) => scanner.lookahead === `"`,
     "/": (scanner) => scanner.lookahead === `/`
@@ -76,14 +114,16 @@ type enclosingCharDescriptions = typeof enclosingCharDescriptions
 
 export const writeUnterminatedEnclosedMessage = <
     fragment extends string,
-    enclosing extends EnclosingChar
+    enclosingStart extends EnclosingStartToken
 >(
     fragment: fragment,
-    enclosing: enclosing
-): writeUnterminatedEnclosedMessage<fragment, enclosing> =>
-    `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
+    enclosingStart: enclosingStart
+): writeUnterminatedEnclosedMessage<fragment, enclosingStart> =>
+    `${enclosingStart}${fragment} requires a closing ${
+        enclosingCharDescriptions[enclosingTokens[enclosingStart]]
+    }`
 
-type writeUnterminatedEnclosedMessage<
+export type writeUnterminatedEnclosedMessage<
     fragment extends string,
-    enclosing extends EnclosingChar
-> = `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
+    enclosingStart extends EnclosingStartToken
+> = `${enclosingStart}${fragment} requires a closing ${enclosingCharDescriptions[EnclosingTokens[enclosingStart]]}`

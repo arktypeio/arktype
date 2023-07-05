@@ -82,7 +82,7 @@ const next = (s: DynamicState) =>
 
 type next<s extends StaticState, $, args> = s["root"] extends undefined
     ? parseOperand<s, $, args>
-    : parseOperator<s>
+    : parseOperator<s, $, args>
 
 export type extractFinalizedResult<s extends StaticState> =
     s["finalizer"] extends error

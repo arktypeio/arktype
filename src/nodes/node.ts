@@ -59,7 +59,7 @@ type NodeExtension<node extends BaseNode> = (
     base: basePropsOf<node>
 ) => extendedPropsOf<node>
 
-type basePropsOf<node extends BaseNode> = Pick<node, BuiltinBaseKey>
+export type basePropsOf<node extends BaseNode> = Pick<node, BuiltinBaseKey>
 
 type extendedPropsOf<node extends BaseNode> = Omit<
     node,

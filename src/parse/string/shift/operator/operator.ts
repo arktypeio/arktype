@@ -29,29 +29,32 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         : s.error(writeUnexpectedCharacterMessage(lookahead))
 }
 
-export type parseOperator<s extends StaticState> =
-    s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
-        ? lookahead extends "["
-            ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
-                ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
-                : state.error<incompleteArrayTokenMessage>
-            : lookahead extends "|" | "&"
-            ? state.reduceBranch<s, lookahead, unscanned>
-            : lookahead extends ")"
-            ? state.finalizeGroup<s, unscanned>
-            : Scanner.lookaheadIsFinalizing<lookahead, unscanned> extends true
-            ? state.finalize<
-                  state.scanTo<s, unscanned>,
-                  lookahead & Scanner.FinalizingLookahead
-              >
-            : lookahead extends ComparatorStartChar
-            ? parseBound<s, lookahead, unscanned>
-            : lookahead extends "%"
-            ? parseDivisor<s, unscanned>
-            : lookahead extends Scanner.WhiteSpaceToken
-            ? parseOperator<state.scanTo<s, unscanned>>
-            : state.error<writeUnexpectedCharacterMessage<lookahead>>
-        : state.finalize<s, "">
+export type parseOperator<
+    s extends StaticState,
+    $,
+    args
+> = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
+    ? lookahead extends "["
+        ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
+            ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
+            : state.error<incompleteArrayTokenMessage>
+        : lookahead extends "|" | "&"
+        ? state.reduceBranch<s, lookahead, unscanned>
+        : lookahead extends ")"
+        ? state.finalizeGroup<s, unscanned>
+        : Scanner.lookaheadIsFinalizing<lookahead, unscanned> extends true
+        ? state.finalize<
+              state.scanTo<s, unscanned>,
+              lookahead & Scanner.FinalizingLookahead
+          >
+        : lookahead extends ComparatorStartChar
+        ? parseBound<s, lookahead, unscanned, $, args>
+        : lookahead extends "%"
+        ? parseDivisor<s, unscanned>
+        : lookahead extends Scanner.WhiteSpaceToken
+        ? parseOperator<state.scanTo<s, unscanned>, $, args>
+        : state.error<writeUnexpectedCharacterMessage<lookahead>>
+    : state.finalize<s, "">
 
 export const writeUnexpectedCharacterMessage = <
     char extends string,

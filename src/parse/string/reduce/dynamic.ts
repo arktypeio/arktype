@@ -13,7 +13,7 @@ import {
 } from "../../../nodes/primitive/range.js"
 import type { ParseContext } from "../../../scope.js"
 import { Scanner } from "../shift/scanner.js"
-import type { StringifiablePrefixOperator } from "./shared.js"
+import type { StringifiablePrefixOperator, ValidLiteral } from "./shared.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -75,7 +75,7 @@ export class DynamicState {
         this.finalizer = finalizer
     }
 
-    reduceLeftBound(limit: number, comparator: Comparator) {
+    reduceLeftBound(limit: number | Date, comparator: Comparator) {
         const invertedComparator = invertedComparators[comparator]
         if (!isKeyOf(invertedComparator, minComparators)) {
             return this.error(writeUnpairableComparatorMessage(comparator))
@@ -84,9 +84,9 @@ export class DynamicState {
             const min = this.branches.range.min!
             return this.error(
                 writeMultipleLeftBoundsMessage(
-                    `${min.limit}`,
+                    `${min.limit}` as ValidLiteral,
                     min.comparator,
-                    `${limit}`,
+                    `${limit}` as ValidLiteral,
                     invertedComparator
                 )
             )
@@ -152,7 +152,10 @@ export class DynamicState {
         if (this.branches.range) {
             const min = this.branches.range.min!
             return this.error(
-                writeOpenRangeMessage(`${min.limit}`, min.comparator)
+                writeOpenRangeMessage(
+                    `${min.limit}` as ValidLiteral,
+                    min.comparator
+                )
             )
         }
     }
