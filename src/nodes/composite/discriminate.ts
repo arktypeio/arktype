@@ -61,10 +61,13 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
     ] as [path: string[], kind: DiscriminantKind]
 }
 
-const discriminantCache = new Map<PredicateNode[], Discriminant | null>()
+const discriminantCache = new Map<
+    readonly PredicateNode[],
+    Discriminant | null
+>()
 
 export const discriminate = (
-    branches: PredicateNode[]
+    branches: readonly PredicateNode[]
 ): Discriminant | null => {
     if (branches.length < 2) {
         return null

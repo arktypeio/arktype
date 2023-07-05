@@ -108,7 +108,7 @@ export type parseGenericInstantiation<
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
     maybeParseReference(s, token) ??
-    maybeParseUnenclosedLiteral(token) ??
+    maybeParseUnenclosedLiteral(s, token) ??
     s.error(
         token === ""
             ? writeMissingOperandMessage(s)
@@ -135,14 +135,17 @@ const maybeParseReference = (
     return throwParseError(`Unexpected resolution ${stringify(resolution)}`)
 }
 
-const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
+const maybeParseUnenclosedLiteral = (
+    s: DynamicState,
+    token: string
+): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return typeNode({ basis: ["===", maybeNumber] })
+        return typeNode({ basis: ["===", maybeNumber] }, s.ctx)
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
-        return typeNode({ basis: ["===", maybeBigint] })
+        return typeNode({ basis: ["===", maybeBigint] }, s.ctx)
     }
 }
 

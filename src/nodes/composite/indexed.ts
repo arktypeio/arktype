@@ -75,7 +75,7 @@ export const extractArrayIndexRegex = (keyNode: TypeNode) => {
     if (!regexNode || regexNode.rule.length !== 1) {
         return
     }
-    const regexLiteral = regexNode.rule[0]
+    const regexLiteral = regexNode.rule
     if (!regexLiteral.endsWith(arrayIndexLiteralSuffix)) {
         return
     }

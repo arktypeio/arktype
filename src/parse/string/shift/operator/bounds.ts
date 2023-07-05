@@ -1,20 +1,20 @@
 import type { keySet } from "@arktype/utils"
 import { isKeyOf } from "@arktype/utils"
-import { Disjoint } from "../../../../nodes/disjoint.js"
 import type {
     Comparator,
     MaxComparator
 } from "../../../../nodes/primitive/range.js"
-import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
 import type { astToString } from "../../../ast/utils.js"
 import type {
     DynamicState,
     DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
-import type { LimitLiteral } from "../../reduce/shared.js"
-import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
+import type {
+    LimitLiteral,
+    writeUnpairableComparatorMessage
+} from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
-import { parseOperand } from "../operand/operand.js"
+import type { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseBound = (
@@ -96,42 +96,45 @@ export const parseRightBound = (
     s: DynamicStateWithRoot,
     comparator: Comparator
 ) => {
-    // store the node that will be bounded
-    const previousRoot = s.ejectRoot()
-    const previousScannerIndex = s.scanner.location
-    parseOperand(s)
-    // after parsing the next operand, use the locations to get the
-    // token from which it was parsed
-    const limitToken = s.scanner.sliceChars(
-        previousScannerIndex,
-        s.scanner.location
-    )
-    const limitNode = s.ejectRoot()
-    const limit = limitNode.value?.rule
-    if (typeof limit !== "number" && !(limit instanceof Date)) {
-        return s.error(
-            // use the reconstructed token for the invalid operand in the error message
-            writeInvalidLimitMessage(comparator, limitToken, "right")
-        )
-    }
-    if (!s.branches.range) {
-        // apply the new bound to the previous root and restore it as the state's root
-        s.setRoot(previousRoot.constrain("range", [{ comparator, limit }]))
-        return
-    }
-    if (!isKeyOf(comparator, maxComparators)) {
-        return s.error(writeUnpairableComparatorMessage(comparator))
-    }
-    const doubleBoundRange = s.branches.range.intersect(
-        rangeNode([{ comparator, limit }])
-    )
-    if (doubleBoundRange instanceof Disjoint) {
-        return doubleBoundRange.throw()
-    }
-    // remove the included left-bound from state
-    delete s.branches.range
-    // restore the previous root, now constrained by the newly parsed double-bounded Range
-    s.setRoot(previousRoot.constrain("range", doubleBoundRange.rule))
+    // TODO: reenable
+    s
+    comparator
+    // // store the node that will be bounded
+    // const previousRoot = s.ejectRoot()
+    // const previousScannerIndex = s.scanner.location
+    // parseOperand(s)
+    // // after parsing the next operand, use the locations to get the
+    // // token from which it was parsed
+    // const limitToken = s.scanner.sliceChars(
+    //     previousScannerIndex,
+    //     s.scanner.location
+    // )
+    // const limitNode = s.ejectRoot()
+    // const limit = limitNode.value?.rule
+    // if (typeof limit !== "number" && !(limit instanceof Date)) {
+    //     return s.error(
+    //         // use the reconstructed token for the invalid operand in the error message
+    //         writeInvalidLimitMessage(comparator, limitToken, "right")
+    //     )
+    // }
+    // if (!s.branches.range) {
+    //     // apply the new bound to the previous root and restore it as the state's root
+    //     s.setRoot(previousRoot.constrain("range", [{ comparator, limit }]))
+    //     return
+    // }
+    // if (!isKeyOf(comparator, maxComparators)) {
+    //     return s.error(writeUnpairableComparatorMessage(comparator))
+    // }
+    // const doubleBoundRange = s.branches.range.intersect(
+    //     rangeNode([{ comparator, limit }])
+    // )
+    // if (doubleBoundRange instanceof Disjoint) {
+    //     return doubleBoundRange.throw()
+    // }
+    // // remove the included left-bound from state
+    // delete s.branches.range
+    // // restore the previous root, now constrained by the newly parsed double-bounded Range
+    // s.setRoot(previousRoot.constrain("range", doubleBoundRange.rule))
 }
 
 export type parseRightBound<

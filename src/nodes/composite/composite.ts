@@ -4,7 +4,8 @@ import type {
     BaseNode,
     BaseNodeConfig,
     BaseNodeImplementation,
-    NodeExtensions
+    basePropsOf,
+    extendedPropsOf
 } from "../node.js"
 import { defineNode } from "../node.js"
 import type { TypeNode } from "./type.js"
@@ -33,10 +34,12 @@ const intersectionCache: Record<string, BaseNode | Disjoint> = {}
 
 export const defineComposite = <node extends CompositeNode>(
     def: CompositeNodeImplementation<node>,
-    extension: NodeExtensions<node>
+    extension: (
+        base: basePropsOf<node>
+    ) => extendedPropsOf<node, "references" | "intersect" | "input">
 ) => {
     const createNode = defineNode(def, (base) => {
-        const instance = Object.assign(extension(base), {
+        const compositeBase = Object.assign(base, {
             references: def.getReferences(base.rule),
             intersect: (other: node) => {
                 if (instance === other) {
@@ -55,11 +58,19 @@ export const defineComposite = <node extends CompositeNode>(
                     result instanceof Disjoint ? result.invert() : result
                 return result
             }
-        }) as node
+        })
+        const instance = Object.assign(
+            extension(compositeBase),
+            compositeBase
+        ) as node
         return instance
     })
-    return (input: node["input"], ctx: ParseContext) =>
-        createNode(def.parse(input, ctx), ctx)
+    // TODO: better way to handle input
+    return (input: node["input"], ctx: ParseContext) => {
+        const result = createNode(def.parse(input, ctx), ctx)
+        result.input = input
+        return result
+    }
 }
 
 export interface CompositeNode<
@@ -67,5 +78,5 @@ export interface CompositeNode<
 > extends BaseNode<config> {
     input: config["input"]
     references: TypeNode[]
-    intersect(other: this): this["rule"] | Disjoint
+    intersect(other: this): this | Disjoint
 }

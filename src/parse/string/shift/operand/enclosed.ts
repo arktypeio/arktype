@@ -37,16 +37,22 @@ export const parseEnclosed = (
             s.error(`${e instanceof Error ? e.message : e}`)
         }
         // flags are not currently supported for embedded regex literals
-        s.root = typeNode({ basis: "string", regex: token as RegexLiteral })
+        s.root = typeNode(
+            { basis: "string", regex: token as RegexLiteral },
+            s.ctx
+        )
     } else if (isKeyOf(enclosing, enclosingQuote)) {
-        s.root = typeNode({ basis: ["===", enclosed] })
+        s.root = typeNode({ basis: ["===", enclosed] }, s.ctx)
     } else {
-        s.root = typeNode({
-            basis: [
-                "===",
-                tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-            ]
-        })
+        s.root = typeNode(
+            {
+                basis: [
+                    "===",
+                    tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
+                ]
+            },
+            s.ctx
+        )
     }
 }
 

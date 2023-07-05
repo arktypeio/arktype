@@ -1,21 +1,13 @@
 import type { requireKeys } from "@arktype/utils"
-import { isKeyOf, throwInternalError, throwParseError } from "@arktype/utils"
+import { throwInternalError, throwParseError } from "@arktype/utils"
 import type { TypeNode } from "../../../nodes/composite/type.js"
 import type { BoundNode, Comparator } from "../../../nodes/primitive/range.js"
-import {
-    invertedComparators,
-    minComparators,
-    rangeNode
-} from "../../../nodes/primitive/range.js"
 import type { ParseContext } from "../../../scope.js"
 import { Scanner } from "../shift/scanner.js"
-import type { LimitLiteral, StringifiablePrefixOperator } from "./shared.js"
+import type { StringifiablePrefixOperator } from "./shared.js"
 import {
-    writeMultipleLeftBoundsMessage,
-    writeOpenRangeMessage,
     writeUnclosedGroupMessage,
-    writeUnmatchedGroupCloseMessage,
-    writeUnpairableComparatorMessage
+    writeUnmatchedGroupCloseMessage
 } from "./shared.js"
 
 type BranchState = {
@@ -72,25 +64,26 @@ export class DynamicState {
     }
 
     reduceLeftBound(limit: number | Date, comparator: Comparator) {
-        const invertedComparator = invertedComparators[comparator]
-        if (!isKeyOf(invertedComparator, minComparators)) {
-            return this.error(writeUnpairableComparatorMessage(comparator))
-        }
-        if (this.branches.range) {
-            const min = this.branches.range.min!
-            return this.error(
-                // TODO: fix casts
-                writeMultipleLeftBoundsMessage(
-                    `${min.limit}` as LimitLiteral,
-                    min.comparator,
-                    `${limit}` as LimitLiteral,
-                    invertedComparator
-                )
-            )
-        }
-        this.branches.range = rangeNode([
-            { comparator: invertedComparator, limit }
-        ])
+        // const invertedComparator = invertedComparators[comparator]
+        // if (!isKeyOf(invertedComparator, minComparators)) {
+        //     return this.error(writeUnpairableComparatorMessage(comparator))
+        // }
+        // if (this.branches.range) {
+        //     const min = this.branches.range.min!
+        //     return this.error(
+        //         // TODO: fix casts
+        //         writeMultipleLeftBoundsMessage(
+        //             `${min.limit}` as LimitLiteral,
+        //             min.comparator,
+        //             `${limit}` as LimitLiteral,
+        //             invertedComparator
+        //         )
+        //     )
+        // }
+        // this.branches.range = rangeNode(
+        //     [{ comparator: invertedComparator, limit }],
+        //     this.ctx
+        // )
     }
 
     finalizeBranches() {
@@ -146,15 +139,15 @@ export class DynamicState {
     }
 
     private assertRangeUnset() {
-        if (this.branches.range) {
-            const min = this.branches.range.min!
-            return this.error(
-                writeOpenRangeMessage(
-                    `${min.limit}` as LimitLiteral,
-                    min.comparator
-                )
-            )
-        }
+        // if (this.branches.range) {
+        //     const min = this.branches.range.min!
+        //     return this.error(
+        //         writeOpenRangeMessage(
+        //             `${min.limit}` as LimitLiteral,
+        //             min.comparator
+        //         )
+        //     )
+        // }
     }
 
     reduceGroupOpen() {
@@ -165,14 +158,17 @@ export class DynamicState {
     }
 
     previousOperator() {
-        return this.branches.range?.min
-            ? this.branches.range.min.comparator
-            : this.branches.prefixes.at(-1) ??
-                  (this.branches.intersection
-                      ? "&"
-                      : this.branches.union
-                      ? "|"
-                      : undefined)
+        // this.branches.range?.min
+        //     ? this.branches.range.min.comparator
+        //     :
+        return (
+            this.branches.prefixes.at(-1) ??
+            (this.branches.intersection
+                ? "&"
+                : this.branches.union
+                ? "|"
+                : undefined)
+        )
     }
 
     shiftedByOne() {

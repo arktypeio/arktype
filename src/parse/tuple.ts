@@ -22,7 +22,7 @@ import type { NodeEntry } from "../nodes/composite/props.js"
 import { propsNode } from "../nodes/composite/props.js"
 import type { TypeNode } from "../nodes/composite/type.js"
 import { builtins, node, typeNode } from "../nodes/composite/type.js"
-import { arrayClassNode } from "../nodes/primitive/basis/class.js"
+import { classNode } from "../nodes/primitive/basis/class.js"
 import type { ParseContext } from "../scope.js"
 import type { extractIn, extractOut } from "../type.js"
 import {
@@ -88,7 +88,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
         })
     }
     const predicate = predicateNode(
-        [arrayClassNode(), propsNode(props, ctx)],
+        [classNode(Array, ctx), propsNode(props, ctx)],
         ctx
     )
     return typeNode([predicate], ctx)
@@ -374,7 +374,8 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
             writeMalformedFunctionalExpressionMessage("=>", def[2])
         )
     }
-    return ctx.scope.parse(def[0], ctx).constrain("morph", def[2] as Morph)
+    // TODO: fix
+    return ctx.scope.parse(def[0], ctx) //.constrain("morph", def[2] as Morph)
 }
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o

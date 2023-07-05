@@ -31,7 +31,7 @@ export type PropsEntries = readonly NodeEntry[]
 
 export type PropsNodeConfig = defineComposite<{
     kind: "props"
-    input: PropsInput
+    input: PropsInput | PropsEntries
     rule: PropsEntries
     meta: {}
 }>
@@ -57,10 +57,11 @@ export const propsNode = defineComposite<PropsNode>(
     {
         kind: "props",
         parse: (input, ctx) => {
+            // TODO: better strategy for sorting
             const rule = isParsedPropsRule(input)
                 ? input
                 : parsePropsInput(input, ctx)
-            return rule.sort((l, r) => {
+            return [...rule].sort((l, r) => {
                 // Sort keys first by precedence (prerequisite,required,optional,indexed),
                 // then alphebetically by key
                 const lPrecedence = kindPrecedence(l.key)

@@ -28,10 +28,13 @@ export type NodeExtensions<node extends BaseNode> = (
 
 export type basePropsOf<node extends BaseNode> = Pick<node, BuiltinBaseKey>
 
-type extendedPropsOf<node extends BaseNode> = Omit<
+export type extendedPropsOf<
+    node extends BaseNode,
+    additionalBuiltinKey extends PropertyKey = never
+> = Omit<
     node,
     // we don't actually need the inferred symbol at runtime
-    BuiltinBaseKey | typeof inferred
+    additionalBuiltinKey | BuiltinBaseKey | typeof inferred
 > &
     ThisType<node>
 

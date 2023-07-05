@@ -14,9 +14,15 @@ import {
     throwInternalError,
     throwParseError
 } from "@arktype/utils"
-import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
-import type { Morph, Narrow, NarrowCast } from "../../parse/tuple.js"
+import type {
+    inferMorphOut,
+    Morph,
+    Narrow,
+    NarrowCast,
+    Out
+} from "../../parse/tuple.js"
+import type { ParseContext } from "../../scope.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
 import { createNodeOfKind, precedenceByKind } from "../kinds.js"
@@ -42,7 +48,7 @@ import { builtins } from "./type.js"
 
 export type PredicateNodeConfig = defineComposite<{
     kind: "predicate"
-    input: PredicateInput
+    input: PredicateInput | PredicateChildren
     rule: PredicateChildren
     meta: {}
 }>
@@ -67,7 +73,7 @@ export const predicateNode = defineComposite<PredicateNode>(
             if (isArray(input)) {
                 children = input
             } else {
-                const basis = input.basis && basisNodeFrom(input.basis)
+                const basis = input.basis && basisNodeFrom(input.basis, ctx)
                 children = basis ? [basis] : []
                 for (const kind of constraintKindNames) {
                     if (input[kind]) {
@@ -114,13 +120,15 @@ export const predicateNode = defineComposite<PredicateNode>(
             }
             return result
         },
-        intersect: (l, r) => {
+        intersect: (l, r): PredicateNode | Disjoint => {
             // TODO: can props imply object basis for compilation?
+            // TODO: Fix
+            // const basis = l.basis
+            //     ? r.basis
+            //         ? l.basis.intersect(r.basis)
+            //         : l.basis
+            //     : r.basis
             const basis = l.basis
-                ? r.basis
-                    ? l.basis.intersect(r.basis)
-                    : l.basis
-                : r.basis
             if (basis instanceof Disjoint) {
                 return basis
             }
@@ -136,18 +144,14 @@ export const predicateNode = defineComposite<PredicateNode>(
                 }
             }
             const rules: PredicateChildren = basis ? [basis] : []
-            // if one of the conditions is value, we've already checked
-            // if it's allowed by the opposite predicate, so the only
-            // constraint we have to worry about is morphs.
-            const intersectedKinds = basis?.hasKind("value")
-                ? (["morph"] as const)
-                : constraintKindNames
-            for (const kind of intersectedKinds) {
+            for (const kind of constraintKindNames) {
                 const lNode = l.getConstraint(kind)
                 const rNode = r.getConstraint(kind)
                 if (lNode) {
                     if (rNode) {
-                        const result = lNode.intersect(rNode as never)
+                        // TODO: fix
+                        const result = lNode
+                        // lNode.intersect(rNode as never)
                         // we may be missing out on deep discriminants here if e.g.
                         // there is a range Disjoint between two arrays, each of which
                         // contains objects that are discriminable. if we need to find
@@ -164,7 +168,8 @@ export const predicateNode = defineComposite<PredicateNode>(
                     rules.push(rNode)
                 }
             }
-            return rules
+            // TODO: bad context source
+            return predicateNode(rules, l.context)
         }
     },
     (base) => {
@@ -251,21 +256,22 @@ export const assertAllowsConstraint = (
             }
             return
         case "range": {
-            const bounds = node["rule"] as Range
-            if (domain !== "string" && domain !== "number") {
-                const isDateClassBasis =
-                    basis?.hasKind("class") && basis.extendsOneOf(Date)
-                if (isDateClassBasis) {
-                    assertValidLimit(bounds, "Date")
-                    return
-                }
-                const hasSizedClassBasis =
-                    basis?.hasKind("class") && basis.extendsOneOf(Array)
-                if (!hasSizedClassBasis) {
-                    throwParseError(writeUnboundableMessage(domain))
-                }
-            }
-            assertValidLimit(bounds, "number")
+            // TODO: reeanble
+            // const bounds = node["rule"] as Range
+            // if (domain !== "string" && domain !== "number") {
+            //     const isDateClassBasis =
+            //         basis?.hasKind("class") && basis.extendsOneOf(Date)
+            //     if (isDateClassBasis) {
+            //         assertValidLimit(bounds, "Date")
+            //         return
+            //     }
+            //     const hasSizedClassBasis =
+            //         basis?.hasKind("class") && basis.extendsOneOf(Array)
+            //     if (!hasSizedClassBasis) {
+            //         throwParseError(writeUnboundableMessage(domain))
+            //     }
+            // }
+            // assertValidLimit(bounds, "number")
             return
         }
         case "regex":
@@ -307,7 +313,7 @@ const constraintKindNames = [
     "narrow"
 ] as const satisfies List<ConstraintKind>
 
-export type ListableInputKind = "regex" | "narrow" | "morph"
+export type ListableInputKind = "regex" | "narrow"
 
 export type PredicateChildren =
     | [BasisNode, ...ConstraintNode[]]
@@ -337,7 +343,10 @@ export type ConstraintsInput<
     basis extends BasisInput | null = BasisInput | null
 > = BasisInput extends basis
     ? {
-          [k in ConstraintKind]?: unknownConstraintInput<k>
+          // TODO: remove morphs here? just to get rid of some type errors reincluding
+          [k in ConstraintKind | "morph"]?: k extends ConstraintKind
+              ? unknownConstraintInput<k>
+              : listable<Morph>
       }
     : basis extends BasisInput
     ? constraintsOf<basis>
@@ -348,18 +357,17 @@ type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
     :
           | ConstraintKinds[kind]["rule"]
           // Add the unlisted version as a valid input for these kinds
+          // TODO: fix these types, derive from nodes?
           | (kind extends ListableInputKind
-                ? ConstraintKinds[kind]["rule"][number]
+                ? readonly ConstraintKinds[kind]["rule"][]
                 : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =
-    // input["morph"] extends Morph<any, infer out>
-    //     ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
-    //     : input["morph"] extends readonly [...any[], Morph<any, infer out>]
-    // ?
-    // (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
-    //     :
-    inferPredicateInput<input>
+    input["morph"] extends Morph<any, infer out>
+        ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
+        : input["morph"] extends readonly [...any[], Morph<any, infer out>]
+        ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
+        : inferPredicateInput<input>
 
 type inferPredicateInput<input extends PredicateInput> =
     input["narrow"] extends NarrowCast<any, infer narrowed>
@@ -419,6 +427,7 @@ type domainConstraints<basis extends Domain> = basis extends "object"
 
 type functionalConstraints<input> = {
     narrow?: listable<Narrow<input>>
+    // TODO: remove?
     morph?: listable<Morph<input>>
 }
 
@@ -440,15 +449,16 @@ export type basisNodeFrom<input extends BasisInput> = input extends Domain
     : ValueNode
 
 export const basisNodeFrom = (
-    input: BasisInput
+    input: BasisInput,
+    ctx: ParseContext
 ): DomainNode | ClassNode | ValueNode => {
     switch (typeof input) {
         case "string":
-            return domainNode(input)
+            return domainNode(input, ctx)
         case "object":
-            return valueNode(input[1])
+            return valueNode(input[1], ctx)
         case "function":
-            return classNode(input)
+            return classNode(input, ctx)
         default:
             return throwInternalError(
                 `Unexpectedly got a basis input of type ${domainOf(input)}`

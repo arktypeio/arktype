@@ -49,5 +49,3 @@ export const classNode = defineNode<ClassNode>(
         }
     }
 )
-
-export const arrayClassNode = cached(() => classNode(Array))

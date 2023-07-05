@@ -18,10 +18,10 @@ import {
     writeInvalidLimitMessage
 } from "../../src/parse/string/shift/operator/bounds.js"
 
-export const expectedBoundsCondition = (...range: Range) =>
+export const expectedBoundsCondition = (...range: any) =>
     node({ basis: "number", range }).condition
 
-export const expectedDateBoundsCondition = (...range: Range) =>
+export const expectedDateBoundsCondition = (...range: any) =>
     node({ basis: Date, range }).condition
 
 suite("range", () => {
