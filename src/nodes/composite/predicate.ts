@@ -14,6 +14,7 @@ import {
     throwInternalError,
     throwParseError
 } from "@arktype/utils"
+import { compileCheck } from "../../compile/compile.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import type {
     inferMorphOut,
@@ -31,6 +32,7 @@ import type {
     BasisNode,
     inferBasis
 } from "../primitive/basis/basis.js"
+import { intersectBases } from "../primitive/basis/basis.js"
 import type { ClassNode } from "../primitive/basis/class.js"
 import { classNode } from "../primitive/basis/class.js"
 import type { DomainNode } from "../primitive/basis/domain.js"
@@ -104,38 +106,43 @@ export const predicateNode = defineComposite<PredicateNode>(
             children.flatMap((child) =>
                 child.hasKind("props") ? child.references : []
             ),
-        compile: (children, state) => {
+        compile: (children, ctx) => {
             let result = ""
             const initialChild = children.at(0)
             const basis = initialChild?.isBasis() ? initialChild : undefined
             if (basis) {
-                state.bases.push(basis)
+                ctx.bases.push(basis)
             }
             for (const child of children) {
-                const childResult = child.compile(state)
+                const childResult = child.hasKind("props")
+                    ? child.compile(ctx)
+                    : compileCheck(
+                          // TODO: fix
+                          child.kind === "narrow" ? "custom" : child.kind,
+                          child.rule,
+                          child.compile(ctx),
+                          ctx
+                      )
                 if (childResult) {
                     result = result ? `${result}\n${childResult}` : childResult
                 }
             }
             if (basis) {
-                state.bases.pop()
+                ctx.bases.pop()
             }
             return result
         },
         intersect: (l, r): PredicateNode | Disjoint => {
             // TODO: can props imply object basis for compilation?
-            // TODO: Fix
-            // const basis = l.basis
-            //     ? r.basis
-            //         ? l.basis.intersect(r.basis)
-            //         : l.basis
-            //     : r.basis
             const basis = l.basis
+                ? r.basis
+                    ? intersectBases(l.basis, r.basis)
+                    : l.basis
+                : r.basis
             if (basis instanceof Disjoint) {
                 return basis
             }
-            // check l.basis instead of l.value since l.value will
-            // only be set if the value is "pure", i.e. has no morphs
+            // TODO: figure out how .value works with morphs & other metadata
             if (l.basis?.hasKind("value")) {
                 if (!r.allows(l.basis.rule)) {
                     return Disjoint.from("assignability", r, l.basis)
@@ -257,7 +264,7 @@ export const assertAllowsConstraint = (
                 throwParseError(writeIndivisibleMessage(domain))
             }
             return
-        case "range":
+        case "bound":
             // TODO: reeanble
             // const bounds = node["rule"] as Range
             // if (domain !== "string" && domain !== "number") {
@@ -308,7 +315,7 @@ export const throwInvalidConstraintError = (
 
 const constraintKindNames = [
     "divisor",
-    "range",
+    "bound",
     "regex",
     "props",
     "narrow"
@@ -323,7 +330,7 @@ export type PredicateChildren =
 export type ConstraintNode = ConstraintKinds[ConstraintKind]
 type ConstraintKinds = Pick<
     NodeKinds,
-    "range" | "divisor" | "regex" | "props" | "narrow"
+    "bound" | "divisor" | "regex" | "props" | "narrow"
 >
 
 export type PredicateChildKind = "basis" | ConstraintKind

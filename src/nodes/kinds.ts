@@ -30,7 +30,7 @@ export type NodeKinds = {
     domain: DomainNode
     class: ClassNode
     value: ValueNode
-    range: BoundNode
+    bound: BoundNode
     divisor: DivisorNode
     regex: RegexNode
     props: PropsNode
@@ -51,7 +51,7 @@ export const precedenceByKind = {
     class: 1,
     value: 1,
     // shallow checks
-    range: 2,
+    bound: 2,
     divisor: 2,
     regex: 2,
     // deep checks
@@ -70,13 +70,13 @@ const nodeKinds = cached(
             domain: domainNode,
             class: classNode,
             value: valueNode,
-            range: boundNode,
+            bound: boundNode,
             divisor: divisorNode,
             regex: regexNode,
             props: propsNode,
             narrow: narrowNode
             // morph: morphNode
-        } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k]> })
+        }) satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k]> }
 )
 
 export type CompositeNodeKind = extend<NodeKind, "type" | "predicate" | "props">

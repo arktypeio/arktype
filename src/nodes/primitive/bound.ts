@@ -24,7 +24,7 @@ export type Range =
 export interface BoundMeta extends BaseNodeMeta {}
 
 export type BoundConfig = definePrimitive<{
-    kind: "range"
+    kind: "bound"
     rule: Bound
     intersectionGroup: Range
     meta: BoundMeta
@@ -127,7 +127,7 @@ export const intersectRanges: PrimitiveIntersection<BoundConfig> = (l) => {
 
 export const boundNode = defineNode<BoundNode>(
     {
-        kind: "range",
+        kind: "bound",
         compile: (bound, ctx) => {
             const lastBasis = ctx.bases.at(-1)
             const size = lastBasis

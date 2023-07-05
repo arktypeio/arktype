@@ -15,9 +15,11 @@
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "prettier.prettierPath": "./node_modules/prettier",
+    // NOTE: these are also maintained in package.json under "mocha"
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
-        "--no-warnings=ExperimentalWarning"
+        "--no-warnings=ExperimentalWarning",
+        "--conditions=arktype-dev"
     ],
     "mochaExplorer.require": "dev/configs/mocha.fixtures.ts",
     "mochaExplorer.timeout": 0,

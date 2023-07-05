@@ -220,8 +220,8 @@ export class KeyProblem extends Problem<KeyProblemKind> {
     mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class RangeProblem extends Problem<Bound, NumericallyBoundableData> {
-    readonly code = "range"
+export class BoundProblem extends Problem<Bound, NumericallyBoundableData> {
+    readonly code = "bound"
 
     get mustBe() {
         return `${numericComparatorDescriptions[this.rule.comparator]} ${
@@ -282,7 +282,7 @@ export const problemsByCode = defineProblemsCode({
     divisor: DivisorProblem,
     class: ClassProblem,
     key: KeyProblem,
-    range: RangeProblem,
+    bound: BoundProblem,
     regex: RegexProblem,
     value: ValueProblem,
     custom: CustomProblem,

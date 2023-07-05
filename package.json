@@ -88,6 +88,7 @@
             "./dev/test/*.test.*"
         ],
         "ignore": "**/node_modules/*",
+        "//": "NOTE: These are also maintained in .vscode/settings.json",
         "node-option": [
             "loader=ts-node/esm",
             "no-warnings=ExperimentalWarning",

@@ -63,9 +63,9 @@ export interface BasisNode<config extends BasisNodeConfig = BasisNodeConfig>
 export type BasisNodeInstance = BasisNodesByKind[BasisKind]
 
 export const intersectBases = (
-    l: BasisNodeInstance,
-    r: BasisNodeInstance
-): BasisNodeInstance | Disjoint => {
+    l: BasisNode,
+    r: BasisNode
+): BasisNode | Disjoint => {
     if (l.hasKind("class") && r.hasKind("class")) {
         return constructorExtends(l.rule, r.rule)
             ? l
@@ -78,7 +78,7 @@ export const intersectBases = (
         disjointEntries.push(["domain", { l, r }])
     }
     if (l.hasKind("value") && r.hasKind("value")) {
-        if (l !== r) {
+        if (l.rule !== r.rule) {
             disjointEntries.push(["value", { l, r }])
         }
     }
