@@ -110,6 +110,9 @@
         "semi": false,
         "trailingComma": "none"
     },
+    "quokka": {
+        "showValueOnSelection": false
+    },
     "eslintConfig": {
         "extends": "./dev/configs/.eslintrc.cjs"
     },
