@@ -17,7 +17,11 @@ const types = $.export()
 
 types.user.root.alias //?
 
+types.user.root.condition //?
+
 types.admin.root.alias //?
+
+types.admin.root.condition //?
 
 const result = types.user.root.getPath("friends", arrayIndexTypeNode())
 

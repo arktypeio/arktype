@@ -1,5 +1,6 @@
 import type {
     conform,
+    equals,
     exact,
     List,
     Thunk
