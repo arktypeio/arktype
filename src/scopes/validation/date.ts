@@ -55,7 +55,7 @@ const isValidDateInstance = (date: Date) => !isNaN(date as any)
 const writeFormattedMustBe = (format: DateFormat) =>
     `a ${format}-formatted date`
 
-export const tryParseDate = (
+export const tryParseDatePattern = (
     data: string,
     opts?: DateOptions
 ): Date | string => {
@@ -100,7 +100,7 @@ export const tryParseDate = (
 export const parsedDate = node({
     basis: "string",
     morph: (s, state) => {
-        const result = tryParseDate(s)
+        const result = tryParseDatePattern(s)
         return typeof result === "string"
             ? // TODO: Fix
               state.mustBe(result, s, state.basePath)

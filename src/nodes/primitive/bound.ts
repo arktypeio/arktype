@@ -9,9 +9,11 @@ import type {
     PrimitiveNode
 } from "./primitive.js"
 
+export type LimitLiteral = number | DateLiteral
+
 export type Bound<
     comparator extends Comparator = Comparator,
-    limit extends number | DateLiteral = number | DateLiteral
+    limit extends LimitLiteral = LimitLiteral
 > = {
     limit: limit
     comparator: comparator

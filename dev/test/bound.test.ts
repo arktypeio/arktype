@@ -23,7 +23,7 @@ export const expectedBoundsCondition = (...range: any) =>
 export const expectedDateBoundsCondition = (...range: any) =>
     node({ basis: Date, range }).condition
 
-suite("range", () => {
+suite("bounds", () => {
     suite("parse", () => {
         suite("single", () => {
             test(">", () => {
@@ -190,19 +190,19 @@ suite("range", () => {
             test("unpaired left", () => {
                 // @ts-expect-error temporarily disabled type snapshot as it is returning ''
                 attest(() => type("3<number")).throws(
-                    writeOpenRangeMessage("3", ">")
+                    writeOpenRangeMessage(3, ">")
                 )
             })
             test("unpaired left group", () => {
                 // @ts-expect-error
                 attest(() => type("(-1<=number)")).throws(
-                    writeOpenRangeMessage("-1", ">=")
+                    writeOpenRangeMessage(-1, ">=")
                 )
             })
             test("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    writeMultipleLeftBoundsMessage("3", ">", "5", ">")
+                    writeMultipleLeftBoundsMessage(3, ">", 5, ">")
                 )
             })
             test("empty range", () => {

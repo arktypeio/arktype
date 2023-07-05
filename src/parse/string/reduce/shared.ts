@@ -1,18 +1,12 @@
-import type { NumberLiteral } from "@arktype/utils"
 import type {
     Comparator,
     InvertedComparators,
+    LimitLiteral,
     MinComparator
 } from "../../../nodes/primitive/bound.js"
 import { invertedComparators } from "../../../nodes/primitive/bound.js"
-import type { DateLiteral } from "../shift/operand/date.js"
 
 export type StringifiablePrefixOperator = "keyof"
-
-export type OpenLeftBound = {
-    limit: LimitLiteral
-    comparator: MinComparator
-}
 
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned
@@ -75,5 +69,3 @@ export type writeMultipleLeftBoundsMessage<
     limit extends LimitLiteral,
     comparator extends MinComparator
 > = `An expression may have at most one left bound (parsed ${openLimit}${InvertedComparators[openComparator]}, ${limit}${InvertedComparators[comparator]})`
-
-export type LimitLiteral = NumberLiteral | DateLiteral

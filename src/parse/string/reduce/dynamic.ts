@@ -1,18 +1,19 @@
 import type { requireKeys } from "@arktype/utils"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/utils"
 import type { TypeNode } from "../../../nodes/composite/type.js"
-import type { Comparator } from "../../../nodes/primitive/bound.js"
+import type {
+    Bound,
+    Comparator,
+    LimitLiteral,
+    MinComparator
+} from "../../../nodes/primitive/bound.js"
 import {
     invertedComparators,
     minComparators
 } from "../../../nodes/primitive/bound.js"
 import type { ParseContext } from "../../../scope.js"
 import { Scanner } from "../shift/scanner.js"
-import type {
-    LimitLiteral,
-    OpenLeftBound,
-    StringifiablePrefixOperator
-} from "./shared.js"
+import type { StringifiablePrefixOperator } from "./shared.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeUnclosedGroupMessage,
@@ -22,7 +23,7 @@ import {
 
 type BranchState = {
     prefixes: StringifiablePrefixOperator[]
-    leftBound?: OpenLeftBound
+    leftBound?: Bound<MinComparator>
     "&"?: TypeNode
     "|"?: TypeNode
 }
@@ -53,8 +54,14 @@ export class DynamicState {
         return this.root !== undefined
     }
 
-    unsetRoot() {
+    unsetRoot(): this["root"] {
+        const value = this.root
         this.root = undefined
+        return value
+    }
+
+    constrainRoot(...args: Parameters<TypeNode["constrain"]>) {
+        this.root = this.root!.constrain(...args)
     }
 
     setRoot(root: TypeNode) {

@@ -2,9 +2,9 @@ import type { error, NumberLiteral } from "@arktype/utils"
 import type {
     Comparator,
     InvertedComparators,
+    LimitLiteral,
     NumericallyBoundableData
 } from "../../nodes/primitive/bound.js"
-import type { LimitLiteral } from "../string/reduce/shared.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {
     BoundKind,
@@ -20,28 +20,21 @@ export type validateRange<
     $,
     args
 > = l extends LimitLiteral
-    ? validateBound<
-          r,
-          InvertedComparators[comparator],
-          astToString<l>,
-          "left",
-          $,
-          args
-      >
+    ? validateBound<r, InvertedComparators[comparator], l, "left", $, args>
     : l extends [infer leftAst, Comparator, unknown]
     ? error<writeDoubleRightBoundMessage<astToString<leftAst>>>
-    : validateBound<l, comparator, astToString<r>, "right", $, args>
+    : validateBound<l, comparator, r & LimitLiteral, "right", $, args>
 
 export type validateBound<
     boundedAst,
     comparator extends Comparator,
-    limit extends string,
+    limit extends LimitLiteral,
     boundKind extends BoundKind,
     $,
     args
 > = inferAst<boundedAst, $, args> extends infer bounded
     ? [bounded] extends [NumericallyBoundableData]
-        ? limit extends NumberLiteral
+        ? limit extends number
             ? validateAst<boundedAst, $, args>
             : error<writeInvalidLimitMessage<comparator, limit, boundKind>>
         : bounded extends Date

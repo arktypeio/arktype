@@ -1,14 +1,14 @@
 import type { defined, error } from "@arktype/utils"
 import type {
+    Bound,
     Comparator,
     InvertedComparators,
+    LimitLiteral,
     MaxComparator,
     MinComparator
 } from "../../../nodes/primitive/bound.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
-    LimitLiteral,
-    OpenLeftBound,
     StringifiablePrefixOperator,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -30,7 +30,7 @@ export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
     prefixes: StringifiablePrefixOperator[]
-    leftBound: OpenLeftBound | undefined
+    leftBound: Bound<MinComparator> | undefined
     "&": unknown
     "|": unknown
 }
