@@ -27,7 +27,7 @@
         "typescript": "5.0.4"
     },
     "scripts": {
-        "build": "ts-node ../scripts/build.ts",
+        "build": "ts ../scripts/build.ts",
         "test": "pnpm mocha"
     }
 }

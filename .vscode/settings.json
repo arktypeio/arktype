@@ -6,7 +6,6 @@
         "import/order",
         "sort-imports",
         "import/no-duplicates",
-        "unicorn/prefer-node-protocol",
         "@typescript-eslint/consistent-type-imports",
         "object-shorthand",
         "prefer-arrow-functions/prefer-arrow-functions"

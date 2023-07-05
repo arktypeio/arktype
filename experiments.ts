@@ -14,6 +14,8 @@ const $ = scope({
     }
 })
 
+console.log("ok")
+
 const types = $.export()
 
 types.user.root.alias //?

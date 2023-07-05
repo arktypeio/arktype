@@ -2,7 +2,7 @@
     "compilerOptions": {
         "module": "ESNext",
         "target": "ES2022",
-        "moduleResolution": "nodenext",
+        "moduleResolution": "NodeNext",
         "noEmit": true,
         "skipLibCheck": true,
         "strict": true,
@@ -19,7 +19,6 @@
     "ts-node": {
         "esm": true,
         "swc": true,
-        "transpileOnly": true,
-        "require": ["tsconfig-paths/register"]
+        "transpileOnly": true
     }
 }

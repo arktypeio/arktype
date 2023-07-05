@@ -3,7 +3,10 @@
     "private": true,
     "type": "module",
     "devDependencies": {
-        "ts-morph": "18.0.0",
+        "ts-morph": "19.0.0",
         "@arktype/attest": "workspace:*"
+    },
+    "bin": {
+        "ts": "./ts.cjs"
     }
 }

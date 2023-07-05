@@ -22,7 +22,7 @@
         "!*.tsbuildinfo"
     ],
     "dependencies": {
-        "ts-morph": "18.0.0",
+        "ts-morph": "19.0.0",
         "@arktype/utils": "workspace:*"
     },
     "devDependencies": {
@@ -31,7 +31,7 @@
         "typescript": "5.0.4"
     },
     "scripts": {
-        "build": "ts-node ../scripts/build.ts",
+        "build": "ts ../scripts/build.ts",
         "test": "pnpm mocha"
     }
 }

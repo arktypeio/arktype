@@ -7,8 +7,8 @@ import type {
 } from "../../../nodes/primitive/range.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
-    StringifiablePrefixOperator,
     LimitLiteral,
+    StringifiablePrefixOperator,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnclosedGroupMessage,

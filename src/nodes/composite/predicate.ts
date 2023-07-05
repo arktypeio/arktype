@@ -255,7 +255,7 @@ export const assertAllowsConstraint = (
                 throwParseError(writeIndivisibleMessage(domain))
             }
             return
-        case "range": {
+        case "range":
             // TODO: reeanble
             // const bounds = node["rule"] as Range
             // if (domain !== "string" && domain !== "number") {
@@ -273,7 +273,6 @@ export const assertAllowsConstraint = (
             // }
             // assertValidLimit(bounds, "number")
             return
-        }
         case "regex":
             if (domain !== "string") {
                 throwInvalidConstraintError("regex", "a string", domain)

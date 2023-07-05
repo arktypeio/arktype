@@ -7,7 +7,6 @@ module.exports = defineConfig({
         "@typescript-eslint",
         "prefer-arrow-functions",
         "import",
-        "unicorn",
         "only-warn"
     ],
     extends: [
@@ -72,31 +71,7 @@ module.exports = defineConfig({
                 ignoreDeclarationSort: true
             }
         ],
-        "no-restricted-imports": "off",
-        "@typescript-eslint/no-restricted-imports": [
-            "error",
-            {
-                patterns: [
-                    {
-                        group: [
-                            "../../dev/utils/src/*",
-                            "!../../dev/utils/src/main.js"
-                        ],
-                        message:
-                            'Deep importing from "dev/utils/*" is not allowed, please import directly from "dev/utils/src/main.js" instead'
-                    },
-                    {
-                        group: [
-                            "../../dev/attest/*",
-                            "!../../dev/attest/src/main.js"
-                        ],
-                        message:
-                            'Deep importing from "dev/attest/*" is not allowed, please import from "dev/attest/src/main.js" instead'
-                    }
-                ],
-                paths: ["dist", "node_modules"]
-            }
-        ],
+        "import/no-relative-packages": "warn",
         "import/no-nodejs-modules": "warn",
         /**
          * Allow more flexible typing
@@ -106,15 +81,13 @@ module.exports = defineConfig({
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         /**
-         * Ensure node imports are easily distinguished
-         */
-        "unicorn/prefer-node-protocol": "warn",
-        /**
          * Namespaces are useful for grouping generic types with related functionality
          */
         "@typescript-eslint/no-namespace": "off",
         // More of a pain during dev (or testing) than it's worth to prevent something that is trivially caught in PR
-        "@typescript-eslint/no-empty-function": "off"
+        "@typescript-eslint/no-empty-function": "off",
+        // We primarily use switches onyl if we're returning, and it's hard to imagine where this would be a problem
+        "no-case-declarations": "off"
     },
     overrides: [
         /**
@@ -148,10 +121,11 @@ module.exports = defineConfig({
                 "./dev/scripts/**",
                 "./dev/examples/**",
                 "./dev/configs/**",
-                "./dev/arkdark/**"
+                "./dev/arkdark/**",
+                "./dev/attest/**"
             ],
             rules: {
-                "@typescript-eslint/no-restricted-imports": "off"
+                "import/no-nodejs-modules": "off"
             }
         }
     ]

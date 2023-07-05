@@ -2,3 +2,4 @@ packages:
     - "."
     - "dev/utils"
     - "dev/attest"
+    - "dev/scripts"
