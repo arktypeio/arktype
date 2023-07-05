@@ -16,8 +16,6 @@ import {
 } from "@arktype/utils"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
-import type { BoundKind } from "../../parse/string/shift/operator/bounds.js"
-import { writeInvalidLimitMessage } from "../../parse/string/shift/operator/bounds.js"
 import type { Morph, Narrow, NarrowCast } from "../../parse/tuple.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
@@ -34,7 +32,6 @@ import { domainNode } from "../primitive/basis/domain.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { Range } from "../primitive/range.js"
-import { invertedComparators } from "../primitive/range.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import type { CompositeNode } from "./composite.js"
 import { defineComposite } from "./composite.js"
@@ -65,7 +62,7 @@ export interface PredicateNode extends CompositeNode<PredicateNodeConfig> {
 export const predicateNode = defineComposite<PredicateNode>(
     {
         kind: "predicate",
-        parse: (input) => {
+        parse: (input, ctx) => {
             let children: PredicateChildren
             if (isArray(input)) {
                 children = input
@@ -76,7 +73,8 @@ export const predicateNode = defineComposite<PredicateNode>(
                     if (input[kind]) {
                         const node = createNodeOfKind(
                             kind,
-                            input[kind] as never
+                            input[kind] as never,
+                            ctx
                         )
                         assertAllowsConstraint(basis, node)
                         children.push(node)
@@ -197,9 +195,15 @@ export const predicateNode = defineComposite<PredicateNode>(
                     ? basis
                     : undefined,
             constrain(kind, input): PredicateNode {
-                const constraint = createNodeOfKind(kind, input as never)
+                const constraint = createNodeOfKind(
+                    kind,
+                    input as never,
+                    base.context
+                )
                 assertAllowsConstraint(this.basis, constraint)
-                const result = this.intersect(predicateNode([constraint]))
+                const result = this.intersect(
+                    predicateNode([constraint], base.context)
+                )
                 if (result instanceof Disjoint) {
                     return result.throw()
                 }

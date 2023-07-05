@@ -122,7 +122,7 @@ const maybeParseReference = (
     if (s.ctx.args?.[token]) {
         return s.ctx.args[token]
     }
-    const resolution = s.ctx.scope.maybeResolve(token, s.ctx)
+    const resolution = s.ctx.scope.maybeResolve(token)
     if (hasArkKind(resolution, "node")) {
         return resolution
     }

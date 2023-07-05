@@ -9,6 +9,8 @@ import {
 import { hasArkKind } from "../../compile/registry.js"
 import type { inferIntersection } from "../../parse/ast/intersections.js"
 import type { inferred } from "../../parse/definition.js"
+import type { ParseContext } from "../../scope.js"
+import { Scope } from "../../scope.js"
 import { Disjoint } from "../disjoint.js"
 import { alphabetizeByCondition } from "../node.js"
 import type { BasisInput } from "../primitive/basis/basis.js"
@@ -31,7 +33,7 @@ import { propsNode } from "./props.js"
 
 export type TypeNodeConfig = defineComposite<{
     kind: "type"
-    input: TypeInput
+    input: TypeInput | readonly PredicateNode[]
     rule: readonly PredicateNode[]
     meta: {}
 }>
@@ -59,11 +61,11 @@ export interface TypeNode<t = unknown> extends CompositeNode<TypeNodeConfig> {
 export const typeNode = defineComposite<TypeNode>(
     {
         kind: "type",
-        parse: (input) => {
+        parse: (input, ctx) => {
             if (!isParsedTypeRule(input)) {
                 input = isArray(input)
-                    ? input.map((branch) => predicateNode(branch))
-                    : [predicateNode(input)]
+                    ? input.map((branch) => predicateNode(branch, ctx))
+                    : [predicateNode(input, ctx)]
             }
             return alphabetizeByCondition(reduceBranches(input))
         },
@@ -104,11 +106,15 @@ export const typeNode = defineComposite<TypeNode>(
                 return this.rule.length === 1 ? this.rule[0].value : undefined
             },
             array(): any {
-                const props = propsNode([
-                    { key: arrayIndexTypeNode(), value: this }
-                ])
-                const predicate = predicateNode([arrayClassNode(), props])
-                return typeNode([predicate])
+                const props = propsNode(
+                    [{ key: arrayIndexTypeNode(), value: this }],
+                    base.context
+                )
+                const predicate = predicateNode(
+                    [arrayClassNode(), props],
+                    base.context
+                )
+                return typeNode([predicate], base.context)
             },
             isResolved() {
                 return Array.isArray(this.rule) || cachedBranches !== undefined
@@ -127,19 +133,23 @@ export const typeNode = defineComposite<TypeNode>(
                 if (this === (other as unknown)) {
                     return this
                 }
-                return typeNode(reduceBranches([...this.rule, ...other.rule]))
-            },
-            constrain(kind, def): any {
                 return typeNode(
-                    this.rule.map((branch) => branch.constrain(kind, def))
+                    reduceBranches([...this.rule, ...other.rule]),
+                    base.context
                 )
+            },
+            constrain: (kind, def): any => {
+                return this as never
+                // return typeNode(
+                //     this.rule.map((branch) => branch.constrain(kind, def)),
+                //     base.context
+                // )
             },
             equals(other) {
                 return this === other
             },
-            extends(other) {
-                return this.intersect(other as never) === this
-            },
+            // this.intersect(other as never) === this
+            extends: () => false,
             keyof(): any {
                 return this.rule.reduce(
                     (result, branch) => result.and(branch.keyof()),
@@ -147,7 +157,7 @@ export const typeNode = defineComposite<TypeNode>(
                 )
             },
             getPath(...path): any {
-                let current: PredicateNode[] = this.rule
+                let current: readonly PredicateNode[] = this.rule
                 let next: PredicateNode[] = []
                 while (path.length) {
                     const key = path.shift()!
@@ -168,7 +178,7 @@ export const typeNode = defineComposite<TypeNode>(
                     current = next
                     next = []
                 }
-                return typeNode(current)
+                return typeNode(current, base.context)
             }
         }
     }
@@ -255,9 +265,9 @@ return true
 }
 
 const intersectBranches = (
-    l: PredicateNode[],
-    r: PredicateNode[]
-): PredicateNode[] => {
+    l: readonly PredicateNode[],
+    r: readonly PredicateNode[]
+): readonly PredicateNode[] => {
     // Branches that are determined to be a subtype of an opposite branch are
     // guaranteed to be a member of the final reduced intersection, so long as
     // each individual set of branches has been correctly reduced to exclude
@@ -380,13 +390,30 @@ export type TypeNodeParser = {
     ): TypeNode<branches[number]>
 }
 
+const getEmptyScope = cached(() => Scope.root({}))
+
+const createAnonymousParseContext = (): ParseContext => ({
+    baseName: "anonymous",
+    path: [],
+    args: {},
+    scope: getEmptyScope()
+})
+
+// TODO: cleanup
 export const node: TypeNodeParser = Object.assign(
-    (...rule: readonly PredicateInput[]) => typeNode(branches) as never,
+    (...branches: readonly PredicateInput[]) =>
+        typeNode(branches, createAnonymousParseContext()) as never,
     {
-        literal: (...rule: readonly unknown[]) =>
-            typeNode(
-                branches.map((literal) => predicateNode([valueNode(literal)]))
+        literal: (...branches: readonly unknown[]) => {
+            const ctx = createAnonymousParseContext()
+            return typeNode(
+                branches.map(
+                    (literal) => predicateNode([valueNode(literal, ctx)], ctx),
+                    ctx
+                ),
+                ctx
             ) as never
+        }
     }
 )
 

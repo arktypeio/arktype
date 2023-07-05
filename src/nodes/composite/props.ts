@@ -7,6 +7,7 @@ import {
     spliterate
 } from "@arktype/utils"
 import { hasArkKind } from "../../compile/registry.js"
+import type { ParseContext } from "../../scope.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { CompositeNode } from "./composite.js"
@@ -55,10 +56,10 @@ export const isParsedPropsRule = (
 export const propsNode = defineComposite<PropsNode>(
     {
         kind: "props",
-        parse: (input) => {
+        parse: (input, ctx) => {
             const rule = isParsedPropsRule(input)
                 ? input
-                : parsePropsInput(input)
+                : parsePropsInput(input, ctx)
             return rule.sort((l, r) => {
                 // Sort keys first by precedence (prerequisite,required,optional,indexed),
                 // then alphebetically by key
@@ -115,7 +116,10 @@ export const propsNode = defineComposite<PropsNode>(
         const literalKeys = named.map((prop) => prop.key.name)
         const namedKeyOf = cached(() => node.literal(...literalKeys))
         const indexedKeyOf = cached(() =>
-            typeNode(indexed.flatMap((entry) => entry.key.branches))
+            typeNode(
+                indexed.flatMap((entry) => entry.key.branches),
+                base.context
+            )
         )
         return {
             description,
@@ -214,10 +218,11 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
         // it has already been intersected and should be removed
         indexed = indexed.filter((entry) => !extractArrayIndexRegex(entry.key))
     }
-    return propsNode([...named, ...indexed])
+    // TODO: review other intersections to make sure meta is handled correclty
+    return propsNode([...named, ...indexed], l.context)
 }
 
-const parsePropsInput = (input: PropsInput) => {
+const parsePropsInput = (input: PropsInput, ctx: ParseContext) => {
     const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
     const entries: NodeEntry[] = []
     for (const name in namedInput) {
@@ -230,13 +235,13 @@ const parsePropsInput = (input: PropsInput) => {
             },
             value: hasArkKind(prop.value, "node")
                 ? prop.value
-                : typeNode(prop.value)
+                : typeNode(prop.value, ctx)
         })
     }
     for (const prop of indexedInput) {
         entries.push({
-            key: typeNode(prop.key),
-            value: typeNode(prop.value)
+            key: typeNode(prop.key, ctx),
+            value: typeNode(prop.value, ctx)
         })
     }
     return entries

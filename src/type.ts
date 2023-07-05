@@ -199,10 +199,11 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     morph(morph: Morph, outValidator?: unknown) {
         // TODO: tuple expression for out validator
         outValidator
-        return new Type(
-            this.root.constrain("morph", morph),
-            this.scope
-        ) as never
+        return this as never
+        // return new Type(
+        //     this.root.constrain("morph", morph),
+        //     this.scope
+        // ) as never
     }
 
     // TODO: based on below, should maybe narrow morph output if used after

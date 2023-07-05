@@ -41,7 +41,8 @@ interface PreconstructedBase<config extends BaseNodeConfig> {
     readonly rule: config["rule"]
     readonly source: string
     readonly condition: string
-    alias: string
+    readonly alias: string
+    readonly context: ParseContext
     compile(ctx: CompilationContext): string
     // TODO: test with cyclic nodes
     allows(data: unknown): boolean
@@ -59,7 +60,7 @@ export type BaseNode<config extends BaseNodeConfig = BaseNodeConfig> =
     PreconstructedBase<config> & NodeExtensionProps
 
 export type NodeConstructor<node extends BaseNode> = (
-    input: node["rule"],
+    input: "input" extends keyof node ? node["input"] : node["rule"],
     ctx: ParseContext
 ) => node
 
@@ -74,10 +75,9 @@ export const defineNode = <node extends BaseNode<any>>(
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
-    let anonymousSuffix = 1
     const isBasis =
         def.kind === "domain" || def.kind === "class" || def.kind === "value"
-    return (rule) => {
+    return (rule, ctx) => {
         const source = def.compile(
             rule,
             createCompilationContext("out", "problems")
@@ -89,10 +89,19 @@ export const defineNode = <node extends BaseNode<any>>(
             rule,
             createCompilationContext("true", "false")
         )
+        const baseAlias = `${ctx.baseName}${ctx.path
+            .map((k) => `${k[0].toUpperCase()}${k.slice(1)}`)
+            .join("")}`
+        let alias = baseAlias
+        let suffix = 2
+        while (alias in nodeCache) {
+            alias = `${baseAlias}${suffix++}`
+        }
         const base: PreconstructedBase<BaseNodeConfig> = {
             [arkKind]: "node",
             kind: def.kind,
-            alias: `${def.kind}${anonymousSuffix++}`,
+            alias,
+            context: { ...ctx },
             hasKind: (kind) => kind === def.kind,
             isBasis: () => isBasis,
             source,

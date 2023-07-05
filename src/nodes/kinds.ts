@@ -1,5 +1,6 @@
 import type { extend } from "@arktype/utils"
 import { cached } from "@arktype/utils"
+import type { ParseContext } from "../scope.js"
 import type { PredicateNode } from "./composite/predicate.js"
 import { predicateNode } from "./composite/predicate.js"
 import type { PropsNode } from "./composite/props.js"
@@ -91,5 +92,6 @@ export type NodeInputs = {
 
 export const createNodeOfKind = <kind extends NodeKind>(
     kind: kind,
-    input: NodeInputs[kind]
-) => nodeKinds()[kind](input as never) as NodeKinds[kind]
+    input: NodeInputs[kind],
+    ctx: ParseContext
+) => nodeKinds()[kind](input as never, ctx) as NodeKinds[kind]

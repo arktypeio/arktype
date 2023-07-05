@@ -13,9 +13,9 @@ import {
 } from "./shift/operator/operator.js"
 
 export const parseString = (def: string, ctx: ParseContext): TypeNode =>
-    ctx.scope.maybeResolveNode(def, ctx) ??
+    ctx.scope.maybeResolveNode(def) ??
     ((def.endsWith("[]") &&
-        ctx.scope.maybeResolveNode(def.slice(0, -2), ctx)?.array()) ||
+        ctx.scope.maybeResolveNode(def.slice(0, -2))?.array()) ||
         fullStringParse(def, ctx))
 
 /**

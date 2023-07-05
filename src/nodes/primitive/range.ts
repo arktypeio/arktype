@@ -149,7 +149,8 @@ export const rangeNode = defineNode<BoundNode>(
         }
     },
     (base) => ({
-        description: describeBound(base.rule)
+        description: describeBound(base.rule),
+        boundKind: getBoundKind(base.rule)
     })
 )
 

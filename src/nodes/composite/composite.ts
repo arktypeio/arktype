@@ -1,3 +1,4 @@
+import type { ParseContext } from "../../scope.js"
 import { Disjoint } from "../disjoint.js"
 import type {
     BaseNode,
@@ -13,7 +14,7 @@ export interface CompositeNodeImplementation<node extends CompositeNode>
     /** Should convert any supported input formats to rule,
      *  then ensure rule is normalized such that equivalent
      *  inputs will compile to the same string. */
-    parse: (input: node["input"]) => node["rule"]
+    parse: (input: node["input"], ctx: ParseContext) => node["rule"]
     getReferences: (rule: node["rule"]) => TypeNode[]
     intersect: (
         l: Parameters<node["intersect"]>[0],
@@ -57,7 +58,8 @@ export const defineComposite = <node extends CompositeNode>(
         }) as node
         return instance
     })
-    return (input: node["input"]) => createNode(def.parse(input))
+    return (input: node["input"], ctx: ParseContext) =>
+        createNode(def.parse(input, ctx), ctx)
 }
 
 export interface CompositeNode<

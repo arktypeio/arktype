@@ -91,6 +91,7 @@ type shiftComparator<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
+// TODO: allow numeric limits for Dates?
 export const parseRightBound = (
     s: DynamicStateWithRoot,
     comparator: Comparator
