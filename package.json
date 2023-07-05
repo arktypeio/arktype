@@ -89,7 +89,8 @@
         "ignore": "**/node_modules/*",
         "node-option": [
             "loader=ts-node/esm",
-            "no-warnings=ExperimentalWarning"
+            "no-warnings=ExperimentalWarning",
+            "conditions=arktype-dev"
         ],
         "require": "./dev/configs/mocha.fixtures.ts"
     },
@@ -108,6 +109,14 @@
         "tabWidth": 4,
         "semi": false,
         "trailingComma": "none"
+    },
+    "quokka": {
+        "showValueOnSelection": false,
+        "env": {
+            "params": {
+                "runner": "--conditions=arktype-dev"
+            }
+        }
     },
     "eslintConfig": {
         "extends": "./dev/configs/.eslintrc.cjs"

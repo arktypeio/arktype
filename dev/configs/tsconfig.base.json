@@ -19,6 +19,7 @@
     "ts-node": {
         "esm": true,
         "swc": true,
-        "transpileOnly": true
+        "transpileOnly": true,
+        "require": ["tsconfig-paths/register"]
     }
 }

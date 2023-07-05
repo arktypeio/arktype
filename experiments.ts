@@ -1,20 +1,26 @@
 // @ts-ignore
-import { format } from "prettier"
-import { scope, type } from "./src/main.js"
+import { scope } from "./src/main.js"
+import { arrayIndexTypeNode } from "./src/nodes/composite/indexed.js"
 
 const $ = scope({
     user: {
         friends: "user[]",
-        name: "string[]"
+        name: "string"
+    },
+    admin: {
+        friends: "user[]",
+        name: "string"
     }
 })
 
-const node = (...args: any[]) => args
-
-type({ a: "string" })
-
 const types = $.export()
 
-console.log($.compile())
+types.user.root.alias //?
 
-console.log(format(types.user.condition, { parser: "typescript" }))
+types.admin.root.alias //?
+
+const result = types.user.root.getPath("friends", arrayIndexTypeNode())
+
+result.alias //?
+
+$.compile() //?
