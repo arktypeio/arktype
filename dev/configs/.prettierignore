@@ -1,25 +1,4 @@
-# @blockFrom:.gitignore
-dist
-node_modules
-temp
-tmp
-*.temp.*
-*.log
-*.tsbuildinfo
-.DS_Store
-.docusaurus
-.cache-loader
-.attest
-coverage
-/**/themes/*.json
-# we avoid committing the root pnpm-lock in order to keep the root of the repo as clean as possible.
-# we can get away with this to since we're only installing devDependencies and they're all pinned.
-/pnpm-lock.yaml
-# this gets generated during certain integration tests, but we never want to actually check it in 
-# (this can be removed in the future if we do need it) 
-/.npmrc
-
-# @blockEnd 
+# as of 3.0, prettier ignores .gitignored files by default, so they don't need to be included here
 
 pnpm-lock.yaml
 

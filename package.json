@@ -73,6 +73,7 @@
         "eslint-define-config": "1.21.0",
         "eslint-import-resolver-typescript": "3.5.5",
         "eslint-plugin-import": "2.27.5",
+        "eslint-plugin-mdx": "2.1.0",
         "eslint-plugin-only-warn": "1.1.0",
         "eslint-plugin-prefer-arrow-functions": "3.1.4",
         "knip": "2.14.3",
