@@ -34,7 +34,11 @@ export abstract class Problem<requirement = unknown, data = unknown> {
     abstract readonly code: ProblemCode
     abstract mustBe: string
 
-    constructor(public rule: requirement, data: data, public path: string[]) {
+    constructor(
+        public rule: requirement,
+        data: data,
+        public path: string[]
+    ) {
         this.data = new DataWrapper(data)
     }
 

@@ -98,7 +98,10 @@ export class BenchAssertions<
 > {
     private label: string
     private lastCallTimes: number[] | undefined
-    constructor(private fn: Fn, private ctx: BenchContext) {
+    constructor(
+        private fn: Fn,
+        private ctx: BenchContext
+    ) {
         this.label = `Call: ${ctx.qualifiedName}`
     }
 

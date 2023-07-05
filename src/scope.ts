@@ -263,7 +263,7 @@ export class Scope<r extends Resolutions = any> {
     type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
     // TODO: decide if this API will be used for non-validated types
-    declare: DeclarationParser<$<r>> = () => ({ type: this.type } as never)
+    declare: DeclarationParser<$<r>> = () => ({ type: this.type }) as never
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
         def: Dict,

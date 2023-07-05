@@ -98,7 +98,10 @@ const generateMarkdownForExport = (
 export class MarkdownSection {
     private contents: (string | MarkdownSection)[]
     private optionsAdded = false
-    constructor(header: string, private depth = 1) {
+    constructor(
+        header: string,
+        private depth = 1
+    ) {
         this.contents = [`${"#".repeat(depth)} ${header}\n`]
     }
 

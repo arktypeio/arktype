@@ -133,7 +133,10 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     condition: string
     allows: this["root"]["allows"]
 
-    constructor(public definition: unknown, public scope: Scope) {
+    constructor(
+        public definition: unknown,
+        public scope: Scope
+    ) {
         const root = parseTypeRoot(definition, scope) as TypeNode<t>
         super(
             InputParameterName,

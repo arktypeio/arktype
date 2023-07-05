@@ -105,7 +105,7 @@ export const arrayIndexInput = <index extends number = 0>(
     ({
         basis: "string",
         regex: `/${arrayIndexMatcherSource(firstVariadicIndex)}/`
-    } as const satisfies PredicateInput<"string">)
+    }) as const satisfies PredicateInput<"string">
 
 export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>
     firstVariadicIndex === 0

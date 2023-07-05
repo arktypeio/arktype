@@ -76,7 +76,7 @@ const nodeKinds = cached(
             props: propsNode,
             narrow: narrowNode
             // morph: morphNode
-        } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k]> })
+        }) satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k]> }
 )
 
 export type CompositeNodeKind = extend<NodeKind, "type" | "predicate" | "props">

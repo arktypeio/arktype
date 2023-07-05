@@ -119,7 +119,8 @@ type parseKey<k> = k extends OptionalKey<infer inner>
           kind: "indexed"
           value: def
       }>
-    : k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends IndexedKey}`
+    : k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
+          IndexedKey}`
     ? parsedKey<{
           kind: "required"
           value: escapedIndexKey

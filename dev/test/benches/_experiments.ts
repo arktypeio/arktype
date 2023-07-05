@@ -2,7 +2,10 @@ import type { Ark } from "../../../src/scopes/ark.js"
 import type { inferTypeRoot, validateTypeRoot } from "../../../src/type.js"
 
 export type FunctionParser<$> = {
-    <ret = unknown>(_?: ":", ret?: validateTypeRoot<ret, $>): <
+    <ret = unknown>(
+        _?: ":",
+        ret?: validateTypeRoot<ret, $>
+    ): <
         implementation extends () => unknown extends ret
             ? unknown
             : inferTypeRoot<ret, $>

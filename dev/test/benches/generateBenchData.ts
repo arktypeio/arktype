@@ -19,37 +19,40 @@ const cyclicScopeSeed = Object.freeze({
 
 /* eslint-disable max-lines-per-function */
 const generateScopeJson = (interval: number, seedDefs: object) => {
-    const defs = Object.entries(seedDefs).reduce((result, [name, seedDef]) => {
-        const variants: Record<string, any> = { [name]: seedDef }
-        const defCopyCount = Math.floor(interval / 2)
-        for (let i = 2; i <= defCopyCount; i++) {
-            variants[`${name}${i}`] = Object.fromEntries(
-                Object.entries(seedDef).map(([k, def]) => {
-                    const isOptionalKey = k.endsWith("?")
-                    let randomizedDef = def as string
-                    if (typeof def === "string") {
-                        // Only randomize the cyclic scope values
-                        for (let name in cyclicScopeSeed) {
-                            if (name.endsWith("?")) {
-                                name = name.slice(0, -1)
+    const defs = Object.entries(seedDefs).reduce(
+        (result, [name, seedDef]) => {
+            const variants: Record<string, any> = { [name]: seedDef }
+            const defCopyCount = Math.floor(interval / 2)
+            for (let i = 2; i <= defCopyCount; i++) {
+                variants[`${name}${i}`] = Object.fromEntries(
+                    Object.entries(seedDef).map(([k, def]) => {
+                        const isOptionalKey = k.endsWith("?")
+                        let randomizedDef = def as string
+                        if (typeof def === "string") {
+                            // Only randomize the cyclic scope values
+                            for (let name in cyclicScopeSeed) {
+                                if (name.endsWith("?")) {
+                                    name = name.slice(0, -1)
+                                }
+                                randomizedDef = randomizedDef.replaceAll(
+                                    name,
+                                    `${name}${randomInRange(2, defCopyCount)}`
+                                )
                             }
-                            randomizedDef = randomizedDef.replaceAll(
-                                name,
-                                `${name}${randomInRange(2, defCopyCount)}`
-                            )
                         }
-                    }
-                    return [
-                        `${isOptionalKey ? k.slice(0, -1) : k}${i}${
-                            isOptionalKey ? "?" : ""
-                        }`,
-                        randomizedDef
-                    ]
-                })
-            )
-        }
-        return { ...result, ...variants }
-    }, {} as Record<string, any>)
+                        return [
+                            `${isOptionalKey ? k.slice(0, -1) : k}${i}${
+                                isOptionalKey ? "?" : ""
+                            }`,
+                            randomizedDef
+                        ]
+                    })
+                )
+            }
+            return { ...result, ...variants }
+        },
+        {} as Record<string, any>
+    )
     return JSON.stringify(defs, null, 4)
 }
 

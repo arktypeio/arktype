@@ -28,7 +28,10 @@ export class DynamicState {
     finalizer: Scanner.FinalizingLookahead | undefined
     groups: BranchState[] = []
 
-    constructor(def: string, public readonly ctx: ParseContext) {
+    constructor(
+        def: string,
+        public readonly ctx: ParseContext
+    ) {
         this.scanner = new Scanner(def)
     }
 
