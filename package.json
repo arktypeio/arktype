@@ -56,10 +56,6 @@
     },
     "devDependencies": {
         "typescript": "5.1.6",
-        "ts49": "npm:typescript@4.9.3",
-        "ts50": "npm:typescript@5.0.4",
-        "ts51": "link:./node_modules/typescript",
-        "ts52": "npm:typescript@next",
         "@changesets/changelog-github": "0.4.8",
         "@changesets/cli": "2.26.1",
         "@swc/cli": "0.1.62",
