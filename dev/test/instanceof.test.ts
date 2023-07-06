@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { node, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeInvalidConstructorMessage } from "../../src/parse/tuple.js"
+import { writeInvalidConstructorMessage } from "../../src/parser/tuple.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
 

@@ -2,8 +2,8 @@ import { AssertionError } from "node:assert"
 import { attest } from "@arktype/attest"
 import { define, scope, type, Type } from "arktype"
 import { suite, test } from "mocha"
-import { ArkTypeError } from "../../src/compile/problems.js"
-import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { ArkTypeError } from "../../src/compiler/problems.js"
+import { writeUnresolvableMessage } from "../../src/parser/string/shift/operand/unenclosed.js"
 
 suite("type methods", () => {
     test("root discriminates", () => {

@@ -3,7 +3,7 @@ import type { Problem } from "arktype"
 import { arktypes, scope, type } from "arktype"
 import { suite, test } from "mocha"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/composite/discriminate.js"
-import type { Out } from "../../src/parse/tuple.js"
+import type { Out } from "../../src/parser/tuple.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
 

@@ -4,7 +4,7 @@ import { suite, test } from "mocha"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.js"
+} from "../../src/parser/string/shift/operand/unenclosed.js"
 
 suite("keyof", () => {
     test("autocompletion", () => {

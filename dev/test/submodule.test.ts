@@ -7,7 +7,7 @@ import {
     writeMissingSubmoduleAccessMessage,
     writeNonSubmoduleDotMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.js"
+} from "../../src/parser/string/shift/operand/unenclosed.js"
 import type { Ark } from "../../src/scopes/ark.js"
 
 const $ = lazily(() =>

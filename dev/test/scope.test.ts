@@ -1,9 +1,9 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeUnboundableMessage } from "../../src/parse/semantic/bounds.js"
-import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
+import { writeUnboundableMessage } from "../../src/parser/semantic/bounds.js"
+import { writeUnresolvableMessage } from "../../src/parser/string/shift/operand/unenclosed.js"
+import { writeUnexpectedCharacterMessage } from "../../src/parser/string/shift/operator/operator.js"
 
 suite("scope", () => {
     test("base definition", () => {

@@ -1,8 +1,8 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
-import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { writeBadDefinitionTypeMessage } from "../../src/parser/definition.js"
+import { writeUnresolvableMessage } from "../../src/parser/string/shift/operand/unenclosed.js"
 
 suite("thunk", () => {
     test("thunk", () => {

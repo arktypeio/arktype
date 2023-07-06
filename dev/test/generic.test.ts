@@ -2,15 +2,15 @@ import { attest } from "@arktype/attest"
 import { lazily } from "@arktype/utils"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeIndivisibleMessage } from "../../src/parse/semantic/divisor.js"
 import {
     emptyGenericParameterMessage,
     writeInvalidGenericArgsMessage
-} from "../../src/parse/generic.js"
-import { writeUnclosedGroupMessage } from "../../src/parse/string/reduce/shared.js"
-import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
-import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
+} from "../../src/parser/generic.js"
+import { writeIndivisibleMessage } from "../../src/parser/semantic/divisor.js"
+import { writeUnclosedGroupMessage } from "../../src/parser/string/reduce/shared.js"
+import { writeUnresolvableMessage } from "../../src/parser/string/shift/operand/unenclosed.js"
+import { writeInvalidDivisorMessage } from "../../src/parser/string/shift/operator/divisor.js"
+import { writeUnexpectedCharacterMessage } from "../../src/parser/string/shift/operator/operator.js"
 
 suite("generics", () => {
     suite("standalone generic", () => {

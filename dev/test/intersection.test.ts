@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
 import { suite, test } from "mocha"
-import { writeIndivisibleMessage } from "../../src/parse/semantic/divisor.js"
+import { writeIndivisibleMessage } from "../../src/parser/semantic/divisor.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.js"
+} from "../../src/parser/string/shift/operand/unenclosed.js"
 
 suite("intersection", () => {
     test("two types", () => {

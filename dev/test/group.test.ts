@@ -4,8 +4,8 @@ import { suite, test } from "mocha"
 import {
     writeUnclosedGroupMessage,
     writeUnmatchedGroupCloseMessage
-} from "../../src/parse/string/reduce/shared.js"
-import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+} from "../../src/parser/string/reduce/shared.js"
+import { writeExpressionExpectedMessage } from "../../src/parser/string/shift/operand/unenclosed.js"
 
 suite("group", () => {
     test("entire expression", () => {

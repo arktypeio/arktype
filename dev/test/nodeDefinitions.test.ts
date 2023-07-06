@@ -3,7 +3,7 @@ import type { TypeNode } from "arktype"
 import { suite, test } from "mocha"
 import { arrayIndexInput } from "../../src/nodes/composite/indexed.js"
 import { node } from "../../src/nodes/composite/type.js"
-import type { Out } from "../../src/parse/tuple.js"
+import type { Out } from "../../src/parser/tuple.js"
 
 suite("node definitions", () => {
     suite("basis", () => {

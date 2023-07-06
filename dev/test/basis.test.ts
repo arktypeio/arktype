@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import type { TypeNode } from "arktype"
 import { type } from "arktype"
 import { suite, test } from "mocha"
-import { writeUnsatisfiableExpressionError } from "../../src/parse/semantic/semantic.js"
+import { writeUnsatisfiableExpressionError } from "../../src/parser/semantic/semantic.js"
 
 suite("basis intersections", () => {
     test("class & literal", () => {

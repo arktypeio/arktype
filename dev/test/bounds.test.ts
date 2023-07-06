@@ -6,16 +6,16 @@ import { writeIncompatibleRangeMessage } from "../../src/nodes/primitive/bound.j
 import {
     writeDoubleRightBoundMessage,
     writeUnboundableMessage
-} from "../../src/parse/semantic/bounds.js"
+} from "../../src/parser/semantic/bounds.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
-} from "../../src/parse/string/reduce/shared.js"
+} from "../../src/parser/string/reduce/shared.js"
 import {
     singleEqualsMessage,
     writeInvalidLimitMessage
-} from "../../src/parse/string/shift/operator/bounds.js"
+} from "../../src/parser/string/shift/operator/bounds.js"
 
 export const expectedBoundsCondition = (...range: any) =>
     node({ basis: "number", range }).condition

@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
 import { suite, test } from "mocha"
-import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
+import { writeUnterminatedEnclosedMessage } from "../../src/parser/string/shift/operand/enclosed.js"
 import {
     writeExpressionExpectedMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.js"
+} from "../../src/parser/string/shift/operand/unenclosed.js"
 
 suite("string", () => {
     test("errors on empty string", () => {
