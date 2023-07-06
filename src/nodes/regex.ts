@@ -1,5 +1,5 @@
-import { In } from "../../compiler/compile.js"
-import { NodeBase } from "../base.js"
+import { In } from "../compiler/compile.js"
+import { NodeBase } from "./node.js"
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>

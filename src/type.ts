@@ -11,8 +11,8 @@ import { arkKind, registry } from "./compiler/registry.js"
 import type { CheckResult } from "./compiler/traverse.js"
 import { TraversalState } from "./compiler/traverse.js"
 import type { TypeConfig } from "./config.js"
-import type { TypeNode } from "./nodes/composite/type.js"
-import { builtins } from "./nodes/composite/type.js"
+import type { TypeNode } from "./nodes/type.js"
+import { builtins } from "./nodes/type.js"
 import type {
     inferDefinition,
     validateDeclared,

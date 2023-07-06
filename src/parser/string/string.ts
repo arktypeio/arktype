@@ -1,5 +1,5 @@
 import { type error, throwParseError } from "@arktype/utils"
-import type { TypeNode } from "../../nodes/composite/type.js"
+import type { TypeNode } from "../../nodes/type.js"
 import type { ParseContext } from "../../scope.js"
 import {
     type inferAst,

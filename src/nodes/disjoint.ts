@@ -8,8 +8,8 @@ import {
     transform
 } from "@arktype/utils"
 import type { PredicateNode } from "./composite/predicate.js"
-import type { TypeNode } from "./composite/type.js"
-import type { BasisNode } from "./primitive/basis.js"
+import type { TypeNode } from "./type.js"
+import type { BasisNode } from "./basis.js"
 import type { BoundNode } from "./primitive/bound.js"
 import type { ClassNode } from "./primitive/class.js"
 import type { UnitNode } from "./primitive/unit.js"

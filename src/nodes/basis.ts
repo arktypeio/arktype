@@ -1,7 +1,7 @@
 import type { Domain, extend } from "@arktype/utils"
-import type { NodeKind, NodeKinds } from "../base.js"
-import { NodeBase } from "../base.js"
-import type { TypeNode } from "../composite/type.js"
+import type { NodeKind, NodeKinds } from "./node.js"
+import { NodeBase } from "./node.js"
+import type { TypeNode } from "./type.js"
 
 export type BasisKind = extend<NodeKind, "domain" | "class" | "unit">
 

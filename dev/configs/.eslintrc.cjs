@@ -28,14 +28,27 @@ module.exports = defineConfig({
         curly: "warn",
         eqeqeq: "warn",
         "object-shorthand": ["warn"],
-        "no-unused-vars": "off",
         "@typescript-eslint/no-unused-vars": [
             "warn",
             {
-                ignoreRestSiblings: true,
-                args: "after-used",
-                argsIgnorePattern: "^__",
-                varsIgnorePattern: "^__"
+                ignoreRestSiblings: true
+            }
+        ],
+        // Per the docs: "you must disable the base rule as it can report incorrect errors"
+        "no-restricted-imports": "off",
+        "@typescript-eslint/no-restricted-imports": [
+            "warn",
+            {
+                patterns: [
+                    {
+                        group: ["**/main.js", "!**/src/main.js"],
+                        message: `Use a path like '../original/definition.js' instead of a package entrypoint`
+                    },
+                    {
+                        group: ["**/src/**"],
+                        message: `Use a specifier like '@arktype/utils' to import from a package`
+                    }
+                ]
             }
         ],
         "@typescript-eslint/default-param-last": "warn",
@@ -71,8 +84,6 @@ module.exports = defineConfig({
                 ignoreDeclarationSort: true
             }
         ],
-        // TODO: Ensure this works correctly
-        "import/no-relative-packages": "warn",
         "import/no-nodejs-modules": "warn",
         /**
          * Allow more flexible typing
@@ -87,7 +98,7 @@ module.exports = defineConfig({
         "@typescript-eslint/no-namespace": "off",
         // More of a pain during dev (or testing) than it's worth to prevent something that is trivially caught in PR
         "@typescript-eslint/no-empty-function": "off",
-        // We primarily use switches onyl if we're returning, and it's hard to imagine where this would be a problem
+        // We primarily use switches only if we're returning, and it's hard to imagine where this would be a problem
         "no-case-declarations": "off"
     },
     overrides: [

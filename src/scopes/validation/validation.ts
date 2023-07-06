@@ -2,8 +2,8 @@ import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
 } from "@arktype/utils"
-import { node } from "../../nodes/composite/type.js"
 import { serializeRegex } from "../../nodes/primitive/regex.js"
+import { node } from "../../nodes/type.js"
 import type { Out } from "../../parser/tuple.js"
 import { Scope } from "../../scope.js"
 import type { RootScope } from "../ark.js"

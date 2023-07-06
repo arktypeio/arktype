@@ -1,7 +1,7 @@
 import { domainOf, prototypeKeysOf, stringify } from "@arktype/utils"
-import { compileSerializedValue, In } from "../../compiler/compile.js"
-import type { DateLiteral } from "../../parser/string/shift/operand/date.js"
-import { extractDateLiteralSource } from "../../parser/string/shift/operand/date.js"
+import { compileSerializedValue, In } from "../compiler/compile.js"
+import type { DateLiteral } from "../parser/string/shift/operand/date.js"
+import { extractDateLiteralSource } from "../parser/string/shift/operand/date.js"
 import { BasisNodeBase } from "./basis.js"
 
 export class UnitNode extends BasisNodeBase<

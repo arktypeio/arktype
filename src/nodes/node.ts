@@ -2,14 +2,6 @@ import { CompiledFunction } from "@arktype/utils"
 import type { CompilationContext } from "../compiler/compile.js"
 import { createCompilationContext, In } from "../compiler/compile.js"
 import { arkKind } from "../compiler/registry.js"
-import type { TypeNode } from "../main.js"
-import type { BoundNode } from "./primitive/bound.js"
-import type { ClassNode } from "./primitive/class.js"
-import type { DivisorNode } from "./primitive/divisor.js"
-import type { DomainNode } from "./primitive/domain.js"
-import type { NarrowNode } from "./primitive/narrow.js"
-import type { RegexNode } from "./primitive/regex.js"
-import type { UnitNode } from "./primitive/unit.js"
 
 // interface StaticBaseNode<node> {
 //     new (...args: never[]): node

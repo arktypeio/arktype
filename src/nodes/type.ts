@@ -1,4 +1,4 @@
-import { NodeBase } from "../base.js"
+import { NodeBase } from "./node.js"
 
 export class TypeNode extends NodeBase<[], {}> {
     readonly kind = "type"

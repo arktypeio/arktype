@@ -1,4 +1,4 @@
-import { node } from "../nodes/composite/type.js"
+import { node } from "../nodes/type.js"
 import { Scope } from "../scope.js"
 import type { RootScope } from "./ark.js"
 

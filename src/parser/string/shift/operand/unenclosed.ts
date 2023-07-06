@@ -6,8 +6,8 @@ import {
     tryParseWellFormedNumber
 } from "@arktype/utils"
 import { hasArkKind } from "../../../../compiler/registry.js"
-import type { TypeNode } from "../../../../nodes/composite/type.js"
-import { typeNode } from "../../../../nodes/composite/type.js"
+import type { TypeNode } from "../../../../nodes/type.js"
+import { typeNode } from "../../../../nodes/type.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { ParsedArgs } from "../../../generic.js"

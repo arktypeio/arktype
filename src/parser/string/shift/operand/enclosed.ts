@@ -1,7 +1,7 @@
 import { isKeyOf } from "@arktype/utils"
 import { predicateNode } from "../../../../nodes/composite/predicate.js"
-import { typeNode } from "../../../../nodes/composite/type.js"
 import { valueNode } from "../../../../nodes/primitive/basis/value.js"
+import { typeNode } from "../../../../nodes/type.js"
 import type { RegexLiteral } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
