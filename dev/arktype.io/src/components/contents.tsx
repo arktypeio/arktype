@@ -31,7 +31,12 @@ export const Contents = () => {
                     color={
                         colorMode === "dark" ? "primary.light" : "primary.dark"
                     }
-                    style={{ marginTop: "2rem", marginBottom: "2rem" }}
+                    style={{
+                        marginTop: "2rem",
+                        marginBottom: "2rem",
+                        marginLeft: "1rem",
+                        marginRight: "1rem"
+                    }}
                     fontSize="1.3rem"
                 >
                     {/* @blockFrom:README.md:intro */}

@@ -15,7 +15,7 @@ export const FloatingInstallationBlock = () => {
     } as const satisfies Parameters<(typeof controls)["start"]>[0]
     scrollY.onChange((value) => {
         controls.start(
-            value ? { position: "fixed", top: "50%", width: 250 } : initial
+            value ? { position: "fixed", top: "50%", width: 340 } : initial
         )
     })
     return (
@@ -34,9 +34,9 @@ export const MobileInstallationBlock = () => (
 export const InstallationBlock = () => (
     <Card
         style={{
-            height: "8rem",
+            height: "9.5rem",
             margin: ".5rem",
-            padding: ".7rem 1rem 0rem",
+            padding: "1rem",
             backgroundColor: "#ffffff00",
             backdropFilter: "blur(1px)",
             borderRadius: "2rem",

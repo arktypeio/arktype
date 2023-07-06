@@ -16,6 +16,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => (
         muted
         // picture in picture doesn't work well since the page is designed around the demo
         disablePictureInPicture={true}
+        style={{ borderRadius: "15px" }}
         {...props}
     />
 )
