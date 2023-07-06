@@ -9,10 +9,10 @@ import {
 } from "@arktype/utils"
 import type { PredicateNode } from "./composite/predicate.js"
 import type { TypeNode } from "./composite/type.js"
-import type { BasisNode } from "./primitive/basis/basis.js"
-import type { ClassNode } from "./primitive/basis/class.js"
-import type { ValueNode } from "./primitive/basis/value.js"
+import type { BasisNode } from "./primitive/basis.js"
 import type { BoundNode } from "./primitive/bound.js"
+import type { ClassNode } from "./primitive/class.js"
+import type { UnitNode } from "./primitive/unit.js"
 
 type DisjointKinds = {
     domain?: {
@@ -20,8 +20,8 @@ type DisjointKinds = {
         r: BasisNode
     }
     value?: {
-        l: ValueNode
-        r: ValueNode
+        l: UnitNode
+        r: UnitNode
     }
     range?: {
         l: BoundNode
@@ -33,12 +33,12 @@ type DisjointKinds = {
     }
     assignability?:
         | {
-              l: ValueNode
+              l: UnitNode
               r: PredicateNode
           }
         | {
               l: PredicateNode
-              r: ValueNode
+              r: UnitNode
           }
     union?: {
         l: TypeNode

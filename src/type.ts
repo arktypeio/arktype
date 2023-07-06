@@ -6,10 +6,7 @@ import type {
     Primitive
 } from "@arktype/utils"
 import { CompiledFunction, transform } from "@arktype/utils"
-import {
-    createCompilationContext,
-    InputParameterName
-} from "./compiler/compile.js"
+import { createCompilationContext, In } from "./compiler/compile.js"
 import { arkKind, registry } from "./compiler/registry.js"
 import type { CheckResult } from "./compiler/traverse.js"
 import { TraversalState } from "./compiler/traverse.js"
@@ -139,14 +136,14 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     ) {
         const root = parseTypeRoot(definition, scope) as TypeNode<t>
         super(
-            InputParameterName,
+            In,
             `const state = new ${registry().reference("state")}();
         const morphs = [];
         ${root.compile(createCompilationContext("out", "problems"))}
         for(let i = 0; i < morphs.length; i++) {
             morphs[i]()
         }
-        return state.finalize(${InputParameterName});`
+        return state.finalize(${In});`
         )
         this.root = root
         this.condition = root.condition

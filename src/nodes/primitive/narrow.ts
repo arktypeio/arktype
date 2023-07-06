@@ -1,28 +1,19 @@
-import { intersectUniqueLists } from "@arktype/utils"
-import { InputParameterName } from "../../compiler/compile.js"
+import { In } from "../../compiler/compile.js"
 import { registry } from "../../compiler/registry.js"
 import type { Narrow } from "../../parser/tuple.js"
-import type { BaseNodeMeta } from "../node.js"
-import { defineNode } from "../node.js"
-import type {
-    definePrimitive,
-    PrimitiveIntersection,
-    PrimitiveNode
-} from "./primitive.js"
+import { NodeBase } from "../base.js"
 
-export interface NarrowMeta extends BaseNodeMeta {}
+export class NarrowNode extends NodeBase<Narrow, {}> {
+    readonly kind = "narrow"
 
-export type NarrowConfig = definePrimitive<{
-    kind: "narrow"
-    rule: Narrow
-    meta: NarrowMeta
-    intersection: readonly Narrow[]
-}>
+    compile() {
+        return `${registry().register(this.rule)}(${In})`
+    }
 
-export const intersectNarrow: PrimitiveIntersection<NarrowConfig> =
-    intersectUniqueLists
-
-export interface NarrowNode extends PrimitiveNode<NarrowConfig> {}
+    describe() {
+        return `valid according to ${this.rule.name}`
+    }
+}
 
 // intersect: (l, r) =>
 //     // as long as the narrows in l and r are individually safe to check
@@ -31,12 +22,3 @@ export interface NarrowNode extends PrimitiveNode<NarrowConfig> {}
 //     intersectUniqueLists(l.children, r.children)
 
 // TODO: allow changed order to be the same type
-export const narrowNode = defineNode<NarrowNode>(
-    {
-        kind: "narrow",
-        compile: (rule) => `${registry().register(rule)}(${InputParameterName})`
-    },
-    (base) => ({
-        description: `valid according to ${base.rule.name}`
-    })
-)

@@ -6,7 +6,7 @@ import {
     throwParseError,
     transform
 } from "@arktype/utils"
-import { InputParameterName } from "./compiler/compile.js"
+import { In } from "./compiler/compile.js"
 import type { arkKind } from "./compiler/registry.js"
 import { addArkKind, hasArkKind } from "./compiler/registry.js"
 import type { ScopeConfig } from "./config.js"
@@ -409,7 +409,7 @@ export class Scope<r extends Resolutions = any> {
         }
         return [...references]
             .map(
-                (ref) => `const ${ref.alias} = (${InputParameterName}) => {
+                (ref) => `const ${ref.alias} = (${In}) => {
     ${ref.condition}
     return true
 }`

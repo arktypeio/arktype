@@ -5,7 +5,7 @@ import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
-export const InputParameterName = "$arkRoot"
+export const In = "$arkRoot"
 
 export type CompiledSuccessKind = "true" | "in" | "out"
 export type CompiledFailureKind = "false" | "problems"
@@ -36,7 +36,7 @@ const compileAddProblem = <code extends ProblemCode>(
 ) => {
     return `state.addProblem("${code}", ${compileSerializedValue(
         rule
-    )}, ${InputParameterName}, [${ctx.path.map((segment) =>
+    )}, ${In}, [${ctx.path.map((segment) =>
         // if the segment is a variable reference, don't quote it
         typeof segment === "string" ? JSON.stringify(segment) : segment[0]
     )}])` as const

@@ -1,12 +1,5 @@
-import { intersectUniqueLists } from "@arktype/utils"
-import { InputParameterName } from "../../compiler/compile.js"
-import type { BaseNodeMeta } from "../node.js"
-import { defineNode } from "../node.js"
-import type {
-    definePrimitive,
-    PrimitiveIntersection,
-    PrimitiveNode
-} from "./primitive.js"
+import { In } from "../../compiler/compile.js"
+import { NodeBase } from "../base.js"
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>
@@ -17,26 +10,14 @@ export type SerializedRegexLiteral = `/${string}/${string}`
 export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
     literal.slice(1, literal.lastIndexOf("/"))
 
-export const intersectRegex: PrimitiveIntersection<RegexConfig> =
-    intersectUniqueLists
+export class RegexNode extends NodeBase<SerializedRegexLiteral, {}> {
+    readonly kind = "regex"
 
-export interface RegexMeta extends BaseNodeMeta {}
+    compile() {
+        return `${this.rule}.test(${In})`
+    }
 
-export type RegexConfig = definePrimitive<{
-    kind: "regex"
-    rule: SerializedRegexLiteral
-    intersection: readonly SerializedRegexLiteral[]
-    meta: RegexMeta
-}>
-
-export interface RegexNode extends PrimitiveNode<RegexConfig> {}
-
-export const regexNode = defineNode<RegexNode>(
-    {
-        kind: "regex",
-        compile: (rule) => `${rule}.test(${InputParameterName})`
-    },
-    (base) => ({
-        description: `matched by ${base.rule}`
-    })
-)
+    describe() {
+        return `matched by ${this.rule}`
+    }
+}
