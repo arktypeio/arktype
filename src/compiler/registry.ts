@@ -4,7 +4,7 @@ import {
     objectKindOf,
     throwInternalError
 } from "@arktype/utils"
-import type { Node } from "../nodes/kinds.js"
+import type { Node } from "../nodes/base.js"
 import type { Module } from "../scope.js"
 import type { Generic } from "../type.js"
 import { isDotAccessible } from "./compile.js"

@@ -2,6 +2,16 @@ import { CompiledFunction } from "@arktype/utils"
 import type { CompilationContext } from "../compiler/compile.js"
 import { createCompilationContext, In } from "../compiler/compile.js"
 import { arkKind } from "../compiler/registry.js"
+import type { PredicateNode } from "./predicate/predicate.js"
+import type { BoundNode } from "./primitive/bound.js"
+import type { ClassNode } from "./primitive/class.js"
+import type { DivisorNode } from "./primitive/divisor.js"
+import type { DomainNode } from "./primitive/domain.js"
+import type { NarrowNode } from "./primitive/narrow.js"
+import type { RegexNode } from "./primitive/regex.js"
+import type { UnitNode } from "./primitive/unit.js"
+import type { PropertiesNode } from "./properties/properties.js"
+import type { TypeNode } from "./type/type.js"
 
 // interface StaticBaseNode<node> {
 //     new (...args: never[]): node
@@ -54,24 +64,6 @@ export abstract class NodeBase<rule, meta> {
     }
 }
 
-export const precedenceByKind = {
-    // roots
-    type: 0,
-    // predicate: 0,
-    // basis checks
-    domain: 1,
-    class: 1,
-    unit: 1,
-    // shallow checks
-    bound: 2,
-    divisor: 2,
-    regex: 2,
-    // deep checks
-    // props: 3,
-    // narrows
-    narrow: 4
-} as const satisfies Record<NodeKind, number>
-
 export type NodeKinds = {
     type: TypeNode
     domain: DomainNode
@@ -81,6 +73,10 @@ export type NodeKinds = {
     divisor: DivisorNode
     regex: RegexNode
     narrow: NarrowNode
+    predicate: PredicateNode
+    properties: PropertiesNode
 }
 
 export type NodeKind = keyof NodeKinds
+
+export type Node = NodeKinds[NodeKind]

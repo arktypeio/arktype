@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { suite, test } from "mocha"
-import { node } from "../../src/nodes/type.js"
+import { node } from "../../src/nodes/type/type.js"
 
 suite("nodes", () => {
     // TODO: add tests for other node kinds if we keep this design

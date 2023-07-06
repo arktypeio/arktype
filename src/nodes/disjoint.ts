@@ -7,12 +7,12 @@ import {
     throwParseError,
     transform
 } from "@arktype/utils"
-import type { PredicateNode } from "./composite/predicate.js"
-import type { TypeNode } from "./type.js"
-import type { BasisNode } from "./basis.js"
+import type { PredicateNode } from "./predicate/predicate.js"
+import type { BasisNode } from "./primitive/basis.js"
 import type { BoundNode } from "./primitive/bound.js"
 import type { ClassNode } from "./primitive/class.js"
 import type { UnitNode } from "./primitive/unit.js"
+import type { TypeNode } from "./type/type.js"
 
 type DisjointKinds = {
     domain?: {

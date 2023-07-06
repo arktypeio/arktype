@@ -1,5 +1,5 @@
 import { serializeRegex } from "../../nodes/primitive/regex.js"
-import { node } from "../../nodes/type.js"
+import { node } from "../../nodes/type/type.js"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string) => {

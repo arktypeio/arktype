@@ -20,8 +20,8 @@ import {
 } from "@arktype/utils"
 import { hasArkKind } from "../compiler/registry.js"
 import { serializeRegex } from "../nodes/primitive/regex.js"
-import type { TypeNode } from "../nodes/type.js"
-import { node } from "../nodes/type.js"
+import type { TypeNode } from "../nodes/type/type.js"
+import { node } from "../nodes/type/type.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type {

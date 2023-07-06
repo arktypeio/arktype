@@ -3,7 +3,7 @@ import {
     wellFormedNumberMatcher
 } from "@arktype/utils"
 import { serializeRegex } from "../../nodes/primitive/regex.js"
-import { node } from "../../nodes/type.js"
+import { node } from "../../nodes/type/type.js"
 import type { Out } from "../../parser/tuple.js"
 import { Scope } from "../../scope.js"
 import type { RootScope } from "../ark.js"
