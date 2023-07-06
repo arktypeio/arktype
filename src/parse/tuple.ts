@@ -88,7 +88,10 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
         })
     }
     const predicate = predicateNode(
-        [classNode(Array, ctx), propsNode(props, ctx)],
+        {
+            basis: classNode(Array, ctx),
+            props: propsNode(props, ctx)
+        },
         ctx
     )
     return typeNode([predicate], ctx)

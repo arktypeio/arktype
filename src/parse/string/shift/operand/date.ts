@@ -5,8 +5,11 @@ export type DateLiteral<source extends string = string> =
     | `d"${source}"`
     | `d'${source}'`
 
-export const isDateLiteral = (s: string): s is DateLiteral =>
-    s[0] === "d" && (s[1] === "'" || s[1] === '"') && s.at(-1) === s[1]
+export const isDateLiteral = (value: unknown): value is DateLiteral =>
+    typeof value === "string" &&
+    value[0] === "d" &&
+    (value[1] === "'" || value[1] === '"') &&
+    value.at(-1) === value[1]
 
 export const isValidDate = (d: Date) => d.toString() !== "Invalid Date"
 

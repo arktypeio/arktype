@@ -144,7 +144,10 @@ export const typeNode = defineComposite<TypeNode>(
                     base.meta
                 )
                 const predicate = predicateNode(
-                    [classNode(Array, base.meta), props],
+                    {
+                        basis: classNode(Array, base.meta),
+                        props
+                    },
                     base.meta
                 )
                 return typeNode([predicate], base.meta)
@@ -194,7 +197,7 @@ export const typeNode = defineComposite<TypeNode>(
                 while (path.length) {
                     const key = path.shift()!
                     for (const branch of current) {
-                        const propsAtKey = branch.getConstraint("props")
+                        const propsAtKey = branch.getConstraints("props")
                         if (propsAtKey) {
                             const branchesAtKey =
                                 typeof key === "string"

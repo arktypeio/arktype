@@ -33,7 +33,10 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
         ctx.path.pop()
     }
     const props = propsNode(named, ctx)
-    const predicate = predicateNode([domainNode("object", ctx), props], ctx)
+    const predicate = predicateNode(
+        { basis: domainNode("object", ctx), props },
+        ctx
+    )
     return typeNode([predicate], ctx)
 }
 

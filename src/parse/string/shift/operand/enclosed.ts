@@ -52,12 +52,12 @@ export const parseEnclosed = (
         s.root = typeNode(
             [
                 predicateNode(
-                    [
-                        valueNode(date, {
+                    {
+                        basis: valueNode(date, {
                             baseName: s.ctx.baseName,
                             parsedFrom: token as DateLiteral
                         })
-                    ],
+                    },
                     s.ctx
                 )
             ],

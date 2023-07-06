@@ -5,17 +5,25 @@ import type {
     evaluate,
     inferDomain,
     isUnknown,
+    keySet,
     List,
-    listable
+    listable,
+    mutable
 } from "@arktype/utils"
 import {
     domainOf,
     isArray,
+    isKeyOf,
+    listFrom,
     throwInternalError,
     throwParseError
 } from "@arktype/utils"
 import { compileCheck } from "../../compile/compile.js"
+import { hasArkKind } from "../../compile/registry.js"
+import { writeUnboundableMessage } from "../../parse/ast/bounds.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
+import { isDateLiteral } from "../../parse/string/shift/operand/date.js"
+import { writeInvalidLimitMessage } from "../../parse/string/shift/operator/bounds.js"
 import type {
     inferMorphOut,
     Morph,
@@ -24,7 +32,7 @@ import type {
     Out
 } from "../../parse/tuple.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeKinds } from "../kinds.js"
+import type { NodeKind, NodeKinds } from "../kinds.js"
 import { createNodeOfKind, precedenceByKind } from "../kinds.js"
 import type { BaseNodeMeta } from "../node.js"
 import type {
@@ -52,15 +60,14 @@ export interface PredicateMeta extends BaseNodeMeta {}
 
 export type PredicateNodeConfig = defineComposite<{
     kind: "predicate"
-    input: PredicateInput | PredicateChildren
-    rule: PredicateChildren
+    input: PredicateInput | PredicateRule
+    rule: PredicateRule
     meta: PredicateMeta
 }>
 
 export interface PredicateNode extends CompositeNode<PredicateNodeConfig> {
     basis: BasisNode | null
-    constraints: ConstraintNode[]
-    getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
+    constraints: PredicateRule
     value: ValueNode | undefined
     keyof(): TypeNode
     constrain<kind extends ConstraintKind>(
@@ -73,39 +80,26 @@ export const predicateNode = defineComposite<PredicateNode>(
     {
         kind: "predicate",
         parse: (input, meta) => {
-            let children: PredicateChildren
-            if (isArray(input)) {
-                children = input
-            } else {
-                const basis = input.basis && basisNodeFrom(input.basis, meta)
-                children = basis ? [basis] : []
-                for (const kind of constraintKindNames) {
-                    if (input[kind]) {
-                        const node = createNodeOfKind(
-                            kind,
-                            input[kind] as never,
-                            meta
-                        )
-                        assertAllowsConstraint(basis, node)
-                        children.push(node)
-                    }
+            const result: mutable<PredicateRule> = {}
+            for (const k in input) {
+                if (!isKeyOf(k, constraintKinds)) {
+                    return throwParseError(
+                        `'${k}' is not a valid constraint name (must be one of ${Object.keys(
+                            constraintKinds
+                        ).join(", ")})`
+                    )
                 }
+                // TODO: parse basis
+                const constraints = listFrom(input[k])
+                result[k] = constraints.map((constraint) =>
+                    hasArkKind(constraint, "node")
+                        ? constraint
+                        : //     TODO:       assertAllowsConstraint(basis, node)
+                          createNodeOfKind(k, constraint as never, meta)
+                ) as never
             }
-            // sort by precedence, and then alphabetically by kind
-            return children.sort((l, r) =>
-                precedenceByKind[l.kind] > precedenceByKind[r.kind]
-                    ? 1
-                    : precedenceByKind[l.kind] < precedenceByKind[r.kind]
-                    ? -1
-                    : l.kind > r.kind
-                    ? 1
-                    : -1
-            )
         },
-        getReferences: (children) =>
-            children.flatMap((child) =>
-                child.hasKind("props") ? child.references : []
-            ),
+        // getReferences: (rule) => rule.props?.,
         compile: (children, ctx) => {
             let result = ""
             const initialChild = children.at(0)
@@ -154,8 +148,8 @@ export const predicateNode = defineComposite<PredicateNode>(
             }
             const rules: PredicateChildren = basis ? [basis] : []
             for (const kind of constraintKindNames) {
-                const lNode = l.getConstraint(kind)
-                const rNode = r.getConstraint(kind)
+                const lNode = l.getConstraints(kind)
+                const rNode = r.getConstraints(kind)
                 if (lNode) {
                     if (rNode) {
                         // TODO: fix
@@ -183,10 +177,6 @@ export const predicateNode = defineComposite<PredicateNode>(
     },
     (base) => {
         const initialRule = base.rule.at(0)
-        const basis = initialRule?.isBasis() ? initialRule : null
-        const constraints = (
-            basis ? base.rule.slice(1) : base.rule
-        ) as ConstraintNode[]
         const description =
             base.rule.length === 0
                 ? "unknown"
@@ -199,10 +189,6 @@ export const predicateNode = defineComposite<PredicateNode>(
             description,
             basis,
             constraints,
-            getConstraint: (k) =>
-                constraints.find(
-                    (constraint) => constraint.kind === k
-                ) as never,
             value:
                 // we only want simple unmorphed values
                 basis?.hasKind("value") && base.rule.length === 1
@@ -227,35 +213,23 @@ export const predicateNode = defineComposite<PredicateNode>(
                 if (!this.basis) {
                     return builtins.never()
                 }
-                const propsKey = this.getConstraint("props")?.keyof()
+                const propsKey = this.getConstraints("props")?.keyof()
                 return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
             }
         }
     }
 )
 
-// if (
-//     // s.lastOperator === "&" &&
-//     rules.morphs?.some(
-//         (morph, i) => morph !== branch.tree.morphs?.[i]
-//     )
-// ) {
-//     throwParseError(
-//         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
-//     )
-// }
-
 export const assertAllowsConstraint = (
     basis: BasisNode | null,
     node: ConstraintNode
 ) => {
     if (basis?.hasKind("value")) {
-        throwInvalidConstraintError(
+        return throwInvalidConstraintError(
             node.kind,
             "a non-literal type",
             basis.toString()
         )
-        return
     }
     const domain = basis?.domain ?? "unknown"
     switch (node.kind) {
@@ -265,22 +239,38 @@ export const assertAllowsConstraint = (
             }
             return
         case "bound":
-            // TODO: reeanble
-            // const bounds = node["rule"] as Range
-            // if (domain !== "string" && domain !== "number") {
-            //     const isDateClassBasis =
-            //         basis?.hasKind("class") && basis.extendsOneOf(Date)
-            //     if (isDateClassBasis) {
-            //         assertValidLimit(bounds, "Date")
-            //         return
-            //     }
-            //     const hasSizedClassBasis =
-            //         basis?.hasKind("class") && basis.extendsOneOf(Array)
-            //     if (!hasSizedClassBasis) {
-            //         throwParseError(writeUnboundableMessage(domain))
-            //     }
-            // }
-            // assertValidLimit(bounds, "number")
+            if (domain !== "string" && domain !== "number") {
+                const isDateClassBasis =
+                    basis?.hasKind("class") && basis.extendsOneOf(Date)
+                if (isDateClassBasis) {
+                    if (!isDateLiteral(node.rule.limit)) {
+                        throwParseError(
+                            writeInvalidLimitMessage(
+                                node.rule.comparator,
+                                node.rule.limit,
+                                // TODO: we don't know if this is true, validate range together
+                                "right"
+                            )
+                        )
+                    }
+                    return
+                }
+                const hasSizedClassBasis =
+                    basis?.hasKind("class") && basis.extendsOneOf(Array)
+                if (!hasSizedClassBasis) {
+                    throwParseError(writeUnboundableMessage(domain))
+                }
+            }
+            if (typeof node.rule.limit !== "number") {
+                throwParseError(
+                    writeInvalidLimitMessage(
+                        node.rule.comparator,
+                        node.rule.limit,
+                        // TODO: we don't know if this is true, validate range together
+                        "right"
+                    )
+                )
+            }
             return
         case "regex":
             if (domain !== "string") {
@@ -313,29 +303,25 @@ export const throwInvalidConstraintError = (
     ...args: Parameters<typeof writeInvalidConstraintMessage>
 ) => throwParseError(writeInvalidConstraintMessage(...args))
 
-const constraintKindNames = [
-    "divisor",
-    "bound",
-    "regex",
-    "props",
-    "narrow"
-] as const satisfies List<ConstraintKind>
-
 export type ListableInputKind = "regex" | "narrow"
 
-export type PredicateChildren =
-    | [BasisNode, ...ConstraintNode[]]
-    | ConstraintNode[]
-
 export type ConstraintNode = ConstraintKinds[ConstraintKind]
-type ConstraintKinds = Pick<
-    NodeKinds,
-    "bound" | "divisor" | "regex" | "props" | "narrow"
->
 
-export type PredicateChildKind = "basis" | ConstraintKind
+export const constraintKinds = {
+    bound: true,
+    divisor: true,
+    regex: true,
+    props: true,
+    narrow: true
+} as const satisfies keySet<NodeKind>
 
-export type ConstraintKind = keyof ConstraintKinds
+export type ConstraintKind = keyof typeof constraintKinds
+
+type ConstraintKinds = Pick<NodeKinds, ConstraintKind>
+
+export type PredicateRule = Readonly<{
+    [k in ConstraintKind]?: readonly ConstraintKinds[k][]
+}>
 
 export type PredicateInput<
     basis extends BasisInput | null = BasisInput | null
