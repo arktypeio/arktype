@@ -25,13 +25,13 @@ import { builtins, node, typeNode } from "../nodes/composite/type.js"
 import { classNode } from "../nodes/primitive/basis/class.js"
 import type { ParseContext } from "../scope.js"
 import type { extractIn, extractOut } from "../type.js"
+import type { inferDefinition, validateDefinition } from "./definition.js"
+import type { inferIntersection } from "./semantic/intersections.js"
 import {
     type InfixOperator,
     type PostfixExpression,
     writeUnsatisfiableExpressionError
-} from "./ast/ast.js"
-import type { inferIntersection } from "./ast/intersections.js"
-import type { inferDefinition, validateDefinition } from "./definition.js"
+} from "./semantic/semantic.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 

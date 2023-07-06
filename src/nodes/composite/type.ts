@@ -7,8 +7,8 @@ import {
     InputParameterName
 } from "../../compile/compile.js"
 import { hasArkKind } from "../../compile/registry.js"
-import type { inferIntersection } from "../../parse/ast/intersections.js"
 import type { inferred } from "../../parse/definition.js"
+import type { inferIntersection } from "../../parse/semantic/intersections.js"
 import type { ParseContext } from "../../scope.js"
 import { Scope } from "../../scope.js"
 import { Disjoint } from "../disjoint.js"

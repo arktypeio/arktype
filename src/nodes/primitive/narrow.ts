@@ -16,7 +16,7 @@ export type NarrowConfig = definePrimitive<{
     kind: "narrow"
     rule: Narrow
     meta: NarrowMeta
-    intersectionGroup: readonly Narrow[]
+    intersection: readonly Narrow[]
 }>
 
 export const intersectNarrow: PrimitiveIntersection<NarrowConfig> =

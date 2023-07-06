@@ -28,7 +28,7 @@ export interface BoundMeta extends BaseNodeMeta {}
 export type BoundConfig = definePrimitive<{
     kind: "bound"
     rule: Bound
-    intersectionGroup: Range
+    intersection: Range
     meta: BoundMeta
 }>
 

@@ -10,7 +10,7 @@ import type {
     BoundKind,
     writeInvalidLimitMessage
 } from "../string/shift/operator/bounds.js"
-import type { inferAst, validateAst } from "./ast.js"
+import type { inferAst, validateAst } from "./semantic.js"
 import type { astToString } from "./utils.js"
 
 export type validateRange<

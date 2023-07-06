@@ -193,7 +193,6 @@ export type inferTerminal<token, $, args> = token extends keyof args | keyof $
     ? value
     : token extends BigintLiteral<infer value>
     ? value
-    : // TODO: test instantiation impact once type errors are fixed
-      // doing this last allows us to infer never if it isn't valid rather than check
+    : // doing this last allows us to infer never if it isn't valid rather than check
       // if it's a valid submodule reference ahead of time
       tryInferSubmoduleReference<$, token>

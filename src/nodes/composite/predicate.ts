@@ -12,7 +12,6 @@ import type {
 } from "@arktype/utils"
 import {
     domainOf,
-    isArray,
     isKeyOf,
     listFrom,
     throwInternalError,
@@ -20,8 +19,8 @@ import {
 } from "@arktype/utils"
 import { compileCheck } from "../../compile/compile.js"
 import { hasArkKind } from "../../compile/registry.js"
-import { writeUnboundableMessage } from "../../parse/ast/bounds.js"
-import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
+import { writeUnboundableMessage } from "../../parse/semantic/bounds.js"
+import { writeIndivisibleMessage } from "../../parse/semantic/divisor.js"
 import { isDateLiteral } from "../../parse/string/shift/operand/date.js"
 import { writeInvalidLimitMessage } from "../../parse/string/shift/operator/bounds.js"
 import type {
@@ -33,7 +32,7 @@ import type {
 } from "../../parse/tuple.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKind, NodeKinds } from "../kinds.js"
-import { createNodeOfKind, precedenceByKind } from "../kinds.js"
+import { createNodeOfKind } from "../kinds.js"
 import type { BaseNodeMeta } from "../node.js"
 import type {
     BasisInput,

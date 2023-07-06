@@ -24,7 +24,7 @@ import { node } from "../nodes/composite/type.js"
 import { serializeRegex } from "../nodes/primitive/regex.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
-import type { validateString } from "./ast/ast.js"
+import type { validateString } from "./semantic/semantic.js"
 import type {
     inferObjectLiteral,
     validateObjectLiteral

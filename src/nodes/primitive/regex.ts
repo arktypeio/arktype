@@ -25,7 +25,7 @@ export interface RegexMeta extends BaseNodeMeta {}
 export type RegexConfig = definePrimitive<{
     kind: "regex"
     rule: SerializedRegexLiteral
-    intersectionGroup: readonly SerializedRegexLiteral[]
+    intersection: readonly SerializedRegexLiteral[]
     meta: RegexMeta
 }>
 

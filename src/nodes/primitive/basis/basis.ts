@@ -46,12 +46,11 @@ export const basisPrecedenceByKind: Record<BasisKind, number> = {
 
 export interface BasisNodeConfig extends PrimitiveNodeConfig {
     kind: BasisKind
-    intersectionGroup: BasisNodeInstance
+    intersection: BasisNodeInstance
 }
 
-export type defineBasis<
-    config extends Omit<BasisNodeConfig, "intersectionGroup">
-> = evaluate<config & { intersectionGroup: BasisNodeInstance }>
+export type defineBasis<config extends Omit<BasisNodeConfig, "intersection">> =
+    evaluate<config & { intersection: BasisNodeInstance }>
 
 export interface BasisNode<config extends BasisNodeConfig = BasisNodeConfig>
     extends PrimitiveNode<config> {

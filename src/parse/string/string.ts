@@ -1,7 +1,10 @@
 import { type error, throwParseError } from "@arktype/utils"
 import type { TypeNode } from "../../nodes/composite/type.js"
 import type { ParseContext } from "../../scope.js"
-import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
+import {
+    type inferAst,
+    writeUnsatisfiableExpressionError
+} from "../semantic/semantic.js"
 import type { DynamicStateWithRoot } from "./reduce/dynamic.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"

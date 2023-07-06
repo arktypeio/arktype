@@ -16,7 +16,7 @@ import { TraversalState } from "./compile/traverse.js"
 import type { TypeConfig } from "./config.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { builtins } from "./nodes/composite/type.js"
-import type { inferIntersection } from "./parse/ast/intersections.js"
+import type { inferIntersection } from "./parse/semantic/intersections.js"
 import type {
     inferDefinition,
     validateDeclared,

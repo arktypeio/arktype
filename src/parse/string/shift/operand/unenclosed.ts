@@ -10,7 +10,7 @@ import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
-import type { GenericInstantiationAst } from "../../../ast/ast.js"
+import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
 import type { ParsedArgs } from "../../../generic.js"
 import {
     parseGenericArgs,

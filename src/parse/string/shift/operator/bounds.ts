@@ -6,7 +6,7 @@ import type {
     MaxComparator
 } from "../../../../nodes/primitive/bound.js"
 import { maxComparators } from "../../../../nodes/primitive/bound.js"
-import type { astToString } from "../../../ast/utils.js"
+import type { astToString } from "../../../semantic/utils.js"
 import type {
     DynamicState,
     DynamicStateWithRoot

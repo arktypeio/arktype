@@ -17,8 +17,6 @@ import type { BoundNode } from "./primitive/bound.js"
 import { boundNode } from "./primitive/bound.js"
 import type { DivisorNode } from "./primitive/divisor.js"
 import { divisorNode } from "./primitive/divisor.js"
-// import type { MorphNode } from "./primitive/morph.js"
-// import { morphNode } from "./primitive/morph.js"
 import type { NarrowNode } from "./primitive/narrow.js"
 import { narrowNode } from "./primitive/narrow.js"
 import type { RegexNode } from "./primitive/regex.js"
@@ -35,7 +33,6 @@ export type NodeKinds = {
     regex: RegexNode
     props: PropsNode
     narrow: NarrowNode
-    // morph: MorphNode
 }
 
 export type NodeKind = keyof NodeKinds
@@ -58,8 +55,6 @@ export const precedenceByKind = {
     props: 3,
     // narrows
     narrow: 4
-    // // morphs
-    // morph: 5
 } as const satisfies Record<NodeKind, number>
 
 const nodeKinds = cached(
@@ -75,7 +70,6 @@ const nodeKinds = cached(
             regex: regexNode,
             props: propsNode,
             narrow: narrowNode
-            // morph: morphNode
         }) satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k]> }
 )
 

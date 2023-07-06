@@ -13,7 +13,7 @@ export type DivisorConfig = definePrimitive<{
     kind: "divisor"
     rule: number
     meta: DivisorMeta
-    intersectionGroup: number
+    intersection: number
 }>
 
 export interface DivisorNode extends PrimitiveNode<DivisorConfig> {}

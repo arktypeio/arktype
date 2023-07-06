@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import { lazily } from "@arktype/utils"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
+import { writeIndivisibleMessage } from "../../src/parse/semantic/divisor.js"
 import {
     emptyGenericParameterMessage,
     writeInvalidGenericArgsMessage
