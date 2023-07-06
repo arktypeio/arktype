@@ -1,5 +1,5 @@
 import { node } from "../nodes/composite/type.js"
-import type { CastTo } from "../parse/definition.js"
+import type { CastTo } from "../parser/definition.js"
 import { Scope } from "../scope.js"
 import type { RootScope } from "./ark.js"
 

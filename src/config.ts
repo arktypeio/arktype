@@ -1,4 +1,4 @@
-import type { ProblemCode } from "./compile/problems.js"
+import type { ProblemCode } from "./compiler/problems.js"
 import type { Scope } from "./scope.js"
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"

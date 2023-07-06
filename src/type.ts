@@ -9,22 +9,22 @@ import { CompiledFunction, transform } from "@arktype/utils"
 import {
     createCompilationContext,
     InputParameterName
-} from "./compile/compile.js"
-import { arkKind, registry } from "./compile/registry.js"
-import type { CheckResult } from "./compile/traverse.js"
-import { TraversalState } from "./compile/traverse.js"
+} from "./compiler/compile.js"
+import { arkKind, registry } from "./compiler/registry.js"
+import type { CheckResult } from "./compiler/traverse.js"
+import { TraversalState } from "./compiler/traverse.js"
 import type { TypeConfig } from "./config.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { builtins } from "./nodes/composite/type.js"
-import type { inferIntersection } from "./parse/semantic/intersections.js"
 import type {
     inferDefinition,
     validateDeclared,
     validateDefinition
-} from "./parse/definition.js"
-import { inferred } from "./parse/definition.js"
-import type { GenericParamsParseError } from "./parse/generic.js"
-import { parseGenericParams } from "./parse/generic.js"
+} from "./parser/definition.js"
+import { inferred } from "./parser/definition.js"
+import type { GenericParamsParseError } from "./parser/generic.js"
+import { parseGenericParams } from "./parser/generic.js"
+import type { inferIntersection } from "./parser/semantic/intersections.js"
 import type {
     IndexOneOperator,
     IndexZeroOperator,
@@ -35,7 +35,7 @@ import type {
     Narrow,
     Out,
     TupleInfixOperator
-} from "./parse/tuple.js"
+} from "./parser/tuple.js"
 import type { Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
 

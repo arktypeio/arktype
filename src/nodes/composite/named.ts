@@ -3,7 +3,7 @@ import {
     type CompilationContext,
     compilePropAccess,
     InputParameterName
-} from "../../compile/compile.js"
+} from "../../compiler/compile.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins } from "./type.js"

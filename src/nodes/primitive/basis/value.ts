@@ -2,10 +2,10 @@ import { cached, domainOf, prototypeKeysOf, stringify } from "@arktype/utils"
 import {
     compileSerializedValue,
     InputParameterName
-} from "../../../compile/compile.js"
+} from "../../../compiler/compile.js"
 import { node } from "../../../main.js"
-import type { DateLiteral } from "../../../parse/string/shift/operand/date.js"
-import { extractDateLiteralSource } from "../../../parse/string/shift/operand/date.js"
+import type { DateLiteral } from "../../../parser/string/shift/operand/date.js"
+import { extractDateLiteralSource } from "../../../parser/string/shift/operand/date.js"
 import type { BaseNodeMeta } from "../../node.js"
 import { defineNode } from "../../node.js"
 import type { BasisNode, defineBasis } from "./basis.js"

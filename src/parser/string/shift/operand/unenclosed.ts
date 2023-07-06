@@ -5,17 +5,17 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "@arktype/utils"
-import { hasArkKind } from "../../../../compile/registry.js"
+import { hasArkKind } from "../../../../compiler/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
-import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
 import type { ParsedArgs } from "../../../generic.js"
 import {
     parseGenericArgs,
     writeInvalidGenericArgsMessage
 } from "../../../generic.js"
+import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"

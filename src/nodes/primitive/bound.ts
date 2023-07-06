@@ -1,6 +1,6 @@
 import { throwInternalError } from "@arktype/utils"
-import { InputParameterName } from "../../compile/compile.js"
-import type { DateLiteral } from "../../parse/string/shift/operand/date.js"
+import { InputParameterName } from "../../compiler/compile.js"
+import type { DateLiteral } from "../../parser/string/shift/operand/date.js"
 import type { BaseNodeMeta } from "../node.js"
 import { defineNode } from "../node.js"
 import type {

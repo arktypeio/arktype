@@ -17,19 +17,19 @@ import {
     throwInternalError,
     throwParseError
 } from "@arktype/utils"
-import { compileCheck } from "../../compile/compile.js"
-import { hasArkKind } from "../../compile/registry.js"
-import { writeUnboundableMessage } from "../../parse/semantic/bounds.js"
-import { writeIndivisibleMessage } from "../../parse/semantic/divisor.js"
-import { isDateLiteral } from "../../parse/string/shift/operand/date.js"
-import { writeInvalidLimitMessage } from "../../parse/string/shift/operator/bounds.js"
+import { compileCheck } from "../../compiler/compile.js"
+import { hasArkKind } from "../../compiler/registry.js"
+import { writeUnboundableMessage } from "../../parser/semantic/bounds.js"
+import { writeIndivisibleMessage } from "../../parser/semantic/divisor.js"
+import { isDateLiteral } from "../../parser/string/shift/operand/date.js"
+import { writeInvalidLimitMessage } from "../../parser/string/shift/operator/bounds.js"
 import type {
     inferMorphOut,
     Morph,
     Narrow,
     NarrowCast,
     Out
-} from "../../parse/tuple.js"
+} from "../../parser/tuple.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKind, NodeKinds } from "../kinds.js"
 import { createNodeOfKind } from "../kinds.js"

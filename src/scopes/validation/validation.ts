@@ -4,7 +4,7 @@ import {
 } from "@arktype/utils"
 import { node } from "../../nodes/composite/type.js"
 import { serializeRegex } from "../../nodes/primitive/regex.js"
-import type { Out } from "../../parse/tuple.js"
+import type { Out } from "../../parser/tuple.js"
 import { Scope } from "../../scope.js"
 import type { RootScope } from "../ark.js"
 import { creditCard } from "./creditCard.js"

@@ -1,12 +1,12 @@
 import type { evaluate } from "@arktype/utils"
 import { CompiledFunction } from "@arktype/utils"
-import type { CompilationContext } from "../compile/compile.js"
+import type { CompilationContext } from "../compiler/compile.js"
 import {
     createCompilationContext,
     InputParameterName
-} from "../compile/compile.js"
-import { arkKind } from "../compile/registry.js"
-import type { inferred } from "../parse/definition.js"
+} from "../compiler/compile.js"
+import { arkKind } from "../compiler/registry.js"
+import type { inferred } from "../parser/definition.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 import type { BasisKind } from "./primitive/basis/basis.js"
 

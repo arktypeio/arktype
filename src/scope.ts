@@ -6,9 +6,9 @@ import {
     throwParseError,
     transform
 } from "@arktype/utils"
-import { InputParameterName } from "./compile/compile.js"
-import type { arkKind } from "./compile/registry.js"
-import { addArkKind, hasArkKind } from "./compile/registry.js"
+import { InputParameterName } from "./compiler/compile.js"
+import type { arkKind } from "./compiler/registry.js"
+import { addArkKind, hasArkKind } from "./compiler/registry.js"
 import type { ScopeConfig } from "./config.js"
 import type { TypeConfig, TypeNode } from "./main.js"
 import { builtins } from "./nodes/composite/type.js"
@@ -16,22 +16,22 @@ import type {
     CastTo,
     inferDefinition,
     validateDefinition
-} from "./parse/definition.js"
+} from "./parser/definition.js"
 import {
     parseObject,
     writeBadDefinitionTypeMessage
-} from "./parse/definition.js"
+} from "./parser/definition.js"
 import type {
     GenericDeclaration,
     GenericParamsParseError
-} from "./parse/generic.js"
-import { parseGenericParams } from "./parse/generic.js"
+} from "./parser/generic.js"
+import { parseGenericParams } from "./parser/generic.js"
 import {
     writeMissingSubmoduleAccessMessage,
     writeNonSubmoduleDotMessage,
     writeUnresolvableMessage
-} from "./parse/string/shift/operand/unenclosed.js"
-import { parseString } from "./parse/string/string.js"
+} from "./parser/string/shift/operand/unenclosed.js"
+import { parseString } from "./parser/string/string.js"
 import type {
     DeclarationParser,
     DefinitionParser,

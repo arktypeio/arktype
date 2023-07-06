@@ -1,6 +1,6 @@
-// import { InputParameterName } from "../../compile/compile.js"
-// import { registry } from "../../compile/registry.js"
-// import type { Morph } from "../../parse/tuple.js"
+// import { InputParameterName } from "../../compiler/compile.js"
+// import { registry } from "../../compiler/registry.js"
+// import type { Morph } from "../../parser/tuple.js"
 // import type { BaseNode } from "../node.js"
 // import { defineNode } from "../node.js"
 

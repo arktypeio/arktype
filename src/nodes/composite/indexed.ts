@@ -2,7 +2,7 @@ import { throwInternalError, tryParseWellFormedInteger } from "@arktype/utils"
 import {
     type CompilationContext,
     InputParameterName
-} from "../../compile/compile.js"
+} from "../../compiler/compile.js"
 import { sourceFromRegexLiteral } from "../primitive/regex.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp, compileNamedProps } from "./named.js"

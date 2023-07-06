@@ -5,8 +5,8 @@ import { propsNode } from "../nodes/composite/props.js"
 import { typeNode } from "../nodes/composite/type.js"
 import { domainNode } from "../nodes/primitive/basis/domain.js"
 import type { ParseContext } from "../scope.js"
-import type { validateString } from "./semantic/semantic.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
+import type { validateString } from "./semantic/semantic.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {

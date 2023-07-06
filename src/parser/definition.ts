@@ -18,18 +18,18 @@ import {
     stringify,
     throwParseError
 } from "@arktype/utils"
-import { hasArkKind } from "../compile/registry.js"
+import { hasArkKind } from "../compiler/registry.js"
 import type { TypeNode } from "../nodes/composite/type.js"
 import { node } from "../nodes/composite/type.js"
 import { serializeRegex } from "../nodes/primitive/regex.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
-import type { validateString } from "./semantic/semantic.js"
 import type {
     inferObjectLiteral,
     validateObjectLiteral
 } from "./objectLiteral.js"
 import { parseObjectLiteral } from "./objectLiteral.js"
+import type { validateString } from "./semantic/semantic.js"
 import type { BaseCompletions, inferString } from "./string/string.js"
 import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
 import { parseTuple } from "./tuple.js"

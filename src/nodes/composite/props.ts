@@ -6,7 +6,7 @@ import {
     isArray,
     spliterate
 } from "@arktype/utils"
-import { hasArkKind } from "../../compile/registry.js"
+import { hasArkKind } from "../../compiler/registry.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNodeMeta } from "../node.js"

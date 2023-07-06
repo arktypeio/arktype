@@ -6,8 +6,8 @@ import {
     objectKindDescriptions,
     prototypeKeysOf
 } from "@arktype/utils"
-import { InputParameterName } from "../../../compile/compile.js"
-import { registry } from "../../../compile/registry.js"
+import { InputParameterName } from "../../../compiler/compile.js"
+import { registry } from "../../../compiler/registry.js"
 import { node } from "../../../main.js"
 import type { BaseNodeMeta } from "../../node.js"
 import { defineNode } from "../../node.js"

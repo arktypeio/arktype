@@ -1,14 +1,14 @@
 import type { conform, exact, List, listable, Thunk } from "@arktype/utils"
 import { cached, hasKey, isArray } from "@arktype/utils"
-import type { CompilationContext } from "../../compile/compile.js"
+import type { CompilationContext } from "../../compiler/compile.js"
 import {
     compileFailureResult,
     compilePropAccess,
     InputParameterName
-} from "../../compile/compile.js"
-import { hasArkKind } from "../../compile/registry.js"
-import type { inferred } from "../../parse/definition.js"
-import type { inferIntersection } from "../../parse/semantic/intersections.js"
+} from "../../compiler/compile.js"
+import { hasArkKind } from "../../compiler/registry.js"
+import type { inferred } from "../../parser/definition.js"
+import type { inferIntersection } from "../../parser/semantic/intersections.js"
 import type { ParseContext } from "../../scope.js"
 import { Scope } from "../../scope.js"
 import { Disjoint } from "../disjoint.js"

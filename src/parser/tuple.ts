@@ -14,7 +14,7 @@ import {
     stringify,
     throwParseError
 } from "@arktype/utils"
-import type { CheckResult, TraversalState } from "../compile/traverse.js"
+import type { CheckResult, TraversalState } from "../compiler/traverse.js"
 import { type Problem } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
