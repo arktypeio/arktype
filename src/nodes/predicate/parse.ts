@@ -15,35 +15,15 @@ import type {
     NarrowCast,
     Out
 } from "../../parser/tuple.js"
+import type { NodeInputs, NodeKind } from "../base.js"
 import type { BasisInput, inferBasis } from "../primitive/basis.js"
-import type { Bound } from "../primitive/bound.js"
+import type { Bound, BoundGroupInput } from "../primitive/bound.js"
 import { ClassNode } from "../primitive/class.js"
 import { DomainNode } from "../primitive/domain.js"
 import type { SerializedRegexLiteral } from "../primitive/regex.js"
 import { UnitNode } from "../primitive/unit.js"
 import type { inferPropsInput, PropsInput } from "../properties/parse.js"
-import type { ConstraintKind } from "./predicate.js"
-
-// parse: (input, meta) => {
-//     const result: mutable<PredicateRule> = {}
-//     for (const k in input) {
-//         if (!isKeyOf(k, constraintKinds)) {
-//             return throwParseError(
-//                 `'${k}' is not a valid constraint name (must be one of ${Object.keys(
-//                     constraintKinds
-//                 ).join(", ")})`
-//             )
-//         }
-//         // TODO: parse basis
-//         const constraints = listFrom(input[k])
-//         result[k] = constraints.map((constraint) =>
-//             hasArkKind(constraint, "node")
-//                 ? constraint
-//                 : //     TODO:       assertAllowsConstraint(basis, node)
-//                   createNodeOfKind(k, constraint as never, meta)
-//         ) as never
-//     }
-// },
+import type { ConstraintGroup, ConstraintKind } from "./predicate.js"
 
 export type PredicateInput<
     basis extends BasisInput | null = BasisInput | null
@@ -58,20 +38,20 @@ export type PredicateInput<
 export type ConstraintsInput<
     basis extends BasisInput | null = BasisInput | null
 > = BasisInput extends basis
-    ? {
-          // TODO: remove morphs here? just to get rid of some type errors reincluding
-          [k in ConstraintKind | "morph"]?: k extends ConstraintKind
-              ? unknownConstraintInput<k>
-              : listable<Morph>
-      }
+    ? UnknownConstraintsInput
     : basis extends BasisInput
     ? constraintsOf<basis>
     : functionalConstraints<unknown>
 
-// TODO: fix
-type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
-    ? PropsInput
-    : any
+type UnknownConstraintsInput = {
+    [k in ConstraintKind]?: k extends NodeKind
+        ? k extends "bound"
+            ? BoundGroupInput
+            : ConstraintGroup<k> extends readonly unknown[]
+            ? listable<NodeInputs[k]>
+            : NodeInputs[k]
+        : BasisInput
+}
 
 export type inferPredicateDefinition<input extends PredicateInput> =
     input["morph"] extends Morph<any, infer out>
@@ -160,7 +140,7 @@ export type basisNodeFrom<input extends BasisInput> = input extends Domain
     ? ClassNode
     : UnitNode
 
-export const basisNodeFrom = (
+export const parseBasisInput = (
     input: BasisInput,
     // TODO: should be correlated with/part of input?
     meta: {}

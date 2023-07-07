@@ -1,21 +1,27 @@
+import type { mutable } from "@arktype/utils"
+import { isKeyOf, listFrom, throwParseError } from "@arktype/utils"
 import type { CompilationContext } from "../../compiler/compile.js"
+import { hasArkKind } from "../../compiler/registry.js"
 import { assertAllowsConstraint } from "../../parser/semantic/validate.js"
 import type { NodeKinds } from "../base.js"
 import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import type { BasisKind, BasisNode } from "../primitive/basis.js"
-import type { BoundNode } from "../primitive/bound.js"
+import type { BoundGroup } from "../primitive/bound.js"
+import { BoundNode } from "../primitive/bound.js"
 import type { DivisorNode } from "../primitive/divisor.js"
 import type { NarrowNode } from "../primitive/narrow.js"
 import type { RegexNode } from "../primitive/regex.js"
+import type { UnitNode } from "../primitive/unit.js"
 import type { PropertiesNode } from "../properties/properties.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
-import type { ConstraintsInput } from "./parse.js"
+import type { PredicateInput } from "./parse.js"
+import { parseBasisInput } from "./parse.js"
 
-export type Constraints = {
+export type ConstraintGroups = {
     readonly basis?: BasisNode
-    readonly bound?: readonly BoundNode[]
+    readonly bound?: BoundGroup
     readonly divisor?: DivisorNode
     readonly regex?: readonly RegexNode[]
     readonly properties?: PropertiesNode
@@ -23,15 +29,26 @@ export type Constraints = {
 }
 
 export type ConstraintGroup<kind extends ConstraintKind> =
-    Constraints[kind] & {}
+    ConstraintGroups[kind] & {}
 
-export type ConstraintKind = keyof Constraints
+export type ConstraintKind = keyof ConstraintGroups
 
 export type Constraint = NodeKinds[BasisKind | Exclude<ConstraintKind, "basis">]
 
-export type PredicateChildren = readonly Constraint[]
+export const assertConstraintKind: (
+    k: string
+) => asserts k is ConstraintKind = (k) => {
+    if (k in constraintsByPrecedence) {
+        return
+    }
+    throwParseError(
+        `'${k}' is not a valid constraint name (must be one of ${Object.keys(
+            constraintsByPrecedence
+        ).join(", ")})`
+    )
+}
 
-export class PredicateNode extends NodeBase implements Constraints {
+export class PredicateNode extends NodeBase implements ConstraintGroups {
     readonly kind = "predicate"
     readonly basis?: ConstraintGroup<"basis">
     readonly bound?: ConstraintGroup<"bound">
@@ -39,28 +56,35 @@ export class PredicateNode extends NodeBase implements Constraints {
     readonly regex?: ConstraintGroup<"regex">
     readonly properties?: ConstraintGroup<"properties">
     readonly narrow?: ConstraintGroup<"narrow">
+    readonly groups: ConstraintGroups
+    readonly children: readonly Constraint[]
+    // TODO: update morph representation here
+    // we only want simple unmorphed values
+    readonly unit: UnitNode | undefined
 
     constructor(
-        public readonly constraints: Constraints,
+        input: PredicateInput,
         public readonly meta: {}
     ) {
         super()
-        // TODO: assert keys
+        const constraints: mutable<ConstraintGroups> = {}
+        if (input.basis) {
+            this.basis = parseBasisInput(input.basis, meta)
+        }
+        if (input.bound) {
+            this.bound = 
+        }
+        this.groups = constraints
+        this.children = Object.values(this.groups).flat()
+        this.unit =
+            this.basis?.hasKind("unit") && this.children.length === 1
+                ? this.basis
+                : undefined
+
         Object.assign(this, constraints)
     }
 
-    readonly children: readonly Constraint[] = Object.values(
-        this.constraints
-    ).flat()
-
     readonly references: readonly TypeNode[] = this.properties?.references ?? []
-
-    // TODO: update morph representation here
-    // we only want simple unmorphed values
-    readonly unit =
-        this.basis?.hasKind("unit") && this.children.length === 1
-            ? this.basis
-            : undefined
 
     intersect(other: PredicateNode): PredicateNode | Disjoint {
         const basis = this.basis
@@ -164,4 +188,17 @@ export class PredicateNode extends NodeBase implements Constraints {
         }
         return result
     }
+}
+
+export const constraintsByPrecedence: Record<ConstraintKind, number> = {
+    // basis
+    basis: 0,
+    // shallow
+    bound: 1,
+    divisor: 1,
+    regex: 1,
+    // deep
+    properties: 2,
+    // narrow
+    narrow: 3
 }

@@ -61,19 +61,27 @@ export abstract class NodeBase {
     }
 }
 
-export type NodeKinds = {
-    type: TypeNode
-    domain: DomainNode
-    class: ClassNode
-    unit: UnitNode
-    bound: BoundNode
-    divisor: DivisorNode
-    regex: RegexNode
-    narrow: NarrowNode
-    predicate: PredicateNode
-    properties: PropertiesNode
+export type NodeConstructors = {
+    type: typeof TypeNode
+    domain: typeof DomainNode
+    class: typeof ClassNode
+    unit: typeof UnitNode
+    bound: typeof BoundNode
+    divisor: typeof DivisorNode
+    regex: typeof RegexNode
+    narrow: typeof NarrowNode
+    predicate: typeof PredicateNode
+    properties: typeof PropertiesNode
 }
 
-export type NodeKind = keyof NodeKinds
+export type NodeKind = keyof NodeConstructors
+
+export type NodeKinds = {
+    [k in NodeKind]: InstanceType<NodeConstructors[k]>
+}
+
+export type NodeInputs = {
+    [k in NodeKind]: ConstructorParameters<NodeConstructors[k]>[0]
+}
 
 export type Node = NodeKinds[NodeKind]

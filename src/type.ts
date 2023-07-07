@@ -226,6 +226,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         return result.problems ? result.problems.throw() : result.data
     }
 
+    // TODO: parse these
     equals<other>(other: Type<other>): this is Type<other, $> {
         return this.root === (other.root as unknown)
     }

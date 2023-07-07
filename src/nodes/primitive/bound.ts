@@ -1,25 +1,41 @@
+import type { evaluate } from "@arktype/utils"
 import { In } from "../../compiler/compile.js"
 import type { DateLiteral } from "../../parser/string/shift/operand/date.js"
 import { NodeBase } from "../base.js"
 
 export type LimitLiteral = number | DateLiteral
 
-export type Bound<
-    comparator extends Comparator = Comparator,
-    limit extends LimitLiteral = LimitLiteral
-> = {
-    limit: limit
-    comparator: comparator
+export type BoundGroupInput =
+    | Bound
+    | readonly [Bound]
+    | readonly [MinBound, MaxBound]
+
+export type BoundGroup = SingleBoundGroup | DoubleBoundGroup
+
+export type SingleBoundGroup = readonly [BoundNode]
+
+export type DoubleBoundGroup = readonly [
+    BoundNode<MinBound>,
+    BoundNode<MaxBound>
+]
+
+export type MinBound = evaluate<Bound & { comparator: MinComparator }>
+
+export type MaxBound = evaluate<Bound & { comparator: MaxComparator }>
+
+export type Bound = {
+    limit: LimitLiteral
+    comparator: Comparator
 }
 
-export class BoundNode extends NodeBase {
+export class BoundNode<bound extends Bound = Bound> extends NodeBase {
     readonly kind = "bound"
     readonly comparator = this.rule.comparator
     readonly limit = this.rule.limit
     readonly boundKind = getBoundKind(this.rule)
 
     constructor(
-        public readonly rule: Bound,
+        public readonly rule: bound,
         public readonly meta: {}
     ) {
         super()
@@ -49,11 +65,14 @@ type LimitsByBoundKind = {
 
 export type BoundKind = keyof LimitsByBoundKind
 
+type boundOfKind<kind extends BoundKind> = evaluate<
+    Bound & { limit: LimitsByBoundKind[kind] }
+>
+
 const boundHasKind = <kind extends BoundKind>(
     bound: Bound,
     kind: kind
-): bound is Bound<Comparator, LimitsByBoundKind[kind]> =>
-    getBoundKind(bound) === kind
+): bound is boundOfKind<kind> => getBoundKind(bound) === kind
 
 const getBoundKind = (bound: Bound): BoundKind =>
     typeof bound.limit === "number" ? "numeric" : "date"
