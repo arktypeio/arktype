@@ -70,7 +70,7 @@ header {
     text-align: center;
     position: relative;
     overflow: hidden;
-    background: #095080;
+    background: #0c5c91;
 }
 
 [data-theme="dark"] .navbar {
@@ -105,15 +105,15 @@ header {
 
 .installationTabs {
     overflow: hidden;
-    height: 2.4rem;
+    height: 2.1rem;
     margin-top: -1.3rem;
     --ifm-tabs-color: #8a8a8a;
     border-radius: 10px;
 }
 
 .subTabs {
-    height: 2.4rem;
-    margin-top: -1.5rem;
+    height: 2.5rem;
+    margin-top: -1.3rem;
     --ifm-tabs-color: #8a8a8a;
 }
 
@@ -127,7 +127,6 @@ header {
     margin: 0 0.5rem;
     padding: 0.5rem 1rem;
     font-size: 1rem;
-    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
 }
