@@ -9,10 +9,17 @@ import { In } from "../../compiler/compile.js"
 import { registry } from "../../compiler/registry.js"
 import { BasisNodeBase } from "./basis.js"
 
-export class ClassNode extends BasisNodeBase<AbstractableConstructor, {}> {
+export class ClassNode extends BasisNodeBase {
     readonly kind = "class"
     readonly literalKeys = prototypeKeysOf(this.rule.prototype)
     readonly domain = "object"
+
+    constructor(
+        public readonly rule: AbstractableConstructor,
+        public readonly meta: {}
+    ) {
+        super()
+    }
 
     compile() {
         return `${In} instanceof ${

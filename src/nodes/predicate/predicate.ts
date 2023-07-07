@@ -4,11 +4,12 @@ import type {
     evaluate,
     inferDomain,
     isUnknown,
-    keySet,
     List,
     listable
 } from "@arktype/utils"
-import { throwParseError } from "@arktype/utils"
+import { domainOf, throwInternalError } from "@arktype/utils"
+import type { CompilationContext } from "../../compiler/compile.js"
+import { assertAllowsConstraint } from "../../parser/semantic/validate.js"
 import type {
     inferMorphOut,
     Morph,
@@ -19,42 +20,70 @@ import type {
 import type { NodeKind, NodeKinds } from "../base.js"
 import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import type { BasisNode } from "../primitive/basis.js"
-import type { SerializedRegexLiteral } from "../primitive/regex.js"
-import type { UnitNode } from "../primitive/unit.js"
+import type { BasisInput, BasisNode, inferBasis } from "../primitive/basis.js"
+import type { Bound, BoundNode } from "../primitive/bound.js"
+import { ClassNode } from "../primitive/class.js"
+import type { DivisorNode } from "../primitive/divisor.js"
+import { DomainNode } from "../primitive/domain.js"
+import type { NarrowNode } from "../primitive/narrow.js"
+import type { RegexNode, SerializedRegexLiteral } from "../primitive/regex.js"
+import { UnitNode } from "../primitive/unit.js"
+import type { inferPropsInput, PropsInput } from "../properties/parse.js"
+import type { PropertiesNode } from "../properties/properties.js"
 import type { TypeNode } from "../type.js"
+import { builtins } from "../union/utils.js"
 
-export class PredicateNode extends NodeBase<[], {}> {
+export type Constraints = {
+    readonly basis?: BasisNode
+    readonly bound?: readonly BoundNode[]
+    readonly divisor?: DivisorNode
+    readonly regex?: readonly RegexNode[]
+    readonly properties?: PropertiesNode
+    readonly narrow?: readonly NarrowNode[]
+}
+
+export type ConstraintKind = keyof Constraints
+
+export class PredicateNode extends NodeBase implements Constraints {
     readonly kind = "predicate"
+    readonly basis?: Constraints["basis"]
+    readonly bound?: Constraints["bound"]
+    readonly divisor?: Constraints["divisor"]
+    readonly regex?: Constraints["regex"]
+    readonly properties?: Constraints["properties"]
+    readonly narrow?: Constraints["narrow"]
 
-    constructor(input: [], meta: {}) {
-        super(input, meta)
+    constructor(
+        public readonly constraints: Constraints,
+        public readonly meta: {}
+    ) {
+        super()
+        Object.assign(this, constraints)
     }
 
     intersect(other: PredicateNode): PredicateNode | Disjoint {
-        // TODO: can props imply object basis for compilation?
-        const basis = l.basis
-            ? r.basis
-                ? intersectBases(l.basis, r.basis)
-                : l.basis
-            : r.basis
+        const basis = this.basis
+            ? other.basis
+                ? this.basis.intersect(other.basis)
+                : this.basis
+            : other.basis
         if (basis instanceof Disjoint) {
             return basis
         }
         // TODO: figure out how .value works with morphs & other metadata
-        if (l.basis?.hasKind("value")) {
-            if (!r.allows(l.basis.rule)) {
-                return Disjoint.from("assignability", r, l.basis)
+        if (this.basis?.hasKind("unit")) {
+            if (!other.allows(this.basis.rule)) {
+                return Disjoint.from("assignability", other, this.basis)
             }
-        } else if (r.basis?.hasKind("value")) {
-            if (!l.allows(r.basis.rule)) {
-                return Disjoint.from("assignability", l, r.basis)
+        } else if (other.basis?.hasKind("unit")) {
+            if (!this.allows(other.basis.rule)) {
+                return Disjoint.from("assignability", this, other.basis)
             }
         }
         const rules: PredicateChildren = basis ? [basis] : []
         for (const kind of constraintKindNames) {
-            const lNode = l.getConstraints(kind)
-            const rNode = r.getConstraints(kind)
+            const lNode = this.getConstraints(kind)
+            const rNode = other.getConstraints(kind)
             if (lNode) {
                 if (rNode) {
                     // TODO: fix
@@ -77,16 +106,13 @@ export class PredicateNode extends NodeBase<[], {}> {
             }
         }
         // TODO: bad context source
-        return predicateNode(rules, l.meta)
+        return new PredicateNode(rules, this.meta)
     }
 
-    compile(ctx) {
+    compile(ctx: CompilationContext) {
+        // TODO: can props imply object basis for compilation?
         let result = ""
-        const initialChild = children.at(0)
-        const basis = initialChild?.isBasis() ? initialChild : undefined
-        if (basis) {
-            ctx.bases.push(basis)
-        }
+        this.basis && ctx.bases.push(this.basis)
         for (const child of children) {
             const childResult = child.hasKind("props")
                 ? child.compile(ctx)
@@ -101,14 +127,12 @@ export class PredicateNode extends NodeBase<[], {}> {
                 result = result ? `${result}\n${childResult}` : childResult
             }
         }
-        if (basis) {
-            ctx.bases.pop()
-        }
+        this.basis && ctx.bases.pop()
         return result
     }
 
     describe() {
-        return base.rule.length === 0
+        return this.rule.length === 0
             ? "unknown"
             : constraints.length
             ? `(${constraints.map((rule) => rule.toString()).join(" and ")})`
@@ -116,7 +140,7 @@ export class PredicateNode extends NodeBase<[], {}> {
     }
 
     value = // we only want simple unmorphed values
-        this.basis?.hasKind("unit") && base.rule.length === 1
+        this.basis?.hasKind("unit") && this.rule.length === 1
             ? basis
             : undefined
 
@@ -124,7 +148,7 @@ export class PredicateNode extends NodeBase<[], {}> {
         if (!this.basis) {
             return builtins.never()
         }
-        const propsKey = this.getConstraints("props")?.keyof()
+        const propsKey = this.properties?.keyof()
         return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
     }
 
@@ -132,36 +156,17 @@ export class PredicateNode extends NodeBase<[], {}> {
         kind: kind,
         input: ConstraintsInput[kind]
     ): PredicateNode {
-        const constraint = createNodeOfKind(kind, input as never, base.meta)
+        const constraint = createNodeOfKind(kind, input as never, this.meta)
         assertAllowsConstraint(this.basis, constraint)
-        const result = this.intersect(predicateNode([constraint], base.meta))
+        const result = this.intersect(
+            new PredicateNode([constraint], this.meta)
+        )
         if (result instanceof Disjoint) {
             return result.throw()
         }
         return result
     }
 }
-
-export const constraintPrecedence = {
-    // basis checks
-    domain: 1,
-    class: 1,
-    unit: 1,
-    // shallow checks
-    bound: 2,
-    divisor: 2,
-    regex: 2,
-    // deep checks
-    properties: 3,
-    // narrows
-    narrow: 4
-} as const satisfies { [k in NodeKind]?: number }
-
-export type ConstraintKind = keyof typeof constraintPrecedence
-
-export type PredicateRule = Readonly<{
-    [k in ConstraintKind]?: readonly ConstraintKinds[k][]
-}>
 
 // parse: (input, meta) => {
 //     const result: mutable<PredicateRule> = {}
@@ -184,102 +189,13 @@ export type PredicateRule = Readonly<{
 //     }
 // },
 
-export const assertAllowsConstraint = (
-    basis: BasisNode | null,
-    node: ConstraintNode
-) => {
-    if (basis?.hasKind("value")) {
-        return throwInvalidConstraintError(
-            node.kind,
-            "a non-literal type",
-            basis.toString()
-        )
-    }
-    const domain = basis?.domain ?? "unknown"
-    switch (node.kind) {
-        case "divisor":
-            if (domain !== "number") {
-                throwParseError(writeIndivisibleMessage(domain))
-            }
-            return
-        case "bound":
-            if (domain !== "string" && domain !== "number") {
-                const isDateClassBasis =
-                    basis?.hasKind("class") && basis.extendsOneOf(Date)
-                if (isDateClassBasis) {
-                    if (!isDateLiteral(node.rule.limit)) {
-                        throwParseError(
-                            writeInvalidLimitMessage(
-                                node.rule.comparator,
-                                node.rule.limit,
-                                // TODO: we don't know if this is true, validate range together
-                                "right"
-                            )
-                        )
-                    }
-                    return
-                }
-                const hasSizedClassBasis =
-                    basis?.hasKind("class") && basis.extendsOneOf(Array)
-                if (!hasSizedClassBasis) {
-                    throwParseError(writeUnboundableMessage(domain))
-                }
-            }
-            if (typeof node.rule.limit !== "number") {
-                throwParseError(
-                    writeInvalidLimitMessage(
-                        node.rule.comparator,
-                        node.rule.limit,
-                        // TODO: we don't know if this is true, validate range together
-                        "right"
-                    )
-                )
-            }
-            return
-        case "regex":
-            if (domain !== "string") {
-                throwInvalidConstraintError("regex", "a string", domain)
-            }
-            return
-        case "props":
-            if (domain !== "object") {
-                throwInvalidConstraintError("props", "an object", domain)
-            }
-            return
-        case "narrow":
-            return
-        default:
-            throwInternalError(
-                `Unexpected rule kind '${(node as ConstraintNode).kind}'`
-            )
-    }
-}
-
-export const writeInvalidConstraintMessage = (
-    kind: ConstraintKind,
-    typeMustBe: string,
-    typeWas: string
-) => {
-    return `${kind} constraint may only be applied to ${typeMustBe} (was ${typeWas})`
-}
-
-export const throwInvalidConstraintError = (
-    ...args: Parameters<typeof writeInvalidConstraintMessage>
-) => throwParseError(writeInvalidConstraintMessage(...args))
-
 export type ListableInputKind = "regex" | "narrow"
 
 export type ConstraintNode = ConstraintKinds[ConstraintKind]
 
-export const constraintKinds = {
-    bound: true,
-    divisor: true,
-    regex: true,
-    properties: true,
-    narrow: true
-} as const satisfies keySet<NodeKind>
-
-type ConstraintKinds = Pick<NodeKinds, ConstraintKind>
+type ConstraintKinds = {
+    [k in ConstraintKind]: k extends NodeKind ? NodeKinds[k] : BasisNode
+}
 
 export type PredicateInput<
     basis extends BasisInput | null = BasisInput | null
@@ -304,6 +220,7 @@ export type ConstraintsInput<
     ? constraintsOf<basis>
     : functionalConstraints<unknown>
 
+// TODO: fix
 type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
     ? PropsInput
     :
@@ -347,8 +264,8 @@ type inferNarrowArray<
 
 type inferNonFunctionalConstraints<input extends PredicateInput> =
     input["basis"] extends BasisInput
-        ? input["props"] extends PropsInput
-            ? inferPropsInput<input["props"]>
+        ? input["properties"] extends PropsInput
+            ? inferPropsInput<input["properties"]>
             : inferBasis<input["basis"]>
         : unknown
 
@@ -365,15 +282,16 @@ type domainConstraints<basis extends Domain> = basis extends "object"
     ? {
           props?: PropsInput
       }
-    : basis extends "string"
+    : // TODO: narrow bound types
+    basis extends "string"
     ? {
           regex?: listable<SerializedRegexLiteral>
-          range?: Range
+          bound?: Bound
       }
     : basis extends "number"
     ? {
           divisor?: number
-          range?: Range
+          bound?: Bound
       }
     : {}
 
@@ -388,7 +306,7 @@ type classConstraints<base extends AbstractableConstructor> = base extends
     | typeof Date
     ? {
           props?: PropsInput
-          range?: Range
+          bound?: Bound
       }
     : {
           props?: PropsInput
@@ -398,20 +316,20 @@ export type basisNodeFrom<input extends BasisInput> = input extends Domain
     ? DomainNode
     : input extends AbstractableConstructor
     ? ClassNode
-    : ValueNode
+    : UnitNode
 
 export const basisNodeFrom = (
     input: BasisInput,
     // TODO: should be correlated with/part of input?
-    meta: BaseNodeMeta
-): DomainNode | ClassNode | ValueNode => {
+    meta: {}
+): DomainNode | ClassNode | UnitNode => {
     switch (typeof input) {
         case "string":
-            return domainNode(input, meta)
+            return new DomainNode(input, meta)
         case "object":
-            return valueNode(input[1], meta)
+            return new UnitNode(input[1], meta)
         case "function":
-            return classNode(input, meta)
+            return new ClassNode(input, meta)
         default:
             return throwInternalError(
                 `Unexpectedly got a basis input of type ${domainOf(input)}`

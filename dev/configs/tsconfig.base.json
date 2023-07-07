@@ -10,8 +10,8 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
-        "exactOptionalPropertyTypes": true,
-        "noErrorTruncation": false,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitOverride": true,
         "stripInternal": true,
         "lib": ["ESNext"],
         "customConditions": ["arktype-dev"]

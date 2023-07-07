@@ -1,13 +1,13 @@
 import { isKeyOf } from "@arktype/utils"
-import { predicateNode } from "../../../../nodes/composite/predicate.js"
-import { valueNode } from "../../../../nodes/primitive/basis/value.js"
-import { typeNode } from "../../../../nodes/type.js"
+import { TypeNode } from "../../../../main.js"
 import type { RegexLiteral } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 import type { DateLiteral } from "./date.js"
 import { tryParseDate, writeInvalidDateMessage } from "./date.js"
+import { UnitNode } from "../../../../nodes/primitive/unit.js"
+import { PredicateNode } from "../../../../nodes/predicate/predicate.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -40,20 +40,20 @@ export const parseEnclosed = (
             s.error(`${e instanceof Error ? e.message : e}`)
         }
         // flags are not currently supported for embedded regex literals
-        s.root = typeNode(
+        s.root = new TypeNode(
             { basis: "string", regex: token as RegexLiteral },
             s.ctx
         )
     } else if (isKeyOf(enclosing, enclosingQuote)) {
-        s.root = typeNode({ basis: ["===", enclosed] }, s.ctx)
-    } else {
+        s.root = new TypeNode({ basis: ["===", enclosed] }, s.ctx)
+    } else 
         const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
         // TODO: cleanup once we have new node input format
-        s.root = typeNode(
+        s.root = new TypeNode(
             [
-                predicateNode(
+                new PredicateNode(
                     {
-                        basis: valueNode(date, {
+                        basis: new UnitNode(date, {
                             baseName: s.ctx.baseName,
                             parsedFrom: token as DateLiteral
                         })

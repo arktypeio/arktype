@@ -14,24 +14,21 @@ import {
     stringify,
     throwParseError
 } from "@arktype/utils"
+import type { Problem } from "../compiler/problems.js"
 import type { CheckResult, TraversalState } from "../compiler/traverse.js"
-import { type Problem } from "../main.js"
-import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
-import { predicateNode } from "../nodes/composite/predicate.js"
-import type { NodeEntry } from "../nodes/composite/props.js"
-import { propsNode } from "../nodes/composite/props.js"
-import { classNode } from "../nodes/primitive/basis/class.js"
-import type { TypeNode } from "../nodes/type.js"
-import { builtins, node, typeNode } from "../nodes/type.js"
+import { PredicateNode } from "../nodes/predicate/predicate.js"
+import { ClassNode } from "../nodes/primitive/class.js"
+import { PropertiesNode } from "../nodes/properties/properties.js"
+import { TypeNode } from "../nodes/type.js"
 import type { ParseContext } from "../scope.js"
 import type { extractIn, extractOut } from "../type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { inferIntersection } from "./semantic/intersections.js"
 import {
     type InfixOperator,
-    type PostfixExpression,
-    writeUnsatisfiableExpressionError
+    type PostfixExpression
 } from "./semantic/semantic.js"
+import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
@@ -84,17 +81,17 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
                 prerequisite: true,
                 optional: false
             },
-            value: typeNode({ basis: ["===", def.length] }, ctx)
+            value: new TypeNode({ basis: ["===", def.length] }, ctx)
         })
     }
-    const predicate = predicateNode(
+    const predicate = new PredicateNode(
         {
-            basis: classNode(Array, ctx),
-            props: propsNode(props, ctx)
+            basis: new ClassNode(Array, ctx),
+            props: new PropertiesNode(props, ctx)
         },
         ctx
     )
-    return typeNode([predicate], ctx)
+    return new TypeNode([predicate], ctx)
 }
 
 export const maybeParseTupleExpression = (
@@ -463,20 +460,18 @@ const prefixParsers: {
                 )
             )
         }
-        return typeNode(
-            def
-                .slice(1)
-                .map((ctor) =>
-                    objectKindOf(ctor) === "Function"
-                        ? { basis: ctor as AbstractableConstructor }
-                        : throwParseError(
-                              writeInvalidConstructorMessage(
-                                  objectKindOf(ctor) ?? domainOf(def[1])
-                              )
+        const branches = def
+            .slice(1)
+            .map((ctor) =>
+                objectKindOf(ctor) === "Function"
+                    ? { basis: ctor as AbstractableConstructor }
+                    : throwParseError(
+                          writeInvalidConstructorMessage(
+                              objectKindOf(ctor) ?? domainOf(def[1])
                           )
-                ),
-            ctx
-        )
+                      )
+            )
+        return new TypeNode(branches, ctx)
     },
     "===": (def) => node.literal(...def.slice(1))
 }

@@ -19,7 +19,7 @@ type DisjointKinds = {
         l: BasisNode
         r: BasisNode
     }
-    value?: {
+    unit?: {
         l: UnitNode
         r: UnitNode
     }

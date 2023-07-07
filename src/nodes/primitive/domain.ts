@@ -8,10 +8,17 @@ export type NonEnumerableDomain = Exclude<
     "null" | "undefined" | "boolean"
 >
 
-export class DomainNode extends BasisNodeBase<NonEnumerableDomain, {}> {
+export class DomainNode extends BasisNodeBase {
     readonly kind = "domain"
     readonly literalKeys = getBaseDomainKeys(this.rule)
     readonly domain = this.rule
+
+    constructor(
+        public readonly rule: NonEnumerableDomain,
+        public readonly meta: {}
+    ) {
+        super()
+    }
 
     compile() {
         return this.rule === "object"

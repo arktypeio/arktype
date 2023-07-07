@@ -3,8 +3,15 @@ import { registry } from "../../compiler/registry.js"
 import type { Narrow } from "../../parser/tuple.js"
 import { NodeBase } from "../base.js"
 
-export class NarrowNode extends NodeBase<Narrow, {}> {
+export class NarrowNode extends NodeBase {
     readonly kind = "narrow"
+
+    constructor(
+        public readonly rule: Narrow,
+        public readonly meta: {}
+    ) {
+        super()
+    }
 
     compile() {
         return `${registry().register(this.rule)}(${In})`

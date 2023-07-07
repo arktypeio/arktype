@@ -20,8 +20,7 @@ import {
 } from "@arktype/utils"
 import { hasArkKind } from "../compiler/registry.js"
 import { serializeRegex } from "../nodes/primitive/regex.js"
-import type { TypeNode } from "../nodes/type.js"
-import { node } from "../nodes/type.js"
+import { TypeNode } from "../nodes/type.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type {
@@ -29,7 +28,7 @@ import type {
     validateObjectLiteral
 } from "./objectLiteral.js"
 import { parseObjectLiteral } from "./objectLiteral.js"
-import type { validateString } from "./semantic/semantic.js"
+import type { validateString } from "./semantic/validate.js"
 import type { BaseCompletions, inferString } from "./string/string.js"
 import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
 import { parseTuple } from "./tuple.js"
@@ -45,10 +44,13 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
-            return node({
-                basis: "string",
-                regex: serializeRegex(def as RegExp)
-            })
+            return new TypeNode(
+                {
+                    basis: "string",
+                    regex: serializeRegex(def as RegExp)
+                },
+                ctx
+            )
         case "Function":
             const resolvedDef = isThunk(def) ? def() : def
             if (resolvedDef instanceof Type) {

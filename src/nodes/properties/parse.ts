@@ -1,4 +1,6 @@
 import type { evaluate, List, NumberLiteral, Thunk } from "@arktype/utils"
+import type { TypeNode } from "../type.js"
+import type { inferTypeInput, TypeInput } from "../union/parse.js"
 import type {
     IndexedPropInput,
     NonVariadicIndexMatcherLiteral,
@@ -9,53 +11,53 @@ import type { NamedPropsInput, PropsInputTuple } from "./properties.js"
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
 
-export const isParsedPropsRule = (
-    input: PropsInput | PropsEntries
-): input is PropsEntries =>
-    isArray(input) && (input.length === 0 || hasArkKind(input[0].value, "node"))
+// export const isParsedPropsRule = (
+//     input: PropsInput | PropsEntries
+// ): input is PropsEntries =>
+//     isArray(input) && (input.length === 0 || hasArkKind(input[0].value, "node"))
 
-const parsePropsInput = (input: PropsInput, meta: PropsMeta) => {
-    const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
-    const entries: NodeEntry[] = []
-    for (const name in namedInput) {
-        const prop = namedInput[name]
-        entries.push({
-            key: {
-                name,
-                prerequisite: prop.prerequisite ?? false,
-                optional: prop.optional ?? false
-            },
-            value: hasArkKind(prop.value, "node")
-                ? prop.value
-                : typeNode(prop.value, meta)
-        })
-    }
-    for (const prop of indexedInput) {
-        entries.push({
-            key: typeNode(prop.key, meta),
-            value: typeNode(prop.value, meta)
-        })
-    }
-    return entries
-}
+// const parsePropsInput = (input: PropsInput, meta: PropsMeta) => {
+//     const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
+//     const entries: NodeEntry[] = []
+//     for (const name in namedInput) {
+//         const prop = namedInput[name]
+//         entries.push({
+//             key: {
+//                 name,
+//                 prerequisite: prop.prerequisite ?? false,
+//                 optional: prop.optional ?? false
+//             },
+//             value: hasArkKind(prop.value, "node")
+//                 ? prop.value
+//                 : typeNode(prop.value, meta)
+//         })
+//     }
+//     for (const prop of indexedInput) {
+//         entries.push({
+//             key: typeNode(prop.key, meta),
+//             value: typeNode(prop.value, meta)
+//         })
+//     }
+//     return entries
+// }
 
-export const parse = (input, meta) => {
-    // TODO: better strategy for sorting
-    const rule = isParsedPropsRule(input) ? input : parsePropsInput(input, meta)
-    return [...rule].sort((l, r) => {
-        // Sort keys first by precedence (prerequisite,required,optional,indexed),
-        // then alphebetically by key
-        const lPrecedence = kindPrecedence(l.key)
-        const rPrecedence = kindPrecedence(r.key)
-        return lPrecedence > rPrecedence
-            ? 1
-            : lPrecedence < rPrecedence
-            ? -1
-            : keyNameToString(l.key) > keyNameToString(r.key)
-            ? 1
-            : -1
-    })
-}
+// export const parse = (input, meta) => {
+//     // TODO: better strategy for sorting
+//     const rule = isParsedPropsRule(input) ? input : parsePropsInput(input, meta)
+//     return [...rule].sort((l, r) => {
+//         // Sort keys first by precedence (prerequisite,required,optional,indexed),
+//         // then alphebetically by key
+//         const lPrecedence = kindPrecedence(l.key)
+//         const rPrecedence = kindPrecedence(r.key)
+//         return lPrecedence > rPrecedence
+//             ? 1
+//             : lPrecedence < rPrecedence
+//             ? -1
+//             : keyNameToString(l.key) > keyNameToString(r.key)
+//             ? 1
+//             : -1
+//     })
+// }
 
 export type inferPropsInput<input extends PropsInput> =
     input extends PropsInputTuple<infer named, infer indexed>

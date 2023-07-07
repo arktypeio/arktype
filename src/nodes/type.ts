@@ -1,18 +1,21 @@
 import type { Thunk } from "@arktype/utils"
 import { hasKey, isArray } from "@arktype/utils"
+import type { CompilationContext } from "../compiler/compile.js"
 import { In } from "../compiler/compile.js"
 import { inferred } from "../parser/definition.js"
 import type { inferIntersection } from "../parser/semantic/intersections.js"
 import { NodeBase } from "./base.js"
 import { Disjoint } from "./disjoint.js"
-import type {
-    ConstraintKind,
-    PredicateInput,
-    PredicateNode
-} from "./predicate/predicate.js"
+import { PredicateNode } from "./predicate/predicate.js"
+import type { ConstraintKind, PredicateInput } from "./predicate/predicate.js"
+import { ClassNode } from "./primitive/class.js"
+import { arrayIndexTypeNode } from "./properties/indexed.js"
+import { PropertiesNode } from "./properties/properties.js"
 import { compileDiscriminant, compileIndiscriminable } from "./union/compile.js"
 import { discriminate } from "./union/discriminate.js"
 import { intersectBranches } from "./union/intersect.js"
+import { reduceBranches } from "./union/parse.js"
+import { builtins } from "./union/utils.js"
 
 export type TypeRule = UnresolvedTypeNode | readonly PredicateNode[]
 
@@ -23,39 +26,45 @@ export type UnresolvedTypeNode = {
     resolve: Thunk<TypeNode>
 }
 
-export class TypeNode<t = unknown> extends NodeBase<
-    readonly PredicateNode[],
-    {}
-> {
+//
+
+export class TypeNode<t = unknown> extends NodeBase {
     declare [inferred]: t
     readonly kind = "type"
 
-    private cachedBranches: readonly PredicateNode[] | undefined
-    get branches() {
-        if (!this.cachedBranches) {
-            this.cachedBranches = hasKey(this.rule, "resolve")
-                ? this.rule.resolve().branches
-                : this.rule
-        }
-        return this.cachedBranches!
+    constructor(
+        public readonly branches: readonly PredicateNode[],
+        public readonly meta: {}
+    ) {
+        super()
     }
 
-    compile() {
-        if (hasKey(this.rule, "resolve")) {
-            return `$${this.rule.alias}(${In})`
-        }
-        const discriminant = discriminate(this.rule)
+    // private cachedBranches: readonly PredicateNode[] | undefined
+    // get branches() {
+    //     if (!this.cachedBranches) {
+    //         this.cachedBranches = hasKey(this.branches, "resolve")
+    //             ? this.branches.resolve().branches
+    //             : this.branches
+    //     }
+    //     return this.cachedBranches!
+    // }
+
+    compile(ctx: CompilationContext) {
+        // if (hasKey(this.branches, "resolve")) {
+        //     return `$${this.branches.alias}(${In})`
+        // }
+        const discriminant = discriminate(this.branches)
         return discriminant
             ? compileDiscriminant(discriminant, ctx)
-            : compileIndiscriminable(this.rule, ctx)
+            : compileIndiscriminable(this.branches, ctx)
     }
 
     describe() {
-        return isArray(this.rule)
-            ? this.rule.length === 0
+        return isArray(this.branches)
+            ? this.branches.length === 0
                 ? "never"
-                : this.rule.map((branch) => branch.toString()).join(" or ")
-            : this.rule.alias
+                : this.branches.map((branch) => branch.toString()).join(" or ")
+            : this.branches.alias
     }
 
     getReferences() {
@@ -88,18 +97,19 @@ export class TypeNode<t = unknown> extends NodeBase<
     }
 
     array(): TypeNode<t[]> {
-        const props = propsNode(
+        const props = new PropertiesNode(
+            {},
             [{ key: arrayIndexTypeNode(), value: this }],
-            base.meta
+            this.meta
         )
-        const predicate = predicateNode(
+        const predicate = new PredicateNode(
             {
-                basis: classNode(Array, base.meta),
+                basis: new ClassNode(Array, this.meta),
                 props
             },
-            base.meta
+            this.meta
         )
-        return new TypeNode([predicate], base.meta)
+        return new TypeNode([predicate], this.meta)
     }
 
     isNever(): this is TypeNode<never> {
@@ -121,7 +131,7 @@ export class TypeNode<t = unknown> extends NodeBase<
         }
         return new TypeNode(
             reduceBranches([...this.branches, ...other.branches]),
-            base.meta
+            this.meta
         )
     }
 
@@ -131,12 +141,12 @@ export class TypeNode<t = unknown> extends NodeBase<
     ): TypeNode<t> {
         return new TypeNode(
             this.branches.map((branch) => branch.constrain(kind, def)),
-            base.meta
+            this.meta
         )
     }
 
     equals<other>(other: TypeNode<other>): this is TypeNode<other> {
-        return this === other
+        return false
     }
 
     extends<other>(other: TypeNode<other>): this is TypeNode<other> {
@@ -148,7 +158,7 @@ export class TypeNode<t = unknown> extends NodeBase<
         return this.branches.reduce(
             (result, branch) => result.and(branch.keyof()),
             builtins.unknown()
-        )
+        ) satisfies TypeNode as never
     }
 
     getPath(...path: (string | TypeNode<string>)[]): TypeNode {
@@ -157,11 +167,11 @@ export class TypeNode<t = unknown> extends NodeBase<
         while (path.length) {
             const key = path.shift()!
             for (const branch of current) {
-                const propsAtKey = branch.getConstraints("props")
+                const propsAtKey = branch?.properties
                 if (propsAtKey) {
                     const branchesAtKey =
                         typeof key === "string"
-                            ? propsAtKey.byName?.[key]?.value.branches
+                            ? propsAtKey.named?.[key]?.value.branches
                             : propsAtKey.indexed.find(
                                   (entry) => entry.key === key
                               )?.value.branches
@@ -173,7 +183,7 @@ export class TypeNode<t = unknown> extends NodeBase<
             current = next
             next = []
         }
-        return new TypeNode(current, base.meta)
+        return new TypeNode(current, this.meta)
     }
 }
 

@@ -12,11 +12,18 @@ export type Bound<
     comparator: comparator
 }
 
-export class BoundNode extends NodeBase<Bound, {}> {
+export class BoundNode extends NodeBase {
     readonly kind = "bound"
     readonly comparator = this.rule.comparator
     readonly limit = this.rule.limit
     readonly boundKind = getBoundKind(this.rule)
+
+    constructor(
+        public readonly rule: Bound,
+        public readonly meta: {}
+    ) {
+        super()
+    }
 
     compile() {
         // TODO: basis-specific

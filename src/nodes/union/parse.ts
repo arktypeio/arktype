@@ -1,13 +1,15 @@
 import type { conform, exact, List, listable } from "@arktype/utils"
-import { cached, isArray } from "@arktype/utils"
-import { hasArkKind } from "../../compiler/registry.js"
+import { cached } from "@arktype/utils"
+import type { ParseContext } from "../../scope.js"
 import { Scope } from "../../scope.js"
 import type {
     inferPredicateDefinition,
-    PredicateInput,
-    PredicateNode
+    PredicateInput
 } from "../predicate/predicate.js"
-import type { TypeNode } from "../type.js"
+import { PredicateNode } from "../predicate/predicate.js"
+import type { BasisInput } from "../primitive/basis.js"
+import { UnitNode } from "../primitive/unit.js"
+import { TypeNode } from "../type.js"
 
 export type TypeNodeParser = {
     <const branches extends PredicateInput[]>(
@@ -23,24 +25,6 @@ export type TypeNodeParser = {
         ...branches: branches
     ): TypeNode<branches[number]>
 }
-
-// parse: (input, meta) => {
-//     if (hasKey(input, "resolve")) {
-//         return input
-//     }
-//     if (!isParsedTypeRule(input)) {
-//         input = isArray(input)
-//             ? input.map((branch) => predicateNode(branch, meta))
-//             : [predicateNode(input, meta)]
-//     }
-//     // TODO: figure out a better way to handle sorting (in composite?)
-//     return alphabetizeByCondition(reduceBranches([...input]))
-// },
-
-const isParsedTypeRule = (
-    input: TypeInput | readonly PredicateNode[]
-): input is readonly PredicateNode[] =>
-    isArray(input) && (input.length === 0 || hasArkKind(input[0], "node"))
 
 export type inferBranches<branches extends readonly PredicateInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
@@ -94,13 +78,14 @@ const createAnonymousParseContext = (): ParseContext => ({
 // TODO: cleanup
 export const node: TypeNodeParser = Object.assign(
     (...branches: readonly PredicateInput[]) =>
-        typeNode(branches, createAnonymousParseContext()) as never,
+        new TypeNode(branches, createAnonymousParseContext()) as never,
     {
         literal: (...branches: readonly unknown[]) => {
             const ctx = createAnonymousParseContext()
-            return typeNode(
+            return new TypeNode(
                 branches.map(
-                    (literal) => predicateNode([valueNode(literal, ctx)], ctx),
+                    (literal) =>
+                        new PredicateNode([new UnitNode(literal, ctx)], ctx),
                     ctx
                 ),
                 ctx
@@ -108,6 +93,22 @@ export const node: TypeNodeParser = Object.assign(
         }
     }
 )
+
+// const isParsedTypeRule = (
+//     input: TypeInput | readonly PredicateNode[]
+// ): input is readonly PredicateNode[] =>
+//     isArray(input) && (input.length === 0 || hasArkKind(input[0], "node"))
+
+// // if (hasKey(input, "resolve")) {
+// //     return input
+// // }
+// if (!isParsedTypeRule(input)) {
+//     input = isArray(input)
+//         ? input.map((branch) => new PredicateNode(branch, meta))
+//         : [new PredicateNode(input, meta)]
+// }
+// // TODO: figure out a better way to handle sorting (in composite?)
+// return alphabetizeByCondition(reduceBranches([...input]))
 
 export const reduceBranches = (branchNodes: PredicateNode[]) => {
     if (branchNodes.length < 2) {

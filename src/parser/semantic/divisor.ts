@@ -1,6 +1,7 @@
 import type { error } from "@arktype/utils"
-import type { inferAst, validateAst } from "./semantic.js"
+import type { inferAst } from "./semantic.js"
 import type { astToString } from "./utils.js"
+import type { validateAst } from "./validate.js"
 
 export type validateDivisor<l, $, args> = isDivisible<
     inferAst<l, $, args>

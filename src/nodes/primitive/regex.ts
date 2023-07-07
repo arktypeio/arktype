@@ -10,8 +10,15 @@ export type SerializedRegexLiteral = `/${string}/${string}`
 export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
     literal.slice(1, literal.lastIndexOf("/"))
 
-export class RegexNode extends NodeBase<SerializedRegexLiteral, {}> {
+export class RegexNode extends NodeBase {
     readonly kind = "regex"
+
+    constructor(
+        public readonly rule: SerializedRegexLiteral,
+        public readonly meta: {}
+    ) {
+        super()
+    }
 
     compile() {
         return `${this.rule}.test(${In})`

@@ -21,19 +21,17 @@ import type { TypeNode } from "./type.js"
 
 //     subclass extends StaticBaseNode<InstanceType<subclass>>
 
-export abstract class NodeBase<rule, meta> {
+export abstract class NodeBase {
     readonly [arkKind] = "node"
     abstract readonly kind: NodeKind
+    abstract readonly meta: {}
     readonly condition: string
     readonly description: string
 
     // TODO: test with cyclic nodes
     allows: (data: unknown) => boolean
 
-    constructor(
-        public readonly rule: rule,
-        public readonly meta: meta
-    ) {
+    constructor() {
         this.condition = this.compile(createCompilationContext("true", "false"))
         this.allows = new CompiledFunction(
             In,

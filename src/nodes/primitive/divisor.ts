@@ -1,8 +1,15 @@
 import { In } from "../../compiler/compile.js"
 import { NodeBase } from "../base.js"
 
-export class DivisorNode extends NodeBase<number, {}> {
+export class DivisorNode extends NodeBase {
     readonly kind = "divisor"
+
+    constructor(
+        public readonly rule: number,
+        public readonly meta: {}
+    ) {
+        super()
+    }
 
     compile() {
         return `${In} % ${this.rule} === 0`
