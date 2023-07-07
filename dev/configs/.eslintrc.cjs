@@ -102,19 +102,6 @@ module.exports = defineConfig({
         "no-case-declarations": "off"
     },
     overrides: [
-        /**
-         * These rules apply only to src (i.e. not scripts or tests)
-         */
-        {
-            files: ["**/src/**"],
-            rules: {
-                /**
-                 * In tests and scripts, we can safely import from the monorepo's root devDependencies,
-                 * so no need to worry about checking imports beyond what TypeScript does by default.
-                 **/
-                "import/no-extraneous-dependencies": "warn"
-            }
-        },
         {
             files: ["**/*.bench.ts"],
             rules: {
@@ -129,15 +116,24 @@ module.exports = defineConfig({
             }
         },
         {
-            files: [
-                "./dev/scripts/**",
-                "./dev/examples/**",
-                "./dev/configs/**",
-                "./dev/arkdark/**",
-                "./dev/attest/**"
-            ],
+            files: ["**/src/**"],
             rules: {
-                "import/no-nodejs-modules": "off",
+                /**
+                 * In tests and scripts, we can safely import from the monorepo's root devDependencies,
+                 * so no need to worry about checking imports beyond what TypeScript does by default.
+                 **/
+                "import/no-extraneous-dependencies": "warn"
+            }
+        },
+        {
+            files: ["./dev/**", "!./dev/utils"],
+            rules: {
+                "import/no-nodejs-modules": "off"
+            }
+        },
+        {
+            files: ["./dev/**", "!./dev/utils", "!./dev/attest"],
+            rules: {
                 "@typescript-eslint/no-restricted-imports": "off"
             }
         }

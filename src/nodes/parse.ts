@@ -1,15 +1,15 @@
 import type { conform, exact, List, listable } from "@arktype/utils"
 import { cached } from "@arktype/utils"
-import type { ParseContext } from "../../scope.js"
-import { Scope } from "../../scope.js"
+import type { ParseContext } from "../scope.js"
+import { Scope } from "../scope.js"
 import type {
     inferPredicateDefinition,
     PredicateInput
-} from "../predicate/predicate.js"
-import { PredicateNode } from "../predicate/predicate.js"
-import type { BasisInput } from "../primitive/basis.js"
-import { UnitNode } from "../primitive/unit.js"
-import { TypeNode } from "../type.js"
+} from "./predicate/predicate.js"
+import { PredicateNode } from "./predicate/predicate.js"
+import type { BasisInput } from "./primitive/basis.js"
+import { UnitNode } from "./primitive/unit.js"
+import { TypeNode } from "./type.js"
 
 export type TypeNodeParser = {
     <const branches extends PredicateInput[]>(

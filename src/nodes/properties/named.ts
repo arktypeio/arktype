@@ -6,7 +6,7 @@ import {
 } from "../../compiler/compile.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeNode } from "../type.js"
-import type { TypeInput } from "../union/parse.js"
+import type { TypeInput } from "../parse.js"
 import { builtins } from "../union/utils.js"
 
 export const intersectNamedProp = (
