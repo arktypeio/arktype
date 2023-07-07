@@ -20,12 +20,29 @@
     font-size: x-large;
 }
 
+.navbar__link {
+    font-size: x-large;
+    color: #ffffff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.navbar-versions {
+    font-size: 21px !important;
+}
+
+.navbar__logo:hover {
+    scale: 1.1;
+    transition: all 0.2s ease-out;
+}
+
 .dropdown {
-    padding: 0px;
+    padding: 2px;
 }
 
 .navbar-github:hover {
     opacity: 0.6;
+    transition: all 0.2s ease;
 }
 
 .navbar-github::before {
@@ -53,7 +70,7 @@ header {
     text-align: center;
     position: relative;
     overflow: hidden;
-    background: #085b92;
+    background: #0c5c91;
 }
 
 [data-theme="dark"] .navbar {
@@ -88,15 +105,37 @@ header {
 
 .installationTabs {
     overflow: hidden;
-    height: 2.6rem;
-    margin-top: -1.5rem;
+    height: 2.1rem;
+    margin-top: -1.3rem;
     --ifm-tabs-color: #8a8a8a;
+    border-radius: 10px;
 }
 
 .subTabs {
-    height: 3rem;
-    margin-top: -1.5rem;
+    height: 2.5rem;
+    margin-top: -1.3rem;
     --ifm-tabs-color: #8a8a8a;
+}
+
+.margin-top--md {
+    margin-top: 0.8rem !important;
+}
+
+.tabs__item {
+    border-top-right-radius: 10px;
+    border-top-left-radius: 10px;
+    margin: 0 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+@media only screen and (max-width: 768px) {
+    .contents {
+        margin-left: 2rem !important;
+        margin-right: 2rem !important;
+    }
 }
 
 .npmTab {
@@ -116,13 +155,13 @@ header {
 
 .theme-code-block {
     --prism-background-color: #1b1b1baa;
-    --ifm-pre-padding: 0.5rem;
+    --ifm-pre-padding: 1rem;
 }
 
 .inferable-code {
     position: relative;
-    background: #fffff0;
     border-radius: 0.5rem;
+    background: #fffff0;
 }
 
 .inferable-code .theme-code-block {
