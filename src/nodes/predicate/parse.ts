@@ -25,15 +25,15 @@ import { UnitNode } from "../primitive/unit.js"
 import type { inferPropsInput, PropsInput } from "../properties/parse.js"
 import type { ConstraintGroup, ConstraintKind } from "./predicate.js"
 
-export type PredicateInput<
-    basis extends BasisInput | null = BasisInput | null
-> =
-    | Record<string, never>
-    | evaluate<
-          {
-              basis: basis
-          } & ConstraintsInput<basis>
-      >
+// export type PredicateInput<
+//     basis extends BasisInput | null = BasisInput | null
+// > =
+//     | Record<string, never>
+//     | evaluate<
+//           {
+//               basis: basis
+//           } & ConstraintsInput<basis>
+//       >
 
 export type ConstraintsInput<
     basis extends BasisInput | null = BasisInput | null

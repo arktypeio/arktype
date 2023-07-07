@@ -60,14 +60,14 @@ export abstract class BasisNodeBase extends NodeBase {
 export type BasisInput<kind extends BasisKind = BasisKind> = {
     domain: NonEnumerableDomain
     class: AbstractableConstructor
-    unit: readonly ["===", unknown]
+    unit: readonly [unknown]
 }[kind]
 
 export type inferBasis<basis extends BasisInput> = basis extends Domain
     ? inferDomain<basis>
     : basis extends AbstractableConstructor<infer instance>
     ? instance
-    : basis extends readonly ["===", infer unit]
+    : basis extends readonly [infer unit]
     ? unit
     : never
 

@@ -1,15 +1,8 @@
 import { In } from "../../compiler/compile.js"
-import { NodeBase } from "../base.js"
+import { PrimitiveNodeBase } from "./primitive.js"
 
-export class DivisorNode extends NodeBase {
+export class DivisorNode extends PrimitiveNodeBase<number> {
     readonly kind = "divisor"
-
-    constructor(
-        public readonly rule: number,
-        public readonly meta: {}
-    ) {
-        super()
-    }
 
     compile() {
         return `${In} % ${this.rule} === 0`

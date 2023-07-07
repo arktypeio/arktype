@@ -1,14 +1,12 @@
 import type { mutable } from "@arktype/utils"
-import { isKeyOf, listFrom, throwParseError } from "@arktype/utils"
+import { throwParseError } from "@arktype/utils"
 import type { CompilationContext } from "../../compiler/compile.js"
-import { hasArkKind } from "../../compiler/registry.js"
 import { assertAllowsConstraint } from "../../parser/semantic/validate.js"
 import type { NodeKinds } from "../base.js"
 import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import type { BasisKind, BasisNode } from "../primitive/basis.js"
 import type { BoundGroup } from "../primitive/bound.js"
-import { BoundNode } from "../primitive/bound.js"
 import type { DivisorNode } from "../primitive/divisor.js"
 import type { NarrowNode } from "../primitive/narrow.js"
 import type { RegexNode } from "../primitive/regex.js"
@@ -16,7 +14,6 @@ import type { UnitNode } from "../primitive/unit.js"
 import type { PropertiesNode } from "../properties/properties.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
-import type { PredicateInput } from "./parse.js"
 import { parseBasisInput } from "./parse.js"
 
 export type ConstraintGroups = {
@@ -72,7 +69,7 @@ export class PredicateNode extends NodeBase implements ConstraintGroups {
             this.basis = parseBasisInput(input.basis, meta)
         }
         if (input.bound) {
-            this.bound = 
+            this.bound = {}
         }
         this.groups = constraints
         this.children = Object.values(this.groups).flat()
