@@ -20,7 +20,7 @@ import type {
 import { domainDescriptions } from "../nodes/primitive/domain.js"
 
 export class ArkTypeError extends TypeError {
-    cause: Problems
+    override cause: Problems
 
     constructor(problems: Problems) {
         super(`${problems}`)
@@ -103,7 +103,7 @@ class ProblemsArray extends Array<Problem> {
         return this.toString()
     }
 
-    toString() {
+    override toString() {
         return this.join("\n")
     }
 
@@ -145,7 +145,7 @@ export const describeBranches = (descriptions: string[]) => {
 export class ProblemIntersection extends Problem<Problem[]> {
     readonly code = "intersection"
 
-    get message() {
+    override get message() {
         return this.path.length
             ? `At ${this.path}, ${this.reason}`
             : this.reason
@@ -155,7 +155,7 @@ export class ProblemIntersection extends Problem<Problem[]> {
         return "• " + this.rule.map(({ mustBe }) => mustBe).join("\n• ")
     }
 
-    get reason() {
+    override get reason() {
         return `${this.data} must be...\n${this.mustBe}`
     }
 }
@@ -190,7 +190,7 @@ export class ProblemUnion extends Problem<Problems> {
         )
     }
 
-    get reason() {
+    override get reason() {
         return this.path.length
             ? `At ${this.path}, ${this.mustBe} (was ${this.was})`
             : `${this.mustBe} (was ${this.was})`
@@ -231,7 +231,7 @@ export class BoundProblem extends Problem<Bound, NumericallyBoundableData> {
         }${this.data.units ? ` ${this.data.units}` : ""}`
     }
 
-    get was() {
+    override get was() {
         return this.data.value instanceof Date
             ? this.data.value.toDateString()
             : `${this.data.size}`

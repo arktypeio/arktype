@@ -1,6 +1,6 @@
 import type { evaluate, List, NumberLiteral, Thunk } from "@arktype/utils"
-import type { TypeNode } from "../type.js"
 import type { inferTypeInput, TypeInput } from "../parse.js"
+import type { TypeNode } from "../type.js"
 import type {
     IndexedPropInput,
     NonVariadicIndexMatcherLiteral,

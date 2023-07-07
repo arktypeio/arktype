@@ -1,8 +1,8 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeUnboundableMessage } from "../../src/parser/semantic/bounds.js"
 import { writeInvalidPropertyKeyMessage } from "../../src/parser/objectLiteral.js"
+import { writeUnboundableMessage } from "../../src/parser/semantic/bounds.js"
 import { writeUnresolvableMessage } from "../../src/parser/string/shift/operand/unenclosed.js"
 
 suite("object literal", () => {

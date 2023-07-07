@@ -42,6 +42,20 @@ export class PropertiesNode extends NodeBase {
         this.indexed = indexed
     }
 
+    readonly references = this.entries.flatMap((entry) =>
+        hasArkKind(entry.key, "node") &&
+        // since array indices have a special compilation process, we
+        // don't need to store a reference their type
+        !extractArrayIndexRegex(entry.key)
+            ? [
+                  entry.key,
+                  ...entry.key.references,
+                  entry.value,
+                  ...entry.value.references
+              ]
+            : [entry.value, ...entry.value.references]
+    )
+
     describe() {
         const entries = this.named.map(({ key, value }): [string, string] => {
             return [`${key.name}${key.optional ? "?" : ""}`, value.toString()]
@@ -69,22 +83,6 @@ export class PropertiesNode extends NodeBase {
             }
         }
         return compileIndexed(this.named, this.indexed, ctx)
-    }
-
-    getReferences() {
-        return this.entries.flatMap((entry) =>
-            hasArkKind(entry.key, "node") &&
-            // since array indices have a special compilation process, we
-            // don't need to store a reference their type
-            !extractArrayIndexRegex(entry.key)
-                ? [
-                      entry.key,
-                      ...entry.key.references,
-                      entry.value,
-                      ...entry.value.references
-                  ]
-                : [entry.value, ...entry.value.references]
-        )
     }
 }
 
