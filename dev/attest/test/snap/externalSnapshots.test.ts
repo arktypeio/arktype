@@ -1,9 +1,8 @@
 import * as assert from "node:assert/strict"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { afterEach, beforeEach, describe, it } from "mocha"
-import { dirName, readJson, writeJson } from "../../../attest/src/main.js"
-import { attest } from "../../src/main.js"
+import { attest, dirName, readJson, writeJson } from "@arktype/attest"
+import { afterEach, beforeEach, describe, test } from "mocha"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
 const o = { re: "do" }
@@ -40,7 +39,7 @@ describe("snapToFile", () => {
         rmSync(customSnapPath, { force: true })
     })
 
-    it("create", () => {
+    test("create", () => {
         attest(o).snapToFile({ id: "toFile" })
         assert.throws(
             () => attest({ re: "kt" }).snapToFile({ id: "toFile" }),
@@ -56,7 +55,7 @@ describe("snapToFile", () => {
             }
         })
     })
-    it("update existing", () => {
+    test("update existing", () => {
         // @ts-ignore (using internal updateSnapshots hook)
         attest({ re: "dew" }, { updateSnapshots: true }).snapToFile({
             id: "toFileUpdate"
@@ -71,7 +70,7 @@ describe("snapToFile", () => {
         assert.deepEqual(updatedContents, expectedContents)
     })
 
-    it("with path", () => {
+    test("with path", () => {
         attest(o).snapToFile({
             id: "toCustomFile",
             path: customFileName

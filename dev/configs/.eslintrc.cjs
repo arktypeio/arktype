@@ -137,7 +137,8 @@ module.exports = defineConfig({
                 "./dev/attest/**"
             ],
             rules: {
-                "import/no-nodejs-modules": "off"
+                "import/no-nodejs-modules": "off",
+                "@typescript-eslint/no-restricted-imports": "off"
             }
         }
     ]

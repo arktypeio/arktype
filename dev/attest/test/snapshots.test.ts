@@ -1,6 +1,6 @@
 import { equal } from "node:assert/strict"
-import { describe, it } from "mocha"
-import { fromHere, readFile } from "../src/main.js"
+import { fromHere, readFile } from "@arktype/attest"
+import { describe, test } from "mocha"
 import { runThenGetContents } from "./utils.js"
 
 const benchTemplate = fromHere("benchTemplate.ts")
@@ -10,7 +10,7 @@ const expectedOutput = readFile(fromHere("benchExpectedOutput.ts")).replaceAll(
 )
 
 describe("bench", () => {
-    it("populates file", () => {
+    test("populates file", () => {
         const actual = runThenGetContents(benchTemplate)
         equal(actual, expectedOutput)
     }).timeout(120000)

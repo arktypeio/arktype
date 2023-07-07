@@ -10,7 +10,7 @@ import { In } from "./compiler/compile.js"
 import type { arkKind } from "./compiler/registry.js"
 import { addArkKind, hasArkKind } from "./compiler/registry.js"
 import type { ScopeConfig, TypeConfig } from "./config.js"
-import type { TypeNode } from "./main.js"
+import type { TypeNode } from "./nodes/type.js"
 import { builtins } from "./nodes/union/utils.js"
 import type {
     CastTo,

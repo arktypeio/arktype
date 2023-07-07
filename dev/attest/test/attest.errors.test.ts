@@ -1,26 +1,26 @@
 import * as assert from "node:assert/strict"
-import { describe, it } from "mocha"
-import { attest } from "../src/main.js"
+import { attest } from "@arktype/attest"
+import { describe, test } from "mocha"
 
 const n = 5
 const o = { re: "do" }
 
 describe("attest errors", () => {
-    it("not equal", () => {
+    test("not equal", () => {
         assert.throws(
             () => attest(o).equals({ re: "doo" }),
             assert.AssertionError,
             "do !== doo"
         )
     })
-    it("incorrect type", () => {
+    test("incorrect type", () => {
         assert.throws(
             () => attest(o).typed as { re: number },
             assert.AssertionError,
             "o is not of type number"
         )
     })
-    it("any type", () => {
+    test("any type", () => {
         attest(n as any).typedValue(5 as any)
         attest(o as any).typed as any
         assert.throws(
@@ -34,7 +34,7 @@ describe("attest errors", () => {
             "unknown"
         )
     })
-    it("typedValue", () => {
+    test("typedValue", () => {
         const getDo = () => "do"
         attest(o).typedValue({ re: getDo() })
         assert.throws(
@@ -48,7 +48,7 @@ describe("attest errors", () => {
             "don't"
         )
     })
-    it("assert unknown ignores type", () => {
+    test("assert unknown ignores type", () => {
         const myValue = { a: ["+"] } as const
         const myExpectedValue = { a: ["+"] }
         // @ts-expect-error
@@ -60,7 +60,7 @@ describe("attest errors", () => {
             "not reference-equal"
         )
     })
-    it("multiline", () => {
+    test("multiline", () => {
         attest({
             several: true,
             lines: true,
@@ -77,7 +77,7 @@ describe("attest errors", () => {
             "object"
         )
     })
-    it("nonexistent types always fail", () => {
+    test("nonexistent types always fail", () => {
         // @ts-expect-error
         const nonexistent: NonExistent = {}
         assert.throws(

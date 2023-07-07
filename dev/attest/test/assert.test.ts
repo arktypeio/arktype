@@ -1,21 +1,21 @@
 import * as assert from "node:assert/strict"
-import { describe, it } from "mocha"
-import { attest } from "../src/main.js"
+import { attest } from "@arktype/attest"
+import { describe, test } from "mocha"
 
 const o = { ark: "type" }
 
 describe("attest", () => {
-    it("type toString", () => {
+    test("type toString", () => {
         attest(o).types.toString("{ ark: string; }")
         attest(o).types.toString.is("{ ark: string; }")
     })
-    it("typed", () => {
+    test("typed", () => {
         attest(o).typed as { ark: string }
     })
-    it("equals", () => {
+    test("equals", () => {
         attest(o).equals({ ark: "type" })
     })
-    it("object", () => {
+    test("object", () => {
         attest({ i: "love my wife" }).typed as { i: string }
         assert.throws(
             () => attest({ g: "whiz" as unknown }).typed as { g: string },
@@ -23,14 +23,14 @@ describe("attest", () => {
             "unknown"
         )
     })
-    it("typed allows equivalent types", () => {
+    test("typed allows equivalent types", () => {
         const actual = { a: true, b: false }
         attest(actual).typed as {
             b: boolean
             a: boolean
         }
     })
-    it("nonexistent types always fail", () => {
+    test("nonexistent types always fail", () => {
         // @ts-expect-error
         const nonexistent: NonExistent = {}
         assert.throws(
@@ -42,7 +42,7 @@ describe("attest", () => {
             "specific"
         )
     })
-    it("functional asserts don't exist on pure value types", () => {
+    test("functional asserts don't exist on pure value types", () => {
         // @ts-expect-error
         attest(5).throws
     })

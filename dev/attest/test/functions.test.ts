@@ -1,8 +1,7 @@
 import * as assert from "node:assert/strict"
 import { basename } from "node:path"
-import { describe, it } from "mocha"
-import { fileName } from "../../attest/src/main.js"
-import { attest } from "../src/main.js"
+import { attest, fileName } from "@arktype/attest"
+import { describe, test } from "mocha"
 
 const n = 5
 const o = { re: "do" }
@@ -15,7 +14,7 @@ const throwError = () => {
     throw new Error("Test error.")
 }
 describe("assertion errors", () => {
-    it("valid type errors", () => {
+    test("valid type errors", () => {
         // @ts-expect-error
         attest(o.re.length.nonexistent).types.errors(
             /Property 'nonexistent' does not exist on type 'number'/
@@ -26,7 +25,7 @@ describe("assertion errors", () => {
             "Expected 1 arguments, but got 2."
         )
     })
-    it("bad type errors", () => {
+    test("bad type errors", () => {
         assert.throws(
             () => attest(o).types.errors(/This error doesn't exist/),
             assert.AssertionError,
@@ -42,14 +41,14 @@ describe("assertion errors", () => {
             "not assignable"
         )
     })
-    it("chainable", () => {
+    test("chainable", () => {
         attest(o).equals({ re: "do" }).typed as { re: string }
         // @ts-expect-error
         attest(() => throwError("this is a type error"))
             .throws("Test error.")
             .types.errors("Expected 0 arguments, but got 1.")
     })
-    it("bad chainable", () => {
+    test("bad chainable", () => {
         assert.throws(
             () =>
                 attest(n)
@@ -64,7 +63,7 @@ describe("assertion errors", () => {
             "7"
         )
     })
-    it("throwsAndHasTypeError", () => {
+    test("throwsAndHasTypeError", () => {
         // @ts-expect-error
         attest(() => shouldThrow(true)).throwsAndHasTypeError(
             /true[\S\s]*not assignable[\S\s]*false/
@@ -89,7 +88,7 @@ describe("assertion errors", () => {
             "not assignable"
         )
     })
-    it("throws empty", () => {
+    test("throws empty", () => {
         attest(throwError).throws()
         assert.throws(
             () => attest(() => shouldThrow(false)).throws(),
@@ -109,7 +108,7 @@ describe("assertion errors", () => {
         throw new Error("Expected function to throw an error.")
     }
 
-    it("stack starts from test file", () => {
+    test("stack starts from test file", () => {
         const e = getThrownError(() => attest(1 + 1).equals(3))
         assert.match(e.stack!.split("\n")[1], new RegExp(basename(fileName())))
     })
