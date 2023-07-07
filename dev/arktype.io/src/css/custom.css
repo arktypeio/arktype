@@ -105,14 +105,14 @@ header {
 
 .installationTabs {
     overflow: hidden;
-    height: 2.6rem;
+    height: 2.3rem;
     margin-top: -0.8rem;
     --ifm-tabs-color: #8a8a8a;
     border-radius: 10px;
 }
 
 .subTabs {
-    height: 2.4rem;
+    height: 2.3rem;
     margin-top: -1.2rem;
     --ifm-tabs-color: #8a8a8a;
 }
