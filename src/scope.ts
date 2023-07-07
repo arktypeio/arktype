@@ -11,7 +11,7 @@ import type { arkKind } from "./compiler/registry.js"
 import { addArkKind, hasArkKind } from "./compiler/registry.js"
 import type { ScopeConfig } from "./config.js"
 import type { TypeConfig, TypeNode } from "./main.js"
-import { builtins } from "./nodes/type/type.js"
+import { builtins } from "./nodes/type.js"
 import type {
     CastTo,
     inferDefinition,

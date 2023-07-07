@@ -12,7 +12,7 @@ import type { BasisNode } from "./primitive/basis.js"
 import type { BoundNode } from "./primitive/bound.js"
 import type { ClassNode } from "./primitive/class.js"
 import type { UnitNode } from "./primitive/unit.js"
-import type { TypeNode } from "./type/type.js"
+import type { TypeNode } from "./type.js"
 
 type DisjointKinds = {
     domain?: {

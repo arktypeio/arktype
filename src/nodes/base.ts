@@ -11,7 +11,7 @@ import type { NarrowNode } from "./primitive/narrow.js"
 import type { RegexNode } from "./primitive/regex.js"
 import type { UnitNode } from "./primitive/unit.js"
 import type { PropertiesNode } from "./properties/properties.js"
-import type { TypeNode } from "./type/type.js"
+import type { TypeNode } from "./type.js"
 
 // interface StaticBaseNode<node> {
 //     new (...args: never[]): node
@@ -50,8 +50,7 @@ export abstract class NodeBase<rule, meta> {
         return this.description
     }
 
-    // TODO: fix narrowing
-    hasKind<kind extends NodeKind>(kind: kind): this is this {
+    hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind] {
         return this.kind === kind
     }
 

@@ -1,4 +1,4 @@
-import { node } from "../../nodes/type/type.js"
+import { node } from "../../nodes/type.js"
 
 type DayDelimiter = "." | "/" | "-"
 
