@@ -15,7 +15,6 @@ export const Contents = () => {
         <main style={{ display: "flex", justifyContent: "center" }}>
             <Stack
                 justifyContent="center"
-                alignItems="center"
                 padding="1rem 0rem 1rem"
                 spacing={1}
                 width="100%"
@@ -31,12 +30,7 @@ export const Contents = () => {
                     color={
                         colorMode === "dark" ? "primary.light" : "primary.dark"
                     }
-                    style={{
-                        marginTop: "2rem",
-                        marginBottom: "2rem",
-                        marginLeft: "1rem",
-                        marginRight: "1rem"
-                    }}
+                    className="contents"
                     fontSize="1.3rem"
                 >
                     {/* @blockFrom:README.md:intro */}

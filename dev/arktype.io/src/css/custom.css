@@ -105,31 +105,34 @@ header {
 
 .installationTabs {
     overflow: hidden;
-    height: 2.3rem;
-    margin-top: -0.8rem;
+    height: 2.6rem;
+    margin-top: -1.3rem;
     --ifm-tabs-color: #8a8a8a;
     border-radius: 10px;
 }
 
 .subTabs {
-    height: 2.3rem;
-    margin-top: -1.2rem;
+    height: 2.6rem;
+    margin-top: -1.5rem;
     --ifm-tabs-color: #8a8a8a;
 }
 
-.tabs {
-    display: flex;
-    align-items: center;
-}
-
 .tabs__item {
-    border-radius: 10px;
+    border-top-right-radius: 10px;
+    border-top-left-radius: 10px;
     margin: 0 0.5rem;
-    padding: 0.3rem 0.8rem;
+    padding: 0.5rem 1rem;
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+}
+
+@media only screen and (max-width: 768px) {
+    .contents {
+        margin-left: 2rem !important;
+        margin-right: 2rem !important;
+    }
 }
 
 .npmTab {
@@ -154,7 +157,8 @@ header {
 
 .inferable-code {
     position: relative;
-    border-radius: 1rem;
+    border-radius: 0.5rem;
+    background: #fffff0;
 }
 
 .inferable-code .theme-code-block {

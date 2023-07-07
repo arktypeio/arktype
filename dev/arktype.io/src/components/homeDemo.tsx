@@ -69,7 +69,7 @@ export const HomeDemo = () => {
                     />
                 )}
             </Stack>
-            <sub style={{ margin: "5px" }}>
+            <sub style={{ marginLeft: "5px", marginTop: "5px" }}>
                 <code>typescript@4.9.5</code> in VS Code— no extensions or
                 plugins required (
                 <a

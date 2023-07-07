@@ -34,7 +34,7 @@ export const MobileInstallationBlock = () => (
 export const InstallationBlock = () => (
     <Card
         style={{
-            height: "9.5rem",
+            height: "9.1rem",
             margin: ".5rem",
             padding: "1rem",
             backgroundColor: "#ffffff00",
