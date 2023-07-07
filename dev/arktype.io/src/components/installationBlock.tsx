@@ -34,13 +34,13 @@ export const MobileInstallationBlock = () => (
 export const InstallationBlock = () => (
     <Card
         style={{
-            height: "9.1rem",
+            height: "8.5rem",
             margin: ".5rem",
-            padding: "1rem",
+            padding: "1.1rem",
             backgroundColor: "#ffffff00",
             backdropFilter: "blur(1px)",
             borderRadius: "2rem",
-            zIndex: 1,
+            zIndex: 20,
             fontFamily: `"Cascadia Code", sans-serif`
         }}
         elevation={8}
