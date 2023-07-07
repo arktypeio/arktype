@@ -114,7 +114,7 @@ export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>
 export const compileArray = (
     indexMatcher: ArrayIndexMatcherSource,
     elementNode: TypeNode,
-    namedProps: NamedPropRule[],
+    namedProps: readonly NamedPropRule[],
     ctx: CompilationContext
 ) => {
     const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
@@ -131,8 +131,8 @@ for(let i = ${firstVariadicIndex}; i < ${In}.length; i++) {
 }
 
 export const compileIndexed = (
-    namedProps: NamedPropRule[],
-    indexedProps: IndexedPropRule[],
+    namedProps: readonly NamedPropRule[],
+    indexedProps: readonly IndexedPropRule[],
     ctx: CompilationContext
 ) => {
     const k = ctx.path.push(["k"])

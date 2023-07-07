@@ -40,7 +40,7 @@ export const intersectNamedProp = (
 }
 
 export const compileNamedProps = (
-    props: NamedPropRule[],
+    props: readonly NamedPropRule[],
     ctx: CompilationContext
 ) => props.map((prop) => compileNamedProp(prop, ctx)).join("\n")
 

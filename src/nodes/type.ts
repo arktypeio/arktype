@@ -1,13 +1,12 @@
 import type { Thunk } from "@arktype/utils"
 import { hasKey, isArray } from "@arktype/utils"
 import type { CompilationContext } from "../compiler/compile.js"
-import { In } from "../compiler/compile.js"
 import { inferred } from "../parser/definition.js"
 import type { inferIntersection } from "../parser/semantic/intersections.js"
 import { NodeBase } from "./base.js"
 import { Disjoint } from "./disjoint.js"
-import { PredicateNode } from "./predicate/predicate.js"
 import type { ConstraintKind, PredicateInput } from "./predicate/predicate.js"
+import { PredicateNode } from "./predicate/predicate.js"
 import { ClassNode } from "./primitive/class.js"
 import { arrayIndexTypeNode } from "./properties/indexed.js"
 import { PropertiesNode } from "./properties/properties.js"
@@ -26,11 +25,13 @@ export type UnresolvedTypeNode = {
     resolve: Thunk<TypeNode>
 }
 
-//
-
 export class TypeNode<t = unknown> extends NodeBase {
     declare [inferred]: t
     readonly kind = "type"
+    readonly references = hasKey(this.branches, "resolve")
+        ? // TODO: unresolved?
+          []
+        : this.branches.flatMap((predicate) => [...predicate.references])
 
     constructor(
         public readonly branches: readonly PredicateNode[],
@@ -67,13 +68,6 @@ export class TypeNode<t = unknown> extends NodeBase {
             : this.branches.alias
     }
 
-    getReferences() {
-        return hasKey(this.branches, "resolve")
-            ? // TODO: unresolved?
-              []
-            : this.branches.flatMap((predicate) => [...predicate.references])
-    }
-
     intersect(other: TypeNode): TypeNode | Disjoint {
         if (this.branches.length === 1 && other.branches.length === 1) {
             const result = this.branches[0].intersect(other.branches[0])
@@ -92,13 +86,13 @@ export class TypeNode<t = unknown> extends NodeBase {
         return discriminate(this.branches)
     }
 
+    // TODO: to unit
     get value() {
         return this.branches.length === 1 ? this.branches[0].value : undefined
     }
 
     array(): TypeNode<t[]> {
         const props = new PropertiesNode(
-            {},
             [{ key: arrayIndexTypeNode(), value: this }],
             this.meta
         )
@@ -120,16 +114,15 @@ export class TypeNode<t = unknown> extends NodeBase {
         return this.branches.length === 1 && this.branches[0].rule.length === 0
     }
 
-    and<other>(other: TypeNode<other>): TypeNode<inferIntersection<t, other>> {
+    and<other>(other: TypeNode<other>) {
         const result = this.intersect(other as never)
-        return result instanceof Disjoint ? result.throw() : result
+        return result instanceof Disjoint
+            ? result.throw()
+            : (result as TypeNode<inferIntersection<t, other>>)
     }
 
-    or<other>(other: TypeNode<other>): TypeNode<t | other> {
-        if (this === (other as unknown)) {
-            return this
-        }
-        return new TypeNode(
+    or<other>(other: TypeNode<other>) {
+        return new TypeNode<t | other>(
             reduceBranches([...this.branches, ...other.branches]),
             this.meta
         )
@@ -140,7 +133,7 @@ export class TypeNode<t = unknown> extends NodeBase {
         definition: PredicateInput[kind]
     ): TypeNode<t> {
         return new TypeNode(
-            this.branches.map((branch) => branch.constrain(kind, def)),
+            this.branches.map((branch) => branch.constrain(kind, definition)),
             this.meta
         )
     }

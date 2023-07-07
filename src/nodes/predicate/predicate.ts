@@ -42,16 +42,19 @@ export type Constraints = {
     readonly narrow?: readonly NarrowNode[]
 }
 
+export type Constraint<kind extends ConstraintKind = ConstraintKind> =
+    Constraints[kind] & {}
+
 export type ConstraintKind = keyof Constraints
 
 export class PredicateNode extends NodeBase implements Constraints {
     readonly kind = "predicate"
-    readonly basis?: Constraints["basis"]
-    readonly bound?: Constraints["bound"]
-    readonly divisor?: Constraints["divisor"]
-    readonly regex?: Constraints["regex"]
-    readonly properties?: Constraints["properties"]
-    readonly narrow?: Constraints["narrow"]
+    readonly basis?: Constraint<"basis">
+    readonly bound?: Constraint<"bound">
+    readonly divisor?: Constraint<"divisor">
+    readonly regex?: Constraint<"regex">
+    readonly properties?: Constraint<"properties">
+    readonly narrow?: Constraint<"narrow">
 
     constructor(
         public readonly constraints: Constraints,

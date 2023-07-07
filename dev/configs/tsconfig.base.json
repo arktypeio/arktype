@@ -10,6 +10,7 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
+        "exactOptionalPropertyTypes": true,
         "noFallthroughCasesInSwitch": true,
         "noImplicitOverride": true,
         "stripInternal": true,

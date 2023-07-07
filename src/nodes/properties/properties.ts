@@ -1,5 +1,5 @@
 import type { Dict } from "@arktype/utils"
-import { fromEntries } from "@arktype/utils"
+import { fromEntries, spliterate } from "@arktype/utils"
 import type { CompilationContext } from "../../compiler/compile.js"
 import { hasArkKind } from "../../compiler/registry.js"
 import { NodeBase } from "../base.js"
@@ -12,7 +12,9 @@ import {
 import type { NamedPropInput, NamedPropRule } from "./named.js"
 import { compileNamedProps } from "./named.js"
 
-export type NamedProps = Dict<string, NamedPropRule>
+export type PropEntries = readonly [...NamedProps, ...IndexedProps]
+
+export type NamedProps = readonly NamedPropRule[]
 
 export type IndexedProps = readonly IndexedPropRule[]
 
@@ -26,13 +28,18 @@ export class PropertiesNode extends NodeBase {
     readonly kind = "properties"
     readonly named: NamedProps
     readonly indexed: IndexedProps
-    readonly meta: {}
 
-    constructor(...args: PropsArgs) {
+    constructor(
+        public readonly entries: PropEntries,
+        public readonly meta: {}
+    ) {
         super()
-        this.named = args[0]
-        this.indexed = args.length === 2 ? [] : args[1]
-        this.meta = args.length === 2 ? args[1] : args[2]
+        const [indexed, named] = spliterate(
+            this.entries,
+            (entry): entry is IndexedPropRule => hasArkKind(entry.key, "node")
+        )
+        this.named = named
+        this.indexed = indexed
     }
 
     describe() {
@@ -65,7 +72,7 @@ export class PropertiesNode extends NodeBase {
     }
 
     getReferences() {
-        return entries.flatMap((entry) =>
+        return this.entries.flatMap((entry) =>
             hasArkKind(entry.key, "node") &&
             // since array indices have a special compilation process, we
             // don't need to store a reference their type
