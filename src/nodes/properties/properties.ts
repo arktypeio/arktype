@@ -1,8 +1,10 @@
 import type { Dict } from "@arktype/utils"
-import { fromEntries, spliterate } from "@arktype/utils"
+import { cached, fromEntries } from "@arktype/utils"
 import type { CompilationContext } from "../../compiler/compile.js"
 import { hasArkKind } from "../../compiler/registry.js"
 import { NodeBase } from "../base.js"
+import { node } from "../parse.js"
+import { TypeNode } from "../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import {
     compileArray,
@@ -12,35 +14,38 @@ import {
 import type { NamedPropInput, NamedPropRule } from "./named.js"
 import { compileNamedProps } from "./named.js"
 
-export type PropEntries = readonly [...NamedProps, ...IndexedProps]
+export type PropEntries = readonly PropEntry[]
 
-export type NamedProps = readonly NamedPropRule[]
+export type PropEntry = NamedPropRule | IndexedPropRule
 
-export type IndexedProps = readonly IndexedPropRule[]
+export type NamedEntries = readonly NamedPropRule[]
+
+export type IndexedEntries = readonly IndexedPropRule[]
 
 export type PropsMeta = {}
 
-export type PropsArgs =
-    | readonly [NamedProps, PropsMeta]
-    | readonly [NamedProps, IndexedProps, PropsMeta]
-
 export class PropertiesNode extends NodeBase {
-    readonly kind = "properties"
-    readonly named: NamedProps
-    readonly indexed: IndexedProps
-
     constructor(
         public readonly entries: PropEntries,
         public readonly meta: {}
     ) {
         super()
-        const [indexed, named] = spliterate(
-            this.entries,
-            (entry): entry is IndexedPropRule => hasArkKind(entry.key, "node")
-        )
-        this.named = named
-        this.indexed = indexed
     }
+
+    readonly kind = "properties"
+    readonly named: NamedEntries = this.entries.filter(isNamed)
+    readonly indexed: IndexedEntries = this.entries.filter(isIndexed)
+
+    readonly literalKeys = this.named.map((prop) => prop.key.name)
+    readonly namedKeyOf = cached(() => node.literal(...this.literalKeys))
+    readonly indexedKeyOf = cached(
+        () =>
+            new TypeNode(
+                this.indexed.flatMap((entry) => entry.key.branches),
+                this.meta
+            )
+    )
+    readonly keyof = cached(() => this.namedKeyOf().or(this.indexedKeyOf()))
 
     readonly references = this.entries.flatMap((entry) =>
         hasArkKind(entry.key, "node") &&
@@ -55,6 +60,12 @@ export class PropertiesNode extends NodeBase {
               ]
             : [entry.value, ...entry.value.references]
     )
+
+    get(key: string | TypeNode) {
+        return typeof key === "string"
+            ? this.named.find((entry) => entry.value.branches)?.value
+            : this.indexed.find((entry) => entry.key.equals(key))?.value
+    }
 
     describe() {
         const entries = this.named.map(({ key, value }): [string, string] => {
@@ -92,3 +103,8 @@ export type PropsInputTuple<
 > = readonly [named: named, ...indexed: indexed]
 
 export type NamedPropsInput = Dict<string, NamedPropInput>
+
+const isIndexed = (rule: PropEntry): rule is IndexedPropRule =>
+    hasArkKind(rule.key, "node")
+
+const isNamed = (rule: PropEntry): rule is NamedPropRule => !isIndexed(rule)

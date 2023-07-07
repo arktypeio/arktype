@@ -2,10 +2,11 @@ import type { conform, exact, List, listable } from "@arktype/utils"
 import { cached } from "@arktype/utils"
 import type { ParseContext } from "../scope.js"
 import { Scope } from "../scope.js"
+
 import type {
     inferPredicateDefinition,
     PredicateInput
-} from "./predicate/predicate.js"
+} from "./predicate/parse.js"
 import { PredicateNode } from "./predicate/predicate.js"
 import type { BasisInput } from "./primitive/basis.js"
 import { UnitNode } from "./primitive/unit.js"

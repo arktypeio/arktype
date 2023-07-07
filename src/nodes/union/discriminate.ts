@@ -77,7 +77,7 @@ export const discriminate = (
         return cached
     }
     const pureValueBranches = branches.flatMap((branch) =>
-        branch.value ? branch.value : []
+        branch.unit ? branch.unit : []
     )
     if (pureValueBranches.length === branches.length) {
         const cases: DiscriminatedCases = transform(

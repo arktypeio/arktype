@@ -1,8 +1,9 @@
 import type { CompilationContext } from "../../compiler/compile.js"
 import { assertAllowsConstraint } from "../../parser/semantic/validate.js"
+import type { NodeKinds } from "../base.js"
 import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import type { BasisNode } from "../primitive/basis.js"
+import type { BasisKind, BasisNode } from "../primitive/basis.js"
 import type { BoundNode } from "../primitive/bound.js"
 import type { DivisorNode } from "../primitive/divisor.js"
 import type { NarrowNode } from "../primitive/narrow.js"
@@ -21,27 +22,45 @@ export type Constraints = {
     readonly narrow?: readonly NarrowNode[]
 }
 
-export type Constraint<kind extends ConstraintKind = ConstraintKind> =
+export type ConstraintGroup<kind extends ConstraintKind> =
     Constraints[kind] & {}
 
 export type ConstraintKind = keyof Constraints
 
+export type Constraint = NodeKinds[BasisKind | Exclude<ConstraintKind, "basis">]
+
+export type PredicateChildren = readonly Constraint[]
+
 export class PredicateNode extends NodeBase implements Constraints {
     readonly kind = "predicate"
-    readonly basis?: Constraint<"basis">
-    readonly bound?: Constraint<"bound">
-    readonly divisor?: Constraint<"divisor">
-    readonly regex?: Constraint<"regex">
-    readonly properties?: Constraint<"properties">
-    readonly narrow?: Constraint<"narrow">
+    readonly basis?: ConstraintGroup<"basis">
+    readonly bound?: ConstraintGroup<"bound">
+    readonly divisor?: ConstraintGroup<"divisor">
+    readonly regex?: ConstraintGroup<"regex">
+    readonly properties?: ConstraintGroup<"properties">
+    readonly narrow?: ConstraintGroup<"narrow">
 
     constructor(
         public readonly constraints: Constraints,
         public readonly meta: {}
     ) {
         super()
+        // TODO: assert keys
         Object.assign(this, constraints)
     }
+
+    readonly children: readonly Constraint[] = Object.values(
+        this.constraints
+    ).flat()
+
+    readonly references: readonly TypeNode[] = this.properties?.references ?? []
+
+    // TODO: update morph representation here
+    // we only want simple unmorphed values
+    readonly unit =
+        this.basis?.hasKind("unit") && this.children.length === 1
+            ? this.basis
+            : undefined
 
     intersect(other: PredicateNode): PredicateNode | Disjoint {
         const basis = this.basis
@@ -62,7 +81,7 @@ export class PredicateNode extends NodeBase implements Constraints {
                 return Disjoint.from("assignability", this, other.basis)
             }
         }
-        const rules: PredicateChildren = basis ? [basis] : []
+        const rules: Constraint[] = basis ? [basis] : []
         for (const kind of constraintKindNames) {
             const lNode = this.getConstraints(kind)
             const rNode = other.getConstraints(kind)
@@ -114,17 +133,14 @@ export class PredicateNode extends NodeBase implements Constraints {
     }
 
     describe() {
-        return this.rule.length === 0
+        return this.children.length === 0
             ? "unknown"
-            : constraints.length
-            ? `(${constraints.map((rule) => rule.toString()).join(" and ")})`
-            : `${basis}`
+            : this.children.length === 1
+            ? `${this.basis}`
+            : `(${this.children
+                  .map((child) => child.toString())
+                  .join(" and ")})`
     }
-
-    value = // we only want simple unmorphed values
-        this.basis?.hasKind("unit") && this.rule.length === 1
-            ? basis
-            : undefined
 
     keyof(): TypeNode {
         if (!this.basis) {

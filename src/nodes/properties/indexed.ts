@@ -2,7 +2,7 @@ import { throwInternalError, tryParseWellFormedInteger } from "@arktype/utils"
 import { type CompilationContext, In } from "../../compiler/compile.js"
 import type { TypeInput } from "../parse.js"
 import { node } from "../parse.js"
-import type { PredicateInput } from "../predicate/predicate.js"
+import type { PredicateInput } from "../predicate/parse.js"
 import { sourceFromRegexLiteral } from "../primitive/regex.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
@@ -70,7 +70,7 @@ export const extractArrayIndexRegex = (keyNode: TypeNode) => {
     if (keyNode.branches.length !== 1) {
         return
     }
-    const regexConstraints = keyNode.branches[0].rule.regex
+    const regexConstraints = keyNode.branches[0].regex
     if (!regexConstraints || regexConstraints.length !== 1) {
         return
     }

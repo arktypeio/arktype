@@ -92,5 +92,5 @@ export const intersectProps = (
     //     indexed = indexed.filter((entry) => !extractArrayIndexRegex(entry.key))
     // }
     // TODO: review other intersections to make sure meta is handled correclty
-    return new PropertiesNode(named, indexed, l.meta)
+    return new PropertiesNode([...named, ...indexed], l.meta)
 }

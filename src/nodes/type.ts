@@ -6,7 +6,8 @@ import type { inferIntersection } from "../parser/semantic/intersections.js"
 import { NodeBase } from "./base.js"
 import { Disjoint } from "./disjoint.js"
 import { reduceBranches } from "./parse.js"
-import type { ConstraintKind, PredicateInput } from "./predicate/predicate.js"
+import type { ConstraintsInput } from "./predicate/parse.js"
+import type { ConstraintKind } from "./predicate/predicate.js"
 import { PredicateNode } from "./predicate/predicate.js"
 import { ClassNode } from "./primitive/class.js"
 import { arrayIndexTypeNode } from "./properties/indexed.js"
@@ -88,7 +89,7 @@ export class TypeNode<t = unknown> extends NodeBase {
 
     // TODO: to unit
     get value() {
-        return this.branches.length === 1 ? this.branches[0].value : undefined
+        return this.branches.length === 1 ? this.branches[0].unit : undefined
     }
 
     array(): TypeNode<t[]> {
@@ -111,7 +112,9 @@ export class TypeNode<t = unknown> extends NodeBase {
     }
 
     isUnknown(): this is TypeNode<unknown> {
-        return this.branches.length === 1 && this.branches[0].rule.length === 0
+        return (
+            this.branches.length === 1 && this.branches[0].children.length === 0
+        )
     }
 
     and<other>(other: TypeNode<other>) {
@@ -130,7 +133,7 @@ export class TypeNode<t = unknown> extends NodeBase {
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        definition: PredicateInput[kind]
+        definition: ConstraintsInput[kind]
     ): TypeNode<t> {
         return new TypeNode(
             this.branches.map((branch) => branch.constrain(kind, definition)),
@@ -160,14 +163,9 @@ export class TypeNode<t = unknown> extends NodeBase {
         while (path.length) {
             const key = path.shift()!
             for (const branch of current) {
-                const propsAtKey = branch?.properties
+                const propsAtKey = branch.properties
                 if (propsAtKey) {
-                    const branchesAtKey =
-                        typeof key === "string"
-                            ? propsAtKey.named?.[key]?.value.branches
-                            : propsAtKey.indexed.find(
-                                  (entry) => entry.key === key
-                              )?.value.branches
+                    const branchesAtKey = propsAtKey.get(key)?.branches
                     if (branchesAtKey) {
                         next.push(...branchesAtKey)
                     }
