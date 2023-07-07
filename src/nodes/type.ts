@@ -29,10 +29,6 @@ export type UnresolvedTypeNode = {
 export class TypeNode<t = unknown> extends NodeBase {
     declare [inferred]: t
     readonly kind = "type"
-    readonly references = hasKey(this.branches, "resolve")
-        ? // TODO: unresolved?
-          []
-        : this.branches.flatMap((predicate) => [...predicate.references])
 
     constructor(
         public readonly branches: readonly PredicateNode[],
@@ -40,6 +36,15 @@ export class TypeNode<t = unknown> extends NodeBase {
     ) {
         super()
     }
+
+    readonly references: readonly TypeNode[] = hasKey(this.branches, "resolve")
+        ? // TODO: unresolved?
+          []
+        : this.branches.flatMap((predicate) => [...predicate.references])
+
+    // TODO: to unit
+    readonly unit =
+        this.branches.length === 1 ? this.branches[0].unit : undefined
 
     // private cachedBranches: readonly PredicateNode[] | undefined
     // get branches() {
@@ -85,11 +90,6 @@ export class TypeNode<t = unknown> extends NodeBase {
     // discriminate is cached so we don't have to worry about this running multiple times
     get discriminant() {
         return discriminate(this.branches)
-    }
-
-    // TODO: to unit
-    get value() {
-        return this.branches.length === 1 ? this.branches[0].unit : undefined
     }
 
     array(): TypeNode<t[]> {
@@ -150,13 +150,14 @@ export class TypeNode<t = unknown> extends NodeBase {
         return false
     }
 
-    keyof(): TypeNode<keyof t> {
+    keyof() {
         return this.branches.reduce(
             (result, branch) => result.and(branch.keyof()),
             builtins.unknown()
-        ) satisfies TypeNode as never
+        ) as TypeNode<keyof t>
     }
 
+    // TODO: TS implementation? test?
     getPath(...path: (string | TypeNode<string>)[]): TypeNode {
         let current: readonly PredicateNode[] = this.branches
         let next: PredicateNode[] = []
