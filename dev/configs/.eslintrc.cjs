@@ -41,12 +41,12 @@ module.exports = defineConfig({
             {
                 patterns: [
                     {
-                        group: ["**/main.js", "!**/src/main.js"],
-                        message: `Use a path like '../original/definition.js' instead of a package entrypoint`
-                    },
-                    {
                         group: ["**/src/**"],
                         message: `Use a specifier like '@arktype/utils' to import from a package`
+                    },
+                    {
+                        group: ["**/main.js"],
+                        message: `Use a path like '../original/definition.js' instead of a package entrypoint`
                     }
                 ]
             }

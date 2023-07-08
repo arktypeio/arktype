@@ -5,9 +5,9 @@ import type {
     inferDomain
 } from "@arktype/utils"
 import { constructorExtends, throwInternalError } from "@arktype/utils"
-import type { NodeKind, NodeKinds } from "../base.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
+import type { NodeKind, NodeKinds } from "../node.js"
 import type { TypeNode } from "../type.js"
 import { PrimitiveNodeBase } from "./primitive.js"
 

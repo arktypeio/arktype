@@ -10,7 +10,7 @@
         "object-shorthand",
         "prefer-arrow-functions/prefer-arrow-functions"
     ],
-    "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
+    "typescript.preferences.autoImportFileExcludePatterns": ["dist", "main.ts"],
     "typescript.preferences.importModuleSpecifierEnding": "js",
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "prettier.ignorePath": "dev/configs/.prettierignore",

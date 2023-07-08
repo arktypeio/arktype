@@ -5,13 +5,10 @@ import { inferred } from "../parser/definition.js"
 import type { inferIntersection } from "../parser/semantic/intersections.js"
 import { NodeBase } from "./base.js"
 import { Disjoint } from "./disjoint.js"
+import { node } from "./node.js"
 import { reduceBranches } from "./parse.js"
 import type { ConstraintsInput } from "./predicate/parse.js"
-import type { ConstraintKind } from "./predicate/predicate.js"
-import { PredicateNode } from "./predicate/predicate.js"
-import { ClassNode } from "./primitive/class.js"
-import { arrayIndexTypeNode } from "./properties/indexed.js"
-import { PropertiesNode } from "./properties/properties.js"
+import type { ConstraintKind, PredicateNode } from "./predicate/predicate.js"
 import { compileDiscriminant, compileIndiscriminable } from "./union/compile.js"
 import { discriminate } from "./union/discriminate.js"
 import { intersectBranches } from "./union/intersect.js"
@@ -93,15 +90,13 @@ export class TypeNode<t = unknown> extends NodeBase {
     }
 
     array(): TypeNode<t[]> {
-        const props = new PropertiesNode(
-            [{ key: arrayIndexTypeNode(), value: this }],
-            this.meta
-        )
-        const predicate = new PredicateNode(
-            {
-                basis: new ClassNode(Array, this.meta),
-                props
-            },
+        // const props = new PropertiesNode(
+        //     [{ key: arrayIndexTypeNode(), value: this }],
+        //     this.meta
+        // )
+        const predicate = node(
+            "predicate",
+            [["class", Array, this.meta]] as const,
             this.meta
         )
         return new TypeNode([predicate], this.meta)
