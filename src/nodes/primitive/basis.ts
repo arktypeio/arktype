@@ -16,7 +16,10 @@ export abstract class BasisNodeBase<
     abstract domain: Domain
     abstract literalKeys: PropertyKey[]
 
-    intersect(other: Node<BasisKind>): Node<BasisKind> | Disjoint {
+    intersect(
+        this: Node<BasisKind>,
+        other: Node<BasisKind>
+    ): Node<BasisKind> | Disjoint {
         if (this.hasKind("class") && other.hasKind("class")) {
             return constructorExtends(this.rule, other.rule)
                 ? this

@@ -13,19 +13,17 @@ import type {
 } from "../kinds.js"
 import { createNode } from "../kinds.js"
 import type { BasisKind } from "../primitive/basis.js"
-import type { BoundGroup } from "../primitive/bound.js"
-import type { DivisorNode } from "../primitive/divisor.js"
-import type { NarrowNode } from "../primitive/narrow.js"
-import type { RegexNode } from "../primitive/regex.js"
-import type { PropsNode } from "../prop/props.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
 
 export type Constraints = {
-    [k in ConstraintKind as k extends BasisKind
+    readonly [k in ConstraintKind as k extends BasisKind
         ? "basis"
-        : k]: NodeIntersections[k]
+        : k]?: NodeIntersections[k]
 }
+
+export type Constraint<k extends keyof Constraints = keyof Constraints> =
+    Constraints[k] & {}
 
 export type ConstraintKind = BasisKind | RefinementKind
 
@@ -56,15 +54,15 @@ export class PredicateNode
         intersection: PredicateNode
         meta: {}
     }>
-    implements Partial<Constraints>
+    implements Constraints
 {
     readonly kind = "predicate"
-    readonly basis?: Constraints["basis"]
-    readonly bound?: Constraints["bound"]
-    readonly divisor?: Constraints["divisor"]
-    readonly regex?: Constraints["regex"]
-    readonly props?: Constraints["props"]
-    readonly narrow?: Constraints["narrow"]
+    readonly basis?: Constraint<"basis">
+    readonly bound?: Constraint<"bound">
+    readonly divisor?: Constraint<"divisor">
+    readonly regex?: Constraint<"regex">
+    readonly props?: Constraint<"props">
+    readonly narrow?: Constraint<"narrow">
 
     readonly children = Object.values(this.rule).flat()
     // we only want simple unmorphed values
@@ -165,7 +163,7 @@ export class PredicateNode
         return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
     }
 
-    constrain<kind extends RefinementKind>(
+    constrain<kind extends ConstraintKind>(
         kind: kind,
         rule: NodeArgs<kind>[0],
         meta: NodeArgs<kind>[1]

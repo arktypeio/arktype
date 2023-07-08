@@ -9,6 +9,7 @@ import type { NodeArgs, NodeKinds } from "./kinds.js"
 import { reduceBranches } from "./parse.js"
 import type { RefinementKind } from "./predicate/predicate.js"
 import { PredicateNode } from "./predicate/predicate.js"
+import { ClassNode } from "./primitive/class.js"
 import { compileDiscriminant, compileIndiscriminable } from "./union/compile.js"
 import { discriminate } from "./union/discriminate.js"
 import { intersectBranches } from "./union/intersect.js"
@@ -66,7 +67,7 @@ export class TypeNode<t = unknown> extends NodeBase<{
             ? this.branches.length === 0
                 ? "never"
                 : this.branches.map((branch) => branch.toString()).join(" or ")
-            : this.branches.alias
+            : this.alias
     }
 
     intersect(other: TypeNode): TypeNode | Disjoint {
@@ -93,7 +94,9 @@ export class TypeNode<t = unknown> extends NodeBase<{
         //     this.meta
         // )
         const predicate = new PredicateNode(
-            [["class", Array, this.meta]] as const,
+            {
+                basis: new ClassNode(Array, this.meta)
+            },
             this.meta
         )
         return new TypeNode([predicate], this.meta)
