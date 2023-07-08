@@ -22,6 +22,8 @@ export type Constraints = {
         : k]?: NodeIntersections[k]
 }
 
+export type 
+
 export type Constraint<k extends keyof Constraints = keyof Constraints> =
     Constraints[k] & {}
 

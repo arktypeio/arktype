@@ -34,6 +34,7 @@ export abstract class NodeBase<config extends NodeConfig> {
         )
         this.description = this.describe()
     }
+
     abstract compile(ctx: CompilationContext): string
     abstract intersect(
         other: config["intersection"]

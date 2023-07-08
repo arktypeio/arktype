@@ -1,17 +1,13 @@
-import type { Ark } from "../../../src/scopes/ark.js"
-import type { inferTypeRoot, validateTypeRoot } from "../../../src/type.js"
+import type { Ark, inferTypeRoot, validateTypeRoot } from "arktype"
 
 export type FunctionParser<$> = {
-    <ret = unknown>(
-        _?: ":",
-        ret?: validateTypeRoot<ret, $>
-    ): <
-        implementation extends () => unknown extends ret
-            ? unknown
-            : inferTypeRoot<ret, $>
-    >(
-        implementation: implementation
-    ) => implementation
+    // <ret = unknown>(_?: ":", ret?: validateTypeRoot<ret, $>): <
+    //     implementation extends () => unknown extends ret
+    //         ? unknown
+    //         : inferTypeRoot<ret, $>
+    // >(
+    //     implementation: implementation
+    // ) => implementation
 
     <arg0, ret = unknown>(
         arg0: validateTypeRoot<arg0, $>,
@@ -94,35 +90,35 @@ export type FunctionParser<$> = {
     ) => implementation
 }
 
-declare const fn: FunctionParser<Ark>
+export declare const fn: FunctionParser<Ark>
 
-// // could allow something like `fn("string", ":", "boolean")` to specify return type
-// const z = fn("string", "number")((s, n) => `${n}` === s)
-{
-    // 0 params
-    const implicitReturn = fn()(() => 5)
-    //    ^?
-    const explicitReturn = fn(":", "number")(() => 5)
-    //    ^?
-}
+// // // could allow something like `fn("string", ":", "boolean")` to specify return type
+// // const z = fn("string", "number")((s, n) => `${n}` === s)
+// {
+//     // 0 params
+//     const implicitReturn = fn()(() => 5)
+//     //    ^?
+//     const explicitReturn = fn(":", "number")(() => 5)
+//     //    ^?
+// }
 
-{
-    // 1 param
-    const implicitReturn = fn("string")((s) => s.length)
-    //    ^?
-    const explicitReturn = fn("string", ":", "number")((s) => s.length)
-    //    ^?
-}
+// {
+//     // 1 param
+//     const implicitReturn = fn("string")((s) => s.length)
+//     //    ^?
+//     const explicitReturn = fn("string", ":", "number")((s) => s.length)
+//     //    ^?
+// }
 
-{
-    // 2 params
-    const implicitReturn = fn("string", "number")((s, n) => s === `${n}`)
-    //    ^?
-    const explicitReturn = fn(
-        //    ^?
-        "string",
-        "number",
-        ":",
-        "boolean"
-    )((s, n) => s === `${n}`)
-}
+// {
+//     // 2 params
+//     const implicitReturn = fn("string", "number")((s, n) => s === `${n}`)
+//     //    ^?
+//     const explicitReturn = fn(
+//         //    ^?
+//         "string",
+//         "number",
+//         ":",
+//         "boolean"
+//     )((s, n) => s === `${n}`)
+// }
