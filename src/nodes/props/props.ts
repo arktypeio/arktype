@@ -5,13 +5,17 @@ import { hasArkKind } from "../../compiler/registry.js"
 import { NodeBase } from "../base.js"
 import { node } from "../parse.js"
 import { TypeNode } from "../type.js"
-import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
+import type {
+    IndexedPropInput,
+    IndexedPropNode,
+    IndexedPropRule
+} from "./indexed.js"
 import {
     compileArray,
     compileIndexed,
     extractArrayIndexRegex
 } from "./indexed.js"
-import type { NamedPropInput, NamedPropRule } from "./named.js"
+import type { NamedPropInput, NamedPropNode, NamedPropRule } from "./named.js"
 import { compileNamedProps } from "./named.js"
 
 export type PropEntries = readonly PropEntry[]
@@ -24,8 +28,10 @@ export type IndexedEntries = readonly IndexedPropRule[]
 
 export type PropsMeta = {}
 
-export class PropertiesNode extends NodeBase<PropEntries, {}> {
-    readonly kind = "properties"
+export type EntryNode = NamedPropNode | IndexedPropNode
+
+export class PropsNode extends NodeBase<PropEntries, {}> {
+    readonly kind = "props"
     readonly named: NamedEntries = this.rule.filter(isNamed)
     readonly indexed: IndexedEntries = this.rule.filter(isIndexed)
 

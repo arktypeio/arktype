@@ -29,6 +29,7 @@ export class TypeNode<t = unknown> extends NodeBase<
 > {
     declare [inferred]: t
     readonly kind = "type"
+    readonly alias = ""
 
     private cachedBranches: readonly PredicateNode[] | undefined
     get branches(): readonly PredicateNode[] {
@@ -157,7 +158,7 @@ export class TypeNode<t = unknown> extends NodeBase<
         while (path.length) {
             const key = path.shift()!
             for (const branch of current) {
-                const propsAtKey = branch.properties
+                const propsAtKey = branch.props
                 if (propsAtKey) {
                     const branchesAtKey = propsAtKey.get(key)?.branches
                     if (branchesAtKey) {

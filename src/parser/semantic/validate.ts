@@ -86,9 +86,9 @@ export const assertAllowsConstraint = (
                 throwInvalidConstraintError("regex", "a string", domain)
             }
             return
-        case "properties":
+        case "props":
             if (domain !== "object") {
-                throwInvalidConstraintError("properties", "an object", domain)
+                throwInvalidConstraintError("props", "an object", domain)
             }
             return
         case "narrow":

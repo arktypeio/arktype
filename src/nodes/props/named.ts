@@ -4,6 +4,7 @@ import {
     compilePropAccess,
     In
 } from "../../compiler/compile.js"
+import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput } from "../parse.js"
 import type { TypeNode } from "../type.js"
@@ -79,3 +80,38 @@ export type NamedKeyRule = Readonly<{
     optional: boolean
     prerequisite: boolean
 }>
+
+export type NamedEntry = Readonly<{
+    key: string
+    value: TypeNode
+    optional?: true
+    prerequisite?: true
+}>
+
+export class NamedPropNode extends NodeBase<NamedEntry, {}> {
+    readonly kind = "named"
+    readonly key = this.rule.key
+    readonly value = this.rule.value
+    readonly optional = this.rule.optional
+    readonly prerequisite = this.rule.prerequisite
+
+    compile(ctx: CompilationContext) {
+        ctx.path.push(this.key)
+        const compiledValue = `${this.value.alias}(${In}${compilePropAccess(
+            this.key
+        )})`
+        ctx.path.pop()
+        const result = this.optional
+            ? `if('${this.key}' in ${In}) {
+                ${compiledValue}
+            }`
+            : compiledValue
+        return result
+    }
+
+    describe() {
+        return `${this.rule.key}${this.rule.optional ? "?" : ""}: ${
+            this.rule.value
+        }`
+    }
+}

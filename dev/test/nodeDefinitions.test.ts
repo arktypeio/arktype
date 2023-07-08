@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import type { TypeNode } from "arktype"
 import { node } from "arktype"
 import { suite, test } from "mocha"
-import { arrayIndexInput } from "../../src/nodes/properties/indexed.js"
+import { arrayIndexInput } from "../../src/nodes/props/indexed.js"
 import type { Out } from "../../src/parser/tuple.js"
 
 suite("node definitions", () => {

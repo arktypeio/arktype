@@ -7,7 +7,7 @@ import type {
     VariadicIndexMatcherLiteral
 } from "./indexed.js"
 import type { PropValueInput } from "./named.js"
-import type { NamedPropsInput, PropsInputTuple } from "./properties.js"
+import type { NamedPropsInput, PropsInputTuple } from "./props.js"
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
 

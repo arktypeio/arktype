@@ -4,12 +4,12 @@ import { Disjoint } from "../disjoint.js"
 import { builtins } from "../union/utils.js"
 import type { NamedPropRule } from "./named.js"
 import { intersectNamedProp } from "./named.js"
-import { PropertiesNode } from "./properties.js"
+import { PropsNode } from "./props.js"
 
 export const intersectProps = (
-    l: PropertiesNode,
-    r: PropertiesNode
-): PropertiesNode | Disjoint => {
+    l: PropsNode,
+    r: PropsNode
+): PropsNode | Disjoint => {
     const indexed = [...l.indexed]
     for (const { key, value } of r.indexed) {
         const matchingIndex = indexed.findIndex((entry) => entry.key === key)
@@ -92,5 +92,5 @@ export const intersectProps = (
     //     indexed = indexed.filter((entry) => !extractArrayIndexRegex(entry.key))
     // }
     // TODO: review other intersections to make sure meta is handled correclty
-    return new PropertiesNode([...named, ...indexed], l.meta)
+    return new PropsNode([...named, ...indexed], l.meta)
 }

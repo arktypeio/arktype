@@ -16,7 +16,7 @@ import type { BoundGroup } from "../primitive/bound.js"
 import type { DivisorNode } from "../primitive/divisor.js"
 import type { NarrowNode } from "../primitive/narrow.js"
 import type { RegexNode } from "../primitive/regex.js"
-import type { PropertiesNode } from "../properties/properties.js"
+import type { PropsNode } from "../props/props.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
 
@@ -25,7 +25,7 @@ export type ConstraintIntersections = {
     bound: BoundGroup
     divisor: DivisorNode
     regex: readonly RegexNode[]
-    properties: PropertiesNode
+    props: PropsNode
     narrow: readonly NarrowNode[]
 }
 
@@ -37,7 +37,7 @@ export type PredicateInput<
 
 export type ConstraintKind = extend<
     NodeKind,
-    "bound" | "divisor" | "regex" | "properties" | "narrow"
+    "bound" | "divisor" | "regex" | "props" | "narrow"
 >
 
 export type Constraint = NodeKinds[ConstraintKind]
@@ -61,7 +61,7 @@ export class PredicateNode
     readonly bound?: ConstraintIntersections["bound"]
     readonly divisor?: ConstraintIntersections["divisor"]
     readonly regex?: ConstraintIntersections["regex"]
-    readonly properties?: ConstraintIntersections["properties"]
+    readonly props?: ConstraintIntersections["props"]
     readonly narrow?: ConstraintIntersections["narrow"]
 
     readonly children = this.rule.map((constraintInput) => {
@@ -74,7 +74,7 @@ export class PredicateNode
             ? this.basis
             : undefined
 
-    readonly references: readonly TypeNode[] = this.properties?.references ?? []
+    readonly references: readonly TypeNode[] = this.props?.references ?? []
 
     intersect(other: PredicateNode): PredicateNode | Disjoint {
         const basis = this.basis
@@ -162,7 +162,7 @@ export class PredicateNode
         if (!this.basis) {
             return builtins.never()
         }
-        const propsKey = this.properties?.keyof()
+        const propsKey = this.props?.keyof()
         return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
     }
 
@@ -199,7 +199,7 @@ export const constraintsByPrecedence: Record<
     divisor: 1,
     regex: 1,
     // deep
-    properties: 2,
+    props: 2,
     // narrow
     narrow: 3
 }

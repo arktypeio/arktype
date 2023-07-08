@@ -1,5 +1,6 @@
 import { throwInternalError, tryParseWellFormedInteger } from "@arktype/utils"
 import { type CompilationContext, In } from "../../compiler/compile.js"
+import { NodeBase } from "../base.js"
 import type { TypeInput } from "../parse.js"
 import { node } from "../parse.js"
 import type { PredicateInput } from "../predicate/parse.js"
@@ -8,16 +9,6 @@ import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp, compileNamedProps } from "./named.js"
-
-export type IndexedPropInput = Readonly<{
-    key: TypeInput
-    value: TypeInput
-}>
-
-export type IndexedPropRule = Readonly<{
-    key: TypeNode
-    value: TypeNode
-}>
 
 const arrayIndexSourceSuffix = `(?:0|(?:[1-9]\\d*))$`
 
@@ -158,4 +149,28 @@ export const compileIndexed = (
         ${indexedChecks}
     }
 `
+}
+
+export type IndexedPropInput = Readonly<{
+    key: TypeInput
+    value: TypeInput
+}>
+
+export type IndexedPropRule = Readonly<{
+    key: TypeNode
+    value: TypeNode
+}>
+
+export class IndexedPropNode extends NodeBase<IndexedPropRule, {}> {
+    readonly kind = "indexed"
+    readonly key = this.rule.key
+    readonly value = this.rule.value
+
+    compile(ctx: CompilationContext) {
+        return ""
+    }
+
+    describe() {
+        return `[${this.rule.key}]: ${this.rule.value}`
+    }
 }

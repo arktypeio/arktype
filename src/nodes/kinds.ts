@@ -7,7 +7,9 @@ import { DomainNode } from "./primitive/domain.js"
 import { NarrowNode } from "./primitive/narrow.js"
 import { RegexNode } from "./primitive/regex.js"
 import { UnitNode } from "./primitive/unit.js"
-import { PropertiesNode } from "./properties/properties.js"
+import { IndexedPropNode } from "./props/indexed.js"
+import { NamedPropNode } from "./props/named.js"
+import { PropsNode } from "./props/props.js"
 import { TypeNode } from "./type.js"
 
 const nodeConstructors = {
@@ -20,7 +22,9 @@ const nodeConstructors = {
     regex: RegexNode,
     narrow: NarrowNode,
     predicate: PredicateNode,
-    properties: PropertiesNode
+    props: PropsNode,
+    named: NamedPropNode,
+    indexed: IndexedPropNode
 }
 
 type NodeConstructors = typeof nodeConstructors
@@ -31,13 +35,17 @@ export type NodeKinds = {
 }
 
 export type NodeArgs<kind extends NodeKind> = {
-    [k in NodeKind]: readonly [...ConstructorParameters<NodeConstructors[k]>]
+    [k in NodeKind]: readonly [
+        rule: NodeKinds[kind]["rule"],
+        meta: NodeKinds[kind]["meta"]
+    ]
 }[kind]
 
 export type NodeInput<kind extends NodeKind> = {
     [k in NodeKind]: readonly [
-        kind,
-        ...ConstructorParameters<NodeConstructors[k]>
+        kind: kind,
+        rule: NodeKinds[kind]["rule"],
+        meta: NodeKinds[kind]["meta"]
     ]
 }[kind]
 

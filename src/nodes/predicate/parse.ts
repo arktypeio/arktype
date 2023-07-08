@@ -52,8 +52,8 @@ import type { NodeArgs, NodeKind, NodeKinds } from "../kinds.js"
 
 // type inferNonFunctionalConstraints<input extends PredicateInput> =
 //     input["basis"] extends BasisInput
-//         ? input["properties"] extends PropsInput
-//             ? inferPropsInput<input["properties"]>
+//         ? input["props"] extends PropsInput
+//             ? inferPropsInput<input["props"]>
 //             : inferBasis<input["basis"]>
 //         : unknown
 

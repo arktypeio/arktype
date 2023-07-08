@@ -13,8 +13,9 @@ import type {
 } from "@arktype/utils"
 import { Disjoint } from "../disjoint.js"
 import type { SerializedPath } from "../disjoint.js"
+import type { Node } from "../kinds.js"
 import type { PredicateNode } from "../predicate/predicate.js"
-import type { BasisNode } from "../primitive/basis.js"
+import type { BasisKind } from "../primitive/basis.js"
 import type { UnitNode } from "../primitive/unit.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
@@ -108,8 +109,8 @@ export const discriminate = (
                 let lSerialized: string
                 let rSerialized: string
                 if (kind === "domain") {
-                    lSerialized = (disjoint.l as BasisNode).domain
-                    rSerialized = (disjoint.r as BasisNode).domain
+                    lSerialized = (disjoint.l as Node<BasisKind>).domain
+                    rSerialized = (disjoint.r as Node<BasisKind>).domain
                 } else if (kind === "value") {
                     lSerialized = (disjoint.l as UnitNode).serialized
                     rSerialized = (disjoint.r as UnitNode).serialized

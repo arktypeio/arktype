@@ -18,8 +18,8 @@ import type { Problem } from "../compiler/problems.js"
 import type { CheckResult, TraversalState } from "../compiler/traverse.js"
 import { PredicateNode } from "../nodes/predicate/predicate.js"
 import { ClassNode } from "../nodes/primitive/class.js"
-import { arrayIndexTypeNode } from "../nodes/properties/indexed.js"
-import { PropertiesNode } from "../nodes/properties/properties.js"
+import { arrayIndexTypeNode } from "../nodes/props/indexed.js"
+import { PropsNode } from "../nodes/props/props.js"
 import { TypeNode } from "../nodes/type.js"
 import { builtins } from "../nodes/union/utils.js"
 import type { ParseContext } from "../scope.js"
@@ -89,7 +89,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
     const predicate = new PredicateNode(
         {
             basis: new ClassNode(Array, ctx),
-            props: new PropertiesNode(props, ctx)
+            props: new PropsNode(props, ctx)
         },
         ctx
     )

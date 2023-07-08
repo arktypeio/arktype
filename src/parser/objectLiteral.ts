@@ -1,8 +1,8 @@
 import type { Dict, error, evaluate, mutable } from "@arktype/utils"
 import { PredicateNode } from "../nodes/predicate/predicate.js"
 import { DomainNode } from "../nodes/primitive/domain.js"
-import type { NamedPropsInput } from "../nodes/properties/properties.js"
-import { PropertiesNode } from "../nodes/properties/properties.js"
+import type { NamedPropsInput } from "../nodes/props/props.js"
+import { PropsNode } from "../nodes/props/props.js"
 import { TypeNode } from "../nodes/type.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -32,7 +32,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
         }
         ctx.path.pop()
     }
-    const props = new PropertiesNode(named, ctx)
+    const props = new PropsNode(named, ctx)
     const predicate = new PredicateNode(
         { basis: new DomainNode("object", ctx), props },
         ctx
