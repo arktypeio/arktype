@@ -36,9 +36,12 @@ export type NodeInput<kind extends NodeKind = NodeKind> = {
     ]
 }[kind]
 
+export type NodeArgs<kind extends NodeKind = NodeKind> =
+    NodeInput<kind> extends [kind, ...infer args] ? args : never
+
 export type Node<kind extends NodeKind = NodeKind> = NodeKinds[kind]
 
-export const node = <const input extends NodeInput>(
-    ...input: input
-): NodeKinds[input[0]] =>
-    new (nodeConstructors[input[0]] as any)(input[1], input[2])
+export const creatNodeKind = <kind extends NodeKind>(
+    kind: kind,
+    ...args: NodeArgs<kind>
+): NodeKinds[kind] => new (nodeConstructors[kind] as any)(...args)

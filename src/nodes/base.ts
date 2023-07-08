@@ -3,7 +3,7 @@ import { CompiledFunction } from "@arktype/utils"
 import type { CompilationContext } from "../compiler/compile.js"
 import { createCompilationContext, In } from "../compiler/compile.js"
 import { arkKind } from "../compiler/registry.js"
-import type { NodeKind, NodeKinds } from "./node.js"
+import type { NodeKind, NodeKinds } from "./kinds.js"
 
 // interface StaticBaseNode<node> {
 //     new (...args: never[]): node

@@ -6,10 +6,9 @@ import type {
     inferPredicateDefinition,
     PredicateInput
 } from "./predicate/parse.js"
-import type { PredicateNode } from "./predicate/predicate.js"
+import { PredicateNode } from "./predicate/predicate.js"
 import type { BasisInput } from "./primitive/basis.js"
-import { UnitNode } from "./primitive/unit.js"
-import type { TypeNode } from "./type.js"
+import { TypeNode } from "./type.js"
 
 export type TypeNodeParser = {
     <const branches extends PredicateInput[]>(
@@ -75,24 +74,24 @@ const createAnonymousParseContext = (): ParseContext => ({
     scope: getEmptyScope()
 })
 
-// // TODO: cleanup
-// export const node: TypeNodeParser = Object.assign(
-//     (...branches: readonly PredicateInput[]) =>
-//         new TypeNode(branches, createAnonymousParseContext()) as never,
-//     {
-//         literal: (...branches: readonly unknown[]) => {
-//             const ctx = createAnonymousParseContext()
-//             return new TypeNode(
-//                 branches.map(
-//                     (literal) =>
-//                         new PredicateNode([new UnitNode(literal, ctx)], ctx),
-//                     ctx
-//                 ),
-//                 ctx
-//             ) as never
-//         }
-//     }
-// )
+// TODO: cleanup
+export const node: TypeNodeParser = Object.assign(
+    (...branches: readonly PredicateInput[]) =>
+        new TypeNode(branches, createAnonymousParseContext()) as never,
+    {
+        literal: (...branches: readonly unknown[]) => {
+            const ctx = createAnonymousParseContext()
+            return new TypeNode(
+                branches.map(
+                    (literal) =>
+                        new PredicateNode([new UnitNode(literal, ctx)], ctx),
+                    ctx
+                ),
+                ctx
+            ) as never
+        }
+    }
+)
 
 // const isParsedTypeRule = (
 //     input: TypeInput | readonly PredicateNode[]

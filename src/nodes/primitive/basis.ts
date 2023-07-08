@@ -7,7 +7,7 @@ import type {
 import { constructorExtends, throwInternalError } from "@arktype/utils"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeKind, NodeKinds } from "../node.js"
+import type { NodeKind, NodeKinds } from "../kinds.js"
 import type { TypeNode } from "../type.js"
 import { PrimitiveNodeBase } from "./primitive.js"
 
