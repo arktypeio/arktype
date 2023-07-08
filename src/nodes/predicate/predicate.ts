@@ -16,7 +16,7 @@ import type { BoundGroup } from "../primitive/bound.js"
 import type { DivisorNode } from "../primitive/divisor.js"
 import type { NarrowNode } from "../primitive/narrow.js"
 import type { RegexNode } from "../primitive/regex.js"
-import type { PropsNode } from "../props/props.js"
+import type { PropsNode } from "../prop/props.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
 
@@ -28,6 +28,8 @@ export type ConstraintIntersections = {
     props: PropsNode
     narrow: readonly NarrowNode[]
 }
+
+export type ConstraintGroup = keyof ConstraintIntersections
 
 export type ConstraintGroups = Partial<ConstraintIntersections>
 
@@ -53,7 +55,11 @@ export type PredicateChildren =
     | readonly [Node<BasisKind>, ...Constraint[]]
 
 export class PredicateNode
-    extends NodeBase<PredicateInput, {}>
+    extends NodeBase<{
+        rule: ConstraintIntersections
+        intersection: PredicateNode
+        meta: {}
+    }>
     implements ConstraintGroups
 {
     readonly kind = "predicate"
@@ -64,10 +70,7 @@ export class PredicateNode
     readonly props?: ConstraintIntersections["props"]
     readonly narrow?: ConstraintIntersections["narrow"]
 
-    readonly children = this.rule.map((constraintInput) => {
-        return createNode(constraintInput)
-    })
-    readonly groups = {}
+    readonly children = Object.values(this.rule).flat()
     // we only want simple unmorphed values
     readonly unit =
         this.basis?.hasKind("unit") && this.children.length === 1
@@ -176,7 +179,7 @@ export class PredicateNode
         assertAllowsConstraint(this.basis, constraint)
         const result = this.intersect(
             // TODO: fix cast
-            new PredicateNode([constraint as never], this.meta)
+            new PredicateNode({ [kind]: constraint as never }, this.meta)
         )
         if (result instanceof Disjoint) {
             return result.throw()

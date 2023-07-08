@@ -3,13 +3,19 @@ import { compileSerializedValue, In } from "../../compiler/compile.js"
 // TODO: move here
 import type { DateLiteral } from "../../parser/string/shift/operand/date.js"
 import { extractDateLiteralSource } from "../../parser/string/shift/operand/date.js"
+import type { Node } from "../kinds.js"
+import type { BasisKind } from "./basis.js"
 import { BasisNodeBase } from "./basis.js"
 
 export type UnitNodeMeta = {
     parsedFrom?: DateLiteral
 }
 
-export class UnitNode extends BasisNodeBase<unknown, UnitNodeMeta> {
+export class UnitNode extends BasisNodeBase<{
+    rule: unknown
+    intersection: Node<BasisKind>
+    meta: UnitNodeMeta
+}> {
     readonly kind = "unit"
     readonly literalKeys =
         this.rule === null || this.rule === undefined

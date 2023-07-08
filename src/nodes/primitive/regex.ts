@@ -10,11 +10,22 @@ export type SerializedRegexLiteral = `/${string}/${string}`
 export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
     literal.slice(1, literal.lastIndexOf("/"))
 
-export class RegexNode extends NodeBase<SerializedRegexLiteral, {}> {
+export type RegexIntersection = readonly RegexNode[]
+
+export class RegexNode extends NodeBase<{
+    rule: SerializedRegexLiteral
+    intersection: RegexIntersection
+    meta: {}
+}> {
     readonly kind = "regex"
 
     compile() {
         return `${this.rule}.test(${In})`
+    }
+
+    intersect(other: RegexIntersection) {
+        const matching = other.find((node) => node.rule === this.rule)
+        return matching ? other : [...other, this]
     }
 
     describe() {

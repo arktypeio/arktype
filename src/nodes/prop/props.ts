@@ -3,19 +3,16 @@ import { cached, fromEntries } from "@arktype/utils"
 import type { CompilationContext } from "../../compiler/compile.js"
 import { hasArkKind } from "../../compiler/registry.js"
 import { NodeBase } from "../base.js"
+import type { Disjoint } from "../disjoint.js"
 import { node } from "../parse.js"
 import { TypeNode } from "../type.js"
-import type {
-    IndexedPropInput,
-    IndexedPropNode,
-    IndexedPropRule
-} from "./indexed.js"
+import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import {
     compileArray,
     compileIndexed,
     extractArrayIndexRegex
 } from "./indexed.js"
-import type { NamedPropInput, NamedPropNode, NamedPropRule } from "./named.js"
+import type { NamedPropInput, NamedPropRule } from "./named.js"
 import { compileNamedProps } from "./named.js"
 
 export type PropEntries = readonly PropEntry[]
@@ -28,9 +25,12 @@ export type IndexedEntries = readonly IndexedPropRule[]
 
 export type PropsMeta = {}
 
-export type EntryNode = NamedPropNode | IndexedPropNode
-
-export class PropsNode extends NodeBase<PropEntries, {}> {
+// TODO: maybe don't compile immediately, intermediate nodes
+export class PropsNode extends NodeBase<{
+    rule: PropEntries
+    intersection: PropsNode
+    meta: {}
+}> {
     readonly kind = "props"
     readonly named: NamedEntries = this.rule.filter(isNamed)
     readonly indexed: IndexedEntries = this.rule.filter(isIndexed)
@@ -93,6 +93,10 @@ export class PropsNode extends NodeBase<PropEntries, {}> {
             }
         }
         return compileIndexed(this.named, this.indexed, ctx)
+    }
+
+    intersect(other: PropsNode): PropsNode | Disjoint {
+        return other
     }
 }
 

@@ -1,6 +1,8 @@
 import type { Domain } from "@arktype/utils"
 import { getBaseDomainKeys } from "@arktype/utils"
 import { In } from "../../compiler/compile.js"
+import type { Node } from "../kinds.js"
+import type { BasisKind } from "./basis.js"
 import { BasisNodeBase } from "./basis.js"
 
 export type NonEnumerableDomain = Exclude<
@@ -8,7 +10,11 @@ export type NonEnumerableDomain = Exclude<
     "null" | "undefined" | "boolean"
 >
 
-export class DomainNode extends BasisNodeBase<NonEnumerableDomain, {}> {
+export class DomainNode extends BasisNodeBase<{
+    rule: NonEnumerableDomain
+    intersection: Node<BasisKind>
+    meta: {}
+}> {
     readonly kind = "domain"
     readonly literalKeys = getBaseDomainKeys(this.rule)
     readonly domain = this.rule

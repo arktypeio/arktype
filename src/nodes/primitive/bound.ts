@@ -1,8 +1,8 @@
 import type { evaluate } from "@arktype/utils"
-import { listFrom } from "@arktype/utils"
 import { In } from "../../compiler/compile.js"
 import type { DateLiteral } from "../../parser/string/shift/operand/date.js"
 import { NodeBase } from "../base.js"
+import type { Disjoint } from "../disjoint.js"
 
 export type LimitLiteral = number | DateLiteral
 
@@ -20,13 +20,6 @@ export type DoubleBoundGroup = readonly [
     BoundNode<MaxBound>
 ]
 
-export const BoundsGroup: new (input: BoundGroupInput) => BoundGroup =
-    class extends Array<BoundNode> {
-        constructor(input: BoundGroupInput) {
-            super(...listFrom(input).map((bound) => new BoundNode(bound)))
-        }
-    } as never
-
 export type MinBound = evaluate<Bound & { comparator: MinComparator }>
 
 export type MaxBound = evaluate<Bound & { comparator: MaxComparator }>
@@ -36,10 +29,11 @@ export type Bound = {
     comparator: Comparator
 }
 
-export class BoundNode<bound extends Bound = Bound> extends NodeBase<
-    bound,
-    {}
-> {
+export class BoundNode<bound extends Bound = Bound> extends NodeBase<{
+    rule: bound
+    intersection: BoundGroup
+    meta: {}
+}> {
     readonly kind = "bound"
     readonly comparator = this.rule.comparator
     readonly limit = this.rule.limit
@@ -51,6 +45,10 @@ export class BoundNode<bound extends Bound = Bound> extends NodeBase<
         return `${size} ${
             this.comparator === "==" ? "===" : this.comparator
         } ${this.limit.valueOf()}`
+    }
+
+    intersect(other: BoundGroup): BoundGroup | Disjoint {
+        return other
     }
 
     describe() {

@@ -1,6 +1,6 @@
 import { cached } from "@arktype/utils"
 import { node } from "../parse.js"
-import { arrayIndexInput } from "../props/indexed.js"
+import { arrayIndexInput } from "../prop/indexed.js"
 import type { TypeNode } from "../type.js"
 
 export const builtins = {

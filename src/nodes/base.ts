@@ -3,17 +3,17 @@ import { CompiledFunction } from "@arktype/utils"
 import type { CompilationContext } from "../compiler/compile.js"
 import { createCompilationContext, In } from "../compiler/compile.js"
 import { arkKind } from "../compiler/registry.js"
-import type { NodeKind, NodeKinds } from "./kinds.js"
+import type { Disjoint } from "./disjoint.js"
+import type { Node, NodeKind, NodeKinds } from "./kinds.js"
+import type { BasisKind } from "./primitive/basis.js"
 
-// interface StaticBaseNode<node> {
-//     new (...args: never[]): node
+export type NodeConfig = {
+    rule: unknown
+    meta: Dict
+    intersection: unknown
+}
 
-//     intersect(l: node, r: node): node | Disjoint
-// }
-
-//     subclass extends StaticBaseNode<InstanceType<subclass>>
-
-export abstract class NodeBase<rule, meta extends Dict> {
+export abstract class NodeBase<config extends NodeConfig> {
     readonly [arkKind] = "node"
     abstract readonly kind: NodeKind
     readonly condition: string
@@ -23,8 +23,8 @@ export abstract class NodeBase<rule, meta extends Dict> {
     allows: (data: unknown) => boolean
 
     constructor(
-        public rule: rule,
-        public meta: meta
+        public rule: config["rule"],
+        public meta: config["meta"]
     ) {
         this.condition = this.compile(createCompilationContext("true", "false"))
         this.allows = new CompiledFunction(
@@ -35,17 +35,21 @@ export abstract class NodeBase<rule, meta extends Dict> {
         this.description = this.describe()
     }
     abstract compile(ctx: CompilationContext): string
+    abstract intersect(
+        other: config["intersection"]
+    ): config["intersection"] | Disjoint
+
     protected abstract describe(): string
 
     toString() {
         return this.description
     }
 
-    hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind] {
+    hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
         return this.kind === kind
     }
 
-    isBasis(): this is this {
+    isBasis(): this is Node<BasisKind> {
         return (
             this.kind === "domain" ||
             this.kind === "class" ||

@@ -7,9 +7,15 @@ import {
 } from "@arktype/utils"
 import { In } from "../../compiler/compile.js"
 import { registry } from "../../compiler/registry.js"
+import type { Node } from "../kinds.js"
+import type { BasisKind } from "./basis.js"
 import { BasisNodeBase } from "./basis.js"
 
-export class ClassNode extends BasisNodeBase<AbstractableConstructor, {}> {
+export class ClassNode extends BasisNodeBase<{
+    rule: AbstractableConstructor
+    intersection: Node<BasisKind>
+    meta: {}
+}> {
     readonly kind = "class"
     readonly literalKeys = prototypeKeysOf(this.rule.prototype)
     readonly domain = "object"

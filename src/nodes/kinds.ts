@@ -7,9 +7,7 @@ import { DomainNode } from "./primitive/domain.js"
 import { NarrowNode } from "./primitive/narrow.js"
 import { RegexNode } from "./primitive/regex.js"
 import { UnitNode } from "./primitive/unit.js"
-import { IndexedPropNode } from "./props/indexed.js"
-import { NamedPropNode } from "./props/named.js"
-import { PropsNode } from "./props/props.js"
+import { PropsNode } from "./prop/props.js"
 import { TypeNode } from "./type.js"
 
 const nodeConstructors = {
@@ -22,9 +20,7 @@ const nodeConstructors = {
     regex: RegexNode,
     narrow: NarrowNode,
     predicate: PredicateNode,
-    props: PropsNode,
-    named: NamedPropNode,
-    indexed: IndexedPropNode
+    props: PropsNode
 }
 
 type NodeConstructors = typeof nodeConstructors

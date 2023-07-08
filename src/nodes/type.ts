@@ -23,10 +23,11 @@ export type UnresolvedTypeNode = {
     resolve: Thunk<TypeNode>
 }
 
-export class TypeNode<t = unknown> extends NodeBase<
-    readonly PredicateNode[],
-    {}
-> {
+export class TypeNode<t = unknown> extends NodeBase<{
+    rule: readonly PredicateNode[]
+    intersection: TypeNode
+    meta: {}
+}> {
     declare [inferred]: t
     readonly kind = "type"
     readonly alias = ""

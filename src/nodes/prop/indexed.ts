@@ -3,7 +3,6 @@ import { type CompilationContext, In } from "../../compiler/compile.js"
 import { NodeBase } from "../base.js"
 import type { TypeInput } from "../parse.js"
 import { node } from "../parse.js"
-import type { PredicateInput } from "../predicate/parse.js"
 import { sourceFromRegexLiteral } from "../primitive/regex.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
@@ -95,7 +94,8 @@ export const arrayIndexInput = <index extends number = 0>(
     ({
         basis: "string",
         regex: `/${arrayIndexMatcherSource(firstVariadicIndex)}/`
-    }) as const satisfies PredicateInput<"string">
+        // TODO: reenable
+    }) as const // satisfies PredicateInput<"string">
 
 export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>
     firstVariadicIndex === 0
@@ -161,16 +161,16 @@ export type IndexedPropRule = Readonly<{
     value: TypeNode
 }>
 
-export class IndexedPropNode extends NodeBase<IndexedPropRule, {}> {
-    readonly kind = "indexed"
-    readonly key = this.rule.key
-    readonly value = this.rule.value
+// export class IndexedPropNode extends NodeBase<IndexedPropRule, {}> {
+//     readonly kind = "indexed"
+//     readonly key = this.rule.key
+//     readonly value = this.rule.value
 
-    compile(ctx: CompilationContext) {
-        return ""
-    }
+//     compile(ctx: CompilationContext) {
+//         return ""
+//     }
 
-    describe() {
-        return `[${this.rule.key}]: ${this.rule.value}`
-    }
-}
+//     describe() {
+//         return `[${this.rule.key}]: ${this.rule.value}`
+//     }
+// }

@@ -3,11 +3,22 @@ import { registry } from "../../compiler/registry.js"
 import type { Narrow } from "../../parser/tuple.js"
 import { NodeBase } from "../base.js"
 
-export class NarrowNode extends NodeBase<Narrow, {}> {
+export type NarrowIntersection = readonly NarrowNode[]
+
+export class NarrowNode extends NodeBase<{
+    rule: Narrow
+    intersection: NarrowIntersection
+    meta: {}
+}> {
     readonly kind = "narrow"
 
     compile() {
         return `${registry().register(this.rule)}(${In})`
+    }
+
+    intersect(other: NarrowIntersection) {
+        const matching = other.find((node) => node.rule === this.rule)
+        return matching ? other : [...other, this]
     }
 
     describe() {
