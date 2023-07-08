@@ -6,17 +6,15 @@ import type {
 } from "@arktype/utils"
 import { constructorExtends, throwInternalError } from "@arktype/utils"
 import type { NodeKind, NodeKinds } from "../base.js"
-import { NodeBase } from "../base.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeNode } from "../type.js"
-import type { NonEnumerableDomain } from "./domain.js"
+import { PrimitiveNodeBase } from "./primitive.js"
 
-export type BasisKind = extend<NodeKind, "domain" | "class" | "unit">
-
-export type BasisNode = NodeKinds[BasisKind]
-
-export abstract class BasisNodeBase extends NodeBase {
+export abstract class BasisNodeBase<
+    rule,
+    meta extends {}
+> extends PrimitiveNodeBase<rule, meta> {
     abstract override kind: BasisKind
     abstract domain: Domain
     abstract literalKeys: PropertyKey[]
@@ -57,17 +55,23 @@ export abstract class BasisNodeBase extends NodeBase {
     }
 }
 
-export type BasisInput<kind extends BasisKind = BasisKind> = {
-    domain: NonEnumerableDomain
-    class: AbstractableConstructor
-    unit: readonly [unknown]
-}[kind]
+export type BasisKind = extend<NodeKind, "domain" | "class" | "unit">
+
+export type BasisNodes = { [k in BasisKind]: NodeKinds[k] }
+
+export type BasisNode = BasisNodes[BasisKind]
+
+export type BasisInput<kind extends BasisKind = BasisKind> = readonly [
+    kind: kind,
+    rule: BasisNodes[kind]["rule"],
+    meta?: BasisNodes[kind]["meta"]
+]
 
 export type inferBasis<basis extends BasisInput> = basis extends Domain
     ? inferDomain<basis>
     : basis extends AbstractableConstructor<infer instance>
     ? instance
-    : basis extends readonly [infer unit]
+    : basis extends readonly ["===", infer unit]
     ? unit
     : never
 

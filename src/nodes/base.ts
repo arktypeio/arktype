@@ -1,3 +1,4 @@
+import type { Dict } from "@arktype/utils"
 import { CompiledFunction } from "@arktype/utils"
 import type { CompilationContext } from "../compiler/compile.js"
 import { createCompilationContext, In } from "../compiler/compile.js"
@@ -24,7 +25,7 @@ import type { TypeNode } from "./type.js"
 export abstract class NodeBase {
     readonly [arkKind] = "node"
     abstract readonly kind: NodeKind
-    abstract readonly meta: {}
+    abstract readonly meta: Dict
     readonly condition: string
     readonly description: string
 

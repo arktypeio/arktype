@@ -1,5 +1,3 @@
-import type { mutable } from "@arktype/utils"
-import { throwParseError } from "@arktype/utils"
 import type { CompilationContext } from "../../compiler/compile.js"
 import { assertAllowsConstraint } from "../../parser/semantic/validate.js"
 import type { NodeKinds } from "../base.js"
@@ -14,45 +12,42 @@ import type { UnitNode } from "../primitive/unit.js"
 import type { PropertiesNode } from "../properties/properties.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
-import { parseBasisInput } from "./parse.js"
+import type {
+    ConstraintInput,
+    ConstraintKind,
+    PredicateInput
+} from "./parse.js"
 
-export type ConstraintGroups = {
-    readonly basis?: BasisNode
-    readonly bound?: BoundGroup
-    readonly divisor?: DivisorNode
-    readonly regex?: readonly RegexNode[]
-    readonly properties?: PropertiesNode
-    readonly narrow?: readonly NarrowNode[]
+export type ConstraintIntersections = {
+    basis: BasisNode
+    bound: BoundGroup
+    divisor: DivisorNode
+    regex: readonly RegexNode[]
+    properties: PropertiesNode
+    narrow: readonly NarrowNode[]
 }
 
-export type ConstraintGroup<kind extends ConstraintKind> =
-    ConstraintGroups[kind] & {}
+export type ConstraintGroups = Partial<ConstraintIntersections>
 
-export type ConstraintKind = keyof ConstraintGroups
+export type Constraint = NodeKinds[ConstraintKind | BasisKind]
 
-export type Constraint = NodeKinds[BasisKind | Exclude<ConstraintKind, "basis">]
+// throwParseError(
+//     `'${k}' is not a valid constraint name (must be one of ${Object.keys(
+//         constraintsByPrecedence
+//     ).join(", ")})`
+// )
 
-export const assertConstraintKind: (
-    k: string
-) => asserts k is ConstraintKind = (k) => {
-    if (k in constraintsByPrecedence) {
-        return
-    }
-    throwParseError(
-        `'${k}' is not a valid constraint name (must be one of ${Object.keys(
-            constraintsByPrecedence
-        ).join(", ")})`
-    )
-}
-
-export class PredicateNode extends NodeBase implements ConstraintGroups {
+export class PredicateNode
+    extends NodeBase
+    implements Partial<ConstraintGroups>
+{
     readonly kind = "predicate"
-    readonly basis?: ConstraintGroup<"basis">
-    readonly bound?: ConstraintGroup<"bound">
-    readonly divisor?: ConstraintGroup<"divisor">
-    readonly regex?: ConstraintGroup<"regex">
-    readonly properties?: ConstraintGroup<"properties">
-    readonly narrow?: ConstraintGroup<"narrow">
+    readonly basis?: ConstraintGroups["basis"]
+    readonly bound?: ConstraintGroups["bound"]
+    readonly divisor?: ConstraintGroups["divisor"]
+    readonly regex?: ConstraintGroups["regex"]
+    readonly properties?: ConstraintGroups["properties"]
+    readonly narrow?: ConstraintGroups["narrow"]
     readonly groups: ConstraintGroups
     readonly children: readonly Constraint[]
     // TODO: update morph representation here
@@ -64,21 +59,12 @@ export class PredicateNode extends NodeBase implements ConstraintGroups {
         public readonly meta: {}
     ) {
         super()
-        const constraints: mutable<ConstraintGroups> = {}
-        if (input.basis) {
-            this.basis = parseBasisInput(input.basis, meta)
-        }
-        if (input.bound) {
-            this.bound = {}
-        }
-        this.groups = constraints
+        this.groups = {}
         this.children = Object.values(this.groups).flat()
         this.unit =
             this.basis?.hasKind("unit") && this.children.length === 1
                 ? this.basis
                 : undefined
-
-        Object.assign(this, constraints)
     }
 
     readonly references: readonly TypeNode[] = this.properties?.references ?? []
@@ -102,55 +88,57 @@ export class PredicateNode extends NodeBase implements ConstraintGroups {
                 return Disjoint.from("assignability", this, other.basis)
             }
         }
-        const rules: Constraint[] = basis ? [basis] : []
-        for (const kind of constraintKindNames) {
-            const lNode = this.getConstraints(kind)
-            const rNode = other.getConstraints(kind)
-            if (lNode) {
-                if (rNode) {
-                    // TODO: fix
-                    const result = lNode
-                    // lNode.intersect(rNode as never)
-                    // we may be missing out on deep discriminants here if e.g.
-                    // there is a range Disjoint between two arrays, each of which
-                    // contains objects that are discriminable. if we need to find
-                    // these, we should avoid returning here and instead collect Disjoints
-                    // similarly to in PropsNode
-                    if (result instanceof Disjoint) {
-                        return result
-                    }
-                    rules.push(result)
-                } else {
-                    rules.push(lNode)
-                }
-            } else if (rNode) {
-                rules.push(rNode)
-            }
-        }
-        // TODO: bad context source
-        return new PredicateNode(rules, this.meta)
+        return this
+        // const rules: Constraint[] = basis ? [basis] : []
+        // for (const kind of constraintKindNames) {
+        //     const lNode = this.getConstraints(kind)
+        //     const rNode = other.getConstraints(kind)
+        //     if (lNode) {
+        //         if (rNode) {
+        //             // TODO: fix
+        //             const result = lNode
+        //             // lNode.intersect(rNode as never)
+        //             // we may be missing out on deep discriminants here if e.g.
+        //             // there is a range Disjoint between two arrays, each of which
+        //             // contains objects that are discriminable. if we need to find
+        //             // these, we should avoid returning here and instead collect Disjoints
+        //             // similarly to in PropsNode
+        //             if (result instanceof Disjoint) {
+        //                 return result
+        //             }
+        //             rules.push(result)
+        //         } else {
+        //             rules.push(lNode)
+        //         }
+        //     } else if (rNode) {
+        //         rules.push(rNode)
+        //     }
+        // }
+        // // TODO: bad context source
+        // return new PredicateNode(rules, this.meta)
     }
 
     compile(ctx: CompilationContext) {
-        // TODO: can props imply object basis for compilation?
-        let result = ""
-        this.basis && ctx.bases.push(this.basis)
-        for (const child of children) {
-            const childResult = child.hasKind("props")
-                ? child.compile(ctx)
-                : compileCheck(
-                      // TODO: fix
-                      child.kind === "narrow" ? "custom" : child.kind,
-                      child.rule,
-                      child.compile(ctx),
-                      ctx
-                  )
-            if (childResult) {
-                result = result ? `${result}\n${childResult}` : childResult
-            }
-        }
-        this.basis && ctx.bases.pop()
-        return result
+        return ""
+        // // TODO: can props imply object basis for compilation?
+        // let result = ""
+        // this.basis && ctx.bases.push(this.basis)
+        // for (const child of children) {
+        //     const childResult = child.hasKind("props")
+        //         ? child.compile(ctx)
+        //         : compileCheck(
+        //               // TODO: fix
+        //               child.kind === "narrow" ? "custom" : child.kind,
+        //               child.rule,
+        //               child.compile(ctx),
+        //               ctx
+        //           )
+        //     if (childResult) {
+        //         result = result ? `${result}\n${childResult}` : childResult
+        //     }
+        // }
+        // this.basis && ctx.bases.pop()
+        // return result
     }
 
     describe() {
@@ -173,7 +161,7 @@ export class PredicateNode extends NodeBase implements ConstraintGroups {
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        input: ConstraintsInput[kind]
+        input: ConstraintInput<kind>
     ): PredicateNode {
         const constraint = createNodeOfKind(kind, input as never, this.meta)
         assertAllowsConstraint(this.basis, constraint)

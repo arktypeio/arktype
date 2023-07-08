@@ -36,9 +36,10 @@ export type Bound = {
     comparator: Comparator
 }
 
-export class BoundNode<
-    bound extends Bound = Bound
-> extends PrimitiveNodeBase<bound> {
+export class BoundNode<bound extends Bound = Bound> extends PrimitiveNodeBase<
+    bound,
+    {}
+> {
     readonly kind = "bound"
     readonly comparator = this.rule.comparator
     readonly limit = this.rule.limit

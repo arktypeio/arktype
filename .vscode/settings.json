@@ -26,5 +26,6 @@
     "mochaExplorer.env": {
         "ATTEST_CONFIG": "{ \"skipTypes\": true }"
     },
-    "testExplorer.useNativeTesting": true
+    "testExplorer.useNativeTesting": true,
+    "typescript.tsdk": "node_modules/typescript/lib"
 }
