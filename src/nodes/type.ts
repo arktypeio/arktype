@@ -5,8 +5,9 @@ import { inferred } from "../parser/definition.js"
 import type { inferIntersection } from "../parser/semantic/intersections.js"
 import { NodeBase } from "./base.js"
 import { Disjoint } from "./disjoint.js"
+import type { NodeArgs, NodeKinds } from "./kinds.js"
 import { reduceBranches } from "./parse.js"
-import type { ConstraintKind } from "./predicate/parse.js"
+import type { ConstraintKind } from "./predicate/predicate.js"
 import { PredicateNode } from "./predicate/predicate.js"
 import { compileDiscriminant, compileIndiscriminable } from "./union/compile.js"
 import { discriminate } from "./union/discriminate.js"
@@ -22,15 +23,21 @@ export type UnresolvedTypeNode = {
     resolve: Thunk<TypeNode>
 }
 
-export class TypeNode<t = unknown> extends NodeBase {
+export class TypeNode<t = unknown> extends NodeBase<
+    readonly PredicateNode[],
+    {}
+> {
     declare [inferred]: t
     readonly kind = "type"
 
-    constructor(
-        public readonly branches: readonly PredicateNode[],
-        public readonly meta: {}
-    ) {
-        super()
+    private cachedBranches: readonly PredicateNode[] | undefined
+    get branches(): readonly PredicateNode[] {
+        if (!this.cachedBranches) {
+            this.cachedBranches = hasKey(this.branches, "resolve")
+                ? []
+                : this.branches
+        }
+        return this.cachedBranches!
     }
 
     readonly references: readonly TypeNode[] = hasKey(this.branches, "resolve")
@@ -41,16 +48,6 @@ export class TypeNode<t = unknown> extends NodeBase {
     // TODO: to unit
     readonly unit =
         this.branches.length === 1 ? this.branches[0].unit : undefined
-
-    // private cachedBranches: readonly PredicateNode[] | undefined
-    // get branches() {
-    //     if (!this.cachedBranches) {
-    //         this.cachedBranches = hasKey(this.branches, "resolve")
-    //             ? this.branches.resolve().branches
-    //             : this.branches
-    //     }
-    //     return this.cachedBranches!
-    // }
 
     compile(ctx: CompilationContext) {
         // if (hasKey(this.branches, "resolve")) {
@@ -126,10 +123,13 @@ export class TypeNode<t = unknown> extends NodeBase {
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        definition: ConstraintsInput[kind]
+        rule: NodeKinds[kind]["rule"],
+        meta: NodeKinds[kind]["meta"]
     ): TypeNode<t> {
         return new TypeNode(
-            this.branches.map((branch) => branch.constrain(kind, definition)),
+            this.branches.map((branch) =>
+                branch.constrain(kind, rule as never, meta as never)
+            ),
             this.meta
         )
     }

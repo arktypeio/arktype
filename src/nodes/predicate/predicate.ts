@@ -1,25 +1,27 @@
+import type { extend } from "@arktype/utils"
 import type { CompilationContext } from "../../compiler/compile.js"
 import { assertAllowsConstraint } from "../../parser/semantic/validate.js"
 import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeKinds } from "../kinds.js"
-import type { BasisKind, BasisNode } from "../primitive/basis.js"
+import type {
+    Node,
+    NodeArgs,
+    NodeInput,
+    NodeKind,
+    NodeKinds
+} from "../kinds.js"
+import { createNode } from "../kinds.js"
+import type { BasisKind } from "../primitive/basis.js"
 import type { BoundGroup } from "../primitive/bound.js"
 import type { DivisorNode } from "../primitive/divisor.js"
 import type { NarrowNode } from "../primitive/narrow.js"
 import type { RegexNode } from "../primitive/regex.js"
-import type { UnitNode } from "../primitive/unit.js"
 import type { PropertiesNode } from "../properties/properties.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
-import type {
-    ConstraintInput,
-    ConstraintKind,
-    PredicateInput
-} from "./parse.js"
 
 export type ConstraintIntersections = {
-    basis: BasisNode
+    basis: Node<BasisKind>
     bound: BoundGroup
     divisor: DivisorNode
     regex: readonly RegexNode[]
@@ -29,7 +31,16 @@ export type ConstraintIntersections = {
 
 export type ConstraintGroups = Partial<ConstraintIntersections>
 
-export type Constraint = NodeKinds[ConstraintKind | BasisKind]
+export type PredicateInput<
+    basis extends NodeInput<BasisKind> = NodeInput<BasisKind>
+> = readonly [] | readonly [basis, ...NodeInput<ConstraintKind>[]]
+
+export type ConstraintKind = extend<
+    NodeKind,
+    "bound" | "divisor" | "regex" | "properties" | "narrow"
+>
+
+export type Constraint = NodeKinds[ConstraintKind]
 
 // throwParseError(
 //     `'${k}' is not a valid constraint name (must be one of ${Object.keys(
@@ -37,35 +48,31 @@ export type Constraint = NodeKinds[ConstraintKind | BasisKind]
 //     ).join(", ")})`
 // )
 
+export type PredicateChildren =
+    | readonly []
+    | readonly [Node<BasisKind>, ...Constraint[]]
+
 export class PredicateNode
-    extends NodeBase
-    implements Partial<ConstraintGroups>
+    extends NodeBase<PredicateInput, {}>
+    implements ConstraintGroups
 {
     readonly kind = "predicate"
-    readonly basis?: ConstraintGroups["basis"]
-    readonly bound?: ConstraintGroups["bound"]
-    readonly divisor?: ConstraintGroups["divisor"]
-    readonly regex?: ConstraintGroups["regex"]
-    readonly properties?: ConstraintGroups["properties"]
-    readonly narrow?: ConstraintGroups["narrow"]
-    readonly groups: ConstraintGroups
-    readonly children: readonly Constraint[]
-    // TODO: update morph representation here
-    // we only want simple unmorphed values
-    readonly unit: UnitNode | undefined
+    readonly basis?: ConstraintIntersections["basis"]
+    readonly bound?: ConstraintIntersections["bound"]
+    readonly divisor?: ConstraintIntersections["divisor"]
+    readonly regex?: ConstraintIntersections["regex"]
+    readonly properties?: ConstraintIntersections["properties"]
+    readonly narrow?: ConstraintIntersections["narrow"]
 
-    constructor(
-        input: PredicateInput,
-        public readonly meta: {}
-    ) {
-        super()
-        this.groups = {}
-        this.children = Object.values(this.groups).flat()
-        this.unit =
-            this.basis?.hasKind("unit") && this.children.length === 1
-                ? this.basis
-                : undefined
-    }
+    readonly children = this.rule.map((constraintInput) => {
+        return createNode(constraintInput)
+    })
+    readonly groups = {}
+    // we only want simple unmorphed values
+    readonly unit =
+        this.basis?.hasKind("unit") && this.children.length === 1
+            ? this.basis
+            : undefined
 
     readonly references: readonly TypeNode[] = this.properties?.references ?? []
 
@@ -161,12 +168,15 @@ export class PredicateNode
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        input: ConstraintInput<kind>
+        rule: NodeArgs<kind>[0],
+        meta: NodeArgs<kind>[1]
     ): PredicateNode {
-        const constraint = createNodeOfKind(kind, input as never, this.meta)
+        // TODO: this cast shouldn't be needed
+        const constraint = createNode([kind, rule, meta as never])
         assertAllowsConstraint(this.basis, constraint)
         const result = this.intersect(
-            new PredicateNode([constraint], this.meta)
+            // TODO: fix cast
+            new PredicateNode([constraint as never], this.meta)
         )
         if (result instanceof Disjoint) {
             return result.throw()
@@ -175,9 +185,15 @@ export class PredicateNode
     }
 }
 
-export const constraintsByPrecedence: Record<ConstraintKind, number> = {
+// TODO: naming
+export const constraintsByPrecedence: Record<
+    BasisKind | ConstraintKind,
+    number
+> = {
     // basis
-    basis: 0,
+    domain: 0,
+    class: 0,
+    unit: 0,
     // shallow
     bound: 1,
     divisor: 1,

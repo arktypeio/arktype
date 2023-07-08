@@ -1,5 +1,5 @@
 import { In } from "../../compiler/compile.js"
-import { PrimitiveNodeBase } from "./primitive.js"
+import { NodeBase } from "../base.js"
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>
@@ -10,7 +10,7 @@ export type SerializedRegexLiteral = `/${string}/${string}`
 export const sourceFromRegexLiteral = (literal: SerializedRegexLiteral) =>
     literal.slice(1, literal.lastIndexOf("/"))
 
-export class RegexNode extends PrimitiveNodeBase<SerializedRegexLiteral, {}> {
+export class RegexNode extends NodeBase<SerializedRegexLiteral, {}> {
     readonly kind = "regex"
 
     compile() {

@@ -2,7 +2,7 @@ import type { evaluate } from "@arktype/utils"
 import { listFrom } from "@arktype/utils"
 import { In } from "../../compiler/compile.js"
 import type { DateLiteral } from "../../parser/string/shift/operand/date.js"
-import { PrimitiveNodeBase } from "./primitive.js"
+import { NodeBase } from "../base.js"
 
 export type LimitLiteral = number | DateLiteral
 
@@ -36,7 +36,7 @@ export type Bound = {
     comparator: Comparator
 }
 
-export class BoundNode<bound extends Bound = Bound> extends PrimitiveNodeBase<
+export class BoundNode<bound extends Bound = Bound> extends NodeBase<
     bound,
     {}
 > {

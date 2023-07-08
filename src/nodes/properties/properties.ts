@@ -24,17 +24,10 @@ export type IndexedEntries = readonly IndexedPropRule[]
 
 export type PropsMeta = {}
 
-export class PropertiesNode extends NodeBase {
-    constructor(
-        public readonly entries: PropEntries,
-        public readonly meta: {}
-    ) {
-        super()
-    }
-
+export class PropertiesNode extends NodeBase<PropEntries, {}> {
     readonly kind = "properties"
-    readonly named: NamedEntries = this.entries.filter(isNamed)
-    readonly indexed: IndexedEntries = this.entries.filter(isIndexed)
+    readonly named: NamedEntries = this.rule.filter(isNamed)
+    readonly indexed: IndexedEntries = this.rule.filter(isIndexed)
 
     readonly literalKeys = this.named.map((prop) => prop.key.name)
     readonly namedKeyOf = cached(() => node.literal(...this.literalKeys))
@@ -47,7 +40,7 @@ export class PropertiesNode extends NodeBase {
     )
     readonly keyof = cached(() => this.namedKeyOf().or(this.indexedKeyOf()))
 
-    readonly references = this.entries.flatMap((entry) =>
+    readonly references = this.rule.flatMap((entry) =>
         hasArkKind(entry.key, "node") &&
         // since array indices have a special compilation process, we
         // don't need to store a reference their type

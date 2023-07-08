@@ -1,35 +1,5 @@
-import type { evaluate } from "@arktype/utils"
-import type { BasisInput } from "../primitive/basis.js"
-import type { BoundNode } from "../primitive/bound.js"
-import type { DivisorNode } from "../primitive/divisor.js"
-import type { NarrowNode } from "../primitive/narrow.js"
-import type { RegexNode } from "../primitive/regex.js"
-import type { PropertiesNode } from "../properties/properties.js"
-
-export type PredicateInput<basis extends BasisInput = BasisInput> =
-    | readonly []
-    | readonly [basis, ...ConstraintInput[]]
-
-type ConstraintConstructors = {
-    bound: typeof BoundNode
-    divisor: typeof DivisorNode
-    regex: typeof RegexNode
-    properties: typeof PropertiesNode
-    narrow: typeof NarrowNode
-}
-
-export type ConstraintNodes = {
-    [k in ConstraintKind]: InstanceType<ConstraintConstructors[k]>
-}
-
-export type ConstraintKind = evaluate<keyof ConstraintConstructors>
-
-export type ConstraintInput<kind extends ConstraintKind = ConstraintKind> =
-    readonly [
-        kind: kind,
-        rule: ConstraintNodes[kind]["rule"],
-        meta?: ConstraintNodes[kind]["meta"]
-    ]
+import type { extend } from "@arktype/utils"
+import type { NodeArgs, NodeKind, NodeKinds } from "../kinds.js"
 
 // export type ConstraintsInput<
 //     basis extends BasisInput | null = BasisInput | null

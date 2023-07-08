@@ -1,3 +1,4 @@
+import type { Dict } from "@arktype/utils"
 import { PredicateNode } from "./predicate/predicate.js"
 import { BoundNode } from "./primitive/bound.js"
 import { ClassNode } from "./primitive/class.js"
@@ -29,19 +30,24 @@ export type NodeKinds = {
     [k in NodeKind]: InstanceType<NodeConstructors[k]>
 }
 
-export type NodeInput<kind extends NodeKind = NodeKind> = {
+export type NodeArgs<kind extends NodeKind> = {
+    [k in NodeKind]: readonly [...ConstructorParameters<NodeConstructors[k]>]
+}[kind]
+
+export type NodeInput<kind extends NodeKind> = {
     [k in NodeKind]: readonly [
-        kind: k,
-        ...args: ConstructorParameters<NodeConstructors[k]>
+        kind,
+        ...ConstructorParameters<NodeConstructors[k]>
     ]
 }[kind]
 
-export type NodeArgs<kind extends NodeKind = NodeKind> =
-    NodeInput<kind> extends [kind, ...infer args] ? args : never
+export type UnknownNodeInput = readonly [
+    kind: NodeKind,
+    rule: unknown,
+    meta: Dict
+]
 
 export type Node<kind extends NodeKind = NodeKind> = NodeKinds[kind]
 
-export const creatNodeKind = <kind extends NodeKind>(
-    kind: kind,
-    ...args: NodeArgs<kind>
-): NodeKinds[kind] => new (nodeConstructors[kind] as any)(...args)
+export const createNode = (input: UnknownNodeInput): Node =>
+    new (nodeConstructors[input[0]] as any)(input[1], input[2])

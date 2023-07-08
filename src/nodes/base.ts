@@ -13,17 +13,19 @@ import type { NodeKind, NodeKinds } from "./kinds.js"
 
 //     subclass extends StaticBaseNode<InstanceType<subclass>>
 
-export abstract class NodeBase {
+export abstract class NodeBase<rule, meta extends Dict> {
     readonly [arkKind] = "node"
     abstract readonly kind: NodeKind
-    abstract readonly meta: Dict
     readonly condition: string
     readonly description: string
 
     // TODO: test with cyclic nodes
     allows: (data: unknown) => boolean
 
-    constructor() {
+    constructor(
+        public rule: rule,
+        public meta: meta
+    ) {
         this.condition = this.compile(createCompilationContext("true", "false"))
         this.allows = new CompiledFunction(
             In,
@@ -32,7 +34,6 @@ export abstract class NodeBase {
         )
         this.description = this.describe()
     }
-
     abstract compile(ctx: CompilationContext): string
     protected abstract describe(): string
 

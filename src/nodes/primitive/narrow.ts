@@ -1,9 +1,9 @@
 import { In } from "../../compiler/compile.js"
 import { registry } from "../../compiler/registry.js"
 import type { Narrow } from "../../parser/tuple.js"
-import { PrimitiveNodeBase } from "./primitive.js"
+import { NodeBase } from "../base.js"
 
-export class NarrowNode extends PrimitiveNodeBase<Narrow, {}> {
+export class NarrowNode extends NodeBase<Narrow, {}> {
     readonly kind = "narrow"
 
     compile() {

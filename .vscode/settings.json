@@ -10,7 +10,13 @@
         "object-shorthand",
         "prefer-arrow-functions/prefer-arrow-functions"
     ],
-    "typescript.preferences.autoImportFileExcludePatterns": ["dist", "main.ts"],
+    "eslint.rules.customizations": [
+        // This will still be caught when run from the CLI, but it's too often
+        // I'm in the middle of writing something and see this. It's already
+        // made apparent by default anyways, as TS renders the variable in gray
+        { "rule": "@typescript-eslint/no-unused-vars", "severity": "off" }
+    ],
+    "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
     "typescript.preferences.importModuleSpecifierEnding": "js",
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "prettier.ignorePath": "dev/configs/.prettierignore",

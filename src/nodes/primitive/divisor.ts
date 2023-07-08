@@ -1,7 +1,7 @@
 import { In } from "../../compiler/compile.js"
-import { PrimitiveNodeBase } from "./primitive.js"
+import { NodeBase } from "../base.js"
 
-export class DivisorNode extends PrimitiveNodeBase<number, {}> {
+export class DivisorNode extends NodeBase<number, {}> {
     readonly kind = "divisor"
 
     compile() {
