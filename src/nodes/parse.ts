@@ -2,16 +2,13 @@ import type { conform, exact, List, listable } from "@arktype/utils"
 import { cached } from "@arktype/utils"
 import type { ParseContext } from "../scope.js"
 import { Scope } from "../scope.js"
-import type {
-    inferPredicateDefinition,
-    PredicateInput
-} from "./predicate/parse.js"
+import type { ConstraintsInput } from "./predicate/predicate.js"
 import { PredicateNode } from "./predicate/predicate.js"
 import type { BasisInput } from "./primitive/basis.js"
 import { TypeNode } from "./type.js"
 
 export type TypeNodeParser = {
-    <const branches extends PredicateInput[]>(
+    <const branches extends readonly ConstraintsInput[]>(
         ...branches: {
             [i in keyof branches]: conform<
                 branches[i],
@@ -25,26 +22,32 @@ export type TypeNodeParser = {
     ): TypeNode<branches[number]>
 }
 
-export type inferBranches<branches extends readonly PredicateInput[]> = {
+// TODO: fix
+type inferPredicateDefinition<t> = t
+
+export type inferBranches<branches extends readonly ConstraintsInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
 
 export type inferTypeInput<input extends TypeInput> =
-    input extends readonly PredicateInput[]
+    input extends readonly ConstraintsInput[]
         ? inferBranches<input>
-        : input extends PredicateInput
+        : input extends ConstraintsInput
         ? inferPredicateDefinition<input>
         : input extends TypeNode<infer t>
         ? t
         : never
 
-export type TypeInput = listable<PredicateInput>
+export type TypeInput = listable<ConstraintsInput>
 
 export type validatedTypeNodeInput<
-    input extends List<PredicateInput>,
+    input extends List<ConstraintsInput>,
     bases extends BasisInput[]
 > = {
-    [i in keyof input]: exact<input[i], PredicateInput<bases[i & keyof bases]>>
+    [i in keyof input]: exact<
+        input[i],
+        ConstraintsInput //<bases[i & keyof bases]>
+    >
 }
 
 export type extractBases<
@@ -76,7 +79,7 @@ const createAnonymousParseContext = (): ParseContext => ({
 
 // TODO: cleanup
 export const node: TypeNodeParser = Object.assign(
-    (...branches: readonly PredicateInput[]) =>
+    (...branches: readonly ConstraintsInput[]) =>
         new TypeNode(branches, createAnonymousParseContext()) as never,
     {
         literal: (...branches: readonly unknown[]) => {

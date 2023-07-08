@@ -1,6 +1,3 @@
-import type { extend } from "@arktype/utils"
-import type { NodeArgs, NodeKind, NodeKinds } from "../kinds.js"
-
 // export type ConstraintsInput<
 //     basis extends BasisInput | null = BasisInput | null
 // > = BasisInput extends basis

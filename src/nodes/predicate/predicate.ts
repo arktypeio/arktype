@@ -5,14 +5,13 @@ import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import type {
     Node,
-    NodeArgs,
-    NodeInput,
+    NodeInputs,
     NodeIntersections,
     NodeKind,
     NodeKinds
 } from "../kinds.js"
 import { createNode } from "../kinds.js"
-import type { BasisKind } from "../primitive/basis.js"
+import type { BasisInput, BasisKind } from "../primitive/basis.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
 
@@ -22,16 +21,18 @@ export type Constraints = {
         : k]?: NodeIntersections[k]
 }
 
-export type 
-
 export type Constraint<k extends keyof Constraints = keyof Constraints> =
     Constraints[k] & {}
 
 export type ConstraintKind = BasisKind | RefinementKind
 
-export type PredicateInput<
-    basis extends NodeInput<BasisKind> = NodeInput<BasisKind>
-> = readonly [] | readonly [basis, ...NodeInput<RefinementKind>[]]
+export type ConstraintsInput = {
+    [k in keyof Constraints]: k extends NodeKind ? NodeInputs[k] : BasisInput
+}
+
+// export type PredicateInput<
+//     basis extends NodeInput<BasisKind> = NodeInput<BasisKind>
+// > = readonly [] | readonly [basis, ...NodeInput<RefinementKind>[]]
 
 export type RefinementKind = extend<
     NodeKind,
@@ -167,8 +168,9 @@ export class PredicateNode
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        rule: NodeArgs<kind>[0],
-        meta: NodeArgs<kind>[1]
+        rule: NodeInputs[kind],
+        // TODO: Fix NodeInputs
+        meta: {}
     ): PredicateNode {
         // TODO: this cast shouldn't be needed
         const constraint = createNode([kind, rule, meta as never])
