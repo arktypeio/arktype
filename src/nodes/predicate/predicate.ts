@@ -7,6 +7,7 @@ import type {
     Node,
     NodeArgs,
     NodeInput,
+    NodeIntersections,
     NodeKind,
     NodeKinds
 } from "../kinds.js"
@@ -20,29 +21,24 @@ import type { PropsNode } from "../prop/props.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
 
-export type ConstraintIntersections = {
-    basis: Node<BasisKind>
-    bound: BoundGroup
-    divisor: DivisorNode
-    regex: readonly RegexNode[]
-    props: PropsNode
-    narrow: readonly NarrowNode[]
+export type Constraints = {
+    [k in ConstraintKind as k extends BasisKind
+        ? "basis"
+        : k]: NodeIntersections[k]
 }
 
-export type ConstraintGroup = keyof ConstraintIntersections
-
-export type ConstraintGroups = Partial<ConstraintIntersections>
+export type ConstraintKind = BasisKind | RefinementKind
 
 export type PredicateInput<
     basis extends NodeInput<BasisKind> = NodeInput<BasisKind>
-> = readonly [] | readonly [basis, ...NodeInput<ConstraintKind>[]]
+> = readonly [] | readonly [basis, ...NodeInput<RefinementKind>[]]
 
-export type ConstraintKind = extend<
+export type RefinementKind = extend<
     NodeKind,
     "bound" | "divisor" | "regex" | "props" | "narrow"
 >
 
-export type Constraint = NodeKinds[ConstraintKind]
+export type Refinement = NodeKinds[RefinementKind]
 
 // throwParseError(
 //     `'${k}' is not a valid constraint name (must be one of ${Object.keys(
@@ -52,23 +48,23 @@ export type Constraint = NodeKinds[ConstraintKind]
 
 export type PredicateChildren =
     | readonly []
-    | readonly [Node<BasisKind>, ...Constraint[]]
+    | readonly [Node<BasisKind>, ...Refinement[]]
 
 export class PredicateNode
     extends NodeBase<{
-        rule: ConstraintIntersections
+        rule: Constraints
         intersection: PredicateNode
         meta: {}
     }>
-    implements ConstraintGroups
+    implements Partial<Constraints>
 {
     readonly kind = "predicate"
-    readonly basis?: ConstraintIntersections["basis"]
-    readonly bound?: ConstraintIntersections["bound"]
-    readonly divisor?: ConstraintIntersections["divisor"]
-    readonly regex?: ConstraintIntersections["regex"]
-    readonly props?: ConstraintIntersections["props"]
-    readonly narrow?: ConstraintIntersections["narrow"]
+    readonly basis?: Constraints["basis"]
+    readonly bound?: Constraints["bound"]
+    readonly divisor?: Constraints["divisor"]
+    readonly regex?: Constraints["regex"]
+    readonly props?: Constraints["props"]
+    readonly narrow?: Constraints["narrow"]
 
     readonly children = Object.values(this.rule).flat()
     // we only want simple unmorphed values
@@ -169,7 +165,7 @@ export class PredicateNode
         return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
     }
 
-    constrain<kind extends ConstraintKind>(
+    constrain<kind extends RefinementKind>(
         kind: kind,
         rule: NodeArgs<kind>[0],
         meta: NodeArgs<kind>[1]
@@ -190,7 +186,7 @@ export class PredicateNode
 
 // TODO: naming
 export const constraintsByPrecedence: Record<
-    BasisKind | ConstraintKind,
+    BasisKind | RefinementKind,
     number
 > = {
     // basis

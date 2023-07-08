@@ -6,8 +6,8 @@ import type {
 } from "@arktype/utils"
 import { throwInternalError, throwParseError } from "@arktype/utils"
 import type {
-    ConstraintKind,
-    ConstraintNode
+    ConstraintNode,
+    RefinementKind
 } from "../../nodes/predicate/predicate.js"
 import type { BasisNode } from "../../nodes/primitive/basis.js"
 import type { Comparator } from "../../nodes/primitive/bound.js"
@@ -101,7 +101,7 @@ export const assertAllowsConstraint = (
 }
 
 export const writeInvalidConstraintMessage = (
-    kind: ConstraintKind,
+    kind: RefinementKind,
     typeMustBe: string,
     typeWas: string
 ) => {

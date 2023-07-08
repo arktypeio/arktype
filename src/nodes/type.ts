@@ -7,7 +7,7 @@ import { NodeBase } from "./base.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeArgs, NodeKinds } from "./kinds.js"
 import { reduceBranches } from "./parse.js"
-import type { ConstraintKind } from "./predicate/predicate.js"
+import type { RefinementKind } from "./predicate/predicate.js"
 import { PredicateNode } from "./predicate/predicate.js"
 import { compileDiscriminant, compileIndiscriminable } from "./union/compile.js"
 import { discriminate } from "./union/discriminate.js"
@@ -123,7 +123,7 @@ export class TypeNode<t = unknown> extends NodeBase<{
         )
     }
 
-    constrain<kind extends ConstraintKind>(
+    constrain<kind extends RefinementKind>(
         kind: kind,
         rule: NodeKinds[kind]["rule"],
         meta: NodeKinds[kind]["meta"]

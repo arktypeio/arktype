@@ -1,5 +1,6 @@
 import type { Dict } from "@arktype/utils"
 import { PredicateNode } from "./predicate/predicate.js"
+import type { BasisKind } from "./primitive/basis.js"
 import { BoundNode } from "./primitive/bound.js"
 import { ClassNode } from "./primitive/class.js"
 import { DivisorNode } from "./primitive/divisor.js"
@@ -28,6 +29,10 @@ export type NodeKind = keyof NodeConstructors
 
 export type NodeKinds = {
     [k in NodeKind]: InstanceType<NodeConstructors[k]>
+}
+
+export type NodeIntersections = {
+    [k in NodeKind]: Parameters<NodeKinds[k]["intersect"]>[0]
 }
 
 export type NodeArgs<kind extends NodeKind> = {
