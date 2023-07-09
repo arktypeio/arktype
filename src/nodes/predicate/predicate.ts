@@ -24,7 +24,7 @@ export type Constraint<k extends keyof Constraints = keyof Constraints> =
 
 export type ConstraintKind = BasisKind | RefinementKind
 
-export type ConstraintInputs = extend<
+type InputDefinitions = extend<
     Record<keyof Constraints, unknown>,
     {
         basis: BasisInput
@@ -36,7 +36,7 @@ export type ConstraintInputs = extend<
     }
 >
 
-export type PredicateInput = Partial<ConstraintInputs>
+export type ConstraintInputs = Partial<InputDefinitions>
 
 export type RefinementKind = extend<
     NodeKind,
@@ -55,7 +55,7 @@ export type PredicateChildren =
     | readonly []
     | readonly [Node<BasisKind>, ...Refinement[]]
 
-export const predicateNode = (input: PredicateInput) =>
+export const predicateNode = (input: ConstraintInputs) =>
     new PredicateNode(input as never, {})
 
 export class PredicateNode
@@ -175,7 +175,7 @@ export class PredicateNode
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        rule: ConstraintInputs,
+        rule: InputDefinitions,
         // TODO: Fix NodeInputs
         meta: {}
     ): PredicateNode {

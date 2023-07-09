@@ -36,7 +36,7 @@ export class PropsNode extends NodeBase<{
     readonly indexed: IndexedEntries = this.rule.filter(isIndexed)
 
     readonly literalKeys = this.named.map((prop) => prop.key.name)
-    readonly namedKeyOf = cached(() => node.literal(...this.literalKeys))
+    readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
     readonly indexedKeyOf = cached(
         () =>
             new TypeNode(

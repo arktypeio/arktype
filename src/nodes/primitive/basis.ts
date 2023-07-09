@@ -1,11 +1,11 @@
 import type { AbstractableConstructor, Domain, extend } from "@arktype/utils"
-import { constructorExtends, throwInternalError } from "@arktype/utils"
+import { cached, constructorExtends, throwInternalError } from "@arktype/utils"
 import type { NodeConfig } from "../base.js"
 import { NodeBase } from "../base.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { Node, NodeKind } from "../kinds.js"
-import type { TypeNode } from "../type.js"
+import { node } from "../parse.js"
 
 export type BasisNodeConfig = NodeConfig & { intersection: Node<BasisKind> }
 
@@ -15,6 +15,8 @@ export abstract class BasisNodeBase<
     abstract override kind: BasisKind
     abstract domain: Domain
     abstract literalKeys: PropertyKey[]
+
+    keyof = cached(() => node.unit(...this.literalKeys))
 
     intersect(
         this: Node<BasisKind>,
@@ -47,11 +49,6 @@ export abstract class BasisNodeBase<
             : throwInternalError(
                   `Unexpected non-disjoint intersection from basis nodes with equal precedence ${this} and ${other}`
               )
-    }
-
-    keyof(): TypeNode {
-        // TODO: node.literal(...literalKeys))
-        return {} as never
     }
 }
 

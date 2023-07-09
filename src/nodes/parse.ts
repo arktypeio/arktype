@@ -1,30 +1,11 @@
-import type { conform, exact, List, listable } from "@arktype/utils"
-import { cached } from "@arktype/utils"
+import type { exact, List, listable } from "@arktype/utils"
+import { cached, listFrom } from "@arktype/utils"
 import type { ParseContext } from "../scope.js"
 import { Scope } from "../scope.js"
-import type {
-    ConstraintInputs,
-    PredicateInput,
-    PredicateNode
-} from "./predicate/predicate.js"
+import type { ConstraintInputs, PredicateNode } from "./predicate/predicate.js"
 import { predicateNode } from "./predicate/predicate.js"
 import type { BasisInput } from "./primitive/basis.js"
 import { TypeNode } from "./type.js"
-
-export type TypeNodeParser = {
-    <const branches extends readonly ConstraintInputs[]>(
-        ...branches: {
-            [i in keyof branches]: conform<
-                branches[i],
-                validatedTypeNodeInput<branches, extractBases<branches>>[i]
-            >
-        }
-    ): TypeNode<inferBranches<branches>>
-
-    literal<const branches extends readonly unknown[]>(
-        ...branches: branches
-    ): TypeNode<branches[number]>
-}
 
 // TODO: fix
 type inferPredicateDefinition<t> = t
@@ -81,30 +62,23 @@ const createAnonymousParseContext = (): ParseContext => ({
     scope: getEmptyScope()
 })
 
-export const node = <const input extends PredicateInput>(
+const typeNode = <const input extends listable<ConstraintInputs>>(
     input: input,
     // TODO: check all usages to ensure metadata is being propagated
     meta = {}
-) => new TypeNode([predicateNode(input)], {})
+) =>
+    new TypeNode(
+        listFrom(input).map((branch) => predicateNode(branch)),
+        meta
+    )
 
-// // TODO: cleanup
-// export const node: TypeNodeParser = Object.assign(
-//     (...branches: readonly ConstraintsInput[]) =>
-//         new TypeNode(branches, createAnonymousParseContext()) as never,
-//     {
-//         literal: (...branches: readonly unknown[]) => {
-//             const ctx = createAnonymousParseContext()
-//             return new TypeNode(
-//                 branches.map(
-//                     (literal) =>
-//                         new PredicateNode([new UnitNode(literal, ctx)], ctx),
-//                     ctx
-//                 ),
-//                 ctx
-//             ) as never
-//         }
-//     }
-// )
+// TODO: could every node have the same functionality as type node?
+const unit = <const values extends readonly unknown[]>(...values: values) =>
+    typeNode(values.map((value) => ({ basis: ["===", value] }))) as TypeNode<
+        values[number]
+    >
+
+export const node = Object.assign(typeNode, { unit })
 
 // const isParsedTypeRule = (
 //     input: TypeInput | readonly PredicateNode[]

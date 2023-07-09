@@ -21,7 +21,7 @@ import { PredicateNode } from "../nodes/predicate/predicate.js"
 import { ClassNode } from "../nodes/primitive/class.js"
 import { arrayIndexTypeNode } from "../nodes/prop/indexed.js"
 import { PropsNode } from "../nodes/prop/props.js"
-import { TypeNode } from "../nodes/type.js"
+import type { TypeNode } from "../nodes/type.js"
 import { builtins } from "../nodes/union/utils.js"
 import type { ParseContext } from "../scope.js"
 import type { extractIn, extractOut } from "../type.js"
@@ -467,9 +467,9 @@ const prefixParsers: {
                           )
                       )
             )
-        return new TypeNode(branches, ctx)
+        return node(branches, ctx)
     },
-    "===": (def) => node.literal(...def.slice(1))
+    "===": (def) => node.unit(...def.slice(1))
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
