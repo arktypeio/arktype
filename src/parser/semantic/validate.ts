@@ -5,11 +5,12 @@ import type {
     writeMalformedNumericLiteralMessage
 } from "@arktype/utils"
 import { throwInternalError, throwParseError } from "@arktype/utils"
+import type { Node } from "../../nodes/kinds.js"
 import type {
-    ConstraintNode,
+    ConstraintKind,
     RefinementKind
 } from "../../nodes/predicate/predicate.js"
-import type { BasisNode } from "../../nodes/primitive/basis.js"
+import type { BasisKind } from "../../nodes/primitive/basis.js"
 import type { Comparator } from "../../nodes/primitive/bound.js"
 import type { Module } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
@@ -30,8 +31,8 @@ import type {
 import type { astToString } from "./utils.js"
 
 export const assertAllowsConstraint = (
-    basis: BasisNode | null,
-    node: ConstraintNode
+    basis: Node<BasisKind> | null,
+    node: Node<RefinementKind>
 ) => {
     if (basis?.hasKind("unit")) {
         return throwInvalidConstraintError(
@@ -94,9 +95,7 @@ export const assertAllowsConstraint = (
         case "narrow":
             return
         default:
-            throwInternalError(
-                `Unexpected rule kind '${(node as ConstraintNode).kind}'`
-            )
+            throwInternalError(`Unexpected rule kind '${(node as Node).kind}'`)
     }
 }
 

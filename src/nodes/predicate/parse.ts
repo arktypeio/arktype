@@ -1,3 +1,28 @@
+// export type basisNodeFrom<input extends BasisInput> = input extends Domain
+//     ? DomainNode
+//     : input extends AbstractableConstructor
+//     ? ClassNode
+//     : UnitNode
+
+// export const parseBasisInput = (
+//     input: BasisInput,
+//     // TODO: should be correlated with/part of input?
+//     meta: {}
+// ): DomainNode | ClassNode | UnitNode => {
+//     switch (typeof input) {
+//         case "string":
+//             return new DomainNode(input, meta)
+//         case "object":
+//             return new UnitNode(input[1], meta)
+//         case "function":
+//             return new ClassNode(input, meta)
+//         default:
+//             return throwInternalError(
+//                 `Unexpectedly got a basis input of type ${domainOf(input)}`
+//             )
+//     }
+// }
+
 // export type ConstraintsInput<
 //     basis extends BasisInput | null = BasisInput | null
 // > = BasisInput extends basis
@@ -96,28 +121,3 @@
 //     : {
 //           props?: PropsInput
 //       }
-
-// export type basisNodeFrom<input extends BasisInput> = input extends Domain
-//     ? DomainNode
-//     : input extends AbstractableConstructor
-//     ? ClassNode
-//     : UnitNode
-
-// export const parseBasisInput = (
-//     input: BasisInput,
-//     // TODO: should be correlated with/part of input?
-//     meta: {}
-// ): DomainNode | ClassNode | UnitNode => {
-//     switch (typeof input) {
-//         case "string":
-//             return new DomainNode(input, meta)
-//         case "object":
-//             return new UnitNode(input[1], meta)
-//         case "function":
-//             return new ClassNode(input, meta)
-//         default:
-//             return throwInternalError(
-//                 `Unexpectedly got a basis input of type ${domainOf(input)}`
-//             )
-//     }
-// }

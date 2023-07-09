@@ -126,13 +126,15 @@ module.exports = defineConfig({
             }
         },
         {
-            files: ["./dev/**", "!./dev/utils"],
+            //  "!./dev/utils"
+            files: ["./dev/**"],
             rules: {
                 "import/no-nodejs-modules": "off"
             }
         },
         {
-            files: ["./dev/**", "!./dev/utils", "!./dev/attest"],
+            // TODO: Exclude these from this directory "!./dev/utils", "!./dev/attest"
+            files: ["./dev/**"],
             rules: {
                 "@typescript-eslint/no-restricted-imports": "off"
             }

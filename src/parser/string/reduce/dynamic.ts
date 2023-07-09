@@ -4,6 +4,7 @@ import type {
     Bound,
     Comparator,
     LimitLiteral,
+    MinBound,
     MinComparator
 } from "../../../nodes/primitive/bound.js"
 import {
@@ -24,7 +25,7 @@ import {
 
 type BranchState = {
     prefixes: StringifiablePrefixOperator[]
-    leftBound?: Bound<MinComparator>
+    leftBound?: MinBound
     "&"?: TypeNode
     "|"?: TypeNode
 }

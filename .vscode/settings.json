@@ -16,7 +16,7 @@
         // made apparent by default anyways, as TS renders the variable in gray
         { "rule": "@typescript-eslint/no-unused-vars", "severity": "off" }
     ],
-    "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
+    "typescript.preferences.autoImportFileExcludePatterns": ["dist", "main.ts"],
     "typescript.preferences.importModuleSpecifierEnding": "js",
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "prettier.ignorePath": "dev/configs/.prettierignore",

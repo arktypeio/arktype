@@ -35,10 +35,6 @@ export type NodeIntersections = {
     [k in NodeKind]: Parameters<NodeKinds[k]["intersect"]>[0]
 }
 
-export type NodeInputs = {
-    [k in NodeKind]: ConstructorParameters<NodeConstructors[k]>[0]
-}
-
 export type UnknownNodeInput = readonly [
     kind: NodeKind,
     rule: unknown,

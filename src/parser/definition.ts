@@ -19,8 +19,9 @@ import {
     throwParseError
 } from "@arktype/utils"
 import { hasArkKind } from "../compiler/registry.js"
+import { node } from "../nodes/parse.js"
 import { serializeRegex } from "../nodes/primitive/regex.js"
-import { TypeNode } from "../nodes/type.js"
+import type { TypeNode } from "../nodes/type.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type {
@@ -44,7 +45,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
-            return new TypeNode(
+            return node(
                 {
                     basis: "string",
                     regex: serializeRegex(def as RegExp)

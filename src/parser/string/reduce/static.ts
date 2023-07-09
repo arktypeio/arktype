@@ -5,6 +5,7 @@ import type {
     InvertedComparators,
     LimitLiteral,
     MaxComparator,
+    MinBound,
     MinComparator
 } from "../../../nodes/primitive/bound.js"
 import type { Scanner } from "../shift/scanner.js"
@@ -30,7 +31,7 @@ export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
     prefixes: StringifiablePrefixOperator[]
-    leftBound: Bound<MinComparator> | undefined
+    leftBound: MinBound | undefined
     "&": unknown
     "|": unknown
 }

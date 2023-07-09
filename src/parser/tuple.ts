@@ -16,6 +16,7 @@ import {
 } from "@arktype/utils"
 import type { Problem } from "../compiler/problems.js"
 import type { CheckResult, TraversalState } from "../compiler/traverse.js"
+import { node } from "../nodes/parse.js"
 import { PredicateNode } from "../nodes/predicate/predicate.js"
 import { ClassNode } from "../nodes/primitive/class.js"
 import { arrayIndexTypeNode } from "../nodes/prop/indexed.js"
@@ -83,17 +84,10 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
                 prerequisite: true,
                 optional: false
             },
-            value: new TypeNode({ basis: ["===", def.length] }, ctx)
+            value: node({ basis: ["===", def.length] }, ctx)
         })
     }
-    const predicate = new PredicateNode(
-        {
-            basis: new ClassNode(Array, ctx),
-            props: new PropsNode(props, ctx)
-        },
-        ctx
-    )
-    return new TypeNode([predicate], ctx)
+    return node({ basis: Array, props }, ctx)
 }
 
 export const maybeParseTupleExpression = (

@@ -1,13 +1,14 @@
 import { isKeyOf } from "@arktype/utils"
 import { TypeNode } from "../../../../main.js"
+import { node } from "../../../../nodes/parse.js"
+import { PredicateNode } from "../../../../nodes/predicate/predicate.js"
+import { UnitNode } from "../../../../nodes/primitive/unit.js"
 import type { RegexLiteral } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 import type { DateLiteral } from "./date.js"
 import { tryParseDate, writeInvalidDateMessage } from "./date.js"
-import { UnitNode } from "../../../../nodes/primitive/unit.js"
-import { PredicateNode } from "../../../../nodes/predicate/predicate.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>
@@ -40,29 +41,18 @@ export const parseEnclosed = (
             s.error(`${e instanceof Error ? e.message : e}`)
         }
         // flags are not currently supported for embedded regex literals
-        s.root = new TypeNode(
-            { basis: "string", regex: token as RegexLiteral },
-            s.ctx
-        )
+        s.root = node({ basis: "string", regex: token as RegexLiteral }, s.ctx)
     } else if (isKeyOf(enclosing, enclosingQuote)) {
-        s.root = new TypeNode({ basis: ["===", enclosed] }, s.ctx)
-    } else 
+        s.root = node({ basis: ["===", enclosed] }, s.ctx)
+    } else {
         const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-        // TODO: cleanup once we have new node input format
-        s.root = new TypeNode(
-            [
-                new PredicateNode(
-                    {
-                        basis: new UnitNode(date, {
-                            baseName: s.ctx.baseName,
-                            parsedFrom: token as DateLiteral
-                        })
-                    },
-                    s.ctx
-                )
-            ],
-            s.ctx
-        )
+        s.root = node({
+            basis: ["===", date]
+        })
+        // TODO: meta
+        // {
+        //     parsedFrom: token as DateLiteral
+        // }
     }
 }
 

@@ -1,17 +1,15 @@
-import type { extend } from "@arktype/utils"
+import type { extend, listable } from "@arktype/utils"
 import type { CompilationContext } from "../../compiler/compile.js"
 import { assertAllowsConstraint } from "../../parser/semantic/validate.js"
+import type { Narrow } from "../../parser/tuple.js"
 import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import type {
-    Node,
-    NodeInputs,
-    NodeIntersections,
-    NodeKind,
-    NodeKinds
-} from "../kinds.js"
+import type { Node, NodeIntersections, NodeKind, NodeKinds } from "../kinds.js"
 import { createNode } from "../kinds.js"
 import type { BasisInput, BasisKind } from "../primitive/basis.js"
+import type { BoundGroupInput } from "../primitive/bound.js"
+import type { SerializedRegexLiteral } from "../primitive/regex.js"
+import type { PropsInput } from "../prop/parse.js"
 import type { TypeNode } from "../type.js"
 import { builtins } from "../union/utils.js"
 
@@ -26,13 +24,19 @@ export type Constraint<k extends keyof Constraints = keyof Constraints> =
 
 export type ConstraintKind = BasisKind | RefinementKind
 
-export type ConstraintsInput = {
-    [k in keyof Constraints]: k extends NodeKind ? NodeInputs[k] : BasisInput
-}
+export type ConstraintInputs = extend<
+    Record<keyof Constraints, unknown>,
+    {
+        basis: BasisInput
+        bound: BoundGroupInput
+        divisor: number
+        regex: listable<SerializedRegexLiteral>
+        narrow: listable<Narrow>
+        props: PropsInput
+    }
+>
 
-// export type PredicateInput<
-//     basis extends NodeInput<BasisKind> = NodeInput<BasisKind>
-// > = readonly [] | readonly [basis, ...NodeInput<RefinementKind>[]]
+export type PredicateInput = Partial<ConstraintInputs>
 
 export type RefinementKind = extend<
     NodeKind,
@@ -50,6 +54,9 @@ export type Refinement = NodeKinds[RefinementKind]
 export type PredicateChildren =
     | readonly []
     | readonly [Node<BasisKind>, ...Refinement[]]
+
+export const predicateNode = (input: PredicateInput) =>
+    new PredicateNode(input as never, {})
 
 export class PredicateNode
     extends NodeBase<{
@@ -168,7 +175,7 @@ export class PredicateNode
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        rule: NodeInputs[kind],
+        rule: ConstraintInputs,
         // TODO: Fix NodeInputs
         meta: {}
     ): PredicateNode {

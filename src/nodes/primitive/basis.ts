@@ -1,10 +1,10 @@
-import type { Domain, extend } from "@arktype/utils"
+import type { AbstractableConstructor, Domain, extend } from "@arktype/utils"
 import { constructorExtends, throwInternalError } from "@arktype/utils"
 import type { NodeConfig } from "../base.js"
 import { NodeBase } from "../base.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import type { Node, NodeInputs, NodeKind } from "../kinds.js"
+import type { Node, NodeKind } from "../kinds.js"
 import type { TypeNode } from "../type.js"
 
 export type BasisNodeConfig = NodeConfig & { intersection: Node<BasisKind> }
@@ -58,7 +58,8 @@ export abstract class BasisNodeBase<
 export type BasisKind = extend<NodeKind, "domain" | "class" | "unit">
 
 export type BasisInput =
-    | NodeInputs["domain" | "class"]
+    | Domain
+    | AbstractableConstructor
     | readonly ["===", unknown]
 
 export const basisPrecedenceByKind: Record<BasisKind, number> = {

@@ -6,7 +6,8 @@ import {
     tryParseWellFormedNumber
 } from "@arktype/utils"
 import { hasArkKind } from "../../../../compiler/registry.js"
-import { TypeNode } from "../../../../nodes/type.js"
+import { node } from "../../../../nodes/parse.js"
+import type { TypeNode } from "../../../../nodes/type.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { ParsedArgs } from "../../../generic.js"
@@ -140,11 +141,11 @@ const maybeParseUnenclosedLiteral = (
 ): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return new TypeNode({ basis: ["===", maybeNumber] }, s.ctx)
+        return node({ basis: ["===", maybeNumber] }, s.ctx)
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
-        return new TypeNode({ basis: ["===", maybeBigint] }, s.ctx)
+        return node({ basis: ["===", maybeBigint] }, s.ctx)
     }
 }
 
