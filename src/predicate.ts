@@ -1,8 +1,7 @@
 import type { AbstractableConstructor, Domain, evaluate } from "@arktype/utils"
-import type { Bound } from "../nodes/primitive/bound.js"
-import type { TypeNode } from "../nodes/type.js"
-import type { Narrow } from "../parser/tuple.js"
-import type { SerializedRegexLiteral } from "./regex.js"
+import type { Bound } from "./nodes/primitive/bound.js"
+import type { TypeNode } from "./nodes/type.js"
+import type { Narrow } from "./parser/tuple.js"
 
 export type Union = readonly [] | readonly [Predicate, ...Predicate[]]
 
@@ -81,7 +80,12 @@ export type DivisorConstraint = defineConstraint<{
 
 export type PatternConstraint = defineConstraint<{
     kind: "pattern"
-    rule: SerializedRegexLiteral
+    rule: RegexRule
+}>
+
+type RegexRule = Readonly<{
+    source: string
+    flags: string
 }>
 
 export type NarrowConstraint = defineConstraint<{
