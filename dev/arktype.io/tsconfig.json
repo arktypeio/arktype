@@ -10,7 +10,5 @@
             "@docusaurus/preset-classic"
         ],
         "lib": ["DOM"]
-        // // avoid docusaurus config triggering type errors in node_modules
-        // "allowJs": true
     }
 }

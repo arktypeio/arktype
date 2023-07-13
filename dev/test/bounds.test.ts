@@ -232,7 +232,7 @@ suite("bounds", () => {
                 )
             })
         })
-        suite("semantic errors", () => {
+        suite("semantic", () => {
             test("number", () => {
                 attest(type("number==-3.14159").infer).typed as number
             })
