@@ -1,4 +1,8 @@
-import type { NarrowConstraint } from "../constraints/constraint.js"
+import type {
+    NarrowConstraint,
+    PropConstraint,
+    SignatureConstraint
+} from "../constraints/constraint.js"
 import type { NumberPredicate } from "./number.js"
 import type { ObjectPredicate } from "./object.js"
 import type { StringPredicate } from "./string.js"
@@ -10,19 +14,10 @@ export type Predicate =
     | NumberPredicate
     | StringPredicate
 
-export interface PredicateBase {
+export class PredicateBase {
     readonly narrow?: readonly NarrowConstraint[]
-}
+    readonly prop?: readonly PropConstraint[]
+    readonly signature?: readonly SignatureConstraint[]
 
-// export type Predicate = Readonly<{
-//     basis?: readonly [BasisConstraint]
-//     range?:
-//         | readonly [RangeConstraint]
-//         | readonly [RangeConstraint, RangeConstraint]
-//     divisor?: readonly [DivisorConstraint]
-//     pattern?: readonly PatternConstraint[]
-//     narrow?: readonly NarrowConstraint[]
-//     prop?: readonly PropConstraint[]
-//     signature?: readonly SignatureConstraint[]
-//     variadic?: readonly [VariadicConstraint]
-// }>
+    constructor() {}
+}

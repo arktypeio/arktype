@@ -1,3 +1,3 @@
-import type { PredicateBase } from "./predicate.js"
+import { PredicateBase } from "./predicate.js"
 
-export interface ObjectPredicate extends PredicateBase {}
+export class ObjectPredicate extends PredicateBase {}

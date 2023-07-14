@@ -1,6 +1,10 @@
-import type { PredicateBase } from "./predicate.js"
+import type {
+    PatternConstraint,
+    RangeConstraint
+} from "../constraints/constraint.js"
+import { PredicateBase } from "./predicate.js"
 
-export interface StringPredicate extends PredicateBase {
+export class StringPredicate extends PredicateBase {
     range?:
         | readonly [RangeConstraint]
         | readonly [RangeConstraint, RangeConstraint]

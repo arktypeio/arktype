@@ -1,6 +1,5 @@
 import { In } from "../compiler/compile.js"
 import { NodeBase } from "../nodes/base.js"
-import { Disjoint } from "../nodes/disjoint.js"
 
 export class DivisorNode extends NodeBase<{
     rule: number

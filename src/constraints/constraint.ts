@@ -16,21 +16,12 @@ export type SignatureConstraint = defineConstraint<{
     value: Type
 }>
 
-// TODO: add minLength prop that would result from collapsing types like [...number[], number]
-// to a single variadic number prop with minLength 1
-// Figure out best design for integrating with named props.
-export type VariadicConstraint = defineConstraint<{
-    kind: "variadic"
-    value: Type
-    tail: readonly Type[]
-}>
-
 type CommonConstraintProps = {
     description?: string
 }
 
-type BaseConstraint = {
-    kind: string
+export abstract class BaseConstraint {
+    constructor() {}
 }
 
 type defineConstraint<constraint extends BaseConstraint> = evaluate<

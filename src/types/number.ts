@@ -1,8 +1,6 @@
-import type { PredicateBase } from "./predicate.js"
+import type { DivisorConstraint } from "../constraints/constraint.js"
+import { PredicateBase } from "./predicate.js"
 
-export interface NumberPredicate extends PredicateBase {
-    range?:
-        | readonly [RangeConstraint]
-        | readonly [RangeConstraint, RangeConstraint]
-    divisor?: readonly [DivisorConstraint]
+export class NumberPredicate extends PredicateBase {
+    divisor?: DivisorConstraint
 }
