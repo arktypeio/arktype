@@ -1,9 +1,14 @@
 import type { AbstractableConstructor, Domain, evaluate } from "@arktype/utils"
+import type { CheckResult } from "./compiler/traverse.js"
 import type { Bound } from "./nodes/primitive/bound.js"
 import type { TypeNode } from "./nodes/type.js"
 import type { Narrow } from "./parser/tuple.js"
+import type { extractOut } from "./type.js"
 
-export type Union = readonly [] | readonly [Predicate, ...Predicate[]]
+export type Type<t = unknown, $ = any> = {
+    (data: unknown): CheckResult<extractOut<t>>
+    branches: readonly Predicate[]
+}
 
 export type Predicate = Readonly<{
     basis?: readonly [BasisConstraint]
@@ -15,30 +20,29 @@ export type Predicate = Readonly<{
     narrow?: readonly NarrowConstraint[]
     prop?: readonly PropConstraint[]
     signature?: readonly SignatureConstraint[]
-    element?: readonly ElementConstraint[]
+    variadic?: readonly [VariadicConstraint]
 }>
 
 export type PropConstraint = defineConstraint<{
     kind: "prop"
     key: string | symbol
     required: boolean
-    value: TypeNode
+    value: Type
 }>
 
 export type SignatureConstraint = defineConstraint<{
     kind: "signature"
-    key: TypeNode
-    value: TypeNode
+    key: Type
+    value: Type
 }>
 
-export type ElementConstraint = defineConstraint<{
-    kind: "element"
-    groups: readonly ElementGroup[]
-}>
-
-type ElementGroup = Readonly<{
-    variadic: boolean
-    value: TypeNode
+// TODO: add minLength prop that would result from collapsing types like [...number[], number]
+// to a single variadic number prop with minLength 1
+// Figure out best design for integrating with named props.
+export type VariadicConstraint = defineConstraint<{
+    kind: "variadic"
+    value: Type
+    tail: readonly Type[]
 }>
 
 type CommonConstraintProps = {
