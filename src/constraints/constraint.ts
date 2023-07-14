@@ -1,27 +1,7 @@
 import type { AbstractableConstructor, Domain, evaluate } from "@arktype/utils"
-import type { CheckResult } from "./compiler/traverse.js"
-import type { Bound } from "./nodes/primitive/bound.js"
-import type { TypeNode } from "./nodes/type.js"
-import type { Narrow } from "./parser/tuple.js"
-import type { extractOut } from "./type.js"
-
-export type Type<t = unknown, $ = any> = {
-    (data: unknown): CheckResult<extractOut<t>>
-    branches: readonly Predicate[]
-}
-
-export type Predicate = Readonly<{
-    basis?: readonly [BasisConstraint]
-    range?:
-        | readonly [RangeConstraint]
-        | readonly [RangeConstraint, RangeConstraint]
-    divisor?: readonly [DivisorConstraint]
-    pattern?: readonly PatternConstraint[]
-    narrow?: readonly NarrowConstraint[]
-    prop?: readonly PropConstraint[]
-    signature?: readonly SignatureConstraint[]
-    variadic?: readonly [VariadicConstraint]
-}>
+import type { Bound } from "../nodes/primitive/bound.js"
+import type { Narrow } from "../parser/tuple.js"
+import type { Type } from "../types/type.js"
 
 export type PropConstraint = defineConstraint<{
     kind: "prop"

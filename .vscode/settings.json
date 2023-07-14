@@ -38,5 +38,19 @@
         "ATTEST_CONFIG": "{ \"skipTypes\": true }"
     },
     "testExplorer.useNativeTesting": true,
-    "typescript.tsdk": "node_modules/typescript/lib"
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "errorLens.replace": [
+        {
+            "matcher": "Argument of type '.*' is not assignable to parameter of type '\"(.*)\"'.",
+            "message": "$1"
+        },
+        {
+            "matcher": "Type '.*' is not assignable to type '\"(.*)\"'.",
+            "message": "$1"
+        },
+        {
+            "matcher": "Type '.*' is not assignable to type 'indexParseError<(.*)>'.",
+            "message": "$1"
+        }
+    ]
 }
