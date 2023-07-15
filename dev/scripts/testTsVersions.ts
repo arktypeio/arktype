@@ -1,5 +1,5 @@
 import { rmSync, writeFileSync } from "node:fs"
-import { fromHere, fromPackageRoot, readJson } from "../attest/src/fs.js"
+import { fromHere, readJson } from "../attest/src/fs.js"
 import { shell } from "../attest/src/shell.js"
 
 const versions: { [k: string]: string } = {
@@ -11,7 +11,7 @@ const originalTsMorphVersion = rootJson["devDependencies"]["ts-morph"]
 
 // Allow us to install a different version of ts-morph for testing
 // without affecting our package.json
-const npmrcPath = fromPackageRoot(".npmrc")
+const npmrcPath = fromHere("..", "..", ".npmrc")
 rmSync(npmrcPath, { force: true })
 writeFileSync(npmrcPath, "save=false")
 
