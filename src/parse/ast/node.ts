@@ -33,7 +33,7 @@ export type inferNode<node extends Node<$>, $ = {}> = node extends string
 
 export type inferResolution<node extends Node<$>, $> = {
     [domain in keyof node]: inferPredicate<
-        // @ts-expect-error Some very odd inference behavior related to domain I can't resolve
+        /** @ts-expect-error Some very odd inference behavior related to domain I can't resolve */
         domain,
         node[domain],
         $
