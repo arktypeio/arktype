@@ -1,74 +1,90 @@
-import type { AbstractableConstructor, Domain, evaluate } from "@arktype/utils"
-import type { Bound } from "../nodes/primitive/bound.js"
-import type { Narrow } from "../parser/tuple.js"
-import type { Type } from "../types/type.js"
+import type { List } from "@arktype/utils"
 
-export type PropConstraint = defineConstraint<{
-    kind: "prop"
-    key: string | symbol
-    required: boolean
-    value: Type
-}>
-
-export type SignatureConstraint = defineConstraint<{
-    kind: "signature"
-    key: Type
-    value: Type
-}>
-
-type CommonConstraintProps = {
+export interface Constraint {
     description?: string
 }
 
-export abstract class BaseConstraint {
-    constructor() {}
+export abstract class ConstraintGroup<
+    group extends List<Constraint> = List<Constraint>
+> extends Array<Constraint> {
+    abstract intersect(constraint: group[number]): this
 }
 
-type defineConstraint<constraint extends BaseConstraint> = evaluate<
-    Readonly<constraint & CommonConstraintProps>
->
+export type ConstraintList = readonly Constraint[]
 
-export type BasisConstraint =
-    | DomainConstraint
-    | UnitConstraint
-    | PrototypeConstraint
+export type SetMethods<constraints extends ConstraintList> = {
+    add: (
+        this: ConstraintSet<constraints>,
+        constraint: constraints[number]
+    ) => constraints
+}
 
-export type DomainConstraint = defineConstraint<{
-    kind: "domain"
-    rule: Domain
-}>
+export type ConstraintSet<constraints extends ConstraintList = ConstraintList> =
+    constraints & SetMethods<constraints>
 
-export type UnitConstraint = defineConstraint<{
-    kind: "unit"
-    rule: unknown
-}>
+export const defineConstraintSet =
+    <constraints extends ConstraintList>(methods: SetMethods<constraints>) =>
+    (constraints: constraints) =>
+        Object.assign(constraints, methods)
 
-export type PrototypeConstraint = defineConstraint<{
-    kind: "prototype"
-    rule: AbstractableConstructor
-}>
+// type defineConstraint<constraint extends ConstraintGroup> = evaluate<
+//     Readonly<constraint & CommonConstraintProps>
+// >
 
-export type DivisorConstraint = defineConstraint<{
-    kind: "divisor"
-    rule: number
-}>
+// export type PropConstraint = defineConstraint<{
+//     kind: "prop"
+//     key: string | symbol
+//     required: boolean
+//     value: Type
+// }>
 
-export type PatternConstraint = defineConstraint<{
-    kind: "pattern"
-    rule: RegexRule
-}>
+// export type SignatureConstraint = defineConstraint<{
+//     kind: "signature"
+//     key: Type
+//     value: Type
+// }>
 
-type RegexRule = Readonly<{
-    source: string
-    flags: string
-}>
+// export type BasisConstraint =
+//     | DomainConstraint
+//     | UnitConstraint
+//     | PrototypeConstraint
 
-export type NarrowConstraint = defineConstraint<{
-    kind: "narrow"
-    rule: Narrow
-}>
+// export type DomainConstraint = defineConstraint<{
+//     kind: "domain"
+//     rule: Domain
+// }>
 
-export type RangeConstraint = defineConstraint<{
-    kind: "range"
-    rule: Bound
-}>
+// export type UnitConstraint = defineConstraint<{
+//     kind: "unit"
+//     rule: unknown
+// }>
+
+// export type PrototypeConstraint = defineConstraint<{
+//     kind: "prototype"
+//     rule: AbstractableConstructor
+// }>
+
+// export type DivisorConstraint = defineConstraint<{
+//     kind: "divisor"
+//     rule: number
+// }>
+
+// export type PatternConstraint = defineConstraint<{
+//     kind: "pattern"
+//     rule: RegexRule
+// }>
+
+// type RegexRule = Readonly<{
+//     source: string
+//     flags: string
+// }>
+
+// export type NarrowConstraint = defineConstraint<{
+//     kind: "narrow"
+//     rule: Narrow
+// }>
+
+// export type RangeConstraint = defineConstraint<{
+//     kind: "range"
+//     rule: Bound
+// }>
