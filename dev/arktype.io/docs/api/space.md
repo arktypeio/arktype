@@ -8,6 +8,6 @@ hide_table_of_contents: true
 
 ```ts
 export type Space<exports = Dict> = {
-    [k in keyof exports]: Type<exports[k]>
+	[k in keyof exports]: Type<exports[k]>
 }
 ```

@@ -7,17 +7,17 @@ import type { Disjoint } from "../disjoint.js"
 export type LimitLiteral = number | DateLiteral
 
 export type BoundGroupInput =
-    | Bound
-    | readonly [Bound]
-    | readonly [MinBound, MaxBound]
+	| Bound
+	| readonly [Bound]
+	| readonly [MinBound, MaxBound]
 
 export type BoundGroup = SingleBoundGroup | DoubleBoundGroup
 
 export type SingleBoundGroup = readonly [BoundNode]
 
 export type DoubleBoundGroup = readonly [
-    BoundNode<MinBound>,
-    BoundNode<MaxBound>
+	BoundNode<MinBound>,
+	BoundNode<MaxBound>
 ]
 
 export type MinBound = evaluate<Bound & { comparator: MinComparator }>
@@ -25,138 +25,138 @@ export type MinBound = evaluate<Bound & { comparator: MinComparator }>
 export type MaxBound = evaluate<Bound & { comparator: MaxComparator }>
 
 export type Bound = {
-    limit: LimitLiteral
-    comparator: Comparator
+	limit: LimitLiteral
+	comparator: Comparator
 }
 
 export class BoundNode<bound extends Bound = Bound> extends NodeBase<{
-    rule: bound
-    intersection: BoundGroup
-    meta: {}
+	rule: bound
+	intersection: BoundGroup
+	meta: {}
 }> {
-    readonly kind = "bound"
-    readonly comparator = this.rule.comparator
-    readonly limit = this.rule.limit
-    readonly boundKind = getBoundKind(this.rule)
+	readonly kind = "bound"
+	readonly comparator = this.rule.comparator
+	readonly limit = this.rule.limit
+	readonly boundKind = getBoundKind(this.rule)
 
-    compile() {
-        // TODO: basis-specific
-        const size = `${In}.length ?? Number(${In})`
-        return `${size} ${
-            this.comparator === "==" ? "===" : this.comparator
-        } ${this.limit.valueOf()}`
-    }
+	compile() {
+		// TODO: basis-specific
+		const size = `${In}.length ?? Number(${In})`
+		return `${size} ${
+			this.comparator === "==" ? "===" : this.comparator
+		} ${this.limit.valueOf()}`
+	}
 
-    intersect(other: BoundGroup): BoundGroup | Disjoint {
-        return other
-    }
+	intersect(other: BoundGroup): BoundGroup | Disjoint {
+		return other
+	}
 
-    describe() {
-        return `${
-            boundHasKind(this.rule, "date")
-                ? dateComparatorDescriptions[this.comparator]
-                : numericComparatorDescriptions[this.comparator]
-        } ${this.limit}`
-    }
+	describe() {
+		return `${
+			boundHasKind(this.rule, "date")
+				? dateComparatorDescriptions[this.comparator]
+				: numericComparatorDescriptions[this.comparator]
+		} ${this.limit}`
+	}
 }
 
 type LimitsByBoundKind = {
-    date: DateLiteral
-    numeric: number
+	date: DateLiteral
+	numeric: number
 }
 
 export type BoundKind = keyof LimitsByBoundKind
 
 type boundOfKind<kind extends BoundKind> = evaluate<
-    Bound & { limit: LimitsByBoundKind[kind] }
+	Bound & { limit: LimitsByBoundKind[kind] }
 >
 
 const boundHasKind = <kind extends BoundKind>(
-    bound: Bound,
-    kind: kind
+	bound: Bound,
+	kind: kind
 ): bound is boundOfKind<kind> => getBoundKind(bound) === kind
 
 const getBoundKind = (bound: Bound): BoundKind =>
-    typeof bound.limit === "number" ? "numeric" : "date"
+	typeof bound.limit === "number" ? "numeric" : "date"
 
 export const compareStrictness = (
-    kind: "min" | "max",
-    l: Bound | undefined,
-    r: Bound | undefined
+	kind: "min" | "max",
+	l: Bound | undefined,
+	r: Bound | undefined
 ) =>
-    !l
-        ? !r
-            ? "="
-            : "r"
-        : !r
-        ? "l"
-        : l.limit === r.limit
-        ? // comparators of length 1 (<,>) are exclusive so have precedence
-          l.comparator.length === 1
-            ? r.comparator.length === 1
-                ? "="
-                : "l"
-            : r.comparator.length === 1
-            ? "r"
-            : "="
-        : kind === "min"
-        ? l.limit > r.limit
-            ? "l"
-            : "r"
-        : l.limit < r.limit
-        ? "l"
-        : "r"
+	!l
+		? !r
+			? "="
+			: "r"
+		: !r
+		? "l"
+		: l.limit === r.limit
+		? // comparators of length 1 (<,>) are exclusive so have precedence
+		  l.comparator.length === 1
+			? r.comparator.length === 1
+				? "="
+				: "l"
+			: r.comparator.length === 1
+			? "r"
+			: "="
+		: kind === "min"
+		? l.limit > r.limit
+			? "l"
+			: "r"
+		: l.limit < r.limit
+		? "l"
+		: "r"
 
 export const minComparators = {
-    ">": true,
-    ">=": true
+	">": true,
+	">=": true
 } as const
 
 export type MinComparator = keyof typeof minComparators
 
 export const maxComparators = {
-    "<": true,
-    "<=": true
+	"<": true,
+	"<=": true
 } as const
 
 export type MaxComparator = keyof typeof maxComparators
 
 export const comparators = {
-    ...minComparators,
-    ...maxComparators,
-    "==": true
+	...minComparators,
+	...maxComparators,
+	"==": true
 }
 
 export type Comparator = keyof typeof comparators
 
 export const numericComparatorDescriptions = {
-    "<": "less than",
-    ">": "more than",
-    "<=": "at most",
-    ">=": "at least",
-    "==": "exactly"
+	"<": "less than",
+	">": "more than",
+	"<=": "at most",
+	">=": "at least",
+	"==": "exactly"
 } as const satisfies Record<Comparator, string>
 
 export const dateComparatorDescriptions = {
-    "<": "before",
-    ">": "after",
-    "<=": "at or before",
-    ">=": "at or after",
-    "==": ""
+	"<": "before",
+	">": "after",
+	"<=": "at or before",
+	">=": "at or after",
+	"==": ""
 } as const satisfies Record<Comparator, string>
 
 export const invertedComparators = {
-    "<": ">",
-    ">": "<",
-    "<=": ">=",
-    ">=": "<=",
-    "==": "=="
+	"<": ">",
+	">": "<",
+	"<=": ">=",
+	">=": "<=",
+	"==": "=="
 } as const satisfies Record<Comparator, Comparator>
 
 export type InvertedComparators = typeof invertedComparators
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
-    `Bound kinds ${l} and ${r} are incompatible`
+	`Bound kinds ${l} and ${r} are incompatible`
 
 export type NumericallyBoundableData = string | number | readonly unknown[]
 

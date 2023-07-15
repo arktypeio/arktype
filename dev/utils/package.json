@@ -1,28 +1,28 @@
 {
-    "name": "@arktype/utils",
-    "version": "0.0.0",
-    "private": true,
-    "author": {
-        "name": "David Blass",
-        "email": "david@arktype.io",
-        "url": "https://arktype.io"
-    },
-    "type": "module",
-    "main": "./dist/cjs/main.js",
-    "types": "./dist/cjs/main.d.ts",
-    "exports": {
-        ".": {
-            "arktype-dev": "./src/main.js",
-            "import": "./dist/mjs/main.js",
-            "require": "./dist/cjs/main.js"
-        }
-    },
-    "files": [
-        "dist",
-        "!*.tsbuildinfo"
-    ],
-    "scripts": {
-        "build": "ts ../scripts/build.ts",
-        "test": "pnpm mocha"
-    }
+	"name": "@arktype/utils",
+	"version": "0.0.0",
+	"private": true,
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"type": "module",
+	"main": "./dist/cjs/main.js",
+	"types": "./dist/cjs/main.d.ts",
+	"exports": {
+		".": {
+			"arktype-dev": "./src/main.js",
+			"import": "./dist/mjs/main.js",
+			"require": "./dist/cjs/main.js"
+		}
+	},
+	"files": [
+		"dist",
+		"!*.tsbuildinfo"
+	],
+	"scripts": {
+		"build": "ts ../scripts/build.ts",
+		"test": "pnpm mocha"
+	}
 }

@@ -1,46 +1,46 @@
 {
-    "name": "arkdark",
-    "displayName": "ArkDark",
-    "description": "ArkType syntax highlighting and theme⛵",
-    "version": "2.5.4",
-    "private": true,
-    "publisher": "arktypeio",
-    "type": "module",
-    "scripts": {
-        "build": "ts ./src/writeTheme.ts",
-        "vspublish": "pnpm build && pnpx vsce publish"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/arktypeio/arktype"
-    },
-    "engines": {
-        "vscode": "^1.0.0"
-    },
-    "icon": "icon.png",
-    "categories": [
-        "Themes",
-        "Programming Languages"
-    ],
-    "contributes": {
-        "themes": [
-            {
-                "label": "ArkDark",
-                "uiTheme": "vs-dark",
-                "path": "./themes/arkDark.json"
-            }
-        ],
-        "grammars": [
-            {
-                "injectTo": [
-                    "source.ts",
-                    "source.ts.tsx",
-                    "source.js",
-                    "source.js.jsx"
-                ],
-                "scopeName": "source.arktype.injection.ts",
-                "path": "arktype.tmLanguage.json"
-            }
-        ]
-    }
+	"name": "arkdark",
+	"displayName": "ArkDark",
+	"description": "ArkType syntax highlighting and theme⛵",
+	"version": "2.5.4",
+	"private": true,
+	"publisher": "arktypeio",
+	"type": "module",
+	"scripts": {
+		"build": "ts ./src/writeTheme.ts",
+		"vspublish": "pnpm build && pnpx vsce publish"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype"
+	},
+	"engines": {
+		"vscode": "^1.0.0"
+	},
+	"icon": "icon.png",
+	"categories": [
+		"Themes",
+		"Programming Languages"
+	],
+	"contributes": {
+		"themes": [
+			{
+				"label": "ArkDark",
+				"uiTheme": "vs-dark",
+				"path": "./themes/arkDark.json"
+			}
+		],
+		"grammars": [
+			{
+				"injectTo": [
+					"source.ts",
+					"source.ts.tsx",
+					"source.js",
+					"source.js.jsx"
+				],
+				"scopeName": "source.arktype.injection.ts",
+				"path": "arktype.tmLanguage.json"
+			}
+		]
+	}
 }

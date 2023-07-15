@@ -2,9 +2,9 @@ import { type } from "../../src/main.js"
 import type { Type } from "../../src/type.js"
 
 const createBox = <T extends string>(of: Type<T>) =>
-    type({
-        box: of
-    })
+	type({
+		box: of
+	})
 
 const boxType = createBox(type("string"))
 //    ^?

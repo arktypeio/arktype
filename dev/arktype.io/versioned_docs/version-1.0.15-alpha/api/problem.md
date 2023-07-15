@@ -8,22 +8,22 @@ hide_table_of_contents: true
 
 ```ts
 export declare class Problem<code extends ProblemCode = ProblemCode> {
-    code: code
-    path: Path
-    private data
-    private source
-    private writers
-    parts?: Problem[]
-    constructor(
-        code: code,
-        path: Path,
-        data: ProblemData<code>,
-        source: ProblemSource<code>,
-        writers: ProblemWriters<code>
-    )
-    toString(): string
-    get message(): string
-    get reason(): string
-    get mustBe(): string
+	code: code
+	path: Path
+	private data
+	private source
+	private writers
+	parts?: Problem[]
+	constructor(
+		code: code,
+		path: Path,
+		data: ProblemData<code>,
+		source: ProblemSource<code>,
+		writers: ProblemWriters<code>
+	)
+	toString(): string
+	get message(): string
+	get reason(): string
+	get mustBe(): string
 }
 ```

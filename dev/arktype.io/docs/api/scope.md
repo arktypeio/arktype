@@ -20,13 +20,13 @@ scope: ScopeParser
 
 ```ts
 export declare class Scope<context extends ScopeInferenceContext = any> {
-    #private
-    aliases: Dict
-    infer: exportsOf<context>
-    readonly config: ScopeConfig
-    constructor(aliases: Dict, opts?: ScopeOptions)
-    type: TypeParser<resolutions<context>>
-    maybeResolve(name: name<context>): Type | undefined
-    compile(): Space<this["infer"]>
+	#private
+	aliases: Dict
+	infer: exportsOf<context>
+	readonly config: ScopeConfig
+	constructor(aliases: Dict, opts?: ScopeOptions)
+	type: TypeParser<resolutions<context>>
+	maybeResolve(name: name<context>): Type | undefined
+	compile(): Space<this["infer"]>
 }
 ```

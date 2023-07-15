@@ -2,10 +2,10 @@
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import {
-    fromHere,
-    readJson,
-    readPackageJson,
-    writeJson
+	fromHere,
+	readJson,
+	readPackageJson,
+	writeJson
 } from "../attest/src/fs.js"
 import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
@@ -35,25 +35,25 @@ writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
 const changelogPath = fromHere("..", "..", "CHANGELOG.md")
 
 writeFileSync(
-    changelogPath,
-    readFileSync(changelogPath)
-        .toString()
-        .replaceAll(nonSuffixedVersion, suffixedVersion)
+	changelogPath,
+	readFileSync(changelogPath)
+		.toString()
+		.replaceAll(nonSuffixedVersion, suffixedVersion)
 )
 
 docgen()
 
 const existingDocsVersions: string[] = readJson(
-    join(repoDirs.arktypeIo, `versions.json`)
+	join(repoDirs.arktypeIo, `versions.json`)
 )
 if (!existingDocsVersions.includes(suffixedVersion)) {
-    shell(
-        `pnpm install && pnpm docusaurus docs:version ${suffixedVersion} && pnpm build`,
-        {
-            cwd: repoDirs.arktypeIo
-        }
-    )
-    shell("pnpm format", { cwd: repoDirs.root })
+	shell(
+		`pnpm install && pnpm docusaurus docs:version ${suffixedVersion} && pnpm build`,
+		{
+			cwd: repoDirs.arktypeIo
+		}
+	)
+	shell("pnpm format", { cwd: repoDirs.root })
 }
 
 shell(`git add ${repoDirs.root}`)

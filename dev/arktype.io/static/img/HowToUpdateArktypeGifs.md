@@ -1,9 +1,9 @@
 # How to update these GIFs
 
 1. Used modified VSCode:
-    - Deleted fileName navbar and added `margin-top: 24px` to the editor from devtools within VsCode
-    - Enabled Quokka, but disabled "Show Expression Value on Select" (this has to be done every time Quokka is restarted)
-    - Applied these settings:
+   - Deleted fileName navbar and added `margin-top: 24px` to the editor from devtools within VsCode
+   - Enabled Quokka, but disabled "Show Expression Value on Select" (this has to be done every time Quokka is restarted)
+   - Applied these settings:
 
 ```ts
 // DEMO ONLY (revert)

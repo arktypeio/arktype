@@ -6,12 +6,12 @@ hide_table_of_contents: true
 
 ## operator
 
--   [node](./resolvednode.md)
+- [node](./resolvednode.md)
 
 ## tuple
 
--   ["node", nodeDefinition]
+- ["node", nodeDefinition]
 
 ## helper
 
--   type.from(nodeDefinition)
+- type.from(nodeDefinition)

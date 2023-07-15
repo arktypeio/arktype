@@ -8,31 +8,31 @@ import type { BasisKind } from "./basis.js"
 import { BasisNodeBase } from "./basis.js"
 
 export type UnitNodeMeta = {
-    parsedFrom?: DateLiteral
+	parsedFrom?: DateLiteral
 }
 
 export class UnitNode extends BasisNodeBase<{
-    rule: unknown
-    intersection: Node<BasisKind>
-    meta: UnitNodeMeta
+	rule: unknown
+	intersection: Node<BasisKind>
+	meta: UnitNodeMeta
 }> {
-    readonly kind = "unit"
-    readonly literalKeys =
-        this.rule === null || this.rule === undefined
-            ? []
-            : [...prototypeKeysOf(this.rule), ...Object.keys(this.rule)]
-    readonly serialized = compileSerializedValue(this.rule)
-    readonly domain = domainOf(this.rule)
+	readonly kind = "unit"
+	readonly literalKeys =
+		this.rule === null || this.rule === undefined
+			? []
+			: [...prototypeKeysOf(this.rule), ...Object.keys(this.rule)]
+	readonly serialized = compileSerializedValue(this.rule)
+	readonly domain = domainOf(this.rule)
 
-    compile() {
-        return this.rule instanceof Date
-            ? `${In}.valueOf() === ${this.rule.valueOf()}`
-            : `${In} === ${this.serialized}`
-    }
+	compile() {
+		return this.rule instanceof Date
+			? `${In}.valueOf() === ${this.rule.valueOf()}`
+			: `${In} === ${this.serialized}`
+	}
 
-    describe() {
-        return this.meta.parsedFrom
-            ? extractDateLiteralSource(this.meta.parsedFrom)
-            : stringify(this.rule)
-    }
+	describe() {
+		return this.meta.parsedFrom
+			? extractDateLiteralSource(this.meta.parsedFrom)
+			: stringify(this.rule)
+	}
 }

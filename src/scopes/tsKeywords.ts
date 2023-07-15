@@ -18,37 +18,37 @@ import type { RootScope } from "./ark.js"
 // "undefined": "undefined"
 
 export type InferredTsKeywords = {
-    any: any
-    bigint: bigint
-    boolean: boolean
-    false: false
-    never: never
-    null: null
-    number: number
-    object: object
-    string: string
-    symbol: symbol
-    true: true
-    unknown: unknown
-    void: void
-    undefined: undefined
+	any: any
+	bigint: bigint
+	boolean: boolean
+	false: false
+	never: never
+	null: null
+	number: number
+	object: object
+	string: string
+	symbol: symbol
+	true: true
+	unknown: unknown
+	void: void
+	undefined: undefined
 }
 
 export const tsKeywords: RootScope<InferredTsKeywords> = Scope.root({
-    any: "unknown" as CastTo<any>,
-    bigint: node({ basis: "bigint" }),
-    boolean: "true|false",
-    false: node({ basis: ["===", false as const] }),
-    never: node(),
-    null: node({ basis: ["===", null] }),
-    number: node({ basis: "number" }),
-    object: node({ basis: "object" }),
-    string: node({ basis: "string" }),
-    symbol: node({ basis: "symbol" }),
-    true: node({ basis: ["===", true as const] }),
-    unknown: node({}),
-    void: "undefined" as CastTo<void>,
-    undefined: node({ basis: ["===", undefined] })
+	any: "unknown" as CastTo<any>,
+	bigint: node({ basis: "bigint" }),
+	boolean: "true|false",
+	false: node({ basis: ["===", false as const] }),
+	never: node(),
+	null: node({ basis: ["===", null] }),
+	number: node({ basis: "number" }),
+	object: node({ basis: "object" }),
+	string: node({ basis: "string" }),
+	symbol: node({ basis: "symbol" }),
+	true: node({ basis: ["===", true as const] }),
+	unknown: node({}),
+	void: "undefined" as CastTo<void>,
+	undefined: node({ basis: ["===", undefined] })
 })
 
 export const tsKeywordTypes = tsKeywords.export()

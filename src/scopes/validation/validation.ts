@@ -1,6 +1,6 @@
 import {
-    wellFormedIntegerMatcher,
-    wellFormedNumberMatcher
+	wellFormedIntegerMatcher,
+	wellFormedNumberMatcher
 } from "@arktype/utils"
 import { node } from "../../nodes/parse.js"
 import { serializeRegex } from "../../nodes/primitive/regex.js"
@@ -14,29 +14,29 @@ import { parsedDate } from "./date.js"
 
 // TODO: { mustBe: "a well-formed numeric string" }
 const parsedNumber = node({
-    basis: "string",
-    regex: serializeRegex(wellFormedNumberMatcher),
-    morph: (s) => parseFloat(s)
+	basis: "string",
+	regex: serializeRegex(wellFormedNumberMatcher),
+	morph: (s) => parseFloat(s)
 })
 
 const parsedInteger = node({
-    basis: "string",
-    regex: serializeRegex(wellFormedIntegerMatcher),
-    morph: (s) => parseInt(s)
-    // TODO:
-    // morph: (s, problems) => {
-    //     if (!isWellFormedInteger(s)) {
-    //         return problems.mustBe("a well-formed integer string")
-    //     }
+	basis: "string",
+	regex: serializeRegex(wellFormedIntegerMatcher),
+	morph: (s) => parseInt(s)
+	// TODO:
+	// morph: (s, problems) => {
+	//     if (!isWellFormedInteger(s)) {
+	//         return problems.mustBe("a well-formed integer string")
+	//     }
 
-    //     const parsed = parseInt(s)
+	//     const parsed = parseInt(s)
 
-    //     return Number.isSafeInteger(parsed)
-    //         ? parsed
-    //         : problems.mustBe(
-    //               "an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
-    //           )
-    // }
+	//     return Number.isSafeInteger(parsed)
+	//         ? parsed
+	//         : problems.mustBe(
+	//               "an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
+	//           )
+	// }
 })
 
 // https://www.regular-expressions.info/email.html
@@ -44,34 +44,34 @@ const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
 //  "a valid email"
 const email = node({
-    basis: "string",
-    regex: serializeRegex(emailMatcher)
+	basis: "string",
+	regex: serializeRegex(emailMatcher)
 })
 
 const uuidMatcher =
-    /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/
+	/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 // "a valid UUID"
 const uuid = node({
-    basis: "string",
-    regex: serializeRegex(uuidMatcher)
+	basis: "string",
+	regex: serializeRegex(uuidMatcher)
 })
 
 const semverMatcher =
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
 // https://semver.org/
 // "a valid semantic version (see https://semver.org/)"
 const semver = node({
-    basis: "string",
-    regex: serializeRegex(semverMatcher)
+	basis: "string",
+	regex: serializeRegex(semverMatcher)
 })
 
 // "a JSON-parsable string"
 const json = node({
-    basis: "string",
-    morph: (s) => JSON.parse(s)
+	basis: "string",
+	morph: (s) => JSON.parse(s)
 })
 
 // "alpha": "only letters",
@@ -89,36 +89,36 @@ const json = node({
 // "integer": "an integer"
 
 export type InferredValidation = {
-    alpha: string
-    alphanumeric: string
-    lowercase: string
-    uppercase: string
-    creditCard: string
-    email: string
-    uuid: string
-    parsedNumber: (In: string) => Out<number>
-    parsedInteger: (In: string) => Out<number>
-    parsedDate: (In: string) => Out<Date>
-    semver: string
-    json: (In: string) => Out<unknown>
-    integer: number
+	alpha: string
+	alphanumeric: string
+	lowercase: string
+	uppercase: string
+	creditCard: string
+	email: string
+	uuid: string
+	parsedNumber: (In: string) => Out<number>
+	parsedInteger: (In: string) => Out<number>
+	parsedDate: (In: string) => Out<Date>
+	semver: string
+	json: (In: string) => Out<unknown>
+	integer: number
 }
 
 export const validation: RootScope<InferredValidation> = Scope.root({
-    // Character sets
-    alpha: /^[A-Za-z]*$/,
-    alphanumeric: /^[A-Za-z\d]*$/,
-    lowercase: /^[a-z]*$/,
-    uppercase: /^[A-Z]*$/,
-    creditCard,
-    email,
-    uuid,
-    parsedNumber,
-    parsedInteger,
-    parsedDate,
-    semver,
-    json,
-    integer: node({ basis: "number", divisor: 1 })
+	// Character sets
+	alpha: /^[A-Za-z]*$/,
+	alphanumeric: /^[A-Za-z\d]*$/,
+	lowercase: /^[a-z]*$/,
+	uppercase: /^[A-Z]*$/,
+	creditCard,
+	email,
+	uuid,
+	parsedNumber,
+	parsedInteger,
+	parsedDate,
+	semver,
+	json,
+	integer: node({ basis: "number", divisor: 1 })
 })
 
 export const validationTypes = validation.export()

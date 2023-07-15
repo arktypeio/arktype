@@ -11,72 +11,72 @@ import { TypeNode } from "./type.js"
 type inferPredicateDefinition<t> = t
 
 export type inferBranches<branches extends readonly ConstraintInputs[]> = {
-    [i in keyof branches]: inferPredicateDefinition<branches[i]>
+	[i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
 
 export type inferTypeInput<input extends TypeInput> =
-    input extends readonly ConstraintInputs[]
-        ? inferBranches<input>
-        : input extends ConstraintInputs
-        ? inferPredicateDefinition<input>
-        : input extends TypeNode<infer t>
-        ? t
-        : never
+	input extends readonly ConstraintInputs[]
+		? inferBranches<input>
+		: input extends ConstraintInputs
+		? inferPredicateDefinition<input>
+		: input extends TypeNode<infer t>
+		? t
+		: never
 
 export type TypeInput = listable<ConstraintInputs>
 
 export type validatedTypeNodeInput<
-    input extends List<ConstraintInputs>,
-    bases extends BasisInput[]
+	input extends List<ConstraintInputs>,
+	bases extends BasisInput[]
 > = {
-    [i in keyof input]: exact<
-        input[i],
-        ConstraintInputs //<bases[i & keyof bases]>
-    >
+	[i in keyof input]: exact<
+		input[i],
+		ConstraintInputs //<bases[i & keyof bases]>
+	>
 }
 
 export type extractBases<
-    branches,
-    result extends BasisInput[] = []
+	branches,
+	result extends BasisInput[] = []
 > = branches extends [infer head, ...infer tail]
-    ? extractBases<
-          tail,
-          [
-              ...result,
-              head extends {
-                  basis: infer basis extends BasisInput
-              }
-                  ? basis
-                  : BasisInput
-          ]
-      >
-    : result
+	? extractBases<
+			tail,
+			[
+				...result,
+				head extends {
+					basis: infer basis extends BasisInput
+				}
+					? basis
+					: BasisInput
+			]
+	  >
+	: result
 
 // TODO: bestway to handle?
 const getEmptyScope = cached(() => Scope.root({}))
 
 const createAnonymousParseContext = (): ParseContext => ({
-    baseName: "anonymous",
-    path: [],
-    args: {},
-    scope: getEmptyScope()
+	baseName: "anonymous",
+	path: [],
+	args: {},
+	scope: getEmptyScope()
 })
 
 const typeNode = <const input extends listable<ConstraintInputs>>(
-    input: input,
-    // TODO: check all usages to ensure metadata is being propagated
-    meta = {}
+	input: input,
+	// TODO: check all usages to ensure metadata is being propagated
+	meta = {}
 ) =>
-    new TypeNode(
-        listFrom(input).map((branch) => predicateNode(branch)),
-        meta
-    )
+	new TypeNode(
+		listFrom(input).map((branch) => predicateNode(branch)),
+		meta
+	)
 
 // TODO: could every node have the same functionality as type node?
 const unit = <const values extends readonly unknown[]>(...values: values) =>
-    typeNode(values.map((value) => ({ basis: ["===", value] }))) as TypeNode<
-        values[number]
-    >
+	typeNode(values.map((value) => ({ basis: ["===", value] }))) as TypeNode<
+		values[number]
+	>
 
 export const node = Object.assign(typeNode, { unit })
 
@@ -97,34 +97,30 @@ export const node = Object.assign(typeNode, { unit })
 // return alphabetizeByCondition(reduceBranches([...input]))
 
 export const reduceBranches = (branchNodes: PredicateNode[]) => {
-    if (branchNodes.length < 2) {
-        return branchNodes
-    }
-    const uniquenessByIndex: Record<number, boolean> = branchNodes.map(
-        () => true
-    )
-    for (let i = 0; i < branchNodes.length; i++) {
-        for (
-            let j = i + 1;
-            j < branchNodes.length &&
-            uniquenessByIndex[i] &&
-            uniquenessByIndex[j];
-            j++
-        ) {
-            if (branchNodes[i] === branchNodes[j]) {
-                // if the two branches are equal, only "j" is marked as
-                // redundant so at least one copy could still be included in
-                // the final set of branches.
-                uniquenessByIndex[j] = false
-                continue
-            }
-            const intersection = branchNodes[i].intersect(branchNodes[j])
-            if (intersection === branchNodes[i]) {
-                uniquenessByIndex[i] = false
-            } else if (intersection === branchNodes[j]) {
-                uniquenessByIndex[j] = false
-            }
-        }
-    }
-    return branchNodes.filter((_, i) => uniquenessByIndex[i])
+	if (branchNodes.length < 2) {
+		return branchNodes
+	}
+	const uniquenessByIndex: Record<number, boolean> = branchNodes.map(() => true)
+	for (let i = 0; i < branchNodes.length; i++) {
+		for (
+			let j = i + 1;
+			j < branchNodes.length && uniquenessByIndex[i] && uniquenessByIndex[j];
+			j++
+		) {
+			if (branchNodes[i] === branchNodes[j]) {
+				// if the two branches are equal, only "j" is marked as
+				// redundant so at least one copy could still be included in
+				// the final set of branches.
+				uniquenessByIndex[j] = false
+				continue
+			}
+			const intersection = branchNodes[i].intersect(branchNodes[j])
+			if (intersection === branchNodes[i]) {
+				uniquenessByIndex[i] = false
+			} else if (intersection === branchNodes[j]) {
+				uniquenessByIndex[j] = false
+			}
+		}
+	}
+	return branchNodes.filter((_, i) => uniquenessByIndex[i])
 }

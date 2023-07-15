@@ -6,14 +6,14 @@ hide_table_of_contents: true
 
 ## operator
 
--   [&vert;>](./morph.md)
+- [&vert;>](./morph.md)
 
 ## tuple
 
--   [inputType, "&vert;>", (data) => output] <br/>
--   const tupleMorph = type( ["string", "&vert;>" , (data) => \`morphed ${data}\`])<br/>
+- [inputType, "&vert;>", (data) => output] <br/>
+- const tupleMorph = type( ["string", "&vert;>" , (data) => \`morphed ${data}\`])<br/>
 
 ## helper
 
--   morph(inputType, (data) => output) <br/>
--   const helperMorph = morph("string", (data) => \`morphed ${data}\`)<br/>
+- morph(inputType, (data) => output) <br/>
+- const helperMorph = morph("string", (data) => \`morphed ${data}\`)<br/>

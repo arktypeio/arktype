@@ -12,13 +12,13 @@ const srcRoot = join(root, "src")
 const outRoot = join(root, "dist")
 
 export const repoDirs = {
-    root,
-    dev,
-    attest,
-    configs,
-    arktypeIo,
-    docsDir,
-    srcRoot,
-    outRoot,
-    utils
+	root,
+	dev,
+	attest,
+	configs,
+	arktypeIo,
+	docsDir,
+	srcRoot,
+	outRoot,
+	utils
 }

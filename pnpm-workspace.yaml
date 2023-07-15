@@ -1,5 +1,5 @@
 packages:
-    - "."
-    - "dev/utils"
-    - "dev/attest"
-    - "dev/scripts"
+  - "."
+  - "dev/utils"
+  - "dev/attest"
+  - "dev/scripts"

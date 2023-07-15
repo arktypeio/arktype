@@ -5,7 +5,7 @@ import type { Type } from "./type.js"
 // to a single variadic number prop with minLength 1
 // Figure out best design for integrating with named props.
 export class ArrayPredicate extends ObjectPredicate {
-    readonly prefixed?: readonly Type[]
-    readonly variadic?: Type
-    readonly postfixed?: readonly Type[]
+	readonly prefixed?: readonly Type[]
+	readonly variadic?: Type
+	readonly postfixed?: readonly Type[]
 }

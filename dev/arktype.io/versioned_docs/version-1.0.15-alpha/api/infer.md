@@ -8,6 +8,6 @@ hide_table_of_contents: true
 
 ```ts
 export type Infer<t> = {
-    [as]?: t
+	[as]?: t
 }
 ```

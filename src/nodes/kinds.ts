@@ -12,36 +12,36 @@ import { PropsNode } from "./prop/props.js"
 import { TypeNode } from "./type.js"
 
 const nodeConstructors = {
-    type: TypeNode,
-    domain: DomainNode,
-    class: ClassNode,
-    unit: UnitNode,
-    bound: BoundNode,
-    divisor: DivisorNode,
-    regex: RegexNode,
-    narrow: NarrowNode,
-    predicate: PredicateNode,
-    props: PropsNode
+	type: TypeNode,
+	domain: DomainNode,
+	class: ClassNode,
+	unit: UnitNode,
+	bound: BoundNode,
+	divisor: DivisorNode,
+	regex: RegexNode,
+	narrow: NarrowNode,
+	predicate: PredicateNode,
+	props: PropsNode
 }
 
 type NodeConstructors = typeof nodeConstructors
 export type NodeKind = keyof NodeConstructors
 
 export type NodeKinds = {
-    [k in NodeKind]: InstanceType<NodeConstructors[k]>
+	[k in NodeKind]: InstanceType<NodeConstructors[k]>
 }
 
 export type NodeIntersections = {
-    [k in NodeKind]: Parameters<NodeKinds[k]["intersect"]>[0]
+	[k in NodeKind]: Parameters<NodeKinds[k]["intersect"]>[0]
 }
 
 export type UnknownNodeInput = readonly [
-    kind: NodeKind,
-    rule: unknown,
-    meta: Dict
+	kind: NodeKind,
+	rule: unknown,
+	meta: Dict
 ]
 
 export type Node<kind extends NodeKind = NodeKind> = NodeKinds[kind]
 
 export const createNode = (input: UnknownNodeInput): Node =>
-    new (nodeConstructors[input[0]] as any)(input[1], input[2])
+	new (nodeConstructors[input[0]] as any)(input[1], input[2])

@@ -6,24 +6,24 @@ import { NodeBase } from "../base.js"
 export type NarrowIntersection = readonly NarrowNode[]
 
 export class NarrowNode extends NodeBase<{
-    rule: Narrow
-    intersection: NarrowIntersection
-    meta: {}
+	rule: Narrow
+	intersection: NarrowIntersection
+	meta: {}
 }> {
-    readonly kind = "narrow"
+	readonly kind = "narrow"
 
-    compile() {
-        return `${registry().register(this.rule)}(${In})`
-    }
+	compile() {
+		return `${registry().register(this.rule)}(${In})`
+	}
 
-    intersect(other: NarrowIntersection) {
-        const matching = other.find((node) => node.rule === this.rule)
-        return matching ? other : [...other, this]
-    }
+	intersect(other: NarrowIntersection) {
+		const matching = other.find((node) => node.rule === this.rule)
+		return matching ? other : [...other, this]
+	}
 
-    describe() {
-        return `valid according to ${this.rule.name}`
-    }
+	describe() {
+		return `valid according to ${this.rule.name}`
+	}
 }
 
 // intersect: (l, r) =>

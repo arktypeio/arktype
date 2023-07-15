@@ -1,56 +1,56 @@
 {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": ["source.fixAll.eslint"],
-    "eslint.codeActionsOnSave.rules": [
-        "import/order",
-        "sort-imports",
-        "import/no-duplicates",
-        "@typescript-eslint/consistent-type-imports",
-        "object-shorthand",
-        "prefer-arrow-functions/prefer-arrow-functions"
-    ],
-    "eslint.rules.customizations": [
-        // This will still be caught when run from the CLI, but it's too often
-        // I'm in the middle of writing something and see this. It's already
-        // made apparent by default anyways, as TS renders the variable in gray
-        { "rule": "@typescript-eslint/no-unused-vars", "severity": "off" }
-    ],
-    "typescript.preferences.autoImportFileExcludePatterns": [
-        "dist",
-        // Ideally we could just exclude main.ts in general, but for now that prevents suggestions from e.g. @arktype/utils:
-        // https://github.com/microsoft/TypeScript/issues/51418
-        "./src/main.ts"
-    ],
-    "typescript.preferences.importModuleSpecifierEnding": "js",
-    "typescript.tsserver.experimental.enableProjectDiagnostics": false,
-    "prettier.ignorePath": "dev/configs/.prettierignore",
-    "prettier.prettierPath": "./node_modules/prettier",
-    // NOTE: these are also maintained in package.json under "mocha"
-    "mochaExplorer.nodeArgv": [
-        "--loader=ts-node/esm",
-        "--no-warnings=ExperimentalWarning",
-        "--conditions=arktype-dev"
-    ],
-    "mochaExplorer.require": "dev/configs/mocha.fixtures.ts",
-    "mochaExplorer.timeout": 0,
-    "mochaExplorer.env": {
-        "ATTEST_CONFIG": "{ \"skipTypes\": true }"
-    },
-    "testExplorer.useNativeTesting": true,
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "errorLens.replace": [
-        {
-            "matcher": "Argument of type '.*' is not assignable to parameter of type '\"(.*)\"'.",
-            "message": "$1"
-        },
-        {
-            "matcher": "Type '.*' is not assignable to type '\"(.*)\"'.",
-            "message": "$1"
-        },
-        {
-            "matcher": "Type '.*' is not assignable to type 'indexParseError<(.*)>'.",
-            "message": "$1"
-        }
-    ]
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": ["source.fixAll.eslint"],
+	"eslint.codeActionsOnSave.rules": [
+		"import/order",
+		"sort-imports",
+		"import/no-duplicates",
+		"@typescript-eslint/consistent-type-imports",
+		"object-shorthand",
+		"prefer-arrow-functions/prefer-arrow-functions"
+	],
+	"eslint.rules.customizations": [
+		// This will still be caught when run from the CLI, but it's too often
+		// I'm in the middle of writing something and see this. It's already
+		// made apparent by default anyways, as TS renders the variable in gray
+		{ "rule": "@typescript-eslint/no-unused-vars", "severity": "off" }
+	],
+	"typescript.preferences.autoImportFileExcludePatterns": [
+		"dist",
+		// Ideally we could just exclude main.ts in general, but for now that prevents suggestions from e.g. @arktype/utils:
+		// https://github.com/microsoft/TypeScript/issues/51418
+		"./src/main.ts"
+	],
+	"typescript.preferences.importModuleSpecifierEnding": "js",
+	"typescript.tsserver.experimental.enableProjectDiagnostics": false,
+	"prettier.ignorePath": "dev/configs/.prettierignore",
+	"prettier.prettierPath": "./node_modules/prettier",
+	// NOTE: these are also maintained in package.json under "mocha"
+	"mochaExplorer.nodeArgv": [
+		"--loader=ts-node/esm",
+		"--no-warnings=ExperimentalWarning",
+		"--conditions=arktype-dev"
+	],
+	"mochaExplorer.require": "dev/configs/mocha.fixtures.ts",
+	"mochaExplorer.timeout": 0,
+	"mochaExplorer.env": {
+		"ATTEST_CONFIG": "{ \"skipTypes\": true }"
+	},
+	"testExplorer.useNativeTesting": true,
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"errorLens.replace": [
+		{
+			"matcher": "Argument of type '.*' is not assignable to parameter of type '\"(.*)\"'.",
+			"message": "$1"
+		},
+		{
+			"matcher": "Type '.*' is not assignable to type '\"(.*)\"'.",
+			"message": "$1"
+		},
+		{
+			"matcher": "Type '.*' is not assignable to type 'indexParseError<(.*)>'.",
+			"message": "$1"
+		}
+	]
 }

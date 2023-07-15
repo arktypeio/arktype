@@ -6,14 +6,14 @@ hide_table_of_contents: true
 
 ## operator
 
--   [instanceOf](./instanceof.md)
+- [instanceOf](./instanceof.md)
 
 ## tuple
 
--   ["instanceOf", T] <br/>
--   const tupleInstanceOf = type(["instanceOf", Date])<br/>
+- ["instanceOf", T] <br/>
+- const tupleInstanceOf = type(["instanceOf", Date])<br/>
 
 ## helper
 
--   instanceOf(T) <br/>
--   const helperInstanceOf = instanceOf(Date)<br/>
+- instanceOf(T) <br/>
+- const helperInstanceOf = instanceOf(Date)<br/>

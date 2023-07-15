@@ -6,19 +6,19 @@ hide_table_of_contents: true
 
 ## operator
 
--   [arrayOf](./arrayof.md)
+- [arrayOf](./arrayof.md)
 
 ## string
 
--   "T[]" <br/>
--   const numberArray = type("number[]")<br/>
+- "T[]" <br/>
+- const numberArray = type("number[]")<br/>
 
 ## tuple
 
--   [T, "[]"] <br/>
--   const tupleArray = type(["number", "[]"])<br/>
+- [T, "[]"] <br/>
+- const tupleArray = type(["number", "[]"])<br/>
 
 ## helper
 
--   arrayOf(T) <br/>
--   const helperArray = arrayOf("number")<br/>
+- arrayOf(T) <br/>
+- const helperArray = arrayOf("number")<br/>

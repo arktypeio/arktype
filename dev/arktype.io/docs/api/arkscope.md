@@ -8,47 +8,47 @@ hide_table_of_contents: true
 
 ```ts
 arkScope: import("../scope.js").Scope<
-    [
-        {
-            any: any
-            bigint: bigint
-            boolean: boolean
-            false: false
-            never: never
-            null: null
-            number: number
-            object: object
-            string: string
-            symbol: symbol
-            true: true
-            unknown: unknown
-            void: void
-            undefined: undefined
-            Function: Function
-            Date: Date
-            Error: Error
-            Map: Map<unknown, unknown>
-            RegExp: RegExp
-            Set: Set<unknown>
-            WeakMap: WeakMap<object, unknown>
-            WeakSet: WeakSet<object>
-            Promise: Promise<unknown>
-            alpha: string
-            alphanumeric: string
-            lowercase: string
-            uppercase: string
-            creditCard: string
-            email: string
-            uuid: string
-            parsedNumber: (In: string) => number
-            parsedInteger: (In: string) => number
-            parsedDate: (In: string) => Date
-            semver: string
-            json: (In: string) => unknown
-            integer: number
-        },
-        {},
-        false
-    ]
+	[
+		{
+			any: any
+			bigint: bigint
+			boolean: boolean
+			false: false
+			never: never
+			null: null
+			number: number
+			object: object
+			string: string
+			symbol: symbol
+			true: true
+			unknown: unknown
+			void: void
+			undefined: undefined
+			Function: Function
+			Date: Date
+			Error: Error
+			Map: Map<unknown, unknown>
+			RegExp: RegExp
+			Set: Set<unknown>
+			WeakMap: WeakMap<object, unknown>
+			WeakSet: WeakSet<object>
+			Promise: Promise<unknown>
+			alpha: string
+			alphanumeric: string
+			lowercase: string
+			uppercase: string
+			creditCard: string
+			email: string
+			uuid: string
+			parsedNumber: (In: string) => number
+			parsedInteger: (In: string) => number
+			parsedDate: (In: string) => Date
+			semver: string
+			json: (In: string) => unknown
+			integer: number
+		},
+		{},
+		false
+	]
 >
 ```

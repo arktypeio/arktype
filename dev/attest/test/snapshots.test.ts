@@ -5,13 +5,13 @@ import { runThenGetContents } from "./utils.js"
 
 const benchTemplate = fromHere("benchTemplate.ts")
 const expectedOutput = readFile(fromHere("benchExpectedOutput.ts")).replaceAll(
-    "\r\n",
-    "\n"
+	"\r\n",
+	"\n"
 )
 
 describe("bench", () => {
-    test("populates file", () => {
-        const actual = runThenGetContents(benchTemplate)
-        equal(actual, expectedOutput)
-    }).timeout(120000)
+	test("populates file", () => {
+		const actual = runThenGetContents(benchTemplate)
+		equal(actual, expectedOutput)
+	}).timeout(120000)
 })

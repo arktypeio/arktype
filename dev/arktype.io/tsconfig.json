@@ -1,14 +1,14 @@
 {
-    "extends": "../configs/tsconfig.base.json",
-    "compilerOptions": {
-        "moduleResolution": "nodenext",
-        "target": "ES2017",
-        "jsx": "react",
-        "types": [
-            "@types/node",
-            "@docusaurus/module-type-aliases",
-            "@docusaurus/preset-classic"
-        ],
-        "lib": ["DOM"]
-    }
+	"extends": "../configs/tsconfig.base.json",
+	"compilerOptions": {
+		"moduleResolution": "nodenext",
+		"target": "ES2017",
+		"jsx": "react",
+		"types": [
+			"@types/node",
+			"@docusaurus/module-type-aliases",
+			"@docusaurus/preset-classic"
+		],
+		"lib": ["DOM"]
+	}
 }

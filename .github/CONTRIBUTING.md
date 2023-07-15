@@ -48,25 +48,25 @@ git checkout -b amazing-feature
 
 6. Do your best to write code that is stylistically consistent with its context. The linter will help with this, but it won't catch everything. Here's a few general guidelines:
 
-    - Favor functions over classes
-    - Favor arrow functions outside of classes
-    - Favor types over interfaces
-    - Favor mutation over copying objects in perf-sensitive contexts
-    - Favor clarity in naming with the following exceptions:
-        - Ubiquitous variables/types. For example, use `s` over `dynamicParserState` for a variable of type DynamicParserState that is used in the same way across many functions.
-        - Ephemeral variables whose contents can be trivially inferred from context. For example, prefer `rawKeyDefinitions.map(_ => _.trim())` to `rawKeyDefinitions.map(rawKeyDefinition => rawKeyDefinition.trim())`.
+   - Favor functions over classes
+   - Favor arrow functions outside of classes
+   - Favor types over interfaces
+   - Favor mutation over copying objects in perf-sensitive contexts
+   - Favor clarity in naming with the following exceptions:
+     - Ubiquitous variables/types. For example, use `s` over `dynamicParserState` for a variable of type DynamicParserState that is used in the same way across many functions.
+     - Ephemeral variables whose contents can be trivially inferred from context. For example, prefer `rawKeyDefinitions.map(_ => _.trim())` to `rawKeyDefinitions.map(rawKeyDefinition => rawKeyDefinition.trim())`.
 
 We also have some unique casing rules for our TypeScript types to making writing isomorphic code easier:
 
--   Use `CapitalCase` for...
+- Use `CapitalCase` for...
 
-    -   Non-generic types (e.g. `SomeData`)
-    -   Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's builtin `Array` type doesn't have a default parameter, but it should have been `unknown`!)
+  - Non-generic types (e.g. `SomeData`)
+  - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's builtin `Array` type doesn't have a default parameter, but it should have been `unknown`!)
 
--   Use `camelCase` for...
+- Use `camelCase` for...
 
-    -   Generic types with verb names like `inferDomain<t>`. Types named this way should always have at least one required parameter.
-    -   Parameter names, e.g. `t` in `Array<t>`
+  - Generic types with verb names like `inferDomain<t>`. Types named this way should always have at least one required parameter.
+  - Parameter names, e.g. `t` in `Array<t>`
 
 7. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any problems:
 

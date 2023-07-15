@@ -5,15 +5,15 @@ import { scope, type } from "../../src/main.js"
 type("(boolean | number | 'foo')[]")
 
 const creditCard = type(
-    "/^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35d{3})d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))$/"
+	"/^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35d{3})d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))$/"
 )
 
 type({
-    a: "string|number"
+	a: "string|number"
 })
 
 export const tsGenerics = Scope.root({
-    "Record<K, V>": node({ basis: "object" })
+	"Record<K, V>": node({ basis: "object" })
 })
 
 type(["string|numer", "[]"])
@@ -24,7 +24,7 @@ const c = "number"
 
 const t = type(a).and(b).and(c)
 const z = {
-    a: true
+	a: true
 }
 
 const factor = (s: string) => s
@@ -40,83 +40,83 @@ const types = scope({ notASpace: { a: type("string") } }).export()
 attest(types.notASpace).typed as Type<{ a: string }, Ark>
 
 test("type definition", () => {
-    const types = scope({ a: type("string") }).export()
-    attest(types.a.infer).typed as string
-    attest(() =>
-        // @ts-expect-error
-        scope({ a: type("strong") })
-    ).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
+	const types = scope({ a: type("string") }).export()
+	attest(types.a.infer).typed as string
+	attest(() =>
+		// @ts-expect-error
+		scope({ a: type("strong") })
+	).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
 })
 
 const $ = scope({
-    b: "3.14",
-    a: () => $.type("number").morph((data) => `${data}`),
-    aAndB: () => $.type("a&b"),
-    bAndA: () => $.type("b&a")
+	b: "3.14",
+	a: () => $.type("number").morph((data) => `${data}`),
+	aAndB: () => $.type("a&b"),
+	bAndA: () => $.type("b&a")
 })
 
 scope({
-    // nested highlighting
-    a: "string|number",
-    b: [
-        {
-            nested: "a"
-        }
-    ]
+	// nested highlighting
+	a: "string|number",
+	b: [
+		{
+			nested: "a"
+		}
+	]
 })
 
 {
-    const type = (arg?: any) => {}
-    type({
-        foo: "string|number"
-    })
-    const obj = {
-        type
-    }
-    obj.type({})
-    // syntax should still be correctly highlighted
-    const foo = {}
+	const type = (arg?: any) => {}
+	type({
+		foo: "string|number"
+	})
+	const obj = {
+		type
+	}
+	obj.type({})
+	// syntax should still be correctly highlighted
+	const foo = {}
 
-    const outer = (...args: any[]) => obj
+	const outer = (...args: any[]) => obj
 
-    outer("ark", () => {
-        const arkType = type({
-            number: "number",
-            negNumber: "number",
-            maxNumber: "number",
-            string: "string",
-            longString: "string",
-            boolean: "boolean",
-            deeplyNested: {
-                foo: "string",
-                num: "number",
-                bool: "boolean"
-            }
-        })
-    }).type()
-    const t = type(`${2}<Date<${4}`)
+	outer("ark", () => {
+		const arkType = type({
+			number: "number",
+			negNumber: "number",
+			maxNumber: "number",
+			string: "string",
+			longString: "string",
+			boolean: "boolean",
+			deeplyNested: {
+				foo: "string",
+				num: "number",
+				bool: "boolean"
+			}
+		})
+	}).type()
+	const t = type(`${2}<Date<${4}`)
 
-    const $ = scope({ a: "string" })
-    const importer = $.scope({ b: "a" })
+	const $ = scope({ a: "string" })
+	const importer = $.scope({ b: "a" })
 
-    const func = (f: any) => f
-    const abc = func($.type("string"))
+	const func = (f: any) => f
+	const abc = func($.type("string"))
 }
 
 class F {
-    static compile(rule: PropRule[]) {
-        const named = rule.filter(isNamed)
-        if (named.length === rule.length) {
-            return this.compileNamed(named)
-        }
-        const indexed = rule.filter(isIndexed)
-        return condition
-    }
+	static compile(rule: PropRule[]) {
+		const named = rule.filter(isNamed)
+		if (named.length === rule.length) {
+			return this.compileNamed(named)
+		}
+		const indexed = rule.filter(isIndexed)
+		return condition
+	}
 }
 
 // This is used to generate highlighting.png
 const highlighted = type({
-    literals: "'foo' | 'bar' | true",
-    expressions: "boolean[] | 5 < number <= 10 | number % 2",
-    regex: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/"
+	literals: "'foo' | 'bar' | true",
+	expressions: "boolean[] | 5 < number <= 10 | number % 2",
+	regex: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/"
 })

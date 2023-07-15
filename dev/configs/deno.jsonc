@@ -1,12 +1,12 @@
 {
-    "lint": {
-        "rules": {
-            "exclude": ["ban-ts-comment", "ban-types", "no-explicit-any"]
-        }
-    },
-    "test": {
-        "files": {
-            "include": ["../test"]
-        }
-    }
+	"lint": {
+		"rules": {
+			"exclude": ["ban-ts-comment", "ban-types", "no-explicit-any"]
+		}
+	},
+	"test": {
+		"files": {
+			"include": ["../test"]
+		}
+	}
 }

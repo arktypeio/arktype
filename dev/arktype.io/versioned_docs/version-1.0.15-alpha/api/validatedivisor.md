@@ -6,8 +6,8 @@ hide_table_of_contents: true
 
 ## operator
 
--   [%](./validatedivisor.md)
+- [%](./validatedivisor.md)
 
 ## string
 
--   "N%D", where "N" is a number and "D" is a non-zero integer
+- "N%D", where "N" is a number and "D" is a non-zero integer

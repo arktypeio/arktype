@@ -1,4 +1,3 @@
-import type { evaluate } from "@arktype/utils"
 import { In } from "../compiler/compile.js"
 import type { DateLiteral } from "../parser/string/shift/operand/date.js"
 import type { Constraint } from "./constraint.js"
@@ -7,120 +6,120 @@ import { ConstraintNode } from "./constraint.js"
 export type LimitLiteral = number | DateLiteral
 
 export interface BoundConstraint<comparator extends Comparator = Comparator>
-    extends Constraint {
-    kind: BoundKind
-    comparator: comparator
-    limit: number
+	extends Constraint {
+	kind: BoundKind
+	comparator: comparator
+	limit: number
 }
 
 export class BoundNode<
-    comparator extends Comparator = Comparator
+	comparator extends Comparator = Comparator
 > extends ConstraintNode<BoundConstraint<comparator>> {
-    condition = `${compiledSizeByBoundKind[this.kind]} ${
-        this.comparator === "==" ? "===" : this.comparator
-    } ${this.limit}`
+	condition = `${compiledSizeByBoundKind[this.kind]} ${
+		this.comparator === "==" ? "===" : this.comparator
+	} ${this.limit}`
 
-    defaultDescription = `${
-        this.kind === "date"
-            ? dateComparatorDescriptions[this.comparator]
-            : numericComparatorDescriptions[this.comparator]
-    } ${this.limit}`
+	defaultDescription = `${
+		this.kind === "date"
+			? dateComparatorDescriptions[this.comparator]
+			: numericComparatorDescriptions[this.comparator]
+	} ${this.limit}`
 }
 
 const unitsByBoundKind = {
-    date: "",
-    number: "",
-    string: "characters",
-    array: "elements"
+	date: "",
+	number: "",
+	string: "characters",
+	array: "elements"
 } as const
 
 export type BoundKind = keyof typeof unitsByBoundKind
 
 const compiledSizeByBoundKind: Record<BoundKind, string> = {
-    date: `${In}.valueOf()`,
-    number: In,
-    string: `${In}.length`,
-    array: `${In}.length`
+	date: `${In}.valueOf()`,
+	number: In,
+	string: `${In}.length`,
+	array: `${In}.length`
 } as const
 
 export const compareStrictness = (
-    kind: "min" | "max",
-    l: BoundConstraint | undefined,
-    r: BoundConstraint | undefined
+	kind: "min" | "max",
+	l: BoundConstraint | undefined,
+	r: BoundConstraint | undefined
 ) =>
-    !l
-        ? !r
-            ? "="
-            : "r"
-        : !r
-        ? "l"
-        : l.limit === r.limit
-        ? // comparators of length 1 (<,>) are exclusive so have precedence
-          l.comparator.length === 1
-            ? r.comparator.length === 1
-                ? "="
-                : "l"
-            : r.comparator.length === 1
-            ? "r"
-            : "="
-        : kind === "min"
-        ? l.limit > r.limit
-            ? "l"
-            : "r"
-        : l.limit < r.limit
-        ? "l"
-        : "r"
+	!l
+		? !r
+			? "="
+			: "r"
+		: !r
+		? "l"
+		: l.limit === r.limit
+		? // comparators of length 1 (<,>) are exclusive so have precedence
+		  l.comparator.length === 1
+			? r.comparator.length === 1
+				? "="
+				: "l"
+			: r.comparator.length === 1
+			? "r"
+			: "="
+		: kind === "min"
+		? l.limit > r.limit
+			? "l"
+			: "r"
+		: l.limit < r.limit
+		? "l"
+		: "r"
 
 export const minComparators = {
-    ">": true,
-    ">=": true
+	">": true,
+	">=": true
 } as const
 
 export type MinComparator = keyof typeof minComparators
 
 export const maxComparators = {
-    "<": true,
-    "<=": true
+	"<": true,
+	"<=": true
 } as const
 
 export type MaxComparator = keyof typeof maxComparators
 
 export const comparators = {
-    ...minComparators,
-    ...maxComparators,
-    "==": true
+	...minComparators,
+	...maxComparators,
+	"==": true
 }
 
 export type Comparator = keyof typeof comparators
 
 export const numericComparatorDescriptions = {
-    "<": "less than",
-    ">": "more than",
-    "<=": "at most",
-    ">=": "at least",
-    "==": "exactly"
+	"<": "less than",
+	">": "more than",
+	"<=": "at most",
+	">=": "at least",
+	"==": "exactly"
 } as const satisfies Record<Comparator, string>
 
 export const dateComparatorDescriptions = {
-    "<": "before",
-    ">": "after",
-    "<=": "at or before",
-    ">=": "at or after",
-    "==": ""
+	"<": "before",
+	">": "after",
+	"<=": "at or before",
+	">=": "at or after",
+	"==": ""
 } as const satisfies Record<Comparator, string>
 
 export const invertedComparators = {
-    "<": ">",
-    ">": "<",
-    "<=": ">=",
-    ">=": "<=",
-    "==": "=="
+	"<": ">",
+	">": "<",
+	"<=": ">=",
+	">=": "<=",
+	"==": "=="
 } as const satisfies Record<Comparator, Comparator>
 
 export type InvertedComparators = typeof invertedComparators
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
-    `Bound kinds ${l} and ${r} are incompatible`
+	`Bound kinds ${l} and ${r} are incompatible`
 
 export type NumericallyBoundableData = string | number | readonly unknown[]
 

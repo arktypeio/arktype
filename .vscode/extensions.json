@@ -1,14 +1,14 @@
 {
-    "recommendations": [
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint",
-        // Run/debug tests inline via VSCode's Test Explorer
-        "hbenl.vscode-mocha-test-adapter",
-        // Syntax highlighting for strings in ArkType definitions
-        "arktypeio.arkdark",
-        // Inline error summaries with customizations for ArkType errors
-        "usernamehw.errorlens",
-        // Playground-like version dropdown for TypeScript versions
-        "typeholes.ts-versions-switcher"
-    ]
+	"recommendations": [
+		"esbenp.prettier-vscode",
+		"dbaeumer.vscode-eslint",
+		// Run/debug tests inline via VSCode's Test Explorer
+		"hbenl.vscode-mocha-test-adapter",
+		// Syntax highlighting for strings in ArkType definitions
+		"arktypeio.arkdark",
+		// Inline error summaries with customizations for ArkType errors
+		"usernamehw.errorlens",
+		// Playground-like version dropdown for TypeScript versions
+		"typeholes.ts-versions-switcher"
+	]
 }

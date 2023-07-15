@@ -7,13 +7,13 @@ import { Header } from "../components/header"
 import { getTheme } from "../components/theme"
 
 export default () => {
-    const { siteConfig } = useDocusaurusContext()
-    return (
-        <Layout title={siteConfig.title} description={siteConfig.tagline}>
-            <ThemeProvider theme={getTheme()}>
-                <Header title={siteConfig.title} tagline={siteConfig.tagline} />
-                <Contents />
-            </ThemeProvider>
-        </Layout>
-    )
+	const { siteConfig } = useDocusaurusContext()
+	return (
+		<Layout title={siteConfig.title} description={siteConfig.tagline}>
+			<ThemeProvider theme={getTheme()}>
+				<Header title={siteConfig.title} tagline={siteConfig.tagline} />
+				<Contents />
+			</ThemeProvider>
+		</Layout>
+	)
 }

@@ -8,6 +8,6 @@ hide_table_of_contents: true
 
 ```ts
 export type Inferred<as> = {
-    [inferred]?: as
+	[inferred]?: as
 }
 ```

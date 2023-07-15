@@ -8,6 +8,6 @@ hide_table_of_contents: true
 
 ```ts
 export type validateDivisor<l, $> = isDivisible<inferAst<l, $>> extends true
-    ? validateAst<l, $>
-    : error<writeIndivisibleMessage<astToString<l>>>
+	? validateAst<l, $>
+	: error<writeIndivisibleMessage<astToString<l>>>
 ```

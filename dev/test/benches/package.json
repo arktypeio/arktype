@@ -1,9 +1,9 @@
 {
-    "type": "module",
-    "dependencies": {
-        "zod": "latest",
-        "ts-node": "10.9.1",
-        "typescript": "5.0.4",
-        "arktype": "link:../../.."
-    }
+	"type": "module",
+	"dependencies": {
+		"zod": "latest",
+		"ts-node": "10.9.1",
+		"typescript": "5.0.4",
+		"arktype": "link:../../.."
+	}
 }

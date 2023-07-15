@@ -1,11 +1,11 @@
 export {
-    scope,
-    type,
-    arktypes,
-    type Ark,
-    ark,
-    define,
-    declare
+	scope,
+	type,
+	arktypes,
+	type Ark,
+	ark,
+	define,
+	declare
 } from "./scopes/ark.js"
 export type { TypeConfig, KeyCheckKind } from "./config.js"
 export type { CastTo } from "./parser/definition.js"

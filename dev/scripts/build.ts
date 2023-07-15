@@ -9,64 +9,64 @@ const tempTsConfigBaseName = "tsconfig.temp"
 const tempTsConfigPath = join(packageRoot, `${tempTsConfigBaseName}.json`)
 
 const writeManifest =
-    (overrides: Record<string, unknown>) =>
-    (sourceDir: string, targetDir: string) => {
-        const manifest = readJson(join(sourceDir, "package.json"))
-        writeJson(join(targetDir, "package.json"), {
-            ...manifest,
-            ...overrides
-        })
-    }
+	(overrides: Record<string, unknown>) =>
+	(sourceDir: string, targetDir: string) => {
+		const manifest = readJson(join(sourceDir, "package.json"))
+		writeJson(join(targetDir, "package.json"), {
+			...manifest,
+			...overrides
+		})
+	}
 
 const Sources = {
-    utils: ["dev", "utils"],
-    attest: ["dev", "attest"]
+	utils: ["dev", "utils"],
+	attest: ["dev", "attest"]
 } as const
 
 const buildFormat = (module: "CommonJS" | "ESNext") => {
-    const moduleKindDir = module === "CommonJS" ? "cjs" : "mjs"
-    const packageType = module === "CommonJS" ? "commonjs" : "module"
-    const outDir = join(outRoot, moduleKindDir)
-    const utilsSrc = join(outDir, ...Sources.utils, "src")
-    const attestSrc = join(outDir, ...Sources.attest, "src")
-    const utilsTarget = join(repoDirs.utils, "dist", moduleKindDir)
-    const attestTarget = join(repoDirs.attest, "dist", moduleKindDir)
+	const moduleKindDir = module === "CommonJS" ? "cjs" : "mjs"
+	const packageType = module === "CommonJS" ? "commonjs" : "module"
+	const outDir = join(outRoot, moduleKindDir)
+	const utilsSrc = join(outDir, ...Sources.utils, "src")
+	const attestSrc = join(outDir, ...Sources.attest, "src")
+	const utilsTarget = join(repoDirs.utils, "dist", moduleKindDir)
+	const attestTarget = join(repoDirs.attest, "dist", moduleKindDir)
 
-    const tempTsConfig = {
-        ...baseTsConfig,
-        include: ["src", Sources.utils.join("/"), Sources.attest.join("/")],
-        compilerOptions: {
-            ...compilerOptions,
-            noEmit: false,
-            module,
-            outDir
-        }
-    }
+	const tempTsConfig = {
+		...baseTsConfig,
+		include: ["src", Sources.utils.join("/"), Sources.attest.join("/")],
+		compilerOptions: {
+			...compilerOptions,
+			noEmit: false,
+			module,
+			outDir
+		}
+	}
 
-    const writePackageManifest = writeManifest({ type: packageType })
+	const writePackageManifest = writeManifest({ type: packageType })
 
-    writeJson(tempTsConfigPath, tempTsConfig)
+	writeJson(tempTsConfigPath, tempTsConfig)
 
-    try {
-        shell(`pnpm tsc --project ${tempTsConfigPath}`)
-        const outSrc = join(outDir, "src")
-        const outDev = join(outDir, "dev")
-        // not sure which setting to change to get it to compile here in the first place
-        cpR(outSrc, outDir)
-        cpR(utilsSrc, utilsTarget)
-        cpR(attestSrc, attestTarget)
+	try {
+		shell(`pnpm tsc --project ${tempTsConfigPath}`)
+		const outSrc = join(outDir, "src")
+		const outDev = join(outDir, "dev")
+		// not sure which setting to change to get it to compile here in the first place
+		cpR(outSrc, outDir)
+		cpR(utilsSrc, utilsTarget)
+		cpR(attestSrc, attestTarget)
 
-        writePackageManifest(repoDirs.root, outDir)
-        writePackageManifest(repoDirs.attest, attestTarget)
-        writePackageManifest(repoDirs.utils, utilsTarget)
+		writePackageManifest(repoDirs.root, outDir)
+		writePackageManifest(repoDirs.attest, attestTarget)
+		writePackageManifest(repoDirs.utils, utilsTarget)
 
-        rmRf(outSrc)
-        rmRf(outDev)
-        rmRf(utilsSrc)
-        rmRf(attestSrc)
-    } finally {
-        rmSync(tempTsConfigPath, { force: true })
-    }
+		rmRf(outSrc)
+		rmRf(outDev)
+		rmRf(utilsSrc)
+		rmRf(attestSrc)
+	} finally {
+		rmSync(tempTsConfigPath, { force: true })
+	}
 }
 
 console.log(`🔨 Building ${packageJson.name}...`)

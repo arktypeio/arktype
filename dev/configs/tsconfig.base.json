@@ -1,24 +1,24 @@
 {
-    "compilerOptions": {
-        "module": "ESNext",
-        "target": "ES2022",
-        "moduleResolution": "NodeNext",
-        "noEmit": true,
-        "skipLibCheck": true,
-        "strict": true,
-        "isolatedModules": true,
-        "esModuleInterop": true,
-        "resolveJsonModule": true,
-        "composite": true,
-        "exactOptionalPropertyTypes": true,
-        "noFallthroughCasesInSwitch": true,
-        "stripInternal": true,
-        "lib": ["ESNext"],
-        "customConditions": ["arktype-dev"]
-    },
-    "ts-node": {
-        "esm": true,
-        "swc": true,
-        "transpileOnly": true
-    }
+	"compilerOptions": {
+		"module": "ESNext",
+		"target": "ES2022",
+		"moduleResolution": "NodeNext",
+		"noEmit": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"isolatedModules": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"composite": true,
+		"exactOptionalPropertyTypes": true,
+		"noFallthroughCasesInSwitch": true,
+		"stripInternal": true,
+		"lib": ["ESNext"],
+		"customConditions": ["arktype-dev"]
+	},
+	"ts-node": {
+		"esm": true,
+		"swc": true,
+		"transpileOnly": true
+	}
 }
