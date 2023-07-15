@@ -16,43 +16,46 @@ export const HomeDemo = () => {
     const [isActive, setIsActive] = useState<boolean>(pathname.includes("try"))
     const backgroundColor = isDarkMode ? "#ffffff00" : "#000000aa"
     return (
-        <Stack alignItems="start" width="100%">
-            <Button
-                variant="contained"
-                sx={{
-                    backgroundColor,
-                    backdropFilter: "blur(4px)",
-                    borderRadius: "2rem",
-                    fontSize: "1.5rem",
-                    fontFamily: cascadiaCodeFamily,
-                    textTransform: "none",
-                    color: palette.primary.main,
-                    "&:hover": {
+        <>
+            <Stack alignItems="start" width="100%">
+                <Button
+                    variant="contained"
+                    sx={{
                         backgroundColor,
-                        color: palette.secondary.main,
-                        backdropFilter: "blur(6px)"
-                    },
-                    zIndex: 1
-                }}
-                onClick={() => setIsActive(!isActive)}
-                endIcon={
-                    <div style={{ display: "flex" }}>
-                        {isActive ? <Collapse /> : <Expand />}
-                    </div>
-                }
-            >
-                {isActive ? "$ wq!" : "$ code demo.ts"}
-                <motion.div
-                    animate={{ opacity: 0 }}
-                    transition={{
-                        duration: 0.5,
-                        repeatType: "mirror",
-                        repeat: Infinity
+                        backdropFilter: "blur(4px)",
+                        borderRadius: "2rem",
+                        fontSize: "1.5rem",
+                        fontFamily: cascadiaCodeFamily,
+                        textTransform: "none",
+                        color: palette.primary.main,
+                        "&:hover": {
+                            backgroundColor,
+                            color: palette.secondary.main,
+                            backdropFilter: "blur(6px)"
+                        },
+                        zIndex: 1
                     }}
+                    onClick={() => setIsActive(!isActive)}
+                    endIcon={
+                        <div style={{ display: "flex" }}>
+                            {isActive ? <Collapse /> : <Expand />}
+                        </div>
+                    }
                 >
-                    _
-                </motion.div>
-            </Button>
+                    {isActive ? "$ wq!" : "$ code demo.ts"}
+                    <motion.div
+                        animate={{ opacity: 0 }}
+                        transition={{
+                            duration: 0.5,
+                            repeatType: "mirror",
+                            repeat: Infinity
+                        }}
+                    >
+                        _
+                    </motion.div>
+                </Button>
+            </Stack>
+
             <Stack width="100%">
                 {isActive ? (
                     <StackBlitzDemo embedId="demo" />
@@ -66,7 +69,7 @@ export const HomeDemo = () => {
                     />
                 )}
             </Stack>
-            <sub>
+            <sub style={{ marginLeft: "2.3px", marginTop: "5px" }}>
                 <code>typescript@4.9.5</code> in VS Code— no extensions or
                 plugins required (
                 <a
@@ -77,6 +80,6 @@ export const HomeDemo = () => {
                 </a>
                 )
             </sub>
-        </Stack>
+        </>
     )
 }

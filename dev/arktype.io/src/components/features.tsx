@@ -207,7 +207,9 @@ const Feature = (props: FeatureProps) => {
             >
                 {props.description}
             </Typography>
-            <div>{props.image ?? null}</div>
+            <div style={{ padding: "6px", borderRadius: "16px" }}>
+                {props.image ?? null}
+            </div>
         </Stack>
     )
 }

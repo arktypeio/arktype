@@ -1,9 +1,8 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-
 import {
-    fromPackageRoot,
+    fromHere,
     readJson,
     readPackageJson,
     writeJson
@@ -14,7 +13,7 @@ import { docgen } from "./docgen/main.js"
 
 const currentSuffix = "beta"
 
-const packageJsonPath = fromPackageRoot("package.json")
+const packageJsonPath = fromHere("..", "..", "package.json")
 
 const packageJson = readJson(packageJsonPath)
 
@@ -33,7 +32,7 @@ const suffixedVersion = nonSuffixedVersion + `-${currentSuffix}`
 packageJson.version = suffixedVersion
 writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
 
-const changelogPath = fromPackageRoot("CHANGELOG.md")
+const changelogPath = fromHere("..", "..", "CHANGELOG.md")
 
 writeFileSync(
     changelogPath,

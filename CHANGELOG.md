@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.15-alpha
+
+### Patch Changes
+
+-   Fix a type error affecting users with skipLibCheck unset
+
 ## 1.0.14-alpha
 
 ### Patch Changes
