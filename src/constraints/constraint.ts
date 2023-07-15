@@ -1,5 +1,3 @@
-import type { List } from "@arktype/utils"
-
 export interface Constraint {
     description?: string
 }
@@ -10,7 +8,7 @@ export const ReadonlyObject = Object as unknown as new <T extends object>(
 
 /** @ts-expect-error allow extending narrowed readonly object */
 export abstract class ConstraintNode<
-    constraint extends Constraint = Constraint
+    constraint extends Constraint
 > extends ReadonlyObject<constraint> {
     constructor(constraint: constraint) {
         super(constraint)

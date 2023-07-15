@@ -1,88 +1,52 @@
 import type { evaluate } from "@arktype/utils"
 import { In } from "../compiler/compile.js"
-import { NodeBase } from "../nodes/base.js"
-import type { Disjoint } from "../nodes/disjoint.js"
 import type { DateLiteral } from "../parser/string/shift/operand/date.js"
+import type { Constraint } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
 export type LimitLiteral = number | DateLiteral
 
-export type BoundGroupInput =
-    | Bound
-    | readonly [Bound]
-    | readonly [MinBound, MaxBound]
-
-export type BoundGroup = SingleBoundGroup | DoubleBoundGroup
-
-export type SingleBoundGroup = readonly [BoundNode]
-
-export type DoubleBoundGroup = readonly [
-    BoundNode<MinBound>,
-    BoundNode<MaxBound>
-]
-
-export type MinBound = evaluate<Bound & { comparator: MinComparator }>
-
-export type MaxBound = evaluate<Bound & { comparator: MaxComparator }>
-
-export type Bound = {
-    limit: LimitLiteral
-    comparator: Comparator
+export interface BoundConstraint<comparator extends Comparator = Comparator>
+    extends Constraint {
+    kind: BoundKind
+    comparator: comparator
+    limit: number
 }
 
-export class BoundNode<bound extends Bound = Bound> extends NodeBase<{
-    rule: bound
-    intersection: BoundGroup
-    meta: {}
-}> {
-    readonly kind = "bound"
-    readonly comparator = this.rule.comparator
-    readonly limit = this.rule.limit
-    readonly boundKind = getBoundKind(this.rule)
+export class BoundNode<
+    comparator extends Comparator = Comparator
+> extends ConstraintNode<BoundConstraint<comparator>> {
+    condition = `${compiledSizeByBoundKind[this.kind]} ${
+        this.comparator === "==" ? "===" : this.comparator
+    } ${this.limit}`
 
-    compile() {
-        // TODO: basis-specific
-        const size = `${In}.length ?? Number(${In})`
-        return `${size} ${
-            this.comparator === "==" ? "===" : this.comparator
-        } ${this.limit.valueOf()}`
-    }
-
-    intersect(other: BoundGroup): BoundGroup | Disjoint {
-        return other
-    }
-
-    describe() {
-        return `${
-            boundHasKind(this.rule, "date")
-                ? dateComparatorDescriptions[this.comparator]
-                : numericComparatorDescriptions[this.comparator]
-        } ${this.limit}`
-    }
+    defaultDescription = `${
+        this.kind === "date"
+            ? dateComparatorDescriptions[this.comparator]
+            : numericComparatorDescriptions[this.comparator]
+    } ${this.limit}`
 }
 
-type LimitsByBoundKind = {
-    date: DateLiteral
-    numeric: number
-}
+const unitsByBoundKind = {
+    date: "",
+    number: "",
+    string: "characters",
+    array: "elements"
+} as const
 
-export type BoundKind = keyof LimitsByBoundKind
+export type BoundKind = keyof typeof unitsByBoundKind
 
-type boundOfKind<kind extends BoundKind> = evaluate<
-    Bound & { limit: LimitsByBoundKind[kind] }
->
-
-const boundHasKind = <kind extends BoundKind>(
-    bound: Bound,
-    kind: kind
-): bound is boundOfKind<kind> => getBoundKind(bound) === kind
-
-const getBoundKind = (bound: Bound): BoundKind =>
-    typeof bound.limit === "number" ? "numeric" : "date"
+const compiledSizeByBoundKind: Record<BoundKind, string> = {
+    date: `${In}.valueOf()`,
+    number: In,
+    string: `${In}.length`,
+    array: `${In}.length`
+} as const
 
 export const compareStrictness = (
     kind: "min" | "max",
-    l: Bound | undefined,
-    r: Bound | undefined
+    l: BoundConstraint | undefined,
+    r: BoundConstraint | undefined
 ) =>
     !l
         ? !r
@@ -177,13 +141,6 @@ export type NumericallyBoundableData = string | number | readonly unknown[]
 //     node: BoundNode
 // ): node is BoundNode & { children: [Bound<"==">] } =>
 //     node.children[0].comparator === "=="
-
-// s.lastDomain === "string"
-// const units =
-//     ? "characters"
-//     : s.lastDomain === "object"
-//     ? "items long"
-//     : ""
 
 // const l = rule[0].limit.valueOf()
 // const r = rule[1]?.limit.valueOf()
