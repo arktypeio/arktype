@@ -12,7 +12,7 @@ export type BasisNodeConfig = NodeConfig & { intersection: Node<BasisKind> }
 export abstract class BasisNodeBase<
     config extends BasisNodeConfig
 > extends NodeBase<config> {
-    abstract override kind: BasisKind
+    abstract kind: BasisKind
     abstract domain: Domain
     abstract literalKeys: PropertyKey[]
 

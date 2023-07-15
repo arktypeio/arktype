@@ -4,7 +4,10 @@ export interface Constraint {
     description?: string
 }
 
-type NodeMethods<constraint extends Constraint = Constraint> = {}
+type NodeMethods<constraint extends Constraint = Constraint> = {
+    get condition(): string
+    get defaultDescription(): string
+} & ThisType<ConstraintNode<constraint>>
 
 export type ConstraintNode<constraint extends Constraint = Constraint> =
     constraint & NodeMethods<constraint>
@@ -14,22 +17,20 @@ export const defineConstraintNode =
     (constraint: constraint) =>
         Object.assign(constraint, methods)
 
-export type ConstraintList = readonly ConstraintNode[]
+export type ConstraintList = readonly Constraint[]
 
-export type SetMethods<constraints extends ConstraintList> = {
-    add: (
-        this: ConstraintSet<constraints>,
-        constraint: constraints[number]
-    ) => constraints
+export const ReadonlyArray = Array as unknown as new <
+    T extends readonly unknown[]
+>(
+    ...args: T
+) => T
+
+/** @ts-expect-error Allow extending narrowed readonly array */
+export abstract class ConstraintSet<
+    constraints extends readonly Constraint[]
+> extends ReadonlyArray<constraints> {
+    abstract add(constraint: constraints[number]): constraints
 }
-
-export type ConstraintSet<constraints extends ConstraintList = ConstraintList> =
-    constraints & SetMethods<constraints>
-
-export const defineConstraintSet =
-    <constraints extends ConstraintList>(methods: SetMethods<constraints>) =>
-    (constraints: constraints) =>
-        Object.assign(constraints, methods)
 
 // type defineConstraint<constraint extends ConstraintGroup> = evaluate<
 //     Readonly<constraint & CommonConstraintProps>

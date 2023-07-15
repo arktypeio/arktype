@@ -1,5 +1,9 @@
-import type { Constraint, ConstraintNode, ConstraintSet } from "./constraint.js"
-import { defineConstraintNode, defineConstraintSet } from "./constraint.js"
+import type { Constraint } from "./constraint.js"
+import {
+    ConstraintNode,
+    ConstraintSet,
+    defineConstraintNode
+} from "./constraint.js"
 
 // TODO: Add equals/extends here? Think about how it will work with range
 export interface RegexConstraint extends Constraint {
@@ -7,17 +11,22 @@ export interface RegexConstraint extends Constraint {
     readonly flags: string
 }
 
-export const regexNode = defineConstraintNode<RegexConstraint>({})
+export const regexNode = defineConstraintNode<RegexConstraint>({
+    get condition() {
+        return `/${this.source}/${this.flags}`
+    },
+    get defaultDescription() {
+        return `matched by /${this.source}/${this.flags}`
+    }
+})
 
-export type RegexSet = ConstraintSet<readonly RegexConstraint[]>
-
-export const regexSet = defineConstraintSet<readonly RegexConstraint[]>({
-    add(this, constraint): RegexSet {
+class RegexSet extends ConstraintSet<readonly RegexConstraint[]> {
+    add(constraint: RegexConstraint) {
         const matching = this.find(
             (existing) =>
                 constraint.source === existing.source &&
                 constraint.flags === existing.flags
         )
-        return matching ? this : regexSet([...this, constraint])
+        return matching ? this : new RegexSet(...this, constraint)
     }
-})
+}

@@ -1,5 +1,22 @@
 import { In } from "../compiler/compile.js"
 import { NodeBase } from "../nodes/base.js"
+import type { Constraint } from "./constraint.js"
+import { ConstraintSet } from "./constraint.js"
+
+export interface DivisorConstraint extends Constraint {
+    readonly divisor: number
+}
+
+export class DivisorSet extends ConstraintSet<[DivisorConstraint]> {
+    add(constraint: DivisorConstraint) {
+        return new DivisorSet({
+            divisor: Math.abs(
+                (this[0].divisor * constraint.divisor) /
+                    greatestCommonDivisor(this[0].divisor, constraint.divisor)
+            )
+        })
+    }
+}
 
 export class DivisorNode extends NodeBase<{
     rule: number
