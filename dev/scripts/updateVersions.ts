@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import {
+    fromHere,
     fromPackageRoot,
     readJson,
     readPackageJson,
@@ -14,7 +15,7 @@ import { docgen } from "./docgen/main.js"
 
 const currentSuffix = "alpha"
 
-const packageJsonPath = fromPackageRoot("package.json")
+const packageJsonPath = fromHere("..", "..", "package.json")
 
 const packageJson = readJson(packageJsonPath)
 
