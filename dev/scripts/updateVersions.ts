@@ -1,10 +1,8 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-
 import {
     fromHere,
-    fromPackageRoot,
     readJson,
     readPackageJson,
     writeJson
@@ -25,7 +23,9 @@ packageJson.version = packageJson.version.slice(0, -currentSuffix.length - 1)
 writeJson(packageJsonPath, packageJson)
 
 shell(
-    `node ${fromPackageRoot(
+    `node ${fromHere(
+        "..",
+        "..",
         "node_modules",
         "@changesets",
         "cli",
@@ -42,7 +42,7 @@ const suffixedVersion = nonSuffixedVersion + `-${currentSuffix}`
 packageJson.version = suffixedVersion
 writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
 
-const changelogPath = fromPackageRoot("CHANGELOG.md")
+const changelogPath = fromHere("..", "..", "CHANGELOG.md")
 
 writeFileSync(
     changelogPath,
