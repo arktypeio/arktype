@@ -4,13 +4,17 @@ export interface Constraint {
     description?: string
 }
 
-export abstract class ConstraintGroup<
-    group extends List<Constraint> = List<Constraint>
-> extends Array<Constraint> {
-    abstract intersect(constraint: group[number]): this
-}
+type NodeMethods<constraint extends Constraint = Constraint> = {}
 
-export type ConstraintList = readonly Constraint[]
+export type ConstraintNode<constraint extends Constraint = Constraint> =
+    constraint & NodeMethods<constraint>
+
+export const defineConstraintNode =
+    <constraint extends Constraint>(methods: NodeMethods<constraint>) =>
+    (constraint: constraint) =>
+        Object.assign(constraint, methods)
+
+export type ConstraintList = readonly ConstraintNode[]
 
 export type SetMethods<constraints extends ConstraintList> = {
     add: (

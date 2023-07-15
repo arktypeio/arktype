@@ -1,11 +1,13 @@
-import type { List } from "@arktype/utils"
-import type { Constraint, ConstraintSet } from "./constraint.js"
-import { ConstraintGroup, defineConstraintSet } from "./constraint.js"
+import type { Constraint, ConstraintNode, ConstraintSet } from "./constraint.js"
+import { defineConstraintNode, defineConstraintSet } from "./constraint.js"
 
+// TODO: Add equals/extends here? Think about how it will work with range
 export interface RegexConstraint extends Constraint {
     readonly source: string
     readonly flags: string
 }
+
+export const regexNode = defineConstraintNode<RegexConstraint>({})
 
 export type RegexSet = ConstraintSet<readonly RegexConstraint[]>
 
