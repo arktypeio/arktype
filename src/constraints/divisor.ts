@@ -1,14 +1,23 @@
 import { In } from "../compiler/compile.js"
 import { NodeBase } from "../nodes/base.js"
 import type { Constraint } from "./constraint.js"
-import { ConstraintSet } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
 export interface DivisorConstraint extends Constraint {
     readonly divisor: number
 }
 
+export class DivisorNode extends ConstraintNode<DivisorConstraint> {
+    readonly kind = "divisor"
+
+    readonly condition = `${In} % ${this.divisor} === 0`
+
+    readonly defaultDescription =
+        this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
+}
+
 export class DivisorSet extends ConstraintSet<[DivisorConstraint]> {
-    add(constraint: DivisorConstraint) {
+    intersect(constraint: DivisorConstraint) {
         return new DivisorSet({
             divisor: Math.abs(
                 (this[0].divisor * constraint.divisor) /
@@ -18,32 +27,32 @@ export class DivisorSet extends ConstraintSet<[DivisorConstraint]> {
     }
 }
 
-export class DivisorNode extends NodeBase<{
-    rule: number
-    meta: {}
-    intersection: DivisorNode
-}> {
-    readonly kind = "divisor"
+// export class DivisorNode extends NodeBase<{
+//     rule: number
+//     meta: {}
+//     intersection: DivisorNode
+// }> {
+//     readonly kind = "divisor"
 
-    compile() {
-        return `${In} % ${this.rule} === 0`
-    }
+//     compile() {
+//         return `${In} % ${this.rule} === 0`
+//     }
 
-    intersect(other: DivisorNode) {
-        return new DivisorNode(
-            Math.abs(
-                (this.rule * other.rule) /
-                    greatestCommonDivisor(this.rule, other.rule)
-            ),
-            // TODO: fix meta intersections
-            this.meta
-        )
-    }
+//     intersect(other: DivisorNode) {
+//         return new DivisorNode(
+//             Math.abs(
+//                 (this.rule * other.rule) /
+//                     greatestCommonDivisor(this.rule, other.rule)
+//             ),
+//             // TODO: fix meta intersections
+//             this.meta
+//         )
+//     }
 
-    describe() {
-        return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
-    }
-}
+//     describe() {
+//         return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
+//     }
+// }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
