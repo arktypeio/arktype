@@ -34,7 +34,7 @@ module.exports = defineConfig({
 				ignoreRestSiblings: true
 			}
 		],
-		// Per the docs: "you must disable the base rule as it can report incorrect errors"
+		// Per the typescript-eslint docs: "you must disable the base rule as it can report incorrect errors"
 		"no-restricted-imports": "off",
 		"@typescript-eslint/no-restricted-imports": [
 			"warn",
