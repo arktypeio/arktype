@@ -1,3 +1,5 @@
+import type { Disjoint } from "../nodes/disjoint.js"
+
 export interface Constraint {
 	description?: string
 }
@@ -28,11 +30,12 @@ export const ReadonlyArray = Array as unknown as new <
 
 /** @ts-expect-error allow extending narrowed readonly array */
 export abstract class ConstraintSet<
-	constraints extends readonly Constraint[]
+	constraints extends readonly Constraint[],
+	subclass extends ConstraintSet<constraints, any>
 > extends ReadonlyArray<constraints> {
 	abstract intersect(
-		constraint: constraints[number]
-	): ConstraintSet<constraints>
+		constraint: ConstraintSet<constraints, subclass>
+	): ConstraintSet<constraints, subclass> | Disjoint
 }
 
 // type defineConstraint<constraint extends ConstraintGroup> = evaluate<
