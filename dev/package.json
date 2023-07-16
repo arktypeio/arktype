@@ -1,0 +1,12 @@
+{
+	"name": "@arktype/scripts",
+	"private": true,
+	"type": "module",
+	"devDependencies": {
+		"ts-morph": "19.0.0",
+		"@arktype/test": "workspace:*"
+	},
+	"bin": {
+		"ts": "./ts.cjs"
+	}
+}

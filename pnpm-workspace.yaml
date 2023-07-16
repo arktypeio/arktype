@@ -1,5 +1,5 @@
 packages:
-  - "."
-  - "dev/utils"
-  - "dev/attest"
-  - "dev/scripts"
+  - "ark/type"
+  - "ark/util"
+  - "ark/test"
+  - "ark/node"

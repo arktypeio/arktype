@@ -18,7 +18,7 @@
 	],
 	"typescript.preferences.autoImportFileExcludePatterns": [
 		"dist",
-		// Ideally we could just exclude main.ts in general, but for now that prevents suggestions from e.g. @arktype/utils:
+		// Ideally we could just exclude main.ts in general, but for now that prevents suggestions from e.g. @arktype/util:
 		// https://github.com/microsoft/TypeScript/issues/51418
 		"./src/main.ts"
 	],

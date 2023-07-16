@@ -1,136 +1,136 @@
 {
-    "name": "arktype",
-    "description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-    "version": "1.0.15-alpha",
-    "license": "MIT",
-    "author": {
-        "name": "David Blass",
-        "email": "david@arktype.io",
-        "url": "https://arktype.io"
-    },
-    "engines": {
-        "node": ">=16"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/arktypeio/arktype.git"
-    },
-    "type": "module",
-    "main": "./dist/cjs/main.js",
-    "types": "./dist/cjs/main.d.ts",
-    "exports": {
-        ".": {
-            "arktype-dev": "./src/main.js",
-            "import": "./dist/mjs/main.js",
-            "require": "./dist/cjs/main.js"
-        },
-        "./internal/*": {
-            "arktype-dev": "./src/*",
-            "import": "./dist/mjs/*",
-            "require": "./dist/cjs/*"
-        }
-    },
-    "files": [
-        "dist",
-        "!*.tsbuildinfo"
-    ],
-    "packageManager": "pnpm@8.6.6",
-    "scripts": {
-        "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
-        "build": "ts ./dev/scripts/build.ts",
-        "buildRepo": "pnpm build && cd ./dev/attest && pnpm build && cd ../arktype.io && pnpm build",
-        "docgen": "ts ./dev/scripts/docgen.ts",
-        "test": "mocha",
-        "tnt": "mocha --skipTypes",
-        "testRepo": "pnpm test && cd ./dev/attest && pnpm test && pnpm testTsVersions",
-        "testTsVersions": "ts ./dev/scripts/testTsVersions.ts",
-        "typecheck": "tsc --noEmit",
-        "tsin": "tsc --noEmit --extendedDiagnostics --composite false",
-        "lint": "eslint --max-warnings=0 .",
-        "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
-        "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
-        "changes": "cd ./dev/configs && node ../../node_modules/@changesets/cli/bin.js",
-        "knip": "knip",
-        "ci:publish": "pnpm changes publish",
-        "ci:version": "ts ./dev/scripts/updateVersions.ts"
-    },
-    "dependencies": {
-        "@arktype/utils": "workspace:*"
-    },
-    "devDependencies": {
-        "@arktype/attest": "workspace:*",
-        "@arktype/scripts": "workspace:*",
-        "@changesets/changelog-github": "0.4.8",
-        "@changesets/cli": "2.26.2",
-        "@swc/cli": "0.1.62",
-        "@swc/core": "1.3.69",
-        "@types/mocha": "10.0.1",
-        "@types/node": "20.4.2",
-        "@typescript-eslint/eslint-plugin": "6.0.0",
-        "@typescript-eslint/parser": "6.0.0",
-        "c8": "8.0.0",
-        "eslint": "8.45.0",
-        "eslint-config-prettier": "8.8.0",
-        "eslint-define-config": "1.21.0",
-        "eslint-import-resolver-typescript": "3.5.5",
-        "eslint-plugin-import": "2.27.5",
-        "eslint-plugin-mdx": "2.1.0",
-        "eslint-plugin-only-warn": "1.1.0",
-        "eslint-plugin-prefer-arrow-functions": "3.1.4",
-        "knip": "2.15.5",
-        "mocha": "10.2.0",
-        "prettier": "3.0.0",
-        "prettier-plugin-jsdoc": "0.4.2",
-        "ts-node": "10.9.1",
-        "typescript": "5.1.6"
-    },
-    "mocha": {
-        "spec": [
-            "./dev/test/*.test.*"
-        ],
-        "ignore": "**/node_modules/*",
-        "//": "NOTE: These are also maintained in .vscode/settings.json",
-        "node-option": [
-            "loader=ts-node/esm",
-            "no-warnings=ExperimentalWarning",
-            "conditions=arktype-dev"
-        ],
-        "require": "./dev/configs/mocha.fixtures.ts"
-    },
-    "c8": {
-        "checkCoverage": true,
-        "lines": 96,
-        "src": "./src",
-        "exclude": [
-            "test/**",
-            "dev/**"
-        ],
-        "extension": ".ts",
-        "reporter": "lcovonly"
-    },
-    "prettier": {
-        "useTabs": true,
-        "semi": false,
-        "trailingComma": "none"
-    },
-    "quokka": {
-        "showValueOnSelection": false,
-        "env": {
-            "params": {
-                "runner": "--conditions=arktype-dev"
-            }
-        }
-    },
-    "eslintConfig": {
-        "extends": "./dev/configs/.eslintrc.cjs"
-    },
-    "pnpm": {
-        "peerDependencyRules": {
-            "ignoreMissing": [
-                "@algolia/client-search",
-                "@babel/core",
-                "typescript"
-            ]
-        }
-    }
+	"name": "arktype",
+	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
+	"version": "1.0.15-alpha",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"engines": {
+		"node": ">=16"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git"
+	},
+	"type": "module",
+	"main": "./dist/cjs/main.js",
+	"types": "./dist/cjs/main.d.ts",
+	"exports": {
+		".": {
+			"arktype-dev": "./src/main.js",
+			"import": "./dist/mjs/main.js",
+			"require": "./dist/cjs/main.js"
+		},
+		"./internal/*": {
+			"arktype-dev": "./src/*",
+			"import": "./dist/mjs/*",
+			"require": "./dist/cjs/*"
+		}
+	},
+	"files": [
+		"dist",
+		"!*.tsbuildinfo"
+	],
+	"packageManager": "pnpm@8.6.6",
+	"scripts": {
+		"prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
+		"build": "ts ./dev/build.ts",
+		"buildRepo": "pnpm build && cd ./ark/test && pnpm build && cd ../docs && pnpm build",
+		"docgen": "ts ./dev/docgen.ts",
+		"test": "mocha",
+		"tnt": "mocha --skipTypes",
+		"testRepo": "pnpm test && cd ./ark/test && pnpm test && pnpm testTsVersions",
+		"testTsVersions": "ts ./dev/testTsVersions.ts",
+		"typecheck": "tsc --noEmit",
+		"tsin": "tsc --noEmit --extendedDiagnostics --composite false",
+		"lint": "eslint --max-warnings=0 .",
+		"format": "prettier --write --ignore-path ./dev/.prettierignore .",
+		"checkFormat": "prettier --check --ignore-path ./dev/.prettierignore .",
+		"changes": "cd ./dev && node ../node_modules/@changesets/cli/bin.js",
+		"knip": "knip",
+		"ci:publish": "pnpm changes publish",
+		"ci:version": "ts ./dev/scripts/updateVersions.ts"
+	},
+	"dependencies": {
+		"@arktype/util": "workspace:*"
+	},
+	"devDependencies": {
+		"@arktype/test": "workspace:*",
+		"@arktype/scripts": "workspace:*",
+		"@changesets/changelog-github": "0.4.8",
+		"@changesets/cli": "2.26.2",
+		"@swc/cli": "0.1.62",
+		"@swc/core": "1.3.69",
+		"@types/mocha": "10.0.1",
+		"@types/node": "20.4.2",
+		"@typescript-eslint/eslint-plugin": "6.0.0",
+		"@typescript-eslint/parser": "6.0.0",
+		"c8": "8.0.0",
+		"eslint": "8.45.0",
+		"eslint-config-prettier": "8.8.0",
+		"eslint-define-config": "1.21.0",
+		"eslint-import-resolver-typescript": "3.5.5",
+		"eslint-plugin-import": "2.27.5",
+		"eslint-plugin-mdx": "2.1.0",
+		"eslint-plugin-only-warn": "1.1.0",
+		"eslint-plugin-prefer-arrow-functions": "3.1.4",
+		"knip": "2.15.5",
+		"mocha": "10.2.0",
+		"prettier": "3.0.0",
+		"prettier-plugin-jsdoc": "0.4.2",
+		"ts-node": "10.9.1",
+		"typescript": "5.1.6"
+	},
+	"mocha": {
+		"spec": [
+			"**/test/*.test.*"
+		],
+		"ignore": "**/node_modules/*",
+		"//": "NOTE: These are also maintained in .vscode/settings.json",
+		"node-option": [
+			"loader=ts-node/esm",
+			"no-warnings=ExperimentalWarning",
+			"conditions=arktype-dev"
+		],
+		"require": "./dev/mocha.fixtures.ts"
+	},
+	"c8": {
+		"checkCoverage": true,
+		"lines": 96,
+		"src": "./src",
+		"exclude": [
+			"test/**",
+			"dev/**"
+		],
+		"extension": ".ts",
+		"reporter": "lcovonly"
+	},
+	"prettier": {
+		"useTabs": true,
+		"semi": false,
+		"trailingComma": "none"
+	},
+	"quokka": {
+		"showValueOnSelection": false,
+		"env": {
+			"params": {
+				"runner": "--conditions=arktype-dev"
+			}
+		}
+	},
+	"eslintConfig": {
+		"extends": "./dev/.eslintrc.cjs"
+	},
+	"pnpm": {
+		"peerDependencyRules": {
+			"ignoreMissing": [
+				"@algolia/client-search",
+				"@babel/core",
+				"typescript"
+			]
+		}
+	}
 }

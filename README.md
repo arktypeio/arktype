@@ -1,6 +1,6 @@
 <h1 align="center">ArkType <sub><sup>TypeScript's 1:1 validator</sup></sub></h1>
 
-[<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
+[<img src="./ark/docs/static/img/arktype.gif">](https://arktype.io/try)
 <sub>
 <i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>) (<a href="https://arktype.io/try">try in-browser</a>)</i>
 </sub>
@@ -182,11 +182,9 @@ export const { data, problems } = parseBigintLiteral("999n")
 
 ArkType supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks ⛵
 
-In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) or ask us [on Discord](https://discord.gg/xEzdc3fJQC) if your functionality is supported. If not, [create a GitHub issue](https://github.com/arktypeio/arktype/issues/new) so we can prioritize it!
+In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./ark/type/test) or ask us [on Discord](https://discord.gg/xEzdc3fJQC) if your functionality is supported. If not, [create a GitHub issue](https://github.com/arktypeio/arktype/issues/new) so we can prioritize it!
 
 <!--@snipEnd -->
-
-> > > > > > > main
 
 ## Integrations
 
