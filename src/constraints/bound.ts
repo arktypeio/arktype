@@ -1,7 +1,7 @@
 import { In } from "../compiler/compile.js"
 import type { DateLiteral } from "../parser/string/shift/operand/date.js"
 import type { Constraint } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
 export type LimitLiteral = number | DateLiteral
 
@@ -24,6 +24,16 @@ export class BoundNode<
 			? dateComparatorDescriptions[this.comparator]
 			: numericComparatorDescriptions[this.comparator]
 	} ${this.limit}`
+
+	isMin =
+		this.comparator === ">" ||
+		this.comparator === ">=" ||
+		this.comparator === "=="
+
+	isMax =
+		this.comparator === "<" ||
+		this.comparator === "<=" ||
+		this.comparator === "=="
 }
 
 const unitsByBoundKind = {
@@ -41,6 +51,26 @@ const compiledSizeByBoundKind: Record<BoundKind, string> = {
 	string: `${In}.length`,
 	array: `${In}.length`
 } as const
+
+export type Range =
+	| readonly [BoundNode]
+	| readonly [BoundNode<MinComparator>, BoundNode<MaxComparator>]
+
+export class BoundSet extends ConstraintSet<Range> {
+	readonly min = this[0].isMin ? this[0] : undefined
+	readonly max = this[0].isMax ? this[0] : this[1]?.isMax ? this[1] : undefined
+
+	intersect(bound: BoundNode) {
+		if (this.min) {
+			if (bound.isMin) {
+			}
+		}
+		if (bound.isMin) {
+		}
+
+		return new BoundSet(bound)
+	}
+}
 
 export const compareStrictness = (
 	kind: "min" | "max",

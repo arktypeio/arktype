@@ -11,7 +11,7 @@ export abstract class ConstraintNode<
 	constraint extends Constraint
 > extends ReadonlyObject<constraint> {
 	constructor(constraint: constraint) {
-		super(constraint)
+		super({ ...constraint })
 	}
 
 	abstract readonly condition: string
@@ -30,7 +30,9 @@ export const ReadonlyArray = Array as unknown as new <
 export abstract class ConstraintSet<
 	constraints extends readonly Constraint[]
 > extends ReadonlyArray<constraints> {
-	abstract intersect(constraint: constraints[number]): constraints
+	abstract intersect(
+		constraint: constraints[number]
+	): ConstraintSet<constraints>
 }
 
 // type defineConstraint<constraint extends ConstraintGroup> = evaluate<
