@@ -2,4 +2,4 @@ packages:
   - "ark/type"
   - "ark/util"
   - "ark/test"
-  - "ark/node"
+  - "node"
