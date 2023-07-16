@@ -7,7 +7,7 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
-			"args": ["--extensionDevelopmentPath=${workspaceRoot}/dev/arkdark"]
+			"args": ["--extensionDevelopmentPath=${workspaceRoot}/ark/dark"]
 		}
 	]
 }

@@ -110,7 +110,7 @@ module.exports = defineConfig({
 			}
 		},
 		{
-			files: ["./dev/examples/*.ts"],
+			files: ["./ark/type/examples/*.ts"],
 			rules: {
 				"@typescript-eslint/no-unused-vars": "off"
 			}
@@ -126,17 +126,10 @@ module.exports = defineConfig({
 			}
 		},
 		{
-			//  "!./dev/utils"
 			files: ["./dev/**"],
 			rules: {
+				"@typescript-eslint/no-restricted-imports": "off",
 				"import/no-nodejs-modules": "off"
-			}
-		},
-		{
-			// TODO: Exclude these from this directory "!./dev/utils", "!./dev/attest"
-			files: ["./dev/**"],
-			rules: {
-				"@typescript-eslint/no-restricted-imports": "off"
 			}
 		}
 	]

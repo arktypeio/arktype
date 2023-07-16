@@ -1,5 +1,5 @@
 {
-	"//": "This directory was generated from the following files (see dev/scripts/docgen/mapDir.ts for details)",
+	"//": "This directory was generated from the following files (see dev/docgen/mapDir.ts for details)",
 	"concision.ts": "dev/examples/concision.ts",
 	"demo.ts": "dev/examples/demo.ts",
 	"extends.ts": "dev/examples/extends.ts",

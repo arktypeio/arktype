@@ -70,7 +70,7 @@ Also...
 
 ## Install <sub><sub>📦`12KB` gzipped, `0` dependencies</sub></sub>
 
-<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code>
+<img src="./ark/docs/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code>
 <sub>(or whatever package manager you prefer)</sub>
 <br />
 

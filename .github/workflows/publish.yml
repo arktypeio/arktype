@@ -25,7 +25,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dev/arktype.io/dist
+          publish_dir: ./ark/docs/dist
 
   create-release-pr:
     runs-on: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
         with:
           commit: "chore: update versions"
           title: "chore: update versions"
-          cwd: "./dev/configs"
+          cwd: "./dev"
           version: pnpm ci:version
           publish: pnpm ci:publish
         env:

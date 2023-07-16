@@ -1,5 +1,4 @@
-import { throwParseError } from "../../../../../dev/utils/src/errors.js"
-import { tryParseWellFormedNumber } from "../../../../../dev/utils/src/main.js"
+import { throwParseError, tryParseWellFormedNumber } from "@arktype/util"
 
 export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
