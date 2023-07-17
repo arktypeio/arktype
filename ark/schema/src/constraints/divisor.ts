@@ -12,20 +12,21 @@ export class DivisorNode extends ConstraintNode<DivisorConstraint> {
 		this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 }
 
-export class DivisorSet extends ConstraintSet<[DivisorConstraint], DivisorSet> {
+export class DivisorSet extends ConstraintSet<[DivisorNode], DivisorSet> {
 	intersect(other: DivisorSet) {
-		return new DivisorSet({
+		const node = new DivisorNode({
 			divisor: Math.abs(
 				(this[0].divisor * other[0].divisor) /
 					greatestCommonDivisor(this[0].divisor, other[0].divisor)
 			)
 		})
+		return new DivisorSet(node)
 	}
 }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
-	let previous
+	let previous: number
 	let greatestCommonDivisor = l
 	let current = r
 	while (current !== 0) {

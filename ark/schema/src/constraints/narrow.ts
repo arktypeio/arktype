@@ -1,29 +1,27 @@
-import { In } from "../compiler/compile.js"
-import { registry } from "../compiler/registry.js"
-import { NodeBase } from "../nodes/base.js"
-import type { Narrow } from "../parser/tuple.js"
+import type { Constraint } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export type NarrowIntersection = readonly NarrowNode[]
+export interface NarrowConstraint extends Constraint {
+	readonly narrow: Narrow
+}
 
-export class NarrowNode extends NodeBase<{
-	rule: Narrow
-	intersection: NarrowIntersection
-	meta: {}
-}> {
-	readonly kind = "narrow"
+export type Narrow<data = any> = (data: data) => boolean
 
-	compile() {
-		return `${registry().register(this.rule)}(${In})`
-	}
+export type NarrowCast<data = any, narrowed extends data = data> = (
+	data: data
+) => data is narrowed
 
-	intersect(other: NarrowIntersection) {
-		const matching = other.find((node) => node.rule === this.rule)
-		return matching ? other : [...other, this]
-	}
+export type inferNarrow<In, predicate> = predicate extends (
+	data: any,
+	...args: any[]
+) => data is infer narrowed
+	? narrowed
+	: In
 
-	describe() {
-		return `valid according to ${this.rule.name}`
-	}
+export class NarrowNode extends ConstraintNode<NarrowConstraint> {
+	readonly kind = "divisor"
+
+	readonly defaultDescription = `valid according to ${this.narrow.name}`
 }
 
 // intersect: (l, r) =>
@@ -33,3 +31,11 @@ export class NarrowNode extends NodeBase<{
 //     intersectUniqueLists(l.children, r.children)
 
 // TODO: allow changed order to be the same type
+
+export class NarrowSet extends ConstraintSet<readonly NarrowNode[], NarrowSet> {
+	intersect(other: NarrowSet) {
+		return this
+	}
+}
+
+export type NarrowIntersection = readonly NarrowNode[]

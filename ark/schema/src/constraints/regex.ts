@@ -11,16 +11,12 @@ export class RegexNode extends ConstraintNode<RegexConstraint> {
 	defaultDescription = `matched by ${this.literal}`
 }
 
-export class RegexSet extends ConstraintSet<
-	readonly RegexConstraint[],
-	RegexSet
-> {
-	intersect(constraint: RegexSet) {
+export class RegexSet extends ConstraintSet<readonly RegexNode[], RegexSet> {
+	intersect(other: RegexSet) {
 		const matching = this.find(
 			(existing) =>
-				constraint.source === existing.source &&
-				constraint.flags === existing.flags
+				other.source === existing.source && other.flags === existing.flags
 		)
-		return matching ? this : new RegexSet(...this, constraint)
+		return matching ? this : new RegexSet(...this, other)
 	}
 }

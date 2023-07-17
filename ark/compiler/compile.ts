@@ -120,3 +120,6 @@ export const compilePropAccess = (name: string, optional = false) =>
 // } ${this.limit}`
 
 // 	readonly condition = `${In} % ${this.divisor} === 0`
+
+// narrow
+// 	return `${registry().register(this.rule)}(${In})`

@@ -398,20 +398,6 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 	return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Narrow)
 }
 
-export type Narrow<data = any> = (data: data, state: TraversalState) => boolean
-
-export type NarrowCast<data = any, narrowed extends data = data> = (
-	data: data,
-	state: TraversalState
-) => data is narrowed
-
-export type inferNarrow<In, predicate> = predicate extends (
-	data: any,
-	...args: any[]
-) => data is infer narrowed
-	? narrowed
-	: In
-
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>
 } = {
