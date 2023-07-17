@@ -39,7 +39,7 @@ export type entryOf<o> = {
 }[o extends readonly unknown[] ? keyof o & number : keyof o] &
 	unknown
 
-export type entriesOf<o extends object> = evaluate<entryOf<o>[]>
+export type entriesOf<o extends object> = entryOf<o>[]
 
 export const entriesOf = <o extends object>(o: o) =>
 	Object.entries(o) as entriesOf<o>
