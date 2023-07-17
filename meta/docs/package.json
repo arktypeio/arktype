@@ -9,11 +9,11 @@
 		"serve": "docusaurus serve --dir dist"
 	},
 	"dependencies": {
-		"@docusaurus/core": "2.4.0",
-		"@docusaurus/plugin-content-docs": "2.4.0",
-		"@docusaurus/plugin-google-gtag": "2.4.0",
-		"@docusaurus/preset-classic": "2.4.0",
-		"@docusaurus/theme-common": "2.4.0",
+		"@docusaurus/core": "2.4.1",
+		"@docusaurus/plugin-content-docs": "2.4.1",
+		"@docusaurus/plugin-google-gtag": "2.4.1",
+		"@docusaurus/preset-classic": "2.4.1",
+		"@docusaurus/theme-common": "2.4.1",
 		"@emotion/react": "11.10.6",
 		"@emotion/styled": "11.10.6",
 		"@mdx-js/react": "1.6.22",
@@ -27,22 +27,12 @@
 		"react-dom": "17.0.2"
 	},
 	"devDependencies": {
-		"@docusaurus/module-type-aliases": "2.4.0",
-		"@docusaurus/types": "2.4.0",
+		"@docusaurus/module-type-aliases": "2.4.1",
+		"@docusaurus/types": "2.4.1",
 		"@tsconfig/docusaurus": "1.0.7",
 		"@types/node": "18.15.11",
 		"@types/react": "17.0.2",
 		"@types/react-dom": "17.0.2",
 		"arktype": "link:../.."
-	},
-	"pnpm": {
-		"peerDependencyRules": {
-			"//": "Docusaurus/webpack nonsense",
-			"ignoreMissing": [
-				"@algolia/client-search",
-				"@babel/core",
-				"typescript"
-			]
-		}
 	}
 }

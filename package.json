@@ -28,7 +28,7 @@
 		"typecheck": "tsc --noEmit",
 		"tsin": "tsc --noEmit --extendedDiagnostics --composite false",
 		"lint": "eslint --max-warnings=0 .",
-		"format": "prettier --write --ignore-path ./dev/.prettierignore .",
+		"format": "prettier --write --ignore-path ./meta/configs/.prettierignore .",
 		"checkFormat": "prettier --check --ignore-path ./dev/.prettierignore .",
 		"changes": "cd ./dev && node ../node_modules/@changesets/cli/bin.js",
 		"knip": "knip",
