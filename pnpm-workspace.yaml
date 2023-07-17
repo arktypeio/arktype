@@ -1,5 +1,2 @@
 packages:
-  - "ark/type"
-  - "ark/util"
-  - "ark/test"
-  - "node"
+  - "ark/*"

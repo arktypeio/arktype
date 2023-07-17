@@ -15,25 +15,6 @@
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype.git"
 	},
-	"type": "module",
-	"main": "./dist/cjs/main.js",
-	"types": "./dist/cjs/main.d.ts",
-	"exports": {
-		".": {
-			"arktype-dev": "./src/main.js",
-			"import": "./dist/mjs/main.js",
-			"require": "./dist/cjs/main.js"
-		},
-		"./internal/*": {
-			"arktype-dev": "./src/*",
-			"import": "./dist/mjs/*",
-			"require": "./dist/cjs/*"
-		}
-	},
-	"files": [
-		"dist",
-		"!*.tsbuildinfo"
-	],
 	"packageManager": "pnpm@8.6.6",
 	"scripts": {
 		"prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
@@ -95,7 +76,7 @@
 			"no-warnings=ExperimentalWarning",
 			"conditions=arktype-dev"
 		],
-		"require": "./dev/mocha.fixtures.ts"
+		"require": "./this/mocha.fixtures.ts"
 	},
 	"c8": {
 		"checkCoverage": true,
@@ -103,7 +84,7 @@
 		"src": "./src",
 		"exclude": [
 			"test/**",
-			"dev/**"
+			"this/**"
 		],
 		"extension": ".ts",
 		"reporter": "lcovonly"
@@ -122,7 +103,7 @@
 		}
 	},
 	"eslintConfig": {
-		"extends": "./dev/.eslintrc.cjs"
+		"extends": "./this/.eslintrc.cjs"
 	},
 	"pnpm": {
 		"peerDependencyRules": {
