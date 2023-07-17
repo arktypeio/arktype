@@ -1,7 +1,7 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "1.0.15-alpha",
+	"version": "1.0.16-alpha",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
