@@ -16,6 +16,7 @@ export abstract class ConstraintNode<
 		super({ ...constraint })
 	}
 
+	abstract readonly id: string
 	abstract readonly defaultDescription: string
 }
 

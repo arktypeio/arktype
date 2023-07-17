@@ -7,7 +7,7 @@ export interface DivisorConstraint extends Constraint {
 
 export class DivisorNode extends ConstraintNode<DivisorConstraint> {
 	readonly kind = "divisor"
-
+	readonly id = ""
 	readonly defaultDescription =
 		this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 }
