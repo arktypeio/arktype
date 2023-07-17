@@ -1,4 +1,3 @@
-import { In } from "../compiler/compile.js"
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
@@ -9,12 +8,14 @@ export interface RegexConstraint extends Constraint {
 
 export class RegexNode extends ConstraintNode<RegexConstraint> {
 	literal = `/${this.source}/${this.flags}`
-	condition = `${this.literal}.test(${In})`
 	defaultDescription = `matched by ${this.literal}`
 }
 
-export class RegexSet extends ConstraintSet<readonly RegexConstraint[]> {
-	intersect(constraint: RegexConstraint) {
+export class RegexSet extends ConstraintSet<
+	readonly RegexConstraint[],
+	RegexSet
+> {
+	intersect(constraint: RegexSet) {
 		const matching = this.find(
 			(existing) =>
 				constraint.source === existing.source &&

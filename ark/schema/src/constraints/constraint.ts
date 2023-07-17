@@ -1,4 +1,4 @@
-import type { Disjoint } from "../nodes/disjoint.js"
+import type { Disjoint } from "../disjoint.js"
 
 export interface Constraint {
 	description?: string
@@ -16,7 +16,6 @@ export abstract class ConstraintNode<
 		super({ ...constraint })
 	}
 
-	abstract readonly condition: string
 	abstract readonly defaultDescription: string
 }
 

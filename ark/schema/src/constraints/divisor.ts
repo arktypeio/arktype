@@ -1,5 +1,3 @@
-import { In } from "../compiler/compile.js"
-import { NodeBase } from "../nodes/base.js"
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
@@ -10,49 +8,20 @@ export interface DivisorConstraint extends Constraint {
 export class DivisorNode extends ConstraintNode<DivisorConstraint> {
 	readonly kind = "divisor"
 
-	readonly condition = `${In} % ${this.divisor} === 0`
-
 	readonly defaultDescription =
 		this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 }
 
-export class DivisorSet extends ConstraintSet<[DivisorConstraint]> {
-	intersect(constraint: DivisorConstraint) {
+export class DivisorSet extends ConstraintSet<[DivisorConstraint], DivisorSet> {
+	intersect(other: DivisorSet) {
 		return new DivisorSet({
 			divisor: Math.abs(
-				(this[0].divisor * constraint.divisor) /
-					greatestCommonDivisor(this[0].divisor, constraint.divisor)
+				(this[0].divisor * other[0].divisor) /
+					greatestCommonDivisor(this[0].divisor, other[0].divisor)
 			)
 		})
 	}
 }
-
-// export class DivisorNode extends NodeBase<{
-//     rule: number
-//     meta: {}
-//     intersection: DivisorNode
-// }> {
-//     readonly kind = "divisor"
-
-//     compile() {
-//         return `${In} % ${this.rule} === 0`
-//     }
-
-//     intersect(other: DivisorNode) {
-//         return new DivisorNode(
-//             Math.abs(
-//                 (this.rule * other.rule) /
-//                     greatestCommonDivisor(this.rule, other.rule)
-//             ),
-//             // TODO: fix meta intersections
-//             this.meta
-//         )
-//     }
-
-//     describe() {
-//         return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
-//     }
-// }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

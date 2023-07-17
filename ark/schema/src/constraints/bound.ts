@@ -1,11 +1,7 @@
 import { throwParseError } from "@arktype/util"
-import { In } from "../compiler/compile.js"
-import { Disjoint } from "../nodes/disjoint.js"
-import type { DateLiteral } from "../parser/string/shift/operand/date.js"
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode, ConstraintSet } from "./constraint.js"
-
-export type LimitLiteral = number | DateLiteral
+import { Disjoint } from "../disjoint.js"
 
 export interface BoundConstraint<comparator extends Comparator = Comparator>
 	extends Constraint {
@@ -17,10 +13,6 @@ export interface BoundConstraint<comparator extends Comparator = Comparator>
 export class BoundNode<
 	comparator extends Comparator = Comparator
 > extends ConstraintNode<BoundConstraint<comparator>> {
-	condition = `${compiledSizeByBoundedKind[this.bounded]} ${
-		this.comparator === "==" ? "===" : this.comparator
-	} ${this.limit}`
-
 	defaultDescription = `${
 		this.bounded === "date"
 			? dateComparatorDescriptions[this.comparator]
@@ -53,13 +45,6 @@ const unitsByBoundedKind = {
 
 export type BoundedKind = keyof typeof unitsByBoundedKind
 
-const compiledSizeByBoundedKind: Record<BoundedKind, string> = {
-	date: `${In}.valueOf()`,
-	number: In,
-	string: `${In}.length`,
-	array: `${In}.length`
-} as const
-
 export type Range =
 	| readonly [BoundNode]
 	| readonly [BoundNode<MinComparator>, BoundNode<MaxComparator>]
@@ -85,7 +70,8 @@ export class BoundSet extends ConstraintSet<Range, BoundSet> {
 			if (stricterMax === "r") {
 				return compareStrictness("min", this.min, other.max) === "l"
 					? Disjoint.from("range", this, other)
-					: new BoundSet(this.min!, other.max!)
+					: // TODO: hair space
+					  new BoundSet(this.min!, other.max!)
 			}
 			return this
 		}

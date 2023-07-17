@@ -107,3 +107,16 @@ export const compilePropAccess = (name: string, optional = false) =>
 	isDotAccessible(name)
 		? `${optional ? "?" : ""}.${name}`
 		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
+
+// const compiledSizeByBoundedKind: Record<BoundedKind, string> = {
+// 	date: `${In}.valueOf()`,
+// 	number: In,
+// 	string: `${In}.length`,
+// 	array: `${In}.length`
+// } as const
+
+// condition = `${compiledSizeByBoundedKind[this.bounded]} ${
+// 	this.comparator === "==" ? "===" : this.comparator
+// } ${this.limit}`
+
+// 	readonly condition = `${In} % ${this.divisor} === 0`
