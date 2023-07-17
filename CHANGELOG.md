@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.16-alpha
+
+### Patch Changes
+
+-   fix: internal type error in compiled output
+
 ## 1.0.15-alpha
 
 ### Patch Changes
