@@ -1,4 +1,4 @@
-import type { Disjoint } from "../disjoint.js"
+import { Disjoint } from "../disjoint.js"
 
 export interface Constraint {
 	description?: string
@@ -8,16 +8,16 @@ export const ReadonlyObject = Object as unknown as new <T extends object>(
 	base: T
 ) => T
 
-/** @ts-expect-error allow extending narrowed readonly object */
 export abstract class ConstraintNode<
-	constraint extends Constraint
-> extends ReadonlyObject<constraint> {
-	constructor(constraint: constraint) {
-		super({ ...constraint })
-	}
-
+	constraint extends Constraint = Constraint,
+	subclass extends ConstraintNode = ConstraintNode<constraint, any>
+> {
 	abstract readonly id: string
 	abstract readonly defaultDescription: string
+
+	constructor(public constraint: constraint) {}
+
+	abstract intersect(constraint: subclass): subclass | null | Disjoint
 }
 
 export type ConstraintList = readonly Constraint[]
@@ -29,13 +29,25 @@ export const ReadonlyArray = Array as unknown as new <
 ) => T
 
 /** @ts-expect-error allow extending narrowed readonly array */
-export abstract class ConstraintSet<
-	constraints extends readonly Constraint[],
-	subclass extends ConstraintSet<constraints, any>
+export class ConstraintSet<
+	constraints extends ConstraintNode[] = ConstraintNode[]
 > extends ReadonlyArray<constraints> {
-	abstract intersect(
-		constraint: ConstraintSet<constraints, subclass>
-	): ConstraintSet<constraints, subclass> | Disjoint
+	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
+		const result = [] as unknown as constraints
+		for (let i = 0; i < this.length; i++) {
+			const elementResult = this[i].intersect(constraint)
+			if (elementResult === null) {
+				result.push(this[i])
+			} else if (elementResult instanceof Disjoint) {
+				return elementResult
+			} else {
+				result.push(elementResult, ...this.slice(i + 1))
+				return new ConstraintSet(...result)
+			}
+		}
+		result.push(constraint)
+		return new ConstraintSet(...result)
+	}
 }
 
 // type defineConstraint<constraint extends ConstraintGroup> = evaluate<

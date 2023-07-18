@@ -1,26 +1,29 @@
 import type { Constraint } from "./constraint.js"
-import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
 export interface DivisorConstraint extends Constraint {
 	readonly divisor: number
 }
 
-export class DivisorNode extends ConstraintNode<DivisorConstraint> {
+export class DivisorNode extends ConstraintNode<
+	DivisorConstraint,
+	DivisorNode
+> {
 	readonly kind = "divisor"
 	readonly id = ""
 	readonly defaultDescription =
-		this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
-}
+		this.constraint.divisor === 1
+			? "an integer"
+			: `a multiple of ${this.constraint.divisor}`
 
-export class DivisorSet extends ConstraintSet<[DivisorNode], DivisorSet> {
-	intersect(other: DivisorSet) {
-		const node = new DivisorNode({
+	intersect(other: DivisorNode) {
+		return new DivisorNode({
 			divisor: Math.abs(
+				// TODO: fix type
 				(this[0].divisor * other[0].divisor) /
 					greatestCommonDivisor(this[0].divisor, other[0].divisor)
 			)
 		})
-		return new DivisorSet(node)
 	}
 }
 
