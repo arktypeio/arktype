@@ -35,4 +35,5 @@ test("optional keys and definition reduction", () => {
 	attest(t0.condition).equals(t1.condition)
 	attest(t0.condition).equals(t2.condition)
 	attest(t0.condition).equals(t3.condition)
+	attest(t0.condition).equals(t4.condition)
 })

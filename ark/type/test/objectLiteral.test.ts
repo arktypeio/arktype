@@ -125,6 +125,43 @@ $ark.object36($arkRoot.b)`)
 		const t = type({ "a?": { b: "boolean" } })
 		attest(t.infer).typed as { a?: { b: boolean } }
 	})
+	suite("optional tuple literals", () => {
+		test("tuple with inline optional", () => {
+			const z = type(["string?", "number"])
+		})
+		test("tuple with optional tuple", () => {
+			const t = type([["string", "?"], "number", "string?"])
+		})
+		test("multidefined optional", () => {
+			const t = type(["string?", "?"])
+		})
+	})
+	type z = [number, string?]
+	test("symbol key", () => {
+		const s = Symbol()
+		const t = type({
+			[s]: "boolean"
+		})
+	})
+	test("optional symbol", () => {
+		//todoshawn gotta figure out this autocomplete ? error stuff
+		const s = Symbol()
+		const t = type({
+			[s]: "boolean?"
+		})
+	})
+	test("optional keys and definition reduction", () => {
+		const t0 = type({ "a?": "string" })
+		const t1 = type({ a: "string?" })
+		const t2 = type({ "a?": "string?" })
+		const t3 = type({ a: ["string", "?"] })
+		const t4 = type({ a: ["string?", "?"] })
+		attest(t0.condition).equals(t1.condition)
+		attest(t0.condition).equals(t2.condition)
+		attest(t0.condition).equals(t3.condition)
+		attest(t0.condition).equals(t4.condition)
+	})
+
 	test("intersections", () => {
 		const a = { "a?": "string" } as const
 		const b = { b: "string" } as const

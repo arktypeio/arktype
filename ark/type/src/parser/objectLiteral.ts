@@ -31,9 +31,9 @@ const parseDefinition = (
 	ctx: ParseContext
 ) => {
 	for (const definitionKey in def) {
-		const key = getTrimmedDataAndOptional(definitionKey, false)
+		const key = checkForOptionalAndTrimData(definitionKey, false)
 		ctx.path.push(key.data as string)
-		const keyDef = getTrimmedDataAndOptional(def[definitionKey], key.optional)
+		const keyDef = checkForOptionalAndTrimData(def[definitionKey], key.optional)
 		const definition = ctx.scope.parse(keyDef.data, ctx)
 
 		named[key.data as string] = {
@@ -44,7 +44,7 @@ const parseDefinition = (
 		ctx.path.pop()
 	}
 }
-const getTrimmedDataAndOptional = (
+export const checkForOptionalAndTrimData = (
 	data: unknown,
 	optional = false
 ): { data: unknown; optional: boolean } => {
