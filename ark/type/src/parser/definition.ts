@@ -26,6 +26,7 @@ import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type {
 	inferObjectLiteral,
+	OptionalValue,
 	validateObjectLiteral
 } from "./objectLiteral.js"
 import { parseObjectLiteral } from "./objectLiteral.js"
@@ -65,7 +66,11 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	}
 }
 
-export type inferDefinition<def, $, args> = isAny<def> extends true
+export type inferDefinition<def, $, args> = def extends OptionalValue<
+	infer inner
+>
+	? inferDefinition<inner, $, args> | undefined
+	: isAny<def> extends true
 	? never
 	: def extends CastTo<infer t> | ThunkCast<infer t>
 	? t

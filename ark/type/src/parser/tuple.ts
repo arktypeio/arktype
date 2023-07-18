@@ -234,6 +234,8 @@ export type inferTupleExpression<
 	args
 > = def[1] extends "[]"
 	? inferDefinition<def[0], $, args>[]
+	: def[1] extends "?"
+	? inferDefinition<def[0], $, args>
 	: def[1] extends "&"
 	? inferIntersection<
 			inferDefinition<def[0], $, args>,
@@ -276,7 +278,11 @@ export type validatePostfixExpression<
 	args
 	// conform here is needed to preserve completions for shallow tuple
 	// expressions at index 1 after TS 5.1
-> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
+> = def[1] extends "[]"
+	? conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
+	: def[1] extends "?"
+	? readonly [validateDefinition<def[0], $, args>]
+	: never
 
 export type validateInfixExpression<
 	def extends InfixExpression,
@@ -340,7 +346,7 @@ export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
 export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
-export type TuplePostfixOperator = "[]"
+export type TuplePostfixOperator = "[]" | "?"
 
 export type TupleInfixOperator = "&" | "|" | "=>" | ":"
 
@@ -398,6 +404,14 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 	return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Narrow)
 }
 
+export const parseOptionalTuple: PostfixParser<"?"> = (def, ctx) => {
+	if (def.length > 2) {
+		return throwParseError(writeInvalidOptionalTupleFormat(def))
+	}
+	return ctx.scope.parse(def[0], ctx)
+}
+const writeInvalidOptionalTupleFormat = (def: IndexOneExpression<"?">) =>
+	`Optional tuples can only be of length 2 (was ${def.length})`
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>
 } = {
@@ -405,7 +419,8 @@ const indexOneParsers: {
 	"&": parseBranchTuple,
 	"[]": parseArrayTuple,
 	":": parseNarrowTuple,
-	"=>": parseMorphTuple
+	"=>": parseMorphTuple,
+	"?": parseOptionalTuple
 }
 
 export type FunctionalTupleOperator = ":" | "=>"
