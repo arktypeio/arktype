@@ -136,7 +136,7 @@ $ark.object36($arkRoot.b)`)
 			const t = type(["string?", "?"])
 		})
 	})
-	type z = [number, string?]
+
 	test("symbol key", () => {
 		const s = Symbol()
 		const t = type({
