@@ -144,7 +144,6 @@ $ark.object36($arkRoot.b)`)
 		})
 	})
 	test("optional symbol", () => {
-		//todoshawn gotta figure out this autocomplete ? error stuff
 		const s = Symbol()
 		const t = type({
 			[s]: "boolean?"
