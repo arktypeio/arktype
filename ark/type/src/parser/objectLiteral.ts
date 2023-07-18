@@ -9,30 +9,63 @@ import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
+import { isArray } from "util"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 	const named: mutable<NamedPropsInput> = {}
+	const symbols = Object.getOwnPropertySymbols(def).reduce(
+		(data, sym) => ({
+			sym: def[sym],
+			...data
+		}),
+		{}
+	)
+	parseDefinition(def, named, ctx)
+	parseDefinition(symbols, named, ctx)
+	// TODO: meta
+	return node({ basis: "object", props: named }, ctx)
+}
+const parseDefinition = (
+	def: Dict,
+	named: mutable<NamedPropsInput>,
+	ctx: ParseContext
+) => {
 	for (const definitionKey in def) {
-		let keyName = definitionKey
-		let optional = false
-		if (definitionKey[definitionKey.length - 1] === "?") {
-			if (definitionKey[definitionKey.length - 2] === Scanner.escapeToken) {
-				keyName = `${definitionKey.slice(0, -2)}?`
-			} else {
-				keyName = definitionKey.slice(0, -1)
-				optional = true
-			}
-		}
-		ctx.path.push(keyName)
-		named[keyName] = {
+		const key = getTrimmedDataAndOptional(definitionKey, false)
+		ctx.path.push(key.data as string)
+		const keyDef = getTrimmedDataAndOptional(def[definitionKey], key.optional)
+		const definition = ctx.scope.parse(keyDef.data, ctx)
+
+		named[key.data as string] = {
 			prerequisite: false,
-			optional,
-			value: ctx.scope.parse(def[definitionKey], ctx)
+			value: definition,
+			optional: keyDef.optional
 		}
 		ctx.path.pop()
 	}
-	// TODO: meta
-	return node({ basis: "object", props: named }, ctx)
+}
+const getTrimmedDataAndOptional = (
+	data: unknown,
+	optional = false
+): { data: unknown; optional: boolean } => {
+	let trimmedData = data
+	if (Array.isArray(data)) {
+		if (data.length === 2 && data[1] === "?") {
+			trimmedData = data[0]
+			optional = true
+		}
+	} else if (typeof data === "string" && data[data.length - 1] === "?") {
+		if (data[data.length - 2] === Scanner.escapeToken) {
+			trimmedData = `${data.slice(0, -2)}?`
+		} else {
+			trimmedData = data.slice(0, -1)
+			optional = true
+		}
+	}
+	return {
+		data: trimmedData,
+		optional
+	}
 }
 
 export type inferObjectLiteral<def extends object, $, args> = evaluate<
@@ -42,29 +75,35 @@ export type inferObjectLiteral<def extends object, $, args> = evaluate<
 		// https://github.com/arktypeio/arktype/issues/808
 		-readonly [k in keyof def as nonOptionalKeyFrom<
 			k,
+			def[k],
 			$,
 			args
 		>]: inferDefinition<def[k], $, args>
 	} & {
-		-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
-			def[k],
+		-readonly [k in keyof def as optionalKeyFrom<k, def[k]>]?: inferDefinition<
+			def[k] extends OptionalValue<infer inner> ? inner : def[k],
 			$,
 			args
 		>
 	}
 >
 
-type nonOptionalKeyFrom<k, $, args> = parseKey<k> extends {
+type nonOptionalKeyFrom<k, valueDef, $, args> = parseKeyDef<
+	parseKey<k>,
+	valueDef
+> extends {
 	kind: infer kind extends "required" | "indexed"
 	value: infer value
+	valueDef: unknown
 }
 	? (kind extends "required" ? value : inferDefinition<value, $, args>) &
 			PropertyKey
 	: never
 
-type optionalKeyFrom<k> = parseKey<k> extends {
+type optionalKeyFrom<k, valueDef> = parseKeyDef<parseKey<k>, valueDef> extends {
 	kind: "optional"
-	value: infer value extends string
+	value: infer value extends string | symbol
+	valueDef: unknown
 }
 	? value
 	: never
@@ -79,6 +118,8 @@ export type validateObjectLiteral<def, $, args> = {
 			  // move on to the validating the value definition
 			  validateDefinition<def[k], $, args>
 			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
+		: def[k] extends OptionalValue<infer extractedDef>
+		? validateDefinition<extractedDef, $, args>
 		: validateDefinition<def[k], $, args>
 }
 
@@ -100,37 +141,54 @@ type ParsedKeyKind = "required" | "optional" | "indexed"
 
 type KeyParseResult = {
 	kind: ParsedKeyKind
-	value: string
+	value: string | symbol
 }
 
 export type IndexedKey<def extends string = string> = `[${def}]`
 
 export type OptionalKey<name extends string = string> = `${name}?`
 
+export type OptionalValue<value> = `${value & string}?` | readonly [value, "?"]
+
 type parsedKey<result extends KeyParseResult> = result
+
+type parseKeyDef<
+	keyParseResult extends KeyParseResult,
+	definition
+> = definition extends OptionalValue<infer def>
+	? parsedKey<{
+			kind: "optional"
+			value: keyParseResult["value"]
+			valueDef: def
+	  }>
+	: parsedKey<{
+			kind: keyParseResult["kind"]
+			value: keyParseResult["value"]
+			valueDef: definition
+	  }>
 
 type parseKey<k> = k extends OptionalKey<infer inner>
 	? inner extends `${infer baseName}${Scanner.EscapeToken}`
-		? parsedKey<{
+		? {
 				kind: "required"
 				value: OptionalKey<baseName>
-		  }>
-		: parsedKey<{
+		  }
+		: {
 				kind: "optional"
 				value: inner
-		  }>
+		  }
 	: k extends IndexedKey<infer def>
-	? parsedKey<{
+	? {
 			kind: "indexed"
 			value: def
-	  }>
+	  }
 	: k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
 			IndexedKey}`
-	? parsedKey<{
+	? {
 			kind: "required"
 			value: escapedIndexKey
-	  }>
-	: parsedKey<{
+	  }
+	: {
 			kind: "required"
-			value: k & string
-	  }>
+			value: k & (string | symbol)
+	  }
