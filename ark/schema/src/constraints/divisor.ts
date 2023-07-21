@@ -1,29 +1,26 @@
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export interface DivisorConstraint extends Constraint {
+export interface DivisibilityConstraint extends Constraint {
 	readonly divisor: number
 }
 
-export class DivisorNode extends ConstraintNode<
-	DivisorConstraint,
-	DivisorNode
-> {
+export class DivisibilityNode extends ConstraintNode<DivisibilityConstraint> {
 	readonly kind = "divisor"
 	readonly id = ""
-	readonly defaultDescription =
-		this.constraint.divisor === 1
-			? "an integer"
-			: `a multiple of ${this.constraint.divisor}`
+	readonly divisor = this.constraint.divisor
+	readonly description =
+		this.constraint.description ??
+		(this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`)
 
-	intersect(other: DivisorNode) {
-		return new DivisorNode({
+	intersectConstraints(other: DivisibilityNode) {
+		return {
 			divisor: Math.abs(
 				// TODO: fix type
-				(this[0].divisor * other[0].divisor) /
-					greatestCommonDivisor(this[0].divisor, other[0].divisor)
+				(this.divisor * other.divisor) /
+					greatestCommonDivisor(this.divisor, other.divisor)
 			)
-		})
+		}
 	}
 }
 

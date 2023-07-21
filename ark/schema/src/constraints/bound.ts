@@ -49,6 +49,8 @@ export type Range =
 	| readonly [BoundNode]
 	| readonly [BoundNode<MinComparator>, BoundNode<MaxComparator>]
 
+// TODO: hair space
+
 export class BoundSet extends ConstraintSet<Range, BoundSet> {
 	readonly bounded = this[0].bounded
 	readonly min = this[0].isMin() ? this[0] : undefined
@@ -70,8 +72,7 @@ export class BoundSet extends ConstraintSet<Range, BoundSet> {
 			if (stricterMax === "r") {
 				return compareStrictness("min", this.min, other.max) === "l"
 					? Disjoint.from("range", this, other)
-					: // TODO: hair space
-					  new BoundSet(this.min!, other.max!)
+					: new BoundSet(this.min!, other.max!)
 			}
 			return this
 		}

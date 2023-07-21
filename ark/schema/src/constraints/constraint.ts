@@ -13,11 +13,30 @@ export abstract class ConstraintNode<
 	subclass extends ConstraintNode = ConstraintNode<constraint, any>
 > {
 	abstract readonly id: string
-	abstract readonly defaultDescription: string
+	abstract readonly description: string
 
 	constructor(public constraint: constraint) {}
 
-	abstract intersect(constraint: subclass): subclass | null | Disjoint
+	intersect(other: subclass) {
+		const intersection = this.intersectConstraints(other)
+		if (intersection === null || intersection instanceof Disjoint) {
+			return intersection
+		}
+		if (this.constraint.description) {
+			if (other.constraint.description) {
+				intersection.description = `${this.constraint.description} and ${other.constraint.description}`
+			} else {
+				intersection.description = this.constraint.description
+			}
+		} else if (other.constraint.description) {
+			intersection.description = other.constraint.description
+		}
+		return
+	}
+
+	protected abstract intersectConstraints(
+		other: subclass
+	): constraint | Disjoint | null
 }
 
 export type ConstraintList = readonly Constraint[]
@@ -32,10 +51,11 @@ export const ReadonlyArray = Array as unknown as new <
 export class ConstraintSet<
 	constraints extends ConstraintNode[] = ConstraintNode[]
 > extends ReadonlyArray<constraints> {
+	// TODO: make sure in cases like range, the result is sorted
 	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
 		const result = [] as unknown as constraints
 		for (let i = 0; i < this.length; i++) {
-			const elementResult = this[i].intersect(constraint)
+			const elementResult = this[i].intersectConstraints(constraint)
 			if (elementResult === null) {
 				result.push(this[i])
 			} else if (elementResult instanceof Disjoint) {
