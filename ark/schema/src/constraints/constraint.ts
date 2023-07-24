@@ -1,45 +1,52 @@
 import { Disjoint } from "../disjoint.js"
 
-export interface Constraint {
+export interface ConstraintDefinition {
 	description?: string
 }
 
-export const ReadonlyObject = Object as unknown as new <T extends object>(
-	base: T
-) => T
+export interface Constraint {
+	readonly description: string
+	readonly definition: ConstraintDefinition
 
-export abstract class ConstraintNode<
-	constraint extends Constraint = Constraint,
-	subclass extends ConstraintNode = ConstraintNode<constraint, any>
-> {
-	abstract readonly id: string
-	abstract readonly description: string
-
-	constructor(public constraint: constraint) {}
-
-	intersect(other: subclass) {
-		const intersection = this.intersectConstraints(other)
-		if (intersection === null || intersection instanceof Disjoint) {
-			return intersection
-		}
-		if (this.constraint.description) {
-			if (other.constraint.description) {
-				intersection.description = `${this.constraint.description} and ${other.constraint.description}`
-			} else {
-				intersection.description = this.constraint.description
-			}
-		} else if (other.constraint.description) {
-			intersection.description = other.constraint.description
-		}
-		return
-	}
-
-	protected abstract intersectConstraints(
-		other: subclass
-	): constraint | Disjoint | null
+	intersect(other: this): Constraint | Disjoint | null
 }
 
-export type ConstraintList = readonly Constraint[]
+// export abstract class ConstraintNode<
+// 	constraint extends Constraint = Constraint,
+// 	subclass extends ConstraintNode = ConstraintNode<constraint, any>
+// > {
+// 	abstract readonly id: string
+// 	abstract readonly description: string
+
+// 	constructor(public constraint: constraint) {}
+
+// 	intersect(other: subclass) {
+// 		const intersection = this.intersectConstraints(other)
+// 		if (intersection === null || intersection instanceof Disjoint) {
+// 			return intersection
+// 		}
+// 		if (this.constraint.description) {
+// 			if (other.constraint.description) {
+// 				intersection.description = this.constraint.description.includes(
+// 					other.constraint.description
+// 				)
+// 					? this.constraint.description
+// 					: other.constraint.description.includes(this.constraint.description)
+// 					? other.constraint.description
+// 					: `${this.constraint.description} and ${other.constraint.description}`
+// 			} else {
+// 				intersection.description = this.constraint.description
+// 			}
+// 		} else if (other.constraint.description) {
+// 			intersection.description = other.constraint.description
+// 		}
+// 		return intersection
+// 	}
+
+// 	protected abstract intersectConstraints(
+// 		other: subclass
+// 	): constraint | Disjoint | null
+// }
 
 export const ReadonlyArray = Array as unknown as new <
 	T extends readonly unknown[]
@@ -49,13 +56,13 @@ export const ReadonlyArray = Array as unknown as new <
 
 /** @ts-expect-error allow extending narrowed readonly array */
 export class ConstraintSet<
-	constraints extends ConstraintNode[] = ConstraintNode[]
+	constraints extends Constraint[] = Constraint[]
 > extends ReadonlyArray<constraints> {
 	// TODO: make sure in cases like range, the result is sorted
 	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
 		const result = [] as unknown as constraints
 		for (let i = 0; i < this.length; i++) {
-			const elementResult = this[i].intersectConstraints(constraint)
+			const elementResult = this[i].intersect(constraint)
 			if (elementResult === null) {
 				result.push(this[i])
 			} else if (elementResult instanceof Disjoint) {

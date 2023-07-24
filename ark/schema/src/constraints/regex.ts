@@ -1,22 +1,21 @@
-import type { Constraint } from "./constraint.js"
-import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import type { ConstraintDefinition } from "./constraint.js"
+import { Constraint, ConstraintSet } from "./constraint.js"
 
-export interface RegexConstraint extends Constraint {
+export interface RegexDefinition extends ConstraintDefinition {
 	readonly source: string
 	readonly flags: string
 }
 
-export class RegexNode extends ConstraintNode<RegexConstraint> {
-	literal = `/${this.source}/${this.flags}`
-	defaultDescription = `matched by ${this.literal}`
-}
+export class RegexConstraint implements Constraint {
+	constructor(public definition: RegexDefinition) {}
 
-export class RegexSet extends ConstraintSet<readonly RegexNode[], RegexSet> {
-	intersect(other: RegexSet) {
-		const matching = this.find(
-			(existing) =>
-				other.source === existing.source && other.flags === existing.flags
-		)
-		return matching ? this : new RegexSet(...this, other)
+	readonly source = this.definition.source
+	readonly flags = this.definition.flags
+	readonly literal = `/${this.source}/${this.flags}`
+	readonly description =
+		this.definition.description ?? `matched by ${this.literal}`
+
+	intersect(other: RegexConstraint) {
+		return this.literal === other.literal ? this : null
 	}
 }

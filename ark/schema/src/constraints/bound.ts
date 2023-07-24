@@ -1,10 +1,10 @@
 import { throwParseError } from "@arktype/util"
-import type { Constraint } from "./constraint.js"
-import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import type { ConstraintDefinition } from "./constraint.js"
+import { Constraint, ConstraintSet } from "./constraint.js"
 import { Disjoint } from "../disjoint.js"
 
 export interface BoundConstraint<comparator extends Comparator = Comparator>
-	extends Constraint {
+	extends ConstraintDefinition {
 	bounded: BoundedKind
 	comparator: comparator
 	limit: number
