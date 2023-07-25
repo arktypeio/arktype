@@ -13,11 +13,19 @@
         "url": "https://github.com/arktypeio/arktype.git"
     },
     "type": "module",
-    "main": "./dist/main.js",
-    "types": "./dist/main.d.ts",
+    "main": "./dist/cjs/main.js",
+    "types": "./dist/types/main.d.ts",
     "exports": {
-        ".": "./dist/main.js",
-        "./internal/*": "./dist/*"
+        ".": {
+            "types": "./dist/types/main.d.ts",
+            "import": "./dist/mjs/main.js",
+            "require": "./dist/cjs/main.js"
+        },
+        "./internal/*": {
+            "types": "./dist/types/*",
+            "import": "./dist/mjs/*",
+            "require": "./dist/cjs/*"
+        }
     },
     "files": [
         "dist",
