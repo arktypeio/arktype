@@ -5,51 +5,50 @@ export interface ConstraintDefinition {
 	description?: string
 }
 
-export interface Constraint {
-	readonly description: string
-	readonly definition: ConstraintDefinition
+export abstract class Constraint<
+	def extends ConstraintDefinition = ConstraintDefinition,
+	subclass extends new (def: def) => Constraint<def> = new (
+		def: def
+	) => Constraint<def>
+> {
+	abstract readonly description: string
+	private readonly subclass: new (def: unknown) => InstanceType<subclass> =
+		Object.getPrototypeOf(this).constructor
 
-	// intersect(other: this): Constraint | Disjoint | null
-}
+	constructor(public definition: def) {}
 
-// TODO: convert decorator to composable intersection function for input
-
-export const intersection =
-	<
-		// TODO: expand to Node
-		operand extends Constraint
-	>() =>
-	<result extends operand["definition"] | Disjoint | null>(
-		target: (this: operand, other: operand) => result,
-		ctx: ClassMethodDecoratorContext<
-			operand,
-			(this: operand, other: operand) => result
-		>
-	) =>
-		function (this: operand, other: operand) {
-			const result = target.call(this, other)
-			if (result === null || result instanceof Disjoint) {
-				return result as Extract<result, Disjoint | null>
-			}
-			if (this.definition.description) {
-				if (other.definition.description) {
-					result.description = this.definition.description.includes(
-						other.definition.description
-					)
-						? this.definition.description
-						: other.definition.description.includes(this.definition.description)
-						? other.definition.description
-						: `${this.definition.description} and ${other.definition.description}`
-				} else {
-					result.description = this.definition.description
-				}
-			} else if (other.definition.description) {
-				result.description = other.definition.description
-			}
-			const operandClass: new (definition: ConstraintDefinition) => operand =
-				Object.getPrototypeOf(this)
-			return new operandClass(result)
+	intersect(other: InstanceType<subclass>) {
+		const result = this.intersectOwnKeys(other)
+		if (result === null || result instanceof Disjoint) {
+			// Ensure the signature of this method reflects whether Disjoint and/or null
+			// are possible intersection results for the subclass.
+			return result as Exclude<
+				ReturnType<InstanceType<subclass>["intersectOwnKeys"]>,
+				def
+			>
 		}
+		if (this.definition.description) {
+			if (other.definition.description) {
+				result.description = this.definition.description.includes(
+					other.definition.description
+				)
+					? this.definition.description
+					: other.definition.description.includes(this.definition.description)
+					? other.definition.description
+					: `${this.definition.description} and ${other.definition.description}`
+			} else {
+				result.description = this.definition.description
+			}
+		} else if (other.definition.description) {
+			result.description = other.definition.description
+		}
+		return new this.subclass(result) as InstanceType<subclass>
+	}
+
+	abstract intersectOwnKeys(
+		other: InstanceType<subclass>
+	): def | Disjoint | null
+}
 
 export const ReadonlyArray = Array as unknown as new <
 	T extends readonly unknown[]
@@ -64,6 +63,7 @@ export class ConstraintSet<
 	// TODO: make sure in cases like range, the result is sorted
 	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
 		const result = [] as unknown as constraints
+		let includesConstraint = false
 		for (let i = 0; i < this.length; i++) {
 			const elementResult = this[i].intersect(constraint)
 			if (elementResult === null) {
@@ -71,11 +71,13 @@ export class ConstraintSet<
 			} else if (elementResult instanceof Disjoint) {
 				return elementResult
 			} else {
-				result.push(elementResult, ...this.slice(i + 1))
-				return new ConstraintSet(...result)
+				result.push(elementResult)
+				includesConstraint = true
 			}
 		}
-		result.push(constraint)
+		if (!includesConstraint) {
+			result.push(constraint)
+		}
 		return new ConstraintSet(...result)
 	}
 }

@@ -15,7 +15,7 @@ export class RegexConstraint implements Constraint {
 	readonly description =
 		this.definition.description ?? `matched by ${this.literal}`
 
-	intersect(other: RegexConstraint) {
+	intersectOwnKeys(other: RegexConstraint) {
 		return this.literal === other.literal ? this : null
 	}
 }

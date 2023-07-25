@@ -1,7 +1,7 @@
 import { throwParseError } from "@arktype/util"
-import type { ConstraintDefinition } from "./constraint.js"
-import { Constraint, ConstraintSet } from "./constraint.js"
 import { Disjoint } from "../disjoint.js"
+import type { ConstraintDefinition } from "./constraint.js"
+import { Constraint } from "./constraint.js"
 
 export interface BoundDefinition<limitKind extends LimitKind = LimitKind>
 	extends ConstraintDefinition {
@@ -11,11 +11,9 @@ export interface BoundDefinition<limitKind extends LimitKind = LimitKind>
 	readonly exclusive?: true
 }
 
-export class BoundConstraint<limitKind extends LimitKind = LimitKind>
-	implements Constraint
-{
-	constructor(public definition: BoundDefinition<limitKind>) {}
-
+export class BoundConstraint<
+	limitKind extends LimitKind = LimitKind
+> extends Constraint<BoundDefinition, typeof BoundConstraint> {
 	readonly dataKind = this.definition.dataKind
 	readonly limitKind = this.definition.limitKind
 	readonly limit = this.definition.limit
@@ -28,7 +26,11 @@ export class BoundConstraint<limitKind extends LimitKind = LimitKind>
 				: numericComparatorDescriptions[this.comparator]
 		} ${this.limit}`
 
-	intersect(other: BoundConstraint) {
+	intersectOwnKeys(
+		other: BoundConstraint
+	): // cast the return type so that it has the same limitKind as this
+	BoundDefinition<limitKind> | Disjoint | null
+	intersectOwnKeys(other: BoundConstraint) {
 		if (this.dataKind !== other.dataKind) {
 			return throwParseError(
 				writeIncompatibleRangeMessage(this.dataKind, other.dataKind)
@@ -37,21 +39,21 @@ export class BoundConstraint<limitKind extends LimitKind = LimitKind>
 		if (this.limit > other.limit) {
 			if (this.limitKind === "min") {
 				return other.limitKind === "min"
-					? this
+					? this.definition
 					: Disjoint.from("range", this, other)
 			}
-			return other.limitKind === "max" ? other : null
+			return other.limitKind === "max" ? other.definition : null
 		}
 		if (this.limit < other.limit) {
 			if (this.limitKind === "max") {
 				return other.limitKind === "max"
-					? this
+					? this.definition
 					: Disjoint.from("range", this, other)
 			}
-			return other.limitKind === "min" ? other : null
+			return other.limitKind === "min" ? other.definition : null
 		}
 		if (this.limitKind === other.limitKind) {
-			return this.exclusive ? this : other
+			return this.exclusive ? this.definition : other.definition
 		}
 		return this.exclusive || other.exclusive
 			? Disjoint.from("range", this, other)
