@@ -24,6 +24,40 @@ $ark.object36($arkRoot.b)`)
 		const o = type({ "a?": "string", b: "boolean" })
 		attest(o.infer).typed as { a?: string; b: boolean }
 	})
+	test("symbol key", () => {
+		const s = Symbol()
+		const t = type({
+			[s]: "boolean"
+		})
+		attest(t.infer).typed as { [s]: boolean }
+	})
+	test("optional symbol", () => {
+		const s = Symbol()
+		const t = type({
+			[s]: "boolean?"
+		})
+		attest(t.infer).typed as { [s]?: boolean }
+	})
+	suite("optional keys and definition reduction", () => {
+		test("optional value", () => {
+			const t0 = type({ "a?": "string" })
+			const t1 = type({ a: "string?" })
+			attest(t0.condition).equals(t1.condition)
+		})
+		test("optional key and value", () => {
+			const t0 = type({ "a?": "string" })
+			const t1 = type({ "a?": "string?" })
+			attest(t0.condition).equals(t1.condition)
+		})
+		test("optional value as tuple", () => {
+			const t0 = type({ "a?": "string" })
+			const t1 = type({ a: ["string", "?"] })
+			attest(t0.condition).equals(t1.condition)
+		})
+	})
+	test("error in obj that has tuple that writes error at proper path", () => {
+		const t0 = type({ "a?": ["string", "string?", ["stringx", "?"]] })
+	})
 	test("index", () => {
 		const o = type({ "[string]": "string" })
 		attest(o).typed as { [x: string]: string }

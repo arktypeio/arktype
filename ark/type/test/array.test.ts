@@ -32,7 +32,22 @@ suite("array", () => {
 			attest(t.infer).typed as string[]
 			attest(t.condition).equals(type("string[]").condition)
 		})
-
+		suite("optional tuple literals", () => {
+			test("tuple with inline optional", () => {
+				const t = type([["string?"]])
+			})
+			test("tuple with optional tuple", () => {
+				const t = type([["string", "?"]])
+				attest(t.infer).typed as [string?]
+				const tt = type([["string?", "?"]])
+				attest(tt.infer).typed as [string?]
+			})
+			test("error optional", () => {
+				const t = type(["string", "?"])
+				const t2 = type(["string??", "?"])
+				const tt = type("string?")
+			})
+		})
 		test("root expression", () => {
 			const t = type("string", "[]")
 			attest(t.infer).typed as string[]
