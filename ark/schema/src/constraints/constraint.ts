@@ -7,7 +7,9 @@ export interface ConstraintDefinition {
 
 export abstract class Constraint<
 	def extends ConstraintDefinition = ConstraintDefinition,
-	subclass extends typeof Constraint<def> = typeof Constraint
+	subclass extends new (def: def) => Constraint<def> = new (
+		def: def
+	) => Constraint<def>
 > {
 	abstract readonly description: string
 	private readonly subclass: new (def: unknown) => InstanceType<subclass> =
