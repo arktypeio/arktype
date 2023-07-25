@@ -1,19 +1,16 @@
+import { Constructor } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 
 export interface ConstraintDefinition {
 	description?: string
 }
 
-type ConstraintSubclass<def extends ConstraintDefinition> = new (
-	definition: def
-) => Constraint<def, ConstraintSubclass<def>>
-
 export abstract class Constraint<
 	def extends ConstraintDefinition = ConstraintDefinition,
-	subclass extends ConstraintSubclass<def> = ConstraintSubclass<def>
+	subclass extends typeof Constraint<def> = typeof Constraint
 > {
 	abstract readonly description: string
-	private readonly subclass: ConstraintSubclass<any> =
+	private readonly subclass: new (def: unknown) => InstanceType<subclass> =
 		Object.getPrototypeOf(this).constructor
 
 	constructor(public definition: def) {}

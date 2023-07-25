@@ -26,7 +26,9 @@ export class BoundConstraint<
 				: numericComparatorDescriptions[this.comparator]
 		} ${this.limit}`
 
-	intersectOwnKeys(other: BoundConstraint) {
+	intersectOwnKeys(
+		other: BoundConstraint
+	): BoundDefinition<limitKind> | Disjoint | null {
 		if (this.dataKind !== other.dataKind) {
 			return throwParseError(
 				writeIncompatibleRangeMessage(this.dataKind, other.dataKind)
@@ -38,7 +40,9 @@ export class BoundConstraint<
 					? this.definition
 					: Disjoint.from("range", this, other)
 			}
-			return other.limitKind === "max" ? other : null
+			return other.limitKind === "max"
+				? (other.definition as BoundDefinition<limitKind>)
+				: null
 		}
 		if (this.limit < other.limit) {
 			if (this.limitKind === "max") {
@@ -46,10 +50,14 @@ export class BoundConstraint<
 					? this.definition
 					: Disjoint.from("range", this, other)
 			}
-			return other.limitKind === "min" ? other : null
+			return other.limitKind === "min"
+				? (other.definition as BoundDefinition<limitKind>)
+				: null
 		}
 		if (this.limitKind === other.limitKind) {
-			return this.exclusive ? this.definition : other
+			return this.exclusive
+				? this.definition
+				: (other.definition as BoundDefinition<limitKind>)
 		}
 		return this.exclusive || other.exclusive
 			? Disjoint.from("range", this, other)
