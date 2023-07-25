@@ -1,14 +1,8 @@
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { validateString } from "./semantic/validate.js"
-import {
-	IndexedKey,
-	OptionalValue,
-	parseKeyValueEntry,
-	parsedEntry,
-	validateObjectValue
-} from "./shared.js"
-import type { parseEntry } from "./shared.js"
+import { IndexedKey, OptionalValue, validateObjectValue } from "./shared.js"
+import { EntryParseResult, parseEntry } from "./shared.js"
 import {
 	type Dict,
 	type error,
@@ -16,39 +10,24 @@ import {
 	type mutable
 } from "@arktype/util"
 
+const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
+	...Object.entries(o),
+	...Object.getOwnPropertySymbols(o).map((k) => [k, o[k]] as const)
+]
+
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 	const named: mutable<NamedPropsInput> = {}
-
-	for (const definitionKey in def) {
-		addKeyValuePairToNamed(def, definitionKey, named, ctx)
+	for (const entry of stringAndSymbolicEntriesOf(def)) {
+		const { innerKey, innerValue, kind } = parseEntry(entry)
+		ctx.path.push(innerKey as string)
+		const valueNode = ctx.scope.parse(innerValue, ctx)
+		named[innerKey] = {
+			prerequisite: false,
+			value: valueNode,
+			optional: kind === "optional"
+		}
+		ctx.path.pop()
 	}
-	const symbols = Object.getOwnPropertySymbols(def)
-	for (const symbol of symbols) {
-		addKeyValuePairToNamed(def, symbol, named, ctx)
-	}
-	// TODO: meta
-	return node({ basis: "object", props: named }, ctx)
-}
-
-const addKeyValuePairToNamed = (
-	def: Dict,
-	definitionKey: string | symbol,
-	named: mutable<NamedPropsInput>,
-	ctx: ParseContext
-) => {
-	const { innerKey, innerValue, optional } = parseKeyValueEntry(
-		definitionKey,
-		def[definitionKey]
-	)
-	ctx.path.push(innerKey as string)
-	const definition = ctx.scope.parse(innerValue, ctx)
-
-	named[innerKey as string] = {
-		prerequisite: false,
-		value: definition,
-		optional
-	}
-	ctx.path.pop()
 }
 
 export type inferObjectLiteral<def extends object, $, args> = evaluate<
@@ -74,35 +53,30 @@ export type inferObjectLiteral<def extends object, $, args> = evaluate<
 type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
 	k,
 	valueDef
-> extends parsedEntry<{
-	kind: infer kind extends "required" | "indexed"
-	innerKey: infer value extends string | symbol
-	innerValue: unknown
-}>
-	? (kind extends "required" ? value : inferDefinition<value, $, args>) &
+> extends infer result extends EntryParseResult
+	? (result["kind"] extends "required"
+			? result["innerKey"]
+			: inferDefinition<result["innerKey"], $, args>) &
 			PropertyKey
 	: never
 
 type optionalKeyFrom<k extends PropertyKey, valueDef> = parseEntry<
 	k,
 	valueDef
-> extends parsedEntry<{
-	kind: "optional"
-	innerKey: infer value extends string | symbol
-	innerValue: unknown
-}>
-	? value
+> extends infer result extends EntryParseResult
+	? result["innerKey"]
 	: never
 
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexedKey<infer indexDef>
 		? validateString<indexDef, $, args> extends error<infer message>
-			? message
+			? // add a nominal type here to avoid allowing the error message as input
+			  indexParseError<message>
 			: inferDefinition<indexDef, $, args> extends PropertyKey
 			? // if the indexDef is syntactically and semantically valid,
 			  // move on to the validating the value definition
 			  validateDefinition<def[k], $, args>
-			: writeInvalidPropertyKeyMessage<indexDef>
+			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
 		: validateObjectValue<def[k], $, args>
 }
 

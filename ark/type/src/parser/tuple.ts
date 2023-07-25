@@ -35,7 +35,6 @@ import {
 	EntryParseResult,
 	OptionalStringDefinition,
 	parseEntry,
-	parseKeyValueEntry,
 	validateObjectValue
 } from "./shared.js"
 
@@ -59,8 +58,8 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			elementDef = elementDef[1]
 			isVariadic = true
 		}
-		const parsedData = parseKeyValueEntry(i, elementDef)
-		const value = ctx.scope.parse(parsedData.innerValue, ctx)
+		const parsedEntry = parseEntry([i, elementDef])
+		const value = ctx.scope.parse(parsedEntry.innerValue, ctx)
 		if (isVariadic) {
 			if (!value.extends(builtins.array())) {
 				return throwParseError(writeNonArrayRestMessage(elementDef))
@@ -75,7 +74,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 				key: {
 					name: `${i}`,
 					prerequisite: false,
-					optional: parsedData.optional
+					optional: parsedEntry.kind === "optional"
 				},
 				value
 			})
@@ -141,23 +140,18 @@ export type validateTuple<
 	  ]
 	: validateTupleLiteral<def, $, args>
 
-type writeIllegalTupleElement<def extends string> =
-	`Optional tuple elements must be nested within a tuple. Maybe you wanted ${def} | undefined`
-
 export type validateTupleLiteral<
 	def extends List,
 	$,
 	args,
 	result extends unknown[] = []
 > = def extends readonly [infer head, ...infer tail]
-	? def extends readonly [infer def, "?"]
-		? writeIllegalTupleElement<def & string>
-		: validateTupleLiteral<
-				tail,
-				$,
-				args,
-				[...result, validateTupleElement<head, tail, $, args>]
-		  >
+	? validateTupleLiteral<
+			tail,
+			$,
+			args,
+			[...result, validateTupleElement<head, tail, $, args>]
+	  >
 	: result
 
 type validateTupleElement<head, tail, $, args> =
@@ -217,11 +211,7 @@ type inferTupleLiteral<
 			head extends variadicExpression<infer operand> ? operand : head
 	  > extends infer entryParseResult extends EntryParseResult
 		? inferDefinition<
-				entryParseResult["innerValue"] extends OptionalStringDefinition<
-					infer innerValue
-				>
-					? innerValue
-					: entryParseResult["innerValue"],
+				entryParseResult["innerValue"],
 				$,
 				args
 		  > extends infer element

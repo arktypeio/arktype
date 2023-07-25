@@ -7,11 +7,11 @@ type OptionalTuple<value> = readonly [value, "?"]
 
 type KeyParseResult = {
 	kind: ParsedKeyKind
-	innerKey: string | symbol
+	innerKey: PropertyKey
 }
 type ParsedKeyKind = "required" | "optional" | "indexed"
 
-export type parsedEntry<result extends EntryParseResult> = result
+type parsedEntry<result extends EntryParseResult> = result
 
 export type OptionalValue<value> =
 	| OptionalStringDefinition<value & string>
@@ -43,29 +43,27 @@ const getInnerDataAndOptional = (
 		? { inner: data.slice(0, -1), optional: true }
 		: { inner: data, optional: false }
 
-export const parseKeyValueEntry = (
-	key: PropertyKey,
-	valueDef: unknown
-): { innerKey: PropertyKey; innerValue: unknown; optional: boolean } => {
+type Entry = [PropertyKey, unknown]
+
+export const parseEntry = (entry: Entry) => {
+	const key = entry[0]
+	const value = entry[1]
 	const keyData = getInnerDataAndOptional(key)
-	const data = {
+	const data: EntryParseResult = {
 		innerKey: keyData.inner,
-		innerValue: valueDef,
-		optional: false
+		innerValue: value,
+		kind: "required"
 	}
 
-	if (Array.isArray(valueDef)) {
-		if (valueDef.length === 2 && valueDef[1] === "?") {
-			data["innerValue"] = valueDef[0]
-			data["optional"] = true
+	if (Array.isArray(value)) {
+		if (value.length === 2 && value[1] === "?") {
+			data["innerValue"] = value[0]
+			data["optional"] = "optional"
 		}
-	} else if (
-		typeof valueDef === "string" &&
-		valueDef[valueDef.length - 1] === "?"
-	) {
+	} else if (typeof value === "string" && value[value.length - 1] === "?") {
 		const valueDefData = getInnerDataAndOptional(key)
 		data["innerValue"] = valueDefData.inner
-		data["optional"] = valueDefData["optional"] || data["optional"]
+		data["optional"] ||= valueDefData["optional"]
 	}
 	return data
 }
@@ -78,7 +76,11 @@ export type parseEntry<
 		? parsedEntry<{
 				kind: "optional"
 				innerKey: keyParseResult["innerKey"]
-				innerValue: innerValue
+				innerValue: innerValue extends OptionalStringDefinition<
+					infer innerStringValue
+				>
+					? innerStringValue
+					: innerValue
 		  }>
 		: parsedEntry<{
 				kind: keyParseResult["kind"]
