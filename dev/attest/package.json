@@ -8,10 +8,14 @@
         "url": "https://arktype.io"
     },
     "type": "module",
-    "main": "./dist/main.js",
-    "types": "./dist/main.d.ts",
+    "main": "./dist/cjs/main.js",
+    "types": "./dist/types/main.d.ts",
     "exports": {
-        ".": "./dist/main.js"
+        ".": {
+            "types": "./dist/types/main.d.ts",
+            "import": "./dist/mjs/main.js",
+            "require": "./dist/cjs/main.js"
+        }
     },
     "files": [
         "dist",

@@ -9,6 +9,9 @@ const arktypeIo = join(dev, "arktype.io")
 const docsDir = join(arktypeIo, "docs")
 const srcRoot = join(root, "src")
 const outRoot = join(root, "dist")
+const typesOut = join(outRoot, "types")
+const mjsOut = join(outRoot, "mjs")
+const cjsOut = join(outRoot, "cjs")
 
 export const repoDirs = {
     root,
@@ -18,5 +21,8 @@ export const repoDirs = {
     arktypeIo,
     docsDir,
     srcRoot,
-    outRoot
+    outRoot,
+    typesOut,
+    mjsOut,
+    cjsOut
 }
