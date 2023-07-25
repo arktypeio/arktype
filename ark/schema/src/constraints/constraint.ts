@@ -1,4 +1,3 @@
-import { Constructor, defer } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 
 export interface ConstraintDefinition {

@@ -1,5 +1,5 @@
 import type { ConstraintDefinition } from "./constraint.js"
-import { Constraint, intersection } from "./constraint.js"
+import { Constraint } from "./constraint.js"
 
 export interface DivisibilityDefinition extends ConstraintDefinition {
 	readonly divisor: number
@@ -23,10 +23,6 @@ export class DivisibilityConstraint extends Constraint<
 		}
 	}
 }
-
-const z = new DivisibilityConstraint({ divisor: 5 })
-
-const result = z.intersect({} as any)
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

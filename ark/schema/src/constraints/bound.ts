@@ -11,11 +11,9 @@ export interface BoundDefinition<limitKind extends LimitKind = LimitKind>
 	readonly exclusive?: true
 }
 
-export class BoundConstraint<limitKind extends LimitKind = LimitKind>
-	implements Constraint
-{
-	constructor(public definition: BoundDefinition<limitKind>) {}
-
+export class BoundConstraint<
+	limitKind extends LimitKind = LimitKind
+> extends Constraint<BoundDefinition<limitKind>, typeof BoundConstraint> {
 	readonly dataKind = this.definition.dataKind
 	readonly limitKind = this.definition.limitKind
 	readonly limit = this.definition.limit
@@ -37,7 +35,7 @@ export class BoundConstraint<limitKind extends LimitKind = LimitKind>
 		if (this.limit > other.limit) {
 			if (this.limitKind === "min") {
 				return other.limitKind === "min"
-					? this
+					? this.definition
 					: Disjoint.from("range", this, other)
 			}
 			return other.limitKind === "max" ? other : null
@@ -45,13 +43,13 @@ export class BoundConstraint<limitKind extends LimitKind = LimitKind>
 		if (this.limit < other.limit) {
 			if (this.limitKind === "max") {
 				return other.limitKind === "max"
-					? this
+					? this.definition
 					: Disjoint.from("range", this, other)
 			}
 			return other.limitKind === "min" ? other : null
 		}
 		if (this.limitKind === other.limitKind) {
-			return this.exclusive ? this : other
+			return this.exclusive ? this.definition : other
 		}
 		return this.exclusive || other.exclusive
 			? Disjoint.from("range", this, other)
