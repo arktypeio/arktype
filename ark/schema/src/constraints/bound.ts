@@ -3,36 +3,59 @@ import type { ConstraintDefinition } from "./constraint.js"
 import { Constraint, ConstraintSet } from "./constraint.js"
 import { Disjoint } from "../disjoint.js"
 
-export interface BoundConstraint<comparator extends Comparator = Comparator>
+export interface BoundDefinition<limitKind extends LimitKind = LimitKind>
 	extends ConstraintDefinition {
-	bounded: BoundedKind
-	comparator: comparator
-	limit: number
+	readonly dataKind: BoundableDataKind
+	readonly limitKind: limitKind
+	readonly limit: number
+	readonly exclusive?: true
 }
 
-export class BoundNode<
-	comparator extends Comparator = Comparator
-> extends ConstraintNode<BoundConstraint<comparator>> {
-	defaultDescription = `${
-		this.bounded === "date"
-			? dateComparatorDescriptions[this.comparator]
-			: numericComparatorDescriptions[this.comparator]
-	} ${this.limit}`
+export class BoundConstraint<limitKind extends LimitKind = LimitKind>
+	implements Constraint
+{
+	constructor(public definition: BoundDefinition<limitKind>) {}
 
-	isMin(): this is BoundConstraint<MinComparator | "=="> {
-		return (
-			this.comparator === ">" ||
-			this.comparator === ">=" ||
-			this.comparator === "=="
-		)
-	}
+	readonly dataKind = this.definition.dataKind
+	readonly limitKind = this.definition.limitKind
+	readonly limit = this.definition.limit
+	readonly exclusive = this.definition.exclusive ?? false
+	readonly description =
+		this.definition.description ??
+		`${
+			this.dataKind === "date"
+				? dateComparatorDescriptions[this.comparator]
+				: numericComparatorDescriptions[this.comparator]
+		} ${this.limit}`
 
-	isMax(): this is BoundConstraint<MaxComparator | "=="> {
-		return (
-			this.comparator === "<" ||
-			this.comparator === "<=" ||
-			this.comparator === "=="
-		)
+	intersect(other: BoundConstraint) {
+		if (this.dataKind !== other.dataKind) {
+			return throwParseError(
+				writeIncompatibleRangeMessage(this.dataKind, other.dataKind)
+			)
+		}
+		if (this.limit > other.limit) {
+			if (this.limitKind === "min") {
+				return other.limitKind === "min"
+					? this
+					: Disjoint.from("range", this, other)
+			}
+			return other.limitKind === "max" ? other : null
+		}
+		if (this.limit < other.limit) {
+			if (this.limitKind === "max") {
+				return other.limitKind === "max"
+					? this
+					: Disjoint.from("range", this, other)
+			}
+			return other.limitKind === "min" ? other : null
+		}
+		if (this.limitKind === other.limitKind) {
+			return this.exclusive ? this : other
+		}
+		return this.exclusive || other.exclusive
+			? Disjoint.from("range", this, other)
+			: null
 	}
 }
 
@@ -43,7 +66,9 @@ const unitsByBoundedKind = {
 	array: "elements"
 } as const
 
-export type BoundedKind = keyof typeof unitsByBoundedKind
+export type BoundableDataKind = keyof typeof unitsByBoundedKind
+
+export type LimitKind = "min" | "max"
 
 export type Range =
 	| readonly [BoundNode]
@@ -164,8 +189,10 @@ export const invertedComparators = {
 
 export type InvertedComparators = typeof invertedComparators
 
-export const writeIncompatibleRangeMessage = (l: BoundedKind, r: BoundedKind) =>
-	`Bound kinds ${l} and ${r} are incompatible`
+export const writeIncompatibleRangeMessage = (
+	l: BoundableDataKind,
+	r: BoundableDataKind
+) => `Bound kinds ${l} and ${r} are incompatible`
 
 export type NumericallyBoundableData = string | number | readonly unknown[]
 
