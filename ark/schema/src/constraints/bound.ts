@@ -28,7 +28,7 @@ export class BoundConstraint<limitKind extends LimitKind = LimitKind>
 				: numericComparatorDescriptions[this.comparator]
 		} ${this.limit}`
 
-	intersect(other: BoundConstraint) {
+	intersectOwnKeys(other: BoundConstraint) {
 		if (this.dataKind !== other.dataKind) {
 			return throwParseError(
 				writeIncompatibleRangeMessage(this.dataKind, other.dataKind)

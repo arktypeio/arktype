@@ -1,55 +1,56 @@
-import { Constructor } from "@arktype/util"
+import { Constructor, defer } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 
 export interface ConstraintDefinition {
 	description?: string
 }
 
-export interface Constraint {
-	readonly description: string
-	readonly definition: ConstraintDefinition
+type ConstraintSubclass<def extends ConstraintDefinition> = new (
+	definition: def
+) => Constraint<def, ConstraintSubclass<def>>
 
-	// intersect(other: this): Constraint | Disjoint | null
-}
+export abstract class Constraint<
+	def extends ConstraintDefinition = ConstraintDefinition,
+	subclass extends ConstraintSubclass<def> = ConstraintSubclass<def>
+> {
+	abstract readonly description: string
+	private readonly subclass: ConstraintSubclass<any> =
+		Object.getPrototypeOf(this).constructor
 
-// TODO: convert decorator to composable intersection function for input
+	constructor(public definition: def) {}
 
-export const intersection =
-	<
-		// TODO: expand to Node
-		operand extends Constraint
-	>() =>
-	<result extends operand["definition"] | Disjoint | null>(
-		target: (this: operand, other: operand) => result,
-		ctx: ClassMethodDecoratorContext<
-			operand,
-			(this: operand, other: operand) => result
-		>
-	) =>
-		function (this: operand, other: operand) {
-			const result = target.call(this, other)
-			if (result === null || result instanceof Disjoint) {
-				return result as Extract<result, Disjoint | null>
-			}
-			if (this.definition.description) {
-				if (other.definition.description) {
-					result.description = this.definition.description.includes(
-						other.definition.description
-					)
-						? this.definition.description
-						: other.definition.description.includes(this.definition.description)
-						? other.definition.description
-						: `${this.definition.description} and ${other.definition.description}`
-				} else {
-					result.description = this.definition.description
-				}
-			} else if (other.definition.description) {
-				result.description = other.definition.description
-			}
-			const operandClass: new (definition: ConstraintDefinition) => operand =
-				Object.getPrototypeOf(this)
-			return new operandClass(result)
+	intersect(other: InstanceType<subclass>) {
+		const result = this.intersectOwnKeys(other)
+		if (result === null || result instanceof Disjoint) {
+			// Ensure the signature of this method reflects whether Disjoint and/or null
+			// are possible intersection results for the subclass.
+			return result as Exclude<
+				ReturnType<InstanceType<subclass>["intersectOwnKeys"]>,
+				def
+			>
 		}
+		if (this.definition.description) {
+			if (other.definition.description) {
+				result.description = this.definition.description.includes(
+					other.definition.description
+				)
+					? this.definition.description
+					: other.definition.description.includes(this.definition.description)
+					? other.definition.description
+					: `${this.definition.description} and ${other.definition.description}`
+			} else {
+				result.description = this.definition.description
+			}
+		} else if (other.definition.description) {
+			result.description = other.definition.description
+		}
+		return new this.subclass(result) as InstanceType<subclass>
+	}
+
+	abstract intersectOwnKeys(
+		other: InstanceType<subclass>
+	): def | Disjoint | null
+}
 
 export const ReadonlyArray = Array as unknown as new <
 	T extends readonly unknown[]
