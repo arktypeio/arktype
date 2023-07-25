@@ -1,7 +1,7 @@
 import { throwParseError } from "@arktype/util"
-import type { ConstraintDefinition } from "./constraint.js"
-import { Constraint, ConstraintSet } from "./constraint.js"
 import { Disjoint } from "../disjoint.js"
+import type { ConstraintDefinition } from "./constraint.js"
+import { Constraint } from "./constraint.js"
 
 export interface BoundDefinition<limitKind extends LimitKind = LimitKind>
 	extends ConstraintDefinition {

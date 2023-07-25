@@ -61,6 +61,7 @@ export class ConstraintSet<
 	// TODO: make sure in cases like range, the result is sorted
 	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
 		const result = [] as unknown as constraints
+		let includesConstraint = false
 		for (let i = 0; i < this.length; i++) {
 			const elementResult = this[i].intersect(constraint)
 			if (elementResult === null) {
@@ -68,11 +69,13 @@ export class ConstraintSet<
 			} else if (elementResult instanceof Disjoint) {
 				return elementResult
 			} else {
-				result.push(elementResult, ...this.slice(i + 1))
-				return new ConstraintSet(...result)
+				result.push(elementResult)
+				includesConstraint = true
 			}
 		}
-		result.push(constraint)
+		if (!includesConstraint) {
+			result.push(constraint)
+		}
 		return new ConstraintSet(...result)
 	}
 }
