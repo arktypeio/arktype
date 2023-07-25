@@ -31,6 +31,7 @@ import {
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
+import { parseKeyValueEntry } from "./shared.js"
 
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
@@ -52,7 +53,8 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			elementDef = elementDef[1]
 			isVariadic = true
 		}
-		const value = ctx.scope.parse(elementDef, ctx)
+		const parsedData = parseKeyValueEntry(i, elementDef)
+		const value = ctx.scope.parse(parsedData.innerValue, ctx)
 		if (isVariadic) {
 			if (!value.extends(builtins.array())) {
 				return throwParseError(writeNonArrayRestMessage(elementDef))
@@ -67,7 +69,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 				key: {
 					name: `${i}`,
 					prerequisite: false,
-					optional: false
+					optional: parsedData.optional
 				},
 				value
 			})
