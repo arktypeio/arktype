@@ -1,3 +1,4 @@
+import { Constructor } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 
 export interface ConstraintDefinition {
@@ -8,45 +9,47 @@ export interface Constraint {
 	readonly description: string
 	readonly definition: ConstraintDefinition
 
-	intersect(other: this): Constraint | Disjoint | null
+	// intersect(other: this): Constraint | Disjoint | null
 }
 
-// export abstract class ConstraintNode<
-// 	constraint extends Constraint = Constraint,
-// 	subclass extends ConstraintNode = ConstraintNode<constraint, any>
-// > {
-// 	abstract readonly id: string
-// 	abstract readonly description: string
+// TODO: convert decorator to composable intersection function for input
 
-// 	constructor(public constraint: constraint) {}
-
-// 	intersect(other: subclass) {
-// 		const intersection = this.intersectConstraints(other)
-// 		if (intersection === null || intersection instanceof Disjoint) {
-// 			return intersection
-// 		}
-// 		if (this.constraint.description) {
-// 			if (other.constraint.description) {
-// 				intersection.description = this.constraint.description.includes(
-// 					other.constraint.description
-// 				)
-// 					? this.constraint.description
-// 					: other.constraint.description.includes(this.constraint.description)
-// 					? other.constraint.description
-// 					: `${this.constraint.description} and ${other.constraint.description}`
-// 			} else {
-// 				intersection.description = this.constraint.description
-// 			}
-// 		} else if (other.constraint.description) {
-// 			intersection.description = other.constraint.description
-// 		}
-// 		return intersection
-// 	}
-
-// 	protected abstract intersectConstraints(
-// 		other: subclass
-// 	): constraint | Disjoint | null
-// }
+export const intersection =
+	<
+		// TODO: expand to Node
+		operand extends Constraint
+	>() =>
+	<result extends operand["definition"] | Disjoint | null>(
+		target: (this: operand, other: operand) => result,
+		ctx: ClassMethodDecoratorContext<
+			operand,
+			(this: operand, other: operand) => result
+		>
+	) =>
+		function (this: operand, other: operand) {
+			const result = target.call(this, other)
+			if (result === null || result instanceof Disjoint) {
+				return result as Extract<result, Disjoint | null>
+			}
+			if (this.definition.description) {
+				if (other.definition.description) {
+					result.description = this.definition.description.includes(
+						other.definition.description
+					)
+						? this.definition.description
+						: other.definition.description.includes(this.definition.description)
+						? other.definition.description
+						: `${this.definition.description} and ${other.definition.description}`
+				} else {
+					result.description = this.definition.description
+				}
+			} else if (other.definition.description) {
+				result.description = other.definition.description
+			}
+			const operandClass: new (definition: ConstraintDefinition) => operand =
+				Object.getPrototypeOf(this)
+			return new operandClass(result)
+		}
 
 export const ReadonlyArray = Array as unknown as new <
 	T extends readonly unknown[]

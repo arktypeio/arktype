@@ -1,5 +1,5 @@
 import type { ConstraintDefinition } from "./constraint.js"
-import { Constraint } from "./constraint.js"
+import { Constraint, intersection } from "./constraint.js"
 
 export interface DivisibilityDefinition extends ConstraintDefinition {
 	readonly divisor: number
@@ -14,12 +14,12 @@ export class DivisibilityConstraint implements Constraint {
 		(this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`)
 
 	intersect(other: DivisibilityConstraint) {
-		return new DivisibilityConstraint({
+		return {
 			divisor: Math.abs(
 				(this.divisor * other.divisor) /
 					greatestCommonDivisor(this.divisor, other.divisor)
 			)
-		})
+		}
 	}
 }
 

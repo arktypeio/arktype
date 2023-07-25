@@ -71,75 +71,10 @@ export type BoundableDataKind = keyof typeof unitsByBoundedKind
 export type LimitKind = "min" | "max"
 
 export type Range =
-	| readonly [BoundNode]
-	| readonly [BoundNode<MinComparator>, BoundNode<MaxComparator>]
+	| readonly [BoundConstraint]
+	| readonly [BoundConstraint<"min">, BoundConstraint<"max">]
 
 // TODO: hair space
-
-export class BoundSet extends ConstraintSet<Range, BoundSet> {
-	readonly bounded = this[0].bounded
-	readonly min = this[0].isMin() ? this[0] : undefined
-	readonly max = this[0].isMax()
-		? this[0]
-		: this[1]?.isMax()
-		? this[1]
-		: undefined
-
-	intersect(other: BoundSet) {
-		if (this.bounded !== other.bounded) {
-			return throwParseError(
-				writeIncompatibleRangeMessage(this.bounded, other.bounded)
-			)
-		}
-		const stricterMin = compareStrictness("min", this.min, other.min)
-		const stricterMax = compareStrictness("max", this.max, other.max)
-		if (stricterMin === "l") {
-			if (stricterMax === "r") {
-				return compareStrictness("min", this.min, other.max) === "l"
-					? Disjoint.from("range", this, other)
-					: new BoundSet(this.min!, other.max!)
-			}
-			return this
-		}
-		if (stricterMin === "r") {
-			if (stricterMax === "l") {
-				return compareStrictness("min", this.max, other.min) === "r"
-					? Disjoint.from("range", this, other)
-					: new BoundSet(other.min!, this.max!)
-			}
-			return other
-		}
-		return stricterMax === "l" ? this : other
-	}
-}
-
-export const compareStrictness = (
-	kind: "min" | "max",
-	l: BoundConstraint | undefined,
-	r: BoundConstraint | undefined
-) =>
-	!l
-		? !r
-			? "="
-			: "r"
-		: !r
-		? "l"
-		: l.limit === r.limit
-		? // comparators of length 1 (<,>) are exclusive so have precedence
-		  l.comparator.length === 1
-			? r.comparator.length === 1
-				? "="
-				: "l"
-			: r.comparator.length === 1
-			? "r"
-			: "="
-		: kind === "min"
-		? l.limit > r.limit
-			? "l"
-			: "r"
-		: l.limit < r.limit
-		? "l"
-		: "r"
 
 export const minComparators = {
 	">": true,
