@@ -43,7 +43,7 @@ const getInnerDataAndOptional = (
 		? { inner: data.slice(0, -1), optional: true }
 		: { inner: data, optional: false }
 
-type Entry = [PropertyKey, unknown]
+type Entry = readonly [PropertyKey, unknown]
 
 export const parseEntry = (entry: Entry) => {
 	const key = entry[0]
