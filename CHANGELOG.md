@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.17-alpha
+
+### Patch Changes
+
+-   ci: revert to dual cjs+esm build output
+
 ## 1.0.16-alpha
 
 ### Patch Changes
