@@ -10,4 +10,5 @@ export const throwParseError = (message: string) => {
 	throw new ParseError(message)
 }
 
+// TODO: hair space
 export type error<message extends string = string> = `!${message}`

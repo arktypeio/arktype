@@ -1,28 +1,25 @@
-import type { ConstraintDefinition } from "./constraint.js"
-import { Constraint, ConstraintSet } from "./constraint.js"
+import type { ConstraintRule } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface RegexDefinition extends ConstraintDefinition {
+export interface RegexRule extends ConstraintRule {
 	readonly source: string
 	readonly flags: string
 }
 
-export class RegexConstraint extends Constraint<
-	RegexDefinition,
-	typeof RegexConstraint
-> {
-	readonly source = this.definition.source
-	readonly flags = this.definition.flags
-	readonly literal = toLiteral(this.definition)
+export class RegexNode extends ConstraintNode<RegexRule, typeof RegexNode> {
+	readonly source = this.rule.source
+	readonly flags = this.rule.flags
+	readonly literal = toLiteral(this.rule)
 
-	static writeDefaultDescription(def: RegexDefinition) {
+	static writeDefaultDescription(def: RegexRule) {
 		return `matched by ${toLiteral(def)}`
 	}
 
-	intersectOwnKeys(other: RegexConstraint) {
-		return this.literal === other.literal ? this.definition : null
+	intersectOwnKeys(other: RegexNode) {
+		return this.literal === other.literal ? this.rule : null
 	}
 }
 
-export const RegexSet = ConstraintSet<readonly RegexConstraint[]>
+export const RegexSet = ConstraintSet<readonly RegexNode[]>
 
-const toLiteral = (def: RegexDefinition) => `/${def.source}/${def.flags}`
+const toLiteral = (def: RegexRule) => `/${def.source}/${def.flags}`

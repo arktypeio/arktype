@@ -1,21 +1,21 @@
-import type { ConstraintDefinition } from "./constraint.js"
-import { Constraint } from "./constraint.js"
+import type { ConstraintRule } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface DivisibilityDefinition extends ConstraintDefinition {
+export interface DivisibilityConstraint extends ConstraintRule {
 	readonly divisor: number
 }
 
-export class DivisibilityConstraint extends Constraint<
-	DivisibilityDefinition,
-	typeof DivisibilityConstraint
+export class DivisibilityNode extends ConstraintNode<
+	DivisibilityConstraint,
+	typeof DivisibilityNode
 > {
-	readonly divisor = this.definition.divisor
+	readonly divisor = this.rule.divisor
 
-	static writeDefaultDescription(def: DivisibilityDefinition) {
+	static writeDefaultDescription(def: DivisibilityConstraint) {
 		return def.divisor === 1 ? "an integer" : `a multiple of ${def.divisor}`
 	}
 
-	intersectOwnKeys(other: DivisibilityConstraint) {
+	intersectOwnKeys(other: DivisibilityNode) {
 		return {
 			divisor: Math.abs(
 				(this.divisor * other.divisor) /
@@ -24,6 +24,8 @@ export class DivisibilityConstraint extends Constraint<
 		}
 	}
 }
+
+export const DivisibilitySet = ConstraintSet<readonly [DivisibilityNode]>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

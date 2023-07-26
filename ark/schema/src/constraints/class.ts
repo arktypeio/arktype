@@ -1,40 +1,50 @@
-import type { AbstractableConstructor } from "@arktype/util"
 import {
+	AbstractableConstructor,
 	constructorExtends,
 	getExactBuiltinConstructorName,
-	objectKindDescriptions,
-	prototypeKeysOf
+	objectKindDescriptions
 } from "@arktype/util"
-import { In } from "../compiler/compile.js"
-import { registry } from "../compiler/registry.js"
-import type { Node } from "../nodes/kinds.js"
-import type { BasisKind } from "../nodes/primitive/basis.js"
-import { BasisNodeBase } from "../nodes/primitive/basis.js"
+import type { ConstraintRule } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import { Disjoint } from "../disjoint.js"
 
-export class ClassNode extends BasisNodeBase<{
-	rule: AbstractableConstructor
-	intersection: Node<BasisKind>
-	meta: {}
-}> {
-	readonly kind = "class"
-	readonly literalKeys = prototypeKeysOf(this.rule.prototype)
-	readonly domain = "object"
+export interface InstanceOfConstraint extends ConstraintRule {
+	readonly class: AbstractableConstructor
+}
 
-	compile() {
-		return `${In} instanceof ${
-			getExactBuiltinConstructorName(this.rule) ??
-			registry().register(this.rule)
-		}`
-	}
+export class InstanceOfNode extends ConstraintNode<
+	InstanceOfConstraint,
+	typeof InstanceOfNode
+> {
+	readonly class = this.rule.class
 
-	describe() {
-		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
+	static writeDefaultDescription(rule: InstanceOfConstraint) {
+		const possibleObjectKind = getExactBuiltinConstructorName(rule.class)
 		return possibleObjectKind
 			? objectKindDescriptions[possibleObjectKind]
-			: `an instance of ${this.rule.name}`
+			: `an instance of ${rule.class.name}`
 	}
 
-	extendsOneOf(...baseConstructors: AbstractableConstructor[]) {
-		return baseConstructors.some((ctor) => constructorExtends(this.rule, ctor))
+	intersectOwnKeys(other: InstanceOfNode) {
+		return constructorExtends(this.class, other.class)
+			? this
+			: constructorExtends(other.class, this.class)
+			? other
+			: Disjoint.from("class", this, other)
 	}
 }
+
+export const InstanceOfSet = ConstraintSet<readonly [InstanceOfNode]>
+
+// readonly literalKeys = prototypeKeysOf(this.rule.prototype)
+
+// compile() {
+// 	return `${In} instanceof ${
+// 		getExactBuiltinConstructorName(this.rule) ??
+// 		registry().register(this.rule)
+// 	}`
+// }
+
+// extendsOneOf(...baseConstructors: AbstractableConstructor[]) {
+// 	return baseConstructors.some((ctor) => constructorExtends(this.rule, ctor))
+// }

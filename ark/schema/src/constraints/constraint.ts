@@ -1,32 +1,26 @@
-// import { Disjoint } from "../disjoint.js"
+import { mutable } from "@arktype/util"
+import { Disjoint } from "../disjoint.js"
 
-const Disjoint = {} as any
-
-type Disjoint = any
-
-export interface ConstraintDefinition {
+export interface ConstraintRule {
 	description?: string
 }
 
-type ConstraintSubclass<
-	def extends ConstraintDefinition = ConstraintDefinition
-> = {
-	new (def: def): Constraint<def>
+type ConstraintSubclass<def extends ConstraintRule = ConstraintRule> = {
+	new (def: def): ConstraintNode<def> & def
 
 	writeDefaultDescription(def: def): string
 }
 
-export abstract class Constraint<
-	def extends ConstraintDefinition = ConstraintDefinition,
-	subclass extends ConstraintSubclass<def> = ConstraintSubclass<def>
+export abstract class ConstraintNode<
+	rule extends ConstraintRule = ConstraintRule,
+	subclass extends ConstraintSubclass<rule> = ConstraintSubclass<rule>
 > {
 	private readonly subclass: subclass = Object.getPrototypeOf(this).constructor
 	readonly description: string
 
-	constructor(public definition: def) {
+	constructor(public rule: rule) {
 		this.description =
-			definition.description ??
-			this.subclass.writeDefaultDescription(definition)
+			rule.description ?? this.subclass.writeDefaultDescription(rule)
 	}
 
 	intersect(other: InstanceType<subclass>) {
@@ -36,30 +30,30 @@ export abstract class Constraint<
 			// are possible intersection results for the subclass.
 			return result as Exclude<
 				ReturnType<InstanceType<subclass>["intersectOwnKeys"]>,
-				def
+				rule
 			>
 		}
-		if (this.definition.description) {
-			if (other.definition.description) {
-				result.description = this.definition.description.includes(
-					other.definition.description
+		if (this.rule.description) {
+			if (other.rule.description) {
+				result.description = this.rule.description.includes(
+					other.rule.description
 				)
-					? this.definition.description
-					: other.definition.description.includes(this.definition.description)
-					? other.definition.description
-					: `${this.definition.description} and ${other.definition.description}`
+					? this.rule.description
+					: other.rule.description.includes(this.rule.description)
+					? other.rule.description
+					: `${this.rule.description} and ${other.rule.description}`
 			} else {
-				result.description = this.definition.description
+				result.description = this.rule.description
 			}
-		} else if (other.definition.description) {
-			result.description = other.definition.description
+		} else if (other.rule.description) {
+			result.description = other.rule.description
 		}
 		return new this.subclass(result) as InstanceType<subclass>
 	}
 
 	abstract intersectOwnKeys(
 		other: InstanceType<subclass>
-	): def | Disjoint | null
+	): rule | Disjoint | null
 }
 
 export const ReadonlyArray = Array as unknown as new <
@@ -68,7 +62,7 @@ export const ReadonlyArray = Array as unknown as new <
 	...args: T
 ) => T
 
-type ConstraintList = readonly Constraint<any, any>[]
+type ConstraintList = readonly ConstraintNode<any, any>[]
 
 /** @ts-expect-error allow extending narrowed readonly array */
 export class ConstraintSet<
@@ -76,7 +70,7 @@ export class ConstraintSet<
 > extends ReadonlyArray<constraints> {
 	// TODO: make sure in cases like range, the result is sorted
 	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
-		const result = [] as unknown as constraints[number][]
+		const result = [] as unknown as mutable<constraints>
 		let includesConstraint = false
 		for (let i = 0; i < this.length; i++) {
 			const elementResult = this[i].intersect(constraint)

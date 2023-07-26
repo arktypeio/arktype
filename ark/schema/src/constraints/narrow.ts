@@ -1,7 +1,7 @@
-import type { ConstraintDefinition } from "./constraint.js"
-import { Constraint, ConstraintSet } from "./constraint.js"
+import type { ConstraintRule } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface NarrowConstraint extends ConstraintDefinition {
+export interface NarrowConstraint extends ConstraintRule {
 	readonly narrow: Narrow
 }
 

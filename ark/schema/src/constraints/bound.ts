@@ -1,25 +1,25 @@
 import { throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { ConstraintDefinition } from "./constraint.js"
-import { Constraint } from "./constraint.js"
+import type { ConstraintRule } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface BoundDefinition<limitKind extends LimitKind = LimitKind>
-	extends ConstraintDefinition {
+export interface BoundRule<limitKind extends LimitKind = LimitKind>
+	extends ConstraintRule {
 	readonly dataKind: BoundableDataKind
 	readonly limitKind: limitKind
 	readonly limit: number
 	readonly exclusive?: true
 }
 
-export class BoundConstraint<
+export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends Constraint<BoundDefinition, typeof BoundConstraint> {
-	readonly dataKind = this.definition.dataKind
-	readonly limitKind = this.definition.limitKind
-	readonly limit = this.definition.limit
-	readonly exclusive = this.definition.exclusive ?? false
+> extends ConstraintNode<BoundRule, typeof BoundNode> {
+	readonly dataKind = this.rule.dataKind
+	readonly limitKind = this.rule.limitKind
+	readonly limit = this.rule.limit
+	readonly exclusive = this.rule.exclusive
 
-	static writeDefaultDescription(def: BoundDefinition) {
+	static writeDefaultDescription(def: BoundRule) {
 		return `${
 			def.dataKind === "date"
 				? dateComparatorDescriptions[this.comparator]
@@ -28,10 +28,10 @@ export class BoundConstraint<
 	}
 
 	intersectOwnKeys(
-		other: BoundConstraint
+		other: BoundNode
 	): // cast the return type so that it has the same limitKind as this
-	BoundDefinition<limitKind> | Disjoint | null
-	intersectOwnKeys(other: BoundConstraint) {
+	BoundRule<limitKind> | Disjoint | null
+	intersectOwnKeys(other: BoundNode) {
 		if (this.dataKind !== other.dataKind) {
 			return throwParseError(
 				writeIncompatibleRangeMessage(this.dataKind, other.dataKind)
@@ -40,27 +40,31 @@ export class BoundConstraint<
 		if (this.limit > other.limit) {
 			if (this.limitKind === "min") {
 				return other.limitKind === "min"
-					? this.definition
+					? this.rule
 					: Disjoint.from("range", this, other)
 			}
-			return other.limitKind === "max" ? other.definition : null
+			return other.limitKind === "max" ? other.rule : null
 		}
 		if (this.limit < other.limit) {
 			if (this.limitKind === "max") {
 				return other.limitKind === "max"
-					? this.definition
+					? this.rule
 					: Disjoint.from("range", this, other)
 			}
-			return other.limitKind === "min" ? other.definition : null
+			return other.limitKind === "min" ? other.rule : null
 		}
 		if (this.limitKind === other.limitKind) {
-			return this.exclusive ? this.definition : other.definition
+			return this.exclusive ? this.rule : other.rule
 		}
 		return this.exclusive || other.exclusive
 			? Disjoint.from("range", this, other)
 			: null
 	}
 }
+
+export const BoundSet = ConstraintSet<
+	readonly [BoundNode] | readonly [BoundNode<"min">, BoundNode<"max">]
+>
 
 const unitsByBoundedKind = {
 	date: "",
@@ -72,12 +76,6 @@ const unitsByBoundedKind = {
 export type BoundableDataKind = keyof typeof unitsByBoundedKind
 
 export type LimitKind = "min" | "max"
-
-export type Range =
-	| readonly [BoundConstraint]
-	| readonly [BoundConstraint<"min">, BoundConstraint<"max">]
-
-// TODO: hair space
 
 export const minComparators = {
 	">": true,
@@ -133,27 +131,3 @@ export const writeIncompatibleRangeMessage = (
 ) => `Bound kinds ${l} and ${r} are incompatible`
 
 export type NumericallyBoundableData = string | number | readonly unknown[]
-
-// const getRangeKind = (range: Range): BoundKind => {
-//     const initialBoundKind = getBoundKind(range[0])
-//     if (range[1] && initialBoundKind !== getBoundKind(range[1])) {
-//         return throwParseError(
-//             writeIncompatibleRangeMessage(
-//                 initialBoundKind,
-//                 getBoundKind(range[1])
-//             )
-//         )
-//     }
-//     return initialBoundKind
-// }
-
-// const l = rule[0].limit.valueOf()
-// const r = rule[1]?.limit.valueOf()
-// if (
-//     l === r &&
-//     rule[0].comparator === ">=" &&
-//     rule[1]?.comparator === "<="
-// ) {
-//     // reduce a range like `1<=number<=1` to `number==1`
-//     rule = [{ comparator: "==", limit: rule[0].limit }]
-// }
