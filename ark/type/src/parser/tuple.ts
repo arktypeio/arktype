@@ -31,6 +31,12 @@ import {
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
+import {
+	EntryParseResult,
+	OptionalStringDefinition,
+	parseEntry,
+	validateObjectValue
+} from "./shared.js"
 
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
@@ -52,7 +58,8 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			elementDef = elementDef[1]
 			isVariadic = true
 		}
-		const value = ctx.scope.parse(elementDef, ctx)
+		const parsedEntry = parseEntry([i, elementDef])
+		const value = ctx.scope.parse(parsedEntry.innerValue, ctx)
 		if (isVariadic) {
 			if (!value.extends(builtins.array())) {
 				return throwParseError(writeNonArrayRestMessage(elementDef))
@@ -67,7 +74,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 				key: {
 					name: `${i}`,
 					prerequisite: false,
-					optional: false
+					optional: parsedEntry.kind === "optional"
 				},
 				value
 			})
@@ -143,28 +150,28 @@ export type validateTupleLiteral<
 			tail,
 			$,
 			args,
-			[
-				...result,
-				head extends variadicExpression<infer operand>
-					? validateDefinition<operand, $, args> extends infer syntacticResult
-						? syntacticResult extends operand
-							? semanticallyValidateRestElement<
-									operand,
-									$,
-									args
-							  > extends infer semanticResult
-								? semanticResult extends operand
-									? tail extends []
-										? head
-										: prematureRestMessage
-									: semanticResult
-								: never
-							: syntacticResult
-						: never
-					: validateDefinition<head, $, args>
-			]
+			[...result, validateTupleElement<head, tail, $, args>]
 	  >
 	: result
+
+type validateTupleElement<head, tail, $, args> =
+	head extends variadicExpression<infer operand>
+		? validateDefinition<operand, $, args> extends infer syntacticResult
+			? syntacticResult extends operand
+				? semanticallyValidateRestElement<
+						operand,
+						$,
+						args
+				  > extends infer semanticResult
+					? semanticResult extends operand
+						? tail extends []
+							? head
+							: prematureRestMessage
+						: semanticResult
+					: never
+				: syntacticResult
+			: never
+		: validateObjectValue<head, $, args>
 
 type semanticallyValidateRestElement<operand, $, args> = inferDefinition<
 	operand,
@@ -199,16 +206,28 @@ type inferTupleLiteral<
 	args,
 	result extends unknown[] = []
 > = def extends readonly [infer head, ...infer tail]
-	? inferDefinition<
-			head extends variadicExpression<infer operand> ? operand : head,
-			$,
-			args
-	  > extends infer element
-		? head extends variadicExpression
-			? element extends readonly unknown[]
-				? inferTupleLiteral<tail, $, args, [...result, ...element]>
-				: never
-			: inferTupleLiteral<tail, $, args, [...result, element]>
+	? parseEntry<
+			result["length"],
+			head extends variadicExpression<infer operand> ? operand : head
+	  > extends infer entryParseResult extends EntryParseResult
+		? inferDefinition<
+				entryParseResult["innerValue"],
+				$,
+				args
+		  > extends infer element
+			? head extends variadicExpression
+				? element extends readonly unknown[]
+					? inferTupleLiteral<tail, $, args, [...result, ...element]>
+					: never
+				: inferTupleLiteral<
+						tail,
+						$,
+						args,
+						entryParseResult["kind"] extends "optional"
+							? [...result, element?]
+							: [...result, element]
+				  >
+			: never
 		: never
 	: result
 
