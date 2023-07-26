@@ -58,7 +58,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			elementDef = elementDef[1]
 			isVariadic = true
 		}
-		const parsedEntry = parseEntry([i, elementDef], "indexed")
+		const parsedEntry = parseEntry([i, elementDef])
 		const value = ctx.scope.parse(parsedEntry.innerValue, ctx)
 		if (isVariadic) {
 			if (!value.extends(builtins.array())) {
