@@ -36,13 +36,12 @@ type validateObjectValueString<def, $, args> =
 
 type DefinitionEntry = readonly [PropertyKey, unknown]
 
-const getInnerValue = (value) => {
+const getInnerValue = (value: unknown) => {
 	if (typeof value === "string") {
 		if (value[value.length - 1] === "?") {
 			return value.slice(0, -1)
 		}
-	}
-	else (Array.isArray(value)) {
+	} else if (Array.isArray(value)) {
 		if (value.length === 2 && value[1] === "?") {
 			return getInnerValue(value[0])
 		}
@@ -53,17 +52,17 @@ const getInnerValue = (value) => {
 export const parseEntry = ([key, value]: DefinitionEntry) => {
 	const keyParseResult =
 		typeof key === "string"
-				? key[key.length - 1] === "?" && key[key.length - 2] === Scanner.escapeToken
-					? { innerKey: `${key.slice(0, -2)}?`, kind: "required" }
-					: { innerKey: key.slice(0, -1), kind: "optional" }
-				: { innerKey: key, kind: "required"  }
+			? key[key.length - 1] === "?" &&
+			  key[key.length - 2] === Scanner.escapeToken
+				? { innerKey: `${key.slice(0, -2)}?`, kind: "required" }
+				: { innerKey: key.slice(0, -1), kind: "optional" }
+			: { innerKey: key, kind: "required" }
 
 	return {
 		innerKey: keyParseResult.innerKey,
 		innerValue: getInnerValue(value),
 		kind: keyParseResult.kind
 	}
-
 }
 
 export type parseEntry<
