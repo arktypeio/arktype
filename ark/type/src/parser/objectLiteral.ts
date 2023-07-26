@@ -18,7 +18,7 @@ const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 	const named: mutable<NamedPropsInput> = {}
 	for (const entry of stringAndSymbolicEntriesOf(def)) {
-		const { innerKey, innerValue, kind } = parseEntry(entry)
+		const { innerKey, innerValue, kind } = parseEntry(entry, "required")
 		ctx.path.push(innerKey as string)
 		const valueNode = ctx.scope.parse(innerValue, ctx)
 		named[innerKey] = {

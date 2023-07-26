@@ -40,19 +40,16 @@ $ark.object36($arkRoot.b)`)
 	})
 	suite("optional keys and definition reduction", () => {
 		test("optional value", () => {
-			const t0 = type({ "a?": "string" })
-			const t1 = type({ a: "string?" })
-			attest(t0.condition).equals(t1.condition)
+			const t = type({ a: "string?" })
+			attest(t.condition).equals(type({ "a?": "string" }))
 		})
 		test("optional key and value", () => {
-			const t0 = type({ "a?": "string" })
-			const t1 = type({ "a?": "string?" })
-			attest(t0.condition).equals(t1.condition)
+			const t = type({ "a?": "string?" })
+			attest(t.condition).equals(type({ "a?": "string" })
 		})
 		test("optional value as tuple", () => {
-			const t0 = type({ "a?": "string" })
-			const t1 = type({ a: ["string", "?"] })
-			attest(t0.condition).equals(t1.condition)
+			const t = type({ a: ["string", "?"] })
+			attest(t.condition).equals(type({ "a?": "string" })
 		})
 	})
 	test("error in obj that has tuple that writes error at proper path", () => {

@@ -34,38 +34,36 @@ type validateObjectValueString<def, $, args> =
 		? `${validateDefinition<innerValue, $, args>}?`
 		: validateDefinition<def, $, args>
 
-const getInnerDataAndOptional = (
-	data: PropertyKey
-): { inner: PropertyKey; optional: boolean } =>
-	typeof data === "string" && data[data.length - 2] === Scanner.escapeToken
-		? { inner: `${data.slice(0, -2)}?`, optional: false }
-		: typeof data === "string"
-		? { inner: data.slice(0, -1), optional: true }
-		: { inner: data, optional: false }
+type DefinitionEntry = readonly [PropertyKey, unknown]
 
-type Entry = readonly [PropertyKey, unknown]
-
-export const parseEntry = (entry: Entry) => {
-	const key = entry[0]
-	const value = entry[1]
-	const keyData = getInnerDataAndOptional(key)
-	const data: EntryParseResult = {
-		innerKey: keyData.inner,
-		innerValue: value,
-		kind: "required"
-	}
-
-	if (Array.isArray(value)) {
-		if (value.length === 2 && value[1] === "?") {
-			data["innerValue"] = value[0]
-			data["optional"] = "optional"
+const getInnerValue = (value) => {
+	if (typeof value === "string") {
+		if (value[value.length - 1] === "?") {
+			return value.slice(0, -1)
 		}
-	} else if (typeof value === "string" && value[value.length - 1] === "?") {
-		const valueDefData = getInnerDataAndOptional(key)
-		data["innerValue"] = valueDefData.inner
-		data["optional"] ||= valueDefData["optional"]
 	}
-	return data
+	else (Array.isArray(value)) {
+		if (value.length === 2 && value[1] === "?") {
+			return getInnerValue(value[0])
+		}
+	}
+	return value
+}
+
+export const parseEntry = ([key, value]: DefinitionEntry) => {
+	const keyParseResult =
+		typeof key === "string"
+				? key[key.length - 1] === "?" && key[key.length - 2] === Scanner.escapeToken
+					? { innerKey: `${key.slice(0, -2)}?`, kind: "required" }
+					: { innerKey: key.slice(0, -1), kind: "optional" }
+				: { innerKey: key, kind: "required"  }
+
+	return {
+		innerKey: keyParseResult.innerKey,
+		innerValue: getInnerValue(value),
+		kind: keyParseResult.kind
+	}
+
 }
 
 export type parseEntry<
