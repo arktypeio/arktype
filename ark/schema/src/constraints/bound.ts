@@ -18,13 +18,14 @@ export class BoundConstraint<
 	readonly limitKind = this.definition.limitKind
 	readonly limit = this.definition.limit
 	readonly exclusive = this.definition.exclusive ?? false
-	readonly description =
-		this.definition.description ??
-		`${
-			this.dataKind === "date"
+
+	static writeDefaultDescription(def: BoundDefinition) {
+		return `${
+			def.dataKind === "date"
 				? dateComparatorDescriptions[this.comparator]
 				: numericComparatorDescriptions[this.comparator]
-		} ${this.limit}`
+		} ${def.limit}`
+	}
 
 	intersectOwnKeys(
 		other: BoundConstraint

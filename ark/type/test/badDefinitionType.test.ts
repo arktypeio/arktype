@@ -1,5 +1,5 @@
 import { attest } from "@arktype/test"
-import { type } from "../type/main.js"
+import { type } from "../src/main.js"
 import { suite, test } from "mocha"
 import { writeBadDefinitionTypeMessage } from "../type/parser/definition.js"
 

@@ -1,21 +1,33 @@
-import { Constructor } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
+// import { Disjoint } from "../disjoint.js"
+
+const Disjoint = {} as any
+
+type Disjoint = any
 
 export interface ConstraintDefinition {
 	description?: string
 }
 
+type ConstraintSubclass<
+	def extends ConstraintDefinition = ConstraintDefinition
+> = {
+	new (def: def): Constraint<def>
+
+	writeDefaultDescription(def: def): string
+}
+
 export abstract class Constraint<
 	def extends ConstraintDefinition = ConstraintDefinition,
-	subclass extends new (def: def) => Constraint<def> = new (
-		def: def
-	) => Constraint<def>
+	subclass extends ConstraintSubclass<def> = ConstraintSubclass<def>
 > {
-	abstract readonly description: string
-	private readonly subclass: new (def: unknown) => InstanceType<subclass> =
-		Object.getPrototypeOf(this).constructor
+	private readonly subclass: subclass = Object.getPrototypeOf(this).constructor
+	readonly description: string
 
-	constructor(public definition: def) {}
+	constructor(public definition: def) {
+		this.description =
+			definition.description ??
+			this.subclass.writeDefaultDescription(definition)
+	}
 
 	intersect(other: InstanceType<subclass>) {
 		const result = this.intersectOwnKeys(other)
@@ -56,13 +68,15 @@ export const ReadonlyArray = Array as unknown as new <
 	...args: T
 ) => T
 
+type ConstraintList = readonly Constraint<any, any>[]
+
 /** @ts-expect-error allow extending narrowed readonly array */
 export class ConstraintSet<
-	constraints extends Constraint[] = Constraint[]
+	constraints extends ConstraintList = ConstraintList
 > extends ReadonlyArray<constraints> {
 	// TODO: make sure in cases like range, the result is sorted
 	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
-		const result = [] as unknown as constraints
+		const result = [] as unknown as constraints[number][]
 		let includesConstraint = false
 		for (let i = 0; i < this.length; i++) {
 			const elementResult = this[i].intersect(constraint)

@@ -6,16 +6,23 @@ export interface RegexDefinition extends ConstraintDefinition {
 	readonly flags: string
 }
 
-export class RegexConstraint implements Constraint {
-	constructor(public definition: RegexDefinition) {}
-
+export class RegexConstraint extends Constraint<
+	RegexDefinition,
+	typeof RegexConstraint
+> {
 	readonly source = this.definition.source
 	readonly flags = this.definition.flags
-	readonly literal = `/${this.source}/${this.flags}`
-	readonly description =
-		this.definition.description ?? `matched by ${this.literal}`
+	readonly literal = toLiteral(this.definition)
+
+	static writeDefaultDescription(def: RegexDefinition) {
+		return `matched by ${toLiteral(def)}`
+	}
 
 	intersectOwnKeys(other: RegexConstraint) {
-		return this.literal === other.literal ? this : null
+		return this.literal === other.literal ? this.definition : null
 	}
 }
+
+export const RegexSet = ConstraintSet<readonly RegexConstraint[]>
+
+const toLiteral = (def: RegexDefinition) => `/${def.source}/${def.flags}`

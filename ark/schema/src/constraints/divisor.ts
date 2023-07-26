@@ -10,9 +10,10 @@ export class DivisibilityConstraint extends Constraint<
 	typeof DivisibilityConstraint
 > {
 	readonly divisor = this.definition.divisor
-	readonly description =
-		this.definition.description ??
-		(this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`)
+
+	static writeDefaultDescription(def: DivisibilityDefinition) {
+		return def.divisor === 1 ? "an integer" : `a multiple of ${def.divisor}`
+	}
 
 	intersectOwnKeys(other: DivisibilityConstraint) {
 		return {
