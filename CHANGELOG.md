@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.18-alpha
+
+### Patch Changes
+
+-   Fix build entrypoint paths
+
 ## 1.0.17-alpha
 
 ### Patch Changes
