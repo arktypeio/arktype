@@ -32,7 +32,35 @@ suite("array", () => {
 			attest(t.infer).typed as string[]
 			attest(t.condition).equals(type("string[]").condition)
 		})
-
+		suite("optional tuple literals", () => {
+			test("string optional", () => {
+				const t = type(["string?"])
+				attest(t.infer).typed as [string?]
+				attest(t.condition).equals(type(["string?"]).condition)
+			})
+			test("optional tuple", () => {
+				const t = type([["string", "?"]])
+				attest(t.infer).typed as [string?]
+				attest(t.condition).equals(type(["string?"]).condition)
+			})
+			test("multi-optional tuple", () => {
+				const t = type([["string?", "?"]])
+				attest(t.infer).typed as [string?]
+				attest(t.condition).equals(type(["string?"]).condition)
+			})
+			test("nested optional tuple", () => {
+				const t = type([["string?"], "string?"])
+				attest(t.infer).typed as [[string?], string?]
+			})
+			suite("error optionals", () => {
+				test("shallow optional", () => {
+					const t = type("string?")
+				})
+				test("shallow optional in tuple form", () => {
+					const t = type(["string", "?"])
+				})
+			})
+		})
 		test("root expression", () => {
 			const t = type("string", "[]")
 			attest(t.infer).typed as string[]
