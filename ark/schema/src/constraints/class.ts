@@ -1,12 +1,12 @@
+import type { AbstractableConstructor } from "@arktype/util"
 import {
-	AbstractableConstructor,
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions
 } from "@arktype/util"
+import { Disjoint } from "../disjoint.js"
 import type { ConstraintRule } from "./constraint.js"
 import { ConstraintNode, ConstraintSet } from "./constraint.js"
-import { Disjoint } from "../disjoint.js"
 
 export interface InstanceOfConstraint extends ConstraintRule {
 	readonly class: AbstractableConstructor
@@ -16,8 +16,6 @@ export class InstanceOfNode extends ConstraintNode<
 	InstanceOfConstraint,
 	typeof InstanceOfNode
 > {
-	readonly class = this.rule.class
-
 	static writeDefaultDescription(rule: InstanceOfConstraint) {
 		const possibleObjectKind = getExactBuiltinConstructorName(rule.class)
 		return possibleObjectKind

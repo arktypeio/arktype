@@ -14,11 +14,6 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind>
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
 > extends ConstraintNode<BoundRule, typeof BoundNode> {
-	readonly dataKind = this.rule.dataKind
-	readonly limitKind = this.rule.limitKind
-	readonly limit = this.rule.limit
-	readonly exclusive = this.rule.exclusive
-
 	static writeDefaultDescription(def: BoundRule) {
 		return `${
 			def.dataKind === "date"

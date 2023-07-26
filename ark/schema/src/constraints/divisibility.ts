@@ -9,8 +9,6 @@ export class DivisibilityNode extends ConstraintNode<
 	DivisibilityConstraint,
 	typeof DivisibilityNode
 > {
-	readonly divisor = this.rule.divisor
-
 	static writeDefaultDescription(def: DivisibilityConstraint) {
 		return def.divisor === 1 ? "an integer" : `a multiple of ${def.divisor}`
 	}

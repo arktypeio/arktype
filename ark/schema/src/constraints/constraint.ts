@@ -1,4 +1,4 @@
-import { mutable } from "@arktype/util"
+import type { mutable } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 
 export interface ConstraintRule {
@@ -6,21 +6,28 @@ export interface ConstraintRule {
 }
 
 type ConstraintSubclass<def extends ConstraintRule = ConstraintRule> = {
-	new (def: def): ConstraintNode<def> & def
+	new (def: def): ConstraintNode<def>
 
 	writeDefaultDescription(def: def): string
 }
 
+export const ReadonlyObject = Object as unknown as new <T extends object>(
+	base: T
+) => T
+
+/** @ts-expect-error allow constraint subclasses to access rule keys as top-level properties */
 export abstract class ConstraintNode<
 	rule extends ConstraintRule = ConstraintRule,
 	subclass extends ConstraintSubclass<rule> = ConstraintSubclass<rule>
-> {
+> extends ReadonlyObject<rule> {
 	private readonly subclass: subclass = Object.getPrototypeOf(this).constructor
-	readonly description: string
 
 	constructor(public rule: rule) {
-		this.description =
-			rule.description ?? this.subclass.writeDefaultDescription(rule)
+		if (rule instanceof ConstraintNode) {
+			return rule
+		}
+		super({ ...rule })
+		this.description ??= this.subclass.writeDefaultDescription(rule)
 	}
 
 	intersect(other: InstanceType<subclass>) {

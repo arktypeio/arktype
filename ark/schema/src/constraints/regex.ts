@@ -7,8 +7,6 @@ export interface RegexRule extends ConstraintRule {
 }
 
 export class RegexNode extends ConstraintNode<RegexRule, typeof RegexNode> {
-	readonly source = this.rule.source
-	readonly flags = this.rule.flags
 	readonly literal = toLiteral(this.rule)
 
 	static writeDefaultDescription(def: RegexRule) {

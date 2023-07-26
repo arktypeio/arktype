@@ -12,6 +12,7 @@
 		"composite": true,
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
+		"noImplicitOverride": true,
 		"stripInternal": true,
 		"lib": ["ESNext"],
 		"customConditions": ["arktype-dev"]
