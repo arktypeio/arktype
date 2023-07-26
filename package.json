@@ -35,7 +35,7 @@
     "scripts": {
         "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
         "build": "pnpm ts ./dev/scripts/build.ts",
-        "buildRepo": "pnpm build && pnpm run -r build",
+        "buildRepo": "pnpm build && pnpm run -r build && pnpm build",
         "test": "pnpm ts ./dev/scripts/test.ts",
         "tnt": "pnpm ts ./dev/scripts/test.ts --skipTypes",
         "testRepo": "pnpm -r test && pnpm testTsVersions",
