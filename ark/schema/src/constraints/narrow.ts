@@ -22,6 +22,8 @@ export class NarrowNode extends ConstraintNode<NarrowRule, typeof NarrowNode> {
 
 export const NarrowSet = ConstraintSet<readonly NarrowNode[]>
 
+export type NarrowSet = typeof NarrowSet
+
 export type Narrow<data = any> = (data: data) => boolean
 
 export type NarrowCast<data = any, narrowed extends data = data> = (

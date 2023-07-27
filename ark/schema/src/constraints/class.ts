@@ -34,6 +34,8 @@ export class InstanceOfNode extends ConstraintNode<
 
 export const InstanceOfSet = ConstraintSet<readonly [InstanceOfNode]>
 
+export type InstanceOfSet = typeof InstanceOfSet
+
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
 // compile() {

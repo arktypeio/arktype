@@ -63,6 +63,8 @@ export const BoundSet = ConstraintSet<
 	readonly [BoundNode] | readonly [BoundNode<"min">, BoundNode<"max">]
 >
 
+export type BoundSet = typeof BoundSet
+
 const boundToComparator = <limitKind extends LimitKind>(
 	bound: BoundRule<limitKind>
 ) =>

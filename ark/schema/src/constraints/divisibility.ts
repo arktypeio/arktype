@@ -25,6 +25,8 @@ export class DivisibilityNode extends ConstraintNode<
 
 export const DivisibilitySet = ConstraintSet<readonly [DivisibilityNode]>
 
+export type DivisibilitySet = typeof DivisibilitySet
+
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
 	let previous: number

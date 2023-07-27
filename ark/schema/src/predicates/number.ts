@@ -1,6 +1,8 @@
-import type { DivisorConstraint } from "../constraints/constraint.js"
+import type { BoundSet } from "../constraints/bound.js"
+import type { DivisibilitySet } from "../constraints/divisibility.js"
 import { PredicateBase } from "./predicate.js"
 
 export class NumberPredicate extends PredicateBase {
-	divisor?: DivisorConstraint
+	range?: BoundSet
+	divisibility?: DivisibilitySet
 }

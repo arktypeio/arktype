@@ -20,4 +20,6 @@ export class RegexNode extends ConstraintNode<RegexRule, typeof RegexNode> {
 
 export const RegexSet = ConstraintSet<readonly RegexNode[]>
 
+export type RegexSet = typeof RegexSet
+
 const toLiteral = (def: RegexRule) => `/${def.source}/${def.flags}`
