@@ -2,7 +2,7 @@ import type { ConstraintRule } from "./constraint.js"
 import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
 export interface NarrowRule extends ConstraintRule {
-	readonly narrow: Narrow
+	readonly validator: Narrow
 }
 
 // TODO: allow changed order to be the same type
@@ -12,11 +12,11 @@ export interface NarrowRule extends ConstraintRule {
 // resulting from this intersection should also be safe.
 export class NarrowNode extends ConstraintNode<NarrowRule, typeof NarrowNode> {
 	static writeDefaultDescription(rule: NarrowRule) {
-		return `valid according to ${rule.narrow.name}`
+		return `valid according to ${rule.validator.name}`
 	}
 
 	intersectOwnKeys(other: NarrowNode) {
-		return this.narrow === other.narrow ? this : null
+		return this.validator === other.validator ? this : null
 	}
 }
 

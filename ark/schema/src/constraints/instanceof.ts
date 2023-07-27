@@ -6,7 +6,7 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { ConstraintRule } from "./constraint.js"
-import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
 export interface InstanceOfConstraint extends ConstraintRule {
 	readonly class: AbstractableConstructor
@@ -31,10 +31,6 @@ export class InstanceOfNode extends ConstraintNode<
 			: Disjoint.from("class", this, other)
 	}
 }
-
-export const InstanceOfSet = ConstraintSet<readonly [InstanceOfNode]>
-
-export type InstanceOfSet = typeof InstanceOfSet
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
