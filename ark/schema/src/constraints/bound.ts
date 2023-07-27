@@ -1,10 +1,11 @@
 import { throwParseError } from "@arktype/util"
+import type { BaseRule } from "../base.js"
+import { BaseNode } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import type { ConstraintRule } from "./constraint.js"
-import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import { ConstraintSet } from "./constraint.js"
 
 export interface BoundRule<limitKind extends LimitKind = LimitKind>
-	extends ConstraintRule {
+	extends BaseRule {
 	readonly dataKind: BoundableDataKind
 	readonly limitKind: limitKind
 	readonly limit: number
@@ -13,7 +14,7 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind>
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<BoundRule<limitKind>, typeof BoundNode> {
+> extends BaseNode<BoundRule<limitKind>, typeof BoundNode> {
 	readonly comparator = boundToComparator(this)
 
 	static writeDefaultDescription(rule: BoundRule) {

@@ -1,15 +1,13 @@
-import type { ConstraintRule } from "./constraint.js"
-import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import type { BaseRule } from "../base.js"
+import { BaseNode } from "../base.js"
+import { ConstraintSet } from "./constraint.js"
 
-export interface PatternRule extends ConstraintRule {
+export interface PatternRule extends BaseRule {
 	readonly source: string
 	readonly flags?: string
 }
 
-export class PatternNode extends ConstraintNode<
-	PatternRule,
-	typeof PatternNode
-> {
+export class PatternNode extends BaseNode<PatternRule, typeof PatternNode> {
 	readonly literal = toLiteral(this.rule)
 
 	static writeDefaultDescription(def: PatternRule) {

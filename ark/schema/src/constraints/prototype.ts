@@ -4,15 +4,15 @@ import {
 	getExactBuiltinConstructorName,
 	objectKindDescriptions
 } from "@arktype/util"
+import type { BaseRule } from "../base.js"
+import { BaseNode } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import type { ConstraintRule } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
 
-export interface PrototypeRule extends ConstraintRule {
+export interface PrototypeRule extends BaseRule {
 	readonly ancestor: AbstractableConstructor
 }
 
-export class PrototypeNode extends ConstraintNode<
+export class PrototypeNode extends BaseNode<
 	PrototypeRule,
 	typeof PrototypeNode
 > {

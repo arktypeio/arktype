@@ -101,3 +101,7 @@ export type requiredKeyOf<o> = {
 }[keyof o]
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
+
+export const ReadonlyObject = Object as unknown as new <T extends object>(
+	base: T
+) => T

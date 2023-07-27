@@ -80,3 +80,9 @@ export const spliterate = <item, included extends item>(
 	}
 	return result
 }
+
+export const ReadonlyArray = Array as unknown as new <
+	T extends readonly unknown[]
+>(
+	...args: T
+) => T

@@ -1,14 +1,11 @@
-import type { ConstraintRule } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import type { BaseRule } from "../base.js"
+import { BaseNode } from "../base.js"
 
-export interface DivisorRule extends ConstraintRule {
+export interface DivisorRule extends BaseRule {
 	readonly value: number
 }
 
-export class DivisorNode extends ConstraintNode<
-	DivisorRule,
-	typeof DivisorNode
-> {
+export class DivisorNode extends BaseNode<DivisorRule, typeof DivisorNode> {
 	static writeDefaultDescription(def: DivisorRule) {
 		return def.value === 1 ? "an integer" : `a multiple of ${def.value}`
 	}

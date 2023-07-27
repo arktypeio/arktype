@@ -1,13 +1,12 @@
+import type { Domain } from "@arktype/util"
+import type { BaseRule } from "../base.js"
+import { BaseNode } from "../base.js"
 import type { NarrowSet } from "../constraints/narrow.js"
-import type { NumberNode } from "./number.js"
-import type { ObjectNode } from "./object.js"
-import type { StringNode } from "./string.js"
-import type { UnitNode } from "./unit.js"
 
-export type Predicate = UnitNode | ObjectNode | NumberNode | StringNode
-
-export class PredicateNode {
+export interface PredicateRule extends BaseRule {
 	readonly narrows?: NarrowSet
+}
 
-	constructor() {}
+export abstract class PredicateNode extends BaseNode {
+	abstract readonly domain: Domain
 }
