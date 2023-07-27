@@ -8,25 +8,25 @@ import { Disjoint } from "../disjoint.js"
 import type { ConstraintRule } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export interface InstanceOfConstraint extends ConstraintRule {
-	readonly class: AbstractableConstructor
+export interface PrototypeRule extends ConstraintRule {
+	readonly ancestor: AbstractableConstructor
 }
 
-export class InstanceOfNode extends ConstraintNode<
-	InstanceOfConstraint,
-	typeof InstanceOfNode
+export class PrototypeNode extends ConstraintNode<
+	PrototypeRule,
+	typeof PrototypeNode
 > {
-	static writeDefaultDescription(rule: InstanceOfConstraint) {
-		const possibleObjectKind = getExactBuiltinConstructorName(rule.class)
+	static writeDefaultDescription(rule: PrototypeRule) {
+		const possibleObjectKind = getExactBuiltinConstructorName(rule.ancestor)
 		return possibleObjectKind
 			? objectKindDescriptions[possibleObjectKind]
-			: `an instance of ${rule.class.name}`
+			: `an instance of ${rule.ancestor.name}`
 	}
 
-	intersectOwnKeys(other: InstanceOfNode) {
-		return constructorExtends(this.class, other.class)
+	intersectOwnKeys(other: PrototypeNode) {
+		return constructorExtends(this.ancestor, other.ancestor)
 			? this
-			: constructorExtends(other.class, this.class)
+			: constructorExtends(other.ancestor, this.ancestor)
 			? other
 			: Disjoint.from("class", this, other)
 	}

@@ -1,4 +1,4 @@
-import type { NarrowNode, NarrowSet } from "../constraints/narrow.js"
+import type { NarrowSet } from "../constraints/narrow.js"
 import type { NumberPredicate } from "./number.js"
 import type { ObjectPredicate } from "./object.js"
 import type { StringPredicate } from "./string.js"
