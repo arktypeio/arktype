@@ -1,5 +1,5 @@
-import type { PredicateBase } from "./predicate.js"
+import type { PredicateNode } from "./predicate.js"
 
-export interface UnitPredicate extends PredicateBase {
+export interface UnitNode extends PredicateNode {
 	readonly value: unknown
 }

@@ -1,6 +1,6 @@
 import type { PrototypeNode } from "../constraints/prototype.js"
-import { PredicateBase } from "./predicate.js"
+import { PredicateNode } from "./predicate.js"
 
-export class ObjectPredicate extends PredicateBase {
+export class ObjectNode extends PredicateNode {
 	readonly instance?: PrototypeNode
 }

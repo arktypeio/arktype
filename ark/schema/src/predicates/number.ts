@@ -1,8 +1,8 @@
 import type { BoundSet } from "../constraints/bound.js"
 import type { DivisorNode } from "../constraints/divisor.js"
-import { PredicateBase } from "./predicate.js"
+import { PredicateNode } from "./predicate.js"
 
-export class NumberPredicate extends PredicateBase {
+export class NumberNode extends PredicateNode {
 	readonly bounds?: BoundSet
 	readonly divisor?: DivisorNode
 }

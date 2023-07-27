@@ -24,6 +24,7 @@
 	],
 	"typescript.preferences.importModuleSpecifierEnding": "js",
 	"typescript.tsserver.experimental.enableProjectDiagnostics": false,
+	"typescript.tsdk": "node_modules/typescript/lib",
 	"prettier.ignorePath": "dev/.prettierignore",
 	"prettier.prettierPath": "./node_modules/prettier",
 	// NOTE: these are also maintained in package.json under "mocha"
@@ -38,7 +39,6 @@
 		"ATTEST_CONFIG": "{ \"skipTypes\": true }"
 	},
 	"testExplorer.useNativeTesting": true,
-	"typescript.tsdk": "node_modules/typescript/lib",
 	"errorLens.replace": [
 		{
 			"matcher": ".*\n([^\n]*)$",

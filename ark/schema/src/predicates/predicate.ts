@@ -1,16 +1,12 @@
 import type { NarrowSet } from "../constraints/narrow.js"
-import type { NumberPredicate } from "./number.js"
-import type { ObjectPredicate } from "./object.js"
-import type { StringPredicate } from "./string.js"
-import type { UnitPredicate } from "./unit.js"
+import type { NumberNode } from "./number.js"
+import type { ObjectNode } from "./object.js"
+import type { StringNode } from "./string.js"
+import type { UnitNode } from "./unit.js"
 
-export type Predicate =
-	| UnitPredicate
-	| ObjectPredicate
-	| NumberPredicate
-	| StringPredicate
+export type Predicate = UnitNode | ObjectNode | NumberNode | StringNode
 
-export class PredicateBase {
+export class PredicateNode {
 	readonly narrows?: NarrowSet
 
 	constructor() {}

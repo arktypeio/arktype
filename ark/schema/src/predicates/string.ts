@@ -1,8 +1,8 @@
 import type { BoundSet } from "../constraints/bound.js"
 import type { PatternSet } from "../constraints/pattern.js"
-import { PredicateBase } from "./predicate.js"
+import { PredicateNode } from "./predicate.js"
 
-export class StringPredicate extends PredicateBase {
+export class StringNode extends PredicateNode {
 	readonly bounds?: BoundSet
 	readonly patterns?: PatternSet
 }
