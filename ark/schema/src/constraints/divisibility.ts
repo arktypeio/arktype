@@ -1,15 +1,15 @@
 import type { ConstraintRule } from "./constraint.js"
 import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface DivisibilityConstraint extends ConstraintRule {
+export interface DivisibilityRule extends ConstraintRule {
 	readonly divisor: number
 }
 
 export class DivisibilityNode extends ConstraintNode<
-	DivisibilityConstraint,
+	DivisibilityRule,
 	typeof DivisibilityNode
 > {
-	static writeDefaultDescription(def: DivisibilityConstraint) {
+	static writeDefaultDescription(def: DivisibilityRule) {
 		return def.divisor === 1 ? "an integer" : `a multiple of ${def.divisor}`
 	}
 

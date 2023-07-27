@@ -174,3 +174,12 @@ export type writeInvalidLimitMessage<
 	: "followed"} by a corresponding literal (was '${limit}')`
 
 export type BoundKind = "left" | "right"
+
+export const invertedComparators = {
+	"<": ">",
+	">": "<",
+	"<=": ">=",
+	">=": "<="
+} as const satisfies Record<Comparator, Comparator>
+
+export type InvertedComparators = typeof invertedComparators

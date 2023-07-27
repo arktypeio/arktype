@@ -5,10 +5,10 @@ export interface ConstraintRule {
 	description?: string
 }
 
-type ConstraintSubclass<def extends ConstraintRule = ConstraintRule> = {
-	new (def: def): ConstraintNode<def>
+type ConstraintSubclass<rule extends ConstraintRule = ConstraintRule> = {
+	new (rule: rule): ConstraintNode<any, any>
 
-	writeDefaultDescription(def: def): string
+	writeDefaultDescription(rule: rule): string
 }
 
 export const ReadonlyObject = Object as unknown as new <T extends object>(
@@ -20,7 +20,7 @@ export abstract class ConstraintNode<
 	rule extends ConstraintRule = ConstraintRule,
 	subclass extends ConstraintSubclass<rule> = ConstraintSubclass<rule>
 > extends ReadonlyObject<rule> {
-	private readonly subclass: subclass = Object.getPrototypeOf(this).constructor
+	private readonly subclass = this.constructor as subclass
 
 	constructor(public rule: rule) {
 		if (rule instanceof ConstraintNode) {

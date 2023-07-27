@@ -13,13 +13,15 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind>
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<BoundRule, typeof BoundNode> {
-	static writeDefaultDescription(def: BoundRule) {
+> extends ConstraintNode<BoundRule<limitKind>, typeof BoundNode> {
+	readonly comparator = boundToComparator(this)
+
+	static writeDefaultDescription(rule: BoundRule) {
 		return `${
-			def.dataKind === "date"
-				? dateComparatorDescriptions[this.comparator]
-				: numericComparatorDescriptions[this.comparator]
-		} ${def.limit}`
+			rule.dataKind === "date"
+				? dateComparatorDescriptions[boundToComparator(rule)]
+				: numericComparatorDescriptions[boundToComparator(rule)]
+		} ${rule.limit}`
 	}
 
 	intersectOwnKeys(
@@ -61,6 +63,13 @@ export const BoundSet = ConstraintSet<
 	readonly [BoundNode] | readonly [BoundNode<"min">, BoundNode<"max">]
 >
 
+const boundToComparator = <limitKind extends LimitKind>(
+	bound: BoundRule<limitKind>
+) =>
+	`${bound.limitKind === "min" ? ">" : "<"}${
+		bound.exclusive ? "" : "="
+	}` as limitKind extends "min" ? MinComparator : MaxComparator
+
 const unitsByBoundedKind = {
 	date: "",
 	number: "",
@@ -88,8 +97,7 @@ export type MaxComparator = keyof typeof maxComparators
 
 export const comparators = {
 	...minComparators,
-	...maxComparators,
-	"==": true
+	...maxComparators
 }
 
 export type Comparator = keyof typeof comparators
@@ -98,27 +106,15 @@ export const numericComparatorDescriptions = {
 	"<": "less than",
 	">": "more than",
 	"<=": "at most",
-	">=": "at least",
-	"==": "exactly"
+	">=": "at least"
 } as const satisfies Record<Comparator, string>
 
 export const dateComparatorDescriptions = {
 	"<": "before",
 	">": "after",
 	"<=": "at or before",
-	">=": "at or after",
-	"==": ""
+	">=": "at or after"
 } as const satisfies Record<Comparator, string>
-
-export const invertedComparators = {
-	"<": ">",
-	">": "<",
-	"<=": ">=",
-	">=": "<=",
-	"==": "=="
-} as const satisfies Record<Comparator, Comparator>
-
-export type InvertedComparators = typeof invertedComparators
 
 export const writeIncompatibleRangeMessage = (
 	l: BoundableDataKind,

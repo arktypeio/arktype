@@ -1,9 +1,26 @@
 import type { ConstraintRule } from "./constraint.js"
 import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface NarrowConstraint extends ConstraintRule {
+export interface NarrowRule extends ConstraintRule {
 	readonly narrow: Narrow
 }
+
+// TODO: allow changed order to be the same type
+
+// as long as the narrows in l and r are individually safe to check
+// in the order they're specified, checking them in the order
+// resulting from this intersection should also be safe.
+export class NarrowNode extends ConstraintNode<NarrowRule, typeof NarrowNode> {
+	static writeDefaultDescription(rule: NarrowRule) {
+		return `valid according to ${rule.narrow.name}`
+	}
+
+	intersectOwnKeys(other: NarrowNode) {
+		return this.narrow === other.narrow ? this : null
+	}
+}
+
+export const NarrowSet = ConstraintSet<readonly NarrowNode[]>
 
 export type Narrow<data = any> = (data: data) => boolean
 
@@ -17,25 +34,3 @@ export type inferNarrow<In, predicate> = predicate extends (
 ) => data is infer narrowed
 	? narrowed
 	: In
-
-export class NarrowNode extends ConstraintNode<NarrowConstraint> {
-	readonly kind = "divisor"
-
-	readonly defaultDescription = `valid according to ${this.narrow.name}`
-}
-
-// intersect: (l, r) =>
-//     // as long as the narrows in l and r are individually safe to check
-//     // in the order they're specified, checking them in the order
-//     // resulting from this intersection should also be safe.
-//     intersectUniqueLists(l.children, r.children)
-
-// TODO: allow changed order to be the same type
-
-export class NarrowSet extends ConstraintSet<readonly NarrowNode[], NarrowSet> {
-	intersect(other: NarrowSet) {
-		return this
-	}
-}
-
-export type NarrowIntersection = readonly NarrowNode[]
