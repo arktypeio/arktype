@@ -1,5 +1,6 @@
 import type { BaseRule } from "../base.js"
 import { BaseNode } from "../base.js"
+import { ConstraintSet } from "./constraint.js"
 
 export interface DivisorRule extends BaseRule {
 	readonly value: number
@@ -19,6 +20,10 @@ export class DivisorNode extends BaseNode<DivisorRule, typeof DivisorNode> {
 		}
 	}
 }
+
+export const DivisorSet = ConstraintSet<readonly DivisorNode[]>
+
+export type DivisorSet = typeof DivisorSet
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

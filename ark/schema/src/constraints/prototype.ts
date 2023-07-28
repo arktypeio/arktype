@@ -7,6 +7,7 @@ import {
 import type { BaseRule } from "../base.js"
 import { BaseNode } from "../base.js"
 import { Disjoint } from "../disjoint.js"
+import { ConstraintSet } from "./constraint.js"
 
 export interface PrototypeRule extends BaseRule {
 	readonly ancestor: AbstractableConstructor
@@ -31,6 +32,10 @@ export class PrototypeNode extends BaseNode<
 			: Disjoint.from("class", this, other)
 	}
 }
+
+export const PrototypeSet = ConstraintSet<readonly PrototypeNode[]>
+
+export type PrototypeSet = typeof PrototypeSet
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 

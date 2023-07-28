@@ -9,20 +9,12 @@ export interface PredicateRule extends BaseRule {
 	readonly narrows?: NarrowSet
 }
 
-type UnknownConstraints = Dict<string, BaseNode | ConstraintSet>
+type UnknownConstraints = Dict<string, ConstraintSet>
 
-const constraintsOf = (rule: PredicateRule) =>
+const constraintsOf = (rule: PredicateRule): UnknownConstraints =>
 	transform(rule, ([k, v]) =>
-		v instanceof BaseNode || v instanceof ConstraintSet ? [k, v] : []
-	) as UnknownConstraints
-
-const flattenConstraints = (
-	constraints: UnknownConstraints
-): readonly BaseNode[] => Object.values(constraints).flat()
-
-export type PredicateSubclass<rule extends PredicateRule = PredicateRule> = {
-	new (rule: rule): BaseNode<any, any>
-}
+		v instanceof ConstraintSet ? [k, v] : []
+	) as never
 
 export class PredicateNode<
 	rule extends PredicateRule = PredicateRule,
@@ -33,18 +25,18 @@ export class PredicateNode<
 	static writeDefaultDescription(rule: PredicateRule) {
 		const basisDescription =
 			this.writeDefaultBaseDescription?.(rule as never) ?? "a value"
-		const flat = flattenConstraints(constraintsOf(rule))
+		const flat = Object.values(constraintsOf(rule)).flat()
 		return flat.length
 			? `${basisDescription} ${flat.join(" and ")}`
 			: basisDescription
 	}
 
 	readonly constraints = constraintsOf(this)
-	readonly flat = flattenConstraints(this.constraints)
+	readonly flat = Object.values(this.constraints).flat()
 
 	// TODO: Convert constraints to object, implement intersectOwnKeys here?
 	// Maybe will end up needing to override, but hopefully can just handle all
 	// the custom reduction logic in constructor/rule reducer of some sort, e.g.
 	// array props.
-	override intersectOwnKeys() {}
+	override intersectOwnKeys(other: PredicateNode) {}
 }

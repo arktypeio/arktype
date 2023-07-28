@@ -1,18 +1,15 @@
-import type { PrototypeNode } from "../constraints/prototype.js"
+import type { NodeSubclass } from "../base.js"
+import type { PrototypeSet } from "../constraints/prototype.js"
 import type { PredicateRule } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
 export interface ObjectRule extends PredicateRule {
-	readonly prototype?: PrototypeNode
-}
-
-export type ObjectSubclass<rule extends ObjectRule = ObjectRule> = {
-	new (rule: rule): ObjectNode<any, any>
+	readonly prototype?: PrototypeSet
 }
 
 export class ObjectNode<
 	rule extends ObjectRule = ObjectRule,
-	subclass extends ObjectSubclass<rule> = ObjectSubclass<rule>
+	subclass extends NodeSubclass<rule> = NodeSubclass<rule>
 > extends PredicateNode<ObjectRule, subclass> {
 	static override writeDefaultBaseDescription() {
 		return "an object"
