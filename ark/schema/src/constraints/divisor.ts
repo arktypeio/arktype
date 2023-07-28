@@ -6,8 +6,8 @@ export interface DivisorRule extends BaseRule {
 }
 
 export class DivisorNode extends BaseNode<DivisorRule, typeof DivisorNode> {
-	static writeDefaultDescription(def: DivisorRule) {
-		return def.value === 1 ? "an integer" : `a multiple of ${def.value}`
+	static writeDefaultDescription(rule: DivisorRule) {
+		return rule.value === 1 ? "an integer" : `a multiple of ${rule.value}`
 	}
 
 	intersectOwnKeys(other: DivisorNode) {

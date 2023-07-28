@@ -8,4 +8,8 @@ export interface StringRule extends PredicateRule {
 	readonly patterns?: PatternSet
 }
 
-export class StringNode extends PredicateNode {}
+export class StringNode extends PredicateNode<StringRule, typeof StringNode> {
+	static override writeDefaultBaseDescription() {
+		return "a string"
+	}
+}

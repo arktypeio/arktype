@@ -14,4 +14,8 @@ export interface ArrayRule extends ObjectRule {
 // TODO: add minLength prop that would result from collapsing types like [...number[], number]
 // to a single variadic number prop with minLength 1
 // Figure out best design for integrating with named props.
-export class ArrayNode extends ObjectNode {}
+export class ArrayNode extends ObjectNode<ArrayRule, typeof ArrayNode> {
+	static override writeDefaultBaseDescription() {
+		return "an array"
+	}
+}

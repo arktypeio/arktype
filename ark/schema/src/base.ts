@@ -1,8 +1,7 @@
-import type { mutable } from "@arktype/util"
 import { ReadonlyObject } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
+import { Disjoint } from "./disjoint.js"
 
-type NodeSubclass<rule extends BaseRule = BaseRule> = {
+export type NodeSubclass<rule extends BaseRule = BaseRule> = {
 	new (rule: rule): BaseNode<any, any>
 
 	writeDefaultDescription(rule: rule): string
@@ -19,12 +18,18 @@ export abstract class BaseNode<
 > extends ReadonlyObject<rule> {
 	private readonly subclass = this.constructor as subclass
 
+	declare readonly id: string
+
 	constructor(public rule: rule) {
 		if (rule instanceof BaseNode) {
 			return rule
 		}
 		super({ ...rule })
 		this.description ??= this.subclass.writeDefaultDescription(rule)
+	}
+
+	equals(other: InstanceType<subclass>) {
+		return this.id === other.id
 	}
 
 	intersect(other: InstanceType<subclass>) {

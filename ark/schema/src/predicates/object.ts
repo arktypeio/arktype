@@ -6,4 +6,15 @@ export interface ObjectRule extends PredicateRule {
 	readonly prototype?: PrototypeNode
 }
 
-export class ObjectNode extends PredicateNode {}
+export type ObjectSubclass<rule extends ObjectRule = ObjectRule> = {
+	new (rule: rule): ObjectNode<any, any>
+}
+
+export class ObjectNode<
+	rule extends ObjectRule = ObjectRule,
+	subclass extends ObjectSubclass<rule> = ObjectSubclass<rule>
+> extends PredicateNode<ObjectRule, subclass> {
+	static override writeDefaultBaseDescription() {
+		return "an object"
+	}
+}

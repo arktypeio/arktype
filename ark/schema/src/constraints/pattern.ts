@@ -10,8 +10,8 @@ export interface PatternRule extends BaseRule {
 export class PatternNode extends BaseNode<PatternRule, typeof PatternNode> {
 	readonly literal = toLiteral(this.rule)
 
-	static writeDefaultDescription(def: PatternRule) {
-		return `matched by ${toLiteral(def)}`
+	static writeDefaultDescription(rule: PatternRule) {
+		return `matched by ${toLiteral(rule)}`
 	}
 
 	intersectOwnKeys(other: PatternNode) {
@@ -23,4 +23,4 @@ export const PatternSet = ConstraintSet<readonly PatternNode[]>
 
 export type PatternSet = typeof PatternSet
 
-const toLiteral = (def: PatternRule) => `/${def.source}/${def.flags ?? ""}`
+const toLiteral = (rule: PatternRule) => `/${rule.source}/${rule.flags ?? ""}`
