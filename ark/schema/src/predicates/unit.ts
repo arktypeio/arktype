@@ -1,7 +1,6 @@
 import { stringify } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
-import { PredicateNode } from "./predicate.js"
 import type { PredicateRule } from "./predicate.js"
+import { PredicateNode } from "./predicate.js"
 
 export interface UnitRule extends PredicateRule {
 	readonly value: unknown
