@@ -21,6 +21,6 @@ export class PatternNode extends BaseNode<PatternRule, typeof PatternNode> {
 
 export const PatternSet = ConstraintSet<readonly PatternNode[]>
 
-export type PatternSet = typeof PatternSet
+export type PatternSet = InstanceType<typeof PatternSet>
 
 const toLiteral = (rule: PatternRule) => `/${rule.source}/${rule.flags ?? ""}`

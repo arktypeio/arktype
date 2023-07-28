@@ -1,9 +1,10 @@
-import type { Dict } from "@arktype/util"
-import { Domain, entriesOf, transform } from "@arktype/util"
+import type { Dict, List } from "@arktype/util"
+import { transform } from "@arktype/util"
 import type { BaseRule, NodeSubclass } from "../base.js"
 import { BaseNode } from "../base.js"
 import { ConstraintSet } from "../constraints/constraint.js"
 import type { NarrowSet } from "../constraints/narrow.js"
+import { Disjoint } from "../disjoint.js"
 
 export interface PredicateRule extends BaseRule {
 	readonly narrows?: NarrowSet
@@ -11,10 +12,26 @@ export interface PredicateRule extends BaseRule {
 
 type UnknownConstraints = Dict<string, ConstraintSet>
 
-const constraintsOf = (rule: PredicateRule): UnknownConstraints =>
+type constraintsOf<rule extends PredicateRule> = {
+	[k in keyof rule as rule[k] extends ConstraintSet | undefined
+		? k
+		: never]: rule[k]
+}
+
+const constraintsOf = <rule extends PredicateRule>(
+	rule: rule
+): constraintsOf<rule> =>
 	transform(rule, ([k, v]) =>
 		v instanceof ConstraintSet ? [k, v] : []
 	) as never
+
+type flatConstraintsOf<rule extends PredicateRule> = List<
+	(rule[keyof rule] & ConstraintSet)[number]
+>
+
+const flatConstraintsOf = <rule extends PredicateRule>(
+	rule: rule
+): flatConstraintsOf<rule> => Object.values(constraintsOf(rule)).flat() as never
 
 export class PredicateNode<
 	rule extends PredicateRule = PredicateRule,
@@ -31,12 +48,29 @@ export class PredicateNode<
 			: basisDescription
 	}
 
-	readonly constraints = constraintsOf(this)
-	readonly flat = Object.values(this.constraints).flat()
+	readonly constraints = constraintsOf(this.rule)
+	readonly flat = flatConstraintsOf(this.rule)
 
-	// TODO: Convert constraints to object, implement intersectOwnKeys here?
-	// Maybe will end up needing to override, but hopefully can just handle all
-	// the custom reduction logic in constructor/rule reducer of some sort, e.g.
-	// array props.
-	override intersectOwnKeys(other: PredicateNode) {}
+	override intersectOwnKeys(other: InstanceType<subclass>) {
+		const l = this.constraints as UnknownConstraints
+		const r = other.constraints as UnknownConstraints
+		const result = { ...l, ...r }
+		for (const k in result) {
+			if (k in l && k in r) {
+				let setResult: ConstraintSet | Disjoint = l[k]
+				for (
+					let i = 0;
+					i < r[k].length && setResult instanceof ConstraintSet;
+					i++
+				) {
+					setResult = setResult.add(r[k][i])
+				}
+				if (setResult instanceof Disjoint) {
+					return setResult
+				}
+				result[k] = setResult
+			}
+		}
+		return result as unknown as rule
+	}
 }

@@ -35,7 +35,7 @@ export class PrototypeNode extends BaseNode<
 
 export const PrototypeSet = ConstraintSet<readonly PrototypeNode[]>
 
-export type PrototypeSet = typeof PrototypeSet
+export type PrototypeSet = InstanceType<typeof PrototypeSet>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 

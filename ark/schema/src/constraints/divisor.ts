@@ -23,7 +23,7 @@ export class DivisorNode extends BaseNode<DivisorRule, typeof DivisorNode> {
 
 export const DivisorSet = ConstraintSet<readonly DivisorNode[]>
 
-export type DivisorSet = typeof DivisorSet
+export type DivisorSet = InstanceType<typeof DivisorSet>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
