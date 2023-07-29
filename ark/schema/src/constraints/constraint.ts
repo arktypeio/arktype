@@ -1,33 +1,7 @@
-import type { extend, mutable } from "@arktype/util"
+import type { mutable } from "@arktype/util"
 import { ReadonlyArray } from "@arktype/util"
 import type { BaseNode } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import type { BoundSet } from "./bound.js"
-import type { DivisorSet } from "./divisor.js"
-import type { NarrowSet } from "./narrow.js"
-import type { PatternSet } from "./pattern.js"
-import type { PrototypeSet } from "./prototype.js"
-
-export const constraintKinds = [
-	"bound",
-	"divisor",
-	"narrow",
-	"pattern",
-	"prototype"
-] as const
-
-export type ConstraintKind = (typeof constraintKinds)[number]
-
-export type ConstraintSetsByKind = extend<
-	Record<ConstraintKind, ConstraintSet>,
-	{
-		bound: BoundSet
-		divisor: DivisorSet
-		narrow: NarrowSet
-		pattern: PatternSet
-		prototype: PrototypeSet
-	}
->
 
 type ConstraintList = readonly BaseNode<any, any>[]
 

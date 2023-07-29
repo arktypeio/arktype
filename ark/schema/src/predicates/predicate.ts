@@ -1,15 +1,16 @@
-import type { Dict, List, mutable } from "@arktype/util"
-import { hasKey, transform } from "@arktype/util"
-import type { BaseRule, IntersectOwnKeys, NodeSubclass } from "../base.js"
+import type { Dict, List } from "@arktype/util"
+import { transform } from "@arktype/util"
+import type { BaseRule, NodeSubclass } from "../base.js"
 import { BaseNode } from "../base.js"
-import type { ConstraintSetsByKind } from "../constraints/constraint.js"
-import { constraintKinds, ConstraintSet } from "../constraints/constraint.js"
+import { ConstraintSet } from "../constraints/constraint.js"
 import type { NarrowSet } from "../constraints/narrow.js"
 import { Disjoint } from "../disjoint.js"
 
 export interface PredicateRule extends BaseRule {
 	readonly narrows?: NarrowSet
 }
+
+type UnknownConstraints = Dict<string, ConstraintSet>
 
 type constraintsOf<rule extends PredicateRule> = {
 	[k in keyof rule as rule[k] extends ConstraintSet | undefined
@@ -32,15 +33,12 @@ const flatConstraintsOf = <rule extends PredicateRule>(
 	rule: rule
 ): flatConstraintsOf<rule> => Object.values(constraintsOf(rule)).flat() as never
 
-type UnknownConstraints = Dict<string, ConstraintSet>
-
 export class PredicateNode<
 	rule extends PredicateRule = PredicateRule,
 	subclass extends NodeSubclass<rule> = NodeSubclass<rule>
 > extends BaseNode<rule, subclass> {
 	constructor(rule = {} as rule) {
 		super(rule)
-		this.intersectors.push(intersectPredicates)
 	}
 
 	static writeDefaultBaseDescription?(rule: never): string
@@ -56,16 +54,13 @@ export class PredicateNode<
 
 	readonly constraints = constraintsOf(this.rule)
 	readonly flat = flatConstraintsOf(this.rule)
-}
 
-const intersectPredicates = (
-	l: UnknownConstraints,
-	r: UnknownConstraints
-): UnknownConstraints | Disjoint => {
-	const result: mutable<UnknownConstraints> = {}
-	for (const k of constraintKinds) {
-		if (l[k]) {
-			if (r[k]) {
+	override intersectOwnKeys(other: InstanceType<subclass>) {
+		const l = this.constraints as UnknownConstraints
+		const r = other.constraints as UnknownConstraints
+		const result = { ...l, ...r }
+		for (const k in result) {
+			if (k in l && k in r) {
 				let setResult: ConstraintSet | Disjoint = l[k]
 				for (
 					let i = 0;
@@ -77,10 +72,9 @@ const intersectPredicates = (
 				if (setResult instanceof Disjoint) {
 					return setResult
 				}
-
 				result[k] = setResult
 			}
 		}
+		return result as unknown as rule
 	}
-	return result
 }
