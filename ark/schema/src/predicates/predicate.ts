@@ -26,7 +26,7 @@ const constraintsOf = <rule extends PredicateRule>(
 	) as never
 
 type flatConstraintsOf<rule extends PredicateRule> = List<
-	(rule[keyof rule] & ConstraintSet)[number]
+	Extract<rule[keyof rule], ConstraintSet>[number]
 >
 
 const flatConstraintsOf = <rule extends PredicateRule>(
@@ -37,6 +37,10 @@ export class PredicateNode<
 	rule extends PredicateRule = PredicateRule,
 	subclass extends NodeSubclass<rule> = NodeSubclass<rule>
 > extends BaseNode<rule, subclass> {
+	constructor(rule = {} as rule) {
+		super(rule)
+	}
+
 	static writeDefaultBaseDescription?(rule: never): string
 
 	static writeDefaultDescription(rule: PredicateRule) {

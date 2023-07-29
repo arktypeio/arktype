@@ -10,7 +10,7 @@ export interface ObjectRule extends PredicateRule {
 export class ObjectNode<
 	rule extends ObjectRule = ObjectRule,
 	subclass extends NodeSubclass<rule> = NodeSubclass<rule>
-> extends PredicateNode<ObjectRule, subclass> {
+> extends PredicateNode<rule, subclass> {
 	static override writeDefaultBaseDescription() {
 		return "an object"
 	}
