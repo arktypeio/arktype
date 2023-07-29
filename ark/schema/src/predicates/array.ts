@@ -1,11 +1,8 @@
-import type { BaseRule } from "../base.js"
-import type { BoundSet } from "../constraints/bound.js"
 import type { Type } from "../type.js"
 import type { ObjectRule } from "./object.js"
 import { ObjectNode } from "./object.js"
 
-export interface ArrayRule extends ObjectRule {
-	readonly bounds?: BoundSet
+export interface ArrayRule extends ObjectRule<"bound"> {
 	readonly prefixed?: readonly Type[]
 	readonly variadic?: Type
 	readonly postfixed?: readonly Type[]

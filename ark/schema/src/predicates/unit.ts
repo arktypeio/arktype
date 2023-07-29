@@ -1,10 +1,13 @@
+import type { evaluate } from "@arktype/util"
 import { stringify } from "@arktype/util"
 import type { PredicateRule } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
-export interface UnitRule extends PredicateRule {
-	readonly value: unknown
-}
+export type UnitRule = evaluate<
+	PredicateRule & {
+		readonly value: unknown
+	}
+>
 
 export class UnitNode extends PredicateNode<UnitRule, typeof UnitNode> {
 	static override writeDefaultBaseDescription(rule: UnitRule) {

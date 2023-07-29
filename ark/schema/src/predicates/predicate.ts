@@ -1,37 +1,25 @@
-import type { Dict, List } from "@arktype/util"
+import type { Dict, evaluate, extend, List } from "@arktype/util"
 import { transform } from "@arktype/util"
 import type { BaseRule, NodeSubclass } from "../base.js"
 import { BaseNode } from "../base.js"
+import type { BoundSet } from "../constraints/bound.js"
 import { ConstraintSet } from "../constraints/constraint.js"
+import type { DivisorSet } from "../constraints/divisor.js"
 import type { NarrowSet } from "../constraints/narrow.js"
+import type { PatternSet } from "../constraints/pattern.js"
+import type { PrototypeSet } from "../constraints/prototype.js"
 import { Disjoint } from "../disjoint.js"
 
-export interface PredicateRule extends BaseRule {
-	readonly narrows?: NarrowSet
-}
-
-type UnknownConstraints = Dict<string, ConstraintSet>
-
-type constraintsOf<rule extends PredicateRule> = {
-	[k in keyof rule as rule[k] extends ConstraintSet | undefined
-		? k
-		: never]: rule[k]
-}
-
-const constraintsOf = <rule extends PredicateRule>(
-	rule: rule
-): constraintsOf<rule> =>
-	transform(rule, ([k, v]) =>
-		v instanceof ConstraintSet ? [k, v] : []
-	) as never
-
-type flatConstraintsOf<rule extends PredicateRule> = List<
-	Extract<rule[keyof rule], ConstraintSet>[number]
+export type PredicateRule<
+	AllowedConstraintKind extends NonUniversalConsraintKind = never
+> = evaluate<
+	BaseRule & {
+		[k in AllowedConstraintKind | "narrow"]?: ConstraintSetsByKind[k]
+	}
 >
 
-const flatConstraintsOf = <rule extends PredicateRule>(
-	rule: rule
-): flatConstraintsOf<rule> => Object.values(constraintsOf(rule)).flat() as never
+export type PredicateSubclass<rule extends PredicateRule> =
+	NodeSubclass<rule> & {}
 
 export class PredicateNode<
 	rule extends PredicateRule = PredicateRule,
@@ -78,3 +66,49 @@ export class PredicateNode<
 		return result as unknown as rule
 	}
 }
+
+export const constraintKinds = [
+	"bound",
+	"divisor",
+	"narrow",
+	"pattern",
+	"prototype"
+] as const
+
+export type ConstraintKind = (typeof constraintKinds)[number]
+
+export type ConstraintSetsByKind = extend<
+	Record<ConstraintKind, ConstraintSet>,
+	Readonly<{
+		bound: BoundSet
+		divisor: DivisorSet
+		narrow: NarrowSet
+		pattern: PatternSet
+		prototype: PrototypeSet
+	}>
+>
+
+export type NonUniversalConsraintKind = Exclude<ConstraintKind, "narrow">
+
+type UnknownConstraints = Dict<string, ConstraintSet>
+
+type constraintsOf<rule extends PredicateRule> = {
+	[k in keyof rule as rule[k] extends ConstraintSet | undefined
+		? k
+		: never]: rule[k]
+}
+
+const constraintsOf = <rule extends PredicateRule>(
+	rule: rule
+): constraintsOf<rule> =>
+	transform(rule, ([k, v]) =>
+		v instanceof ConstraintSet ? [k, v] : []
+	) as never
+
+type flatConstraintsOf<rule extends PredicateRule> = List<
+	Extract<rule[keyof rule], ConstraintSet>[number]
+>
+
+const flatConstraintsOf = <rule extends PredicateRule>(
+	rule: rule
+): flatConstraintsOf<rule> => Object.values(constraintsOf(rule)).flat() as never
