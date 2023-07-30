@@ -1,22 +1,14 @@
-import type { Domain, extend } from "@arktype/util"
-import type { AttributesRecord } from "../attributes/attribute.js"
-import type { DescriptionAttribute } from "../attributes/description.js"
+import type { Domain } from "@arktype/util"
+import type {
+	AttributesRecord,
+	UniversalAttributes
+} from "../attributes/attribute.js"
 import type { ConstraintsRecord } from "../constraints/constraint.js"
-import type { NarrowSet } from "../constraints/narrow.js"
 import { Disjoint } from "../disjoint.js"
 
-export type PredicateConstraints<constraints extends ConstraintsRecord> =
-	extend<{ readonly narrow?: NarrowSet }, constraints>
-
-export type PredicateAttributes<attributes extends AttributesRecord> = extend<
-	{ readonly description?: DescriptionAttribute },
-	attributes
->
-
 export abstract class PredicateNode<
-	constraints extends PredicateConstraints<ConstraintsRecord>,
-	attributes extends
-		PredicateAttributes<AttributesRecord> = PredicateAttributes<{}>
+	constraints extends ConstraintsRecord,
+	attributes extends AttributesRecord = UniversalAttributes
 > {
 	declare readonly id: string
 
@@ -40,8 +32,8 @@ export abstract class PredicateNode<
 	intersect(other: this): this | Disjoint {
 		const result = { ...this.constraints, ...other.constraints }
 		for (const k in result) {
-			if (k in l && k in r) {
-				const setResult = l[k].intersect(r[k])
+			if (k in this.constraints && k in other.constraints) {
+				const setResult = this.constraints[k].intersect(other.constraints[k])
 				if (setResult instanceof Disjoint) {
 					return setResult
 				}

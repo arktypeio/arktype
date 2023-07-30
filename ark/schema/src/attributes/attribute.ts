@@ -1,4 +1,8 @@
-export abstract class Attribute<value> {
+import type { extend } from "@arktype/util"
+import type { Intersectable, IntersectableRecord } from "../shared.js"
+import type { DescriptionAttribute } from "./description.js"
+
+export abstract class Attribute<value> implements Intersectable {
 	constructor(public value: value) {}
 
 	intersect(other: this) {
@@ -8,6 +12,8 @@ export abstract class Attribute<value> {
 	abstract intersectValues(other: this): value
 }
 
-export type AttributesRecord = {
-	readonly [k: string]: Attribute<unknown>
+export type AttributesRecord = extend<IntersectableRecord, UniversalAttributes>
+
+export type UniversalAttributes = {
+	readonly description?: DescriptionAttribute
 }

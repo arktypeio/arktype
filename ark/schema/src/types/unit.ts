@@ -1,11 +1,15 @@
-import type { evaluate } from "@arktype/util"
+import type { extend } from "@arktype/util"
 import { domainOf, stringify } from "@arktype/util"
-import type { PredicateConstraints } from "./predicate.js"
+
+import type { UniversalConstraints } from "../constraints/constraint.js"
 import { PredicateNode } from "./predicate.js"
 
-export type UnitConstraints = PredicateConstraints<{
-	readonly value: unknown
-}>
+export type UnitConstraints = extend<
+	UniversalConstraints,
+	{
+		readonly value: unknown
+	}
+>
 
 export class UnitNode extends PredicateNode<UnitConstraints> {
 	readonly domain = domainOf(this.constraints.value)

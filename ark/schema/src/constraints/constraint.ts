@@ -3,6 +3,8 @@ import { ReadonlyArray } from "@arktype/util"
 import type { AttributesRecord } from "../attributes/attribute.js"
 import type { DescriptionAttribute } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"
+import type { IntersectableRecord } from "../shared.js"
+import type { NarrowSet } from "./narrow.js"
 
 export type ConstraintAttributes<attributes extends AttributesRecord> = extend<
 	{ readonly description?: DescriptionAttribute },
@@ -76,6 +78,9 @@ export class ConstraintSet<
 	}
 }
 
-export type ConstraintsRecord = {
-	[k: string]: Constraint<unknown> | ConstraintSet
-}
+export type ConstraintsRecord = extend<
+	IntersectableRecord,
+	UniversalConstraints
+>
+
+export type UniversalConstraints = { readonly narrow?: NarrowSet }

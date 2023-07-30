@@ -1,13 +1,20 @@
+import type { extend } from "@arktype/util"
+import type {
+	ConstraintsRecord,
+	UniversalConstraints
+} from "../constraints/constraint.js"
 import type { ConstructorConstraint } from "../constraints/constructor.js"
-import type { PredicateConstraints } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
-export type ObjectConstraints = PredicateConstraints<{
-	readonly instanceOf?: ConstructorConstraint
-}>
+export type ObjectConstraints<constraints extends ConstraintsRecord> = extend<
+	UniversalConstraints,
+	{
+		readonly instanceOf?: ConstructorConstraint
+	} & constraints
+>
 
 export class ObjectNode<
-	constraints extends ObjectConstraints
+	constraints extends ObjectConstraints<ConstraintsRecord>
 > extends PredicateNode<constraints> {
 	readonly domain = "object"
 

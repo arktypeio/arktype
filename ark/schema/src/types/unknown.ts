@@ -1,7 +1,7 @@
-import type { PredicateConstraints } from "./predicate.js"
+import type { UniversalConstraints } from "../constraints/constraint.js"
 import { PredicateNode } from "./predicate.js"
 
-export class UnknownNode extends PredicateNode<PredicateConstraints<{}>> {
+export class UnknownNode extends PredicateNode<UniversalConstraints> {
 	readonly domain = null
 
 	override writeDefaultBaseDescription() {
