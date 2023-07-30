@@ -1,6 +1,6 @@
 import type { mutable } from "@arktype/util"
 import { ReadonlyArray } from "@arktype/util"
-import type { BaseNode } from "../base.js"
+import type { BaseNode } from "../node.js"
 import { Disjoint } from "../disjoint.js"
 
 type ConstraintList = readonly BaseNode<any, any, any>[]

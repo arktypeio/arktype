@@ -54,7 +54,10 @@ export abstract class BaseNode<
 	}
 
 	intersect(other: InstanceType<subclass>) {
-		const result = this.intersectConstraints(other)
+		const result = this.subclass.intersectConstraints(
+			this.constraints,
+			other.constraints
+		)
 		if (result === null || result instanceof Disjoint) {
 			// Ensure the signature of this method reflects whether Disjoint and/or null
 			// are possible intersection results for the subclass.

@@ -1,5 +1,5 @@
-import type { BaseConstraints } from "../base.js"
-import { BaseNode } from "../base.js"
+import type { BaseConstraints } from "../node.js"
+import { BaseNode } from "../node.js"
 import { ConstraintSet } from "./constraint.js"
 
 export interface NarrowRule extends BaseConstraints {

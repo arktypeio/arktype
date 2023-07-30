@@ -4,9 +4,9 @@ import {
 	getExactBuiltinConstructorName,
 	objectKindDescriptions
 } from "@arktype/util"
-import type { BaseConstraints } from "../base.js"
-import { BaseNode } from "../base.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseAttributes, BaseConstraints } from "../node.js"
+import { BaseNode } from "../node.js"
 import { ConstraintSet } from "./constraint.js"
 
 export interface PrototypeRule extends BaseConstraints {
@@ -14,8 +14,9 @@ export interface PrototypeRule extends BaseConstraints {
 }
 
 export class PrototypeNode extends BaseNode<
+	typeof PrototypeNode,
 	PrototypeRule,
-	typeof PrototypeNode
+	BaseAttributes
 > {
 	static writeDefaultDescription(rule: PrototypeRule) {
 		const possibleObjectKind = getExactBuiltinConstructorName(rule.ancestor)

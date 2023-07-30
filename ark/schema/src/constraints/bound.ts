@@ -1,6 +1,6 @@
 import { throwParseError } from "@arktype/util"
-import type { BaseAttributes, BaseConstraints } from "../base.js"
-import { BaseNode } from "../base.js"
+import type { BaseAttributes, BaseConstraints } from "../node.js"
+import { BaseNode } from "../node.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintSet } from "./constraint.js"
 
