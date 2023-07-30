@@ -5,17 +5,20 @@ import type {
 } from "../attributes/attribute.js"
 import type { ConstraintsRecord } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
+import { TypeNode } from "./type.js"
 
 export abstract class PredicateNode<
 	constraints extends ConstraintsRecord,
 	attributes extends AttributesRecord = UniversalAttributes
-> {
+> extends TypeNode<attributes> {
 	declare readonly id: string
 
 	constructor(
 		public constraints = {} as constraints,
-		public attributes = {} as attributes
-	) {}
+		attributes = {} as attributes
+	) {
+		super(attributes)
+	}
 
 	abstract readonly domain: Domain | null
 	abstract writeDefaultBaseDescription(constraints: constraints): string

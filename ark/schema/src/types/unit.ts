@@ -1,8 +1,6 @@
 import type { extend } from "@arktype/util"
 import { domainOf } from "@arktype/util"
 import type { UniversalConstraints } from "../constraints/constraint.js"
-import type { EqualityConstraint } from "../constraints/equality.js"
-import { PredicateNode } from "./predicate.js"
 
 export type UnitConstraints = extend<
 	UniversalConstraints,
@@ -11,11 +9,24 @@ export type UnitConstraints = extend<
 	}
 >
 
-export class UnitNode extends PredicateNode<UnitConstraints> {
+export class UnitNode {
 	readonly domain = domainOf(this.constraints.value)
 
-	override writeDefaultBaseDescription() {
+	writeDefaultDescription() {
 		// description is handled by EqualityConstraint
-		return ""
+		// TODO: add reference to for objects
+		return stringify(this.rule)
+	}
+
+	intersect(other: UnitNode) {}
+}
+
+export class EqualityConstraint extends Constraint<unknown> {
+	writeDefaultDescription() {}
+
+	intersectRules(other: this) {
+		return this.equals(other)
+			? new EqualityConstraint(this.rule)
+			: Disjoint.from("unit", this, other)
 	}
 }
