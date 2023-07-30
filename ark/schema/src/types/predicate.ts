@@ -1,10 +1,10 @@
 import type { Domain } from "@arktype/util"
-import type { ConstraintSet } from "../constraints/constraint.js"
+import type { Constraint, ConstraintSet } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 
 export type PredicateConstraints = {
-	[k: string]: ConstraintSet
+	[k: string]: Constraint<unknown> | ConstraintSet
 }
 
 export type PredicateAttributes = BaseAttributes & { readonly morph?: unknown }

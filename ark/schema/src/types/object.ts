@@ -1,12 +1,8 @@
-import type { evaluate } from "@arktype/util"
-import type { PrototypeSet } from "../constraints/prototype.js"
+import type { ConstructorConstraint } from "../constraints/constructor.js"
 import type { BaseAttributes } from "../node.js"
-import type { PredicateConstraints } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
-export type ObjectConstraints = evaluate<
-	PredicateConstraints & { readonly prototype?: PrototypeSet }
->
+export type ObjectConstraints = { readonly instanceOf?: ConstructorConstraint }
 
 export class ObjectNode<
 	constraints extends ObjectConstraints,

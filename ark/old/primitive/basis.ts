@@ -50,7 +50,7 @@ export abstract class BasisNodeBase<
 	}
 }
 
-export type BasisKind = extend<NodeKind, "domain" | "class" | "unit">
+export type BasisKind = satisfy<NodeKind, "domain" | "class" | "unit">
 
 export type BasisInput =
 	| Domain

@@ -6,9 +6,9 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
-import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import { Constraint } from "./constraint.js"
 
-export class ClassNode extends ConstraintNode<
+export class ConstructorConstraint extends Constraint<
 	AbstractableConstructor,
 	BaseAttributes
 > {
@@ -19,7 +19,7 @@ export class ClassNode extends ConstraintNode<
 			: `an instance of ${this.rule.name}`
 	}
 
-	intersectRules(other: ClassNode) {
+	intersectRules(other: ConstructorConstraint) {
 		return constructorExtends(this.rule, other.rule)
 			? this.rule
 			: constructorExtends(other.rule, this.rule)

@@ -1,11 +1,14 @@
-import type { evaluate } from "@arktype/util"
+import type { extend } from "@arktype/util"
+import type { BoundSet } from "../constraints/bound.js"
 import type { BaseAttributes } from "../node.js"
 import type { Type } from "../type.js"
 import type { ObjectConstraints } from "./object.js"
 import { ObjectNode } from "./object.js"
 
-export type ArrayConstraints = evaluate<
-	ObjectConstraints & {
+export type ArrayConstraints = extend<
+	ObjectConstraints,
+	{
+		readonly length?: BoundSet
 		readonly prefixed?: readonly Type[]
 		readonly variadic?: Type
 		readonly postfixed?: readonly Type[]

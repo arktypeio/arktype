@@ -1,6 +1,6 @@
 import { throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { ConstraintNode, ConstraintSet } from "./constraint.js"
+import { Constraint, ConstraintSet } from "./constraint.js"
 
 export interface BoundRule<limitKind extends LimitKind = LimitKind> {
 	readonly dataKind: BoundableDataKind
@@ -9,9 +9,9 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind> {
 	readonly exclusive?: true
 }
 
-export class BoundNode<
+export class BoundConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<BoundRule<limitKind>> {
+> extends Constraint<BoundRule<limitKind>> {
 	readonly comparator = boundToComparator(this.rule)
 
 	writeDefaultDescription() {
@@ -23,10 +23,10 @@ export class BoundNode<
 	}
 
 	intersectRules(
-		other: BoundNode
+		other: BoundConstraint
 	): // cast the return type so that it has the same limitKind as this
 	BoundRule<limitKind> | Disjoint | null
-	intersectRules(other: BoundNode) {
+	intersectRules(other: BoundConstraint) {
 		const l = this.rule
 		const r = other.rule
 		if (l.dataKind !== r.dataKind) {
@@ -54,7 +54,8 @@ export class BoundNode<
 }
 
 export const BoundSet = ConstraintSet<
-	readonly [BoundNode] | readonly [BoundNode<"min">, BoundNode<"max">]
+	| readonly [BoundConstraint]
+	| readonly [BoundConstraint<"min">, BoundConstraint<"max">]
 >
 
 export type BoundSet = InstanceType<typeof BoundSet>

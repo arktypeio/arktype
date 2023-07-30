@@ -3,7 +3,7 @@ import { ReadonlyArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 
-export abstract class ConstraintNode<
+export abstract class Constraint<
 	rule,
 	attributes extends BaseAttributes = BaseAttributes
 > {
@@ -21,7 +21,7 @@ export abstract class ConstraintNode<
 		if (ruleIntersection === null || ruleIntersection instanceof Disjoint) {
 			// Ensure the signature of this method reflects whether Disjoint and/or null
 			// are possible intersection results for the subclass.
-			return ruleIntersection as ConstraintNode<unknown> extends this
+			return ruleIntersection as Constraint<unknown> extends this
 				? Disjoint | null
 				: Exclude<ReturnType<this["intersectRules"]>, rule>
 		}
@@ -29,7 +29,7 @@ export abstract class ConstraintNode<
 	}
 }
 
-type ConstraintList = readonly ConstraintNode<unknown>[]
+type ConstraintList = readonly Constraint<unknown>[]
 
 /** @ts-expect-error allow extending narrowed readonly array */
 export class ConstraintSet<

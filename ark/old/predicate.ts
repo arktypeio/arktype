@@ -24,7 +24,7 @@ export type Constraint<k extends keyof Constraints = keyof Constraints> =
 
 export type ConstraintKind = BasisKind | RefinementKind
 
-type InputDefinitions = extend<
+type InputDefinitions = satisfy<
 	Record<keyof Constraints, unknown>,
 	{
 		basis: BasisInput
@@ -38,7 +38,7 @@ type InputDefinitions = extend<
 
 export type ConstraintInputs = Partial<InputDefinitions>
 
-export type RefinementKind = extend<
+export type RefinementKind = satisfy<
 	NodeKind,
 	"bound" | "divisor" | "regex" | "props" | "narrow"
 >
