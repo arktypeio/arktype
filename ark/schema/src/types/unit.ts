@@ -15,6 +15,7 @@ export class UnitNode extends PredicateNode<UnitConstraints> {
 	readonly domain = domainOf(this.constraints.value)
 
 	override writeDefaultBaseDescription() {
+		// description is handled by EqualityConstraint
 		return ""
 	}
 }
