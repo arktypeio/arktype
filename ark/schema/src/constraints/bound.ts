@@ -1,11 +1,8 @@
 import { throwParseError } from "@arktype/util"
-import type { BaseAttributes, BaseConstraints } from "../node.js"
-import { BaseNode } from "../node.js"
 import { Disjoint } from "../disjoint.js"
-import { ConstraintSet } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface BoundConstraints<limitKind extends LimitKind = LimitKind>
-	extends BaseConstraints {
+export interface BoundRule<limitKind extends LimitKind = LimitKind> {
 	readonly dataKind: BoundableDataKind
 	readonly limitKind: limitKind
 	readonly limit: number
@@ -14,22 +11,24 @@ export interface BoundConstraints<limitKind extends LimitKind = LimitKind>
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends BaseNode<
-	typeof BoundNode,
-	BoundConstraints<limitKind>,
-	BaseAttributes
-> {
-	readonly comparator = boundToComparator(this)
+> extends ConstraintNode<BoundRule<limitKind>> {
+	readonly comparator = boundToComparator(this.rule)
 
-	static writeDefaultDescription(rule: BoundConstraints) {
+	writeDefaultDescription() {
 		return `${
-			rule.dataKind === "date"
-				? dateComparatorDescriptions[boundToComparator(rule)]
-				: numericComparatorDescriptions[boundToComparator(rule)]
-		} ${rule.limit}`
+			this.rule.dataKind === "date"
+				? dateComparatorDescriptions[boundToComparator(this.rule)]
+				: numericComparatorDescriptions[boundToComparator(this.rule)]
+		} ${this.rule.limit}`
 	}
 
-	static intersectConstraints(l: BoundConstraints, r: BoundConstraints) {
+	intersectRules(
+		other: BoundNode
+	): // cast the return type so that it has the same limitKind as this
+	BoundRule<limitKind> | Disjoint | null
+	intersectRules(other: BoundNode) {
+		const l = this.rule
+		const r = other.rule
 		if (l.dataKind !== r.dataKind) {
 			return throwParseError(
 				writeIncompatibleRangeMessage(l.dataKind, r.dataKind)
@@ -61,7 +60,7 @@ export const BoundSet = ConstraintSet<
 export type BoundSet = InstanceType<typeof BoundSet>
 
 const boundToComparator = <limitKind extends LimitKind>(
-	bound: BoundConstraints<limitKind>
+	bound: BoundRule<limitKind>
 ) =>
 	`${bound.limitKind === "min" ? ">" : "<"}${
 		bound.exclusive ? "" : "="

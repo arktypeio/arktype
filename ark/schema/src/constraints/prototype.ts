@@ -5,38 +5,28 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, BaseConstraints } from "../node.js"
-import { BaseNode } from "../node.js"
-import { ConstraintSet } from "./constraint.js"
+import type { BaseAttributes } from "../node.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface PrototypeRule extends BaseConstraints {
-	readonly ancestor: AbstractableConstructor
-}
-
-export class PrototypeNode extends BaseNode<
-	typeof PrototypeNode,
-	PrototypeRule,
+export class ClassNode extends ConstraintNode<
+	AbstractableConstructor,
 	BaseAttributes
 > {
-	static writeDefaultDescription(rule: PrototypeRule) {
-		const possibleObjectKind = getExactBuiltinConstructorName(rule.ancestor)
+	writeDefaultDescription() {
+		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 		return possibleObjectKind
 			? objectKindDescriptions[possibleObjectKind]
-			: `an instance of ${rule.ancestor.name}`
+			: `an instance of ${this.rule.name}`
 	}
 
-	intersectOwnKeys(other: PrototypeNode) {
-		return constructorExtends(this.ancestor, other.ancestor)
-			? this
-			: constructorExtends(other.ancestor, this.ancestor)
-			? other
+	intersectRules(other: ClassNode) {
+		return constructorExtends(this.rule, other.rule)
+			? this.rule
+			: constructorExtends(other.rule, this.rule)
+			? other.rule
 			: Disjoint.from("class", this, other)
 	}
 }
-
-export const PrototypeSet = ConstraintSet<readonly PrototypeNode[]>
-
-export type PrototypeSet = InstanceType<typeof PrototypeSet>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 

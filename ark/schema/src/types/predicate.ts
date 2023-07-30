@@ -1,7 +1,7 @@
+import type { Domain } from "@arktype/util"
 import type { ConstraintSet } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, NodeSubclass } from "../node.js"
-import { NumberNode } from "./number.js"
+import type { BaseAttributes } from "../node.js"
 
 export type PredicateConstraints = {
 	[k: string]: ConstraintSet
@@ -22,6 +22,7 @@ export abstract class PredicateNode<
 		// this.description = this.subclass.writeDefaultDescription(constraints)
 	}
 
+	abstract readonly domain: Domain | null
 	abstract writeDefaultBaseDescription(constraints: constraints): string
 
 	writeDefaultDescription() {

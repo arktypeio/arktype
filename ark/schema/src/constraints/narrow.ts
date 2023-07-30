@@ -1,23 +1,17 @@
-import type { BaseConstraints } from "../node.js"
-import { BaseNode } from "../node.js"
-import { ConstraintSet } from "./constraint.js"
-
-export interface NarrowRule extends BaseConstraints {
-	readonly validator: Narrow
-}
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
 // TODO: allow changed order to be the same type
 
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowNode extends BaseNode<NarrowRule, typeof NarrowNode> {
-	static writeDefaultDescription(rule: NarrowRule) {
-		return `valid according to ${rule.validator.name}`
+export class NarrowNode extends ConstraintNode<Narrow> {
+	writeDefaultDescription() {
+		return `valid according to ${this.rule.name}`
 	}
 
-	intersectOwnKeys(other: NarrowNode) {
-		return this.validator === other.validator ? this : null
+	intersectRules(other: NarrowNode) {
+		return this.rule === other.rule ? this.rule : null
 	}
 }
 

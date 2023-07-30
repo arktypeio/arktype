@@ -16,6 +16,8 @@ export class StringNode extends PredicateNode<
 	StringConstraints,
 	BaseAttributes
 > {
+	readonly domain = "string"
+
 	override writeDefaultBaseDescription() {
 		return "a string"
 	}

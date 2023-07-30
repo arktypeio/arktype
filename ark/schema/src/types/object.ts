@@ -12,6 +12,8 @@ export class ObjectNode<
 	constraints extends ObjectConstraints,
 	attributes extends BaseAttributes
 > extends PredicateNode<constraints, attributes> {
+	readonly domain = "object"
+
 	override writeDefaultBaseDescription() {
 		return "an object"
 	}

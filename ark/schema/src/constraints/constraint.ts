@@ -1,9 +1,36 @@
 import type { mutable } from "@arktype/util"
 import { ReadonlyArray } from "@arktype/util"
-import type { BaseNode } from "../node.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseAttributes, BaseNode } from "../node.js"
 
-type ConstraintList = readonly BaseNode<any, any, any>[]
+export abstract class ConstraintNode<
+	rule,
+	attributes extends BaseAttributes = BaseAttributes
+> {
+	constructor(
+		public rule: rule,
+		public attributes = {} as attributes
+	) {}
+
+	abstract writeDefaultDescription(): string
+
+	abstract intersectRules(other: this): rule | Disjoint | null
+
+	intersect(other: this) {
+		const ruleIntersection = this.intersectRules(other)
+		if (ruleIntersection === null || ruleIntersection instanceof Disjoint) {
+			// Ensure the signature of this method reflects whether Disjoint and/or null
+			// are possible intersection results for the subclass.
+			return ruleIntersection as Exclude<
+				ReturnType<this["intersectRules"]>,
+				rule
+			>
+		}
+		return new (this.constructor as any)(ruleIntersection) as this
+	}
+}
+
+type ConstraintList = readonly ConstraintNode<unknown>[]
 
 /** @ts-expect-error allow extending narrowed readonly array */
 export class ConstraintSet<

@@ -16,6 +16,8 @@ export class NumberNode extends PredicateNode<
 	NumberConstraints,
 	BaseAttributes
 > {
+	readonly domain = "number"
+
 	override writeDefaultBaseDescription() {
 		return "a number"
 	}

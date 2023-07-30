@@ -1,29 +1,14 @@
-import type { BaseAttributes, BaseConstraints } from "../node.js"
-import { BaseNode } from "../node.js"
-import { ConstraintSet } from "./constraint.js"
+import { ConstraintNode, ConstraintSet } from "./constraint.js"
 
-export interface DivisorConstraints extends BaseConstraints {
-	readonly value: number
-}
-
-export class DivisorNode extends BaseNode<
-	typeof DivisorNode,
-	DivisorConstraints,
-	BaseAttributes
-> {
-	static writeDefaultDescription(constraints: DivisorConstraints) {
-		return constraints.value === 1
-			? "an integer"
-			: `a multiple of ${constraints.value}`
+export class DivisorNode extends ConstraintNode<number> {
+	writeDefaultDescription() {
+		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	static intersectConstraints(l: DivisorConstraints, r: DivisorConstraints) {
-		return {
-			value: Math.abs(
-				(this.value * other.value) /
-					greatestCommonDivisor(this.value, other.value)
-			)
-		}
+	intersectRules(other: DivisorNode) {
+		return (
+			(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
+		)
 	}
 }
 
