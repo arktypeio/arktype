@@ -1,11 +1,11 @@
 import { throwParseError } from "@arktype/util"
-import type { BaseRule } from "../base.js"
+import type { BaseAttributes, BaseConstraints } from "../base.js"
 import { BaseNode } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintSet } from "./constraint.js"
 
-export interface BoundRule<limitKind extends LimitKind = LimitKind>
-	extends BaseRule {
+export interface BoundConstraints<limitKind extends LimitKind = LimitKind>
+	extends BaseConstraints {
 	readonly dataKind: BoundableDataKind
 	readonly limitKind: limitKind
 	readonly limit: number
@@ -14,10 +14,14 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind>
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends BaseNode<BoundRule<limitKind>, typeof BoundNode> {
+> extends BaseNode<
+	typeof BoundNode,
+	BoundConstraints<limitKind>,
+	BaseAttributes
+> {
 	readonly comparator = boundToComparator(this)
 
-	static writeDefaultDescription(rule: BoundRule) {
+	static writeDefaultDescription(rule: BoundConstraints) {
 		return `${
 			rule.dataKind === "date"
 				? dateComparatorDescriptions[boundToComparator(rule)]
@@ -25,38 +29,28 @@ export class BoundNode<
 		} ${rule.limit}`
 	}
 
-	intersectOwnKeys(
-		other: BoundNode
-	): // cast the return type so that it has the same limitKind as this
-	BoundRule<limitKind> | Disjoint | null
-	intersectOwnKeys(other: BoundNode) {
-		if (this.dataKind !== other.dataKind) {
+	static intersectConstraints(l: BoundConstraints, r: BoundConstraints) {
+		if (l.dataKind !== r.dataKind) {
 			return throwParseError(
-				writeIncompatibleRangeMessage(this.dataKind, other.dataKind)
+				writeIncompatibleRangeMessage(l.dataKind, r.dataKind)
 			)
 		}
-		if (this.limit > other.limit) {
-			if (this.limitKind === "min") {
-				return other.limitKind === "min"
-					? this.constraints
-					: Disjoint.from("range", this, other)
+		if (l.limit > r.limit) {
+			if (l.limitKind === "min") {
+				return r.limitKind === "min" ? l : Disjoint.from("range", l, r)
 			}
-			return other.limitKind === "max" ? other.constraints : null
+			return r.limitKind === "max" ? r : null
 		}
-		if (this.limit < other.limit) {
-			if (this.limitKind === "max") {
-				return other.limitKind === "max"
-					? this.constraints
-					: Disjoint.from("range", this, other)
+		if (l.limit < r.limit) {
+			if (l.limitKind === "max") {
+				return r.limitKind === "max" ? l : Disjoint.from("range", l, r)
 			}
-			return other.limitKind === "min" ? other.constraints : null
+			return r.limitKind === "min" ? r : null
 		}
-		if (this.limitKind === other.limitKind) {
-			return this.exclusive ? this.constraints : other.constraints
+		if (l.limitKind === r.limitKind) {
+			return l.exclusive ? l : r
 		}
-		return this.exclusive || other.exclusive
-			? Disjoint.from("range", this, other)
-			: null
+		return l.exclusive || r.exclusive ? Disjoint.from("range", l, r) : null
 	}
 }
 
@@ -67,7 +61,7 @@ export const BoundSet = ConstraintSet<
 export type BoundSet = InstanceType<typeof BoundSet>
 
 const boundToComparator = <limitKind extends LimitKind>(
-	bound: BoundRule<limitKind>
+	bound: BoundConstraints<limitKind>
 ) =>
 	`${bound.limitKind === "min" ? ">" : "<"}${
 		bound.exclusive ? "" : "="

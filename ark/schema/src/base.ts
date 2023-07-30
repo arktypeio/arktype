@@ -1,13 +1,26 @@
 import { ReadonlyObject } from "@arktype/util"
 import { Disjoint } from "./disjoint.js"
 
-export type NodeSubclass<rule extends BaseRule = BaseRule> = {
-	new (rule: rule): BaseNode<any, any>
+export type NodeSubclass<
+	constraints extends BaseConstraints,
+	attributes extends BaseAttributes
+> = {
+	new (
+		constraints: constraints,
+		attributes: attributes
+	): BaseNode<any, any, any>
 
-	writeDefaultDescription(rule: rule): string
+	writeDefaultDescription(rule: constraints): string
+
+	intersectConstraints(
+		l: constraints,
+		r: constraints
+	): constraints | Disjoint | null
+
+	intersectAttributes(l: attributes, r: attributes): attributes
 }
 
-export type BaseRule = {}
+export type BaseConstraints = {}
 
 export type BaseAttributes = {
 	description?: string
@@ -15,22 +28,25 @@ export type BaseAttributes = {
 
 /** @ts-expect-error allow subclasses to access rule keys as top-level properties */
 export abstract class BaseNode<
-	constraints extends BaseRule = BaseRule,
-	subclass extends NodeSubclass<constraints> = NodeSubclass<constraints>
+	subclass extends NodeSubclass<constraints, attributes>,
+	constraints extends BaseConstraints,
+	attributes extends BaseAttributes
 > extends ReadonlyObject<constraints> {
 	private readonly subclass = this.constructor as subclass
 
+	readonly constraints: constraints
+	readonly attributes: attributes
+
 	declare readonly id: string
 
-	constructor(
-		public constraints: constraints,
-		public attributes = {}
-	) {
+	constructor(constraints: constraints, attributes = {} as attributes) {
 		if (constraints instanceof BaseNode) {
 			// avoid including non-constraint keys in rule
-			constraints = constraints.rule
+			constraints = constraints.constraints
 		}
 		super({ ...constraints })
+		this.constraints = constraints
+		this.attributes = attributes
 		this.description = this.subclass.writeDefaultDescription(constraints)
 	}
 
@@ -39,36 +55,17 @@ export abstract class BaseNode<
 	}
 
 	intersect(other: InstanceType<subclass>) {
-		const result = this.intersectOwnKeys(other)
+		const result = this.intersectConstraints(other)
 		if (result === null || result instanceof Disjoint) {
 			// Ensure the signature of this method reflects whether Disjoint and/or null
 			// are possible intersection results for the subclass.
 			return result as Exclude<
-				ReturnType<InstanceType<subclass>["intersectOwnKeys"]>,
+				ReturnType<InstanceType<subclass>["intersectConstraints"]>,
 				constraints
 			>
 		}
-		if (this.constraints.description) {
-			if (other.constraints.description) {
-				result.description = this.constraints.description.includes(
-					other.constraints.description
-				)
-					? this.constraints.description
-					: other.constraints.description.includes(this.constraints.description)
-					? other.constraints.description
-					: `${this.constraints.description} and ${other.constraints.description}`
-			} else {
-				result.description = this.constraints.description
-			}
-		} else if (other.constraints.description) {
-			result.description = other.constraints.description
-		}
 		return new this.subclass(result) as InstanceType<subclass>
 	}
-
-	abstract intersectOwnKeys(
-		other: InstanceType<subclass>
-	): constraints | Disjoint | null
 }
 
 // type defineConstraint<constraint extends ConstraintGroup> = evaluate<

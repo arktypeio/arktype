@@ -1,6 +1,6 @@
 import type { Dict, evaluate, extend, List } from "@arktype/util"
 import { transform } from "@arktype/util"
-import type { BaseRule, NodeSubclass } from "../base.js"
+import type { BaseAttributes, BaseConstraints, NodeSubclass } from "../base.js"
 import { BaseNode } from "../base.js"
 import type { BoundSet } from "../constraints/bound.js"
 import { ConstraintSet } from "../constraints/constraint.js"
@@ -10,25 +10,26 @@ import type { PatternSet } from "../constraints/pattern.js"
 import type { PrototypeSet } from "../constraints/prototype.js"
 import { Disjoint } from "../disjoint.js"
 
-export type PredicateRule<
+export type PredicateConstraints<
 	AllowedConstraintKind extends NonUniversalConsraintKind = never
 > = evaluate<
-	BaseRule & {
+	BaseConstraints & {
 		[k in AllowedConstraintKind | "narrow"]?: ConstraintSetsByKind[k]
 	}
 >
 
 export class PredicateNode<
-	rule extends PredicateRule = PredicateRule,
-	subclass extends NodeSubclass<rule> = NodeSubclass<rule>
-> extends BaseNode<rule, subclass> {
-	constructor(rule = {} as rule) {
-		super(rule)
+	subclass extends NodeSubclass<constraints, attributes>,
+	constraints extends PredicateConstraints,
+	attributes extends BaseAttributes
+> extends BaseNode<subclass, constraints, attributes> {
+	constructor(constraints = {} as constraints) {
+		super(constraints)
 	}
 
 	static writeDefaultBaseDescription?(rule: never): string
 
-	static writeDefaultDescription(rule: PredicateRule) {
+	static writeDefaultDescription(rule: PredicateConstraints) {
 		const basisDescription =
 			this.writeDefaultBaseDescription?.(rule as never) ?? "a value"
 		const flat = Object.values(constraintsOf(rule)).flat()
@@ -37,12 +38,10 @@ export class PredicateNode<
 			: basisDescription
 	}
 
-	readonly constraints = constraintsOf(this.constraints)
-	readonly flat = flatConstraintsOf(this.constraints)
-
-	override intersectOwnKeys(other: InstanceType<subclass>) {
-		const l = this.constraints as UnknownConstraints
-		const r = other.constraints as UnknownConstraints
+	static intersectConstraints(
+		l: PredicateConstraints,
+		r: PredicateConstraints
+	) {
 		const result = { ...l, ...r }
 		for (const k in result) {
 			if (k in l && k in r) {
@@ -53,7 +52,7 @@ export class PredicateNode<
 				result[k] = setResult
 			}
 		}
-		return result as unknown as rule
+		return result
 	}
 }
 
@@ -80,25 +79,23 @@ export type ConstraintSetsByKind = extend<
 
 export type NonUniversalConsraintKind = Exclude<ConstraintKind, "narrow">
 
-type UnknownConstraints = Dict<string, ConstraintSet>
-
-type constraintsOf<rule extends PredicateRule> = {
+type constraintsOf<rule extends PredicateConstraints> = {
 	[k in keyof rule as rule[k] extends ConstraintSet | undefined
 		? k
 		: never]: rule[k]
 }
 
-const constraintsOf = <rule extends PredicateRule>(
+const constraintsOf = <rule extends PredicateConstraints>(
 	rule: rule
 ): constraintsOf<rule> =>
 	transform(rule, ([k, v]) =>
 		v instanceof ConstraintSet ? [k, v] : []
 	) as never
 
-type flatConstraintsOf<rule extends PredicateRule> = List<
+type flatConstraintsOf<rule extends PredicateConstraints> = List<
 	Extract<rule[keyof rule], ConstraintSet>[number]
 >
 
-const flatConstraintsOf = <rule extends PredicateRule>(
+const flatConstraintsOf = <rule extends PredicateConstraints>(
 	rule: rule
 ): flatConstraintsOf<rule> => Object.values(constraintsOf(rule)).flat() as never

@@ -3,7 +3,7 @@ import { ReadonlyArray } from "@arktype/util"
 import type { BaseNode } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 
-type ConstraintList = readonly BaseNode<any, any>[]
+type ConstraintList = readonly BaseNode<any, any, any>[]
 
 /** @ts-expect-error allow extending narrowed readonly array */
 export class ConstraintSet<

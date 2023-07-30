@@ -1,8 +1,8 @@
-import type { BaseRule } from "../base.js"
+import type { BaseConstraints } from "../base.js"
 import { BaseNode } from "../base.js"
 import { ConstraintSet } from "./constraint.js"
 
-export interface PatternRule extends BaseRule {
+export interface PatternRule extends BaseConstraints {
 	readonly source: string
 	readonly flags?: string
 }
