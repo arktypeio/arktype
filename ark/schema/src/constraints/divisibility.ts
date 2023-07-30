@@ -1,11 +1,11 @@
 import { Constraint } from "./constraint.js"
 
-export class DivisorConstraint extends Constraint<number> {
+export class DivisibilityConstraint extends Constraint<number> {
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	intersectRules(other: DivisorConstraint) {
+	intersectRules(other: DivisibilityConstraint) {
 		return (
 			(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
 		)

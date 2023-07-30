@@ -21,9 +21,18 @@ export abstract class Constraint<
 		public attributes = {} as attributes
 	) {}
 
+	declare readonly id: string
+
 	abstract writeDefaultDescription(): string
 
-	abstract intersectRules(other: this): rule | Disjoint | null
+	// For constraints whose rules overlap with null and/or Disjoint, we can't
+	// use the rule to determine the result of the intersection, so we allow
+	// returning the full instance instead.
+	abstract intersectRules(other: this): this | rule | Disjoint | null
+
+	equals(other: this) {
+		return this.id === other.id
+	}
 
 	intersect(other: this) {
 		const ruleIntersection = this.intersectRules(other)
@@ -32,9 +41,11 @@ export abstract class Constraint<
 			// are possible intersection results for the subclass.
 			return ruleIntersection as Constraint<unknown> extends this
 				? Disjoint | null
-				: Exclude<ReturnType<this["intersectRules"]>, rule>
+				: Extract<ReturnType<this["intersectRules"]>, null | Disjoint>
 		}
-		return new (this.constructor as any)(ruleIntersection) as this
+		return ruleIntersection instanceof Constraint
+			? ruleIntersection
+			: (new (this.constructor as any)(ruleIntersection) as this)
 	}
 }
 

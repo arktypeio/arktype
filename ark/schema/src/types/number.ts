@@ -1,14 +1,14 @@
 import type { extend } from "@arktype/util"
 import type { BoundSet } from "../constraints/bound.js"
 import type { UniversalConstraints } from "../constraints/constraint.js"
-import type { DivisorConstraint } from "../constraints/divisor.js"
+import type { DivisibilityConstraint } from "../constraints/divisibility.js"
 import { PredicateNode } from "./predicate.js"
 
 export type NumberConstraints = extend<
 	UniversalConstraints,
 	{
 		readonly range?: BoundSet
-		readonly divisor?: DivisorConstraint
+		readonly divisor?: DivisibilityConstraint
 	}
 >
 
