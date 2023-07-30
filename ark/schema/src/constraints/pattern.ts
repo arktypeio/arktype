@@ -8,14 +8,14 @@ export interface PatternRule extends BaseRule {
 }
 
 export class PatternNode extends BaseNode<PatternRule, typeof PatternNode> {
-	readonly literal = toLiteral(this.rule)
+	readonly literal = toLiteral(this.constraints)
 
 	static writeDefaultDescription(rule: PatternRule) {
 		return `matched by ${toLiteral(rule)}`
 	}
 
 	intersectOwnKeys(other: PatternNode) {
-		return this.literal === other.literal ? this.rule : null
+		return this.literal === other.literal ? this.constraints : null
 	}
 }
 

@@ -98,6 +98,8 @@ module.exports = defineConfig({
 		"@typescript-eslint/no-namespace": "off",
 		// More of a pain during dev (or testing) than it's worth to prevent something that is trivially caught in PR
 		"@typescript-eslint/no-empty-function": "off",
+		// This rule is not needed in a modern codebase
+		"@typescript-eslint/no-this-alias": "off",
 		// We primarily use switches only if we're returning, and it's hard to imagine where this would be a problem
 		"no-case-declarations": "off"
 	},

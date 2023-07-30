@@ -18,9 +18,6 @@ export type PredicateRule<
 	}
 >
 
-export type PredicateSubclass<rule extends PredicateRule> =
-	NodeSubclass<rule> & {}
-
 export class PredicateNode<
 	rule extends PredicateRule = PredicateRule,
 	subclass extends NodeSubclass<rule> = NodeSubclass<rule>
@@ -40,8 +37,8 @@ export class PredicateNode<
 			: basisDescription
 	}
 
-	readonly constraints = constraintsOf(this.rule)
-	readonly flat = flatConstraintsOf(this.rule)
+	readonly constraints = constraintsOf(this.constraints)
+	readonly flat = flatConstraintsOf(this.constraints)
 
 	override intersectOwnKeys(other: InstanceType<subclass>) {
 		const l = this.constraints as UnknownConstraints
@@ -49,14 +46,7 @@ export class PredicateNode<
 		const result = { ...l, ...r }
 		for (const k in result) {
 			if (k in l && k in r) {
-				let setResult: ConstraintSet | Disjoint = l[k]
-				for (
-					let i = 0;
-					i < r[k].length && setResult instanceof ConstraintSet;
-					i++
-				) {
-					setResult = setResult.add(r[k][i])
-				}
+				const setResult = l[k].intersect(r[k])
 				if (setResult instanceof Disjoint) {
 					return setResult
 				}

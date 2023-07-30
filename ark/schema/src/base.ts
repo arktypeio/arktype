@@ -7,25 +7,31 @@ export type NodeSubclass<rule extends BaseRule = BaseRule> = {
 	writeDefaultDescription(rule: rule): string
 }
 
-export interface BaseRule {
+export type BaseRule = {}
+
+export type BaseAttributes = {
 	description?: string
 }
 
 /** @ts-expect-error allow subclasses to access rule keys as top-level properties */
 export abstract class BaseNode<
-	rule extends BaseRule = BaseRule,
-	subclass extends NodeSubclass<rule> = NodeSubclass<rule>
-> extends ReadonlyObject<rule> {
+	constraints extends BaseRule = BaseRule,
+	subclass extends NodeSubclass<constraints> = NodeSubclass<constraints>
+> extends ReadonlyObject<constraints> {
 	private readonly subclass = this.constructor as subclass
 
 	declare readonly id: string
 
-	constructor(public rule: rule) {
-		if (rule instanceof BaseNode) {
-			return rule
+	constructor(
+		public constraints: constraints,
+		public attributes = {}
+	) {
+		if (constraints instanceof BaseNode) {
+			// avoid including non-constraint keys in rule
+			constraints = constraints.rule
 		}
-		super({ ...rule })
-		this.description ??= this.subclass.writeDefaultDescription(rule)
+		super({ ...constraints })
+		this.description = this.subclass.writeDefaultDescription(constraints)
 	}
 
 	equals(other: InstanceType<subclass>) {
@@ -39,30 +45,30 @@ export abstract class BaseNode<
 			// are possible intersection results for the subclass.
 			return result as Exclude<
 				ReturnType<InstanceType<subclass>["intersectOwnKeys"]>,
-				rule
+				constraints
 			>
 		}
-		if (this.rule.description) {
-			if (other.rule.description) {
-				result.description = this.rule.description.includes(
-					other.rule.description
+		if (this.constraints.description) {
+			if (other.constraints.description) {
+				result.description = this.constraints.description.includes(
+					other.constraints.description
 				)
-					? this.rule.description
-					: other.rule.description.includes(this.rule.description)
-					? other.rule.description
-					: `${this.rule.description} and ${other.rule.description}`
+					? this.constraints.description
+					: other.constraints.description.includes(this.constraints.description)
+					? other.constraints.description
+					: `${this.constraints.description} and ${other.constraints.description}`
 			} else {
-				result.description = this.rule.description
+				result.description = this.constraints.description
 			}
-		} else if (other.rule.description) {
-			result.description = other.rule.description
+		} else if (other.constraints.description) {
+			result.description = other.constraints.description
 		}
 		return new this.subclass(result) as InstanceType<subclass>
 	}
 
 	abstract intersectOwnKeys(
 		other: InstanceType<subclass>
-	): rule | Disjoint | null
+	): constraints | Disjoint | null
 }
 
 // type defineConstraint<constraint extends ConstraintGroup> = evaluate<

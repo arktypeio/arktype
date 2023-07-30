@@ -38,21 +38,21 @@ export class BoundNode<
 		if (this.limit > other.limit) {
 			if (this.limitKind === "min") {
 				return other.limitKind === "min"
-					? this.rule
+					? this.constraints
 					: Disjoint.from("range", this, other)
 			}
-			return other.limitKind === "max" ? other.rule : null
+			return other.limitKind === "max" ? other.constraints : null
 		}
 		if (this.limit < other.limit) {
 			if (this.limitKind === "max") {
 				return other.limitKind === "max"
-					? this.rule
+					? this.constraints
 					: Disjoint.from("range", this, other)
 			}
-			return other.limitKind === "min" ? other.rule : null
+			return other.limitKind === "min" ? other.constraints : null
 		}
 		if (this.limitKind === other.limitKind) {
-			return this.exclusive ? this.rule : other.rule
+			return this.exclusive ? this.constraints : other.constraints
 		}
 		return this.exclusive || other.exclusive
 			? Disjoint.from("range", this, other)

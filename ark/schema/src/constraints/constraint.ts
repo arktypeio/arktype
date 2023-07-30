@@ -29,4 +29,16 @@ export class ConstraintSet<
 		}
 		return new ConstraintSet(...result)
 	}
+
+	intersect(other: ConstraintSet<constraints>) {
+		let setResult: ConstraintSet<constraints> | Disjoint = this
+		for (
+			let i = 0;
+			i < other.length && setResult instanceof ConstraintSet;
+			i++
+		) {
+			setResult = setResult.add(other[i])
+		}
+		return setResult
+	}
 }
