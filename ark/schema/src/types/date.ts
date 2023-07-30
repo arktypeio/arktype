@@ -1,17 +1,12 @@
-import type { extend } from "@arktype/util"
 import type { BoundSet } from "../constraints/bound.js"
-import type { BaseAttributes } from "../node.js"
-import type { ObjectConstraints } from "./object.js"
 import { ObjectNode } from "./object.js"
+import type { PredicateConstraints } from "./predicate.js"
 
-export type DateConstraints = extend<
-	ObjectConstraints,
-	{
-		readonly range?: BoundSet
-	}
->
+export type DateConstraints = PredicateConstraints<{
+	readonly range?: BoundSet
+}>
 
-export class DateNode extends ObjectNode<DateConstraints, BaseAttributes> {
+export class DateNode extends ObjectNode<DateConstraints> {
 	override writeDefaultBaseDescription() {
 		return "a date"
 	}

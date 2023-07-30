@@ -1,9 +1,12 @@
 import { intersectUniqueLists } from "@arktype/util"
+import { Attribute } from "./attribute.js"
 
-export class Description {
-	intersect(other: Description) {
-		return {
-			parts: intersectUniqueLists(this.parts, other.parts)
-		}
+export class DescriptionAttribute extends Attribute<readonly string[]> {
+	intersectValues(other: DescriptionAttribute) {
+		return intersectUniqueLists(this.value, other.value)
+	}
+
+	override toString() {
+		return this.value.join(" and ")
 	}
 }

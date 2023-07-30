@@ -1,11 +1,18 @@
-import type { mutable } from "@arktype/util"
+import type { extend, mutable } from "@arktype/util"
 import { ReadonlyArray } from "@arktype/util"
+import type { AttributesRecord } from "../attributes/attribute.js"
+import type { DescriptionAttribute } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
+
+export type ConstraintAttributes<attributes extends AttributesRecord> = extend<
+	{ readonly description?: DescriptionAttribute },
+	attributes
+>
 
 export abstract class Constraint<
 	rule,
-	attributes extends BaseAttributes = BaseAttributes
+	attributes extends
+		ConstraintAttributes<AttributesRecord> = ConstraintAttributes<{}>
 > {
 	constructor(
 		public rule: rule,
@@ -67,4 +74,8 @@ export class ConstraintSet<
 		}
 		return setResult
 	}
+}
+
+export type ConstraintsRecord = {
+	[k: string]: Constraint<unknown> | ConstraintSet
 }

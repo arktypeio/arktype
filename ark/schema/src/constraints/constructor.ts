@@ -5,13 +5,9 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
 import { Constraint } from "./constraint.js"
 
-export class ConstructorConstraint extends Constraint<
-	AbstractableConstructor,
-	BaseAttributes
-> {
+export class ConstructorConstraint extends Constraint<AbstractableConstructor> {
 	writeDefaultDescription() {
 		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 		return possibleObjectKind

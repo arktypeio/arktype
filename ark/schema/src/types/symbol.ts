@@ -1,13 +1,7 @@
-import type { BaseAttributes } from "../node.js"
 import type { PredicateConstraints } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
-export type SymbolConstraints = PredicateConstraints
-
-export class SymbolNode extends PredicateNode<
-	SymbolConstraints,
-	BaseAttributes
-> {
+export class SymbolNode extends PredicateNode<PredicateConstraints<{}>> {
 	readonly domain = "symbol"
 
 	override writeDefaultBaseDescription() {

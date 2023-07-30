@@ -1,6 +1,5 @@
 import type { BoundSet } from "../constraints/bound.js"
 import type { RegexSet } from "../constraints/regex.js"
-import type { BaseAttributes } from "../node.js"
 import { PredicateNode } from "./predicate.js"
 
 export type StringConstraints = {
@@ -8,10 +7,7 @@ export type StringConstraints = {
 	readonly pattern?: RegexSet
 }
 
-export class StringNode extends PredicateNode<
-	StringConstraints,
-	BaseAttributes
-> {
+export class StringNode extends PredicateNode<StringConstraints> {
 	readonly domain = "string"
 
 	override writeDefaultBaseDescription() {

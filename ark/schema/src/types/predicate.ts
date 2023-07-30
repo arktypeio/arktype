@@ -1,26 +1,29 @@
-import type { Domain } from "@arktype/util"
-import type { Constraint, ConstraintSet } from "../constraints/constraint.js"
+import type { Domain, extend } from "@arktype/util"
+import type { AttributesRecord } from "../attributes/attribute.js"
+import type { DescriptionAttribute } from "../attributes/description.js"
+import type { ConstraintsRecord } from "../constraints/constraint.js"
+import type { NarrowSet } from "../constraints/narrow.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
 
-export type PredicateConstraints = {
-	[k: string]: Constraint<unknown> | ConstraintSet
-}
+export type PredicateConstraints<constraints extends ConstraintsRecord> =
+	extend<{ readonly narrow?: NarrowSet }, constraints>
 
-export type PredicateAttributes = BaseAttributes & { readonly morph?: unknown }
+export type PredicateAttributes<attributes extends AttributesRecord> = extend<
+	{ readonly description?: DescriptionAttribute },
+	attributes
+>
 
 export abstract class PredicateNode<
-	constraints extends PredicateConstraints,
-	attributes extends BaseAttributes
+	constraints extends PredicateConstraints<ConstraintsRecord>,
+	attributes extends
+		PredicateAttributes<AttributesRecord> = PredicateAttributes<{}>
 > {
 	declare readonly id: string
 
 	constructor(
 		public constraints = {} as constraints,
 		public attributes = {} as attributes
-	) {
-		// this.description = this.subclass.writeDefaultDescription(constraints)
-	}
+	) {}
 
 	abstract readonly domain: Domain | null
 	abstract writeDefaultBaseDescription(constraints: constraints): string
