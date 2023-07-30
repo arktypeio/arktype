@@ -1,8 +1,9 @@
+import type { Dict } from "@arktype/util"
 import { ReadonlyObject } from "@arktype/util"
 import { Disjoint } from "./disjoint.js"
 
 export type NodeSubclass<
-	constraints extends BaseConstraints,
+	constraints extends Dict,
 	attributes extends BaseAttributes
 > = {
 	new (
@@ -20,16 +21,14 @@ export type NodeSubclass<
 	intersectAttributes(l: attributes, r: attributes): attributes
 }
 
-export type BaseConstraints = {}
-
 export type BaseAttributes = {
-	description?: string
+	[k: string]: {}
 }
 
 /** @ts-expect-error allow subclasses to access rule keys as top-level properties */
 export abstract class BaseNode<
 	subclass extends NodeSubclass<constraints, attributes>,
-	constraints extends BaseConstraints,
+	constraints extends Dict,
 	attributes extends BaseAttributes
 > extends ReadonlyObject<constraints> {
 	private readonly subclass = this.constructor as subclass
