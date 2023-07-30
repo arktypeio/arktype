@@ -1,7 +1,7 @@
 import type { mutable } from "@arktype/util"
 import { ReadonlyArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, BaseNode } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 
 export abstract class ConstraintNode<
 	rule,
@@ -21,10 +21,9 @@ export abstract class ConstraintNode<
 		if (ruleIntersection === null || ruleIntersection instanceof Disjoint) {
 			// Ensure the signature of this method reflects whether Disjoint and/or null
 			// are possible intersection results for the subclass.
-			return ruleIntersection as Exclude<
-				ReturnType<this["intersectRules"]>,
-				rule
-			>
+			return ruleIntersection as ConstraintNode<unknown> extends this
+				? Disjoint | null
+				: Exclude<ReturnType<this["intersectRules"]>, rule>
 		}
 		return new (this.constructor as any)(ruleIntersection) as this
 	}

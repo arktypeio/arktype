@@ -23,7 +23,7 @@
 		"./ark/type/src/main.ts"
 	],
 	"typescript.preferences.importModuleSpecifierEnding": "js",
-	"typescript.tsserver.experimental.enableProjectDiagnostics": false,
+	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"typescript.tsdk": "node_modules/typescript/lib",
 	"prettier.ignorePath": "dev/.prettierignore",
 	"prettier.prettierPath": "./node_modules/prettier",

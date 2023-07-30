@@ -4,9 +4,6 @@ import {
 	objectKindOf,
 	throwInternalError
 } from "@arktype/util"
-import type { Node } from "../nodes/kinds.js"
-import type { Module } from "../scope.js"
-import type { Generic } from "../type.js"
 import { isDotAccessible } from "./compile.js"
 import type { TraversalState } from "./traverse.js"
 
