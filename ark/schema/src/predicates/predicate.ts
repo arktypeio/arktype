@@ -5,7 +5,7 @@ import type {
 } from "../attributes/attribute.js"
 import type { ConstraintsRecord } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import { TypeNode } from "./type.js"
+import { TypeNode } from "../type.js"
 
 export abstract class PredicateNode<
 	constraints extends ConstraintsRecord,
