@@ -1,10 +1,10 @@
 import type { extend } from "@arktype/util"
 import type { BoundSet } from "../constraints/bound.js"
-import type { UniversalConstraints } from "../constraints/constraint.js"
+import type { DomainConstraints } from "../constraints/constraint.js"
 import { ObjectNode } from "./object.js"
 
 export type DateConstraints = extend<
-	UniversalConstraints,
+	DomainConstraints,
 	{
 		readonly range?: BoundSet
 	}

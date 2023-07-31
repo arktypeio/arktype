@@ -2,6 +2,9 @@ import type {
 	AttributesRecord,
 	UniversalAttributes
 } from "./attributes/attribute.js"
+import { EqualityConstraint } from "./constraints/equality.js"
+import { Disjoint } from "./disjoint.js"
+import { PredicateNode } from "./predicates/predicate.js"
 
 export abstract class TypeNode<
 	attributes extends AttributesRecord = UniversalAttributes

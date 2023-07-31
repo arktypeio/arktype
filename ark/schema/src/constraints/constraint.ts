@@ -89,9 +89,4 @@ export class ConstraintSet<
 	}
 }
 
-export type ConstraintsRecord = extend<
-	IntersectableRecord,
-	UniversalConstraints
->
-
-export type UniversalConstraints = { readonly narrow?: NarrowSet }
+export type ConstraintsRecord = IntersectableRecord

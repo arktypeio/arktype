@@ -1,11 +1,16 @@
-import type { Domain } from "@arktype/util"
+import type { Domain, extend } from "@arktype/util"
 import type {
 	AttributesRecord,
 	UniversalAttributes
 } from "../attributes/attribute.js"
 import type { ConstraintsRecord } from "../constraints/constraint.js"
+import { EqualityConstraint } from "../constraints/equality.js"
+import type { NarrowSet } from "../constraints/narrow.js"
 import { Disjoint } from "../disjoint.js"
 import { TypeNode } from "../type.js"
+
+export type DomainConstraints = { readonly narrow?: NarrowSet }
+export type UnitConstraints = { readonly value?: EqualityConstraint }
 
 export abstract class PredicateNode<
 	constraints extends ConstraintsRecord,
@@ -23,6 +28,12 @@ export abstract class PredicateNode<
 	abstract readonly domain: Domain | null
 	abstract writeDefaultBaseDescription(constraints: constraints): string
 
+	readonly flat = Object.values(this.constraints).flat()
+	readonly unit =
+		this.flat.length === 1 && this.flat[0] instanceof EqualityConstraint
+			? this.flat[0]
+			: undefined
+
 	writeDefaultDescription() {
 		const basisDescription =
 			this.writeDefaultBaseDescription?.(this.constraints) ?? "a value"
@@ -32,7 +43,11 @@ export abstract class PredicateNode<
 			: basisDescription
 	}
 
-	intersect(other: this): this | Disjoint {
+	intersect(other: this): constraints | Disjoint {
+		if (this.unit) {
+			if (other.unit) {
+			}
+		}
 		const result = { ...this.constraints, ...other.constraints }
 		for (const k in result) {
 			if (k in this.constraints && k in other.constraints) {
@@ -43,6 +58,6 @@ export abstract class PredicateNode<
 				result[k] = setResult
 			}
 		}
-		return new (this.constructor as any)(result) as this
+		return result
 	}
 }
