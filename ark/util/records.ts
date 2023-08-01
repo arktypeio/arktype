@@ -1,4 +1,4 @@
-import { hasDomain } from "./domains.js"
+import { hasDomain } from "./domain.js"
 import type { defined, evaluate } from "./generics.js"
 import { isArray } from "./objectKinds.js"
 import type { intersectUnion } from "./unionToTuple.js"

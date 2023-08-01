@@ -7,7 +7,7 @@
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
-		"build": "ts ./src/writeTheme.ts",
+		"build": "ts ./theme/writeTheme.ts",
 		"vspublish": "pnpm build && pnpx vsce publish"
 	},
 	"repository": {

@@ -1,5 +1,5 @@
-import type { Domain } from "./domains.js"
-import { domainOf } from "./domains.js"
+import type { Domain } from "./domain.js"
+import { domainOf } from "./domain.js"
 import type { evaluate } from "./generics.js"
 import { isKeyOf } from "./records.js"
 

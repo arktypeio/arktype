@@ -3,7 +3,7 @@ import { suite, test } from "mocha"
 
 suite("snippets", () => {
 	test("demo", async () => {
-		const typeSnippet = await import("../examples/demo.js")
+		const typeSnippet = await import("../../docs/examples/demo.js")
 		attest(typeSnippet.pkg.infer).typed as {
 			name: string
 			version: string
@@ -14,7 +14,7 @@ suite("snippets", () => {
 		)
 	})
 	test("type", async () => {
-		const typeSnippet = await import("../examples/type.js")
+		const typeSnippet = await import("../../docs/examples/type.js")
 		attest(typeSnippet.user.infer).typed as {
 			name: string
 			device: {
@@ -42,7 +42,7 @@ suite("snippets", () => {
 	//     )
 	// })
 	test("optimized", async () => {
-		const example = await import("../examples/optimized.js")
+		const example = await import("../../docs/examples/optimized.js")
 		attest(example.deepLeftOrRight.infer).typed as
 			| {
 					auto: {

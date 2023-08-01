@@ -1,4 +1,4 @@
-export * from "./domains.js"
+export * from "./domain.js"
 export * from "./errors.js"
 export * from "./functions.js"
 export * from "./generics.js"
