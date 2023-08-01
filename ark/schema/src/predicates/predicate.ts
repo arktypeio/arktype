@@ -44,8 +44,10 @@ export abstract class PredicateNode<
 	}
 
 	intersect(other: this): constraints | Disjoint {
+		// TODO: include domain disjoints
 		if (this.unit) {
 			if (other.unit) {
+				const result = this.unit.intersect(other.unit)
 			}
 		}
 		const result = { ...this.constraints, ...other.constraints }
