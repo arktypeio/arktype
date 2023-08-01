@@ -17,7 +17,7 @@ module.exports = defineConfig({
 	],
 	ignorePatterns: [
 		"**/dist/**",
-		"**/node_modules**",
+		"**/node_modules/**",
 		"**/*js",
 		"**/generated/**"
 	],
@@ -84,7 +84,6 @@ module.exports = defineConfig({
 				ignoreDeclarationSort: true
 			}
 		],
-		"import/no-nodejs-modules": "warn",
 		/**
 		 * Allow more flexible typing
 		 */
@@ -105,21 +104,9 @@ module.exports = defineConfig({
 	},
 	overrides: [
 		{
-			files: ["**/*.bench.ts"],
-			rules: {
-				// Assignment to a variable is required to ensure types are parsed
-				"@typescript-eslint/no-unused-vars": "off"
-			}
-		},
-		{
-			files: ["./ark/type/examples/*.ts"],
-			rules: {
-				"@typescript-eslint/no-unused-vars": "off"
-			}
-		},
-		{
 			files: ["**/src/**"],
 			rules: {
+				"import/no-nodejs-modules": "warn",
 				/**
 				 * In tests and scripts, we can safely import from the monorepo's root devDependencies,
 				 * so no need to worry about checking imports beyond what TypeScript does by default.
@@ -128,10 +115,16 @@ module.exports = defineConfig({
 			}
 		},
 		{
-			files: ["./dev/**"],
+			files: ["**/examples/**"],
 			rules: {
-				"@typescript-eslint/no-restricted-imports": "off",
-				"import/no-nodejs-modules": "off"
+				"@typescript-eslint/no-unused-vars": "off"
+			}
+		},
+		{
+			files: ["**/*.bench.ts"],
+			rules: {
+				// Assignment to a variable is required to ensure types are parsed
+				"@typescript-eslint/no-unused-vars": "off"
 			}
 		}
 	]

@@ -1,7 +1,6 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "1.0.18-beta",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -16,6 +15,7 @@
 		"url": "https://github.com/arktypeio/arktype.git"
 	},
 	"packageManager": "pnpm@8.6.6",
+	"type": "module",
 	"scripts": {
 		"prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
 		"build": "ts ./dev/build.ts",

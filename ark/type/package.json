@@ -1,7 +1,7 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "1.0.16-alpha",
+	"version": "1.0.18-beta",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -18,8 +18,8 @@
 	"exports": {
 		".": {
 			"arktype-dev": "./src/main.js",
-			"import": "./dist/mjs/main.js",
-			"require": "./dist/cjs/main.js"
+			"import": "./dist/main.js",
+			"require": "./dist/main.js"
 		},
 		"./internal/*": {
 			"arktype-dev": "./src/*",

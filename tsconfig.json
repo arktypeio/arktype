@@ -6,11 +6,11 @@
 		"noEmit": true,
 		"skipLibCheck": true,
 		"strict": true,
+		// https://github.com/egoist/tsup/issues/647
+		// "composite": true,
 		"isolatedModules": true,
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
-		// https://github.com/egoist/tsup/issues/647
-		// "composite": true,
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
 		"noImplicitOverride": true,

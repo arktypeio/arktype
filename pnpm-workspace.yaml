@@ -1,3 +1,2 @@
 packages:
-  - "ark/util"
-  - "ark/test"
+  - "ark/*"
