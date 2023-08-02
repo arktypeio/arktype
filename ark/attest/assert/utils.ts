@@ -1,5 +1,5 @@
 import { throwAssertionError } from "../assertions.js"
-import type { AssertionContext } from "../attest.js"
+import type { AssertionContext } from "./attest.js"
 
 export const callAssertedFunction = (
 	asserted: Function

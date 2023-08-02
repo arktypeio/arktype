@@ -1,10 +1,13 @@
-import type {
-	LinePosition,
-	LinePositionRange,
-	SourcePosition
-} from "../utils.js"
+
 import { getFileKey } from "../utils.js"
 import { getAssertionsByFile } from "./analysis.js"
+
+
+export type LinePositionRange = {
+	start: LinePosition
+	end: LinePosition
+}
+
 
 const isPositionWithinRange = (
 	{ line, char }: LinePosition,

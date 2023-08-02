@@ -1,11 +1,11 @@
 import type { Node, Project, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { caller } from "../main.js"
-import { findCallExpressionAncestor } from "../snapshot.js"
+import { findCallExpressionAncestor } from "../snapshot/snapshot.js"
 import {
 	forceCreateTsMorphProject,
 	getTsMorphProject
-} from "../type/cacheAssertions.js"
+} from "../tsserver/cacheAssertions.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
 import type { Measure, MeasureComparison, TypeUnit } from "./measure.js"

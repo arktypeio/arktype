@@ -3,13 +3,13 @@ import { isDeepStrictEqual } from "node:util"
 
 import { snapshot, stringify } from "@arktype/util"
 import { assertEquals } from "../assertions.js"
-import type { AssertionContext } from "../attest.js"
+import type { AssertionContext } from "./attest.js"
 import { caller } from "../main.js"
-import type { SnapshotArgs } from "../snapshot.js"
-import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot.js"
-import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
+import type { SnapshotArgs } from "../snapshot/snapshot.js"
+import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot/snapshot.js"
+import { getTypeDataAtPos } from "../tsserver/getAssertionAtPos.js"
 import { chainableNoOpProxy } from "../utils.js"
-import { updateExternalSnapshot } from "../writeSnapshot.js"
+import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
 import type { ExternalSnapshotArgs, rootAssertions } from "./types.js"
 import {
 	assertEqualOrMatching,

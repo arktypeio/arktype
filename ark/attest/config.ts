@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { ensureDir, fromCwd } from "./fs.js"
-import { getParamValue, hasFlag } from "./shell.js"
+import { ensureDir, fromCwd } from "../node/fs.js"
+import { getParamValue, hasFlag } from "../node/shell.js"
 
 export type AttestConfig = {
 	tsconfig: string | undefined
