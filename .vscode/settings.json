@@ -31,7 +31,7 @@
 	"mochaExplorer.nodeArgv": [
 		"--loader=ts-node/esm",
 		"--no-warnings=ExperimentalWarning",
-		"--conditions=arktype-dev"
+		"--conditions=arktype-repo"
 	],
 	"mochaExplorer.require": "dev/mocha.fixtures.ts",
 	"mochaExplorer.timeout": 0,

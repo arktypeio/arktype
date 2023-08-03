@@ -71,7 +71,7 @@
 		"node-option": [
 			"loader=ts-node/esm",
 			"no-warnings=ExperimentalWarning",
-			"conditions=arktype-dev"
+			"conditions=arktype-repo"
 		],
 		"require": "./ark/repo/mocha.fixtures.ts"
 	},
@@ -94,7 +94,7 @@
 		"showValueOnSelection": false,
 		"env": {
 			"params": {
-				"runner": "--conditions=arktype-dev"
+				"runner": "--conditions=arktype-repo"
 			}
 		}
 	},

@@ -8,10 +8,10 @@
 	},
 	"type": "module",
 	"main": "./dist/main.cjs",
-	"types": "./dsit/main.d.cts",
+	"types": "./dist/main.d.cts",
 	"exports": {
 		".": {
-			"arktype-dev": "./main.js",
+			"arktype-repo": "./main.js",
 			"import": "./dist/main.js",
 			"require": "./dist/main.cjs"
 		}

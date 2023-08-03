@@ -16,7 +16,7 @@
 		"noImplicitOverride": true,
 		"stripInternal": true,
 		"lib": ["ESNext"],
-		"customConditions": ["arktype-dev"]
+		"customConditions": ["arktype-repo"]
 	},
 	"ts-node": {
 		"esm": true,
