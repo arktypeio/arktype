@@ -1,7 +1,6 @@
 {
 	"name": "@arktype/fs",
-	"version": "0.0.0",
-	"private": true,
+	"version": "0.0.1",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -9,7 +8,7 @@
 	},
 	"type": "module",
 	"main": "./dist/main.cjs",
-	"types": "./dist/main.d.cts",
+	"types": "./dsit/main.d.cts",
 	"exports": {
 		".": {
 			"arktype-dev": "./main.js",

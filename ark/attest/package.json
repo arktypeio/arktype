@@ -1,7 +1,6 @@
 {
 	"name": "@arktype/attest",
-	"version": "0.0.0",
-	"private": true,
+	"version": "0.0.1",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -25,7 +24,7 @@
 	},
 	"dependencies": {
 		"ts-morph": "19.0.0",
-		"@arktype/util": "workspace:*",
-		"@arktype/fs": "workspace:*"
+		"@arktype/util": "0.0.1",
+		"@arktype/fs": "0.0.1"
 	}
 }

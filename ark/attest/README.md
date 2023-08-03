@@ -4,7 +4,7 @@ This package is under active development.
 
 If you want to try it, you'll need to call our setup/cleanup methods before and after your tests run.
 
-For example, in mocha
+For example, in mocha:
 
 ```ts
 import { cleanup, setup } from "@arktype/attest"

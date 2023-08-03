@@ -1,7 +1,6 @@
 {
 	"name": "@arktype/util",
-	"version": "0.0.0",
-	"private": true,
+	"version": "0.0.1",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
