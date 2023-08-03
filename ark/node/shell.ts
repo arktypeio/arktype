@@ -1,11 +1,6 @@
 import { execSync } from "node:child_process"
 import * as process from "node:process"
 
-
-
-
-
-
 // @snipStart:shell
 export type ShellOptions = Parameters<typeof execSync>[1] & {
 	env?: Record<string, unknown>

@@ -20,20 +20,20 @@
 	"scripts": {
 		"prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
 		"build": "pnpm -r exec -- tsup --config ark/repo/tsup.config.ts",
-		"docgen": "ts ./dev/docgen.ts",
+		"docgen": "ts ./ark/repo/docgen.ts",
 		"test": "mocha",
 		"tnt": "mocha --skipTypes",
 		"testRepo": "pnpm test && cd ./ark/test && pnpm test && pnpm testTsVersions",
-		"testTsVersions": "ts ./dev/testTsVersions.ts",
+		"testTsVersions": "ts ./ark/repo/testTsVersions.ts",
 		"typecheck": "tsc --noEmit",
 		"tsin": "tsc --noEmit --extendedDiagnostics --composite false",
 		"lint": "eslint --max-warnings=0 .",
-		"format": "prettier --write --ignore-path ./meta/configs/.prettierignore .",
-		"checkFormat": "prettier --check --ignore-path ./dev/.prettierignore .",
+		"format": "prettier --write --ignore-path ./ark/repo/.prettierignore .",
+		"checkFormat": "prettier --check --ignore-path ./ark/repo/.prettierignore .",
 		"changes": "cd ./dev && node ../node_modules/@changesets/cli/bin.js",
 		"knip": "knip",
 		"ci:publish": "pnpm changes publish",
-		"ci:version": "ts ./dev/scripts/updateVersions.ts"
+		"ci:version": "ts ./ark/repo/updateVersions.ts"
 	},
 	"devDependencies": {
 		"@arktype/repo": "workspace:*",
@@ -64,7 +64,7 @@
 	},
 	"mocha": {
 		"spec": [
-			"**/test/*.test.*"
+			"**/__tests__/*.test.*"
 		],
 		"ignore": "**/node_modules/*",
 		"//": "NOTE: These are also maintained in .vscode/settings.json",
@@ -73,15 +73,14 @@
 			"no-warnings=ExperimentalWarning",
 			"conditions=arktype-dev"
 		],
-		"require": "./meta/configs/mocha.fixtures.ts"
+		"require": "./ark/repo/mocha.fixtures.ts"
 	},
 	"c8": {
 		"checkCoverage": true,
 		"lines": 96,
 		"src": "./src",
 		"exclude": [
-			"test/**",
-			"meta/**"
+			"__tests__/**"
 		],
 		"extension": ".ts",
 		"reporter": "lcovonly"
@@ -100,10 +99,10 @@
 		}
 	},
 	"tsup": {
-		"config": "./meta/configs/tsup.config.ts"
+		"config": "./ark/repo/tsup.config.ts"
 	},
 	"eslintConfig": {
-		"extends": "./meta/configs/.eslintrc.cjs"
+		"extends": "./ark/repo/.eslintrc.cjs"
 	},
 	"pnpm": {
 		"peerDependencyRules": {
