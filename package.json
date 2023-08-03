@@ -19,7 +19,7 @@
 	"type": "module",
 	"scripts": {
 		"prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
-		"build": "pnpm -r exec -- tsup --config ark/repo/tsup.config.ts",
+		"build": "pnpm -r build",
 		"docgen": "ts ./ark/repo/docgen.ts",
 		"test": "mocha",
 		"tnt": "mocha --skipTypes",

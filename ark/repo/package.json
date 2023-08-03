@@ -7,6 +7,9 @@
 		"@arktype/fs": "workspace:*",
 		"ts-morph": "19.0.0"
 	},
+	"scripts": {
+		"build": "echo No build required!"
+	},
 	"bin": {
 		"ts": "./ts.cjs"
 	}

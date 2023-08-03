@@ -30,6 +30,9 @@
 	"files": [
 		"dist"
 	],
+	"scripts": {
+		"build": "tsup --config ../repo/tsup.config.ts"
+	},
 	"dependencies": {
 		"@arktype/util": "workspace:*",
 		"@arktype/schema": "workspace:*"

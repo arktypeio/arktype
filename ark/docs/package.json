@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "docusaurus start",
-		"build": "ts ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && ts ../scripts/copyCname.ts ",
+		"build": "ts ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && ts ../repo/copyCname.ts ",
 		"typecheck": "tsc",
 		"serve": "docusaurus serve --dir dist"
 	},

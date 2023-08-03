@@ -20,6 +20,9 @@
 	"files": [
 		"dist"
 	],
+	"scripts": {
+		"build": "tsup --config ../repo/tsup.config.ts"
+	},
 	"dependencies": {
 		"ts-morph": "19.0.0",
 		"@arktype/util": "workspace:*",

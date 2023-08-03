@@ -1,6 +1,5 @@
-import { cleanup, setup } from "@arktype/test"
+import { cleanup, setup } from "@arktype/attest"
 
-// get around "not portable" error, can remove annotation if it doesn't error
-export const mochaGlobalSetup: typeof setup = setup
+export const mochaGlobalSetup = setup
 
 export const mochaGlobalTeardown = cleanup

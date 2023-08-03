@@ -17,6 +17,9 @@
 			"require": "./dist/main.cjs"
 		}
 	},
+	"scripts": {
+		"build": "tsup --config ../repo/tsup.config.ts"
+	},
 	"files": [
 		"dist"
 	]

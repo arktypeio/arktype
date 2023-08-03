@@ -16,6 +16,10 @@ test("type snap", () => {
 	attest(o).types.toString.snap()
 })
 
+test("type assertion", () => {
+	attest(o).typed as { readonly ark: "type" }
+})
+
 test("chained snaps", () => {
 	attest(o).snap().types.toString.snap()
 })
