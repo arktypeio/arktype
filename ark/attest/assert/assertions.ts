@@ -1,15 +1,14 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
-
+import { caller } from "@arktype/fs"
 import { snapshot, stringify } from "@arktype/util"
-import { assertEquals } from "../assertions.js"
-import type { AssertionContext } from "./attest.js"
-import { caller } from "../main.js"
 import type { SnapshotArgs } from "../snapshot/snapshot.js"
 import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot/snapshot.js"
+import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
 import { getTypeDataAtPos } from "../tsserver/getAssertionAtPos.js"
 import { chainableNoOpProxy } from "../utils.js"
-import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
+import { assertEquals } from "./assertEquals.js"
+import type { AssertionContext } from "./attest.js"
 import type { ExternalSnapshotArgs, rootAssertions } from "./types.js"
 import {
 	assertEqualOrMatching,

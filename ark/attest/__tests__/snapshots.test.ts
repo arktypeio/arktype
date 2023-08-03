@@ -1,5 +1,5 @@
 import { equal } from "node:assert/strict"
-import { fromHere, readFile } from "@arktype/test"
+import { fromHere, readFile } from "@arktype/fs"
 import { describe, test } from "mocha"
 import { runThenGetContents } from "./utils.js"
 

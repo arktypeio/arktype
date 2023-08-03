@@ -8,26 +8,21 @@
 		"url": "https://arktype.io"
 	},
 	"type": "module",
-	"main": "./dist/cjs/main.js",
-	"types": "./dist/cjs/main.d.ts",
+	"main": "./dist/main.cjs",
+	"types": "./dist/main.d.cts",
 	"exports": {
 		".": {
-			"arktype-dev": "./src/main.js",
-			"import": "./dist/mjs/main.js",
-			"require": "./dist/cjs/main.js"
+			"arktype-dev": "./main.js",
+			"import": "./dist/main.js",
+			"require": "./dist/main.cjs"
 		}
 	},
 	"files": [
-		"dist",
-		"!*.tsbuildinfo"
+		"dist"
 	],
 	"dependencies": {
 		"ts-morph": "19.0.0",
 		"@arktype/util": "workspace:*",
-		"@arktype/node": "workspace:*"
-	},
-	"scripts": {
-		"build": "ts ../scripts/build.ts",
-		"test": "pnpm mocha"
+		"@arktype/fs": "workspace:*"
 	}
 }

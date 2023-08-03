@@ -1,6 +1,7 @@
 import * as assert from "node:assert/strict"
 import { basename } from "node:path"
-import { attest, fileName } from "@arktype/test"
+import { attest } from "@arktype/attest"
+import { fileName } from "@arktype/fs"
 import { describe, test } from "mocha"
 
 const n = 5

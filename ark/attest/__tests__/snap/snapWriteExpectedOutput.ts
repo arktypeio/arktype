@@ -1,4 +1,4 @@
-import { attest, cleanup, setup } from "../../src/main.js"
+import { attest, cleanup, setup } from "@arktype/attest"
 
 setup()
 

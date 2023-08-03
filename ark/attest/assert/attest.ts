@@ -1,11 +1,10 @@
 import { fileURLToPath } from "node:url"
-import { Assertions } from "./assertions.js"
-import type { rootAssertions } from "./types.js"
-import { caller, getCallStack } from "../../fs/caller.js"
+import type { SourcePosition } from "@arktype/fs"
+import { caller, getCallStack } from "@arktype/fs"
 import type { AttestConfig } from "../config.js"
 import { getConfig } from "../config.js"
-
-import type { SourcePosition } from "../utils.js"
+import { Assertions } from "./assertions.js"
+import type { rootAssertions } from "./types.js"
 
 export type AttestFn = <T>(
 	value: T

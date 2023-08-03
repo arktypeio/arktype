@@ -1,5 +1,5 @@
 import * as assert from "node:assert/strict"
-import { attest } from "@arktype/test"
+import { attest } from "@arktype/attest"
 import { describe, test } from "mocha"
 
 const o = { ark: "type" }

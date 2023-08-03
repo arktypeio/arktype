@@ -1,12 +1,11 @@
 import { randomUUID } from "node:crypto"
 import { basename, dirname, isAbsolute, join } from "node:path"
+import type { SourcePosition } from "@arktype/fs"
+import { positionToString, readJson, writeJson } from "@arktype/fs"
 import type { CallExpression, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { getConfig } from "../config.js"
-import { readJson, writeJson } from "../../fs/fs.js"
 import { getTsNodeAtPosition } from "../tsserver/getTsNodeAtPos.js"
-import type { SourcePosition } from "../utils.js"
-import { positionToString } from "../utils.js"
 import { writeCachedInlineSnapshotUpdates } from "./writeSnapshot.js"
 
 export type SnapshotArgs = {

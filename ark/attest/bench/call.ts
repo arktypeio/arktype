@@ -1,5 +1,5 @@
 import { performance } from "node:perf_hooks"
-import { caller } from "../main.js"
+import { caller } from "@arktype/fs"
 import { chainableNoOpProxy } from "../utils.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"

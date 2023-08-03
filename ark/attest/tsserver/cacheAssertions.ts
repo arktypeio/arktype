@@ -1,9 +1,9 @@
 import { rmSync } from "node:fs"
+import { ensureDir, writeJson } from "@arktype/fs"
 import type { ProjectOptions } from "ts-morph"
 import { Project } from "ts-morph"
 import type { AttestOptions } from "../config.js"
 import { getConfig } from "../config.js"
-import { ensureDir, writeJson } from "../main.js"
 import { writeCachedInlineSnapshotUpdates } from "../snapshot/writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 

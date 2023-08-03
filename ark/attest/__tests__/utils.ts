@@ -1,5 +1,5 @@
 import { copyFileSync, rmSync } from "node:fs"
-import { readFile, shell } from "../src/main.js"
+import { readFile, shell } from "@arktype/fs"
 
 export const runThenGetContents = (templatePath: string) => {
 	const tempPath = templatePath + ".temp.ts"

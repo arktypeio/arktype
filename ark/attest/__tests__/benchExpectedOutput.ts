@@ -1,4 +1,4 @@
-import { bench } from "../src/main.js"
+import { bench } from "@arktype/attest"
 
 const fakeCallOptions = {
 	until: { count: 2 },

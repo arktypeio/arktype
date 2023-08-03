@@ -1,4 +1,4 @@
-import { attest } from "@arktype/test"
+import { attest } from "@arktype/attest"
 import { test } from "mocha"
 
 const o = { ark: "type" } as const

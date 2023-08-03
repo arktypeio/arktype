@@ -18,11 +18,6 @@
 		}
 	},
 	"files": [
-		"dist",
-		"!*.tsbuildinfo"
-	],
-	"scripts": {
-		"build": "ts ../scripts/build.ts",
-		"test": "pnpm mocha"
-	}
+		"dist"
+	]
 }

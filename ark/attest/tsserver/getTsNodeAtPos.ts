@@ -1,7 +1,7 @@
+import { positionToString } from "@arktype/fs"
+import type { SourcePosition } from "@arktype/fs"
 import type { Project } from "ts-morph"
 import { ts } from "ts-morph"
-import type { SourcePosition } from "../utils.js"
-import { positionToString } from "../utils.js"
 
 export const getTsNodeAtPosition = (
 	project: Project,

@@ -1,4 +1,4 @@
-import { throwAssertionError } from "../assertions.js"
+import { throwAssertionError } from "./assertEquals.js"
 import type { AssertionContext } from "./attest.js"
 
 export const callAssertedFunction = (

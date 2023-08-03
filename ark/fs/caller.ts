@@ -43,6 +43,9 @@ export type FormatFilePathOptions = {
 	seperator?: string
 }
 
+export const positionToString = (position: SourcePosition) =>
+	`line ${position.line}, character ${position.char} at path '${position.file}'`
+
 export const formatFilePath = (
 	original: string,
 	{ relative, seperator }: FormatFilePathOptions

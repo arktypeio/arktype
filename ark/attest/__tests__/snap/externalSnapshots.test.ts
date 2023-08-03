@@ -1,7 +1,8 @@
 import * as assert from "node:assert/strict"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { attest, dirName, readJson, writeJson } from "@arktype/test"
+import { attest } from "@arktype/attest"
+import { dirName, readJson, writeJson } from "@arktype/fs"
 import { afterEach, beforeEach, describe, test } from "mocha"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
