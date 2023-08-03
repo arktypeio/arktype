@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url"
 import { Assertions } from "./assertions.js"
 import type { rootAssertions } from "./types.js"
-import { caller, getCallStack } from "../../node/caller.js"
+import { caller, getCallStack } from "../../fs/caller.js"
 import type { AttestConfig } from "../config.js"
 import { getConfig } from "../config.js"
 

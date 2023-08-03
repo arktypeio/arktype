@@ -41,7 +41,14 @@ module.exports = defineConfig({
 			{
 				patterns: [
 					{
-						group: ["**/node/**"],
+						group: [
+							"**/fs/**",
+							"**/attest/**",
+							"**/io/**",
+							"**/schema/**",
+							"**/type/**",
+							"**/util/**"
+						],
 						message: `Use a specifier like '@arktype/util' to import from a package`
 					},
 					{

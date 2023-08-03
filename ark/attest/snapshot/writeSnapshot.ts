@@ -2,8 +2,8 @@ import { existsSync, readdirSync, rmSync } from "node:fs"
 import { basename, join } from "node:path"
 import type { Node, ts } from "ts-morph"
 import { getConfig } from "../config.js"
-import { readJson, writeJson } from "../../node/fs.js"
-import { shell } from "../../node/shell.js"
+import { readJson, writeJson } from "../../fs/fs.js"
+import { shell } from "../../fs/shell.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
 import { getTsMorphProject } from "../tsserver/cacheAssertions.js"
@@ -13,7 +13,6 @@ export type ExternalSnapshotArgs = SnapshotArgs & {
 	name: string
 	customPath: string | undefined
 }
-
 
 export const updateExternalSnapshot = ({
 	serializedValue: value,

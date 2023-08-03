@@ -1,8 +1,6 @@
 import { relative } from "node:path"
 import { ts } from "ts-morph"
 
-
-
 export const positionToString = (position: SourcePosition) =>
 	`line ${position.line}, character ${position.char} at path '${position.file}'`
 
