@@ -24,7 +24,7 @@
 	},
 	"dependencies": {
 		"ts-morph": "19.0.0",
-		"@arktype/util": "0.0.1",
-		"@arktype/fs": "0.0.1"
+		"@arktype/util": "workspace:*",
+		"@arktype/fs": "workspace:*"
 	}
 }
