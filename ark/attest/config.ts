@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { ensureDir, fromCwd } from "../node/fs.js"
+import { ensureDir, fromCwd } from "@arktype/node"
 
 export type AttestConfig = {
 	tsconfig: string | undefined

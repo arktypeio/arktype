@@ -23,7 +23,8 @@
 	],
 	"dependencies": {
 		"ts-morph": "19.0.0",
-		"@arktype/util": "workspace:*"
+		"@arktype/util": "workspace:*",
+		"@arktype/node": "workspace:*"
 	},
 	"scripts": {
 		"build": "ts ../scripts/build.ts",
