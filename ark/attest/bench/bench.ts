@@ -2,7 +2,6 @@ import * as process from "node:process"
 import type { AttestConfig } from "../config.js"
 import { getConfig } from "../config.js"
 import { caller } from "../main.js"
-import { addListener } from "../../node/shell.js"
 import type { SourcePosition } from "../utils.js"
 import { chainableNoOpProxy } from "../utils.js"
 import type { TimeAssertionName } from "./call.js"
@@ -52,7 +51,7 @@ export type InitialBenchAssertions<Fn extends BenchableFunction> =
 const currentSuitePath: string[] = []
 export const unhandledExceptionMessages: string[] = []
 
-addListener("beforeExit", () => {
+process.on("beforeExit", () => {
 	if (unhandledExceptionMessages.length) {
 		console.error(
 			`${unhandledExceptionMessages.length} unhandled exception(s) occurred during your benches (see details above).`

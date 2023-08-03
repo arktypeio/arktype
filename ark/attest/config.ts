@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { ensureDir, fromCwd } from "../node/fs.js"
-import { getParamValue, hasFlag } from "../node/shell.js"
 
 export type AttestConfig = {
 	tsconfig: string | undefined
@@ -65,4 +64,19 @@ export const getConfig = (options?: Partial<AttestConfig>): AttestConfig => {
 	ensureDir(cachedConfig.cacheDir)
 	ensureDir(cachedConfig.snapCacheDir)
 	return cachedConfig
+}
+
+const hasFlag = (flag: string) => process.argv.some((arg) => arg.includes(flag))
+
+const getParamValue = (param: string) => {
+	const paramIndex = process.argv.findIndex((arg) => arg.includes(param))
+	if (paramIndex === -1) {
+		return undefined
+	}
+	const value = process.argv[paramIndex + 1]
+	return value === "true"
+		? true
+		: value === "false"
+		? false
+		: parseFloat(value) ?? value
 }

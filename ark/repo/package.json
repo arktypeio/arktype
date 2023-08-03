@@ -1,10 +1,9 @@
 {
-	"name": "@arktype/scripts",
+	"name": "@arktype/repo",
 	"private": true,
 	"type": "module",
 	"devDependencies": {
-		"ts-morph": "19.0.0",
-		"@arktype/test": "workspace:*"
+		"ts-morph": "19.0.0"
 	},
 	"bin": {
 		"ts": "./ts.cjs"

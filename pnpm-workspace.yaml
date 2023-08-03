@@ -1,2 +1,2 @@
 packages:
-  - "ark/util"
+  - "ark/*"

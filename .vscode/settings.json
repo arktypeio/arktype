@@ -26,7 +26,7 @@
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"typescript.tsdk": "node_modules/typescript/lib",
 	"prettier.ignorePath": "dev/.prettierignore",
-	"prettier.prettierPath": "./node_modules/prettier",
+	"prettier.prettierPath": "./node_modules/prettier/index.cjs",
 	// NOTE: these are also maintained in package.json under "mocha"
 	"mochaExplorer.nodeArgv": [
 		"--loader=ts-node/esm",

@@ -2,6 +2,7 @@
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
 	"license": "MIT",
+	"funding": "https://github.com/arktypeio/arktype?sponsor=1",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -35,9 +36,7 @@
 		"ci:version": "ts ./dev/scripts/updateVersions.ts"
 	},
 	"devDependencies": {
-		"@arktype/scripts": "workspace:*",
-		"@arktype/test": "workspace:*",
-		"@arktype/util": "workspace:*",
+		"@arktype/repo": "workspace:*",
 		"@changesets/changelog-github": "0.4.8",
 		"@changesets/cli": "2.26.2",
 		"@swc/cli": "0.1.62",
@@ -57,7 +56,7 @@
 		"eslint-plugin-prefer-arrow-functions": "3.1.4",
 		"knip": "2.17.2",
 		"mocha": "10.2.0",
-		"prettier": "3.0.0",
+		"prettier": "3.0.1",
 		"prettier-plugin-jsdoc": "1.0.1",
 		"ts-node": "10.9.1",
 		"tsup": "7.1.0",
