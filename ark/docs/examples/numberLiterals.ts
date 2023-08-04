@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { type } from "../type/main.js"
+import { type } from "arktype"
 
 const min = 2 as number
 const max = 2 as number

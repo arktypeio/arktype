@@ -1,5 +1,5 @@
-import { type } from "../type/main.js"
-import type { Type } from "../type/type.js"
+import { type } from "arktype"
+import type { Type } from "arktype"
 
 const createBox = <T extends string>(of: Type<T>) =>
 	type({

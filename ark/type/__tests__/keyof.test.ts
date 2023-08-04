@@ -1,5 +1,5 @@
-import { attest } from "@arktype/test"
-import { node, type } from "../type/main.js"
+import { attest } from "@arktype/attest"
+import { node, type } from "arktype"
 import { suite, test } from "mocha"
 import {
 	writeMissingRightOperandMessage,

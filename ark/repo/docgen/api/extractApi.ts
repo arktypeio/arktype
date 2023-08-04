@@ -1,4 +1,5 @@
 import { join } from "node:path"
+import { readPackageJson } from "@arktype/fs"
 import type {
 	ExportedDeclarations,
 	JSDoc,
@@ -7,7 +8,6 @@ import type {
 	Project,
 	SourceFile
 } from "ts-morph"
-import { readPackageJson } from "../../../attest/src/fs.js"
 
 export type ApiEntryPoint = {
 	subpath: string

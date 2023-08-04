@@ -1,16 +1,8 @@
 import { rm, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, sep } from "node:path"
 import * as process from "node:process"
-
-import {
-	ensureDir,
-	fileName,
-	walkPaths,
-	writeJson
-} from "../../attest/src/fs.js"
-import { shell } from "../../attest/src/shell.js"
-import { repoDirs } from "../common.js"
-import type { DocGenMappedDirsConfig } from "./main.js"
+import { ensureDir, fileName, shell, walkPaths, writeJson } from "@arktype/fs"
+import type { DocGenMappedDirsConfig } from "./docgen.js"
 import type { SnippetsByPath } from "./snippets/extractSnippets.js"
 
 export const mapDir = (

@@ -1,6 +1,6 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { scope, type } from "../type/main.js"
+import { scope, type } from "arktype"
 
 type("(boolean | number | 'foo')[]")
 

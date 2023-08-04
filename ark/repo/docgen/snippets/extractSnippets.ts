@@ -1,7 +1,7 @@
+import { readFile, tsFileMatcher } from "@arktype/fs"
 import type { Project } from "ts-morph"
-import { readFile, tsFileMatcher } from "../../../attest/src/fs.js"
-import type { DocGenSnippetsConfig } from "../main.js"
-import { defaultConfig } from "../main.js"
+import type { DocGenSnippetsConfig } from "../docgen.js"
+import { defaultConfig } from "../docgen.js"
 import type { ExtractionToken } from "./snipTokens.js"
 import {
 	extractionTokens,

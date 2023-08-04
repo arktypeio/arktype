@@ -1,5 +1,5 @@
-import { attest } from "@arktype/test"
-import { scope } from "../type/main.js"
+import { attest } from "@arktype/attest"
+import { scope } from "arktype"
 import { suite, test } from "mocha"
 
 const getCyclicScope = () =>
@@ -100,6 +100,21 @@ suite("cyclic", () => {
 	//         'Must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 	//     )
 	// })
+
+	test("equivalent cycles reduce", () => {
+		// // TODO: reduce this case or create an issue
+		// const $ = scope({
+		//     user: {
+		//         friends: "user[]",
+		//         name: "string"
+		//     },
+		//     admin: {
+		//         friends: "user[]",
+		//         name: "string"
+		//     }
+		// })
+	})
+
 	test("union cyclic reference", () => {
 		const types = scope({
 			a: {

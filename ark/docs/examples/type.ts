@@ -1,4 +1,4 @@
-import { type } from "../type/main.js"
+import { type } from "arktype"
 
 // Definitions are statically parsed and inferred as TS.
 export const user = type({

@@ -1,4 +1,4 @@
-import { scope } from "../type/main.js"
+import { scope } from "arktype"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({

@@ -1,5 +1,5 @@
-import { attest } from "@arktype/test"
-import { arktypes, scope } from "../type/main.js"
+import { attest } from "@arktype/attest"
+import { arktypes, scope } from "arktype"
 import { suite, test } from "mocha"
 
 suite("tsGenerics", () => {

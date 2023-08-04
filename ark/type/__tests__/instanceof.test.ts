@@ -1,6 +1,6 @@
-import { attest } from "@arktype/test"
-import { node, type } from "../type/main.js"
+import { attest } from "@arktype/attest"
 import { suite, test } from "mocha"
+import { node, type } from "arktype"
 import { writeInvalidConstructorMessage } from "../type/parser/tuple.js"
 import type { Ark } from "../type/scopes/ark.js"
 import type { Type } from "../type/type.js"

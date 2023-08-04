@@ -1,4 +1,4 @@
-import { bench } from "@arktype/test"
+import { bench } from "@arktype/attest"
 import { scope, type } from "../../type/main.js"
 
 bench("single-quoted", () => {

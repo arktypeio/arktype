@@ -1,4 +1,4 @@
-import { type } from "../type/main.js"
+import { type } from "arktype"
 
 export const currentTsSyntax = type({
 	keyword: "null",

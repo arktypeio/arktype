@@ -1,6 +1,6 @@
-import { attest } from "@arktype/test"
+import { attest } from "@arktype/attest"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
-import { scope, type } from "../type/main.js"
+import { scope, type } from "arktype"
 import { suite, test } from "mocha"
 import { writeUnresolvableMessage } from "../type/parser/string/shift/operand/unenclosed.js"
 

@@ -1,7 +1,7 @@
-import { attest } from "@arktype/test"
+import { attest } from "@arktype/attest"
 import { lazily } from "@arktype/util"
-import type { Module, Scope } from "../type/main.js"
-import { scope, type } from "../type/main.js"
+import type { Module, Scope } from "arktype"
+import { scope, type } from "arktype"
 import { suite, test } from "mocha"
 import {
 	writeMissingSubmoduleAccessMessage,

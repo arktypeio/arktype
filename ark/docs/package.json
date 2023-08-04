@@ -3,12 +3,13 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"dev": "docusaurus start",
-		"build": "ts ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && ts ../repo/copyCname.ts ",
+		"start": "docusaurus start",
+		"build": "ts ./build.mts",
 		"typecheck": "tsc",
 		"serve": "docusaurus serve --dir dist"
 	},
 	"dependencies": {
+		"@arktype/util": "workspace:*",
 		"@docusaurus/core": "2.4.1",
 		"@docusaurus/plugin-content-docs": "2.4.1",
 		"@docusaurus/plugin-google-gtag": "2.4.1",
@@ -28,6 +29,7 @@
 	},
 	"devDependencies": {
 		"arktype": "workspace:*",
+		"@arktype/fs": "workspace:*",
 		"@docusaurus/module-type-aliases": "2.4.1",
 		"@docusaurus/types": "2.4.1",
 		"@tsconfig/docusaurus": "1.0.7",

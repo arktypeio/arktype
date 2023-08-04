@@ -1,6 +1,6 @@
-import { attest } from "@arktype/test"
-import { node, type } from "../type/main.js"
+import { attest } from "@arktype/attest"
 import { suite, test } from "mocha"
+import { node, type } from "arktype"
 import { writeIndivisibleMessage } from "../type/parser/semantic/divisor.js"
 import {
 	writeMissingRightOperandMessage,

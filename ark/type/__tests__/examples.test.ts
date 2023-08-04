@@ -1,4 +1,4 @@
-import { attest } from "@arktype/test"
+import { attest } from "@arktype/attest"
 import { suite, test } from "mocha"
 
 suite("snippets", () => {

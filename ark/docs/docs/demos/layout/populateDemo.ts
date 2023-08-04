@@ -1,12 +1,13 @@
 import "./demo.css"
+import { stringify } from "@arktype/util"
 import type { Problems, Type } from "arktype"
-import { stringify } from "arktype/internal/utils/serialize.js"
 
 type PopulateDemoArgs = {
 	type: Type
 	data: unknown
 	problems: Problems
 }
+
 export const populateDemo = ({ data, type, problems }: PopulateDemoArgs) => {
 	const defElement = document.querySelector("#definition")!
 	defElement.textContent = stringify(type.definition, 2)

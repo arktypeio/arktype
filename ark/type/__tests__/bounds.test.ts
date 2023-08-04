@@ -1,6 +1,6 @@
-import { attest } from "@arktype/test"
+import { attest } from "@arktype/attest"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
-import { node, type } from "../type/main.js"
+import { node, type } from "arktype"
 import { suite, test } from "mocha"
 import { writeIncompatibleRangeMessage } from "../type/nodes/primitive/bound.js"
 import {

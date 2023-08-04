@@ -1,6 +1,6 @@
-import { attest } from "@arktype/test"
-import type { TypeNode } from "../type/main.js"
-import { type } from "../type/main.js"
+import { attest } from "@arktype/attest"
+import type { TypeNode } from "arktype"
+import { type } from "arktype"
 import { suite, test } from "mocha"
 import { writeUnsatisfiableExpressionError } from "../type/parser/semantic/validate.js"
 

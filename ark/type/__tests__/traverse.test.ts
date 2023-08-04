@@ -1,6 +1,6 @@
-import { attest } from "@arktype/test"
-import { scope, type } from "../type/main.js"
+import { attest } from "@arktype/attest"
 import { suite, test } from "mocha"
+import { scope, type } from "arktype"
 
 suite("traverse", () => {
 	test("divisible", () => {

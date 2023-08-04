@@ -1,7 +1,5 @@
 import { join } from "node:path"
-import { readFile, readJson, writeFile } from "../../../attest/src/fs.js"
-import { shell } from "../../../attest/src/shell.js"
-import { repoDirs } from "../../common.js"
+import { readFile, readJson, shell, writeFile } from "@arktype/fs"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 

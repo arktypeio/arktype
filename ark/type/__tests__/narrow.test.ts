@@ -1,6 +1,6 @@
-import { attest } from "@arktype/test"
+import { attest } from "@arktype/attest"
 import type { equals } from "@arktype/util"
-import { type } from "../type/main.js"
+import { type } from "arktype"
 import { suite, test } from "mocha"
 import type { Ark } from "../type/scopes/ark.js"
 import type { Type } from "../type/type.js"
