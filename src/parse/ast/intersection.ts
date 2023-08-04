@@ -9,7 +9,6 @@ import type {
     extractValues,
     isAny,
     List,
-    stringKeyOf,
     tryCatch
 } from "../../utils/generics.js"
 import { objectKeysOf } from "../../utils/generics.js"
@@ -42,7 +41,9 @@ type inferIntersectionRecurse<
     ? bubblePropErrors<
           evaluate<
               {
-                  [k in stringKeyOf<l>]: k extends keyof r
+                  [k in keyof l as k extends string
+                      ? k
+                      : never]: k extends keyof r
                       ? inferIntersectionRecurse<l[k], r[k], [...path, k]>
                       : l[k]
               } & Omit<r, keyof l>
