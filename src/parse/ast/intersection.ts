@@ -43,9 +43,11 @@ type inferIntersectionRecurse<
               {
                   [k in keyof l as k extends string
                       ? k
-                      : never]: k extends keyof r
-                      ? inferIntersectionRecurse<l[k], r[k], [...path, k]>
-                      : l[k]
+                      : never]: k extends string
+                      ? k extends keyof r
+                          ? inferIntersectionRecurse<l[k], r[k], [...path, k]>
+                          : l[k]
+                      : never
               } & Omit<r, keyof l>
           >
       >
