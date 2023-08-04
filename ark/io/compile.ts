@@ -123,3 +123,9 @@ export const compilePropAccess = (name: string, optional = false) =>
 
 // narrow
 // 	return `${registry().register(this.rule)}(${In})`
+
+// compile() {
+// 	return this.rule === "object"
+// 		? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
+// 		: `typeof ${In} === "${this.rule}"`
+// }

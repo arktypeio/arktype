@@ -1,89 +1,70 @@
-import type { AbstractableConstructor, Domain, extend } from "@arktype/util"
-import { cached, constructorExtends, throwInternalError } from "@arktype/util"
-import type { DisjointKindEntries } from "../disjoint.js"
+import type { AbstractableConstructor, Domain, evaluate } from "@arktype/util"
+import {
+	constructorExtends,
+	getExactBuiltinConstructorName,
+	objectKindDescriptions,
+	throwInternalError
+} from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { Constraint } from "./constraint.js"
 
-export type BasisNodeConfig = NodeConfig & { intersection: Node<BasisKind> }
+type BasisRulesByKind = {
+	domain: NonEnumerableDomain
+	constructor: AbstractableConstructor
+}
 
-export class BasisConstraint<
-	config extends BasisNodeConfig
-> extends Constraint<config> {
-	abstract kind: BasisKind
-	abstract domain: Domain
-	abstract literalKeys: PropertyKey[]
+export type BasisKind = evaluate<keyof BasisRulesByKind>
 
-	keyof = cached(() => node.unit(...this.literalKeys))
+export type BasisRule<kind extends BasisKind = BasisKind> =
+	BasisRulesByKind[kind]
 
-	intersect(
-		this: Node<BasisKind>,
-		other: Node<BasisKind>
-	): Node<BasisKind> | Disjoint {
-		if (this.hasKind("class") && other.hasKind("class")) {
-			return constructorExtends(this.rule, other.rule)
-				? this
-				: constructorExtends(other.rule, this.rule)
-				? other
-				: Disjoint.from("class", this, other)
+export class BasisConstraint extends Constraint<BasisRule> {
+	readonly basisKind: BasisKind =
+		typeof this.rule === "string" ? "domain" : "constructor"
+
+	readonly domain: NonEnumerableDomain =
+		this.basisKind === "domain" ? (this.rule as NonEnumerableDomain) : "object"
+
+	intersectRules(other: BasisConstraint) {
+		if (this.rule === other.rule) {
+			return this.rule
 		}
-		const disjointEntries: DisjointKindEntries = []
-		if (this.domain !== other.domain) {
-			disjointEntries.push(["domain", { l: this, r: other }])
-		}
-		if (this.hasKind("unit") && other.hasKind("unit")) {
-			if (this.rule !== other.rule) {
-				disjointEntries.push(["unit", { l: this, r: other }])
+		if (typeof this.rule === "function") {
+			if (other.rule === "object") {
+				return this.rule
+			}
+			if (typeof other.rule === "function") {
+				return constructorExtends(this.rule, other.rule)
+					? this.rule
+					: constructorExtends(other.rule, this.rule)
+					? other.rule
+					: Disjoint.from("class", this, other)
 			}
 		}
-		return disjointEntries.length
-			? Disjoint.fromEntries(disjointEntries)
-			: basisPrecedenceByKind[this.kind] < basisPrecedenceByKind[other.kind]
-			? this
-			: basisPrecedenceByKind[other.kind] < basisPrecedenceByKind[this.kind]
-			? other
-			: throwInternalError(
-					`Unexpected non-disjoint intersection from basis nodes with equal precedence ${this} and ${other}`
-			  )
+		if (typeof other.rule === "function") {
+			if (this.rule === "object") {
+				return other.rule
+			}
+		}
+		return Disjoint.from("domain", this, other)
+	}
+
+	writeDefaultDescription() {
+		if (typeof this.rule === "string") {
+			return domainDescriptions[this.rule]
+		}
+		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
+		return possibleObjectKind
+			? objectKindDescriptions[possibleObjectKind]
+			: `an instance of ${this.rule.name}`
 	}
 }
 
-export type BasisKind = satisfy<NodeKind, "domain" | "class" | "unit">
-
-export type BasisInput =
-	| Domain
-	| AbstractableConstructor
-	| readonly ["===", unknown]
-
-export const basisPrecedenceByKind: Record<BasisKind, number> = {
-	unit: 0,
-	class: 1,
-	domain: 2
-}
-
-export type NonEnumerableDomain = Exclude<
-	Domain,
-	"null" | "undefined" | "boolean"
->
-
-export class DomainNode extends BasisNodeBase<{
-	rule: NonEnumerableDomain
-	intersection: Node<BasisKind>
-	meta: {}
-}> {
-	readonly kind = "domain"
-	readonly literalKeys = getBaseDomainKeys(this.rule)
-	readonly domain = this.rule
-
-	compile() {
-		return this.rule === "object"
-			? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-			: `typeof ${In} === "${this.rule}"`
-	}
-
-	describe() {
-		return domainDescriptions[this.rule]
-	}
-}
+// hasBasisKind<kind extends BasisKind>(
+// 	kind: kind
+// ): this is BasisConstraint<kind> {
+// 	return this.basisKind === (kind as never)
+// }
 
 /** Each domain's completion for the phrase "Must be _____" */
 export const domainDescriptions = {
@@ -97,52 +78,11 @@ export const domainDescriptions = {
 	undefined: "undefined"
 } as const satisfies Record<Domain, string>
 
-export type UnitNodeMeta = {
-	parsedFrom?: DateLiteral
-}
-
-export class UnitNode extends BasisNodeBase<{
-	rule: unknown
-	intersection: Node<BasisKind>
-	meta: UnitNodeMeta
-}> {
-	readonly kind = "unit"
-	readonly literalKeys =
-		this.rule === null || this.rule === undefined
-			? []
-			: [...prototypeKeysOf(this.rule), ...Object.keys(this.rule)]
-	readonly serialized = compileSerializedValue(this.rule)
-	readonly domain = domainOf(this.rule)
-
-	compile() {
-		return this.rule instanceof Date
-			? `${In}.valueOf() === ${this.rule.valueOf()}`
-			: `${In} === ${this.serialized}`
-	}
-
-	describe() {
-		return this.meta.parsedFrom
-			? extractDateLiteralSource(this.meta.parsedFrom)
-			: stringify(this.rule)
-	}
-}
-
-export class ConstructorConstraint extends Constraint<AbstractableConstructor> {
-	writeDefaultDescription() {
-		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
-		return possibleObjectKind
-			? objectKindDescriptions[possibleObjectKind]
-			: `an instance of ${this.rule.name}`
-	}
-
-	intersectRules(other: ConstructorConstraint) {
-		return constructorExtends(this.rule, other.rule)
-			? this.rule
-			: constructorExtends(other.rule, this.rule)
-			? other.rule
-			: Disjoint.from("class", this, other)
-	}
-}
+// only domains with an infinite number of values are allowed as bases
+export type NonEnumerableDomain = Exclude<
+	Domain,
+	"null" | "undefined" | "boolean"
+>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 

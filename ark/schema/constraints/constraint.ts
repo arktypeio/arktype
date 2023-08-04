@@ -4,7 +4,6 @@ import type { AttributesRecord } from "../attributes/attribute.js"
 import type { DescriptionAttribute } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"
 import type { IntersectableRecord } from "../shared.js"
-import type { NarrowSet } from "./narrow.js"
 
 export type ConstraintAttributes<attributes extends AttributesRecord> = extend<
 	{ readonly description?: DescriptionAttribute },
@@ -25,10 +24,7 @@ export abstract class Constraint<
 
 	abstract writeDefaultDescription(): string
 
-	// For constraints whose rules overlap with null and/or Disjoint, we can't
-	// use the rule to determine the result of the intersection, so we allow
-	// returning the full instance instead.
-	abstract intersectRules(other: this): this | rule | Disjoint | null
+	abstract intersectRules(other: this): rule | Disjoint | null
 
 	equals(other: this) {
 		return this.id === other.id
@@ -39,13 +35,12 @@ export abstract class Constraint<
 		if (ruleIntersection === null || ruleIntersection instanceof Disjoint) {
 			// Ensure the signature of this method reflects whether Disjoint and/or null
 			// are possible intersection results for the subclass.
-			return ruleIntersection as Constraint<unknown> extends this
-				? Disjoint | null
-				: Extract<ReturnType<this["intersectRules"]>, null | Disjoint>
+			return ruleIntersection as Extract<
+				ReturnType<this["intersectRules"]>,
+				null | Disjoint
+			>
 		}
-		return ruleIntersection instanceof Constraint
-			? ruleIntersection
-			: (new (this.constructor as any)(ruleIntersection) as this)
+		return new (this.constructor as any)(ruleIntersection) as this
 	}
 }
 

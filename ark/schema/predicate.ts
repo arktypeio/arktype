@@ -7,6 +7,7 @@ import type { ConstraintsRecord } from "./constraints/constraint.js"
 import { EqualityConstraint } from "./constraints/equality.js"
 import type { NarrowSet } from "./constraints/narrow.js"
 import { Disjoint } from "./disjoint.js"
+import type { NonEnumerableDomain } from "./old/primitive/domain.js"
 import { TypeNode } from "./type.js"
 
 export class PredicateNode<
@@ -58,8 +59,42 @@ export class PredicateNode<
 	}
 }
 
-export type DomainConstraints = { readonly narrow?: NarrowSet }
-export type UnitConstraints = { readonly value?: EqualityConstraint }
+export type UnknownConstraints = {
+	readonly narrow?: NarrowSet
+}
+
+export type DomainConstraints<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> = extend<
+	UnknownConstraints,
+	{
+		readonly basis: {}
+	}
+>
+
+export type UnitConstraints = {
+	readonly value?: EqualityConstraint
+}
+
+export type NumberConstraints = extend<
+	DomainConstraints,
+	{
+		readonly range?: BoundSet
+		readonly divisor?: DivisibilityConstraint
+	}
+>
+
+export type ObjectConstraints<constraints extends ConstraintsRecord> = extend<
+	DomainConstraints,
+	{
+		readonly instanceOf?: ConstructorConstraint
+	} & constraints
+>
+
+export type StringConstraints = {
+	readonly length?: BoundSet
+	readonly pattern?: RegexSet
+}
 
 // TODO: add minLength prop that would result from collapsing types like [...number[], number]
 // to a single variadic number prop with minLength 1
@@ -77,26 +112,3 @@ export type DateConstraints = extend<
 		readonly range?: BoundSet
 	}
 >
-
-export type NumberConstraints = extend<
-	DomainConstraints,
-	{
-		readonly range?: BoundSet
-		readonly divisor?: DivisibilityConstraint
-	}
->
-
-export class ObjectNode<
-	constraints extends ObjectConstraints<ConstraintsRecord>
-> extends PredicateNode<constraints> {
-	readonly domain = "object"
-
-	override writeDefaultBaseDescription() {
-		return "an object"
-	}
-}
-
-export type StringConstraints = {
-	readonly length?: BoundSet
-	readonly pattern?: RegexSet
-}
