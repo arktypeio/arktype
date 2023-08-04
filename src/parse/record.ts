@@ -39,10 +39,10 @@ type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
 
 export type inferRecord<def extends Dict, $> = evaluate<
     {
-        [requiredKeyName in keyof def as requiredKeyName extends optionalKeyOf<def>
-            ? never
-            : requiredKeyName]: inferDefinition<
-            def[withPossiblePreviousEscapeCharacter<requiredKeyName>],
+        [k in keyof def as k extends requiredKeyOf<def>
+            ? k
+            : never]: inferDefinition<
+            def[withPossiblePreviousEscapeCharacter<k>],
             $
         >
     } & {
@@ -72,4 +72,11 @@ type optionalKeyOf<def> = {
         : never
 }[keyof def] &
     // ensure keyof is fully evaluated for inferred types
+    unknown
+
+type requiredKeyOf<def> = {
+    [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, false>
+        ? name
+        : never
+}[keyof def] &
     unknown
