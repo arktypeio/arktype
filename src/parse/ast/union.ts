@@ -5,6 +5,7 @@ import type {
     error,
     extractValues,
     isAny,
+    optionalKeyOf,
     requiredKeyOf
 } from "../../utils/generics.js"
 import type { objectKindOf } from "../../utils/objectKinds.js"
@@ -42,8 +43,14 @@ type discriminatableRecurse<
     : [objectKindOf<l>, objectKindOf<r>] extends ["Object", "Object"]
     ? extractValues<
           {
-              [k in requiredKeyOf<l>]: k extends requiredKeyOf<r>
-                  ? discriminatableRecurse<l[k], r[k], [...path, k & string]>
+              [k in keyof l as k extends optionalKeyOf<l>
+                  ? never
+                  : k]: k extends requiredKeyOf<r>
+                  ? discriminatableRecurse<
+                        l[k],
+                        r[k],
+                        [...path, k & string]
+                    > & { _: l }
                   : never
           },
           string[]
