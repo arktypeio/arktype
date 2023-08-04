@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.js"
 
 const ab = { a: "1", b: 1 }
-describe("= JSDoc =", () => {
+describe("JSDoc", () => {
     // Note: `<#` are not checked, they are for understandability
     it("objects keep JSDoc", () => {
         type({

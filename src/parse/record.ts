@@ -46,6 +46,11 @@ export type inferRecord<def extends Dict, $> = evaluate<
             $
         >
     } & {
+        [k in Exclude<requiredKeyOf<def>, keyof def>]: inferDefinition<
+            def[withPossiblePreviousEscapeCharacter<k>],
+            $
+        >
+    } & {
         [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
             def[`${optionalKeyName}?`],
             $
