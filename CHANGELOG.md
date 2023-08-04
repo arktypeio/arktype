@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.19-alpha
+
+### Patch Changes
+
+-   Make types keep JSDoc for required keys
+
 ## 1.0.18-alpha
 
 ### Patch Changes
