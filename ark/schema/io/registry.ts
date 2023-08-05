@@ -14,6 +14,7 @@ export type ArkKinds = {
 	generic: Generic
 	module: Module
 }
+
 export const arkKind = Symbol("ArkTypeInternalKind")
 
 export const addArkKind = <kind extends ArkKind>(

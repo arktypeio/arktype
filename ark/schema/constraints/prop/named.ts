@@ -4,11 +4,11 @@ import {
 	compilePropAccess,
 	In
 } from "../../compiler/compile.js"
+import { builtins } from "../../utils.js"
 import { NodeBase } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput } from "../parse.js"
 import type { TypeNode } from "../type.js"
-import { builtins } from "../union/utils.js"
 
 export const intersectNamedProp = (
 	l: NamedPropRule,

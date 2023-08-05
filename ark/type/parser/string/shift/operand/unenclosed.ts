@@ -1,3 +1,4 @@
+import type { TypeNode } from "@arktype/schema"
 import type { BigintLiteral, error, join, NumberLiteral } from "@arktype/util"
 import {
 	stringify,
@@ -5,9 +6,6 @@ import {
 	tryParseWellFormedBigint,
 	tryParseWellFormedNumber
 } from "@arktype/util"
-import { hasArkKind } from "../../../../compiler/registry.js"
-import { node } from "../../../../nodes/parse.js"
-import type { TypeNode } from "../../../../nodes/type.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { ParsedArgs } from "../../../generic.js"

@@ -1,18 +1,10 @@
+import type { BoundConstraint, Comparator, TypeNode } from "@arktype/schema"
+import { minComparators } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
-import type {
-	Bound,
-	Comparator,
-	LimitLiteral,
-	MinBound,
-	MinComparator
-} from "../../../nodes/primitive/bound.js"
-import {
-	invertedComparators,
-	minComparators
-} from "../../../nodes/primitive/bound.js"
-import type { TypeNode } from "../../../nodes/type.js"
 import type { ParseContext } from "../../../scope.js"
+import type { LimitLiteral } from "../shift/operator/bounds.js"
+import { invertedComparators } from "../shift/operator/bounds.js"
 import { Scanner } from "../shift/scanner.js"
 import type { StringifiablePrefixOperator } from "./shared.js"
 import {
@@ -25,7 +17,7 @@ import {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound?: MinBound
+	leftBound?: BoundConstraint<"min">
 	"&"?: TypeNode
 	"|"?: TypeNode
 }

@@ -1,14 +1,19 @@
-import type { ParseContext } from "../scope.js"
-import type { inferDefinition, validateDefinition } from "./definition.js"
-import type { validateString } from "./semantic/validate.js"
-import { IndexedKey, OptionalValue, validateObjectValue } from "./shared.js"
-import { EntryParseResult, parseEntry } from "./shared.js"
 import {
 	type Dict,
 	type error,
 	type evaluate,
 	type mutable
 } from "@arktype/util"
+import type { ParseContext } from "../scope.js"
+import type { inferDefinition, validateDefinition } from "./definition.js"
+import type { validateString } from "./semantic/validate.js"
+import { parseEntry } from "./shared.js"
+import type {
+	EntryParseResult,
+	IndexedKey,
+	OptionalValue,
+	validateObjectValue
+} from "./shared.js"
 
 const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 	...Object.entries(o),

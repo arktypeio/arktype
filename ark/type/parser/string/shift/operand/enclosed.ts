@@ -1,13 +1,8 @@
 import { isKeyOf } from "@arktype/util"
-import { TypeNode } from "../../../../main.js"
-import { node } from "../../../../nodes/parse.js"
-import { PredicateNode } from "../../../../nodes/predicate/predicate.js"
-import { UnitNode } from "../../../../nodes/primitive/unit.js"
 import type { RegexLiteral } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
-import type { DateLiteral } from "./date.js"
 import { tryParseDate, writeInvalidDateMessage } from "./date.js"
 
 export type StringLiteral<Text extends string = string> =

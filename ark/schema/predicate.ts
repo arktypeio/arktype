@@ -14,7 +14,7 @@ import { Disjoint } from "./disjoint.js"
 import { TypeNode } from "./type.js"
 
 export class PredicateNode<
-	constraints extends ConstraintsRecord,
+	constraints extends ConstraintsRecord = ConstraintsRecord,
 	attributes extends AttributesRecord = UniversalAttributes
 > extends TypeNode<attributes> {
 	declare readonly id: string
@@ -25,6 +25,8 @@ export class PredicateNode<
 	) {
 		super(attributes)
 	}
+
+	readonly references: readonly TypeNode[] = this.props?.references ?? []
 
 	readonly flat = Object.values(this.constraints).flat()
 	readonly unit =
@@ -60,7 +62,63 @@ export class PredicateNode<
 		}
 		return result
 	}
+
+	compile(ctx: CompilationContext) {
+		return ""
+		// // TODO: can props imply object basis for compilation?
+		// let result = ""
+		// this.basis && ctx.bases.push(this.basis)
+		// for (const child of children) {
+		//     const childResult = child.hasKind("props")
+		//         ? child.compile(ctx)
+		//         : compileCheck(
+		//               // TODO: fix
+		//               child.kind === "narrow" ? "custom" : child.kind,
+		//               child.rule,
+		//               child.compile(ctx),
+		//               ctx
+		//           )
+		//     if (childResult) {
+		//         result = result ? `${result}\n${childResult}` : childResult
+		//     }
+		// }
+		// this.basis && ctx.bases.pop()
+		// return result
+	}
+
+	// keyof(): TypeNode {
+	// 	if (!this.basis) {
+	// 		return builtins.never()
+	// 	}
+	// 	const propsKey = this.props?.keyof()
+	// 	return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
+	// }
+
+	// constrain<kind extends ConstraintKind>(
+	// 	kind: kind,
+	// 	rule: InputDefinitions,
+	// 	// TODO: Fix NodeInputs
+	// 	meta: {}
+	// ): PredicateNode {
+	// 	// TODO: this cast shouldn't be needed
+	// 	const constraint = createNode([kind, rule, meta as never])
+	// 	assertAllowsConstraint(this.basis, constraint)
+	// 	const result = this.intersect(
+	// 		// TODO: fix cast
+	// 		new PredicateNode({ [kind]: constraint as never }, this.meta)
+	// 	)
+	// 	if (result instanceof Disjoint) {
+	// 		return result.throw()
+	// 	}
+	// 	return result
+	// }
 }
+
+// throwParseError(
+//     `'${k}' is not a valid constraint name (must be one of ${Object.keys(
+//         constraintsByPrecedence
+//     ).join(", ")})`
+// )
 
 export type UnitConstraints = {
 	readonly value?: EqualityConstraint
@@ -114,3 +172,22 @@ export type DateConstraints = extend<
 		readonly range?: BoundSet
 	}
 >
+
+// // TODO: naming
+// export const constraintsByPrecedence: Record<
+// 	BasisKind | RefinementKind,
+// 	number
+// > = {
+// 	// basis
+// 	domain: 0,
+// 	class: 0,
+// 	unit: 0,
+// 	// shallow
+// 	bound: 1,
+// 	divisor: 1,
+// 	regex: 1,
+// 	// deep
+// 	props: 2,
+// 	// narrow
+// 	narrow: 3
+// }

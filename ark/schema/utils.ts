@@ -1,7 +1,7 @@
 import { cached } from "@arktype/util"
-import { node } from "../parse.js"
-import { arrayIndexInput } from "../prop/indexed.js"
-import type { TypeNode } from "../type.js"
+import { node } from "./old/parse.js"
+import { arrayIndexInput } from "./old/prop/indexed.js"
+import type { TypeNode } from "./old/type.js"
 
 // TODO: integrate with default scopes
 export const builtins = {

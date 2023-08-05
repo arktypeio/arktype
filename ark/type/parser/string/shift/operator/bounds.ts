@@ -1,11 +1,5 @@
 import type { keySet } from "@arktype/util"
 import { isKeyOf, tryParseWellFormedNumber } from "@arktype/util"
-import type {
-	Comparator,
-	LimitLiteral,
-	MaxComparator
-} from "../../../../nodes/primitive/bound.js"
-import { maxComparators } from "../../../../nodes/primitive/bound.js"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
@@ -13,6 +7,7 @@ import type {
 } from "../../reduce/dynamic.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
+import type { DateLiteral } from "../operand/date.js"
 import { isDateLiteral } from "../operand/date.js"
 import { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
@@ -50,6 +45,30 @@ export type parseBound<
 			: parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
 		: shiftResultOrError
 	: never
+
+export const minComparators = {
+	">": true,
+	">=": true
+} as const
+
+export type MinComparator = keyof typeof minComparators
+
+export const maxComparators = {
+	"<": true,
+	"<=": true
+} as const
+
+export type MaxComparator = keyof typeof maxComparators
+
+export const comparators = {
+	...minComparators,
+	...maxComparators,
+	"==": true
+}
+
+export type Comparator = keyof typeof comparators
+
+export type LimitLiteral = number | DateLiteral
 
 const oneCharComparators = {
 	"<": true,
@@ -179,7 +198,8 @@ export const invertedComparators = {
 	"<": ">",
 	">": "<",
 	"<=": ">=",
-	">=": "<="
+	">=": "<=",
+	"==": "=="
 } as const satisfies Record<Comparator, Comparator>
 
 export type InvertedComparators = typeof invertedComparators

@@ -5,7 +5,7 @@ import type { TypeInput } from "../parse.js"
 import { node } from "../parse.js"
 import { sourceFromRegexLiteral } from "../primitive/regex.js"
 import type { TypeNode } from "../type.js"
-import { builtins } from "../union/utils.js"
+import { builtins } from "../../utils.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp, compileNamedProps } from "./named.js"
 

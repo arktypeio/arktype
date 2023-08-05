@@ -1,10 +1,9 @@
+import type { Comparator, MinComparator } from "@arktype/schema"
 import type {
-	Comparator,
 	InvertedComparators,
-	LimitLiteral,
-	MinComparator
-} from "../../../nodes/primitive/bound.js"
-import { invertedComparators } from "../../../nodes/primitive/bound.js"
+	LimitLiteral
+} from "../shift/operator/bounds.js"
+import { invertedComparators } from "../shift/operator/bounds.js"
 
 export type StringifiablePrefixOperator = "keyof"
 

@@ -1,6 +1,5 @@
 import { throwParseError } from "@arktype/util"
 import type { error, join, nominal } from "@arktype/util"
-import type { TypeNode } from "../main.js"
 import type { ParseContext } from "../scope.js"
 import { DynamicState } from "./string/reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "./string/reduce/shared.js"

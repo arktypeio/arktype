@@ -1,3 +1,4 @@
+import type { TypeNode } from "@arktype/schema"
 import type {
 	AbstractableConstructor,
 	BuiltinObjectKind,
@@ -14,12 +15,6 @@ import {
 	stringify,
 	throwParseError
 } from "@arktype/util"
-import type { Problem } from "../compiler/problems.js"
-import type { CheckResult, TraversalState } from "../compiler/traverse.js"
-import { node } from "../nodes/parse.js"
-import { arrayIndexTypeNode } from "../nodes/prop/indexed.js"
-import type { TypeNode } from "../nodes/type.js"
-import { builtins } from "../nodes/union/utils.js"
 import type { ParseContext } from "../scope.js"
 import type { extractIn, extractOut } from "../type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -29,14 +24,10 @@ import {
 	type PostfixExpression
 } from "./semantic/semantic.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
+import type { EntryParseResult, validateObjectValue } from "./shared.js"
+import { OptionalStringDefinition, parseEntry } from "./shared.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
-import {
-	EntryParseResult,
-	OptionalStringDefinition,
-	parseEntry,
-	validateObjectValue
-} from "./shared.js"
 
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)

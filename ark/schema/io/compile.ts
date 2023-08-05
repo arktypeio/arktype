@@ -1,8 +1,7 @@
 import type { SerializablePrimitive } from "@arktype/util"
 import { hasDomain, serializePrimitive } from "@arktype/util"
-import type { Node } from "../nodes/kinds.js"
-import type { BasisKind } from "../nodes/primitive/basis.js"
-import type { Discriminant } from "../nodes/union/discriminate.js"
+import type { BasisConstraint } from "../constraints/basis.js"
+import type { Discriminant } from "../discriminate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
@@ -16,7 +15,7 @@ export type CompilationContext = {
 	failureKind: CompiledFailureKind
 	path: CompiledPathSegment[]
 	discriminants: Discriminant[]
-	bases: Node<BasisKind>[]
+	bases: BasisConstraint[]
 }
 
 export const createCompilationContext = (

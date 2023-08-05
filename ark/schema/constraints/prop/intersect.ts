@@ -1,7 +1,7 @@
 import { hasKeys } from "@arktype/util"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import { builtins } from "../union/utils.js"
+import { builtins } from "../../utils.js"
 import type { NamedPropRule } from "./named.js"
 import { intersectNamedProp } from "./named.js"
 import { PropsNode } from "./props.js"

@@ -44,7 +44,6 @@ module.exports = defineConfig({
 						group: [
 							"**/fs/**",
 							"**/attest/**",
-							"**/io/**",
 							"**/schema/**",
 							"**/type/**",
 							"**/util/**"

@@ -18,10 +18,6 @@ import {
 	stringify,
 	throwParseError
 } from "@arktype/util"
-import { hasArkKind } from "../compiler/registry.js"
-import { node } from "../nodes/parse.js"
-import { serializeRegex } from "../nodes/primitive/regex.js"
-import type { TypeNode } from "../nodes/type.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type {

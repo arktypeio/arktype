@@ -1,5 +1,6 @@
 {
 	"name": "@arktype/schema",
+	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",

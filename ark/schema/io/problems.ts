@@ -12,12 +12,12 @@ import {
 	objectKindDescriptions,
 	stringify
 } from "@arktype/util"
-import { numericComparatorDescriptions } from "../nodes/primitive/bound.js"
+import { domainDescriptions } from "../constraints/basis.js"
 import type {
-	Bound,
+	BoundRule,
 	NumericallyBoundableData
-} from "../nodes/primitive/bound.js"
-import { domainDescriptions } from "../nodes/primitive/domain.js"
+} from "../constraints/bound.js"
+import { numericComparatorDescriptions } from "../constraints/bound.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems
@@ -216,7 +216,7 @@ export class KeyProblem extends Problem<KeyProblemKind> {
 	mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class BoundProblem extends Problem<Bound, NumericallyBoundableData> {
+export class BoundProblem extends Problem<BoundRule, NumericallyBoundableData> {
 	readonly code = "bound"
 
 	get mustBe() {

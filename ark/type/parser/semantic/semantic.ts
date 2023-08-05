@@ -1,5 +1,4 @@
-import type { BigintLiteral, error, List, NumberLiteral } from "@arktype/util"
-import type { Comparator } from "../../nodes/primitive/bound.js"
+import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
 import type {
 	resolve,
 	tryInferSubmoduleReference,

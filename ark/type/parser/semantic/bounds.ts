@@ -1,13 +1,10 @@
+import type { Comparator, NumericallyBoundableData } from "@arktype/schema"
 import type { error } from "@arktype/util"
-import type {
-	Comparator,
-	InvertedComparators,
-	LimitLiteral,
-	NumericallyBoundableData
-} from "../../nodes/primitive/bound.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {
 	BoundKind,
+	InvertedComparators,
+	LimitLiteral,
 	writeInvalidLimitMessage
 } from "../string/shift/operator/bounds.js"
 import type { inferAst } from "./semantic.js"

@@ -11,12 +11,9 @@ import type {
 	mutable,
 	SerializedPrimitive
 } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
-import type { SerializedPath } from "../disjoint.js"
-import type { Node } from "../kinds.js"
-import type { PredicateNode } from "../predicate/predicate.js"
-import type { BasisKind } from "../primitive/basis.js"
-import type { UnitNode } from "../primitive/unit.js"
+import type { BasisConstraint } from "./constraints/basis.js"
+import type { SerializedPath } from "./disjoint.js"
+import type { PredicateNode, UnitConstraints } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -109,11 +106,11 @@ export const discriminate = (
 				let lSerialized: string
 				let rSerialized: string
 				if (kind === "domain") {
-					lSerialized = (disjoint.l as Node<BasisKind>).domain
-					rSerialized = (disjoint.r as Node<BasisKind>).domain
+					lSerialized = (disjoint.l as BasisConstraint).domain
+					rSerialized = (disjoint.r as BasisConstraint).domain
 				} else if (kind === "value") {
-					lSerialized = (disjoint.l as UnitNode).serialized
-					rSerialized = (disjoint.r as UnitNode).serialized
+					lSerialized = (disjoint.l as UnitConstraints).serialized
+					rSerialized = (disjoint.r as UnitConstraints).serialized
 				} else {
 					return throwInternalError(
 						`Unexpected attempt to discriminate disjoint kind '${kind}'`

@@ -15,4 +15,8 @@ export abstract class TypeNode<
 	equals(other: TypeNode) {
 		return this.id === other.id
 	}
+
+	toString() {
+		return this.attributes.description ?? this.writeDefaultDescription()
+	}
 }

@@ -1,13 +1,12 @@
-import type { defined, error } from "@arktype/util"
 import type {
-	Bound,
+	BoundConstraint,
+	BoundRule,
 	Comparator,
-	InvertedComparators,
-	LimitLiteral,
 	MaxComparator,
-	MinBound,
 	MinComparator
-} from "../../../nodes/primitive/bound.js"
+} from "@arktype/schema"
+import type { defined, error } from "@arktype/util"
+import type { LimitLiteral } from "../shift/operator/bounds.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
 	StringifiablePrefixOperator,
@@ -31,7 +30,7 @@ export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound: MinBound | undefined
+	leftBound: BoundRule<"min"> | undefined
 	"&": unknown
 	"|": unknown
 }
