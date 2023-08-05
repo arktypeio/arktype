@@ -3,11 +3,14 @@ import type {
 	AttributesRecord,
 	UniversalAttributes
 } from "./attributes/attribute.js"
+import type { BasisRule } from "./constraints/basis.js"
+import type { BoundSet } from "./constraints/bound.js"
 import type { ConstraintsRecord } from "./constraints/constraint.js"
+import type { DivisibilityConstraint } from "./constraints/divisibility.js"
 import { EqualityConstraint } from "./constraints/equality.js"
 import type { NarrowSet } from "./constraints/narrow.js"
+import type { RegexSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
-import type { NonEnumerableDomain } from "./old/primitive/domain.js"
 import { TypeNode } from "./type.js"
 
 export class PredicateNode<
@@ -59,55 +62,54 @@ export class PredicateNode<
 	}
 }
 
-export type UnknownConstraints = {
-	readonly narrow?: NarrowSet
-}
-
-export type DomainConstraints<
-	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = extend<
-	UnknownConstraints,
-	{
-		readonly basis: {}
-	}
->
-
 export type UnitConstraints = {
 	readonly value?: EqualityConstraint
 }
 
+export type UnknownConstraints = {
+	readonly narrow?: NarrowSet
+}
+
+export type BasisConstraints<basis extends BasisRule = BasisRule> = extend<
+	UnknownConstraints,
+	{
+		readonly basis: basis
+	}
+>
+
 export type NumberConstraints = extend<
-	DomainConstraints,
+	BasisConstraints<"number">,
 	{
 		readonly range?: BoundSet
 		readonly divisor?: DivisibilityConstraint
 	}
 >
 
-export type ObjectConstraints<constraints extends ConstraintsRecord> = extend<
-	DomainConstraints,
-	{
-		readonly instanceOf?: ConstructorConstraint
-	} & constraints
->
+export type ObjectConstraints = BasisConstraints<"object">
 
-export type StringConstraints = {
-	readonly length?: BoundSet
-	readonly pattern?: RegexSet
-}
+export type StringConstraints = extend<
+	BasisConstraints<"string">,
+	{
+		readonly length?: BoundSet
+		readonly pattern?: RegexSet
+	}
+>
 
 // TODO: add minLength prop that would result from collapsing types like [...number[], number]
 // to a single variadic number prop with minLength 1
 // Figure out best design for integrating with named props.
-export type ArrayConstraints = ObjectConstraints<{
-	readonly length?: BoundSet
-	// readonly prefixed?: readonly Type[]
-	// readonly variadic?: Type
-	// readonly postfixed?: readonly Type[]
-}>
+export type ArrayConstraints = extend<
+	BasisConstraints<typeof Array>,
+	{
+		readonly length?: BoundSet
+		readonly prefixed?: readonly TypeNode[]
+		readonly variadic?: TypeNode
+		readonly postfixed?: readonly TypeNode[]
+	}
+>
 
 export type DateConstraints = extend<
-	DomainConstraints,
+	BasisConstraints<typeof Date>,
 	{
 		readonly range?: BoundSet
 	}
