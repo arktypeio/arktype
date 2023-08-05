@@ -5,11 +5,11 @@ import {
 	fromHere,
 	readJson,
 	readPackageJson,
+	shell,
 	writeJson
-} from "../attest/src/fs.js"
-import { shell } from "../attest/src/shell.js"
-import { repoDirs } from "./common.js"
+} from "@arktype/fs"
 import { docgen } from "./docgen/docgen.js"
+import { repoDirs } from "./shared.js"
 
 const currentSuffix = "beta"
 
@@ -22,9 +22,9 @@ packageJson.version = packageJson.version.slice(0, -currentSuffix.length - 1)
 
 writeJson(packageJsonPath, packageJson)
 
-shell(`pnpm changes version`, { cwd: repoDirs.configs })
+shell(`pnpm changes version`, { cwd: repoDirs.repo })
 
-shell(`rm -f ${join(repoDirs.configs, ".changeset", "*.md")}`)
+shell(`rm -f ${join(repoDirs.repo, ".changeset", "*.md")}`)
 
 const nonSuffixedVersion = readPackageJson(repoDirs.root).version
 const suffixedVersion = nonSuffixedVersion + `-${currentSuffix}`
@@ -44,13 +44,13 @@ writeFileSync(
 docgen()
 
 const existingDocsVersions: string[] = readJson(
-	join(repoDirs.arktypeIo, `versions.json`)
+	join(repoDirs.docs, `versions.json`)
 )
 if (!existingDocsVersions.includes(suffixedVersion)) {
 	shell(
 		`pnpm install && pnpm docusaurus docs:version ${suffixedVersion} && pnpm build`,
 		{
-			cwd: repoDirs.arktypeIo
+			cwd: repoDirs.docs
 		}
 	)
 	shell("pnpm format", { cwd: repoDirs.root })

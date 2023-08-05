@@ -3,6 +3,7 @@ import * as process from "node:process"
 import type { WalkOptions } from "@arktype/fs"
 import { dirName, getSourceControlPaths } from "@arktype/fs"
 import { Project } from "ts-morph"
+import { repoDirs } from "../shared.js"
 import { extractApi } from "./api/extractApi.js"
 import { writeApi } from "./api/writeApi.js"
 import { mapDir } from "./mapDir.js"
@@ -40,11 +41,14 @@ export type DocGenMappedDirsConfig = {
 
 const createConfig = <Config extends DocGenConfig>(config: Config) => config
 
+const innerDocsDir = join(repoDirs.docs, "docs")
+const examplesDir = join(repoDirs.docs, "examples")
+
 export const defaultConfig = createConfig({
 	apis: [
 		{
 			packageRoot: repoDirs.root,
-			outDir: join(repoDirs.docsDir, "api")
+			outDir: join(repoDirs.docs, "docs", "api")
 		}
 	],
 	snippets: {
@@ -55,10 +59,10 @@ export const defaultConfig = createConfig({
 	mappedDirs: [
 		{
 			sources: [
-				join(repoDirs.dev, "examples"),
-				join(repoDirs.docsDir, "demos", "layout")
+				join(repoDirs.docs, "examples"),
+				join(innerDocsDir, "demos", "layout")
 			],
-			targets: [join(repoDirs.docsDir, "demos", "generated")],
+			targets: [join(innerDocsDir, "demos", "generated")],
 			transformOutputPaths: (path) => {
 				let outputFileName = basename(path)
 				if (!outputFileName.endsWith(".ts")) {
