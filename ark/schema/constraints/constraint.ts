@@ -1,9 +1,5 @@
 import type { extend, mutable } from "@arktype/util"
-import {
-	ReadonlyArray,
-	throwInternalError,
-	throwParseError
-} from "@arktype/util"
+import { ReadonlyArray } from "@arktype/util"
 import type { AttributesRecord } from "../attributes/attribute.js"
 import type { DescriptionAttribute } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"

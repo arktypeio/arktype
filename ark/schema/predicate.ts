@@ -19,16 +19,9 @@ export class PredicateNode<
 > extends TypeNode<attributes> {
 	declare readonly id: string
 
-	constructor(
-		public constraints = {} as constraints,
-		attributes = {} as attributes
-	) {
-		super(attributes)
-	}
-
 	readonly references: readonly TypeNode[] = this.props?.references ?? []
 
-	readonly flat = Object.values(this.constraints).flat()
+	readonly flat = Object.values(this.rule).flat()
 	readonly unit =
 		this.flat.length === 1 && this.flat[0] instanceof EqualityConstraint
 			? this.flat[0]
@@ -36,24 +29,24 @@ export class PredicateNode<
 
 	writeDefaultDescription() {
 		const basisDescription =
-			this.writeDefaultBaseDescription?.(this.constraints) ?? "a value"
-		const flat = Object.values(this.constraints).flat()
+			this.writeDefaultBaseDescription?.(this.rule) ?? "a value"
+		const flat = Object.values(this.rule).flat()
 		return flat.length
 			? `${basisDescription} ${flat.join(" and ")}`
 			: basisDescription
 	}
 
-	intersect(other: this): constraints | Disjoint {
+	override intersectRules(other: this): constraints | Disjoint {
 		// TODO: include domain disjoints
 		if (this.unit) {
 			if (other.unit) {
 				const result = this.unit.intersect(other.unit)
 			}
 		}
-		const result = { ...this.constraints, ...other.constraints }
+		const result = { ...this.rule, ...other.rule }
 		for (const k in result) {
-			if (k in this.constraints && k in other.constraints) {
-				const setResult = this.constraints[k].intersect(other.constraints[k])
+			if (k in this.rule && k in other.rule) {
+				const setResult = this.rule[k].intersect(other.rule[k])
 				if (setResult instanceof Disjoint) {
 					return setResult
 				}
