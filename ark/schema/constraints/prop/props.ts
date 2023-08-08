@@ -15,6 +15,19 @@ import {
 import type { NamedPropInput, NamedPropRule } from "./named.js"
 import { compileNamedProps } from "./named.js"
 
+// export type PropConstraint = defineConstraint<{
+//     kind: "prop"
+//     key: string | symbol
+//     required: boolean
+//     value: Type
+// }>
+
+// export type SignatureConstraint = defineConstraint<{
+//     kind: "signature"
+//     key: Type
+//     value: Type
+// }>
+
 export type PropEntries = readonly PropEntry[]
 
 export type PropEntry = NamedPropRule | IndexedPropRule

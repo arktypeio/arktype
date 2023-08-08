@@ -28,25 +28,30 @@ export abstract class Constraint<
 
 	abstract writeDefaultDescription(): string
 
-	abstract intersectRules(other: this): rule | Disjoint | null
+	abstract intersectRules(other: this): rule | Disjoint | orthogonal
 
 	equals(other: this) {
 		return this.id === other.id
 	}
 
-	intersect(other: this) {
+	// Ensure the signature of this method reflects whether Disjoint and/or null
+	// are possible intersection results for the subclass.
+	intersect(
+		other: this
+	): this | Extract<ReturnType<this["intersectRules"]>, null | Disjoint> {
 		const ruleIntersection = this.intersectRules(other)
 		if (ruleIntersection === null || ruleIntersection instanceof Disjoint) {
-			// Ensure the signature of this method reflects whether Disjoint and/or null
-			// are possible intersection results for the subclass.
-			return ruleIntersection as Extract<
-				ReturnType<this["intersectRules"]>,
-				null | Disjoint
-			>
+			return ruleIntersection as never
 		}
-		return new (this.constructor as any)(ruleIntersection) as this
+		return new (this.constructor as any)(ruleIntersection)
 	}
 }
+
+export const orthogonal = Symbol(
+	"Represents an intersection result that cannot be reduced"
+)
+
+export type orthogonal = typeof orthogonal
 
 type ConstraintList = readonly Constraint<unknown>[]
 
@@ -90,83 +95,83 @@ export class ConstraintSet<
 
 export type ConstraintsRecord = IntersectableRecord
 
-export const assertAllowsConstraint = (
-	basis: Node<BasisKind> | null,
-	node: Node<RefinementKind>
-) => {
-	if (basis?.hasKind("unit")) {
-		return throwInvalidConstraintError(
-			node.kind,
-			"a non-literal type",
-			basis.toString()
-		)
-	}
-	const domain = basis?.domain ?? "unknown"
-	switch (node.kind) {
-		case "divisor":
-			if (domain !== "number") {
-				throwParseError(writeIndivisibleMessage(domain))
-			}
-			return
-		case "bound":
-			if (domain !== "string" && domain !== "number") {
-				const isDateClassBasis =
-					basis?.hasKind("class") && basis.extendsOneOf(Date)
-				if (isDateClassBasis) {
-					if (!isDateLiteral(node.rule.limit)) {
-						throwParseError(
-							writeInvalidLimitMessage(
-								node.rule.comparator,
-								node.rule.limit,
-								// TODO: we don't know if this is true, validate range together
-								"right"
-							)
-						)
-					}
-					return
-				}
-				const hasSizedClassBasis =
-					basis?.hasKind("class") && basis.extendsOneOf(Array)
-				if (!hasSizedClassBasis) {
-					throwParseError(writeUnboundableMessage(domain))
-				}
-			}
-			if (typeof node.rule.limit !== "number") {
-				throwParseError(
-					writeInvalidLimitMessage(
-						node.rule.comparator,
-						node.rule.limit,
-						// TODO: we don't know if this is true, validate range together
-						"right"
-					)
-				)
-			}
-			return
-		case "regex":
-			if (domain !== "string") {
-				throwInvalidConstraintError("regex", "a string", domain)
-			}
-			return
-		case "props":
-			if (domain !== "object") {
-				throwInvalidConstraintError("props", "an object", domain)
-			}
-			return
-		case "narrow":
-			return
-		default:
-			throwInternalError(`Unexpected rule kind '${(node as Node).kind}'`)
-	}
-}
+// export const assertAllowsConstraint = (
+// 	basis: Node<BasisKind> | null,
+// 	node: Node<RefinementKind>
+// ) => {
+// 	if (basis?.hasKind("unit")) {
+// 		return throwInvalidConstraintError(
+// 			node.kind,
+// 			"a non-literal type",
+// 			basis.toString()
+// 		)
+// 	}
+// 	const domain = basis?.domain ?? "unknown"
+// 	switch (node.kind) {
+// 		case "divisor":
+// 			if (domain !== "number") {
+// 				throwParseError(writeIndivisibleMessage(domain))
+// 			}
+// 			return
+// 		case "bound":
+// 			if (domain !== "string" && domain !== "number") {
+// 				const isDateClassBasis =
+// 					basis?.hasKind("class") && basis.extendsOneOf(Date)
+// 				if (isDateClassBasis) {
+// 					if (!isDateLiteral(node.rule.limit)) {
+// 						throwParseError(
+// 							writeInvalidLimitMessage(
+// 								node.rule.comparator,
+// 								node.rule.limit,
+// 								// TODO: we don't know if this is true, validate range together
+// 								"right"
+// 							)
+// 						)
+// 					}
+// 					return
+// 				}
+// 				const hasSizedClassBasis =
+// 					basis?.hasKind("class") && basis.extendsOneOf(Array)
+// 				if (!hasSizedClassBasis) {
+// 					throwParseError(writeUnboundableMessage(domain))
+// 				}
+// 			}
+// 			if (typeof node.rule.limit !== "number") {
+// 				throwParseError(
+// 					writeInvalidLimitMessage(
+// 						node.rule.comparator,
+// 						node.rule.limit,
+// 						// TODO: we don't know if this is true, validate range together
+// 						"right"
+// 					)
+// 				)
+// 			}
+// 			return
+// 		case "regex":
+// 			if (domain !== "string") {
+// 				throwInvalidConstraintError("regex", "a string", domain)
+// 			}
+// 			return
+// 		case "props":
+// 			if (domain !== "object") {
+// 				throwInvalidConstraintError("props", "an object", domain)
+// 			}
+// 			return
+// 		case "narrow":
+// 			return
+// 		default:
+// 			throwInternalError(`Unexpected rule kind '${(node as Node).kind}'`)
+// 	}
+// }
 
-export const writeInvalidConstraintMessage = (
-	kind: RefinementKind,
-	typeMustBe: string,
-	typeWas: string
-) => {
-	return `${kind} constraint may only be applied to ${typeMustBe} (was ${typeWas})`
-}
+// export const writeInvalidConstraintMessage = (
+// 	kind: RefinementKind,
+// 	typeMustBe: string,
+// 	typeWas: string
+// ) => {
+// 	return `${kind} constraint may only be applied to ${typeMustBe} (was ${typeWas})`
+// }
 
-export const throwInvalidConstraintError = (
-	...args: Parameters<typeof writeInvalidConstraintMessage>
-) => throwParseError(writeInvalidConstraintMessage(...args))
+// export const throwInvalidConstraintError = (
+// 	...args: Parameters<typeof writeInvalidConstraintMessage>
+// ) => throwParseError(writeInvalidConstraintMessage(...args))
