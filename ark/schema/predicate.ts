@@ -1,31 +1,28 @@
-import type { extend } from "@arktype/util"
-import type {
-	AttributesRecord,
-	UniversalAttributes
-} from "./attributes/attribute.js"
+import type { Domain, extend, mutable } from "@arktype/util"
 import type { BasisRule } from "./constraints/basis.js"
 import type { BoundSet } from "./constraints/bound.js"
-import type { ConstraintsRecord } from "./constraints/constraint.js"
+import type { Constraint } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"
-import { EqualityConstraint } from "./constraints/equality.js"
+import type { EqualityConstraint } from "./constraints/equality.js"
 import type { NarrowSet } from "./constraints/narrow.js"
 import type { RegexSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import { TypeNode } from "./type.js"
 
-export class PredicateNode<
-	constraints extends ConstraintsRecord = ConstraintsRecord,
-	attributes extends AttributesRecord = UniversalAttributes
-> extends TypeNode<attributes> {
+export type ConstraintSet = readonly Constraint[]
+
+export class PredicateNode extends TypeNode<ConstraintSet> {
 	declare readonly id: string
 
-	readonly references: readonly TypeNode[] = this.props?.references ?? []
+	// readonly references: readonly TypeNode[] = this.props?.references ?? []
 
-	readonly flat = Object.values(this.rule).flat()
-	readonly unit =
-		this.flat.length === 1 && this.flat[0] instanceof EqualityConstraint
-			? this.flat[0]
-			: undefined
+	readonly domain: Domain = "string"
+
+	// readonly flat = Object.values(this.rule).flat()
+	// readonly unit =
+	// 	this.flat.length === 1 && this.flat[0] instanceof EqualityConstraint
+	// 		? this.flat[0]
+	// 		: undefined
 
 	writeDefaultDescription() {
 		const basisDescription =
@@ -36,47 +33,36 @@ export class PredicateNode<
 			: basisDescription
 	}
 
-	override intersectRules(other: this): constraints | Disjoint {
-		// TODO: include domain disjoints
-		if (this.unit) {
-			if (other.unit) {
-				const result = this.unit.intersect(other.unit)
+	// TODO: make sure in cases like range, the result is sorted
+	intersect(other: ConstraintSet<constraints>) {
+		const result = [] as mutable<ConstraintSet>
+		let includesConstraint = false
+		for (let i = 0; i < this.rule.length; i++) {
+			const elementResult = this.rule[i].intersect(constraint)
+			if (elementResult === null) {
+				result.push(this.rule[i])
+			} else if (elementResult instanceof Disjoint) {
+				return elementResult
+			} else {
+				result.push(elementResult)
+				includesConstraint = true
 			}
 		}
-		const result = { ...this.rule, ...other.rule }
-		for (const k in result) {
-			if (k in this.rule && k in other.rule) {
-				const setResult = this.rule[k].intersect(other.rule[k])
-				if (setResult instanceof Disjoint) {
-					return setResult
-				}
-				result[k] = setResult
-			}
+		if (!includesConstraint) {
+			result.push(constraint)
 		}
-		return result
+		for (
+			let i = 0;
+			i < other.length && setResult instanceof ConstraintSet;
+			i++
+		) {
+			setResult = setResult.add(other[i])
+		}
+		return setResult
 	}
 
-	compile(ctx: CompilationContext) {
-		return ""
-		// // TODO: can props imply object basis for compilation?
-		// let result = ""
-		// this.basis && ctx.bases.push(this.basis)
-		// for (const child of children) {
-		//     const childResult = child.hasKind("props")
-		//         ? child.compile(ctx)
-		//         : compileCheck(
-		//               // TODO: fix
-		//               child.kind === "narrow" ? "custom" : child.kind,
-		//               child.rule,
-		//               child.compile(ctx),
-		//               ctx
-		//           )
-		//     if (childResult) {
-		//         result = result ? `${result}\n${childResult}` : childResult
-		//     }
-		// }
-		// this.basis && ctx.bases.pop()
-		// return result
+	constrain(constraint: Constraint): PredicateNode {
+		return this.intersect(new PredicateNode([constraint], {}))
 	}
 
 	// keyof(): TypeNode {

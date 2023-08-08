@@ -1,6 +1,19 @@
+import { throwParseError } from "@arktype/util"
+import type { PredicateNode } from "../predicate.js"
 import { Constraint } from "./constraint.js"
 
 export class DivisibilityConstraint extends Constraint<number> {
+	readonly kind = "divisibility"
+
+	override applyRules(target: PredicateNode) {
+		if (target.domain !== "number") {
+			return throwParseError(writeIndivisibleMessage(target.domain))
+		}
+		return target.rule.map((constraint) =>
+			constraint.hasKind("divisibility") ? {} : {}
+		)
+	}
+
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
@@ -24,3 +37,11 @@ const greatestCommonDivisor = (l: number, r: number) => {
 	}
 	return greatestCommonDivisor
 }
+
+export const writeIndivisibleMessage = <root extends string>(
+	root: root
+): writeIndivisibleMessage<root> =>
+	`Divisibility operand ${root} must be a number`
+
+export type writeIndivisibleMessage<root extends string> =
+	`Divisibility operand ${root} must be a number`

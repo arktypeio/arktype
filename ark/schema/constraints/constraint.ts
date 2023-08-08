@@ -1,34 +1,26 @@
-import type { extend, mutable } from "@arktype/util"
-import { ReadonlyArray } from "@arktype/util"
-import type { AttributesRecord } from "../attributes/attribute.js"
-import type { DescriptionAttribute } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"
-import type { IntersectableRecord } from "../shared.js"
+import type { ConstraintSet, PredicateNode } from "../predicate.js"
+import { TypeNode } from "../type.js"
+import type { BasisConstraint } from "./basis.js"
+import type { BoundConstraint } from "./bound.js"
+import type { DivisibilityConstraint } from "./divisibility.js"
+import type { EqualityConstraint } from "./equality.js"
+import type { NarrowConstraint } from "./narrow.js"
+import type { RegexConstraint } from "./regex.js"
 
-export type ConstraintAttributes<attributes extends AttributesRecord> = extend<
-	{ readonly description?: DescriptionAttribute },
-	attributes
->
+export type ConstraintsByKind = {
+	basis: BasisConstraint
+	bound: BoundConstraint
+	divisibility: DivisibilityConstraint
+	equality: EqualityConstraint
+	narrow: NarrowConstraint
+	regex: RegexConstraint
+}
 
-export abstract class Constraint<
-	rule,
-	attributes extends
-		ConstraintAttributes<AttributesRecord> = ConstraintAttributes<{}>
-> {
-	constructor(
-		public rule: rule,
-		public attributes = {} as attributes
-	) {}
-
+export abstract class Constraint<rule = unknown> extends TypeNode<rule> {
 	declare readonly id: string
 
-	abstract writeDefaultDescription(): string
-
-	abstract intersectRules(other: this): rule | Disjoint | orthogonal
-
-	equals(other: this) {
-		return this.id === other.id
-	}
+	abstract applyRules(target: PredicateNode): ConstraintSet | Disjoint
 
 	// Ensure the signature of this method reflects whether Disjoint and/or null
 	// are possible intersection results for the subclass.
@@ -48,48 +40,6 @@ export const orthogonal = Symbol(
 )
 
 export type orthogonal = typeof orthogonal
-
-type ConstraintList = readonly Constraint<unknown>[]
-
-/** @ts-expect-error allow extending narrowed readonly array */
-export class ConstraintSet<
-	constraints extends ConstraintList = ConstraintList
-> extends ReadonlyArray<constraints> {
-	// TODO: make sure in cases like range, the result is sorted
-	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
-		const result = [] as unknown as mutable<constraints>
-		let includesConstraint = false
-		for (let i = 0; i < this.length; i++) {
-			const elementResult = this[i].intersect(constraint)
-			if (elementResult === null) {
-				result.push(this[i])
-			} else if (elementResult instanceof Disjoint) {
-				return elementResult
-			} else {
-				result.push(elementResult)
-				includesConstraint = true
-			}
-		}
-		if (!includesConstraint) {
-			result.push(constraint)
-		}
-		return new ConstraintSet(...result)
-	}
-
-	intersect(other: ConstraintSet<constraints>) {
-		let setResult: ConstraintSet<constraints> | Disjoint = this
-		for (
-			let i = 0;
-			i < other.length && setResult instanceof ConstraintSet;
-			i++
-		) {
-			setResult = setResult.add(other[i])
-		}
-		return setResult
-	}
-}
-
-export type ConstraintsRecord = IntersectableRecord
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,
