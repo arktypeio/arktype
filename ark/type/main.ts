@@ -1,3 +1,5 @@
+import { type } from "./scopes/ark.js"
+
 export {
 	scope,
 	type,

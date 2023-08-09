@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
-import { suite, test } from "mocha"
 import { node, type } from "arktype"
+import { suite, test } from "mocha"
 import { writeInvalidConstructorMessage } from "../type/parser/tuple.js"
 import type { Ark } from "../type/scopes/ark.js"
 import type { Type } from "../type/type.js"
@@ -38,7 +38,7 @@ suite("instanceof", () => {
 		})
 		test("user-defined class", () => {
 			class ArkClass {
-				isArk = true
+				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
 			attest(ark).typed as Type<ArkClass, Ark>
@@ -50,6 +50,23 @@ suite("instanceof", () => {
 			attest(ark({}).problems?.summary).snap(
 				"Must be an instance of ArkClass (was Object)"
 			)
+		})
+		// TODO: Fix- Investigate bidirectional check impact on perf to narrow private props without breaking this case:
+		// const tt = type({
+		// 	f: ["string", "=>", (s) => [] as unknown]
+		// })
+		// // Should be inferred as {f: unknown}
+		// type FF = typeof tt.infer
+		// If perf cost too high can use global type config to expand TerminallyInferredObjects
+		test("class with private properties", () => {
+			class ArkClass {
+				private isArk = true
+			}
+			const ark = type(["instanceof", ArkClass])
+			attest(ark).typed as Type<ArkClass, Ark>
+			// not expanded since there are no morphs
+			attest(ark.infer).types.toString("ArkClass")
+			attest(ark.inferIn).types.toString("ArkClass")
 		})
 	})
 	suite("root expression", () => {
