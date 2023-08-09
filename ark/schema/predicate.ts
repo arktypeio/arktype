@@ -1,11 +1,11 @@
 import type { Domain, extend, mutable } from "@arktype/util"
 import { isArray, throwInternalError } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { BasisConstraint } from "./constraints/constraint.js"
+import type { BasisConstraint, Constraint } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"
-import type { EqualityConstraint } from "./constraints/equality.js"
+import type { IdentityConstraint } from "./constraints/identity.js"
 import { Disjoint } from "./disjoint.js"
-import { BaseNode, orthogonal } from "./type.js"
+import { BaseNode } from "./type.js"
 
 export class PredicateNode extends BaseNode<ConstraintSet> {
 	readonly kind = "predicate"
@@ -65,7 +65,7 @@ export class PredicateNode extends BaseNode<ConstraintSet> {
 // )
 
 export type UnitConstraints = {
-	readonly value?: EqualityConstraint
+	readonly identity: IdentityConstraint
 }
 
 export type UnknownConstraints = {

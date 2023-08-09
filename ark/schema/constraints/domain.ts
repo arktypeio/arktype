@@ -1,13 +1,14 @@
 import type { Domain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { BaseNode } from "../type.js"
+import type { BaseNode } from "../type.js"
+import { ConstraintNode } from "./constraint.js"
 
-export class DomainConstraint extends BaseNode<NonEnumerableDomain> {
+export class DomainConstraint extends ConstraintNode<NonEnumerableDomain> {
 	readonly kind = "basis"
 
 	readonly domain = this.rule
 
-	intersectUniqueRules(other: BaseNode) {
+	intersectRules(other: DomainConstraint) {
 		return Disjoint.from("domain", this, other)
 	}
 

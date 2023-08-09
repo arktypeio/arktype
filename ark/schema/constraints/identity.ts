@@ -1,17 +1,20 @@
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../type.js"
+import type { Constraint } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class EqualityConstraint extends ConstraintNode<unknown> {
-	readonly kind = "equality"
+export class IdentityConstraint extends ConstraintNode<unknown> {
+	readonly kind = "identity"
 
 	writeDefaultDescription() {
 		// TODO: add reference to for objects
 		return stringify(this.rule)
 	}
 
-	intersectRules(other: BaseNode) {
-		return Disjoint.from("unit", this, other)
+	intersectRules(other: Constraint) {
+		return other.allows(this.rule)
+			? this.rule
+			: Disjoint.from("unit", this, other)
 	}
 }

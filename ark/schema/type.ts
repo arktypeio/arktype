@@ -3,7 +3,6 @@ import type {
 	AttributesRecord,
 	UniversalAttributes
 } from "./attributes/attribute.js"
-import type { Disjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 import type { UnionNode } from "./union.js"
 
@@ -16,12 +15,15 @@ export abstract class BaseNode<
 		public attributes: attributes
 	) {}
 
-	abstract readonly kind: string
+	assertAllowedBy?(basis: BasisConstraint): void
+
+	abstract intersectRules(other: this): rule | Orthogonal | Disjoint
+
+	declare allows: (data: unknown) => boolean
+	abstract readonly kind: NodeKind
 	declare readonly id: string
 
 	abstract writeDefaultDescription(): string
-
-	abstract intersect(other: this): this | Disjoint
 
 	hasKind<kind extends NodeKind>(kind: kind): this is NodesByKind[kind] {
 		return this.kind === kind

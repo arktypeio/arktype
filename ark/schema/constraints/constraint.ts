@@ -1,36 +1,37 @@
-import { type extend, type mutable, throwInternalError } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
-import { Disjoint } from "../disjoint.js"
+import { type extend } from "@arktype/util"
+import type { Disjoint } from "../disjoint.js"
 import type { PredicateNode } from "../predicate.js"
 import { BaseNode } from "../type.js"
 import type { UnionNode } from "../union.js"
 import type { ConstructorConstraint } from "./constructor.js"
 import type { DivisibilityConstraint } from "./divisibility.js"
 import type { DomainConstraint } from "./domain.js"
-import type { EqualityConstraint } from "./equality.js"
+import type { IdentityConstraint } from "./identity.js"
 import type { NarrowConstraint } from "./narrow.js"
 import type { RangeConstraint } from "./range.js"
 import type { RegexConstraint } from "./regex.js"
 
 export abstract class ConstraintNode<rule = unknown> extends BaseNode<rule> {
-	assertAllowedBy?(basis: BasisConstraint): true
+	assertAllowedBy?(basis: BasisConstraint): void
 
 	abstract intersectRules(other: this): rule | Orthogonal | Disjoint
 
-	intersect(
-		other: this
-		// Ensure the signature of this method reflects whether Disjoint and/or null
-		// are possible intersection results for the subclass.
-	): this | Extract<ReturnType<this["intersectRules"]>, Orthogonal | Disjoint> {
-		const ruleIntersection = this.intersectRules(other)
-		if (
-			ruleIntersection === orthogonal ||
-			ruleIntersection instanceof Disjoint
-		) {
-			return ruleIntersection as never
-		}
-		return new (this.constructor as any)(ruleIntersection)
-	}
+	declare allows: (data: unknown) => boolean
+
+	// intersect(
+	// 	other: this
+	// 	// Ensure the signature of this method reflects whether Disjoint and/or null
+	// 	// are possible intersection results for the subclass.
+	// ): this | Extract<ReturnType<this["intersectRules"]>, Orthogonal | Disjoint> {
+	// 	const ruleIntersection = this.intersectRules(other)
+	// 	if (
+	// 		ruleIntersection === orthogonal ||
+	// 		ruleIntersection instanceof Disjoint
+	// 	) {
+	// 		return ruleIntersection as never
+	// 	}
+	// 	return new (this.constructor as any)(ruleIntersection)
+	// }
 }
 
 export type BasisConstraint = DomainConstraint | ConstructorConstraint
@@ -56,7 +57,7 @@ export type ConstraintsByKind = {
 	domain: DomainConstraint
 	range: RangeConstraint
 	divisibility: DivisibilityConstraint
-	equality: EqualityConstraint
+	identity: IdentityConstraint
 	narrow: NarrowConstraint
 	regex: RegexConstraint
 }
