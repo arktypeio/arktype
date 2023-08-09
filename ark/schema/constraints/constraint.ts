@@ -1,5 +1,6 @@
 import { Disjoint } from "../disjoint.js"
 import type { ConstraintSet, PredicateNode } from "../predicate.js"
+import type { Orthogonal } from "../type.js"
 import { TypeNode } from "../type.js"
 import type { BasisConstraint } from "./basis.js"
 import type { BoundConstraint } from "./bound.js"
@@ -20,13 +21,13 @@ export type ConstraintsByKind = {
 export abstract class Constraint<rule = unknown> extends TypeNode<rule> {
 	declare readonly id: string
 
-	abstract applyRules(target: PredicateNode): ConstraintSet | Disjoint
+	abstract intersectConstraint(other: Constraint): rule | Orthogonal | Disjoint
 
 	// Ensure the signature of this method reflects whether Disjoint and/or null
 	// are possible intersection results for the subclass.
-	intersect(
-		other: this
-	): this | Extract<ReturnType<this["intersectRules"]>, null | Disjoint> {
+	intersectRules(
+		other: Constraint
+	): this | Extract<ReturnType<this["intersectConstraint"]>, null | Disjoint> {
 		const ruleIntersection = this.intersectRules(other)
 		if (ruleIntersection === null || ruleIntersection instanceof Disjoint) {
 			return ruleIntersection as never

@@ -5,20 +5,11 @@ import { Constraint } from "./constraint.js"
 export class DivisibilityConstraint extends Constraint<number> {
 	readonly kind = "divisibility"
 
-	override applyRules(target: PredicateNode) {
-		if (target.domain !== "number") {
-			return throwParseError(writeIndivisibleMessage(target.domain))
-		}
-		return target.rule.map((constraint) =>
-			constraint.hasKind("divisibility") ? {} : {}
-		)
-	}
-
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	intersectRules(other: DivisibilityConstraint) {
+	intersectConstraint(other: DivisibilityConstraint) {
 		return (
 			(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
 		)

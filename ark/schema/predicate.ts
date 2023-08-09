@@ -14,6 +14,8 @@ export type ConstraintSet = readonly Constraint[]
 export class PredicateNode extends TypeNode<ConstraintSet> {
 	declare readonly id: string
 
+	constructor(input: ConstraintSet) {}
+
 	// readonly references: readonly TypeNode[] = this.props?.references ?? []
 
 	readonly domain: Domain = "string"
