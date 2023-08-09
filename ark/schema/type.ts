@@ -18,11 +18,11 @@ export abstract class TypeNode<
 	) {}
 
 	abstract readonly kind: string
-	abstract readonly id: string
+	declare readonly id: string
 
 	abstract writeDefaultDescription(): string
 
-	abstract intersectRules(other: this): rule | Orthogonal | Disjoint
+	abstract intersectRules(other: TypeNode): rule | Orthogonal | Disjoint
 
 	hasKind<kind extends NodeKind>(kind: kind): this is NodesByKind[kind] {
 		return this.kind === kind
@@ -32,7 +32,7 @@ export abstract class TypeNode<
 	// are possible intersection results for the subclass.
 	intersect(
 		other: this
-	): this | Extract<ReturnType<this["intersectRules"]>, null | Disjoint> {
+	): this | Extract<ReturnType<this["intersectRules"]>, Orthogonal | Disjoint> {
 		const ruleIntersection = this.intersectRules(other)
 		if (
 			ruleIntersection === orthogonal ||
@@ -63,7 +63,7 @@ export type NodesByKind = extend<
 export type NodeKind = keyof NodesByKind
 
 export const orthogonal = Symbol(
-	"Represents an intersection result that cannot be reduced"
+	"Represents an intersection result between two compatible but independent constraints"
 )
 
 export type Orthogonal = typeof orthogonal

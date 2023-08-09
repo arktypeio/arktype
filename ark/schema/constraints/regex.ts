@@ -1,16 +1,16 @@
-import type { Orthogonal } from "./constraint.js"
-import { Constraint, orthogonal } from "./constraint.js"
+import type { Orthogonal } from "../type.js"
+import { orthogonal, TypeNode } from "../type.js"
 
-export class RegexConstraint extends Constraint<RegExp> {
+export class RegexConstraint extends TypeNode<RegExp> {
 	readonly literal = `${this.rule}` as `/${string}/${string}`
+	readonly kind = "regex"
 
 	writeDefaultDescription() {
 		// don't use this.literal here since it may not have been initialized
 		return `matched by ${this.rule}`
 	}
 
-	// TODO: remove annotation?
-	intersectConstraint(): Orthogonal {
+	intersectRules(): Orthogonal {
 		return orthogonal
 	}
 }

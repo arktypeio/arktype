@@ -1,57 +1,31 @@
-import type { mutable } from "@arktype/util"
 import { ReadonlyArray, throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { TypeNode } from "../type.js"
 import type { BasisConstraint } from "./basis.js"
-import type { BoundConstraint } from "./bound.js"
 import type { DivisibilityConstraint } from "./divisibility.js"
 import type { EqualityConstraint } from "./equality.js"
 import type { NarrowConstraint } from "./narrow.js"
+import type { RangeConstraint } from "./range.js"
 import type { RegexConstraint } from "./regex.js"
 
 export type ConstraintsByKind = {
 	basis: BasisConstraint
-	bound: BoundConstraint
+	bound: RangeConstraint
 	divisibility: DivisibilityConstraint
 	equality: EqualityConstraint
 	narrow: NarrowConstraint
 	regex: RegexConstraint
 }
 
-export abstract class Constraint<rule = unknown> extends TypeNode<rule> {
-	declare readonly id: string
+export type ConstraintKind = keyof ConstraintsByKind
 
-	abstract intersectConstraint(other: Constraint): rule | Orthogonal | Disjoint
+export type ConstraintNode = ConstraintsByKind[ConstraintKind]
 
-	// Ensure the signature of this method reflects whether Disjoint and/or null
-	// are possible intersection results for the subclass.
-	intersectRules(
-		other: Constraint
-	):
-		| this
-		| Extract<ReturnType<this["intersectConstraint"]>, Orthogonal | Disjoint> {
-		const ruleIntersection = this.intersectRules(other)
-		if (ruleIntersection === null || ruleIntersection instanceof Disjoint) {
-			return ruleIntersection as never
-		}
-		return new (this.constructor as any)(ruleIntersection)
-	}
-}
-
-export const orthogonal = Symbol(
-	"Represents an intersection result that cannot be reduced"
-)
-
-export type Orthogonal = typeof orthogonal
-
-type ConstraintList = readonly Constraint<unknown>[]
-
-export class ConstraintSet extends ReadonlyArray<ConstraintList> {
-	protected constructor(...constraints: ConstraintList) {
+export class ConstraintSet extends ReadonlyArray<readonly ConstraintNode[]> {
+	protected constructor(...constraints: readonly ConstraintNode[]) {
 		super(...constraints)
 	}
 
-	static from(...constraints: ConstraintList) {
+	static from(...constraints: readonly ConstraintNode[]) {
 		const set = constraints.reduce<ConstraintSet>((set, constraint) => {
 			const next = set.add(constraint)
 			return next instanceof Disjoint ? next.throw() : next
@@ -60,8 +34,8 @@ export class ConstraintSet extends ReadonlyArray<ConstraintList> {
 	}
 
 	// TODO: make sure in cases like range, the result is sorted
-	add(constraint: Constraint): ConstraintSet | Disjoint {
-		const result = [] as mutable<ConstraintList>
+	add(constraint: ConstraintNode): ConstraintSet | Disjoint {
+		const result = [] as ConstraintNode[]
 		let includesConstraint = false
 		for (let i = 0; i < this.length; i++) {
 			const elementResult = this[i].intersect(constraint)

@@ -1,15 +1,13 @@
-import { throwParseError } from "@arktype/util"
-import type { PredicateNode } from "../predicate.js"
-import { Constraint } from "./constraint.js"
+import { TypeNode } from "../type.js"
 
-export class DivisibilityConstraint extends Constraint<number> {
+export class DivisibilityConstraint extends TypeNode<number> {
 	readonly kind = "divisibility"
 
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	intersectConstraint(other: DivisibilityConstraint) {
+	intersectRules(other: DivisibilityConstraint) {
 		return (
 			(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
 		)

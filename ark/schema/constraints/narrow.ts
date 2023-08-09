@@ -1,23 +1,21 @@
-import { Constraint, ConstraintSet } from "./constraint.js"
+import { orthogonal, TypeNode } from "../type.js"
 
 // TODO: allow changed order to be the same type
 
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends Constraint<Narrow> {
+export class NarrowConstraint extends TypeNode<Narrow> {
+	readonly kind = "narrow"
+
 	writeDefaultDescription() {
 		return `valid according to ${this.rule.name}`
 	}
 
-	intersectRules(other: NarrowConstraint) {
-		return this.rule === other.rule ? this.rule : null
+	intersectRules() {
+		return orthogonal
 	}
 }
-
-export const NarrowSet = ConstraintSet<readonly NarrowConstraint[]>
-
-export type NarrowSet = InstanceType<typeof NarrowSet>
 
 export type Narrow<data = any> = (data: data) => boolean
 

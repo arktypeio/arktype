@@ -16,5 +16,5 @@ export type AttributesRecord = extend<IntersectableRecord, UniversalAttributes>
 
 export type UniversalAttributes = {
 	readonly description?: DescriptionAttribute
-	readonly alias?: {}
+	readonly alias?: DescriptionAttribute
 }

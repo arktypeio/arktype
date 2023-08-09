@@ -8,7 +8,7 @@ import {
 	transform
 } from "@arktype/util"
 import type { BasisConstraint } from "./constraints/basis.js"
-import type { BoundConstraint } from "./constraints/bound.js"
+import type { RangeConstraint } from "./constraints/range.js"
 import type { UnitNode } from "./constraints/unit.js"
 import type { PredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
@@ -23,8 +23,8 @@ type DisjointKinds = {
 		r: UnitNode
 	}
 	range?: {
-		l: BoundConstraint
-		r: BoundConstraint
+		l: RangeConstraint
+		r: RangeConstraint
 	}
 	class?: {
 		l: BasisConstraint

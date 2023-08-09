@@ -2,7 +2,7 @@ import type { Domain, extend, mutable } from "@arktype/util"
 import { isArray, throwInternalError } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
 import type { BasisRule } from "./constraints/basis.js"
-import type { BoundSet } from "./constraints/bound.js"
+import type { BoundSet } from "./constraints/range.js"
 
 import type { Constraint } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"

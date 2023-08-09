@@ -2,11 +2,10 @@ import type { AbstractableConstructor, Domain, evaluate } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
-	objectKindDescriptions,
-	throwInternalError
+	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { Constraint } from "./constraint.js"
+import { orthogonal, TypeNode } from "../type.js"
 
 type BasisRulesByKind = {
 	domain: NonEnumerableDomain
@@ -18,14 +17,18 @@ export type BasisKind = evaluate<keyof BasisRulesByKind>
 export type BasisRule<kind extends BasisKind = BasisKind> =
 	BasisRulesByKind[kind]
 
-export class BasisConstraint extends Constraint<BasisRule> {
+export class BasisConstraint extends TypeNode<BasisRule> {
+	readonly kind = "basis"
 	readonly basisKind: BasisKind =
 		typeof this.rule === "string" ? "domain" : "constructor"
 
 	readonly domain: NonEnumerableDomain =
 		this.basisKind === "domain" ? (this.rule as NonEnumerableDomain) : "object"
 
-	intersectRules(other: BasisConstraint) {
+	intersectRules(other: TypeNode) {
+		if (!other.hasKind("basis")) {
+			return orthogonal
+		}
 		if (this.rule === other.rule) {
 			return this.rule
 		}

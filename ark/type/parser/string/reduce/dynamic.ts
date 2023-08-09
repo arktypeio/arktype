@@ -1,4 +1,4 @@
-import type { BoundConstraint, Comparator, TypeNode } from "@arktype/schema"
+import type { RangeConstraint, Comparator, TypeNode } from "@arktype/schema"
 import { minComparators } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
@@ -17,7 +17,7 @@ import {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound?: BoundConstraint<"min">
+	leftBound?: RangeConstraint<"min">
 	"&"?: TypeNode
 	"|"?: TypeNode
 }

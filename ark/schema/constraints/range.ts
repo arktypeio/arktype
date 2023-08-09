@@ -1,17 +1,18 @@
 import { throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { Constraint, ConstraintSet } from "./constraint.js"
+import type { Orthogonal } from "../type.js"
+import { orthogonal, TypeNode } from "../type.js"
 
-export interface BoundRule<limitKind extends LimitKind = LimitKind> {
+export type RangeRule = {
 	readonly dataKind: BoundableDataKind
-	readonly limitKind: limitKind
+	readonly limitKind: LimitKind
 	readonly limit: number
 	readonly exclusive?: true
 }
 
-export class BoundConstraint<
-	limitKind extends LimitKind = LimitKind
-> extends Constraint<BoundRule<limitKind>> {
+export class RangeConstraint extends TypeNode<RangeRule> {
+	readonly kind = "range"
+
 	writeDefaultDescription() {
 		const comparisonDescription =
 			this.rule.dataKind === "date"
@@ -32,11 +33,10 @@ export class BoundConstraint<
 		return `${comparisonDescription} ${this.rule.limit}`
 	}
 
-	intersectRules(
-		other: BoundConstraint
-	): // cast the return type so that it has the same limitKind as this
-	BoundRule<limitKind> | Disjoint | null
-	intersectRules(other: BoundConstraint) {
+	intersectRules(other: TypeNode): RangeRule | Disjoint | Orthogonal {
+		if (!other.hasKind("bound")) {
+			return orthogonal
+		}
 		const l = this.rule
 		const r = other.rule
 		if (l.dataKind !== r.dataKind) {
@@ -48,18 +48,20 @@ export class BoundConstraint<
 			if (l.limitKind === "min") {
 				return r.limitKind === "min" ? l : Disjoint.from("range", l, r)
 			}
-			return r.limitKind === "max" ? r : null
+			return r.limitKind === "max" ? r : orthogonal
 		}
 		if (l.limit < r.limit) {
 			if (l.limitKind === "max") {
 				return r.limitKind === "max" ? l : Disjoint.from("range", l, r)
 			}
-			return r.limitKind === "min" ? r : null
+			return r.limitKind === "min" ? r : orthogonal
 		}
 		if (l.limitKind === r.limitKind) {
 			return l.exclusive ? l : r
 		}
-		return l.exclusive || r.exclusive ? Disjoint.from("range", l, r) : null
+		return l.exclusive || r.exclusive
+			? Disjoint.from("range", l, r)
+			: orthogonal
 	}
 }
 

@@ -1,6 +1,6 @@
 import type {
-	BoundConstraint,
-	BoundRule,
+	RangeConstraint,
+	RangeRule,
 	Comparator,
 	MaxComparator,
 	MinComparator
@@ -30,7 +30,7 @@ export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound: BoundRule<"min"> | undefined
+	leftBound: RangeRule<"min"> | undefined
 	"&": unknown
 	"|": unknown
 }
