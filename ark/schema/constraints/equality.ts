@@ -3,14 +3,14 @@ import { Disjoint } from "../disjoint.js"
 import { TypeNode } from "../type.js"
 
 export class EqualityConstraint extends TypeNode<unknown> {
+	readonly kind = "equality"
+
 	writeDefaultDescription() {
 		// TODO: add reference to for objects
 		return stringify(this.rule)
 	}
 
-	intersectRules(other: TypeNode) {
-		return this.equals(other)
-			? new EqualityConstraint(this.rule)
-			: Disjoint.from("unit", this, other)
+	intersectUniqueRules(other: TypeNode) {
+		return Disjoint.from("unit", this, other)
 	}
 }

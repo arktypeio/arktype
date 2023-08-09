@@ -39,7 +39,7 @@ export class PredicateNode extends TypeNode<ConstraintSet> {
 			: basisDescription
 	}
 
-	intersectRules(other: PredicateNode) {
+	intersectUniqueRules(other: PredicateNode) {
 		let result: ConstraintSet | Disjoint = this.rule
 		for (let i = 0; i < other.rule.length && isArray(result); i++) {
 			result = constrain(this.rule, other.rule[i])

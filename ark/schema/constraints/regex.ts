@@ -10,7 +10,7 @@ export class RegexConstraint extends TypeNode<RegExp> {
 		return `matched by ${this.rule}`
 	}
 
-	intersectRules(): Orthogonal {
+	intersectUniqueRules(): Orthogonal {
 		return orthogonal
 	}
 }

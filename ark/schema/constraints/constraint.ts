@@ -9,7 +9,7 @@ import type { RegexConstraint } from "./regex.js"
 
 export type ConstraintsByKind = {
 	basis: BasisConstraint
-	bound: RangeConstraint
+	range: RangeConstraint
 	divisibility: DivisibilityConstraint
 	equality: EqualityConstraint
 	narrow: NarrowConstraint

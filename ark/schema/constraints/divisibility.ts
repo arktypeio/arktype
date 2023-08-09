@@ -7,7 +7,7 @@ export class DivisibilityConstraint extends TypeNode<number> {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	intersectRules(other: DivisibilityConstraint) {
+	intersectUniqueRules(other: DivisibilityConstraint) {
 		return (
 			(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
 		)

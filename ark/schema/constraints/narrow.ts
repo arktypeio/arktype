@@ -1,3 +1,4 @@
+import type { Orthogonal } from "../type.js"
 import { orthogonal, TypeNode } from "../type.js"
 
 // TODO: allow changed order to be the same type
@@ -12,7 +13,7 @@ export class NarrowConstraint extends TypeNode<Narrow> {
 		return `valid according to ${this.rule.name}`
 	}
 
-	intersectRules() {
+	intersectUniqueRules(): Orthogonal {
 		return orthogonal
 	}
 }

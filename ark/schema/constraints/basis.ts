@@ -25,7 +25,7 @@ export class BasisConstraint extends TypeNode<BasisRule> {
 	readonly domain: NonEnumerableDomain =
 		this.basisKind === "domain" ? (this.rule as NonEnumerableDomain) : "object"
 
-	intersectRules(other: TypeNode) {
+	intersectUniqueRules(other: TypeNode) {
 		if (!other.hasKind("basis")) {
 			return orthogonal
 		}

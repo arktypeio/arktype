@@ -33,8 +33,8 @@ export class RangeConstraint extends TypeNode<RangeRule> {
 		return `${comparisonDescription} ${this.rule.limit}`
 	}
 
-	intersectRules(other: TypeNode): RangeRule | Disjoint | Orthogonal {
-		if (!other.hasKind("bound")) {
+	intersectUniqueRules(other: TypeNode): RangeRule | Disjoint | Orthogonal {
+		if (!other.hasKind("range")) {
 			return orthogonal
 		}
 		const l = this.rule

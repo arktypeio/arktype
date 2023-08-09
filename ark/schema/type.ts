@@ -22,7 +22,7 @@ export abstract class TypeNode<
 
 	abstract writeDefaultDescription(): string
 
-	abstract intersectRules(other: TypeNode): rule | Orthogonal | Disjoint
+	abstract intersectUniqueRules(other: TypeNode): rule | Orthogonal | Disjoint
 
 	hasKind<kind extends NodeKind>(kind: kind): this is NodesByKind[kind] {
 		return this.kind === kind
@@ -31,9 +31,11 @@ export abstract class TypeNode<
 	// Ensure the signature of this method reflects whether Disjoint and/or null
 	// are possible intersection results for the subclass.
 	intersect(
-		other: this
-	): this | Extract<ReturnType<this["intersectRules"]>, Orthogonal | Disjoint> {
-		const ruleIntersection = this.intersectRules(other)
+		other: TypeNode
+	):
+		| this
+		| Extract<ReturnType<this["intersectUniqueRules"]>, Orthogonal | Disjoint> {
+		const ruleIntersection = this.intersectUniqueRules(other)
 		if (
 			ruleIntersection === orthogonal ||
 			ruleIntersection instanceof Disjoint
