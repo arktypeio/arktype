@@ -1,5 +1,12 @@
+import type { mutable } from "@arktype/util"
+import {
+	ReadonlyArray,
+	throwInternalError,
+	throwParseError
+} from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { ConstraintSet, PredicateNode } from "../predicate.js"
+import type { PredicateNode } from "../predicate.js"
+import type { IntersectableRecord } from "../shared.js"
 import type { Orthogonal } from "../type.js"
 import { TypeNode } from "../type.js"
 import type { BasisConstraint } from "./basis.js"

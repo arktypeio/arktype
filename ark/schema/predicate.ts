@@ -1,6 +1,9 @@
 import type { Domain, extend, mutable } from "@arktype/util"
+import { isArray, throwInternalError } from "@arktype/util"
+import type { UniversalAttributes } from "./attributes/attribute.js"
 import type { BasisRule } from "./constraints/basis.js"
 import type { BoundSet } from "./constraints/bound.js"
+
 import type { Constraint } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"
 import type { EqualityConstraint } from "./constraints/equality.js"
@@ -9,12 +12,20 @@ import type { RegexSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import { TypeNode } from "./type.js"
 
-export type ConstraintSet = readonly Constraint[]
-
 export class PredicateNode extends TypeNode<ConstraintSet> {
 	declare readonly id: string
+	readonly kind = "predicate"
 
-	constructor(input: ConstraintSet) {}
+	static from(constraints: ConstraintSet, attributes: UniversalAttributes) {
+		const validatedConstraints = constraints.reduce<ConstraintSet>(
+			(set, constraint) => {
+				const next = constrain(set, constraint)
+				return next instanceof Disjoint ? next.throw() : next
+			},
+			[]
+		)
+		return new PredicateNode(validatedConstraints, attributes)
+	}
 
 	// readonly references: readonly TypeNode[] = this.props?.references ?? []
 
@@ -35,36 +46,19 @@ export class PredicateNode extends TypeNode<ConstraintSet> {
 			: basisDescription
 	}
 
-	// TODO: make sure in cases like range, the result is sorted
-	intersect(other: ConstraintSet<constraints>) {
-		const result = [] as mutable<ConstraintSet>
-		let includesConstraint = false
-		for (let i = 0; i < this.rule.length; i++) {
-			const elementResult = this.rule[i].intersect(constraint)
-			if (elementResult === null) {
-				result.push(this.rule[i])
-			} else if (elementResult instanceof Disjoint) {
-				return elementResult
-			} else {
-				result.push(elementResult)
-				includesConstraint = true
-			}
+	intersectRules(other: PredicateNode) {
+		let result: ConstraintSet | Disjoint = this.rule
+		for (let i = 0; i < other.rule.length && isArray(result); i++) {
+			result = constrain(this.rule, other.rule[i])
 		}
-		if (!includesConstraint) {
-			result.push(constraint)
-		}
-		for (
-			let i = 0;
-			i < other.length && setResult instanceof ConstraintSet;
-			i++
-		) {
-			setResult = setResult.add(other[i])
-		}
-		return setResult
+		return result
 	}
 
 	constrain(constraint: Constraint): PredicateNode {
-		return this.intersect(new PredicateNode([constraint], {}))
+		const result = constrain(this.rule, constraint)
+		return result instanceof Disjoint
+			? result.throw()
+			: new PredicateNode(result, this.attributes)
 	}
 
 	// keyof(): TypeNode {
@@ -73,25 +67,6 @@ export class PredicateNode extends TypeNode<ConstraintSet> {
 	// 	}
 	// 	const propsKey = this.props?.keyof()
 	// 	return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
-	// }
-
-	// constrain<kind extends ConstraintKind>(
-	// 	kind: kind,
-	// 	rule: InputDefinitions,
-	// 	// TODO: Fix NodeInputs
-	// 	meta: {}
-	// ): PredicateNode {
-	// 	// TODO: this cast shouldn't be needed
-	// 	const constraint = createNode([kind, rule, meta as never])
-	// 	assertAllowsConstraint(this.basis, constraint)
-	// 	const result = this.intersect(
-	// 		// TODO: fix cast
-	// 		new PredicateNode({ [kind]: constraint as never }, this.meta)
-	// 	)
-	// 	if (result instanceof Disjoint) {
-	// 		return result.throw()
-	// 	}
-	// 	return result
 	// }
 }
 
@@ -172,3 +147,33 @@ export type DateConstraints = extend<
 // 	// narrow
 // 	narrow: 3
 // }
+
+export type ConstraintSet = readonly Constraint[]
+
+// TODO: make sure in cases like range, the result is sorted
+const constrain = (
+	set: ConstraintSet,
+	constraint: Constraint
+): ConstraintSet | Disjoint => {
+	const result = [] as mutable<ConstraintSet>
+	let includesConstraint = false
+	for (let i = 0; i < set.length; i++) {
+		const elementResult = set[i].intersect(constraint)
+		if (elementResult === null) {
+			result.push(set[i])
+		} else if (elementResult instanceof Disjoint) {
+			return elementResult
+		} else if (!includesConstraint) {
+			result.push(elementResult)
+			includesConstraint = true
+		} else if (!result.includes(elementResult)) {
+			return throwInternalError(
+				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+			)
+		}
+	}
+	if (!includesConstraint) {
+		result.push(constraint)
+	}
+	return result
+}

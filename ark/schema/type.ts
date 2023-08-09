@@ -12,7 +12,7 @@ export abstract class TypeNode<
 	rule = unknown,
 	attributes extends AttributesRecord = UniversalAttributes
 > {
-	constructor(
+	protected constructor(
 		public rule: rule,
 		public attributes: attributes
 	) {}
