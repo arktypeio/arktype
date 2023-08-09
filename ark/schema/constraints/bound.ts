@@ -12,14 +12,24 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind> {
 export class BoundConstraint<
 	limitKind extends LimitKind = LimitKind
 > extends Constraint<BoundRule<limitKind>> {
-	readonly comparator = boundToComparator(this.rule)
-
 	writeDefaultDescription() {
-		return `${
+		const comparisonDescription =
 			this.rule.dataKind === "date"
-				? dateComparatorDescriptions[boundToComparator(this.rule)]
-				: numericComparatorDescriptions[boundToComparator(this.rule)]
-		} ${this.rule.limit}`
+				? this.rule.limitKind === "min"
+					? this.rule.exclusive
+						? "after"
+						: "at or after"
+					: this.rule.exclusive
+					? "before"
+					: "at or before"
+				: this.rule.limitKind === "min"
+				? this.rule.exclusive
+					? "more than"
+					: "at least"
+				: this.rule.exclusive
+				? "less than"
+				: "at most"
+		return `${comparisonDescription} ${this.rule.limit}`
 	}
 
 	intersectRules(
@@ -53,20 +63,6 @@ export class BoundConstraint<
 	}
 }
 
-export const BoundSet = ConstraintSet<
-	| readonly [BoundConstraint]
-	| readonly [BoundConstraint<"min">, BoundConstraint<"max">]
->
-
-export type BoundSet = InstanceType<typeof BoundSet>
-
-const boundToComparator = <limitKind extends LimitKind>(
-	bound: BoundRule<limitKind>
-) =>
-	`${bound.limitKind === "min" ? ">" : "<"}${
-		bound.exclusive ? "" : "="
-	}` as limitKind extends "min" ? MinComparator : MaxComparator
-
 const unitsByBoundedKind = {
 	date: "",
 	number: "",
@@ -77,41 +73,6 @@ const unitsByBoundedKind = {
 export type BoundableDataKind = keyof typeof unitsByBoundedKind
 
 export type LimitKind = "min" | "max"
-
-export const minComparators = {
-	">": true,
-	">=": true
-} as const
-
-export type MinComparator = keyof typeof minComparators
-
-export const maxComparators = {
-	"<": true,
-	"<=": true
-} as const
-
-export type MaxComparator = keyof typeof maxComparators
-
-export const comparators = {
-	...minComparators,
-	...maxComparators
-}
-
-export type Comparator = keyof typeof comparators
-
-export const numericComparatorDescriptions = {
-	"<": "less than",
-	">": "more than",
-	"<=": "at most",
-	">=": "at least"
-} as const satisfies Record<Comparator, string>
-
-export const dateComparatorDescriptions = {
-	"<": "before",
-	">": "after",
-	"<=": "at or before",
-	">=": "at or after"
-} as const satisfies Record<Comparator, string>
 
 export const writeIncompatibleRangeMessage = (
 	l: BoundableDataKind,

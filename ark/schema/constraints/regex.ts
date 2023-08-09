@@ -1,4 +1,5 @@
-import { Constraint, ConstraintSet } from "./constraint.js"
+import type { Orthogonal } from "./constraint.js"
+import { Constraint, orthogonal } from "./constraint.js"
 
 export class RegexConstraint extends Constraint<RegExp> {
 	readonly literal = `${this.rule}` as `/${string}/${string}`
@@ -8,14 +9,11 @@ export class RegexConstraint extends Constraint<RegExp> {
 		return `matched by ${this.rule}`
 	}
 
-	intersectRules(other: RegexConstraint) {
-		return this.literal === other.literal ? this.rule : null
+	// TODO: remove annotation?
+	intersectConstraint(): Orthogonal {
+		return orthogonal
 	}
 }
-
-export const RegexSet = ConstraintSet<readonly RegexConstraint[]>
-
-export type RegexSet = InstanceType<typeof RegexSet>
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>

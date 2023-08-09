@@ -128,3 +128,7 @@ export const compilePropAccess = (name: string, optional = false) =>
 // 		? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
 // 		: `typeof ${In} === "${this.rule}"`
 // }
+
+// const boundToComparator = <limitKind extends LimitKind>(
+// 	bound: BoundRule<limitKind>
+// ) => `${bound.limitKind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}`

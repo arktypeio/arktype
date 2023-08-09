@@ -17,14 +17,7 @@ export class PredicateNode extends TypeNode<ConstraintSet> {
 	readonly kind = "predicate"
 
 	static from(constraints: ConstraintSet, attributes: UniversalAttributes) {
-		const validatedConstraints = constraints.reduce<ConstraintSet>(
-			(set, constraint) => {
-				const next = constrain(set, constraint)
-				return next instanceof Disjoint ? next.throw() : next
-			},
-			[]
-		)
-		return new PredicateNode(validatedConstraints, attributes)
+		return new PredicateNode(constraints, attributes)
 	}
 
 	// readonly references: readonly TypeNode[] = this.props?.references ?? []
