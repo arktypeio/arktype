@@ -5,18 +5,18 @@ import { Disjoint } from "./disjoint.js"
 import type { CompilationContext } from "./io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "./io/compile.js"
 import { PredicateNode } from "./predicate.js"
-import { TypeNode } from "./type.js"
+import { BaseNode } from "./type.js"
 
 export type TypeRule = UnresolvedTypeNode | readonly PredicateNode[]
 
-export type MaybeResolvedTypeNode = TypeNode | UnresolvedTypeNode
+export type MaybeResolvedTypeNode = BaseNode | UnresolvedTypeNode
 
 export type UnresolvedTypeNode = {
 	alias: string
-	resolve: Thunk<TypeNode>
+	resolve: Thunk<BaseNode>
 }
 
-export class UnionNode<t = unknown> extends TypeNode<unknown> {
+export class UnionNode<t = unknown> extends BaseNode<unknown> {
 	declare [inferred]: t
 	readonly kind = "type"
 	readonly alias = ""
@@ -31,7 +31,7 @@ export class UnionNode<t = unknown> extends TypeNode<unknown> {
 		return this.cachedBranches!
 	}
 
-	readonly references: readonly TypeNode[] = hasKey(this.branches, "resolve")
+	readonly references: readonly BaseNode[] = hasKey(this.branches, "resolve")
 		? // TODO: unresolved?
 		  []
 		: this.branches.flatMap((predicate) => [...predicate.references])
@@ -57,16 +57,16 @@ export class UnionNode<t = unknown> extends TypeNode<unknown> {
 			: this.alias
 	}
 
-	intersect(other: TypeNode): TypeNode | Disjoint {
+	intersect(other: BaseNode): BaseNode | Disjoint {
 		if (this.branches.length === 1 && other.branches.length === 1) {
 			const result = this.branches[0].intersect(other.branches[0])
 			return result instanceof Disjoint
 				? result
-				: new TypeNode([result], this.meta)
+				: new BaseNode([result], this.meta)
 		}
 		const resultBranches = intersectBranches(this.branches, other.branches)
 		return resultBranches.length
-			? new TypeNode(resultBranches, this.meta)
+			? new BaseNode(resultBranches, this.meta)
 			: Disjoint.from("union", this, other)
 	}
 
@@ -75,7 +75,7 @@ export class UnionNode<t = unknown> extends TypeNode<unknown> {
 		return discriminate(this.branches)
 	}
 
-	array(): TypeNode<t[]> {
+	array(): BaseNode<t[]> {
 		// const props = new PropertiesNode(
 		//     [{ key: arrayIndexTypeNode(), value: this }],
 		//     this.meta
@@ -86,26 +86,26 @@ export class UnionNode<t = unknown> extends TypeNode<unknown> {
 			},
 			this.meta
 		)
-		return new TypeNode([predicate], this.meta)
+		return new BaseNode([predicate], this.meta)
 	}
 
-	isNever(): this is TypeNode<never> {
+	isNever(): this is BaseNode<never> {
 		return this.branches.length === 0
 	}
 
-	isUnknown(): this is TypeNode<unknown> {
+	isUnknown(): this is BaseNode<unknown> {
 		return this.branches.length === 1 && this.branches[0].children.length === 0
 	}
 
-	and<other>(other: TypeNode<other>) {
+	and<other>(other: BaseNode<other>) {
 		const result = this.intersect(other as never)
 		return result instanceof Disjoint
 			? result.throw()
-			: (result as TypeNode<inferIntersection<t, other>>)
+			: (result as BaseNode<inferIntersection<t, other>>)
 	}
 
-	or<other>(other: TypeNode<other>) {
-		return new TypeNode<t | other>(
+	or<other>(other: BaseNode<other>) {
+		return new BaseNode<t | other>(
 			reduceBranches([...this.branches, ...other.branches]),
 			this.meta
 		)
@@ -115,8 +115,8 @@ export class UnionNode<t = unknown> extends TypeNode<unknown> {
 		kind: kind,
 		rule: NodeKinds[kind]["rule"],
 		meta: NodeKinds[kind]["meta"]
-	): TypeNode<t> {
-		return new TypeNode(
+	): BaseNode<t> {
+		return new BaseNode(
 			this.branches.map((branch) =>
 				branch.constrain(kind, rule as never, meta as never)
 			),
@@ -124,11 +124,11 @@ export class UnionNode<t = unknown> extends TypeNode<unknown> {
 		)
 	}
 
-	equals<other>(other: TypeNode<other>): this is TypeNode<other> {
+	equals<other>(other: BaseNode<other>): this is BaseNode<other> {
 		return false
 	}
 
-	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
+	extends<other>(other: BaseNode<other>): this is BaseNode<other> {
 		// this.intersect(other as never) === this
 		return false
 	}
@@ -137,11 +137,11 @@ export class UnionNode<t = unknown> extends TypeNode<unknown> {
 		return this.branches.reduce(
 			(result, branch) => result.and(branch.keyof()),
 			builtins.unknown()
-		) as TypeNode<keyof t>
+		) as BaseNode<keyof t>
 	}
 
 	// TODO: TS implementation? test?
-	getPath(...path: (string | TypeNode<string>)[]): TypeNode {
+	getPath(...path: (string | BaseNode<string>)[]): BaseNode {
 		let current: readonly PredicateNode[] = this.branches
 		let next: PredicateNode[] = []
 		while (path.length) {
@@ -158,7 +158,7 @@ export class UnionNode<t = unknown> extends TypeNode<unknown> {
 			current = next
 			next = []
 		}
-		return new TypeNode(current, this.meta)
+		return new BaseNode(current, this.meta)
 	}
 }
 
@@ -166,7 +166,7 @@ export const isUnresolvedNode = (
 	node: MaybeResolvedTypeNode
 ): node is UnresolvedTypeNode => hasKey(node, "resolve")
 
-export const maybeResolve = (node: MaybeResolvedTypeNode): TypeNode =>
+export const maybeResolve = (node: MaybeResolvedTypeNode): BaseNode =>
 	isUnresolvedNode(node) ? node.resolve() : node
 
 export const reduceBranches = (branchNodes: PredicateNode[]) => {
@@ -209,7 +209,7 @@ export type inferTypeInput<input extends TypeInput> =
 		? inferBranches<input>
 		: input extends ConstraintInputs
 		? inferPredicateDefinition<input>
-		: input extends TypeNode<infer t>
+		: input extends BaseNode<infer t>
 		? t
 		: never
 
@@ -257,14 +257,14 @@ const typeNode = <const input extends listable<ConstraintInputs>>(
 	// TODO: check all usages to ensure metadata is being propagated
 	meta = {}
 ) =>
-	new TypeNode(
+	new BaseNode(
 		listFrom(input).map((branch) => predicateNode(branch)),
 		meta
 	)
 
 // TODO: could every node have the same functionality as type node?
 const unit = <const values extends readonly unknown[]>(...values: values) =>
-	typeNode(values.map((value) => ({ basis: ["===", value] }))) as TypeNode<
+	typeNode(values.map((value) => ({ basis: ["===", value] }))) as BaseNode<
 		values[number]
 	>
 

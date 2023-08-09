@@ -3,12 +3,11 @@ import type {
 	AttributesRecord,
 	UniversalAttributes
 } from "./attributes/attribute.js"
-import type { ConstraintsByKind } from "./constraints/constraint.js"
-import { Disjoint } from "./disjoint.js"
+import type { Disjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 import type { UnionNode } from "./union.js"
 
-export abstract class TypeNode<
+export abstract class BaseNode<
 	rule = unknown,
 	attributes extends AttributesRecord = UniversalAttributes
 > {
@@ -22,30 +21,13 @@ export abstract class TypeNode<
 
 	abstract writeDefaultDescription(): string
 
-	abstract intersectUniqueRules(other: TypeNode): rule | Orthogonal | Disjoint
+	abstract intersect(other: this): this | Disjoint
 
 	hasKind<kind extends NodeKind>(kind: kind): this is NodesByKind[kind] {
 		return this.kind === kind
 	}
 
-	// Ensure the signature of this method reflects whether Disjoint and/or null
-	// are possible intersection results for the subclass.
-	intersect(
-		other: TypeNode
-	):
-		| this
-		| Extract<ReturnType<this["intersectUniqueRules"]>, Orthogonal | Disjoint> {
-		const ruleIntersection = this.intersectUniqueRules(other)
-		if (
-			ruleIntersection === orthogonal ||
-			ruleIntersection instanceof Disjoint
-		) {
-			return ruleIntersection as never
-		}
-		return new (this.constructor as any)(ruleIntersection)
-	}
-
-	equals(other: TypeNode) {
+	equals(other: BaseNode) {
 		return this.id === other.id
 	}
 
@@ -63,9 +45,3 @@ export type NodesByKind = extend<
 >
 
 export type NodeKind = keyof NodesByKind
-
-export const orthogonal = Symbol(
-	"Represents an intersection result between two compatible but independent constraints"
-)
-
-export type Orthogonal = typeof orthogonal

@@ -1,34 +1,29 @@
 import type { Domain, extend, mutable } from "@arktype/util"
 import { isArray, throwInternalError } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { BasisRule } from "./constraints/basis.js"
-import type { BoundSet } from "./constraints/range.js"
-
-import type { Constraint } from "./constraints/constraint.js"
+import type { BasisConstraint } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"
 import type { EqualityConstraint } from "./constraints/equality.js"
-import type { NarrowSet } from "./constraints/narrow.js"
-import type { RegexSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
-import { TypeNode } from "./type.js"
+import { BaseNode, orthogonal } from "./type.js"
 
-export class PredicateNode extends TypeNode<ConstraintSet> {
-	declare readonly id: string
+export class PredicateNode extends BaseNode<ConstraintSet> {
 	readonly kind = "predicate"
 
 	static from(constraints: ConstraintSet, attributes: UniversalAttributes) {
-		return new PredicateNode(constraints, attributes)
+		return new PredicateNode(
+			constraints.reduce<ConstraintSet>((set, constraint) => {
+				const next = set.add(constraint)
+				return next instanceof Disjoint ? next.throw() : next
+			}, []),
+			attributes
+		)
 	}
 
 	// readonly references: readonly TypeNode[] = this.props?.references ?? []
 
 	readonly domain: Domain = "string"
-
-	// readonly flat = Object.values(this.rule).flat()
-	// readonly unit =
-	// 	this.flat.length === 1 && this.flat[0] instanceof EqualityConstraint
-	// 		? this.flat[0]
-	// 		: undefined
+	readonly basis: BasisConstraint
 
 	writeDefaultDescription() {
 		const basisDescription =
@@ -109,9 +104,9 @@ export type ArrayConstraints = extend<
 	BasisConstraints<typeof Array>,
 	{
 		readonly length?: BoundSet
-		readonly prefixed?: readonly TypeNode[]
-		readonly variadic?: TypeNode
-		readonly postfixed?: readonly TypeNode[]
+		readonly prefixed?: readonly BaseNode[]
+		readonly variadic?: BaseNode
+		readonly postfixed?: readonly BaseNode[]
 	}
 >
 
@@ -152,7 +147,7 @@ const constrain = (
 	let includesConstraint = false
 	for (let i = 0; i < set.length; i++) {
 		const elementResult = set[i].intersect(constraint)
-		if (elementResult === null) {
+		if (elementResult === orthogonal) {
 			result.push(set[i])
 		} else if (elementResult instanceof Disjoint) {
 			return elementResult

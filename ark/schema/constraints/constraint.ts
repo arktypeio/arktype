@@ -1,14 +1,59 @@
-import { ReadonlyArray, throwInternalError } from "@arktype/util"
+import { type extend, type mutable, throwInternalError } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { BasisConstraint } from "./basis.js"
+import type { PredicateNode } from "../predicate.js"
+import { BaseNode } from "../type.js"
+import type { UnionNode } from "../union.js"
+import type { ConstructorConstraint } from "./constructor.js"
 import type { DivisibilityConstraint } from "./divisibility.js"
+import type { DomainConstraint } from "./domain.js"
 import type { EqualityConstraint } from "./equality.js"
 import type { NarrowConstraint } from "./narrow.js"
 import type { RangeConstraint } from "./range.js"
 import type { RegexConstraint } from "./regex.js"
 
+export abstract class ConstraintNode<rule = unknown> extends BaseNode<rule> {
+	assertAllowedBy?(basis: BasisConstraint): true
+
+	abstract intersectRules(other: this): rule | Orthogonal | Disjoint
+
+	intersect(
+		other: this
+		// Ensure the signature of this method reflects whether Disjoint and/or null
+		// are possible intersection results for the subclass.
+	): this | Extract<ReturnType<this["intersectRules"]>, Orthogonal | Disjoint> {
+		const ruleIntersection = this.intersectRules(other)
+		if (
+			ruleIntersection === orthogonal ||
+			ruleIntersection instanceof Disjoint
+		) {
+			return ruleIntersection as never
+		}
+		return new (this.constructor as any)(ruleIntersection)
+	}
+}
+
+export type BasisConstraint = DomainConstraint | ConstructorConstraint
+
+export type NodesByKind = extend<
+	ConstraintsByKind,
+	{
+		predicate: PredicateNode
+		union: UnionNode
+	}
+>
+
+export type NodeKind = keyof NodesByKind
+
+export const orthogonal = Symbol(
+	"Represents an intersection result between two compatible but independent constraints"
+)
+
+export type Orthogonal = typeof orthogonal
+
 export type ConstraintsByKind = {
-	basis: BasisConstraint
+	constructor: ConstructorConstraint
+	domain: DomainConstraint
 	range: RangeConstraint
 	divisibility: DivisibilityConstraint
 	equality: EqualityConstraint
@@ -18,46 +63,9 @@ export type ConstraintsByKind = {
 
 export type ConstraintKind = keyof ConstraintsByKind
 
-export type ConstraintNode = ConstraintsByKind[ConstraintKind]
+export type Constraint = ConstraintsByKind[ConstraintKind]
 
-export class ConstraintSet extends ReadonlyArray<readonly ConstraintNode[]> {
-	protected constructor(...constraints: readonly ConstraintNode[]) {
-		super(...constraints)
-	}
-
-	static from(...constraints: readonly ConstraintNode[]) {
-		const set = constraints.reduce<ConstraintSet>((set, constraint) => {
-			const next = set.add(constraint)
-			return next instanceof Disjoint ? next.throw() : next
-		}, new ConstraintSet())
-		return set
-	}
-
-	// TODO: make sure in cases like range, the result is sorted
-	add(constraint: ConstraintNode): ConstraintSet | Disjoint {
-		const result = [] as ConstraintNode[]
-		let includesConstraint = false
-		for (let i = 0; i < this.length; i++) {
-			const elementResult = this[i].intersect(constraint)
-			if (elementResult === null) {
-				result.push(this[i])
-			} else if (elementResult instanceof Disjoint) {
-				return elementResult
-			} else if (!includesConstraint) {
-				result.push(elementResult)
-				includesConstraint = true
-			} else if (!result.includes(elementResult)) {
-				return throwInternalError(
-					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
-				)
-			}
-		}
-		if (!includesConstraint) {
-			result.push(constraint)
-		}
-		return new ConstraintSet(...result)
-	}
-}
+export type ConstraintSet = readonly ConstraintNode[]
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

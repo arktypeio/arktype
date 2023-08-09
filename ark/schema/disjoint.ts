@@ -7,11 +7,11 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { BasisConstraint } from "./constraints/basis.js"
+import type { BasisConstraint } from "./constraints/domain.js"
 import type { RangeConstraint } from "./constraints/range.js"
 import type { UnitNode } from "./constraints/unit.js"
 import type { PredicateNode } from "./predicate.js"
-import type { TypeNode } from "./type.js"
+import type { BaseNode } from "./type.js"
 
 type DisjointKinds = {
 	domain?: {
@@ -40,8 +40,8 @@ type DisjointKinds = {
 				r: UnitNode
 		  }
 	union?: {
-		l: TypeNode
-		r: TypeNode
+		l: BaseNode
+		r: BaseNode
 	}
 }
 

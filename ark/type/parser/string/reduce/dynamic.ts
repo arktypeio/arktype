@@ -1,4 +1,4 @@
-import type { RangeConstraint, Comparator, TypeNode } from "@arktype/schema"
+import type { RangeConstraint, Comparator, BaseNode } from "@arktype/schema"
 import { minComparators } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
@@ -18,15 +18,15 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: RangeConstraint<"min">
-	"&"?: TypeNode
-	"|"?: TypeNode
+	"&"?: BaseNode
+	"|"?: BaseNode
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: TypeNode | undefined
+	root: BaseNode | undefined
 	branches: BranchState = {
 		prefixes: []
 	}
@@ -54,11 +54,11 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<TypeNode["constrain"]>) {
+	constrainRoot(...args: Parameters<BaseNode["constrain"]>) {
 		this.root = this.root!.constrain(...args)
 	}
 
-	setRoot(root: TypeNode) {
+	setRoot(root: BaseNode) {
 		this.root = root
 	}
 

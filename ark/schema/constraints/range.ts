@@ -1,16 +1,18 @@
 import { throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { Orthogonal } from "../type.js"
-import { orthogonal, TypeNode } from "../type.js"
+import type { Orthogonal } from "./constraint.js"
+import { ConstraintNode, orthogonal } from "./constraint.js"
 
-export type RangeRule = {
+export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 	readonly dataKind: BoundableDataKind
-	readonly limitKind: LimitKind
+	readonly limitKind: limitKind
 	readonly limit: number
 	readonly exclusive?: true
 }
 
-export class RangeConstraint extends TypeNode<RangeRule> {
+export class RangeConstraint<
+	limitKind extends LimitKind = LimitKind
+> extends ConstraintNode<RangeRule<limitKind>> {
 	readonly kind = "range"
 
 	writeDefaultDescription() {
@@ -33,10 +35,11 @@ export class RangeConstraint extends TypeNode<RangeRule> {
 		return `${comparisonDescription} ${this.rule.limit}`
 	}
 
-	intersectUniqueRules(other: TypeNode): RangeRule | Disjoint | Orthogonal {
-		if (!other.hasKind("range")) {
-			return orthogonal
-		}
+	intersectRules(
+		other: RangeConstraint
+	) // cast the rule result to the current limitKind
+	: RangeRule<limitKind> | Disjoint | Orthogonal
+	intersectRules(other: RangeConstraint) {
 		const l = this.rule
 		const r = other.rule
 		if (l.dataKind !== r.dataKind) {
@@ -46,13 +49,13 @@ export class RangeConstraint extends TypeNode<RangeRule> {
 		}
 		if (l.limit > r.limit) {
 			if (l.limitKind === "min") {
-				return r.limitKind === "min" ? l : Disjoint.from("range", l, r)
+				return r.limitKind === "min" ? l : Disjoint.from("range", this, other)
 			}
 			return r.limitKind === "max" ? r : orthogonal
 		}
 		if (l.limit < r.limit) {
 			if (l.limitKind === "max") {
-				return r.limitKind === "max" ? l : Disjoint.from("range", l, r)
+				return r.limitKind === "max" ? l : Disjoint.from("range", this, other)
 			}
 			return r.limitKind === "min" ? r : orthogonal
 		}
@@ -60,7 +63,7 @@ export class RangeConstraint extends TypeNode<RangeRule> {
 			return l.exclusive ? l : r
 		}
 		return l.exclusive || r.exclusive
-			? Disjoint.from("range", l, r)
+			? Disjoint.from("range", this, other)
 			: orthogonal
 	}
 }

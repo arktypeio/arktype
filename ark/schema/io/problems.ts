@@ -12,7 +12,7 @@ import {
 	objectKindDescriptions,
 	stringify
 } from "@arktype/util"
-import { domainDescriptions } from "../constraints/basis.js"
+import { domainDescriptions } from "../constraints/domain.js"
 import type {
 	RangeRule,
 	NumericallyBoundableData

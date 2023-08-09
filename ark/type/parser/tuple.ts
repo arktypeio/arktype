@@ -1,4 +1,4 @@
-import type { TypeNode } from "@arktype/schema"
+import type { BaseNode } from "@arktype/schema"
 import type {
 	AbstractableConstructor,
 	BuiltinObjectKind,
@@ -32,7 +32,7 @@ import type { BaseCompletions } from "./string/string.js"
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
+export const parseTupleLiteral = (def: List, ctx: ParseContext): BaseNode => {
 	const props: NodeEntry[] = []
 	let isVariadic = false
 	for (let i = 0; i < def.length; i++) {
@@ -88,7 +88,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 export const maybeParseTupleExpression = (
 	def: List,
 	ctx: ParseContext
-): TypeNode | undefined => {
+): BaseNode | undefined => {
 	const tupleExpressionResult = isIndexOneExpression(def)
 		? indexOneParsers[def[1]](def as never, ctx)
 		: isIndexZeroExpression(def)
@@ -337,12 +337,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => TypeNode
+) => BaseNode
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => TypeNode
+) => BaseNode
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

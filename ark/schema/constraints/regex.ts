@@ -1,7 +1,8 @@
-import type { Orthogonal } from "../type.js"
-import { orthogonal, TypeNode } from "../type.js"
+import { BaseNode } from "../type.js"
+import type { Orthogonal } from "./constraint.js"
+import { ConstraintNode, orthogonal } from "./constraint.js"
 
-export class RegexConstraint extends TypeNode<RegExp> {
+export class RegexConstraint extends ConstraintNode<RegExp> {
 	readonly literal = `${this.rule}` as `/${string}/${string}`
 	readonly kind = "regex"
 
@@ -10,7 +11,7 @@ export class RegexConstraint extends TypeNode<RegExp> {
 		return `matched by ${this.rule}`
 	}
 
-	intersectUniqueRules(): Orthogonal {
+	intersectRules(): Orthogonal {
 		return orthogonal
 	}
 }

@@ -1,8 +1,9 @@
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { TypeNode } from "../type.js"
+import type { BaseNode } from "../type.js"
+import { ConstraintNode } from "./constraint.js"
 
-export class EqualityConstraint extends TypeNode<unknown> {
+export class EqualityConstraint extends ConstraintNode<unknown> {
 	readonly kind = "equality"
 
 	writeDefaultDescription() {
@@ -10,7 +11,7 @@ export class EqualityConstraint extends TypeNode<unknown> {
 		return stringify(this.rule)
 	}
 
-	intersectUniqueRules(other: TypeNode) {
+	intersectRules(other: BaseNode) {
 		return Disjoint.from("unit", this, other)
 	}
 }
