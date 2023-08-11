@@ -122,11 +122,6 @@ const config = {
 						label: "Docs"
 					},
 					{
-						type: "docsVersionDropdown",
-						position: "right",
-						className: "navbar-versions"
-					},
-					{
 						href: "https://github.com/arktypeio/arktype",
 						position: "right",
 						className: "navbar-github"
