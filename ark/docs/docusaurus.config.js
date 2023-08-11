@@ -1,6 +1,5 @@
 // @ts-check
 
-// Automatically generated from ArkDark via https://github.com/FormidableLabs/prism-react-renderer/tree/master/tools/themeFromVsCode
 /** @type {import('prism-react-renderer').PrismTheme} */
 const arkDarkPrismTheme = {
 	plain: {
@@ -149,7 +148,7 @@ const config = {
 							},
 							{
 								label: "Discord",
-								href: "https://discord.gg/WSNF3Kc4xh"
+								href: "https://arktype.io/discord"
 							},
 							{
 								label: "Twitter",

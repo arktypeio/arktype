@@ -1,6 +1,6 @@
 # Contributing
 
-ArkType values the time of its users and contributors as much as its maintainers, so our goal is for the process to be as efficient and straightforward as possible. Whether this is your first pull request or you're a seasoned open source contributor, this guide is the perfect place to start. If you have any other questions, please don't hesitate to [create an issue on GitHub](https://github.com/arktypeio/arktype/issues/new) or reach out [on our Discord](https://discord.gg/WSNF3Kc4xh).
+ArkType values the time of its users and contributors as much as its maintainers, so our goal is for the process to be as efficient and straightforward as possible. Whether this is your first pull request or you're a seasoned open source contributor, this guide is the perfect place to start. If you have any other questions, please don't hesitate to [create an issue on GitHub](https://github.com/arktypeio/arktype/issues/new) or reach out [on our Discord](https://arktype.io/discord).
 
 ## Sending a Pull Request
 

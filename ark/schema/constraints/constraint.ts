@@ -22,6 +22,7 @@ export abstract class ConstraintNode<rule = unknown> extends BaseNode<rule> {
 	// 	other: this
 	// 	// Ensure the signature of this method reflects whether Disjoint and/or null
 	// 	// are possible intersection results for the subclass.
+
 	// ): this | Extract<ReturnType<this["intersectRules"]>, Orthogonal | Disjoint> {
 	// 	const ruleIntersection = this.intersectRules(other)
 	// 	if (
