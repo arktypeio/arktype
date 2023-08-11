@@ -68,6 +68,13 @@ export class RangeConstraint<
 	}
 }
 
+export type RangeSet = SingleBoundedRange | DoubleBoundedRange
+export type SingleBoundedRange = readonly [RangeConstraint]
+export type DoubleBoundedRange = readonly [
+	RangeConstraint<"min">,
+	RangeConstraint<"max">
+]
+
 const unitsByBoundedKind = {
 	date: "",
 	number: "",

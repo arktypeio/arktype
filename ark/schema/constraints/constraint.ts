@@ -1,22 +1,68 @@
-import { type extend } from "@arktype/util"
-import type { Disjoint } from "../disjoint.js"
-import type { PredicateNode } from "../predicate.js"
+import type { listable, satisfy } from "@arktype/util"
 import { BaseNode } from "../type.js"
-import type { UnionNode } from "../union.js"
 import type { ConstructorConstraint } from "./constructor.js"
 import type { DivisibilityConstraint } from "./divisibility.js"
 import type { DomainConstraint } from "./domain.js"
 import type { IdentityConstraint } from "./identity.js"
-import type { NarrowConstraint } from "./narrow.js"
+import type { NarrowConstraint, NarrowSet } from "./narrow.js"
 import type { PropConstraint } from "./prop/prop.js"
-import type { RangeConstraint } from "./range.js"
-import type { RegexConstraint } from "./regex.js"
+import type { RangeConstraint, RangeSet } from "./range.js"
+import type { RegexConstraint, RegexSet } from "./regex.js"
 
 export abstract class ConstraintNode<rule = unknown> extends BaseNode<rule> {
-	assertAllowedBy?(basis: BasisConstraint): void
+	assertAllowedBy?(): void
 }
 
-export type BasisConstraint = DomainConstraint | ConstructorConstraint
+// type ConstraintList = readonly Constraint[]
+
+// /** @ts-expect-error allow extending narrowed readonly array */
+// export class ConstraintSet<
+// 	constraints extends ConstraintList = ConstraintList
+// > extends ReadonlyArray<constraints> {
+// 	// TODO: make sure in cases like range, the result is sorted
+// 	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
+// 		const result = [] as mutable<ConstraintList>
+// 		let includesConstraint = false
+// 		for (let i = 0; i < this.length; i++) {
+// 			const elementResult = this[i].intersect(constraint as never)
+// 			if (elementResult === orthogonal) {
+// 				result.push(this[i])
+// 			} else if (elementResult instanceof Disjoint) {
+// 				return elementResult
+// 			} else if (!includesConstraint) {
+// 				result.push(elementResult)
+// 				includesConstraint = true
+// 			} else if (!result.includes(elementResult)) {
+// 				return throwInternalError(
+// 					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+// 				)
+// 			}
+// 		}
+// 		if (!includesConstraint) {
+// 			result.push(constraint)
+// 		}
+// 		return new ConstraintSet(result)
+// 	}
+
+// 	intersect(other: ConstraintSet<constraints>) {
+// 		return this.reduce<ConstraintSet>((set, constraint) => {
+// 			const next = constrain(set, constraint)
+// 			return next instanceof Disjoint ? next.throw() : next
+// 		}, []),
+// 		let setResult: ConstraintSet<constraints> | Disjoint = this
+// 		for (
+// 			let i = 0;
+// 			i < other.length && setResult instanceof ConstraintSet;
+// 			i++
+// 		) {
+// 			if (setResult instanceof Disjoint) {
+// 				return setResult
+// 			}
+// 			setResult = setResult.add(other[i])
+// 		}
+// 		return setResult
+// 	}
+// }
 
 export type ConstraintsByKind = {
 	constructor: ConstructorConstraint
@@ -31,7 +77,22 @@ export type ConstraintsByKind = {
 
 export type ConstraintKind = keyof ConstraintsByKind
 
-export type Constraint = ConstraintsByKind[ConstraintKind]
+export type Constraint<kind extends ConstraintKind = ConstraintKind> =
+	ConstraintsByKind[kind]
+
+export type ConstraintSetsByKind = satisfy<
+	{ [kind in ConstraintKind]: listable<Constraint<kind>> },
+	{
+		constructor: ConstructorConstraint
+		domain: DomainConstraint
+		range: RangeSet
+		divisibility: DivisibilityConstraint
+		identity: IdentityConstraint
+		narrow: NarrowSet
+		regex: RegexSet
+		prop: PropConstraint
+	}
+>
 
 export type ConstraintSet = readonly ConstraintNode[]
 

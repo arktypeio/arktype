@@ -16,6 +16,8 @@ export class RegexConstraint extends ConstraintNode<RegExp> {
 	}
 }
 
+export type RegexSet = readonly RegexConstraint[]
+
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>
 	`${regex}` as SerializedRegexLiteral

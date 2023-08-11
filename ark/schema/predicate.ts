@@ -1,8 +1,9 @@
 import type { Domain, extend, mutable } from "@arktype/util"
 import { isArray, throwInternalError } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { BasisConstraint, Constraint } from "./constraints/constraint.js"
+import type { Constraint } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"
+import type { NonEnumerableDomain } from "./constraints/domain.js"
 import type { IdentityConstraint } from "./constraints/identity.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode, orthogonal } from "./type.js"
@@ -13,7 +14,7 @@ export class PredicateNode extends BaseNode<ConstraintSet> {
 	static from(constraints: ConstraintSet, attributes: UniversalAttributes) {
 		return new PredicateNode(
 			constraints.reduce<ConstraintSet>((set, constraint) => {
-				const next = set.add(constraint)
+				const next = constrain(set, constraint)
 				return next instanceof Disjoint ? next.throw() : next
 			}, []),
 			attributes
@@ -21,9 +22,6 @@ export class PredicateNode extends BaseNode<ConstraintSet> {
 	}
 
 	// readonly references: readonly TypeNode[] = this.props?.references ?? []
-
-	readonly domain: Domain = "string"
-	readonly basis: BasisConstraint
 
 	writeDefaultDescription() {
 		const basisDescription =
@@ -72,25 +70,27 @@ export type UnknownConstraints = {
 	readonly narrow?: NarrowSet
 }
 
-export type BasisConstraints<basis extends BasisRule = BasisRule> = extend<
+export type DomainConstraints<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> = extend<
 	UnknownConstraints,
 	{
-		readonly basis: basis
+		readonly domain: domain
 	}
 >
 
 export type NumberConstraints = extend<
-	BasisConstraints<"number">,
+	DomainConstraints<"number">,
 	{
 		readonly range?: BoundSet
 		readonly divisor?: DivisibilityConstraint
 	}
 >
 
-export type ObjectConstraints = BasisConstraints<"object">
+export type ObjectConstraints = DomainConstraints<"object">
 
 export type StringConstraints = extend<
-	BasisConstraints<"string">,
+	DomainConstraints<"string">,
 	{
 		readonly length?: BoundSet
 		readonly pattern?: RegexSet
@@ -101,7 +101,7 @@ export type StringConstraints = extend<
 // to a single variadic number prop with minLength 1
 // Figure out best design for integrating with named props.
 export type ArrayConstraints = extend<
-	BasisConstraints<typeof Array>,
+	DomainConstraints<typeof Array>,
 	{
 		readonly length?: BoundSet
 		readonly prefixed?: readonly BaseNode[]
@@ -111,7 +111,7 @@ export type ArrayConstraints = extend<
 >
 
 export type DateConstraints = extend<
-	BasisConstraints<typeof Date>,
+	DomainConstraints<typeof Date>,
 	{
 		readonly range?: BoundSet
 	}

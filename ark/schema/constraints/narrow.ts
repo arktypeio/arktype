@@ -18,6 +18,8 @@ export class NarrowConstraint extends ConstraintNode<Narrow> {
 	}
 }
 
+export type NarrowSet = readonly NarrowConstraint[]
+
 export type Narrow<data = any> = (data: data) => boolean
 
 export type NarrowCast<data = any, narrowed extends data = data> = (
