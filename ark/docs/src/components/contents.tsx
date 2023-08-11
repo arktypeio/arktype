@@ -7,7 +7,7 @@ import {
 	FloatingInstallationBlock,
 	MobileInstallationBlock
 } from "./installationBlock"
-import { useInstallationBlockShouldFloat } from "./useWindowSize"
+import { useInstallationBlockShouldFloat } from "./utils"
 
 export const Contents = () => {
 	const { colorMode } = useColorMode()
@@ -15,6 +15,7 @@ export const Contents = () => {
 		<main style={{ display: "flex", justifyContent: "center" }}>
 			<Stack
 				justifyContent="center"
+				alignItems="center"
 				padding="1rem 0rem 1rem"
 				spacing={1}
 				width="100%"
@@ -28,7 +29,6 @@ export const Contents = () => {
 				)}
 				<Typography
 					color={colorMode === "dark" ? "primary.light" : "primary.dark"}
-					className="contents"
 					fontSize="1.3rem"
 				>
 					{/* @blockFrom:README.md:intro */}

@@ -3,7 +3,7 @@ import { Stack, Typography, useTheme } from "@mui/material"
 import Code from "@theme/CodeBlock"
 import React from "react"
 import { AutoplayDemo } from "./autoplayDemo"
-import { useIsMobile } from "./useWindowSize"
+import { useIsMobile } from "./utils"
 
 const IsomorphicCodeBlock = (
 	<div className="inferable-code">
@@ -207,9 +207,7 @@ const Feature = (props: FeatureProps) => {
 			>
 				{props.description}
 			</Typography>
-			<div style={{ padding: "6px", borderRadius: "16px" }}>
-				{props.image ?? null}
-			</div>
+			<div>{props.image ?? null}</div>
 		</Stack>
 	)
 }

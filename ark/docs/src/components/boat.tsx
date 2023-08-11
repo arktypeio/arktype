@@ -1,13 +1,12 @@
 import BoatSvg from "@site/static/img/boat.svg"
 import { motion } from "framer-motion"
 import React from "react"
-import { useWindowSize } from "./useWindowSize"
 
 const BOB_HEIGHT_PX = 2
 const BOB_WIDTH_PX = 16
 
 export const Boat = () => {
-	const { width } = useWindowSize()
+	const width = window.innerWidth
 	const loopDuration = width / BOB_WIDTH_PX
 	const bobFrames: number[] = []
 	for (let i = 0; i < loopDuration; i++) {

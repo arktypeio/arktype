@@ -11,11 +11,11 @@ export const FloatingInstallationBlock = () => {
 	const initial = {
 		position: "absolute",
 		top: 60,
-		width: 386
+		width: 350
 	} as const satisfies Parameters<(typeof controls)["start"]>[0]
-	scrollY.onChange((value) => {
+	scrollY.on("change", (value) => {
 		controls.start(
-			value ? { position: "fixed", top: "50%", width: 340 } : initial
+			value ? { position: "fixed", top: "50%", width: 250 } : initial
 		)
 	})
 	return (
@@ -31,10 +31,9 @@ export const MobileInstallationBlock = () => (
 	</div>
 )
 
-export const InstallationBlock = () => (
+const InstallationBlock = () => (
 	<Card
 		style={{
-			height: "8rem",
 			margin: ".5rem",
 			padding: ".7rem 1rem 0rem",
 			backgroundColor: "#ffffff00",
@@ -46,26 +45,14 @@ export const InstallationBlock = () => (
 		elevation={8}
 	>
 		<Tabs className="installationTabs">
-			<TabItem value="node" default>
-				<Tabs className="subTabs">
-					<TabItem value="npm" attributes={{ className: "npmTab" }}>
-						<Code language="bash">npm install arktype</Code>
-					</TabItem>
-					<TabItem value="pnpm" attributes={{ className: "pnpmTab" }}>
-						<Code language="bash">pnpm add arktype</Code>
-					</TabItem>
-					<TabItem value="yarn" attributes={{ className: "yarnTab" }}>
-						<Code language="bash">yarn add arktype</Code>
-					</TabItem>
-				</Tabs>
+			<TabItem value="npm" attributes={{ className: "npmTab" }}>
+				<Code language="bash">npm install arktype</Code>
 			</TabItem>
-			<TabItem value="bun" label="bun">
-				<Code language="bash">bun install arktype</Code>
+			<TabItem value="pnpm" attributes={{ className: "pnpmTab" }}>
+				<Code language="bash">pnpm add arktype</Code>
 			</TabItem>
-			<TabItem value="deno" label="deno">
-				<Code language="typescript">
-					{`import { type } from "npm:arktype"`}
-				</Code>
+			<TabItem value="yarn" attributes={{ className: "yarnTab" }}>
+				<Code language="bash">yarn add arktype</Code>
 			</TabItem>
 		</Tabs>
 	</Card>
