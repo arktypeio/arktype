@@ -1,5 +1,7 @@
-import type { listable, satisfy } from "@arktype/util"
-import { BaseNode } from "../type.js"
+import type { Constructor, listable, satisfy } from "@arktype/util"
+import { ReadonlyArray, throwInternalError } from "@arktype/util"
+import { Disjoint } from "../disjoint.js"
+import { BaseNode, orthogonal } from "../type.js"
 import type { ConstructorConstraint } from "./constructor.js"
 import type { DivisibilityConstraint } from "./divisibility.js"
 import type { DomainConstraint } from "./domain.js"
@@ -13,56 +15,77 @@ export abstract class ConstraintNode<rule = unknown> extends BaseNode<rule> {
 	assertAllowedBy?(): void
 }
 
-// type ConstraintList = readonly Constraint[]
+export const setConstructor =
+	<subclass>(subclass: subclass) =>
+	(
+		constraints: subclass extends typeof ConstraintSet<
+			infer constraints extends readonly Constraint[]
+		>
+			? constraints
+			: never
+	) =>
+		// starting from an empty set, apply and reduce unvalidated constraints
+		intersectConstraints(new (subclass as any)(), constraints)
 
-// /** @ts-expect-error allow extending narrowed readonly array */
-// export class ConstraintSet<
-// 	constraints extends ConstraintList = ConstraintList
-// > extends ReadonlyArray<constraints> {
-// 	// TODO: make sure in cases like range, the result is sorted
-// 	add(constraint: constraints[number]): ConstraintSet<constraints> | Disjoint {
-// 		const result = [] as mutable<ConstraintList>
-// 		let includesConstraint = false
-// 		for (let i = 0; i < this.length; i++) {
-// 			const elementResult = this[i].intersect(constraint as never)
-// 			if (elementResult === orthogonal) {
-// 				result.push(this[i])
-// 			} else if (elementResult instanceof Disjoint) {
-// 				return elementResult
-// 			} else if (!includesConstraint) {
-// 				result.push(elementResult)
-// 				includesConstraint = true
-// 			} else if (!result.includes(elementResult)) {
-// 				return throwInternalError(
-// 					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
-// 				)
-// 			}
-// 		}
-// 		if (!includesConstraint) {
-// 			result.push(constraint)
-// 		}
-// 		return new ConstraintSet(result)
-// 	}
+/** @ts-expect-error allow extending narrowed readonly array */
+export abstract class ConstraintSet<
+	constraints extends readonly Constraint[] = readonly Constraint[]
+> extends ReadonlyArray<constraints> {
+	protected constructor(...constraints: constraints) {
+		super(...constraints)
+	}
 
-// 	intersect(other: ConstraintSet<constraints>) {
-// 		return this.reduce<ConstraintSet>((set, constraint) => {
-// 			const next = constrain(set, constraint)
-// 			return next instanceof Disjoint ? next.throw() : next
-// 		}, []),
-// 		let setResult: ConstraintSet<constraints> | Disjoint = this
-// 		for (
-// 			let i = 0;
-// 			i < other.length && setResult instanceof ConstraintSet;
-// 			i++
-// 		) {
-// 			if (setResult instanceof Disjoint) {
-// 				return setResult
-// 			}
-// 			setResult = setResult.add(other[i])
-// 		}
-// 		return setResult
-// 	}
-// }
+	add(constraint: constraints[number]): this | Disjoint {
+		const withConstraint = addConstraint(this, constraint)
+		return withConstraint instanceof Disjoint
+			? withConstraint
+			: (new (this.constructor as any)(...withConstraint) as this)
+	}
+
+	intersect(other: constraints) {
+		return intersectConstraints(this, other)
+	}
+}
+
+// TODO: make sure in cases like range, the result is sorted
+const addConstraint = <constraints extends readonly Constraint[]>(
+	to: constraints,
+	constraint: constraints[number]
+): readonly Constraint[] | Disjoint => {
+	const result: Constraint[] = []
+	let includesConstraint = false
+	for (let i = 0; i < to.length; i++) {
+		const elementResult = to[i].intersect(constraint as never)
+		if (elementResult === orthogonal) {
+			result.push(to[i])
+		} else if (elementResult instanceof Disjoint) {
+			return elementResult
+		} else if (!includesConstraint) {
+			result.push(elementResult)
+			includesConstraint = true
+		} else if (!result.includes(elementResult)) {
+			return throwInternalError(
+				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+			)
+		}
+	}
+	if (!includesConstraint) {
+		result.push(constraint)
+	}
+	return result
+}
+
+const intersectConstraints = <
+	set extends ConstraintSet<constraints>,
+	constraints extends readonly Constraint[]
+>(
+	set: set,
+	constraints: constraints
+) =>
+	constraints.reduce((set, constraint) => {
+		const next = set.add(constraint)
+		return next instanceof Disjoint ? next.throw() : next
+	}, set)
 
 export type ConstraintsByKind = {
 	constructor: ConstructorConstraint
@@ -93,8 +116,6 @@ export type ConstraintSetsByKind = satisfy<
 		prop: PropConstraint
 	}
 >
-
-export type ConstraintSet = readonly ConstraintNode[]
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,
