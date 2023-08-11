@@ -1,7 +1,8 @@
 import { throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { Orthogonal } from "./constraint.js"
-import { ConstraintNode, orthogonal } from "./constraint.js"
+import type { Orthogonal } from "../type.js"
+import { orthogonal } from "../type.js"
+import { ConstraintNode } from "./constraint.js"
 
 export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 	readonly dataKind: BoundableDataKind
@@ -36,9 +37,8 @@ export class RangeConstraint<
 	}
 
 	intersectRules(
-		other: RangeConstraint
-	) // cast the rule result to the current limitKind
-	: RangeRule<limitKind> | Disjoint | Orthogonal
+		other: RangeConstraint // cast the rule result to the current limitKind
+	): RangeRule<limitKind> | Disjoint | Orthogonal
 	intersectRules(other: RangeConstraint) {
 		const l = this.rule
 		const r = other.rule

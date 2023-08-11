@@ -8,50 +8,15 @@ import type { DivisibilityConstraint } from "./divisibility.js"
 import type { DomainConstraint } from "./domain.js"
 import type { IdentityConstraint } from "./identity.js"
 import type { NarrowConstraint } from "./narrow.js"
+import type { PropConstraint } from "./prop/prop.js"
 import type { RangeConstraint } from "./range.js"
 import type { RegexConstraint } from "./regex.js"
 
 export abstract class ConstraintNode<rule = unknown> extends BaseNode<rule> {
 	assertAllowedBy?(basis: BasisConstraint): void
-
-	abstract intersectRules(other: this): rule | Orthogonal | Disjoint
-
-	declare allows: (data: unknown) => boolean
-
-	// intersect(
-	// 	other: this
-	// 	// Ensure the signature of this method reflects whether Disjoint and/or null
-	// 	// are possible intersection results for the subclass.
-
-	// ): this | Extract<ReturnType<this["intersectRules"]>, Orthogonal | Disjoint> {
-	// 	const ruleIntersection = this.intersectRules(other)
-	// 	if (
-	// 		ruleIntersection === orthogonal ||
-	// 		ruleIntersection instanceof Disjoint
-	// 	) {
-	// 		return ruleIntersection as never
-	// 	}
-	// 	return new (this.constructor as any)(ruleIntersection)
-	// }
 }
 
 export type BasisConstraint = DomainConstraint | ConstructorConstraint
-
-export type NodesByKind = extend<
-	ConstraintsByKind,
-	{
-		predicate: PredicateNode
-		union: UnionNode
-	}
->
-
-export type NodeKind = keyof NodesByKind
-
-export const orthogonal = Symbol(
-	"Represents an intersection result between two compatible but independent constraints"
-)
-
-export type Orthogonal = typeof orthogonal
 
 export type ConstraintsByKind = {
 	constructor: ConstructorConstraint
@@ -61,6 +26,7 @@ export type ConstraintsByKind = {
 	identity: IdentityConstraint
 	narrow: NarrowConstraint
 	regex: RegexConstraint
+	prop: PropConstraint
 }
 
 export type ConstraintKind = keyof ConstraintsByKind

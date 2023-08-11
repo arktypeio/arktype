@@ -1,7 +1,5 @@
-import type { conform } from "@arktype/util"
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseNode } from "../type.js"
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 

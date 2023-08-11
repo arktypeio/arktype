@@ -5,7 +5,7 @@ import type { BasisConstraint, Constraint } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"
 import type { IdentityConstraint } from "./constraints/identity.js"
 import { Disjoint } from "./disjoint.js"
-import { BaseNode } from "./type.js"
+import { BaseNode, orthogonal } from "./type.js"
 
 export class PredicateNode extends BaseNode<ConstraintSet> {
 	readonly kind = "predicate"
@@ -34,7 +34,7 @@ export class PredicateNode extends BaseNode<ConstraintSet> {
 			: basisDescription
 	}
 
-	intersectUniqueRules(other: PredicateNode) {
+	intersectRules(other: PredicateNode) {
 		let result: ConstraintSet | Disjoint = this.rule
 		for (let i = 0; i < other.rule.length && isArray(result); i++) {
 			result = constrain(this.rule, other.rule[i])

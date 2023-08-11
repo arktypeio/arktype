@@ -1,6 +1,6 @@
-import { BaseNode } from "../type.js"
-import type { Orthogonal } from "./constraint.js"
-import { ConstraintNode, orthogonal } from "./constraint.js"
+import type { Orthogonal } from "../type.js"
+import { orthogonal } from "../type.js"
+import { ConstraintNode } from "./constraint.js"
 
 export class RegexConstraint extends ConstraintNode<RegExp> {
 	readonly literal = `${this.rule}` as `/${string}/${string}`
