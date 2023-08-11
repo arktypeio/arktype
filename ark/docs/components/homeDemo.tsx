@@ -5,7 +5,7 @@ import Expand from "@mui/icons-material/ExpandMore"
 import { Button, Stack, useTheme } from "@mui/material"
 import { motion } from "framer-motion"
 import React, { useState } from "react"
-import { StackBlitzDemo } from "../../docs/demos/StackBlitzDemo"
+import { StackBlitzDemo } from "../demos/StackBlitzDemo"
 import { AutoplayDemo } from "./autoplayDemo"
 import { cascadiaCodeFamily } from "./theme"
 

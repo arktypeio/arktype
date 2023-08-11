@@ -73,16 +73,22 @@ const config = {
 		[
 			"@docusaurus/theme-classic",
 			{
-				customCss: require.resolve("./src/css/custom.css")
+				customCss: require.resolve("./custom.css")
 			}
 		]
 	],
 	plugins: [
-		["@docusaurus/plugin-content-pages", {}],
+		[
+			"@docusaurus/plugin-content-pages",
+			{
+				path: "./pages"
+			}
+		],
 		[
 			"@docusaurus/plugin-content-docs",
 			{
-				sidebarPath: require.resolve("./docs/sidebar.js")
+				path: "./markdown",
+				sidebarPath: require.resolve("./markdown/sidebar.js")
 			}
 		],
 		[
