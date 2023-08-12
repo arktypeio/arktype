@@ -37,6 +37,10 @@ export abstract class ConstraintSet<
 	intersectRules(other: this) {
 		return intersectConstraints(this.rule, other.rule) as constraints
 	}
+
+	writeDefaultDescription() {
+		return `matched by ${this.rule.join(" and ")}`
+	}
 }
 
 // TODO: make sure in cases like range, the result is sorted

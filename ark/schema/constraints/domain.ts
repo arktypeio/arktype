@@ -7,7 +7,7 @@ export class DomainConstraint extends BaseNode<{
 	attributes: {}
 	intersections: Disjoint
 }> {
-	readonly kind = "basis"
+	readonly kind = "domain"
 
 	readonly domain = this.rule
 

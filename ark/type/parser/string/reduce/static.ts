@@ -1,5 +1,5 @@
 import type { RangeRule } from "@arktype/schema"
-import type { defined, error } from "@arktype/util"
+import type { defined, error, ErrorSuffixToken } from "@arktype/util"
 import type {
 	Comparator,
 	InvertedComparators,
@@ -49,7 +49,7 @@ export namespace state {
 		root: undefined
 		branches: initialBranches
 		groups: []
-		finalizer: `!${message}`
+		finalizer: `${message}${ErrorSuffixToken}`
 		scanned: ""
 		unscanned: ""
 	}>

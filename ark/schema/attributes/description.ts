@@ -6,7 +6,7 @@ export class DescriptionAttribute extends Attribute<readonly string[]> {
 		return intersectUniqueLists(this.value, other.value)
 	}
 
-	override toString() {
+	toString() {
 		return this.value.join(" and ")
 	}
 }

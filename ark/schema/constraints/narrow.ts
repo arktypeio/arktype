@@ -24,10 +24,6 @@ export class NarrowConstraint extends BaseNode<{
 
 export class NarrowSet extends ConstraintSet<readonly NarrowConstraint[]> {
 	readonly kind = "narrows"
-
-	override writeDefaultDescription(): string {
-		return ""
-	}
 }
 
 export type Narrow<data = any> = (data: data) => boolean

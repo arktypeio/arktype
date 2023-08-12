@@ -74,10 +74,6 @@ export class RangeConstraint<
 
 export class RangeSet extends ConstraintSet<Bounds> {
 	readonly kind = "ranges"
-
-	override writeDefaultDescription() {
-		return ""
-	}
 }
 
 export type Bounds = SingleBound | DoubleBounds

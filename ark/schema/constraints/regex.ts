@@ -7,8 +7,8 @@ export class PatternConstraint extends BaseNode<{
 	attributes: {}
 	intersections: Orthogonal
 }> {
-	readonly literal = `${this.rule}` as `/${string}/${string}`
 	readonly kind = "pattern"
+	readonly literal = `${this.rule}` as `/${string}/${string}`
 
 	writeDefaultDescription() {
 		// don't use this.literal here since it may not have been initialized
@@ -22,10 +22,6 @@ export class PatternConstraint extends BaseNode<{
 
 export class PatternSet extends ConstraintSet<readonly PatternConstraint[]> {
 	readonly kind = "patterns"
-
-	override writeDefaultDescription() {
-		return ""
-	}
 }
 
 // converting a regex to a string alphabetizes the flags for us

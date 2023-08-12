@@ -20,7 +20,7 @@ export class PropConstraint extends BaseNode<{
 export class PropSet extends ConstraintSet<readonly PropConstraint[]> {
 	readonly kind = "props"
 
-	override writeDefaultDescription() {
+	writeDefaultDescription() {
 		return ""
 	}
 }

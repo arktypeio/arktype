@@ -17,6 +17,6 @@ export class IdentityConstraint extends BaseNode<{
 	intersectRules(other: this) {
 		return other.allows(this.rule)
 			? this.rule
-			: Disjoint.from("unit", this, other)
+			: Disjoint.from("identity", this, other)
 	}
 }

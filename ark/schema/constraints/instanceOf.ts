@@ -20,7 +20,7 @@ export class InstanceOfConstraint extends BaseNode<{
 			? this.rule
 			: constructorExtends(other.rule, this.rule)
 			? other.rule
-			: Disjoint.from("class", this, other)
+			: Disjoint.from("instanceOf", this, other)
 	}
 
 	writeDefaultDescription() {

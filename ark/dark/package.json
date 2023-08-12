@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "3.2.0",
+	"version": "3.2.1",
 	"private": true,
 	"publisher": "arktypeio",
 	"type": "module",

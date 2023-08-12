@@ -8,6 +8,7 @@
 		"editorError.foreground": "#9558f8",
 		"minimap.errorHighlight": "#9558f8",
 		"list.errorForeground": "#9558f8",
+		"editorOverviewRuler.errorForeground": "#9558f8",
 		"editorBracketHighlight.foreground1": "#f5cf8f",
 		"editorBracketHighlight.foreground2": "#eb9f2e",
 		"editorBracketHighlight.unexpectedBracket.foreground": "#eb9f2e",
