@@ -1,6 +1,6 @@
 import type { AbstractableConstructor, extend } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { Constraint, ConstraintSet } from "./constraints/constraint.js"
+import type { Constraint } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"
 import type { NonEnumerableDomain } from "./constraints/domain.js"
 import type { IdentityConstraint } from "./constraints/identity.js"
@@ -9,27 +9,24 @@ import type { RangeSet } from "./constraints/range.js"
 import type { RegexSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./type.js"
+import { assertOverlapping } from "./utils.js"
 
-export class PredicateNode extends BaseNode<ConstraintRecord> {
+export class PredicateNode extends BaseNode<Constraints> {
 	readonly kind = "predicate"
 
-	static from(constraints: ConstraintRecord, attributes: UniversalAttributes) {
+	static from(constraints: Constraints, attributes: UniversalAttributes) {
 		return new PredicateNode(constraints, attributes)
 	}
 
 	// readonly references: readonly TypeNode[] = this.props?.references ?? []
 
 	writeDefaultDescription() {
-		const basisDescription =
-			this.writeDefaultBaseDescription?.(this.rule) ?? "a value"
 		const flat = Object.values(this.rule).flat()
-		return flat.length
-			? `${basisDescription} ${flat.join(" and ")}`
-			: basisDescription
+		return flat.join(" and ")
 	}
 
-	intersectRules(other: PredicateNode) {
-		const intersection: ConstraintRecord = { ...this.rule, ...other.rule }
+	intersectRules(other: PredicateNode): Constraints | Disjoint {
+		const intersection = { ...this.rule, ...other.rule }
 		for (const k in intersection) {
 			if (k in this.rule && k in other.rule) {
 				const subresult = this.rule[k].intersect(other.rule[k] as never)
@@ -44,10 +41,17 @@ export class PredicateNode extends BaseNode<ConstraintRecord> {
 	}
 
 	constrain(constraint: Constraint): PredicateNode {
-		const result = constrain(this.rule, constraint)
-		return result instanceof Disjoint
-			? result.throw()
-			: new PredicateNode(result, this.attributes)
+		const result =
+			constraint.kind in this.rule
+				? assertOverlapping(this.rule[constraint.kind].intersect(constraint))
+				: constraint
+		return new PredicateNode(
+			{
+				...this.rule,
+				[constraint.kind]: result
+			},
+			this.attributes
+		)
 	}
 
 	// keyof(): TypeNode {
@@ -65,6 +69,16 @@ export class PredicateNode extends BaseNode<ConstraintRecord> {
 //     ).join(", ")})`
 // )
 
+export type Constraints =
+	| UnitConstraints
+	| UnknownConstraints
+	| DomainConstraints
+	| NumberConstraints
+	| ObjectConstraints
+	| StringConstraints
+	| ArrayConstraints
+	| DateConstraints
+
 export type UnitConstraints = {
 	readonly identity: IdentityConstraint
 }
@@ -73,23 +87,12 @@ export type UnknownConstraints = {
 	readonly narrow?: NarrowSet
 }
 
-export type ConstraintRecord = Record<string, Constraint | ConstraintSet>
-
 export type DomainConstraints<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > = extend<
 	UnknownConstraints,
 	{
 		readonly domain: domain
-	}
->
-
-export type ConstructorConstraints<
-	constructor extends AbstractableConstructor = AbstractableConstructor
-> = extend<
-	DomainConstraints<"object">,
-	{
-		readonly instance: constructor
 	}
 >
 
@@ -101,13 +104,22 @@ export type NumberConstraints = extend<
 	}
 >
 
-export type ObjectConstraints = DomainConstraints<"object">
+export type ObjectConstraints<
+	constructor extends AbstractableConstructor = AbstractableConstructor
+> = extend<
+	DomainConstraints<"object">,
+	AbstractableConstructor extends constructor
+		? {
+				readonly instance?: constructor
+		  }
+		: { readonly instance: constructor }
+>
 
 export type StringConstraints = extend<
 	DomainConstraints<"string">,
 	{
-		readonly length?: RangeSet
-		readonly pattern?: RegexSet
+		readonly range?: RangeSet
+		readonly regex?: RegexSet
 	}
 >
 
@@ -115,17 +127,17 @@ export type StringConstraints = extend<
 // to a single variadic number prop with minLength 1
 // Figure out best design for integrating with named props.
 export type ArrayConstraints = extend<
-	ConstructorConstraints<typeof Array>,
+	ObjectConstraints<typeof Array>,
 	{
-		readonly length?: RangeSet
-		readonly prefixed?: readonly BaseNode[]
+		readonly range?: RangeSet
+		readonly prefix?: readonly BaseNode[]
 		readonly variadic?: BaseNode
-		readonly postfixed?: readonly BaseNode[]
+		readonly postfix?: readonly BaseNode[]
 	}
 >
 
 export type DateConstraints = extend<
-	ConstructorConstraints<typeof Date>,
+	ObjectConstraints<typeof Date>,
 	{
 		readonly range?: RangeSet
 	}

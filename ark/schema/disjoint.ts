@@ -7,9 +7,7 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { BasisConstraint } from "./constraints/domain.js"
 import type { RangeConstraint } from "./constraints/range.js"
-import type { UnitNode } from "./constraints/unit.js"
 import type { PredicateNode } from "./predicate.js"
 import type { BaseNode } from "./type.js"
 
