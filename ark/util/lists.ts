@@ -53,6 +53,11 @@ export type listable<t> = t | readonly t[]
 
 export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
 
+export type CollapsingList<t = unknown> =
+	| readonly []
+	| t
+	| readonly [t, t, ...t[]]
+
 export type arraySubclassToReadonly<t extends unknown[]> =
 	readonly t[number][] & {
 		[k in Exclude<keyof t, keyof unknown[]>]: t[k]

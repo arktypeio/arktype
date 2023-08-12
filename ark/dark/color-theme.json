@@ -4,8 +4,9 @@
 	"colors": {
 		// Customized built-in settings
 		"editor.foreground": "#eeeeee",
-		"errorForeground": "#847b92",
+		"errorForeground": "#9558f8",
 		"editorError.foreground": "#9558f8",
+		"editorWarning.foreground": "#2faf64",
 		"minimap.errorHighlight": "#9558f8",
 		"list.errorForeground": "#9558f8",
 		"editorOverviewRuler.errorForeground": "#9558f8",

@@ -7,7 +7,7 @@ import type { UnionNode } from "./union.js"
 export interface NodeConfig {
 	rule: unknown
 	attributes: AttributeRecord
-	intersections: Orthogonal | Disjoint
+	intersections: Disjoint
 }
 
 export abstract class BaseNode<config extends NodeConfig = NodeConfig> {

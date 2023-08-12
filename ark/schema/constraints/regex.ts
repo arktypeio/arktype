@@ -1,12 +1,9 @@
+import type { CollapsingList } from "@arktype/util"
 import type { Orthogonal } from "../type.js"
 import { BaseNode, orthogonal } from "../type.js"
 import { ConstraintSet } from "./constraint.js"
 
-export class PatternConstraint extends BaseNode<{
-	rule: RegExp
-	attributes: {}
-	intersections: Orthogonal
-}> {
+export class PatternConstraint extends ConstraintSet<readonly RegExp[]> {
 	readonly kind = "pattern"
 	readonly literal = `${this.rule}` as `/${string}/${string}`
 
@@ -15,8 +12,8 @@ export class PatternConstraint extends BaseNode<{
 		return `matched by ${this.rule}`
 	}
 
-	intersectRules(): Orthogonal {
-		return orthogonal
+	intersectMembers(other: this) {
+		return [this.rule, other.rule]
 	}
 }
 

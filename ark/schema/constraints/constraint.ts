@@ -13,7 +13,7 @@ import { BaseNode, orthogonal } from "../type.js"
 type toConstraintSetConfig<constraints extends readonly BaseNode[]> = satisfy<
 	NodeConfig,
 	{
-		rule: constraints
+		rule: constraints[number] | constraints
 		attributes: {}
 		intersections: Extract<
 			ReturnType<constraints[number]["intersectRules"]>,
@@ -33,6 +33,10 @@ export abstract class ConstraintSet<
 			? result
 			: new (this.constructor as any)(result, this.attributes)
 	}
+
+	abstract intersectMembers(other: constraints[number]) => {
+		
+	} 
 
 	intersectRules(other: this) {
 		return intersectConstraints(this.rule, other.rule) as constraints
