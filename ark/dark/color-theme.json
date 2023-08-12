@@ -161,7 +161,7 @@
 		},
 		{
 			"name": "keywords and operators",
-			"scope": ["keyword", "storage", "punctuation"],
+			"scope": ["keyword", "storage", "punctuation", "variable.language"],
 			"settings": {
 				"foreground": "#eb9f2e"
 			}

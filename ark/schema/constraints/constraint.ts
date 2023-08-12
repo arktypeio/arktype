@@ -1,23 +1,18 @@
 import type { mutable } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { disjointIfAllowed, Orthogonal } from "../type.js"
+import type { disjointIfAllowed, NodeConfig, Orthogonal } from "../type.js"
 import { BaseNode, orthogonal } from "../type.js"
 
-export interface SetConfig<leaf> {
+export interface SetConfig<leaf> extends NodeConfig {
 	leaf: leaf
 	intersection: readonly ConstraintSet<this>[]
-	disjoinable: boolean
 }
 
 export abstract class ConstraintSet<
-	setConfig extends SetConfig<any> = SetConfig<unknown>
-> extends BaseNode<{
-	rule: setConfig["leaf" | "intersection"]
-	attributes: {}
-	disjoinable: setConfig["disjoinable"]
-}> {
-	add(constraint: setConfig["leaf"]): this | disjointIfAllowed<setConfig> {
+	config extends SetConfig<any> = SetConfig<unknown>
+> extends BaseNode<config> {
+	add(constraint: config["leaf"]): this | disjointIfAllowed<config> {
 		const result = addConstraint(this.rule, constraint)
 		return result instanceof Disjoint
 			? result
@@ -25,10 +20,10 @@ export abstract class ConstraintSet<
 	}
 
 	protected abstract intersectMembers(
-		other: setConfig["leaf"]
-	): setConfig["leaf"] | Orthogonal | disjointIfAllowed<setConfig>
+		other: config["leaf"]
+	): config["leaf"] | Orthogonal | disjointIfAllowed<config>
 
-	intersectRules(other: this): this["rule"] | disjointIfAllowed<setConfig> {
+	intersectRules(other: this): config["rule"] | disjointIfAllowed<config> {
 		return intersectConstraints(this.rule, other.rule)
 	}
 
