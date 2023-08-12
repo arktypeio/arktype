@@ -2,13 +2,12 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "3.0.0",
+	"version": "3.1.0",
 	"private": true,
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
-		"build": "ts ./theme/writeTheme.ts",
-		"vspublish": "pnpm build && pnpx vsce publish"
+		"vspublish": "pnpx vsce publish"
 	},
 	"repository": {
 		"type": "git",
@@ -27,7 +26,7 @@
 			{
 				"label": "ArkDark",
 				"uiTheme": "vs-dark",
-				"path": "./themes/arkDark.json"
+				"path": "./color-theme.json"
 			}
 		],
 		"grammars": [
