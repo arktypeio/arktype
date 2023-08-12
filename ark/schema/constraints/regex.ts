@@ -2,13 +2,13 @@ import type { Orthogonal } from "../type.js"
 import { BaseNode, orthogonal } from "../type.js"
 import { ConstraintSet } from "./constraint.js"
 
-export class RegexConstraint extends BaseNode<{
+export class PatternConstraint extends BaseNode<{
 	rule: RegExp
 	attributes: {}
 	intersections: Orthogonal
 }> {
 	readonly literal = `${this.rule}` as `/${string}/${string}`
-	readonly kind = "regex"
+	readonly kind = "pattern"
 
 	writeDefaultDescription() {
 		// don't use this.literal here since it may not have been initialized
@@ -20,7 +20,13 @@ export class RegexConstraint extends BaseNode<{
 	}
 }
 
-export class RegexSet extends ConstraintSet<readonly RegexConstraint[]> {}
+export class PatternSet extends ConstraintSet<readonly PatternConstraint[]> {
+	readonly kind = "patterns"
+
+	override writeDefaultDescription() {
+		return ""
+	}
+}
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>

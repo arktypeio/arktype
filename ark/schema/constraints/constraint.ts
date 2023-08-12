@@ -1,6 +1,7 @@
-import type { mutable } from "@arktype/util"
+import type { mutable, satisfy } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import type { NodeConfig } from "../type.js"
 import { BaseNode, orthogonal } from "../type.js"
 
 // export const setConstructor =
@@ -9,15 +10,24 @@ import { BaseNode, orthogonal } from "../type.js"
 // 		// starting from an empty set, apply and reduce unvalidated constraints
 // 		intersectConstraints(new (subclass as any)(), constraints) as subclass
 
+type toConstraintSetConfig<constraints extends readonly BaseNode[]> = satisfy<
+	NodeConfig,
+	{
+		rule: constraints
+		attributes: {}
+		intersections: Extract<
+			ReturnType<constraints[number]["intersectRules"]>,
+			Disjoint
+		>
+	}
+>
+
 export abstract class ConstraintSet<
-	// TODO: narrower type?
 	constraints extends readonly BaseNode[] = readonly BaseNode[]
-> extends BaseNode<{
-	rule: constraints
-	attributes: {}
-	intersections: Orthogonal
-}> {
-	add(constraint: constraints[number]): this | Disjoint {
+> extends BaseNode<toConstraintSetConfig<constraints>> {
+	add(
+		constraint: constraints[number]
+	): this | toConstraintSetConfig<constraints>["intersections"] {
 		const result = addConstraint(this.rule, constraint)
 		return result instanceof Disjoint
 			? result
@@ -57,10 +67,7 @@ const addConstraint = <constraints extends readonly BaseNode[]>(
 	return result
 }
 
-const intersectConstraints = (
-	l: readonly ConstraintNode[],
-	r: readonly ConstraintNode[]
-) =>
+const intersectConstraints = (l: readonly BaseNode[], r: readonly BaseNode[]) =>
 	r.reduce((intersection, constraint) => {
 		const next = addConstraint(intersection, constraint)
 		return next instanceof Disjoint ? next.throw() : next

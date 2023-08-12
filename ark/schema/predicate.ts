@@ -10,7 +10,7 @@ import type { IdentityConstraint } from "./constraints/identity.js"
 import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
 import type { NarrowSet } from "./constraints/narrow.js"
 import type { RangeConstraint, RangeSet } from "./constraints/range.js"
-import type { RegexSet } from "./constraints/regex.js"
+import type { PatternSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./type.js"
 import { assertOverlapping } from "./utils.js"
@@ -80,7 +80,7 @@ export type ConstraintsByKind = {
 	divisor: DivisorConstraint
 	instanceOf: InstanceOfConstraint
 	range: RangeSet
-	regex: RegexSet
+	regex: PatternSet
 	narrow: NarrowSet
 }
 
@@ -134,7 +134,7 @@ export type StringConstraints = extend<
 	DomainConstraints<"string">,
 	{
 		readonly range?: RangeSet
-		readonly regex?: RegexSet
+		readonly regex?: PatternSet
 	}
 >
 
