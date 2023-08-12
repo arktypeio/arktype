@@ -1,20 +1,24 @@
 import type { AbstractableConstructor, extend } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { Constraint } from "./constraints/constraint.js"
-import type { DivisibilityConstraint } from "./constraints/divisibility.js"
-import type { NonEnumerableDomain } from "./constraints/domain.js"
+import type { Constraint, ConstraintKind } from "./constraints/constraint.js"
+import type { DivisorConstraint } from "./constraints/divisibility.js"
+import type {
+	DomainConstraint,
+	NonEnumerableDomain
+} from "./constraints/domain.js"
 import type { IdentityConstraint } from "./constraints/identity.js"
+import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
 import type { NarrowSet } from "./constraints/narrow.js"
-import type { RangeSet } from "./constraints/range.js"
+import type { RangeConstraint, RangeSet } from "./constraints/range.js"
 import type { RegexSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./type.js"
 import { assertOverlapping } from "./utils.js"
 
-export class PredicateNode extends BaseNode<Constraints> {
+export class PredicateNode extends BaseNode<ConstraintsByKind> {
 	readonly kind = "predicate"
 
-	static from(constraints: Constraints, attributes: UniversalAttributes) {
+	static from(constraints: ConstraintsByKind, attributes: UniversalAttributes) {
 		return new PredicateNode(constraints, attributes)
 	}
 
@@ -25,9 +29,10 @@ export class PredicateNode extends BaseNode<Constraints> {
 		return flat.join(" and ")
 	}
 
-	intersectRules(other: PredicateNode): Constraints | Disjoint {
-		const intersection = { ...this.rule, ...other.rule }
-		for (const k in intersection) {
+	intersectRules(other: PredicateNode): ConstraintsByKind | Disjoint {
+		const intersection: ConstraintsByKind = { ...this.rule, ...other.rule }
+		let k: ConstraintKind
+		for (k in intersection) {
 			if (k in this.rule && k in other.rule) {
 				const subresult = this.rule[k].intersect(other.rule[k] as never)
 				if (subresult instanceof Disjoint) {
@@ -69,6 +74,16 @@ export class PredicateNode extends BaseNode<Constraints> {
 //     ).join(", ")})`
 // )
 
+export type ConstraintsByKind = {
+	identity: IdentityConstraint
+	domain: DomainConstraint
+	divisor: DivisorConstraint
+	instanceOf: InstanceOfConstraint
+	range: RangeSet
+	regex: RegexSet
+	narrow: NarrowSet
+}
+
 export type Constraints =
 	| UnitConstraints
 	| UnknownConstraints
@@ -92,7 +107,7 @@ export type DomainConstraints<
 > = extend<
 	UnknownConstraints,
 	{
-		readonly domain: domain
+		readonly domain: DomainConstraint
 	}
 >
 
@@ -100,7 +115,7 @@ export type NumberConstraints = extend<
 	DomainConstraints<"number">,
 	{
 		readonly range?: RangeSet
-		readonly divisor?: DivisibilityConstraint
+		readonly divisor?: DivisorConstraint
 	}
 >
 
@@ -110,9 +125,9 @@ export type ObjectConstraints<
 	DomainConstraints<"object">,
 	AbstractableConstructor extends constructor
 		? {
-				readonly instance?: constructor
+				readonly instance?: InstanceOfConstraint
 		  }
-		: { readonly instance: constructor }
+		: { readonly instance: InstanceOfConstraint }
 >
 
 export type StringConstraints = extend<

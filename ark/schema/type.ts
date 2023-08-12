@@ -1,4 +1,4 @@
-import type { extend } from "@arktype/util"
+import type { extend, satisfy } from "@arktype/util"
 import type {
 	AttributesRecord,
 	UniversalAttributes
@@ -7,22 +7,25 @@ import { Disjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 import type { UnionNode } from "./union.js"
 
-export abstract class BaseNode<
-	rule = unknown,
-	attributes extends AttributesRecord = UniversalAttributes
-> {
+export interface NodeConfig {
+	rule: unknown
+	attributes: AttributesRecord
+	intersections: Orthogonal | Disjoint
+}
+
+export abstract class BaseNode<config extends NodeConfig = NodeConfig> {
 	protected constructor(
-		public rule: rule,
-		public attributes: attributes
+		public rule: config["rule"],
+		public attributes: config["attributes"]
 	) {}
 
-	abstract intersectRules(other: this): rule | Orthogonal | Disjoint
+	abstract intersectRules(other: this): config["rule"] | config["intersections"]
 
 	intersect(
 		other: this
 		// Ensure the signature of this method reflects whether Disjoint and/or null
 		// are possible intersection results for the subclass.
-	): this | Extract<ReturnType<this["intersectRules"]>, Orthogonal | Disjoint> {
+	): this | config["intersections"] {
 		const ruleIntersection = this.intersectRules(other)
 		if (
 			ruleIntersection === orthogonal ||

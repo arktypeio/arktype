@@ -5,13 +5,17 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { ConstraintNode } from "./constraint.js"
+import { BaseNode } from "../type.js"
 
-export class ConstructorConstraint extends ConstraintNode<AbstractableConstructor> {
-	readonly kind = "constructor"
+export class InstanceOfConstraint extends BaseNode<{
+	rule: AbstractableConstructor
+	attributes: {}
+	intersections: Disjoint
+}> {
+	readonly kind = "instanceOf"
 	readonly domain = "object"
 
-	intersectRules(other: ConstructorConstraint) {
+	intersectRules(other: InstanceOfConstraint) {
 		return constructorExtends(this.rule, other.rule)
 			? this.rule
 			: constructorExtends(other.rule, this.rule)

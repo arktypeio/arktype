@@ -12,7 +12,7 @@ export abstract class Attribute<value> implements Intersectable {
 	abstract intersectValues(other: this): value
 }
 
-export type AttributesRecord = extend<IntersectableRecord, UniversalAttributes>
+export type AttributeRecord = Record<string, Attribute<unknown>>
 
 export type UniversalAttributes = {
 	readonly description?: DescriptionAttribute

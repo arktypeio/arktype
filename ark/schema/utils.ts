@@ -1,9 +1,6 @@
 import { cached } from "@arktype/util"
 import type { ConstraintSet } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
-import { node } from "./old/parse.js"
-import { arrayIndexInput } from "./old/prop/indexed.js"
-import type { TypeNode } from "./old/type.js"
 import type { BaseNode } from "./type.js"
 
 // TODO: integrate with default scopes

@@ -1,8 +1,7 @@
 import { throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Orthogonal } from "../type.js"
-import { orthogonal } from "../type.js"
-import { ConstraintNode, ConstraintSet, setConstructor } from "./constraint.js"
+import { BaseNode, orthogonal } from "../type.js"
 
 export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 	readonly dataKind: BoundableDataKind
@@ -13,7 +12,11 @@ export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<RangeRule<limitKind>> {
+> extends BaseNode<{
+	rule: RangeRule<limitKind>
+	attributes: {}
+	intersections: Orthogonal | Disjoint
+}> {
 	readonly kind = "range"
 
 	writeDefaultDescription() {

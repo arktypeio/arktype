@@ -1,13 +1,17 @@
-import { ConstraintNode } from "./constraint.js"
+import { BaseNode } from "../type.js"
 
-export class DivisibilityConstraint extends ConstraintNode<number> {
-	readonly kind = "divisibility"
+export class DivisorConstraint extends BaseNode<{
+	rule: number
+	attributes: {}
+	intersections: never
+}> {
+	readonly kind = "divisor"
 
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	intersectRules(other: DivisibilityConstraint) {
+	intersectRules(other: DivisorConstraint) {
 		return (
 			(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
 		)

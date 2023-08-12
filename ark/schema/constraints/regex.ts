@@ -1,8 +1,12 @@
 import type { Orthogonal } from "../type.js"
-import { orthogonal } from "../type.js"
-import { ConstraintNode, ConstraintSet, setConstructor } from "./constraint.js"
+import { BaseNode, orthogonal } from "../type.js"
+import { ConstraintSet } from "./constraint.js"
 
-export class RegexConstraint extends ConstraintNode<RegExp> {
+export class RegexConstraint extends BaseNode<{
+	rule: RegExp
+	attributes: {}
+	intersections: Orthogonal
+}> {
 	readonly literal = `${this.rule}` as `/${string}/${string}`
 	readonly kind = "regex"
 
@@ -16,9 +20,7 @@ export class RegexConstraint extends ConstraintNode<RegExp> {
 	}
 }
 
-export class RegexSet extends ConstraintSet<readonly RegexConstraint[]> {
-	static from = setConstructor<RegexSet>
-}
+export class RegexSet extends ConstraintSet<readonly RegexConstraint[]> {}
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) =>

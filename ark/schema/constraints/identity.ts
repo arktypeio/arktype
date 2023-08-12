@@ -1,9 +1,12 @@
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { Constraint } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import { BaseNode } from "../type.js"
 
-export class IdentityConstraint extends ConstraintNode<unknown> {
+export class IdentityConstraint extends BaseNode<{
+	rule: unknown
+	attributes: {}
+	intersections: Disjoint
+}> {
 	readonly kind = "identity"
 
 	writeDefaultDescription() {
@@ -11,7 +14,7 @@ export class IdentityConstraint extends ConstraintNode<unknown> {
 		return stringify(this.rule)
 	}
 
-	intersectRules(other: Constraint) {
+	intersectRules(other: this) {
 		return other.allows(this.rule)
 			? this.rule
 			: Disjoint.from("unit", this, other)

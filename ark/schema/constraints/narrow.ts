@@ -1,13 +1,16 @@
 // TODO: allow changed order to be the same type
 import type { Orthogonal } from "../type.js"
-import { orthogonal } from "../type.js"
-import { ConstraintNode, ConstraintSet, setConstructor } from "./constraint.js"
-import type { RegexConstraint } from "./regex.js"
+import { BaseNode, orthogonal } from "../type.js"
+import { ConstraintSet } from "./constraint.js"
 
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends ConstraintNode<Narrow> {
+export class NarrowConstraint extends BaseNode<{
+	rule: Narrow
+	attributes: {}
+	intersections: Orthogonal
+}> {
 	readonly kind = "narrow"
 
 	writeDefaultDescription() {
@@ -20,7 +23,11 @@ export class NarrowConstraint extends ConstraintNode<Narrow> {
 }
 
 export class NarrowSet extends ConstraintSet<readonly NarrowConstraint[]> {
-	static from = setConstructor<NarrowSet>
+	readonly kind = "narrows"
+
+	override writeDefaultDescription(): string {
+		return ""
+	}
 }
 
 export type Narrow<data = any> = (data: data) => boolean
