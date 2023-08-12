@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "2.5.4",
+	"version": "3.0.0",
 	"private": true,
 	"publisher": "arktypeio",
 	"type": "module",
@@ -41,6 +41,38 @@
 				"scopeName": "source.arktype.injection.ts",
 				"path": "arktype.tmLanguage.json"
 			}
-		]
+		],
+		"extensionDependencies": [
+			"usernamehw.errorlens"
+		],
+		"configurationDefaults": {
+			"errorLens.followCursor": "closestProblem",
+			"errorLens.delay": 0,
+			"errorLens.editorHoverPartsEnabled": {
+				"buttonsEnabled": false
+			},
+			"errorLens.replace": [
+				{
+					"matcher": ".*\n([^\n]*)$",
+					"message": "$1"
+				},
+				{
+					"matcher": "Argument of type '.*' is not assignable to parameter of type '\"(.*)\"'.",
+					"message": "$1"
+				},
+				{
+					"matcher": "Type '.*' is not assignable to type '\"(.*)\"'.",
+					"message": "$1"
+				},
+				{
+					"matcher": "Type '.*' is not assignable to type 'indexParseError<(.*)>'.",
+					"message": "$1"
+				},
+				{
+					"matcher": ".*\n([^\n]*)$",
+					"message": "$1"
+				}
+			]
+		}
 	}
 }
