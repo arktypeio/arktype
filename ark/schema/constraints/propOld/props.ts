@@ -15,12 +15,11 @@ import {
 import type { NamedPropInput, NamedPropRule } from "./named.js"
 import { compileNamedProps } from "./named.js"
 
-// export type PropConstraint = defineConstraint<{
-//     kind: "prop"
+// export type PropConstraint = {
 //     key: string | symbol
 //     required: boolean
 //     value: Type
-// }>
+// }
 
 // export type SignatureConstraint = defineConstraint<{
 //     kind: "signature"

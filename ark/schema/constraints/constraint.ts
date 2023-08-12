@@ -16,16 +16,15 @@ export abstract class ConstraintNode<rule = unknown> extends BaseNode<rule> {
 }
 
 export const setConstructor =
-	<subclass>(subclass: subclass) =>
-	(
-		constraints: subclass extends typeof ConstraintSet<
-			infer constraints extends readonly Constraint[]
-		>
-			? constraints
-			: never
-	) =>
+	<subclass extends ConstraintSet>(subclass: subclass) =>
+	(constraints: extractArray<subclass>) =>
 		// starting from an empty set, apply and reduce unvalidated constraints
-		intersectConstraints(new (subclass as any)(), constraints)
+		intersectConstraints(new (subclass as any)(), constraints) as subclass
+
+type extractArray<subclass extends readonly Constraint[]> =
+	subclass extends readonly [...infer constraints extends readonly Constraint[]]
+		? constraints
+		: never
 
 /** @ts-expect-error allow extending narrowed readonly array */
 export abstract class ConstraintSet<

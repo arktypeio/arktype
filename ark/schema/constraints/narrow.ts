@@ -1,7 +1,8 @@
 // TODO: allow changed order to be the same type
 import type { Orthogonal } from "../type.js"
 import { orthogonal } from "../type.js"
-import { ConstraintNode } from "./constraint.js"
+import { ConstraintNode, ConstraintSet, setConstructor } from "./constraint.js"
+import type { RegexConstraint } from "./regex.js"
 
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
@@ -18,7 +19,9 @@ export class NarrowConstraint extends ConstraintNode<Narrow> {
 	}
 }
 
-export type NarrowSet = readonly NarrowConstraint[]
+export class NarrowSet extends ConstraintSet<readonly NarrowConstraint[]> {
+	static from = setConstructor<NarrowSet>
+}
 
 export type Narrow<data = any> = (data: data) => boolean
 

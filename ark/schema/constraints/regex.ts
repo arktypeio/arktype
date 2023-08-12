@@ -17,9 +17,7 @@ export class RegexConstraint extends ConstraintNode<RegExp> {
 }
 
 export class RegexSet extends ConstraintSet<readonly RegexConstraint[]> {
-	static from(constraints: readonly RegexConstraint[]) {
-		return new RegexSet()
-	}
+	static from = setConstructor<RegexSet>
 }
 
 // converting a regex to a string alphabetizes the flags for us

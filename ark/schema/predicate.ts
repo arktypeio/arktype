@@ -1,24 +1,20 @@
-import type { Domain, extend, mutable } from "@arktype/util"
-import { isArray, throwInternalError } from "@arktype/util"
+import type { AbstractableConstructor, extend } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { Constraint } from "./constraints/constraint.js"
+import type { Constraint, ConstraintSet } from "./constraints/constraint.js"
 import type { DivisibilityConstraint } from "./constraints/divisibility.js"
 import type { NonEnumerableDomain } from "./constraints/domain.js"
 import type { IdentityConstraint } from "./constraints/identity.js"
+import type { NarrowSet } from "./constraints/narrow.js"
+import type { RangeSet } from "./constraints/range.js"
+import type { RegexSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
-import { BaseNode, orthogonal } from "./type.js"
+import { BaseNode } from "./type.js"
 
-export class PredicateNode extends BaseNode<ConstraintSet> {
+export class PredicateNode extends BaseNode<ConstraintRecord> {
 	readonly kind = "predicate"
 
-	static from(constraints: ConstraintSet, attributes: UniversalAttributes) {
-		return new PredicateNode(
-			constraints.reduce<ConstraintSet>((set, constraint) => {
-				const next = constrain(set, constraint)
-				return next instanceof Disjoint ? next.throw() : next
-			}, []),
-			attributes
-		)
+	static from(constraints: ConstraintRecord, attributes: UniversalAttributes) {
+		return new PredicateNode(constraints, attributes)
 	}
 
 	// readonly references: readonly TypeNode[] = this.props?.references ?? []
@@ -33,11 +29,18 @@ export class PredicateNode extends BaseNode<ConstraintSet> {
 	}
 
 	intersectRules(other: PredicateNode) {
-		let result: ConstraintSet | Disjoint = this.rule
-		for (let i = 0; i < other.rule.length && isArray(result); i++) {
-			result = constrain(this.rule, other.rule[i])
+		const intersection: ConstraintRecord = { ...this.rule, ...other.rule }
+		for (const k in intersection) {
+			if (k in this.rule && k in other.rule) {
+				const subresult = this.rule[k].intersect(other.rule[k] as never)
+				if (subresult instanceof Disjoint) {
+					return subresult
+				}
+				// TODO: narrow record type to kinds so this isn't casted
+				intersection[k] = subresult as never
+			}
 		}
-		return result
+		return intersection
 	}
 
 	constrain(constraint: Constraint): PredicateNode {
@@ -70,6 +73,8 @@ export type UnknownConstraints = {
 	readonly narrow?: NarrowSet
 }
 
+export type ConstraintRecord = Record<string, Constraint | ConstraintSet>
+
 export type DomainConstraints<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > = extend<
@@ -79,10 +84,19 @@ export type DomainConstraints<
 	}
 >
 
+export type ConstructorConstraints<
+	constructor extends AbstractableConstructor = AbstractableConstructor
+> = extend<
+	DomainConstraints<"object">,
+	{
+		readonly instance: constructor
+	}
+>
+
 export type NumberConstraints = extend<
 	DomainConstraints<"number">,
 	{
-		readonly range?: BoundSet
+		readonly range?: RangeSet
 		readonly divisor?: DivisibilityConstraint
 	}
 >
@@ -92,7 +106,7 @@ export type ObjectConstraints = DomainConstraints<"object">
 export type StringConstraints = extend<
 	DomainConstraints<"string">,
 	{
-		readonly length?: BoundSet
+		readonly length?: RangeSet
 		readonly pattern?: RegexSet
 	}
 >
@@ -101,9 +115,9 @@ export type StringConstraints = extend<
 // to a single variadic number prop with minLength 1
 // Figure out best design for integrating with named props.
 export type ArrayConstraints = extend<
-	DomainConstraints<typeof Array>,
+	ConstructorConstraints<typeof Array>,
 	{
-		readonly length?: BoundSet
+		readonly length?: RangeSet
 		readonly prefixed?: readonly BaseNode[]
 		readonly variadic?: BaseNode
 		readonly postfixed?: readonly BaseNode[]
@@ -111,9 +125,9 @@ export type ArrayConstraints = extend<
 >
 
 export type DateConstraints = extend<
-	DomainConstraints<typeof Date>,
+	ConstructorConstraints<typeof Date>,
 	{
-		readonly range?: BoundSet
+		readonly range?: RangeSet
 	}
 >
 
@@ -135,33 +149,3 @@ export type DateConstraints = extend<
 // 	// narrow
 // 	narrow: 3
 // }
-
-export type ConstraintSet = readonly Constraint[]
-
-// TODO: make sure in cases like range, the result is sorted
-const constrain = (
-	set: ConstraintSet,
-	constraint: Constraint
-): ConstraintSet | Disjoint => {
-	const result = [] as mutable<ConstraintSet>
-	let includesConstraint = false
-	for (let i = 0; i < set.length; i++) {
-		const elementResult = set[i].intersect(constraint)
-		if (elementResult === orthogonal) {
-			result.push(set[i])
-		} else if (elementResult instanceof Disjoint) {
-			return elementResult
-		} else if (!includesConstraint) {
-			result.push(elementResult)
-			includesConstraint = true
-		} else if (!result.includes(elementResult)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
-			)
-		}
-	}
-	if (!includesConstraint) {
-		result.push(constraint)
-	}
-	return result
-}
