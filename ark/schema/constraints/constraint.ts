@@ -1,5 +1,5 @@
 import type { mutable } from "@arktype/util"
-import { throwInternalError } from "@arktype/util"
+import { isArray, throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { disjointIfAllowed, NodeConfig, Orthogonal } from "../type.js"
 import { BaseNode, orthogonal } from "../type.js"
@@ -12,8 +12,13 @@ export interface SetConfig<leaf> extends NodeConfig {
 export abstract class ConstraintSet<
 	config extends SetConfig<any> = SetConfig<unknown>
 > extends BaseNode<config> {
+	// TODO: array overlap?
+	protected members = (isArray(this.rule)
+		? this.rule
+		: [this]) as readonly this[]
+
 	add(constraint: config["leaf"]): this | disjointIfAllowed<config> {
-		const result = addConstraint(this.rule, constraint)
+		const result = addConstraint(this.members, constraint)
 		return result instanceof Disjoint
 			? result
 			: new (this.constructor as any)(result, this.attributes)
@@ -24,25 +29,25 @@ export abstract class ConstraintSet<
 	): config["leaf"] | Orthogonal | disjointIfAllowed<config>
 
 	intersectRules(other: this): config["rule"] | disjointIfAllowed<config> {
-		return intersectConstraints(this.rule, other.rule)
+		return intersectConstraints(this.members, other.members)
 	}
 
 	writeDefaultDescription() {
-		return `matched by ${this.rule.join(" and ")}`
+		return `matched by ${this.members.join(" and ")}`
 	}
 }
 
 // TODO: make sure in cases like range, the result is sorted
-const addConstraint = <constraints extends readonly BaseNode[]>(
-	to: constraints,
-	constraint: constraints[number]
-): constraints | Disjoint => {
-	const result = [] as {} as mutable<constraints>
+const addConstraint = (
+	members: readonly ConstraintSet[],
+	constraint: ConstraintSet
+) => {
+	const result: ConstraintSet[] = []
 	let includesConstraint = false
-	for (let i = 0; i < to.length; i++) {
-		const elementResult = to[i].intersect(constraint as never)
-		if (elementResult === orthogonal) {
-			result.push(to[i])
+	for (let i = 0; i < members.length; i++) {
+		const elementResult = members[i].intersect(constraint as never)
+		if (elementResult === (orthogonal as never)) {
+			result.push(members[i])
 		} else if (elementResult instanceof Disjoint) {
 			return elementResult
 		} else if (!includesConstraint) {
@@ -60,7 +65,10 @@ const addConstraint = <constraints extends readonly BaseNode[]>(
 	return result
 }
 
-const intersectConstraints = (l: readonly BaseNode[], r: readonly BaseNode[]) =>
+const intersectConstraints = (
+	l: readonly ConstraintSet[],
+	r: readonly ConstraintSet[]
+): readonly BaseNode[] =>
 	r.reduce((intersection, constraint) => {
 		const next = addConstraint(intersection, constraint)
 		return next instanceof Disjoint ? next.throw() : next
