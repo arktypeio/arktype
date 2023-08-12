@@ -1,4 +1,4 @@
-import { throwParseError } from "@arktype/util"
+import { isArray, throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Orthogonal } from "../type.js"
 import { BaseNode, orthogonal } from "../type.js"
@@ -13,13 +13,20 @@ export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
 > extends BaseNode<{
-	rule: RangeRule<limitKind>
+	leaf: RangeRule<limitKind>
+	intersection: DoubleBounds
+	rule: RangeRule<limitKind> | DoubleBounds
 	attributes: {}
-	intersections: Orthogonal | Disjoint
+	disjoinable: false
 }> {
 	readonly kind = "range"
 
-	writeDefaultDescription() {
+	protected readonly defaultDescriptionPrefix = ""
+
+	writeDefaultDescription(): string {
+		if (isArray(this.rule)) {
+			return this.rule.join(" and ")
+		}
 		const comparisonDescription =
 			this.rule.dataKind === "date"
 				? this.rule.limitKind === "min"
@@ -39,10 +46,10 @@ export class RangeConstraint<
 		return `${comparisonDescription} ${this.rule.limit}`
 	}
 
-	intersectRules(
+	intersectMembers(
 		other: RangeConstraint // cast the rule result to the current limitKind
 	): RangeRule<limitKind> | Disjoint | Orthogonal
-	intersectRules(other: RangeConstraint) {
+	intersectMembers(other: RangeConstraint) {
 		const l = this.rule
 		const r = other.rule
 		if (l.dataKind !== r.dataKind) {

@@ -5,7 +5,7 @@ import { BaseNode } from "../type.js"
 export class IdentityConstraint extends BaseNode<{
 	rule: unknown
 	attributes: {}
-	intersections: Disjoint
+	disjoinable: false
 }> {
 	readonly kind = "identity"
 

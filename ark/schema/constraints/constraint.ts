@@ -1,4 +1,3 @@
-import type { mutable } from "@arktype/util"
 import { isArray, throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { disjointIfAllowed, NodeConfig, Orthogonal } from "../type.js"
@@ -30,10 +29,6 @@ export abstract class ConstraintSet<
 
 	intersectRules(other: this): config["rule"] | disjointIfAllowed<config> {
 		return intersectConstraints(this.members, other.members)
-	}
-
-	writeDefaultDescription() {
-		return `matched by ${this.members.join(" and ")}`
 	}
 }
 

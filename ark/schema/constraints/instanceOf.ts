@@ -10,7 +10,7 @@ import { BaseNode } from "../type.js"
 export class InstanceOfConstraint extends BaseNode<{
 	rule: AbstractableConstructor
 	attributes: {}
-	intersections: Disjoint
+	disjoinable: true
 }> {
 	readonly kind = "instanceOf"
 	readonly domain = "object"

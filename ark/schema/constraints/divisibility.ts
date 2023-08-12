@@ -3,7 +3,7 @@ import { BaseNode } from "../type.js"
 export class DivisorConstraint extends BaseNode<{
 	rule: number
 	attributes: {}
-	intersections: never
+	disjoinable: false
 }> {
 	readonly kind = "divisor"
 

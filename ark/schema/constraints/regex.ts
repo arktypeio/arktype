@@ -1,3 +1,4 @@
+import { isArray } from "@arktype/util"
 import type { Orthogonal } from "../type.js"
 import { orthogonal } from "../type.js"
 import { ConstraintSet } from "./constraint.js"
@@ -9,14 +10,17 @@ export class PatternConstraint<
 > extends ConstraintSet<{
 	leaf: RegExp
 	intersection: PatternIntersection
+	rule: rule
+	attributes: {}
 	disjoinable: false
 }> {
 	readonly kind = "pattern"
 	readonly literal = `${this.rule}` as `/${string}/${string}`
 
 	writeDefaultDescription() {
-		// don't use this.literal here since it may not have been initialized
-		return `matched by ${this.rule}`
+		return isArray(this.rule)
+			? this.rule.join(" and ")
+			: `matched by ${this.rule}`
 	}
 
 	intersectMembers(): Orthogonal {

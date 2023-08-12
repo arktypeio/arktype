@@ -5,7 +5,7 @@ import { BaseNode } from "../type.js"
 export class DomainConstraint extends BaseNode<{
 	rule: NonEnumerableDomain
 	attributes: {}
-	intersections: Disjoint
+	disjoinable: true
 }> {
 	readonly kind = "domain"
 
