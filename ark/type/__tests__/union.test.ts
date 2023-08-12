@@ -1,11 +1,10 @@
 import { attest } from "@arktype/attest"
+import { type } from "arktype"
 import { suite, test } from "mocha"
-import { node, type } from "arktype"
-import { writeIndivisibleMessage } from "../type/parser/semantic/divisor.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
-} from "../type/parser/string/shift/operand/unenclosed.js"
+} from "../parser/string/shift/operand/unenclosed.js"
 
 suite("union", () => {
 	test("binary", () => {

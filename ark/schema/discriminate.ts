@@ -11,7 +11,6 @@ import type {
 	mutable,
 	SerializedPrimitive
 } from "@arktype/util"
-import type { BasisConstraint } from "./constraints/domain.js"
 import type { SerializedPath } from "./disjoint.js"
 import type { PredicateNode, UnitConstraints } from "./predicate.js"
 

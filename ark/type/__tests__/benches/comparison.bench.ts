@@ -1,6 +1,5 @@
 import { bench } from "@arktype/attest"
-import { type } from "../../type/main.js"
-import { registry } from "../../type/compiler/registry.js"
+import { type } from "arktype"
 
 const validInput = {
 	number: 1,

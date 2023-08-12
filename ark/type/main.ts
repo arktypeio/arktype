@@ -1,5 +1,3 @@
-import { type } from "./scopes/ark.js"
-
 export {
 	scope,
 	type,
@@ -9,7 +7,6 @@ export {
 	define,
 	declare
 } from "./scopes/ark.js"
-export type { TypeConfig, KeyCheckKind } from "./config.js"
 export type { CastTo } from "./parser/definition.js"
 export type { Out } from "./parser/tuple.js"
 export type { Scope, Module } from "./scope.js"

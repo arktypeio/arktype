@@ -1,12 +1,12 @@
+import type { RangeRule } from "@arktype/schema"
+import type { defined, error } from "@arktype/util"
 import type {
-	RangeConstraint,
-	RangeRule,
 	Comparator,
+	InvertedComparators,
+	LimitLiteral,
 	MaxComparator,
 	MinComparator
-} from "@arktype/schema"
-import type { defined, error } from "@arktype/util"
-import type { LimitLiteral } from "../shift/operator/bounds.js"
+} from "../shift/operator/bounds.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
 	StringifiablePrefixOperator,

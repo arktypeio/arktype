@@ -1,9 +1,10 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeInvalidPropertyKeyMessage } from "../type/parser/objectLiteral.js"
-import { writeUnboundableMessage } from "../type/parser/semantic/bounds.js"
-import { writeUnresolvableMessage } from "../type/parser/string/shift/operand/unenclosed.js"
+import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeUnboundableMessage } from "../parser/semantic/bounds.js"
+import { writeInvalidPropertyKeyMessage } from "../parser/objectLiteral.js"
+
 
 suite("object literal", () => {
 	test("empty", () => {

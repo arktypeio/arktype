@@ -5,12 +5,11 @@ import { suite, test } from "mocha"
 import {
 	emptyGenericParameterMessage,
 	writeInvalidGenericArgsMessage
-} from "../type/parser/generic.js"
-import { writeIndivisibleMessage } from "../type/parser/semantic/divisor.js"
-import { writeUnclosedGroupMessage } from "../type/parser/string/reduce/shared.js"
-import { writeUnresolvableMessage } from "../type/parser/string/shift/operand/unenclosed.js"
-import { writeInvalidDivisorMessage } from "../type/parser/string/shift/operator/divisor.js"
-import { writeUnexpectedCharacterMessage } from "../type/parser/string/shift/operator/operator.js"
+} from "../parser/generic.js"
+import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
+import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
+import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
 suite("generics", () => {
 	suite("standalone generic", () => {

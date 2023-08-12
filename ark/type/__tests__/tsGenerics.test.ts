@@ -1,6 +1,4 @@
-import { attest } from "@arktype/attest"
-import { arktypes, scope } from "arktype"
-import { suite, test } from "mocha"
+import { suite } from "mocha"
 
 suite("tsGenerics", () => {
 	// test("in scope", () => {

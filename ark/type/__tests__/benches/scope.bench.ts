@@ -1,5 +1,5 @@
 import { bench } from "@arktype/attest"
-import { scope } from "../../type/main.js"
+import { scope } from "arktype"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 // const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } }).compile()

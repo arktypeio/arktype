@@ -1,11 +1,8 @@
 import { attest } from "@arktype/attest"
-import type { Problem } from "arktype"
 import { arktypes, scope, type } from "arktype"
+import type { Ark, Problem, Type } from "arktype"
 import { suite, test } from "mocha"
-import { writeUndiscriminatableMorphUnionMessage } from "../type/nodes/union/discriminate.js"
-import type { Out } from "../type/parser/tuple.js"
-import type { Ark } from "../type/scopes/ark.js"
-import type { Type } from "../type/type.js"
+import type { Out } from "../parser/tuple.js"
 
 suite("morph", () => {
 	test("base", () => {

@@ -1,6 +1,6 @@
 // @ts-ignore
 import { bench } from "@arktype/attest"
-import { scope, type } from "../../type/main.js"
+import { scope, type } from "arktype"
 import { z } from "zod"
 
 bench("arktype", () => {

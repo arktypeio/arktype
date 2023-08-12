@@ -1,14 +1,13 @@
 import { attest } from "@arktype/attest"
 import { lazily } from "@arktype/util"
-import type { Module, Scope } from "arktype"
+import type { Ark, Module, Scope } from "arktype"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
-} from "../type/parser/string/shift/operand/unenclosed.js"
-import type { Ark } from "../type/scopes/ark.js"
+} from "../parser/string/shift/operand/unenclosed.js"
 
 const $ = lazily(() =>
 	scope({

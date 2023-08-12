@@ -7,35 +7,38 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
+import type { DomainConstraint } from "./constraints/domain.js"
+import type { IdentityConstraint } from "./constraints/identity.js"
+import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
 import type { RangeConstraint } from "./constraints/range.js"
 import type { PredicateNode } from "./predicate.js"
 import type { BaseNode } from "./type.js"
 
 type DisjointKinds = {
 	domain?: {
-		l: BasisConstraint
-		r: BasisConstraint
+		l: DomainConstraint
+		r: DomainConstraint
 	}
-	unit?: {
-		l: UnitNode
-		r: UnitNode
+	identity?: {
+		l: IdentityConstraint
+		r: IdentityConstraint
 	}
 	range?: {
 		l: RangeConstraint
 		r: RangeConstraint
 	}
-	class?: {
-		l: BasisConstraint
-		r: BasisConstraint
+	instanceOf?: {
+		l: InstanceOfConstraint
+		r: InstanceOfConstraint
 	}
 	assignability?:
 		| {
-				l: UnitNode
+				l: IdentityConstraint
 				r: PredicateNode
 		  }
 		| {
 				l: PredicateNode
-				r: UnitNode
+				r: IdentityConstraint
 		  }
 	union?: {
 		l: BaseNode

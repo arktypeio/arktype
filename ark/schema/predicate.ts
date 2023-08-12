@@ -1,6 +1,9 @@
-import type { AbstractableConstructor, extend } from "@arktype/util"
+import type {
+	AbstractableConstructor,
+	extend,
+	PickPartial
+} from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { Constraint, ConstraintKind } from "./constraints/constraint.js"
 import type { DivisorConstraint } from "./constraints/divisibility.js"
 import type {
 	DomainConstraint,
@@ -9,13 +12,18 @@ import type {
 import type { IdentityConstraint } from "./constraints/identity.js"
 import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
 import type { NarrowSet } from "./constraints/narrow.js"
-import type { RangeConstraint, RangeSet } from "./constraints/range.js"
+import type { PropSet } from "./constraints/prop/prop.js"
+import type { RangeSet } from "./constraints/range.js"
 import type { PatternSet } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./type.js"
 import { assertOverlapping } from "./utils.js"
 
-export class PredicateNode extends BaseNode<ConstraintsByKind> {
+export class PredicateNode extends BaseNode<{
+	rule: ConstraintsByKind
+	attributes: {}
+	intersections: Disjoint
+}> {
 	readonly kind = "predicate"
 
 	static from(constraints: ConstraintsByKind, attributes: UniversalAttributes) {
@@ -74,75 +82,47 @@ export class PredicateNode extends BaseNode<ConstraintsByKind> {
 //     ).join(", ")})`
 // )
 
-export type ConstraintsByKind = {
+export type ConstraintsByKind = Readonly<{
 	identity: IdentityConstraint
 	domain: DomainConstraint
-	divisor: DivisorConstraint
 	instanceOf: InstanceOfConstraint
+	divisor: DivisorConstraint
 	range: RangeSet
 	regex: PatternSet
-	narrow: NarrowSet
-}
+	props: PropSet
+	narrows: NarrowSet
+}>
 
-export type Constraints =
-	| UnitConstraints
-	| UnknownConstraints
-	| DomainConstraints
-	| NumberConstraints
-	| ObjectConstraints
-	| StringConstraints
-	| ArrayConstraints
-	| DateConstraints
+export type UnitConstraints = Pick<ConstraintsByKind, "identity">
 
-export type UnitConstraints = {
-	readonly identity: IdentityConstraint
-}
-
-export type UnknownConstraints = {
-	readonly narrow?: NarrowSet
-}
+export type UnknownConstraints = PickPartial<ConstraintsByKind, "narrows">
 
 export type DomainConstraints<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = extend<
-	UnknownConstraints,
-	{
-		readonly domain: DomainConstraint
-	}
->
+> = extend<UnknownConstraints, Pick<ConstraintsByKind, "domain">>
 
 export type NumberConstraints = extend<
 	DomainConstraints<"number">,
-	{
-		readonly range?: RangeSet
-		readonly divisor?: DivisorConstraint
-	}
+	PickPartial<ConstraintsByKind, "range" | "divisor">
 >
 
-export type ObjectConstraints<
+export type InstanceConstraints<
 	constructor extends AbstractableConstructor = AbstractableConstructor
 > = extend<
 	DomainConstraints<"object">,
-	AbstractableConstructor extends constructor
-		? {
-				readonly instance?: InstanceOfConstraint
-		  }
-		: { readonly instance: InstanceOfConstraint }
+	{ readonly instance: InstanceOfConstraint }
 >
 
 export type StringConstraints = extend<
 	DomainConstraints<"string">,
-	{
-		readonly range?: RangeSet
-		readonly regex?: PatternSet
-	}
+	PickPartial<ConstraintsByKind, "range" | "regex">
 >
 
 // TODO: add minLength prop that would result from collapsing types like [...number[], number]
 // to a single variadic number prop with minLength 1
 // Figure out best design for integrating with named props.
 export type ArrayConstraints = extend<
-	ObjectConstraints<typeof Array>,
+	InstanceConstraints<typeof Array>,
 	{
 		readonly range?: RangeSet
 		readonly prefix?: readonly BaseNode[]
@@ -152,7 +132,7 @@ export type ArrayConstraints = extend<
 >
 
 export type DateConstraints = extend<
-	ObjectConstraints<typeof Date>,
+	InstanceConstraints<typeof Date>,
 	{
 		readonly range?: RangeSet
 	}

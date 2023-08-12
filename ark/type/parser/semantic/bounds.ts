@@ -1,8 +1,9 @@
-import type { Comparator, NumericallyBoundableData } from "@arktype/schema"
+import type { NumericallyBoundableData } from "@arktype/schema"
 import type { error } from "@arktype/util"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {
 	BoundKind,
+	Comparator,
 	InvertedComparators,
 	LimitLiteral,
 	writeInvalidLimitMessage

@@ -1,7 +1,8 @@
-import type { Comparator, MinComparator } from "@arktype/schema"
 import type {
+	Comparator,
 	InvertedComparators,
-	LimitLiteral
+	LimitLiteral,
+	MinComparator
 } from "../shift/operator/bounds.js"
 import { invertedComparators } from "../shift/operator/bounds.js"
 

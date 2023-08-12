@@ -1,9 +1,9 @@
 import { attest } from "@arktype/attest"
-import { node, type } from "arktype"
+import { type } from "arktype"
 import { suite, test } from "mocha"
-import { writeInvalidConstructorMessage } from "../type/parser/tuple.js"
-import type { Ark } from "../type/scopes/ark.js"
-import type { Type } from "../type/type.js"
+import { writeInvalidConstructorMessage } from "../parser/tuple.js"
+import type { Ark } from "../scopes/ark.js"
+import type { Type } from "../type.js"
 
 suite("instanceof", () => {
 	suite("tuple expression", () => {

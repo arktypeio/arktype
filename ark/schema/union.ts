@@ -16,7 +16,11 @@ export type UnresolvedTypeNode = {
 	resolve: Thunk<BaseNode>
 }
 
-export class UnionNode<t = unknown> extends BaseNode<unknown> {
+export class UnionNode<t = unknown> extends BaseNode<{
+	rule: readonly PredicateNode[]
+	attributes: {}
+	intersections: Disjoint
+}> {
 	declare [inferred]: t
 	readonly kind = "type"
 	readonly alias = ""

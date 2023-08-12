@@ -4,18 +4,14 @@ import type {
 	NumberLiteral,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
-import { throwInternalError, throwParseError } from "@arktype/util"
 import type { Module } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { writeInvalidGenericArgsMessage } from "../generic.js"
-import { isDateLiteral } from "../string/shift/operand/date.js"
 import type { writeMissingSubmoduleAccessMessage } from "../string/shift/operand/unenclosed.js"
-import { writeInvalidLimitMessage } from "../string/shift/operator/bounds.js"
+import type { Comparator } from "../string/shift/operator/bounds.js"
 import type { parseString } from "../string/string.js"
 import type { validateRange } from "./bounds.js"
-import { writeUnboundableMessage } from "./bounds.js"
 import type { validateDivisor } from "./divisor.js"
-import { writeIndivisibleMessage } from "./divisor.js"
 import type {
 	GenericInstantiationAst,
 	InfixExpression,

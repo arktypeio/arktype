@@ -1,6 +1,6 @@
 // import z from "zod"
 import { bench } from "@arktype/attest"
-import { type } from "../../type/main.js"
+import { type } from "arktype"
 
 bench("arktype", () => {
 	// Union is automatically discriminated using shallow or deep keys

@@ -1,21 +1,21 @@
 import { attest } from "@arktype/attest"
+import { writeIncompatibleRangeMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
-import { node, type } from "arktype"
+import { type } from "arktype"
 import { suite, test } from "mocha"
-import { writeIncompatibleRangeMessage } from "../type/nodes/primitive/bound.js"
 import {
 	writeDoubleRightBoundMessage,
 	writeUnboundableMessage
-} from "../type/parser/semantic/bounds.js"
+} from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnpairableComparatorMessage
-} from "../type/parser/string/reduce/shared.js"
+} from "../parser/string/reduce/shared.js"
 import {
 	singleEqualsMessage,
 	writeInvalidLimitMessage
-} from "../type/parser/string/shift/operator/bounds.js"
+} from "../parser/string/shift/operator/bounds.js"
 
 export const expectedBoundsCondition = (...bound: any) =>
 	node({ basis: "number", bound }).condition

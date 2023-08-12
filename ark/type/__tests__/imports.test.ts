@@ -1,9 +1,8 @@
 import { attest } from "@arktype/attest"
 import { lazily } from "@arktype/util"
+import type { Ark, Module } from "arktype"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import type { Module } from "../type/scope.js"
-import type { Ark } from "../type/scopes/ark.js"
 
 suite("scope imports", () => {
 	const threeSixtyNoScope = lazily(() =>

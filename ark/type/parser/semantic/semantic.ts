@@ -8,6 +8,7 @@ import type { GenericProps } from "../../type.js"
 import type { CastTo, inferDefinition } from "../definition.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+import type { Comparator } from "../string/shift/operator/bounds.js"
 import type { inferIntersection } from "./intersections.js"
 
 export type inferAst<ast, $, args> = ast extends List

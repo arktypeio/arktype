@@ -35,6 +35,7 @@
 		"ci:version": "ts ./ark/repo/updateVersions.ts"
 	},
 	"devDependencies": {
+		"arktype": "workspace:*",
 		"@arktype/attest": "workspace:*",
 		"@arktype/repo": "workspace:*",
 		"@changesets/changelog-github": "0.4.8",

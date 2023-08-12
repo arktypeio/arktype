@@ -1,15 +1,12 @@
-import type { extend, satisfy } from "@arktype/util"
-import type {
-	AttributesRecord,
-	UniversalAttributes
-} from "./attributes/attribute.js"
+import type { extend } from "@arktype/util"
+import type { AttributeRecord } from "./attributes/attribute.js"
 import { Disjoint } from "./disjoint.js"
-import type { PredicateNode } from "./predicate.js"
+import type { ConstraintsByKind, PredicateNode } from "./predicate.js"
 import type { UnionNode } from "./union.js"
 
 export interface NodeConfig {
 	rule: unknown
-	attributes: AttributesRecord
+	attributes: AttributeRecord
 	intersections: Orthogonal | Disjoint
 }
 

@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
-import { node, type } from "arktype"
+import { type } from "arktype"
 import { suite, test } from "mocha"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
-} from "../type/parser/string/shift/operand/unenclosed.js"
+} from "../parser/string/shift/operand/unenclosed.js"
 
 suite("keyof", () => {
 	test("autocompletion", () => {

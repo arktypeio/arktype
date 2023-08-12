@@ -1,5 +1,5 @@
 import { bench } from "@arktype/attest"
-import { scope, type } from "../../type/main.js"
+import { scope, type } from "arktype"
 
 bench("single-quoted", () => {
 	const _ = type("'nineteen characters'")

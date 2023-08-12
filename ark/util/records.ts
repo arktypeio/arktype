@@ -105,3 +105,7 @@ export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 export const ReadonlyObject = Object as unknown as new <T extends object>(
 	base: T
 ) => T
+
+export type PickPartial<o extends object, key extends keyof o> = {
+	[k in key]?: o[k]
+}

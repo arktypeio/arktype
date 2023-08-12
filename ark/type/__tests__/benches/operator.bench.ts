@@ -1,5 +1,5 @@
 import { bench } from "@arktype/attest"
-import { type } from "../../type/main.js"
+import { type } from "arktype"
 
 bench("array-string", () => {
 	const _ = type("number[]")

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node, type } from "arktype"
+import { type } from "arktype"
 import { suite, test } from "mocha"
 
 suite("literal", () => {

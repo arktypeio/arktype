@@ -16,6 +16,7 @@
 		"noImplicitOverride": true,
 		"stripInternal": true,
 		"lib": ["ESNext"],
+		"jsx": "react",
 		"customConditions": ["arktype-repo"]
 	},
 	"ts-node": {

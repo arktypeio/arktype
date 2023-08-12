@@ -1,9 +1,8 @@
 import { attest } from "@arktype/attest"
 import type { equals } from "@arktype/util"
+import type { Ark, Type } from "arktype"
 import { type } from "arktype"
 import { suite, test } from "mocha"
-import type { Ark } from "../type/scopes/ark.js"
-import type { Type } from "../type/type.js"
 
 suite("narrow", () => {
 	test("implicit problem", () => {
