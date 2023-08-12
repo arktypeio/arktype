@@ -11,10 +11,10 @@ import type {
 } from "./constraints/domain.js"
 import type { IdentityConstraint } from "./constraints/identity.js"
 import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
-import type { NarrowSet } from "./constraints/narrow.js"
-import type { PropSet } from "./constraints/prop/prop.js"
-import type { RangeSet } from "./constraints/range.js"
-import type { PatternSet } from "./constraints/regex.js"
+import type { NarrowConstraint } from "./constraints/narrow.js"
+import type { PropConstraint } from "./constraints/prop/prop.js"
+import type { RangeConstraint } from "./constraints/range.js"
+import type { PatternConstraint } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./type.js"
 import { assertOverlapping } from "./utils.js"
@@ -87,15 +87,15 @@ export type ConstraintsByKind = Readonly<{
 	domain: DomainConstraint
 	instanceOf: InstanceOfConstraint
 	divisor: DivisorConstraint
-	range: RangeSet
-	regex: PatternSet
-	props: PropSet
-	narrows: NarrowSet
+	range: RangeConstraint
+	pattern: PatternConstraint
+	prop: PropConstraint
+	narrow: NarrowConstraint
 }>
 
 export type UnitConstraints = Pick<ConstraintsByKind, "identity">
 
-export type UnknownConstraints = PickPartial<ConstraintsByKind, "narrows">
+export type UnknownConstraints = PickPartial<ConstraintsByKind, "narrow">
 
 export type DomainConstraints<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -115,7 +115,7 @@ export type InstanceConstraints<
 
 export type StringConstraints = extend<
 	DomainConstraints<"string">,
-	PickPartial<ConstraintsByKind, "range" | "regex">
+	PickPartial<ConstraintsByKind, "range" | "pattern">
 >
 
 // TODO: add minLength prop that would result from collapsing types like [...number[], number]
@@ -124,7 +124,7 @@ export type StringConstraints = extend<
 export type ArrayConstraints = extend<
 	InstanceConstraints<typeof Array>,
 	{
-		readonly range?: RangeSet
+		readonly range?: RangeConstraint
 		readonly prefix?: readonly BaseNode[]
 		readonly variadic?: BaseNode
 		readonly postfix?: readonly BaseNode[]
@@ -134,7 +134,7 @@ export type ArrayConstraints = extend<
 export type DateConstraints = extend<
 	InstanceConstraints<typeof Date>,
 	{
-		readonly range?: RangeSet
+		readonly range?: RangeConstraint
 	}
 >
 

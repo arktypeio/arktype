@@ -1,45 +1,35 @@
-import type { mutable, satisfy } from "@arktype/util"
+import type { mutable } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { NodeConfig } from "../type.js"
+import type { disjointIfAllowed, Orthogonal } from "../type.js"
 import { BaseNode, orthogonal } from "../type.js"
 
-// export const setConstructor =
-// 	<subclass extends ConstraintSet>(subclass: subclass) =>
-// 	(constraints: extractArray<subclass>) =>
-// 		// starting from an empty set, apply and reduce unvalidated constraints
-// 		intersectConstraints(new (subclass as any)(), constraints) as subclass
-
-type toConstraintSetConfig<constraints extends readonly BaseNode[]> = satisfy<
-	NodeConfig,
-	{
-		rule: constraints[number] | constraints
-		attributes: {}
-		intersections: Extract<
-			ReturnType<constraints[number]["intersectRules"]>,
-			Disjoint
-		>
-	}
->
+export interface SetConfig<leaf> {
+	leaf: leaf
+	intersection: readonly ConstraintSet<this>[]
+	disjoinable: boolean
+}
 
 export abstract class ConstraintSet<
-	constraints extends readonly BaseNode[] = readonly BaseNode[]
-> extends BaseNode<toConstraintSetConfig<constraints>> {
-	add(
-		constraint: constraints[number]
-	): this | toConstraintSetConfig<constraints>["intersections"] {
+	setConfig extends SetConfig<any> = SetConfig<unknown>
+> extends BaseNode<{
+	rule: setConfig["leaf" | "intersection"]
+	attributes: {}
+	disjoinable: setConfig["disjoinable"]
+}> {
+	add(constraint: setConfig["leaf"]): this | disjointIfAllowed<setConfig> {
 		const result = addConstraint(this.rule, constraint)
 		return result instanceof Disjoint
 			? result
 			: new (this.constructor as any)(result, this.attributes)
 	}
 
-	abstract intersectMembers(other: constraints[number]) => {
-		
-	} 
+	protected abstract intersectMembers(
+		other: setConfig["leaf"]
+	): setConfig["leaf"] | Orthogonal | disjointIfAllowed<setConfig>
 
-	intersectRules(other: this) {
-		return intersectConstraints(this.rule, other.rule) as constraints
+	intersectRules(other: this): this["rule"] | disjointIfAllowed<setConfig> {
+		return intersectConstraints(this.rule, other.rule)
 	}
 
 	writeDefaultDescription() {

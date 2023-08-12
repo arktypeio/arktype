@@ -6,24 +6,16 @@ import { ConstraintSet } from "./constraint.js"
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends BaseNode<{
-	rule: Narrow
-	attributes: {}
-	intersections: Orthogonal
-}> {
+export class NarrowConstraint extends ConstraintSet<readonly Narrow[]> {
 	readonly kind = "narrow"
 
 	writeDefaultDescription() {
 		return `valid according to ${this.rule.name}`
 	}
 
-	intersectRules(): Orthogonal {
+	intersectMembers(): Orthogonal {
 		return orthogonal
 	}
-}
-
-export class NarrowSet extends ConstraintSet<readonly NarrowConstraint[]> {
-	readonly kind = "narrows"
 }
 
 export type Narrow<data = any> = (data: data) => boolean

@@ -1,9 +1,16 @@
-import type { CollapsingList } from "@arktype/util"
 import type { Orthogonal } from "../type.js"
-import { BaseNode, orthogonal } from "../type.js"
+import { orthogonal } from "../type.js"
 import { ConstraintSet } from "./constraint.js"
 
-export class PatternConstraint extends ConstraintSet<readonly RegExp[]> {
+type PatternIntersection = readonly PatternConstraint<RegExp>[]
+
+export class PatternConstraint<
+	rule extends RegExp | PatternIntersection = RegExp | PatternIntersection
+> extends ConstraintSet<{
+	leaf: RegExp
+	intersection: PatternIntersection
+	disjoinable: false
+}> {
 	readonly kind = "pattern"
 	readonly literal = `${this.rule}` as `/${string}/${string}`
 
@@ -12,13 +19,9 @@ export class PatternConstraint extends ConstraintSet<readonly RegExp[]> {
 		return `matched by ${this.rule}`
 	}
 
-	intersectMembers(other: this) {
-		return [this.rule, other.rule]
+	intersectMembers(): Orthogonal {
+		return orthogonal
 	}
-}
-
-export class PatternSet extends ConstraintSet<readonly PatternConstraint[]> {
-	readonly kind = "patterns"
 }
 
 // converting a regex to a string alphabetizes the flags for us

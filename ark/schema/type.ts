@@ -4,11 +4,14 @@ import { Disjoint } from "./disjoint.js"
 import type { ConstraintsByKind, PredicateNode } from "./predicate.js"
 import type { UnionNode } from "./union.js"
 
-export interface NodeConfig {
-	rule: unknown
+export interface NodeConfig<rule = unknown> {
+	rule: rule
 	attributes: AttributeRecord
-	intersections: Disjoint
+	disjoinable: boolean
 }
+
+export type disjointIfAllowed<config extends { disjoinable: boolean }> =
+	config["disjoinable"] extends true ? Disjoint : never
 
 export abstract class BaseNode<config extends NodeConfig = NodeConfig> {
 	protected constructor(
@@ -16,13 +19,15 @@ export abstract class BaseNode<config extends NodeConfig = NodeConfig> {
 		public attributes: config["attributes"]
 	) {}
 
-	abstract intersectRules(other: this): config["rule"] | config["intersections"]
+	abstract intersectRules(
+		other: this
+	): config["rule"] | disjointIfAllowed<config>
 
 	intersect(
 		other: this
 		// Ensure the signature of this method reflects whether Disjoint and/or null
 		// are possible intersection results for the subclass.
-	): this | config["intersections"] {
+	): this | disjointIfAllowed<config> {
 		const ruleIntersection = this.intersectRules(other)
 		if (
 			ruleIntersection === orthogonal ||
