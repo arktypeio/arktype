@@ -1,7 +1,7 @@
 import { isArray, throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Orthogonal } from "../type.js"
-import { BaseNode, orthogonal } from "../type.js"
+import { orthogonal } from "../type.js"
 import { ConstraintSet } from "./constraint.js"
 
 export type RangeRule<limitKind extends LimitKind = LimitKind> = {
@@ -12,13 +12,13 @@ export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 }
 
 export class RangeConstraint<
-	limitKind extends LimitKind = LimitKind
+	rule extends RangeRule | DoubleBounds = RangeRule | DoubleBounds
 > extends ConstraintSet<{
-	leaf: RangeRule<limitKind>
+	leaf: Extract<rule, RangeRule>
 	intersection: DoubleBounds
-	rule: RangeRule<limitKind> | DoubleBounds
+	rule: rule
 	attributes: {}
-	disjoinable: false
+	disjoinable: true
 }> {
 	readonly kind = "range"
 
@@ -47,8 +47,9 @@ export class RangeConstraint<
 
 	// TODO: Move to static?
 	intersectRule(
+		this: RangeConstraint<RangeRule>,
 		other: RangeRule // cast the rule result to the current limitKind
-	): RangeRule<limitKind> | Disjoint | Orthogonal
+	): this["rule"] | Disjoint | Orthogonal
 	intersectRule(r: RangeRule) {
 		const l = this.rule
 		if (l.dataKind !== r.dataKind) {
@@ -80,8 +81,8 @@ export class RangeConstraint<
 export type Bounds = SingleBound | DoubleBounds
 export type SingleBound = readonly [RangeConstraint]
 export type DoubleBounds = readonly [
-	RangeConstraint<"min">,
-	RangeConstraint<"max">
+	RangeConstraint<RangeRule<"min">>,
+	RangeConstraint<RangeRule<"max">>
 ]
 
 const unitsByBoundedKind = {

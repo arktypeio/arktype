@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "3.2.3",
+	"version": "3.2.4",
 	"private": true,
 	"publisher": "arktypeio",
 	"type": "module",
@@ -20,6 +20,9 @@
 	"categories": [
 		"Themes",
 		"Programming Languages"
+	],
+	"extensionDependencies": [
+		"usernamehw.errorlens"
 	],
 	"contributes": {
 		"themes": [
@@ -40,9 +43,6 @@
 				"scopeName": "source.arktype.injection.ts",
 				"path": "arktype.tmLanguage.json"
 			}
-		],
-		"extensionDependencies": [
-			"usernamehw.errorlens"
 		],
 		"configurationDefaults": {
 			"errorLens.followCursor": "closestProblem",

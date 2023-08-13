@@ -5,11 +5,11 @@ import { BaseNode, orthogonal } from "../type.js"
 
 export interface SetConfig<leaf> extends NodeConfig {
 	leaf: leaf
-	intersection: readonly ConstraintSet<this>[]
+	intersection: readonly ConstraintSet<any>[]
 }
 
 export abstract class ConstraintSet<
-	config extends SetConfig<any> = SetConfig<unknown>
+	config extends SetConfig<unknown> = SetConfig<unknown>
 > extends BaseNode<config> {
 	// TODO: array overlap?
 	protected members = (isArray(this.rule)
@@ -24,6 +24,7 @@ export abstract class ConstraintSet<
 	}
 
 	protected abstract intersectRule(
+		this: config["intersection"][number],
 		other: config["leaf"]
 	): config["leaf"] | Orthogonal | disjointIfAllowed<config>
 
