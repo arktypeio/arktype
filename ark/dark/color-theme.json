@@ -198,7 +198,7 @@
 			"name": "comment",
 			"scope": ["comment", "punctuation.definition.comment"],
 			"settings": {
-				"foreground": "#708090"
+				"foreground": "#888899"
 			}
 		}
 	]
