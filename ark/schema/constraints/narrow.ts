@@ -26,7 +26,7 @@ export class NarrowConstraint<
 			: `valid according to ${this.rule.name}`
 	}
 
-	intersectMembers(): Orthogonal {
+	intersectRule(): Orthogonal {
 		return orthogonal
 	}
 }

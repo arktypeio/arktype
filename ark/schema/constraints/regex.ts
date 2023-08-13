@@ -23,7 +23,7 @@ export class PatternConstraint<
 			: `matched by ${this.rule}`
 	}
 
-	intersectMembers(): Orthogonal {
+	intersectRule(): Orthogonal {
 		return orthogonal
 	}
 }

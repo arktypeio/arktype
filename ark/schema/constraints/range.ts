@@ -2,6 +2,7 @@ import { isArray, throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Orthogonal } from "../type.js"
 import { BaseNode, orthogonal } from "../type.js"
+import { ConstraintSet } from "./constraint.js"
 
 export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 	readonly dataKind: BoundableDataKind
@@ -12,7 +13,7 @@ export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends BaseNode<{
+> extends ConstraintSet<{
 	leaf: RangeRule<limitKind>
 	intersection: DoubleBounds
 	rule: RangeRule<limitKind> | DoubleBounds
@@ -20,8 +21,6 @@ export class RangeConstraint<
 	disjoinable: false
 }> {
 	readonly kind = "range"
-
-	protected readonly defaultDescriptionPrefix = ""
 
 	writeDefaultDescription(): string {
 		if (isArray(this.rule)) {
@@ -46,12 +45,12 @@ export class RangeConstraint<
 		return `${comparisonDescription} ${this.rule.limit}`
 	}
 
-	intersectMembers(
-		other: RangeConstraint // cast the rule result to the current limitKind
+	// TODO: Move to static?
+	intersectRule(
+		other: RangeRule // cast the rule result to the current limitKind
 	): RangeRule<limitKind> | Disjoint | Orthogonal
-	intersectMembers(other: RangeConstraint) {
+	intersectRule(r: RangeRule) {
 		const l = this.rule
-		const r = other.rule
 		if (l.dataKind !== r.dataKind) {
 			return throwParseError(
 				writeIncompatibleRangeMessage(l.dataKind, r.dataKind)
@@ -59,13 +58,13 @@ export class RangeConstraint<
 		}
 		if (l.limit > r.limit) {
 			if (l.limitKind === "min") {
-				return r.limitKind === "min" ? l : Disjoint.from("range", this, other)
+				return r.limitKind === "min" ? l : Disjoint.from("range", this, r)
 			}
 			return r.limitKind === "max" ? r : orthogonal
 		}
 		if (l.limit < r.limit) {
 			if (l.limitKind === "max") {
-				return r.limitKind === "max" ? l : Disjoint.from("range", this, other)
+				return r.limitKind === "max" ? l : Disjoint.from("range", this, r)
 			}
 			return r.limitKind === "min" ? r : orthogonal
 		}
@@ -73,7 +72,7 @@ export class RangeConstraint<
 			return l.exclusive ? l : r
 		}
 		return l.exclusive || r.exclusive
-			? Disjoint.from("range", this, other)
+			? Disjoint.from("range", this, r)
 			: orthogonal
 	}
 }

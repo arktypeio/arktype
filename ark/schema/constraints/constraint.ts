@@ -23,7 +23,7 @@ export abstract class ConstraintSet<
 			: new (this.constructor as any)(result, this.attributes)
 	}
 
-	protected abstract intersectMembers(
+	protected abstract intersectRule(
 		other: config["leaf"]
 	): config["leaf"] | Orthogonal | disjointIfAllowed<config>
 
