@@ -156,3 +156,31 @@ export type DateConstraints = extend<
 // 	// narrow
 // 	narrow: 3
 // }
+
+// TODO: make sure in cases like range, the result is sorted
+// const addConstraint = (
+// 	members: readonly ConstraintSet[],
+// 	constraint: ConstraintSet
+// ) => {
+// 	const result: ConstraintSet[] = []
+// 	let includesConstraint = false
+// 	for (let i = 0; i < members.length; i++) {
+// 		const elementResult = members[i].intersect(constraint as never)
+// 		if (elementResult === (orthogonal as never)) {
+// 			result.push(members[i])
+// 		} else if (elementResult instanceof Disjoint) {
+// 			return elementResult
+// 		} else if (!includesConstraint) {
+// 			result.push(elementResult)
+// 			includesConstraint = true
+// 		} else if (!result.includes(elementResult)) {
+// 			return throwInternalError(
+// 				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+// 			)
+// 		}
+// 	}
+// 	if (!includesConstraint) {
+// 		result.push(constraint)
+// 	}
+// 	return result
+// }

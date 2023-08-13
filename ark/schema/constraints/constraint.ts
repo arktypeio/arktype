@@ -1,57 +1,9 @@
-import { isArray, throwInternalError } from "@arktype/util"
-import type { AttributeRecord } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { disjointIfAllowed, NodeConfig } from "../node.js"
-import { BaseNode } from "../node.js"
+import { PredicateNode } from "../predicate.js"
 
-export abstract class Constraint<config extends NodeConfig> extends BaseNode {}
+export abstract class Constraint<config extends NodeConfig> extends BaseNode {
+	abstract apply(to: readonly Constraint[]): 
 
-export abstract class ConstraintSet<
-	config extends SetConfig<unknown> = SetConfig<unknown>
-> extends BaseNode<config> {
-	// TODO: array overlap?
-	protected members = (isArray(this.rule)
-		? this.rule
-		: [this]) as readonly this[]
-
-	add(constraint: config["leaf"]): this | disjointIfAllowed<config> {
-		const result = addConstraint(this.members, constraint)
-		return result instanceof Disjoint
-			? result
-			: new (this.constructor as any)(result, this.attributes)
-	}
-
-	intersectRules(other: this): config["rule"] | disjointIfAllowed<config> {
-		return intersectConstraints(this.members, other.members)
-	}
-}
-
-// TODO: make sure in cases like range, the result is sorted
-const addConstraint = (
-	members: readonly ConstraintSet[],
-	constraint: ConstraintSet
-) => {
-	const result: ConstraintSet[] = []
-	let includesConstraint = false
-	for (let i = 0; i < members.length; i++) {
-		const elementResult = members[i].intersect(constraint as never)
-		if (elementResult === (orthogonal as never)) {
-			result.push(members[i])
-		} else if (elementResult instanceof Disjoint) {
-			return elementResult
-		} else if (!includesConstraint) {
-			result.push(elementResult)
-			includesConstraint = true
-		} else if (!result.includes(elementResult)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
-			)
-		}
-	}
-	if (!includesConstraint) {
-		result.push(constraint)
-	}
-	return result
 }
 
 const intersectConstraints = (
@@ -76,8 +28,7 @@ export type Orthogonal = typeof orthogonal
 // 	if (basis?.hasKind("unit")) {
 // 		return throwInvalidConstraintError(
 // 			node.kind,
-// 			"a non-literal type",
-// 			basis.toString()
+// 			"a non-literal type",gujhnkib.l
 // 		)
 // 	}
 // 	const domain = basis?.domain ?? "unknown"
