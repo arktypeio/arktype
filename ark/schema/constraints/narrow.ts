@@ -1,20 +1,12 @@
 // TODO: allow changed order to be the same type
 import { isArray } from "@arktype/util"
-import type { Orthogonal } from "../node.js"
-import { BaseNode, orthogonal } from "../node.js"
-import { ConstraintSet } from "./constraint.js"
-
-export type NarrowRule = Narrow | readonly NarrowConstraint<Narrow>[]
+import { ConstraintNode } from "./constraint.js"
 
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint<
-	rule extends NarrowRule = NarrowRule
-> extends ConstraintSet<{
-	leaf: Narrow
-	intersection: readonly NarrowConstraint<Narrow>[]
-	rule: rule
+export class NarrowConstraint extends ConstraintNode<{
+	rule: Narrow
 	attributes: {}
 	disjoinable: false
 }> {
@@ -26,8 +18,8 @@ export class NarrowConstraint<
 			: `valid according to ${this.rule.name}`
 	}
 
-	intersectRule(): Orthogonal {
-		return orthogonal
+	compare() {
+		return null
 	}
 }
 

@@ -1,8 +1,7 @@
 import { isArray, throwParseError } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { Orthogonal } from "../node.js"
-import { orthogonal } from "../node.js"
-import { ConstraintSet } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
 export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 	readonly dataKind: BoundableDataKind
@@ -11,15 +10,16 @@ export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 	readonly exclusive?: true
 }
 
+export type RangeDefinition<limitKind extends LimitKind = LimitKind> = {
+	kind: "range"
+	rule: RangeRule<limitKind>
+	attributes: UniversalAttributes
+	node: RangeConstraint<limitKind>
+}
+
 export class RangeConstraint<
-	rule extends RangeRule | DoubleBounds = RangeRule | DoubleBounds
-> extends ConstraintSet<{
-	leaf: Extract<rule, RangeRule>
-	intersection: DoubleBounds
-	rule: rule
-	attributes: {}
-	disjoinable: true
-}> {
+	limitKind extends LimitKind = LimitKind
+> extends ConstraintNode<RangeDefinition<limitKind>> {
 	readonly kind = "range"
 
 	writeDefaultDescription(): string {
@@ -45,44 +45,51 @@ export class RangeConstraint<
 		return `${comparisonDescription} ${this.rule.limit}`
 	}
 
-	// TODO: Move to static?
-	intersectRule(
-		this: RangeConstraint<RangeRule>,
-		other: RangeRule // cast the rule result to the current limitKind
-	): this["rule"] | Disjoint | Orthogonal
-	intersectRule(r: RangeRule) {
-		const l = this.rule
-		if (l.dataKind !== r.dataKind) {
+	hasLimitKind<limitKind extends LimitKind>(
+		limitKind: limitKind
+	): this is RangeConstraint<limitKind> {
+		return this.rule.limitKind === (limitKind as never)
+	}
+
+	compare(other: ConstraintNode): RangeRule<limitKind> | Disjoint | null {
+		if (!other.hasKind("range")) {
+			return null
+		}
+		if (this.rule.dataKind !== other.rule.dataKind) {
 			return throwParseError(
-				writeIncompatibleRangeMessage(l.dataKind, r.dataKind)
+				writeIncompatibleRangeMessage(this.rule.dataKind, other.rule.dataKind)
 			)
 		}
-		if (l.limit > r.limit) {
-			if (l.limitKind === "min") {
-				return r.limitKind === "min" ? l : Disjoint.from("range", this, r)
+		if (this.rule.limit > other.rule.limit) {
+			if (this.hasLimitKind("min")) {
+				return other.hasLimitKind("min")
+					? this.rule
+					: Disjoint.from("range", this, other)
 			}
-			return r.limitKind === "max" ? r : orthogonal
+			return other.hasLimitKind(this.rule.limitKind) ? other.rule : null
 		}
-		if (l.limit < r.limit) {
-			if (l.limitKind === "max") {
-				return r.limitKind === "max" ? l : Disjoint.from("range", this, r)
+		if (this.rule.limit < other.rule.limit) {
+			if (this.hasLimitKind("max")) {
+				return other.hasLimitKind("max")
+					? this.rule
+					: Disjoint.from("range", this, other)
 			}
-			return r.limitKind === "min" ? r : orthogonal
+			return other.hasLimitKind(this.rule.limitKind) ? other.rule : null
 		}
-		if (l.limitKind === r.limitKind) {
-			return l.exclusive ? l : r
+		if (other.hasLimitKind(this.rule.limitKind)) {
+			return this.rule.exclusive ? this.rule : other.rule
 		}
-		return l.exclusive || r.exclusive
-			? Disjoint.from("range", this, r)
-			: orthogonal
+		return this.rule.exclusive || other.rule.exclusive
+			? Disjoint.from("range", this, other)
+			: null
 	}
 }
 
 export type Bounds = SingleBound | DoubleBounds
 export type SingleBound = readonly [RangeConstraint]
 export type DoubleBounds = readonly [
-	RangeConstraint<RangeRule<"min">>,
-	RangeConstraint<RangeRule<"max">>
+	RangeConstraint<"min">,
+	RangeConstraint<"max">
 ]
 
 const unitsByBoundedKind = {

@@ -1,25 +1,52 @@
+import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { PredicateNode } from "../predicate.js"
+import type { NodeDefinition } from "../node.js"
+import { BaseNode } from "../node.js"
+import type { RangeConstraint, RangeDefinition } from "./range.js"
 
-export abstract class Constraint<config extends NodeConfig> extends BaseNode {
-	abstract apply(to: readonly Constraint[]): 
-
+export type ConstraintDefinitionsByKind = {
+	// identity: IdentityConstraint
+	// domain: DomainConstraint
+	// instanceOf: InstanceOfConstraint
+	// divisor: DivisorConstraint
+	range: RangeDefinition
+	// pattern: PatternConstraint
+	// prop: PropConstraint
+	// narrow: NarrowConstraint
 }
 
-const intersectConstraints = (
-	l: readonly ConstraintSet[],
-	r: readonly ConstraintSet[]
-): readonly BaseNode[] =>
-	r.reduce((intersection, constraint) => {
-		const next = addConstraint(intersection, constraint)
-		return next instanceof Disjoint ? next.throw() : next
-	}, l)
+export type ConstraintKind = keyof ConstraintDefinitionsByKind
 
-export const orthogonal = Symbol(
-	"Represents an intersection result between two compatible but independent constraints"
-)
+// TODO: make sure in cases like range, the result is sorted
+export abstract class ConstraintNode<
+	def extends NodeDefinition = NodeDefinition
+> extends BaseNode<def> {
+	apply(to: readonly ConstraintNode[]) {
+		const result: ConstraintNode[] = []
+		let includesConstraint = false
+		for (let i = 0; i < to.length; i++) {
+			const elementResult = this.compare(to[i]) ?? to[i].compare(this)
+			if (elementResult === null) {
+				result.push(to[i])
+			} else if (elementResult instanceof Disjoint) {
+				return elementResult
+			} else if (!includesConstraint) {
+				result.push(elementResult)
+				includesConstraint = true
+			} else if (!result.includes(elementResult)) {
+				return throwInternalError(
+					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+				)
+			}
+		}
+		if (!includesConstraint) {
+			result.push(this)
+		}
+		return result
+	}
 
-export type Orthogonal = typeof orthogonal
+	abstract compare(other: ConstraintNode): this["rule"] | Disjoint | null
+}
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,
