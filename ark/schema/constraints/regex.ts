@@ -1,7 +1,20 @@
+import type { satisfy } from "@arktype/util"
 import { isArray } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
+import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class PatternConstraint extends ConstraintNode<"pattern"> {
+export type PatternDefinition = satisfy<
+	NodeDefinition,
+	{
+		kind: "pattern"
+		rule: RegExp
+		attributes: UniversalAttributes
+		node: PatternConstraint
+	}
+>
+
+export class PatternConstraint extends ConstraintNode<PatternDefinition> {
 	readonly kind = "pattern"
 	readonly literal = `${this.rule}` as `/${string}/${string}`
 

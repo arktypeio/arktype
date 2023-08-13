@@ -34,6 +34,7 @@ export abstract class BaseNode<def extends NodeDefinition = NodeDefinition> {
 
 	abstract readonly kind: def["kind"]
 	declare readonly id: string
+	declare allows: (data: unknown) => boolean
 
 	abstract writeDefaultDescription(): string
 

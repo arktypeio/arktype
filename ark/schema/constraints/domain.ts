@@ -1,14 +1,21 @@
-import type { Domain } from "@arktype/util"
+import type { Domain, satisfy } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
+import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
 
-export class DomainConstraint extends BaseNode<{
-	rule: NonEnumerableDomain
-	attributes: {}
-	disjoinable: true
-}> {
-	readonly kind = "domain"
+export type DomainDefinition = satisfy<
+	NodeDefinition,
+	{
+		kind: "domain"
+		rule: NonEnumerableDomain
+		attributes: UniversalAttributes
+		node: DomainConstraint
+	}
+>
 
+export class DomainConstraint extends BaseNode<DomainDefinition> {
+	readonly kind = "domain"
 	readonly domain = this.rule
 
 	intersectRules(other: DomainConstraint) {

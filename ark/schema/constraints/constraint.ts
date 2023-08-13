@@ -2,17 +2,22 @@ import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
-import type { RangeConstraint, RangeDefinition } from "./range.js"
+import type { DivisorDefinition } from "./divisibility.js"
+import type { DomainDefinition } from "./domain.js"
+import type { IdentityDefinition } from "./identity.js"
+import type { InstanceOfDefinition } from "./instanceOf.js"
+import type { NarrowDefinition } from "./narrow.js"
+import type { RangeDefinition } from "./range.js"
+import type { PatternDefinition } from "./regex.js"
 
 export type ConstraintDefinitionsByKind = {
-	// identity: IdentityConstraint
-	// domain: DomainConstraint
-	// instanceOf: InstanceOfConstraint
-	// divisor: DivisorConstraint
+	identity: IdentityDefinition
+	domain: DomainDefinition
+	instanceOf: InstanceOfDefinition
+	divisor: DivisorDefinition
 	range: RangeDefinition
-	// pattern: PatternConstraint
-	// prop: PropConstraint
-	// narrow: NarrowConstraint
+	pattern: PatternDefinition
+	narrow: NarrowDefinition
 }
 
 export type ConstraintKind = keyof ConstraintDefinitionsByKind

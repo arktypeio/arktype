@@ -1,17 +1,29 @@
-import { BaseNode } from "../node.js"
+import type { satisfy } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
+import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class DivisorConstraint extends ConstraintNode<"divisor"> {
+export type DivisorDefinition = satisfy<
+	NodeDefinition,
+	{
+		kind: "divisor"
+		rule: number
+		attributes: UniversalAttributes
+		node: DivisorConstraint
+	}
+>
+
+export class DivisorConstraint extends ConstraintNode<DivisorDefinition> {
 	readonly kind = "divisor"
 
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	compare(other: ConstraintNode) {
-		return (
-			(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
-		)
+	compare(other: ConstraintNode): number | null {
+		return other.hasKind("divisor")
+			? (this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
+			: null
 	}
 }
 
