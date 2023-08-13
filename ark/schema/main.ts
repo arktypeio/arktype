@@ -1,2 +1,2 @@
-export * from "./type.js"
+export * from "./node.js"
 export * from "./constraints/range.js"

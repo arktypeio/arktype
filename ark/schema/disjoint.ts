@@ -12,7 +12,7 @@ import type { IdentityConstraint } from "./constraints/identity.js"
 import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
 import type { RangeConstraint } from "./constraints/range.js"
 import type { PredicateNode } from "./predicate.js"
-import type { BaseNode } from "./type.js"
+import type { BaseNode } from "./node.js"
 
 type DisjointKinds = {
 	domain?: {

@@ -1,6 +1,6 @@
 import { isArray } from "@arktype/util"
-import type { Orthogonal } from "../type.js"
-import { orthogonal } from "../type.js"
+import type { Orthogonal } from "../node.js"
+import { orthogonal } from "../node.js"
 import { ConstraintSet } from "./constraint.js"
 
 type PatternIntersection = readonly PatternConstraint<RegExp>[]

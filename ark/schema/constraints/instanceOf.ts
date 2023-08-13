@@ -5,7 +5,7 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { BaseNode } from "../type.js"
+import { BaseNode } from "../node.js"
 
 export class InstanceOfConstraint extends BaseNode<{
 	rule: AbstractableConstructor

@@ -1,12 +1,10 @@
 import { isArray, throwInternalError } from "@arktype/util"
+import type { AttributeRecord } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { disjointIfAllowed, NodeConfig, Orthogonal } from "../type.js"
-import { BaseNode, orthogonal } from "../type.js"
+import type { disjointIfAllowed, NodeConfig } from "../node.js"
+import { BaseNode } from "../node.js"
 
-export interface SetConfig<leaf> extends NodeConfig {
-	leaf: leaf
-	intersection: readonly ConstraintSet<any>[]
-}
+export abstract class Constraint<config extends NodeConfig> extends BaseNode {}
 
 export abstract class ConstraintSet<
 	config extends SetConfig<unknown> = SetConfig<unknown>
@@ -22,11 +20,6 @@ export abstract class ConstraintSet<
 			? result
 			: new (this.constructor as any)(result, this.attributes)
 	}
-
-	protected abstract intersectRule(
-		this: config["intersection"][number],
-		other: config["leaf"]
-	): config["leaf"] | Orthogonal | disjointIfAllowed<config>
 
 	intersectRules(other: this): config["rule"] | disjointIfAllowed<config> {
 		return intersectConstraints(this.members, other.members)
@@ -69,6 +62,12 @@ const intersectConstraints = (
 		const next = addConstraint(intersection, constraint)
 		return next instanceof Disjoint ? next.throw() : next
 	}, l)
+
+export const orthogonal = Symbol(
+	"Represents an intersection result between two compatible but independent constraints"
+)
+
+export type Orthogonal = typeof orthogonal
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

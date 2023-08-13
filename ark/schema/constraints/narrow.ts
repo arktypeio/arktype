@@ -1,7 +1,7 @@
 // TODO: allow changed order to be the same type
 import { isArray } from "@arktype/util"
-import type { Orthogonal } from "../type.js"
-import { BaseNode, orthogonal } from "../type.js"
+import type { Orthogonal } from "../node.js"
+import { BaseNode, orthogonal } from "../node.js"
 import { ConstraintSet } from "./constraint.js"
 
 export type NarrowRule = Narrow | readonly NarrowConstraint<Narrow>[]

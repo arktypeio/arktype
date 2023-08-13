@@ -5,7 +5,7 @@ import { Disjoint } from "./disjoint.js"
 import type { CompilationContext } from "./io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "./io/compile.js"
 import { PredicateNode } from "./predicate.js"
-import { BaseNode } from "./type.js"
+import { BaseNode } from "./node.js"
 
 export type TypeRule = UnresolvedTypeNode | readonly PredicateNode[]
 

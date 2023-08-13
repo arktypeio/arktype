@@ -1,4 +1,4 @@
-import { BaseNode } from "../type.js"
+import { BaseNode } from "../node.js"
 
 export class DivisorConstraint extends BaseNode<{
 	rule: number

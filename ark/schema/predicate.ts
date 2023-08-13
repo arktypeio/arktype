@@ -16,7 +16,7 @@ import type { PropConstraint } from "./constraints/prop/prop.js"
 import type { RangeConstraint } from "./constraints/range.js"
 import type { PatternConstraint } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
-import { BaseNode } from "./type.js"
+import { BaseNode } from "./node.js"
 import { assertOverlapping } from "./utils.js"
 
 export class PredicateNode extends BaseNode<{

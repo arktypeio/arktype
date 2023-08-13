@@ -1,7 +1,7 @@
 import { isArray, throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { Orthogonal } from "../type.js"
-import { orthogonal } from "../type.js"
+import type { Orthogonal } from "../node.js"
+import { orthogonal } from "../node.js"
 import { ConstraintSet } from "./constraint.js"
 
 export type RangeRule<limitKind extends LimitKind = LimitKind> = {

@@ -1,4 +1,4 @@
-import { BaseNode } from "../../type.js"
+import { BaseNode } from "../../node.js"
 
 export class PropConstraint extends BaseNode<{
 	rule: {}
