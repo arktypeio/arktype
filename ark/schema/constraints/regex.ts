@@ -4,7 +4,7 @@ import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type PatternDefinition = satisfy<
+export type PatternNodeDefinition = satisfy<
 	NodeDefinition,
 	{
 		kind: "pattern"
@@ -14,7 +14,7 @@ export type PatternDefinition = satisfy<
 	}
 >
 
-export class PatternConstraint extends ConstraintNode<PatternDefinition> {
+export class PatternConstraint extends ConstraintNode<PatternNodeDefinition> {
 	readonly kind = "pattern"
 	readonly literal = `${this.rule}` as `/${string}/${string}`
 

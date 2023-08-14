@@ -4,7 +4,7 @@ import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
 
-export type DomainDefinition = satisfy<
+export type DomainNodeDefinition = satisfy<
 	NodeDefinition,
 	{
 		kind: "domain"
@@ -14,7 +14,7 @@ export type DomainDefinition = satisfy<
 	}
 >
 
-export class DomainConstraint extends BaseNode<DomainDefinition> {
+export class DomainConstraint extends BaseNode<DomainNodeDefinition> {
 	readonly kind = "domain"
 	readonly domain = this.rule
 

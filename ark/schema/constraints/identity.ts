@@ -5,7 +5,7 @@ import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
 
-export type IdentityDefinition = satisfy<
+export type IdentityNodeDefinition = satisfy<
 	NodeDefinition,
 	{
 		kind: "identity"
@@ -15,7 +15,8 @@ export type IdentityDefinition = satisfy<
 	}
 >
 
-export class IdentityConstraint extends BaseNode<IdentityDefinition> {
+// TODO: to constraint
+export class IdentityConstraint extends BaseNode<IdentityNodeDefinition> {
 	readonly kind = "identity"
 
 	writeDefaultDescription() {

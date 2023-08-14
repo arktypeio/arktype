@@ -1,21 +1,22 @@
-import type {
-	AbstractableConstructor,
-	extend,
-	PickPartial
-} from "@arktype/util"
+import type { satisfy } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { NonEnumerableDomain } from "./constraints/domain.js"
-import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
-import type { RangeConstraint } from "./constraints/range.js"
+import type { ConstraintNode } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
+import type { NodeDefinition } from "./node.js"
 import { BaseNode } from "./node.js"
 import { assertOverlapping } from "./utils.js"
 
-export class PredicateNode extends BaseNode<{
-	rule: ConstraintsByKind
-	attributes: {}
-	intersections: Disjoint
-}> {
+export type PredicateNodeDefinition = satisfy<
+	NodeDefinition,
+	{
+		kind: "predicate"
+		rule: readonly ConstraintNode[]
+		attributes: UniversalAttributes
+		node: PredicateNode
+	}
+>
+
+export class PredicateNode extends BaseNode<PredicateNodeDefinition> {
 	readonly kind = "predicate"
 
 	static from(constraints: ConstraintsByKind, attributes: UniversalAttributes) {
@@ -74,50 +75,50 @@ export class PredicateNode extends BaseNode<{
 //     ).join(", ")})`
 // )
 
-export type UnitConstraints = Pick<ConstraintsByKind, "identity">
+// export type UnitConstraints = Pick<ConstraintsByKind, "identity">
 
-export type UnknownConstraints = PickPartial<ConstraintsByKind, "narrow">
+// export type UnknownConstraints = PickPartial<ConstraintsByKind, "narrow">
 
-export type DomainConstraints<
-	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = extend<UnknownConstraints, Pick<ConstraintsByKind, "domain">>
+// export type DomainConstraints<
+// 	domain extends NonEnumerableDomain = NonEnumerableDomain
+// > = extend<UnknownConstraints, Pick<ConstraintsByKind, "domain">>
 
-export type NumberConstraints = extend<
-	DomainConstraints<"number">,
-	PickPartial<ConstraintsByKind, "range" | "divisor">
->
+// export type NumberConstraints = extend<
+// 	DomainConstraints<"number">,
+// 	PickPartial<ConstraintsByKind, "range" | "divisor">
+// >
 
-export type InstanceConstraints<
-	constructor extends AbstractableConstructor = AbstractableConstructor
-> = extend<
-	DomainConstraints<"object">,
-	{ readonly instance: InstanceOfConstraint }
->
+// export type InstanceConstraints<
+// 	constructor extends AbstractableConstructor = AbstractableConstructor
+// > = extend<
+// 	DomainConstraints<"object">,
+// 	{ readonly instance: InstanceOfConstraint }
+// >
 
-export type StringConstraints = extend<
-	DomainConstraints<"string">,
-	PickPartial<ConstraintsByKind, "range" | "pattern">
->
+// export type StringConstraints = extend<
+// 	DomainConstraints<"string">,
+// 	PickPartial<ConstraintsByKind, "range" | "pattern">
+// >
 
-// TODO: add minLength prop that would result from collapsing types like [...number[], number]
-// to a single variadic number prop with minLength 1
-// Figure out best design for integrating with named props.
-export type ArrayConstraints = extend<
-	InstanceConstraints<typeof Array>,
-	{
-		readonly range?: RangeConstraint
-		readonly prefix?: readonly BaseNode[]
-		readonly variadic?: BaseNode
-		readonly postfix?: readonly BaseNode[]
-	}
->
+// // TODO: add minLength prop that would result from collapsing types like [...number[], number]
+// // to a single variadic number prop with minLength 1
+// // Figure out best design for integrating with named props.
+// export type ArrayConstraints = extend<
+// 	InstanceConstraints<typeof Array>,
+// 	{
+// 		readonly range?: RangeConstraint
+// 		readonly prefix?: readonly BaseNode[]
+// 		readonly variadic?: BaseNode
+// 		readonly postfix?: readonly BaseNode[]
+// 	}
+// >
 
-export type DateConstraints = extend<
-	InstanceConstraints<typeof Date>,
-	{
-		readonly range?: RangeConstraint
-	}
->
+// export type DateConstraints = extend<
+// 	InstanceConstraints<typeof Date>,
+// 	{
+// 		readonly range?: RangeConstraint
+// 	}
+// >
 
 // // TODO: naming
 // export const constraintsByPrecedence: Record<

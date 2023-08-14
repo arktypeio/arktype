@@ -12,19 +12,20 @@ export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 	readonly exclusive?: true
 }
 
-export type RangeDefinition<limitKind extends LimitKind = LimitKind> = satisfy<
-	NodeDefinition,
-	{
-		kind: "range"
-		rule: RangeRule<limitKind>
-		attributes: UniversalAttributes
-		node: RangeConstraint<limitKind>
-	}
->
+export type RangeNodeDefinition<limitKind extends LimitKind = LimitKind> =
+	satisfy<
+		NodeDefinition,
+		{
+			kind: "range"
+			rule: RangeRule<limitKind>
+			attributes: UniversalAttributes
+			node: RangeConstraint<limitKind>
+		}
+	>
 
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<RangeDefinition<limitKind>> {
+> extends ConstraintNode<RangeNodeDefinition<limitKind>> {
 	readonly kind = "range"
 
 	writeDefaultDescription(): string {

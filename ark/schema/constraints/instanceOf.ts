@@ -7,10 +7,9 @@ import {
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
-import { BaseNode } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type InstanceOfDefinition = satisfy<
+export type InstanceOfNodeDefinition = satisfy<
 	NodeDefinition,
 	{
 		kind: "instanceOf"
@@ -20,7 +19,7 @@ export type InstanceOfDefinition = satisfy<
 	}
 >
 
-export class InstanceOfConstraint extends ConstraintNode<InstanceOfDefinition> {
+export class InstanceOfConstraint extends ConstraintNode<InstanceOfNodeDefinition> {
 	readonly kind = "instanceOf"
 
 	protected reduceWithRuleOf(

@@ -5,7 +5,7 @@ import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type NarrowDefinition = satisfy<
+export type NarrowNodeDefinition = satisfy<
 	NodeDefinition,
 	{
 		kind: "narrow"
@@ -18,7 +18,7 @@ export type NarrowDefinition = satisfy<
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends ConstraintNode<NarrowDefinition> {
+export class NarrowConstraint extends ConstraintNode<NarrowNodeDefinition> {
 	readonly kind = "narrow"
 
 	writeDefaultDescription() {

@@ -3,7 +3,7 @@ import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type DivisorDefinition = satisfy<
+export type DivisorNodeDefinition = satisfy<
 	NodeDefinition,
 	{
 		kind: "divisor"
@@ -13,7 +13,7 @@ export type DivisorDefinition = satisfy<
 	}
 >
 
-export class DivisorConstraint extends ConstraintNode<DivisorDefinition> {
+export class DivisorConstraint extends ConstraintNode<DivisorNodeDefinition> {
 	readonly kind = "divisor"
 
 	writeDefaultDescription() {
