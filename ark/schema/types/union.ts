@@ -9,16 +9,8 @@ import { BaseNode } from "../node.js"
 import { builtins } from "../utils.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
-import type { TypeNode } from "./type.js"
-
-export type TypeRule = UnresolvedTypeNode | readonly PredicateNode[]
-
-export type MaybeResolvedTypeNode = BaseNode | UnresolvedTypeNode
-
-export type UnresolvedTypeNode = {
-	alias: string
-	resolve: Thunk<BaseNode>
-}
+import type { RootNode } from "./type.js"
+import { TypeNode } from "./type.js"
 
 export type UnionNodeDefinition = satisfy<
 	NodeDefinition,
@@ -30,16 +22,27 @@ export type UnionNodeDefinition = satisfy<
 	}
 >
 
-export class UnionNode<t = unknown> extends BaseNode<UnionNodeDefinition> {
+export class UnionNode<t = unknown> extends TypeNode<t, UnionNodeDefinition> {
+	readonly kind = "union"
+
 	writeDefaultDescription(): string {
 		return this.rule.length === 0 ? "never" : this.rule.join(" or ")
 	}
 
-	intersect(other: TypeNode): TypeNode | Disjoint {
-		const resultBranches = intersectBranches(this.rule, other.rule)
-		return resultBranches.length
-			? new BaseNode(resultBranches, this.meta)
-			: Disjoint.from("union", this, other)
+	references() {
+		return this.rule.flatMap((branch) => branch.references())
+	}
+
+	intersect(other: RootNode): RootNode | Disjoint {
+		const resultBranches = intersectBranches(
+			this.rule,
+			other.hasKind("union") ? other.rule : [other]
+		)
+		return resultBranches.length === 0
+			? Disjoint.from("union", this, other)
+			: resultBranches.length === 1
+			? resultBranches[0]
+			: new UnionNode(resultBranches)
 	}
 
 	// // discriminate is cached so we don't have to worry about this running multiple times
@@ -54,13 +57,6 @@ export class UnionNode<t = unknown> extends BaseNode<UnionNodeDefinition> {
 		) as TypeNode<keyof t>
 	}
 }
-
-export const isUnresolvedNode = (
-	node: MaybeResolvedTypeNode
-): node is UnresolvedTypeNode => hasKey(node, "resolve")
-
-export const maybeResolve = (node: MaybeResolvedTypeNode): BaseNode =>
-	isUnresolvedNode(node) ? node.resolve() : node
 
 export const reduceBranches = (branchNodes: PredicateNode[]) => {
 	if (branchNodes.length < 2) {

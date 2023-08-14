@@ -3,6 +3,7 @@ import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { ConstraintNode } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
+import type { RootNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
 export type PredicateNodeDefinition = satisfy<
@@ -30,7 +31,7 @@ export class PredicateNode<t = unknown> extends TypeNode<
 		return []
 	}
 
-	intersect(other: TypeNode): TypeNode | Disjoint {
+	intersect(other: RootNode): RootNode | Disjoint {
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
 		}

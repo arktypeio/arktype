@@ -5,7 +5,7 @@ import { BaseNode, type NodeDefinition } from "../node.js"
 import { PredicateNode, type PredicateNodeDefinition } from "./predicate.js"
 import type { UnionNode, UnionNodeDefinition } from "./union.js"
 
-export type RootDefinitionsByKind = satisfy<
+export type TypeNodeDefinitionsByKind = satisfy<
 	Record<string, NodeDefinition>,
 	{
 		predicate: PredicateNodeDefinition
@@ -13,7 +13,10 @@ export type RootDefinitionsByKind = satisfy<
 	}
 >
 
-export type RootKind = keyof RootDefinitionsByKind
+export type TypeKind = keyof TypeNodeDefinitionsByKind
+
+// TODO: test external types if this isn't any
+export type RootNode<t = any> = UnionNode<t> | PredicateNode<t>
 
 export abstract class TypeNode<
 	t = unknown,
@@ -22,7 +25,9 @@ export abstract class TypeNode<
 	declare infer: t
 
 	abstract references(): BaseNode[]
-	abstract intersect(other: TypeNode): TypeNode | Disjoint
+	abstract intersect<other>(
+		other: RootNode<other> // TODO: inferIntersection
+	): RootNode<t & other> | Disjoint
 	abstract keyof(): TypeNode
 
 	isUnknown(): this is PredicateNode<unknown> {
@@ -37,7 +42,7 @@ export abstract class TypeNode<
 		return new PredicateNode([new DomainConstraint("object")])
 	}
 
-	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
+	extends<other>(other: RootNode<other>): this is RootNode<other> {
 		const intersection = this.intersect(other)
 		return intersection instanceof TypeNode && this.equals(intersection)
 	}

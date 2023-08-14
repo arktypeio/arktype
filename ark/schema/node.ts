@@ -5,13 +5,13 @@ import type {
 } from "./attributes/attribute.js"
 import type { ConstraintDefinitionsByKind } from "./constraints/constraint.js"
 import type { Disjoint } from "./disjoint.js"
-import type { RootDefinitionsByKind } from "./types/type.js"
+import type { TypeNodeDefinitionsByKind } from "./types/type.js"
 
 export type disjointIfAllowed<config extends { disjoinable: boolean }> =
 	config["disjoinable"] extends true ? Disjoint : never
 
 export type DefinitionsByKind = extend<
-	RootDefinitionsByKind,
+	TypeNodeDefinitionsByKind,
 	ConstraintDefinitionsByKind
 >
 
