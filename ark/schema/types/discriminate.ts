@@ -12,7 +12,7 @@ import type {
 	SerializedPrimitive
 } from "@arktype/util"
 import type { SerializedPath } from "../disjoint.js"
-import type { PredicateNode, UnitConstraints } from "./predicate.js"
+import type { PredicateNode } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"

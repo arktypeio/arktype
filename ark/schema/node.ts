@@ -5,7 +5,7 @@ import type {
 } from "./attributes/attribute.js"
 import type { ConstraintDefinitionsByKind } from "./constraints/constraint.js"
 import type { Disjoint } from "./disjoint.js"
-import type { RootDefinitionsByKind } from "./roots/root.js"
+import type { RootDefinitionsByKind } from "./types/type.js"
 
 export type disjointIfAllowed<config extends { disjoinable: boolean }> =
 	config["disjoinable"] extends true ? Disjoint : never
@@ -18,7 +18,7 @@ export type DefinitionsByKind = extend<
 export type NodeDefinition = {
 	kind: string
 	rule: unknown
-	node: BaseNode
+	instance: BaseNode
 	attributes: extend<AttributeRecord, UniversalAttributes>
 }
 
@@ -38,7 +38,7 @@ export abstract class BaseNode<def extends NodeDefinition = NodeDefinition> {
 
 	hasKind<kind extends NodeKind>(
 		kind: kind
-	): this is DefinitionsByKind[kind]["node"] {
+	): this is DefinitionsByKind[kind]["instance"] {
 		return this.kind === (kind as never)
 	}
 

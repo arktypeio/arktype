@@ -25,7 +25,7 @@ export type ConstraintKind = keyof ConstraintDefinitionsByKind
 export abstract class ConstraintNode<
 	def extends NodeDefinition = NodeDefinition
 > extends BaseNode<def> {
-	apply(to: readonly ConstraintNode[]) {
+	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
 		const result: ConstraintNode[] = []
 		let includesConstraint = false
 		for (let i = 0; i < to.length; i++) {

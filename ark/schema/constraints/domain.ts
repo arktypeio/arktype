@@ -11,7 +11,7 @@ export type DomainNodeDefinition = satisfy<
 		kind: "domain"
 		rule: NonEnumerableDomain
 		attributes: UniversalAttributes
-		node: DomainConstraint
+		instance: DomainConstraint
 	}
 >
 

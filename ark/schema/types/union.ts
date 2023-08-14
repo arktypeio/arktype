@@ -1,11 +1,15 @@
-import type { exact, listable, Thunk } from "@arktype/util"
+import type { exact, listable, satisfy, Thunk } from "@arktype/util"
 import { hasKey, isArray } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
+import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
+import { builtins } from "../utils.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
+import type { TypeNode } from "./type.js"
 
 export type TypeRule = UnresolvedTypeNode | readonly PredicateNode[]
 
@@ -16,131 +20,38 @@ export type UnresolvedTypeNode = {
 	resolve: Thunk<BaseNode>
 }
 
-export class UnionNode<t = unknown> extends BaseNode<{
-	rule: readonly PredicateNode[]
-	attributes: {}
-	intersections: Disjoint
-}> {
-	declare [inferred]: t
-	readonly kind = "type"
-	readonly alias = ""
+export type UnionNodeDefinition = satisfy<
+	NodeDefinition,
+	{
+		kind: "union"
+		rule: readonly PredicateNode[]
+		attributes: UniversalAttributes
+		instance: UnionNode
+	}
+>
 
-	private cachedBranches: readonly PredicateNode[] | undefined
-	get branches(): readonly PredicateNode[] {
-		if (!this.cachedBranches) {
-			this.cachedBranches = hasKey(this.branches, "resolve")
-				? []
-				: this.branches
-		}
-		return this.cachedBranches!
+export class UnionNode<t = unknown> extends BaseNode<UnionNodeDefinition> {
+	writeDefaultDescription(): string {
+		return this.rule.length === 0 ? "never" : this.rule.join(" or ")
 	}
 
-	readonly references: readonly BaseNode[] = hasKey(this.branches, "resolve")
-		? // TODO: unresolved?
-		  []
-		: this.branches.flatMap((predicate) => [...predicate.references])
-
-	// TODO: to unit
-	readonly unit = this.branches.length === 1 ? this.branches[0].unit : undefined
-
-	compile(ctx: CompilationContext) {
-		// if (hasKey(this.branches, "resolve")) {
-		//     return `$${this.branches.alias}(${In})`
-		// }
-		const discriminant = discriminate(this.branches)
-		return discriminant
-			? compileDiscriminant(discriminant, ctx)
-			: compileIndiscriminable(this.branches, ctx)
-	}
-
-	describe() {
-		return isArray(this.branches)
-			? this.branches.length === 0
-				? "never"
-				: this.branches.map((branch) => branch.toString()).join(" or ")
-			: this.alias
-	}
-
-	intersect(other: BaseNode): BaseNode | Disjoint {
-		if (this.branches.length === 1 && other.branches.length === 1) {
-			const result = this.branches[0].intersect(other.branches[0])
-			return result instanceof Disjoint
-				? result
-				: new BaseNode([result], this.meta)
-		}
-		const resultBranches = intersectBranches(this.branches, other.branches)
+	intersect(other: TypeNode): TypeNode | Disjoint {
+		const resultBranches = intersectBranches(this.rule, other.rule)
 		return resultBranches.length
 			? new BaseNode(resultBranches, this.meta)
 			: Disjoint.from("union", this, other)
 	}
 
-	// discriminate is cached so we don't have to worry about this running multiple times
-	get discriminant() {
-		return discriminate(this.branches)
-	}
-
-	and<other>(other: BaseNode<other>) {
-		const result = this.intersect(other as never)
-		return result instanceof Disjoint
-			? result.throw()
-			: (result as BaseNode<inferIntersection<t, other>>)
-	}
-
-	or<other>(other: BaseNode<other>) {
-		return new BaseNode<t | other>(
-			reduceBranches([...this.branches, ...other.branches]),
-			this.meta
-		)
-	}
-
-	constrain<kind extends RefinementKind>(
-		kind: kind,
-		rule: NodeKinds[kind]["rule"],
-		meta: NodeKinds[kind]["meta"]
-	): BaseNode<t> {
-		return new BaseNode(
-			this.branches.map((branch) =>
-				branch.constrain(kind, rule as never, meta as never)
-			),
-			this.meta
-		)
-	}
-
-	equals<other>(other: BaseNode<other>): this is BaseNode<other> {
-		return false
-	}
-
-	extends<other>(other: BaseNode<other>): this is BaseNode<other> {
-		// this.intersect(other as never) === this
-		return false
-	}
+	// // discriminate is cached so we don't have to worry about this running multiple times
+	// get discriminant() {
+	// 	return discriminate(this.branches)
+	// }
 
 	keyof() {
-		return this.branches.reduce(
+		return this.rule.reduce(
 			(result, branch) => result.and(branch.keyof()),
 			builtins.unknown()
-		) as BaseNode<keyof t>
-	}
-
-	// TODO: TS implementation? test?
-	getPath(...path: (string | BaseNode<string>)[]): BaseNode {
-		let current: readonly PredicateNode[] = this.branches
-		let next: PredicateNode[] = []
-		while (path.length) {
-			const key = path.shift()!
-			for (const branch of current) {
-				const propsAtKey = branch.props
-				if (propsAtKey) {
-					const branchesAtKey = propsAtKey.get(key)?.branches
-					if (branchesAtKey) {
-						next.push(...branchesAtKey)
-					}
-				}
-			}
-			current = next
-			next = []
-		}
-		return new BaseNode(current, this.meta)
+		) as TypeNode<keyof t>
 	}
 }
 

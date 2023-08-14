@@ -11,7 +11,7 @@ export type NarrowNodeDefinition = satisfy<
 		kind: "narrow"
 		rule: Narrow
 		attributes: UniversalAttributes
-		node: NarrowConstraint
+		instance: NarrowConstraint
 	}
 >
 

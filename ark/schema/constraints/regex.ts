@@ -10,7 +10,7 @@ export type PatternNodeDefinition = satisfy<
 		kind: "pattern"
 		rule: RegExp
 		attributes: UniversalAttributes
-		node: PatternConstraint
+		instance: PatternConstraint
 	}
 >
 

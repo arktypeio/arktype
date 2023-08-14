@@ -2,8 +2,8 @@ import type { satisfy } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { ConstraintNode } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseNode, NodeDefinition } from "../node.js"
-import { RootNode } from "./root.js"
+import type { NodeDefinition } from "../node.js"
+import { TypeNode } from "./type.js"
 
 export type PredicateNodeDefinition = satisfy<
 	NodeDefinition,
@@ -11,11 +11,14 @@ export type PredicateNodeDefinition = satisfy<
 		kind: "predicate"
 		rule: readonly ConstraintNode[]
 		attributes: UniversalAttributes
-		node: PredicateNode
+		instance: PredicateNode
 	}
 >
 
-export class PredicateNode extends RootNode<PredicateNodeDefinition> {
+export class PredicateNode<t = unknown> extends TypeNode<
+	t,
+	PredicateNodeDefinition
+> {
 	readonly kind = "predicate"
 
 	writeDefaultDescription() {
@@ -27,7 +30,7 @@ export class PredicateNode extends RootNode<PredicateNodeDefinition> {
 		return []
 	}
 
-	intersect(other: RootNode): RootNode | Disjoint {
+	intersect(other: TypeNode): TypeNode | Disjoint {
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
 		}

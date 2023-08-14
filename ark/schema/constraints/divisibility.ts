@@ -9,7 +9,7 @@ export type DivisorNodeDefinition = satisfy<
 		kind: "divisor"
 		rule: number
 		attributes: UniversalAttributes
-		node: DivisorConstraint
+		instance: DivisorConstraint
 	}
 >
 

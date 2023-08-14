@@ -12,7 +12,7 @@ export type IdentityNodeDefinition = satisfy<
 		kind: "identity"
 		rule: unknown
 		attributes: UniversalAttributes
-		node: IdentityConstraint
+		instance: IdentityConstraint
 	}
 >
 
