@@ -7,10 +7,12 @@ import type { DomainNodeDefinition } from "./domain.js"
 import type { IdentityNodeDefinition } from "./identity.js"
 import type { InstanceOfNodeDefinition } from "./instanceOf.js"
 import type { NarrowNodeDefinition } from "./narrow.js"
+import type { PropNodeDefinition } from "./prop/prop.js"
 import type { RangeNodeDefinition } from "./range.js"
 import type { PatternNodeDefinition } from "./regex.js"
 
 export type ConstraintDefinitionsByKind = {
+	prop: PropNodeDefinition
 	identity: IdentityNodeDefinition
 	domain: DomainNodeDefinition
 	instanceOf: InstanceOfNodeDefinition

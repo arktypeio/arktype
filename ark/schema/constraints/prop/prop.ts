@@ -1,17 +1,29 @@
-import { BaseNode } from "../../node.js"
+import type { satisfy } from "@arktype/util"
+import type { UniversalAttributes } from "../../attributes/attribute.js"
+import type { NodeDefinition } from "../../node.js"
+import { ConstraintNode } from "../constraint.js"
 
-export class PropConstraint extends BaseNode<{
-	rule: {}
-	attributes: {}
-	intersections: never
-}> {
+export type PropNodeDefinition = satisfy<
+	NodeDefinition,
+	{
+		kind: "prop"
+		rule: {}
+		attributes: UniversalAttributes
+		instance: PropConstraint
+	}
+>
+
+export class PropConstraint extends ConstraintNode<PropNodeDefinition> {
 	readonly kind = "prop"
 
 	writeDefaultDescription() {
 		return ""
 	}
 
-	intersectRules(other: this) {
+	reduceWithRuleOf(other: ConstraintNode) {
+		if (!other.hasKind("prop")) {
+			return null
+		}
 		return this.rule
 	}
 }
