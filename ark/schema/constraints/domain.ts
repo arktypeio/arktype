@@ -15,7 +15,7 @@ export type DomainNodeDefinition = satisfy<
 	}
 >
 
-export class DomainConstraint extends ConstraintNode<"domain"> {
+export class DomainConstraint extends ConstraintNode<DomainNodeDefinition> {
 	readonly kind = "domain"
 	readonly domain = this.rule
 
