@@ -23,7 +23,9 @@ export type InstanceOfDefinition = satisfy<
 export class InstanceOfConstraint extends ConstraintNode<InstanceOfDefinition> {
 	readonly kind = "instanceOf"
 
-	compare(other: ConstraintNode): AbstractableConstructor | Disjoint | null {
+	protected reduceWithRuleOf(
+		other: ConstraintNode
+	): AbstractableConstructor | Disjoint | null {
 		return !other.hasKind("instanceOf")
 			? null
 			: constructorExtends(this.rule, other.rule)

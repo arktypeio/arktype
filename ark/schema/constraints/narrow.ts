@@ -27,7 +27,7 @@ export class NarrowConstraint extends ConstraintNode<NarrowDefinition> {
 			: `valid according to ${this.rule.name}`
 	}
 
-	compare() {
+	protected reduceWithRuleOf() {
 		return null
 	}
 }

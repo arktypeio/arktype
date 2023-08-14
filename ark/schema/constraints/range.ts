@@ -56,7 +56,9 @@ export class RangeConstraint<
 		return this.rule.limitKind === (limitKind as never)
 	}
 
-	compare(other: ConstraintNode): RangeRule<limitKind> | Disjoint | null {
+	protected reduceWithRuleOf(
+		other: ConstraintNode
+	): RangeRule<limitKind> | Disjoint | null {
 		if (!other.hasKind("range")) {
 			return null
 		}

@@ -22,7 +22,6 @@ export type ConstraintDefinitionsByKind = {
 
 export type ConstraintKind = keyof ConstraintDefinitionsByKind
 
-// TODO: make sure in cases like range, the result is sorted
 export abstract class ConstraintNode<
 	def extends NodeDefinition = NodeDefinition
 > extends BaseNode<def> {
@@ -30,7 +29,7 @@ export abstract class ConstraintNode<
 		const result: ConstraintNode[] = []
 		let includesConstraint = false
 		for (let i = 0; i < to.length; i++) {
-			const elementResult = this.compare(to[i]) ?? to[i].compare(this)
+			const elementResult = this.reduce(to[i])
 			if (elementResult === null) {
 				result.push(to[i])
 			} else if (elementResult instanceof Disjoint) {
@@ -50,7 +49,23 @@ export abstract class ConstraintNode<
 		return result
 	}
 
-	abstract compare(other: ConstraintNode): this["rule"] | Disjoint | null
+	reduce(other: ConstraintNode) {
+		return this.reduceOwnKind(other) ?? other.reduceOwnKind(this)
+	}
+
+	private reduceOwnKind(other: ConstraintNode) {
+		const ruleComparison = this.equals(other)
+			? this.rule
+			: this.reduceWithRuleOf(other)
+		return ruleComparison instanceof Disjoint || ruleComparison === null
+			? // TODO: unknown
+			  (ruleComparison as Disjoint | null)
+			: (new (this.constructor as any)(ruleComparison) as this)
+	}
+
+	protected abstract reduceWithRuleOf(
+		other: ConstraintNode
+	): this["rule"] | Disjoint | null
 }
 
 // export const assertAllowsConstraint = (

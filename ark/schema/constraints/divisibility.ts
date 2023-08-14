@@ -20,7 +20,7 @@ export class DivisorConstraint extends ConstraintNode<DivisorDefinition> {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	compare(other: ConstraintNode): number | null {
+	protected reduceWithRuleOf(other: ConstraintNode): number | null {
 		return other.hasKind("divisor")
 			? (this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
 			: null

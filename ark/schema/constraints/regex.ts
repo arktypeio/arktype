@@ -24,7 +24,7 @@ export class PatternConstraint extends ConstraintNode<PatternDefinition> {
 			: `matched by ${this.rule}`
 	}
 
-	compare() {
+	protected reduceWithRuleOf() {
 		return null
 	}
 }
