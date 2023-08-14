@@ -4,6 +4,7 @@ import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
+import { ConstraintNode } from "./constraint.js"
 
 export type IdentityNodeDefinition = satisfy<
 	NodeDefinition,
@@ -16,7 +17,7 @@ export type IdentityNodeDefinition = satisfy<
 >
 
 // TODO: to constraint
-export class IdentityConstraint extends BaseNode<IdentityNodeDefinition> {
+export class IdentityConstraint extends ConstraintNode<IdentityNodeDefinition> {
 	readonly kind = "identity"
 
 	writeDefaultDescription() {
@@ -24,7 +25,7 @@ export class IdentityConstraint extends BaseNode<IdentityNodeDefinition> {
 		return stringify(this.rule)
 	}
 
-	intersectRules(other: this) {
+	reduceWithRuleOf(other: this) {
 		return other.allows(this.rule)
 			? this.rule
 			: Disjoint.from("identity", this, other)

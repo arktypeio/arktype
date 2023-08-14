@@ -2,9 +2,8 @@ import type { satisfy } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { ConstraintNode } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeDefinition } from "../node.js"
-import { BaseNode } from "../node.js"
-import { assertOverlapping } from "../utils.js"
+import type { BaseNode, NodeDefinition } from "../node.js"
+import { RootNode } from "./root.js"
 
 export type PredicateNodeDefinition = satisfy<
 	NodeDefinition,
@@ -16,57 +15,36 @@ export type PredicateNodeDefinition = satisfy<
 	}
 >
 
-export class PredicateNode extends BaseNode<PredicateNodeDefinition> {
+export class PredicateNode extends RootNode<PredicateNodeDefinition> {
 	readonly kind = "predicate"
-
-	static from(constraints: ConstraintsByKind, attributes: UniversalAttributes) {
-		return new PredicateNode(constraints, attributes)
-	}
-
-	// readonly references: readonly TypeNode[] = this.props?.references ?? []
 
 	writeDefaultDescription() {
 		const flat = Object.values(this.rule).flat()
-		return flat.join(" and ")
+		return flat.length ? flat.join(" and ") : "a value"
 	}
 
-	intersectRules(other: PredicateNode): ConstraintsByKind | Disjoint {
-		const intersection: ConstraintsByKind = { ...this.rule, ...other.rule }
-		let k: ConstraintKind
-		for (k in intersection) {
-			if (k in this.rule && k in other.rule) {
-				const subresult = this.rule[k].intersect(other.rule[k] as never)
-				if (subresult instanceof Disjoint) {
-					return subresult
-				}
-				// TODO: narrow record type to kinds so this isn't casted
-				intersection[k] = subresult as never
-			}
+	references() {
+		return []
+	}
+
+	intersect(other: RootNode): RootNode | Disjoint {
+		if (!other.hasKind("predicate")) {
+			return other.intersect(this)
 		}
-		return intersection
+		let result: readonly ConstraintNode[] | Disjoint = this.rule
+		for (const constraint of other.rule) {
+			if (result instanceof Disjoint) {
+				break
+			}
+			result = constraint.apply(result)
+		}
+		// TODO: attributes
+		return result instanceof Disjoint ? result : new PredicateNode(result)
 	}
 
-	constrain(constraint: Constraint): PredicateNode {
-		const result =
-			constraint.kind in this.rule
-				? assertOverlapping(this.rule[constraint.kind].intersect(constraint))
-				: constraint
-		return new PredicateNode(
-			{
-				...this.rule,
-				[constraint.kind]: result
-			},
-			this.attributes
-		)
+	keyof() {
+		return this
 	}
-
-	// keyof(): TypeNode {
-	// 	if (!this.basis) {
-	// 		return builtins.never()
-	// 	}
-	// 	const propsKey = this.props?.keyof()
-	// 	return propsKey?.or(this.basis.keyof()) ?? this.basis.keyof()
-	// }
 }
 
 // throwParseError(

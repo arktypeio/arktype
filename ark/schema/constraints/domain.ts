@@ -3,6 +3,7 @@ import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
+import { ConstraintNode } from "./constraint.js"
 
 export type DomainNodeDefinition = satisfy<
 	NodeDefinition,
@@ -14,11 +15,11 @@ export type DomainNodeDefinition = satisfy<
 	}
 >
 
-export class DomainConstraint extends BaseNode<DomainNodeDefinition> {
+export class DomainConstraint extends ConstraintNode<"domain"> {
 	readonly kind = "domain"
 	readonly domain = this.rule
 
-	intersectRules(other: DomainConstraint) {
+	reduceWithRuleOf(other: DomainConstraint) {
 		return Disjoint.from("domain", this, other)
 	}
 

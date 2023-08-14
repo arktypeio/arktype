@@ -11,20 +11,20 @@ import type { RangeNodeDefinition } from "./range.js"
 import type { PatternNodeDefinition } from "./regex.js"
 
 export type ConstraintDefinitionsByKind = {
-	identity: IdentityNodeDefinition
+	// identity: IdentityNodeDefinition
 	domain: DomainNodeDefinition
-	instanceOf: InstanceOfNodeDefinition
-	divisor: DivisorNodeDefinition
-	range: RangeNodeDefinition
-	pattern: PatternNodeDefinition
-	narrow: NarrowNodeDefinition
+	// instanceOf: InstanceOfNodeDefinition
+	// divisor: DivisorNodeDefinition
+	// range: RangeNodeDefinition
+	// pattern: PatternNodeDefinition
+	// narrow: NarrowNodeDefinition
 }
 
 export type ConstraintKind = keyof ConstraintDefinitionsByKind
 
 export abstract class ConstraintNode<
-	def extends NodeDefinition = NodeDefinition
-> extends BaseNode<def> {
+	kind extends ConstraintKind = ConstraintKind
+> extends BaseNode<ConstraintDefinitionsByKind[kind]> {
 	apply(to: readonly ConstraintNode[]) {
 		const result: ConstraintNode[] = []
 		let includesConstraint = false

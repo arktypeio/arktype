@@ -5,7 +5,7 @@ import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
 import { BaseNode } from "../node.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
-import { PredicateNode } from "./predicate.js"
+import type { PredicateNode } from "./predicate.js"
 
 export type TypeRule = UnresolvedTypeNode | readonly PredicateNode[]
 
@@ -77,28 +77,6 @@ export class UnionNode<t = unknown> extends BaseNode<{
 	// discriminate is cached so we don't have to worry about this running multiple times
 	get discriminant() {
 		return discriminate(this.branches)
-	}
-
-	array(): BaseNode<t[]> {
-		// const props = new PropertiesNode(
-		//     [{ key: arrayIndexTypeNode(), value: this }],
-		//     this.meta
-		// )
-		const predicate = new PredicateNode(
-			{
-				basis: new ClassNode(Array, this.meta)
-			},
-			this.meta
-		)
-		return new BaseNode([predicate], this.meta)
-	}
-
-	isNever(): this is BaseNode<never> {
-		return this.branches.length === 0
-	}
-
-	isUnknown(): this is BaseNode<unknown> {
-		return this.branches.length === 1 && this.branches[0].children.length === 0
 	}
 
 	and<other>(other: BaseNode<other>) {

@@ -27,7 +27,7 @@ export type NodeKind = keyof DefinitionsByKind
 export abstract class BaseNode<def extends NodeDefinition = NodeDefinition> {
 	protected constructor(
 		public rule: def["rule"],
-		public attributes: def["attributes"]
+		public attributes?: def["attributes"]
 	) {}
 
 	abstract readonly kind: def["kind"]
@@ -47,6 +47,6 @@ export abstract class BaseNode<def extends NodeDefinition = NodeDefinition> {
 	}
 
 	toString() {
-		return this.attributes.description ?? this.writeDefaultDescription()
+		return this.attributes?.description ?? this.writeDefaultDescription()
 	}
 }
