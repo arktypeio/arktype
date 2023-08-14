@@ -1,6 +1,74 @@
 {
 	"$schema": "vscode://schemas/color-theme",
 	"name": "ArkDark",
+	"tokenColors": [
+		{
+			"name": "functions",
+			"scope": ["entity.name.function"],
+			"settings": {
+				"foreground": "#80cff8"
+			}
+		},
+		{
+			"name": "types",
+			"scope": ["entity.name.type"],
+			"settings": {
+				"foreground": "#40decc"
+			}
+		},
+		{
+			"name": "keywords and operators",
+			"scope": ["keyword", "storage", "punctuation", "variable.language"],
+			"settings": {
+				"foreground": "#eb9f2e"
+			}
+		},
+		{
+			"name": "properties and strings",
+			"scope": ["variable.other.property", "string"],
+			"settings": {
+				"foreground": "#f5cf8f"
+			}
+		},
+		{
+			"name": "primitives, built-in types, quotes",
+			"scope": [
+				"constant",
+				"support.type",
+				"punctuation.definition.string.begin",
+				"punctuation.definition.string.end",
+				"punctuation.definition.string.template.begin",
+				"punctuation.definition.string.template.end"
+			],
+			"settings": {
+				"foreground": "#408fde"
+			}
+		},
+		{
+			"name": "invalid",
+			"scope": ["invalid"],
+			"settings": {
+				"foreground": "#9558f8"
+			}
+		},
+		{
+			"name": "comment",
+			"scope": ["comment", "punctuation.definition.comment"],
+			"settings": {
+				"foreground": "#888899"
+			}
+		},
+		{
+			// re-specifying the foreground color explicitly for variable avoids
+			// some edge cases like variables in template strings being
+			// highlighted as strings
+			"name": "variable",
+			"scope": ["variable"],
+			"settings": {
+				"foreground": "#eeeeee"
+			}
+		}
+	],
 	"colors": {
 		// Customized built-in settings
 		"editor.foreground": "#eeeeee",
@@ -143,63 +211,5 @@
 		"welcomePage.tileBackground": "#2B2B2B",
 		"welcomePage.progress.foreground": "#0078D4",
 		"widget.border": "#313131"
-	},
-	"tokenColors": [
-		{
-			"name": "functions",
-			"scope": ["entity.name.function"],
-			"settings": {
-				"foreground": "#80cff8"
-			}
-		},
-		{
-			"name": "types",
-			"scope": ["entity.name.type"],
-			"settings": {
-				"foreground": "#40decc"
-			}
-		},
-		{
-			"name": "keywords and operators",
-			"scope": ["keyword", "storage", "punctuation", "variable.language"],
-			"settings": {
-				"foreground": "#eb9f2e"
-			}
-		},
-		{
-			"name": "properties and strings",
-			"scope": ["variable.other.property", "string"],
-			"settings": {
-				"foreground": "#f5cf8f"
-			}
-		},
-		{
-			"name": "primitives, built-in types, quotes",
-			"scope": [
-				"constant",
-				"support.type",
-				"punctuation.definition.string.begin",
-				"punctuation.definition.string.end",
-				"punctuation.definition.string.template.begin",
-				"punctuation.definition.string.template.end"
-			],
-			"settings": {
-				"foreground": "#408fde"
-			}
-		},
-		{
-			"name": "invalid",
-			"scope": ["invalid"],
-			"settings": {
-				"foreground": "#9558f8"
-			}
-		},
-		{
-			"name": "comment",
-			"scope": ["comment", "punctuation.definition.comment"],
-			"settings": {
-				"foreground": "#888899"
-			}
-		}
-	]
+	}
 }
