@@ -4,17 +4,9 @@ import type {
 	PickPartial
 } from "@arktype/util"
 import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { DivisorConstraint } from "./constraints/divisibility.js"
-import type {
-	DomainConstraint,
-	NonEnumerableDomain
-} from "./constraints/domain.js"
-import type { IdentityConstraint } from "./constraints/identity.js"
+import type { NonEnumerableDomain } from "./constraints/domain.js"
 import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
-import type { NarrowConstraint } from "./constraints/narrow.js"
-import type { PropConstraint } from "./constraints/prop/prop.js"
 import type { RangeConstraint } from "./constraints/range.js"
-import type { PatternConstraint } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./node.js"
 import { assertOverlapping } from "./utils.js"

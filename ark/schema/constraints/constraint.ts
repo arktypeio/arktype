@@ -20,13 +20,6 @@ export type ConstraintDefinitionsByKind = {
 	narrow: NarrowDefinition
 }
 
-const foo = `f${BaseNode}f`
-
-
-const n = undefined
-
-
-
 export type ConstraintKind = keyof ConstraintDefinitionsByKind
 
 export abstract class ConstraintNode<
