@@ -1,10 +1,10 @@
 import type { satisfy } from "@arktype/util"
-import type { UniversalAttributes } from "./attributes/attribute.js"
-import type { ConstraintNode } from "./constraints/constraint.js"
-import { Disjoint } from "./disjoint.js"
-import type { NodeDefinition } from "./node.js"
-import { BaseNode } from "./node.js"
-import { assertOverlapping } from "./utils.js"
+import type { UniversalAttributes } from "../attributes/attribute.js"
+import type { ConstraintNode } from "../constraints/constraint.js"
+import { Disjoint } from "../disjoint.js"
+import type { NodeDefinition } from "../node.js"
+import { BaseNode } from "../node.js"
+import { assertOverlapping } from "../utils.js"
 
 export type PredicateNodeDefinition = satisfy<
 	NodeDefinition,

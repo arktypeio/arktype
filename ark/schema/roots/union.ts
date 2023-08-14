@@ -1,11 +1,11 @@
 import type { exact, listable, Thunk } from "@arktype/util"
 import { hasKey, isArray } from "@arktype/util"
+import { Disjoint } from "../disjoint.js"
+import type { CompilationContext } from "../io/compile.js"
+import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
+import { BaseNode } from "../node.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
-import { Disjoint } from "./disjoint.js"
-import type { CompilationContext } from "./io/compile.js"
-import { compileFailureResult, compilePropAccess, In } from "./io/compile.js"
 import { PredicateNode } from "./predicate.js"
-import { BaseNode } from "./node.js"
 
 export type TypeRule = UnresolvedTypeNode | readonly PredicateNode[]
 
