@@ -51,7 +51,9 @@ export abstract class ConstraintNode<
 		return result
 	}
 
-	reduce(other: ConstraintNode) {
+	reduce(
+		other: ConstraintNode
+	): Disjoint | ConstraintNode<NodeDefinition> | null {
 		return this.reduceOwnKind(other) ?? other.reduceOwnKind(this)
 	}
 

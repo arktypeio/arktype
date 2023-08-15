@@ -9,8 +9,8 @@ import { BaseNode } from "../node.js"
 import { builtins } from "../utils.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
-import type { RootNode } from "./type.js"
 import { TypeNode } from "./type.js"
+import type { RootNode } from "./type.js"
 
 export type UnionNodeDefinition = satisfy<
 	NodeDefinition,
@@ -18,14 +18,14 @@ export type UnionNodeDefinition = satisfy<
 		kind: "union"
 		rule: readonly PredicateNode[]
 		attributes: UniversalAttributes
-		instance: UnionNode
+		class: typeof UnionNode
 	}
 >
 
 export class UnionNode<t = unknown> extends TypeNode<t, UnionNodeDefinition> {
 	readonly kind = "union"
 
-	writeDefaultDescription(): string {
+	writeDefaultDescription() {
 		return this.rule.length === 0 ? "never" : this.rule.join(" or ")
 	}
 
@@ -58,106 +58,42 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionNodeDefinition> {
 	}
 }
 
-export const reduceBranches = (branchNodes: PredicateNode[]) => {
-	if (branchNodes.length < 2) {
-		return branchNodes
+export const reduceBranches = (branches: PredicateNode[]) => {
+	if (branches.length < 2) {
+		return branches
 	}
-	const uniquenessByIndex: Record<number, boolean> = branchNodes.map(() => true)
-	for (let i = 0; i < branchNodes.length; i++) {
+	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
+	for (let i = 0; i < branches.length; i++) {
 		for (
 			let j = i + 1;
-			j < branchNodes.length && uniquenessByIndex[i] && uniquenessByIndex[j];
+			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
 			j++
 		) {
-			if (branchNodes[i] === branchNodes[j]) {
+			if (branches[i] === branches[j]) {
 				// if the two branches are equal, only "j" is marked as
 				// redundant so at least one copy could still be included in
 				// the final set of branches.
 				uniquenessByIndex[j] = false
 				continue
 			}
-			const intersection = branchNodes[i].intersect(branchNodes[j])
-			if (intersection === branchNodes[i]) {
+			const intersection = branches[i].intersect(branches[j])
+			if (intersection === branches[i]) {
 				uniquenessByIndex[i] = false
-			} else if (intersection === branchNodes[j]) {
+			} else if (intersection === branches[j]) {
 				uniquenessByIndex[j] = false
 			}
 		}
 	}
-	return branchNodes.filter((_, i) => uniquenessByIndex[i])
+	return branches.filter((_, i) => uniquenessByIndex[i])
 }
 
-type inferPredicateDefinition<t> = t
-
-export type inferBranches<branches extends readonly ConstraintInputs[]> = {
-	[i in keyof branches]: inferPredicateDefinition<branches[i]>
-}[number]
-
-export type inferTypeInput<input extends TypeInput> =
-	input extends readonly ConstraintInputs[]
-		? inferBranches<input>
-		: input extends ConstraintInputs
-		? inferPredicateDefinition<input>
-		: input extends BaseNode<infer t>
-		? t
-		: never
-
-export type TypeInput = listable<ConstraintInputs>
-
-export type validatedTypeNodeInput<
-	input extends List<ConstraintInputs>,
-	bases extends BasisInput[]
-> = {
-	[i in keyof input]: exact<
-		input[i],
-		ConstraintInputs //<bases[i & keyof bases]>
-	>
-}
-
-export type extractBases<
-	branches,
-	result extends BasisInput[] = []
-> = branches extends [infer head, ...infer tail]
-	? extractBases<
-			tail,
-			[
-				...result,
-				head extends {
-					basis: infer basis extends BasisInput
-				}
-					? basis
-					: BasisInput
-			]
-	  >
-	: result
-
-// TODO: bestway to handle?
-const getEmptyScope = cached(() => Scope.root({}))
-
-const createAnonymousParseContext = (): ParseContext => ({
-	baseName: "anonymous",
-	path: [],
-	args: {},
-	scope: getEmptyScope()
-})
-
-const typeNode = <const input extends listable<ConstraintInputs>>(
-	input: input,
-	// TODO: check all usages to ensure metadata is being propagated
-	meta = {}
+export const node = <const input extends listable<ConstraintInputs>>(
+	input: input
 ) =>
 	new BaseNode(
 		listFrom(input).map((branch) => predicateNode(branch)),
 		meta
 	)
-
-// TODO: could every node have the same functionality as type node?
-const unit = <const values extends readonly unknown[]>(...values: values) =>
-	typeNode(values.map((value) => ({ basis: ["===", value] }))) as BaseNode<
-		values[number]
-	>
-
-export const node = Object.assign(typeNode, { unit })
 
 export const intersectBranches = (
 	l: readonly PredicateNode[],
@@ -309,3 +245,47 @@ return true
 		)
 		.join(" || ")
 }
+
+// type inferPredicateDefinition<t> = t
+
+// export type inferBranches<branches extends readonly ConstraintInputs[]> = {
+// 	[i in keyof branches]: inferPredicateDefinition<branches[i]>
+// }[number]
+
+// export type inferTypeInput<input extends TypeInput> =
+// 	input extends readonly ConstraintInputs[]
+// 		? inferBranches<input>
+// 		: input extends ConstraintInputs
+// 		? inferPredicateDefinition<input>
+// 		: input extends BaseNode<infer t>
+// 		? t
+// 		: never
+
+// export type TypeInput = listable<ConstraintInputs>
+
+// export type validatedTypeNodeInput<
+// 	input extends List<ConstraintInputs>,
+// 	bases extends BasisInput[]
+// > = {
+// 	[i in keyof input]: exact<
+// 		input[i],
+// 		ConstraintInputs //<bases[i & keyof bases]>
+// 	>
+// }
+
+// export type extractBases<
+// 	branches,
+// 	result extends BasisInput[] = []
+// > = branches extends [infer head, ...infer tail]
+// 	? extractBases<
+// 			tail,
+// 			[
+// 				...result,
+// 				head extends {
+// 					basis: infer basis extends BasisInput
+// 				}
+// 					? basis
+// 					: BasisInput
+// 			]
+// 	  >
+// 	: result

@@ -115,6 +115,11 @@ export type DefinitionParser<$> = <const def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
 
+export type TypeConfig = {
+	keys?: KeyCheckKind
+	mustBe?: string
+}
+
 registry().registerInternal("state", TraversalState)
 
 export class Type<t = unknown, $ = any> extends CompiledFunction<

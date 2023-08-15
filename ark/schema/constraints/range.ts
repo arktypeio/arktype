@@ -19,7 +19,7 @@ export type RangeNodeDefinition<limitKind extends LimitKind = LimitKind> =
 			kind: "range"
 			rule: RangeRule<limitKind>
 			attributes: UniversalAttributes
-			instance: RangeConstraint<limitKind>
+			class: typeof RangeConstraint<limitKind>
 		}
 	>
 

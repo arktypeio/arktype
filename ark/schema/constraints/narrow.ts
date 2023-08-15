@@ -1,5 +1,5 @@
 // TODO: allow changed order to be the same type
-import type { satisfy } from "@arktype/util"
+import type { listable, satisfy } from "@arktype/util"
 import { isArray } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { NodeDefinition } from "../node.js"
@@ -11,7 +11,7 @@ export type NarrowNodeDefinition = satisfy<
 		kind: "narrow"
 		rule: Narrow
 		attributes: UniversalAttributes
-		instance: NarrowConstraint
+		class: typeof NarrowConstraint
 	}
 >
 

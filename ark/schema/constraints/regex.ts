@@ -1,4 +1,4 @@
-import type { satisfy } from "@arktype/util"
+import type { listable, satisfy } from "@arktype/util"
 import { isArray } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { NodeDefinition } from "../node.js"
@@ -10,7 +10,7 @@ export type PatternNodeDefinition = satisfy<
 		kind: "pattern"
 		rule: RegExp
 		attributes: UniversalAttributes
-		instance: PatternConstraint
+		class: typeof PatternConstraint
 	}
 >
 

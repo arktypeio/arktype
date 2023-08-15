@@ -9,7 +9,7 @@ export type PropNodeDefinition = satisfy<
 		kind: "prop"
 		rule: {}
 		attributes: UniversalAttributes
-		instance: PropConstraint
+		class: typeof PropConstraint
 	}
 >
 

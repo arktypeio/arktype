@@ -2,7 +2,6 @@ import type { Domain, satisfy } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
-import { BaseNode } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
 export type DomainNodeDefinition = satisfy<
@@ -11,7 +10,7 @@ export type DomainNodeDefinition = satisfy<
 		kind: "domain"
 		rule: NonEnumerableDomain
 		attributes: UniversalAttributes
-		instance: DomainConstraint
+		class: typeof DomainConstraint
 	}
 >
 

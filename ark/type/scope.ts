@@ -64,6 +64,12 @@ export type ScopeParser<parent, ambient> = {
 	}>
 }
 
+export type ScopeConfig = {
+	ambient?: Scope | null
+	codes?: Record<ProblemCode, { mustBe?: string }>
+	keys?: KeyCheckKind
+}
+
 type validateScope<def, $> = {
 	[k in keyof def]: parseScopeKey<k>["params"] extends []
 		? // Not including Type here directly breaks inference

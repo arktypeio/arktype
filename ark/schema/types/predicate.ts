@@ -12,7 +12,7 @@ export type PredicateNodeDefinition = satisfy<
 		kind: "predicate"
 		rule: readonly ConstraintNode[]
 		attributes: UniversalAttributes
-		instance: PredicateNode
+		class: typeof PredicateNode
 	}
 >
 

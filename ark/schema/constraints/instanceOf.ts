@@ -15,7 +15,7 @@ export type InstanceOfNodeDefinition = satisfy<
 		kind: "instanceOf"
 		rule: AbstractableConstructor
 		attributes: UniversalAttributes
-		instance: InstanceOfConstraint
+		class: typeof InstanceOfConstraint
 	}
 >
 

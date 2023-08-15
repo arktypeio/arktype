@@ -3,7 +3,6 @@ import { stringify } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
-import { BaseNode } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
 export type IdentityNodeDefinition = satisfy<
@@ -12,7 +11,7 @@ export type IdentityNodeDefinition = satisfy<
 		kind: "identity"
 		rule: unknown
 		attributes: UniversalAttributes
-		instance: IdentityConstraint
+		class: typeof IdentityConstraint
 	}
 >
 

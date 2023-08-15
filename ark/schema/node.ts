@@ -15,17 +15,17 @@ export type DefinitionsByKind = extend<
 	ConstraintDefinitionsByKind
 >
 
-export type NodeDefinition = {
+export interface NodeDefinition {
 	kind: string
 	rule: unknown
-	instance: BaseNode
 	attributes: extend<AttributeRecord, UniversalAttributes>
+	class: typeof BaseNode
 }
 
 export type NodeKind = keyof DefinitionsByKind
 
 export abstract class BaseNode<def extends NodeDefinition = NodeDefinition> {
-	protected constructor(
+	constructor(
 		public rule: def["rule"],
 		public attributes?: def["attributes"]
 	) {}
@@ -38,11 +38,14 @@ export abstract class BaseNode<def extends NodeDefinition = NodeDefinition> {
 
 	hasKind<kind extends NodeKind>(
 		kind: kind
-	): this is DefinitionsByKind[kind]["instance"] {
+	): this is InstanceType<DefinitionsByKind[kind]["class"]> {
 		return this.kind === (kind as never)
 	}
 
 	equals(other: BaseNode) {
+		if (this.hasKind("divisor")) {
+			const z = this.rule
+		}
 		return this.id === other.id
 	}
 
