@@ -1,5 +1,9 @@
-import type { UniversalAttributes } from "../attributes/attribute.js"
-import type { ConstraintNode } from "../constraints/constraint.js"
+import type { AbstractableConstructor } from "@arktype/util"
+import type {
+	ConstraintNode,
+	ConstraintsByKind
+} from "../constraints/constraint.js"
+import type { NonEnumerableDomain } from "../constraints/domain.js"
 import { Disjoint } from "../disjoint.js"
 import type { RootNode } from "./type.js"
 import { TypeNode } from "./type.js"
@@ -39,11 +43,51 @@ export class PredicateNode<t = unknown> extends TypeNode<
 	}
 }
 
-// throwParseError(
-//     `'${k}' is not a valid constraint name (must be one of ${Object.keys(
-//         constraintsByPrecedence
-//     ).join(", ")})`
-// )
+type ConstraintNodeRecord = Partial<ConstraintsByKind>
+
+export const predicateNode = <
+	basis extends PredicateInputBasis,
+	refinements,
+	attributes
+>() => {}
+
+export type PredicateInputBasis =
+	| NonEnumerableDomain
+	| AbstractableConstructor
+	| IdentityBasis
+	| null
+
+export type IdentityBasis<value = unknown> = {
+	readonly identity: value
+}
+
+type createPredicateInput<basis extends PredicateInputBasis> = basis
+
+export type RefinementInput<
+	basis extends PredicateInputBasis = PredicateInputBasis
+> = ConstraintsByKind[ConstraintKindsByBasis<basis>]
+
+type ConstraintKindsByBasis<
+	basis extends PredicateInputBasis = PredicateInputBasis
+> = basis extends IdentityBasis
+	? never
+	:
+			| "narrow"
+			| (basis extends null
+					? never
+					: basis extends NonEnumerableDomain
+					? basis extends "string"
+						? "range" | "pattern"
+						: basis extends "number"
+						? "range" | "divisor"
+						: never
+					: basis extends AbstractableConstructor
+					? basis extends typeof Array
+						? "range"
+						: basis extends typeof Date
+						? "range"
+						: never
+					: never)
 
 // export type UnitConstraints = Pick<ConstraintsByKind, "identity">
 
@@ -89,6 +133,19 @@ export class PredicateNode<t = unknown> extends TypeNode<
 // 		readonly range?: RangeConstraint
 // 	}
 // >
+
+// export type DateConstraints = extend<
+// 	InstanceConstraints<typeof Date>,
+// 	{
+// 		readonly range?: RangeConstraint
+// 	}
+// >
+
+// throwParseError(
+//     `'${k}' is not a valid constraint name (must be one of ${Object.keys(
+//         constraintsByPrecedence
+//     ).join(", ")})`
+// )
 
 // // TODO: naming
 // export const constraintsByPrecedence: Record<
