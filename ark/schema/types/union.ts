@@ -1,16 +1,15 @@
-import type { exact, listable, satisfy, Thunk } from "@arktype/util"
-import { hasKey, isArray } from "@arktype/util"
+import type { satisfy } from "@arktype/util"
+import { isArray } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
 import type { NodeDefinition } from "../node.js"
-import { BaseNode } from "../node.js"
 import { builtins } from "../utils.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
-import { TypeNode } from "./type.js"
 import type { RootNode } from "./type.js"
+import { TypeNode } from "./type.js"
 
 export type UnionNodeDefinition = satisfy<
 	NodeDefinition,
@@ -86,14 +85,6 @@ export const reduceBranches = (branches: PredicateNode[]) => {
 	}
 	return branches.filter((_, i) => uniquenessByIndex[i])
 }
-
-export const node = <const input extends listable<ConstraintInputs>>(
-	input: input
-) =>
-	new BaseNode(
-		listFrom(input).map((branch) => predicateNode(branch)),
-		meta
-	)
 
 export const intersectBranches = (
 	l: readonly PredicateNode[],

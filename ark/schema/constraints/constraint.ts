@@ -2,14 +2,20 @@ import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
-import type { DivisorNodeDefinition } from "./divisibility.js"
-import type { DomainNodeDefinition } from "./domain.js"
-import type { IdentityNodeDefinition } from "./identity.js"
-import type { InstanceOfNodeDefinition } from "./instanceOf.js"
-import type { NarrowNodeDefinition } from "./narrow.js"
-import type { PropNodeDefinition } from "./prop/prop.js"
-import type { RangeNodeDefinition } from "./range.js"
-import type { PatternNodeDefinition } from "./regex.js"
+import type {
+	DivisorConstraint,
+	DivisorNodeDefinition
+} from "./divisibility.js"
+import type { DomainConstraint, DomainNodeDefinition } from "./domain.js"
+import type { IdentityConstraint, IdentityNodeDefinition } from "./identity.js"
+import type {
+	InstanceOfConstraint,
+	InstanceOfNodeDefinition
+} from "./instanceOf.js"
+import type { NarrowConstraint, NarrowNodeDefinition } from "./narrow.js"
+import type { PropConstraint, PropNodeDefinition } from "./prop/prop.js"
+import type { RangeConstraint, RangeNodeDefinition } from "./range.js"
+import type { PatternConstraint, PatternNodeDefinition } from "./regex.js"
 
 export type ConstraintDefinitionsByKind = {
 	prop: PropNodeDefinition
@@ -20,6 +26,17 @@ export type ConstraintDefinitionsByKind = {
 	range: RangeNodeDefinition
 	pattern: PatternNodeDefinition
 	narrow: NarrowNodeDefinition
+}
+
+export type ConstraintClassesByKind = {
+	prop: typeof PropConstraint
+	identity: typeof IdentityConstraint
+	domain: typeof DomainConstraint
+	instanceOf: typeof InstanceOfConstraint
+	divisor: typeof DivisorConstraint
+	range: typeof RangeConstraint
+	pattern: typeof PatternConstraint
+	narrow: typeof NarrowConstraint
 }
 
 export type ConstraintKind = keyof ConstraintDefinitionsByKind

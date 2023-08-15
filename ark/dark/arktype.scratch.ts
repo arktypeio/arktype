@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { scope, type } from "arktype"
 
+// TODO: remove alpha helpers from syntax highlighting
 type("(boolean | number | 'foo')[]")
 
 const creditCard = type(

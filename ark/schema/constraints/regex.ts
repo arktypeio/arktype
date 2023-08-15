@@ -1,4 +1,4 @@
-import type { listable, satisfy } from "@arktype/util"
+import type { satisfy } from "@arktype/util"
 import { isArray } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { NodeDefinition } from "../node.js"

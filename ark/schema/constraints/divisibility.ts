@@ -16,6 +16,10 @@ export type DivisorNodeDefinition = satisfy<
 export class DivisorConstraint extends ConstraintNode<DivisorNodeDefinition> {
 	readonly kind = "divisor"
 
+	constructor(rule: number, attributes: UniversalAttributes) {
+		super()
+	}
+
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
