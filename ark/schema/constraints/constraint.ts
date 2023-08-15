@@ -1,34 +1,16 @@
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
-import type {
-	DivisorConstraint,
-	DivisorNodeDefinition
-} from "./divisibility.js"
-import type { DomainConstraint, DomainNodeDefinition } from "./domain.js"
-import type { IdentityConstraint, IdentityNodeDefinition } from "./identity.js"
-import type {
-	InstanceOfConstraint,
-	InstanceOfNodeDefinition
-} from "./instanceOf.js"
-import type { NarrowConstraint, NarrowNodeDefinition } from "./narrow.js"
-import type { PropConstraint, PropNodeDefinition } from "./prop/prop.js"
-import type { RangeConstraint, RangeNodeDefinition } from "./range.js"
-import type { PatternConstraint, PatternNodeDefinition } from "./regex.js"
+import type { DivisorConstraint } from "./divisibility.js"
+import type { DomainConstraint } from "./domain.js"
+import type { IdentityConstraint } from "./identity.js"
+import type { InstanceOfConstraint } from "./instanceOf.js"
+import type { NarrowConstraint } from "./narrow.js"
+import type { PropConstraint } from "./prop/prop.js"
+import type { RangeConstraint } from "./range.js"
+import type { PatternConstraint } from "./regex.js"
 
-export type ConstraintDefinitionsByKind = {
-	prop: PropNodeDefinition
-	identity: IdentityNodeDefinition
-	domain: DomainNodeDefinition
-	instanceOf: InstanceOfNodeDefinition
-	divisor: DivisorNodeDefinition
-	range: RangeNodeDefinition
-	pattern: PatternNodeDefinition
-	narrow: NarrowNodeDefinition
-}
-
-export type ConstraintClassesByKind = {
+export type ConstraintsByKind = {
 	prop: typeof PropConstraint
 	identity: typeof IdentityConstraint
 	domain: typeof DomainConstraint
@@ -39,11 +21,9 @@ export type ConstraintClassesByKind = {
 	narrow: typeof NarrowConstraint
 }
 
-export type ConstraintKind = keyof ConstraintDefinitionsByKind
+export type ConstraintKind = keyof ConstraintsByKind
 
-export abstract class ConstraintNode<
-	def extends NodeDefinition = NodeDefinition
-> extends BaseNode<def> {
+export abstract class ConstraintNode extends BaseNode {
 	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
 		const result: ConstraintNode[] = []
 		let includesConstraint = false
@@ -68,9 +48,7 @@ export abstract class ConstraintNode<
 		return result
 	}
 
-	reduce(
-		other: ConstraintNode
-	): Disjoint | ConstraintNode<NodeDefinition> | null {
+	reduce(other: ConstraintNode): Disjoint | ConstraintNode | null {
 		return this.reduceOwnKind(other) ?? other.reduceOwnKind(this)
 	}
 

@@ -1,8 +1,6 @@
-import type { satisfy } from "@arktype/util"
 import { isArray, throwParseError } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
 export type RangeRule<limitKind extends LimitKind = LimitKind> = {
@@ -12,21 +10,17 @@ export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 	readonly exclusive?: true
 }
 
-export type RangeNodeDefinition<limitKind extends LimitKind = LimitKind> =
-	satisfy<
-		NodeDefinition,
-		{
-			kind: "range"
-			rule: RangeRule<limitKind>
-			attributes: UniversalAttributes
-			class: typeof RangeConstraint<limitKind>
-		}
-	>
-
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<RangeNodeDefinition<limitKind>> {
+> extends ConstraintNode {
 	readonly kind = "range"
+
+	constructor(
+		public rule: RangeRule<limitKind>,
+		public attributes: UniversalAttributes = {}
+	) {
+		super()
+	}
 
 	writeDefaultDescription(): string {
 		if (isArray(this.rule)) {

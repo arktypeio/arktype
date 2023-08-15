@@ -1,26 +1,18 @@
-import type { satisfy } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import type { ConstraintNode } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeDefinition } from "../node.js"
 import type { RootNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export type PredicateNodeDefinition = satisfy<
-	NodeDefinition,
-	{
-		kind: "predicate"
-		rule: readonly ConstraintNode[]
-		attributes: UniversalAttributes
-		class: typeof PredicateNode
-	}
->
-
-export class PredicateNode<t = unknown> extends TypeNode<
-	t,
-	PredicateNodeDefinition
-> {
+export class PredicateNode<t = unknown> extends TypeNode<t> {
 	readonly kind = "predicate"
+
+	constructor(
+		public rule: readonly ConstraintNode[],
+		public attributes: UniversalAttributes = {}
+	) {
+		super()
+	}
 
 	writeDefaultDescription() {
 		const flat = Object.values(this.rule).flat()

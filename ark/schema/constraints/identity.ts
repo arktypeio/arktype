@@ -1,23 +1,18 @@
-import type { satisfy } from "@arktype/util"
 import { stringify } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type IdentityNodeDefinition = satisfy<
-	NodeDefinition,
-	{
-		kind: "identity"
-		rule: unknown
-		attributes: UniversalAttributes
-		class: typeof IdentityConstraint
-	}
->
-
 // TODO: to constraint
-export class IdentityConstraint extends ConstraintNode<IdentityNodeDefinition> {
+export class IdentityConstraint extends ConstraintNode {
 	readonly kind = "identity"
+
+	constructor(
+		public rule: unknown,
+		public attributes: UniversalAttributes = {}
+	) {
+		super()
+	}
 
 	writeDefaultDescription() {
 		// TODO: add reference to for objects

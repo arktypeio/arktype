@@ -1,22 +1,13 @@
-import type { satisfy } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
-import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type DivisorNodeDefinition = satisfy<
-	NodeDefinition,
-	{
-		kind: "divisor"
-		rule: number
-		attributes: UniversalAttributes
-		class: typeof DivisorConstraint
-	}
->
-
-export class DivisorConstraint extends ConstraintNode<DivisorNodeDefinition> {
+export class DivisorConstraint extends ConstraintNode {
 	readonly kind = "divisor"
 
-	constructor(rule: number, attributes: UniversalAttributes) {
+	constructor(
+		public rule: number,
+		public attributes: UniversalAttributes
+	) {
 		super()
 	}
 

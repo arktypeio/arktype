@@ -1,4 +1,4 @@
-import type { AbstractableConstructor, satisfy } from "@arktype/util"
+import type { AbstractableConstructor } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -6,21 +6,17 @@ import {
 } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type InstanceOfNodeDefinition = satisfy<
-	NodeDefinition,
-	{
-		kind: "instanceOf"
-		rule: AbstractableConstructor
-		attributes: UniversalAttributes
-		class: typeof InstanceOfConstraint
-	}
->
-
-export class InstanceOfConstraint extends ConstraintNode<InstanceOfNodeDefinition> {
+export class InstanceOfConstraint extends ConstraintNode {
 	readonly kind = "instanceOf"
+
+	constructor(
+		public rule: AbstractableConstructor,
+		public attributes: UniversalAttributes = {}
+	) {
+		super()
+	}
 
 	protected reduceWithRuleOf(
 		other: ConstraintNode

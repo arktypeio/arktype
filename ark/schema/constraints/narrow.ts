@@ -2,24 +2,20 @@
 import type { listable, satisfy } from "@arktype/util"
 import { isArray } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
-import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
-
-export type NarrowNodeDefinition = satisfy<
-	NodeDefinition,
-	{
-		kind: "narrow"
-		rule: Narrow
-		attributes: UniversalAttributes
-		class: typeof NarrowConstraint
-	}
->
 
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends ConstraintNode<NarrowNodeDefinition> {
+export class NarrowConstraint extends ConstraintNode {
 	readonly kind = "narrow"
+
+	constructor(
+		public rule: Narrow,
+		public attributes: UniversalAttributes = {}
+	) {
+		super()
+	}
 
 	writeDefaultDescription() {
 		return isArray(this.rule)

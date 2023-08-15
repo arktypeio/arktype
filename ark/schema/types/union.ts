@@ -1,28 +1,23 @@
-import type { satisfy } from "@arktype/util"
 import { isArray } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
-import type { NodeDefinition } from "../node.js"
 import { builtins } from "../utils.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
 import type { RootNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export type UnionNodeDefinition = satisfy<
-	NodeDefinition,
-	{
-		kind: "union"
-		rule: readonly PredicateNode[]
-		attributes: UniversalAttributes
-		class: typeof UnionNode
-	}
->
-
-export class UnionNode<t = unknown> extends TypeNode<t, UnionNodeDefinition> {
+export class UnionNode<t = unknown> extends TypeNode<t> {
 	readonly kind = "union"
+
+	constructor(
+		public rule: readonly PredicateNode[],
+		public attributes: UniversalAttributes = {}
+	) {
+		super()
+	}
 
 	writeDefaultDescription() {
 		return this.rule.length === 0 ? "never" : this.rule.join(" or ")

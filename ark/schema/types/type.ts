@@ -1,27 +1,20 @@
-import type { satisfy } from "@arktype/util"
 import { DomainConstraint } from "../constraints/domain.js"
 import type { Disjoint } from "../disjoint.js"
-import { BaseNode, type NodeDefinition } from "../node.js"
-import { PredicateNode, type PredicateNodeDefinition } from "./predicate.js"
-import type { UnionNode, UnionNodeDefinition } from "./union.js"
+import { BaseNode } from "../node.js"
+import { PredicateNode } from "./predicate.js"
+import type { UnionNode } from "./union.js"
 
-export type TypeNodeDefinitionsByKind = satisfy<
-	Record<string, NodeDefinition>,
-	{
-		predicate: PredicateNodeDefinition
-		union: UnionNodeDefinition
-	}
->
+export type TypesByKind = {
+	predicate: typeof PredicateNode
+	union: typeof UnionNode
+}
 
-export type TypeKind = keyof TypeNodeDefinitionsByKind
+export type TypeKind = keyof TypesByKind
 
 // TODO: test external types if this isn't any
 export type RootNode<t = any> = UnionNode<t> | PredicateNode<t>
 
-export abstract class TypeNode<
-	t = unknown,
-	def extends NodeDefinition = NodeDefinition
-> extends BaseNode<def> {
+export abstract class TypeNode<t = unknown> extends BaseNode {
 	declare infer: t
 
 	abstract references(): BaseNode[]

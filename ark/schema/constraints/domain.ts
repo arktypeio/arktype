@@ -1,22 +1,18 @@
-import type { Domain, satisfy } from "@arktype/util"
+import type { Domain } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeDefinition } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type DomainNodeDefinition = satisfy<
-	NodeDefinition,
-	{
-		kind: "domain"
-		rule: NonEnumerableDomain
-		attributes: UniversalAttributes
-		class: typeof DomainConstraint
-	}
->
-
-export class DomainConstraint extends ConstraintNode<DomainNodeDefinition> {
+export class DomainConstraint extends ConstraintNode {
 	readonly kind = "domain"
 	readonly domain = this.rule
+
+	constructor(
+		public rule: NonEnumerableDomain,
+		public attributes: UniversalAttributes = {}
+	) {
+		super()
+	}
 
 	reduceWithRuleOf(other: DomainConstraint) {
 		return Disjoint.from("domain", this, other)

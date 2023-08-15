@@ -1,20 +1,15 @@
-import type { satisfy } from "@arktype/util"
 import type { UniversalAttributes } from "../../attributes/attribute.js"
-import type { NodeDefinition } from "../../node.js"
 import { ConstraintNode } from "../constraint.js"
 
-export type PropNodeDefinition = satisfy<
-	NodeDefinition,
-	{
-		kind: "prop"
-		rule: {}
-		attributes: UniversalAttributes
-		class: typeof PropConstraint
-	}
->
-
-export class PropConstraint extends ConstraintNode<PropNodeDefinition> {
+export class PropConstraint extends ConstraintNode {
 	readonly kind = "prop"
+
+	constructor(
+		public rule: {},
+		public attributes: UniversalAttributes = {}
+	) {
+		super()
+	}
 
 	writeDefaultDescription() {
 		return ""
