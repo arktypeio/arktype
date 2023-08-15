@@ -6,13 +6,6 @@ export class PatternConstraint extends ConstraintNode {
 	readonly kind = "pattern"
 	readonly literal = `${this.rule}` as `/${string}/${string}`
 
-	constructor(
-		public rule: RegExp,
-		public attributes: UniversalAttributes = {}
-	) {
-		super()
-	}
-
 	writeDefaultDescription() {
 		return isArray(this.rule)
 			? this.rule.join(" and ")

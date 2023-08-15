@@ -1,3 +1,7 @@
+import type {
+	AttributeRecord,
+	UniversalAttributes
+} from "../attributes/attribute.js"
 import { DomainConstraint } from "../constraints/domain.js"
 import type { Disjoint } from "../disjoint.js"
 import { BaseNode } from "../node.js"
@@ -14,7 +18,17 @@ export type TypeKind = keyof TypesByKind
 // TODO: test external types if this isn't any
 export type RootNode<t = any> = UnionNode<t> | PredicateNode<t>
 
-export abstract class TypeNode<t = unknown> extends BaseNode {
+export type TypeInput = {}
+
+export const typeNode = <branches extends readonly {}[]>(
+	...branches: branches
+) => {}
+
+export abstract class TypeNode<
+	t = unknown,
+	rule = unknown,
+	attributes extends AttributeRecord = UniversalAttributes
+> extends BaseNode<rule, attributes> {
 	declare infer: t
 
 	abstract references(): BaseNode[]

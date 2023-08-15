@@ -4,15 +4,8 @@ import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 
 // TODO: to constraint
-export class IdentityConstraint extends ConstraintNode {
+export class IdentityConstraint extends ConstraintNode<unknown> {
 	readonly kind = "identity"
-
-	constructor(
-		public rule: unknown,
-		public attributes: UniversalAttributes = {}
-	) {
-		super()
-	}
 
 	writeDefaultDescription() {
 		// TODO: add reference to for objects

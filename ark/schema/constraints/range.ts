@@ -12,15 +12,8 @@ export type RangeRule<limitKind extends LimitKind = LimitKind> = {
 
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode {
+> extends ConstraintNode<RangeRule<limitKind>> {
 	readonly kind = "range"
-
-	constructor(
-		public rule: RangeRule<limitKind>,
-		public attributes: UniversalAttributes = {}
-	) {
-		super()
-	}
 
 	writeDefaultDescription(): string {
 		if (isArray(this.rule)) {

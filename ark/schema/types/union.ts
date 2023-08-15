@@ -1,5 +1,4 @@
 import { isArray } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
@@ -9,15 +8,11 @@ import type { PredicateNode } from "./predicate.js"
 import type { RootNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export class UnionNode<t = unknown> extends TypeNode<t> {
+export class UnionNode<t = unknown> extends TypeNode<
+	t,
+	readonly PredicateNode[]
+> {
 	readonly kind = "union"
-
-	constructor(
-		public rule: readonly PredicateNode[],
-		public attributes: UniversalAttributes = {}
-	) {
-		super()
-	}
 
 	writeDefaultDescription() {
 		return this.rule.length === 0 ? "never" : this.rule.join(" or ")

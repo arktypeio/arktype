@@ -4,15 +4,11 @@ import { Disjoint } from "../disjoint.js"
 import type { RootNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export class PredicateNode<t = unknown> extends TypeNode<t> {
+export class PredicateNode<t = unknown> extends TypeNode<
+	t,
+	readonly ConstraintNode[]
+> {
 	readonly kind = "predicate"
-
-	constructor(
-		public rule: readonly ConstraintNode[],
-		public attributes: UniversalAttributes = {}
-	) {
-		super()
-	}
 
 	writeDefaultDescription() {
 		const flat = Object.values(this.rule).flat()

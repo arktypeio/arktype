@@ -8,15 +8,8 @@ import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class InstanceOfConstraint extends ConstraintNode {
+export class InstanceOfConstraint extends ConstraintNode<AbstractableConstructor> {
 	readonly kind = "instanceOf"
-
-	constructor(
-		public rule: AbstractableConstructor,
-		public attributes: UniversalAttributes = {}
-	) {
-		super()
-	}
 
 	protected reduceWithRuleOf(
 		other: ConstraintNode

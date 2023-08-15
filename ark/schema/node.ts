@@ -1,5 +1,5 @@
 import type { AbstractableConstructor, extend } from "@arktype/util"
-import type { AttributeRecord } from "./attributes/attribute.js"
+import type { Attribute, AttributeRecord } from "./attributes/attribute.js"
 import type { ConstraintsByKind } from "./constraints/constraint.js"
 import type { Disjoint } from "./disjoint.js"
 import type { TypesByKind } from "./types/type.js"
@@ -20,9 +20,15 @@ export type Node<kind extends NodeKind = NodeKind> = InstanceType<
 	NodeSubclass<kind>
 >
 
-export abstract class BaseNode {
-	abstract readonly rule: unknown
-	abstract readonly attributes: AttributeRecord
+export abstract class BaseNode<
+	rule = unknown,
+	attributes extends AttributeRecord = AttributeRecord
+> {
+	constructor(
+		public rule: rule,
+		public attributes = {} as attributes
+	) {}
+
 	abstract readonly kind: NodeKind
 	declare readonly id: string
 	declare allows: (data: unknown) => boolean

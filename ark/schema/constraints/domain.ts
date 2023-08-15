@@ -3,16 +3,9 @@ import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class DomainConstraint extends ConstraintNode {
+export class DomainConstraint extends ConstraintNode<NonEnumerableDomain> {
 	readonly kind = "domain"
 	readonly domain = this.rule
-
-	constructor(
-		public rule: NonEnumerableDomain,
-		public attributes: UniversalAttributes = {}
-	) {
-		super()
-	}
 
 	reduceWithRuleOf(other: DomainConstraint) {
 		return Disjoint.from("domain", this, other)

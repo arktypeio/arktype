@@ -7,15 +7,8 @@ import { ConstraintNode } from "./constraint.js"
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends ConstraintNode {
+export class NarrowConstraint extends ConstraintNode<Narrow> {
 	readonly kind = "narrow"
-
-	constructor(
-		public rule: Narrow,
-		public attributes: UniversalAttributes = {}
-	) {
-		super()
-	}
 
 	writeDefaultDescription() {
 		return isArray(this.rule)

@@ -1,15 +1,7 @@
-import type { UniversalAttributes } from "../attributes/attribute.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class DivisorConstraint extends ConstraintNode {
+export class DivisorConstraint extends ConstraintNode<number> {
 	readonly kind = "divisor"
-
-	constructor(
-		public rule: number,
-		public attributes: UniversalAttributes
-	) {
-		super()
-	}
 
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
