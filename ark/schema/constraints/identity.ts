@@ -1,5 +1,4 @@
 import { stringify } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 

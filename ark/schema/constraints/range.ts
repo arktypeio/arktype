@@ -1,18 +1,32 @@
+import type { extend } from "@arktype/util"
 import { isArray, throwParseError } from "@arktype/util"
 import type { UniversalAttributes } from "../attributes/attribute.js"
+import { Attribute } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 
 export type RangeRule<limitKind extends LimitKind = LimitKind> = {
-	readonly dataKind: BoundableDataKind
 	readonly limitKind: limitKind
 	readonly limit: number
 	readonly exclusive?: true
 }
 
+export class RangeKind extends Attribute<BoundableDataKind> {
+	intersectValues(other: this) {
+		return throwParseError(
+			writeIncompatibleRangeMessage(this.value, other.value)
+		)
+	}
+}
+
+export type RangeAttributes = extend<
+	UniversalAttributes,
+	{ rangeKind: RangeKind }
+>
+
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<RangeRule<limitKind>> {
+> extends ConstraintNode<RangeRule<limitKind>, RangeAttributes> {
 	readonly kind = "range"
 
 	writeDefaultDescription(): string {
@@ -20,7 +34,7 @@ export class RangeConstraint<
 			return this.rule.join(" and ")
 		}
 		const comparisonDescription =
-			this.rule.dataKind === "date"
+			this.attributes.rangeKind.value === "date"
 				? this.rule.limitKind === "min"
 					? this.rule.exclusive
 						? "after"
@@ -49,11 +63,6 @@ export class RangeConstraint<
 	): RangeRule<limitKind> | Disjoint | null {
 		if (!other.hasKind("range")) {
 			return null
-		}
-		if (this.rule.dataKind !== other.rule.dataKind) {
-			return throwParseError(
-				writeIncompatibleRangeMessage(this.rule.dataKind, other.rule.dataKind)
-			)
 		}
 		if (this.rule.limit > other.rule.limit) {
 			if (this.hasLimitKind("min")) {

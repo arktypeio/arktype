@@ -1,5 +1,5 @@
-import type { AbstractableConstructor, extend } from "@arktype/util"
-import type { Attribute, AttributeRecord } from "./attributes/attribute.js"
+import type { extend } from "@arktype/util"
+import type { AttributeRecord } from "./attributes/attribute.js"
 import type { ConstraintsByKind } from "./constraints/constraint.js"
 import type { Disjoint } from "./disjoint.js"
 import type { TypesByKind } from "./types/type.js"
@@ -11,20 +11,13 @@ export type NodesByKind = extend<TypesByKind, ConstraintsByKind>
 
 export type NodeKind = keyof NodesByKind
 
-export type NodeSubclass<kind extends NodeKind = NodeKind> = Extract<
-	NodesByKind[kind],
-	AbstractableConstructor
->
-
-export type Node<kind extends NodeKind = NodeKind> = InstanceType<
-	NodeSubclass<kind>
->
+export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
 export abstract class BaseNode<
 	rule = unknown,
 	attributes extends AttributeRecord = AttributeRecord
 > {
-	constructor(
+	protected constructor(
 		public rule: rule,
 		public attributes = {} as attributes
 	) {}

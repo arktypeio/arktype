@@ -9,8 +9,8 @@ import { PredicateNode } from "./predicate.js"
 import type { UnionNode } from "./union.js"
 
 export type TypesByKind = {
-	predicate: typeof PredicateNode
-	union: typeof UnionNode
+	predicate: PredicateNode
+	union: UnionNode
 }
 
 export type TypeKind = keyof TypesByKind

@@ -10,19 +10,19 @@ import type { DomainConstraint } from "./domain.js"
 import type { IdentityConstraint } from "./identity.js"
 import type { InstanceOfConstraint } from "./instanceOf.js"
 import type { NarrowConstraint } from "./narrow.js"
+import type { PatternConstraint } from "./pattern.js"
 import type { PropConstraint } from "./prop/prop.js"
 import type { RangeConstraint } from "./range.js"
-import type { PatternConstraint } from "./regex.js"
 
 export type ConstraintsByKind = {
-	prop: typeof PropConstraint
-	identity: typeof IdentityConstraint
-	domain: typeof DomainConstraint
-	instanceOf: typeof InstanceOfConstraint
-	divisor: typeof DivisorConstraint
-	range: typeof RangeConstraint
-	pattern: typeof PatternConstraint
-	narrow: typeof NarrowConstraint
+	prop: PropConstraint
+	identity: IdentityConstraint
+	domain: DomainConstraint
+	instanceOf: InstanceOfConstraint
+	divisor: DivisorConstraint
+	range: RangeConstraint
+	pattern: PatternConstraint
+	narrow: NarrowConstraint
 }
 
 export type ConstraintKind = keyof ConstraintsByKind

@@ -1,7 +1,5 @@
 // TODO: allow changed order to be the same type
-import type { listable, satisfy } from "@arktype/util"
 import { isArray } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
 import { ConstraintNode } from "./constraint.js"
 
 // as long as the narrows in l and r are individually safe to check
