@@ -1,5 +1,4 @@
 import type { Domain } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 

@@ -89,7 +89,8 @@ export class RangeConstraint<
 	}
 }
 
-export type Bounds = SingleBound | DoubleBounds
+export type RangeInput = RangeConstraint | RangeConstraintSet
+export type RangeConstraintSet = SingleBound | DoubleBounds
 export type SingleBound = readonly [RangeConstraint]
 export type DoubleBounds = readonly [
 	RangeConstraint<"min">,
