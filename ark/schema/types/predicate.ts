@@ -1,7 +1,7 @@
 import type { ConstraintNode } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseRule } from "../node.js"
-import type { RootNode } from "./type.js"
+import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
 export interface PredicateRule extends BaseRule {}
@@ -22,7 +22,7 @@ export class PredicateNode<
 		return []
 	}
 
-	intersect(other: RootNode): RootNode | Disjoint {
+	intersect(other: TypeNode): TypeNode | Disjoint {
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
 		}

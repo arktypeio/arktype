@@ -13,7 +13,7 @@ export type TypesByKind = {
 export type TypeKind = keyof TypesByKind
 
 // TODO: test external types if this isn't any
-export type RootNode<t = any> = UnionNode<t> | PredicateNode<t>
+export type TypeNode<t = any> = UnionNode<t> | PredicateNode<t>
 
 export abstract class TypeNodeBase<
 	t = unknown,
@@ -23,9 +23,9 @@ export abstract class TypeNodeBase<
 
 	abstract references(): BaseNode[]
 	abstract intersect<other>(
-		other: RootNode<other> // TODO: inferIntersection
-	): RootNode<t & other> | Disjoint
-	abstract keyof(): RootNode
+		other: TypeNode<other> // TODO: inferIntersection
+	): TypeNode<t & other> | Disjoint
+	abstract keyof(): TypeNode
 
 	isUnknown(): this is PredicateNode<unknown> {
 		return this.hasKind("predicate") && this.rule.length === 0
@@ -39,7 +39,7 @@ export abstract class TypeNodeBase<
 		return new PredicateNode([new DomainConstraint("object")])
 	}
 
-	extends<other>(other: RootNode<other>): this is RootNode<other> {
+	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
 		const intersection = this.intersect(other)
 		return intersection instanceof TypeNodeBase && this.equals(intersection)
 	}

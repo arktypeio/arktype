@@ -1,5 +1,6 @@
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import type { BaseRule } from "../node.js"
 import { BaseNode } from "../node.js"
 import type { DivisorConstraint } from "./divisor.js"
 import type { DomainConstraint } from "./domain.js"
@@ -24,8 +25,8 @@ export type ConstraintsByKind = {
 export type ConstraintKind = keyof ConstraintsByKind
 
 export abstract class ConstraintNode<
-	definition extends BaseRule = BaseRule
-> extends BaseNode<definition> {
+	rule extends BaseRule = BaseRule
+> extends BaseNode<rule> {
 	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
 		const result: ConstraintNode[] = []
 		let includesConstraint = false
@@ -66,7 +67,7 @@ export abstract class ConstraintNode<
 
 	protected abstract reduceWithRuleOf(
 		other: ConstraintNode
-	): definition | Disjoint | null
+	): rule | Disjoint | null
 }
 
 // export const assertAllowsConstraint = (

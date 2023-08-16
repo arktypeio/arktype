@@ -2,36 +2,38 @@ import { isArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
+import type { BaseRule } from "../node.js"
 import { builtins } from "../utils.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
-import type { RootNode } from "./type.js"
+import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
-export class UnionNode<t = unknown> extends TypeNodeBase<
-	t,
-	readonly PredicateNode[]
-> {
+export interface UnionRule extends BaseRule {
+	readonly branches: readonly PredicateNode[]
+}
+
+export class UnionNode<t = unknown> extends TypeNodeBase<t, UnionRule> {
 	readonly kind = "union"
 
 	writeDefaultDescription() {
-		return this.rule.length === 0 ? "never" : this.rule.join(" or ")
+		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
 	}
 
 	references() {
-		return this.rule.flatMap((branch) => branch.references())
+		return this.branches.flatMap((branch) => branch.references())
 	}
 
-	intersect(other: RootNode): RootNode | Disjoint {
+	intersect(other: TypeNode): TypeNode | Disjoint {
 		const resultBranches = intersectBranches(
-			this.rule,
-			other.hasKind("union") ? other.rule : [other]
+			this.branches,
+			other.hasKind("union") ? other.branches : [other]
 		)
 		return resultBranches.length === 0
 			? Disjoint.from("union", this, other)
 			: resultBranches.length === 1
 			? resultBranches[0]
-			: new UnionNode(resultBranches)
+			: new UnionNode({ branches: resultBranches })
 	}
 
 	// // discriminate is cached so we don't have to worry about this running multiple times
@@ -40,10 +42,10 @@ export class UnionNode<t = unknown> extends TypeNodeBase<
 	// }
 
 	keyof() {
-		return this.rule.reduce(
+		return this.branches.reduce(
 			(result, branch) => result.and(branch.keyof()),
 			builtins.unknown()
-		) as TypeNodeBase<keyof t>
+		) as TypeNode<keyof t>
 	}
 }
 
