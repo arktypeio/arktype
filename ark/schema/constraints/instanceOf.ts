@@ -5,12 +5,12 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseRule } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
 export interface InstanceOfRule<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends BaseRule {
+> extends BaseAttributes {
 	readonly value: constructor
 }
 

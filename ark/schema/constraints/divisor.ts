@@ -1,7 +1,7 @@
-import type { BaseRule } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export interface DivisorRule extends BaseRule {
+export interface DivisorRule extends BaseAttributes {
 	readonly value: number
 }
 

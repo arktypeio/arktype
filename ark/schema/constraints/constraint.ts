@@ -1,6 +1,6 @@
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseRule } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"
 import type { DivisorConstraint } from "./divisor.js"
 import type { DomainConstraint } from "./domain.js"
@@ -25,8 +25,9 @@ export type ConstraintsByKind = {
 export type ConstraintKind = keyof ConstraintsByKind
 
 export abstract class ConstraintNode<
-	rule extends BaseRule = BaseRule
-> extends BaseNode<rule> {
+	rule extends {} = {},
+	attributes extends BaseAttributes = BaseAttributes
+> extends BaseNode<rule, attributes> {
 	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
 		const result: ConstraintNode[] = []
 		let includesConstraint = false
@@ -67,7 +68,7 @@ export abstract class ConstraintNode<
 
 	protected abstract reduceWithRuleOf(
 		other: ConstraintNode
-	): rule | Disjoint | null
+	): attributes | Disjoint | null
 }
 
 // export const assertAllowsConstraint = (
@@ -77,7 +78,7 @@ export abstract class ConstraintNode<
 // 	if (basis?.hasKind("unit")) {
 // 		return throwInvalidConstraintError(
 // 			node.kind,
-// 			"a non-literal type",gujhnkib.l
+// 			"a non-literal type",
 // 		)
 // 	}
 // 	const domain = basis?.domain ?? "unknown"

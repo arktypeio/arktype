@@ -1,6 +1,6 @@
 import { DomainConstraint } from "../constraints/domain.js"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseRule } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"
 import { PredicateNode } from "./predicate.js"
 import type { UnionNode } from "./union.js"
@@ -17,8 +17,9 @@ export type TypeNode<t = any> = UnionNode<t> | PredicateNode<t>
 
 export abstract class TypeNodeBase<
 	t = unknown,
-	rule extends BaseRule = BaseRule
-> extends BaseNode<rule> {
+	rule extends {} = {},
+	attributes extends BaseAttributes = BaseAttributes
+> extends BaseNode<rule, attributes> {
 	declare infer: t
 
 	abstract references(): BaseNode[]
@@ -28,11 +29,11 @@ export abstract class TypeNodeBase<
 	abstract keyof(): TypeNode
 
 	isUnknown(): this is PredicateNode<unknown> {
-		return this.hasKind("predicate") && this.rule.length === 0
+		return this.hasKind("predicate") && this.constraints.length === 0
 	}
 
 	isNever(): this is UnionNode<never> {
-		return this.hasKind("union") && this.rule.length === 0
+		return this.hasKind("union") && this.branches.length === 0
 	}
 
 	array() {

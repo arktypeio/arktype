@@ -1,18 +1,27 @@
+import type { listable } from "@arktype/util"
+import type { DescriptionAttribute } from "../attributes/description.js"
 import type { ConstraintNode } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseRule } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
-export interface PredicateRule extends BaseRule {}
+export interface PredicateAttributes extends BaseAttributes {
+	readonly morph?: readonly DescriptionAttribute[]
+}
+
+export type PredicateRule = { [k: string]: listable<ConstraintNode> }
 
 export class PredicateNode<
 	t = unknown,
-	rule extends PredicateRule = PredicateRule
-> extends TypeNodeBase<t, rule> {
+	rule extends {} = {},
+	attributes extends PredicateAttributes = PredicateAttributes
+> extends TypeNodeBase<t, rule, attributes> {
 	readonly kind = "predicate"
-	readonly constraints = Object.values()
-	0
+	readonly constraints = Object.values(
+		this.rule
+	).flat() as readonly ConstraintNode[]
+
 	writeDefaultDescription() {
 		const flat = Object.values(this.rule).flat()
 		return flat.length ? flat.join(" and ") : "a value"
@@ -26,8 +35,8 @@ export class PredicateNode<
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
 		}
-		let result: readonly ConstraintNode[] | Disjoint = this.rule
-		for (const constraint of other.rule) {
+		let result: readonly ConstraintNode[] | Disjoint = this.constraints
+		for (const constraint of other.constraints) {
 			if (result instanceof Disjoint) {
 				break
 			}

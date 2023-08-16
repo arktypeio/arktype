@@ -1,11 +1,11 @@
 import { throwParseError } from "@arktype/util"
 import { Attribute } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseRule } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
 export interface RangeRule<limitKind extends LimitKind = LimitKind>
-	extends BaseRule {
+	extends BaseAttributes {
 	readonly rangeKind: RangeKindAttribute
 	readonly limitKind: limitKind
 	readonly limit: number
