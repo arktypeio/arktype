@@ -4,11 +4,13 @@ import { Disjoint } from "../disjoint.js"
 import type { RootNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export type PredicateRule = { [k in string]?: listable<ConstraintNode> }
+export type PredicateRule = {
+	[k in string]?: listable<ConstraintNode>
+}
 
 export class PredicateNode<
 	t = unknown,
-	rule extends PredicateRule = PredicateRule
+	definition extends PredicateRule = PredicateRule
 > extends TypeNode<t, readonly ConstraintNode[]> {
 	readonly kind = "predicate"
 

@@ -26,9 +26,9 @@ export const typeNode = <branches extends readonly {}[]>(
 
 export abstract class TypeNode<
 	t = unknown,
-	rule = unknown,
+	definition = unknown,
 	attributes extends AttributeRecord = UniversalAttributes
-> extends BaseNode<rule, attributes> {
+> extends BaseNode<definition, attributes> {
 	declare infer: t
 
 	abstract references(): BaseNode[]

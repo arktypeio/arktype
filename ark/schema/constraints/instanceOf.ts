@@ -4,30 +4,39 @@ import {
 	getExactBuiltinConstructorName,
 	objectKindDescriptions
 } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 
+export interface InstanceOfRule<
+	constructor extends AbstractableConstructor = AbstractableConstructor
+> extends UniversalAttributes {
+	readonly value: constructor
+}
+
 export class InstanceOfConstraint<
-	rule extends AbstractableConstructor = AbstractableConstructor
-> extends ConstraintNode<rule> {
+	constructor extends AbstractableConstructor = AbstractableConstructor
+> extends ConstraintNode<InstanceOfRule<constructor>> {
 	readonly kind = "instanceOf"
 
-	protected reduceWithRuleOf(other: ConstraintNode): rule | Disjoint | null {
+	protected reduceWithRuleOf(
+		other: ConstraintNode
+	): InstanceOfRule<constructor> | Disjoint | null {
 		return !other.hasKind("instanceOf")
 			? null
-			: constructorExtends(this.rule, other.rule)
-			? this.rule
-			: constructorExtends(other.rule, this.rule)
+			: constructorExtends(this.value, other.value)
+			? this
+			: constructorExtends(other.value, this.value)
 			? // other extends this rule, so the cast is safe
-			  (other.rule as rule)
+			  (other as InstanceOfConstraint<constructor>)
 			: Disjoint.from("instanceOf", this, other)
 	}
 
 	writeDefaultDescription() {
-		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
+		const possibleObjectKind = getExactBuiltinConstructorName(this.value)
 		return possibleObjectKind
 			? objectKindDescriptions[possibleObjectKind]
-			: `an instance of ${this.rule.name}`
+			: `an instance of ${this.value.name}`
 	}
 }
 

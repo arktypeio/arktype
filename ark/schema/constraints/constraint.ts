@@ -1,8 +1,5 @@
 import { throwInternalError } from "@arktype/util"
-import type {
-	AttributeRecord,
-	UniversalAttributes
-} from "../attributes/attribute.js"
+import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { BaseNode } from "../node.js"
 import type { DivisorConstraint } from "./divisor.js"
@@ -28,9 +25,8 @@ export type ConstraintsByKind = {
 export type ConstraintKind = keyof ConstraintsByKind
 
 export abstract class ConstraintNode<
-	rule = unknown,
-	attributes extends AttributeRecord = UniversalAttributes
-> extends BaseNode<rule, attributes> {
+	definition extends UniversalAttributes = UniversalAttributes
+> extends BaseNode<definition> {
 	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
 		const result: ConstraintNode[] = []
 		let includesConstraint = false
@@ -71,7 +67,7 @@ export abstract class ConstraintNode<
 
 	protected abstract reduceWithRuleOf(
 		other: ConstraintNode
-	): this["rule"] | Disjoint | null
+	): definition | Disjoint | null
 }
 
 // export const assertAllowsConstraint = (

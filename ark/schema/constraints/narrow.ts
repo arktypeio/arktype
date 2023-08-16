@@ -1,17 +1,19 @@
 // TODO: allow changed order to be the same type
-import { isArray } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
 import { ConstraintNode } from "./constraint.js"
+
+export interface NarrowRule extends UniversalAttributes {
+	readonly value: Narrow
+}
 
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends ConstraintNode<Narrow> {
+export class NarrowConstraint extends ConstraintNode<NarrowRule> {
 	readonly kind = "narrow"
 
 	writeDefaultDescription() {
-		return isArray(this.rule)
-			? this.rule.join(" and ")
-			: `valid according to ${this.rule.name}`
+		return `valid according to ${this.value.name}`
 	}
 
 	protected reduceWithRuleOf() {

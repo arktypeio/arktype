@@ -1,7 +1,11 @@
 import type { UniversalAttributes } from "../../attributes/attribute.js"
 import { ConstraintNode } from "../constraint.js"
 
-export class PropConstraint extends ConstraintNode<{}> {
+export interface PropRule extends UniversalAttributes {
+	readonly value: {}
+}
+
+export class PropConstraint extends ConstraintNode<PropRule> {
 	readonly kind = "prop"
 
 	writeDefaultDescription() {
@@ -12,6 +16,6 @@ export class PropConstraint extends ConstraintNode<{}> {
 		if (!other.hasKind("prop")) {
 			return null
 		}
-		return this.rule
+		return this
 	}
 }

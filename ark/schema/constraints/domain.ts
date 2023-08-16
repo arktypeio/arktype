@@ -1,19 +1,25 @@
 import type { Domain } from "@arktype/util"
+import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 
+export interface DomainRule<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> extends UniversalAttributes {
+	readonly value: domain
+}
+
 export class DomainConstraint<
-	rule extends NonEnumerableDomain = NonEnumerableDomain
-> extends ConstraintNode<rule> {
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> extends ConstraintNode<DomainRule<domain>> {
 	readonly kind = "domain"
-	readonly domain = this.rule
 
 	reduceWithRuleOf(other: DomainConstraint) {
 		return Disjoint.from("domain", this, other)
 	}
 
 	writeDefaultDescription() {
-		return domainDescriptions[this.rule]
+		return domainDescriptions[this.value]
 	}
 }
 

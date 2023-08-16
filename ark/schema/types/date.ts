@@ -9,6 +9,7 @@ export type DatePredicateRule = extend<
 		readonly range?: RangeConstraintSet
 	}
 >
+
 export class DatePredicate extends PredicateNode<
 	readonly unknown[],
 	DatePredicateRule

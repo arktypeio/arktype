@@ -1,5 +1,5 @@
-import type { extend } from "@arktype/util"
-import type { AttributeRecord } from "./attributes/attribute.js"
+import { type extend, ReadonlyObject } from "@arktype/util"
+import type { UniversalAttributes } from "./attributes/attribute.js"
 import type { ConstraintsByKind } from "./constraints/constraint.js"
 import type { Disjoint } from "./disjoint.js"
 import type { TypesByKind } from "./types/type.js"
@@ -13,14 +13,13 @@ export type NodeKind = keyof NodesByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
+// @ts-expect-error
 export abstract class BaseNode<
-	rule = unknown,
-	attributes extends AttributeRecord = AttributeRecord
-> {
-	protected constructor(
-		public rule: rule,
-		public attributes = {} as attributes
-	) {}
+	rule extends UniversalAttributes = UniversalAttributes
+> extends ReadonlyObject<rule> {
+	protected constructor(rule: rule) {
+		super(rule)
+	}
 
 	abstract readonly kind: NodeKind
 	declare readonly id: string
@@ -37,6 +36,6 @@ export abstract class BaseNode<
 	}
 
 	toString() {
-		return this.attributes?.description ?? this.writeDefaultDescription()
+		return this.description?.toString() ?? this.writeDefaultDescription()
 	}
 }

@@ -14,5 +14,5 @@ export type StringPredicateRule = extend<
 
 export class StringPredicate extends PredicateNode<
 	unknown,
-	DomainPredicateRule
+	StringPredicateRule
 > {}

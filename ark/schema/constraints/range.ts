@@ -5,13 +5,15 @@ import { Attribute } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type RangeRule<limitKind extends LimitKind = LimitKind> = {
+export interface RangeRule<limitKind extends LimitKind = LimitKind>
+	extends UniversalAttributes {
+	readonly rangeKind: RangeKindAttribute
 	readonly limitKind: limitKind
 	readonly limit: number
 	readonly exclusive?: true
 }
 
-export class RangeKind extends Attribute<BoundableDataKind> {
+export class RangeKindAttribute extends Attribute<BoundableDataKind> {
 	intersectValues(other: this) {
 		return throwParseError(
 			writeIncompatibleRangeMessage(this.value, other.value)
@@ -19,43 +21,35 @@ export class RangeKind extends Attribute<BoundableDataKind> {
 	}
 }
 
-export type RangeAttributes = extend<
-	UniversalAttributes,
-	{ rangeKind: RangeKind }
->
-
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<RangeRule<limitKind>, RangeAttributes> {
+> extends ConstraintNode<RangeRule<limitKind>> {
 	readonly kind = "range"
 
 	writeDefaultDescription(): string {
-		if (isArray(this.rule)) {
-			return this.rule.join(" and ")
-		}
 		const comparisonDescription =
-			this.attributes.rangeKind.value === "date"
-				? this.rule.limitKind === "min"
-					? this.rule.exclusive
+			this.rangeKind.value === "date"
+				? this.limitKind === "min"
+					? this.exclusive
 						? "after"
 						: "at or after"
-					: this.rule.exclusive
+					: this.exclusive
 					? "before"
 					: "at or before"
-				: this.rule.limitKind === "min"
-				? this.rule.exclusive
+				: this.limitKind === "min"
+				? this.exclusive
 					? "more than"
 					: "at least"
-				: this.rule.exclusive
+				: this.exclusive
 				? "less than"
 				: "at most"
-		return `${comparisonDescription} ${this.rule.limit}`
+		return `${comparisonDescription} ${this.limit}`
 	}
 
 	hasLimitKind<limitKind extends LimitKind>(
 		limitKind: limitKind
 	): this is RangeConstraint<limitKind> {
-		return this.rule.limitKind === (limitKind as never)
+		return this.limitKind === (limitKind as never)
 	}
 
 	protected reduceWithRuleOf(
@@ -64,26 +58,26 @@ export class RangeConstraint<
 		if (!other.hasKind("range")) {
 			return null
 		}
-		if (this.rule.limit > other.rule.limit) {
+		if (this.limit > other.limit) {
 			if (this.hasLimitKind("min")) {
 				return other.hasLimitKind("min")
-					? this.rule
+					? this
 					: Disjoint.from("range", this, other)
 			}
-			return other.hasLimitKind(this.rule.limitKind) ? other.rule : null
+			return other.hasLimitKind(this.limitKind) ? other : null
 		}
-		if (this.rule.limit < other.rule.limit) {
+		if (this.limit < other.limit) {
 			if (this.hasLimitKind("max")) {
 				return other.hasLimitKind("max")
-					? this.rule
+					? this
 					: Disjoint.from("range", this, other)
 			}
-			return other.hasLimitKind(this.rule.limitKind) ? other.rule : null
+			return other.hasLimitKind(this.limitKind) ? other : null
 		}
-		if (other.hasLimitKind(this.rule.limitKind)) {
-			return this.rule.exclusive ? this.rule : other.rule
+		if (other.hasLimitKind(this.limitKind)) {
+			return this.exclusive ? this : other
 		}
-		return this.rule.exclusive || other.rule.exclusive
+		return this.exclusive || other.exclusive
 			? Disjoint.from("range", this, other)
 			: null
 	}
