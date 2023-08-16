@@ -1,9 +1,9 @@
 import { stringify } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseRule } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export interface IdentityRule extends UniversalAttributes {
+export interface IdentityRule extends BaseRule {
 	readonly value: number
 }
 

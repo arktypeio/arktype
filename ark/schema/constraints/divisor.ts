@@ -1,7 +1,7 @@
-import type { UniversalAttributes } from "../attributes/attribute.js"
+import type { BaseRule } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export interface DivisorRule extends UniversalAttributes {
+export interface DivisorRule extends BaseRule {
 	readonly value: number
 }
 

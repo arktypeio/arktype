@@ -1,8 +1,8 @@
 // TODO: allow changed order to be the same type
-import type { UniversalAttributes } from "../attributes/attribute.js"
+import type { BaseRule } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
-export interface NarrowRule extends UniversalAttributes {
+export interface NarrowRule extends BaseRule {
 	readonly value: Narrow
 }
 

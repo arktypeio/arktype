@@ -1,16 +1,15 @@
-import type { extend } from "@arktype/util"
-import { isArray, throwParseError } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
+import { throwParseError } from "@arktype/util"
 import { Attribute } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseRule } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
 export interface RangeRule<limitKind extends LimitKind = LimitKind>
-	extends UniversalAttributes {
+	extends BaseRule {
 	readonly rangeKind: RangeKindAttribute
 	readonly limitKind: limitKind
 	readonly limit: number
-	readonly exclusive?: true
+	readonly exclusive: boolean
 }
 
 export class RangeKindAttribute extends Attribute<BoundableDataKind> {

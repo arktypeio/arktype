@@ -4,13 +4,13 @@ import {
 	getExactBuiltinConstructorName,
 	objectKindDescriptions
 } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseRule } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
 export interface InstanceOfRule<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends UniversalAttributes {
+> extends BaseRule {
 	readonly value: constructor
 }
 

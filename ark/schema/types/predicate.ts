@@ -1,19 +1,18 @@
-import type { listable } from "@arktype/util"
 import type { ConstraintNode } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseRule } from "../node.js"
 import type { RootNode } from "./type.js"
-import { TypeNode } from "./type.js"
+import { TypeNodeBase } from "./type.js"
 
-export type PredicateRule = {
-	[k in string]?: listable<ConstraintNode>
-}
+export interface PredicateRule extends BaseRule {}
 
 export class PredicateNode<
 	t = unknown,
-	definition extends PredicateRule = PredicateRule
-> extends TypeNode<t, readonly ConstraintNode[]> {
+	rule extends PredicateRule = PredicateRule
+> extends TypeNodeBase<t, rule> {
 	readonly kind = "predicate"
-
+	readonly constraints = Object.values()
+	0
 	writeDefaultDescription() {
 		const flat = Object.values(this.rule).flat()
 		return flat.length ? flat.join(" and ") : "a value"

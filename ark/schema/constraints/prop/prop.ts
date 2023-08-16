@@ -1,7 +1,7 @@
-import type { UniversalAttributes } from "../../attributes/attribute.js"
+import type { BaseRule } from "../../node.js"
 import { ConstraintNode } from "../constraint.js"
 
-export interface PropRule extends UniversalAttributes {
+export interface PropRule extends BaseRule {
 	readonly value: {}
 }
 

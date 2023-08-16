@@ -1,6 +1,4 @@
-import type { DescriptionAttribute } from "./description.js"
-
-export abstract class Attribute<value> {
+export abstract class Attribute<value = unknown> {
 	constructor(public value: value) {}
 
 	intersect(other: this) {
@@ -8,11 +6,4 @@ export abstract class Attribute<value> {
 	}
 
 	abstract intersectValues(other: this): value
-}
-
-export type AttributeRecord = Record<string, Attribute<unknown>>
-
-export type UniversalAttributes = {
-	readonly description?: DescriptionAttribute
-	readonly alias?: DescriptionAttribute
 }

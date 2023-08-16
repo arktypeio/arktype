@@ -1,9 +1,6 @@
-import type {
-	AttributeRecord,
-	UniversalAttributes
-} from "../attributes/attribute.js"
 import { DomainConstraint } from "../constraints/domain.js"
 import type { Disjoint } from "../disjoint.js"
+import type { BaseRule } from "../node.js"
 import { BaseNode } from "../node.js"
 import { PredicateNode } from "./predicate.js"
 import type { UnionNode } from "./union.js"
@@ -18,24 +15,17 @@ export type TypeKind = keyof TypesByKind
 // TODO: test external types if this isn't any
 export type RootNode<t = any> = UnionNode<t> | PredicateNode<t>
 
-export type TypeInput = {}
-
-export const typeNode = <branches extends readonly {}[]>(
-	...branches: branches
-) => {}
-
-export abstract class TypeNode<
+export abstract class TypeNodeBase<
 	t = unknown,
-	definition = unknown,
-	attributes extends AttributeRecord = UniversalAttributes
-> extends BaseNode<definition, attributes> {
+	rule extends BaseRule = BaseRule
+> extends BaseNode<rule> {
 	declare infer: t
 
 	abstract references(): BaseNode[]
 	abstract intersect<other>(
 		other: RootNode<other> // TODO: inferIntersection
 	): RootNode<t & other> | Disjoint
-	abstract keyof(): TypeNode
+	abstract keyof(): RootNode
 
 	isUnknown(): this is PredicateNode<unknown> {
 		return this.hasKind("predicate") && this.rule.length === 0
@@ -51,6 +41,6 @@ export abstract class TypeNode<
 
 	extends<other>(other: RootNode<other>): this is RootNode<other> {
 		const intersection = this.intersect(other)
-		return intersection instanceof TypeNode && this.equals(intersection)
+		return intersection instanceof TypeNodeBase && this.equals(intersection)
 	}
 }

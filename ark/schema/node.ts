@@ -1,5 +1,6 @@
 import { type extend, ReadonlyObject } from "@arktype/util"
-import type { UniversalAttributes } from "./attributes/attribute.js"
+
+import type { DescriptionAttribute } from "./attributes/description.js"
 import type { ConstraintsByKind } from "./constraints/constraint.js"
 import type { Disjoint } from "./disjoint.js"
 import type { TypesByKind } from "./types/type.js"
@@ -13,9 +14,14 @@ export type NodeKind = keyof NodesByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
+export interface BaseRule {
+	readonly description?: DescriptionAttribute
+	readonly alias?: DescriptionAttribute
+}
+
 // @ts-expect-error
 export abstract class BaseNode<
-	rule extends UniversalAttributes = UniversalAttributes
+	rule extends BaseRule = BaseRule
 > extends ReadonlyObject<rule> {
 	protected constructor(rule: rule) {
 		super(rule)

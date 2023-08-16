@@ -6,9 +6,9 @@ import { builtins } from "../utils.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
 import type { RootNode } from "./type.js"
-import { TypeNode } from "./type.js"
+import { TypeNodeBase } from "./type.js"
 
-export class UnionNode<t = unknown> extends TypeNode<
+export class UnionNode<t = unknown> extends TypeNodeBase<
 	t,
 	readonly PredicateNode[]
 > {
@@ -43,7 +43,7 @@ export class UnionNode<t = unknown> extends TypeNode<
 		return this.rule.reduce(
 			(result, branch) => result.and(branch.keyof()),
 			builtins.unknown()
-		) as TypeNode<keyof t>
+		) as TypeNodeBase<keyof t>
 	}
 }
 

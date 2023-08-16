@@ -1,11 +1,11 @@
 import type { Domain } from "@arktype/util"
-import type { UniversalAttributes } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseRule } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
 
 export interface DomainRule<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends UniversalAttributes {
+> extends BaseRule {
 	readonly value: domain
 }
 
