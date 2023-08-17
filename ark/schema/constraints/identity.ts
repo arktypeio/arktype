@@ -16,9 +16,11 @@ export class IdentityConstraint extends ConstraintNode<IdentityRule> {
 		return stringify(this.value)
 	}
 
-	reduceWithRuleOf(other: this) {
-		return other.allows(this.value)
+	reduceWithRuleOf(other: ConstraintNode): this | Disjoint {
+		return other.hasKind("identity")
+			? Disjoint.from("identity", this, other)
+			: other.allows(this.value)
 			? this
-			: Disjoint.from("identity", this, other)
+			: Disjoint.from("assignability", this, other)
 	}
 }

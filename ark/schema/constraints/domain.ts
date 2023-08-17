@@ -14,8 +14,8 @@ export class DomainConstraint<
 > extends ConstraintNode<DomainRule<domain>> {
 	readonly kind = "domain"
 
-	reduceWithRuleOf(other: DomainConstraint) {
-		return Disjoint.from("domain", this, other)
+	reduceWithRuleOf(other: ConstraintNode): Disjoint | null {
+		return other.hasKind("domain") ? Disjoint.from("domain", this, other) : null
 	}
 
 	writeDefaultDescription() {

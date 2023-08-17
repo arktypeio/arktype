@@ -3,11 +3,7 @@ import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
 import { Attribute } from "./attributes/attribute.js"
 import type { DescriptionAttribute } from "./attributes/description.js"
 import type { ConstraintsByKind } from "./constraints/constraint.js"
-import type { Disjoint } from "./disjoint.js"
 import type { TypesByKind } from "./types/type.js"
-
-export type disjointIfAllowed<config extends { disjoinable: boolean }> =
-	config["disjoinable"] extends true ? Disjoint : never
 
 export type NodesByKind = extend<TypesByKind, ConstraintsByKind>
 

@@ -7,6 +7,7 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
+import type { ConstraintNode } from "./constraints/constraint.js"
 import type { DomainConstraint } from "./constraints/domain.js"
 import type { IdentityConstraint } from "./constraints/identity.js"
 import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
@@ -34,10 +35,10 @@ type DisjointKinds = {
 	assignability?:
 		| {
 				l: IdentityConstraint
-				r: PredicateNode
+				r: ConstraintNode
 		  }
 		| {
-				l: PredicateNode
+				l: ConstraintNode
 				r: IdentityConstraint
 		  }
 	union?: {
