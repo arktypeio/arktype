@@ -22,7 +22,7 @@ export abstract class TypeNodeBase<
 > extends BaseNode<rule, attributes> {
 	declare infer: t
 
-	abstract references(): BaseNode[]
+	abstract references(): readonly BaseNode[]
 	abstract intersect<other>(
 		other: TypeNode<other> // TODO: inferIntersection
 	): TypeNode<t & other> | Disjoint

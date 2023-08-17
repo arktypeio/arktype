@@ -1,3 +1,4 @@
+import type { satisfy } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
@@ -7,7 +8,7 @@ import type { DomainConstraint } from "./domain.js"
 import type { IdentityConstraint } from "./identity.js"
 import type { InstanceOfConstraint } from "./instanceOf.js"
 import type { NarrowConstraint } from "./narrow.js"
-import type { PatternConstraint } from "./pattern.js"
+import type { PatternConstraint, PatternInput } from "./pattern.js"
 import type { PropConstraint } from "./prop/prop.js"
 import type { RangeConstraint } from "./range.js"
 
@@ -23,6 +24,21 @@ export type ConstraintsByKind = {
 }
 
 export type ConstraintKind = keyof ConstraintsByKind
+
+// TODO: derive these from constructor
+export type ConstraintInputsByKind = satisfy<
+	Record<ConstraintKind, unknown>,
+	{
+		prop: {}
+		identity: {}
+		domain: {}
+		instanceOf: {}
+		divisor: {}
+		range: {}
+		pattern: PatternInput
+		narrow: {}
+	}
+>
 
 export abstract class ConstraintNode<
 	rule extends {} = {},

@@ -371,8 +371,6 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 	return ctx.scope.parse(def[0], ctx) //.constrain("morph", def[2] as Morph)
 }
 
-export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
-
 export type parseMorph<inDef, morph, $, args> = morph extends Morph
 	? (
 			// TODO: should this be extractOut

@@ -1,5 +1,5 @@
 import type { AbstractableConstructor, listable } from "@arktype/util"
-import type { DescriptionAttribute } from "../attributes/description.js"
+import type { MorphAttribute } from "../attributes/morph.js"
 import type { ConstraintNode } from "../constraints/constraint.js"
 import type { DivisorConstraint } from "../constraints/divisor.js"
 import type {
@@ -16,7 +16,7 @@ import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
 export interface PredicateAttributes extends BaseAttributes {
-	readonly morph?: readonly DescriptionAttribute[]
+	readonly morph?: readonly MorphAttribute[]
 }
 
 export type PredicateRule = { [k: string]: listable<ConstraintNode> }
@@ -37,7 +37,7 @@ export class PredicateNode<
 	}
 
 	references() {
-		return []
+		return this.constraints
 	}
 
 	intersect(other: TypeNode): TypeNode | Disjoint {
