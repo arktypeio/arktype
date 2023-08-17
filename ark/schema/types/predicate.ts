@@ -28,11 +28,11 @@ export class PredicateNode<
 > extends TypeNodeBase<t, rule, attributes> {
 	readonly kind = "predicate"
 	readonly constraints = Object.values(
-		this.rule
+		this.rules
 	).flat() as readonly ConstraintNode[]
 
 	writeDefaultDescription() {
-		const flat = Object.values(this.rule).flat()
+		const flat = Object.values(this.rules).flat()
 		return flat.length ? flat.join(" and ") : "a value"
 	}
 

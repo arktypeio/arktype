@@ -74,7 +74,7 @@ export abstract class ConstraintNode<
 
 	private reduceOwnKind(other: ConstraintNode) {
 		const ruleComparison = this.equals(other)
-			? this.rule
+			? this.rules
 			: this.reduceWithRuleOf(other)
 		return ruleComparison instanceof Disjoint || ruleComparison === null
 			? // TODO: unknown
