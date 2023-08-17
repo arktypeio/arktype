@@ -91,14 +91,6 @@
 		"semi": false,
 		"trailingComma": "none"
 	},
-	"quokka": {
-		"showValueOnSelection": false,
-		"env": {
-			"params": {
-				"runner": "--conditions=arktype-repo"
-			}
-		}
-	},
 	"tsup": {
 		"config": "./ark/repo/tsup.config.ts"
 	},

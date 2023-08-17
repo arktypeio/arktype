@@ -1,0 +1,8 @@
+{
+	"showValueOnSelection": false,
+	"env": {
+		"params": {
+			"runner": "--conditions=arktype-repo"
+		}
+	}
+}

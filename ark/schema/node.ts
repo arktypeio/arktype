@@ -1,4 +1,4 @@
-import { ReadonlyObject } from "@arktype/util"
+import { DynamicBase } from "@arktype/util"
 import { type extend } from "@arktype/util"
 import type { DescriptionAttribute } from "./attributes/description.js"
 import type { ConstraintsByKind } from "./constraints/constraint.js"
@@ -23,12 +23,9 @@ export interface BaseAttributes {
 export abstract class BaseNode<
 	rule extends {} = {},
 	attributes extends BaseAttributes = BaseAttributes
-> extends ReadonlyObject<rule & attributes> {
-	protected constructor(
-		public rule: rule,
-		public attributes = {} as attributes
-	) {
-		super({ ...rule, ...attributes })
+> extends DynamicBase<rule & attributes> {
+	protected constructor(input: rule & attributes) {
+		super(input)
 	}
 
 	abstract readonly kind: NodeKind
