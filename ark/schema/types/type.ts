@@ -3,14 +3,16 @@ import type { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"
 import { PredicateNode } from "./predicate.js"
-import type { UnionNode } from "./union.js"
+import { UnionNode } from "./union.js"
 
-export type TypesByKind = {
-	predicate: PredicateNode
+export const typeDefinitions = {
+	predicate: PredicateNode,
 	union: UnionNode
 }
 
-export type TypeKind = keyof TypesByKind
+export type TypeDefinitions = typeof typeDefinitions
+
+export type TypeKind = keyof TypeDefinitions
 
 // TODO: test external types if this isn't any
 export type TypeNode<t = any> = UnionNode<t> | PredicateNode<t>

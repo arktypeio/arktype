@@ -2,12 +2,20 @@ import type { extend } from "@arktype/util"
 import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
 import { Attribute } from "./attributes/attribute.js"
 import type { DescriptionAttribute } from "./attributes/description.js"
-import type { ConstraintsByKind } from "./constraints/constraint.js"
-import type { TypesByKind } from "./types/type.js"
+import type { ConstraintDefinitions } from "./constraints/constraint.js"
+import { constraintDefinitions } from "./constraints/constraint.js"
+import type { TypeDefinitions } from "./types/type.js"
 
-export type NodesByKind = extend<TypesByKind, ConstraintsByKind>
+export type NodeDefinitionsByKind = extend<
+	TypeDefinitions,
+	ConstraintDefinitions
+>
 
-export type NodeKind = keyof NodesByKind
+export type NodesByKind = {
+	[k in NodeKind]: InstanceType<NodeDefinitionsByKind[k]>
+}
+
+export type NodeKind = keyof NodeDefinitionsByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
@@ -26,7 +34,7 @@ export abstract class BaseNode<
 	readonly attributes: attributes
 	readonly attributeEntries: entriesOf<attributes> = []
 
-	protected constructor(input: rules & attributes) {
+	constructor(input: rules & attributes) {
 		super(input)
 		for (const entry of entriesOf(input)) {
 			if (

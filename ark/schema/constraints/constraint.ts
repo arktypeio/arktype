@@ -1,44 +1,30 @@
-import type { satisfy } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"
-import type { DivisorConstraint } from "./divisor.js"
-import type { DomainConstraint } from "./domain.js"
-import type { IdentityConstraint } from "./identity.js"
-import type { InstanceOfConstraint } from "./instanceOf.js"
-import type { NarrowConstraint } from "./narrow.js"
-import type { PatternConstraint, PatternInput } from "./pattern.js"
-import type { PropConstraint } from "./prop/prop.js"
-import type { RangeConstraint } from "./range.js"
+import { DivisorConstraint } from "./divisor.js"
+import { DomainConstraint } from "./domain.js"
+import { IdentityConstraint } from "./identity.js"
+import { InstanceOfConstraint } from "./instanceOf.js"
+import { NarrowConstraint } from "./narrow.js"
+import { PatternConstraint } from "./pattern.js"
+import { PropConstraint } from "./prop/prop.js"
+import { RangeConstraint } from "./range.js"
 
-export type ConstraintsByKind = {
-	prop: PropConstraint
-	identity: IdentityConstraint
-	domain: DomainConstraint
-	instanceOf: InstanceOfConstraint
-	divisor: DivisorConstraint
-	range: RangeConstraint
-	pattern: PatternConstraint
+export const constraintDefinitions = {
+	prop: PropConstraint,
+	identity: IdentityConstraint,
+	domain: DomainConstraint,
+	instanceOf: InstanceOfConstraint,
+	divisor: DivisorConstraint,
+	range: RangeConstraint,
+	pattern: PatternConstraint,
 	narrow: NarrowConstraint
 }
 
-export type ConstraintKind = keyof ConstraintsByKind
+export type ConstraintDefinitions = typeof constraintDefinitions
 
-// TODO: derive these from constructor
-export type ConstraintInputsByKind = satisfy<
-	Record<ConstraintKind, unknown>,
-	{
-		prop: {}
-		identity: {}
-		domain: {}
-		instanceOf: {}
-		divisor: {}
-		range: {}
-		pattern: PatternInput
-		narrow: {}
-	}
->
+export type ConstraintKind = keyof ConstraintDefinitions
 
 export abstract class ConstraintNode<
 	rule extends {} = {},
