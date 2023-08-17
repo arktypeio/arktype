@@ -37,7 +37,7 @@ export abstract class TypeNodeBase<
 	}
 
 	array() {
-		return new PredicateNode([new DomainConstraint("object")])
+		return new PredicateNode([new DomainConstraint({ value: "object" })])
 	}
 
 	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
