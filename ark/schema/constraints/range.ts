@@ -1,5 +1,5 @@
 import { throwParseError } from "@arktype/util"
-import { Attribute } from "../attributes/attribute.js"
+import { AttributeNode } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { ConstraintNode } from "./constraint.js"
@@ -12,7 +12,7 @@ export interface RangeRule<limitKind extends LimitKind = LimitKind>
 	readonly exclusive: boolean
 }
 
-export class RangeKindAttribute extends Attribute<BoundableDataKind> {
+export class RangeKindAttribute extends AttributeNode<BoundableDataKind> {
 	intersectValues(other: this) {
 		return throwParseError(
 			writeIncompatibleRangeMessage(this.value, other.value)

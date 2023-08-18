@@ -1,6 +1,6 @@
 import type { extend } from "@arktype/util"
 import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
-import { Attribute } from "./attributes/attribute.js"
+import { AttributeNode } from "./attributes/attribute.js"
 import type { DescriptionAttribute } from "./attributes/description.js"
 import type { ConstraintDefinitions } from "./constraints/constraint.js"
 import type { TypeDefinitions } from "./types/type.js"
@@ -37,9 +37,9 @@ export abstract class BaseNode<
 		super(input)
 		for (const entry of entriesOf(input)) {
 			if (
-				entry[1] instanceof Attribute ||
+				entry[1] instanceof AttributeNode ||
 				// instanceof doesn't care whether it's an object anyways
-				(isArray(entry[1]) && (entry[1][0] as any) instanceof Attribute)
+				(isArray(entry[1]) && (entry[1][0] as any) instanceof AttributeNode)
 			) {
 				this.attributeEntries.push(entry as never)
 			} else {

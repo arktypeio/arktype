@@ -1,7 +1,7 @@
 import { intersectUniqueLists } from "@arktype/util"
-import { Attribute } from "./attribute.js"
+import { AttributeNode } from "./attribute.js"
 
-export class DescriptionAttribute extends Attribute<readonly string[]> {
+export class DescriptionAttribute extends AttributeNode<readonly string[]> {
 	intersectValues(other: DescriptionAttribute) {
 		return intersectUniqueLists(this.value, other.value)
 	}

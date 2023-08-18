@@ -1,4 +1,5 @@
-import { hasDomain, throwInternalError } from "@arktype/util"
+import type { listable, satisfy } from "@arktype/util"
+import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"
@@ -9,6 +10,7 @@ import { InstanceOfConstraint } from "./instanceOf.js"
 import { NarrowConstraint } from "./narrow.js"
 import { PatternConstraint } from "./pattern.js"
 import { PropConstraint } from "./prop/prop.js"
+import type { RangeConstraintSet } from "./range.js"
 import { RangeConstraint } from "./range.js"
 
 export const constraintDefinitions = {
@@ -23,6 +25,28 @@ export const constraintDefinitions = {
 }
 
 export type ConstraintDefinitions = typeof constraintDefinitions
+
+export type Constraint<kind extends ConstraintKind = ConstraintKind> =
+	InstanceType<ConstraintDefinitions[kind]>
+
+export type ConstraintSets = satisfy<
+	{
+		[kind in ConstraintKind]: listable<Constraint<kind>>
+	},
+	{
+		prop: PropConstraint
+		identity: IdentityConstraint
+		domain: DomainConstraint
+		instanceOf: InstanceOfConstraint
+		divisor: DivisorConstraint
+		range: RangeConstraintSet
+		pattern: readonly PatternConstraint[]
+		narrow: readonly NarrowConstraint[]
+	}
+>
+
+export type ConstraintSet<kind extends ConstraintKind = ConstraintKind> =
+	ConstraintSets[kind]
 
 export type ConstraintKind = keyof ConstraintDefinitions
 

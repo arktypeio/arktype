@@ -1,8 +1,10 @@
 import type { AbstractableConstructor, Dict, listable } from "@arktype/util"
+import type { AttributeKind } from "../attributes/attribute.js"
 import type { MorphAttribute } from "../attributes/morph.js"
 import type {
 	ConstraintKind,
-	ConstraintNode
+	ConstraintNode,
+	ConstraintSet
 } from "../constraints/constraint.js"
 import type { DivisorConstraint } from "../constraints/divisor.js"
 import type {
@@ -22,9 +24,25 @@ export interface PredicateAttributes extends BaseAttributes {
 	readonly morph?: readonly MorphAttribute[]
 }
 
-export type PredicateRule = { [k: string]: listable<ConstraintNode> }
-
 export type ConstraintKindMap = Dict<string, ConstraintKind>
+
+type allowConstraints<map extends ConstraintKindMap> = {
+	[k in keyof map]: ConstraintSet<map[k]>
+}
+
+export type AttributeKindMap = Dict<string, AttributeKind>
+
+type allowAttributes<map extends ConstraintKindMap> = {
+	[k in keyof map]: ConstraintSet<map[k]>
+}
+
+export const definePredicate = <
+	allowsConstraints extends ConstraintKindMap,
+	allowsAttributes extends AttributeKindMap
+>(
+	allowsConstraints: allowsConstraints,
+	allowsAttributes: allowsAttributes
+) => {}
 
 export class PredicateNode<
 	t = unknown,
