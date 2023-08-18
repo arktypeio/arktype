@@ -3,7 +3,6 @@ import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
 import { Attribute } from "./attributes/attribute.js"
 import type { DescriptionAttribute } from "./attributes/description.js"
 import type { ConstraintDefinitions } from "./constraints/constraint.js"
-import { constraintDefinitions } from "./constraints/constraint.js"
 import type { TypeDefinitions } from "./types/type.js"
 
 export type NodeDefinitionsByKind = extend<

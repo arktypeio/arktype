@@ -1,4 +1,4 @@
-import { throwInternalError } from "@arktype/util"
+import { hasDomain, throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"

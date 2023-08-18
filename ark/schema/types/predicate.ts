@@ -1,6 +1,9 @@
-import type { AbstractableConstructor, listable } from "@arktype/util"
+import type { AbstractableConstructor, Dict, listable } from "@arktype/util"
 import type { MorphAttribute } from "../attributes/morph.js"
-import type { ConstraintNode } from "../constraints/constraint.js"
+import type {
+	ConstraintKind,
+	ConstraintNode
+} from "../constraints/constraint.js"
 import type { DivisorConstraint } from "../constraints/divisor.js"
 import type {
 	DomainConstraint,
@@ -20,6 +23,8 @@ export interface PredicateAttributes extends BaseAttributes {
 }
 
 export type PredicateRule = { [k: string]: listable<ConstraintNode> }
+
+export type ConstraintKindMap = Dict<string, ConstraintKind>
 
 export class PredicateNode<
 	t = unknown,
