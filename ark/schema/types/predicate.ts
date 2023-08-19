@@ -1,47 +1,26 @@
 import type { AbstractableConstructor, Dict, listable } from "@arktype/util"
 import type { AttributeKind } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
+import type { BaseDefinition } from "../node.js"
+import type { RangeConstraintSet } from "../rules/bound.js"
 import type { DivisorConstraint } from "../rules/divisor.js"
 import type { DomainConstraint, NonEnumerableDomain } from "../rules/domain.js"
 import type { IdentityConstraint } from "../rules/identity.js"
 import type { InstanceOfConstraint } from "../rules/instanceOf.js"
 import type { MorphAttribute } from "../rules/morph.js"
 import type { NarrowConstraint } from "../rules/narrow.js"
-import type { RangeConstraintSet } from "../rules/range.js"
 import type { RuleKind, RuleNode, RuleSet } from "../rules/rule.js"
 import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
-export interface PredicateAttributes extends BaseAttributes {
+export interface PredicateDefinition extends BaseDefinition {
 	readonly morph?: readonly MorphAttribute[]
 }
 
-export type ConstraintKindMap = Dict<string, RuleKind>
-
-type allowConstraints<map extends ConstraintKindMap> = {
-	[k in keyof map]: RuleSet<map[k]>
-}
-
-export type AttributeKindMap = Dict<string, AttributeKind>
-
-type allowAttributes<map extends ConstraintKindMap> = {
-	[k in keyof map]: RuleSet<map[k]>
-}
-
-export const definePredicate = <
-	allowsConstraints extends ConstraintKindMap,
-	allowsAttributes extends AttributeKindMap
->(
-	allowsConstraints: allowsConstraints,
-	allowsAttributes: allowsAttributes
-) => {}
-
-export class PredicateNode<
-	t = unknown,
-	rule extends {} = {},
-	attributes extends PredicateAttributes = PredicateAttributes
-> extends TypeNodeBase<t, rule, attributes> {
+export class PredicateNode<t = unknown> extends TypeNodeBase<
+	t,
+	PredicateDefinition
+> {
 	readonly kind = "predicate"
 	readonly constraints = Object.values(this.rules).flat() as readonly RuleNode[]
 
@@ -78,7 +57,7 @@ export interface UnitRule {
 	readonly identity: IdentityConstraint
 }
 
-export interface UnknownPredicateRule extends PredicateAttributes {
+export interface UnknownPredicateRule extends PredicateDefinition {
 	readonly narrow?: readonly NarrowConstraint[]
 }
 

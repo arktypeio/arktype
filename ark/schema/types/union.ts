@@ -2,17 +2,17 @@ import { isArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
-import type { BaseAttributes } from "../node.js"
+import type { BaseDefinition } from "../node.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
-export interface UnionRule extends BaseAttributes {
+export interface UnionDefinition extends BaseDefinition {
 	readonly branches: readonly PredicateNode[]
 }
 
-export class UnionNode<t = unknown> extends TypeNodeBase<t, UnionRule> {
+export class UnionNode<t = unknown> extends TypeNodeBase<t, UnionDefinition> {
 	readonly kind = "union"
 
 	writeDefaultDescription() {

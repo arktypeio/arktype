@@ -11,7 +11,7 @@ import type { BaseNode } from "./node.js"
 import type { DomainConstraint } from "./rules/domain.js"
 import type { IdentityConstraint } from "./rules/identity.js"
 import type { InstanceOfConstraint } from "./rules/instanceOf.js"
-import type { RangeConstraint } from "./rules/range.js"
+import type { BoundNode } from "./rules/bound.js"
 import type { RuleNode } from "./rules/rule.js"
 import type { PredicateNode } from "./types/predicate.js"
 
@@ -25,8 +25,8 @@ type DisjointKinds = {
 		r: IdentityConstraint
 	}
 	range?: {
-		l: RangeConstraint
-		r: RangeConstraint
+		l: BoundNode
+		r: BoundNode
 	}
 	instanceOf?: {
 		l: InstanceOfConstraint

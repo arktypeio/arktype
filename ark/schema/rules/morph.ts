@@ -1,9 +1,9 @@
-import type { BaseAttributes } from "../node.js"
+import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export interface MorphRule extends BaseAttributes {
+export interface MorphRule extends BaseDefinition {
 	readonly value: string
 }
 

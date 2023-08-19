@@ -1,10 +1,10 @@
 import { throwParseError } from "@arktype/util"
-import type { BaseAttributes } from "../node.js"
+import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
 export type PatternInput = RegexLiteral | PatternRule | RegExp
 
-export interface PatternRule extends BaseAttributes {
+export interface PatternRule extends BaseDefinition {
 	source: string
 	flags: string
 }

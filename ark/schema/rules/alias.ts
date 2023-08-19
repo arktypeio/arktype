@@ -1,7 +1,7 @@
-import type { BaseAttributes } from "../node.js"
+import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export interface AliasRule extends BaseAttributes {
+export interface AliasRule extends BaseDefinition {
 	readonly value: string
 }
 

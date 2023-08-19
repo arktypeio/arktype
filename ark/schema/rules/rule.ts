@@ -1,9 +1,11 @@
 import type { listable, satisfy } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
+import type { BaseDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
 import { AliasAttribute } from "./alias.js"
+import type { RangeConstraintSet } from "./bound.js"
+import { BoundNode } from "./bound.js"
 import { DescriptionAttribute } from "./description.js"
 import { DivisorConstraint } from "./divisor.js"
 import { DomainConstraint } from "./domain.js"
@@ -13,8 +15,6 @@ import { MorphAttribute } from "./morph.js"
 import { NarrowConstraint } from "./narrow.js"
 import { PatternConstraint } from "./pattern.js"
 import { PropConstraint } from "./prop/prop.js"
-import type { RangeConstraintSet } from "./range.js"
-import { RangeConstraint } from "./range.js"
 
 export const ruleDefinitions = {
 	prop: PropConstraint,
@@ -22,7 +22,7 @@ export const ruleDefinitions = {
 	domain: DomainConstraint,
 	instanceOf: InstanceOfConstraint,
 	divisor: DivisorConstraint,
-	range: RangeConstraint,
+	range: BoundNode,
 	pattern: PatternConstraint,
 	narrow: NarrowConstraint,
 	description: DescriptionAttribute,
@@ -60,9 +60,8 @@ export type RuleSet<kind extends RuleKind = RuleKind> = RuleSets[kind]
 export type RuleKind = keyof RuleDefinitions
 
 export abstract class RuleNode<
-	rule extends {} = {},
-	attributes extends BaseAttributes = BaseAttributes
-> extends BaseNode<rule, attributes> {
+	definition extends BaseDefinition = BaseDefinition
+> extends BaseNode<definition> {
 	apply(to: readonly this[]): readonly this[] | Disjoint {
 		const result: this[] = []
 		let includesConstraint = false
@@ -88,16 +87,14 @@ export abstract class RuleNode<
 	}
 
 	reduce(other: this): this | Disjoint | null {
-		const ruleComparison = this.equals(other)
-			? this.rules
-			: this.reduceRules(other)
+		const ruleComparison = this.equals(other) ? this : this.reduceRules(other)
 		return ruleComparison instanceof Disjoint || ruleComparison === null
 			? // TODO: unknown
 			  ruleComparison
 			: (new (this.constructor as any)(ruleComparison) as this)
 	}
 
-	protected abstract reduceRules(other: this): rule | Disjoint | null
+	protected abstract reduceRules(other: this): definition | Disjoint | null
 }
 
 // export const assertAllowsConstraint = (

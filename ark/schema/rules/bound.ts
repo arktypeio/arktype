@@ -1,17 +1,21 @@
 import { throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
-import { , RuleNode } from "./rule.js"
+import type { BaseDefinition } from "../node.js"
+import { RuleNode } from "./rule.js"
 
-export interface RangeRule<limitKind extends LimitKind = LimitKind>
-	extends BaseAttributes {
-	readonly rangeKind: RangeKindAttribute
+export interface BoundDefinition<limitKind extends LimitKind = LimitKind>
+	extends BaseDefinition {
+	readonly rangeKind: BoundKindNode
 	readonly limitKind: limitKind
 	readonly limit: number
 	readonly exclusive: boolean
 }
 
-export class RangeKindAttribute extends RuleNode<BoundableDataKind> {
+export interface BoundKindDefinition extends BaseDefinition {
+	readonly value: BoundableDataKind
+}
+
+export class BoundKindNode extends RuleNode<BoundKindDefinition> {
 	intersectValues(other: this) {
 		return throwParseError(
 			writeIncompatibleRangeMessage(this.value, other.value)
@@ -19,9 +23,9 @@ export class RangeKindAttribute extends RuleNode<BoundableDataKind> {
 	}
 }
 
-export class RangeConstraint<
+export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends RuleNode<RangeRule<limitKind>> {
+> extends RuleNode<BoundDefinition<limitKind>> {
 	readonly kind = "range"
 
 	writeDefaultDescription(): string {
@@ -46,13 +50,13 @@ export class RangeConstraint<
 
 	hasLimitKind<limitKind extends LimitKind>(
 		limitKind: limitKind
-	): this is RangeConstraint<limitKind> {
+	): this is BoundNode<limitKind> {
 		return this.limitKind === (limitKind as never)
 	}
 
 	protected reduceRules(
-		other: RangeConstraint
-	): RangeRule<limitKind> | Disjoint | null {
+		other: BoundNode
+	): BoundDefinition<limitKind> | Disjoint | null {
 		if (!other.hasKind("range")) {
 			return null
 		}
@@ -81,13 +85,10 @@ export class RangeConstraint<
 	}
 }
 
-export type RangeInput = RangeConstraint | RangeConstraintSet
+export type RangeInput = BoundNode | RangeConstraintSet
 export type RangeConstraintSet = SingleBound | DoubleBounds
-export type SingleBound = readonly [RangeConstraint]
-export type DoubleBounds = readonly [
-	RangeConstraint<"min">,
-	RangeConstraint<"max">
-]
+export type SingleBound = readonly [BoundNode]
+export type DoubleBounds = readonly [BoundNode<"min">, BoundNode<"max">]
 
 const unitsByBoundedKind = {
 	date: "",

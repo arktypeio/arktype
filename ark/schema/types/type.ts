@@ -1,7 +1,7 @@
-import { DomainConstraint } from "../rules/domain.js"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
+import type { BaseDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
+import { DomainConstraint } from "../rules/domain.js"
 import { PredicateNode } from "./predicate.js"
 import { UnionNode } from "./union.js"
 
@@ -19,9 +19,8 @@ export type TypeNode<t = any> = UnionNode<t> | PredicateNode<t>
 
 export abstract class TypeNodeBase<
 	t = unknown,
-	rule extends {} = {},
-	attributes extends BaseAttributes = BaseAttributes
-> extends BaseNode<rule, attributes> {
+	def extends BaseDefinition = BaseDefinition
+> extends BaseNode<def> {
 	declare infer: t
 
 	abstract references(): readonly BaseNode[]

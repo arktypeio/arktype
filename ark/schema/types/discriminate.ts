@@ -11,9 +11,9 @@ import type {
 	mutable,
 	SerializedPrimitive
 } from "@arktype/util"
+import { Disjoint, type SerializedPath } from "../disjoint.js"
 import type { DomainConstraint } from "../rules/domain.js"
 import type { IdentityConstraint } from "../rules/identity.js"
-import { Disjoint, type SerializedPath } from "../disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =

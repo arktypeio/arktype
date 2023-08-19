@@ -1,7 +1,7 @@
-import type { BaseAttributes } from "../../node.js"
+import type { BaseDefinition } from "../../node.js"
 import { RuleNode } from "../rule.js"
 
-export interface PropRule extends BaseAttributes {
+export interface PropRule extends BaseDefinition {
 	readonly value: {}
 }
 
