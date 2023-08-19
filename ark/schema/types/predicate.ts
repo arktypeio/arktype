@@ -1,22 +1,15 @@
 import type { AbstractableConstructor, Dict, listable } from "@arktype/util"
 import type { AttributeKind } from "../attributes/attribute.js"
-import type { MorphAttribute } from "../attributes/morph.js"
-import type {
-	ConstraintKind,
-	ConstraintNode,
-	ConstraintSet
-} from "../constraints/constraint.js"
-import type { DivisorConstraint } from "../constraints/divisor.js"
-import type {
-	DomainConstraint,
-	NonEnumerableDomain
-} from "../constraints/domain.js"
-import type { IdentityConstraint } from "../constraints/identity.js"
-import type { InstanceOfConstraint } from "../constraints/instanceOf.js"
-import type { NarrowConstraint } from "../constraints/narrow.js"
-import type { RangeConstraintSet } from "../constraints/range.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
+import type { DivisorConstraint } from "../rules/divisor.js"
+import type { DomainConstraint, NonEnumerableDomain } from "../rules/domain.js"
+import type { IdentityConstraint } from "../rules/identity.js"
+import type { InstanceOfConstraint } from "../rules/instanceOf.js"
+import type { MorphAttribute } from "../rules/morph.js"
+import type { NarrowConstraint } from "../rules/narrow.js"
+import type { RangeConstraintSet } from "../rules/range.js"
+import type { RuleKind, RuleNode, RuleSet } from "../rules/rule.js"
 import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
@@ -24,16 +17,16 @@ export interface PredicateAttributes extends BaseAttributes {
 	readonly morph?: readonly MorphAttribute[]
 }
 
-export type ConstraintKindMap = Dict<string, ConstraintKind>
+export type ConstraintKindMap = Dict<string, RuleKind>
 
 type allowConstraints<map extends ConstraintKindMap> = {
-	[k in keyof map]: ConstraintSet<map[k]>
+	[k in keyof map]: RuleSet<map[k]>
 }
 
 export type AttributeKindMap = Dict<string, AttributeKind>
 
 type allowAttributes<map extends ConstraintKindMap> = {
-	[k in keyof map]: ConstraintSet<map[k]>
+	[k in keyof map]: RuleSet<map[k]>
 }
 
 export const definePredicate = <
@@ -50,9 +43,7 @@ export class PredicateNode<
 	attributes extends PredicateAttributes = PredicateAttributes
 > extends TypeNodeBase<t, rule, attributes> {
 	readonly kind = "predicate"
-	readonly constraints = Object.values(
-		this.rules
-	).flat() as readonly ConstraintNode[]
+	readonly constraints = Object.values(this.rules).flat() as readonly RuleNode[]
 
 	writeDefaultDescription() {
 		const flat = Object.values(this.rules).flat()
@@ -67,7 +58,7 @@ export class PredicateNode<
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
 		}
-		let result: readonly ConstraintNode[] | Disjoint = this.constraints
+		let result: readonly RuleNode[] | Disjoint = this.constraints
 		for (const constraint of other.constraints) {
 			if (result instanceof Disjoint) {
 				break

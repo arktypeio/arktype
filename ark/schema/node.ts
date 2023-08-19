@@ -1,14 +1,11 @@
 import type { extend } from "@arktype/util"
 import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
 import { AttributeNode } from "./attributes/attribute.js"
-import type { DescriptionAttribute } from "./attributes/description.js"
-import type { ConstraintDefinitions } from "./constraints/constraint.js"
+import type { DescriptionAttribute } from "./rules/description.js"
+import type { RuleDefinitions } from "./rules/rule.js"
 import type { TypeDefinitions } from "./types/type.js"
 
-export type NodeDefinitionsByKind = extend<
-	TypeDefinitions,
-	ConstraintDefinitions
->
+export type NodeDefinitionsByKind = extend<TypeDefinitions, RuleDefinitions>
 
 export type NodesByKind = {
 	[k in NodeKind]: InstanceType<NodeDefinitionsByKind[k]>

@@ -1,4 +1,4 @@
-import { DomainConstraint } from "../constraints/domain.js"
+import { DomainConstraint } from "../rules/domain.js"
 import type { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"

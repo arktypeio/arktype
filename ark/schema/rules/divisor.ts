@@ -1,25 +1,23 @@
 import type { BaseAttributes } from "../node.js"
-import { ConstraintNode } from "./constraint.js"
+import { RuleNode } from "./rule.js"
 
 export interface DivisorRule extends BaseAttributes {
 	readonly value: number
 }
 
-export class DivisorConstraint extends ConstraintNode<DivisorRule> {
+export class DivisorConstraint extends RuleNode<DivisorRule> {
 	readonly kind = "divisor"
 
 	writeDefaultDescription() {
 		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
 	}
 
-	protected reduceWithRuleOf(other: ConstraintNode): DivisorRule | null {
-		return other.hasKind("divisor")
-			? {
-					value:
-						(this.value * other.value) /
-						greatestCommonDivisor(this.value, other.value)
-			  }
-			: null
+	protected reduceRules(other: DivisorConstraint) {
+		return {
+			value:
+				(this.value * other.value) /
+				greatestCommonDivisor(this.value, other.value)
+		}
 	}
 }
 

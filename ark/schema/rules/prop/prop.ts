@@ -1,18 +1,18 @@
 import type { BaseAttributes } from "../../node.js"
-import { ConstraintNode } from "../constraint.js"
+import { RuleNode } from "../rule.js"
 
 export interface PropRule extends BaseAttributes {
 	readonly value: {}
 }
 
-export class PropConstraint extends ConstraintNode<PropRule> {
+export class PropConstraint extends RuleNode<PropRule> {
 	readonly kind = "prop"
 
 	writeDefaultDescription() {
 		return ""
 	}
 
-	reduceWithRuleOf(other: ConstraintNode) {
+	reduceRules(other: RuleNode) {
 		if (!other.hasKind("prop")) {
 			return null
 		}

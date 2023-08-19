@@ -1,6 +1,6 @@
 // TODO: allow changed order to be the same type
 import type { BaseAttributes } from "../node.js"
-import { ConstraintNode } from "./constraint.js"
+import { RuleNode } from "./rule.js"
 
 export interface NarrowRule extends BaseAttributes {
 	readonly value: Narrow
@@ -9,14 +9,14 @@ export interface NarrowRule extends BaseAttributes {
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends ConstraintNode<NarrowRule> {
+export class NarrowConstraint extends RuleNode<NarrowRule> {
 	readonly kind = "narrow"
 
 	writeDefaultDescription() {
 		return `valid according to ${this.value.name}`
 	}
 
-	protected reduceWithRuleOf() {
+	protected reduceRules() {
 		return null
 	}
 }

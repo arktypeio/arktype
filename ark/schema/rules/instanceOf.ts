@@ -6,7 +6,7 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
-import { ConstraintNode } from "./constraint.js"
+import { RuleNode } from "./rule.js"
 
 export interface InstanceOfRule<
 	constructor extends AbstractableConstructor = AbstractableConstructor
@@ -16,12 +16,10 @@ export interface InstanceOfRule<
 
 export class InstanceOfConstraint<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends ConstraintNode<InstanceOfRule<constructor>> {
+> extends RuleNode<InstanceOfRule<constructor>> {
 	readonly kind = "instanceOf"
 
-	protected reduceWithRuleOf(
-		other: ConstraintNode
-	): InstanceOfRule<constructor> | Disjoint | null {
+	protected reduceRules(other: InstanceOfConstraint) {
 		return !other.hasKind("instanceOf")
 			? null
 			: constructorExtends(this.value, other.value)

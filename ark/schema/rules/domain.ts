@@ -1,7 +1,7 @@
 import type { Domain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
-import { ConstraintNode } from "./constraint.js"
+import { RuleNode } from "./rule.js"
 
 export interface DomainRule<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -11,10 +11,10 @@ export interface DomainRule<
 
 export class DomainConstraint<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends ConstraintNode<DomainRule<domain>> {
+> extends RuleNode<DomainRule<domain>> {
 	readonly kind = "domain"
 
-	reduceWithRuleOf(other: ConstraintNode): Disjoint | null {
+	reduceRules(other: DomainConstraint) {
 		return other.hasKind("domain") ? Disjoint.from("domain", this, other) : null
 	}
 

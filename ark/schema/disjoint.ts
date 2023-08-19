@@ -7,12 +7,12 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { ConstraintNode } from "./constraints/constraint.js"
-import type { DomainConstraint } from "./constraints/domain.js"
-import type { IdentityConstraint } from "./constraints/identity.js"
-import type { InstanceOfConstraint } from "./constraints/instanceOf.js"
-import type { RangeConstraint } from "./constraints/range.js"
 import type { BaseNode } from "./node.js"
+import type { DomainConstraint } from "./rules/domain.js"
+import type { IdentityConstraint } from "./rules/identity.js"
+import type { InstanceOfConstraint } from "./rules/instanceOf.js"
+import type { RangeConstraint } from "./rules/range.js"
+import type { RuleNode } from "./rules/rule.js"
 import type { PredicateNode } from "./types/predicate.js"
 
 type DisjointKinds = {
@@ -35,10 +35,10 @@ type DisjointKinds = {
 	assignability?:
 		| {
 				l: IdentityConstraint
-				r: ConstraintNode
+				r: RuleNode
 		  }
 		| {
-				l: ConstraintNode
+				l: RuleNode
 				r: IdentityConstraint
 		  }
 	union?: {

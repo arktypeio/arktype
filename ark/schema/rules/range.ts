@@ -1,8 +1,7 @@
 import { throwParseError } from "@arktype/util"
-import { AttributeNode } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
-import { ConstraintNode } from "./constraint.js"
+import { , RuleNode } from "./rule.js"
 
 export interface RangeRule<limitKind extends LimitKind = LimitKind>
 	extends BaseAttributes {
@@ -12,7 +11,7 @@ export interface RangeRule<limitKind extends LimitKind = LimitKind>
 	readonly exclusive: boolean
 }
 
-export class RangeKindAttribute extends AttributeNode<BoundableDataKind> {
+export class RangeKindAttribute extends RuleNode<BoundableDataKind> {
 	intersectValues(other: this) {
 		return throwParseError(
 			writeIncompatibleRangeMessage(this.value, other.value)
@@ -22,7 +21,7 @@ export class RangeKindAttribute extends AttributeNode<BoundableDataKind> {
 
 export class RangeConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<RangeRule<limitKind>> {
+> extends RuleNode<RangeRule<limitKind>> {
 	readonly kind = "range"
 
 	writeDefaultDescription(): string {
@@ -51,8 +50,8 @@ export class RangeConstraint<
 		return this.limitKind === (limitKind as never)
 	}
 
-	protected reduceWithRuleOf(
-		other: ConstraintNode
+	protected reduceRules(
+		other: RangeConstraint
 	): RangeRule<limitKind> | Disjoint | null {
 		if (!other.hasKind("range")) {
 			return null

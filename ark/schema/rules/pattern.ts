@@ -1,6 +1,6 @@
 import { throwParseError } from "@arktype/util"
 import type { BaseAttributes } from "../node.js"
-import { ConstraintNode } from "./constraint.js"
+import { RuleNode } from "./rule.js"
 
 export type PatternInput = RegexLiteral | PatternRule | RegExp
 
@@ -12,7 +12,7 @@ export interface PatternRule extends BaseAttributes {
 export const patternConstraint = (input: PatternInput): PatternRule =>
 	typeof input === "string" ? parseRegexLiteral(input) : input
 
-export class PatternConstraint extends ConstraintNode<PatternRule> {
+export class PatternConstraint extends RuleNode<PatternRule> {
 	readonly kind = "pattern"
 
 	readonly regex = new RegExp(this.source, this.flags)
@@ -22,7 +22,7 @@ export class PatternConstraint extends ConstraintNode<PatternRule> {
 		return `matched by ${this.literal}`
 	}
 
-	protected reduceWithRuleOf() {
+	protected reduceRules() {
 		return null
 	}
 }

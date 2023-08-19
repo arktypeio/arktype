@@ -12,12 +12,9 @@ import {
 	objectKindDescriptions,
 	stringify
 } from "@arktype/util"
-import { domainDescriptions } from "../constraints/domain.js"
-import type {
-	RangeRule,
-	NumericallyBoundableData
-} from "../constraints/range.js"
-import { numericComparatorDescriptions } from "../constraints/range.js"
+import { domainDescriptions } from "../rules/domain.js"
+import type { RangeRule, NumericallyBoundableData } from "../rules/range.js"
+import { numericComparatorDescriptions } from "../rules/range.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems

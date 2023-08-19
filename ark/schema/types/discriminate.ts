@@ -11,8 +11,8 @@ import type {
 	mutable,
 	SerializedPrimitive
 } from "@arktype/util"
-import type { DomainConstraint } from "../constraints/domain.js"
-import type { IdentityConstraint } from "../constraints/identity.js"
+import type { DomainConstraint } from "../rules/domain.js"
+import type { IdentityConstraint } from "../rules/identity.js"
 import { Disjoint, type SerializedPath } from "../disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 

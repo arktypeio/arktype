@@ -3,17 +3,20 @@ import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"
+import { AliasAttribute } from "./alias.js"
+import { DescriptionAttribute } from "./description.js"
 import { DivisorConstraint } from "./divisor.js"
 import { DomainConstraint } from "./domain.js"
 import { IdentityConstraint } from "./identity.js"
 import { InstanceOfConstraint } from "./instanceOf.js"
+import { MorphAttribute } from "./morph.js"
 import { NarrowConstraint } from "./narrow.js"
 import { PatternConstraint } from "./pattern.js"
 import { PropConstraint } from "./prop/prop.js"
 import type { RangeConstraintSet } from "./range.js"
 import { RangeConstraint } from "./range.js"
 
-export const constraintDefinitions = {
+export const ruleDefinitions = {
 	prop: PropConstraint,
 	identity: IdentityConstraint,
 	domain: DomainConstraint,
@@ -21,17 +24,21 @@ export const constraintDefinitions = {
 	divisor: DivisorConstraint,
 	range: RangeConstraint,
 	pattern: PatternConstraint,
-	narrow: NarrowConstraint
+	narrow: NarrowConstraint,
+	description: DescriptionAttribute,
+	alias: AliasAttribute,
+	morph: MorphAttribute
 }
 
-export type ConstraintDefinitions = typeof constraintDefinitions
+export type RuleDefinitions = typeof ruleDefinitions
 
-export type Constraint<kind extends ConstraintKind = ConstraintKind> =
-	InstanceType<ConstraintDefinitions[kind]>
+export type Rule<kind extends RuleKind = RuleKind> = InstanceType<
+	RuleDefinitions[kind]
+>
 
-export type ConstraintSets = satisfy<
+export type RuleSets = satisfy<
 	{
-		[kind in ConstraintKind]: listable<Constraint<kind>>
+		[kind in RuleKind]: listable<Rule<kind>>
 	},
 	{
 		prop: PropConstraint
@@ -42,20 +49,22 @@ export type ConstraintSets = satisfy<
 		range: RangeConstraintSet
 		pattern: readonly PatternConstraint[]
 		narrow: readonly NarrowConstraint[]
+		description: readonly DescriptionAttribute[]
+		alias: AliasAttribute
+		morph: MorphAttribute
 	}
 >
 
-export type ConstraintSet<kind extends ConstraintKind = ConstraintKind> =
-	ConstraintSets[kind]
+export type RuleSet<kind extends RuleKind = RuleKind> = RuleSets[kind]
 
-export type ConstraintKind = keyof ConstraintDefinitions
+export type RuleKind = keyof RuleDefinitions
 
-export abstract class ConstraintNode<
+export abstract class RuleNode<
 	rule extends {} = {},
 	attributes extends BaseAttributes = BaseAttributes
 > extends BaseNode<rule, attributes> {
-	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
-		const result: ConstraintNode[] = []
+	apply(to: readonly this[]): readonly this[] | Disjoint {
+		const result: this[] = []
 		let includesConstraint = false
 		for (let i = 0; i < to.length; i++) {
 			const elementResult = this.reduce(to[i])
@@ -78,23 +87,17 @@ export abstract class ConstraintNode<
 		return result
 	}
 
-	reduce(other: ConstraintNode): Disjoint | ConstraintNode | null {
-		return this.reduceOwnKind(other) ?? other.reduceOwnKind(this)
-	}
-
-	private reduceOwnKind(other: ConstraintNode) {
+	reduce(other: this): this | Disjoint | null {
 		const ruleComparison = this.equals(other)
 			? this.rules
-			: this.reduceWithRuleOf(other)
+			: this.reduceRules(other)
 		return ruleComparison instanceof Disjoint || ruleComparison === null
 			? // TODO: unknown
-			  (ruleComparison as Disjoint | null)
+			  ruleComparison
 			: (new (this.constructor as any)(ruleComparison) as this)
 	}
 
-	protected abstract reduceWithRuleOf(
-		other: ConstraintNode
-	): attributes | Disjoint | null
+	protected abstract reduceRules(other: this): rule | Disjoint | null
 }
 
 // export const assertAllowsConstraint = (
