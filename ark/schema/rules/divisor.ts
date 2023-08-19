@@ -16,29 +16,31 @@ export type NodeDefinition = {
 
 export interface NodeImplementation<def extends NodeDefinition> {
 	kind: string
-	parse(input: def["input"] | def["definition"]): def["definition"]
 	writeDefaultDescription(): string
 }
 
 export const defineNode =
-	<def extends NodeDefinition>() =>
+	<def extends NodeDefinition>(
+		parse: (input: def["input"] | def["definition"]) => def["definition"]
+	) =>
 	<implementation extends NodeImplementation<def>>(
 		implementation: implementation &
 			ThisType<implementation & def["definition"]>
 	) =>
+	(input: def["input"] | def["definition"]) =>
 		({}) as extend<implementation, def["definition"]>
 
 const Divisor = defineNode<{
 	input: number
 	definition: DivisorDefinition
-}>()({
+}>((input) => (typeof input === "number" ? { value: input } : input))({
 	kind: "divisor",
-	parse: (input: number | DivisorDefinition): DivisorDefinition =>
-		typeof input === "number" ? { value: input } : input,
 	writeDefaultDescription() {
 		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
 	}
 })
+
+const z = Divisor(5)
 
 export class DivisorNode extends RuleNode<DivisorDefinition> {
 	readonly kind = "divisor"
