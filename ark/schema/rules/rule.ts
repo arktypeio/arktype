@@ -3,31 +3,31 @@ import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
-import { AliasAttribute } from "./alias.js"
+import { AliasNode } from "./alias.js"
 import type { RangeConstraintSet } from "./bound.js"
 import { BoundNode } from "./bound.js"
-import { DescriptionAttribute } from "./description.js"
-import { DivisorConstraint } from "./divisor.js"
-import { DomainConstraint } from "./domain.js"
-import { IdentityConstraint } from "./identity.js"
-import { InstanceOfConstraint } from "./instanceOf.js"
-import { MorphAttribute } from "./morph.js"
-import { NarrowConstraint } from "./narrow.js"
+import { DescriptionNode } from "./description.js"
+import { DivisorNode } from "./divisor.js"
+import { DomainNode } from "./domain.js"
+import { IdentityNode } from "./identity.js"
+import { InstanceOfNode } from "./instanceOf.js"
+import { MorphNode } from "./morph.js"
+import { NarrowNode } from "./narrow.js"
 import { PatternConstraint } from "./pattern.js"
 import { PropConstraint } from "./prop/prop.js"
 
 export const ruleDefinitions = {
 	prop: PropConstraint,
-	identity: IdentityConstraint,
-	domain: DomainConstraint,
-	instanceOf: InstanceOfConstraint,
-	divisor: DivisorConstraint,
+	identity: IdentityNode,
+	domain: DomainNode,
+	instanceOf: InstanceOfNode,
+	divisor: DivisorNode,
 	range: BoundNode,
 	pattern: PatternConstraint,
-	narrow: NarrowConstraint,
-	description: DescriptionAttribute,
-	alias: AliasAttribute,
-	morph: MorphAttribute
+	narrow: NarrowNode,
+	description: DescriptionNode,
+	alias: AliasNode,
+	morph: MorphNode
 }
 
 export type RuleDefinitions = typeof ruleDefinitions
@@ -42,16 +42,16 @@ export type RuleSets = satisfy<
 	},
 	{
 		prop: PropConstraint
-		identity: IdentityConstraint
-		domain: DomainConstraint
-		instanceOf: InstanceOfConstraint
-		divisor: DivisorConstraint
+		identity: IdentityNode
+		domain: DomainNode
+		instanceOf: InstanceOfNode
+		divisor: DivisorNode
 		range: RangeConstraintSet
 		pattern: readonly PatternConstraint[]
-		narrow: readonly NarrowConstraint[]
-		description: readonly DescriptionAttribute[]
-		alias: AliasAttribute
-		morph: MorphAttribute
+		narrow: readonly NarrowNode[]
+		description: readonly DescriptionNode[]
+		alias: AliasNode
+		morph: readonly MorphNode[]
 	}
 >
 
@@ -94,7 +94,9 @@ export abstract class RuleNode<
 			: (new (this.constructor as any)(ruleComparison) as this)
 	}
 
-	protected abstract reduceRules(other: this): definition | Disjoint | null
+	protected abstract reduceRules(
+		other: Rule<this["kind"]>
+	): definition | Disjoint | null
 }
 
 // export const assertAllowsConstraint = (

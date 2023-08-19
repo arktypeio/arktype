@@ -1,6 +1,6 @@
 import type { extend } from "@arktype/util"
 import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
-import type { DescriptionAttribute } from "./rules/description.js"
+import type { DescriptionNode } from "./rules/description.js"
 import type { RuleDefinitions } from "./rules/rule.js"
 import type { TypeDefinitions } from "./types/type.js"
 
@@ -15,8 +15,8 @@ export type NodeKind = keyof NodeDefinitionsByKind
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
 export interface BaseDefinition {
-	readonly description?: DescriptionAttribute
-	readonly alias?: DescriptionAttribute
+	readonly description?: DescriptionNode
+	readonly alias?: DescriptionNode
 }
 
 // @ts-expect-error

@@ -3,12 +3,12 @@ import { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export interface IdentityRule extends BaseDefinition {
+export interface IdentityDefinition extends BaseDefinition {
 	readonly value: number
 }
 
 // TODO: to constraint
-export class IdentityConstraint extends RuleNode<IdentityRule> {
+export class IdentityNode extends RuleNode<IdentityDefinition> {
 	readonly kind = "identity"
 
 	writeDefaultDescription() {
@@ -16,7 +16,7 @@ export class IdentityConstraint extends RuleNode<IdentityRule> {
 		return stringify(this.value)
 	}
 
-	reduceRules(other: IdentityConstraint) {
+	reduceRules(other: IdentityNode) {
 		return Disjoint.from("identity", this, other)
 	}
 }

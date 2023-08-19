@@ -1,18 +1,18 @@
 import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export interface DescriptionRule extends BaseDefinition {
+export interface DescriptionDefinition extends BaseDefinition {
 	readonly value: string
 }
 
-export class DescriptionAttribute extends RuleNode<DescriptionRule> {
-	readonly kind = "divisor"
+export class DescriptionNode extends RuleNode<DescriptionDefinition> {
+	readonly kind = "description"
 
 	writeDefaultDescription() {
 		return this.value
 	}
 
-	protected reduceRules(other: DescriptionAttribute) {
+	protected reduceRules(other: DescriptionNode) {
 		return null
 	}
 }

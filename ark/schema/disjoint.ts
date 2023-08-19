@@ -8,38 +8,38 @@ import {
 	transform
 } from "@arktype/util"
 import type { BaseNode } from "./node.js"
-import type { DomainConstraint } from "./rules/domain.js"
-import type { IdentityConstraint } from "./rules/identity.js"
-import type { InstanceOfConstraint } from "./rules/instanceOf.js"
+import type { DomainNode } from "./rules/domain.js"
+import type { IdentityNode } from "./rules/identity.js"
+import type { InstanceOfNode } from "./rules/instanceOf.js"
 import type { BoundNode } from "./rules/bound.js"
 import type { RuleNode } from "./rules/rule.js"
 import type { PredicateNode } from "./types/predicate.js"
 
 type DisjointKinds = {
 	domain?: {
-		l: DomainConstraint
-		r: DomainConstraint
+		l: DomainNode
+		r: DomainNode
 	}
 	identity?: {
-		l: IdentityConstraint
-		r: IdentityConstraint
+		l: IdentityNode
+		r: IdentityNode
 	}
 	range?: {
 		l: BoundNode
 		r: BoundNode
 	}
 	instanceOf?: {
-		l: InstanceOfConstraint
-		r: InstanceOfConstraint
+		l: InstanceOfNode
+		r: InstanceOfNode
 	}
 	assignability?:
 		| {
-				l: IdentityConstraint
+				l: IdentityNode
 				r: RuleNode
 		  }
 		| {
 				l: RuleNode
-				r: IdentityConstraint
+				r: IdentityNode
 		  }
 	union?: {
 		l: BaseNode

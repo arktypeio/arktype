@@ -3,18 +3,18 @@ import { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export interface DomainRule<
+export interface DomainDefinition<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > extends BaseDefinition {
 	readonly value: domain
 }
 
-export class DomainConstraint<
+export class DomainNode<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends RuleNode<DomainRule<domain>> {
+> extends RuleNode<DomainDefinition<domain>> {
 	readonly kind = "domain"
 
-	reduceRules(other: DomainConstraint) {
+	reduceRules(other: DomainNode) {
 		return other.hasKind("domain") ? Disjoint.from("domain", this, other) : null
 	}
 

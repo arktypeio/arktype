@@ -2,17 +2,17 @@ import { throwParseError } from "@arktype/util"
 import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export type PatternInput = RegexLiteral | PatternRule | RegExp
+export type PatternInput = RegexLiteral | PatternDefinition | RegExp
 
-export interface PatternRule extends BaseDefinition {
+export interface PatternDefinition extends BaseDefinition {
 	source: string
 	flags: string
 }
 
-export const patternConstraint = (input: PatternInput): PatternRule =>
+export const patternConstraint = (input: PatternInput): PatternDefinition =>
 	typeof input === "string" ? parseRegexLiteral(input) : input
 
-export class PatternConstraint extends RuleNode<PatternRule> {
+export class PatternNode extends RuleNode<PatternDefinition> {
 	readonly kind = "pattern"
 
 	readonly regex = new RegExp(this.source, this.flags)
@@ -34,7 +34,7 @@ export type RegexLiteral = `/${string}/${string}`
 
 const regexLiteralMatcher = /^\/(.+)\/([a-z]*)$/
 
-export const parseRegexLiteral = (literal: string): PatternRule => {
+export const parseRegexLiteral = (literal: string): PatternDefinition => {
 	const match = regexLiteralMatcher.exec(literal)
 	if (!match || !match[1]) {
 		return throwParseError(

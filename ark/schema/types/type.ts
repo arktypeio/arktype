@@ -1,7 +1,7 @@
 import type { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
-import { DomainConstraint } from "../rules/domain.js"
+import { DomainNode } from "../rules/domain.js"
 import { PredicateNode } from "./predicate.js"
 import { UnionNode } from "./union.js"
 
@@ -38,7 +38,7 @@ export abstract class TypeNodeBase<
 	}
 
 	array() {
-		return new PredicateNode([new DomainConstraint({ value: "object" })])
+		return new PredicateNode([new DomainNode({ value: "object" })])
 	}
 
 	extends<other>(other: TypeNode<other>): this is TypeNode<other> {

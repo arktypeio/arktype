@@ -3,18 +3,18 @@ import type { AttributeKind } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
 import type { RangeConstraintSet } from "../rules/bound.js"
-import type { DivisorConstraint } from "../rules/divisor.js"
-import type { DomainConstraint, NonEnumerableDomain } from "../rules/domain.js"
-import type { IdentityConstraint } from "../rules/identity.js"
-import type { InstanceOfConstraint } from "../rules/instanceOf.js"
-import type { MorphAttribute } from "../rules/morph.js"
-import type { NarrowConstraint } from "../rules/narrow.js"
+import type { DivisorNode } from "../rules/divisor.js"
+import type { DomainNode, NonEnumerableDomain } from "../rules/domain.js"
+import type { IdentityNode } from "../rules/identity.js"
+import type { InstanceOfNode } from "../rules/instanceOf.js"
+import type { MorphNode } from "../rules/morph.js"
+import type { NarrowNode } from "../rules/narrow.js"
 import type { RuleKind, RuleNode, RuleSet } from "../rules/rule.js"
 import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
 export interface PredicateDefinition extends BaseDefinition {
-	readonly morph?: readonly MorphAttribute[]
+	readonly morph?: readonly MorphNode[]
 }
 
 export class PredicateNode<t = unknown> extends TypeNodeBase<
@@ -54,33 +54,33 @@ export class PredicateNode<t = unknown> extends TypeNodeBase<
 }
 
 export interface UnitRule {
-	readonly identity: IdentityConstraint
+	readonly identity: IdentityNode
 }
 
 export interface UnknownPredicateRule extends PredicateDefinition {
-	readonly narrow?: readonly NarrowConstraint[]
+	readonly narrow?: readonly NarrowNode[]
 }
 
 export interface NumberPredicateRule extends DomainPredicateRule<"number"> {
 	readonly range?: RangeConstraintSet
-	readonly divisor?: DivisorConstraint
+	readonly divisor?: DivisorNode
 }
 
 export interface InstancePredicateRule<
 	constructor extends AbstractableConstructor = AbstractableConstructor
 > extends DomainPredicateRule<"object"> {
-	readonly instance: InstanceOfConstraint<constructor>
+	readonly instance: InstanceOfNode<constructor>
 }
 
 export interface StringPredicateRule extends DomainPredicateRule<"string"> {
 	readonly length?: RangeConstraintSet
-	readonly pattern?: DivisorConstraint
+	readonly pattern?: DivisorNode
 }
 
 export interface DomainPredicateRule<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > extends UnknownPredicateRule {
-	readonly domain: DomainConstraint<domain>
+	readonly domain: DomainNode<domain>
 }
 
 export interface DatePredicateRule extends InstancePredicateRule<typeof Date> {

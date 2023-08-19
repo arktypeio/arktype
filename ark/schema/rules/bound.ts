@@ -57,9 +57,6 @@ export class BoundNode<
 	protected reduceRules(
 		other: BoundNode
 	): BoundDefinition<limitKind> | Disjoint | null {
-		if (!other.hasKind("range")) {
-			return null
-		}
 		if (this.limit > other.limit) {
 			if (this.hasLimitKind("min")) {
 				return other.hasLimitKind("min")

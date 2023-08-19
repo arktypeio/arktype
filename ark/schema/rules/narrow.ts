@@ -2,14 +2,14 @@
 import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export interface NarrowRule extends BaseDefinition {
+export interface NarrowDefinition extends BaseDefinition {
 	readonly value: Narrow
 }
 
 // as long as the narrows in l and r are individually safe to check
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
-export class NarrowConstraint extends RuleNode<NarrowRule> {
+export class NarrowNode extends RuleNode<NarrowDefinition> {
 	readonly kind = "narrow"
 
 	writeDefaultDescription() {

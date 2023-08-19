@@ -1,18 +1,18 @@
 import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export interface DivisorRule extends BaseDefinition {
+export interface DivisorDefinition extends BaseDefinition {
 	readonly value: number
 }
 
-export class DivisorConstraint extends RuleNode<DivisorRule> {
+export class DivisorNode extends RuleNode<DivisorDefinition> {
 	readonly kind = "divisor"
 
 	writeDefaultDescription() {
 		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
 	}
 
-	protected reduceRules(other: DivisorConstraint) {
+	protected reduceRules(other: DivisorNode) {
 		return {
 			value:
 				(this.value * other.value) /
