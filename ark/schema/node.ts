@@ -19,6 +19,27 @@ export interface BaseDefinition {
 	readonly alias?: DescriptionNode
 }
 
+export type NodeDefinition = {
+	input: unknown
+	definition: Dict<string, unknown>
+}
+
+export interface NodeImplementation {
+	kind: string
+	writeDefaultDescription(): string
+}
+
+export const defineNode =
+	<def extends NodeDefinition>(
+		parse: (input: def["input"] | def["definition"]) => def["definition"]
+	) =>
+	<implementation extends NodeImplementation>(
+		implementation: implementation &
+			ThisType<implementation & def["definition"]>
+	) =>
+	(input: def["input"] | def["definition"]) =>
+		({}) as extend<implementation, def["definition"]>
+
 export abstract class BaseNode<
 	definitionKey extends BaseDefinition = BaseDefinition
 > {

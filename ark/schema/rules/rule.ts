@@ -1,7 +1,7 @@
 import type { listable, satisfy } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseDefinition } from "../node.js"
+import type { BaseDefinition, NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
 import { AliasNode } from "./alias.js"
 import type { RangeConstraintSet } from "./bound.js"
@@ -58,6 +58,22 @@ export type RuleSets = satisfy<
 export type RuleSet<kind extends RuleKind = RuleKind> = RuleSets[kind]
 
 export type RuleKind = keyof RuleDefinitions
+
+export interface RuleImplementation<def extends NodeDefinition> {
+	// TODO: not attributes
+	reduceRules(other: this): def["definition"] | Disjoint | null
+}
+
+// export const defineRule =
+// 	<def extends NodeDefinition>(
+// 		parse: (input: def["input"] | def["definition"]) => def["definition"]
+// 	) =>
+// 	<implementation extends NodeImplementation>(
+// 		implementation: implementation &
+// 			ThisType<implementation & def["definition"]>
+// 	) =>
+// 	(input: def["input"] | def["definition"]) =>
+// 		({}) as extend<implementation, def["definition"]>
 
 export abstract class RuleNode<
 	definition extends BaseDefinition = BaseDefinition

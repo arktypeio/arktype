@@ -1,5 +1,5 @@
-import type { Dict, evaluate, extend } from "@arktype/util"
-import type { BaseDefinition } from "../node.js"
+import type { extend } from "@arktype/util"
+import { type BaseDefinition, defineNode } from "../node.js"
 import { RuleNode } from "./rule.js"
 
 export type DivisorDefinition = extend<
@@ -8,27 +8,6 @@ export type DivisorDefinition = extend<
 		readonly value: number
 	}
 >
-
-export type NodeDefinition = {
-	input: unknown
-	definition: Dict<string, unknown>
-}
-
-export interface NodeImplementation<def extends NodeDefinition> {
-	kind: string
-	writeDefaultDescription(): string
-}
-
-export const defineNode =
-	<def extends NodeDefinition>(
-		parse: (input: def["input"] | def["definition"]) => def["definition"]
-	) =>
-	<implementation extends NodeImplementation<def>>(
-		implementation: implementation &
-			ThisType<implementation & def["definition"]>
-	) =>
-	(input: def["input"] | def["definition"]) =>
-		({}) as extend<implementation, def["definition"]>
 
 const Divisor = defineNode<{
 	input: number
@@ -39,8 +18,6 @@ const Divisor = defineNode<{
 		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
 	}
 })
-
-const z = Divisor(5)
 
 export class DivisorNode extends RuleNode<DivisorDefinition> {
 	readonly kind = "divisor"
