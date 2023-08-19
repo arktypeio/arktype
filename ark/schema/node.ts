@@ -1,4 +1,4 @@
-import type { extend } from "@arktype/util"
+import type { Dict, extend } from "@arktype/util"
 import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
 import type { DescriptionNode } from "./rules/description.js"
 import type { RuleDefinitions } from "./rules/rule.js"
@@ -19,10 +19,9 @@ export interface BaseDefinition {
 	readonly alias?: DescriptionNode
 }
 
-// @ts-expect-error
 export abstract class BaseNode<
-	definition extends BaseDefinition = BaseDefinition
-> extends DynamicBase<definition> {
+	definitionKey extends BaseDefinition = BaseDefinition
+> {
 	// readonly rules: rules
 	// readonly ruleEntries: entriesOf<rules> = []
 	// readonly attributes: attributes

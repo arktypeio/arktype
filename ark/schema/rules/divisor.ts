@@ -1,9 +1,44 @@
+import type { Dict, evaluate, extend } from "@arktype/util"
 import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export interface DivisorDefinition extends BaseDefinition {
-	readonly value: number
+export type DivisorDefinition = extend<
+	BaseDefinition,
+	{
+		readonly value: number
+	}
+>
+
+export type NodeDefinition = {
+	input: unknown
+	definition: Dict<string, unknown>
 }
+
+export interface NodeImplementation<def extends NodeDefinition> {
+	kind: string
+	parse(input: def["input"] | def["definition"]): def["definition"]
+	writeDefaultDescription(): string
+}
+
+export const defineNode =
+	<def extends NodeDefinition>() =>
+	<implementation extends NodeImplementation<def>>(
+		implementation: implementation &
+			ThisType<implementation & def["definition"]>
+	) =>
+		({}) as extend<implementation, def["definition"]>
+
+const Divisor = defineNode<{
+	input: number
+	definition: DivisorDefinition
+}>()({
+	kind: "divisor",
+	parse: (input: number | DivisorDefinition): DivisorDefinition =>
+		typeof input === "number" ? { value: input } : input,
+	writeDefaultDescription() {
+		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
+	}
+})
 
 export class DivisorNode extends RuleNode<DivisorDefinition> {
 	readonly kind = "divisor"
