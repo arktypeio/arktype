@@ -1,4 +1,4 @@
-import type { BaseDefinition } from "../node.js"
+import type { Base, BaseDefinition } from "../node.js"
 import { RuleNode } from "./rule.js"
 
 export interface DescriptionDefinition extends BaseDefinition {
@@ -15,4 +15,22 @@ export class DescriptionNode extends RuleNode<DescriptionDefinition> {
 	protected reduceRules(other: DescriptionNode) {
 		return null
 	}
+}
+
+const Describable = <base extends Base<object>>(base: base) => {
+	abstract class Describable extends base {
+		readonly description?: DescriptionNode
+
+		constructor(...args: any[]) {
+			super(...args)
+			this.description = args[0]?.description
+		}
+
+		toString() {
+			return this.description?.toString() ?? this.writeDefaultDescription()
+		}
+
+		abstract writeDefaultDescription(): string
+	}
+	return Describable
 }

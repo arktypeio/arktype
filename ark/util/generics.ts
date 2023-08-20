@@ -16,6 +16,13 @@ export type defer<t> = [t][t extends any ? 0 : never]
 
 export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 
+export type mergeAll<t extends readonly unknown[]> = t extends readonly [
+	infer head,
+	...infer tail
+]
+	? merge<head, mergeAll<tail>>
+	: []
+
 export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
 export type isNever<t> = [t] extends [never] ? true : false
