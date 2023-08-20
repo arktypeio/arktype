@@ -9,18 +9,11 @@ export type DivisorDefinition = extend<
 	}
 >
 
-const Divisor = defineNode<{
-	input: number
-	definition: DivisorDefinition
-}>((input) => (typeof input === "number" ? { value: input } : input))({
-	kind: "divisor",
-	writeDefaultDescription() {
-		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
-	}
-})
-
-export class DivisorNode extends RuleNode<DivisorDefinition> {
+export class DivisorNode extends RuleNode<typeof DivisorNode, "value"> {
+	declare readonly value: number
 	readonly kind = "divisor"
+
+	static definitionKeys() {}
 
 	writeDefaultDescription() {
 		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`

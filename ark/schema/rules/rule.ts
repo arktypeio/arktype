@@ -59,25 +59,16 @@ export type RuleSet<kind extends RuleKind = RuleKind> = RuleSets[kind]
 
 export type RuleKind = keyof RuleDefinitions
 
-export interface RuleImplementation<def extends NodeDefinition> {
-	// TODO: not attributes
-	reduceRules(other: this): def["definition"] | Disjoint | null
+export type RuleSubclass<definitionKey extends PropertyKey> = {
+	new (input: unknown): RuleNode<any, definitionKey>
+
+	definitionKeys: Record<definitionKey, unknown>
 }
 
-// export const defineRule =
-// 	<def extends NodeDefinition>(
-// 		parse: (input: def["input"] | def["definition"]) => def["definition"]
-// 	) =>
-// 	<implementation extends NodeImplementation>(
-// 		implementation: implementation &
-// 			ThisType<implementation & def["definition"]>
-// 	) =>
-// 	(input: def["input"] | def["definition"]) =>
-// 		({}) as extend<implementation, def["definition"]>
-
 export abstract class RuleNode<
-	definition extends BaseDefinition = BaseDefinition
-> extends BaseNode<definition> {
+	subclass extends RuleSubclass<definitionKey>,
+	definitionKey extends keyof InstanceType<subclass>
+> extends BaseNode {
 	apply(to: readonly this[]): readonly this[] | Disjoint {
 		const result: this[] = []
 		let includesConstraint = false

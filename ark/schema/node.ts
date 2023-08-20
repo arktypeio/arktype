@@ -1,6 +1,7 @@
 import type { Dict, extend } from "@arktype/util"
 import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
-import type { DescriptionNode } from "./rules/description.js"
+import { AliasNode } from "./rules/alias.js"
+import { DescriptionNode } from "./rules/description.js"
 import type { RuleDefinitions } from "./rules/rule.js"
 import type { TypeDefinitions } from "./types/type.js"
 
@@ -14,56 +15,37 @@ export type NodeKind = keyof NodeDefinitionsByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
-export interface BaseDefinition {
-	readonly description?: DescriptionNode
-	readonly alias?: DescriptionNode
-}
+export type NodeChildren = Record<string, NodeKind>
 
-export type NodeDefinition = {
-	input: unknown
-	definition: Dict<string, unknown>
-}
-
-export interface NodeImplementation {
-	kind: string
-	writeDefaultDescription(): string
-}
-
-export const defineNode =
-	<def extends NodeDefinition>(
-		parse: (input: def["input"] | def["definition"]) => def["definition"]
-	) =>
-	<implementation extends NodeImplementation>(
-		implementation: implementation &
-			ThisType<implementation & def["definition"]>
-	) =>
-	(input: def["input"] | def["definition"]) =>
-		({}) as extend<implementation, def["definition"]>
+export const BaseChildren = {
+	description: "description",
+	alias: "alias"
+} satisfies NodeChildren
 
 export abstract class BaseNode<
-	definitionKey extends BaseDefinition = BaseDefinition
+	children extends NodeChildren = any //Record<string, null>
 > {
 	// readonly rules: rules
 	// readonly ruleEntries: entriesOf<rules> = []
 	// readonly attributes: attributes
 	// readonly attributeEntries: entriesOf<attributes> = []
 
-	constructor(input: definition) {
-		super(input)
-		// for (const entry of entriesOf(input)) {
-		// 	if (
-		// 		entry[1] instanceof AttributeNode ||
-		// 		// instanceof doesn't care whether it's an object anyways
-		// 		(isArray(entry[1]) && (entry[1][0] as any) instanceof AttributeNode)
-		// 	) {
-		// 		this.attributeEntries.push(entry as never)
-		// 	} else {
-		// 		this.ruleEntries.push(entry as never)
-		// 	}
-		// }
-		// this.rules = fromEntries(this.ruleEntries) as rules
-		// this.attributes = fromEntries(this.attributeEntries) as attributes
-	}
+	// constructor(definition: { [k in keyof children]: children[k] extends NodeKind ? Node<children[k]> :  }) {
+	// 	super(input)
+	// 	// for (const entry of entriesOf(input)) {
+	// 	// 	if (
+	// 	// 		entry[1] instanceof AttributeNode ||
+	// 	// 		// instanceof doesn't care whether it's an object anyways
+	// 	// 		(isArray(entry[1]) && (entry[1][0] as any) instanceof AttributeNode)
+	// 	// 	) {
+	// 	// 		this.attributeEntries.push(entry as never)
+	// 	// 	} else {
+	// 	// 		this.ruleEntries.push(entry as never)
+	// 	// 	}
+	// 	// }
+	// 	// this.rules = fromEntries(this.ruleEntries) as rules
+	// 	// this.attributes = fromEntries(this.attributeEntries) as attributes
+	// }
 
 	abstract readonly kind: NodeKind
 	declare readonly id: string
