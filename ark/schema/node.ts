@@ -1,7 +1,4 @@
-import type { Dict, extend } from "@arktype/util"
-import { DynamicBase, entriesOf, fromEntries, isArray } from "@arktype/util"
-import { AliasNode } from "./rules/alias.js"
-import { DescriptionNode } from "./rules/description.js"
+import type { Dict, extend, nominal } from "@arktype/util"
 import type { RuleDefinitions } from "./rules/rule.js"
 import type { TypeDefinitions } from "./types/type.js"
 
@@ -15,15 +12,55 @@ export type NodeKind = keyof NodeDefinitionsByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
-export type NodeChildren = Record<string, NodeKind>
+export type NodeKeyMap<definitionKey extends PropertyKey = PropertyKey> = {
+	[k in definitionKey]?: NodeKind | LeafRule
+}
+
+export interface NodeImplementation {
+	kind: string
+	writeDefaultDescription(): string
+}
+
+export type LeafRule<t = unknown> = nominal<t, "leaf">
+
+export const leafRule = <t>() => null as unknown as LeafRule<t>
+
+export type mapKeys<keymap extends NodeKeyMap> = {
+	[k in keyof keymap]: keymap[k] extends LeafRule<infer t> ? t : never
+}
+
+export const defineNode =
+	<input, keymap extends NodeKeyMap>(
+		keys: keymap,
+		parse: (input: input) => mapKeys<keymap>
+	) =>
+	<implementation extends NodeImplementation>(
+		implementation: implementation & ThisType<implementation & mapKeys<keymap>>
+	) =>
+	(input: input | mapKeys<keymap>) =>
+		({}) as extend<implementation, mapKeys<keymap>>
+
+const Divisor = defineNode({ value: leafRule<number>() }, (input: number) =>
+	typeof input === "number" ? { value: input } : input
+)({
+	kind: "divisor",
+	writeDefaultDescription() {
+		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
+	}
+})
 
 export const BaseChildren = {
 	description: "description",
 	alias: "alias"
-} satisfies NodeChildren
+} satisfies NodeKeyMap
+
+export interface NodeSubclass<instance> {
+	new (input: unknown): instance
+	readonly keymap: NodeKeyMap<keyof instance>
+}
 
 export abstract class BaseNode<
-	children extends NodeChildren = any //Record<string, null>
+	subclass extends NodeSubclass<InstanceType<subclass>>
 > {
 	// readonly rules: rules
 	// readonly ruleEntries: entriesOf<rules> = []

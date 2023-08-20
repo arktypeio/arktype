@@ -59,12 +59,6 @@ export type RuleSet<kind extends RuleKind = RuleKind> = RuleSets[kind]
 
 export type RuleKind = keyof RuleDefinitions
 
-export type RuleSubclass<definitionKey extends PropertyKey> = {
-	new (input: unknown): RuleNode<any, definitionKey>
-
-	definitionKeys: Record<definitionKey, unknown>
-}
-
 export abstract class RuleNode<
 	subclass extends RuleSubclass<definitionKey>,
 	definitionKey extends keyof InstanceType<subclass>

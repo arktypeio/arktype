@@ -1,19 +1,14 @@
 import type { extend } from "@arktype/util"
-import { type BaseDefinition, defineNode } from "../node.js"
+import { BaseNode } from "../node.js"
 import { RuleNode } from "./rule.js"
 
-export type DivisorDefinition = extend<
-	BaseDefinition,
-	{
-		readonly value: number
-	}
->
-
-export class DivisorNode extends RuleNode<typeof DivisorNode, "value"> {
+export class DivisorNode extends BaseNode<typeof DivisorNode> {
 	declare readonly value: number
 	readonly kind = "divisor"
 
-	static definitionKeys() {}
+	static keymap = {
+		value: null
+	}
 
 	writeDefaultDescription() {
 		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
