@@ -6,9 +6,9 @@ export class DivisorNode extends composeNode() {
 	declare readonly value: number
 	readonly kind = "divisor"
 
-	// writeDefaultDescription() {
-	// 	return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
-	// }
+	writeDefaultDescription() {
+		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
+	}
 
 	protected reduceRules(other: DivisorNode) {
 		return {

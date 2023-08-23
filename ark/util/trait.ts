@@ -13,7 +13,7 @@ export type Base<instance = object> = abstract new (...args: any[]) => instance
 export type Trait<instance = object> = (base: Base<instance>) => Base<instance>
 
 export const compose = <traits extends readonly Trait[]>(...traits: traits) =>
-	traits.reduce(
+	traits.reduce<Base>(
 		(base, trait) => {
 			abstract class extended extends base {
 				constructor(...args: any[]) {
@@ -23,5 +23,5 @@ export const compose = <traits extends readonly Trait[]>(...traits: traits) =>
 			}
 			return extended
 		},
-		class {} as Base
+		class {}
 	) as {} as composeTraits<traits>
