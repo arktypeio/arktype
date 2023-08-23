@@ -1,4 +1,4 @@
-import type { Dict, evaluate, isAny, nominal } from "@arktype/util"
+import type { Dict, evaluate, isAny, Kind, nominal } from "@arktype/util"
 import {
 	domainOf,
 	hasDomain,
@@ -117,7 +117,7 @@ type bootstrapExports<def> = bootstrapAliases<{
 }>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
-type PreparsedResolution = Module | GenericProps
+type PreparsedResolution = Module | GenericProps | Kind
 
 type bootstrapAliases<def> = {
 	[k in Exclude<
@@ -192,6 +192,13 @@ export type tryInferSubmoduleReference<$, token> =
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
 type exportedName<r extends Resolutions> = keyof r["exports"] & string
+
+// r["exports"][k] extends Kind<any>
+//             ? <const def>(
+//                   def: validateTypeRoot<def, $<r>>
+//               ) => inferTypeRoot<def, $<r>> extends infer t
+//                   ? Apply<r["exports"][k], t>
+//                   : never
 
 export type Module<r extends Resolutions = any> = {
 	// just adding the nominal id this way and mapping it is cheaper than an intersection

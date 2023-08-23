@@ -78,6 +78,26 @@ export const parseGenericInstantiation = (
 	return g(...parsedArgs.result).root
 }
 
+// export type parseKindInstantiation<
+//     name extends string,
+//     k extends Kind,
+//     s extends StaticState,
+//     $,
+//     args
+//     // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
+// > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
+//     ? parseGenericArgs<name, ["t"], unscanned, $, args> extends infer result
+//         ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
+//             ? state.setRoot<
+//                   s,
+//                   CastTo<Apply<k, inferAst<argAsts[0], $, args>>>,
+//                   nextUnscanned
+//               >
+//             : // propagate error
+//               result
+//         : never
+//     : state.error<writeInvalidGenericArgsMessage<name, ["t"], []>>
+
 export type parseGenericInstantiation<
 	name extends string,
 	g extends GenericProps,
