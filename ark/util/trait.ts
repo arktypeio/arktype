@@ -1,16 +1,36 @@
 export type composeTraits<
 	traits extends readonly Trait[],
-	result extends Base = Base<{}>
+	args extends readonly any[] = [],
+	instance = {}
 > = traits extends readonly [
-	infer head extends Trait,
+	Trait<infer traitArgs, infer traitInstance>,
 	...infer tail extends readonly Trait[]
 ]
-	? composeTraits<tail, result & ReturnType<head>>
-	: result
+	? composeTraits<
+			tail,
+			intersectArgs<args, traitArgs>,
+			instance & traitInstance
+	  >
+	: abstract new (...args: args) => instance
 
-export type Base<instance = object> = abstract new (...args: any[]) => instance
+type intersectArgs<
+	l extends readonly any[],
+	r extends readonly any[]
+> = l extends readonly [infer lHead, ...infer lTail]
+	? r extends readonly [infer rHead, ...infer rTail]
+		? readonly [lHead & rHead, ...intersectArgs<lTail, rTail>]
+		: l
+	: r
 
-export type Trait<instance = object> = (base: Base<instance>) => Base<instance>
+export type Base<
+	args extends readonly any[] = readonly any[],
+	instance = object
+> = abstract new (...args: args) => instance
+
+export type Trait<
+	args extends readonly any[] = readonly any[],
+	instance = object
+> = (base: Base<never[], instance>) => Base<args, instance>
 
 export const compose = <traits extends readonly Trait[]>(...traits: traits) =>
 	traits.reduce<Base>(

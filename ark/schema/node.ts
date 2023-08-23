@@ -1,5 +1,5 @@
 import { compose } from "@arktype/util"
-import type { composeTraits, type extend, type Trait } from "@arktype/util"
+import type { composeTraits, extend, Trait } from "@arktype/util"
 import { Describable } from "./traits/description.js"
 import type { RuleDefinitions } from "./traits/trait.js"
 import type { TypeDefinitions } from "./types/type.js"
@@ -46,8 +46,9 @@ export const composeNode = <traits extends readonly Trait[]>(
 			return this.id === other.id
 		}
 	}
-	return BaseNode as composeTraits<
+	return BaseNode as {} as composeTraits<
 		[typeof Describable, ...traits],
+		[],
 		typeof BaseNode
 	>
 }

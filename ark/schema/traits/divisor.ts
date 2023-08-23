@@ -6,6 +6,11 @@ export class DivisorNode extends composeNode() {
 	declare readonly value: number
 	readonly kind = "divisor"
 
+	constructor(def: { value: number }) {
+		super()
+		this.value = def.value
+	}
+
 	writeDefaultDescription() {
 		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
 	}
@@ -18,6 +23,8 @@ export class DivisorNode extends composeNode() {
 		}
 	}
 }
+
+const z = new DivisorNode({ value: 5 })
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
