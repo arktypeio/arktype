@@ -1,7 +1,7 @@
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
-import { RuleNode } from "./rule.js"
+import { RuleNode } from "./trait.js"
 
 export interface IdentityDefinition extends BaseDefinition {
 	readonly value: number

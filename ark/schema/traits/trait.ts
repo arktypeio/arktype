@@ -1,7 +1,6 @@
 import type { listable, satisfy } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseDefinition, NodeDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
 import { AliasNode } from "./alias.js"
 import type { RangeConstraintSet } from "./bound.js"

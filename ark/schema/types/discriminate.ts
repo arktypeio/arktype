@@ -12,8 +12,8 @@ import type {
 	SerializedPrimitive
 } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../disjoint.js"
-import type { DomainNode } from "../rules/domain.js"
-import type { IdentityNode } from "../rules/identity.js"
+import type { DomainNode } from "../traits/domain.js"
+import type { IdentityNode } from "../traits/identity.js"
 import type { PredicateNode } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =

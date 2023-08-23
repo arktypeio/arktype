@@ -1,18 +1,14 @@
 import type { extend } from "@arktype/util"
-import { BaseNode } from "../node.js"
-import { RuleNode } from "./rule.js"
+import { BaseNode, composeNode } from "../node.js"
+import { RuleNode } from "./trait.js"
 
-export class DivisorNode extends BaseNode<typeof DivisorNode> {
+export class DivisorNode extends composeNode() {
 	declare readonly value: number
 	readonly kind = "divisor"
 
-	static keymap = {
-		value: null
-	}
-
-	writeDefaultDescription() {
-		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
-	}
+	// writeDefaultDescription() {
+	// 	return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
+	// }
 
 	protected reduceRules(other: DivisorNode) {
 		return {

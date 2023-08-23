@@ -13,11 +13,11 @@ import {
 	stringify
 } from "@arktype/util"
 import type {
-	NumericallyBoundableData,
-	BoundDefinition
-} from "../rules/bound.js"
-import { numericComparatorDescriptions } from "../rules/bound.js"
-import { domainDescriptions } from "../rules/domain.js"
+	BoundDefinition,
+	NumericallyBoundableData
+} from "../traits/bound.js"
+import { numericComparatorDescriptions } from "../traits/bound.js"
+import { domainDescriptions } from "../traits/domain.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems

@@ -1,5 +1,5 @@
 import type { BaseDefinition } from "../../node.js"
-import { RuleNode } from "../rule.js"
+import { RuleNode } from "../trait.js"
 
 export interface PropRule extends BaseDefinition {
 	readonly value: {}

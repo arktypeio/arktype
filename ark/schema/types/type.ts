@@ -1,7 +1,7 @@
 import type { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
 import { BaseNode } from "../node.js"
-import { DomainNode } from "../rules/domain.js"
+import { DomainNode } from "../traits/domain.js"
 import { PredicateNode } from "./predicate.js"
 import { UnionNode } from "./union.js"
 

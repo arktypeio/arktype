@@ -1,5 +1,5 @@
 import type { BaseDefinition } from "../node.js"
-import { RuleNode } from "./rule.js"
+import { RuleNode } from "./trait.js"
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
@@ -8,7 +8,7 @@ export interface MorphDefinition extends BaseDefinition {
 }
 
 export class MorphNode extends RuleNode<MorphDefinition> {
-	readonly kind = "divisor"
+	readonly kind = "morph"
 
 	writeDefaultDescription() {
 		return this.value

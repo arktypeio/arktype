@@ -1,5 +1,5 @@
 import type { Base, BaseDefinition } from "../node.js"
-import { RuleNode } from "./rule.js"
+import { RuleNode } from "./trait.js"
 
 export interface DescriptionDefinition extends BaseDefinition {
 	readonly value: string
@@ -17,7 +17,7 @@ export class DescriptionNode extends RuleNode<DescriptionDefinition> {
 	}
 }
 
-const Describable = <base extends Base<object>>(base: base) => {
+export const Describable = <base extends Base<object>>(base: base) => {
 	abstract class Describable extends base {
 		readonly description?: DescriptionNode
 
