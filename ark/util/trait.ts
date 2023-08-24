@@ -1,13 +1,12 @@
-import type { conform, evaluate } from "./generics.js"
-import type { Dict } from "./records.js"
+import type { evaluate } from "./generics.js"
 
-type Trait<
+export type Trait<
 	base = never,
 	args extends readonly any[] = readonly any[],
 	out = unknown
 > = (base: base) => (...args: args) => out
 
-type composeTraits<
+export type composeTraits<
 	traits extends readonly unknown[],
 	result extends Trait = Trait<{}, [], {}>
 > = traits extends [infer head extends Trait, ...infer tail]
@@ -46,7 +45,7 @@ type outOf<trait extends Trait> = trait extends Trait<any, any, infer adds>
 	? adds
 	: never
 
-const compose =
+export const compose =
 	<traits extends readonly Trait[]>(...traits: traits) =>
 	<implementation extends baseOf<composeTraits<traits>>>(
 		implementation: implementation
@@ -56,41 +55,3 @@ const compose =
 			(base, trait) => Object.assign(base, trait(base as never)(...args)),
 			implementation as evaluate<implementation & outOf<composeTraits<traits>>>
 		)
-
-const describable =
-	(base: { writeDefaultDescription: () => string }) =>
-	(def: { description?: string }) => ({
-		description: def.description ?? base.writeDefaultDescription()
-	})
-
-type Bound = {
-	kind: "min" | "max"
-	limit: number
-}
-
-const boundable =
-	<data>(base: { sizeOf(data: data): number }) =>
-	(def: { bounds?: Bound[] }) => ({
-		checkBounds: (data: data) =>
-			!def.bounds ||
-			def.bounds.every((bound) =>
-				bound.kind === "max"
-					? base.sizeOf(data) < bound.limit
-					: base.sizeOf(data) > bound.limit
-			)
-	})
-
-const boundedDescribed = compose(
-	describable,
-	boundable
-)({
-	writeDefaultDescription: () => "default description",
-	sizeOf: (data: number) => data + 1,
-	isComposable: true
-})
-
-const result = boundedDescribed({ description: "something" }) //?
-
-result.sizeOf(5) //? 6
-
-result.description //? "something"
