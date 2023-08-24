@@ -1,3 +1,5 @@
+import type { Dict } from "./records.js"
+
 export type composeTraits<
 	traits extends readonly Trait[],
 	args extends readonly any[] = [],
