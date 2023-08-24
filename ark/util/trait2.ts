@@ -59,10 +59,33 @@ type intersectArgs<
 		: l
 	: r
 
-const compose = <traits extends readonly Trait[]>(...traits: traits) =>
-	({}) as composeTraits<traits>
+type baseOf<trait extends Trait> = trait extends Trait<infer base>
+	? base
+	: never
 
-const z = compose(describable, boundable)
+type argsOf<trait extends Trait> = trait extends Trait<any, infer args>
+	? args
+	: never
+
+type addsOf<trait extends Trait> = trait extends Trait<any, any, infer adds>
+	? adds
+	: never
+
+const compose =
+	<traits extends readonly Trait[]>(...traits: traits) =>
+	<implementation extends baseOf<composeTraits<traits>>>(
+		implementation: implementation
+	) =>
+	(...args: argsOf<composeTraits<traits>>) =>
+		traits.reduce(
+			(base, trait) => Object.assign(base, trait(base as never)(...args)),
+			implementation as evaluate<implementation & addsOf<composeTraits<traits>>>
+		)
+
+const z = compose(
+	describable,
+	boundable
+)({ writeDefaultDescription: () => "", sizeOf: () => 5, else: 5 })
 
 const numericBounds = boundable({ sizeOf: (data: number) => data })
 
