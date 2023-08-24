@@ -82,13 +82,23 @@ const compose =
 			implementation as evaluate<implementation & addsOf<composeTraits<traits>>>
 		)
 
-const z = compose(
+const boundedDescribed = compose(
 	describable,
 	boundable
-)({ writeDefaultDescription: () => "", sizeOf: () => 5, else: 5 })
+)({
+	writeDefaultDescription: () => "default description",
+	sizeOf: (data: number) => data + 1,
+	else: 5
+})
 
 const numericBounds = boundable({ sizeOf: (data: number) => data })
 
 const bounded = numericBounds({ bounds: [{ kind: "min", limit: 1 }] })
 
 const f = bounded.checkBounds(2) //?
+
+const result = boundedDescribed({ description: "something" }) //?
+
+result.sizeOf(5) //?
+
+result.description //?
