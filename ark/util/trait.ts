@@ -2,10 +2,10 @@ import type { conform, evaluate } from "./generics.js"
 import type { Dict } from "./records.js"
 
 type Trait<
-	base extends Dict = never,
+	base = never,
 	args extends readonly any[] = readonly any[],
-	adds extends Dict = Dict
-> = (abstract: base) => (...args: args) => adds
+	out = unknown
+> = (base: base) => (...args: args) => out
 
 type composeTraits<
 	traits extends readonly unknown[],
@@ -15,13 +15,13 @@ type composeTraits<
 	: result
 
 type intersectTraits<l extends Trait, r extends Trait> = [l, r] extends [
-	Trait<infer lAbs, infer lArgs, infer lAdds>,
-	Trait<infer rAbs, infer rArgs, infer rAdds>
+	Trait<infer lBase, infer lArgs, infer lOut>,
+	Trait<infer rBase, infer rArgs, infer rOut>
 ]
 	? Trait<
-			evaluate<lAbs & rAbs>,
+			evaluate<lBase & rBase>,
 			intersectArgs<lArgs, rArgs>,
-			evaluate<lAdds & rAdds>
+			evaluate<lOut & rOut>
 	  >
 	: never
 
@@ -42,7 +42,7 @@ type argsOf<trait extends Trait> = trait extends Trait<any, infer args>
 	? args
 	: never
 
-type addsOf<trait extends Trait> = trait extends Trait<any, any, infer adds>
+type outOf<trait extends Trait> = trait extends Trait<any, any, infer adds>
 	? adds
 	: never
 
@@ -54,7 +54,7 @@ const compose =
 	(...args: argsOf<composeTraits<traits>>) =>
 		traits.reduce(
 			(base, trait) => Object.assign(base, trait(base as never)(...args)),
-			implementation as evaluate<implementation & addsOf<composeTraits<traits>>>
+			implementation as evaluate<implementation & outOf<composeTraits<traits>>>
 		)
 
 const describable =
