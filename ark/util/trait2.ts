@@ -1,4 +1,4 @@
-import type { evaluate } from "./generics.js"
+import type { conform, evaluate } from "./generics.js"
 import type { Dict } from "./records.js"
 
 type Trait<
@@ -6,31 +6,6 @@ type Trait<
 	args extends readonly any[] = readonly any[],
 	adds extends Dict = Dict
 > = (abstract: base) => (...args: args) => adds
-
-const describable =
-	(abstract: { writeDefaultDescription: () => string }) =>
-	(def: { description?: string }) => ({
-		description: def.description ?? abstract.writeDefaultDescription()
-	})
-
-type Bound = {
-	kind: "min" | "max"
-	limit: number
-}
-
-const boundable =
-	<data>(abstract: { sizeOf(data: data): number }) =>
-	(def: { bounds?: Bound[] }) => ({
-		checkBounds: (data: data) => {
-			if (!def.bounds) {
-				return true
-			}
-			const size = abstract.sizeOf(data)
-			return def.bounds.every((bound) =>
-				bound.kind === "max" ? size < bound.limit : size > bound.limit
-			)
-		}
-	})
 
 type composeTraits<
 	traits extends readonly unknown[],
@@ -82,23 +57,40 @@ const compose =
 			implementation as evaluate<implementation & addsOf<composeTraits<traits>>>
 		)
 
+const describable =
+	(base: { writeDefaultDescription: () => string }) =>
+	(def: { description?: string }) => ({
+		description: def.description ?? base.writeDefaultDescription()
+	})
+
+type Bound = {
+	kind: "min" | "max"
+	limit: number
+}
+
+const boundable =
+	<data>(base: { sizeOf(data: data): number }) =>
+	(def: { bounds?: Bound[] }) => ({
+		checkBounds: (data: data) =>
+			!def.bounds ||
+			def.bounds.every((bound) =>
+				bound.kind === "max"
+					? base.sizeOf(data) < bound.limit
+					: base.sizeOf(data) > bound.limit
+			)
+	})
+
 const boundedDescribed = compose(
 	describable,
 	boundable
 )({
 	writeDefaultDescription: () => "default description",
 	sizeOf: (data: number) => data + 1,
-	else: 5
+	isComposable: true
 })
-
-const numericBounds = boundable({ sizeOf: (data: number) => data })
-
-const bounded = numericBounds({ bounds: [{ kind: "min", limit: 1 }] })
-
-const f = bounded.checkBounds(2) //?
 
 const result = boundedDescribed({ description: "something" }) //?
 
-result.sizeOf(5) //?
+result.sizeOf(5) //? 6
 
-result.description //?
+result.description //? "something"
