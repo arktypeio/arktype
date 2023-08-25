@@ -41,8 +41,8 @@ type argsOf<trait extends Trait> = trait extends Trait<any, infer args>
 	? args
 	: never
 
-type outOf<trait extends Trait> = trait extends Trait<any, any, infer adds>
-	? adds
+type outOf<trait extends Trait> = trait extends Trait<any, any, infer out>
+	? out
 	: never
 
 export const compose =

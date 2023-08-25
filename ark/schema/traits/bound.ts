@@ -23,6 +23,20 @@ export class BoundKindNode extends RuleNode<BoundKindDefinition> {
 	}
 }
 
+interface Boundable {
+	hasLimitKind<limitKind extends LimitKind>(
+		limitKind: limitKind
+	): this is BoundNode<limitKind>
+}
+
+export const Boundable =
+	(abstract: {}) =>
+	(input: {}): Boundable => ({
+		hasLimitKind(limitKind) {
+			return this.limitKind === (limitKind as never)
+		}
+	})
+
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
 > extends RuleNode<BoundDefinition<limitKind>> {
