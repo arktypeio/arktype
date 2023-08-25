@@ -1,9 +1,27 @@
 import type { evaluate } from "./generics.js"
 
-export const trait = <input, implementation, abstract = {}>(
-	implementation: implementation &
-		ThisType<{ readonly input: input } & abstract>
-) => {}
+export type AbstractTraitConstructor<
+	input = never,
+	implementation extends object = {},
+	base extends object = never
+> = (base: base) => TraitConstructor<input, evaluate<implementation & base>>
+
+export type TraitConstructor<input = never, output extends object = {}> = (
+	input: input
+) => Trait<input, output>
+
+export type Trait<input = never, output extends object = {}> = evaluate<
+	{ readonly input: input } & output
+>
+
+export const trait =
+	<input, implementation extends object, base extends object = {}>(
+		implementation: implementation &
+			ThisType<Trait<input, implementation & base>>
+	): AbstractTraitConstructor<input, implementation, base> =>
+	(base) =>
+	(input) =>
+		Object.assign(base, implementation, { input }) as never
 
 const d2 = trait<
 	{ description?: string },
