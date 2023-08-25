@@ -1,95 +1,115 @@
 import type { evaluate } from "./generics.js"
 
 export type Trait<
-	base = never,
-	args extends readonly any[] = readonly any[],
-	out = unknown
-> = (base: base) => (...args: args) => out
+	input = any,
+	implementation extends object = {},
+	base extends object = any
+> = {
+	(base: base): (input: input) => evaluate<base & implementation & input>
+	implementation: implementation
+}
 
-export type composeTraits<
-	traits extends readonly unknown[],
-	result extends Trait = Trait<{}, [], {}>
-> = traits extends [infer head extends Trait, ...infer tail]
-	? composeTraits<tail, intersectTraits<result, head>>
+export const trait = <
+	input,
+	implementation extends object,
+	base extends object = {}
+>(
+	implementation: implementation &
+		ThisType<evaluate<input & implementation & base>>
+): Trait<input, implementation, base> =>
+	Object.assign(
+		(base: base) => {
+			const prototype = Object.defineProperties(
+				base,
+				Object.getOwnPropertyDescriptors(implementation)
+			)
+			return (input: input) =>
+				Object.create(prototype, Object.getOwnPropertyDescriptors(input))
+		},
+		{ implementation }
+	)
+
+export type compose<
+	traits extends readonly Trait[],
+	result extends Trait = Trait<{}, {}, {}>
+> = traits extends readonly [
+	infer head extends Trait,
+	...infer tail extends Trait[]
+]
+	? compose<tail, intersectTraits<result, head>>
 	: result
 
+export const compose = <traits extends readonly Trait[]>(...traits: traits) =>
+	trait(
+		traits.reduce(
+			(base, trait) => Object.assign(base, trait.implementation),
+			{}
+		)
+	) as compose<traits>
+
 type intersectTraits<l extends Trait, r extends Trait> = [l, r] extends [
-	Trait<infer lBase, infer lArgs, infer lOut>,
-	Trait<infer rBase, infer rArgs, infer rOut>
+	Trait<infer lInput, infer lImplementation, infer lBase>,
+	Trait<infer rInput, infer rImplementation, infer rBase>
 ]
 	? Trait<
-			evaluate<lBase & rBase>,
-			intersectArgs<lArgs, rArgs>,
-			evaluate<lOut & rOut>
+			evaluate<lInput & rInput>,
+			evaluate<lImplementation & rImplementation>,
+			evaluate<lBase & rBase>
 	  >
 	: never
 
-type intersectArgs<
-	l extends readonly unknown[],
-	r extends readonly unknown[]
-> = l extends readonly [infer lHead, ...infer lTail]
-	? r extends readonly [infer rHead, ...infer rTail]
-		? readonly [evaluate<lHead & rHead>, ...intersectArgs<lTail, rTail>]
-		: l
-	: r
+// const describable = trait<
+// 	{ description?: string },
+// 	{ describe: () => string },
+// 	{ writeDefaultDescription: () => string }
+// >({
+// 	describe() {
+// 		return this.description ?? this.writeDefaultDescription()
+// 	}
+// })
 
-type baseOf<trait extends Trait> = trait extends Trait<infer base>
-	? base
-	: never
+// type Bound = {
+// 	kind: "min" | "max"
+// 	limit: number
+// }
 
-type argsOf<trait extends Trait> = trait extends Trait<any, infer args>
-	? args
-	: never
+// const boundable = trait<
+// 	{ bounds?: Bound[] },
+// 	{ checkBounds(data: never): boolean },
+// 	{ sizeOf(data: never): number }
+// >({
+// 	checkBounds(data: never) {
+// 		return (
+// 			!this.bounds ||
+// 			this.bounds.every((bound) =>
+// 				bound.kind === "max"
+// 					? this.sizeOf(data) < bound.limit
+// 					: this.sizeOf(data) > bound.limit
+// 			)
+// 		)
+// 	}
+// })
 
-type outOf<trait extends Trait> = trait extends Trait<any, any, infer out>
-	? out
-	: never
+// const t = describable({ writeDefaultDescription: () => "foo" })
 
-export const compose =
-	<traits extends readonly Trait[]>(...traits: traits) =>
-	<implementation extends baseOf<composeTraits<traits>>>(
-		implementation: implementation
-	) =>
-	(...args: argsOf<composeTraits<traits>>) =>
-		traits.reduce(
-			(base, trait) => Object.assign(base, trait(base as never)(...args)),
-			implementation as evaluate<implementation & outOf<composeTraits<traits>>>
-		)
+// const u = t({})
 
-const describable =
-	(base: { writeDefaultDescription: () => string }) =>
-	(def: { description?: string }) => ({
-		description: def.description ?? base.writeDefaultDescription()
-	})
+// u.describe() //?
 
-type Bound = {
-	kind: "min" | "max"
-	limit: number
-}
+// const boundedDescribed = compose(
+// 	describable,
+// 	boundable
+// )({
+// 	writeDefaultDescription: () => "default description",
+// 	sizeOf: (data: number) => data + 1
+// })
 
-const boundable =
-	<data>(base: { sizeOf(data: data): number }) =>
-	(def: { bounds?: Bound[] }) => ({
-		checkBounds: (data: data) =>
-			!def.bounds ||
-			def.bounds.every((bound) =>
-				bound.kind === "max"
-					? base.sizeOf(data) < bound.limit
-					: base.sizeOf(data) > bound.limit
-			)
-	})
+// const result = boundedDescribed({ description: "something" }) //?
 
-const boundedDescribed = compose(
-	describable,
-	boundable
-)({
-	writeDefaultDescription: () => "default description",
-	sizeOf: (data: number) => data + 1,
-	isComposable: true
-})
+// console.log(Object.getPrototypeOf(result))
 
-const result = boundedDescribed({ description: "something" }) //?
+// console.log(Object.keys(result))
 
-result.sizeOf(5) //? 6
+// result.sizeOf(5) //? 6
 
-result.description //? "something"
+// result.description //? "something"

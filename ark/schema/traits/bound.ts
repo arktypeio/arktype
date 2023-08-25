@@ -29,6 +29,11 @@ interface Boundable {
 	): this is BoundNode<limitKind>
 }
 
+interface obj {
+	a: boolean
+	hasA(): this is { a: true }
+}
+
 export const Boundable =
 	(abstract: {}) =>
 	(input: {}): Boundable => ({
