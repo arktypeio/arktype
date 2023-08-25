@@ -1,6 +1,6 @@
-import { compose } from "@arktype/util"
+import { trait } from "@arktype/util"
 
-export interface DescriptionDefinition extends BaseDefinition {
+export interface DescriptionDefinition {
 	readonly value: string
 }
 
@@ -12,15 +12,12 @@ export class DescriptionNode {
 	}
 }
 
-export const Describable =
-	(abstract: { writeDefaultDescription(): string }) =>
-	(input: { description?: string | DescriptionNode }) => ({
-		description: input.description ?? abstract.writeDefaultDescription(),
-		toString() {
-			return this.description
-		}
-	})
-
-const z = compose(Describable)({
-	writeDefaultDescription: () => "foo"
+export const describable = trait<
+	{ description?: string },
+	{ describe: () => string },
+	{ writeDefaultDescription: () => string }
+>({
+	describe() {
+		return this.description ?? this.writeDefaultDescription()
+	}
 })

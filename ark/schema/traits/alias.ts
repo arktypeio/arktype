@@ -1,18 +1,23 @@
-import type { BaseDefinition } from "../node.js"
-import { RuleNode } from "./trait.js"
+import { trait } from "@arktype/util"
 
-export interface AliasDefinition extends BaseDefinition {
+export interface DescriptionDefinition {
 	readonly value: string
 }
 
-export class AliasNode extends RuleNode<AliasDefinition> {
-	readonly kind = "divisor"
+export class DescriptionNode {
+	readonly kind = "description"
 
-	writeDefaultDescription() {
-		return this.value
-	}
-
-	protected reduceRules(other: AliasNode) {
+	protected reduceRules(other: DescriptionNode) {
 		return null
 	}
 }
+
+export const aliasable = trait<
+	{ description?: string },
+	{ describe: () => string },
+	{ writeDefaultDescription: () => string }
+>({
+	describe() {
+		return this.description ?? this.writeDefaultDescription()
+	}
+})
