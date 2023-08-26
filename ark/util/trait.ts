@@ -2,52 +2,80 @@ import type { error } from "./errors.js"
 import type { conform, evaluate } from "./generics.js"
 
 export type Trait<
-	input = any,
+	args extends readonly unknown[] = readonly any[],
 	implementation extends object = {},
 	base extends object = any
 > = {
-	<additionalInput, additionalImplementation = {}>(
-		base: evaluate<base & additionalImplementation> &
+	<extendedArgs extends readonly unknown[], extendedImplementation = {}>(
+		base: evaluate<base & extendedImplementation> &
 			ThisType<
-				evaluate<
-					base &
-						implementation &
-						additionalImplementation &
-						input &
-						additionalInput
+				traitInstance<
+					intersectParameters<args, extendedArgs>,
+					implementation & extendedImplementation,
+					base
 				>
 			>
 	): (
-		input: evaluate<input & additionalInput>
-	) => evaluate<
-		base & implementation & additionalImplementation & input & additionalInput
+		...args: intersectParameters<args, extendedArgs>
+	) => traitInstance<
+		intersectParameters<args, extendedArgs>,
+		implementation & extendedImplementation,
+		base
 	>
 	implementation: implementation
 }
 
+type traitInstance<
+	args extends readonly unknown[],
+	implementation extends object,
+	base extends object
+> = evaluate<{ readonly args: args } & base & implementation>
+
+// Based on inferArrayIntersection from the core arktype package
+type intersectParameters<
+	l extends readonly unknown[],
+	r extends readonly unknown[],
+	result extends readonly unknown[] = []
+> = l extends readonly []
+	? [...result, ...r]
+	: r extends readonly []
+	? [...result, ...l]
+	: [number, number] extends [l["length"], r["length"]]
+	? [...result, ...(l[number] & r[number])[]]
+	: [l, r] extends [
+			readonly [unknown?, ...infer lTail],
+			readonly [unknown?, ...infer rTail]
+	  ]
+	? intersectParameters<lTail, rTail, [...result, l[0] & r[0]]>
+	: l extends readonly [infer lHead, ...infer lTail]
+	? intersectParameters<lTail, r, [...result, lHead & r[number]]>
+	: r extends readonly [infer rHead, ...infer rTail]
+	? intersectParameters<l, rTail, [...result, l[number] & rHead]>
+	: result
+
 export const trait = <
-	input,
+	args extends readonly unknown[],
 	implementation extends object,
 	base extends object = {}
 >(
 	implementation: implementation &
-		ThisType<evaluate<input & implementation & base>>
-): Trait<input, implementation, base> =>
+		ThisType<traitInstance<args, implementation, base>>
+) =>
 	Object.assign(
 		(base: base) => {
 			const prototype = Object.defineProperties(
 				base,
 				Object.getOwnPropertyDescriptors(implementation)
 			)
-			return (input: input) =>
-				Object.create(prototype, Object.getOwnPropertyDescriptors(input))
+			return (...args: args) =>
+				Object.create(prototype, { args: { value: args } })
 		},
 		{ implementation }
-	)
+	) as {} as Trait<args, implementation, base>
 
 export type compose<
 	traits extends readonly Trait[],
-	result extends Trait = Trait<{}, {}, {}>
+	result extends Trait = Trait<[], {}, {}>
 > = traits extends readonly [
 	infer head extends Trait,
 	...infer tail extends Trait[]
@@ -71,7 +99,7 @@ export const compose = <traits extends readonly Trait[]>(
 
 type validateTraits<
 	traits extends readonly Trait[],
-	base extends Trait = Trait<{}, {}, {}>,
+	base extends Trait = Trait<[], {}, {}>,
 	result extends Trait[] = []
 > = traits extends readonly [
 	infer head extends Trait,
@@ -112,53 +140,50 @@ type validateExtension<l extends Trait, r extends Trait> = [l, r] extends [
 	: never
 
 type intersectTraits<l extends Trait, r extends Trait> = [l, r] extends [
-	Trait<infer lInput, infer lImplementation, infer lBase>,
-	Trait<infer rInput, infer rImplementation, infer rBase>
+	Trait<infer lArgs, infer lImplementation, infer lBase>,
+	Trait<infer rArgs, infer rImplementation, infer rBase>
 ]
 	? Trait<
-			evaluate<lInput & rInput>,
+			intersectParameters<lArgs, rArgs>,
 			evaluate<lImplementation & rImplementation>,
 			evaluate<Omit<lBase & rBase, keyof (lImplementation & rImplementation)>>
 	  >
 	: never
 
-const describable = trait<
-	{ description?: string },
-	{ describe: () => string },
-	{ writeDefaultDescription: () => string }
->({
-	describe() {
-		return this.description ?? this.writeDefaultDescription()
-	}
-})
+// const describable = trait<
+// 	[{}, { description?: string }],
+// 	{ description: string },
+// 	{ writeDefaultDescription: () => string }
+// >({
+// 	get description() {
+// 		return this.args[1].description ?? this.writeDefaultDescription()
+// 	}
+// })
 
-type Bound = {
-	kind: "min" | "max"
-	limit: number
-}
+// type Bound = {
+// 	kind: "min" | "max"
+// 	limit: number
+// }
 
-const boundable = trait<
-	{ bounds?: Bound[] },
-	{ checkBounds(data: never): boolean },
-	{ sizeOf(data: never): number }
->({
-	checkBounds(data: never) {
-		return (
-			!this.bounds ||
-			this.bounds.every((bound) =>
-				bound.kind === "max"
-					? this.sizeOf(data) < bound.limit
-					: this.sizeOf(data) > bound.limit
-			)
-		)
-	}
-})
-
-// const t = describable({ writeDefaultDescription: () => "foo" })
-
-// const u = t({})
-
-// u.describe() //?
+// const boundable = trait<
+// 	[{ bounds?: Bound[] }],
+// 	{ bounds?: Bound[]; checkBounds(data: never): boolean },
+// 	{ sizeOf(data: never): number }
+// >({
+// 	get bounds() {
+// 		return this.args[0].bounds
+// 	},
+// 	checkBounds(data: never) {
+// 		return (
+// 			!this.bounds ||
+// 			this.bounds.every((bound) =>
+// 				bound.kind === "max"
+// 					? this.sizeOf(data) < bound.limit
+// 					: this.sizeOf(data) > bound.limit
+// 			)
+// 		)
+// 	}
+// })
 
 // const boundedDescribed = compose(
 // 	describable,
@@ -168,12 +193,12 @@ const boundable = trait<
 // 	sizeOf: (data: number) => data + 1
 // })
 
-// const result = boundedDescribed({ description: "something" }) //?
+// const result = boundedDescribed({}, { description: "something" }) //?
 
 // console.log(Object.getPrototypeOf(result))
 
 // console.log(Object.keys(result))
 
-// result.sizeOf(5) //? 6
+// result.sizeOf(5) //?
 
-// result.description //? "something"
+// result.description //?

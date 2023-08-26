@@ -1,5 +1,5 @@
 import type { listable, satisfy } from "@arktype/util"
-import { compose, throwInternalError } from "@arktype/util"
+import { compose, throwInternalError, trait } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { BaseNode } from "../node.js"
 import { AliasNode } from "./alias.js"
@@ -99,8 +99,13 @@ export abstract class RuleNode<
 	): definition | Disjoint | null
 }
 
-export interface ConstraintImplementation {
-	intersect(other: this): this | Disjoint
+export const constraint = <rule, implementation>(
+	implementation: implementation
+) => {}
+
+export interface ConstraintImplementation<rule> {
+	rule: rule
+	intersect(other: rule): rule | Disjoint
 }
 
 // export const assertAllowsConstraint = (

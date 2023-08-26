@@ -26,19 +26,18 @@ export class DivisorNode extends composeNode() {
 	}
 }
 
-export const divisor = compose(describable)<
-	{ value: number },
-	ConstraintImplementation
->({
-	intersect(other) {
-		return
+export const divisor = compose(describable)<[number], { rule: number }>({
+	get rule() {
+		return this.args[0]
 	},
 	writeDefaultDescription() {
-		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
+		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 })
 
-export const divisible = trait<{ value: number }>({})
+const d = divisor(5, { description: "foo" }) //?
+
+type Divisor = typeof divisor
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

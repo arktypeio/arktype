@@ -47,6 +47,14 @@ export const intersectUniqueLists = <item>(
 	return intersection
 }
 
+export type constructTuple<
+	item,
+	length extends number,
+	result extends item[] = []
+> = result["length"] extends length
+	? result
+	: constructTuple<item, length, [...result, item]>
+
 export type List<t = unknown> = readonly t[]
 
 export type listable<t> = t | readonly t[]

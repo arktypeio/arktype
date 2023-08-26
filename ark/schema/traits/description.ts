@@ -13,11 +13,11 @@ export class DescriptionNode {
 }
 
 export const describable = trait<
-	{ description?: string },
-	{ describe: () => string },
+	[unknown, { description?: string }?],
+	{ description: string },
 	{ writeDefaultDescription: () => string }
 >({
-	describe() {
-		return this.description ?? this.writeDefaultDescription()
+	get description() {
+		return this.args[1].description ?? this.writeDefaultDescription()
 	}
 })
