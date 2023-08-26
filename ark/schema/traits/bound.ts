@@ -1,4 +1,4 @@
-import { throwParseError } from "@arktype/util"
+import { throwParseError, trait } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
 import { RuleNode } from "./trait.js"
@@ -28,19 +28,6 @@ interface Boundable {
 		limitKind: limitKind
 	): this is BoundNode<limitKind>
 }
-
-interface obj {
-	a: boolean
-	hasA(): this is { a: true }
-}
-
-export const Boundable =
-	(abstract: {}) =>
-	(input: {}): Boundable => ({
-		hasLimitKind(limitKind) {
-			return this.limitKind === (limitKind as never)
-		}
-	})
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind

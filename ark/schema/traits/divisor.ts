@@ -1,5 +1,7 @@
-import type { extend } from "@arktype/util"
+import { compose, type extend, trait } from "@arktype/util"
 import { BaseNode, composeNode } from "../node.js"
+import { describable } from "./description.js"
+import type { ConstraintImplementation } from "./trait.js"
 import { RuleNode } from "./trait.js"
 
 export class DivisorNode extends composeNode() {
@@ -24,7 +26,19 @@ export class DivisorNode extends composeNode() {
 	}
 }
 
-const z = new DivisorNode({ value: 5 })
+export const divisor = compose(describable)<
+	{ value: number },
+	ConstraintImplementation
+>({
+	intersect(other) {
+		return
+	},
+	writeDefaultDescription() {
+		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
+	}
+})
+
+export const divisible = trait<{ value: number }>({})
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

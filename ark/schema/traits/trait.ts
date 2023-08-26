@@ -1,11 +1,11 @@
 import type { listable, satisfy } from "@arktype/util"
-import { throwInternalError } from "@arktype/util"
+import { compose, throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { BaseNode } from "../node.js"
 import { AliasNode } from "./alias.js"
 import type { RangeConstraintSet } from "./bound.js"
 import { BoundNode } from "./bound.js"
-import { DescriptionNode } from "./description.js"
+import { describable, DescriptionNode } from "./description.js"
 import { DivisorNode } from "./divisor.js"
 import { DomainNode } from "./domain.js"
 import { IdentityNode } from "./identity.js"
@@ -97,6 +97,10 @@ export abstract class RuleNode<
 	protected abstract reduceRules(
 		other: Rule<this["kind"]>
 	): definition | Disjoint | null
+}
+
+export interface ConstraintImplementation {
+	intersect(other: this): this | Disjoint
 }
 
 // export const assertAllowsConstraint = (

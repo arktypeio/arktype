@@ -6,7 +6,22 @@ export type Trait<
 	implementation extends object = {},
 	base extends object = any
 > = {
-	(base: base): (input: input) => evaluate<base & implementation & input>
+	<additionalInput, additionalImplementation = {}>(
+		base: evaluate<base & additionalImplementation> &
+			ThisType<
+				evaluate<
+					base &
+						implementation &
+						additionalImplementation &
+						input &
+						additionalInput
+				>
+			>
+	): (
+		input: evaluate<input & additionalInput>
+	) => evaluate<
+		base & implementation & additionalImplementation & input & additionalInput
+	>
 	implementation: implementation
 }
 

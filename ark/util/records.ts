@@ -112,3 +112,9 @@ export const DynamicBase = class {
 export type PickPartial<o extends object, key extends keyof o> = {
 	[k in key]?: o[k]
 }
+
+export const shallowClone = <input extends object>(input: input): input =>
+	Object.create(
+		Object.getPrototypeOf(input),
+		Object.getOwnPropertyDescriptors(input)
+	)
