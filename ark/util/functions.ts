@@ -1,5 +1,10 @@
 import { throwInternalError } from "./errors.js"
 
+export type Fn<
+	args extends readonly unknown[] = readonly never[],
+	returns = unknown
+> = (...args: args) => returns
+
 export const cached = <T>(thunk: () => T) => {
 	let isCached = false
 	let result: T | undefined

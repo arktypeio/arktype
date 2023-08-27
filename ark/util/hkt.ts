@@ -1,16 +1,16 @@
-export declare const _: unique symbol
+import type { Fn } from "./functions.js"
 
-export type _ = typeof _
+export declare const args: unique symbol
 
-type Fn = (...args: never[]) => unknown
+export type args = typeof args
 
-export declare abstract class Kind<F extends Fn = Fn> {
-	abstract readonly [_]: unknown
-	f: F
+export declare abstract class Kind<f extends Fn = Fn> {
+	abstract readonly [args]: unknown
+	f: f
 }
 
-export type Apply<F extends Kind, X extends Parameters<F["f"]>[0]> = ReturnType<
-	(F & {
-		readonly [_]: X
+export type apply<k extends Kind, args extends Parameters<k["f"]>> = ReturnType<
+	(k & {
+		readonly [args]: args
 	})["f"]
 >
