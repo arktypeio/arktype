@@ -4,14 +4,42 @@
 	"tokenColors": [
 		{
 			"name": "functions",
-			"scope": ["entity.name.function"],
+			"scope": ["entity.name.function", "meta.function-call", "support.function"],
 			"settings": {
 				"foreground": "#80cff8"
 			}
 		},
 		{
-			"name": "types",
-			"scope": ["entity.name.type"],
+			"name": "function arguments",
+			"scope": ["meta.function-call.arguments"],
+			"settings": {
+				"foreground": "#eeeeee"
+			}
+		},
+		{
+			"name": "escapes",
+			"scope": ["constant.character.escape"],
+			"settings": {
+				"foreground": "#eb9f2e",
+			}
+		},
+		{
+			"name": "tags",
+			"scope": ["entity.name.tag"],
+			"settings": {
+				"foreground": "#408fde",
+			}
+		},
+		{
+			"name": "decorators",
+			"scope": ["punctuation.definition.decorator"],
+			"settings": {
+				"foreground": "#80cff8",
+			}
+		},
+		{
+			"name": "types and exceptions",
+			"scope": ["entity.name.type", "support.type.exception"],
 			"settings": {
 				"foreground": "#40decc"
 			}
