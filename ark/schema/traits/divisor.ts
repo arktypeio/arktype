@@ -1,9 +1,12 @@
 import { compose } from "@arktype/util"
 import { composeNode } from "../node.js"
 import { describable } from "./description.js"
+import type { BaseConstraint, Constraint } from "./trait.js"
 import { constraint } from "./trait.js"
 
-export const divisor = constraint<number>(
+export interface Divisor extends BaseConstraint<Divisor, number> {}
+
+export const divisor = constraint<"divisor">(
 	(l, r) => (l * r) / greatestCommonDivisor(l, r)
 )({
 	writeDefaultDescription() {
@@ -12,8 +15,6 @@ export const divisor = constraint<number>(
 })
 
 const d = divisor(5, { description: "foo" }) //?
-
-export type Divisor = ReturnType<typeof divisor>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
