@@ -1,10 +1,6 @@
 import type { reify, Trait } from "@arktype/util"
-import { compose, trait } from "@arktype/util"
+import { trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import { composeNode } from "../node.js"
-import { describable } from "./description.js"
-import type { BaseConstraint, Constraint } from "./trait.js"
-import { constraint } from "./trait.js"
 
 // export interface Divisor extends BaseConstraint<Divisor, number> {}
 
@@ -34,17 +30,18 @@ const base = trait<Base>({
 	}
 })
 
-export interface Divisor extends Trait {
-	bases: [Base]
+export interface Divisor extends Base {
 	args: [number]
 	foo: string
 }
 
 const divisor = trait<Divisor>({
 	get foo() {
-		return this.rule
+		return `${this.rule}`
 	}
-})({})
+})({
+	intersectRules: (l, r) => l.rule
+})
 
 const d = divisor(5) //?
 

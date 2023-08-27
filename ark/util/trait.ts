@@ -1,60 +1,37 @@
 import type { error } from "./errors.js"
-import type { conform, evaluate } from "./generics.js"
+import type { conform, evaluate, mergeAll } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
+import type { intersectUnion, unionToTuple } from "./unionToTuple.js"
 
 // export interface Trait {
 // 	args: readonly any[]
 // }
 
+type mergeParameters<
+	parameters extends readonly unknown[],
+	result extends readonly unknown[] = []
+> = parameters extends readonly [
+	infer head extends readonly unknown[],
+	...infer tail
+]
+	? mergeParameters<tail, intersectParameters<result, head>>
+	: result
+
 export interface Trait {
-	bases: readonly Trait[]
-	args: readonly any[]
+	args: readonly unknown[]
 }
 
-// type TraitConstructor<trait extends Trait = Trait> = {
-// 	<extendedArgs extends readonly unknown[] = [], extendedBase = {}>(
-// 		base: evaluate<trait["$base"] & extendedBase> &
-// 			ThisType<
-// 				traitInstance<
-// 					intersectParameters<trait["$args"], extendedArgs>,
-// 					trait["$implementation"] & extendedBase,
-// 					trait["$base"]
-// 				>
-// 			>
-// 	): (
-// 		...args: intersectParameters<trait["$args"], extendedArgs>
-// 	) => traitInstance<
-// 		intersectParameters<trait["$args"], extendedArgs>,
-// 		trait["$implementation"] & extendedBase,
-// 		trait["$base"]
-// 	>
-// 	implementation: trait["$implementation"]
-// }
-
-// type traitInstance<
-// 	args extends readonly unknown[],
-// 	implementation extends object,
-// 	base extends object
-// > = evaluate<{ readonly args: args } & base & implementation>
-
-export type abstractTraitKey<trait extends Trait> = Extract<
-	keyof trait,
-	`$${string}`
->
-
-export type reify<trait extends Trait> = evaluate<{
+export type reify<trait> = evaluate<{
 	[k in keyof trait as k extends `$${infer name}` ? name : k]: trait[k]
 }>
 
-export type futureSelf<trait extends Trait> = reify<trait> &
-	reify<trait["bases"][number]>
+type extractAbstract<trait> = Omit<reify<trait>, keyof trait>
 
 export const trait = <trait extends Trait>(
-	implementation: Omit<trait, keyof Trait | `$${string}`> &
-		ThisType<futureSelf<trait>>
+	implementation: Omit<trait, `$${string}`> & ThisType<reify<trait>>
 ) =>
 	Object.assign(
-		(base: base) => {
+		(base: extractAbstract<trait>) => {
 			const prototype = Object.defineProperties(
 				base,
 				Object.getOwnPropertyDescriptors(implementation)
@@ -63,10 +40,37 @@ export const trait = <trait extends Trait>(
 				Object.create(prototype, { args: { value: args } })
 		},
 		{ implementation }
-	) as {
-		(base: base): (...args: trait["args"]) => trait
-		implementation: Omit<trait, keyof base>
+	) as {} as {
+		(
+			base: extractAbstract<trait> & ThisType<reify<trait>>
+		): (...args: trait["args"]) => reify<trait>
+		implementation: Omit<trait, keyof Trait | `$${string}`>
 	}
+
+// type reifyBases<
+// 	bases extends readonly unknown[],
+// 	result extends Trait = { bases: []; args: [] }
+// > = bases extends readonly [infer head extends Trait, ...infer tail]
+// 	? reifyBases<
+// 			tail,
+// 			Omit<result & extractReified<head>, "args"> & {
+// 				args: intersectParameters<result["args"], head["args"]>
+// 			}
+// 	  >
+// 	: evaluate<result>
+
+// type reduceAbstract<
+// 	bases extends readonly unknown[],
+// 	result extends {} = {}
+// > = bases extends readonly [infer head, ...infer tail]
+// 	? reduceAbstract<tail, result & extractAbstract<head>>
+// 	: evaluate<result>
+
+// type unimplemented<trait extends Trait> = evaluate<
+// 	extractAbstract<trait> & reduceAbstract<trait["bases"]>
+// 	>
+
+// 	export type reify<trait extends Trait> = reifyBases<[...trait["bases"], trait]>
 
 export type compose<
 	traits extends readonly Trait[],
