@@ -1,7 +1,9 @@
+import type { andPreserveUnknown } from "./generics.js"
+
 export type intersectParameters<
 	l extends readonly unknown[],
 	r extends readonly unknown[],
-	result extends readonly unknown[] = []
+	prefix extends readonly unknown[] = []
 > = [parseNextParam<l>, parseNextParam<r>] extends [
 	infer lState extends ParameterParseResult,
 	infer rState extends ParameterParseResult
@@ -12,27 +14,26 @@ export type intersectParameters<
 				lState["tail"],
 				rState["tail"],
 				[
-					...result,
-					// the intersection is optional only if both elements are
+					...prefix,
+					// the intersection is optional only if both elements are optional
 					...(lState["optional"] | rState["optional"] extends true
-						? [(lState["head"] & rState["head"])?]
-						: [lState["head"] & rState["head"]])
+						? [andPreserveUnknown<lState["head"], rState["head"]>?]
+						: [andPreserveUnknown<lState["head"], rState["head"]>])
 				]
 		  >
 		: // once both arrays have reached their fixed end or a variadic element, return the final result
 		  [
-				...result,
-				// if the state is done and non-optional, we've reached the end of a non-variadic tuple
-				...(lState["optional"] extends false
-					? rState["optional"] extends false
+				...prefix,
+				...(lState["tail"] extends readonly []
+					? rState["tail"] extends readonly []
 						? []
-						: // if done and non-optional, we've reached a variadic element
+						: // if done and non-empty, we've reached a variadic element
 						  // (or it's just a normal array, since number[] === [...number[]])
 						  rState["tail"]
-					: rState["optional"] extends false
+					: rState["tail"] extends readonly []
 					? lState["tail"]
 					: // if we've reached a variadic element in both arrays, intersect them
-					  (lState["head"] & rState["head"])[])
+					  andPreserveUnknown<lState["head"], rState["head"]>[])
 		  ]
 	: never
 
@@ -50,7 +51,7 @@ type parseNextParam<params extends readonly unknown[]> =
 				// elements after the last are typed as unknown. For a normal
 				// tuple (not parameters), this would be never.
 				head: unknown
-				optional: false
+				optional: true
 				tail: []
 				done: true
 		  }
@@ -64,6 +65,8 @@ type parseNextParam<params extends readonly unknown[]> =
 			  }
 			: {
 					head: head
+					// the parameter is required iff its type is the same as the
+					// one we inferred from within (infer head)?, otherwise optional
 					optional: params[0] extends head ? false : true
 					tail: tail
 					done: false

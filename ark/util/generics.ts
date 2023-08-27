@@ -6,6 +6,11 @@ type asConstRecurse<t> = {
 
 export type Literalable = string | boolean | number | bigint | null | undefined
 
+/**
+ * Force an operation like `{ a: 0 } & { b: 1 }` to be computed so that it displays `{ a: 0; b: 1 }`.
+ *
+ * Also works for some non-intersections, e.g. `keyof SomeObj` => `"a" | "b" | ...`
+ */
 export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
 export type exact<t, u> = {
@@ -22,6 +27,18 @@ export type mergeAll<t extends readonly unknown[]> = t extends readonly [
 ]
 	? merge<head, mergeAll<tail>>
 	: []
+
+/**
+ * Simple interesection (&) combined with evaluate to improve display
+ */
+export type and<l, r> = evaluate<l & r>
+
+/**
+ * Interesection (`&`) that avoids evaluating `unknown` to `{}`
+ */
+export type andPreserveUnknown<l, r> = unknown extends l & r
+	? unknown
+	: evaluate<l & r>
 
 export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
