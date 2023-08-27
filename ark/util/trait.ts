@@ -1,17 +1,18 @@
 import type { error } from "./errors.js"
 import type { conform, evaluate } from "./generics.js"
+import type { intersectParameters } from "./parameters.js"
 
 export type Trait<
-	args extends readonly unknown[] = readonly any[],
+	args extends readonly unknown[] = any,
 	implementation extends object = {},
 	base extends object = any
 > = {
-	<extendedArgs extends readonly unknown[], extendedImplementation = {}>(
-		base: evaluate<base & extendedImplementation> &
+	<extendedArgs extends readonly unknown[] = [], extendedBase = {}>(
+		base: evaluate<base & extendedBase> &
 			ThisType<
 				traitInstance<
 					intersectParameters<args, extendedArgs>,
-					implementation & extendedImplementation,
+					implementation & extendedBase,
 					base
 				>
 			>
@@ -19,7 +20,7 @@ export type Trait<
 		...args: intersectParameters<args, extendedArgs>
 	) => traitInstance<
 		intersectParameters<args, extendedArgs>,
-		implementation & extendedImplementation,
+		implementation & extendedBase,
 		base
 	>
 	implementation: implementation
@@ -30,28 +31,6 @@ type traitInstance<
 	implementation extends object,
 	base extends object
 > = evaluate<{ readonly args: args } & base & implementation>
-
-// Based on inferArrayIntersection from the core arktype package
-type intersectParameters<
-	l extends readonly unknown[],
-	r extends readonly unknown[],
-	result extends readonly unknown[] = []
-> = l extends readonly []
-	? [...result, ...r]
-	: r extends readonly []
-	? [...result, ...l]
-	: [number, number] extends [l["length"], r["length"]]
-	? [...result, ...(l[number] & r[number])[]]
-	: [l, r] extends [
-			readonly [unknown?, ...infer lTail],
-			readonly [unknown?, ...infer rTail]
-	  ]
-	? intersectParameters<lTail, rTail, [...result, l[0] & r[0]]>
-	: l extends readonly [infer lHead, ...infer lTail]
-	? intersectParameters<lTail, r, [...result, lHead & r[number]]>
-	: r extends readonly [infer rHead, ...infer rTail]
-	? intersectParameters<l, rTail, [...result, l[number] & rHead]>
-	: result
 
 export const trait = <
 	args extends readonly unknown[],
