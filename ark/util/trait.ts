@@ -2,43 +2,56 @@ import type { error } from "./errors.js"
 import type { conform, evaluate } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 
-export type Trait<
-	args extends readonly unknown[] = any,
-	implementation extends object = {},
-	base extends object = any
-> = {
-	<extendedArgs extends readonly unknown[] = [], extendedBase = {}>(
-		base: evaluate<base & extendedBase> &
-			ThisType<
-				traitInstance<
-					intersectParameters<args, extendedArgs>,
-					implementation & extendedBase,
-					base
-				>
-			>
-	): (
-		...args: intersectParameters<args, extendedArgs>
-	) => traitInstance<
-		intersectParameters<args, extendedArgs>,
-		implementation & extendedBase,
-		base
-	>
-	implementation: implementation
+// export interface Trait {
+// 	args: readonly any[]
+// }
+
+export interface Trait {
+	bases: readonly Trait[]
+	args: readonly any[]
 }
 
-type traitInstance<
-	args extends readonly unknown[],
-	implementation extends object,
-	base extends object
-> = evaluate<{ readonly args: args } & base & implementation>
+// type TraitConstructor<trait extends Trait = Trait> = {
+// 	<extendedArgs extends readonly unknown[] = [], extendedBase = {}>(
+// 		base: evaluate<trait["$base"] & extendedBase> &
+// 			ThisType<
+// 				traitInstance<
+// 					intersectParameters<trait["$args"], extendedArgs>,
+// 					trait["$implementation"] & extendedBase,
+// 					trait["$base"]
+// 				>
+// 			>
+// 	): (
+// 		...args: intersectParameters<trait["$args"], extendedArgs>
+// 	) => traitInstance<
+// 		intersectParameters<trait["$args"], extendedArgs>,
+// 		trait["$implementation"] & extendedBase,
+// 		trait["$base"]
+// 	>
+// 	implementation: trait["$implementation"]
+// }
 
-export const trait = <
-	args extends readonly unknown[],
-	implementation extends object,
-	base extends object = {}
->(
-	implementation: implementation &
-		ThisType<traitInstance<args, implementation, base>>
+// type traitInstance<
+// 	args extends readonly unknown[],
+// 	implementation extends object,
+// 	base extends object
+// > = evaluate<{ readonly args: args } & base & implementation>
+
+export type abstractTraitKey<trait extends Trait> = Extract<
+	keyof trait,
+	`$${string}`
+>
+
+export type reify<trait extends Trait> = evaluate<{
+	[k in keyof trait as k extends `$${infer name}` ? name : k]: trait[k]
+}>
+
+export type futureSelf<trait extends Trait> = reify<trait> &
+	reify<trait["bases"][number]>
+
+export const trait = <trait extends Trait>(
+	implementation: Omit<trait, keyof Trait | `$${string}`> &
+		ThisType<futureSelf<trait>>
 ) =>
 	Object.assign(
 		(base: base) => {
@@ -46,11 +59,14 @@ export const trait = <
 				base,
 				Object.getOwnPropertyDescriptors(implementation)
 			)
-			return (...args: args) =>
+			return (...args: trait["args"]) =>
 				Object.create(prototype, { args: { value: args } })
 		},
 		{ implementation }
-	) as {} as Trait<args, implementation, base>
+	) as {
+		(base: base): (...args: trait["args"]) => trait
+		implementation: Omit<trait, keyof base>
+	}
 
 export type compose<
 	traits extends readonly Trait[],
