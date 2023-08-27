@@ -1,20 +1,7 @@
-import type { listable, satisfy } from "@arktype/util"
-import { compose, throwInternalError, trait } from "@arktype/util"
+import { compose, trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import { BaseNode } from "../node.js"
-import type { AliasNode } from "./alias.js"
-import type { RangeConstraintSet } from "./bound.js"
-import { BoundNode } from "./bound.js"
-import type { DescriptionNode } from "./description.js"
 import { describable } from "./description.js"
 import type { Divisor } from "./divisor.js"
-import type { DomainNode } from "./domain.js"
-import type { IdentityNode } from "./identity.js"
-import type { InstanceOfNode } from "./instanceOf.js"
-import type { MorphNode } from "./morph.js"
-import type { NarrowNode } from "./narrow.js"
-import type { PatternConstraint } from "./pattern.js"
-import type { PropConstraint } from "./prop/prop.js"
 
 export const ruleDefinitions = {
 	// prop: PropConstraint,
