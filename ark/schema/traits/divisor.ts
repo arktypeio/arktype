@@ -1,35 +1,11 @@
-import { compose, type extend, trait } from "@arktype/util"
-import { BaseNode, composeNode } from "../node.js"
+import { compose } from "@arktype/util"
+import { composeNode } from "../node.js"
 import { describable } from "./description.js"
-import type { ConstraintImplementation } from "./trait.js"
-import { RuleNode } from "./trait.js"
+import { constraint } from "./trait.js"
 
-export class DivisorNode extends composeNode() {
-	declare readonly value: number
-	readonly kind = "divisor"
-
-	constructor(def: { value: number }) {
-		super()
-		this.value = def.value
-	}
-
-	writeDefaultDescription() {
-		return this.value === 1 ? "an integer" : `a multiple of ${this.value}`
-	}
-
-	protected reduceRules(other: DivisorNode) {
-		return {
-			value:
-				(this.value * other.value) /
-				greatestCommonDivisor(this.value, other.value)
-		}
-	}
-}
-
-export const divisor = compose(describable)<[number], { rule: number }>({
-	get rule() {
-		return this.args[0]
-	},
+export const divisor = constraint<number>(
+	(l, r) => (l * r) / greatestCommonDivisor(l, r)
+)({
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
@@ -37,7 +13,7 @@ export const divisor = compose(describable)<[number], { rule: number }>({
 
 const d = divisor(5, { description: "foo" }) //?
 
-type Divisor = typeof divisor
+export type Divisor = ReturnType<typeof divisor>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

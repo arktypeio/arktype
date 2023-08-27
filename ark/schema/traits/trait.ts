@@ -6,6 +6,7 @@ import { AliasNode } from "./alias.js"
 import type { RangeConstraintSet } from "./bound.js"
 import { BoundNode } from "./bound.js"
 import { describable, DescriptionNode } from "./description.js"
+import type { Divisor } from "./divisor.js"
 import { DivisorNode } from "./divisor.js"
 import { DomainNode } from "./domain.js"
 import { IdentityNode } from "./identity.js"
@@ -35,24 +36,19 @@ export type Rule<kind extends RuleKind = RuleKind> = InstanceType<
 	RuleDefinitions[kind]
 >
 
-export type RuleSets = satisfy<
-	{
-		[kind in RuleKind]: listable<Rule<kind>>
-	},
-	{
-		prop: PropConstraint
-		identity: IdentityNode
-		domain: DomainNode
-		instanceOf: InstanceOfNode
-		divisor: DivisorNode
-		range: RangeConstraintSet
-		pattern: readonly PatternConstraint[]
-		narrow: readonly NarrowNode[]
-		description: readonly DescriptionNode[]
-		alias: AliasNode
-		morph: readonly MorphNode[]
-	}
->
+export type RuleSets = {
+	prop: PropConstraint
+	identity: IdentityNode
+	domain: DomainNode
+	instanceOf: InstanceOfNode
+	divisor: Divisor
+	range: RangeConstraintSet
+	pattern: readonly PatternConstraint[]
+	narrow: readonly NarrowNode[]
+	description: readonly DescriptionNode[]
+	alias: AliasNode
+	morph: readonly MorphNode[]
+}
 
 export type RuleSet<kind extends RuleKind = RuleKind> = RuleSets[kind]
 
@@ -99,14 +95,26 @@ export abstract class RuleNode<
 	): definition | Disjoint | null
 }
 
-export const constraint = <rule, implementation>(
-	implementation: implementation
-) => {}
-
-export interface ConstraintImplementation<rule> {
-	rule: rule
-	intersect(other: rule): rule | Disjoint
+interface ConstraintImplementation<rule> {
+	readonly rule: rule
+	intersect(other: this): this | Disjoint | null
 }
+
+export const constraint = <rule>(
+	intersect: (l: rule, r: rule) => rule | Disjoint | null
+) =>
+	compose(
+		describable,
+		trait<[rule], ConstraintImplementation<rule>, { readonly rule: rule }>({
+			get rule() {
+				return this.args[0]
+			},
+			intersect(other) {
+				const ruleIntersection = intersect(this.rule, other.rule)
+				return other
+			}
+		})
+	)
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,
