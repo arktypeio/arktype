@@ -6,7 +6,7 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
-import { RuleNode } from "./trait.js"
+import { RuleNode } from "./constraint.js"
 
 export interface InstanceOfDefinition<
 	constructor extends AbstractableConstructor = AbstractableConstructor

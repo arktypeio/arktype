@@ -9,7 +9,7 @@ import type { IdentityNode } from "../traits/identity.js"
 import type { InstanceOfNode } from "../traits/instanceOf.js"
 import type { MorphNode } from "../traits/morph.js"
 import type { NarrowNode } from "../traits/narrow.js"
-import type { ConstraintKind, RuleNode, RuleSet } from "../traits/trait.js"
+import type { ConstraintKind, RuleNode, RuleSet } from "../traits/constraint.js"
 import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 

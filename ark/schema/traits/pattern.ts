@@ -1,6 +1,6 @@
 import { throwParseError } from "@arktype/util"
 import type { BaseDefinition } from "../node.js"
-import { RuleNode } from "./trait.js"
+import { RuleNode } from "./constraint.js"
 
 export type PatternInput = RegexLiteral | PatternDefinition | RegExp
 

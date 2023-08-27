@@ -1,7 +1,7 @@
 import { compose } from "@arktype/util"
 import type { composeTraits, extend, Trait } from "@arktype/util"
 import { Describable } from "./traits/description.js"
-import type { ConstraintDefinitions } from "./traits/trait.js"
+import type { ConstraintDefinitions } from "./traits/constraint.js"
 import type { TypeDefinitions } from "./types/type.js"
 
 export type NodeDefinitionsByKind = extend<
