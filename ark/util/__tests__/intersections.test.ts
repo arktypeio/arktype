@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import type { intersectParameters } from "@arktype/util"
+import type { intersectArrays, intersectParameters } from "@arktype/util"
 import { suite, test } from "mocha"
 
 suite("intersectParameters", () => {
@@ -10,6 +10,10 @@ suite("intersectParameters", () => {
 	test("one empty", () => {
 		type t = intersectParameters<[], [string, number, ...boolean[]]>
 		attest({} as t).typed as [string, number, ...boolean[]]
+	})
+	test("longer parameters preserved", () => {
+		type t = intersectParameters<["a"], [string, number]>
+		attest({} as t).typed as ["a", number]
 	})
 	test("objects evaluated", () => {
 		type t = intersectParameters<[{ a: string }], [{ b: boolean }]>
@@ -115,5 +119,21 @@ suite("intersectParameters", () => {
 				g: 6
 			}[]
 		]
+	})
+	test("extra variadic args preserved", () => {
+		type t = intersectParameters<["a", "b"], [string, ...string[]]>
+		attest({} as t).typed as ["a", "b", ...string[]]
+	})
+})
+
+suite("intersectArrays", () => {
+	// Ideally this might be reduced to a top-level never
+	test("incompatible lengths", () => {
+		type t = intersectArrays<[], [string]>
+		attest({} as t).typed as [never]
+	})
+	test("extra variadic args truncated", () => {
+		type t = intersectArrays<["a", "b"], [string, ...string[]]>
+		attest({} as t).typed as ["a", "b"]
 	})
 })

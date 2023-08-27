@@ -1,4 +1,4 @@
-import type { Dict, evaluate, isAny, Kind, nominal } from "@arktype/util"
+import type { Dict, evaluate, isAny, Hkt, nominal } from "@arktype/util"
 import {
 	domainOf,
 	hasDomain,
@@ -117,7 +117,7 @@ type bootstrapExports<def> = bootstrapAliases<{
 }>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
-type PreparsedResolution = Module | GenericProps | Kind
+type PreparsedResolution = Module | GenericProps | Hkt
 
 type bootstrapAliases<def> = {
 	[k in Exclude<

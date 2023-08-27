@@ -31,6 +31,7 @@ type intersectObjects<l, r> = [l, r] extends [object, object]
 		  }>
 	: l & r
 
+// TODO: Test instantiations removing this in favor of HKT
 type inferArrayIntersection<
 	l extends List,
 	r extends List,

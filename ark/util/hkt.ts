@@ -4,13 +4,16 @@ export declare const args: unique symbol
 
 export type args = typeof args
 
-export declare abstract class Kind<f extends Fn = Fn> {
+export declare abstract class Hkt<f extends Fn = Fn> {
 	abstract readonly [args]: unknown
 	f: f
 }
 
-export type apply<k extends Kind, args extends Parameters<k["f"]>> = ReturnType<
-	(k & {
+export type apply<
+	hkt extends Hkt,
+	args extends Parameters<hkt["f"]>[0]
+> = ReturnType<
+	(hkt & {
 		readonly [args]: args
 	})["f"]
 >

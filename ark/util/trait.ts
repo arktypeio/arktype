@@ -1,6 +1,6 @@
 import type { error } from "./errors.js"
 import type { conform, evaluate } from "./generics.js"
-import type { intersectParameters } from "./parameters.js"
+import type { intersectParameters } from "./intersections.js"
 
 export type Trait<
 	args extends readonly unknown[] = any,
