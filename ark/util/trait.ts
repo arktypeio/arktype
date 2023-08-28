@@ -28,12 +28,19 @@ export type reify<trait> = evaluate<{
 }>
 
 type extractAbstract<trait> = Omit<reify<trait>, keyof trait | "args">
-// type extractConcrete<trait> = Omit<trait, `$${string}`>
+
+export type TraitConstructor<trait extends Trait> = {
+	(
+		base: extractAbstract<trait> & ThisType<reify<trait>>
+	): (...args: trait["$args"]) => reify<trait>
+	$args: trait["$args"]
+	implementation: Omit<trait, keyof Trait | `$${string}`>
+}
 
 export const trait = <trait extends Trait>(
 	implementation: Omit<trait, keyof Trait | `$${string}`> &
 		ThisType<reify<trait>>
-) =>
+): TraitConstructor<trait> =>
 	Object.assign(
 		(base: extractAbstract<trait>) => {
 			const prototype = Object.defineProperties(
@@ -43,38 +50,8 @@ export const trait = <trait extends Trait>(
 			return (...args: trait["$args"]) =>
 				Object.create(prototype, { args: { value: args } })
 		},
-		{ implementation }
-	) as {} as {
-		(
-			base: extractAbstract<trait> & ThisType<reify<trait>>
-		): (...args: trait["$args"]) => reify<trait>
-		implementation: Omit<trait, keyof Trait | `$${string}`>
-	}
-
-// type reifyBases<
-// 	bases extends readonly unknown[],
-// 	result extends Trait = { bases: []; args: [] }
-// > = bases extends readonly [infer head extends Trait, ...infer tail]
-// 	? reifyBases<
-// 			tail,
-// 			Omit<result & extractReified<head>, "args"> & {
-// 				args: intersectParameters<result["args"], head["args"]>
-// 			}
-// 	  >
-// 	: evaluate<result>
-
-// type reduceAbstract<
-// 	bases extends readonly unknown[],
-// 	result extends {} = {}
-// > = bases extends readonly [infer head, ...infer tail]
-// 	? reduceAbstract<tail, result & extractAbstract<head>>
-// 	: evaluate<result>
-
-// type unimplemented<trait extends Trait> = evaluate<
-// 	extractAbstract<trait> & reduceAbstract<trait["bases"]>
-// 	>
-
-// 	export type reify<trait extends Trait> = reifyBases<[...trait["bases"], trait]>
+		{ implementation } satisfies Omit<TraitConstructor<trait>, "$args"> as never
+	)
 
 export type compose<
 	traits extends readonly Trait[],
@@ -87,14 +64,14 @@ export type compose<
 	: result
 
 type intersectTraits<l extends Trait, r extends Trait> = {
-	[k in keyof (l & r)]: k extends "args"
-		? intersectParameters<l["args"], r["args"]>
+	[k in keyof (l & r)]: k extends "$args"
+		? intersectParameters<l["$args"], r["$args"]>
 		: (l & r)[k]
-}
+} & unknown
 
 export const compose = <traits extends readonly Trait[]>(...traits: traits) =>
 	trait(
-		(traits as Trait[]).reduce(
+		(traits as readonly Trait[]).reduce(
 			(base, trait) =>
 				Object.defineProperties(
 					base,
@@ -102,7 +79,7 @@ export const compose = <traits extends readonly Trait[]>(...traits: traits) =>
 				),
 			{}
 		)
-	) as {} as compose<traits>
+	) as {} as TraitConstructor<compose<traits>>
 
 // type validateTraits<
 // 	traits extends readonly Trait[],

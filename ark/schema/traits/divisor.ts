@@ -1,6 +1,7 @@
 import type { reify, Trait } from "@arktype/util"
 import { trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
+import { type BaseConstraint, constraint } from "./constraint.js"
 
 // export interface Divisor extends BaseConstraint<Divisor, number> {}
 
@@ -12,36 +13,29 @@ import type { Disjoint } from "../disjoint.js"
 // 	}
 // })
 
-interface Base extends Trait {
-	rule: this["args"][0]
-	intersect(other: reify<this>): reify<this> | Disjoint | null
-	$intersectRules: (
-		l: this["rule"],
-		r: this["rule"]
-	) => this["rule"] | Disjoint | null
+export interface Divisor extends BaseConstraint<"divisor"> {
+	$args: [number]
 }
 
-const base = trait<Base>({
-	get rule() {
-		return this.args[0]
-	},
-	intersect(other) {
-		return this
+const divisor = constraint<Divisor>(
+	(l, r) => (l * r) / greatestCommonDivisor(l, r)
+)({
+	writeDefaultDescription() {
+		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 })
-
-export interface Divisor extends Base {
-	args: [number]
-	foo: string
-}
-
-const divisor = trait<Divisor>({
-	get foo() {
-		return `${this.rule}`
-	}
-})({
-	intersectRules: (l, r) => l.rule
-})
+// 	({
+// 	writeDefaultDescription() {
+// 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
+// 	}
+// })
+// 	({
+// 	get foo() {
+// 		return `${this.rule}`
+// 	}
+// })({
+// 	intersectRules: (l, r) => l.rule
+// })
 
 const d = divisor(5) //?
 

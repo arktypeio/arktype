@@ -1,5 +1,7 @@
+import type { reify, Trait, TraitConstructor } from "@arktype/util"
 import { compose, trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
+import type { Describable } from "./description.js"
 import { describable } from "./description.js"
 import type { Divisor } from "./divisor.js"
 
@@ -29,26 +31,50 @@ export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 export type Rule<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintDefinitions[kind]["rule"]
 
-export interface BaseConstraint<self extends BaseConstraint<self, rule>, rule> {
-	readonly rule: rule
-	intersect(other: self): self | Disjoint | null
+// export interface BaseConstraint<self extends BaseConstraint<self, rule>, rule> {
+// 	readonly rule: rule
+// 	intersect(other: self): self | Disjoint | null
+// }
+
+export interface BaseConstraint<kind extends ConstraintKind> extends Trait {
+	rule: this["$args"][0]
+	intersect(other: Constraint<kind>): Constraint<kind> | Disjoint | null
 }
 
-export const constraint = <kind extends ConstraintKind>(
-	intersect: (l: Rule<kind>, r: Rule<kind>) => Rule<kind> | Disjoint | null
+export const constraint = <constraint extends BaseConstraint<any>>(
+	intersect: (
+		l: constraint["rule"],
+		r: constraint["rule"]
+	) => constraint["rule"] | Disjoint | null
 ) =>
 	compose(
 		describable,
-		trait<[Rule<kind>], BaseConstraint<Constraint<kind>, Rule<kind>>>({
+		trait({
 			get rule() {
 				return this.args[0]
 			},
 			intersect(other) {
 				const ruleIntersection = intersect(this.rule, other.rule)
-				return other
+				return this
 			}
 		})
-	)
+	) as {} as TraitConstructor<compose<[Describable, constraint]>>
+
+// export const constraint = <kind extends ConstraintKind>(
+// 	intersect: (l: Rule<kind>, r: Rule<kind>) => Rule<kind> | Disjoint | null
+// ) =>
+// 	compose(
+// 		describable,
+// 		trait<[Rule<kind>], BaseConstraint<Constraint<kind>, Rule<kind>>>({
+// 			get rule() {
+// 				return this.args[0]
+// 			},
+// 			intersect(other) {
+// 				const ruleIntersection = intersect(this.rule, other.rule)
+// 				return other
+// 			}
+// 		})
+// 	)
 
 // export type RuleSets = {
 // 	prop: PropConstraint
