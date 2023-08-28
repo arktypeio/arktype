@@ -14,7 +14,7 @@ type mergeParameters<
 	: result
 
 export interface TraitDeclaration {
-	$args: readonly unknown[]
+	args: readonly unknown[]
 }
 
 type EmptyTrait = satisfy<TraitDeclaration, { $args: [] }>
@@ -30,7 +30,7 @@ type implementationFor<trait extends TraitDeclaration> = Omit<
 	`$${string}`
 >
 
-export type Trait<declaration extends TraitDeclaration> = {
+export type Trait<declaration> = {
 	(
 		abstract: extractAbstract<declaration> & ThisType<reify<declaration>>
 	): (...args: declaration["$args"]) => reify<declaration>
@@ -38,11 +38,9 @@ export type Trait<declaration extends TraitDeclaration> = {
 	implementation: implementationFor<declaration>
 }
 
-export type TraitConstructor = <declaration extends TraitDeclaration>() => <
-	implementation
->(
-	implementation: conform<implementation, implementationFor<declaration>>
-) => Trait<declaration>
+export type TraitConstructor = <declaration>(implementation: {
+	[k in keyof declaration]: declaration[k]
+}) => Trait<declaration>
 
 export const trait: TraitConstructor = (implementation) =>
 	Object.assign(
