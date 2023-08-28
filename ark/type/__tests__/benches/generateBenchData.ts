@@ -17,7 +17,6 @@ const cyclicScopeSeed = Object.freeze({
 	}
 })
 
-/* eslint-disable max-lines-per-function */
 const generateScopeJson = (interval: number, seedDefs: object) => {
 	const defs = Object.entries(seedDefs).reduce(
 		(result, [name, seedDef]) => {

@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { scope, type } from "arktype"
 
 // TODO: remove alpha helpers from syntax highlighting

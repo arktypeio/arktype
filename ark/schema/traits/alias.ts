@@ -1,23 +1,13 @@
+import type { Trait } from "@arktype/util"
 import { trait } from "@arktype/util"
 
-export interface DescriptionDefinition {
-	readonly value: string
+export interface Aliasable extends Trait {
+	$args: [unknown, { alias?: string }?]
+	alias: string
 }
 
-export class DescriptionNode {
-	readonly kind = "description"
-
-	protected reduceRules(other: DescriptionNode) {
-		return null
-	}
-}
-
-export const aliasable = trait<
-	{ description?: string },
-	{ describe: () => string },
-	{ writeDefaultDescription: () => string }
->({
-	describe() {
-		return this.description ?? this.writeDefaultDescription()
+export const aliasable = trait<Aliasable>({
+	get alias() {
+		return this.args[1].alias ?? this.argsd
 	}
 })
