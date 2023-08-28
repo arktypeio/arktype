@@ -32,7 +32,7 @@
 		},
 		{
 			"name": "decorators",
-			"scope": ["punctuation.definition.decorator"],
+			"scope": ["meta.function.decorator punctuation", "meta.function.decorator support.type"],
 			"settings": {
 				"foreground": "#80cff8",
 			}
