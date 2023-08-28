@@ -1,4 +1,4 @@
-import type { reify, Trait, TraitConstructor } from "@arktype/util"
+import type { reify, TraitDeclaration, Trait } from "@arktype/util"
 import { compose, trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { BoundConstraint } from "./bound.js"
@@ -45,7 +45,7 @@ export type Rule<kind extends ConstraintKind = ConstraintKind> =
 export interface BaseConstraint<
 	kind extends ConstraintKind,
 	args extends readonly unknown[]
-> extends Trait {
+> extends TraitDeclaration {
 	$args: args
 	rule: this["$args"][0]
 	intersect(other: Constraint<kind>): Constraint<kind> | Disjoint | null
@@ -68,7 +68,7 @@ export const constraint = <constraint extends BaseConstraint<any, any>>(
 				return this
 			}
 		})
-	) as {} as TraitConstructor<compose<[Describable, constraint]>>
+	) as {} as Trait<compose<[Describable, constraint]>>
 
 // export type RuleSets = {
 // 	prop: PropConstraint

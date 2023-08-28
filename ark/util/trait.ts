@@ -13,61 +13,71 @@ type mergeParameters<
 	? mergeParameters<tail, intersectParameters<result, head>>
 	: result
 
-export interface Trait {
+export interface TraitDeclaration {
 	$args: readonly unknown[]
 }
 
-type EmptyTrait = satisfy<Trait, { $args: [] }>
+type EmptyTrait = satisfy<TraitDeclaration, { $args: [] }>
 
-export type reify<trait> = evaluate<{
+export type reify<trait> = {
 	[k in keyof trait as k extends `$${infer name}` ? name : k]: trait[k]
-}>
+}
 
 type extractAbstract<trait> = Omit<reify<trait>, keyof trait | "args">
 
-export type TraitConstructor<trait extends Trait> = {
+type implementationFor<trait extends TraitDeclaration> = Omit<
+	trait,
+	`$${string}`
+>
+
+export type Trait<declaration extends TraitDeclaration> = {
 	(
-		base: extractAbstract<trait> & ThisType<reify<trait>>
-	): (...args: trait["$args"]) => reify<trait>
-	$args: trait["$args"]
-	implementation: Omit<trait, keyof Trait | `$${string}`>
+		abstract: extractAbstract<declaration> & ThisType<reify<declaration>>
+	): (...args: declaration["$args"]) => reify<declaration>
+	$args: declaration["$args"]
+	implementation: implementationFor<declaration>
 }
 
-export const trait = <trait extends Trait>(
-	implementation: Omit<trait, keyof Trait | `$${string}`> &
-		ThisType<reify<trait>>
-): TraitConstructor<trait> =>
+export type TraitConstructor = <declaration extends TraitDeclaration>() => <
+	implementation
+>(
+	implementation: conform<implementation, implementationFor<declaration>>
+) => Trait<declaration>
+
+export const trait: TraitConstructor = (implementation) =>
 	Object.assign(
-		(base: extractAbstract<trait>) => {
+		(base: object) => {
 			const prototype = Object.defineProperties(
 				base,
 				Object.getOwnPropertyDescriptors(implementation)
 			)
-			return (...args: trait["$args"]) =>
+			return (...args: any[]) =>
 				Object.create(prototype, { args: { value: args } })
 		},
-		{ implementation } satisfies Omit<TraitConstructor<trait>, "$args"> as never
+		{ implementation } satisfies Omit<Trait, "$args"> as never
 	)
 
 export type compose<
-	traits extends readonly Trait[],
-	result extends Trait = EmptyTrait
+	traits extends readonly TraitDeclaration[],
+	result extends TraitDeclaration = EmptyTrait
 > = traits extends readonly [
-	infer head extends Trait,
-	...infer tail extends Trait[]
+	infer head extends TraitDeclaration,
+	...infer tail extends TraitDeclaration[]
 ]
 	? compose<tail, intersectTraits<result, head>>
 	: result
 
-type intersectTraits<l extends Trait, r extends Trait> = {
+type intersectTraits<l extends TraitDeclaration, r extends TraitDeclaration> = {
 	[k in keyof (l & r)]: k extends "$args"
 		? intersectParameters<l["$args"], r["$args"]>
 		: (l & r)[k]
 } & unknown
 
-export const compose = <traits extends readonly Trait[]>(...traits: traits) =>
+export const compose = <traits extends readonly TraitDeclaration[]>(
+	...traits: traits
+) =>
 	trait(
-		(traits as readonly Trait[]).reduce(
+		(traits as readonly TraitDeclaration[]).reduce(
 			(base, trait) =>
 				Object.defineProperties(
 					base,
@@ -75,7 +85,7 @@ export const compose = <traits extends readonly Trait[]>(...traits: traits) =>
 				),
 			{}
 		)
-	) as {} as TraitConstructor<compose<traits>>
+	) as {} as Trait<compose<traits>>
 
 // type validateTraits<
 // 	traits extends readonly Trait[],

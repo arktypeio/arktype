@@ -4,49 +4,35 @@
 	"tokenColors": [
 		{
 			"name": "functions",
-			"scope": ["entity.name.function", "meta.function-call", "support.function"],
+			"scope": [
+				"entity.name.function",
+				"meta.function-call",
+				"support.function",
+				// We have this for Python in honor of contributor TizzySaurus.
+				// Will be removed for consistency once they allow it or the next time someone complains about it.
+				"meta.function.decorator punctuation",
+				"meta.function.decorator support.type"
+			],
 			"settings": {
 				"foreground": "#80cff8"
 			}
 		},
 		{
-			"name": "function arguments",
-			"scope": ["meta.function-call.arguments"],
-			"settings": {
-				"foreground": "#eeeeee"
-			}
-		},
-		{
-			"name": "escapes",
-			"scope": ["constant.character.escape"],
-			"settings": {
-				"foreground": "#eb9f2e",
-			}
-		},
-		{
-			"name": "tags",
-			"scope": ["entity.name.tag"],
-			"settings": {
-				"foreground": "#408fde",
-			}
-		},
-		{
-			"name": "decorators",
-			"scope": ["meta.function.decorator punctuation", "meta.function.decorator support.type"],
-			"settings": {
-				"foreground": "#80cff8",
-			}
-		},
-		{
-			"name": "types and exceptions",
-			"scope": ["entity.name.type", "support.type.exception"],
+			"name": "types",
+			"scope": ["entity.name.type"],
 			"settings": {
 				"foreground": "#40decc"
 			}
 		},
 		{
 			"name": "keywords and operators",
-			"scope": ["keyword", "storage", "punctuation", "variable.language"],
+			"scope": [
+				"keyword",
+				"storage",
+				"punctuation",
+				"variable.language",
+				"constant.character.escape"
+			],
 			"settings": {
 				"foreground": "#eb9f2e"
 			}
@@ -62,7 +48,10 @@
 			"name": "primitives, built-in types, quotes",
 			"scope": [
 				"constant",
+				// also includes JSON keys
 				"support.type",
+				// YAML keys
+				"entity.name.tag",
 				"punctuation.definition.string.begin",
 				"punctuation.definition.string.end",
 				"punctuation.definition.string.template.begin",
@@ -73,8 +62,8 @@
 			}
 		},
 		{
-			"name": "invalid",
-			"scope": ["invalid"],
+			"name": "errors",
+			"scope": ["invalid", "support.type.exception"],
 			"settings": {
 				"foreground": "#9558f8"
 			}
@@ -91,7 +80,7 @@
 			// some edge cases like variables in template strings being
 			// highlighted as strings
 			"name": "variable",
-			"scope": ["variable"],
+			"scope": ["variable", "meta.function-call.arguments"],
 			"settings": {
 				"foreground": "#eeeeee"
 			}

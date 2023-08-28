@@ -1,5 +1,5 @@
 import { compose } from "@arktype/util"
-import type { composeTraits, extend, Trait } from "@arktype/util"
+import type { composeTraits, extend, TraitDeclaration } from "@arktype/util"
 import type { ConstraintDefinitions } from "./traits/constraint.js"
 import { Describable } from "./traits/description.js"
 import type { TypeDefinitions } from "./types/type.js"
@@ -32,7 +32,7 @@ export abstract class BaseNode {
 	}
 }
 
-export const composeNode = <traits extends readonly Trait[]>(
+export const composeNode = <traits extends readonly TraitDeclaration[]>(
 	...traits: traits
 ) => {
 	abstract class BaseNode extends compose(Describable, ...traits) {
