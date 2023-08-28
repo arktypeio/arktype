@@ -36,12 +36,16 @@ export type Rule<kind extends ConstraintKind = ConstraintKind> =
 // 	intersect(other: self): self | Disjoint | null
 // }
 
-export interface BaseConstraint<kind extends ConstraintKind> extends Trait {
+export interface ConstraintBase<
+	kind extends ConstraintKind,
+	args extends readonly unknown[]
+> extends Trait {
+	$args: args
 	rule: this["$args"][0]
 	intersect(other: Constraint<kind>): Constraint<kind> | Disjoint | null
 }
 
-export const constraint = <constraint extends BaseConstraint<any>>(
+export const constraint = <constraint extends ConstraintBase<any, any>>(
 	intersect: (
 		l: constraint["rule"],
 		r: constraint["rule"]
@@ -49,7 +53,7 @@ export const constraint = <constraint extends BaseConstraint<any>>(
 ) =>
 	compose(
 		describable,
-		trait({
+		trait<ConstraintBase<any, any>>({
 			get rule() {
 				return this.args[0]
 			},
@@ -59,22 +63,6 @@ export const constraint = <constraint extends BaseConstraint<any>>(
 			}
 		})
 	) as {} as TraitConstructor<compose<[Describable, constraint]>>
-
-// export const constraint = <kind extends ConstraintKind>(
-// 	intersect: (l: Rule<kind>, r: Rule<kind>) => Rule<kind> | Disjoint | null
-// ) =>
-// 	compose(
-// 		describable,
-// 		trait<[Rule<kind>], BaseConstraint<Constraint<kind>, Rule<kind>>>({
-// 			get rule() {
-// 				return this.args[0]
-// 			},
-// 			intersect(other) {
-// 				const ruleIntersection = intersect(this.rule, other.rule)
-// 				return other
-// 			}
-// 		})
-// 	)
 
 // export type RuleSets = {
 // 	prop: PropConstraint
