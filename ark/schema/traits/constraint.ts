@@ -1,9 +1,12 @@
 import type { reify, Trait, TraitConstructor } from "@arktype/util"
 import { compose, trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
+import type { BoundConstraint } from "./bound.js"
 import type { Describable } from "./description.js"
 import { describable } from "./description.js"
-import type { Divisor } from "./divisor.js"
+import type { DivisorConstraint } from "./divisor.js"
+import type { DomainNode } from "./domain.js"
+import type { PatternConstraint } from "./pattern.js"
 
 export const ruleDefinitions = {
 	// prop: PropConstraint,
@@ -20,7 +23,10 @@ export const ruleDefinitions = {
 }
 
 export type ConstraintDefinitions = {
-	divisor: Divisor
+	divisor: DivisorConstraint
+	domain: DomainNode
+	bound: BoundConstraint
+	pattern: PatternConstraint
 }
 
 export type ConstraintKind = keyof ConstraintDefinitions
@@ -36,7 +42,7 @@ export type Rule<kind extends ConstraintKind = ConstraintKind> =
 // 	intersect(other: self): self | Disjoint | null
 // }
 
-export interface ConstraintBase<
+export interface BaseConstraint<
 	kind extends ConstraintKind,
 	args extends readonly unknown[]
 > extends Trait {
@@ -45,7 +51,7 @@ export interface ConstraintBase<
 	intersect(other: Constraint<kind>): Constraint<kind> | Disjoint | null
 }
 
-export const constraint = <constraint extends ConstraintBase<any, any>>(
+export const constraint = <constraint extends BaseConstraint<any, any>>(
 	intersect: (
 		l: constraint["rule"],
 		r: constraint["rule"]
@@ -53,7 +59,7 @@ export const constraint = <constraint extends ConstraintBase<any, any>>(
 ) =>
 	compose(
 		describable,
-		trait<ConstraintBase<any, any>>({
+		trait<BaseConstraint<any, any>>({
 			get rule() {
 				return this.args[0]
 			},

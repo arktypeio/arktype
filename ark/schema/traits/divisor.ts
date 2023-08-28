@@ -1,19 +1,15 @@
-import type { reify, Trait } from "@arktype/util"
-import { trait } from "@arktype/util"
-import type { Disjoint } from "../disjoint.js"
-import { constraint, type ConstraintBase } from "./constraint.js"
+import { type BaseConstraint, constraint } from "./constraint.js"
 
-export interface Divisor extends ConstraintBase<"divisor", [number]> {}
+export interface DivisorConstraint
+	extends BaseConstraint<"divisor", [number]> {}
 
-const divisor = constraint<Divisor>(
+export const divisor = constraint<DivisorConstraint>(
 	(l, r) => (l * r) / greatestCommonDivisor(l, r)
 )({
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 })
-
-const d = divisor(5)
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

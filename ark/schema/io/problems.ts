@@ -12,10 +12,7 @@ import {
 	objectKindDescriptions,
 	stringify
 } from "@arktype/util"
-import type {
-	BoundDefinition,
-	NumericallyBoundableData
-} from "../traits/bound.js"
+import type { BoundRule, NumericallyBoundableData } from "../traits/bound.js"
 import { numericComparatorDescriptions } from "../traits/bound.js"
 import { domainDescriptions } from "../traits/domain.js"
 
@@ -216,10 +213,7 @@ export class KeyProblem extends Problem<KeyProblemKind> {
 	mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class BoundProblem extends Problem<
-	BoundDefinition,
-	NumericallyBoundableData
-> {
+export class BoundProblem extends Problem<BoundRule, NumericallyBoundableData> {
 	readonly code = "bound"
 
 	get mustBe() {

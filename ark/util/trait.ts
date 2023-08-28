@@ -3,10 +3,6 @@ import type { conform, evaluate, mergeAll, satisfy } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { intersectUnion, unionToTuple } from "./unionToTuple.js"
 
-// export interface Trait {
-// 	args: readonly any[]
-// }
-
 type mergeParameters<
 	parameters extends readonly unknown[],
 	result extends readonly unknown[] = []

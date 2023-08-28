@@ -9,10 +9,10 @@ import {
 } from "@arktype/util"
 import type { BaseNode } from "./node.js"
 import type { BoundNode } from "./traits/bound.js"
+import type { RuleNode } from "./traits/constraint.js"
 import type { DomainNode } from "./traits/domain.js"
 import type { IdentityNode } from "./traits/identity.js"
 import type { InstanceOfNode } from "./traits/instanceOf.js"
-import type { RuleNode } from "./traits/constraint.js"
 import type { PredicateNode } from "./types/predicate.js"
 
 type DisjointKinds = {
