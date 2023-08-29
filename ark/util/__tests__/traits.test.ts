@@ -1,56 +1,65 @@
-import { attest } from "@arktype/attest"
-import type {
-	AbstractableConstructor,
-	conform,
-	error,
-	TraitDeclaration
-} from "@arktype/util"
-import { compose, DynamicBase, trait } from "@arktype/util"
-import { suite, test } from "mocha"
-
-// declare abstract class Describable {
-// 	constructor(rule: unknown, attributes: { description?: string })
-// 	description: string
-// 	protected writeDefaultDescription(): string
-// }
-
-// @ts-expect-error (otherwise can't dynamically add abstracted props)
-export abstract class Trait<
-	abstracts extends object = {}
-> extends DynamicBase<abstracts> {
-	constructor(abstracts: abstracts) {
-		super(abstracts)
-	}
-	abstract args: readonly unknown[]
-}
-
-const implement = <
-	trait extends AbstractableConstructor<Trait>,
-	implementation
->(
-	trait: trait,
-	implementation: conform<
-		implementation & ThisType<InstanceType<trait>>,
-		ConstructorParameters<trait>[0]
-	>
-) => implementation
+import { compose, implement, Trait } from "@arktype/util"
 
 class Describable extends Trait<{
+	// declare any abstract props here
 	writeDefaultDescription: () => string
 }> {
-	declare args: [rule: unknown, attributes: { description?: string }]
+	// declare input
+	declare args: [rule: unknown, attributes?: { description?: string }]
 
 	get description() {
-		return this.args[1].description ?? this.writeDefaultDescription()
+		// you can use inputs/abstract props in whatever you implement, it's available via this
+		return this.args[1]?.description ?? this.writeDefaultDescription()
 	}
 }
 
-const z = implement(Describable, {
-	//       ^?
-	writeDefaultDescription() {
-		return this.args[1].description ?? this.writeDefaultDescription()
+class Boundable<data> extends Trait<{
+	sizeOf: (data: data) => number
+}> {
+	declare args: [rule: { limit?: number }]
+
+	get limit() {
+		return this.args[0].limit
 	}
+
+	check(data: data) {
+		return this.limit === undefined || this.sizeOf(data) <= this.limit
+	}
+}
+
+const describableFoo = implement(Describable, {
+	writeDefaultDescription() {
+		this.writeDefaultDescription
+		return "default foo" as const
+	},
+	other: () => "bar"
 })
+
+const bar = describableFoo({})
+
+// "deafult foo"
+console.log(bar.description)
+
+// "other foo"
+console.log(describableFoo({ description: "other foo" }).description)
+
+const boundableDescribable = compose(Boundable, Describable)
+
+boundableDescribable.prototype //?
+
+const string = implement(boundableDescribable, {
+	//     ^?
+	sizeOf: (data) => Number(data),
+	writeDefaultDescription: () => ""
+})
+
+const z = string({ limit: 5 }, { description: "foo" })
+
+const n = z.description //?
+
+// suite("", () => {
+// 	test("")
+// })
 
 // export const describable = trait<Describable>({
 // 	get description() {
