@@ -1,4 +1,8 @@
-import type { compose, TraitConstructor } from "@arktype/util"
+import type {
+	AbstractableConstructor,
+	compose,
+	TraitConstructor
+} from "@arktype/util"
 import { implement, Trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { BoundConstraint } from "./bound.js"
@@ -42,8 +46,8 @@ export type Rule<kind extends ConstraintKind = ConstraintKind> =
 // }
 
 export abstract class BaseConstraint<
-	kind extends ConstraintKind,
-	args extends readonly unknown[]
+	kind extends ConstraintKind = ConstraintKind,
+	args extends readonly unknown[] = readonly unknown[]
 > extends Trait {
 	declare args: args
 
@@ -51,17 +55,21 @@ export abstract class BaseConstraint<
 		return this.args[0] as (typeof this)["args"][0]
 	}
 
-	abstract intersect(other: this): this | Disjoint | null
+	abstract intersect(
+		other: Constraint<kind>
+	): Constraint<kind> | Disjoint | null
 }
 
-export const constraint = <constraint extends typeof BaseConstraint<any, any>>(
+export const constraint = <
+	trait extends AbstractableConstructor<BaseConstraint>
+>(
 	intersect: (
-		l: InstanceType<constraint>["rule"],
-		r: InstanceType<constraint>["rule"]
-	) => InstanceType<constraint>["rule"] | Disjoint | null
+		l: InstanceType<trait>["rule"],
+		r: InstanceType<trait>["rule"]
+	) => InstanceType<trait>["rule"] | Disjoint | null
 ) =>
 	implement(Describable, BaseConstraint) as TraitConstructor<
-		compose<[typeof Describable, constraint]>
+		compose<[typeof Describable, trait]>
 	>
 
 // export type RuleSets = {
