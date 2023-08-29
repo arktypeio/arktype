@@ -3,13 +3,13 @@ import type { AttributeKind } from "../attributes/attribute.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseDefinition } from "../node.js"
 import type { RangeConstraintSet } from "../traits/bound.js"
+import type { ConstraintKind, RuleNode, RuleSet } from "../traits/constraint.js"
 import type { DivisorNode } from "../traits/divisor.js"
-import type { DomainNode, NonEnumerableDomain } from "../traits/domain.js"
+import type { DomainConstraint, NonEnumerableDomain } from "../traits/domain.js"
 import type { IdentityNode } from "../traits/identity.js"
-import type { InstanceOfNode } from "../traits/instanceOf.js"
+import type { InstanceOfNode } from "../traits/prototype.js"
 import type { MorphNode } from "../traits/morph.js"
 import type { NarrowNode } from "../traits/narrow.js"
-import type { ConstraintKind, RuleNode, RuleSet } from "../traits/constraint.js"
 import type { TypeNode } from "./type.js"
 import { TypeNodeBase } from "./type.js"
 
@@ -80,7 +80,7 @@ export interface StringPredicateRule extends DomainPredicateRule<"string"> {
 export interface DomainPredicateRule<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > extends UnknownPredicateRule {
-	readonly domain: DomainNode<domain>
+	readonly domain: DomainConstraint<domain>
 }
 
 export interface DatePredicateRule extends InstancePredicateRule<typeof Date> {

@@ -10,15 +10,15 @@ import {
 import type { BaseNode } from "./node.js"
 import type { BoundNode } from "./traits/bound.js"
 import type { RuleNode } from "./traits/constraint.js"
-import type { DomainNode } from "./traits/domain.js"
+import type { DomainConstraint } from "./traits/domain.js"
 import type { IdentityNode } from "./traits/identity.js"
-import type { InstanceOfNode } from "./traits/instanceOf.js"
+import type { InstanceOfNode } from "./traits/prototype.js"
 import type { PredicateNode } from "./types/predicate.js"
 
 type DisjointKinds = {
 	domain?: {
-		l: DomainNode
-		r: DomainNode
+		l: DomainConstraint
+		r: DomainConstraint
 	}
 	identity?: {
 		l: IdentityNode

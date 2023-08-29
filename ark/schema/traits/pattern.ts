@@ -6,8 +6,8 @@ export interface PatternConstraint extends BaseConstraint<RegExp> {
 	literal: RegexLiteral
 }
 
-// For now, any non-equal regex are naively intersected
-export const pattern = constraint<PatternConstraint>(() => null)({
+// For now, non-equal regex are naively intersected
+export const pattern = constraint<PatternConstraint>((l, r) => [l, r])({
 	kind: "pattern",
 	get literal() {
 		return serializeRegex(this.rule)

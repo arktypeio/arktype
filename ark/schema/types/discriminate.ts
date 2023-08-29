@@ -12,7 +12,7 @@ import type {
 	SerializedPrimitive
 } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../disjoint.js"
-import type { DomainNode } from "../traits/domain.js"
+import type { DomainConstraint } from "../traits/domain.js"
 import type { IdentityNode } from "../traits/identity.js"
 import type { PredicateNode } from "./predicate.js"
 
@@ -107,8 +107,8 @@ export const discriminate = (
 				let lSerialized: string
 				let rSerialized: string
 				if (kind === "domain") {
-					lSerialized = (disjoint.l as DomainNode).domain
-					rSerialized = (disjoint.r as DomainNode).domain
+					lSerialized = (disjoint.l as DomainConstraint).domain
+					rSerialized = (disjoint.r as DomainConstraint).domain
 				} else if (kind === "value") {
 					lSerialized = (disjoint.l as IdentityNode).serialized
 					rSerialized = (disjoint.r as IdentityNode).serialized

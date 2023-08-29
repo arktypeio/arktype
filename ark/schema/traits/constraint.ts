@@ -10,8 +10,11 @@ import type { Disjoint } from "../disjoint.js"
 import type { BoundConstraint } from "./bound.js"
 import { Describable } from "./description.js"
 import type { DivisorConstraint } from "./divisor.js"
-import type { DomainNode } from "./domain.js"
+import type { DomainConstraint } from "./domain.js"
+import type { Identity } from "./identity.js"
 import type { PatternConstraint } from "./pattern.js"
+import type { PropConstraint } from "./prop.js"
+import type { PrototypeConstraint } from "./prototype.js"
 
 export const ruleDefinitions = {
 	// prop: PropConstraint,
@@ -29,9 +32,12 @@ export const ruleDefinitions = {
 
 export type ConstraintDefinitions = {
 	divisor: DivisorConstraint
-	domain: DomainNode
+	domain: DomainConstraint
 	bound: BoundConstraint
 	pattern: PatternConstraint
+	identity: Identity
+	prototype: PrototypeConstraint
+	prop: PropConstraint
 }
 
 export type ConstraintKind = keyof ConstraintDefinitions
@@ -59,7 +65,7 @@ export abstract class BaseConstraint<rule = any> extends compose(
 	}
 }
 
-type RuleIntersection<rule> = (l: rule, r: rule) => rule | Disjoint | null
+type RuleIntersection<rule> = (l: rule, r: rule) => [] | [rule] | [rule, rule]
 
 export const constraint = <constraint extends BaseConstraint>(
 	intersect: RuleIntersection<constraint["rule"]>

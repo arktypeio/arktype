@@ -16,23 +16,21 @@ export interface BoundConstraint extends BaseConstraint<BoundRule> {}
 export const bound = constraint<BoundConstraint>((l, r) => {
 	if (l.limit > r.limit) {
 		if (l.limitKind === "min") {
-			return r.limitKind === "min" ? l : Disjoint.from("range", l, r)
+			return r.limitKind === "min" ? [l] : []
 		}
-		return r.limitKind === "max" ? r : null
+		return r.limitKind === "max" ? [r] : [l, r]
 	}
 	if (l.limit < r.limit) {
 		if (l.limitKind === "max") {
-			return r.limitKind === "max" ? l : Disjoint.from("range", l, r)
+			return r.limitKind === "max" ? [l] : []
 		}
-		return r.limitKind === "min" ? r : null
+		return r.limitKind === "min" ? [r] : [l, r]
 	}
 	return l.limitKind === r.limitKind
-		? l.exclusive
-			? l
-			: r
+		? [l.exclusive ? l : r]
 		: l.exclusive || r.exclusive
-		? Disjoint.from("range", l, r)
-		: null
+		? []
+		: [l, r]
 })({
 	kind: "bound",
 	writeDefaultDescription() {

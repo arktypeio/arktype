@@ -1,22 +1,13 @@
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseDefinition } from "../node.js"
-import { RuleNode } from "./constraint.js"
+import { type BaseConstraint, constraint } from "./constraint.js"
 
-export interface IdentityDefinition extends BaseDefinition {
-	readonly value: number
-}
+export interface Identity extends BaseConstraint<unknown> {}
 
-// TODO: to constraint
-export class IdentityNode extends RuleNode<IdentityDefinition> {
-	readonly kind = "identity"
-
+export const identity = constraint<Identity>(() => [])({
+	kind: "identity",
 	writeDefaultDescription() {
 		// TODO: add reference to for objects
-		return stringify(this.value)
+		return stringify(this.rule)
 	}
-
-	reduceRules(other: IdentityNode) {
-		return Disjoint.from("identity", this, other)
-	}
-}
+})

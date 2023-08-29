@@ -2,12 +2,10 @@ import type { Domain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { type BaseConstraint, constraint } from "./constraint.js"
 
-export interface DomainNode
-	extends BaseConstraint<"domain", [NonEnumerableDomain]> {}
+export interface DomainConstraint extends BaseConstraint<NonEnumerableDomain> {}
 
-export const domain = constraint<DomainNode>((l, r) =>
-	Disjoint.from("domain", l, r)
-)({
+export const domain = constraint<DomainConstraint>(() => [])({
+	kind: "domain",
 	writeDefaultDescription() {
 		return domainDescriptions[this.rule]
 	}

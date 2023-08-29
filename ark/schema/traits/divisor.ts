@@ -3,16 +3,14 @@ import { constraint } from "./constraint.js"
 
 export interface DivisorConstraint extends BaseConstraint<number> {}
 
-export const divisor = constraint<DivisorConstraint>(
-	(l, r) => (l * r) / greatestCommonDivisor(l, r)
-)({
+export const divisor = constraint<DivisorConstraint>((l, r) => [
+	(l * r) / greatestCommonDivisor(l, r)
+])({
 	kind: "divisor",
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 })
-
-const d = divisor(5)
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
