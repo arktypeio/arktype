@@ -21,7 +21,11 @@ export type defer<t> = [t][t extends any ? 0 : never]
 
 export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 
-export type mergeAll<t extends readonly unknown[]> = t extends readonly [
+export type mergeAll<t extends readonly unknown[]> = t["length"] extends 1
+	? t[0]
+	: mergeAllRecurse<t>
+
+type mergeAllRecurse<t extends readonly unknown[]> = t extends readonly [
 	infer head,
 	...infer tail
 ]

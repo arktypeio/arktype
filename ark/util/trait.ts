@@ -1,4 +1,4 @@
-import type { evaluate, merge } from "./generics.js"
+import type { conform, evaluate, merge } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { NonEmptyList } from "./lists.js"
 import type { AbstractableConstructor } from "./objectKinds.js"
@@ -15,14 +15,18 @@ export abstract class Trait<
 	abstract args: readonly unknown[]
 }
 
+type selfOf<
+	trait extends AbstractableConstructor<Trait>,
+	implementation
+> = {} extends implementation
+	? InstanceType<trait>
+	: merge<InstanceType<trait>, implementation>
+
 export type TraitConstructor<
 	trait extends AbstractableConstructor<Trait> = AbstractableConstructor<Trait>
 > = <implementation extends ConstructorParameters<trait>[0]>(
-	implementation: implementation &
-		ThisType<merge<InstanceType<trait>, implementation>>
-) => (
-	...args: InstanceType<trait>["args"]
-) => merge<InstanceType<trait>, implementation>
+	implementation: implementation & ThisType<selfOf<trait, implementation>>
+) => (...args: InstanceType<trait>["args"]) => selfOf<trait, implementation>
 
 export const implement =
 	<
@@ -31,9 +35,9 @@ export const implement =
 	>(
 		...traits: traits
 	): TraitConstructor<composed> =>
-	(implementation) => {
+	(...implementation) => {
 		const prototype = Object.defineProperties(
-			implementation,
+			implementation[0] ?? {},
 			Object.getOwnPropertyDescriptors(compose(...traits).prototype)
 		)
 		return (...args) =>

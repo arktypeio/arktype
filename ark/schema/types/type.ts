@@ -20,7 +20,7 @@ export type TypeNode<t = any> = UnionNode<t> | PredicateNode<t>
 export abstract class TypeNodeBase<
 	t = unknown,
 	def extends BaseDefinition = BaseDefinition
-> extends BaseNode<def> {
+> extends BaseNode {
 	declare infer: t
 
 	abstract references(): readonly BaseNode[]

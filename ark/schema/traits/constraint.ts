@@ -65,7 +65,10 @@ export abstract class BaseConstraint<rule = any> extends compose(
 	}
 }
 
-type RuleIntersection<rule> = (l: rule, r: rule) => [] | [rule] | [rule, rule]
+type RuleIntersection<rule> = (
+	l: rule,
+	r: rule
+) => [] | [rule] | [rule, rule] | Disjoint
 
 export const constraint = <constraint extends BaseConstraint>(
 	intersect: RuleIntersection<constraint["rule"]>

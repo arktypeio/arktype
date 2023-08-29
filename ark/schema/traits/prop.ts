@@ -1,4 +1,6 @@
-import type { TypeNode } from "../types/type.js"
+import { Disjoint } from "../disjoint.js"
+import { PredicateNode } from "../types/predicate.js"
+import { type TypeNode, TypeNodeBase } from "../types/type.js"
 import { type BaseConstraint, constraint } from "./constraint.js"
 
 export type PropRule = {
@@ -9,42 +11,45 @@ export type PropRule = {
 
 export interface PropConstraint extends BaseConstraint<PropRule> {}
 
-export const prop = constraint<PropConstraint>((l, r) => [l, r])({
+export const prop = constraint<PropConstraint>((l, r) => {
+	if (l.key instanceof TypeNodeBase || r.key instanceof TypeNodeBase) {
+		return [l, r]
+	}
+	if (l.key !== r.key) {
+		return [l, r]
+	}
+	const key = l.key
+	const required = l.required || r.required
+	const value = l.value.intersect(r.value)
+	if (value instanceof Disjoint) {
+		return required
+			? value
+			: [
+					{
+						key,
+						required,
+						// TODO: builtins.never()
+						value: new PredicateNode()
+					}
+			  ]
+	}
+	return [
+		{
+			key,
+			required,
+			value
+		}
+	]
+})({
 	kind: "prop",
-	writeDefaultDescription: () => "a prop"
+	writeDefaultDescription() {
+		return `${String(this.rule.key)}${this.rule.required ? "" : "?"}: ${
+			this.rule.value
+		}`
+	}
 })
 
 /**** NAMED *****/
-
-// export const intersectNamedProp = (
-// 	l: NamedPropRule,
-// 	r: NamedPropRule
-// ): NamedPropRule | Disjoint => {
-// 	if (l.key.name !== r.key.name) {
-// 		return throwInternalError(
-// 			`Unexpected attempt to intersect non-equal keys '${l.key.name}' and '${r.key.name}'`
-// 		)
-// 	}
-// 	const key: NamedKeyRule = {
-// 		name: l.key.name,
-// 		prerequisite: l.key.prerequisite || r.key.prerequisite,
-// 		optional: l.key.optional && r.key.optional
-// 	}
-// 	const value = l.value.intersect(r.value)
-// 	if (value instanceof Disjoint) {
-// 		if (key.optional) {
-// 			return {
-// 				key,
-// 				value: builtins.never()
-// 			}
-// 		}
-// 		return value
-// 	}
-// 	return {
-// 		key,
-// 		value
-// 	}
-// }
 
 // export const compileNamedProps = (
 // 	props: readonly NamedPropRule[],
@@ -66,60 +71,6 @@ export const prop = constraint<PropConstraint>((l, r) => [l, r])({
 //         }`
 // 		: compiledValue
 // 	return result
-// }
-
-// export type PropValueInput = TypeNode | TypeInput
-
-// export type NamedPropInput = Readonly<{
-// 	value: PropValueInput
-// 	optional?: boolean
-// 	prerequisite?: boolean
-// }>
-
-// export type NamedPropRule = Readonly<{
-// 	key: NamedKeyRule
-// 	value: TypeNode
-// }>
-
-// export type NamedKeyRule = Readonly<{
-// 	name: string
-// 	optional: boolean
-// 	prerequisite: boolean
-// }>
-
-// export type NamedEntry = Readonly<{
-//     key: string
-//     value: TypeNode
-//     optional?: true
-//     prerequisite?: true
-// }>
-
-// export class NamedPropNode extends NodeBase<NamedEntry, {}> {
-//     readonly kind = "named"
-//     readonly key = this.rule.key
-//     readonly value = this.rule.value
-//     readonly optional = this.rule.optional
-//     readonly prerequisite = this.rule.prerequisite
-
-//     compile(ctx: CompilationContext) {
-//         ctx.path.push(this.key)
-//         const compiledValue = `${this.value.alias}(${In}${compilePropAccess(
-//             this.key
-//         )})`
-//         ctx.path.pop()
-//         const result = this.optional
-//             ? `if('${this.key}' in ${In}) {
-//                 ${compiledValue}
-//             }`
-//             : compiledValue
-//         return result
-//     }
-
-//     describe() {
-//         return `${this.rule.key}${this.rule.optional ? "?" : ""}: ${
-//             this.rule.value
-//         }`
-//     }
 // }
 
 /**** PROPS ********/
