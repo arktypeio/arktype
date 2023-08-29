@@ -1,5 +1,6 @@
-import type { evaluate, merge } from "./generics.js"
+import type { evaluate, merge, satisfy } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
+import type { NonEmptyList } from "./lists.js"
 import type { AbstractableConstructor } from "./objectKinds.js"
 import { DynamicBase } from "./records.js"
 
@@ -14,27 +15,30 @@ export abstract class Trait<
 	abstract args: readonly unknown[]
 }
 
-export const implement = <
-	trait extends AbstractableConstructor<Trait>,
-	implementation extends ConstructorParameters<trait>[0]
->(
-	trait: trait,
-	implementation: implementation &
-		ThisType<merge<InstanceType<trait>, implementation>>
-) => {
-	const prototype = Object.defineProperties(
-		implementation,
-		Object.getOwnPropertyDescriptors(trait.prototype)
-	)
-	return (
-		...args: InstanceType<trait>["args"]
-	): merge<InstanceType<trait>, implementation> =>
-		Object.create(prototype, {
-			args: {
-				value: args
-			}
-		})
-}
+export const implement =
+	<
+		traits extends NonEmptyList<AbstractableConstructor<Trait>>,
+		composed extends compose<traits> = compose<traits>
+	>(
+		...traits: traits
+	) =>
+	<implementation extends ConstructorParameters<composed>[0]>(
+		implementation: implementation &
+			ThisType<merge<InstanceType<composed>, implementation>>
+	) => {
+		const prototype = Object.defineProperties(
+			implementation,
+			Object.getOwnPropertyDescriptors(compose(...traits).prototype)
+		)
+		return (
+			...args: InstanceType<composed>["args"]
+		): merge<InstanceType<composed>, implementation> =>
+			Object.create(prototype, {
+				args: {
+					value: args
+				}
+			})
+	}
 
 export const compose = <
 	traits extends readonly AbstractableConstructor<Trait>[]
@@ -52,22 +56,47 @@ export const compose = <
 		)
 	}) as compose<traits>
 
-export type compose<
-	traits extends readonly AbstractableConstructor<Trait>[],
-	args extends readonly unknown[] = [],
-	abstracted extends {} = {},
-	implemented = {}
+export type compose<traits extends readonly AbstractableConstructor<Trait>[]> =
+	traits extends readonly [
+		infer head extends AbstractableConstructor,
+		...infer tail
+	]
+		? // if it's only a single trait, return it directly to preserve nominal types, arg labels, etc.
+		  tail["length"] extends 0
+			? head
+			: composeRecurse<tail, partsOf<head>>
+		: typeof Trait<{}>
+
+type TraitParts = {
+	args: readonly unknown[]
+	abstracted: {}
+	implemented: {}
+}
+
+type partsOf<trait extends AbstractableConstructor> = {
+	args: InstanceType<trait>["args"]
+	abstracted: ConstructorParameters<trait>[0]
+	implemented: Omit<
+		InstanceType<trait>,
+		keyof ConstructorParameters<trait>[0] | "args"
+	>
+}
+
+type composeRecurse<
+	traits extends readonly unknown[],
+	parts extends TraitParts
 > = traits extends readonly [
 	infer head extends AbstractableConstructor,
-	...infer tail extends AbstractableConstructor<Trait>[]
+	...infer tail
 ]
-	? compose<
+	? composeRecurse<
 			tail,
-			intersectParameters<args, InstanceType<head>["args"]>,
-			abstracted & ConstructorParameters<head>[0],
-			implemented &
-				Omit<InstanceType<head>, keyof ConstructorParameters<head>[0] | "args">
+			{
+				args: intersectParameters<parts["args"], partsOf<head>["args"]>
+				abstracted: parts["abstracted"] & partsOf<head>["abstracted"]
+				implemented: parts["implemented"] & partsOf<head>["implemented"]
+			}
 	  >
 	: abstract new (
-			abstracted: evaluate<abstracted>
-	  ) => evaluate<{ args: args } & implemented>
+			abstracted: evaluate<parts["abstracted"]>
+	  ) => evaluate<{ args: parts["args"] } & parts["implemented"]>

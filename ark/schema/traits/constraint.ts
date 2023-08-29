@@ -1,4 +1,4 @@
-import type { reify, TraitDeclaration, Trait } from "@arktype/util"
+import type { reify, Trait, TraitDeclaration } from "@arktype/util"
 import { compose, trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { BoundConstraint } from "./bound.js"
