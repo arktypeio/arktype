@@ -37,6 +37,8 @@ export type IndexedEntries = readonly IndexedPropRule[]
 
 export type PropsMeta = {}
 
+export const Props = {}
+
 // TODO: maybe don't compile immediately, intermediate nodes
 export class PropsNode extends NodeBase<{
 	rule: PropEntries
