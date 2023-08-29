@@ -1,24 +1,18 @@
-import type { Fn } from "@arktype/util"
-import { BaseConstraint, constraint } from "./constraint.js"
+import type { BaseConstraint } from "./constraint.js"
+import { constraint } from "./constraint.js"
 
-export abstract class DivisorConstraint2 extends BaseConstraint<
-	"divisor",
-	[number]
-> {}
+export interface DivisorConstraint extends BaseConstraint<number> {}
 
-export const divisor = constraint<typeof DivisorConstraint2>(
+export const divisor = constraint<DivisorConstraint>(
 	(l, r) => (l * r) / greatestCommonDivisor(l, r)
 )({
+	kind: "divisor",
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 })
 
-export const divisorConstraint = divisor as (
-	...args: Parameters<typeof divisor>
-) => DivisorConstraint
-
-export interface DivisorConstraint extends ReturnType<typeof divisor> {}
+const d = divisor(5)
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

@@ -1,9 +1,11 @@
-import type {
+import type { Constructor, TraitConstructor } from "@arktype/util"
+import {
 	AbstractableConstructor,
 	compose,
-	TraitConstructor
+	Fn,
+	implement,
+	Trait
 } from "@arktype/util"
-import { implement, Trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { BoundConstraint } from "./bound.js"
 import { Describable } from "./description.js"
@@ -37,40 +39,43 @@ export type ConstraintKind = keyof ConstraintDefinitions
 export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintDefinitions[kind]
 
-export type Rule<kind extends ConstraintKind = ConstraintKind> =
-	ConstraintDefinitions[kind]["rule"]
+// export type Rule<kind extends ConstraintKind = ConstraintKind> =
+// 	ConstraintDefinitions[kind]["rule"]
 
-// export interface BaseConstraint<self extends BaseConstraint<self, rule>, rule> {
-// 	readonly rule: rule
-// 	intersect(other: self): self | Disjoint | null
-// }
-
-export abstract class BaseConstraint<
-	kind extends ConstraintKind = ConstraintKind,
-	args extends readonly unknown[] = readonly unknown[]
-> extends Trait {
-	declare args: args
+export abstract class BaseConstraint<rule = any> extends compose(
+	Describable,
+	Trait<{ kind: ConstraintKind }>
+) {
+	declare args: [rule: rule, attributes?: { description?: string }]
+	// this is assigned during constraint construction
+	protected declare intersectRules: RuleIntersection<rule>
 
 	get rule() {
-		return this.args[0] as (typeof this)["args"][0]
+		return this.args[0] as rule
 	}
 
-	abstract intersect(
-		other: Constraint<kind>
-	): Constraint<kind> | Disjoint | null
+	intersect(other: this): this | Disjoint | null {
+		return this
+	}
 }
 
-export const constraint = <
-	trait extends AbstractableConstructor<BaseConstraint>
->(
-	intersect: (
-		l: InstanceType<trait>["rule"],
-		r: InstanceType<trait>["rule"]
-	) => InstanceType<trait>["rule"] | Disjoint | null
+type RuleIntersection<rule> = (l: rule, r: rule) => rule | Disjoint | null
+
+export const constraint = <constraint extends BaseConstraint>(
+	intersect: RuleIntersection<constraint["rule"]>
 ) =>
-	implement(Describable, BaseConstraint) as TraitConstructor<
-		compose<[typeof Describable, trait]>
-	>
+	implement(
+		Describable,
+		BaseConstraint
+	) as {} as constraintConstructor<constraint>
+
+type constraintConstructor<trait extends BaseConstraint> = (
+	implementation: Parameters<
+		TraitConstructor<
+			new (...params: ConstructorParameters<typeof BaseConstraint>) => trait
+		>
+	>[0]
+) => (rule: trait["args"][0], attributes?: trait["args"][1]) => trait
 
 // export type RuleSets = {
 // 	prop: PropConstraint

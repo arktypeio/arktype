@@ -1,4 +1,4 @@
-import type { evaluate, merge, satisfy } from "./generics.js"
+import type { evaluate, merge } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { NonEmptyList } from "./lists.js"
 import type { AbstractableConstructor } from "./objectKinds.js"
