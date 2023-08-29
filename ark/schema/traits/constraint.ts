@@ -72,7 +72,10 @@ export const constraint = <constraint extends BaseConstraint>(
 type constraintConstructor<trait extends BaseConstraint> = (
 	implementation: Parameters<
 		TraitConstructor<
-			new (...params: ConstructorParameters<typeof BaseConstraint>) => trait
+			new (
+				abstracts: ConstructorParameters<typeof BaseConstraint>[0] &
+					Omit<trait, keyof BaseConstraint>
+			) => trait
 		>
 	>[0]
 ) => (rule: trait["args"][0], attributes?: trait["args"][1]) => trait

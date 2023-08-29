@@ -1,4 +1,3 @@
-import { throwParseError, trait } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { type BaseConstraint, constraint } from "./constraint.js"
 
@@ -12,9 +11,9 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind> {
 	readonly exclusive: boolean
 }
 
-export interface BoundConstraint extends BaseConstraint<"bound", [BoundRule]> {}
+export interface BoundConstraint extends BaseConstraint<BoundRule> {}
 
-const bound = constraint<BoundConstraint>((l, r) => {
+export const bound = constraint<BoundConstraint>((l, r) => {
 	if (l.limit > r.limit) {
 		if (l.limitKind === "min") {
 			return r.limitKind === "min" ? l : Disjoint.from("range", l, r)
@@ -35,6 +34,7 @@ const bound = constraint<BoundConstraint>((l, r) => {
 		? Disjoint.from("range", l, r)
 		: null
 })({
+	kind: "bound",
 	writeDefaultDescription() {
 		const comparisonDescription =
 			this.rule.boundKind === "date"

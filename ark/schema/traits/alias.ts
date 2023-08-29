@@ -1,13 +1,12 @@
-import type { TraitDeclaration } from "@arktype/util"
-import { trait } from "@arktype/util"
+import { Trait } from "@arktype/util"
 
-export interface Aliasable extends TraitDeclaration {
-	$args: [unknown, { alias?: string }?]
-	alias: string
-}
+export class Describable extends Trait<{
+	writeDefaultDescription: () => string
+}> {
+	declare args: [unknown, { alias?: string }?]
 
-export const aliasable = trait<Aliasable>({
 	get alias() {
-		return this.args[1].alias ?? this.args
+		// ensure this is cached
+		return this.args[1]?.alias ?? "generated"
 	}
-})
+}
