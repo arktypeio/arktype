@@ -1,15 +1,11 @@
-import type { TraitDeclaration } from "@arktype/util"
-import { trait } from "@arktype/util"
+import { Trait } from "@arktype/util"
 
-export interface Describable extends TraitDeclaration {
-	$args: [unknown, { description?: string }?]
-	description: string
-	$writeDefaultDescription(): string
-}
+export class Describable extends Trait<{
+	writeDefaultDescription: () => string
+}> {
+	declare args: [unknown, { description?: string }?]
 
-export const describable = trait<Describable>()({
 	get description() {
-		return 5
-		return this.args[1].description ?? this.writeDefaultDescription()
+		return this.args[1]?.description ?? this.writeDefaultDescription()
 	}
-})
+}

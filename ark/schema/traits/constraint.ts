@@ -1,9 +1,8 @@
-import type { reify, Trait, TraitDeclaration } from "@arktype/util"
-import { compose, trait } from "@arktype/util"
+import type { compose, TraitConstructor } from "@arktype/util"
+import { implement, Trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { BoundConstraint } from "./bound.js"
-import type { Describable } from "./description.js"
-import { describable } from "./description.js"
+import { Describable } from "./description.js"
 import type { DivisorConstraint } from "./divisor.js"
 import type { DomainNode } from "./domain.js"
 import type { PatternConstraint } from "./pattern.js"
@@ -42,33 +41,28 @@ export type Rule<kind extends ConstraintKind = ConstraintKind> =
 // 	intersect(other: self): self | Disjoint | null
 // }
 
-export interface BaseConstraint<
+export abstract class BaseConstraint<
 	kind extends ConstraintKind,
 	args extends readonly unknown[]
-> extends TraitDeclaration {
-	$args: args
-	rule: this["$args"][0]
-	intersect(other: Constraint<kind>): Constraint<kind> | Disjoint | null
+> extends Trait {
+	declare args: args
+
+	get rule() {
+		return this.args[0] as (typeof this)["args"][0]
+	}
+
+	abstract intersect(other: this): this | Disjoint | null
 }
 
-export const constraint = <constraint extends BaseConstraint<any, any>>(
+export const constraint = <constraint extends typeof BaseConstraint<any, any>>(
 	intersect: (
-		l: constraint["rule"],
-		r: constraint["rule"]
-	) => constraint["rule"] | Disjoint | null
+		l: InstanceType<constraint>["rule"],
+		r: InstanceType<constraint>["rule"]
+	) => InstanceType<constraint>["rule"] | Disjoint | null
 ) =>
-	compose(
-		describable,
-		trait<BaseConstraint<any, any>>({
-			get rule() {
-				return this.args[0]
-			},
-			intersect(other) {
-				const ruleIntersection = intersect(this.rule, other.rule)
-				return this
-			}
-		})
-	) as {} as Trait<compose<[Describable, constraint]>>
+	implement(Describable, BaseConstraint) as TraitConstructor<
+		compose<[typeof Describable, constraint]>
+	>
 
 // export type RuleSets = {
 // 	prop: PropConstraint

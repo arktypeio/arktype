@@ -15,24 +15,28 @@ export abstract class Trait<
 	abstract args: readonly unknown[]
 }
 
+export type TraitConstructor<
+	trait extends AbstractableConstructor<Trait> = AbstractableConstructor<Trait>
+> = <implementation extends ConstructorParameters<trait>[0]>(
+	implementation: implementation &
+		ThisType<merge<InstanceType<trait>, implementation>>
+) => (
+	...args: InstanceType<trait>["args"]
+) => merge<InstanceType<trait>, implementation>
+
 export const implement =
 	<
 		traits extends NonEmptyList<AbstractableConstructor<Trait>>,
 		composed extends compose<traits> = compose<traits>
 	>(
 		...traits: traits
-	) =>
-	<implementation extends ConstructorParameters<composed>[0]>(
-		implementation: implementation &
-			ThisType<merge<InstanceType<composed>, implementation>>
-	) => {
+	): TraitConstructor<composed> =>
+	(implementation) => {
 		const prototype = Object.defineProperties(
 			implementation,
 			Object.getOwnPropertyDescriptors(compose(...traits).prototype)
 		)
-		return (
-			...args: InstanceType<composed>["args"]
-		): merge<InstanceType<composed>, implementation> =>
+		return (...args) =>
 			Object.create(prototype, {
 				args: {
 					value: args

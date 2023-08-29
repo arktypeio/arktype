@@ -1,9 +1,11 @@
-import { type BaseConstraint, constraint } from "./constraint.js"
+import { BaseConstraint, constraint } from "./constraint.js"
 
-export interface DivisorConstraint
-	extends BaseConstraint<"divisor", [number]> {}
+export abstract class DivisorConstraint extends BaseConstraint<
+	"divisor",
+	[number]
+> {}
 
-export const divisor = constraint<DivisorConstraint>(
+export const divisor = constraint<typeof DivisorConstraint>(
 	(l, r) => (l * r) / greatestCommonDivisor(l, r)
 )({
 	writeDefaultDescription() {
