@@ -1,49 +1,45 @@
+import type { AbstractableConstructor, Domain, entryOf } from "@arktype/util"
 import {
 	entriesOf,
-	type entryOf,
 	fromEntries,
 	stringify,
 	throwInternalError,
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { BaseNode } from "./node.js"
-import type { BoundNode } from "./traits/bound.js"
-import type { RuleNode } from "./traits/constraint.js"
-import type { DomainConstraint } from "./traits/domain.js"
-import type { IdentityNode } from "./traits/identity.js"
-import type { InstanceOfNode } from "./traits/prototype.js"
-import type { PredicateNode } from "./types/predicate.js"
+import type { BoundRule } from "./traits/bound.js"
+import type { Constraint } from "./traits/constraint.js"
+import type { Union } from "./types/union.js"
 
 type DisjointKinds = {
 	domain?: {
-		l: DomainConstraint
-		r: DomainConstraint
+		l: Domain
+		r: Domain
 	}
 	identity?: {
-		l: IdentityNode
-		r: IdentityNode
+		l: unknown
+		r: unknown
 	}
-	range?: {
-		l: BoundNode
-		r: BoundNode
+	bound?: {
+		l: BoundRule
+		r: BoundRule
 	}
-	instanceOf?: {
-		l: InstanceOfNode
-		r: InstanceOfNode
+	prototype?: {
+		l: AbstractableConstructor
+		r: AbstractableConstructor
 	}
 	assignability?:
 		| {
-				l: IdentityNode
-				r: RuleNode
+				l: unknown
+				r: Constraint
 		  }
 		| {
-				l: RuleNode
-				r: IdentityNode
+				l: Constraint
+				r: unknown
 		  }
 	union?: {
-		l: BaseNode
-		r: BaseNode
+		l: Union
+		r: Union
 	}
 }
 

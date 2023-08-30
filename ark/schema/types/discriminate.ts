@@ -12,9 +12,9 @@ import type {
 	SerializedPrimitive
 } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../disjoint.js"
+import { compileSerializedValue } from "../io/compile.js"
 import type { DomainConstraint } from "../traits/domain.js"
-import type { IdentityNode } from "../traits/identity.js"
-import type { PredicateNode } from "./predicate.js"
+import type { Predicate } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -31,13 +31,13 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> =
 export type DiscriminatedCases<
 	kind extends DiscriminantKind = DiscriminantKind
 > = Readonly<{
-	[caseKey in CaseKey<kind>]: Discriminant | PredicateNode[]
+	[caseKey in CaseKey<kind>]: Discriminant | Predicate[]
 }>
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
 
 type CasesBySpecifier = {
-	[k in DiscriminantKey]?: Record<string, PredicateNode[]>
+	[k in DiscriminantKey]?: Record<string, Predicate[]>
 }
 
 export type DiscriminantKinds = {
@@ -60,13 +60,10 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
 	] as [path: string[], kind: DiscriminantKind]
 }
 
-const discriminantCache = new Map<
-	readonly PredicateNode[],
-	Discriminant | null
->()
+const discriminantCache = new Map<readonly Predicate[], Discriminant | null>()
 
 export const discriminate = (
-	branches: readonly PredicateNode[]
+	branches: readonly Predicate[]
 ): Discriminant | null => {
 	if (branches.length < 2) {
 		return null
@@ -107,11 +104,11 @@ export const discriminate = (
 				let lSerialized: string
 				let rSerialized: string
 				if (kind === "domain") {
-					lSerialized = (disjoint.l as DomainConstraint).domain
-					rSerialized = (disjoint.r as DomainConstraint).domain
+					lSerialized = disjoint.l as Domain
+					rSerialized = disjoint.r as Domain
 				} else if (kind === "value") {
-					lSerialized = (disjoint.l as IdentityNode).serialized
-					rSerialized = (disjoint.r as IdentityNode).serialized
+					lSerialized = compileSerializedValue(disjoint.l)
+					rSerialized = compileSerializedValue(disjoint.r)
 				} else {
 					return throwInternalError(
 						`Unexpected attempt to discriminate disjoint kind '${kind}'`

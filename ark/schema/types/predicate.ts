@@ -1,40 +1,33 @@
 import type { AbstractableConstructor, Dict, listable } from "@arktype/util"
-import type { AttributeKind } from "../attributes/attribute.js"
-import { Disjoint } from "../disjoint.js"
-import type { BaseDefinition } from "../node.js"
-import type { RangeConstraintSet } from "../traits/bound.js"
-import type { ConstraintKind, RuleNode, RuleSet } from "../traits/constraint.js"
-import type { DivisorNode } from "../traits/divisor.js"
-import type { DomainConstraint, NonEnumerableDomain } from "../traits/domain.js"
-import type { IdentityNode } from "../traits/identity.js"
-import type { InstanceOfNode } from "../traits/prototype.js"
-import type { MorphNode } from "../traits/morph.js"
-import type { NarrowNode } from "../traits/narrow.js"
-import type { Root } from "./type.js"
-import { Root } from "./type.js"
 
-export interface PredicateDefinition extends BaseDefinition {
-	readonly morph?: readonly MorphNode[]
+import { Disjoint } from "../disjoint.js"
+import type { Constraint } from "../traits/constraint.js"
+import type { Morphable } from "../traits/morph.js"
+import type { Typed } from "./type.js"
+import { root } from "./type.js"
+
+export interface Predicate<t = unknown> extends Typed<t> {
+	args: [rule: readonly Constraint[]]
 }
 
-export class PredicateNode<t = unknown> extends Root<t, PredicateDefinition> {
-	readonly kind = "predicate"
-	readonly constraints = Object.values(this.rules).flat() as readonly RuleNode[]
+// // discriminate is cached so we don't have to worry about this running multiple times
+// get discriminant() {
+// 	return discriminate(this.branches)
+// }
 
+export const predicate = root<Predicate>()({
+	kind: "predicate",
 	writeDefaultDescription() {
-		const flat = Object.values(this.rules).flat()
-		return flat.length ? flat.join(" and ") : "a value"
-	}
-
+		return this.rule.length ? this.rule.join(" and ") : "a value"
+	},
 	references() {
-		return this.constraints
-	}
-
-	intersect(other: Root): Root | Disjoint {
+		return this.rule
+	},
+	intersect(other) {
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
 		}
-		let result: readonly RuleNode[] | Disjoint = this.constraints
+		let result: readonly Constraint[] | Disjoint = this.rule
 		for (const constraint of other.constraints) {
 			if (result instanceof Disjoint) {
 				break
@@ -42,19 +35,22 @@ export class PredicateNode<t = unknown> extends Root<t, PredicateDefinition> {
 			result = constraint.apply(result)
 		}
 		// TODO: attributes
-		return result instanceof Disjoint ? result : new PredicateNode(result)
-	}
-
+		return result instanceof Disjoint ? result : predicate(result)
+	},
 	keyof() {
 		return this
 	}
+})
+
+export interface PredicateRule {
+	readonly morph?: readonly Morphable[]
 }
 
 export interface UnitRule {
 	readonly identity: IdentityNode
 }
 
-export interface UnknownPredicateRule extends PredicateDefinition {
+export interface UnknownPredicateRule extends PredicateRule {
 	readonly narrow?: readonly NarrowNode[]
 }
 

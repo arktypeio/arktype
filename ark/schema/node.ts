@@ -1,20 +1,15 @@
-import { compose } from "@arktype/util"
 import type {
 	AbstractableConstructor,
-	composeTraits,
 	extend,
-	intersectParameters,
-	Trait,
-	TraitConstructor,
-	TraitDeclaration
+	TraitConstructor
 } from "@arktype/util"
+import { Trait } from "@arktype/util"
 import type { ConstraintDefinitions } from "./traits/constraint.js"
-import { Describable } from "./traits/description.js"
-import type { TypeDefinitions } from "./types/type.js"
+import type { RootDefinitions } from "./types/type.js"
 
 export type nodeConstructor<
 	node extends Trait,
-	base extends AbstractableConstructor<Trait>
+	base extends AbstractableConstructor<BaseNode>
 > = (
 	implementation: Parameters<
 		TraitConstructor<
@@ -27,23 +22,27 @@ export type nodeConstructor<
 ) => (rule: node["args"][0], attributes?: node["args"][1]) => node
 
 export type NodeDefinitionsByKind = extend<
-	TypeDefinitions,
+	RootDefinitions,
 	ConstraintDefinitions
 >
 
 export type NodesByKind = {
-	[k in NodeKind]: InstanceType<NodeDefinitionsByKind[k]>
+	[k in NodeKind]: NodeDefinitionsByKind[k]
 }
 
 export type NodeKind = keyof NodeDefinitionsByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
-export abstract class BaseNode {
+export abstract class BaseNode<abstracts extends {} = {}> extends Trait<
+	{ kind: NodeKind } & abstracts
+> {
 	declare readonly id: string
 	declare allows: (data: unknown) => boolean
 
-	abstract readonly kind: NodeKind
+	get rule() {
+		return this.args[0] as (typeof this)["args"][0]
+	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
 		return this.kind === (kind as never)
@@ -52,28 +51,4 @@ export abstract class BaseNode {
 	equals(other: BaseNode) {
 		return this.id === other.id
 	}
-}
-
-export const composeNode = <traits extends readonly TraitDeclaration[]>(
-	...traits: traits
-) => {
-	abstract class BaseNode extends compose(Describable, ...traits) {
-		declare readonly id: string
-		declare allows: (data: unknown) => boolean
-
-		abstract readonly kind: NodeKind
-
-		hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
-			return this.kind === (kind as never)
-		}
-
-		equals(other: BaseNode) {
-			return this.id === other.id
-		}
-	}
-	return BaseNode as {} as composeTraits<
-		[typeof Describable, ...traits],
-		[],
-		typeof BaseNode
-	>
 }

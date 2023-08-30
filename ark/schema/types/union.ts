@@ -3,13 +3,12 @@ import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
-import type { PredicateNode } from "./predicate.js"
-import type { BaseRoot, Root } from "./type.js"
+import type { Predicate } from "./predicate.js"
+import type { Root, Typed } from "./type.js"
 import { root } from "./type.js"
 
-export interface Union<t = unknown> extends BaseRoot<t> {
-	args: [rule: readonly PredicateNode[]]
-	branches: readonly PredicateNode[]
+export interface Union<t = unknown> extends Typed<t> {
+	args: [rule: readonly Predicate[]]
 }
 
 // // discriminate is cached so we don't have to worry about this running multiple times
@@ -19,35 +18,32 @@ export interface Union<t = unknown> extends BaseRoot<t> {
 
 export const union = root<Union>()({
 	kind: "union",
-	get branches() {
-		return this.args[0]
-	},
 	writeDefaultDescription() {
-		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
+		return this.rule.length === 0 ? "never" : this.rule.join(" or ")
 	},
 	references() {
-		return this.branches.flatMap((branch) => branch.references())
+		return this.rule.flatMap((branch) => branch.references())
 	},
-	intersect(other: Root): Root | Disjoint {
+	intersect(other) {
 		const resultBranches = intersectBranches(
-			this.branches,
+			this.rule,
 			other.hasKind("union") ? other.branches : [other]
 		)
 		return resultBranches.length === 0
 			? Disjoint.from("union", this, other)
 			: resultBranches.length === 1
 			? resultBranches[0]
-			: new Union({ branches: resultBranches })
+			: union(resultBranches)
 	},
 	keyof() {
-		return this.branches.reduce(
+		return this.rule.reduce(
 			(result, branch) => result.and(branch.keyof()),
 			builtins.unknown()
-		) as Root<keyof t>
+		)
 	}
 })
 
-export const reduceBranches = (branches: PredicateNode[]) => {
+export const reduceBranches = (branches: Predicate[]) => {
 	if (branches.length < 2) {
 		return branches
 	}
@@ -77,23 +73,23 @@ export const reduceBranches = (branches: PredicateNode[]) => {
 }
 
 export const intersectBranches = (
-	l: readonly PredicateNode[],
-	r: readonly PredicateNode[]
-): readonly PredicateNode[] => {
+	l: readonly Predicate[],
+	r: readonly Predicate[]
+): readonly Predicate[] => {
 	// Branches that are determined to be a subtype of an opposite branch are
 	// guaranteed to be a member of the final reduced intersection, so long as
 	// each individual set of branches has been correctly reduced to exclude
 	// redundancies.
-	const finalBranches: PredicateNode[] = []
+	const finalBranches: Predicate[] = []
 	// Each rBranch is initialized to an empty array to which distinct
 	// intersections will be appended. If the rBranch is identified as a
 	// subtype or equal of any lBranch, the corresponding value should be
 	// set to null so we can avoid including previous/future intersections
 	// in the final result.
-	const candidatesByR: (PredicateNode[] | null)[] = r.map(() => [])
+	const candidatesByR: (Predicate[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
 		const lBranch = l[lIndex]
-		let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
+		let currentCandidateByR: { [rIndex in number]: Predicate } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			const rBranch = r[rIndex]
 			if (!candidatesByR[rIndex]) {
@@ -208,7 +204,7 @@ const compileDiscriminatedLiteral = (cases: DiscriminatedCases) => {
 }
 
 export const compileIndiscriminable = (
-	branches: readonly PredicateNode[],
+	branches: readonly Predicate[],
 	ctx: CompilationContext
 ) => {
 	if (branches.length === 0) {
