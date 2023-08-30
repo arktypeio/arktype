@@ -1,29 +1,34 @@
-import { isArray } from "@arktype/util"
+import { implement, isArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
-import type { BaseDefinition } from "../node.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { PredicateNode } from "./predicate.js"
-import type { TypeNode } from "./type.js"
-import { TypeNodeBase } from "./type.js"
+import type { BaseRoot, Root } from "./type.js"
+import { root } from "./type.js"
 
-export interface UnionDefinition extends BaseDefinition {
-	readonly branches: readonly PredicateNode[]
+export interface Union<t = unknown> extends BaseRoot<t> {
+	args: [rule: readonly PredicateNode[]]
+	branches: readonly PredicateNode[]
 }
 
-export class UnionNode<t = unknown> extends TypeNodeBase<t, UnionDefinition> {
-	readonly kind = "union"
+// // discriminate is cached so we don't have to worry about this running multiple times
+// get discriminant() {
+// 	return discriminate(this.branches)
+// }
 
+export const union = root<Union>()({
+	kind: "union",
+	get branches() {
+		return this.args[0]
+	},
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
-	}
-
+	},
 	references() {
 		return this.branches.flatMap((branch) => branch.references())
-	}
-
-	intersect(other: TypeNode): TypeNode | Disjoint {
+	},
+	intersect(other: Root): Root | Disjoint {
 		const resultBranches = intersectBranches(
 			this.branches,
 			other.hasKind("union") ? other.branches : [other]
@@ -32,21 +37,15 @@ export class UnionNode<t = unknown> extends TypeNodeBase<t, UnionDefinition> {
 			? Disjoint.from("union", this, other)
 			: resultBranches.length === 1
 			? resultBranches[0]
-			: new UnionNode({ branches: resultBranches })
-	}
-
-	// // discriminate is cached so we don't have to worry about this running multiple times
-	// get discriminant() {
-	// 	return discriminate(this.branches)
-	// }
-
+			: new Union({ branches: resultBranches })
+	},
 	keyof() {
 		return this.branches.reduce(
 			(result, branch) => result.and(branch.keyof()),
 			builtins.unknown()
-		) as TypeNode<keyof t>
+		) as Root<keyof t>
 	}
-}
+})
 
 export const reduceBranches = (branches: PredicateNode[]) => {
 	if (branches.length < 2) {

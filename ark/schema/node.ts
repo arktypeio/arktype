@@ -1,8 +1,30 @@
 import { compose } from "@arktype/util"
-import type { composeTraits, extend, TraitDeclaration } from "@arktype/util"
+import type {
+	AbstractableConstructor,
+	composeTraits,
+	extend,
+	intersectParameters,
+	Trait,
+	TraitConstructor,
+	TraitDeclaration
+} from "@arktype/util"
 import type { ConstraintDefinitions } from "./traits/constraint.js"
 import { Describable } from "./traits/description.js"
 import type { TypeDefinitions } from "./types/type.js"
+
+export type nodeConstructor<
+	node extends Trait,
+	base extends AbstractableConstructor<Trait>
+> = (
+	implementation: Parameters<
+		TraitConstructor<
+			new (
+				abstracts: ConstructorParameters<base>[0] &
+					Omit<node, keyof InstanceType<base>>
+			) => node
+		>
+	>[0]
+) => (rule: node["args"][0], attributes?: node["args"][1]) => node
 
 export type NodeDefinitionsByKind = extend<
 	TypeDefinitions,

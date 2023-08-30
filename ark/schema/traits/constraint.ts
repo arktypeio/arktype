@@ -1,12 +1,6 @@
-import type { Constructor, TraitConstructor } from "@arktype/util"
-import {
-	AbstractableConstructor,
-	compose,
-	Fn,
-	implement,
-	Trait
-} from "@arktype/util"
+import { compose, implement, Trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
+import type { nodeConstructor } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Describable } from "./description.js"
 import type { DivisorConstraint } from "./divisor.js"
@@ -68,26 +62,15 @@ export abstract class BaseConstraint<rule = any> extends compose(
 type RuleIntersection<rule> = (
 	l: rule,
 	r: rule
-) => [] | [rule] | [rule, rule] | Disjoint
+) => Disjoint | [] | [rule] | [rule, rule]
 
 export const constraint = <constraint extends BaseConstraint>(
 	intersect: RuleIntersection<constraint["rule"]>
 ) =>
-	implement(
-		Describable,
-		BaseConstraint
-	) as {} as constraintConstructor<constraint>
-
-type constraintConstructor<trait extends BaseConstraint> = (
-	implementation: Parameters<
-		TraitConstructor<
-			new (
-				abstracts: ConstructorParameters<typeof BaseConstraint>[0] &
-					Omit<trait, keyof BaseConstraint>
-			) => trait
-		>
-	>[0]
-) => (rule: trait["args"][0], attributes?: trait["args"][1]) => trait
+	implement(BaseConstraint) as {} as nodeConstructor<
+		constraint,
+		typeof BaseConstraint
+	>
 
 // export type RuleSets = {
 // 	prop: PropConstraint

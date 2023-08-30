@@ -1,6 +1,6 @@
 import { Trait } from "@arktype/util"
 
-export class Describable extends Trait<{
+export class Aliasable extends Trait<{
 	writeDefaultDescription: () => string
 }> {
 	declare args: [unknown, { alias?: string }?]

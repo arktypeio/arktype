@@ -1,18 +1,19 @@
+import type { evaluate } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { PredicateNode } from "../types/predicate.js"
-import { type TypeNode, TypeNodeBase } from "../types/type.js"
+import { Root, type Root } from "../types/type.js"
 import { type BaseConstraint, constraint } from "./constraint.js"
 
 export type PropRule = {
-	key: string | symbol | TypeNode
-	value: TypeNode
+	key: string | symbol | Root
+	value: Root
 	required: boolean
 }
 
 export interface PropConstraint extends BaseConstraint<PropRule> {}
 
 export const prop = constraint<PropConstraint>((l, r) => {
-	if (l.key instanceof TypeNodeBase || r.key instanceof TypeNodeBase) {
+	if (l.key instanceof Root || r.key instanceof Root) {
 		return [l, r]
 	}
 	if (l.key !== r.key) {

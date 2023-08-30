@@ -10,17 +10,14 @@ import type { IdentityNode } from "../traits/identity.js"
 import type { InstanceOfNode } from "../traits/prototype.js"
 import type { MorphNode } from "../traits/morph.js"
 import type { NarrowNode } from "../traits/narrow.js"
-import type { TypeNode } from "./type.js"
-import { TypeNodeBase } from "./type.js"
+import type { Root } from "./type.js"
+import { Root } from "./type.js"
 
 export interface PredicateDefinition extends BaseDefinition {
 	readonly morph?: readonly MorphNode[]
 }
 
-export class PredicateNode<t = unknown> extends TypeNodeBase<
-	t,
-	PredicateDefinition
-> {
+export class PredicateNode<t = unknown> extends Root<t, PredicateDefinition> {
 	readonly kind = "predicate"
 	readonly constraints = Object.values(this.rules).flat() as readonly RuleNode[]
 
@@ -33,7 +30,7 @@ export class PredicateNode<t = unknown> extends TypeNodeBase<
 		return this.constraints
 	}
 
-	intersect(other: TypeNode): TypeNode | Disjoint {
+	intersect(other: Root): Root | Disjoint {
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
 		}
@@ -94,9 +91,9 @@ export interface DatePredicateRule extends InstancePredicateRule<typeof Date> {
 export interface ArrayPredicateRule
 	extends InstancePredicateRule<typeof Array> {
 	readonly length?: RangeConstraintSet
-	readonly prefix?: readonly TypeNodeBase[]
-	readonly variadic?: TypeNodeBase
-	readonly postfix?: readonly TypeNodeBase[]
+	readonly prefix?: readonly Root[]
+	readonly variadic?: Root
+	readonly postfix?: readonly Root[]
 }
 
 // throwParseError(
