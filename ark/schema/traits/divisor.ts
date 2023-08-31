@@ -1,20 +1,11 @@
-import { implement } from "@arktype/util"
-// import type { BaseConstraint } from "./constraint.js"
-
+import { compose, implement } from "@arktype/util"
 import { constraintTraits } from "./constraint.js"
 
-// export const divisor = constraint<number>((l, r) => [
-// 	(l * r) / greatestCommonDivisor(l, r)
-// ])({
-// 	kind: "divisor",
-// 	writeDefaultDescription() {
-// 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
-// 	}
-// })
-
-export const divisor = implement(
+abstract class Divisor extends compose(
 	...constraintTraits<number>((l, r) => [(l * r) / greatestCommonDivisor(l, r)])
-)({
+) {}
+
+export const divisor = implement(Divisor)({
 	kind: "divisor",
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`

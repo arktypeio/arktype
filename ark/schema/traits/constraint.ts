@@ -1,9 +1,8 @@
 import { compose, implement, Trait } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import { Enforceable, Kinded, type nodeConstructor } from "../node.js"
+import { Enforceable, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Describable } from "./description.js"
-import type { DivisorConstraint } from "./divisor.js"
 import type { DomainConstraint } from "./domain.js"
 import type { Identity } from "./identity.js"
 import type { PatternConstraint } from "./pattern.js"
@@ -46,6 +45,16 @@ type RuleIntersection<rule> = (
 	l: rule,
 	r: rule
 ) => Disjoint | [] | [rule] | [rule, rule]
+
+export abstract class BaseConstraint<rule = unknown> extends compose(
+	Describable,
+	Kinded,
+	Enforceable
+) {
+	intersect(other: this) {
+		return this
+	}
+}
 
 export const constraintTraits = <rule>(intersect: RuleIntersection<rule>) =>
 	[

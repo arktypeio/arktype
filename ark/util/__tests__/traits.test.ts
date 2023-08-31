@@ -2,17 +2,19 @@ import { attest } from "@arktype/attest"
 import { compose, implement, Trait } from "@arktype/util"
 
 suite("traits", () => {
-	class Describable extends Trait<{
-		// declare any abstract props here
-		writeDefaultDescription: () => string
-	}> {
+	class Describable extends Trait<
 		// declare input
-		declare args: [rule: unknown, attributes?: { description?: string }]
-
-		get description() {
-			// you can use inputs/abstract props in whatever you implement, it's available via this
-			return this.args[1]?.description ?? this.writeDefaultDescription()
+		[rule: unknown, attributes?: { description?: string }],
+		{ description: string },
+		{
+			// declare any abstract props here
+			writeDefaultDescription: () => string
 		}
+	> {
+		protected initialize = () => ({
+			// you can use inputs/abstract props in whatever you implement, it's available via this
+			description: this.args[1]?.description ?? this.writeDefaultDescription()
+		})
 	}
 	const describableFoo = implement(Describable)({
 		writeDefaultDescription: () => "default foo" as const,
@@ -40,14 +42,16 @@ suite("traits", () => {
 		attest(myCustomFoo.description).equals("custom foo")
 	})
 
-	class Boundable<data> extends Trait<{
-		sizeOf: (data: data) => number
-	}> {
-		declare args: [rule: { limit?: number }]
-
-		get limit() {
-			return this.args[0].limit
+	class Boundable<data> extends Trait<
+		[rule: { limit?: number }],
+		{ limit: number | undefined },
+		{
+			sizeOf: (data: data) => number
 		}
+	> {
+		protected initialize = () => ({
+			limit: this.args[0].limit
+		})
 
 		check(data: data) {
 			return this.limit === undefined || this.sizeOf(data) <= this.limit
@@ -55,7 +59,10 @@ suite("traits", () => {
 	}
 
 	test("compose", () => {
-		const string = implement(compose(Boundable<string>, Describable))({
+		const string = implement(
+			Boundable<string>,
+			Describable
+		)({
 			sizeOf: (data) => data.length,
 			writeDefaultDescription: () => "a string"
 		})
@@ -78,9 +85,7 @@ suite("traits", () => {
 	})
 })
 
-abstract class Foo extends Trait {
-	declare args: [name: string]
-
+abstract class Foo extends Trait<[name: string]> {
 	get name() {
 		return this.args[0]
 	}

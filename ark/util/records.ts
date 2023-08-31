@@ -104,7 +104,7 @@ export const DynamicBase = class {
 	constructor({ ...properties }: object) {
 		return properties
 	}
-} as new <T extends object>(base: T) => T
+} as new <t extends object>(base: t) => t
 
 export type PickPartial<o extends object, key extends keyof o> = {
 	[k in key]?: o[k]

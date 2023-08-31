@@ -112,4 +112,10 @@ type composeRecurse<
 			args: parts["args"],
 			props: evaluate<parts["props"]>,
 			requires: evaluate<parts["requires"]>
-	  ) => evaluate<parts["self"]>
+	  ) => InstanceType<
+			typeof Trait<
+				parts["args"],
+				evaluate<parts["props"]>,
+				evaluate<parts["requires"]>
+			>
+	  >
