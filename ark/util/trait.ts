@@ -1,7 +1,7 @@
-import type { evaluate, merge } from "./generics.js"
+import type { conform, evaluate, merge } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { AbstractableConstructor } from "./objectKinds.js"
-import { DynamicBase } from "./records.js"
+import { DynamicBase, hasKey } from "./records.js"
 
 // @ts-expect-error (otherwise can't dynamically add abstracted props)
 export abstract class Trait<
@@ -12,11 +12,14 @@ export abstract class Trait<
 	protected declare args: args
 
 	constructor(args: args, props: props, requires: requires) {
-		throw new Error(`Traits cannot be constructed directly`)
-		super("unnecessary" as never)
+		super({} as never)
+		// throw new Error(`Traits cannot be constructed directly`)
+		// super("unnecessary" as never)
 	}
 
-	protected declare initialize: () => props
+	protected initialize(): props {
+		return {} as never
+	}
 }
 
 type selfOf<
@@ -42,12 +45,14 @@ export const implement =
 			implementation[0] ?? {},
 			Object.getOwnPropertyDescriptors(compose(...traits).prototype)
 		)
-		return (...args) =>
-			Object.create(prototype, {
+		return (...args) => {
+			const result = Object.create(prototype, {
 				args: {
 					value: args
 				}
 			})
+			return Object.assign(result, result.initialize?.())
+		}
 	}
 
 export const compose = <
@@ -88,9 +93,10 @@ interface partsOf<trait extends AbstractableConstructor<Trait>> {
 	args: ConstructorParameters<trait>[0]
 	props: ConstructorParameters<trait>[1]
 	requires: ConstructorParameters<trait>[2]
-	self: InstanceType<trait>
+	self: Omit<InstanceType<trait>, keyof this["props"] | keyof this["requires"]>
 }
 
+// TODO: typesafe compose, will validate compatibility as it goes
 type composeRecurse<
 	traits extends readonly unknown[],
 	parts extends TraitParts
@@ -102,7 +108,8 @@ type composeRecurse<
 			tail,
 			{
 				args: intersectParameters<parts["args"], partsOf<head>["args"]>
-				requires: parts["requires"] & partsOf<head>["requires"]
+				requires: Omit<parts["requires"], keyof partsOf<head>["self"]> &
+					partsOf<head>["requires"]
 				self: parts["self"] & partsOf<head>["self"]
 				props: parts["props"] & partsOf<head>["props"]
 			}
@@ -114,7 +121,62 @@ type composeRecurse<
 	  ) => InstanceType<
 			typeof Trait<
 				parts["args"],
-				evaluate<parts["self"]>,
+				evaluate<parts["props"] & parts["self"]>,
 				evaluate<parts["requires"]>
 			>
 	  >
+
+// export class Describable extends Trait<
+// 	[rule: unknown, attributes?: { description?: string }],
+// 	{ description: string },
+// 	{
+// 		writeDefaultDescription(): string
+// 	}
+// > {
+// 	protected initialize = () => ({
+// 		description: this.args[1]?.description ?? this.writeDefaultDescription()
+// 	})
+// }
+
+// class DescribableFoo extends compose(
+// 	Describable,
+// 	class extends Trait {
+// 		writeDefaultDescription() {
+// 			return "default foo" as const
+// 		}
+// 		other() {
+// 			return "bar"
+// 		}
+// 	}
+// ) {}
+
+// const describableFoo = implement(DescribableFoo)({})
+
+// console.log(describableFoo(0))
+
+// describableFoo(0).writeDefaultDescription()
+
+// class Boundable<data> extends Trait<
+// 	[rule: { limit?: number }],
+// 	{ limit: number | undefined },
+// 	{
+// 		sizeOf: (data: data) => number
+// 	}
+// > {
+// 	protected initialize = () => ({
+// 		limit: this.args[0].limit
+// 	})
+
+// 	check(data: data) {
+// 		return this.limit === undefined || this.sizeOf(data) <= this.limit
+// 	}
+// }
+
+// const string = implement(
+// 	Boundable<string>,
+// 	Describable
+// )({
+// 	sizeOf: (data) => data.length,
+// 	writeDefaultDescription: () => "a string"
+// })
+// const shortString = string({ limit: 5 }, { description: "a short string" })

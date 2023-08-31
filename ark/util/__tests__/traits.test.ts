@@ -84,22 +84,3 @@ suite("traits", () => {
 		attest(shortString.check("toolong")).equals(false)
 	})
 })
-
-abstract class Foo extends Trait<[name: string]> {
-	get name() {
-		return this.args[0]
-	}
-
-	scream() {
-		return this.name.toUpperCase()
-	}
-}
-
-const from = implement(Foo)({
-	get name() {
-		return ""
-	},
-	get bar() {
-		return this.name
-	}
-})
