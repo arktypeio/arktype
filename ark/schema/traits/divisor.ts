@@ -4,7 +4,7 @@ import { Enforceable, Kinded } from "../node.js"
 import { constraint } from "./constraint.js"
 import { Describable } from "./description.js"
 
-export interface DivisorConstraint extends BaseConstraint<number> {}
+// export interface DivisorConstraint extends BaseConstraint<number> {}
 
 // export const divisor = constraint<number>((l, r) => [
 // 	(l * r) / greatestCommonDivisor(l, r)

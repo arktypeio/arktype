@@ -1,14 +1,13 @@
 import { Trait } from "@arktype/util"
 
 export class Describable extends Trait<
+	[rule: unknown, attributes?: { description?: string }],
+	{ description: string },
 	{
 		writeDefaultDescription(): string
-	},
-	{ description: string }
-> {
-	init(rule: unknown, attributes?: { description?: string }) {
-		return {
-			description: attributes?.description ?? this.writeDefaultDescription()
-		}
 	}
+> {
+	protected initialize = () => ({
+		description: this.args[1]?.description ?? this.writeDefaultDescription()
+	})
 }

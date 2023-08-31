@@ -6,15 +6,18 @@ import { DynamicBase } from "./records.js"
 
 // @ts-expect-error (otherwise can't dynamically add abstracted props)
 export abstract class Trait<
-	abstracts extends {} = {},
-	init extends {} = {}
-> extends DynamicBase<abstracts & init> {
-	constructor(abstracts: abstracts, initializes: init) {
+	args extends readonly unknown[] = readonly unknown[],
+	props extends {} = {},
+	requires extends {} = {}
+> extends DynamicBase<requires & props> {
+	protected declare args: args
+
+	constructor(args: args, props: props, requires: requires) {
 		throw new Error(`Traits cannot be constructed directly`)
 		super("unnecessary" as never)
 	}
 
-	protected abstract init(...args: never[]): init
+	protected declare initialize: () => props
 }
 
 type selfOf<
@@ -26,7 +29,7 @@ type selfOf<
 
 export type TraitConstructor<
 	trait extends AbstractableConstructor<Trait> = AbstractableConstructor<Trait>
-> = <implementation extends partsOf<trait>["abstracted"]>(
+> = <implementation extends partsOf<trait>["requires"]>(
 	implementation: implementation & ThisType<selfOf<trait, implementation>>
 ) => (...args: partsOf<trait>["args"]) => selfOf<trait, implementation>
 
@@ -75,18 +78,20 @@ export type compose<traits extends readonly AbstractableConstructor<Trait>[]> =
 		  tail["length"] extends 0
 			? head
 			: composeRecurse<tail, partsOf<head>>
-		: typeof Trait
+		: typeof Trait<[]>
 
 type TraitParts = {
 	args: readonly unknown[]
-	abstracted: {}
-	implemented: {}
+	requires: {}
+	self: {}
+	props: {}
 }
 
 interface partsOf<trait extends AbstractableConstructor<Trait>> {
-	args: Parameters<InstanceType<trait>["init"]>
-	abstracted: ConstructorParameters<trait>[0]
-	implemented: Omit<InstanceType<trait>, keyof this["abstracted"] | "init">
+	args: ConstructorParameters<trait>[0]
+	props: ConstructorParameters<trait>[1]
+	requires: ConstructorParameters<trait>[2]
+	self: InstanceType<trait>
 }
 
 type composeRecurse<
@@ -100,10 +105,13 @@ type composeRecurse<
 			tail,
 			{
 				args: intersectParameters<parts["args"], partsOf<head>["args"]>
-				abstracted: parts["abstracted"] & partsOf<head>["abstracted"]
-				implemented: parts["implemented"] & partsOf<head>["implemented"]
+				requires: parts["requires"] & partsOf<head>["requires"]
+				self: parts["self"] & partsOf<head>["self"]
+				props: parts["props"] & partsOf<head>["props"]
 			}
 	  >
 	: abstract new (
-			abstracted: evaluate<parts["abstracted"]>
-	  ) => evaluate<parts["implemented"]>
+			args: parts["args"],
+			props: evaluate<parts["props"]>,
+			requires: evaluate<parts["requires"]>
+	  ) => evaluate<parts["self"]>
