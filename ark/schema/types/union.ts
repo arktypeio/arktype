@@ -4,10 +4,10 @@ import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { Predicate } from "./predicate.js"
-import type { Root, Typed } from "./type.js"
-import { root } from "./type.js"
+import type { Root, TypedNode } from "./type.js"
+import { typedNode } from "./type.js"
 
-export interface Union<t = unknown> extends Typed<t> {
+export interface Union<t = unknown> extends TypedNode<t> {
 	args: [rule: readonly Predicate[]]
 }
 
@@ -16,7 +16,7 @@ export interface Union<t = unknown> extends Typed<t> {
 // 	return discriminate(this.branches)
 // }
 
-export const union = root<Union>()({
+export const union = typedNode<Union>()({
 	kind: "union",
 	writeDefaultDescription() {
 		return this.rule.length === 0 ? "never" : this.rule.join(" or ")

@@ -34,6 +34,14 @@ export type NodeKind = keyof NodeDefinitionsByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
+export abstract class Kinded extends Trait<{ kind: NodeKind }> {
+	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
+		return this.kind === (kind as never)
+	}
+}
+
+export abstract class Fingerprinted {}
+
 export abstract class BaseNode<abstracts extends {} = {}> extends Trait<
 	{ kind: NodeKind } & abstracts
 > {

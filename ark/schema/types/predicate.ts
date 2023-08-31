@@ -3,10 +3,10 @@ import type { AbstractableConstructor, Dict, listable } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Constraint } from "../traits/constraint.js"
 import type { Morphable } from "../traits/morph.js"
-import type { Typed } from "./type.js"
-import { root } from "./type.js"
+import type { TypedNode } from "./type.js"
+import { typedNode } from "./type.js"
 
-export interface Predicate<t = unknown> extends Typed<t> {
+export interface Predicate<t = unknown> extends TypedNode<t> {
 	args: [rule: readonly Constraint[]]
 }
 
@@ -15,7 +15,7 @@ export interface Predicate<t = unknown> extends Typed<t> {
 // 	return discriminate(this.branches)
 // }
 
-export const predicate = root<Predicate>()({
+export const predicate = typedNode<Predicate>()({
 	kind: "predicate",
 	writeDefaultDescription() {
 		return this.rule.length ? this.rule.join(" and ") : "a value"

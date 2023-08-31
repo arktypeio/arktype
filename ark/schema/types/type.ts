@@ -1,4 +1,4 @@
-import type { AbstractableConstructor, Trait } from "@arktype/util"
+import type { AbstractableConstructor, conform, Trait } from "@arktype/util"
 import { implement } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import { BaseNode, type nodeConstructor } from "../node.js"
@@ -18,9 +18,13 @@ export type TypeKind = keyof RootDefinitions
 // TODO: test external types if this isn't any
 export type Root<t = any> = Union<t> | Predicate<t>
 
-export const root = <root extends Root>(
+export const typedNode = <root extends Root>(
 	...traits: readonly AbstractableConstructor<Trait>[]
-) => implement(Describable, Aliasable, Typed) as nodeConstructor<root, Typed>
+) =>
+	implement(Describable, Aliasable, TypedNode) as nodeConstructor<
+		root,
+		AbstractableConstructor<TypedNode>
+	>
 
 interface TypedAbstracts {
 	infer: unknown
@@ -32,7 +36,7 @@ interface TypedAbstracts {
 	keyof(): Root
 }
 
-export abstract class Typed<t = unknown> extends BaseNode<TypedAbstracts> {
+export abstract class TypedNode<t = unknown> extends BaseNode<TypedAbstracts> {
 	declare infer: t
 
 	isUnknown(): this is Predicate<unknown> {
