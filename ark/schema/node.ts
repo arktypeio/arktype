@@ -1,5 +1,6 @@
 import type {
 	AbstractableConstructor,
+	compose,
 	extend,
 	TraitConstructor
 } from "@arktype/util"
@@ -37,7 +38,7 @@ export abstract class Fingerprinted extends Trait<[], {}, { hash(): string }> {
 	}
 }
 
-export abstract class Enforceable<rule extends number = number> extends Trait<
+export abstract class Enforceable<rule = number> extends Trait<
 	[rule: rule],
 	{ rule: rule }
 > {

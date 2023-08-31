@@ -23,8 +23,9 @@ export abstract class Trait<
 type selfOf<
 	trait extends AbstractableConstructor<Trait>,
 	implementation
-> = {} extends implementation
-	? InstanceType<trait>
+> = InstanceType<trait> extends implementation
+	? // maintain the original name if possible
+	  InstanceType<trait>
 	: merge<InstanceType<trait>, implementation>
 
 export type TraitConstructor<
@@ -34,12 +35,9 @@ export type TraitConstructor<
 ) => (...args: partsOf<trait>["args"]) => selfOf<trait, implementation>
 
 export const implement =
-	<
-		traits extends readonly AbstractableConstructor<Trait>[],
-		composed extends compose<traits> = compose<traits>
-	>(
+	<traits extends readonly AbstractableConstructor<Trait>[]>(
 		...traits: traits
-	): TraitConstructor<composed> =>
+	): TraitConstructor<compose<traits>> =>
 	(...implementation) => {
 		const prototype = Object.defineProperties(
 			implementation[0] ?? {},

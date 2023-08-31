@@ -1,10 +1,7 @@
 import { implement } from "@arktype/util"
-import { Enforceable, Kinded } from "../node.js"
 // import type { BaseConstraint } from "./constraint.js"
-import { constraint } from "./constraint.js"
-import { Describable } from "./description.js"
 
-// export interface DivisorConstraint extends BaseConstraint<number> {}
+import { constraintTraits } from "./constraint.js"
 
 // export const divisor = constraint<number>((l, r) => [
 // 	(l * r) / greatestCommonDivisor(l, r)
@@ -16,9 +13,7 @@ import { Describable } from "./description.js"
 // })
 
 export const divisor = implement(
-	Describable,
-	Enforceable<number>,
-	Kinded
+	...constraintTraits<number>((l, r) => [(l * r) / greatestCommonDivisor(l, r)])
 )({
 	kind: "divisor",
 	writeDefaultDescription() {
