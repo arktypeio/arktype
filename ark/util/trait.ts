@@ -6,13 +6,15 @@ import { DynamicBase } from "./records.js"
 
 // @ts-expect-error (otherwise can't dynamically add abstracted props)
 export abstract class Trait<
-	abstracts extends {} = {}
-> extends DynamicBase<abstracts> {
-	constructor(abstracts: abstracts) {
+	abstracts extends {} = {},
+	init extends {} = {}
+> extends DynamicBase<abstracts & init> {
+	constructor(abstracts: abstracts, initializes: init) {
 		throw new Error(`Traits cannot be constructed directly`)
-		super(abstracts)
+		super("unnecessary" as never)
 	}
-	abstract args: readonly unknown[]
+
+	protected abstract init(...args: never[]): init
 }
 
 type selfOf<
@@ -24,13 +26,13 @@ type selfOf<
 
 export type TraitConstructor<
 	trait extends AbstractableConstructor<Trait> = AbstractableConstructor<Trait>
-> = <implementation extends ConstructorParameters<trait>[0]>(
+> = <implementation extends partsOf<trait>["abstracted"]>(
 	implementation: implementation & ThisType<selfOf<trait, implementation>>
-) => (...args: InstanceType<trait>["args"]) => selfOf<trait, implementation>
+) => (...args: partsOf<trait>["args"]) => selfOf<trait, implementation>
 
 export const implement =
 	<
-		traits extends NonEmptyList<AbstractableConstructor<Trait>>,
+		traits extends readonly AbstractableConstructor<Trait>[],
 		composed extends compose<traits> = compose<traits>
 	>(
 		...traits: traits
@@ -66,14 +68,14 @@ export const compose = <
 
 export type compose<traits extends readonly AbstractableConstructor<Trait>[]> =
 	traits extends readonly [
-		infer head extends AbstractableConstructor,
+		infer head extends AbstractableConstructor<Trait>,
 		...infer tail
 	]
 		? // if it's only a single trait, return it directly to preserve nominal types, arg labels, etc.
 		  tail["length"] extends 0
 			? head
 			: composeRecurse<tail, partsOf<head>>
-		: typeof Trait<{}>
+		: typeof Trait
 
 type TraitParts = {
 	args: readonly unknown[]
@@ -81,20 +83,17 @@ type TraitParts = {
 	implemented: {}
 }
 
-type partsOf<trait extends AbstractableConstructor> = {
-	args: InstanceType<trait>["args"]
+interface partsOf<trait extends AbstractableConstructor<Trait>> {
+	args: Parameters<InstanceType<trait>["init"]>
 	abstracted: ConstructorParameters<trait>[0]
-	implemented: Omit<
-		InstanceType<trait>,
-		keyof ConstructorParameters<trait>[0] | "args"
-	>
+	implemented: Omit<InstanceType<trait>, keyof this["abstracted"] | "init">
 }
 
 type composeRecurse<
 	traits extends readonly unknown[],
 	parts extends TraitParts
 > = traits extends readonly [
-	infer head extends AbstractableConstructor,
+	infer head extends AbstractableConstructor<Trait>,
 	...infer tail
 ]
 	? composeRecurse<
@@ -107,4 +106,4 @@ type composeRecurse<
 	  >
 	: abstract new (
 			abstracted: evaluate<parts["abstracted"]>
-	  ) => evaluate<{ args: parts["args"] } & parts["implemented"]>
+	  ) => evaluate<parts["implemented"]>

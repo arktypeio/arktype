@@ -3,7 +3,7 @@ import type {
 	extend,
 	TraitConstructor
 } from "@arktype/util"
-import { Trait } from "@arktype/util"
+import { implement, Trait } from "@arktype/util"
 import type { ConstraintDefinitions } from "./traits/constraint.js"
 import type { RootDefinitions } from "./types/type.js"
 
@@ -19,7 +19,7 @@ export type nodeConstructor<
 			) => node
 		>
 	>[0]
-) => (rule: node["args"][0], attributes?: node["args"][1]) => node
+) => (rule: Parameters<node["init"]>[0], attributes?: node["args"][1]) => node
 
 export type NodeDefinitionsByKind = extend<
 	RootDefinitions,
@@ -40,23 +40,24 @@ export abstract class Kinded extends Trait<{ kind: NodeKind }> {
 	}
 }
 
-export abstract class Fingerprinted {}
+const z = implement(Kinded)({ kind: "bound" })
 
-export abstract class BaseNode<abstracts extends {} = {}> extends Trait<
-	{ kind: NodeKind } & abstracts
-> {
-	declare readonly id: string
-	declare allows: (data: unknown) => boolean
-
-	get rule() {
-		return this.args[0] as (typeof this)["args"][0]
+export abstract class Fingerprinted extends Trait<{ hash(): string }> {
+	// TOOD: figure out caching
+	get id() {
+		return this.hash()
 	}
 
-	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
-		return this.kind === (kind as never)
-	}
-
-	equals(other: BaseNode) {
+	equals(other: Fingerprinted) {
 		return this.id === other.id
+	}
+}
+
+export abstract class Enforceable<rule = unknown> extends Trait<
+	{},
+	{ rule: rule }
+> {
+	init(rule: rule) {
+		return { rule }
 	}
 }

@@ -1,6 +1,6 @@
-import { compose, implement, Trait } from "@arktype/util"
+import { compose, implement } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { nodeConstructor } from "../node.js"
+import { Enforceable, Kinded, type nodeConstructor } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Describable } from "./description.js"
 import type { DivisorConstraint } from "./divisor.js"
@@ -42,35 +42,25 @@ export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 // export type Rule<kind extends ConstraintKind = ConstraintKind> =
 // 	ConstraintDefinitions[kind]["rule"]
 
-export abstract class BaseConstraint<rule = any> extends compose(
-	Describable,
-	Trait<{ kind: ConstraintKind }>
-) {
-	declare args: [rule: rule, attributes?: { description?: string }]
-	// this is assigned during constraint construction
-	protected declare intersectRules: RuleIntersection<rule>
+// export abstract class BaseConstraint<rule = any> {
+// 	// this is assigned during constraint construction
+// 	protected declare intersectRules: RuleIntersection<rule>
 
-	get rule() {
-		return this.args[0] as rule
-	}
+// 	// get rule() {
+// 	// 	return this.args[0] as rule
+// 	// }
 
-	intersect(other: this): this | Disjoint | null {
-		return this
-	}
-}
+// 	intersect(other: this): this | Disjoint | null {
+// 		return this
+// 	}
+// }
 
 type RuleIntersection<rule> = (
 	l: rule,
 	r: rule
 ) => Disjoint | [] | [rule] | [rule, rule]
 
-export const constraint = <constraint extends BaseConstraint>(
-	intersect: RuleIntersection<constraint["rule"]>
-) =>
-	implement(BaseConstraint) as {} as nodeConstructor<
-		constraint,
-		typeof BaseConstraint
-	>
+export const constraint = compose(Describable, Kinded, Enforceable)
 
 // export type RuleSets = {
 // 	prop: PropConstraint

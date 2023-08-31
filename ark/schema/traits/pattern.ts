@@ -19,7 +19,7 @@ export const pattern = constraint<PatternConstraint>((l, r) => [l, r])({
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) => `${regex}` as RegexLiteral
-;``
+
 export type RegexLiteral = `/${string}/${string}`
 
 const regexLiteralMatcher = /^\/(.+)\/([a-z]*)$/
