@@ -1,15 +1,20 @@
 import { compose, implement } from "@arktype/util"
+import { Fingerprinted } from "../node.js"
 import { constraintTraits } from "./constraint.js"
 
 abstract class Divisor extends compose(
-	...constraintTraits<number>((l, r) => [(l * r) / greatestCommonDivisor(l, r)])
+	...constraintTraits<number>((l, r) => [
+		(l * r) / greatestCommonDivisor(l, r)
+	]),
+	Fingerprinted
 ) {}
 
 export const divisor = implement(Divisor)({
 	kind: "divisor",
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
-	}
+	},
+	hash: () => ""
 })
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

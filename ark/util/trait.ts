@@ -1,6 +1,5 @@
-import type { conform, evaluate, merge } from "./generics.js"
+import type { evaluate, merge } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
-import type { NonEmptyList } from "./lists.js"
 import type { AbstractableConstructor } from "./objectKinds.js"
 import { DynamicBase } from "./records.js"
 
@@ -115,7 +114,7 @@ type composeRecurse<
 	  ) => InstanceType<
 			typeof Trait<
 				parts["args"],
-				evaluate<parts["props"]>,
+				evaluate<parts["self"]>,
 				evaluate<parts["requires"]>
 			>
 	  >
