@@ -1,29 +1,19 @@
 import type { Domain } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
-import { type BaseConstraint, constraint } from "./constraint.js"
+import { composeConstraint } from "./constraint.js"
 
-export interface DomainConstraint extends BaseConstraint<NonEnumerableDomain> {}
+export class DomainConstraint extends composeConstraint<NonEnumerableDomain>(
+	() => []
+) {
+	readonly kind = "domain"
 
-export const domain = constraint<DomainConstraint>(() => [])({
-	kind: "domain",
+	hash() {
+		return this.rule
+	}
+
 	writeDefaultDescription() {
 		return domainDescriptions[this.rule]
 	}
-})
-
-// export class DomainNode<
-// 	domain extends NonEnumerableDomain = NonEnumerableDomain
-// > extends RuleNode<DomainDefinition<domain>> {
-// 	readonly kind = "domain"
-
-// 	reduceRules(other: DomainNode) {
-// 		return other.hasKind("domain") ? Disjoint.from("domain", this, other) : null
-// 	}
-
-// 	writeDefaultDescription() {
-// 		return domainDescriptions[this.value]
-// 	}
-// }
+}
 
 /** Each domain's completion for the phrase "Must be _____" */
 export const domainDescriptions = {

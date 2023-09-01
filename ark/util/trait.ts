@@ -1,4 +1,5 @@
 import type { intersectParameters } from "./intersections.js"
+import type { applyElementLabels } from "./labels.js"
 import { type AbstractableConstructor } from "./objectKinds.js"
 
 export const compose = <traits extends readonly AbstractableConstructor[]>(
@@ -11,13 +12,21 @@ export const compose = <traits extends readonly AbstractableConstructor[]>(
 	return result as {} as compose<traits>
 }
 
-export type compose<traits extends readonly AbstractableConstructor[]> =
-	composeRecurse<traits, [], {}>
+export const composeWithLabels =
+	<labels extends 1[]>() =>
+	<traits extends readonly AbstractableConstructor[]>(...traits: traits) =>
+		compose(...traits) as compose<traits, labels>
+
+export type compose<
+	traits extends readonly AbstractableConstructor[],
+	labels extends 1[] = []
+> = composeRecurse<traits, [], {}, labels>
 
 export type composeRecurse<
 	traits extends readonly unknown[],
 	parameters extends readonly unknown[],
-	instance extends {}
+	instance extends {},
+	labels extends 1[]
 > = traits extends readonly [
 	infer head extends AbstractableConstructor,
 	...infer tail
@@ -25,6 +34,7 @@ export type composeRecurse<
 	? composeRecurse<
 			tail,
 			intersectParameters<parameters, ConstructorParameters<head>>,
-			instance & InstanceType<head>
+			instance & InstanceType<head>,
+			labels
 	  >
-	: abstract new (...args: parameters) => instance
+	: abstract new (...args: applyElementLabels<parameters, labels>) => instance

@@ -1,13 +1,9 @@
-import { Trait } from "@arktype/util"
+export abstract class Describable {
+	description: string
 
-export class Describable extends Trait<
-	[rule: unknown, attributes?: { description?: string }],
-	{ description: string },
-	{
-		writeDefaultDescription(): string
+	abstract writeDefaultDescription(): string
+
+	constructor(rule: unknown, attributes?: { description?: string }) {
+		this.description = attributes?.description ?? this.writeDefaultDescription()
 	}
-> {
-	protected initialize = () => ({
-		description: this.args[1]?.description ?? this.writeDefaultDescription()
-	})
 }

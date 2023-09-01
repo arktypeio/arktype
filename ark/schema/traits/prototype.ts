@@ -4,23 +4,22 @@ import {
 	getExactBuiltinConstructorName,
 	objectKindDescriptions
 } from "@arktype/util"
-import { type BaseConstraint, constraint } from "./constraint.js"
+import { composeConstraint } from "./constraint.js"
 
-export interface PrototypeConstraint<
+export class PrototypeConstraint<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends BaseConstraint<constructor> {}
-
-export const prototype = constraint<PrototypeConstraint>((l, r) =>
+> extends composeConstraint<constructor>((l, r) =>
 	constructorExtends(l, r) ? [l] : constructorExtends(r, l) ? [r] : []
-)({
-	kind: "prototype",
+) {
+	readonly kind = "prototype"
+
 	writeDefaultDescription() {
 		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 		return possibleObjectKind
 			? objectKindDescriptions[possibleObjectKind]
 			: `an instance of ${this.rule}`
 	}
-})
+}
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 

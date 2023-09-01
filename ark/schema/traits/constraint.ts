@@ -1,6 +1,6 @@
-import { compose, implement, Trait } from "@arktype/util"
+import { compose, composeWithLabels } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import { Enforceable, Kinded } from "../node.js"
+import { Enforceable, Fingerprinted, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Describable } from "./description.js"
 import type { DomainConstraint } from "./domain.js"
@@ -46,27 +46,32 @@ type RuleIntersection<rule> = (
 	r: rule
 ) => Disjoint | [] | [rule] | [rule, rule]
 
-export abstract class BaseConstraint<rule = unknown> extends compose(
-	Describable,
-	Kinded,
-	Enforceable
-) {
-	intersect(other: this) {
-		return this
-	}
-}
+// export abstract class BaseConstraint<rule = unknown> extends compose(
+// 	Describable,
+// 	Kinded
+// ) {
+// 	constructor(public rule: rule) {
+// 		super()
+// 	}
 
-export const constraintTraits = <rule>(intersect: RuleIntersection<rule>) =>
-	[
+// 	intersect(other: this) {
+// 		return this
+// 	}
+// }
+
+export const composeConstraint = <rule>(intersect: RuleIntersection<rule>) =>
+	composeWithLabels<[rule: 1, attributes: 1]>()(
 		Describable,
 		Kinded,
-		Enforceable<rule>,
-		class Constraint extends Trait<[]> {
+		Fingerprinted,
+		class Constraint {
+			constructor(public rule: rule) {}
+
 			intersect(other: this) {
 				return this
 			}
 		}
-	] as const
+	)
 
 // export type RuleSets = {
 // 	prop: PropConstraint

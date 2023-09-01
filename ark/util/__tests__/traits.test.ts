@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { compose } from "@arktype/util"
+import { compose, composeWithLabels } from "@arktype/util"
 
 suite("traits", () => {
 	abstract class Describable {
@@ -53,5 +53,19 @@ suite("traits", () => {
 		]
 		attest(shortString.check("foo")).equals(true)
 		attest(shortString.check("toolong")).equals(false)
+	})
+	test("compose with labels", () => {
+		abstract class Labeled extends composeWithLabels<
+			[rule: 1, attributes: 1]
+		>()(Describable, Boundable) {}
+		const t = {} as ConstructorParameters<typeof Labeled>
+		attest(t).typed as [
+			rule: {
+				limit?: number
+			},
+			attributes?: {
+				description?: string
+			}
+		]
 	})
 })
