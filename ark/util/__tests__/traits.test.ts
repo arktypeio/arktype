@@ -1,85 +1,56 @@
 import { attest } from "@arktype/attest"
-import { compose, implement, Trait } from "@arktype/util"
+import { compose } from "@arktype/util"
 
 suite("traits", () => {
-	class Describable extends Trait<
-		// declare input
-		[rule: unknown, attributes?: { description?: string }],
-		{ description: string },
-		{
-			// declare any abstract props here
-			writeDefaultDescription: () => string
-		}
-	> {
-		protected initialize = () => ({
-			// you can use inputs/abstract props in whatever you implement, it's available via this
-			description: this.args[1]?.description ?? this.writeDefaultDescription()
-		})
-	}
-	const describableFoo = implement(Describable)({
-		writeDefaultDescription: () => "default foo" as const,
-		other: () => "bar"
-	})
-	test("standalone", () => {
-		const myDefaultFoo = describableFoo({})
-		attest(myDefaultFoo).typed as {
-			args: [
-				rule: unknown,
-				attributes?: {
-					description?: string
-				}
-			]
-			readonly description: string
-			writeDefaultDescription: () => "default foo"
-			other: () => "bar"
-		}
-		attest(myDefaultFoo.description).equals("default description for true")
-	})
-	test("from input", () => {
-		const myCustomFoo = describableFoo(false, {
-			description: "custom foo"
-		})
-		attest(myCustomFoo.description).equals("custom foo")
-	})
+	abstract class Describable {
+		description: string
 
-	class Boundable<data> extends Trait<
-		[rule: { limit?: number }],
-		{ limit: number | undefined },
-		{
-			sizeOf: (data: data) => number
+		abstract writeDefaultDescription(): string
+
+		constructor(rule: unknown, attributes?: { description?: string }) {
+			this.description =
+				attributes?.description ?? this.writeDefaultDescription()
 		}
-	> {
-		protected initialize = () => ({
-			limit: this.args[0].limit
-		})
+	}
+
+	abstract class Boundable<data> {
+		limit: number | undefined
+
+		constructor(rule: { limit?: number }) {
+			this.limit = rule.limit
+		}
+
+		abstract sizeOf(data: data): number
 
 		check(data: data) {
 			return this.limit === undefined || this.sizeOf(data) <= this.limit
 		}
 	}
 
-	test("compose", () => {
-		const string = implement(
-			Boundable<string>,
-			Describable
-		)({
-			sizeOf: (data) => data.length,
-			writeDefaultDescription: () => "a string"
-		})
-		const shortString = string({ limit: 5 }, { description: "a short string" })
-		attest(shortString).typed as {
-			args: [
-				{
-					limit?: number
-				},
-				{
-					description?: string
-				}?
-			]
-			readonly limit: number | undefined
-			check: (data: unknown) => boolean
-			readonly description: string
+	class StringChecker extends compose(Describable, Boundable) {
+		sizeOf(data: unknown) {
+			return Number(data)
 		}
+
+		writeDefaultDescription() {
+			return "foo"
+		}
+	}
+
+	test("compose", () => {
+		const shortString = new StringChecker(
+			{ limit: 5 },
+			{ description: "a short string" }
+		)
+		type Params = ConstructorParameters<typeof StringChecker>
+		attest({} as Params).typed as [
+			{
+				limit?: number
+			},
+			{
+				description?: string
+			}?
+		]
 		attest(shortString.check("foo")).equals(true)
 		attest(shortString.check("toolong")).equals(false)
 	})
