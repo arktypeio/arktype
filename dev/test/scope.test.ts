@@ -21,6 +21,41 @@ describe("scope", () => {
             scope({ a: type("strong") })
         ).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
     })
+    it("resolves intersections across scopes", () => {
+        const $ = scope({
+            a: "'abc'",
+            b: { "c?": "a" }
+        })
+        const types = $.compile()
+        // This fails if you don't use scoped type for now, fixing in next release
+        const t = $.type([types.b, "&", { extraProp: "string" }])
+        attest(t.infer).typed as { c?: "abc"; extraProp: string }
+        attest(t.node).snap({
+            object: { props: { c: ["?", "a"], extraProp: "string" } }
+        })
+    })
+    it("resolves unions across scopes", () => {
+        const $ = scope({
+            a: "'abc'",
+            b: { "c?": "a" }
+        })
+        const types = $.compile()
+        // This fails if you don't use scoped type for now, fixing in next release
+        const t = $.type([types.b, "|", { extraProp: "string" }])
+        attest(t.infer).typed as
+            | {
+                  c?: "abc"
+              }
+            | {
+                  extraProp: string
+              }
+        attest(t.node).snap({
+            object: [
+                { props: { c: ["?", "a"] } },
+                { props: { extraProp: "string" } }
+            ]
+        })
+    })
     it("interdependent", () => {
         const types = scope({
             a: "string>5",
