@@ -290,12 +290,9 @@ describe("morph", () => {
             scope({
                 a: ["boolean", "|>", (data) => `${data}`],
                 b: ["boolean", "|>", (data) => `${data}!!!`],
-                // @ts-expect-error
                 c: "a&b"
             }).compile()
-        }).throwsAndHasTypeError(
-            "Intersection of morphs results in an unsatisfiable type"
-        )
+        }).throws("Intersection of morphs results in an unsatisfiable type")
     })
     it("undiscriminated union", () => {
         attest(() => {
@@ -312,10 +309,9 @@ describe("morph", () => {
             scope({
                 a: { a: ["boolean", "|>", (data) => `${data}`] },
                 b: { a: ["boolean", "|>", (data) => `${data}!!!`] },
-                // @ts-expect-error
                 c: "a&b"
             }).compile()
-        }).throwsAndHasTypeError(
+        }).throws(
             "At a: Intersection of morphs results in an unsatisfiable type"
         )
     })
@@ -354,10 +350,9 @@ describe("morph", () => {
             scope({
                 a: { a: ["number>0", "|>", (data) => data + 1] },
                 b: { a: ["number>0", "|>", (data) => data + 2] },
-                // @ts-expect-error
                 c: "a[]&b[]"
             }).compile()
-        }).throwsAndHasTypeError(
+        }).throws(
             "At [index]/a: Intersection of morphs results in an unsatisfiable type"
         )
     })

@@ -184,8 +184,7 @@ describe("intersection", () => {
                 )
             })
             it("implicit never", () => {
-                // @ts-expect-error
-                attest(() => type("string&number")).throwsAndHasTypeError(
+                attest(() => type("string&number")).throws(
                     "results in an unsatisfiable type"
                 )
             })

@@ -1,99 +1,74 @@
 import type { DisjointsByPath } from "../../nodes/compose.js"
 import { disjointDescriptionWriters } from "../../nodes/compose.js"
-import type { MappedKeys } from "../../nodes/rules/props.js"
-import type {
-    asConst,
-    Dict,
-    error,
-    evaluate,
-    extractValues,
-    isAny,
-    List,
-    tryCatch
-} from "../../utils/generics.js"
+import type { asConst, evaluate, isAny, List } from "../../utils/generics.js"
 import { objectKeysOf } from "../../utils/generics.js"
 import type { Path, pathToString } from "../../utils/paths.js"
 import type { ParsedMorph } from "./morph.js"
 
-export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
-
-type inferIntersectionRecurse<
-    l,
-    r,
-    path extends string[]
-> = path["length"] extends 10
-    ? l & r
-    : l extends never
+export type inferIntersection<l, r> = [l] extends [never]
     ? never
-    : r extends never
+    : [r] extends [never]
     ? never
-    : l & r extends never
-    ? error<writeImplicitNeverMessage<path, "Intersection">>
+    : [l & r] extends [never]
+    ? never
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<writeImplicitNeverMessage<path, "Intersection", "of morphs">>
+        ? never
         : (In: evaluate<lIn & r>) => lOut
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => rOut
-    : [l, r] extends [Dict, Dict]
-    ? bubblePropErrors<
-          evaluate<
+    : intersectObjects<l, r> extends infer result
+    ? result
+    : never
+
+type intersectObjects<l, r> = [l, r] extends [object, object]
+    ? [l, r] extends [infer lList extends List, infer rList extends List]
+        ? inferArrayIntersection<lList, rList>
+        : evaluate<
               {
-                  [k in keyof l as k extends string
-                      ? k
-                      : never]: k extends string
-                      ? k extends keyof r
-                          ? inferIntersectionRecurse<l[k], r[k], [...path, k]>
-                          : l[k]
-                      : never
+                  [k in keyof l]: k extends keyof r
+                      ? inferIntersection<l[k], r[k]>
+                      : l[k]
               } & Omit<r, keyof l>
           >
-      >
-    : l extends List
-    ? r extends List
-        ? inferArrayIntersection<l, r, path>
-        : l & r
     : l & r
 
 type inferArrayIntersection<
     l extends List,
     r extends List,
-    path extends string[]
-> = isTuple<l> extends true
-    ? {
-          [i in keyof l]: inferIntersectionRecurse<
-              l[i],
-              r[i & keyof r],
-              [...path, `${i}`]
-          > extends infer result
-              ? tryCatch<result, result>
-              : never
-      }
-    : isTuple<r> extends true
-    ? {
-          [i in keyof r]: inferIntersectionRecurse<
-              l[i & keyof l],
-              r[i],
-              [...path, `${i}`]
-          > extends infer result
-              ? tryCatch<result, result>
-              : never
-      }
-    : inferIntersectionRecurse<
-          l[number],
-          r[number],
-          [...path, MappedKeys["index"]]
-      > extends infer result
-    ? tryCatch<result, result[]>
-    : never
-
-type isTuple<list extends List> = number extends list["length"] ? false : true
-
-type bubblePropErrors<o> = extractValues<o, error> extends never
-    ? o
-    : extractValues<o, error>
+    result extends List = []
+> = [l, r] extends [
+    [infer lHead, ...infer lTail],
+    [infer rHead, ...infer rTail]
+]
+    ? inferArrayIntersection<
+          lTail,
+          rTail,
+          [...result, inferIntersection<lHead, rHead>]
+      >
+    : l extends [infer lHead, ...infer lTail]
+    ? r extends []
+        ? // l is longer tuple than r, unsatisfiable
+          never
+        : inferArrayIntersection<
+              lTail,
+              r,
+              [...result, inferIntersection<lHead, r[number]>]
+          >
+    : r extends [infer rHead, ...infer rTail]
+    ? l extends []
+        ? // r is longer tuple than l, unsatisfiable
+          never
+        : inferArrayIntersection<
+              l,
+              rTail,
+              [...result, inferIntersection<l[number], rHead>]
+          >
+    : [number, number] extends [l["length"], r["length"]]
+    ? [...result, ...inferIntersection<l[number], r[number]>[]]
+    : result
 
 export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     const paths = objectKeysOf(disjoints)
