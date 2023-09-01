@@ -1,16 +1,6 @@
 import type { DisjointsByPath } from "../../nodes/compose.js"
 import { disjointDescriptionWriters } from "../../nodes/compose.js"
-import type { MappedKeys } from "../../nodes/rules/props.js"
-import type {
-    asConst,
-    Dict,
-    error,
-    evaluate,
-    extractValues,
-    isAny,
-    List,
-    tryCatch
-} from "../../utils/generics.js"
+import type { asConst, evaluate, isAny, List } from "../../utils/generics.js"
 import { objectKeysOf } from "../../utils/generics.js"
 import type { Path, pathToString } from "../../utils/paths.js"
 import type { ParsedMorph } from "./morph.js"
