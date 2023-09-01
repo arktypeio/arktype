@@ -100,14 +100,15 @@
 		"editorBracketHighlight.unexpectedBracket.foreground": "#eb9f2e",
 		"editorCursor.foreground": "#408fde",
 		"terminalCursor.foreground": "#408fde",
-		"editorCodeLens.foreground": "#00b7e460",
+		"editorCodeLens.foreground": "#00ccff60",
+		"editorInlayHint.foreground": "#00ccff60",
 		// ErrorLens settings
 		"errorLens.errorBackground": "#9558f818",
 		"errorLens.errorForeground": "#9558f8a0",
 		"errorLens.warningBackground": "#00b7e40c",
-		"errorLens.warningForeground": "#00b7e460",
+		"errorLens.warningForeground": "#00ccff60",
 		"errorLens.infoBackground": "#00b7e40c",
-		"errorLens.infoForeground": "#00b7e460",
+		"errorLens.infoForeground": "#00ccff60",
 		"errorLens.hintBackground": "#17a2a20c",
 		"errorLens.hintForeground": "#2faf6460",
 		// Copied from VSCode's "Default Dark Modern" (https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/dark_modern.json)

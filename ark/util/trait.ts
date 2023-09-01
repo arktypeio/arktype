@@ -53,13 +53,7 @@ abstract class Boundable<data> {
 	}
 }
 
-abstract class Booch {
-	booch = true
-}
-
-const z = compose(Describable, Boundable, Booch)
-
-class Foo extends z {
+class Foo extends compose(Describable, Boundable) {
 	sizeOf(data: unknown) {
 		return Number(data)
 	}
@@ -70,9 +64,8 @@ class Foo extends z {
 }
 
 const zn = new Foo({ limit: 5 }, {})
+//               ^?
 
 zn.check //?
-
-zn.booch //?
 
 zn.writeDefaultDescription() //?
