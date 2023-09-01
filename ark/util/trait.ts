@@ -1,7 +1,9 @@
+import type { EntryParseResult } from "arktype/internal/parser/shared.js"
 import type { conform, evaluate, merge } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
-import type { AbstractableConstructor } from "./objectKinds.js"
-import { DynamicBase, hasKey } from "./records.js"
+import { type AbstractableConstructor, prototypeKeysOf } from "./objectKinds.js"
+import type { entryOf } from "./records.js"
+import { DynamicBase, entriesOf, hasKey } from "./records.js"
 
 // @ts-expect-error (otherwise can't dynamically add abstracted props)
 export abstract class Trait<
@@ -15,10 +17,6 @@ export abstract class Trait<
 		super({} as never)
 		// throw new Error(`Traits cannot be constructed directly`)
 		// super("unnecessary" as never)
-	}
-
-	protected initialize(): props {
-		return {} as never
 	}
 }
 
@@ -41,9 +39,10 @@ export const implement =
 		...traits: traits
 	): TraitConstructor<compose<traits>> =>
 	(...implementation) => {
+		const base = compose(...traits)
 		const prototype = Object.defineProperties(
-			implementation[0] ?? {},
-			Object.getOwnPropertyDescriptors(compose(...traits).prototype)
+			base.prototype,
+			Object.getOwnPropertyDescriptors(implementation[0])
 		)
 		return (...args) => {
 			const result = Object.create(prototype, {
@@ -51,25 +50,63 @@ export const implement =
 					value: args
 				}
 			})
+			const z = result.initialize() //?
 			return Object.assign(result, result.initialize?.())
 		}
 	}
+
+export const flattenPrototypeDescriptors = (value: unknown) => {
+	const result: Record<string | symbol, PropertyDescriptor> = {}
+	while (value !== Object.prototype && value !== null && value !== undefined) {
+		const descriptors = Object.getOwnPropertyDescriptors(value)
+		for (const k in descriptors) {
+			if (!result[k]) {
+				result[k] = descriptors[k]
+			}
+		}
+		value = Object.getPrototypeOf(value)
+	}
+	return entriesOf(result)
+}
 
 export const compose = <
 	traits extends readonly AbstractableConstructor<Trait>[]
 >(
 	...traits: traits
-) =>
-	({
-		prototype: traits.reduce(
-			(base, trait) =>
-				Object.defineProperties(
-					base,
-					Object.getOwnPropertyDescriptors(trait.prototype)
-				),
-			{}
-		)
-	}) as compose<traits>
+) => {
+	const initializers: (() => {})[] = []
+	const result = traits.reduce(
+		(base, trait) => {
+			for (const [k, descriptors] of flattenPrototypeDescriptors(
+				trait.prototype
+			)) {
+				if (base.prototype[k] === undefined) {
+					Object.defineProperty(base.prototype, k, descriptors)
+				} else if (k === "initialize") {
+					initializers.push(descriptors.value)
+				} else if (k !== "constructor") {
+					throw new Error(
+						`Property '${String(k)}' cannot be redefined on trait ${trait.name}`
+					)
+				}
+			}
+			return base
+		},
+		class {} as { prototype: any }
+	) as unknown as compose<traits>
+	if (!initializers.length) {
+		return result
+	}
+	Object.defineProperty(result.prototype, "initialize", {
+		// eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
+		value() {
+			return initializers.reduce((base, init) => Object.assign(base, init()), {
+				fOOL: ""
+			})
+		}
+	})
+	return result
+}
 
 export type compose<traits extends readonly AbstractableConstructor<Trait>[]> =
 	traits extends readonly [
@@ -126,51 +163,57 @@ type composeRecurse<
 			>
 	  >
 
-// export class Describable extends Trait<
-// 	[rule: unknown, attributes?: { description?: string }],
-// 	{ description: string },
-// 	{
-// 		writeDefaultDescription(): string
-// 	}
-// > {
-// 	protected initialize = () => ({
-// 		description: this.args[1]?.description ?? this.writeDefaultDescription()
-// 	})
-// }
+export class Describable extends Trait<
+	[rule: unknown, attributes?: { description?: string }],
+	{ description: string },
+	{
+		writeDefaultDescription(): string
+	}
+> {
+	protected initialize() {
+		console.log(this.args[1]) //?
 
-// class DescribableFoo extends compose(
-// 	Describable,
-// 	class extends Trait {
-// 		writeDefaultDescription() {
-// 			return "default foo" as const
-// 		}
-// 		other() {
-// 			return "bar"
-// 		}
-// 	}
-// ) {}
+		return {
+			description: this.args[1]?.description ?? this.writeDefaultDescription()
+		}
+	}
+}
 
-// const describableFoo = implement(DescribableFoo)({})
+const based = compose(
+	Describable,
+	class extends Trait {
+		writeDefaultDescription() {
+			return "default foo" as const
+		}
+		other() {
+			return "bar"
+		}
+	}
+)
 
-// console.log(describableFoo(0))
+class DescribableFoo extends based {}
 
-// describableFoo(0).writeDefaultDescription()
+const describableFoo = implement(DescribableFoo)({})
 
-// class Boundable<data> extends Trait<
-// 	[rule: { limit?: number }],
-// 	{ limit: number | undefined },
-// 	{
-// 		sizeOf: (data: data) => number
-// 	}
-// > {
-// 	protected initialize = () => ({
-// 		limit: this.args[0].limit
-// 	})
+// console.log(describableFoo(0, { description: "bar" }))
 
-// 	check(data: data) {
-// 		return this.limit === undefined || this.sizeOf(data) <= this.limit
-// 	}
-// }
+describableFoo(0).description //?
+
+class Boundable<data> extends Trait<
+	[rule: { limit?: number }],
+	{ limit: number | undefined },
+	{
+		sizeOf: (data: data) => number
+	}
+> {
+	protected initialize = () => ({
+		limit: this.args[0].limit
+	})
+
+	check(data: data) {
+		return this.limit === undefined || this.sizeOf(data) <= this.limit
+	}
+}
 
 // const string = implement(
 // 	Boundable<string>,
@@ -179,4 +222,5 @@ type composeRecurse<
 // 	sizeOf: (data) => data.length,
 // 	writeDefaultDescription: () => "a string"
 // })
+
 // const shortString = string({ limit: 5 }, { description: "a short string" })

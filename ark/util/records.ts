@@ -42,7 +42,7 @@ export type entryOf<o> = {
 export type entriesOf<o extends object> = entryOf<o>[]
 
 export const entriesOf = <o extends object>(o: o) =>
-	Object.entries(o) as entriesOf<o>
+	Object.entries(o) as evaluate<entriesOf<o>>
 
 type Entry<key extends PropertyKey = PropertyKey, value = unknown> = readonly [
 	key: key,
