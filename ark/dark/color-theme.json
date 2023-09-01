@@ -100,8 +100,8 @@
 		"editorBracketHighlight.unexpectedBracket.foreground": "#eb9f2e",
 		"editorCursor.foreground": "#408fde",
 		"terminalCursor.foreground": "#408fde",
-		// ErrorLens settings
 		"editorCodeLens.foreground": "#00b7e460",
+		// ErrorLens settings
 		"errorLens.errorBackground": "#9558f818",
 		"errorLens.errorForeground": "#9558f8a0",
 		"errorLens.warningBackground": "#00b7e40c",
