@@ -101,10 +101,11 @@
 		"editorCursor.foreground": "#408fde",
 		"terminalCursor.foreground": "#408fde",
 		// ErrorLens settings
+		"editorCodeLens.foreground": "#00b7e460",
 		"errorLens.errorBackground": "#9558f818",
 		"errorLens.errorForeground": "#9558f8a0",
-		"errorLens.warningBackground": "#17a2a20c",
-		"errorLens.warningForeground": "#2faf6460",
+		"errorLens.warningBackground": "#00b7e40c",
+		"errorLens.warningForeground": "#00b7e460",
 		"errorLens.infoBackground": "#00b7e40c",
 		"errorLens.infoForeground": "#00b7e460",
 		"errorLens.hintBackground": "#17a2a20c",
