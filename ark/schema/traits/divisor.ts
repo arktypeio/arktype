@@ -2,7 +2,7 @@ import { compose } from "@arktype/util"
 import { Fingerprinted } from "../node.js"
 import { composeConstraint } from "./constraint.js"
 
-export class Divisor extends composeConstraint<number>((l, r) => [
+export class DivisorConstraint extends composeConstraint<number>((l, r) => [
 	(l * r) / greatestCommonDivisor(l, r)
 ]) {
 	readonly kind = "divisor"

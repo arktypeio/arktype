@@ -1,8 +1,9 @@
-import { compose, composeWithLabels } from "@arktype/util"
+import { compose } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import { Enforceable, Fingerprinted, Kinded } from "../node.js"
+import { Fingerprinted, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Describable } from "./description.js"
+import type { DivisorConstraint } from "./divisor.js"
 import type { DomainConstraint } from "./domain.js"
 import type { Identity } from "./identity.js"
 import type { PatternConstraint } from "./pattern.js"
@@ -41,26 +42,13 @@ export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 // export type Rule<kind extends ConstraintKind = ConstraintKind> =
 // 	ConstraintDefinitions[kind]["rule"]
 
-type RuleIntersection<rule> = (
+export type RuleIntersection<rule> = (
 	l: rule,
 	r: rule
 ) => Disjoint | [] | [rule] | [rule, rule]
 
-// export abstract class BaseConstraint<rule = unknown> extends compose(
-// 	Describable,
-// 	Kinded
-// ) {
-// 	constructor(public rule: rule) {
-// 		super()
-// 	}
-
-// 	intersect(other: this) {
-// 		return this
-// 	}
-// }
-
 export const composeConstraint = <rule>(intersect: RuleIntersection<rule>) =>
-	composeWithLabels<[rule: 1, attributes: 1]>()(
+	compose<[rule: 1, attributes: 1]>()(
 		Describable,
 		Kinded,
 		Fingerprinted,

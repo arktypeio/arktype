@@ -8,10 +8,15 @@ import { composeConstraint } from "./constraint.js"
 
 export class PrototypeConstraint<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends composeConstraint<constructor>((l, r) =>
+> extends composeConstraint<AbstractableConstructor>((l, r) =>
 	constructorExtends(l, r) ? [l] : constructorExtends(r, l) ? [r] : []
 ) {
+	declare rule: constructor
 	readonly kind = "prototype"
+
+	hash(): string {
+		return ""
+	}
 
 	writeDefaultDescription() {
 		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)

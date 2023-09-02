@@ -3,10 +3,10 @@ import type { AbstractableConstructor, Dict, listable } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Constraint } from "../traits/constraint.js"
 import type { Morphable } from "../traits/morph.js"
-import type { TypedNode } from "./type.js"
+import type { Typed } from "./type.js"
 import { typedNode } from "./type.js"
 
-export interface Predicate<t = unknown> extends TypedNode<t> {
+export interface Predicate<t = unknown> extends Typed<t> {
 	args: [rule: readonly Constraint[]]
 }
 

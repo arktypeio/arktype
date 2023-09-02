@@ -1,8 +1,6 @@
-import type { AbstractableConstructor, conform, Trait } from "@arktype/util"
-import { implement } from "@arktype/util"
+import { compose } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import { BaseNode, type nodeConstructor } from "../node.js"
-import { Aliasable } from "../traits/alias.js"
+import { Fingerprinted, Kinded } from "../node.js"
 import { Describable } from "../traits/description.js"
 import type { Predicate } from "./predicate.js"
 import { predicate } from "./predicate.js"
@@ -18,26 +16,22 @@ export type TypeKind = keyof RootDefinitions
 // TODO: test external types if this isn't any
 export type Root<t = any> = Union<t> | Predicate<t>
 
-export const typedNode = <root extends Root>(
-	...traits: readonly AbstractableConstructor<Trait>[]
-) =>
-	implement(Describable, Aliasable, TypedNode) as nodeConstructor<
-		root,
-		AbstractableConstructor<TypedNode>
-	>
+export abstract class Typed<t = unknown> extends compose(
+	Describable,
+	Kinded,
+	Fingerprinted
+) {
+	abstract infer: t
 
-interface TypedAbstracts {
-	infer: unknown
-	rule: unknown
-	references(): readonly Root[]
-	intersect<other>(
+	abstract rule: unknown
+
+	abstract references(): readonly Root[]
+
+	abstract intersect<other>(
 		other: Root<other> // TODO: inferIntersection
 	): Root<this["infer"] & other> | Disjoint
-	keyof(): Root
-}
 
-export abstract class TypedNode<t = unknown> extends BaseNode<TypedAbstracts> {
-	declare infer: t
+	abstract keyof(): Root
 
 	isUnknown(): this is Predicate<unknown> {
 		return this.hasKind("predicate") && this.rule.length === 0

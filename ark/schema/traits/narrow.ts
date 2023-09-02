@@ -1,14 +1,20 @@
-import type { BaseConstraint } from "./constraint.js"
-import { constraint } from "./constraint.js"
+import { compileSerializedValue } from "../io/compile.js"
+import { composeConstraint } from "./constraint.js"
 
-export interface NarrowConstraint extends BaseConstraint<Narrow> {}
+export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [
+	l,
+	r
+]) {
+	readonly kind = "prototype"
 
-export const prototype = constraint<NarrowConstraint>((l, r) => [l, r])({
-	kind: "prototype",
+	hash(): string {
+		return compileSerializedValue(this.rule)
+	}
+
 	writeDefaultDescription() {
 		return `valid according to ${this.rule.name}`
 	}
-})
+}
 
 // TODO: allow changed order to be the same type
 

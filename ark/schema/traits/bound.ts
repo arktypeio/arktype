@@ -1,5 +1,4 @@
-import { Disjoint } from "../disjoint.js"
-import { type BaseConstraint, constraint } from "./constraint.js"
+import { composeConstraint } from "./constraint.js"
 
 export type BoundKind = "date" | "number"
 
@@ -11,9 +10,9 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind> {
 	readonly exclusive: boolean
 }
 
-export interface BoundConstraint extends BaseConstraint<BoundRule> {}
-
-export const bound = constraint<BoundConstraint>((l, r) => {
+export class BoundConstraint<
+	limitKind extends LimitKind = LimitKind
+> extends composeConstraint<BoundRule>((l, r) => {
 	if (l.limit > r.limit) {
 		if (l.limitKind === "min") {
 			return r.limitKind === "min" ? [l] : []
@@ -31,8 +30,16 @@ export const bound = constraint<BoundConstraint>((l, r) => {
 		: l.exclusive || r.exclusive
 		? []
 		: [l, r]
-})({
-	kind: "bound",
+}) {
+	readonly kind = "bound"
+
+	declare rule: BoundRule<limitKind>
+
+	hash() {
+		// TODO:
+		return ""
+	}
+
 	writeDefaultDescription() {
 		const comparisonDescription =
 			this.rule.boundKind === "date"
@@ -52,7 +59,7 @@ export const bound = constraint<BoundConstraint>((l, r) => {
 				: "at most"
 		return `${comparisonDescription} ${this.rule.limit}`
 	}
-})
+}
 
 const unitsByBoundedKind = {
 	date: "",

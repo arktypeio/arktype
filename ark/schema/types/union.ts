@@ -1,29 +1,32 @@
-import { implement, isArray } from "@arktype/util"
+import { isArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { CompilationContext } from "../io/compile.js"
 import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
+import { composeConstraint } from "../traits/constraint.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { Predicate } from "./predicate.js"
-import type { Root, TypedNode } from "./type.js"
-import { typedNode } from "./type.js"
+import { Typed } from "./type.js"
 
-export interface Union<t = unknown> extends TypedNode<t> {
-	args: [rule: readonly Predicate[]]
-}
+export class Union<t = unknown> extends Typed {
+	constructor(public rule: readonly Predicate[]) {
+		super(rule, {})
+	}
 
-// // discriminate is cached so we don't have to worry about this running multiple times
-// get discriminant() {
-// 	return discriminate(this.branches)
-// }
+	readonly kind = "union"
+	declare infer: t
 
-export const union = typedNode<Union>()({
-	kind: "union",
 	writeDefaultDescription() {
 		return this.rule.length === 0 ? "never" : this.rule.join(" or ")
-	},
+	}
+
+	hash(): string {
+		return ""
+	}
+
 	references() {
 		return this.rule.flatMap((branch) => branch.references())
-	},
+	}
+
 	intersect(other) {
 		const resultBranches = intersectBranches(
 			this.rule,
@@ -33,15 +36,21 @@ export const union = typedNode<Union>()({
 			? Disjoint.from("union", this, other)
 			: resultBranches.length === 1
 			? resultBranches[0]
-			: union(resultBranches)
-	},
+			: new Union(resultBranches)
+	}
+
 	keyof() {
 		return this.rule.reduce(
 			(result, branch) => result.and(branch.keyof()),
 			builtins.unknown()
 		)
 	}
-})
+}
+
+// // discriminate is cached so we don't have to worry about this running multiple times
+// get discriminant() {
+// 	return discriminate(this.branches)
+// }
 
 export const reduceBranches = (branches: Predicate[]) => {
 	if (branches.length < 2) {

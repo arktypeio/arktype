@@ -1,12 +1,16 @@
 import { stringify } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
+import { compileSerializedValue } from "../io/compile.js"
+import { composeConstraint } from "./constraint.js"
 
-export interface Identity extends BaseConstraint<unknown> {}
+export class Identity extends composeConstraint<unknown>(() => []) {
+	readonly kind = "identity"
 
-export const identity = constraint<Identity>(() => [])({
-	kind: "identity",
+	hash() {
+		return compileSerializedValue(this.rule)
+	}
+
 	writeDefaultDescription() {
 		// TODO: add reference to for objects
 		return stringify(this.rule)
 	}
-})
+}

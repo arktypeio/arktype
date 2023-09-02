@@ -1,8 +1,7 @@
 import type { evaluate } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { PredicateNode } from "../types/predicate.js"
-import { Root, type Root } from "../types/type.js"
-import { type BaseConstraint, constraint } from "./constraint.js"
+import { Root } from "../types/type.js"
+import { composeConstraint, type RuleIntersection } from "./constraint.js"
 
 export type PropRule = {
 	key: string | symbol | Root
@@ -10,9 +9,7 @@ export type PropRule = {
 	required: boolean
 }
 
-export interface PropConstraint extends BaseConstraint<PropRule> {}
-
-export const prop = constraint<PropConstraint>((l, r) => {
+const intersectProps = ((l, r) => {
 	if (l.key instanceof Root || r.key instanceof Root) {
 		return [l, r]
 	}
@@ -30,7 +27,7 @@ export const prop = constraint<PropConstraint>((l, r) => {
 						key,
 						required,
 						// TODO: builtins.never()
-						value: new PredicateNode()
+						value: new Predicate()
 					}
 			  ]
 	}
@@ -41,14 +38,23 @@ export const prop = constraint<PropConstraint>((l, r) => {
 			value
 		}
 	]
-})({
-	kind: "prop",
+}) satisfies RuleIntersection<PropRule>
+
+export class PropConstraint extends composeConstraint<PropRule>(
+	intersectProps
+) {
+	readonly kind = "prop"
+
+	hash(): string {
+		return ""
+	}
+
 	writeDefaultDescription() {
 		return `${String(this.rule.key)}${this.rule.required ? "" : "?"}: ${
 			this.rule.value
 		}`
 	}
-})
+}
 
 /**** NAMED *****/
 

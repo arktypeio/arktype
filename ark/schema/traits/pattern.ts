@@ -1,21 +1,25 @@
 import { throwParseError } from "@arktype/util"
-import type { BaseConstraint } from "./constraint.js"
-import { constraint } from "./constraint.js"
-
-export interface PatternConstraint extends BaseConstraint<RegExp> {
-	literal: RegexLiteral
-}
+import { composeConstraint } from "./constraint.js"
 
 // For now, non-equal regex are naively intersected
-export const pattern = constraint<PatternConstraint>((l, r) => [l, r])({
-	kind: "pattern",
+export class PatternConstraint extends composeConstraint<RegExp>((l, r) => [
+	l,
+	r
+]) {
+	readonly kind = "pattern"
+
+	hash() {
+		return ""
+	}
+
 	get literal() {
 		return serializeRegex(this.rule)
-	},
+	}
+
 	writeDefaultDescription() {
 		return `matched by ${this.literal}`
 	}
-})
+}
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) => `${regex}` as RegexLiteral

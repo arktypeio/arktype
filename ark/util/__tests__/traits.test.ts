@@ -1,47 +1,47 @@
 import { attest } from "@arktype/attest"
-import { compose, composeWithLabels } from "@arktype/util"
+import { compose } from "@arktype/util"
+
+abstract class Describable {
+	description: string
+
+	abstract writeDefaultDescription(): string
+
+	constructor(rule: unknown, attributes?: { description?: string }) {
+		this.description = attributes?.description ?? this.writeDefaultDescription()
+	}
+}
+
+abstract class Boundable<data> {
+	limit: number | undefined
+
+	constructor(rule: { limit?: number }) {
+		this.limit = rule.limit
+	}
+
+	abstract sizeOf(data: data): number
+
+	check(data: data) {
+		return this.limit === undefined || this.sizeOf(data) <= this.limit
+	}
+}
 
 suite("traits", () => {
-	abstract class Describable {
-		description: string
-
-		abstract writeDefaultDescription(): string
-
-		constructor(rule: unknown, attributes?: { description?: string }) {
-			this.description =
-				attributes?.description ?? this.writeDefaultDescription()
-		}
-	}
-
-	abstract class Boundable<data> {
-		limit: number | undefined
-
-		constructor(rule: { limit?: number }) {
-			this.limit = rule.limit
-		}
-
-		abstract sizeOf(data: data): number
-
-		check(data: data) {
-			return this.limit === undefined || this.sizeOf(data) <= this.limit
-		}
-	}
-
-	class StringChecker extends compose(Describable, Boundable) {
-		sizeOf(data: unknown) {
-			return Number(data)
-		}
-
-		writeDefaultDescription() {
-			return "foo"
-		}
-	}
-
 	test("compose", () => {
+		class StringChecker extends compose(Describable, Boundable) {
+			sizeOf(data: unknown) {
+				return Number(data)
+			}
+
+			writeDefaultDescription() {
+				return "foo"
+			}
+		}
+
 		const shortString = new StringChecker(
 			{ limit: 5 },
 			{ description: "a short string" }
 		)
+
 		type Params = ConstructorParameters<typeof StringChecker>
 		attest({} as Params).typed as [
 			{
@@ -55,17 +55,12 @@ suite("traits", () => {
 		attest(shortString.check("toolong")).equals(false)
 	})
 	test("compose with labels", () => {
-		abstract class Labeled extends composeWithLabels<
-			[rule: 1, attributes: 1]
-		>()(Describable, Boundable) {}
+		abstract class Labeled extends compose<[rule: 1, attributes: 1]>()(
+			Describable,
+			Boundable
+		) {}
+
 		const t = {} as ConstructorParameters<typeof Labeled>
-		attest(t).typed as [
-			rule: {
-				limit?: number
-			},
-			attributes?: {
-				description?: string
-			}
-		]
+		attest(t).types.toString.snap()
 	})
 })
