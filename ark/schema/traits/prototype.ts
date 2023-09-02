@@ -4,7 +4,7 @@ import {
 	getExactBuiltinConstructorName,
 	objectKindDescriptions
 } from "@arktype/util"
-import { composeConstraint } from "./constraint.js"
+import { composeConstraint, ConstraintSet } from "./constraint.js"
 
 export class PrototypeConstraint<
 	constructor extends AbstractableConstructor = AbstractableConstructor
@@ -25,6 +25,10 @@ export class PrototypeConstraint<
 			: `an instance of ${this.rule}`
 	}
 }
+
+export abstract class Prototypeable<
+	constructor extends AbstractableConstructor = AbstractableConstructor
+> extends ConstraintSet<readonly PrototypeConstraint[]> {}
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 

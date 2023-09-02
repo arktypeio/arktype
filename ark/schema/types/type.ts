@@ -16,16 +16,14 @@ export type TypeKind = keyof RootDefinitions
 // TODO: test external types if this isn't any
 export type Root<t = any> = Union<t> | Predicate<t>
 
-export abstract class Typed<t = unknown, rule = unknown> extends compose(
+export abstract class TypeRoot extends compose(
 	Describable,
 	Kinded,
 	Fingerprinted
 ) {
-	constructor(public rule: rule) {
-		super(rule, {})
-	}
+	abstract infer: unknown
 
-	declare infer: t
+	abstract rule: unknown
 
 	abstract references(): readonly Root[]
 

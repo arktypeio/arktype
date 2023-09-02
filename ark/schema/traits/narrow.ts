@@ -1,11 +1,11 @@
 import { compileSerializedValue } from "../io/compile.js"
-import { composeConstraint } from "./constraint.js"
+import { composeConstraint, ConstraintSet } from "./constraint.js"
 
 export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [
 	l,
 	r
 ]) {
-	readonly kind = "prototype"
+	readonly kind = "narrow"
 
 	hash(): string {
 		return compileSerializedValue(this.rule)
@@ -15,6 +15,8 @@ export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [
 		return `valid according to ${this.rule.name}`
 	}
 }
+
+export class Narrowable extends ConstraintSet<readonly NarrowConstraint[]> {}
 
 // TODO: allow changed order to be the same type
 

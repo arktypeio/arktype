@@ -1,9 +1,3 @@
-import {
-	entriesOf,
-	isKeyOf,
-	throwInternalError,
-	transform
-} from "@arktype/util"
 import type {
 	Domain,
 	evaluate,
@@ -11,9 +5,14 @@ import type {
 	mutable,
 	SerializedPrimitive
 } from "@arktype/util"
+import {
+	entriesOf,
+	isKeyOf,
+	throwInternalError,
+	transform
+} from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { DomainConstraint } from "../traits/domain.js"
 import type { Predicate } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =

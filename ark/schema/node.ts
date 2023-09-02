@@ -1,4 +1,5 @@
 import type { extend } from "@arktype/util"
+import type { Disjoint } from "./disjoint.js"
 import type { ConstraintDefinitions } from "./traits/constraint.js"
 import type { RootDefinitions } from "./types/type.js"
 
@@ -31,4 +32,8 @@ export abstract class Fingerprinted {
 	equals(other: Fingerprinted) {
 		return this.id === other.id
 	}
+}
+
+export abstract class Intersectable extends Fingerprinted {
+	abstract intersect(other: this): this | Disjoint
 }

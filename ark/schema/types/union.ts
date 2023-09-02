@@ -5,9 +5,9 @@ import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
 import { composeConstraint } from "../traits/constraint.js"
 import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { Predicate } from "./predicate.js"
-import { Typed } from "./type.js"
+import { TypeRoot } from "./type.js"
 
-export class Union<t = unknown> extends Typed<t, readonly Predicate[]> {
+export class Union<t = unknown> extends TypeRoot<t, readonly Predicate[]> {
 	readonly kind = "union"
 
 	writeDefaultDescription() {

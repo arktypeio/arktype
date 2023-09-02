@@ -1,7 +1,12 @@
-import type { evaluate } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { Root } from "../types/type.js"
-import { composeConstraint, type RuleIntersection } from "./constraint.js"
+import { Predicate } from "../types/predicate.js"
+import type { Root } from "../types/type.js"
+import { TypeRoot } from "../types/type.js"
+import {
+	composeConstraint,
+	ConstraintSet,
+	type RuleIntersection
+} from "./constraint.js"
 
 export type PropRule = {
 	key: string | symbol | Root
@@ -10,7 +15,7 @@ export type PropRule = {
 }
 
 const intersectProps = ((l, r) => {
-	if (l.key instanceof Root || r.key instanceof Root) {
+	if (l.key instanceof TypeRoot || r.key instanceof TypeRoot) {
 		return [l, r]
 	}
 	if (l.key !== r.key) {
@@ -27,7 +32,7 @@ const intersectProps = ((l, r) => {
 						key,
 						required,
 						// TODO: builtins.never()
-						value: new Predicate()
+						value: new Predicate([])
 					}
 			  ]
 	}
@@ -55,6 +60,8 @@ export class PropConstraint extends composeConstraint<PropRule>(
 		}`
 	}
 }
+
+export class Propable extends ConstraintSet<readonly PropConstraint[]> {}
 
 /**** NAMED *****/
 

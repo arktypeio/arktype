@@ -1,12 +1,21 @@
-import type { AbstractableConstructor } from "@arktype/util"
+import { type AbstractableConstructor, compose } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Constraint } from "../traits/constraint.js"
-import type { Morphable } from "../traits/morph.js"
+import { Morphable } from "../traits/morph.js"
 import type { PrototypeConstraint } from "../traits/prototype.js"
-import { Typed } from "./type.js"
+import { TypeRoot } from "./type.js"
 
-export class Predicate<t = unknown> extends Typed<t, readonly Constraint[]> {
+export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
 	readonly kind = "predicate"
+
+	constructor(
+		public rule: readonly Constraint[],
+		public attributes?: {}
+	) {
+		super(rule, attributes)
+	}
+
+	declare infer: t
 
 	writeDefaultDescription() {
 		return this.rule.length ? this.rule.join(" and ") : "a value"
@@ -20,7 +29,7 @@ export class Predicate<t = unknown> extends Typed<t, readonly Constraint[]> {
 		return ""
 	}
 
-	intersect(other) {
+	intersect(other: this) {
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
 		}
@@ -32,7 +41,7 @@ export class Predicate<t = unknown> extends Typed<t, readonly Constraint[]> {
 			result = constraint.apply(result)
 		}
 		// TODO: attributes
-		return result instanceof Disjoint ? result : predicate(result)
+		return result instanceof Disjoint ? result : new Predicate(result)
 	}
 
 	keyof() {

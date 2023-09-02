@@ -1,11 +1,13 @@
-import { compose } from "@arktype/util"
-import type { Disjoint } from "../disjoint.js"
-import { Fingerprinted, Kinded } from "../node.js"
+import type { mutable } from "@arktype/util"
+import { compose, throwInternalError } from "@arktype/util"
+import { Disjoint } from "../disjoint.js"
+import { Fingerprinted, Intersectable, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Describable } from "./description.js"
 import type { DivisorConstraint } from "./divisor.js"
 import type { DomainConstraint } from "./domain.js"
 import type { Identity } from "./identity.js"
+import type { NarrowConstraint } from "./narrow.js"
 import type { PatternConstraint } from "./pattern.js"
 import type { PropConstraint } from "./prop.js"
 import type { PrototypeConstraint } from "./prototype.js"
@@ -32,6 +34,7 @@ export type ConstraintDefinitions = {
 	identity: Identity
 	prototype: PrototypeConstraint
 	prop: PropConstraint
+	narrow: NarrowConstraint
 }
 
 export type ConstraintKind = keyof ConstraintDefinitions
@@ -52,7 +55,7 @@ export const composeConstraint = <rule>(intersect: RuleIntersection<rule>) =>
 		Describable,
 		Kinded,
 		Fingerprinted,
-		class Constraint {
+		class {
 			constructor(public rule: rule) {}
 
 			intersect(other: this) {
@@ -61,63 +64,62 @@ export const composeConstraint = <rule>(intersect: RuleIntersection<rule>) =>
 		}
 	)
 
-// export type RuleSets = {
-// 	prop: PropConstraint
-// 	identity: IdentityNode
-// 	domain: DomainNode
-// 	instanceOf: InstanceOfNode
-// 	divisor: Divisor
-// 	range: RangeConstraintSet
-// 	pattern: readonly PatternConstraint[]
-// 	narrow: readonly NarrowNode[]
-// 	description: readonly DescriptionNode[]
-// 	alias: AliasNode
-// 	morph: readonly MorphNode[]
-// }
+const ConstraintSetBase = compose(Describable, Kinded, Intersectable)
 
-// export type RuleSet<kind extends ConstraintKind = ConstraintKind> =
-// 	RuleSets[kind]
+export class ConstraintSet<
+	constraints extends readonly Constraint[] = readonly Constraint[]
+> {
+	constructor(
+		public rule: constraints,
+		public attributes: ConstructorParameters<typeof ConstraintSetBase>[1]
+	) {}
 
-// export abstract class RuleNode<
-// 	subclass extends RuleSubclass<definitionKey>,
-// 	definitionKey extends keyof InstanceType<subclass>
-// > extends BaseNode {
-// 	apply(to: readonly this[]): readonly this[] | Disjoint {
-// 		const result: this[] = []
-// 		let includesConstraint = false
-// 		for (let i = 0; i < to.length; i++) {
-// 			const elementResult = this.reduce(to[i])
-// 			if (elementResult === null) {
-// 				result.push(to[i])
-// 			} else if (elementResult instanceof Disjoint) {
-// 				return elementResult
-// 			} else if (!includesConstraint) {
-// 				result.push(elementResult)
-// 				includesConstraint = true
-// 			} else if (!result.includes(elementResult)) {
-// 				return throwInternalError(
-// 					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
-// 				)
-// 			}
-// 		}
-// 		if (!includesConstraint) {
-// 			result.push(this)
-// 		}
-// 		return result
-// 	}
+	intersect(other: this) {
+		let ruleResult: constraints | Disjoint = this.rule
+		for (const constraint of other.rule) {
+			ruleResult = addConstraint(this.rule, constraint)
+			if (ruleResult instanceof Disjoint) {
+				return ruleResult
+			}
+		}
+		// TODO: intersect attributes
+		return new ConstraintSet(ruleResult, this.attributes)
+	}
 
-// 	reduce(other: this): this | Disjoint | null {
-// 		const ruleComparison = this.equals(other) ? this : this.reduceRules(other)
-// 		return ruleComparison instanceof Disjoint || ruleComparison === null
-// 			? // TODO: unknown
-// 			  ruleComparison
-// 			: (new (this.constructor as any)(ruleComparison) as this)
-// 	}
+	apply(constraint: constraints[number]): this | Disjoint {
+		const ruleResult = addConstraint(this.rule, constraint)
+		return ruleResult instanceof Disjoint
+			? ruleResult
+			: (new ConstraintSet(ruleResult, this.attributes) as this)
+	}
+}
 
-// 	protected abstract reduceRules(
-// 		other: Rule<this["kind"]>
-// 	): definition | Disjoint | null
-// }
+const addConstraint = <constraints extends readonly Constraint[]>(
+	base: constraints,
+	constraint: constraints[number]
+): constraints | Disjoint => {
+	const result: mutable<constraints> = [] as never
+	let includesConstraint = false
+	for (let i = 0; i < base.length; i++) {
+		const elementResult = base[i].intersect(constraint as never)
+		if (elementResult === null) {
+			result.push(base[i])
+		} else if (elementResult instanceof Disjoint) {
+			return elementResult
+		} else if (!includesConstraint) {
+			result.push(elementResult)
+			includesConstraint = true
+		} else if (!result.includes(elementResult)) {
+			return throwInternalError(
+				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+			)
+		}
+	}
+	if (!includesConstraint) {
+		result.push(constraint)
+	}
+	return result
+}
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

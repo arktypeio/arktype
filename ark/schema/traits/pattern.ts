@@ -1,5 +1,5 @@
 import { throwParseError } from "@arktype/util"
-import { composeConstraint } from "./constraint.js"
+import { composeConstraint, ConstraintSet } from "./constraint.js"
 
 // For now, non-equal regex are naively intersected
 export class PatternConstraint extends composeConstraint<RegExp>((l, r) => [
@@ -20,6 +20,8 @@ export class PatternConstraint extends composeConstraint<RegExp>((l, r) => [
 		return `matched by ${this.literal}`
 	}
 }
+
+export class Regexable extends ConstraintSet<readonly PatternConstraint[]> {}
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) => `${regex}` as RegexLiteral
