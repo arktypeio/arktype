@@ -8,9 +8,9 @@ import type { DivisorConstraint } from "./divisor.js"
 import type { DomainConstraint } from "./domain.js"
 import type { Identity } from "./identity.js"
 import type { NarrowConstraint } from "./narrow.js"
-import type { PatternConstraint } from "./pattern.js"
 import type { PropConstraint } from "./prop.js"
 import type { PrototypeConstraint } from "./prototype.js"
+import type { RegexConstraint } from "./regex.js"
 
 export const ruleDefinitions = {
 	// prop: PropConstraint,
@@ -30,7 +30,7 @@ export type ConstraintDefinitions = {
 	divisor: DivisorConstraint
 	domain: DomainConstraint
 	bound: BoundConstraint
-	pattern: PatternConstraint
+	regex: RegexConstraint
 	identity: Identity
 	prototype: PrototypeConstraint
 	prop: PropConstraint

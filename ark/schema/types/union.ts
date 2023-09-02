@@ -7,8 +7,16 @@ import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { Predicate } from "./predicate.js"
 import { TypeRoot } from "./type.js"
 
-export class Union<t = unknown> extends TypeRoot<t, readonly Predicate[]> {
+export class Union<t = unknown> extends TypeRoot {
 	readonly kind = "union"
+	declare infer: t
+
+	constructor(
+		public rule: readonly Predicate[],
+		public attributes?: {}
+	) {
+		super(rule, attributes)
+	}
 
 	writeDefaultDescription() {
 		return this.rule.length === 0 ? "never" : this.rule.join(" or ")
@@ -22,7 +30,7 @@ export class Union<t = unknown> extends TypeRoot<t, readonly Predicate[]> {
 		return this.rule.flatMap((branch) => branch.references())
 	}
 
-	intersect(other) {
+	intersect(other: this) {
 		const resultBranches = intersectBranches(
 			this.rule,
 			other.hasKind("union") ? other.branches : [other]

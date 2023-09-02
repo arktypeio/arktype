@@ -2,10 +2,15 @@ import { type AbstractableConstructor, compose } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Constraint } from "../traits/constraint.js"
 import { Morphable } from "../traits/morph.js"
+import { Propable } from "../traits/prop.js"
 import type { PrototypeConstraint } from "../traits/prototype.js"
 import { TypeRoot } from "./type.js"
 
-export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
+export class Predicate<t = unknown> extends compose(
+	TypeRoot,
+	Morphable,
+	Propable
+) {
 	readonly kind = "predicate"
 
 	constructor(

@@ -2,8 +2,8 @@ import { compose } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import { Fingerprinted, Kinded } from "../node.js"
 import { Describable } from "../traits/description.js"
-import type { Predicate } from "./predicate.js"
-import { predicate } from "./predicate.js"
+import { DomainConstraint } from "../traits/domain.js"
+import { Predicate } from "./predicate.js"
 import type { Union } from "./union.js"
 
 export type RootDefinitions = {
@@ -29,7 +29,7 @@ export abstract class TypeRoot extends compose(
 
 	abstract intersect<other>(
 		other: Root<other> // TODO: inferIntersection
-	): Root<t & other> | Disjoint
+	): Root<this["infer"] & other> | Disjoint
 
 	abstract keyof(): Root
 
@@ -42,7 +42,7 @@ export abstract class TypeRoot extends compose(
 	}
 
 	array() {
-		return predicate([new DomainNode({ value: "object" })])
+		return new Predicate([new DomainConstraint({ value: "object" })])
 	}
 
 	extends<other>(other: Root<other>): this is Root<other> {
