@@ -18,7 +18,7 @@ export abstract class TypeRoot<t = unknown> extends compose(
 	Kinded,
 	Fingerprinted
 ) {
-	abstract infer: t;
+	declare infer: t;
 	declare [inferred]: t
 
 	abstract rule: unknown

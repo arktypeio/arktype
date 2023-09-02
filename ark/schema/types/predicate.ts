@@ -1,4 +1,8 @@
-import type { intersectUnion, unionToTuple } from "@arktype/util"
+import type {
+	AbstractableConstructor,
+	intersectUnion,
+	unionToTuple
+} from "@arktype/util"
 import { compose } from "@arktype/util"
 import type {
 	BasisKind,
@@ -6,7 +10,12 @@ import type {
 	RefinementKind,
 	RefinementRules
 } from "../traits/constraint.js"
+import type { NonEnumerableDomain } from "../traits/domain.js"
+import { DomainConstraint } from "../traits/domain.js"
+import type { IdentityConstraint } from "../traits/identity.js"
 import { Morphable } from "../traits/morph.js"
+import type { PrototypeConstraint } from "../traits/prototype.js"
+import { inferred } from "../utils.js"
 import { TypeRoot } from "./type.js"
 
 type flattenConstraints<constraints> = readonly {
@@ -23,6 +32,32 @@ export type RulesForBasis<basis extends Constraint<BasisKind> | undefined> =
 				: {}
 		}[RefinementKind]
 	>
+type BasisInput =
+	| AbstractableConstructor
+	| NonEnumerableDomain
+	| { is: unknown }
+
+type instantiateBasisInput<input extends BasisInput> = input extends {
+	is: infer rule
+}
+	? IdentityConstraint<rule>
+	: input extends AbstractableConstructor
+	? PrototypeConstraint<input>
+	: DomainConstraint<input & NonEnumerableDomain>
+
+export type MaybeParsedBasis = Constraint<BasisKind> | BasisInput | undefined
+
+export type parseBasis<basis extends MaybeParsedBasis> =
+	basis extends BasisInput ? instantiateBasisInput<basis> : basis
+
+export const predicate = <basis extends MaybeParsedBasis>(
+	rule: { basis?: basis } & RulesForBasis<parseBasis<basis>>
+	// TODO: Fix
+) =>
+	new Predicate<
+		parseBasis<basis> extends { infer: infer t } ? t : unknown,
+		parseBasis<basis>
+	>({} as never)
 
 export class Predicate<
 	t = unknown,
@@ -33,12 +68,11 @@ export class Predicate<
 	readonly kind = "predicate"
 	readonly constraints: flattenConstraints<this["rule"]>
 
-	declare infer: t
+	declare infer: t;
+	declare [inferred]: t
 
 	constructor(
-		public rule:
-			| RulesForBasis<undefined>
-			| ({ basis: basis } & RulesForBasis<basis>),
+		public rule: { basis?: basis } & RulesForBasis<basis>,
 		public attributes?: {}
 	) {
 		super(rule, attributes)
@@ -77,18 +111,7 @@ export class Predicate<
 	}
 }
 
-const z = new Predicate({})
-
-// const composePredicate = <traits extends AbstractableConstructor[]>(
-// 	...traits: traits
-// ) =>
-// 	compose(
-// 		BasePredicate<unknown, ConstructorParameters<compose<traits>>[0] & {}>,
-// 		...traits
-// 	)
-
-// const composeFromBasis = <basis extends Constraint<BasisConstraintKind>>() =>
-// 	compose(BasePredicate<unknown, basis>)
+const z = new Predicate({ basis: new DomainConstraint("string") }).infer
 
 // export type PredicatesByKind = {
 // 	identity: IdentityPredicate

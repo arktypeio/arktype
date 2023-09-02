@@ -1,13 +1,19 @@
+import type { conform } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Predicate } from "./predicate.js"
 import { TypeRoot } from "./type.js"
 
-export class Union<t = unknown> extends TypeRoot {
+export const union = <branches extends readonly unknown[]>() =>
+	new Union<never>([])
+
+export class Union<
+	t = unknown,
+	rule extends readonly Predicate[] = readonly Predicate[]
+> extends TypeRoot<t> {
 	readonly kind = "union"
-	declare infer: t
 
 	constructor(
-		public rule: readonly Predicate[],
+		public rule: rule,
 		public attributes?: {}
 	) {
 		super(rule, attributes)

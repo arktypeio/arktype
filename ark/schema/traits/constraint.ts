@@ -1,5 +1,6 @@
 import type {
 	AbstractableConstructor,
+	evaluate,
 	extend,
 	inferDomain
 } from "@arktype/util"
@@ -63,19 +64,6 @@ export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 export type ConstraintRule<kind extends ConstraintKind = ConstraintKind> =
 	Constraint<kind>["rule"]
 
-export type BasisInput =
-	| NonEnumerableDomain
-	| AbstractableConstructor
-	| [identity: unknown]
-
-export type inferBasis<basis extends BasisInput> = basis extends readonly [
-	infer identity
-]
-	? identity
-	: basis extends AbstractableConstructor<infer instance>
-	? instance
-	: inferDomain<basis & NonEnumerableDomain>
-
 export type RuleIntersection<rule> = (
 	l: rule,
 	r: rule
@@ -119,6 +107,17 @@ export const composeConstraint = <rule>(intersect: RuleIntersection<rule>) => {
 		}
 	)
 }
+
+export type BaseConstraintParameters<
+	rule,
+	additionalAttributes = {}
+> = readonly [
+	rule: rule,
+	attributes?: evaluate<
+		ConstructorParameters<ReturnType<typeof composeConstraint>>[1] &
+			additionalAttributes
+	>
+]
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

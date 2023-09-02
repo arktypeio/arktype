@@ -1,4 +1,4 @@
-import { node } from "../nodes/type.js"
+import { predicate } from "@arktype/schema"
 import { Scope } from "../scope.js"
 import type { RootScope } from "./ark.js"
 
@@ -15,15 +15,15 @@ export type InferredJsObjects = {
 }
 
 export const jsObjects: RootScope<InferredJsObjects> = Scope.root({
-	Function: node({ basis: Function }),
-	Date: node({ basis: Date }),
-	Error: node({ basis: Error }),
-	Map: node({ basis: Map }),
-	RegExp: node({ basis: RegExp }),
-	Set: node({ basis: Set }),
-	WeakMap: node({ basis: WeakMap }),
-	WeakSet: node({ basis: WeakSet }),
-	Promise: node({ basis: Promise })
+	Function: predicate({ basis: Function }),
+	Date: predicate({ basis: Date }),
+	Error: predicate({ basis: Error }),
+	Map: predicate({ basis: Map }),
+	RegExp: predicate({ basis: RegExp }),
+	Set: predicate({ basis: Set }),
+	WeakMap: predicate({ basis: WeakMap }),
+	WeakSet: predicate({ basis: WeakSet }),
+	Promise: predicate({ basis: Promise })
 })
 
 export const jsObjectTypes = jsObjects.export()

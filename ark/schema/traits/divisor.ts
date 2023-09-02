@@ -1,4 +1,3 @@
-import type { BasisInput } from "./constraint.js"
 import { composeConstraint } from "./constraint.js"
 import type { DomainConstraint } from "./domain.js"
 

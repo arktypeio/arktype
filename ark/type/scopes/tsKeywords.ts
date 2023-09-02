@@ -1,4 +1,5 @@
-import type { CastTo } from "../parser/definition.js"
+import type { CastTo } from "@arktype/schema"
+import { predicate, union } from "@arktype/schema"
 import { Scope } from "../scope.js"
 import type { RootScope } from "./ark.js"
 
@@ -35,19 +36,19 @@ export type InferredTsKeywords = {
 
 export const tsKeywords: RootScope<InferredTsKeywords> = Scope.root({
 	any: "unknown" as CastTo<any>,
-	bigint: node({ basis: "bigint" }),
+	bigint: predicate({ basis: "bigint" }),
 	boolean: "true|false",
-	false: node({ basis: ["===", false as const] }),
-	never: node(),
-	null: node({ basis: ["===", null] }),
-	number: node({ basis: "number" }),
-	object: node({ basis: "object" }),
-	string: node({ basis: "string" }),
-	symbol: node({ basis: "symbol" }),
-	true: node({ basis: ["===", true as const] }),
-	unknown: node({}),
+	false: predicate({ basis: { is: false } }),
+	never: union(),
+	null: predicate({ basis: { is: null } }),
+	number: predicate({ basis: "number" }),
+	object: predicate({ basis: "object" }),
+	string: predicate({ basis: "string" }),
+	symbol: predicate({ basis: "symbol" }),
+	true: predicate({ basis: { is: true } }),
+	unknown: predicate({}),
 	void: "undefined" as CastTo<void>,
-	undefined: node({ basis: ["===", undefined] })
+	undefined: predicate({ basis: { is: undefined } })
 })
 
 export const tsKeywordTypes = tsKeywords.export()

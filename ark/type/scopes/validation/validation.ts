@@ -1,9 +1,8 @@
+import { predicate, serializeRegex } from "@arktype/schema"
 import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import { node } from "../../nodes/parse.js"
-import { serializeRegex } from "../../nodes/primitive/regex.js"
 import type { Out } from "../../parser/tuple.js"
 import { Scope } from "../../scope.js"
 import type { RootScope } from "../ark.js"
@@ -13,16 +12,16 @@ import { parsedDate } from "./date.js"
 // Non-trivial expressions should have an explanation or attribution
 
 // TODO: { mustBe: "a well-formed numeric string" }
-const parsedNumber = node({
-	basis: "string",
-	regex: serializeRegex(wellFormedNumberMatcher),
-	morph: (s) => parseFloat(s)
+const parsedNumber = predicate({
+	basis: "string"
+	// regex: serializeRegex(wellFormedNumberMatcher),
+	// morph: (s) => parseFloat(s)
 })
 
-const parsedInteger = node({
-	basis: "string",
-	regex: serializeRegex(wellFormedIntegerMatcher),
-	morph: (s) => parseInt(s)
+const parsedInteger = predicate({
+	basis: "string"
+	// regex: serializeRegex(wellFormedIntegerMatcher),
+	// morph: (s) => parseInt(s)
 	// TODO:
 	// morph: (s, problems) => {
 	//     if (!isWellFormedInteger(s)) {
@@ -43,9 +42,9 @@ const parsedInteger = node({
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
 //  "a valid email"
-const email = node({
-	basis: "string",
-	regex: serializeRegex(emailMatcher)
+const email = predicate({
+	basis: "string"
+	// regex: serializeRegex(emailMatcher)
 })
 
 const uuidMatcher =
@@ -53,9 +52,9 @@ const uuidMatcher =
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 // "a valid UUID"
-const uuid = node({
-	basis: "string",
-	regex: serializeRegex(uuidMatcher)
+const uuid = predicate({
+	basis: "string"
+	// regex: serializeRegex(uuidMatcher)
 })
 
 const semverMatcher =
@@ -63,15 +62,15 @@ const semverMatcher =
 
 // https://semver.org/
 // "a valid semantic version (see https://semver.org/)"
-const semver = node({
-	basis: "string",
-	regex: serializeRegex(semverMatcher)
+const semver = predicate({
+	basis: "string"
+	// regex: serializeRegex(semverMatcher)
 })
 
 // "a JSON-parsable string"
-const json = node({
-	basis: "string",
-	morph: (s) => JSON.parse(s)
+const json = predicate({
+	basis: "string"
+	// morph: (s) => JSON.parse(s)
 })
 
 // "alpha": "only letters",
@@ -118,7 +117,8 @@ export const validation: RootScope<InferredValidation> = Scope.root({
 	parsedDate,
 	semver,
 	json,
-	integer: node({ basis: "number", divisor: 1 })
+	// TODO:  divisor: 1
+	integer: predicate({ basis: "number" })
 })
 
 export const validationTypes = validation.export()
