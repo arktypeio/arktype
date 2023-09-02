@@ -1,4 +1,4 @@
-import { hasArkKind, type TypeRoot } from "@arktype/schema"
+import type { CastTo, TypeRoot } from "@arktype/schema"
 import { serializeRegex } from "@arktype/schema"
 import type {
 	defined,
@@ -21,7 +21,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
-import { Type } from "../type.js"
+import { hasArkKind, Type } from "../type.js"
 import type {
 	inferObjectLiteral,
 	validateObjectLiteral

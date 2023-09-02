@@ -50,7 +50,7 @@ export type MaybeParsedBasis = Constraint<BasisKind> | BasisInput | undefined
 export type parseBasis<basis extends MaybeParsedBasis> =
 	basis extends BasisInput ? instantiateBasisInput<basis> : basis
 
-export const predicate = <basis extends MaybeParsedBasis>(
+export const predicate = <const basis extends MaybeParsedBasis>(
 	rule: { basis?: basis } & RulesForBasis<parseBasis<basis>>
 	// TODO: Fix
 ) =>

@@ -1,10 +1,9 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
-import { writeUnboundableMessage } from "../parser/semantic/bounds.js"
 import { writeInvalidPropertyKeyMessage } from "../parser/objectLiteral.js"
-
+import { writeUnboundableMessage } from "../parser/semantic/bounds.js"
+import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 suite("object literal", () => {
 	test("empty", () => {
@@ -42,19 +41,22 @@ $ark.object36($arkRoot.b)`)
 	suite("optional keys and definition reduction", () => {
 		test("optional value", () => {
 			const t = type({ a: "string?" })
-			attest(t.condition).equals(type({ "a?": "string" }))
+			attest(t.condition).equals(type({ "a?": "string" }).condition)
 		})
 		test("optional key and value", () => {
 			const t = type({ "a?": "string?" })
-			attest(t.condition).equals(type({ "a?": "string" })
+			attest(t.condition).equals(type({ "a?": "string" }).condition)
 		})
 		test("optional value as tuple", () => {
 			const t = type({ a: ["string", "?"] })
-			attest(t.condition).equals(type({ "a?": "string" })
+			attest(t.condition).equals(type({ "a?": "string" }).condition)
 		})
 	})
 	test("error in obj that has tuple that writes error at proper path", () => {
-		const t0 = type({ "a?": ["string", "string?", ["stringx", "?"]] })
+		// @ts-expect-error
+		attest(() => type({ "a?": ["string", "string?", ["stringx", "?"]] }))
+			.throws(writeUnresolvableMessage("stringx"))
+			.types.errors.snap()
 	})
 	test("index", () => {
 		const o = type({ "[string]": "string" })

@@ -13,5 +13,6 @@
 		// disable arktype-dev imports here until Docusaurus supports ESM
 		// https://github.com/facebook/docusaurus/issues/6520
 		"customConditions": []
-	}
+	},
+	"exclude": []
 }

@@ -1,3 +1,4 @@
+import type Module from "node:module"
 import type {
 	CheckResult,
 	inferNarrow,
@@ -112,6 +113,27 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 	}
 	return parser as never
 }
+
+export type ArkKinds = {
+	node: TypeRoot
+	generic: Generic
+	module: Module
+}
+
+export const addArkKind = <kind extends ArkKind>(
+	value: Omit<ArkKinds[kind], arkKind> & { [arkKind]?: kind },
+	kind: kind
+): ArkKinds[kind] =>
+	Object.defineProperty(value, arkKind, { enumerable: false }) as never
+
+export type arkKind = typeof arkKind
+
+export type ArkKind = keyof ArkKinds
+
+export const hasArkKind = <kind extends ArkKind>(
+	value: unknown,
+	kind: kind
+): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
 
 export type DefinitionParser<$> = <const def>(
 	def: validateDefinition<def, $, bindThis<def>>

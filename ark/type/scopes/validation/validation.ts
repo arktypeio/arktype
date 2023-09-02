@@ -119,6 +119,7 @@ export const validation: RootScope<InferredValidation> = Scope.root({
 	json,
 	// TODO:  divisor: 1
 	integer: predicate({ basis: "number" })
-})
+	// TODO: fix inference
+}) as never
 
 export const validationTypes = validation.export()

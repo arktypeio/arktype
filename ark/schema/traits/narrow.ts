@@ -1,4 +1,5 @@
 import { compileSerializedValue } from "../io/compile.js"
+import type { TraversalState } from "../main.js"
 import { composeConstraint } from "./constraint.js"
 import type { DomainConstraint, NonEnumerableDomain } from "./domain.js"
 import type { PropConstraint } from "./prop.js"
@@ -32,7 +33,10 @@ export class Narrowable {
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
 
-export type Narrow<data = any> = (data: data) => boolean
+export type Narrow<data = any> = (
+	data: data,
+	traversal: TraversalState
+) => boolean
 
 export type NarrowCast<data = any, narrowed extends data = data> = (
 	data: data

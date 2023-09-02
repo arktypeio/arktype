@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
-import { writeIncompatibleRangeMessage } from "@arktype/schema"
+import type { BoundRule } from "@arktype/schema"
+import { predicate, writeIncompatibleRangeMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
 import { suite, test } from "mocha"
@@ -17,11 +18,11 @@ import {
 	writeInvalidLimitMessage
 } from "../parser/string/shift/operator/bounds.js"
 
-export const expectedBoundsCondition = (...bound: any) =>
-	node({ basis: "number", bound }).condition
+export const expectedBoundsCondition = (...bounds: BoundRule[]) =>
+	predicate({ basis: "number", bounds }).condition
 
-export const expectedDateBoundsCondition = (...bound: any) =>
-	node({ basis: Date, bound }).condition
+export const expectedDateBoundsCondition = (...bounds: any) =>
+	predicate({ basis: Date, bounds }).condition
 
 suite("bounds", () => {
 	suite("parse", () => {
@@ -286,7 +287,7 @@ suite("bounds", () => {
 					test("number with left Date bound", () => {
 						//@ts-expect-error
 						attest(() => type("d'2001/01/01'<number<2"))
-							.throws(writeIncompatibleRangeMessage("date", "numeric"))
+							.throws(writeIncompatibleRangeMessage("date", "number"))
 							.types.errors(
 								writeInvalidLimitMessage("<", "d'2001/01/01'", "left")
 							)
@@ -302,7 +303,7 @@ suite("bounds", () => {
 							// @ts-expect-error
 							type("0<Date<d'1999/9/8'")
 						)
-							.throws(writeIncompatibleRangeMessage("numeric", "date"))
+							.throws(writeIncompatibleRangeMessage("number", "date"))
 							.types.errors(writeInvalidLimitMessage("<", "0", "left"))
 					})
 				})

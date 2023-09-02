@@ -1,6 +1,8 @@
 import { attest } from "@arktype/attest"
+import type { Problem } from "@arktype/schema"
+import { writeUndiscriminatableMorphUnionMessage } from "@arktype/schema/internal/types/discriminate.js"
+import type { Ark, Type } from "arktype"
 import { arktypes, scope, type } from "arktype"
-import type { Ark, Problem, Type } from "arktype"
 import { suite, test } from "mocha"
 import type { Out } from "../parser/tuple.js"
 

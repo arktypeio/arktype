@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
 import { suite, test } from "mocha"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"

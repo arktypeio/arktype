@@ -1,3 +1,4 @@
+import type { CastTo } from "@arktype/schema"
 import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
 import type {
 	resolve,
@@ -5,7 +6,7 @@ import type {
 	UnparsedScope
 } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
-import type { CastTo, inferDefinition } from "../definition.js"
+import type { inferDefinition } from "../definition.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { Comparator } from "../string/shift/operator/bounds.js"

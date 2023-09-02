@@ -1,3 +1,4 @@
+import { predicate } from "@arktype/schema"
 import { isKeyOf } from "@arktype/util"
 import type { RegexLiteral } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -36,13 +37,15 @@ export const parseEnclosed = (
 			s.error(`${e instanceof Error ? e.message : e}`)
 		}
 		// flags are not currently supported for embedded regex literals
-		s.root = node({ basis: "string", regex: token as RegexLiteral }, s.ctx)
+		// TODO: s.ctx
+		s.root = predicate({ basis: "string", regex: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
-		s.root = node({ basis: ["===", enclosed] }, s.ctx)
+		// TODO:  s.ctx
+		s.root = predicate({ basis: { is: enclosed } })
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = node({
-			basis: ["===", date]
+		s.root = predicate({
+			basis: { is: date }
 		})
 		// TODO: meta
 		// {

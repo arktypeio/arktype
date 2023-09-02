@@ -1,6 +1,7 @@
 import { AssertionError } from "node:assert"
 import { attest } from "@arktype/attest"
-import { define, scope, type, Type } from "arktype"
+import { ArkTypeError } from "@arktype/schema"
+import { define, scope, type } from "arktype"
 import { suite, test } from "mocha"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 

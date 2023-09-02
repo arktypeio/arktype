@@ -22,5 +22,6 @@
 		"esm": true,
 		"swc": true,
 		"transpileOnly": true
-	}
+	},
+	"exclude": ["./ark/docs"]
 }

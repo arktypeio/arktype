@@ -9,28 +9,7 @@ import type { TraversalState } from "./traverse.js"
 
 type RegisteredInternalkey = "state"
 
-export type ArkKinds = {
-	node: unknown //Node
-	generic: unknown // Generic
-	module: unknown //Module
-}
-
 export const arkKind = Symbol("ArkTypeInternalKind")
-
-export const addArkKind = <kind extends ArkKind>(
-	value: Omit<ArkKinds[kind], arkKind> & { [arkKind]?: kind },
-	kind: kind
-): ArkKinds[kind] =>
-	Object.defineProperty(value, arkKind, { enumerable: false }) as never
-
-export type arkKind = typeof arkKind
-
-export type ArkKind = keyof ArkKinds
-
-export const hasArkKind = <kind extends ArkKind>(
-	value: unknown,
-	kind: kind
-): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
 
 export const registry = () => new Registry()
 

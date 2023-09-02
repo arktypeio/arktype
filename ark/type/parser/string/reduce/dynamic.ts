@@ -1,5 +1,4 @@
-import type { TypeRoot } from "@arktype/schema"
-import type { BoundConstraint } from "@arktype/schema/internal/traits/bound.js"
+import type { BoundConstraint, TypeRoot } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"

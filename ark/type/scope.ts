@@ -1,5 +1,4 @@
-import type { arkKind, CastTo, ProblemCode, TypeRoot } from "@arktype/schema"
-import { addArkKind, hasArkKind } from "@arktype/schema"
+import type { CastTo, ProblemCode, TypeRoot } from "@arktype/schema"
 import type { Dict, evaluate, Hkt, isAny, nominal } from "@arktype/util"
 import {
 	domainOf,
@@ -28,6 +27,7 @@ import {
 } from "./parser/string/shift/operand/unenclosed.js"
 import { parseString } from "./parser/string/string.js"
 import type {
+	arkKind,
 	DeclarationParser,
 	DefinitionParser,
 	extractIn,
@@ -39,8 +39,10 @@ import type {
 	TypeParser
 } from "./type.js"
 import {
+	addArkKind,
 	createTypeParser,
 	generic,
+	hasArkKind,
 	Type,
 	validateUninstantiatedGeneric
 } from "./type.js"

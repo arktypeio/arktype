@@ -31,7 +31,7 @@ export abstract class TypeRoot<t = unknown> extends compose(
 		? this.rule
 		: [this as {} as Predicate]
 
-	allows() {
+	allows(data: unknown) {
 		return true
 	}
 
