@@ -1,10 +1,15 @@
 import type { Domain } from "@arktype/util"
+import { Disjoint } from "../disjoint.js"
 import { composeConstraint } from "./constraint.js"
+import type { NarrowConstraint } from "./narrow.js"
 
-export class DomainConstraint extends composeConstraint<NonEnumerableDomain>(
-	() => []
+export class DomainConstraint<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> extends composeConstraint<NonEnumerableDomain>((l, r) =>
+	Disjoint.from("domain", l, r)
 ) {
 	readonly kind = "domain"
+	declare rule: domain
 
 	hash() {
 		return this.rule

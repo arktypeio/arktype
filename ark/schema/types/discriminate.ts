@@ -71,21 +71,21 @@ export const discriminate = (
 	if (cached !== undefined) {
 		return cached
 	}
-	const pureValueBranches = branches.flatMap((branch) =>
-		branch.unit ? branch.unit : []
-	)
-	if (pureValueBranches.length === branches.length) {
-		const cases: DiscriminatedCases = transform(
-			pureValueBranches,
-			([i, valueNode]) => [valueNode.serialized, [branches[i]]]
-		)
-		return {
-			path: [],
-			kind: "value",
-			cases,
-			isPureRootLiteral: true
-		}
-	}
+	// const pureValueBranches = branches.flatMap((branch) =>
+	// 	branch.unit ? branch.unit : []
+	// )
+	// if (pureValueBranches.length === branches.length) {
+	// 	const cases: DiscriminatedCases = transform(
+	// 		pureValueBranches,
+	// 		([i, valueNode]) => [valueNode.serialized, [branches[i]]]
+	// 	)
+	// 	return {
+	// 		path: [],
+	// 		kind: "value",
+	// 		cases,
+	// 		isPureRootLiteral: true
+	// 	}
+	// }
 	const casesBySpecifier: CasesBySpecifier = {}
 	for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
 		const l = branches[lIndex]

@@ -1,20 +1,15 @@
 import { Disjoint } from "../disjoint.js"
 import { Predicate } from "../types/predicate.js"
-import type { Root } from "../types/type.js"
 import { TypeRoot } from "../types/type.js"
-import {
-	composeConstraint,
-	ConstraintSet,
-	type RuleIntersection
-} from "./constraint.js"
+import { composeConstraint } from "./constraint.js"
 
 export type PropRule = {
-	key: string | symbol | Root
-	value: Root
+	key: string | symbol | TypeRoot
+	value: TypeRoot
 	required: boolean
 }
 
-const intersectProps = ((l, r) => {
+export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
 	if (l.key instanceof TypeRoot || r.key instanceof TypeRoot) {
 		return [l, r]
 	}
@@ -43,11 +38,7 @@ const intersectProps = ((l, r) => {
 			value
 		}
 	]
-}) satisfies RuleIntersection<PropRule>
-
-export class PropConstraint extends composeConstraint<PropRule>(
-	intersectProps
-) {
+}) {
 	readonly kind = "prop"
 
 	hash(): string {
@@ -60,8 +51,6 @@ export class PropConstraint extends composeConstraint<PropRule>(
 		}`
 	}
 }
-
-export class Propable extends ConstraintSet<readonly PropConstraint[]> {}
 
 /**** NAMED *****/
 

@@ -9,6 +9,7 @@ import {
 } from "@arktype/util"
 import type { BoundRule } from "./traits/bound.js"
 import type { Constraint } from "./traits/constraint.js"
+import type { Predicate } from "./types/predicate.js"
 import type { Union } from "./types/union.js"
 
 type DisjointKinds = {
@@ -38,8 +39,8 @@ type DisjointKinds = {
 				r: unknown
 		  }
 	union?: {
-		l: Union
-		r: Union
+		l: readonly Predicate[]
+		r: readonly Predicate[]
 	}
 }
 

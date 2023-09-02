@@ -4,12 +4,17 @@ import {
 	getExactBuiltinConstructorName,
 	objectKindDescriptions
 } from "@arktype/util"
-import { composeConstraint, ConstraintSet } from "./constraint.js"
+import { Disjoint } from "../disjoint.js"
+import { composeConstraint } from "./constraint.js"
 
 export class PrototypeConstraint<
 	constructor extends AbstractableConstructor = AbstractableConstructor
 > extends composeConstraint<AbstractableConstructor>((l, r) =>
-	constructorExtends(l, r) ? [l] : constructorExtends(r, l) ? [r] : []
+	constructorExtends(l, r)
+		? [l]
+		: constructorExtends(r, l)
+		? [r]
+		: Disjoint.from("prototype", l, r)
 ) {
 	declare rule: constructor
 	readonly kind = "prototype"
@@ -26,9 +31,11 @@ export class PrototypeConstraint<
 	}
 }
 
-export abstract class Prototypeable<
+export class Instantiatable<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends ConstraintSet<readonly PrototypeConstraint[]> {}
+> {
+	constructor(rule: { prototype?: PrototypeConstraint<constructor> }) {}
+}
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 

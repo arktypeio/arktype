@@ -1,9 +1,4 @@
-import { isArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { CompilationContext } from "../io/compile.js"
-import { compileFailureResult, compilePropAccess, In } from "../io/compile.js"
-import { composeConstraint } from "../traits/constraint.js"
-import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { Predicate } from "./predicate.js"
 import { TypeRoot } from "./type.js"
 
@@ -30,23 +25,12 @@ export class Union<t = unknown> extends TypeRoot {
 		return this.rule.flatMap((branch) => branch.references())
 	}
 
-	intersect(other: this) {
-		const resultBranches = intersectBranches(
-			this.rule,
-			other.hasKind("union") ? other.branches : [other]
-		)
-		return resultBranches.length === 0
-			? Disjoint.from("union", this, other)
-			: resultBranches.length === 1
-			? resultBranches[0]
-			: new Union(resultBranches)
-	}
-
 	keyof() {
-		return this.rule.reduce(
-			(result, branch) => result.and(branch.keyof()),
-			builtins.unknown()
-		)
+		return this
+		// return this.rule.reduce(
+		// 	(result, branch) => result.and(branch.keyof()),
+		// 	builtins.unknown()
+		// )
 	}
 }
 
@@ -157,83 +141,83 @@ export const intersectBranches = (
 	return finalBranches
 }
 
-export const compileDiscriminant = (
-	discriminant: Discriminant,
-	ctx: CompilationContext
-) => {
-	if (discriminant.isPureRootLiteral) {
-		// TODO: ctx?
-		return compileDiscriminatedLiteral(discriminant.cases)
-	}
-	let compiledPath = In
-	for (const segment of discriminant.path) {
-		// we need to access the path as optional so we don't throw if it isn't present
-		compiledPath += compilePropAccess(segment, true)
-	}
-	const condition =
-		discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
-	let compiledCases = ""
-	for (const k in discriminant.cases) {
-		const caseCondition = k === "default" ? "default" : `case ${k}`
-		const caseBranches = discriminant.cases[k]
-		ctx.discriminants.push(discriminant)
-		const caseChecks = isArray(caseBranches)
-			? compileIndiscriminable(caseBranches, ctx)
-			: compileDiscriminant(caseBranches, ctx)
-		ctx.discriminants.pop()
-		compiledCases += `${caseCondition}: {
-    ${caseChecks ? `${caseChecks}\n     break` : "break"}
-}`
-	}
-	if (!discriminant.cases.default) {
-		// TODO: error message for traversal
-		compiledCases += `default: {
-    return false
-}`
-	}
-	return `switch(${condition}) {
-    ${compiledCases}
-}`
-}
+// export const compileDiscriminant = (
+// 	discriminant: Discriminant,
+// 	ctx: CompilationContext
+// ) => {
+// 	if (discriminant.isPureRootLiteral) {
+// 		// TODO: ctx?
+// 		return compileDiscriminatedLiteral(discriminant.cases)
+// 	}
+// 	let compiledPath = In
+// 	for (const segment of discriminant.path) {
+// 		// we need to access the path as optional so we don't throw if it isn't present
+// 		compiledPath += compilePropAccess(segment, true)
+// 	}
+// 	const condition =
+// 		discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
+// 	let compiledCases = ""
+// 	for (const k in discriminant.cases) {
+// 		const caseCondition = k === "default" ? "default" : `case ${k}`
+// 		const caseBranches = discriminant.cases[k]
+// 		ctx.discriminants.push(discriminant)
+// 		const caseChecks = isArray(caseBranches)
+// 			? compileIndiscriminable(caseBranches, ctx)
+// 			: compileDiscriminant(caseBranches, ctx)
+// 		ctx.discriminants.pop()
+// 		compiledCases += `${caseCondition}: {
+//     ${caseChecks ? `${caseChecks}\n     break` : "break"}
+// }`
+// 	}
+// 	if (!discriminant.cases.default) {
+// 		// TODO: error message for traversal
+// 		compiledCases += `default: {
+//     return false
+// }`
+// 	}
+// 	return `switch(${condition}) {
+//     ${compiledCases}
+// }`
+// }
 
-const compileDiscriminatedLiteral = (cases: DiscriminatedCases) => {
-	// TODO: error messages for traversal
-	const caseKeys = Object.keys(cases)
-	if (caseKeys.length === 2) {
-		return `if( ${In} !== ${caseKeys[0]} && ${In} !== ${caseKeys[1]}) {
-    return false
-}`
-	}
-	// for >2 literals, we fall through all cases, breaking on the last
-	const compiledCases =
-		caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
-	// if none of the cases are met, the check fails (this is optimal for perf)
-	return `switch(${In}) {
-    ${compiledCases}
-    default:
-        return false
-}`
-}
+// const compileDiscriminatedLiteral = (cases: DiscriminatedCases) => {
+// 	// TODO: error messages for traversal
+// 	const caseKeys = Object.keys(cases)
+// 	if (caseKeys.length === 2) {
+// 		return `if( ${In} !== ${caseKeys[0]} && ${In} !== ${caseKeys[1]}) {
+//     return false
+// }`
+// 	}
+// 	// for >2 literals, we fall through all cases, breaking on the last
+// 	const compiledCases =
+// 		caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
+// 	// if none of the cases are met, the check fails (this is optimal for perf)
+// 	return `switch(${In}) {
+//     ${compiledCases}
+//     default:
+//         return false
+// }`
+// }
 
-export const compileIndiscriminable = (
-	branches: readonly Predicate[],
-	ctx: CompilationContext
-) => {
-	if (branches.length === 0) {
-		return compileFailureResult("custom", "nothing", ctx)
-	}
-	if (branches.length === 1) {
-		return branches[0].compile(ctx)
-	}
-	return branches
-		.map(
-			(branch) => `(() => {
-${branch.compile(ctx)}
-return true
-})()`
-		)
-		.join(" || ")
-}
+// export const compileIndiscriminable = (
+// 	branches: readonly Predicate[],
+// 	ctx: CompilationContext
+// ) => {
+// 	if (branches.length === 0) {
+// 		return compileFailureResult("custom", "nothing", ctx)
+// 	}
+// 	if (branches.length === 1) {
+// 		return branches[0].compile(ctx)
+// 	}
+// 	return branches
+// 		.map(
+// 			(branch) => `(() => {
+// ${branch.compile(ctx)}
+// return true
+// })()`
+// 		)
+// 		.join(" || ")
+// }
 
 // type inferPredicateDefinition<t> = t
 

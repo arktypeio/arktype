@@ -1,5 +1,7 @@
 import { compileSerializedValue } from "../io/compile.js"
-import { composeConstraint, ConstraintSet } from "./constraint.js"
+import { composeConstraint } from "./constraint.js"
+import type { DomainConstraint, NonEnumerableDomain } from "./domain.js"
+import type { PropConstraint } from "./prop.js"
 
 export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [
 	l,
@@ -16,7 +18,15 @@ export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [
 	}
 }
 
-export class Narrowable extends ConstraintSet<readonly NarrowConstraint[]> {}
+export class Narrowable<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> {
+	constructor(rule: {
+		domain?: DomainConstraint
+		narrows?: readonly NarrowConstraint[]
+		props?: readonly PropConstraint[]
+	}) {}
+}
 
 // TODO: allow changed order to be the same type
 

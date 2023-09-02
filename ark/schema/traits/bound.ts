@@ -1,3 +1,4 @@
+import { Disjoint } from "../disjoint.js"
 import { composeConstraint } from "./constraint.js"
 
 export type BoundKind = "date" | "number"
@@ -10,33 +11,38 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind> {
 	readonly exclusive: boolean
 }
 
+export type BoundSet =
+	| readonly [BoundConstraint]
+	| readonly [BoundConstraint<"min">, BoundConstraint<"max">]
+
 export class BoundConstraint<
 	limitKind extends LimitKind = LimitKind
 > extends composeConstraint<BoundRule>((l, r) => {
 	if (l.limit > r.limit) {
 		if (l.limitKind === "min") {
-			return r.limitKind === "min" ? [l] : []
+			return r.limitKind === "min" ? [l] : Disjoint.from("bound", l, r)
 		}
-		return r.limitKind === "max" ? [r] : [l, r]
+		return r.limitKind === "max" ? [r] : [r, l]
 	}
 	if (l.limit < r.limit) {
 		if (l.limitKind === "max") {
-			return r.limitKind === "max" ? [l] : []
+			return r.limitKind === "max" ? [l] : Disjoint.from("bound", l, r)
 		}
 		return r.limitKind === "min" ? [r] : [l, r]
 	}
 	return l.limitKind === r.limitKind
 		? [l.exclusive ? l : r]
 		: l.exclusive || r.exclusive
-		? []
-		: [l, r]
+		? Disjoint.from("bound", l, r)
+		: l.limitKind === "min"
+		? [l, r]
+		: [r, l]
 }) {
 	readonly kind = "bound"
 
 	declare rule: BoundRule<limitKind>
 
 	hash() {
-		// TODO:
 		return ""
 	}
 
@@ -59,6 +65,10 @@ export class BoundConstraint<
 				: "at most"
 		return `${comparisonDescription} ${this.rule.limit}`
 	}
+}
+
+export class Boundable {
+	constructor(rule: { bounds?: BoundSet }) {}
 }
 
 const unitsByBoundedKind = {

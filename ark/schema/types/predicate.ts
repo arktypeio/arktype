@@ -1,29 +1,36 @@
-import { type AbstractableConstructor, compose } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
-import type { Constraint } from "../traits/constraint.js"
+import { compose, DynamicBase } from "@arktype/util"
+import { Boundable } from "../traits/bound.js"
+import { type ConstraintKind } from "../traits/constraint.js"
+import { Divisible } from "../traits/divisor.js"
+import type { IdentityConstraint } from "../traits/identity.js"
 import { Morphable } from "../traits/morph.js"
-import { Propable } from "../traits/prop.js"
-import type { PrototypeConstraint } from "../traits/prototype.js"
+import { Narrowable } from "../traits/narrow.js"
+import { Instantiatable } from "../traits/prototype.js"
+import { Matchable } from "../traits/regex.js"
 import { TypeRoot } from "./type.js"
 
-export class Predicate<t = unknown> extends compose(
-	TypeRoot,
-	Morphable,
-	Propable
-) {
+type flattenConstraints<constraints> = readonly {
+	[k in keyof constraints]: constraints[k] extends readonly unknown[]
+		? constraints[k][number]
+		: constraints[k]
+}[]
+
+export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
 	readonly kind = "predicate"
+	readonly constraints: flattenConstraints<this["rule"]>
 
 	constructor(
-		public rule: readonly Constraint[],
+		public rule: {},
 		public attributes?: {}
 	) {
 		super(rule, attributes)
+		this.constraints = Object.values(this.rule).flat() as never
 	}
 
 	declare infer: t
 
-	writeDefaultDescription() {
-		return this.rule.length ? this.rule.join(" and ") : "a value"
+	writeDefaultDescription(): string {
+		return this.constraints.length ? this.constraints.join(" and ") : "a value"
 	}
 
 	references() {
@@ -34,81 +41,62 @@ export class Predicate<t = unknown> extends compose(
 		return ""
 	}
 
-	intersect(other: this) {
-		if (!other.hasKind("predicate")) {
-			return other.intersect(this)
-		}
-		let result: readonly Constraint[] | Disjoint = this.rule
-		for (const constraint of other.constraints) {
-			if (result instanceof Disjoint) {
-				break
-			}
-			result = constraint.apply(result)
-		}
-		// TODO: attributes
-		return result instanceof Disjoint ? result : new Predicate(result)
-	}
+	// intersect(other: this) {
+	// 	if (!other.hasKind("predicate")) {
+	// 		return other.intersect(this)
+	// 	}
+	// 	let result: readonly Constraint[] | Disjoint = this.rule
+	// 	for (const constraint of other.constraints) {
+	// 		if (result instanceof Disjoint) {
+	// 			break
+	// 		}
+	// 		result = constraint.apply(result)
+	// 	}
+	// 	// TODO: attributes
+	// 	return result instanceof Disjoint ? result : new Predicate(result)
+	// }
 
 	keyof() {
 		return this
 	}
 }
 
-export interface PredicateRule {
-	readonly morph?: readonly Morphable[]
+export class IdentityPredicate extends compose(Predicate) {
+	constructor(rule: { identity: IdentityConstraint }) {
+		super(rule, {})
+	}
 }
 
-export interface UnitRule {
-	readonly identity: IdentityNode
+export class UnknownPredicate extends compose(Predicate, Narrowable) {}
+
+export class NumberPredicate extends compose(
+	UnknownPredicate,
+	Divisible,
+	Boundable
+) {}
+
+export class StringPredicate extends compose(
+	UnknownPredicate,
+	Matchable,
+	Boundable
+) {}
+
+export class ObjectPredicate extends compose(
+	UnknownPredicate,
+	Instantiatable
+) {}
+
+export class ArrayPredicate extends compose(UnknownPredicate, Boundable) {
+	// TODO: add minLength prop that would result from collapsing types like [...number[], number]
+	// to a single variadic number prop with minLength 1
+	// Figure out best design for integrating with named props.
+
+	readonly prefix?: readonly TypeRoot[]
+	readonly variadic?: TypeRoot
+	readonly postfix?: readonly TypeRoot[]
 }
 
-export interface UnknownPredicateRule extends PredicateRule {
-	readonly narrow?: readonly NarrowNode[]
-}
-
-export interface NumberPredicateRule extends DomainPredicateRule<"number"> {
-	readonly range?: RangeConstraintSet
-	readonly divisor?: DivisorNode
-}
-
-export interface InstancePredicateRule<
-	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends DomainPredicateRule<"object"> {
-	readonly instance: PrototypeConstraint<constructor>
-}
-
-export interface StringPredicateRule extends DomainPredicateRule<"string"> {
-	readonly length?: RangeConstraintSet
-	readonly pattern?: DivisorNode
-}
-
-export interface DomainPredicateRule<
-	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends UnknownPredicateRule {
-	readonly domain: DomainConstraint<domain>
-}
-
-export interface DatePredicateRule extends InstancePredicateRule<typeof Date> {
-	readonly range?: RangeConstraintSet
-}
-
-// TODO: add minLength prop that would result from collapsing types like [...number[], number]
-// to a single variadic number prop with minLength 1
-
-// Figure out best design for integrating with named props.
-export interface ArrayPredicateRule
-	extends InstancePredicateRule<typeof Array> {
-	readonly length?: RangeConstraintSet
-	readonly prefix?: readonly Root[]
-	readonly variadic?: Root
-	readonly postfix?: readonly Root[]
-}
-
-// throwParseError(
-//     `'${k}' is not a valid constraint name (must be one of ${Object.keys(
-//         constraintsByPrecedence
-//     ).join(", ")})`
-// )
+export class DatePredicate extends compose(UnknownPredicate, Boundable) {}
 
 // // TODO: naming
 // export const constraintsByPrecedence: Record<

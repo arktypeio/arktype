@@ -1,5 +1,3 @@
-import { compose } from "@arktype/util"
-import { Fingerprinted } from "../node.js"
 import { composeConstraint } from "./constraint.js"
 
 export class DivisorConstraint extends composeConstraint<number>((l, r) => [
@@ -14,6 +12,10 @@ export class DivisorConstraint extends composeConstraint<number>((l, r) => [
 	writeDefaultDescription() {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
+}
+
+export class Divisible {
+	constructor(rule: { divisor?: DivisorConstraint }) {}
 }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
