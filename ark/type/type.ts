@@ -5,7 +5,13 @@ import type {
 	Narrow,
 	TypeRoot
 } from "@arktype/schema"
-import { arkKind, In, registry, TraversalState } from "@arktype/schema"
+import {
+	arkKind,
+	In,
+	inferred,
+	registry,
+	TraversalState
+} from "@arktype/schema"
 import type {
 	AbstractableConstructor,
 	BuiltinObjectKind,
@@ -19,7 +25,6 @@ import type {
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.js"
-import { inferred } from "./parser/definition.js"
 import type { GenericParamsParseError } from "./parser/generic.js"
 import { parseGenericParams } from "./parser/generic.js"
 import type { inferIntersection } from "./parser/semantic/intersections.js"

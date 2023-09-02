@@ -1,4 +1,4 @@
-import type { ProblemCode, TypeRoot } from "@arktype/schema"
+import type { CastTo, ProblemCode, TypeRoot } from "@arktype/schema"
 import { addArkKind, hasArkKind } from "@arktype/schema"
 import type { Dict, evaluate, Hkt, isAny, nominal } from "@arktype/util"
 import {
@@ -9,7 +9,6 @@ import {
 	transform
 } from "@arktype/util"
 import type {
-	CastTo,
 	inferDefinition,
 	validateDefinition
 } from "./parser/definition.js"

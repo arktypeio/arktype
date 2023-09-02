@@ -1,4 +1,5 @@
 export * from "./node.js"
+export * from "./utils.js"
 export * from "./types/type.js"
 export * from "./types/union.js"
 export * from "./types/predicate.js"

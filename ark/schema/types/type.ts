@@ -2,7 +2,7 @@ import { compose } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { Fingerprinted, Kinded } from "../node.js"
 import { Describable } from "../traits/description.js"
-import { DomainConstraint } from "../traits/domain.js"
+import { inferred } from "../utils.js"
 import { Predicate } from "./predicate.js"
 import { intersectBranches, Union } from "./union.js"
 
@@ -13,12 +13,15 @@ export type RootDefinitions = {
 
 export type TypeKind = keyof RootDefinitions
 
+export const node = () => {}
+
 export abstract class TypeRoot<t = unknown> extends compose(
 	Describable,
 	Kinded,
 	Fingerprinted
 ) {
-	abstract infer: unknown
+	abstract infer: t;
+	declare [inferred]: t
 
 	abstract rule: unknown
 
