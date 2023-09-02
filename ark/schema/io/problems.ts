@@ -12,8 +12,11 @@ import {
 	objectKindDescriptions,
 	stringify
 } from "@arktype/util"
-import type { BoundRule, NumericallyBoundableData } from "../traits/bound.js"
-import { numericComparatorDescriptions } from "../traits/bound.js"
+import {
+	type BoundRule,
+	describeBound,
+	type NumericallyBoundableData
+} from "../traits/bound.js"
 import { domainDescriptions } from "../traits/domain.js"
 
 export class ArkTypeError extends TypeError {
@@ -217,11 +220,9 @@ export class BoundProblem extends Problem<BoundRule, NumericallyBoundableData> {
 	readonly code = "bound"
 
 	get mustBe() {
-		return `${numericComparatorDescriptions[this.rule.comparator]} ${
-			this.data.value instanceof Date
-				? new Date(this.rule.limit).toDateString()
-				: this.rule.limit
-		}${this.data.units ? ` ${this.data.units}` : ""}`
+		return `${describeBound(this.rule)}${
+			this.data.units ? ` ${this.data.units}` : ""
+		}`
 	}
 
 	override get was() {

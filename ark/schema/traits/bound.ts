@@ -47,29 +47,38 @@ export class BoundConstraint<
 	}
 
 	writeDefaultDescription() {
-		const comparisonDescription =
-			this.rule.boundKind === "date"
-				? this.rule.limitKind === "min"
-					? this.rule.exclusive
-						? "after"
-						: "at or after"
-					: this.rule.exclusive
-					? "before"
-					: "at or before"
-				: this.rule.limitKind === "min"
-				? this.rule.exclusive
-					? "more than"
-					: "at least"
-				: this.rule.exclusive
-				? "less than"
-				: "at most"
-		return `${comparisonDescription} ${this.rule.limit}`
+		return describeBound(this.rule)
 	}
 }
 
 export class Boundable {
 	constructor(rule: { bounds?: BoundSet }) {}
 }
+
+export const describeBound = (rule: BoundRule) =>
+	`${
+		rule.boundKind === "date"
+			? describeDateComparison(rule)
+			: describeNumericComparison(rule)
+	} ${rule.limit}`
+
+const describeDateComparison = (rule: BoundRule) =>
+	rule.limitKind === "min"
+		? rule.exclusive
+			? "after"
+			: "at or after"
+		: rule.exclusive
+		? "before"
+		: "at or before"
+
+const describeNumericComparison = (rule: BoundRule) =>
+	rule.limitKind === "min"
+		? rule.exclusive
+			? "more than"
+			: "at least"
+		: rule.exclusive
+		? "less than"
+		: "at most"
 
 const unitsByBoundedKind = {
 	date: "",

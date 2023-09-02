@@ -10,9 +10,9 @@ import type { TraversalState } from "./traverse.js"
 type RegisteredInternalkey = "state"
 
 export type ArkKinds = {
-	node: Node
-	generic: Generic
-	module: Module
+	node: unknown //Node
+	generic: unknown // Generic
+	module: unknown //Module
 }
 
 export const arkKind = Symbol("ArkTypeInternalKind")

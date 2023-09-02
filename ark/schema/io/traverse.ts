@@ -1,4 +1,3 @@
-import type { TypeConfig } from "../config.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
 import { Problems, problemsByCode } from "./problems.js"
 
@@ -67,8 +66,4 @@ export class TraversalState {
 		) as any as Problem
 		return this.problems.add(problem)
 	}
-}
-
-export type TraversalConfig = {
-	[k in keyof TypeConfig]-?: TypeConfig[k][]
 }
