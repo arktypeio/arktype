@@ -1,4 +1,11 @@
-import type { BaseNode } from "@arktype/schema"
+import type {
+	CheckResult,
+	inferNarrow,
+	Morph,
+	Narrow,
+	Problem,
+	TypeRoot
+} from "@arktype/schema"
 import type {
 	AbstractableConstructor,
 	BuiltinObjectKind,
@@ -25,14 +32,14 @@ import {
 } from "./semantic/semantic.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import type { EntryParseResult, validateObjectValue } from "./shared.js"
-import { OptionalStringDefinition, parseEntry } from "./shared.js"
+import { parseEntry } from "./shared.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: List, ctx: ParseContext): BaseNode => {
+export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeRoot => {
 	const props: NodeEntry[] = []
 	let isVariadic = false
 	for (let i = 0; i < def.length; i++) {
@@ -88,7 +95,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): BaseNode => {
 export const maybeParseTupleExpression = (
 	def: List,
 	ctx: ParseContext
-): BaseNode | undefined => {
+): TypeRoot | undefined => {
 	const tupleExpressionResult = isIndexOneExpression(def)
 		? indexOneParsers[def[1]](def as never, ctx)
 		: isIndexZeroExpression(def)
@@ -337,12 +344,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => BaseNode
+) => TypeRoot
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => BaseNode
+) => TypeRoot
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

@@ -1,4 +1,12 @@
 import type {
+	CheckResult,
+	inferNarrow,
+	Morph,
+	Narrow,
+	TypeRoot
+} from "@arktype/schema"
+import { arkKind, In, registry, TraversalState } from "@arktype/schema"
+import type {
 	AbstractableConstructor,
 	BuiltinObjectKind,
 	BuiltinObjects,
@@ -6,13 +14,6 @@ import type {
 	Primitive
 } from "@arktype/util"
 import { CompiledFunction, transform } from "@arktype/util"
-import { createCompilationContext, In } from "./compiler/compile.js"
-import { arkKind, registry } from "./compiler/registry.js"
-import type { CheckResult } from "./compiler/traverse.js"
-import { TraversalState } from "./compiler/traverse.js"
-import type { TypeConfig } from "./config.js"
-import type { TypeNode } from "./nodes/type.js"
-import { builtins } from "./nodes/union/utils.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -26,16 +27,12 @@ import type {
 	IndexOneOperator,
 	IndexZeroOperator,
 	inferMorphOut,
-	inferNarrow,
-	Morph,
 	MorphAst,
-	Narrow,
 	Out,
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import type { Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
-import { type } from "./scopes/ark.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -115,6 +112,8 @@ export type DefinitionParser<$> = <const def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
 
+export type KeyCheckKind = "distilled" | "strict" | "loose"
+
 export type TypeConfig = {
 	keys?: KeyCheckKind
 	mustBe?: string
@@ -130,7 +129,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	declare inferIn: extractIn<t>
 
 	config: TypeConfig
-	root: TypeNode<t>
+	root: TypeRoot<t>
 	condition: string
 	allows: this["root"]["allows"]
 
@@ -138,7 +137,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		public definition: unknown,
 		public scope: Scope
 	) {
-		const root = parseTypeRoot(definition, scope) as TypeNode<t>
+		const root = parseTypeRoot(definition, scope) as TypeRoot<t>
 		super(
 			In,
 			`const state = new ${registry().reference("state")}();
@@ -304,7 +303,7 @@ export type GenericProps<
 	scope: Scope
 }
 
-export type BoundArgs = Record<string, TypeNode>
+export type BoundArgs = Record<string, TypeRoot>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 export type Generic<

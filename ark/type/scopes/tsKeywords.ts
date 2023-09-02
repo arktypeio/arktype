@@ -1,4 +1,3 @@
-import { node } from "../nodes/type.js"
 import type { CastTo } from "../parser/definition.js"
 import { Scope } from "../scope.js"
 import type { RootScope } from "./ark.js"

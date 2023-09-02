@@ -1,4 +1,4 @@
-import type { BaseNode } from "@arktype/schema"
+import { hasArkKind, type TypeRoot } from "@arktype/schema"
 import type { BigintLiteral, error, join, NumberLiteral } from "@arktype/util"
 import {
 	stringify,
@@ -132,7 +132,7 @@ const unenclosedToNode = (s: DynamicState, token: string): BaseNode =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): BaseNode | undefined => {
+): TypeRoot | undefined => {
 	if (s.ctx.args?.[token]) {
 		return s.ctx.args[token]
 	}
@@ -152,7 +152,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): BaseNode | undefined => {
+): TypeRoot | undefined => {
 	const maybeNumber = tryParseWellFormedNumber(token)
 	if (maybeNumber !== undefined) {
 		return node({ basis: ["===", maybeNumber] }, s.ctx)

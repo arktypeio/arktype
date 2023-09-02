@@ -1,3 +1,4 @@
+import type { writeIndivisibleMessage } from "@arktype/schema"
 import type { error } from "@arktype/util"
 import type { inferAst } from "./semantic.js"
 import type { astToString } from "./utils.js"
