@@ -1,4 +1,6 @@
+import type { BasisInput } from "./constraint.js"
 import { composeConstraint } from "./constraint.js"
+import type { DomainConstraint } from "./domain.js"
 
 export class DivisorConstraint extends composeConstraint<number>((l, r) => [
 	(l * r) / greatestCommonDivisor(l, r)
@@ -15,7 +17,10 @@ export class DivisorConstraint extends composeConstraint<number>((l, r) => [
 }
 
 export class Divisible {
-	constructor(rule: { divisor?: DivisorConstraint }) {}
+	constructor(rule: {
+		basis: DomainConstraint<"number">
+		divisor?: DivisorConstraint
+	}) {}
 }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

@@ -1,5 +1,5 @@
 import { Disjoint } from "../disjoint.js"
-import type { BasePredicate } from "./predicate.js"
+import type { Predicate } from "./predicate.js"
 import { TypeRoot } from "./type.js"
 
 export class Union<t = unknown> extends TypeRoot {
@@ -7,7 +7,7 @@ export class Union<t = unknown> extends TypeRoot {
 	declare infer: t
 
 	constructor(
-		public rule: readonly BasePredicate[],
+		public rule: readonly Predicate[],
 		public attributes?: {}
 	) {
 		super(rule, attributes)
@@ -39,7 +39,7 @@ export class Union<t = unknown> extends TypeRoot {
 // 	return discriminate(this.branches)
 // }
 
-export const reduceBranches = (branches: BasePredicate[]) => {
+export const reduceBranches = (branches: Predicate[]) => {
 	if (branches.length < 2) {
 		return branches
 	}
@@ -69,23 +69,23 @@ export const reduceBranches = (branches: BasePredicate[]) => {
 }
 
 export const intersectBranches = (
-	l: readonly BasePredicate[],
-	r: readonly BasePredicate[]
-): readonly BasePredicate[] => {
+	l: readonly Predicate[],
+	r: readonly Predicate[]
+): readonly Predicate[] => {
 	// Branches that are determined to be a subtype of an opposite branch are
 	// guaranteed to be a member of the final reduced intersection, so long as
 	// each individual set of branches has been correctly reduced to exclude
 	// redundancies.
-	const finalBranches: BasePredicate[] = []
+	const finalBranches: Predicate[] = []
 	// Each rBranch is initialized to an empty array to which distinct
 	// intersections will be appended. If the rBranch is identified as a
 	// subtype or equal of any lBranch, the corresponding value should be
 	// set to null so we can avoid including previous/future intersections
 	// in the final result.
-	const candidatesByR: (BasePredicate[] | null)[] = r.map(() => [])
+	const candidatesByR: (Predicate[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
 		const lBranch = l[lIndex]
-		let currentCandidateByR: { [rIndex in number]: BasePredicate } = {}
+		let currentCandidateByR: { [rIndex in number]: Predicate } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			const rBranch = r[rIndex]
 			if (!candidatesByR[rIndex]) {

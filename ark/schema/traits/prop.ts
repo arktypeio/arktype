@@ -1,13 +1,17 @@
 import { Disjoint } from "../disjoint.js"
-import { BasePredicate } from "../types/predicate.js"
 import { TypeRoot } from "../types/type.js"
+import { Union } from "../types/union.js"
 import { composeConstraint } from "./constraint.js"
+import type { DomainConstraint } from "./domain.js"
+import type { PrototypeConstraint } from "./prototype.js"
 
 export type PropRule = {
 	key: string | symbol | TypeRoot
 	value: TypeRoot
 	required: boolean
 }
+
+// TODO: builtins.never()
 
 export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
 	if (l.key instanceof TypeRoot || r.key instanceof TypeRoot) {
@@ -26,8 +30,7 @@ export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
 					{
 						key,
 						required,
-						// TODO: builtins.never()
-						value: new BasePredicate([])
+						value: new Union([]) as never
 					}
 			  ]
 	}
@@ -50,6 +53,13 @@ export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
 			this.rule.value
 		}`
 	}
+}
+
+export class Propable {
+	constructor(rule: {
+		basis: DomainConstraint<"object"> | PrototypeConstraint
+		props?: readonly PropConstraint[]
+	}) {}
 }
 
 /**** NAMED *****/

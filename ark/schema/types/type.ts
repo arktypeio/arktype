@@ -1,13 +1,13 @@
-import { AbstractableConstructor, compose } from "@arktype/util"
+import { compose } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { Fingerprinted, Kinded } from "../node.js"
 import { Describable } from "../traits/description.js"
 import { inferred } from "../utils.js"
-import { BasePredicate } from "./predicate.js"
+import { Predicate } from "./predicate.js"
 import { intersectBranches, Union } from "./union.js"
 
 export type TypeRootsByKind = {
-	predicate: BasePredicate
+	predicate: Predicate
 	union: Union
 }
 
@@ -27,9 +27,9 @@ export abstract class TypeRoot<t = unknown> extends compose(
 
 	abstract keyof(): TypeRoot
 
-	branches: readonly BasePredicate[] = this.hasKind("union")
+	branches: readonly Predicate[] = this.hasKind("union")
 		? this.rule
-		: [this as {} as BasePredicate]
+		: [this as {} as Predicate]
 
 	allows() {
 		return true
@@ -38,8 +38,8 @@ export abstract class TypeRoot<t = unknown> extends compose(
 	intersect<other extends TypeRoot>(
 		other: other // TODO: inferIntersection
 	):
-		| ([this, other] extends [BasePredicate, BasePredicate]
-				? BasePredicate<this["infer"] & other["infer"]>
+		| ([this, other] extends [Predicate, Predicate]
+				? Predicate<this["infer"] & other["infer"]>
 				: TypeRoot<this["infer"] & other["infer"]>)
 		| Disjoint
 	intersect(
@@ -53,7 +53,7 @@ export abstract class TypeRoot<t = unknown> extends compose(
 			: new Union(resultBranches)
 	}
 
-	isUnknown(): this is BasePredicate<unknown> {
+	isUnknown(): this is Predicate<unknown> {
 		return this.hasKind("predicate") && this.constraints.length === 0
 	}
 
@@ -62,7 +62,7 @@ export abstract class TypeRoot<t = unknown> extends compose(
 	}
 
 	array() {
-		return new BasePredicate({})
+		return new Predicate({})
 	}
 
 	extends<other>(other: TypeRoot<other>): this is TypeRoot<other> {

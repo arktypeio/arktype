@@ -2,6 +2,7 @@ import { compileSerializedValue } from "../io/compile.js"
 import { composeConstraint } from "./constraint.js"
 import type { DomainConstraint, NonEnumerableDomain } from "./domain.js"
 import type { PropConstraint } from "./prop.js"
+import type { PrototypeConstraint } from "./prototype.js"
 
 export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [
 	l,
@@ -18,13 +19,10 @@ export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [
 	}
 }
 
-export class Narrowable<
-	domain extends NonEnumerableDomain = NonEnumerableDomain
-> {
+export class Narrowable {
 	constructor(rule: {
-		domain?: DomainConstraint
+		basis: DomainConstraint | PrototypeConstraint | undefined
 		narrows?: readonly NarrowConstraint[]
-		props?: readonly PropConstraint[]
 	}) {}
 }
 

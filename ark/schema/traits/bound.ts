@@ -1,5 +1,7 @@
 import { Disjoint } from "../disjoint.js"
 import { composeConstraint } from "./constraint.js"
+import type { DomainConstraint } from "./domain.js"
+import type { PrototypeConstraint } from "./prototype.js"
 
 export type BoundKind = "date" | "number"
 
@@ -52,7 +54,12 @@ export class BoundConstraint<
 }
 
 export class Boundable {
-	constructor(rule: { bounds?: BoundSet }) {}
+	constructor(rule: {
+		basis:
+			| DomainConstraint<"number" | "string">
+			| PrototypeConstraint<typeof Array | typeof Date>
+		bounds?: BoundSet
+	}) {}
 }
 
 export const describeBound = (rule: BoundRule) =>

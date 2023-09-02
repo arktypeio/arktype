@@ -1,5 +1,6 @@
 import { throwParseError } from "@arktype/util"
 import { composeConstraint } from "./constraint.js"
+import type { DomainConstraint } from "./domain.js"
 
 // For now, non-equal regex are naively intersected
 export class RegexConstraint extends composeConstraint<RegExp>((l, r) => [
@@ -22,7 +23,10 @@ export class RegexConstraint extends composeConstraint<RegExp>((l, r) => [
 }
 
 export class Matchable {
-	constructor(rule: { regex?: readonly RegexConstraint[] }) {}
+	constructor(rule: {
+		basis: DomainConstraint<"string">
+		regex?: readonly RegexConstraint[]
+	}) {}
 }
 
 // converting a regex to a string alphabetizes the flags for us

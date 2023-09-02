@@ -31,12 +31,6 @@ export class PrototypeConstraint<
 	}
 }
 
-export class Instantiatable<
-	constructor extends AbstractableConstructor = AbstractableConstructor
-> {
-	constructor(rule: { prototype?: PrototypeConstraint<constructor> }) {}
-}
-
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
 // compile() {

@@ -1,40 +1,59 @@
+import type {
+	AbstractableConstructor,
+	extend,
+	inferDomain
+} from "@arktype/util"
 import { compose, throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { Fingerprinted, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
+import { Boundable } from "./bound.js"
 import { Describable } from "./description.js"
 import type { DivisorConstraint } from "./divisor.js"
-import type { DomainConstraint } from "./domain.js"
+import { Divisible } from "./divisor.js"
+import type { DomainConstraint, NonEnumerableDomain } from "./domain.js"
 import type { IdentityConstraint } from "./identity.js"
 import type { NarrowConstraint } from "./narrow.js"
+import { Narrowable } from "./narrow.js"
 import type { PropConstraint } from "./prop.js"
+import { Propable } from "./prop.js"
 import type { PrototypeConstraint } from "./prototype.js"
 import type { RegexConstraint } from "./regex.js"
+import { Matchable } from "./regex.js"
 
-export const ruleDefinitions = {
-	// prop: PropConstraint,
-	// identity: IdentityNode,
-	// domain: DomainNode,
-	// instanceOf: InstanceOfNode,
-	// divisor: DivisorNode
-	// range: BoundNode,
-	// pattern: PatternConstraint,
-	// narrow: NarrowNode,
-	// description: DescriptionNode,
-	// alias: AliasNode,
-	// morph: MorphNode
-}
-
-export type ConstraintsByKind = {
-	divisor: DivisorConstraint
+export type BasesByKind = {
 	domain: DomainConstraint
-	bound: BoundConstraint
-	regex: RegexConstraint
 	identity: IdentityConstraint
 	prototype: PrototypeConstraint
+}
+
+export type BasisKind = keyof BasesByKind
+
+export type RefinementsByKind = {
+	divisor: DivisorConstraint
+	bound: BoundConstraint
+	regex: RegexConstraint
 	prop: PropConstraint
 	narrow: NarrowConstraint
 }
+
+export type RefinementKind = keyof RefinementsByKind
+
+export const refinementTraits = {
+	divisor: Divisible,
+	bound: Boundable,
+	regex: Matchable,
+	prop: Propable,
+	narrow: Narrowable
+} satisfies Record<RefinementKind, AbstractableConstructor>
+
+export type RefinementTraits = typeof refinementTraits
+
+export type RefinementRules = {
+	[k in RefinementKind]: ConstructorParameters<RefinementTraits[k]>[0]
+}
+
+export type ConstraintsByKind = extend<BasesByKind, RefinementsByKind>
 
 export type ConstraintKind = keyof ConstraintsByKind
 
@@ -43,6 +62,19 @@ export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 
 export type ConstraintRule<kind extends ConstraintKind = ConstraintKind> =
 	Constraint<kind>["rule"]
+
+export type BasisInput =
+	| NonEnumerableDomain
+	| AbstractableConstructor
+	| [identity: unknown]
+
+export type inferBasis<basis extends BasisInput> = basis extends readonly [
+	infer identity
+]
+	? identity
+	: basis extends AbstractableConstructor<infer instance>
+	? instance
+	: inferDomain<basis & NonEnumerableDomain>
 
 export type RuleIntersection<rule> = (
 	l: rule,

@@ -1,12 +1,12 @@
-import type { AbstractableConstructor, exact } from "@arktype/util"
+import type { intersectUnion, unionToTuple } from "@arktype/util"
 import { compose } from "@arktype/util"
-import { Boundable } from "../traits/bound.js"
-import { Divisible } from "../traits/divisor.js"
-import type { IdentityConstraint } from "../traits/identity.js"
+import type {
+	BasisKind,
+	Constraint,
+	RefinementKind,
+	RefinementRules
+} from "../traits/constraint.js"
 import { Morphable } from "../traits/morph.js"
-import { Narrowable } from "../traits/narrow.js"
-import { Instantiatable } from "../traits/prototype.js"
-import { Matchable } from "../traits/regex.js"
 import { TypeRoot } from "./type.js"
 
 type flattenConstraints<constraints> = readonly {
@@ -15,25 +15,30 @@ type flattenConstraints<constraints> = readonly {
 		: constraints[k]
 }[]
 
-const composePredicate = <traits extends AbstractableConstructor[]>(
-	...traits: traits
-) =>
-	compose(
-		BasePredicate<unknown, ConstructorParameters<compose<traits>>[0] & {}>,
-		...traits
-	)
+export type RulesForBasis<basis extends Constraint<BasisKind> | undefined> =
+	intersectUnion<
+		{
+			[k in RefinementKind]: basis extends RefinementRules[k]["basis"]
+				? Omit<RefinementRules[k], "basis">
+				: {}
+		}[RefinementKind]
+	>
 
-export class BasePredicate<t = unknown, rule extends {} = {}> extends compose(
-	TypeRoot,
-	Morphable
-) {
+export class Predicate<
+	t = unknown,
+	basis extends Constraint<BasisKind> | undefined =
+		| Constraint<BasisKind>
+		| undefined
+> extends compose(TypeRoot, Morphable) {
 	readonly kind = "predicate"
 	readonly constraints: flattenConstraints<this["rule"]>
 
 	declare infer: t
 
 	constructor(
-		public rule: rule,
+		public rule:
+			| RulesForBasis<undefined>
+			| ({ basis: basis } & RulesForBasis<basis>),
 		public attributes?: {}
 	) {
 		super(rule, attributes)
@@ -72,71 +77,94 @@ export class BasePredicate<t = unknown, rule extends {} = {}> extends compose(
 	}
 }
 
-export type PredicatesByKind = {
-	identity: IdentityPredicate
-	unknown: NarrowablePredicate
-	number: NumberPredicate
-	string: StringPredicate
-	object: ObjectPredicate
-	array: ArrayPredicate
-	date: DatePredicate
-}
+const z = new Predicate({})
 
-export type PredicateKind = keyof PredicatesByKind
+// const composePredicate = <traits extends AbstractableConstructor[]>(
+// 	...traits: traits
+// ) =>
+// 	compose(
+// 		BasePredicate<unknown, ConstructorParameters<compose<traits>>[0] & {}>,
+// 		...traits
+// 	)
 
-export type Predicate<kind extends PredicateKind = PredicateKind> =
-	PredicatesByKind[kind]
+// const composeFromBasis = <basis extends Constraint<BasisConstraintKind>>() =>
+// 	compose(BasePredicate<unknown, basis>)
 
-export type PredicateRule<kind extends PredicateKind = PredicateKind> =
-	Predicate<kind>["rule"]
+// export type PredicatesByKind = {
+// 	identity: IdentityPredicate
+// 	unknown: NarrowablePredicate
+// 	number: NumberPredicate
+// 	string: StringPredicate
+// 	object: ObjectPredicate
+// 	array: ArrayPredicate
+// 	date: DatePredicate
+// }
 
-export const predicate = <constraints>(constraints: {}) =>
-	new NarrowablePredicate({}, {}) as Predicate
+// export type PredicateKind = keyof PredicatesByKind
 
-export class IdentityPredicate extends compose(BasePredicate) {
-	constructor(rule: { identity: IdentityConstraint }) {
-		super(rule, {})
-	}
-}
+// export type Predicate<kind extends PredicateKind = PredicateKind> =
+// 	PredicatesByKind[kind]
 
-export class NarrowablePredicate extends composePredicate(Narrowable) {}
+// export type PredicateRule<kind extends PredicateKind = PredicateKind> =
+// 	Predicate<kind>["rule"]
 
-export class NumberPredicate extends composePredicate(
-	Narrowable,
-	Divisible,
-	Boundable
-) {}
+// export class IdentityPredicate extends compose(BasePredicate) {
+// 	constructor(rule: { identity: IdentityConstraint }) {
+// 		super(rule, {})
+// 	}
+// }
 
-export class StringPredicate extends composePredicate(
-	Narrowable,
-	Matchable,
-	Boundable
-) {}
+// export class NarrowablePredicate extends composePredicate(Narrowable) {}
 
-export class ObjectPredicate extends composePredicate(
-	Narrowable,
-	Instantiatable
-) {}
+// export class NumberPredicate2 extends composeFromBasis<
+// 	DomainConstraint<"number">
+// >() {
+// 	foo() {
+// 		this.rule
+// 	}
+// }
 
-export class ArrayPredicate extends composePredicate(
-	Narrowable,
-	Instantiatable,
-	Boundable
-) {
-	// TODO: add minLength prop that would result from collapsing types like [...number[], number]
-	// to a single variadic number prop with minLength 1
-	// Figure out best design for integrating with named props.
+// const n = new NumberPredicate2(
+// 	{ basis: new DomainConstraint("number", {}) },
+// 	{}
+// )
 
-	readonly prefix?: readonly TypeRoot[]
-	readonly variadic?: TypeRoot
-	readonly postfix?: readonly TypeRoot[]
-}
+// export class NumberPredicate extends composePredicate(
+// 	Narrowable<"number">,
+// 	Divisible,
+// 	Boundable
+// ) {}
 
-export class DatePredicate extends composePredicate(
-	Narrowable,
-	Instantiatable,
-	Boundable
-) {}
+// export class StringPredicate extends composePredicate(
+// 	Narrowable<"string">,
+// 	Matchable,
+// 	Boundable
+// ) {}
+
+// export class ObjectPredicate extends composePredicate(
+// 	Narrowable<"object">,
+// 	Instantiatable
+// ) {}
+
+// export class ArrayPredicate extends composePredicate(
+// 	Narrowable<"object">,
+// 	Instantiatable<typeof Array>,
+// 	Boundable
+// ) {
+// 	// TODO: add minLength prop that would result from collapsing types like [...number[], number]
+// 	// to a single variadic number prop with minLength 1
+// 	// Figure out best design for integrating with named props.
+
+// 	readonly prefix?: readonly TypeRoot[]
+// 	readonly variadic?: TypeRoot
+// 	readonly postfix?: readonly TypeRoot[]
+// }
+
+// export class DatePredicate extends composePredicate(
+// 	Narrowable<"object">,
+// 	Instantiatable<typeof Date>,
+// 	Boundable
+// ) {}
 
 // // TODO: naming
 // export const constraintsByPrecedence: Record<
