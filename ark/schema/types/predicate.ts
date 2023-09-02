@@ -1,8 +1,4 @@
-import type {
-	AbstractableConstructor,
-	intersectUnion,
-	unionToTuple
-} from "@arktype/util"
+import type { AbstractableConstructor, intersectUnion } from "@arktype/util"
 import { compose } from "@arktype/util"
 import type {
 	BasisKind,
