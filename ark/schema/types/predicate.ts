@@ -1,28 +1,25 @@
-import type { AbstractableConstructor, Dict, listable } from "@arktype/util"
-
+import type { AbstractableConstructor } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Constraint } from "../traits/constraint.js"
 import type { Morphable } from "../traits/morph.js"
-import type { Typed } from "./type.js"
-import { typedNode } from "./type.js"
+import type { PrototypeConstraint } from "../traits/prototype.js"
+import { Typed } from "./type.js"
 
-export interface Predicate<t = unknown> extends Typed<t> {
-	args: [rule: readonly Constraint[]]
-}
+export class Predicate<t = unknown> extends Typed<t, readonly Constraint[]> {
+	readonly kind = "predicate"
 
-// // discriminate is cached so we don't have to worry about this running multiple times
-// get discriminant() {
-// 	return discriminate(this.branches)
-// }
-
-export const predicate = typedNode<Predicate>()({
-	kind: "predicate",
 	writeDefaultDescription() {
 		return this.rule.length ? this.rule.join(" and ") : "a value"
-	},
+	}
+
 	references() {
-		return this.rule
-	},
+		return [this]
+	}
+
+	hash(): string {
+		return ""
+	}
+
 	intersect(other) {
 		if (!other.hasKind("predicate")) {
 			return other.intersect(this)
@@ -36,11 +33,12 @@ export const predicate = typedNode<Predicate>()({
 		}
 		// TODO: attributes
 		return result instanceof Disjoint ? result : predicate(result)
-	},
+	}
+
 	keyof() {
 		return this
 	}
-})
+}
 
 export interface PredicateRule {
 	readonly morph?: readonly Morphable[]
@@ -62,7 +60,7 @@ export interface NumberPredicateRule extends DomainPredicateRule<"number"> {
 export interface InstancePredicateRule<
 	constructor extends AbstractableConstructor = AbstractableConstructor
 > extends DomainPredicateRule<"object"> {
-	readonly instance: InstanceOfNode<constructor>
+	readonly instance: PrototypeConstraint<constructor>
 }
 
 export interface StringPredicateRule extends DomainPredicateRule<"string"> {

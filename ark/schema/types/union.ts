@@ -7,13 +7,8 @@ import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import type { Predicate } from "./predicate.js"
 import { Typed } from "./type.js"
 
-export class Union<t = unknown> extends Typed {
-	constructor(public rule: readonly Predicate[]) {
-		super(rule, {})
-	}
-
+export class Union<t = unknown> extends Typed<t, readonly Predicate[]> {
 	readonly kind = "union"
-	declare infer: t
 
 	writeDefaultDescription() {
 		return this.rule.length === 0 ? "never" : this.rule.join(" or ")

@@ -16,20 +16,22 @@ export type TypeKind = keyof RootDefinitions
 // TODO: test external types if this isn't any
 export type Root<t = any> = Union<t> | Predicate<t>
 
-export abstract class Typed<t = unknown> extends compose(
+export abstract class Typed<t = unknown, rule = unknown> extends compose(
 	Describable,
 	Kinded,
 	Fingerprinted
 ) {
-	abstract infer: t
+	constructor(public rule: rule) {
+		super(rule, {})
+	}
 
-	abstract rule: unknown
+	declare infer: t
 
 	abstract references(): readonly Root[]
 
 	abstract intersect<other>(
 		other: Root<other> // TODO: inferIntersection
-	): Root<this["infer"] & other> | Disjoint
+	): Root<t & other> | Disjoint
 
 	abstract keyof(): Root
 
