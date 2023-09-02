@@ -1,5 +1,5 @@
 import { Disjoint } from "../disjoint.js"
-import { Predicate } from "../types/predicate.js"
+import { BasePredicate } from "../types/predicate.js"
 import { TypeRoot } from "../types/type.js"
 import { composeConstraint } from "./constraint.js"
 
@@ -27,7 +27,7 @@ export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
 						key,
 						required,
 						// TODO: builtins.never()
-						value: new Predicate([])
+						value: new BasePredicate([])
 					}
 			  ]
 	}

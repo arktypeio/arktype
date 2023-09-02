@@ -1,20 +1,26 @@
 import type { extend } from "@arktype/util"
 import type { Disjoint } from "./disjoint.js"
-import type { ConstraintDefinitions } from "./traits/constraint.js"
-import type { RootDefinitions } from "./types/type.js"
+import type { Union } from "./main.js"
+import type { ConstraintsByKind } from "./traits/constraint.js"
+import type { TypeRootsByKind } from "./types/type.js"
 
-export type NodeDefinitionsByKind = extend<
-	RootDefinitions,
-	ConstraintDefinitions
->
+export type NodesByKind = extend<TypeRootsByKind, ConstraintsByKind>
 
-export type NodesByKind = {
-	[k in NodeKind]: NodeDefinitionsByKind[k]
-}
+export type NodeClass<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
-export type NodeKind = keyof NodeDefinitionsByKind
+export type NodeKind = keyof NodesByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
+
+type extractInput<t> = t extends Kinded
+	? Node<t["kind"]>["rule"] extends infer rule
+		? { [k in keyof rule]: extractInput<rule[k]> }
+		: never
+	: t
+
+type Z = extractInput<Union> //=>
+
+export const node = () => {}
 
 export abstract class Kinded {
 	abstract kind: NodeKind

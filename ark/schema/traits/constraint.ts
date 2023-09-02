@@ -25,7 +25,7 @@ export const ruleDefinitions = {
 	// morph: MorphNode
 }
 
-export type ConstraintDefinitions = {
+export type ConstraintsByKind = {
 	divisor: DivisorConstraint
 	domain: DomainConstraint
 	bound: BoundConstraint
@@ -36,10 +36,10 @@ export type ConstraintDefinitions = {
 	narrow: NarrowConstraint
 }
 
-export type ConstraintKind = keyof ConstraintDefinitions
+export type ConstraintKind = keyof ConstraintsByKind
 
 export type Constraint<kind extends ConstraintKind = ConstraintKind> =
-	ConstraintDefinitions[kind]
+	ConstraintsByKind[kind]
 
 export type ConstraintRule<kind extends ConstraintKind = ConstraintKind> =
 	Constraint<kind>["rule"]

@@ -13,7 +13,7 @@ import {
 } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { Predicate } from "./predicate.js"
+import type { BasePredicate } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -30,13 +30,13 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> =
 export type DiscriminatedCases<
 	kind extends DiscriminantKind = DiscriminantKind
 > = Readonly<{
-	[caseKey in CaseKey<kind>]: Discriminant | Predicate[]
+	[caseKey in CaseKey<kind>]: Discriminant | BasePredicate[]
 }>
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
 
 type CasesBySpecifier = {
-	[k in DiscriminantKey]?: Record<string, Predicate[]>
+	[k in DiscriminantKey]?: Record<string, BasePredicate[]>
 }
 
 export type DiscriminantKinds = {
@@ -59,10 +59,13 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
 	] as [path: string[], kind: DiscriminantKind]
 }
 
-const discriminantCache = new Map<readonly Predicate[], Discriminant | null>()
+const discriminantCache = new Map<
+	readonly BasePredicate[],
+	Discriminant | null
+>()
 
 export const discriminate = (
-	branches: readonly Predicate[]
+	branches: readonly BasePredicate[]
 ): Discriminant | null => {
 	if (branches.length < 2) {
 		return null

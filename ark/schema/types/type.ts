@@ -1,19 +1,17 @@
-import { compose } from "@arktype/util"
+import { AbstractableConstructor, compose } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { Fingerprinted, Kinded } from "../node.js"
 import { Describable } from "../traits/description.js"
 import { inferred } from "../utils.js"
-import { Predicate } from "./predicate.js"
+import { BasePredicate } from "./predicate.js"
 import { intersectBranches, Union } from "./union.js"
 
-export type RootDefinitions = {
-	predicate: Predicate
+export type TypeRootsByKind = {
+	predicate: BasePredicate
 	union: Union
 }
 
-export type TypeKind = keyof RootDefinitions
-
-export const node = () => {}
+export type TypeKind = keyof TypeRootsByKind
 
 export abstract class TypeRoot<t = unknown> extends compose(
 	Describable,
@@ -29,9 +27,9 @@ export abstract class TypeRoot<t = unknown> extends compose(
 
 	abstract keyof(): TypeRoot
 
-	branches: readonly Predicate[] = this.hasKind("union")
+	branches: readonly BasePredicate[] = this.hasKind("union")
 		? this.rule
-		: [this as {} as Predicate]
+		: [this as {} as BasePredicate]
 
 	allows() {
 		return true
@@ -40,8 +38,8 @@ export abstract class TypeRoot<t = unknown> extends compose(
 	intersect<other extends TypeRoot>(
 		other: other // TODO: inferIntersection
 	):
-		| ([this, other] extends [Predicate, Predicate]
-				? Predicate<this["infer"] & other["infer"]>
+		| ([this, other] extends [BasePredicate, BasePredicate]
+				? BasePredicate<this["infer"] & other["infer"]>
 				: TypeRoot<this["infer"] & other["infer"]>)
 		| Disjoint
 	intersect(
@@ -55,7 +53,7 @@ export abstract class TypeRoot<t = unknown> extends compose(
 			: new Union(resultBranches)
 	}
 
-	isUnknown(): this is Predicate<unknown> {
+	isUnknown(): this is BasePredicate<unknown> {
 		return this.hasKind("predicate") && this.constraints.length === 0
 	}
 
@@ -64,7 +62,7 @@ export abstract class TypeRoot<t = unknown> extends compose(
 	}
 
 	array() {
-		return new Predicate({})
+		return new BasePredicate({})
 	}
 
 	extends<other>(other: TypeRoot<other>): this is TypeRoot<other> {
