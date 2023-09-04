@@ -2,17 +2,18 @@ import type {
 	AbstractableConstructor,
 	evaluate,
 	extend,
-	inferDomain
+	listable
 } from "@arktype/util"
-import { compose, throwInternalError } from "@arktype/util"
+import { compose, hasDomain, hasKey, throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import type { Intersectable } from "../node.js"
 import { Fingerprinted, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Boundable } from "./bound.js"
 import { Describable } from "./description.js"
 import type { DivisorConstraint } from "./divisor.js"
 import { Divisible } from "./divisor.js"
-import type { DomainConstraint, NonEnumerableDomain } from "./domain.js"
+import type { DomainConstraint } from "./domain.js"
 import type { IdentityConstraint } from "./identity.js"
 import type { NarrowConstraint } from "./narrow.js"
 import { Narrowable } from "./narrow.js"
@@ -118,6 +119,36 @@ export type BaseConstraintParameters<
 			additionalAttributes
 	>
 ]
+
+// interface ConstraintSubclass<rule> {
+// 	new (input: ConstraintInput<rule>): BaseConstraint<rule, this>
+
+// 	intersectRules(l: rule, r: rule): rule | Disjoint
+// }
+
+// type ConstraintInput<rule> = rule | { rule: rule }
+
+// export abstract class BaseConstraint<
+// 	rule,
+// 	subclass extends ConstraintSubclass<rule>
+// > {
+// 	rule: rule
+
+// 	constructor(input: ConstraintInput<rule>) {
+// 		this.rule =
+// 			hasDomain(input, "object") && hasKey(input, "rule") ? input.rule : input
+// 	}
+// }
+
+// export class Divisor extends BaseConstraint<number, typeof Divisor> {
+// 	static intersectRules(l: number, r: number) {
+// 		return l
+// 	}
+// }
+
+// const z = new Divisor(5)
+
+// z.rule //?
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,
