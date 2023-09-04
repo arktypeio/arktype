@@ -1,11 +1,15 @@
+import { cached } from "@arktype/util"
+import type { TypeRoot } from "./types/type.js"
+import { union } from "./types/union.js"
+
 // // TODO: integrate with default scopes
-// export const builtins = {
-// 	never: cached(() => node([])),
-// 	unknown: cached(() => node({})),
-// 	nonVariadicArrayIndex: cached(() => node(arrayIndexInput())),
-// 	string: cached(() => node({ basis: "string" })),
-// 	array: cached(() => node({ basis: Array }))
-// } satisfies Record<string, () => TypeNode>
+export const builtins = {
+	never: cached(() => union()),
+	unknown: cached(() => node({})),
+	nonVariadicArrayIndex: cached(() => node(arrayIndexInput())),
+	string: cached(() => node({ basis: "string" })),
+	array: cached(() => node({ basis: Array }))
+} satisfies Record<string, () => TypeRoot>
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608

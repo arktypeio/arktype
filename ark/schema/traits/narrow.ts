@@ -1,8 +1,7 @@
 import { compileSerializedValue } from "../io/compile.js"
-import type { TraversalState } from "../main.js"
+import type { TraversalState } from "../io/traverse.js"
 import { composeConstraint } from "./constraint.js"
-import type { DomainConstraint, NonEnumerableDomain } from "./domain.js"
-import type { PropConstraint } from "./prop.js"
+import type { DomainConstraint } from "./domain.js"
 import type { PrototypeConstraint } from "./prototype.js"
 
 export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [

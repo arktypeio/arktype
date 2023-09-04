@@ -6,8 +6,7 @@ import type {
 	RefinementKind,
 	RefinementRules
 } from "../traits/constraint.js"
-import type { NonEnumerableDomain } from "../traits/domain.js"
-import { DomainConstraint } from "../traits/domain.js"
+import type { DomainConstraint, NonEnumerableDomain } from "../traits/domain.js"
 import type { IdentityConstraint } from "../traits/identity.js"
 import { Morphable } from "../traits/morph.js"
 import type { PrototypeConstraint } from "../traits/prototype.js"
@@ -46,21 +45,22 @@ export type MaybeParsedBasis = Constraint<BasisKind> | BasisInput | undefined
 export type parseBasis<basis extends MaybeParsedBasis> =
 	basis extends BasisInput ? instantiateBasisInput<basis> : basis
 
-export const predicate = <const basis extends MaybeParsedBasis>(
-	rule: { basis?: basis } & RulesForBasis<parseBasis<basis>>
-	// TODO: Fix
-) =>
-	new Predicate<
-		parseBasis<basis> extends { infer: infer t } ? t : unknown,
-		parseBasis<basis>
-	>({} as never)
+export type PredicateInput<basis extends MaybeParsedBasis = MaybeParsedBasis> =
+	{
+		basis?: basis
+	} & RulesForBasis<parseBasis<basis>>
 
-export class Predicate<
-	t = unknown,
-	basis extends Constraint<BasisKind> | undefined =
-		| Constraint<BasisKind>
-		| undefined
-> extends compose(TypeRoot, Morphable) {
+export type inferPredicateInput<input extends PredicateInput> =
+	input extends PredicateInput<infer basis>
+		? parseBasis<basis> extends { infer: infer t }
+			? t
+			: unknown
+		: never
+
+export const predicate = <const input extends PredicateInput>(rule: input) =>
+	new Predicate<inferPredicateInput<input>>(rule as never)
+
+export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
 	readonly kind = "predicate"
 	readonly constraints: flattenConstraints<this["rule"]>
 
@@ -68,7 +68,7 @@ export class Predicate<
 	declare [inferred]: t
 
 	constructor(
-		public rule: { basis?: basis } & RulesForBasis<basis>,
+		public rule: PredicateInput<any>,
 		public attributes?: {}
 	) {
 		super(rule, attributes)
@@ -106,64 +106,6 @@ export class Predicate<
 		return this
 	}
 }
-
-const z = new Predicate({ basis: new DomainConstraint("string") }).infer
-
-// export type PredicatesByKind = {
-// 	identity: IdentityPredicate
-// 	unknown: NarrowablePredicate
-// 	number: NumberPredicate
-// 	string: StringPredicate
-// 	object: ObjectPredicate
-// 	array: ArrayPredicate
-// 	date: DatePredicate
-// }
-
-// export type PredicateKind = keyof PredicatesByKind
-
-// export type Predicate<kind extends PredicateKind = PredicateKind> =
-// 	PredicatesByKind[kind]
-
-// export type PredicateRule<kind extends PredicateKind = PredicateKind> =
-// 	Predicate<kind>["rule"]
-
-// export class IdentityPredicate extends compose(BasePredicate) {
-// 	constructor(rule: { identity: IdentityConstraint }) {
-// 		super(rule, {})
-// 	}
-// }
-
-// export class NarrowablePredicate extends composePredicate(Narrowable) {}
-
-// export class NumberPredicate2 extends composeFromBasis<
-// 	DomainConstraint<"number">
-// >() {
-// 	foo() {
-// 		this.rule
-// 	}
-// }
-
-// const n = new NumberPredicate2(
-// 	{ basis: new DomainConstraint("number", {}) },
-// 	{}
-// )
-
-// export class NumberPredicate extends composePredicate(
-// 	Narrowable<"number">,
-// 	Divisible,
-// 	Boundable
-// ) {}
-
-// export class StringPredicate extends composePredicate(
-// 	Narrowable<"string">,
-// 	Matchable,
-// 	Boundable
-// ) {}
-
-// export class ObjectPredicate extends composePredicate(
-// 	Narrowable<"object">,
-// 	Instantiatable
-// ) {}
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

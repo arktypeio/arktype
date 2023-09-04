@@ -1,19 +1,20 @@
-import type { conform } from "@arktype/util"
+import type { conform, exact } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { Predicate } from "./predicate.js"
+import type {
+	inferPredicateInput,
+	MaybeParsedBasis,
+	parseBasis,
+	Predicate,
+	PredicateInput,
+	RulesForBasis
+} from "./predicate.js"
 import { TypeRoot } from "./type.js"
 
-export const union = <branches extends readonly unknown[]>() =>
-	new Union<never>([])
-
-export class Union<
-	t = unknown,
-	rule extends readonly Predicate[] = readonly Predicate[]
-> extends TypeRoot<t> {
+export class Union<t = unknown> extends TypeRoot<t> {
 	readonly kind = "union"
 
 	constructor(
-		public rule: rule,
+		public rule: readonly Predicate[],
 		public attributes?: {}
 	) {
 		super(rule, attributes)
@@ -227,44 +228,40 @@ export const intersectBranches = (
 
 // type inferPredicateDefinition<t> = t
 
-// export type inferBranches<branches extends readonly ConstraintInputs[]> = {
-// 	[i in keyof branches]: inferPredicateDefinition<branches[i]>
-// }[number]
+export const union = <branches extends readonly PredicateInput[]>(
+	...branches: conform<
+		branches,
+		validatedBranches<branches, extractBases<branches>>
+	>
+) => new Union<never>([])
 
-// export type inferTypeInput<input extends TypeInput> =
-// 	input extends readonly ConstraintInputs[]
-// 		? inferBranches<input>
-// 		: input extends ConstraintInputs
-// 		? inferPredicateDefinition<input>
-// 		: input extends BaseNode<infer t>
-// 		? t
-// 		: never
+export type inferBranches<branches extends readonly PredicateInput[]> = {
+	[i in keyof branches]: inferPredicateInput<branches[i]>
+}[number]
 
-// export type TypeInput = listable<ConstraintInputs>
+export type validatedBranches<
+	input extends readonly PredicateInput[],
+	bases extends readonly MaybeParsedBasis[]
+> = {
+	[i in keyof input]: exact<
+		input[i],
+		RulesForBasis<parseBasis<bases[i & keyof bases]>>
+	>
+}
 
-// export type validatedTypeNodeInput<
-// 	input extends List<ConstraintInputs>,
-// 	bases extends BasisInput[]
-// > = {
-// 	[i in keyof input]: exact<
-// 		input[i],
-// 		ConstraintInputs //<bases[i & keyof bases]>
-// 	>
-// }
-
-// export type extractBases<
-// 	branches,
-// 	result extends BasisInput[] = []
-// > = branches extends [infer head, ...infer tail]
-// 	? extractBases<
-// 			tail,
-// 			[
-// 				...result,
-// 				head extends {
-// 					basis: infer basis extends BasisInput
-// 				}
-// 					? basis
-// 					: BasisInput
-// 			]
-// 	  >
-// 	: result
+export type extractBases<
+	branches,
+	result extends MaybeParsedBasis[] = []
+> = branches extends [infer head, ...infer tail]
+	? extractBases<
+			tail,
+			[
+				...result,
+				head extends {
+					basis: infer basis extends MaybeParsedBasis
+				}
+					? basis
+					: MaybeParsedBasis
+			]
+	  >
+	: result
