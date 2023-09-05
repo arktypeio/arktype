@@ -1,7 +1,7 @@
 export abstract class Aliasable {
 	alias: string
 
-	constructor(rule: unknown, attributes?: { alias?: string }) {
-		this.alias = attributes?.alias ?? "generated"
+	constructor(schema: { alias?: string }) {
+		this.alias = schema.alias ?? "generated"
 	}
 }

@@ -3,7 +3,7 @@ export abstract class Describable {
 
 	abstract writeDefaultDescription(): string
 
-	constructor(rule: unknown, attributes?: { description?: string }) {
-		this.description = attributes?.description ?? this.writeDefaultDescription()
+	constructor(schema: { description?: string }) {
+		this.description = schema.description ?? this.writeDefaultDescription()
 	}
 }

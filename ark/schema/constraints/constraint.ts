@@ -1,12 +1,19 @@
 import type {
 	AbstractableConstructor,
+	entryOf,
 	evaluate,
 	extend,
 	listable
 } from "@arktype/util"
-import { compose, throwInternalError } from "@arktype/util"
+import {
+	compose,
+	DynamicBase,
+	fromEntries,
+	throwInternalError
+} from "@arktype/util"
 import { Describable } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"
+import type { NodeKind } from "../node.js"
 import { Hashable, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Boundable } from "./bound.js"
@@ -57,6 +64,47 @@ export type RuleIntersection<rule> = (
 	l: rule,
 	r: rule
 ) => readonly rule[] | Disjoint
+
+export type Schema<rule = unknown> = {
+	rule: rule
+}
+
+// const schemaFromEntries = <schema extends Schema>(
+// 	entries: readonly entryOf<schema>[]
+// ) => entries.reduce(
+// 	(result, )
+// 	, { } as schema)
+
+// // @ts-expect-error
+// export abstract class SchemaNode<
+// 	schema extends Schema = Schema
+// > extends DynamicBase<schema> {
+// 	abstract kind: NodeKind
+
+// 	constructor(public schema: schema) {
+// 		super(schema)
+// 	}
+
+// 	abstract writeDefaultDescription(): string
+// }
+
+// export abstract class ConstraintNode<
+// 	schema extends Schema = Schema
+// > extends SchemaNode<schema> {
+// 	abstract reduceWith(other: ConstraintNode): this["rule"] | Disjoint
+// }
+
+// export class Divisor extends SchemaNode<{ rule: number }> {
+// 	readonly kind = "divisibility"
+
+// 	hash() {
+// 		return ""
+// 	}
+
+// 	writeDefaultDescription() {
+// 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
+// 	}
+// }
 
 export const composeConstraint = <rule>(intersect: RuleIntersection<rule>) => {
 	return compose<[rule: 1, attributes: 1]>()(
