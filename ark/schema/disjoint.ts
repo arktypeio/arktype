@@ -7,8 +7,8 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { BoundRule } from "./traits/bound.js"
-import type { Constraint } from "./traits/constraint.js"
+import type { BoundRule } from "./constraints/bound.js"
+import type { Constraint } from "./constraints/constraint.js"
 import type { Predicate } from "./types/predicate.js"
 
 type DisjointKinds = {

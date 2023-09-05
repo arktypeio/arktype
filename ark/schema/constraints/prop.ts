@@ -11,8 +11,6 @@ export type PropRule = {
 	required: boolean
 }
 
-// TODO: builtins.never()
-
 export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
 	if (l.key instanceof TypeRoot || r.key instanceof TypeRoot) {
 		return [l, r]
@@ -30,6 +28,7 @@ export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
 					{
 						key,
 						required,
+						// TODO: builtins.never()
 						value: new Union([]) as never
 					}
 			  ]

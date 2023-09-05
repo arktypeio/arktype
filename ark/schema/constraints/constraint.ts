@@ -4,32 +4,20 @@ import type {
 	extend,
 	listable
 } from "@arktype/util"
-import { compose, hasDomain, hasKey, throwInternalError } from "@arktype/util"
+import { compose, throwInternalError } from "@arktype/util"
+import { Describable } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"
-import type { Intersectable } from "../node.js"
-import { Fingerprinted, Kinded } from "../node.js"
+import { Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Boundable } from "./bound.js"
-import { Describable } from "./description.js"
 import type { DivisorConstraint } from "./divisor.js"
 import { Divisible } from "./divisor.js"
-import type { DomainConstraint } from "./domain.js"
-import type { IdentityConstraint } from "./identity.js"
 import type { NarrowConstraint } from "./narrow.js"
 import { Narrowable } from "./narrow.js"
 import type { PropConstraint } from "./prop.js"
 import { Propable } from "./prop.js"
-import type { PrototypeConstraint } from "./prototype.js"
 import type { RegexConstraint } from "./regex.js"
 import { Matchable } from "./regex.js"
-
-export type BasesByKind = {
-	domain: DomainConstraint
-	identity: IdentityConstraint
-	prototype: PrototypeConstraint
-}
-
-export type BasisKind = keyof BasesByKind
 
 export type RefinementsByKind = {
 	divisor: DivisorConstraint
@@ -74,7 +62,7 @@ export const composeConstraint = <rule>(intersect: RuleIntersection<rule>) => {
 	return compose<[rule: 1, attributes: 1]>()(
 		Describable,
 		Kinded,
-		Fingerprinted,
+		Hashable,
 		class {
 			constructor(public rule: rule) {}
 
@@ -119,36 +107,6 @@ export type BaseConstraintParameters<
 			additionalAttributes
 	>
 ]
-
-// interface ConstraintSubclass<rule> {
-// 	new (input: ConstraintInput<rule>): BaseConstraint<rule, this>
-
-// 	intersectRules(l: rule, r: rule): rule | Disjoint
-// }
-
-// type ConstraintInput<rule> = rule | { rule: rule }
-
-// export abstract class BaseConstraint<
-// 	rule,
-// 	subclass extends ConstraintSubclass<rule>
-// > {
-// 	rule: rule
-
-// 	constructor(input: ConstraintInput<rule>) {
-// 		this.rule =
-// 			hasDomain(input, "object") && hasKey(input, "rule") ? input.rule : input
-// 	}
-// }
-
-// export class Divisor extends BaseConstraint<number, typeof Divisor> {
-// 	static intersectRules(l: number, r: number) {
-// 		return l
-// 	}
-// }
-
-// const z = new Divisor(5)
-
-// z.rule //?
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

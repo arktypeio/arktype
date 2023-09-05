@@ -5,28 +5,19 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseConstraintParameters } from "./constraint.js"
-import { composeConstraint } from "./constraint.js"
+import { composeConstraint } from "./basis.js"
 
-export class PrototypeConstraint<
-	rule extends AbstractableConstructor = AbstractableConstructor
-> extends composeConstraint<AbstractableConstructor>((l, r) =>
-	constructorExtends(l, r)
-		? [l]
-		: constructorExtends(r, l)
-		? [r]
-		: Disjoint.from("prototype", l, r)
+export class PrototypeConstraint extends composeConstraint<AbstractableConstructor>(
+	(l, r) =>
+		constructorExtends(l, r)
+			? [l]
+			: constructorExtends(r, l)
+			? [r]
+			: Disjoint.from("prototype", l, r)
 ) {
 	readonly kind = "prototype"
 
-	declare rule: rule
-	declare infer: InstanceType<rule>
-
-	constructor(...args: BaseConstraintParameters<rule>) {
-		super(...args)
-	}
-
-	hash(): string {
+	hash() {
 		return ""
 	}
 

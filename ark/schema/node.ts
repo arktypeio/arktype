@@ -1,6 +1,6 @@
-import type { extend } from "@arktype/util"
-import type { Disjoint } from "./disjoint.js"
-import type { ConstraintsByKind } from "./traits/constraint.js"
+import { type extend } from "@arktype/util"
+import type { ConstraintsByKind } from "./constraints/constraint.js"
+import { Disjoint } from "./disjoint.js"
 import type { TypeRootsByKind } from "./types/type.js"
 
 export type NodesByKind = extend<TypeRootsByKind, ConstraintsByKind>
@@ -19,16 +19,48 @@ export abstract class Kinded {
 	}
 }
 
-export abstract class Fingerprinted {
+export type NodeMethods<children> = {
+	parse: RuleParser<children>
+	serialize: RuleSerializer<children>
+	intersect: RuleIntersector<children>
+}
+
+abstract class Node2<def = unknown> {
+	readonly nodeId: string
+	protected ownConstructor = this.constructor as new (def: def) => this
+
+	constructor(public definition: def) {
+		this.nodeId = methods.serialize(definition)
+	}
+
+	protected abstract intersectRules(other: this): string
+
+	intersect(other: this): this | Disjoint {
+		if (this === other) {
+			return this
+		}
+		const intersection = methods.intersect(this.definition, other.definition)
+		return intersection instanceof Disjoint
+			? intersection
+			: new this.ownConstructor(intersection as never)
+	}
+}
+
+export abstract class Hashable {
 	id = this.hash()
 
 	abstract hash(): string
 
-	equals(other: Fingerprinted) {
+	equals(other: Hashable) {
 		return this.id === other.id
 	}
 }
 
-export abstract class Intersectable extends Fingerprinted {
-	abstract intersect(other: this): this | Disjoint
-}
+export type RuleIntersector<rule> = (
+	l: rule,
+	r: rule
+) => readonly rule[] | Disjoint
+
+export type RuleParser<rule, input = never> = (input: input | rule) => rule
+
+export type RuleSerializer<rule> = (rule: rule) => string

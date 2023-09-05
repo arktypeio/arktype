@@ -1,5 +1,5 @@
+import type { DomainConstraint } from "../bases/domain.js"
 import { composeConstraint } from "./constraint.js"
-import type { DomainConstraint } from "./domain.js"
 
 export class DivisorConstraint extends composeConstraint<number>((l, r) => [
 	(l * r) / greatestCommonDivisor(l, r)

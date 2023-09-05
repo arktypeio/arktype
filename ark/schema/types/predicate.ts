@@ -1,15 +1,13 @@
 import type { AbstractableConstructor, intersectUnion } from "@arktype/util"
 import { compose } from "@arktype/util"
+import { Morphable } from "../attributes/morph.js"
+import type { Basis } from "../bases/basis.js"
+import type { NonEnumerableDomain } from "../bases/domain.js"
+import type { IdentityConstraint } from "../bases/identity.js"
 import type {
-	BasisKind,
-	Constraint,
 	RefinementKind,
 	RefinementRules
-} from "../traits/constraint.js"
-import type { DomainConstraint, NonEnumerableDomain } from "../traits/domain.js"
-import type { IdentityConstraint } from "../traits/identity.js"
-import { Morphable } from "../traits/morph.js"
-import type { PrototypeConstraint } from "../traits/prototype.js"
+} from "../constraints/constraint.js"
 import { inferred } from "../utils.js"
 import { TypeRoot } from "./type.js"
 
@@ -19,14 +17,13 @@ type flattenConstraints<constraints> = readonly {
 		: constraints[k]
 }[]
 
-export type RulesForBasis<basis extends Constraint<BasisKind> | undefined> =
-	intersectUnion<
-		{
-			[k in RefinementKind]: basis extends RefinementRules[k]["basis"]
-				? Omit<RefinementRules[k], "basis">
-				: {}
-		}[RefinementKind]
-	>
+export type RulesForBasis<basis extends Basis | undefined> = intersectUnion<
+	{
+		[k in RefinementKind]: basis extends RefinementRules[k]["basis"]
+			? Omit<RefinementRules[k], "basis">
+			: {}
+	}[RefinementKind]
+>
 type BasisInput =
 	| AbstractableConstructor
 	| NonEnumerableDomain
@@ -40,7 +37,7 @@ type instantiateBasisInput<input extends BasisInput> = input extends {
 	? PrototypeConstraint<input>
 	: DomainConstraint<input & NonEnumerableDomain>
 
-export type MaybeParsedBasis = Constraint<BasisKind> | BasisInput | undefined
+export type MaybeParsedBasis = Basis | BasisInput | undefined
 
 export type parseBasis<basis extends MaybeParsedBasis> =
 	basis extends BasisInput ? instantiateBasisInput<basis> : basis

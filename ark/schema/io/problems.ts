@@ -16,8 +16,8 @@ import {
 	type BoundRule,
 	describeBound,
 	type NumericallyBoundableData
-} from "../traits/bound.js"
-import { domainDescriptions } from "../traits/domain.js"
+} from "../constraints/bound.js"
+import { domainDescriptions } from "../constraints/domain.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems

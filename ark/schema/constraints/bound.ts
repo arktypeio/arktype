@@ -1,7 +1,5 @@
 import { Disjoint } from "../disjoint.js"
 import { composeConstraint } from "./constraint.js"
-import type { DomainConstraint } from "./domain.js"
-import type { PrototypeConstraint } from "./prototype.js"
 
 export type BoundKind = "date" | "number"
 
