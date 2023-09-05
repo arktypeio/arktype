@@ -1,19 +1,7 @@
-import type {
-	AbstractableConstructor,
-	entryOf,
-	evaluate,
-	extend,
-	listable
-} from "@arktype/util"
-import {
-	compose,
-	DynamicBase,
-	fromEntries,
-	throwInternalError
-} from "@arktype/util"
+import type { AbstractableConstructor, evaluate, extend } from "@arktype/util"
+import { compose, throwInternalError } from "@arktype/util"
 import { Describable } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"
-import type { NodeKind } from "../node.js"
 import { Hashable, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Boundable } from "./bound.js"
@@ -68,6 +56,15 @@ export type RuleIntersection<rule> = (
 export type Schema<rule = unknown> = {
 	rule: rule
 }
+
+// type SchemaDefinition = { readonly [k: string]: "description" | null }
+
+// const composeNode = <def extends SchemaDefinition>(def: def) =>
+// 	({}) as {
+// 		[k in keyof def]: def[k] extends ConstraintKind ? Constraint<def[k]> : {}
+// 	}
+
+// composeNode({ description: "description" })
 
 // const schemaFromEntries = <schema extends Schema>(
 // 	entries: readonly entryOf<schema>[]
