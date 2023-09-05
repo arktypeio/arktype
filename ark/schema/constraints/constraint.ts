@@ -7,7 +7,7 @@ import type {
 import { compose, throwInternalError } from "@arktype/util"
 import { Describable } from "../attributes/description.js"
 import { Disjoint } from "../disjoint.js"
-import { Kinded } from "../node.js"
+import { Hashable, Kinded } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import { Boundable } from "./bound.js"
 import type { DivisorConstraint } from "./divisor.js"
