@@ -1,62 +1,95 @@
-import { throwInternalError } from "@arktype/util"
+import { isArray, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
 	Constraint,
-	ConstraintKind,
-	ConstraintsByKind
+	Refinement,
+	RefinementKind
 } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseSchema } from "../schema.js"
+import { BaseNode } from "../schema.js"
 import { inferred } from "../utils.js"
-import { TypeRoot } from "./type.js"
+import type { TypeRoot } from "./type.js"
 
-type flattenConstraints<constraints> = readonly {
-	[k in keyof constraints]: constraints[k] extends readonly unknown[]
-		? constraints[k][number]
-		: constraints[k]
-}[]
+type applicableRefinementKind<basis extends Basis | undefined> = {
+	[k in RefinementKind]: Refinement<k>["applicableTo"] extends (
+		allowedBasis: Basis | undefined
+	) => allowedBasis is basis
+		? k
+		: never
+}[RefinementKind]
 
-type constraintOf<basis extends Basis | undefined> = {
-	[k in ConstraintKind]: basis extends ConstraintRules[k]["basis"] ? k : {}
-}[ConstraintKind]
+export type PredicateInput<basis extends Basis = Basis> =
+	| readonly Refinement<applicableRefinementKind<undefined>>[]
+	| [
+			basis: basis,
+			...refinements: Refinement<applicableRefinementKind<basis>>[]
+	  ]
 
-export type PredicateInput<
-	basis extends Basis | undefined = Basis | undefined
-> = [basis, ...ConstraintsByKind[constraintOf<basis>]]
+export interface PredicateSchema<basis extends Basis = Basis>
+	extends BaseSchema {
+	constraints: PredicateInput<basis>
+}
 
-export class Predicate<t = unknown> extends TypeRoot {
+export class PredicateNode<t = unknown>
+	extends BaseNode<PredicateSchema, typeof PredicateNode>
+	implements TypeRoot<t>
+{
 	readonly kind = "predicate"
-	readonly constraints: flattenConstraints<this["rule"]>
 
 	declare infer: t;
 	declare [inferred]: t
 
-	constructor(
-		public rule: PredicateInput<any>,
-		public attributes?: {}
+	static parse<basis extends Basis>(
+		input: PredicateInput<basis> | PredicateSchema<basis>
 	) {
-		super(rule)
-		this.constraints = Object.values(this.rule).flat() as never
+		return isArray(input) ? { constraints: input } : input
 	}
 
-	writeDefaultDescription(): string {
+	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
+	}
+
+	allows() {
+		return true
+	}
+	//intersect, isUnknown, isNever, array, extends
+
+	intersect(other: TypeRoot) {
+		return this
+	}
+
+	extends(other: TypeRoot) {
+		return false
+	}
+
+	isUnknown(): this is PredicateNode<unknown> {
+		return this.constraints.length === 0
+	}
+
+	isNever() {
+		return false
 	}
 
 	references() {
 		return [this]
 	}
 
-	hash(): string {
+	array() {
+		return this as never
+	}
+
+	hash() {
 		return ""
 	}
 
 	constrain(constraint: Constraint): readonly Constraint[] | Disjoint {
 		const result: Constraint[] = []
 		let includesConstraint = false
-		for (let i = 0; i < this.rule.length; i++) {
-			const elementResult = constraint.reduce(this.rule[i])
+		for (let i = 0; i < this.constraints.length; i++) {
+			const elementResult = constraint.reduce(this.constraints[i])
 			if (elementResult === null) {
-				result.push(this.rule[i])
+				result.push(this.constraints[i])
 			} else if (elementResult instanceof Disjoint) {
 				return elementResult
 			} else if (!includesConstraint) {

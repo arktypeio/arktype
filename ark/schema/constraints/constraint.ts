@@ -2,6 +2,8 @@ import type { extend } from "@arktype/util"
 import { DynamicBase, throwInternalError } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { NodeKind } from "../node.js"
+import { BaseNode } from "../schema.js"
+import type { BaseSchema } from "../schema.js"
 import type { BoundNode } from "./bound.js"
 import type { DivisibilityNode } from "./divisor.js"
 import type { DomainNode } from "./domain.js"
@@ -38,18 +40,8 @@ export type ConstraintsByKind = extend<BasesByKind, RefinementsByKind>
 
 export type ConstraintKind = keyof ConstraintsByKind
 
-export type SchemasByKind = extend<BasesByKind, RefinementsByKind>
-
-export type SchemaKind = keyof SchemasByKind
-
-export type Schema<kind extends SchemaKind = SchemaKind> = SchemasByKind[kind]
-
 export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintsByKind[kind]
-
-export interface BaseSchema {
-	description?: string
-}
 
 export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
 	new (schema: InstanceType<subclass>["schema"]): BaseNode
@@ -57,24 +49,6 @@ export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
 	parse(
 		input: InstanceType<subclass>["schema"]
 	): InstanceType<subclass>["schema"]
-}
-
-// @ts-expect-error
-export abstract class BaseNode<
-	schema extends BaseSchema = BaseSchema,
-	node extends NodeSubclass<node> = NodeSubclass<any>
-> extends DynamicBase<schema> {
-	abstract kind: SchemaKind
-
-	constructor(public schema: schema) {
-		super(schema)
-	}
-
-	hasKind<kind extends SchemaKind>(kind: kind): this is Schema<kind> {
-		return this.kind === kind
-	}
-
-	abstract writeDefaultDescription(): string
 }
 
 export interface ConstraintSchema extends BaseSchema {}
@@ -94,7 +68,7 @@ export abstract class ConstraintNode<
 export abstract class RefinementNode<
 	schema extends ConstraintSchema,
 	node extends NodeSubclass<node>
-> extends BaseNode<schema> {
+> extends ConstraintNode<schema, node> {
 	abstract applicableTo(basis: Basis | undefined): basis is Basis | undefined
 }
 

@@ -1,7 +1,7 @@
 import type { SerializablePrimitive } from "@arktype/util"
 import { hasDomain, serializePrimitive } from "@arktype/util"
 import type { DomainNode } from "../constraints/domain.js"
-import type { Discriminant } from "../types/discriminate.js"
+import type { Discriminant } from "../roots/discriminate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 

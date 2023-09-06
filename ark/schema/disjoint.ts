@@ -12,7 +12,7 @@ import type { Constraint } from "./constraints/constraint.js"
 import type { DomainNode } from "./constraints/domain.js"
 import type { IdentityNode } from "./constraints/identity.js"
 import type { PrototypeNode } from "./constraints/prototype.js"
-import type { Predicate } from "./types/predicate.js"
+import type { PredicateNode } from "./roots/predicate.js"
 
 type DisjointKinds = {
 	domain?: {
@@ -41,8 +41,8 @@ type DisjointKinds = {
 				r: unknown
 		  }
 	union?: {
-		l: readonly Predicate[]
-		r: readonly Predicate[]
+		l: readonly PredicateNode[]
+		r: readonly PredicateNode[]
 	}
 }
 

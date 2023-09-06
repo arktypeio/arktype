@@ -1,6 +1,6 @@
 import { Disjoint } from "../disjoint.js"
-import { TypeRoot } from "../types/type.js"
-import { Union } from "../types/union.js"
+import { TypeRoot } from "../roots/type.js"
+import { Union } from "../roots/union.js"
 import type { Basis, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode, RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"

@@ -1,9 +1,9 @@
 import { type extend } from "@arktype/util"
 import type { ConstraintsByKind } from "./constraints/constraint.js"
 import type { Disjoint } from "./disjoint.js"
-import type { TypeRootsByKind } from "./types/type.js"
+import type { RootsByKind } from "./roots/type.js"
 
-export type NodesByKind = extend<TypeRootsByKind, ConstraintsByKind>
+export type NodesByKind = extend<RootsByKind, ConstraintsByKind>
 
 export type NodeClass<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 

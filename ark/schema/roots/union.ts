@@ -1,12 +1,12 @@
 import { Disjoint } from "../disjoint.js"
-import type { Predicate } from "./predicate.js"
+import type { PredicateNode } from "./predicate.js"
 import { TypeRoot } from "./type.js"
 
 export class Union<t = unknown> extends TypeRoot<t> {
 	readonly kind = "union"
 
 	constructor(
-		public rule: readonly Predicate[],
+		public rule: readonly PredicateNode[],
 		public attributes?: {}
 	) {
 		super(rule, attributes)
@@ -38,7 +38,7 @@ export class Union<t = unknown> extends TypeRoot<t> {
 // 	return discriminate(this.branches)
 // }
 
-export const reduceBranches = (branches: Predicate[]) => {
+export const reduceBranches = (branches: PredicateNode[]) => {
 	if (branches.length < 2) {
 		return branches
 	}
@@ -68,23 +68,23 @@ export const reduceBranches = (branches: Predicate[]) => {
 }
 
 export const intersectBranches = (
-	l: readonly Predicate[],
-	r: readonly Predicate[]
-): readonly Predicate[] => {
+	l: readonly PredicateNode[],
+	r: readonly PredicateNode[]
+): readonly PredicateNode[] => {
 	// Branches that are determined to be a subtype of an opposite branch are
 	// guaranteed to be a member of the final reduced intersection, so long as
 	// each individual set of branches has been correctly reduced to exclude
 	// redundancies.
-	const finalBranches: Predicate[] = []
+	const finalBranches: PredicateNode[] = []
 	// Each rBranch is initialized to an empty array to which distinct
 	// intersections will be appended. If the rBranch is identified as a
 	// subtype or equal of any lBranch, the corresponding value should be
 	// set to null so we can avoid including previous/future intersections
 	// in the final result.
-	const candidatesByR: (Predicate[] | null)[] = r.map(() => [])
+	const candidatesByR: (PredicateNode[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
 		const lBranch = l[lIndex]
-		let currentCandidateByR: { [rIndex in number]: Predicate } = {}
+		let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			const rBranch = r[rIndex]
 			if (!candidatesByR[rIndex]) {
