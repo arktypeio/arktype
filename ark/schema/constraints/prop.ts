@@ -10,8 +10,15 @@ export interface PropSchema extends ConstraintSchema {
 	required: boolean
 }
 
-export class PropConstraint extends ConstraintNode<PropSchema> {
+export class PropConstraint extends ConstraintNode<
+	PropSchema,
+	typeof PropConstraint
+> {
 	readonly kind = "prop"
+
+	static parse(input: PropSchema) {
+		return input
+	}
 
 	hash() {
 		return ""

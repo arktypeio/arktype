@@ -8,12 +8,20 @@ import { Disjoint } from "../disjoint.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export interface PrototypeSchema extends ConstraintSchema {
-	rule: AbstractableConstructor
+export interface PrototypeSchema<
+	constructor extends AbstractableConstructor = AbstractableConstructor
+> extends ConstraintSchema {
+	rule: constructor
 }
 
-export class PrototypeNode extends ConstraintNode<PrototypeSchema> {
+export class PrototypeNode<
+	constructor extends AbstractableConstructor = AbstractableConstructor
+> extends ConstraintNode<PrototypeSchema<constructor>, typeof PrototypeNode> {
 	readonly kind = "prototype"
+
+	static parse(input: AbstractableConstructor | PrototypeSchema) {
+		return typeof input === "function" ? { rule: input } : input
+	}
 
 	hash() {
 		return this.rule
@@ -32,7 +40,8 @@ export class PrototypeNode extends ConstraintNode<PrototypeSchema> {
 			: constructorExtends(this.rule, other.rule)
 			? this
 			: constructorExtends(other.rule, this.rule)
-			? other
+			? // this cast is safe since we know other's constructor extends this one
+			  (other as PrototypeNode<constructor>)
 			: Disjoint.from("prototype", this, other)
 	}
 }

@@ -6,7 +6,7 @@ import type { BoundNode } from "./bound.js"
 import type { DivisibilityNode } from "./divisor.js"
 import type { DomainNode } from "./domain.js"
 import type { IdentityNode } from "./identity.js"
-import type { NarrowConstraint } from "./narrow.js"
+import type { NarrowNode } from "./narrow.js"
 import type { PropConstraint } from "./prop.js"
 import type { PrototypeNode } from "./prototype.js"
 import type { PatternNode } from "./regex.js"
@@ -26,7 +26,7 @@ export type RefinementsByKind = {
 	bound: BoundNode
 	regex: PatternNode
 	prop: PropConstraint
-	narrow: NarrowConstraint
+	narrow: NarrowNode
 }
 
 export type RefinementKind = keyof RefinementsByKind
@@ -51,9 +51,18 @@ export interface BaseSchema {
 	description?: string
 }
 
+export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
+	new (schema: InstanceType<subclass>["schema"]): BaseNode
+
+	parse(
+		input: InstanceType<subclass>["schema"]
+	): InstanceType<subclass>["schema"]
+}
+
 // @ts-expect-error
 export abstract class BaseNode<
-	schema extends BaseSchema = BaseSchema
+	schema extends BaseSchema = BaseSchema,
+	node extends NodeSubclass<node> = NodeSubclass<any>
 > extends DynamicBase<schema> {
 	abstract kind: SchemaKind
 
@@ -71,7 +80,8 @@ export abstract class BaseNode<
 export interface ConstraintSchema extends BaseSchema {}
 
 export abstract class ConstraintNode<
-	schema extends ConstraintSchema = ConstraintSchema
+	schema extends ConstraintSchema,
+	node extends NodeSubclass<node>
 > extends BaseNode<schema> {
 	reduce(other: Constraint): Constraint | Disjoint | null {
 		return this as never
@@ -79,17 +89,6 @@ export abstract class ConstraintNode<
 
 	// TODO: only own keys
 	abstract reduceWith(other: Constraint): schema | null | Disjoint
-}
-
-export abstract class BasisNode<
-	schema extends {} = {}
-> extends BaseNode<schema> {
-	reduce(other: ConstraintNode): Constraint | Disjoint | null {
-		return this as never
-	}
-
-	// TODO: only own keys
-	abstract reduceWith(other: ConstraintNode): schema | null | Disjoint
 }
 
 // export const assertAllowsConstraint = (

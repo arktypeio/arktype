@@ -11,8 +11,12 @@ export interface DomainSchema<
 
 export class DomainNode<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends ConstraintNode<DomainSchema<domain>> {
+> extends ConstraintNode<DomainSchema<domain>, typeof DomainNode> {
 	readonly kind = "domain"
+
+	static parse(input: NonEnumerableDomain | DomainSchema) {
+		return typeof input === "string" ? { rule: input } : input
+	}
 
 	hash() {
 		return this.rule

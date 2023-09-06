@@ -7,8 +7,15 @@ export interface NarrowSchema extends ConstraintSchema {
 	rule: Narrow
 }
 
-export class NarrowConstraint extends ConstraintNode<NarrowSchema> {
+export class NarrowNode extends ConstraintNode<
+	NarrowSchema,
+	typeof NarrowNode
+> {
 	readonly kind = "narrow"
+
+	static parse(input: Narrow | NarrowSchema) {
+		return typeof input === "function" ? { rule: input } : input
+	}
 
 	hash() {
 		return compileSerializedValue(this.rule)

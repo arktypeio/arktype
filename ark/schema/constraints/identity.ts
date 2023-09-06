@@ -8,8 +8,15 @@ export interface IdentitySchema extends ConstraintSchema {
 	rule: unknown
 }
 
-export class IdentityNode extends ConstraintNode<IdentitySchema> {
+export class IdentityNode extends ConstraintNode<
+	IdentitySchema,
+	typeof IdentityNode
+> {
 	readonly kind = "identity"
+
+	static parse(input: IdentitySchema) {
+		return input
+	}
 
 	hash() {
 		return compileSerializedValue(this.rule)

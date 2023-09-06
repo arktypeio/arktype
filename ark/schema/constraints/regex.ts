@@ -7,8 +7,22 @@ export interface PatternSchema extends ConstraintSchema {
 	flags: string
 }
 
-export class PatternNode extends ConstraintNode<PatternSchema> {
+export class PatternNode extends ConstraintNode<
+	PatternSchema,
+	typeof PatternNode
+> {
 	readonly kind = "regex"
+
+	static parse(input: RegexLiteral | RegExp | PatternSchema) {
+		return typeof input === "string"
+			? parseRegexLiteral(input)
+			: input instanceof RegExp
+			? {
+					source: input.source,
+					flags: input.flags
+			  }
+			: input
+	}
 
 	instance = new RegExp(this.source, this.flags)
 	literal = serializeRegex(this.instance)
@@ -37,7 +51,7 @@ const regexLiteralMatcher = /^\/(.+)\/([a-z]*)$/
 // export const patternConstraint = (input: PatternInput): PatternDefinition =>
 // 	typeof input === "string" ? parseRegexLiteral(input) : input
 
-export const parseRegexLiteral = (literal: string) => {
+export const parseRegexLiteral = (literal: string): PatternSchema => {
 	const match = regexLiteralMatcher.exec(literal)
 	if (!match || !match[1]) {
 		return throwParseError(

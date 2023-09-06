@@ -19,8 +19,12 @@ export interface BoundSchema<limitKind extends LimitKind = LimitKind>
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<BoundSchema<limitKind>> {
+> extends ConstraintNode<BoundSchema<limitKind>, typeof BoundNode> {
 	readonly kind = "bound"
+
+	static parse(input: BoundSchema) {
+		return input
+	}
 
 	hash() {
 		return ""

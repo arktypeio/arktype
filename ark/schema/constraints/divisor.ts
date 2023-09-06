@@ -6,8 +6,15 @@ export interface DivisibilitySchema extends ConstraintSchema {
 	divisor: number
 }
 
-export class DivisibilityNode extends ConstraintNode<DivisibilitySchema> {
+export class DivisibilityNode extends ConstraintNode<
+	DivisibilitySchema,
+	typeof DivisibilityNode
+> {
 	readonly kind = "divisor"
+
+	static parse(input: number | DivisibilitySchema) {
+		return typeof input === "number" ? { divisor: input } : input
+	}
 
 	applicableTo(basis: Basis): basis is DomainNode<"number"> {
 		return basis.hasKind("domain") && basis.rule === "number"
