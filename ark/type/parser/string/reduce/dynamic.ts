@@ -1,4 +1,4 @@
-import type { BoundNode, TypeRoot } from "@arktype/schema"
+import type { BoundNode, TypeNode } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
@@ -17,15 +17,15 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: BoundNode<"min">
-	"&"?: TypeRoot
-	"|"?: TypeRoot
+	"&"?: TypeNode
+	"|"?: TypeNode
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: TypeRoot | undefined
+	root: TypeNode | undefined
 	branches: BranchState = {
 		prefixes: []
 	}
@@ -53,11 +53,11 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<TypeRoot["constrain"]>) {
+	constrainRoot(...args: Parameters<TypeNode["constrain"]>) {
 		this.root = this.root!.constrain(...args)
 	}
 
-	setRoot(root: TypeRoot) {
+	setRoot(root: TypeNode) {
 		this.root = root
 	}
 

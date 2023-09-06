@@ -1,4 +1,4 @@
-import type { CastTo, TypeRoot } from "@arktype/schema"
+import type { CastTo, TypeNode } from "@arktype/schema"
 import { serializeRegex } from "@arktype/schema"
 import type {
 	defined,
@@ -32,7 +32,7 @@ import type { BaseCompletions, inferString } from "./string/string.js"
 import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
 import { parseTuple } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): TypeRoot => {
+export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case "Object":

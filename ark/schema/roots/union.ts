@@ -1,27 +1,42 @@
+import { isArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { PredicateNode } from "./predicate.js"
-import { TypeRoot } from "./type.js"
+import type { BaseSchema } from "../schema.js"
+import type { PredicateInput } from "./predicate.js"
+import { PredicateNode } from "./predicate.js"
+import { TypeNode } from "./type.js"
 
-export class Union<t = unknown> extends TypeRoot<t> {
+export interface UnionSchema extends BaseSchema {
+	branches: readonly PredicateNode[]
+}
+
+export class UnionNode<t = unknown> extends TypeNode<
+	t,
+	UnionSchema,
+	typeof UnionNode
+> {
 	readonly kind = "union"
 
-	constructor(
-		public rule: readonly PredicateNode[],
-		public attributes?: {}
-	) {
-		super(rule, attributes)
+	static parse(input: readonly PredicateInput[] | UnionSchema) {
+		return isArray(input)
+			? {
+					branches: input.map((predicateInput) =>
+						// TODO: fix
+						PredicateNode.parse(predicateInput)
+					) as PredicateNode[]
+			  }
+			: input
 	}
 
 	writeDefaultDescription() {
-		return this.rule.length === 0 ? "never" : this.rule.join(" or ")
+		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
 	}
 
-	hash(): string {
+	hash() {
 		return ""
 	}
 
 	references() {
-		return this.rule.flatMap((branch) => branch.references())
+		return this.branches.flatMap((branch) => branch.references())
 	}
 
 	keyof() {

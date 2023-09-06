@@ -9,7 +9,7 @@ import { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
 import { BaseNode } from "../schema.js"
 import { inferred } from "../utils.js"
-import type { TypeRoot } from "./type.js"
+import { TypeNode } from "./type.js"
 
 type applicableRefinementKind<basis extends Basis | undefined> = {
 	[k in RefinementKind]: Refinement<k>["applicableTo"] extends (
@@ -31,10 +31,11 @@ export interface PredicateSchema<basis extends Basis = Basis>
 	constraints: PredicateInput<basis>
 }
 
-export class PredicateNode<t = unknown>
-	extends BaseNode<PredicateSchema, typeof PredicateNode>
-	implements TypeRoot<t>
-{
+export class PredicateNode<t = unknown> extends TypeNode<
+	t,
+	PredicateSchema,
+	typeof PredicateNode
+> {
 	readonly kind = "predicate"
 
 	declare infer: t;
@@ -46,6 +47,8 @@ export class PredicateNode<t = unknown>
 		return isArray(input) ? { constraints: input } : input
 	}
 
+	branches = [this]
+
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
 	}
@@ -55,11 +58,11 @@ export class PredicateNode<t = unknown>
 	}
 	//intersect, isUnknown, isNever, array, extends
 
-	intersect(other: TypeRoot) {
+	intersect(other: TypeNode) {
 		return this
 	}
 
-	extends(other: TypeRoot) {
+	extends(other: TypeNode) {
 		return false
 	}
 

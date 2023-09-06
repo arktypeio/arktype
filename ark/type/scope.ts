@@ -1,4 +1,4 @@
-import type { CastTo, ProblemCode, TypeRoot } from "@arktype/schema"
+import type { CastTo, ProblemCode, TypeNode } from "@arktype/schema"
 import type { Dict, evaluate, Hkt, isAny, nominal } from "@arktype/util"
 import {
 	domainOf,
@@ -224,10 +224,10 @@ export type ParseContext = {
 	baseName: string
 	path: string[]
 	scope: Scope
-	args: Record<string, TypeRoot> | undefined
+	args: Record<string, TypeNode> | undefined
 }
 
-type MergedResolutions = Record<string, TypeRoot | Generic>
+type MergedResolutions = Record<string, TypeNode | Generic>
 
 type ParseContextInput = Pick<ParseContext, "baseName" | "args">
 
@@ -237,7 +237,7 @@ export class Scope<r extends Resolutions = any> {
 
 	config: TypeConfig
 
-	private parseCache: Record<string, TypeRoot> = {}
+	private parseCache: Record<string, TypeNode> = {}
 	private resolutions: MergedResolutions
 
 	/** The set of names defined at the root-level of the scope mapped to their
@@ -245,7 +245,7 @@ export class Scope<r extends Resolutions = any> {
 	aliases: Record<string, unknown> = {}
 	private exportedNames: exportedName<r>[] = []
 	private ambient: Scope | null
-	private references: TypeRoot[] = []
+	private references: TypeNode[] = []
 
 	constructor(def: Dict, config: ScopeConfig) {
 		for (const k in def) {
@@ -321,7 +321,7 @@ export class Scope<r extends Resolutions = any> {
 		return this.parse(def, this.createRootContext(input))
 	}
 
-	parse(def: unknown, ctx: ParseContext): TypeRoot {
+	parse(def: unknown, ctx: ParseContext): TypeNode {
 		if (typeof def === "string") {
 			if (ctx.args !== undefined) {
 				// we can only rely on the cache if there are no contextual
@@ -338,7 +338,7 @@ export class Scope<r extends Resolutions = any> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	maybeResolve(name: string): TypeRoot | Generic | undefined {
+	maybeResolve(name: string): TypeNode | Generic | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -388,7 +388,7 @@ export class Scope<r extends Resolutions = any> {
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): TypeRoot | undefined {
+	maybeResolveNode(name: string): TypeNode | undefined {
 		const result = this.maybeResolve(name)
 		return hasArkKind(result, "node") ? result : undefined
 	}
@@ -410,7 +410,7 @@ export class Scope<r extends Resolutions = any> {
 
 	compile() {
 		this.export()
-		const references: Set<TypeRoot> = new Set()
+		const references: Set<TypeNode> = new Set()
 		for (const k in this.exportedResolutions!) {
 			const resolution = this.exportedResolutions[k]
 			if (hasArkKind(resolution, "node") && !references.has(resolution)) {

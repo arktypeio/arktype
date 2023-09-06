@@ -1,14 +1,14 @@
 import { Disjoint } from "../disjoint.js"
-import { TypeRoot } from "../roots/type.js"
-import { Union } from "../roots/union.js"
+import { TypeNode } from "../roots/type.js"
+import { UnionNode } from "../roots/union.js"
 import type { Basis, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode, RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 
 export interface PropSchema extends ConstraintSchema {
-	key: string | symbol | TypeRoot
-	value: TypeRoot
+	key: string | symbol | TypeNode
+	value: TypeNode
 	required: boolean
 }
 
@@ -41,7 +41,7 @@ export class PropConstraint extends RefinementNode<
 	}
 
 	reduceWith(other: PropConstraint) {
-		if (this.key instanceof TypeRoot || other.key instanceof TypeRoot) {
+		if (this.key instanceof TypeNode || other.key instanceof TypeNode) {
 			return null
 		}
 		if (this.key !== other.key) {
@@ -57,7 +57,7 @@ export class PropConstraint extends RefinementNode<
 						key,
 						required,
 						// TODO: builtins.never()
-						value: new Union([]) as never
+						value: new UnionNode({ branches: [] }) as never
 				  }
 		}
 		return {
