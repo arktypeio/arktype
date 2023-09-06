@@ -5,8 +5,9 @@ import type { Basis } from "../bases/basis.js"
 import type { NonEnumerableDomain } from "../bases/domain.js"
 import type { IdentityConstraint } from "../bases/identity.js"
 import type {
-	RefinementKind,
-	RefinementRules
+	ConstraintKind,
+	ConstraintRules,
+	ConstraintsByKind
 } from "../constraints/constraint.js"
 import { inferred } from "../utils.js"
 import { TypeRoot } from "./type.js"
@@ -17,45 +18,13 @@ type flattenConstraints<constraints> = readonly {
 		: constraints[k]
 }[]
 
-export type RulesForBasis<basis extends Basis | undefined> = intersectUnion<
-	{
-		[k in RefinementKind]: basis extends RefinementRules[k]["basis"]
-			? Omit<RefinementRules[k], "basis">
-			: {}
-	}[RefinementKind]
->
-type BasisInput =
-	| AbstractableConstructor
-	| NonEnumerableDomain
-	| { is: unknown }
+type constraintOf<basis extends Basis | undefined> = {
+	[k in ConstraintKind]: basis extends ConstraintRules[k]["basis"] ? k : {}
+}[ConstraintKind]
 
-type instantiateBasisInput<input extends BasisInput> = input extends {
-	is: infer rule
-}
-	? IdentityConstraint<rule>
-	: input extends AbstractableConstructor
-	? PrototypeConstraint<input>
-	: DomainConstraint<input & NonEnumerableDomain>
-
-export type MaybeParsedBasis = Basis | BasisInput | undefined
-
-export type parseBasis<basis extends MaybeParsedBasis> =
-	basis extends BasisInput ? instantiateBasisInput<basis> : basis
-
-export type PredicateInput<basis extends MaybeParsedBasis = MaybeParsedBasis> =
-	{
-		basis?: basis
-	} & RulesForBasis<parseBasis<basis>>
-
-export type inferPredicateInput<input extends PredicateInput> =
-	input extends PredicateInput<infer basis>
-		? parseBasis<basis> extends { infer: infer t }
-			? t
-			: unknown
-		: never
-
-export const predicate = <const input extends PredicateInput>(rule: input) =>
-	new Predicate<inferPredicateInput<input>>(rule as never)
+export type PredicateInput<
+	basis extends Basis | undefined = Basis | undefined
+> = [basis, ...ConstraintsByKind[constraintOf<basis>]]
 
 export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
 	readonly kind = "predicate"

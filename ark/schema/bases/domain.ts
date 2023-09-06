@@ -1,8 +1,6 @@
 import type { Domain } from "@arktype/util"
+import { composeConstraint } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import { composeConstraint } from "./basis.js"
-
-export const domainConstraint = () => {}
 
 export class DomainConstraint extends composeConstraint<NonEnumerableDomain>(
 	(l, r) => Disjoint.from("domain", l, r)

@@ -1,20 +1,13 @@
-import type { AbstractableConstructor, evaluate, extend } from "@arktype/util"
-import { compose, throwInternalError } from "@arktype/util"
-import { Describable } from "../attributes/description.js"
+import { DynamicBase, throwInternalError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { Hashable, Kinded } from "../node.js"
+import type { NodeKind } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
-import { Boundable } from "./bound.js"
 import type { DivisorConstraint } from "./divisor.js"
-import { Divisible } from "./divisor.js"
 import type { NarrowConstraint } from "./narrow.js"
-import { Narrowable } from "./narrow.js"
 import type { PropConstraint } from "./prop.js"
-import { Propable } from "./prop.js"
 import type { RegexConstraint } from "./regex.js"
-import { Matchable } from "./regex.js"
 
-export type RefinementsByKind = {
+export type ConstraintsByKind = {
 	divisor: DivisorConstraint
 	bound: BoundConstraint
 	regex: RegexConstraint
@@ -22,136 +15,58 @@ export type RefinementsByKind = {
 	narrow: NarrowConstraint
 }
 
-export type RefinementKind = keyof RefinementsByKind
-
-export const refinementTraits = {
-	divisor: Divisible,
-	bound: Boundable,
-	regex: Matchable,
-	prop: Propable,
-	narrow: Narrowable
-} satisfies Record<RefinementKind, AbstractableConstructor>
-
-export type RefinementTraits = typeof refinementTraits
-
-export type RefinementRules = {
-	[k in RefinementKind]: ConstructorParameters<RefinementTraits[k]>[0]
-}
-
-export type ConstraintsByKind = extend<BasesByKind, RefinementsByKind>
-
 export type ConstraintKind = keyof ConstraintsByKind
-
-export type Constraint<kind extends ConstraintKind = ConstraintKind> =
-	ConstraintsByKind[kind]
-
-export type ConstraintRule<kind extends ConstraintKind = ConstraintKind> =
-	Constraint<kind>["rule"]
-
-export type RuleIntersection<rule> = (
-	l: rule,
-	r: rule
-) => readonly rule[] | Disjoint
 
 export type Schema<rule = unknown> = {
 	rule: rule
 }
 
-// type SchemaDefinition = { readonly [k: string]: "description" | null }
+// @ts-expect-error
+export abstract class SchemaNode<
+	schema extends Schema = Schema
+> extends DynamicBase<schema> {
+	abstract kind: NodeKind
 
-// const composeNode = <def extends SchemaDefinition>(def: def) =>
-// 	({}) as {
-// 		[k in keyof def]: def[k] extends ConstraintKind ? Constraint<def[k]> : {}
-// 	}
+	constructor(public schema: schema) {
+		super(schema)
+	}
 
-// composeNode({ description: "description" })
-
-// const schemaFromEntries = <schema extends Schema>(
-// 	entries: readonly entryOf<schema>[]
-// ) => entries.reduce(
-// 	(result, )
-// 	, { } as schema)
-
-// // @ts-expect-error
-// export abstract class SchemaNode<
-// 	schema extends Schema = Schema
-// > extends DynamicBase<schema> {
-// 	abstract kind: NodeKind
-
-// 	constructor(public schema: schema) {
-// 		super(schema)
-// 	}
-
-// 	abstract writeDefaultDescription(): string
-// }
-
-// export abstract class ConstraintNode<
-// 	schema extends Schema = Schema
-// > extends SchemaNode<schema> {
-// 	abstract reduceWith(other: ConstraintNode): this["rule"] | Disjoint
-// }
-
-// export class Divisor extends SchemaNode<{ rule: number }> {
-// 	readonly kind = "divisibility"
-
-// 	hash() {
-// 		return ""
-// 	}
-
-// 	writeDefaultDescription() {
-// 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
-// 	}
-// }
-
-export const composeConstraint = <rule>(intersect: RuleIntersection<rule>) => {
-	return compose<[rule: 1, attributes: 1]>()(
-		Describable,
-		Kinded,
-		Hashable,
-		class {
-			constructor(public rule: rule) {}
-
-			apply(to: readonly Constraint[]): readonly Constraint[] | Disjoint {
-				const result: Constraint[] = []
-				let includesConstraint = false
-				for (let i = 0; i < to.length; i++) {
-					const elementResult = this.reduce(to[i])
-					if (elementResult === null) {
-						result.push(to[i])
-					} else if (elementResult instanceof Disjoint) {
-						return elementResult
-					} else if (!includesConstraint) {
-						result.push(elementResult)
-						includesConstraint = true
-					} else if (!result.includes(elementResult)) {
-						return throwInternalError(
-							`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
-						)
-					}
-				}
-				if (!includesConstraint) {
-					result.push(this as never)
-				}
-				return result
-			}
-
-			reduce(other: Constraint) {
-				return this as {} as Constraint
-			}
-		}
-	)
+	abstract writeDefaultDescription(): string
 }
 
-export type BaseConstraintParameters<
-	rule,
-	additionalAttributes = {}
-> = readonly [
-	rule: rule,
-	attributes?: evaluate<
-		ConstructorParameters<ReturnType<typeof composeConstraint>>[1] &
-			additionalAttributes
-	>
-]
+export abstract class ConstraintNode<
+	schema extends Schema = Schema
+> extends SchemaNode<schema> {
+	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
+		const result: ConstraintNode[] = []
+		let includesConstraint = false
+		for (let i = 0; i < to.length; i++) {
+			const elementResult = this.reduce(to[i])
+			if (elementResult === null) {
+				result.push(to[i])
+			} else if (elementResult instanceof Disjoint) {
+				return elementResult
+			} else if (!includesConstraint) {
+				result.push(elementResult)
+				includesConstraint = true
+			} else if (!result.includes(elementResult)) {
+				return throwInternalError(
+					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+				)
+			}
+		}
+		if (!includesConstraint) {
+			result.push(this as never)
+		}
+		return result
+	}
+
+	reduce(other: ConstraintNode) {
+		return this as {} as ConstraintNode
+	}
+
+	abstract reduceWith(other: ConstraintNode): this["rule"] | null | Disjoint
+}
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

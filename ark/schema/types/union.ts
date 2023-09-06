@@ -1,13 +1,5 @@
-import type { conform, exact } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type {
-	inferPredicateInput,
-	MaybeParsedBasis,
-	parseBasis,
-	Predicate,
-	PredicateInput,
-	RulesForBasis
-} from "./predicate.js"
+import type { Predicate } from "./predicate.js"
 import { TypeRoot } from "./type.js"
 
 export class Union<t = unknown> extends TypeRoot<t> {

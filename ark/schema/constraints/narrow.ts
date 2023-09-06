@@ -1,29 +1,21 @@
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import { composeConstraint } from "./constraint.js"
-import type { DomainConstraint } from "./domain.js"
-import type { PrototypeConstraint } from "./prototype.js"
+import { ConstraintNode } from "./constraint.js"
 
-export class NarrowConstraint extends composeConstraint<Narrow>((l, r) => [
-	l,
-	r
-]) {
+export class NarrowConstraint extends ConstraintNode<{ rule: Narrow }> {
 	readonly kind = "narrow"
 
-	hash(): string {
+	hash() {
 		return compileSerializedValue(this.rule)
 	}
 
 	writeDefaultDescription() {
 		return `valid according to ${this.rule.name}`
 	}
-}
 
-export class Narrowable {
-	constructor(rule: {
-		basis: DomainConstraint | PrototypeConstraint | undefined
-		narrows?: readonly NarrowConstraint[]
-	}) {}
+	reduceWith() {
+		return null
+	}
 }
 
 // TODO: allow changed order to be the same type

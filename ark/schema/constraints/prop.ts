@@ -1,9 +1,8 @@
+import type { Basis } from "../bases/basis.js"
 import { Disjoint } from "../disjoint.js"
 import { TypeRoot } from "../types/type.js"
 import { Union } from "../types/union.js"
-import { composeConstraint } from "./constraint.js"
-import type { DomainConstraint } from "./domain.js"
-import type { PrototypeConstraint } from "./prototype.js"
+import { ConstraintNode } from "./constraint.js"
 
 export type PropRule = {
 	key: string | symbol | TypeRoot
@@ -11,36 +10,7 @@ export type PropRule = {
 	required: boolean
 }
 
-export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
-	if (l.key instanceof TypeRoot || r.key instanceof TypeRoot) {
-		return [l, r]
-	}
-	if (l.key !== r.key) {
-		return [l, r]
-	}
-	const key = l.key
-	const required = l.required || r.required
-	const value = l.value.intersect(r.value)
-	if (value instanceof Disjoint) {
-		return required
-			? value
-			: [
-					{
-						key,
-						required,
-						// TODO: builtins.never()
-						value: new Union([]) as never
-					}
-			  ]
-	}
-	return [
-		{
-			key,
-			required,
-			value
-		}
-	]
-}) {
+export class PropConstraint extends ConstraintNode<{ rule: PropRule }> {
 	readonly kind = "prop"
 
 	hash(): string {
@@ -52,13 +22,42 @@ export class PropConstraint extends composeConstraint<PropRule>((l, r) => {
 			this.rule.value
 		}`
 	}
-}
 
-export class Propable {
-	constructor(rule: {
-		basis: DomainConstraint<"object"> | PrototypeConstraint
-		props?: readonly PropConstraint[]
-	}) {}
+	allowedBy(basis: Basis) {}
+
+	reduceWith(other: PropConstraint) {
+		if (
+			this.rule.key instanceof TypeRoot ||
+			other.rule.key instanceof TypeRoot
+		) {
+			return null
+		}
+		if (this.rule.key !== other.rule.key) {
+			return null
+		}
+		const key = this.key
+		const required = l.required || r.required
+		const value = l.value.intersect(r.value)
+		if (value instanceof Disjoint) {
+			return required
+				? value
+				: [
+						{
+							key,
+							required,
+							// TODO: builtins.never()
+							value: new Union([]) as never
+						}
+				  ]
+		}
+		return [
+			{
+				key,
+				required,
+				value
+			}
+		]
+	}
 }
 
 /**** NAMED *****/
@@ -276,13 +275,13 @@ export class Propable {
 //     return [...rule].sort((l, r) => {
 //         // Sort keys first by precedence (prerequisite,required,optional,indexed),
 //         // then alphebetically by key
-//         const lPrecedence = kindPrecedence(l.key)
+//         const lPrecedence = kindPrecedence(this.key)
 //         const rPrecedence = kindPrecedence(r.key)
 //         return lPrecedence > rPrecedence
 //             ? 1
 //             : lPrecedence < rPrecedence
 //             ? -1
-//             : keyNameToString(l.key) > keyNameToString(r.key)
+//             : keyNameToString(this.key) > keyNameToString(r.key)
 //             ? 1
 //             : -1
 //     })
