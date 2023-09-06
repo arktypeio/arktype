@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.21-alpha
+
+### Patch Changes
+
+-   Remove preinstall script from package.json
+
 ## 1.0.20-alpha
 
 ### Patch Changes
