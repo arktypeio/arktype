@@ -1,4 +1,12 @@
-import type { AbstractableConstructor, exact, listable } from "@arktype/util"
+import type {
+	AbstractableConstructor,
+	conform,
+	exact,
+	Fn,
+	listable,
+	overloadOf,
+	overloadReturn
+} from "@arktype/util"
 import type { NonEnumerableDomain } from "./bases/domain.js"
 import type { BoundSet, Narrow } from "./main.js"
 import type { CastTo } from "./utils.js"
@@ -89,17 +97,3 @@ const t = schema(
 	{ domain: "number", divisor: 5 },
 	{ domain: "number", regex: /.*/ }
 ) //=>
-
-// type Foo = { foo: true }
-
-// type Bar = { bar: true }
-
-// const foo = (a: Foo) => a
-// const bar = (a: Bar) => a
-
-// const operate = <f extends typeof foo | typeof bar>(
-// 	f: f,
-// 	input: Parameters<f>[0]
-// ) => f(input)
-
-// operate(f) // <- tacit
