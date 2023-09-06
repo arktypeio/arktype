@@ -1,7 +1,3 @@
-import { cached } from "@arktype/util"
-import type { TypeRoot } from "./types/type.js"
-import { union } from "./types/union.js"
-
 // // // TODO: integrate with default scopes
 // export const builtins = {
 // 	never: cached(() => union()),

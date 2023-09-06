@@ -1,12 +1,4 @@
-import type {
-	AbstractableConstructor,
-	conform,
-	exact,
-	Fn,
-	listable,
-	overloadOf,
-	overloadReturn
-} from "@arktype/util"
+import type { AbstractableConstructor, exact, listable } from "@arktype/util"
 import type { NonEnumerableDomain } from "./bases/domain.js"
 import type { BoundSet, Narrow } from "./main.js"
 import type { CastTo } from "./utils.js"
@@ -92,8 +84,8 @@ export const schema = <const branches extends readonly PredicateDefinition[]>(
 
 const predicate: PredicateDefinition = { domain: "number", divisor: 5 }
 
-const t = schema(
-	//    ^?
-	{ domain: "number", divisor: 5 },
-	{ domain: "number", regex: /.*/ }
-) //=>
+// const t = schema(
+// 	//    ^?
+// 	{ domain: "number", divisor: 5 },
+// 	{ domain: "number", regex: /.*/ }
+// ) //=>
