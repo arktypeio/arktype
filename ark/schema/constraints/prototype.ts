@@ -11,7 +11,7 @@ import { ConstraintNode } from "./constraint.js"
 export class PrototypeConstraint extends ConstraintNode<{
 	rule: AbstractableConstructor
 }> {
-	readonly kind = "domain"
+	readonly kind = "prototype"
 
 	hash() {
 		return this.rule

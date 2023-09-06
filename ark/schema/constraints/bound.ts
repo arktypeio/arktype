@@ -29,27 +29,33 @@ export class BoundConstraint<
 		return describeBound(this)
 	}
 
-	reduceWith(other: Constraint) {
+	hasLimitKind<kind extends LimitKind>(
+		kind: kind
+	): this is BoundConstraint<kind> {
+		return this.limitKind === (kind as never)
+	}
+
+	reduceWith(other: Constraint): BoundConstraint<limitKind> | Disjoint | null {
 		if (other.kind !== "bound") {
 			return null
 		}
 		if (this.limit > other.limit) {
-			if (this.limitKind === "min") {
+			if (this.hasLimitKind("min")) {
 				return other.limitKind === "min"
 					? this
 					: Disjoint.from("bound", this, other)
 			}
-			return other.limitKind === "max" ? other : null
+			return other.hasLimitKind(this.limitKind) ? other : null
 		}
 		if (this.limit < other.limit) {
-			if (this.limitKind === "max") {
+			if (this.hasLimitKind("max")) {
 				return other.limitKind === "max"
 					? this
 					: Disjoint.from("bound", this, other)
 			}
-			return other.limitKind === "min" ? other : null
+			return other.hasLimitKind(this.limitKind) ? other : null
 		}
-		return this.limitKind === other.limitKind
+		return other.hasLimitKind(this.limitKind)
 			? this.exclusive
 				? this
 				: other

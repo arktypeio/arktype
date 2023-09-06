@@ -7,26 +7,29 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { BoundRule } from "./constraints/bound.js"
+import type { BoundConstraint, BoundRule } from "./constraints/bound.js"
 import type { Constraint } from "./constraints/constraint.js"
+import type { DomainConstraint } from "./constraints/domain.js"
+import type { IdentityConstraint } from "./constraints/identity.js"
+import type { PrototypeConstraint } from "./constraints/prototype.js"
 import type { Predicate } from "./types/predicate.js"
 
 type DisjointKinds = {
 	domain?: {
-		l: Domain
-		r: Domain
+		l: DomainConstraint
+		r: DomainConstraint
 	}
 	identity?: {
-		l: unknown
-		r: unknown
-	}
-	bound?: {
-		l: BoundRule
-		r: BoundRule
+		l: IdentityConstraint
+		r: IdentityConstraint
 	}
 	prototype?: {
-		l: AbstractableConstructor
-		r: AbstractableConstructor
+		l: PrototypeConstraint
+		r: PrototypeConstraint
+	}
+	bound?: {
+		l: BoundConstraint
+		r: BoundConstraint
 	}
 	assignability?:
 		| {
