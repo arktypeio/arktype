@@ -2,13 +2,13 @@ import type { AbstractableConstructor, intersectUnion } from "@arktype/util"
 import { compose } from "@arktype/util"
 import { Morphable } from "../attributes/morph.js"
 import type { Basis } from "../bases/basis.js"
-import type { NonEnumerableDomain } from "../bases/domain.js"
 import type { IdentityConstraint } from "../bases/identity.js"
 import type {
 	ConstraintKind,
 	ConstraintRules,
 	ConstraintsByKind
 } from "../constraints/constraint.js"
+import type { NonEnumerableDomain } from "../constraints/domain.js"
 import { inferred } from "../utils.js"
 import { TypeRoot } from "./type.js"
 
@@ -51,6 +51,30 @@ export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
 
 	hash(): string {
 		return ""
+	}
+
+	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
+		const result: ConstraintNode[] = []
+		let includesConstraint = false
+		for (let i = 0; i < to.length; i++) {
+			const elementResult = this.reduce(to[i])
+			if (elementResult === null) {
+				result.push(to[i])
+			} else if (elementResult instanceof Disjoint) {
+				return elementResult
+			} else if (!includesConstraint) {
+				result.push(elementResult)
+				includesConstraint = true
+			} else if (!result.includes(elementResult)) {
+				return throwInternalError(
+					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+				)
+			}
+		}
+		if (!includesConstraint) {
+			result.push(this as never)
+		}
+		return result
 	}
 
 	// intersect(other: this) {

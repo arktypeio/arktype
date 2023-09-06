@@ -1,5 +1,6 @@
 import { Disjoint } from "../disjoint.js"
-import { composeConstraint } from "./constraint.js"
+import type { Constraint } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
 export type BoundKind = "date" | "number"
 
@@ -17,47 +18,45 @@ export type BoundSet =
 
 export class BoundConstraint<
 	limitKind extends LimitKind = LimitKind
-> extends composeConstraint<BoundRule>((l, r) => {
-	if (l.limit > r.limit) {
-		if (l.limitKind === "min") {
-			return r.limitKind === "min" ? [l] : Disjoint.from("bound", l, r)
-		}
-		return r.limitKind === "max" ? [r] : [r, l]
-	}
-	if (l.limit < r.limit) {
-		if (l.limitKind === "max") {
-			return r.limitKind === "max" ? [l] : Disjoint.from("bound", l, r)
-		}
-		return r.limitKind === "min" ? [r] : [l, r]
-	}
-	return l.limitKind === r.limitKind
-		? [l.exclusive ? l : r]
-		: l.exclusive || r.exclusive
-		? Disjoint.from("bound", l, r)
-		: l.limitKind === "min"
-		? [l, r]
-		: [r, l]
-}) {
+> extends ConstraintNode<BoundRule<limitKind>> {
 	readonly kind = "bound"
-
-	declare rule: BoundRule<limitKind>
 
 	hash() {
 		return ""
 	}
 
 	writeDefaultDescription() {
-		return describeBound(this.rule)
+		return describeBound(this)
 	}
-}
 
-export class Boundable {
-	constructor(rule: {
-		basis:
-			| DomainConstraint<"number" | "string">
-			| PrototypeConstraint<typeof Array | typeof Date>
-		bounds?: BoundSet
-	}) {}
+	reduceWith(other: Constraint) {
+		if (other.kind !== "bound") {
+			return null
+		}
+		if (this.limit > other.limit) {
+			if (this.limitKind === "min") {
+				return other.limitKind === "min"
+					? this
+					: Disjoint.from("bound", this, other)
+			}
+			return other.limitKind === "max" ? other : null
+		}
+		if (this.limit < other.limit) {
+			if (this.limitKind === "max") {
+				return other.limitKind === "max"
+					? this
+					: Disjoint.from("bound", this, other)
+			}
+			return other.limitKind === "min" ? other : null
+		}
+		return this.limitKind === other.limitKind
+			? this.exclusive
+				? this
+				: other
+			: this.exclusive || other.exclusive
+			? Disjoint.from("bound", this, other)
+			: null
+	}
 }
 
 export const describeBound = (rule: BoundRule) =>

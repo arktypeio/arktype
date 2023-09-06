@@ -1,4 +1,3 @@
-import type { Basis } from "../bases/basis.js"
 import { Disjoint } from "../disjoint.js"
 import { TypeRoot } from "../types/type.js"
 import { Union } from "../types/union.js"
@@ -10,53 +9,42 @@ export type PropRule = {
 	required: boolean
 }
 
-export class PropConstraint extends ConstraintNode<{ rule: PropRule }> {
+export class PropConstraint extends ConstraintNode<PropRule> {
 	readonly kind = "prop"
 
-	hash(): string {
+	hash() {
 		return ""
 	}
 
 	writeDefaultDescription() {
-		return `${String(this.rule.key)}${this.rule.required ? "" : "?"}: ${
-			this.rule.value
-		}`
+		return `${String(this.key)}${this.required ? "" : "?"}: ${this.value}`
 	}
 
-	allowedBy(basis: Basis) {}
-
 	reduceWith(other: PropConstraint) {
-		if (
-			this.rule.key instanceof TypeRoot ||
-			other.rule.key instanceof TypeRoot
-		) {
+		if (this.key instanceof TypeRoot || other.key instanceof TypeRoot) {
 			return null
 		}
-		if (this.rule.key !== other.rule.key) {
+		if (this.key !== other.key) {
 			return null
 		}
 		const key = this.key
-		const required = l.required || r.required
-		const value = l.value.intersect(r.value)
+		const required = this.required || other.required
+		const value = this.value.intersect(other.value)
 		if (value instanceof Disjoint) {
 			return required
 				? value
-				: [
-						{
-							key,
-							required,
-							// TODO: builtins.never()
-							value: new Union([]) as never
-						}
-				  ]
+				: {
+						key,
+						required,
+						// TODO: builtins.never()
+						value: new Union([]) as never
+				  }
 		}
-		return [
-			{
-				key,
-				required,
-				value
-			}
-		]
+		return {
+			key,
+			required,
+			value
+		}
 	}
 }
 

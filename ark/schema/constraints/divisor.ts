@@ -1,6 +1,7 @@
+import type { Constraint } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class Divisor extends ConstraintNode<{ rule: number }> {
+export class DivisorConstraint extends ConstraintNode<{ rule: number }> {
 	readonly kind = "divisor"
 
 	hash() {
@@ -11,10 +12,14 @@ export class Divisor extends ConstraintNode<{ rule: number }> {
 		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	reduceWith(other: Divisor) {
-		return (
-			(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
-		)
+	reduceWith(other: Constraint) {
+		return other.kind === "divisor"
+			? {
+					rule:
+						(this.rule * other.rule) /
+						greatestCommonDivisor(this.rule, other.rule)
+			  }
+			: null
 	}
 }
 

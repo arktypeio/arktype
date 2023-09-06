@@ -1,10 +1,11 @@
 import type { Domain } from "@arktype/util"
-import { composeConstraint } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
+import type { Constraint } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
-export class DomainConstraint extends composeConstraint<NonEnumerableDomain>(
-	(l, r) => Disjoint.from("domain", l, r)
-) {
+export class DomainConstraint extends ConstraintNode<{
+	rule: NonEnumerableDomain
+}> {
 	readonly kind = "domain"
 
 	hash() {
@@ -13,6 +14,10 @@ export class DomainConstraint extends composeConstraint<NonEnumerableDomain>(
 
 	writeDefaultDescription() {
 		return domainDescriptions[this.rule]
+	}
+
+	reduceWith(other: Constraint) {
+		return other.kind === "domain" ? Disjoint.from("domain", this, other) : null
 	}
 }
 

@@ -1,13 +1,27 @@
+import type { extend } from "@arktype/util"
 import { DynamicBase, throwInternalError } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
+import type { Disjoint } from "../disjoint.js"
 import type { NodeKind } from "../node.js"
 import type { BoundConstraint } from "./bound.js"
 import type { DivisorConstraint } from "./divisor.js"
+import type { DomainConstraint } from "./domain.js"
+import type { IdentityConstraint } from "./identity.js"
 import type { NarrowConstraint } from "./narrow.js"
 import type { PropConstraint } from "./prop.js"
+import type { PrototypeConstraint } from "./prototype.js"
 import type { RegexConstraint } from "./regex.js"
 
-export type ConstraintsByKind = {
+export type BasesByKind = {
+	domain: DomainConstraint
+	identity: IdentityConstraint
+	prototype: PrototypeConstraint
+}
+
+export type BasisKind = keyof BasesByKind
+
+export type Basis<kind extends BasisKind = BasisKind> = BasesByKind[kind]
+
+export type RefinementsByKind = {
 	divisor: DivisorConstraint
 	bound: BoundConstraint
 	regex: RegexConstraint
@@ -15,15 +29,21 @@ export type ConstraintsByKind = {
 	narrow: NarrowConstraint
 }
 
+export type RefinementKind = keyof RefinementsByKind
+
+export type Refinement<kind extends RefinementKind = RefinementKind> =
+	RefinementsByKind[kind]
+
+export type ConstraintsByKind = extend<BasesByKind, RefinementsByKind>
+
 export type ConstraintKind = keyof ConstraintsByKind
 
-export type Schema<rule = unknown> = {
-	rule: rule
-}
+export type Constraint<kind extends ConstraintKind = ConstraintKind> =
+	ConstraintsByKind[kind]
 
 // @ts-expect-error
 export abstract class SchemaNode<
-	schema extends Schema = Schema
+	schema extends {} = {}
 > extends DynamicBase<schema> {
 	abstract kind: NodeKind
 
@@ -35,37 +55,13 @@ export abstract class SchemaNode<
 }
 
 export abstract class ConstraintNode<
-	schema extends Schema = Schema
+	schema extends {} = {}
 > extends SchemaNode<schema> {
-	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
-		const result: ConstraintNode[] = []
-		let includesConstraint = false
-		for (let i = 0; i < to.length; i++) {
-			const elementResult = this.reduce(to[i])
-			if (elementResult === null) {
-				result.push(to[i])
-			} else if (elementResult instanceof Disjoint) {
-				return elementResult
-			} else if (!includesConstraint) {
-				result.push(elementResult)
-				includesConstraint = true
-			} else if (!result.includes(elementResult)) {
-				return throwInternalError(
-					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
-				)
-			}
-		}
-		if (!includesConstraint) {
-			result.push(this as never)
-		}
-		return result
-	}
-
 	reduce(other: ConstraintNode) {
 		return this as {} as ConstraintNode
 	}
 
-	abstract reduceWith(other: ConstraintNode): this["rule"] | null | Disjoint
+	abstract reduceWith(other: ConstraintNode): schema | null | Disjoint
 }
 
 // export const assertAllowsConstraint = (

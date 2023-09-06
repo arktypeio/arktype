@@ -5,20 +5,16 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { composeConstraint } from "./basis.js"
+import type { Constraint } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
-export class PrototypeConstraint extends composeConstraint<AbstractableConstructor>(
-	(l, r) =>
-		constructorExtends(l, r)
-			? [l]
-			: constructorExtends(r, l)
-			? [r]
-			: Disjoint.from("prototype", l, r)
-) {
-	readonly kind = "prototype"
+export class PrototypeConstraint extends ConstraintNode<{
+	rule: AbstractableConstructor
+}> {
+	readonly kind = "domain"
 
 	hash() {
-		return ""
+		return this.rule
 	}
 
 	writeDefaultDescription() {
@@ -26,6 +22,16 @@ export class PrototypeConstraint extends composeConstraint<AbstractableConstruct
 		return possibleObjectKind
 			? objectKindDescriptions[possibleObjectKind]
 			: `an instance of ${this.rule}`
+	}
+
+	reduceWith(other: Constraint) {
+		return other.kind !== "prototype"
+			? null
+			: constructorExtends(this.rule, other.rule)
+			? this
+			: constructorExtends(other.rule, this.rule)
+			? other
+			: Disjoint.from("prototype", this, other)
 	}
 }
 
