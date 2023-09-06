@@ -1,9 +1,7 @@
 import type { extend } from "@arktype/util"
-import { DynamicBase, throwInternalError } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { NodeKind } from "../node.js"
+import type { BaseSchema, NodeSubclass } from "../schema.js"
 import { BaseNode } from "../schema.js"
-import type { BaseSchema } from "../schema.js"
 import type { BoundNode } from "./bound.js"
 import type { DivisibilityNode } from "./divisor.js"
 import type { DomainNode } from "./domain.js"
@@ -12,6 +10,12 @@ import type { NarrowNode } from "./narrow.js"
 import type { PropConstraint } from "./prop.js"
 import type { PrototypeNode } from "./prototype.js"
 import type { PatternNode } from "./regex.js"
+
+export type BasisClassesByKind = {
+	domain: typeof DomainNode
+	identity: typeof IdentityNode
+	prototype: typeof PrototypeNode
+}
 
 export type BasesByKind = {
 	domain: DomainNode
@@ -22,6 +26,14 @@ export type BasesByKind = {
 export type BasisKind = keyof BasesByKind
 
 export type Basis<kind extends BasisKind = BasisKind> = BasesByKind[kind]
+
+export type RefinementClassesByKind = {
+	divisor: typeof DivisibilityNode
+	bound: typeof BoundNode
+	regex: typeof PatternNode
+	prop: typeof PropConstraint
+	narrow: typeof NarrowNode
+}
 
 export type RefinementsByKind = {
 	divisor: DivisibilityNode
@@ -36,20 +48,17 @@ export type RefinementKind = keyof RefinementsByKind
 export type Refinement<kind extends RefinementKind = RefinementKind> =
 	RefinementsByKind[kind]
 
+export type ConstraintClassesByKind = extend<
+	BasisClassesByKind,
+	RefinementClassesByKind
+>
+
 export type ConstraintsByKind = extend<BasesByKind, RefinementsByKind>
 
 export type ConstraintKind = keyof ConstraintsByKind
 
 export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintsByKind[kind]
-
-export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
-	new (schema: InstanceType<subclass>["schema"]): BaseNode
-
-	parse(
-		input: InstanceType<subclass>["schema"]
-	): InstanceType<subclass>["schema"]
-}
 
 export interface ConstraintSchema extends BaseSchema {}
 

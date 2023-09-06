@@ -1,4 +1,4 @@
-export * from "./node.js"
+export * from "./schema.js"
 export * from "./utils.js"
 export * from "./roots/type.js"
 export * from "./roots/union.js"

@@ -1,10 +1,14 @@
-import type { NodeSubclass } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseSchema } from "../schema.js"
+import type { BaseSchema, NodeSubclass } from "../schema.js"
 import { BaseNode } from "../schema.js"
 import { inferred } from "../utils.js"
 import { PredicateNode } from "./predicate.js"
 import { intersectBranches, UnionNode } from "./union.js"
+
+export type RootClassesByKind = {
+	predicate: typeof PredicateNode
+	union: typeof UnionNode
+}
 
 export type RootsByKind = {
 	predicate: PredicateNode
@@ -37,9 +41,7 @@ export abstract class TypeNode<
 				? PredicateNode<this["infer"] & other["infer"]>
 				: TypeNode<this["infer"] & other["infer"]>)
 		| Disjoint
-	intersect(
-		other: TypeNode // TODO: inferIntersection
-	): TypeNode | Disjoint {
+	intersect(other: TypeNode): TypeNode | Disjoint {
 		const resultBranches = intersectBranches(this.branches, other.branches)
 		return resultBranches.length === 0
 			? Disjoint.from("union", this.branches, other.branches)
@@ -61,8 +63,7 @@ export abstract class TypeNode<
 	}
 
 	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
-		return true
-		// const intersection = this.intersect(other)
-		// return !(intersection instanceof Disjoint) && this.equals(intersection)
+		const intersection = this.intersect(other)
+		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
 }

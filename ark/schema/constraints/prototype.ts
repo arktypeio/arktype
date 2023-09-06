@@ -5,6 +5,7 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import { compileSerializedValue } from "../io/compile.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
@@ -23,14 +24,15 @@ export class PrototypeNode<
 		return typeof input === "function" ? { rule: input } : input
 	}
 
+	protected possibleObjectKind = getExactBuiltinConstructorName(this.rule)
+
 	hash() {
-		return this.rule
+		return this.possibleObjectKind ?? compileSerializedValue(this.rule)
 	}
 
 	writeDefaultDescription() {
-		const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
-		return possibleObjectKind
-			? objectKindDescriptions[possibleObjectKind]
+		return this.possibleObjectKind
+			? objectKindDescriptions[this.possibleObjectKind]
 			: `an instance of ${this.rule}`
 	}
 
