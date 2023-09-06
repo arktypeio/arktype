@@ -1,12 +1,12 @@
 import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import { ConstraintNode, RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 
 export interface DivisibilitySchema extends ConstraintSchema {
 	divisor: number
 }
 
-export class DivisibilityNode extends ConstraintNode<
+export class DivisibilityNode extends RefinementNode<
 	DivisibilitySchema,
 	typeof DivisibilityNode
 > {
@@ -16,8 +16,10 @@ export class DivisibilityNode extends ConstraintNode<
 		return typeof input === "number" ? { divisor: input } : input
 	}
 
-	applicableTo(basis: Basis): basis is DomainNode<"number"> {
-		return basis.hasKind("domain") && basis.rule === "number"
+	applicableTo(basis: Basis | undefined): basis is DomainNode<"number"> {
+		return (
+			basis !== undefined && basis.hasKind("domain") && basis.rule === "number"
+		)
 	}
 
 	hash() {

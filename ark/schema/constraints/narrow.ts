@@ -1,13 +1,15 @@
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import type { ConstraintSchema } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import type { Basis, ConstraintSchema } from "./constraint.js"
+import { ConstraintNode, RefinementNode } from "./constraint.js"
+import type { DomainNode } from "./domain.js"
+import type { PrototypeNode } from "./prototype.js"
 
 export interface NarrowSchema extends ConstraintSchema {
 	rule: Narrow
 }
 
-export class NarrowNode extends ConstraintNode<
+export class NarrowNode extends RefinementNode<
 	NarrowSchema,
 	typeof NarrowNode
 > {
@@ -15,6 +17,16 @@ export class NarrowNode extends ConstraintNode<
 
 	static parse(input: Narrow | NarrowSchema) {
 		return typeof input === "function" ? { rule: input } : input
+	}
+
+	applicableTo(
+		basis: Basis | undefined
+	): basis is DomainNode | PrototypeNode | undefined {
+		return (
+			basis === undefined ||
+			basis.hasKind("domain") ||
+			basis.hasKind("prototype")
+		)
 	}
 
 	hash() {

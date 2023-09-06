@@ -1,6 +1,8 @@
 import { Disjoint } from "../disjoint.js"
-import type { Constraint, ConstraintSchema } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
+import { ConstraintNode, RefinementNode } from "./constraint.js"
+import type { DomainNode } from "./domain.js"
+import type { PrototypeNode } from "./prototype.js"
 
 export type BoundKind = "date" | "number"
 
@@ -19,11 +21,28 @@ export interface BoundSchema<limitKind extends LimitKind = LimitKind>
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<BoundSchema<limitKind>, typeof BoundNode> {
+> extends RefinementNode<BoundSchema<limitKind>, typeof BoundNode> {
 	readonly kind = "bound"
 
 	static parse(input: BoundSchema) {
 		return input
+	}
+
+	applicableTo(
+		basis: Basis | undefined
+	): basis is
+		| DomainNode<"number" | "string">
+		| PrototypeNode<typeof Array | typeof Date> {
+		if (basis === undefined) {
+			return false
+		}
+		if (basis.hasKind("domain")) {
+			return basis.rule === "number" || basis.rule === "string"
+		}
+		if (basis.hasKind("prototype")) {
+			return basis.extendsOneOf(Array, Date)
+		}
+		return false
 	}
 
 	hash() {

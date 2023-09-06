@@ -1,13 +1,14 @@
 import { throwParseError } from "@arktype/util"
-import type { ConstraintSchema } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import type { Basis, ConstraintSchema } from "./constraint.js"
+import { ConstraintNode, RefinementNode } from "./constraint.js"
+import type { DomainNode } from "./domain.js"
 
 export interface PatternSchema extends ConstraintSchema {
 	source: string
 	flags: string
 }
 
-export class PatternNode extends ConstraintNode<
+export class PatternNode extends RefinementNode<
 	PatternSchema,
 	typeof PatternNode
 > {
@@ -22,6 +23,12 @@ export class PatternNode extends ConstraintNode<
 					flags: input.flags
 			  }
 			: input
+	}
+
+	applicableTo(basis: Basis | undefined): basis is DomainNode<"string"> {
+		return (
+			basis !== undefined && basis.hasKind("domain") && basis.rule === "string"
+		)
 	}
 
 	instance = new RegExp(this.source, this.flags)

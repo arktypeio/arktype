@@ -34,6 +34,14 @@ export class PrototypeNode<
 			: `an instance of ${this.rule}`
 	}
 
+	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
+		...constructors: constructors
+	): this is PrototypeNode<constructors[number]> {
+		return constructors.some((constructor) =>
+			constructorExtends(this.rule, constructor)
+		)
+	}
+
 	reduceWith(other: Constraint) {
 		return other.kind !== "prototype"
 			? null
@@ -53,8 +61,4 @@ export class PrototypeNode<
 // 		getExactBuiltinConstructorName(this.rule) ??
 // 		registry().register(this.rule)
 // 	}`
-// }
-
-// extendsOneOf(...baseConstructors: AbstractableConstructor[]) {
-// 	return baseConstructors.some((ctor) => constructorExtends(this.rule, ctor))
 // }

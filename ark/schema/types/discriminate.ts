@@ -5,12 +5,7 @@ import type {
 	mutable,
 	SerializedPrimitive
 } from "@arktype/util"
-import {
-	entriesOf,
-	isKeyOf,
-	throwInternalError,
-	transform
-} from "@arktype/util"
+import { entriesOf, isKeyOf, throwInternalError } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { Predicate } from "./predicate.js"

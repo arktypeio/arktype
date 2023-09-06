@@ -1,8 +1,10 @@
 import { Disjoint } from "../disjoint.js"
 import { TypeRoot } from "../types/type.js"
 import { Union } from "../types/union.js"
-import type { ConstraintSchema } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import type { Basis, ConstraintSchema } from "./constraint.js"
+import { ConstraintNode, RefinementNode } from "./constraint.js"
+import type { DomainNode } from "./domain.js"
+import type { PrototypeNode } from "./prototype.js"
 
 export interface PropSchema extends ConstraintSchema {
 	key: string | symbol | TypeRoot
@@ -10,7 +12,7 @@ export interface PropSchema extends ConstraintSchema {
 	required: boolean
 }
 
-export class PropConstraint extends ConstraintNode<
+export class PropConstraint extends RefinementNode<
 	PropSchema,
 	typeof PropConstraint
 > {
@@ -18,6 +20,16 @@ export class PropConstraint extends ConstraintNode<
 
 	static parse(input: PropSchema) {
 		return input
+	}
+
+	applicableTo(
+		basis: Basis | undefined
+	): basis is DomainNode | PrototypeNode | undefined {
+		return (
+			basis === undefined ||
+			basis.hasKind("domain") ||
+			basis.hasKind("prototype")
+		)
 	}
 
 	hash() {

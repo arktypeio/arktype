@@ -91,6 +91,13 @@ export abstract class ConstraintNode<
 	abstract reduceWith(other: Constraint): schema | null | Disjoint
 }
 
+export abstract class RefinementNode<
+	schema extends ConstraintSchema,
+	node extends NodeSubclass<node>
+> extends BaseNode<schema> {
+	abstract applicableTo(basis: Basis | undefined): basis is Basis | undefined
+}
+
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,
 // 	node: Node<RefinementKind>
