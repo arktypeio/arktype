@@ -1,12 +1,14 @@
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { Constraint } from "./constraint.js"
+import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class IdentityConstraint extends ConstraintNode<{
+export interface IdentitySchema extends ConstraintSchema {
 	rule: unknown
-}> {
+}
+
+export class IdentityNode extends ConstraintNode<IdentitySchema> {
 	readonly kind = "identity"
 
 	hash() {

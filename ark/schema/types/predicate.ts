@@ -1,14 +1,11 @@
-import type { AbstractableConstructor, intersectUnion } from "@arktype/util"
-import { compose } from "@arktype/util"
-import { Morphable } from "../attributes/morph.js"
-import type { Basis } from "../bases/basis.js"
-import type { IdentityConstraint } from "../bases/identity.js"
+import { throwInternalError } from "@arktype/util"
 import type {
+	Basis,
+	Constraint,
 	ConstraintKind,
-	ConstraintRules,
 	ConstraintsByKind
 } from "../constraints/constraint.js"
-import type { NonEnumerableDomain } from "../constraints/domain.js"
+import { Disjoint } from "../disjoint.js"
 import { inferred } from "../utils.js"
 import { TypeRoot } from "./type.js"
 
@@ -26,7 +23,7 @@ export type PredicateInput<
 	basis extends Basis | undefined = Basis | undefined
 > = [basis, ...ConstraintsByKind[constraintOf<basis>]]
 
-export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
+export class Predicate<t = unknown> extends TypeRoot {
 	readonly kind = "predicate"
 	readonly constraints: flattenConstraints<this["rule"]>
 
@@ -37,7 +34,7 @@ export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
 		public rule: PredicateInput<any>,
 		public attributes?: {}
 	) {
-		super(rule, attributes)
+		super(rule)
 		this.constraints = Object.values(this.rule).flat() as never
 	}
 
@@ -53,13 +50,13 @@ export class Predicate<t = unknown> extends compose(TypeRoot, Morphable) {
 		return ""
 	}
 
-	apply(to: readonly ConstraintNode[]): readonly ConstraintNode[] | Disjoint {
-		const result: ConstraintNode[] = []
+	constrain(constraint: Constraint): readonly Constraint[] | Disjoint {
+		const result: Constraint[] = []
 		let includesConstraint = false
-		for (let i = 0; i < to.length; i++) {
-			const elementResult = this.reduce(to[i])
+		for (let i = 0; i < this.rule.length; i++) {
+			const elementResult = constraint.reduce(this.rule[i])
 			if (elementResult === null) {
-				result.push(to[i])
+				result.push(this.rule[i])
 			} else if (elementResult instanceof Disjoint) {
 				return elementResult
 			} else if (!includesConstraint) {

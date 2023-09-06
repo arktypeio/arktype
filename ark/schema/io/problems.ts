@@ -13,7 +13,7 @@ import {
 	stringify
 } from "@arktype/util"
 import {
-	type BoundRule,
+	type BoundSchema,
 	describeBound,
 	type NumericallyBoundableData
 } from "../constraints/bound.js"
@@ -216,7 +216,10 @@ export class KeyProblem extends Problem<KeyProblemKind> {
 	mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class BoundProblem extends Problem<BoundRule, NumericallyBoundableData> {
+export class BoundProblem extends Problem<
+	BoundSchema,
+	NumericallyBoundableData
+> {
 	readonly code = "bound"
 
 	get mustBe() {

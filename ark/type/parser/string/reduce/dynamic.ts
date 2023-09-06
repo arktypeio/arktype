@@ -1,4 +1,4 @@
-import type { BoundConstraint, TypeRoot } from "@arktype/schema"
+import type { BoundNode, TypeRoot } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
@@ -16,7 +16,7 @@ import {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound?: BoundConstraint<"min">
+	leftBound?: BoundNode<"min">
 	"&"?: TypeRoot
 	"|"?: TypeRoot
 }

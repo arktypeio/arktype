@@ -1,15 +1,20 @@
 import { throwParseError } from "@arktype/util"
+import type { ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class RegexConstraint extends ConstraintNode<{ rule: RegExp }> {
+export interface PatternSchema extends ConstraintSchema {
+	source: string
+	flags: string
+}
+
+export class PatternNode extends ConstraintNode<PatternSchema> {
 	readonly kind = "regex"
+
+	instance = new RegExp(this.source, this.flags)
+	literal = serializeRegex(this.instance)
 
 	hash() {
 		return ""
-	}
-
-	get literal() {
-		return serializeRegex(this.rule)
 	}
 
 	writeDefaultDescription() {

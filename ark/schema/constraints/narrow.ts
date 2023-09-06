@@ -1,8 +1,13 @@
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
+import type { ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class NarrowConstraint extends ConstraintNode<{ rule: Narrow }> {
+export interface NarrowSchema extends ConstraintSchema {
+	rule: Narrow
+}
+
+export class NarrowConstraint extends ConstraintNode<NarrowSchema> {
 	readonly kind = "narrow"
 
 	hash() {

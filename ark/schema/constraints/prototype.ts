@@ -5,12 +5,14 @@ import {
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { Constraint } from "./constraint.js"
+import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class PrototypeConstraint extends ConstraintNode<{
+export interface PrototypeSchema extends ConstraintSchema {
 	rule: AbstractableConstructor
-}> {
+}
+
+export class PrototypeNode extends ConstraintNode<PrototypeSchema> {
 	readonly kind = "prototype"
 
 	hash() {

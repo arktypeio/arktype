@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import type { BoundRule } from "@arktype/schema"
+import type { BoundSchema } from "@arktype/schema"
 import { predicate, writeIncompatibleRangeMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
@@ -18,7 +18,7 @@ import {
 	writeInvalidLimitMessage
 } from "../parser/string/shift/operator/bounds.js"
 
-export const expectedBoundsCondition = (...bounds: BoundRule[]) =>
+export const expectedBoundsCondition = (...bounds: BoundSchema[]) =>
 	predicate({ basis: "number", bounds }).condition
 
 export const expectedDateBoundsCondition = (...bounds: any) =>

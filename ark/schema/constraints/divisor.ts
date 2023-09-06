@@ -1,23 +1,32 @@
-import type { Constraint } from "./constraint.js"
+import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
+import type { DomainNode } from "./domain.js"
 
-export class DivisorConstraint extends ConstraintNode<{ rule: number }> {
+export interface DivisibilitySchema extends ConstraintSchema {
+	divisor: number
+}
+
+export class DivisibilityNode extends ConstraintNode<DivisibilitySchema> {
 	readonly kind = "divisor"
+
+	applicableTo(basis: Basis): basis is DomainNode<"number"> {
+		return basis.hasKind("domain") && basis.rule === "number"
+	}
 
 	hash() {
 		return ""
 	}
 
 	writeDefaultDescription() {
-		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
+		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 
 	reduceWith(other: Constraint) {
 		return other.kind === "divisor"
 			? {
-					rule:
-						(this.rule * other.rule) /
-						greatestCommonDivisor(this.rule, other.rule)
+					divisor:
+						(this.divisor * other.divisor) /
+						greatestCommonDivisor(this.divisor, other.divisor)
 			  }
 			: null
 	}

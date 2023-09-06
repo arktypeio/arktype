@@ -1,10 +1,15 @@
 import { Disjoint } from "../disjoint.js"
-import type { Constraint } from "./constraint.js"
+import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
 export type BoundKind = "date" | "number"
 
-export interface BoundRule<limitKind extends LimitKind = LimitKind> {
+export type BoundSet =
+	| readonly [BoundNode]
+	| readonly [BoundNode<"min">, BoundNode<"max">]
+
+export interface BoundSchema<limitKind extends LimitKind = LimitKind>
+	extends ConstraintSchema {
 	// TODO: remove this from rule
 	readonly boundKind: BoundKind
 	readonly limitKind: limitKind
@@ -12,13 +17,9 @@ export interface BoundRule<limitKind extends LimitKind = LimitKind> {
 	readonly exclusive: boolean
 }
 
-export type BoundSet =
-	| readonly [BoundConstraint]
-	| readonly [BoundConstraint<"min">, BoundConstraint<"max">]
-
-export class BoundConstraint<
+export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<BoundRule<limitKind>> {
+> extends ConstraintNode<BoundSchema<limitKind>> {
 	readonly kind = "bound"
 
 	hash() {
@@ -29,13 +30,11 @@ export class BoundConstraint<
 		return describeBound(this)
 	}
 
-	hasLimitKind<kind extends LimitKind>(
-		kind: kind
-	): this is BoundConstraint<kind> {
+	hasLimitKind<kind extends LimitKind>(kind: kind): this is BoundNode<kind> {
 		return this.limitKind === (kind as never)
 	}
 
-	reduceWith(other: Constraint): BoundConstraint<limitKind> | Disjoint | null {
+	reduceWith(other: Constraint): BoundNode<limitKind> | Disjoint | null {
 		if (other.kind !== "bound") {
 			return null
 		}
@@ -65,14 +64,14 @@ export class BoundConstraint<
 	}
 }
 
-export const describeBound = (rule: BoundRule) =>
+export const describeBound = (rule: BoundSchema) =>
 	`${
 		rule.boundKind === "date"
 			? describeDateComparison(rule)
 			: describeNumericComparison(rule)
 	} ${rule.limit}`
 
-const describeDateComparison = (rule: BoundRule) =>
+const describeDateComparison = (rule: BoundSchema) =>
 	rule.limitKind === "min"
 		? rule.exclusive
 			? "after"
@@ -81,7 +80,7 @@ const describeDateComparison = (rule: BoundRule) =>
 		? "before"
 		: "at or before"
 
-const describeNumericComparison = (rule: BoundRule) =>
+const describeNumericComparison = (rule: BoundSchema) =>
 	rule.limitKind === "min"
 		? rule.exclusive
 			? "more than"

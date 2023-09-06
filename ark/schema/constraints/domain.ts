@@ -1,11 +1,17 @@
 import type { Domain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { Constraint } from "./constraint.js"
+import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export class DomainConstraint extends ConstraintNode<{
-	rule: NonEnumerableDomain
-}> {
+export interface DomainSchema<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> extends ConstraintSchema {
+	rule: domain
+}
+
+export class DomainNode<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> extends ConstraintNode<DomainSchema<domain>> {
 	readonly kind = "domain"
 
 	hash() {

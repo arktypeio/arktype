@@ -1,15 +1,16 @@
 import { Disjoint } from "../disjoint.js"
 import { TypeRoot } from "../types/type.js"
 import { Union } from "../types/union.js"
+import type { ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export type PropRule = {
+export interface PropSchema extends ConstraintSchema {
 	key: string | symbol | TypeRoot
 	value: TypeRoot
 	required: boolean
 }
 
-export class PropConstraint extends ConstraintNode<PropRule> {
+export class PropConstraint extends ConstraintNode<PropSchema> {
 	readonly kind = "prop"
 
 	hash() {

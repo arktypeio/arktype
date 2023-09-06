@@ -2,19 +2,19 @@ import type { extend } from "@arktype/util"
 import { DynamicBase, throwInternalError } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { NodeKind } from "../node.js"
-import type { BoundConstraint } from "./bound.js"
-import type { DivisorConstraint } from "./divisor.js"
-import type { DomainConstraint } from "./domain.js"
-import type { IdentityConstraint } from "./identity.js"
+import type { BoundNode } from "./bound.js"
+import type { DivisibilityNode } from "./divisor.js"
+import type { DomainNode } from "./domain.js"
+import type { IdentityNode } from "./identity.js"
 import type { NarrowConstraint } from "./narrow.js"
 import type { PropConstraint } from "./prop.js"
-import type { PrototypeConstraint } from "./prototype.js"
-import type { RegexConstraint } from "./regex.js"
+import type { PrototypeNode } from "./prototype.js"
+import type { PatternNode } from "./regex.js"
 
 export type BasesByKind = {
-	domain: DomainConstraint
-	identity: IdentityConstraint
-	prototype: PrototypeConstraint
+	domain: DomainNode
+	identity: IdentityNode
+	prototype: PrototypeNode
 }
 
 export type BasisKind = keyof BasesByKind
@@ -22,9 +22,9 @@ export type BasisKind = keyof BasesByKind
 export type Basis<kind extends BasisKind = BasisKind> = BasesByKind[kind]
 
 export type RefinementsByKind = {
-	divisor: DivisorConstraint
-	bound: BoundConstraint
-	regex: RegexConstraint
+	divisor: DivisibilityNode
+	bound: BoundNode
+	regex: PatternNode
 	prop: PropConstraint
 	narrow: NarrowConstraint
 }
@@ -38,29 +38,57 @@ export type ConstraintsByKind = extend<BasesByKind, RefinementsByKind>
 
 export type ConstraintKind = keyof ConstraintsByKind
 
+export type SchemasByKind = extend<BasesByKind, RefinementsByKind>
+
+export type SchemaKind = keyof SchemasByKind
+
+export type Schema<kind extends SchemaKind = SchemaKind> = SchemasByKind[kind]
+
 export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintsByKind[kind]
 
+export interface BaseSchema {
+	description?: string
+}
+
 // @ts-expect-error
-export abstract class SchemaNode<
-	schema extends {} = {}
+export abstract class BaseNode<
+	schema extends BaseSchema = BaseSchema
 > extends DynamicBase<schema> {
-	abstract kind: NodeKind
+	abstract kind: SchemaKind
 
 	constructor(public schema: schema) {
 		super(schema)
 	}
 
+	hasKind<kind extends SchemaKind>(kind: kind): this is Schema<kind> {
+		return this.kind === kind
+	}
+
 	abstract writeDefaultDescription(): string
 }
 
+export interface ConstraintSchema extends BaseSchema {}
+
 export abstract class ConstraintNode<
-	schema extends {} = {}
-> extends SchemaNode<schema> {
-	reduce(other: ConstraintNode) {
-		return this as {} as ConstraintNode
+	schema extends ConstraintSchema = ConstraintSchema
+> extends BaseNode<schema> {
+	reduce(other: Constraint): Constraint | Disjoint | null {
+		return this as never
 	}
 
+	// TODO: only own keys
+	abstract reduceWith(other: Constraint): schema | null | Disjoint
+}
+
+export abstract class BasisNode<
+	schema extends {} = {}
+> extends BaseNode<schema> {
+	reduce(other: ConstraintNode): Constraint | Disjoint | null {
+		return this as never
+	}
+
+	// TODO: only own keys
 	abstract reduceWith(other: ConstraintNode): schema | null | Disjoint
 }
 

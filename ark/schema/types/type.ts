@@ -1,5 +1,6 @@
 import { compose } from "@arktype/util"
 import { Describable } from "../attributes/description.js"
+import { BaseNode } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import { Hashable, Kinded } from "../node.js"
 import { inferred } from "../utils.js"
@@ -13,11 +14,7 @@ export type TypeRootsByKind = {
 
 export type TypeKind = keyof TypeRootsByKind
 
-export abstract class TypeRoot<t = unknown> extends compose(
-	Describable,
-	Kinded,
-	Hashable
-) {
+export abstract class TypeRoot<t = unknown> extends BaseNode {
 	declare infer: t;
 	declare [inferred]: t
 
@@ -28,7 +25,7 @@ export abstract class TypeRoot<t = unknown> extends compose(
 	abstract keyof(): TypeRoot
 
 	branches: readonly Predicate[] = this.hasKind("union")
-		? this.rule
+		? this.divisor
 		: [this as {} as Predicate]
 
 	allows(data: unknown) {
@@ -58,7 +55,7 @@ export abstract class TypeRoot<t = unknown> extends compose(
 	}
 
 	isNever(): this is Union<never> {
-		return this.hasKind("union") && this.rule.length === 0
+		return this.hasKind("union") && this.divisor.length === 0
 	}
 
 	array() {
