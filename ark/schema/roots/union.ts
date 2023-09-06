@@ -1,7 +1,7 @@
 import { isArray } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
-import type { PredicateInput } from "./predicate.js"
+import type { PredicateConstraints } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 import { TypeNode } from "./type.js"
 
@@ -16,7 +16,7 @@ export class UnionNode<t = unknown> extends TypeNode<
 > {
 	readonly kind = "union"
 
-	static parse(input: readonly PredicateInput[] | UnionSchema) {
+	static parse(input: readonly PredicateConstraints[] | UnionSchema) {
 		return isArray(input)
 			? {
 					branches: input.map((predicateInput) =>

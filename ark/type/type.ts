@@ -166,14 +166,14 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	) {
 		const root = parseTypeRoot(definition, scope) as TypeNode<t>
 		super(
-			In,
-			`const state = new ${registry().reference("state")}();
-        const morphs = [];
-        ${root.compile(createCompilationContext("out", "problems"))}
-        for(let i = 0; i < morphs.length; i++) {
-            morphs[i]()
-        }
-        return state.finalize(${In});`
+			In
+			// 	`const state = new ${registry().reference("state")}();
+			// const morphs = [];
+			// ${root.compile(createCompilationContext("out", "problems"))}
+			// for(let i = 0; i < morphs.length; i++) {
+			//     morphs[i]()
+			// }
+			// return state.finalize(${In});`
 		)
 		this.root = root
 		this.condition = root.condition

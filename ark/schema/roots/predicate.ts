@@ -1,13 +1,14 @@
+import type { apply, conform, Hkt, hktInput } from "@arktype/util"
 import { isArray, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
+	BasisKind,
 	Constraint,
 	Refinement,
 	RefinementKind
 } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseSchema } from "../schema.js"
-import { BaseNode } from "../schema.js"
+import type { BaseSchema, BasisInput, inputFor } from "../schema.js"
 import { inferred } from "../utils.js"
 import { TypeNode } from "./type.js"
 
@@ -19,16 +20,32 @@ type applicableRefinementKind<basis extends Basis | undefined> = {
 		: never
 }[RefinementKind]
 
-export type PredicateInput<basis extends Basis = Basis> =
+export type PredicateConstraints<basis extends Basis = Basis> =
 	| readonly Refinement<applicableRefinementKind<undefined>>[]
 	| [
 			basis: basis,
 			...refinements: Refinement<applicableRefinementKind<basis>>[]
 	  ]
 
+type inferBasis<input extends BasisInput> = {
+	[k in BasisKind]: Basis<k> extends Hkt
+		? input extends Parameters<Basis<k>["f"]>[0]
+			? apply<Basis<k>, input>
+			: never
+		: never
+}[BasisKind]
+
+export type PredicateInputs<basis extends BasisInput = BasisInput> =
+	| readonly inputFor<applicableRefinementKind<undefined>>[]
+	| [
+			basis: basis,
+			// TODO: Fix
+			...refinements: inputFor<applicableRefinementKind<undefined>>[]
+	  ]
+
 export interface PredicateSchema<basis extends Basis = Basis>
 	extends BaseSchema {
-	constraints: PredicateInput<basis>
+	constraints: PredicateConstraints<basis>
 }
 
 export class PredicateNode<t = unknown> extends TypeNode<
@@ -38,11 +55,19 @@ export class PredicateNode<t = unknown> extends TypeNode<
 > {
 	readonly kind = "predicate"
 
+	declare f: (
+		input: conform<this[hktInput], PredicateInputs>
+	) => typeof input extends PredicateInputs<infer basis>
+		? basis extends BasisInput
+			? inferBasis<basis>
+			: never
+		: never
+
 	declare infer: t;
 	declare [inferred]: t
 
 	static parse<basis extends Basis>(
-		input: PredicateInput<basis> | PredicateSchema<basis>
+		input: PredicateConstraints<basis> | PredicateSchema<basis>
 	) {
 		return isArray(input) ? { constraints: input } : input
 	}

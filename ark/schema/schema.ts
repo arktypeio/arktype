@@ -1,11 +1,13 @@
-import type { extend } from "@arktype/util"
-import { DynamicBase } from "@arktype/util"
+import type { apply, extend } from "@arktype/util"
+import { DynamicBase, hktInput } from "@arktype/util"
 import type {
 	Basis,
+	BasisKind,
 	ConstraintClassesByKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
-import type { PredicateInput } from "./roots/predicate.js"
+import { PredicateNode } from "./roots/predicate.js"
+import type { PredicateInputs } from "./roots/predicate.js"
 import type { RootClassesByKind, RootsByKind } from "./roots/type.js"
 
 export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
@@ -20,19 +22,26 @@ export interface BaseSchema {
 	description?: string
 }
 
-export const schema = <
-	input extends PredicateInput<basis>,
-	basis extends Basis
+export type BasisInput = inputFor<BasisKind>
+
+export const node = <
+	input extends PredicateInputs<basis>,
+	basis extends BasisInput
 >(
-	input: input
-) => {}
+	...input: input
+) =>
+	new PredicateNode<apply<PredicateNode, input>>(
+		PredicateNode.parse(input as never)
+	)
 
 // @ts-expect-error
 export abstract class BaseNode<
 	schema extends BaseSchema = BaseSchema,
 	node extends NodeSubclass<node> = NodeSubclass<any>
 > extends DynamicBase<schema> {
-	abstract kind: NodeKind
+	abstract kind: NodeKind;
+
+	declare [hktInput]: unknown
 
 	constructor(public schema: schema) {
 		super(schema)
@@ -54,6 +63,9 @@ export abstract class BaseNode<
 	// }
 
 	id = this.hash()
+
+	// TODO: remove
+	condition = this.id
 
 	equals(other: BaseNode) {
 		return this.id === other.id

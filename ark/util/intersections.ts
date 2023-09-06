@@ -4,11 +4,11 @@ import type {
 	extend,
 	satisfy
 } from "./generics.js"
-import type { apply, args, Hkt } from "./hkt.js"
+import type { apply, hktInput, Hkt } from "./hkt.js"
 
 export interface AndPreserveUnknown extends Hkt {
 	f: (
-		args: conform<this[args], [unknown, unknown]>
+		args: conform<this[hktInput], [unknown, unknown]>
 	) => andPreserveUnknown<(typeof args)[0], (typeof args)[1]>
 }
 

@@ -1,4 +1,10 @@
-import type { Domain } from "@arktype/util"
+import type {
+	apply,
+	conform,
+	Domain,
+	hktInput,
+	inferDomain
+} from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
@@ -9,12 +15,22 @@ export interface DomainSchema<
 	rule: domain
 }
 
+export type DomainInput<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> = domain | DomainSchema<domain>
+
 export class DomainNode<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > extends ConstraintNode<DomainSchema<domain>, typeof DomainNode> {
 	readonly kind = "domain"
 
-	static parse(input: NonEnumerableDomain | DomainSchema) {
+	declare f: (
+		input: conform<this[hktInput], DomainInput>
+	) => typeof input extends DomainInput<infer domain>
+		? inferDomain<domain>
+		: never
+
+	static parse(input: DomainInput) {
 		return typeof input === "string" ? { rule: input } : input
 	}
 
