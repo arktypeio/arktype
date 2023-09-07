@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { node } from "@arktype/schema"
 import type { Out } from "arktype"
 import { type } from "arktype"
 import { suite, test } from "mocha"
@@ -77,14 +78,12 @@ suite("root expression", () => {
 	test("instanceof single", () => {
 		const t = type("instanceof", RegExp)
 		attest(t.infer).typed as RegExp
-		attest(t.condition).equals(node({ basis: RegExp }).condition)
+		attest(t.condition).equals(node(RegExp).condition)
 	})
 	test("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest(t.infer).typed as unknown[] | Date
-		attest(t.condition).equals(
-			node({ basis: Array }, { basis: Date }).condition
-		)
+		attest(t.condition).equals(node(Array, { basis: Date }).condition)
 	})
 	test("postfix", () => {
 		const t = type({ a: "string" }, "[]")

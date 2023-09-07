@@ -1,10 +1,3 @@
-import { attest } from "@arktype/attest"
-import type { TypeNode } from "arktype"
-import { node } from "arktype"
-import { suite, test } from "mocha"
-import { arrayIndexInput } from "../type/nodes/prop/indexed.js"
-import type { Out } from "../type/parser/tuple.js"
-
 // suite("node definitions", () => {
 //     suite("basis", () => {
 //         test("domain", () => {

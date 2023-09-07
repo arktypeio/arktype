@@ -1,4 +1,5 @@
-import type { BoundNode, TypeNode } from "@arktype/schema"
+import type { TypeNode } from "@arktype/schema"
+import { BoundNode } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
@@ -87,7 +88,13 @@ export class DynamicState {
 				)
 			)
 		}
-		this.branches.leftBound = { comparator: invertedComparator, limit }
+		// TODO: date?
+		this.branches.leftBound = new BoundNode({
+			boundKind: "number",
+			limitKind: "min",
+			exclusive: comparator.length === 1,
+			limit: limit as number
+		})
 	}
 
 	finalizeBranches() {

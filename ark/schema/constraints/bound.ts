@@ -28,6 +28,12 @@ export class BoundNode<
 		return input
 	}
 
+	comparator = `${
+		(this.limitKind === "min" ? ">" : "<") as "min" extends limitKind
+			? ">"
+			: "<"
+	}${this.exclusive ? "" : "="}` as const
+
 	applicableTo(
 		basis: Basis | undefined
 	): basis is

@@ -30,7 +30,7 @@ export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound: BoundSchema<"min"> | undefined
+	leftBound: { limit: LimitLiteral; comparator: MinComparator } | undefined
 	"&": unknown
 	"|": unknown
 }
