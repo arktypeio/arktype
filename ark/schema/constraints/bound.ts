@@ -12,12 +12,15 @@ export type BoundSet =
 
 export interface BoundSchema<limitKind extends LimitKind = LimitKind>
 	extends ConstraintSchema {
-	// TODO: remove this from rule
-	readonly boundKind: BoundKind
 	readonly limitKind: limitKind
 	readonly limit: number
 	readonly exclusive: boolean
 }
+
+export type RelativeComparator<limitKind extends LimitKind = LimitKind> = {
+	min: ">" | ">="
+	max: "<" | "<="
+}[limitKind]
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
@@ -28,11 +31,9 @@ export class BoundNode<
 		return input
 	}
 
-	comparator = `${
-		(this.limitKind === "min" ? ">" : "<") as "min" extends limitKind
-			? ">"
-			: "<"
-	}${this.exclusive ? "" : "="}` as const
+	comparator = `${this.limitKind === "min" ? ">" : "<"}${
+		this.exclusive ? "" : "="
+	}` as RelativeComparator<limitKind>
 
 	applicableTo(
 		basis: Basis | undefined
@@ -93,12 +94,12 @@ export class BoundNode<
 	}
 }
 
+// readonly boundKind: BoundKind
+// rule.boundKind === "date"
+// ? describeDateComparison(rule)
+// :
 export const describeBound = (rule: BoundSchema) =>
-	`${
-		rule.boundKind === "date"
-			? describeDateComparison(rule)
-			: describeNumericComparison(rule)
-	} ${rule.limit}`
+	`${describeNumericComparison(rule)} ${rule.limit}`
 
 const describeDateComparison = (rule: BoundSchema) =>
 	rule.limitKind === "min"

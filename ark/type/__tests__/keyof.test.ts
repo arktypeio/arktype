@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { node } from "@arktype/schema"
 import { type } from "arktype"
 import { suite, test } from "mocha"
 import {
@@ -14,7 +15,7 @@ suite("keyof", () => {
 	test("root expression", () => {
 		const t = type("keyof", "Date")
 		attest(t.infer).typed as keyof Date
-		attest(t.condition).equals(node({ basis: Date }).keyof().condition)
+		attest(t.condition).equals(node(Date).keyof().condition)
 	})
 	test("primitive", () => {
 		const t = type("keyof bigint")

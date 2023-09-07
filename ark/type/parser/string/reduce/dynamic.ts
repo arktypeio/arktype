@@ -90,7 +90,6 @@ export class DynamicState {
 		}
 		// TODO: date?
 		this.branches.leftBound = new BoundNode({
-			boundKind: "number",
 			limitKind: "min",
 			exclusive: comparator.length === 1,
 			limit: limit as number

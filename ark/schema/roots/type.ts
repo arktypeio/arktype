@@ -1,3 +1,4 @@
+import type { IdentityNode } from "../constraints/identity.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema, NodeSubclass } from "../schema.js"
 import { BaseNode } from "../schema.js"
@@ -29,6 +30,7 @@ export abstract class TypeNode<
 	declare getPath: (
 		...segments: (PropertyKey | TypeNode<PropertyKey>)[]
 	) => TypeNode
+	declare unit: IdentityNode | undefined
 
 	abstract references(): readonly TypeNode[]
 
