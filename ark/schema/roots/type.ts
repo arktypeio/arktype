@@ -25,6 +25,10 @@ export abstract class TypeNode<
 	declare infer: t;
 	declare [inferred]: t
 	declare branches: readonly PredicateNode[]
+	declare constrain: (...constraints: unknown[]) => TypeNode
+	declare getPath: (
+		...segments: (PropertyKey | TypeNode<PropertyKey>)[]
+	) => TypeNode
 
 	abstract references(): readonly TypeNode[]
 
@@ -32,6 +36,15 @@ export abstract class TypeNode<
 
 	allows(data: unknown) {
 		return true
+	}
+
+	and<other extends TypeNode>(
+		other: other // TODO: inferIntersection
+	): [this, other] extends [PredicateNode, PredicateNode]
+		? PredicateNode<this["infer"] & other["infer"]>
+		: TypeNode<this["infer"] & other["infer"]> {
+		const result = this.intersect(other)
+		return result instanceof Disjoint ? result.throw() : result
 	}
 
 	intersect<other extends TypeNode>(
@@ -48,6 +61,10 @@ export abstract class TypeNode<
 			: resultBranches.length === 1
 			? resultBranches[0]
 			: new UnionNode({ branches: resultBranches })
+	}
+
+	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
+		return this
 	}
 
 	isUnknown(): this is PredicateNode<unknown> {

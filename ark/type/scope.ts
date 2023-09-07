@@ -1,4 +1,9 @@
-import type { CastTo, ProblemCode, TypeNode } from "@arktype/schema"
+import {
+	builtins,
+	type CastTo,
+	type ProblemCode,
+	type TypeNode
+} from "@arktype/schema"
 import type { Dict, evaluate, Hkt, isAny, nominal } from "@arktype/util"
 import {
 	domainOf,
@@ -409,24 +414,25 @@ export class Scope<r extends Resolutions = any> {
 	}
 
 	compile() {
-		this.export()
-		const references: Set<TypeNode> = new Set()
-		for (const k in this.exportedResolutions!) {
-			const resolution = this.exportedResolutions[k]
-			if (hasArkKind(resolution, "node") && !references.has(resolution)) {
-				for (const reference of resolution.references) {
-					references.add(reference)
-				}
-			}
-		}
-		return [...references]
-			.map(
-				(ref) => `const ${ref.alias} = (${In}) => {
-    ${ref.condition}
-    return true
-}`
-			)
-			.join("\n")
+		return ""
+		// 		this.export()
+		// 		const references: Set<TypeNode> = new Set()
+		// 		for (const k in this.exportedResolutions!) {
+		// 			const resolution = this.exportedResolutions[k]
+		// 			if (hasArkKind(resolution, "node") && !references.has(resolution)) {
+		// 				for (const reference of resolution.references) {
+		// 					references.add(reference)
+		// 				}
+		// 			}
+		// 		}
+		// 		return [...references]
+		// 			.map(
+		// 				(ref) => `const ${ref.alias} = (${In}) => {
+		//     ${ref.condition}
+		//     return true
+		// }`
+		// 			)
+		// 			.join("\n")
 	}
 
 	private exportedResolutions: MergedResolutions | undefined
@@ -466,7 +472,7 @@ export class Scope<r extends Resolutions = any> {
 				this.exportCache![name]
 			]) as never,
 			"module"
-		)
+		) as never
 	}
 }
 
@@ -477,7 +483,7 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 	for (const k in typeSet) {
 		const v = typeSet[k]
 		if (hasArkKind(v, "module")) {
-			const innerResolutions = resolutionsOfModule(v)
+			const innerResolutions = resolutionsOfModule(v as never)
 			const prefixedResolutions = transform(
 				innerResolutions,
 				([innerK, innerV]) => [`${k}.${innerK}`, innerV]
@@ -486,7 +492,8 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 		} else if (hasArkKind(v, "generic")) {
 			result[k] = v
 		} else {
-			result[k] = v.root
+			// TODO: needed?
+			result[k] = v.root as never
 		}
 	}
 	return result

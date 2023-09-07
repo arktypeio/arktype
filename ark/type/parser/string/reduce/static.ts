@@ -1,4 +1,4 @@
-import type { RangeRule } from "@arktype/schema"
+import type { BoundSchema } from "@arktype/schema"
 import type { defined, error, ErrorSuffixToken } from "@arktype/util"
 import type {
 	Comparator,
@@ -30,7 +30,7 @@ export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound: RangeRule<"min"> | undefined
+	leftBound: BoundSchema<"min"> | undefined
 	"&": unknown
 	"|": unknown
 }

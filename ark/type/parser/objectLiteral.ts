@@ -1,3 +1,4 @@
+import { node } from "@arktype/schema"
 import {
 	type Dict,
 	type error,
@@ -7,11 +8,11 @@ import {
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { validateString } from "./semantic/validate.js"
-import { parseEntry } from "./shared.js"
 import type {
 	EntryParseResult,
 	IndexedKey,
 	OptionalValue,
+	parseEntry,
 	validateObjectValue
 } from "./shared.js"
 
@@ -21,18 +22,19 @@ const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 ]
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
-	const named: mutable<NamedPropsInput> = {}
-	for (const entry of stringAndSymbolicEntriesOf(def)) {
-		const { innerKey, innerValue, kind } = parseEntry(entry, "required")
-		ctx.path.push(innerKey as string)
-		const valueNode = ctx.scope.parse(innerValue, ctx)
-		named[innerKey] = {
-			prerequisite: false,
-			value: valueNode,
-			optional: kind === "optional"
-		}
-		ctx.path.pop()
-	}
+	// const named: mutable<NamedPropsInput> = {}
+	// for (const entry of stringAndSymbolicEntriesOf(def)) {
+	// 	const { innerKey, innerValue, kind } = parseEntry(entry, "required")
+	// 	ctx.path.push(innerKey as string)
+	// 	const valueNode = ctx.scope.parse(innerValue, ctx)
+	// 	named[innerKey] = {
+	// 		prerequisite: false,
+	// 		value: valueNode,
+	// 		optional: kind === "optional"
+	// 	}
+	// 	ctx.path.pop()
+	// }
+	return node("object")
 }
 
 export type inferObjectLiteral<def extends object, $, args> = evaluate<

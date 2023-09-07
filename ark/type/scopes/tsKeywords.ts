@@ -1,5 +1,4 @@
-import type { CastTo } from "@arktype/schema"
-import { predicate, union } from "@arktype/schema"
+import { builtins, type CastTo, node } from "@arktype/schema"
 import { Scope } from "../scope.js"
 import type { RootScope } from "./ark.js"
 
@@ -36,19 +35,19 @@ export type InferredTsKeywords = {
 
 export const tsKeywords: RootScope<InferredTsKeywords> = Scope.root({
 	any: "unknown" as CastTo<any>,
-	bigint: predicate({ basis: "bigint" }),
+	bigint: node("bigint"),
 	boolean: "true|false",
-	false: predicate({ basis: { is: false } }),
-	never: union(),
-	null: predicate({ basis: { is: null } }),
-	number: predicate({ basis: "number" }),
-	object: predicate({ basis: "object" }),
-	string: predicate({ basis: "string" }),
-	symbol: predicate({ basis: "symbol" }),
-	true: predicate({ basis: { is: true } }),
-	unknown: predicate({}),
+	false: node({ is: false }),
+	never: builtins.never(),
+	null: node({ is: null }),
+	number: node("number"),
+	object: node("object"),
+	string: node("string"),
+	symbol: node("symbol"),
+	true: node({ is: true }),
+	unknown: node(),
 	void: "undefined" as CastTo<void>,
-	undefined: predicate({ basis: { is: undefined } })
+	undefined: node({ is: undefined })
 })
 
 export const tsKeywordTypes = tsKeywords.export()

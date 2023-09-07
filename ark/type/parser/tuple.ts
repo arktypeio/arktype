@@ -1,10 +1,12 @@
-import type {
-	CheckResult,
-	inferNarrow,
-	Morph,
-	Narrow,
-	Problem,
-	TypeNode
+import {
+	builtins,
+	type CheckResult,
+	type inferNarrow,
+	type Morph,
+	type Narrow,
+	node,
+	type Problem,
+	type TypeNode
 } from "@arktype/schema"
 import type {
 	AbstractableConstructor,
@@ -40,7 +42,7 @@ export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
 export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
-	const props: NodeEntry[] = []
+	const props: unknown[] = []
 	let isVariadic = false
 	for (let i = 0; i < def.length; i++) {
 		let elementDef = def[i]
@@ -65,8 +67,9 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			if (i !== def.length - 1) {
 				return throwParseError(prematureRestMessage)
 			}
-			const elementType = value.getPath(arrayIndexTypeNode())
-			props.push({ key: arrayIndexTypeNode(i), value: elementType })
+			const elementType = value.getPath(builtins.arrayIndexTypeNode())
+			// TODO: first variadic i
+			props.push({ key: builtins.arrayIndexTypeNode(), value: elementType })
 		} else {
 			props.push({
 				key: {
@@ -86,10 +89,12 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 				prerequisite: true,
 				optional: false
 			},
-			value: node({ basis: ["===", def.length] }, ctx)
+			// , ctx
+			value: node({ is: def.length })
 		})
 	}
-	return node({ basis: Array, props }, ctx)
+	//  props , ctx
+	return node(Array)
 }
 
 export const maybeParseTupleExpression = (
@@ -455,9 +460,9 @@ const prefixParsers: {
 							)
 					  )
 			)
-		return node(branches, ctx)
+		return node() // branches, ctx
 	},
-	"===": (def) => node.unit(...def.slice(1))
+	"===": (def) => node({ is: def }) //node.unit(...def.slice(1))
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

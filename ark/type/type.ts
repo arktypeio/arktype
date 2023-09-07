@@ -1,4 +1,3 @@
-import type Module from "node:module"
 import type {
 	CheckResult,
 	inferNarrow,
@@ -8,6 +7,7 @@ import type {
 } from "@arktype/schema"
 import {
 	arkKind,
+	builtins,
 	In,
 	inferred,
 	registry,
@@ -37,7 +37,7 @@ import type {
 	Out,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { Scope } from "./scope.js"
+import type { Module, Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
 
 export type TypeParser<$> = {

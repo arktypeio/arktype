@@ -58,9 +58,9 @@ export class PredicateNode<t = unknown> extends TypeNode<
 	declare f: (
 		input: conform<this[hktInput], PredicateInputs>
 	) => typeof input extends PredicateInputs<infer basis>
-		? basis extends BasisInput
-			? inferBasis<basis>
-			: never
+		? BasisInput extends basis
+			? unknown
+			: inferBasis<basis>
 		: never
 
 	declare infer: t;
@@ -111,7 +111,9 @@ export class PredicateNode<t = unknown> extends TypeNode<
 		return ""
 	}
 
-	constrain(constraint: Constraint): readonly Constraint[] | Disjoint {
+	protected addConstraint(
+		constraint: Constraint
+	): readonly Constraint[] | Disjoint {
 		const result: Constraint[] = []
 		let includesConstraint = false
 		for (let i = 0; i < this.constraints.length; i++) {

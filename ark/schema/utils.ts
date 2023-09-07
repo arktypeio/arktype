@@ -1,11 +1,18 @@
-// // // TODO: integrate with default scopes
-// export const builtins = {
-// 	never: cached(() => union()),
-// 	unknown: cached(() => node({})),
-// 	nonVariadicArrayIndex: cached(() => node(arrayIndexInput())),
-// 	string: cached(() => node({ basis: "string" })),
-// 	array: cached(() => node({ basis: Array }))
-// } satisfies Record<string, () => TypeRoot>
+import { cached } from "@arktype/util"
+import type { TypeNode } from "./roots/type.js"
+import { UnionNode } from "./roots/union.js"
+import { node } from "./schema.js"
+
+// // TODO: integrate with default scopes
+export const builtins = {
+	never: cached(() => new UnionNode<never>({ branches: [] })),
+	unknown: cached(() => node()),
+	// TODO: fix
+	nonVariadicArrayIndex: cached(() => node("number")),
+	arrayIndexTypeNode: cached(() => node("number")),
+	string: cached(() => node("string")),
+	array: cached(() => node(Array))
+} satisfies Record<string, () => TypeNode>
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608

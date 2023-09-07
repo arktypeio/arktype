@@ -5,7 +5,7 @@ import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
 export interface IdentitySchema extends ConstraintSchema {
-	rule: unknown
+	is: unknown
 }
 
 export class IdentityNode extends ConstraintNode<
@@ -19,12 +19,12 @@ export class IdentityNode extends ConstraintNode<
 	}
 
 	hash() {
-		return compileSerializedValue(this.rule)
+		return compileSerializedValue(this.is)
 	}
 
 	writeDefaultDescription() {
 		// TODO: add reference to for objects
-		return stringify(this.rule)
+		return stringify(this.is)
 	}
 
 	reduceWith(other: Constraint) {

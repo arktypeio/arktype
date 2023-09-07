@@ -3,7 +3,10 @@ import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
 import type { Comparator, LimitLiteral } from "../shift/operator/bounds.js"
-import { invertedComparators } from "../shift/operator/bounds.js"
+import {
+	invertedComparators,
+	minComparators
+} from "../shift/operator/bounds.js"
 import { Scanner } from "../shift/scanner.js"
 import type { StringifiablePrefixOperator } from "./shared.js"
 import {

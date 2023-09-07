@@ -1,4 +1,4 @@
-import { hasArkKind, type TypeNode } from "@arktype/schema"
+import { node, type TypeNode } from "@arktype/schema"
 import type { BigintLiteral, error, join, NumberLiteral } from "@arktype/util"
 import {
 	stringify,
@@ -7,7 +7,11 @@ import {
 	tryParseWellFormedNumber
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
-import type { Generic, GenericProps } from "../../../../type.js"
+import {
+	type Generic,
+	type GenericProps,
+	hasArkKind
+} from "../../../../type.js"
 import type { ParsedArgs } from "../../../generic.js"
 import {
 	parseGenericArgs,
@@ -120,7 +124,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): BaseNode =>
+const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -155,11 +159,13 @@ const maybeParseUnenclosedLiteral = (
 ): TypeNode | undefined => {
 	const maybeNumber = tryParseWellFormedNumber(token)
 	if (maybeNumber !== undefined) {
-		return node({ basis: ["===", maybeNumber] }, s.ctx)
+		// ctx
+		return node({ is: maybeNumber })
 	}
 	const maybeBigint = tryParseWellFormedBigint(token)
 	if (maybeBigint !== undefined) {
-		return node({ basis: ["===", maybeBigint] }, s.ctx)
+		// ctx
+		return node({ is: maybeBigint })
 	}
 }
 

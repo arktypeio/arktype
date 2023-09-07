@@ -1,13 +1,12 @@
 import type { apply, extend } from "@arktype/util"
 import { DynamicBase, hktInput } from "@arktype/util"
 import type {
-	Basis,
 	BasisKind,
 	ConstraintClassesByKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
-import { PredicateNode } from "./roots/predicate.js"
 import type { PredicateInputs } from "./roots/predicate.js"
+import { PredicateNode } from "./roots/predicate.js"
 import type { RootClassesByKind, RootsByKind } from "./roots/type.js"
 
 export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
@@ -22,7 +21,13 @@ export interface BaseSchema {
 	description?: string
 }
 
-export type BasisInput = inputFor<BasisKind>
+export type BasisInput = inputFor<BasisKind> | undefined
+
+export type node = {
+	<input extends PredicateInputs<basis>, basis extends BasisInput>(
+		...input: input
+	): PredicateNode<apply<PredicateNode, input>>
+}
 
 export const node = <
 	input extends PredicateInputs<basis>,

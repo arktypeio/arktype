@@ -21,8 +21,8 @@ suite("basis intersections", () => {
 		const literal = type("===", a)
 		const cls = type("instanceof", Date)
 		attest(() => literal.and(cls)).throws(writeUnsatisfiableExpressionError(""))
+		attest(() => cls.and(literal)).throws(writeUnsatisfiableExpressionError(""))
 	})
-	attest(() => cls.and(literal)).throws(writeUnsatisfiableExpressionError(""))
 	test("domain & literal", () => {
 		const literal = type("'foo'")
 		const domain = type("string")

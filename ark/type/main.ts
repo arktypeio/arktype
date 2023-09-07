@@ -15,5 +15,4 @@ export { jsObjects } from "./scopes/jsObjects.js"
 export { tsKeywords } from "./scopes/tsKeywords.js"
 export { tsGenerics } from "./scopes/tsGenerics.js"
 export { validation } from "./scopes/validation/validation.js"
-
 export type { CastTo } from "@arktype/schema"

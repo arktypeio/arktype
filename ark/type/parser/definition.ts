@@ -1,5 +1,5 @@
-import type { CastTo, TypeNode } from "@arktype/schema"
-import { serializeRegex } from "@arktype/schema"
+import type { CastTo } from "@arktype/schema"
+import { node, serializeRegex, TypeNode } from "@arktype/schema"
 import type {
 	defined,
 	Dict,
@@ -36,20 +36,15 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case "Object":
-			if (hasArkKind(def, "node") && def.hasKind("type")) {
+			if (hasArkKind(def, "node") && def instanceof TypeNode) {
 				return def
 			}
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
 			return parseTuple(def as List, ctx)
 		case "RegExp":
-			return node(
-				{
-					basis: "string",
-					regex: serializeRegex(def as RegExp)
-				},
-				ctx
-			)
+			//, serializeRegex(def as RegExp), 	ctx
+			return node("string")
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
 			if (resolvedDef instanceof Type) {
