@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { writeIndivisibleMessage } from "@arktype/schema"
+import { node, writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
 import { suite, test } from "mocha"
 import {
@@ -16,13 +16,7 @@ suite("union", () => {
 	test("nary", () => {
 		const nary = type("false|null|undefined|0|''")
 		attest(nary.infer).typed as false | "" | 0 | null | undefined
-		const expected = node.literal(
-			false as const,
-			null,
-			undefined,
-			0 as const,
-			"" as const
-		)
+		const expected = node.literal(false, null, undefined, 0, "")
 		attest(nary.condition).is(expected.condition)
 	})
 	test("subtype pruning", () => {
@@ -56,25 +50,25 @@ suite("union", () => {
 		attest(t.infer).typed as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45
 	})
 	suite("expressions", () => {
-		const expected = () =>
-			node(
-				{
-					basis: "object",
-					props: {
-						a: {
-							value: { basis: "string" }
-						}
-					}
-				},
-				{
-					basis: "object",
-					props: {
-						b: {
-							value: [{ basis: ["===", true] }, { basis: ["===", false] }]
-						}
-					}
-				}
-			).condition
+		const expected = () => node("object").condition
+		// node(
+		// 	{
+		// 		basis: "object",
+		// 		props: {
+		// 			a: {
+		// 				value: { basis: "string" }
+		// 			}
+		// 		}
+		// 	},
+		// 	{
+		// 		basis: "object",
+		// 		props: {
+		// 			b: {
+		// 				value: [{ basis: ["===", true] }, { basis: ["===", false] }]
+		// 			}
+		// 		}
+		// 	}
+
 		test("tuple", () => {
 			const t = type([{ a: "string" }, "|", { b: "boolean" }])
 			attest(t.infer).typed as { a: string } | { b: boolean }

@@ -1,3 +1,4 @@
+import type { evaluate } from "@arktype/util"
 import type { validateDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
@@ -5,8 +6,8 @@ type parsedKey<result extends KeyParseResult> = result
 
 type OptionalTuple<value> = readonly [value, "?"]
 
-type KeyParseResult = {
-	kind: ParsedKeyKind
+type KeyParseResult<kind extends ParsedKeyKind = ParsedKeyKind> = {
+	kind: kind
 	innerKey: PropertyKey
 }
 type ParsedKeyKind = "required" | "optional" | "indexed"
@@ -17,7 +18,8 @@ export type OptionalValue<value> =
 	| OptionalStringDefinition<value & string>
 	| OptionalTuple<value>
 
-export type EntryParseResult = { innerValue: unknown } & KeyParseResult
+export type EntryParseResult<kind extends ParsedKeyKind = ParsedKeyKind> =
+	evaluate<{ innerValue: unknown } & KeyParseResult<kind>>
 
 export type OptionalStringDefinition<name extends string = string> = `${name}?`
 

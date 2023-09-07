@@ -1,10 +1,5 @@
 import { node } from "@arktype/schema"
-import {
-	type Dict,
-	type error,
-	type evaluate,
-	type mutable
-} from "@arktype/util"
+import { type Dict, type error, type evaluate } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { validateString } from "./semantic/validate.js"
@@ -61,16 +56,17 @@ type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
 	k,
 	valueDef
 > extends infer result extends EntryParseResult
-	? (result["kind"] extends "required"
-			? result["innerKey"]
-			: inferDefinition<result["innerKey"], $, args>) &
-			PropertyKey
+	? result["kind"] extends "required"
+		? result["innerKey"]
+		: result["kind"] extends "indexed"
+		? inferDefinition<result["innerKey"], $, args> & PropertyKey
+		: never
 	: never
 
 type optionalKeyFrom<k extends PropertyKey, valueDef> = parseEntry<
 	k,
 	valueDef
-> extends infer result extends EntryParseResult
+> extends infer result extends EntryParseResult<"optional">
 	? result["innerKey"]
 	: never
 

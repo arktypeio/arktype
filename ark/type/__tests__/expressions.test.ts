@@ -7,6 +7,7 @@ import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
+import { scope } from "../scopes/ark.js"
 
 suite("tuple expressions", () => {
 	test("nested", () => {
@@ -47,20 +48,20 @@ suite("tuple expressions", () => {
 			}).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
 		})
 		// TODO: reenable
-		// test("this", () => {
-		//     const t = type([{ a: "string" }, "|", { b: "this" }])
-		//     attest(t.infer).types.toString.snap()
-		//     const types = scope({
-		//         a: {
-		//             a: "string"
-		//         },
-		//         b: {
-		//             b: "expected"
-		//         },
-		//         expected: "a|b"
-		//     }).export()
-		//     attest(t.condition).equals(types.expected.condition)
-		// })
+		test("this", () => {
+			const t = type([{ a: "string" }, "|", { b: "this" }])
+			attest(t.infer).types.toString.snap()
+			const types = scope({
+				a: {
+					a: "string"
+				},
+				b: {
+					b: "expected"
+				},
+				expected: "a|b"
+			}).export()
+			attest(t.condition).equals(types.expected.condition)
+		})
 	})
 })
 
@@ -83,7 +84,7 @@ suite("root expression", () => {
 	test("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest(t.infer).typed as unknown[] | Date
-		attest(t.condition).equals(node(Array, { basis: Date }).condition)
+		attest(t.condition).equals(node([Array], [Date]).condition)
 	})
 	test("postfix", () => {
 		const t = type({ a: "string" }, "[]")

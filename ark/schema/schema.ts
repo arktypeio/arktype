@@ -7,7 +7,8 @@ import type {
 } from "./constraints/constraint.js"
 import type { PredicateInputs } from "./roots/predicate.js"
 import { PredicateNode } from "./roots/predicate.js"
-import type { RootClassesByKind, RootsByKind } from "./roots/type.js"
+import type { RootClassesByKind, RootsByKind, TypeNode } from "./roots/type.js"
+import type { UnionNode } from "./roots/union.js"
 
 export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
 	new (schema: InstanceType<subclass>["schema"]): BaseNode
@@ -24,20 +25,23 @@ export interface BaseSchema {
 export type BasisInput = inputFor<BasisKind> | undefined
 
 export type node = {
-	<input extends PredicateInputs<basis>, basis extends BasisInput>(
+	<const input extends PredicateInputs<basis>, basis extends BasisInput>(
 		...input: input
 	): PredicateNode<apply<PredicateNode, input>>
+
+	<const branches extends readonly PredicateInputs[]>(
+		...branches: branches
+	): UnionNode<
+		{ [i in keyof branches]: apply<PredicateNode, branches[i]> }[keyof branches]
+	>
+
+	literal<const branches extends readonly unknown[]>(
+		...branches: branches
+	): TypeNode<branches[number]>
 }
 
-export const node = <
-	const input extends PredicateInputs<basis>,
-	basis extends BasisInput
->(
-	...input: input
-) =>
-	new PredicateNode<apply<PredicateNode, input>>(
-		PredicateNode.parse(input as never)
-	)
+export const node = ((...input: PredicateInputs[]) =>
+	new PredicateNode(PredicateNode.parse(input as never))) as node
 
 // @ts-expect-error
 export abstract class BaseNode<
