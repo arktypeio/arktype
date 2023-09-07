@@ -1,4 +1,4 @@
-import { predicate } from "@arktype/schema"
+import { node } from "@arktype/schema"
 
 type DayDelimiter = "." | "/" | "-"
 
@@ -94,13 +94,12 @@ export const tryParseDatePattern = (
 	return writeFormattedMustBe(opts.format)
 }
 
-export const parsedDate = predicate({
-	basis: "string"
-	// morph: (s, state) => {
-	// 	const result = tryParseDatePattern(s)
-	// 	return typeof result === "string"
-	// 		? // TODO: Fix
-	// 		  state.mustBe(result, s, state.basePath)
-	// 		: result
-	// }
-})
+// morph: (s, state) => {
+// 	const result = tryParseDatePattern(s)
+// 	return typeof result === "string"
+// 		? // TODO: Fix
+// 		  state.mustBe(result, s, state.basePath)
+// 		: result
+// }
+
+export const parsedDate = node("string")

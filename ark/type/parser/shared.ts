@@ -36,7 +36,7 @@ type validateObjectValueString<def, $, args> =
 
 type DefinitionEntry = readonly [PropertyKey, unknown]
 
-const getInnerValue = (value: unknown) => {
+const getInnerValue = (value: unknown): unknown => {
 	if (typeof value === "string") {
 		if (value[value.length - 1] === "?") {
 			return value.slice(0, -1)

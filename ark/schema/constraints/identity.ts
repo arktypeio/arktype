@@ -1,3 +1,4 @@
+import type { conform, hktInput } from "@arktype/util"
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
@@ -13,6 +14,10 @@ export class IdentityNode extends ConstraintNode<
 	typeof IdentityNode
 > {
 	readonly kind = "identity"
+
+	declare f: (
+		input: conform<this[hktInput], IdentitySchema>
+	) => (typeof input)["is"]
 
 	static parse(input: IdentitySchema) {
 		return input

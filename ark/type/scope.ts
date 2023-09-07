@@ -1,6 +1,7 @@
 import {
 	builtins,
 	type CastTo,
+	node,
 	type ProblemCode,
 	type TypeNode
 } from "@arktype/schema"
@@ -31,6 +32,7 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { parseString } from "./parser/string/string.js"
+import { scope } from "./scopes/ark.js"
 import type {
 	arkKind,
 	DeclarationParser,
@@ -73,6 +75,8 @@ export type ScopeConfig = {
 	codes?: Record<ProblemCode, { mustBe?: string }>
 	keys?: KeyCheckKind
 }
+
+const s = scope({ a: node("string") })
 
 type validateScope<def, $> = {
 	[k in keyof def]: parseScopeKey<k>["params"] extends []
@@ -121,7 +125,10 @@ type bootstrapExports<def> = bootstrapAliases<{
 }>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
-type PreparsedResolution = Module | GenericProps | Hkt
+type PreparsedResolution = Module | GenericProps
+
+// Note- adding HKT breaks node inference since nodes are HKTs but used them differently
+// | Hkt
 
 type bootstrapAliases<def> = {
 	[k in Exclude<

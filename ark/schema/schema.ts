@@ -30,7 +30,7 @@ export type node = {
 }
 
 export const node = <
-	input extends PredicateInputs<basis>,
+	const input extends PredicateInputs<basis>,
 	basis extends BasisInput
 >(
 	...input: input

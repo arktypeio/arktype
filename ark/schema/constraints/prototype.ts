@@ -1,4 +1,4 @@
-import type { AbstractableConstructor } from "@arktype/util"
+import type { AbstractableConstructor, conform, hktInput } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -15,12 +15,22 @@ export interface PrototypeSchema<
 	rule: constructor
 }
 
+export type PrototypeInput = AbstractableConstructor | PrototypeSchema
+
 export class PrototypeNode<
 	constructor extends AbstractableConstructor = AbstractableConstructor
 > extends ConstraintNode<PrototypeSchema<constructor>, typeof PrototypeNode> {
 	readonly kind = "prototype"
 
-	static parse(input: AbstractableConstructor | PrototypeSchema) {
+	declare f: (
+		input: conform<this[hktInput], PrototypeInput>
+	) => typeof input extends
+		| PrototypeSchema<AbstractableConstructor<infer instance extends {}>>
+		| AbstractableConstructor<infer instance>
+		? instance
+		: never
+
+	static parse(input: PrototypeInput) {
 		return typeof input === "function" ? { rule: input } : input
 	}
 

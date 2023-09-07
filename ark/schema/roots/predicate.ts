@@ -37,7 +37,7 @@ type inferBasis<input extends BasisInput> = {
 
 export type PredicateInputs<basis extends BasisInput = BasisInput> =
 	| readonly inputFor<applicableRefinementKind<undefined>>[]
-	| [
+	| readonly [
 			basis: basis,
 			// TODO: Fix
 			...refinements: inputFor<applicableRefinementKind<undefined>>[]
