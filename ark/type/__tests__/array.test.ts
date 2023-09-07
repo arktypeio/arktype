@@ -52,13 +52,17 @@ suite("array", () => {
 				const t = type([["string?"], "string?"])
 				attest(t.infer).typed as [[string?], string?]
 			})
-			suite("error optionals", () => {
-				test("shallow optional", () => {
-					const t = type("string?")
-				})
-				test("shallow optional in tuple form", () => {
-					const t = type(["string", "?"])
-				})
+			test("shallow optional string", () => {
+				// @ts-expect-error
+				attest(() => type("string?")).throwsAndHasTypeError(
+					writeUnresolvableMessage("string?")
+				)
+			})
+			test("shallow optional tuple", () => {
+				// @ts-expect-error
+				attest(() => type(["string", "?"])).throws(
+					writeUnresolvableMessage("?")
+				)
 			})
 		})
 		test("root expression", () => {

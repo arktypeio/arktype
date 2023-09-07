@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { node } from "@arktype/schema"
 import { type } from "arktype"
 import { suite, test } from "mocha"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
@@ -10,7 +11,7 @@ suite("instanceof", () => {
 		test("base", () => {
 			const t = type(["instanceof", Error])
 			attest(t.infer).typed as Error
-			attest(t.condition).equals(node({ basis: Error }).condition)
+			attest(t.condition).equals(node(Error).condition)
 			const e = new Error()
 			attest(t(e).data).equals(e)
 			attest(t({}).problems?.summary).snap("Must be an Error (was Object)")

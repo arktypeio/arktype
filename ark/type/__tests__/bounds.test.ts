@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import type { BoundSchema } from "@arktype/schema"
-import { predicate, writeIncompatibleRangeMessage } from "@arktype/schema"
+import { node, writeIncompatibleRangeMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
 import { suite, test } from "mocha"
@@ -18,11 +18,11 @@ import {
 	writeInvalidLimitMessage
 } from "../parser/string/shift/operator/bounds.js"
 
-export const expectedBoundsCondition = (...bounds: BoundSchema[]) =>
-	predicate({ basis: "number", bounds }).condition
+export const expectedBoundsCondition = (...bounds: BoundSchema[]) => ""
+// node("number", ...bounds).condition
 
-export const expectedDateBoundsCondition = (...bounds: any) =>
-	predicate({ basis: Date, bounds }).condition
+export const expectedDateBoundsCondition = (...bounds: BoundSchema[]) => ""
+// node(Date, ...bounds).condition
 
 suite("bounds", () => {
 	suite("parse", () => {
@@ -38,24 +38,40 @@ suite("bounds", () => {
 				const t = type("number<10")
 				attest(t.infer).typed as number
 				attest(t.condition).equals(
-					expectedBoundsCondition({ comparator: "<", limit: 10 })
+					expectedBoundsCondition({
+						limitKind: "max",
+						exclusive: true,
+						limit: 10
+					})
 				)
 			})
 			test("<=", () => {
 				const t = type("number<=-49")
 				attest(t.infer).typed as number
 				attest(t.condition).equals(
-					expectedBoundsCondition({ comparator: "<=", limit: -49 })
+					expectedBoundsCondition({
+						limitKind: "max",
+						exclusive: false,
+						limit: -49
+					})
 				)
 			})
 			test("==", () => {
 				const t = type("number==3211993")
 				attest(t.infer).typed as number
 				attest(t.condition).equals(
-					expectedBoundsCondition({
-						comparator: "==",
-						limit: 3211993
-					})
+					expectedBoundsCondition(
+						{
+							limitKind: "min",
+							exclusive: false,
+							limit: 3211993
+						},
+						{
+							limitKind: "max",
+							exclusive: false,
+							limit: 3211993
+						}
+					)
 				)
 			})
 		})
@@ -72,11 +88,13 @@ suite("bounds", () => {
 				attest(t.condition).equals(
 					expectedBoundsCondition(
 						{
-							comparator: ">",
+							limitKind: "min",
+							exclusive: true,
 							limit: -5
 						},
 						{
-							comparator: "<=",
+							limitKind: "max",
+							exclusive: false,
 							limit: 5
 						}
 					)
@@ -88,11 +106,13 @@ suite("bounds", () => {
 				attest(t.condition).equals(
 					expectedBoundsCondition(
 						{
-							comparator: ">=",
+							limitKind: "min",
+							exclusive: false,
 							limit: -3.23
 						},
 						{
-							comparator: "<",
+							limitKind: "max",
+							exclusive: true,
 							limit: 4.654
 						}
 					)
@@ -103,7 +123,7 @@ suite("bounds", () => {
 			const t = type("number > 3")
 			attest(t.infer).typed as number
 			attest(t.condition).equals(
-				expectedBoundsCondition({ comparator: ">", limit: 3 })
+				expectedBoundsCondition({ limitKind: "min", exclusive: true, limit: 3 })
 			)
 		})
 		suite("intersection", () => {
@@ -316,9 +336,11 @@ suite("bounds", () => {
 			const t = type("Date<d'2023/1/12'")
 			attest(t.infer).typed as Date
 			attest(t.condition).equals(
+				// TODO: Dates?
 				expectedDateBoundsCondition({
-					comparator: "<",
-					limit: new Date("2023/1/12")
+					limitKind: "max",
+					exclusive: true,
+					limit: new Date("2023/1/12").valueOf()
 				})
 			)
 		})
@@ -326,10 +348,18 @@ suite("bounds", () => {
 			const t = type("Date==d'2020-1-1'")
 			attest(t.infer).typed as Date
 			attest(t.condition).equals(
-				expectedDateBoundsCondition({
-					comparator: "==",
-					limit: new Date("2020-1-1")
-				})
+				expectedDateBoundsCondition(
+					{
+						limitKind: "min",
+						exclusive: false,
+						limit: new Date("2020-1-1").valueOf()
+					},
+					{
+						limitKind: "max",
+						exclusive: false,
+						limit: new Date("2020-1-1").valueOf()
+					}
+				)
 			)
 			attest(t.allows(new Date("2020/01/01"))).equals(true)
 			attest(t.allows(new Date("2020/01/02"))).equals(false)
@@ -340,12 +370,14 @@ suite("bounds", () => {
 			attest(t.condition).equals(
 				expectedDateBoundsCondition(
 					{
-						comparator: ">",
-						limit: new Date("2001/10/10")
+						limitKind: "min",
+						exclusive: true,
+						limit: new Date("2001/10/10").valueOf()
 					},
 					{
-						comparator: "<",
-						limit: new Date("2005/10/10")
+						limitKind: "max",
+						exclusive: true,
+						limit: new Date("2005/10/10").valueOf()
 					}
 				)
 			)

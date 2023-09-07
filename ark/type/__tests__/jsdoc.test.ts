@@ -2,6 +2,7 @@ import { scope, type } from "arktype"
 import { describe, it } from "mocha"
 
 const ab = { a: "1", b: 1 }
+
 describe("JSDoc", () => {
 	// Note: `<#` are not checked, they are for understandability
 	it("objects keep JSDoc", () => {
@@ -44,7 +45,7 @@ describe("JSDoc", () => {
 			},
 			ab: "a & b"
 		})
-			.compile()
+			.export()
 			.ab.assert(ab).a // <# JSDoc
 	})
 
@@ -52,7 +53,7 @@ describe("JSDoc", () => {
 		scope({
 			/** JSDoc */
 			a: "string"
-		}).compile().a // <# JSDoc
+		}).export().a // <# JSDoc
 	})
 
 	it("doesn't work with optional keys", () => {
