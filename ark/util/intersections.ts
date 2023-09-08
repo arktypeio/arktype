@@ -8,7 +8,7 @@ import type { Hkt } from "./hkt.js"
 
 export interface AndPreserveUnknown extends Hkt {
 	f: (
-		args: conform<this[Hkt.In], [unknown, unknown]>
+		args: conform<this[Hkt.key], [unknown, unknown]>
 	) => andPreserveUnknown<(typeof args)[0], (typeof args)[1]>
 }
 

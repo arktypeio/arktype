@@ -56,7 +56,7 @@ export class PredicateNode<t = unknown> extends TypeNode<
 	readonly kind = "predicate"
 
 	declare f: (
-		input: conform<this[Hkt.In], PredicateInputs>
+		input: conform<this[Hkt.key], PredicateInputs>
 	) => typeof input extends PredicateInputs<infer basis>
 		? BasisInput extends basis
 			? unknown

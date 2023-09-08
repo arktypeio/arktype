@@ -19,7 +19,7 @@ export class DomainNode<
 	readonly kind = "domain"
 
 	declare f: (
-		input: conform<this[Hkt.In], DomainInput>
+		input: conform<this[Hkt.key], DomainInput>
 	) => typeof input extends DomainInput<infer domain>
 		? inferDomain<domain>
 		: never

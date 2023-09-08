@@ -52,7 +52,7 @@ export abstract class BaseNode<
 > extends DynamicBase<schema> {
 	abstract kind: NodeKind;
 
-	declare [Hkt.In]: unknown
+	declare [Hkt.key]: unknown
 
 	constructor(public schema: schema) {
 		super(schema)

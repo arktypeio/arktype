@@ -1,4 +1,4 @@
-import type { Literalable } from "@arktype/util"
+import type { Stringifiable } from "@arktype/util"
 
 export type astToString<
 	ast,
@@ -8,6 +8,6 @@ export type astToString<
 			tail,
 			`${result extends "" ? "" : `${result} `}${astToString<head, "">}`
 	  >
-	: ast extends Literalable
+	: ast extends Stringifiable
 	? `${result}${ast extends bigint ? `${ast}n` : ast}`
 	: result

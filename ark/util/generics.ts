@@ -1,10 +1,10 @@
-export type asConst<t> = t extends [] ? t : asConstRecurse<t>
-
-type asConstRecurse<t> = {
-	[k in keyof t]: t[k] extends Literalable | [] ? t[k] : asConstRecurse<t[k]>
-}
-
-export type Literalable = string | boolean | number | bigint | null | undefined
+export type Stringifiable =
+	| string
+	| boolean
+	| number
+	| bigint
+	| null
+	| undefined
 
 /**
  * Force an operation like `{ a: 0 } & { b: 1 }` to be computed so that it displays `{ a: 0; b: 1 }`.

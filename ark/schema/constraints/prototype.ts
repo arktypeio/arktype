@@ -23,7 +23,7 @@ export class PrototypeNode<
 	readonly kind = "prototype"
 
 	declare f: (
-		input: conform<this[Hkt.In], PrototypeInput>
+		input: conform<this[Hkt.key], PrototypeInput>
 	) => typeof input extends
 		| PrototypeSchema<AbstractableConstructor<infer instance extends {}>>
 		| AbstractableConstructor<infer instance>

@@ -16,7 +16,7 @@ export class IdentityNode extends ConstraintNode<
 	readonly kind = "identity"
 
 	declare f: (
-		input: conform<this[Hkt.In], IdentitySchema>
+		input: conform<this[Hkt.key], IdentitySchema>
 	) => (typeof input)["is"]
 
 	static parse(input: IdentitySchema) {
