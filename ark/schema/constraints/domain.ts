@@ -1,10 +1,4 @@
-import type {
-	apply,
-	conform,
-	Domain,
-	hktInput,
-	inferDomain
-} from "@arktype/util"
+import type { conform, Domain, Hkt, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
@@ -25,7 +19,7 @@ export class DomainNode<
 	readonly kind = "domain"
 
 	declare f: (
-		input: conform<this[hktInput], DomainInput>
+		input: conform<this[Hkt.In], DomainInput>
 	) => typeof input extends DomainInput<infer domain>
 		? inferDomain<domain>
 		: never

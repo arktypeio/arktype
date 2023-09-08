@@ -4,11 +4,11 @@ import type {
 	extend,
 	satisfy
 } from "./generics.js"
-import type { apply, hktInput, Hkt } from "./hkt.js"
+import type { Hkt } from "./hkt.js"
 
 export interface AndPreserveUnknown extends Hkt {
 	f: (
-		args: conform<this[hktInput], [unknown, unknown]>
+		args: conform<this[Hkt.In], [unknown, unknown]>
 	) => andPreserveUnknown<(typeof args)[0], (typeof args)[1]>
 }
 
@@ -44,8 +44,8 @@ type intersectParametersRecurse<
 					...prefix,
 					// the intersection is optional iff both elements are optional
 					...(lState["optional"] | rState["optional"] extends true
-						? [apply<intersector, [lState["head"], rState["head"]]>?]
-						: [apply<intersector, [lState["head"], rState["head"]]>])
+						? [Hkt.apply<intersector, [lState["head"], rState["head"]]>?]
+						: [Hkt.apply<intersector, [lState["head"], rState["head"]]>])
 				],
 				intersector,
 				mode
@@ -66,7 +66,7 @@ type intersectParametersRecurse<
 						? lState["tail"]
 						: []
 					: // if we've reached a variadic element in both arrays, intersect them
-					  apply<intersector, [lState["head"], rState["head"]]>[])
+					  Hkt.apply<intersector, [lState["head"], rState["head"]]>[])
 		  ]
 	: never
 

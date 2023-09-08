@@ -1,4 +1,4 @@
-import type { apply, conform, Hkt, hktInput } from "@arktype/util"
+import type { conform, Hkt } from "@arktype/util"
 import { isArray, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
@@ -30,7 +30,7 @@ export type PredicateConstraints<basis extends Basis = Basis> =
 type inferBasis<input extends BasisInput> = {
 	[k in BasisKind]: Basis<k> extends Hkt
 		? input extends Parameters<Basis<k>["f"]>[0]
-			? apply<Basis<k>, input>
+			? Hkt.apply<Basis<k>, input>
 			: never
 		: never
 }[BasisKind]
@@ -56,7 +56,7 @@ export class PredicateNode<t = unknown> extends TypeNode<
 	readonly kind = "predicate"
 
 	declare f: (
-		input: conform<this[hktInput], PredicateInputs>
+		input: conform<this[Hkt.In], PredicateInputs>
 	) => typeof input extends PredicateInputs<infer basis>
 		? BasisInput extends basis
 			? unknown

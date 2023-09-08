@@ -1,4 +1,4 @@
-import type { AbstractableConstructor, conform, hktInput } from "@arktype/util"
+import type { AbstractableConstructor, conform, Hkt } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -23,7 +23,7 @@ export class PrototypeNode<
 	readonly kind = "prototype"
 
 	declare f: (
-		input: conform<this[hktInput], PrototypeInput>
+		input: conform<this[Hkt.In], PrototypeInput>
 	) => typeof input extends
 		| PrototypeSchema<AbstractableConstructor<infer instance extends {}>>
 		| AbstractableConstructor<infer instance>

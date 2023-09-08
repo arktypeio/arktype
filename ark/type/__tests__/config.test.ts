@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
-import { suite, test } from "mocha"
 import { scope, type } from "arktype"
+import { suite, test } from "mocha"
 
 suite("config traversal", () => {
 	// test("tuple expression", () => {

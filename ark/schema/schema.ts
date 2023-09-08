@@ -1,5 +1,5 @@
-import type { apply, extend } from "@arktype/util"
-import { DynamicBase, hktInput } from "@arktype/util"
+import type { extend } from "@arktype/util"
+import { DynamicBase, Hkt } from "@arktype/util"
 import type {
 	BasisKind,
 	ConstraintClassesByKind,
@@ -27,12 +27,14 @@ export type BasisInput = inputFor<BasisKind> | undefined
 export type node = {
 	<const input extends PredicateInputs<basis>, basis extends BasisInput>(
 		...input: input
-	): PredicateNode<apply<PredicateNode, input>>
+	): PredicateNode<Hkt.apply<PredicateNode, input>>
 
 	<const branches extends readonly PredicateInputs[]>(
 		...branches: branches
 	): UnionNode<
-		{ [i in keyof branches]: apply<PredicateNode, branches[i]> }[keyof branches]
+		{
+			[i in keyof branches]: Hkt.apply<PredicateNode, branches[i]>
+		}[keyof branches]
 	>
 
 	literal<const branches extends readonly unknown[]>(
@@ -50,7 +52,7 @@ export abstract class BaseNode<
 > extends DynamicBase<schema> {
 	abstract kind: NodeKind;
 
-	declare [hktInput]: unknown
+	declare [Hkt.In]: unknown
 
 	constructor(public schema: schema) {
 		super(schema)
