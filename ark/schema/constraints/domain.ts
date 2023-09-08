@@ -18,7 +18,7 @@ export class DomainNode<
 > extends ConstraintNode<DomainSchema<domain>, typeof DomainNode> {
 	readonly kind = "domain"
 
-	f(input: conform<this[Hkt.key], NonEnumerableDomain | DomainSchema>) {
+	parse(input: conform<this[Hkt.key], NonEnumerableDomain | DomainSchema>) {
 		return (
 			typeof input === "string" ? { rule: input } : input
 		) as typeof input extends DomainInput<infer domain>

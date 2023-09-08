@@ -1,8 +1,13 @@
 import type { Fn } from "./functions.js"
 import type { conform } from "./generics.js"
 
-export declare abstract class Hkt<f extends Fn = Fn> {
-	abstract readonly [Hkt.key]: unknown
+// export declare abstract class Hkt<f extends Fn = Fn> {
+// 	abstract readonly [Hkt.key]: unknown
+// 	f: f
+// }
+
+export interface Hkt<f extends Fn = Fn> {
+	readonly [Hkt.key]: unknown
 	f: f
 }
 
@@ -13,20 +18,26 @@ export namespace Hkt {
 	export type key = typeof key
 
 	export type apply<
-		hkt extends Hkt,
-		args extends Parameters<hkt["f"]>[0]
+		hkt extends Record<k, Fn>,
+		args extends Parameters<hkt[k]>[0],
+		k extends string = "f"
 	> = ReturnType<
 		(hkt & {
 			readonly [key]: args
-		})["f"]
+		})[k]
 	>
 
-	export type inputOf<hkt extends Hkt> = Parameters<hkt["f"]>[0]
+	export type inputOf<
+		hkt extends Record<k, Fn>,
+		k extends string = "f"
+	> = Parameters<hkt[k]>[0]
 
-	export type reify<hkt extends Hkt> = hkt & {
-		<In extends inputOf<hkt>>(
+	export type reify<hkt extends Record<k, Fn>, k extends string = "f"> = hkt & {
+		<In extends inputOf<hkt, k>>(
 			In: narrow<In>
-		): apply<hkt, In> extends Hkt ? reify<apply<hkt, In>> : apply<hkt, In>
+		): apply<hkt, In, k> extends Hkt
+			? reify<apply<hkt, In, k>>
+			: apply<hkt, In, k>
 	}
 
 	export interface Reify extends Hkt {

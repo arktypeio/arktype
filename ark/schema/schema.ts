@@ -51,9 +51,9 @@ export abstract class BaseNode<
 	declare [Hkt.key]: unknown
 
 	// TODO: narrowable?
-	abstract f(input: never): unknown
+	abstract parse(input: never): unknown
 
-	declare parse: this extends Hkt ? Hkt.reify<this> : unknown
+	declare from: this extends Hkt ? Hkt.reify<this> : unknown
 
 	constructor(public schema: schema) {
 		super(schema)
@@ -76,8 +76,7 @@ export abstract class BaseNode<
 
 	id = this.hash()
 
-	// TODO: remove
-	condition = this.id
+	// TODO: remove-
 
 	equals(other: BaseNode) {
 		return this.id === other.id

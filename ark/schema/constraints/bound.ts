@@ -1,6 +1,6 @@
 import { Disjoint } from "../disjoint.js"
 import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
-import { ConstraintNode, RefinementNode } from "./constraint.js"
+import { RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 
