@@ -23,7 +23,7 @@ export namespace Hkt {
 
 	export type inputOf<hkt extends Hkt> = Parameters<hkt["f"]>[0]
 
-	type reify<hkt extends Hkt> = hkt & {
+	export type reify<hkt extends Hkt> = hkt & {
 		<In extends inputOf<hkt>>(
 			In: narrow<In>
 		): apply<hkt, In> extends Hkt ? reify<apply<hkt, In>> : apply<hkt, In>
@@ -49,10 +49,8 @@ export namespace Hkt {
 
 	export type narrow<
 		t,
-		base = conform<t, Narrowable> | [...conform<t, readonly Narrowable[]>]
-	> = base extends readonly unknown[]
-		? { [key in keyof t]: narrow<t[key]> }
-		: base
+		base = conform<t, Narrowable> | [...conform<t, Narrowable[]>]
+	> = base extends readonly unknown[] ? { [i in keyof t]: narrow<t[i]> } : base
 
 	export interface Narrow extends Hkt {
 		f(In: this[key]): narrow<typeof In>

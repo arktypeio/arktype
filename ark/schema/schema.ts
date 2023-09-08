@@ -12,10 +12,6 @@ import type { UnionNode } from "./roots/union.js"
 
 export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
 	new (schema: InstanceType<subclass>["schema"]): BaseNode
-
-	parse(
-		input: InstanceType<subclass>["schema"]
-	): InstanceType<subclass>["schema"]
 }
 
 export interface BaseSchema {
@@ -53,6 +49,11 @@ export abstract class BaseNode<
 	abstract kind: NodeKind;
 
 	declare [Hkt.key]: unknown
+
+	// TODO: narrowable?
+	abstract f(input: never): unknown
+
+	declare parse: this extends Hkt ? Hkt.reify<this> : unknown
 
 	constructor(public schema: schema) {
 		super(schema)

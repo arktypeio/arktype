@@ -1,4 +1,4 @@
-import type { conform, Domain, Hkt, inferDomain } from "@arktype/util"
+import type { conform, Domain, Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
@@ -18,14 +18,12 @@ export class DomainNode<
 > extends ConstraintNode<DomainSchema<domain>, typeof DomainNode> {
 	readonly kind = "domain"
 
-	declare f: (
-		input: conform<this[Hkt.key], DomainInput>
-	) => typeof input extends DomainInput<infer domain>
-		? inferDomain<domain>
-		: never
-
-	static parse(input: DomainInput) {
-		return typeof input === "string" ? { rule: input } : input
+	f(input: conform<this[Hkt.key], NonEnumerableDomain | DomainSchema>) {
+		return (
+			typeof input === "string" ? { rule: input } : input
+		) as typeof input extends DomainInput<infer domain>
+			? DomainSchema<domain>
+			: never
 	}
 
 	hash() {
@@ -40,6 +38,8 @@ export class DomainNode<
 		return other.kind === "domain" ? Disjoint.from("domain", this, other) : null
 	}
 }
+
+const z = new DomainNode({ rule: "string" }).parse("string")
 
 /** Each domain's completion for the phrase "Must be _____" */
 export const domainDescriptions = {
