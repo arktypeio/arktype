@@ -76,8 +76,6 @@ export type ScopeConfig = {
 	keys?: KeyCheckKind
 }
 
-const s = scope({ a: node("string") })
-
 type validateScope<def, $> = {
 	[k in keyof def]: parseScopeKey<k>["params"] extends []
 		? // Not including Type here directly breaks inference
