@@ -19,7 +19,7 @@ export type PrototypeInput = AbstractableConstructor | PrototypeSchema
 
 export class PrototypeNode<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends ConstraintNode<PrototypeSchema<constructor>, typeof PrototypeNode> {
+> extends ConstraintNode<PrototypeSchema<constructor>> {
 	readonly kind = "prototype"
 
 	declare f: (

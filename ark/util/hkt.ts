@@ -1,15 +1,14 @@
 import type { Fn } from "./functions.js"
 import type { conform } from "./generics.js"
+import type { Constructor } from "./objectKinds.js"
 
-// export declare abstract class Hkt<f extends Fn = Fn> {
-// 	abstract readonly [Hkt.key]: unknown
-// 	f: f
-// }
-
-export interface Hkt<f extends Fn = Fn> {
+export declare abstract class Hkt<f extends Fn = Fn> {
 	readonly [Hkt.key]: unknown
-	f: f
+	abstract f: f
 }
+
+export const hkt = <def extends new () => Hkt>(def: def) =>
+	({}) as Hkt.reify<InstanceType<def>>
 
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */
 export namespace Hkt {
@@ -18,26 +17,21 @@ export namespace Hkt {
 	export type key = typeof key
 
 	export type apply<
-		hkt extends Record<k, Fn>,
-		args extends Parameters<hkt[k]>[0],
-		k extends string = "f"
+		hkt extends Hkt,
+		args extends Parameters<hkt["f"]>[0]
 	> = ReturnType<
 		(hkt & {
 			readonly [key]: args
-		})[k]
+		})["f"]
 	>
 
-	export type inputOf<
-		hkt extends Record<k, Fn>,
-		k extends string = "f"
-	> = Parameters<hkt[k]>[0]
+	export const reify = <hkt extends new () => Hkt>(hkt: hkt) =>
+		new hkt().f as Hkt.apply<Hkt.Reify, InstanceType<hkt>>
 
-	export type reify<hkt extends Record<k, Fn>, k extends string = "f"> = hkt & {
-		<In extends inputOf<hkt, k>>(
-			In: narrow<In>
-		): apply<hkt, In, k> extends Hkt
-			? reify<apply<hkt, In, k>>
-			: apply<hkt, In, k>
+	export type reify<hkt extends Hkt> = hkt & {
+		<In extends Parameters<hkt["f"]>[0]>(
+			In: conform<In, narrow<In>>
+		): apply<hkt, In> extends Hkt ? reify<apply<hkt, In>> : apply<hkt, In>
 	}
 
 	export interface Reify extends Hkt {

@@ -6,10 +6,7 @@ export interface DivisibilitySchema extends ConstraintSchema {
 	divisor: number
 }
 
-export class DivisibilityNode extends RefinementNode<
-	DivisibilitySchema,
-	typeof DivisibilityNode
-> {
+export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 	readonly kind = "divisor"
 
 	static parse(input: number | DivisibilitySchema) {

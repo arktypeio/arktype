@@ -24,7 +24,7 @@ export type RelativeComparator<limitKind extends LimitKind = LimitKind> = {
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends RefinementNode<BoundSchema<limitKind>, typeof BoundNode> {
+> extends RefinementNode<BoundSchema<limitKind>> {
 	readonly kind = "bound"
 
 	static parse(input: BoundSchema) {

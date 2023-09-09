@@ -1,4 +1,4 @@
-import type { extend } from "@arktype/util"
+import type { conform, Constructor, extend, Fn } from "@arktype/util"
 import { DynamicBase, Hkt } from "@arktype/util"
 import type {
 	BasisKind,
@@ -9,10 +9,6 @@ import type { PredicateInputs } from "./roots/predicate.js"
 import { PredicateNode } from "./roots/predicate.js"
 import type { RootClassesByKind, RootsByKind, TypeNode } from "./roots/type.js"
 import type { UnionNode } from "./roots/union.js"
-
-export interface NodeSubclass<subclass extends NodeSubclass<subclass>> {
-	new (schema: InstanceType<subclass>["schema"]): BaseNode
-}
 
 export interface BaseSchema {
 	description?: string
@@ -41,20 +37,21 @@ export type node = {
 export const node = ((...input: PredicateInputs[]) =>
 	new PredicateNode(PredicateNode.parse(input as never))) as node
 
-// @ts-expect-error
-export abstract class BaseNode<
-	schema extends BaseSchema = BaseSchema,
-	node extends NodeSubclass<node> = NodeSubclass<any>
-> extends DynamicBase<schema> {
-	abstract kind: NodeKind;
-
+export abstract class NodeParserDefinition {
 	declare [Hkt.key]: unknown
 
-	// TODO: narrowable?
-	abstract parse(input: never): unknown
+	abstract parse(...args: never[]): BaseNode<any>
+}
 
-	declare from: this extends Hkt ? Hkt.reify<this> : unknown
+// @ts-expect-error
+export abstract class BaseNode<
+	schema extends BaseSchema = BaseSchema
+> extends DynamicBase<schema> {
+	abstract kind: NodeKind
 
+	abstract infer: unknown
+
+	// TODO: protect
 	constructor(public schema: schema) {
 		super(schema)
 	}

@@ -9,10 +9,7 @@ export interface NarrowSchema extends ConstraintSchema {
 	rule: Narrow
 }
 
-export class NarrowNode extends RefinementNode<
-	NarrowSchema,
-	typeof NarrowNode
-> {
+export class NarrowNode extends RefinementNode<NarrowSchema> {
 	readonly kind = "narrow"
 
 	static parse(input: Narrow | NarrowSchema) {

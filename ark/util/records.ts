@@ -106,6 +106,13 @@ export const DynamicBase = class {
 	}
 } as new <t extends object>(base: t) => t
 
+export const DynamicBaseWithStatic = <
+	t extends object,
+	staticProps extends object
+>(
+	staticProps: staticProps
+) => Object.assign(class extends DynamicBase<t> {}, staticProps)
+
 export type PickPartial<o extends object, key extends keyof o> = {
 	[k in key]?: o[k]
 }

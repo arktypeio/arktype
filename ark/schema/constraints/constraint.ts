@@ -1,6 +1,6 @@
 import type { extend } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseSchema, NodeSubclass } from "../schema.js"
+import type { BaseSchema } from "../schema.js"
 import { BaseNode } from "../schema.js"
 import type { BoundNode } from "./bound.js"
 import type { DivisibilityNode } from "./divisor.js"
@@ -63,8 +63,7 @@ export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 export interface ConstraintSchema extends BaseSchema {}
 
 export abstract class ConstraintNode<
-	schema extends ConstraintSchema,
-	node extends NodeSubclass<node>
+	schema extends ConstraintSchema
 > extends BaseNode<schema> {
 	reduce(other: Constraint): Constraint | Disjoint | null {
 		return this as never
@@ -75,9 +74,8 @@ export abstract class ConstraintNode<
 }
 
 export abstract class RefinementNode<
-	schema extends ConstraintSchema,
-	node extends NodeSubclass<node>
-> extends ConstraintNode<schema, node> {
+	schema extends ConstraintSchema
+> extends ConstraintNode<schema> {
 	abstract applicableTo(basis: Basis | undefined): basis is Basis | undefined
 }
 
