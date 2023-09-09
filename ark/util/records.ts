@@ -99,19 +99,14 @@ export type requiredKeyOf<o> = {
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
-export const DynamicBase = class {
-	// shallow copy the input props first to avoid unexpectedly modifying them
+const ShallowClone = class {
 	constructor({ ...properties }: object) {
 		return properties
 	}
 } as new <t extends object>(base: t) => t
 
-export const DynamicBaseWithStatic = <
-	t extends object,
-	staticProps extends object
->(
-	staticProps: staticProps
-) => Object.assign(class extends DynamicBase<t> {}, staticProps)
+// @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation)
+export class DynamicBase<t extends object> extends ShallowClone<t> {}
 
 export type PickPartial<o extends object, key extends keyof o> = {
 	[k in key]?: o[k]

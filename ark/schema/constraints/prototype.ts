@@ -1,8 +1,10 @@
-import type { AbstractableConstructor, conform, Hkt } from "@arktype/util"
+import type { AbstractableConstructor, conform } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
-	objectKindDescriptions
+	Hkt,
+	objectKindDescriptions,
+	reify
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
@@ -18,17 +20,27 @@ export interface PrototypeSchema<
 export type PrototypeInput = AbstractableConstructor | PrototypeSchema
 
 export class PrototypeNode<
-	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends ConstraintNode<PrototypeSchema<constructor>> {
+	schema extends PrototypeSchema = PrototypeSchema
+> extends ConstraintNode<schema> {
 	readonly kind = "prototype"
 
-	declare f: (
-		input: conform<this[Hkt.key], PrototypeInput>
-	) => typeof input extends
-		| PrototypeSchema<AbstractableConstructor<infer instance extends {}>>
-		| AbstractableConstructor<infer instance>
-		? instance
-		: never
+	declare infer: InstanceType<schema["rule"]>
+
+	static from = reify(
+		class extends Hkt {
+			f = (
+				input: conform<this[Hkt.key], AbstractableConstructor | PrototypeSchema>
+			) => {
+				return new PrototypeNode(
+					typeof input === "function" ? { rule: input } : input
+				) as {} as typeof input extends PrototypeSchema
+					? PrototypeNode<typeof input>
+					: typeof input extends AbstractableConstructor
+					? { rule: typeof input }
+					: never
+			}
+		}
+	)
 
 	static parse(input: PrototypeInput) {
 		return typeof input === "function" ? { rule: input } : input
@@ -48,7 +60,7 @@ export class PrototypeNode<
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
 		...constructors: constructors
-	): this is PrototypeNode<constructors[number]> {
+	): this is PrototypeNode<{ rule: constructors[number] }> {
 		return constructors.some((constructor) =>
 			constructorExtends(this.rule, constructor)
 		)
@@ -61,7 +73,7 @@ export class PrototypeNode<
 			? this
 			: constructorExtends(other.rule, this.rule)
 			? // this cast is safe since we know other's constructor extends this one
-			  (other as PrototypeNode<constructor>)
+			  (other as PrototypeNode<schema>)
 			: Disjoint.from("prototype", this, other)
 	}
 }

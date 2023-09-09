@@ -38,8 +38,8 @@ export class BoundNode<
 	applicableTo(
 		basis: Basis | undefined
 	): basis is
-		| DomainNode<"number" | "string">
-		| PrototypeNode<typeof Array | typeof Date> {
+		| DomainNode<{ rule: "number" | "string" }>
+		| PrototypeNode<{ rule: typeof Array | typeof Date }> {
 		if (basis === undefined) {
 			return false
 		}

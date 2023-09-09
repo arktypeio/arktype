@@ -1,23 +1,29 @@
-import type { conform, Hkt } from "@arktype/util"
-import { stringify } from "@arktype/util"
+import type { conform } from "@arktype/util"
+import { Hkt, reify, stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
-export interface IdentitySchema extends ConstraintSchema {
-	is: unknown
+export interface IdentitySchema<value = unknown> extends ConstraintSchema {
+	is: value
 }
 
-export class IdentityNode extends ConstraintNode<
-	IdentitySchema,
-	typeof IdentityNode
-> {
+export class IdentityNode<
+	schema extends IdentitySchema = IdentitySchema
+> extends ConstraintNode<schema> {
 	readonly kind = "identity"
+	declare infer: schema["is"]
 
-	parse(input: conform<this[Hkt.key], IdentitySchema>): (typeof input)["is"] {
-		return input
-	}
+	static from = reify(
+		class extends Hkt {
+			f = (
+				input: conform<this[Hkt.key], IdentitySchema>
+			): IdentityNode<typeof input> => {
+				return new IdentityNode(input)
+			}
+		}
+	)
 
 	hash() {
 		return compileSerializedValue(this.is)
@@ -34,3 +40,5 @@ export class IdentityNode extends ConstraintNode<
 			: null
 	}
 }
+
+export const identityNode = IdentityNode.from

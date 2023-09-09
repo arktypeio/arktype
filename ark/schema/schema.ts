@@ -43,7 +43,6 @@ export abstract class NodeParserDefinition {
 	abstract parse(...args: never[]): BaseNode<any>
 }
 
-// @ts-expect-error
 export abstract class BaseNode<
 	schema extends BaseSchema = BaseSchema
 > extends DynamicBase<schema> {

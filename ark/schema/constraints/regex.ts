@@ -8,10 +8,7 @@ export interface PatternSchema extends ConstraintSchema {
 	flags: string
 }
 
-export class PatternNode extends RefinementNode<
-	PatternSchema,
-	typeof PatternNode
-> {
+export class PatternNode extends RefinementNode<PatternSchema> {
 	readonly kind = "regex"
 
 	static parse(input: RegexLiteral | RegExp | PatternSchema) {
@@ -25,7 +22,9 @@ export class PatternNode extends RefinementNode<
 			: input
 	}
 
-	applicableTo(basis: Basis | undefined): basis is DomainNode<"string"> {
+	applicableTo(
+		basis: Basis | undefined
+	): basis is DomainNode<{ rule: "string" }> {
 		return (
 			basis !== undefined && basis.hasKind("domain") && basis.rule === "string"
 		)

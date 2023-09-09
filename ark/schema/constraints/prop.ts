@@ -12,8 +12,22 @@ export interface PropSchema extends ConstraintSchema {
 	required: boolean
 }
 
-export class PropConstraint extends RefinementNode<PropSchema> {
+type inferPropSchema<schema extends PropSchema> =
+	schema["required"] extends true
+		? { [k in inferKey<schema["key"]>]: schema["value"]["infer"] }
+		: { [k in inferKey<schema["key"]>]?: schema["value"]["infer"] }
+
+type inferKey<k extends PropSchema["key"]> = k extends string | symbol
+	? k
+	: k extends TypeNode
+	? k["infer"] & PropertyKey
+	: never
+
+export class PropConstraint<
+	schema extends PropSchema = PropSchema
+> extends RefinementNode<PropSchema> {
 	readonly kind = "prop"
+	declare infer: inferPropSchema<schema>
 
 	static parse(input: PropSchema) {
 		return input

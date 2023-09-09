@@ -13,7 +13,9 @@ export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 		return typeof input === "number" ? { divisor: input } : input
 	}
 
-	applicableTo(basis: Basis | undefined): basis is DomainNode<"number"> {
+	applicableTo(
+		basis: Basis | undefined
+	): basis is DomainNode<{ rule: "number" }> {
 		return (
 			basis !== undefined && basis.hasKind("domain") && basis.rule === "number"
 		)

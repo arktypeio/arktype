@@ -1,14 +1,21 @@
 import type { Fn } from "./functions.js"
 import type { conform } from "./generics.js"
-import type { Constructor } from "./objectKinds.js"
 
 export declare abstract class Hkt<f extends Fn = Fn> {
 	readonly [Hkt.key]: unknown
 	abstract f: f
 }
 
-export const hkt = <def extends new () => Hkt>(def: def) =>
-	({}) as Hkt.reify<InstanceType<def>>
+export const reify = <def extends new () => Hkt>(def: def) =>
+	new def().f as reify<InstanceType<def>>
+
+export type reify<hkt extends Hkt> = hkt & {
+	<In extends Parameters<hkt["f"]>[0]>(
+		In: conform<In, Hkt.narrow<In>>
+	): Hkt.apply<hkt, In> extends Hkt
+		? reify<Hkt.apply<hkt, In>>
+		: Hkt.apply<hkt, In>
+}
 
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */
 export namespace Hkt {
@@ -24,15 +31,6 @@ export namespace Hkt {
 			readonly [key]: args
 		})["f"]
 	>
-
-	export const reify = <hkt extends new () => Hkt>(hkt: hkt) =>
-		new hkt().f as Hkt.apply<Hkt.Reify, InstanceType<hkt>>
-
-	export type reify<hkt extends Hkt> = hkt & {
-		<In extends Parameters<hkt["f"]>[0]>(
-			In: conform<In, narrow<In>>
-		): apply<hkt, In> extends Hkt ? reify<apply<hkt, In>> : apply<hkt, In>
-	}
 
 	export interface Reify extends Hkt {
 		f(In: conform<this[key], Hkt>): reify<typeof In>
