@@ -9,11 +9,7 @@ export interface UnionSchema extends BaseSchema {
 	branches: readonly PredicateNode[]
 }
 
-export class UnionNode<t = unknown> extends TypeNode<
-	t,
-	UnionSchema,
-	typeof UnionNode
-> {
+export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 	readonly kind = "union"
 
 	static parse(input: readonly PredicateConstraints[] | UnionSchema) {
@@ -21,7 +17,7 @@ export class UnionNode<t = unknown> extends TypeNode<
 			? {
 					branches: input.map((predicateInput) =>
 						// TODO: fix
-						PredicateNode.parse(predicateInput)
+						PredicateNode.from(predicateInput)
 					) as PredicateNode[]
 			  }
 			: input

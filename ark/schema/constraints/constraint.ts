@@ -76,6 +76,7 @@ export abstract class ConstraintNode<
 export abstract class RefinementNode<
 	schema extends ConstraintSchema
 > extends ConstraintNode<schema> {
+	declare infer: unknown
 	abstract applicableTo(basis: Basis | undefined): basis is Basis | undefined
 }
 

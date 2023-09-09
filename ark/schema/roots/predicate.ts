@@ -1,5 +1,5 @@
-import type { conform, Hkt } from "@arktype/util"
-import { isArray, throwInternalError } from "@arktype/util"
+import type { conform } from "@arktype/util"
+import { Hkt, isArray, reify, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
 	BasisKind,
@@ -22,7 +22,7 @@ type applicableRefinementKind<basis extends Basis | undefined> = {
 
 export type PredicateConstraints<basis extends Basis = Basis> =
 	| readonly Refinement<applicableRefinementKind<undefined>>[]
-	| [
+	| readonly [
 			basis: basis,
 			...refinements: Refinement<applicableRefinementKind<basis>>[]
 	  ]
@@ -48,29 +48,25 @@ export interface PredicateSchema<basis extends Basis = Basis>
 	constraints: PredicateConstraints<basis>
 }
 
-export class PredicateNode<t = unknown> extends TypeNode<
-	t,
-	PredicateSchema,
-	typeof PredicateNode
-> {
+export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 	readonly kind = "predicate"
 
-	declare f: (
-		input: conform<this[Hkt.key], PredicateInputs>
-	) => typeof input extends PredicateInputs<infer basis>
-		? BasisInput extends basis
-			? unknown
-			: inferBasis<basis>
-		: never
+	static from = reify(
+		class extends Hkt {
+			f = (input: conform<this[Hkt.key], PredicateInputs>) => {
+				return new PredicateNode(
+					isArray(input) ? { constraints: input } : input
+				) as {} as typeof input extends PredicateInputs<infer basis>
+					? BasisInput extends basis
+						? unknown
+						: inferBasis<basis>
+					: never
+			}
+		}
+	)
 
 	declare infer: t;
 	declare [inferred]: t
-
-	static parse<basis extends Basis>(
-		input: PredicateConstraints<basis> | PredicateSchema<basis>
-	) {
-		return isArray(input) ? { constraints: input } : input
-	}
 
 	branches = [this]
 

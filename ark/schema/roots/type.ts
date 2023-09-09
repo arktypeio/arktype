@@ -1,6 +1,6 @@
 import type { IdentityNode } from "../constraints/identity.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseSchema, NodeSubclass } from "../schema.js"
+import type { BaseSchema } from "../schema.js"
 import { BaseNode } from "../schema.js"
 import { inferred } from "../utils.js"
 import { PredicateNode } from "./predicate.js"
@@ -20,9 +20,8 @@ export type RootKind = keyof RootsByKind
 
 export abstract class TypeNode<
 	t = unknown,
-	schema extends BaseSchema = BaseSchema,
-	node extends NodeSubclass<node> = NodeSubclass<any>
-> extends BaseNode<schema, node> {
+	schema extends BaseSchema = BaseSchema
+> extends BaseNode<schema> {
 	declare infer: t;
 	declare [inferred]: t
 	declare branches: readonly PredicateNode[]
