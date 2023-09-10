@@ -6,8 +6,8 @@ import type {
 	SerializedPrimitive
 } from "@arktype/util"
 import { entriesOf, isKeyOf, throwInternalError } from "@arktype/util"
-import { Disjoint, type SerializedPath } from "../disjoint.js"
-import { compileSerializedValue } from "../io/compile.js"
+import { Disjoint, type SerializedPath } from "./disjoint.js"
+import { compileSerializedValue } from "./io/compile.js"
 import type { PredicateNode } from "./predicate.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =

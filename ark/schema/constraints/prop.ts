@@ -1,8 +1,7 @@
 import type { conform } from "@arktype/util"
 import { Hkt, reify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { TypeNode } from "../roots/type.js"
-import { UnionNode } from "../roots/union.js"
+import { TypeNode } from "../type.js"
 import type { Basis, ConstraintSchema } from "./constraint.js"
 import { RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -74,7 +73,7 @@ export class PropNode<
 						key,
 						required,
 						// TODO: builtins.never()
-						value: new UnionNode({ branches: [] }) as never
+						value: new TypeNode({ branches: [] }) as never
 				  }
 		}
 		return {

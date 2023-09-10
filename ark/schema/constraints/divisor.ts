@@ -1,7 +1,7 @@
 import type { conform } from "@arktype/util"
 import { Hkt, reify } from "@arktype/util"
 import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
-import { ConstraintNode, RefinementNode } from "./constraint.js"
+import { RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 
 export interface DivisibilitySchema extends ConstraintSchema {

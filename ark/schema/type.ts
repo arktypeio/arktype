@@ -1,30 +1,30 @@
 import type { conform } from "@arktype/util"
 import { Hkt, isArray, reify } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
-import type { BaseSchema } from "../schema.js"
-import type { PredicateConstraints } from "./predicate.js"
+import { Disjoint } from "./disjoint.js"
 import { PredicateNode } from "./predicate.js"
-import { TypeNode } from "./type.js"
+import { BaseNode, type BaseSchema } from "./schema.js"
 
-export interface UnionSchema extends BaseSchema {
+export interface TypeSchema extends BaseSchema {
 	branches: readonly PredicateNode[]
 }
 
-export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
-	readonly kind = "union"
+export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
+	readonly kind = "type"
+
+	declare infer: t
 
 	static from = reify(
 		class extends Hkt {
 			f = (
-				input: conform<this[Hkt.key], UnionSchema | UnionSchema["branches"]>
-			): UnionNode<
-				typeof input extends UnionSchema
+				input: conform<this[Hkt.key], TypeSchema | TypeSchema["branches"]>
+			): TypeNode<
+				typeof input extends TypeSchema
 					? typeof input
 					: typeof input extends readonly PredicateNode[]
 					? { branches: typeof input }
 					: never
 			> => {
-				return new UnionNode(
+				return new TypeNode(
 					isArray(input)
 						? {
 								branches: input.map((predicateInput) =>
@@ -56,6 +56,47 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 		// 	(result, branch) => result.and(branch.keyof()),
 		// 	builtins.unknown()
 		// )
+	}
+
+	allows(data: unknown) {
+		return true
+	}
+
+	and<other extends TypeNode>(
+		other: other // TODO: inferIntersection
+	) {
+		const result = this.intersect(other)
+		return result instanceof Disjoint ? result.throw() : result
+	}
+
+	intersect(other: TypeNode): TypeNode | Disjoint {
+		const resultBranches = intersectBranches(this.branches, other.branches)
+		return resultBranches.length === 0
+			? Disjoint.from("union", this.branches, other.branches)
+			: new TypeNode({ branches: resultBranches })
+	}
+
+	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
+		return this
+	}
+
+	isUnknown(): this is PredicateNode<unknown> {
+		return (
+			this.branches.length === 1 && this.branches[1].constraints.length === 0
+		)
+	}
+
+	isNever(): this is TypeNode<never> {
+		return this.branches.length === 0
+	}
+
+	array(): PredicateNode<t[]> {
+		return new TypeNode({ branches: [] })
+	}
+
+	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
+		const intersection = this.intersect(other)
+		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
 }
 

@@ -4,76 +4,32 @@ import type {
 	Basis,
 	BasisKind,
 	Constraint,
-	Refinement,
-	RefinementKind
-} from "../constraints/constraint.js"
-import { Disjoint } from "../disjoint.js"
-import type { BaseSchema, BasisInput, inputFor } from "../schema.js"
-import { inferred } from "../utils.js"
-import { TypeNode } from "./type.js"
-
-type applicableRefinementKind<basis extends Basis | undefined> = {
-	[k in RefinementKind]: Refinement<k>["applicableTo"] extends (
-		allowedBasis: Basis | undefined
-	) => allowedBasis is basis
-		? k
-		: never
-}[RefinementKind]
-
-export type PredicateConstraints<basis extends Basis = Basis> =
-	| readonly Refinement<applicableRefinementKind<undefined>>[]
-	| readonly [
-			basis: basis,
-			...refinements: Refinement<applicableRefinementKind<basis>>[]
-	  ]
-
-type inferBasis<input extends BasisInput> = {
-	[k in BasisKind]: Basis<k> extends Hkt
-		? input extends Parameters<Basis<k>["f"]>[0]
-			? Hkt.apply<Basis<k>, input>
-			: never
-		: never
-}[BasisKind]
-
-export type PredicateInputs<basis extends BasisInput = BasisInput> =
-	| readonly inputFor<applicableRefinementKind<undefined>>[]
-	| readonly [
-			basis: basis,
-			// TODO: Fix
-			...refinements: inputFor<applicableRefinementKind<undefined>>[]
-	  ]
+	ConstraintKind
+} from "./constraints/constraint.js"
+import { Disjoint } from "./disjoint.js"
+import { BaseNode, type BaseSchema, type inputFor } from "./schema.js"
 
 export interface PredicateSchema<basis extends Basis = Basis>
 	extends BaseSchema {
-	constraints: PredicateConstraints<basis>
+	constraints: [basis: basis, ...unknown[]]
 }
 
-export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
+export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	readonly kind = "predicate"
+	declare infer: t
 
 	static from = reify(
 		class extends Hkt {
 			f = (
-				input: conform<
-					this[Hkt.key],
-					PredicateSchema | PredicateSchema["constraints"]
-				>
-			): PredicateNode<
-				typeof input extends PredicateSchema
-					? typeof input
-					: typeof input extends readonly PredicateNode[]
-					? { branches: typeof input }
-					: never
-			> => {
+				basis: conform<this[Hkt.key], inputFor<BasisKind>>,
+				...constraints: inputFor<ConstraintKind>[]
+			): PredicateNode<typeof basis> => {
 				return new PredicateNode(
 					isArray(input) ? { constraints: input } : input
 				) as never
 			}
 		}
 	)
-
-	declare infer: t;
-	declare [inferred]: t
 
 	branches = [this]
 
@@ -84,22 +40,21 @@ export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 	allows() {
 		return true
 	}
-	//intersect, isUnknown, isNever, array, extends
 
-	intersect(other: TypeNode) {
+	intersect(other: PredicateNode) {
+		let result: readonly Constraint[] | Disjoint = this.rule
+		for (const constraint of other.constraints) {
+			if (result instanceof Disjoint) {
+				break
+			}
+			result = constraint.apply(result)
+		}
+		// TODO: attributes
+		return result instanceof Disjoint ? result : new PredicateNode(result)
+	}
+
+	keyof() {
 		return this
-	}
-
-	extends(other: TypeNode) {
-		return false
-	}
-
-	isUnknown(): this is PredicateNode<unknown> {
-		return this.constraints.length === 0
-	}
-
-	isNever() {
-		return false
 	}
 
 	references() {
@@ -138,25 +93,6 @@ export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 			result.push(this as never)
 		}
 		return result
-	}
-
-	// intersect(other: this) {
-	// 	if (!other.hasKind("predicate")) {
-	// 		return other.intersect(this)
-	// 	}
-	// 	let result: readonly Constraint[] | Disjoint = this.rule
-	// 	for (const constraint of other.constraints) {
-	// 		if (result instanceof Disjoint) {
-	// 			break
-	// 		}
-	// 		result = constraint.apply(result)
-	// 	}
-	// 	// TODO: attributes
-	// 	return result instanceof Disjoint ? result : new Predicate(result)
-	// }
-
-	keyof() {
-		return this
 	}
 }
 
