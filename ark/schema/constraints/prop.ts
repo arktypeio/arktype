@@ -1,8 +1,10 @@
+import type { conform } from "@arktype/util"
+import { Hkt, reify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { TypeNode } from "../roots/type.js"
 import { UnionNode } from "../roots/union.js"
 import type { Basis, ConstraintSchema } from "./constraint.js"
-import { ConstraintNode, RefinementNode } from "./constraint.js"
+import { RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 
@@ -23,15 +25,19 @@ type inferKey<k extends PropSchema["key"]> = k extends string | symbol
 	? k["infer"] & PropertyKey
 	: never
 
-export class PropConstraint<
+export class PropNode<
 	schema extends PropSchema = PropSchema
 > extends RefinementNode<PropSchema> {
 	readonly kind = "prop"
 	declare infer: inferPropSchema<schema>
 
-	static parse(input: PropSchema) {
-		return input
-	}
+	static from = reify(
+		class extends Hkt {
+			f = (input: conform<this[Hkt.key], PropSchema>) => {
+				return new PropNode(input)
+			}
+		}
+	)
 
 	applicableTo(
 		basis: Basis | undefined
@@ -51,7 +57,7 @@ export class PropConstraint<
 		return `${String(this.key)}${this.required ? "" : "?"}: ${this.value}`
 	}
 
-	reduceWith(other: PropConstraint) {
+	reduceWith(other: PropNode) {
 		if (this.key instanceof TypeNode || other.key instanceof TypeNode) {
 			return null
 		}

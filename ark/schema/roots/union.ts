@@ -1,4 +1,5 @@
-import { isArray } from "@arktype/util"
+import type { conform } from "@arktype/util"
+import { Hkt, isArray, reify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
 import type { PredicateConstraints } from "./predicate.js"
@@ -12,16 +13,30 @@ export interface UnionSchema extends BaseSchema {
 export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 	readonly kind = "union"
 
-	static parse(input: readonly PredicateConstraints[] | UnionSchema) {
-		return isArray(input)
-			? {
-					branches: input.map((predicateInput) =>
-						// TODO: fix
-						PredicateNode.from(predicateInput)
-					) as PredicateNode[]
-			  }
-			: input
-	}
+	static from = reify(
+		class extends Hkt {
+			f = (
+				input: conform<this[Hkt.key], UnionSchema | UnionSchema["branches"]>
+			): UnionNode<
+				typeof input extends UnionSchema
+					? typeof input
+					: typeof input extends readonly PredicateNode[]
+					? { branches: typeof input }
+					: never
+			> => {
+				return new UnionNode(
+					isArray(input)
+						? {
+								branches: input.map((predicateInput) =>
+									// TODO: fix
+									PredicateNode.from(predicateInput as never)
+								) as PredicateNode[]
+						  }
+						: input
+				) as never
+			}
+		}
+	)
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")

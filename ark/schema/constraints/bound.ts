@@ -1,3 +1,5 @@
+import type { conform } from "@arktype/util"
+import { Hkt, reify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
 import { RefinementNode } from "./constraint.js"
@@ -30,6 +32,14 @@ export class BoundNode<
 	static parse(input: BoundSchema) {
 		return input
 	}
+
+	static from = reify(
+		class extends Hkt {
+			f = (input: conform<this[Hkt.key], BoundSchema>) => {
+				return new BoundNode(input)
+			}
+		}
+	)
 
 	comparator = `${this.limitKind === "min" ? ">" : "<"}${
 		this.exclusive ? "" : "="

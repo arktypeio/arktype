@@ -1,3 +1,5 @@
+import type { conform } from "@arktype/util"
+import { Hkt, reify } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import type { Basis, ConstraintSchema } from "./constraint.js"
@@ -12,9 +14,15 @@ export interface NarrowSchema extends ConstraintSchema {
 export class NarrowNode extends RefinementNode<NarrowSchema> {
 	readonly kind = "narrow"
 
-	static parse(input: Narrow | NarrowSchema) {
-		return typeof input === "function" ? { rule: input } : input
-	}
+	static from = reify(
+		class extends Hkt {
+			f = (input: conform<this[Hkt.key], Narrow | NarrowSchema>) => {
+				return new NarrowNode(
+					typeof input === "function" ? { rule: input } : input
+				)
+			}
+		}
+	)
 
 	applicableTo(
 		basis: Basis | undefined

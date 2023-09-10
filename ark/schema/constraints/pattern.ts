@@ -1,4 +1,5 @@
-import { throwParseError } from "@arktype/util"
+import type { conform } from "@arktype/util"
+import { Hkt, reify, throwParseError } from "@arktype/util"
 import type { Basis, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode, RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -7,6 +8,8 @@ export interface PatternSchema extends ConstraintSchema {
 	source: string
 	flags: string
 }
+
+export type PatternInput = RegexLiteral | RegExp | PatternSchema
 
 export class PatternNode extends RefinementNode<PatternSchema> {
 	readonly kind = "regex"
@@ -21,6 +24,20 @@ export class PatternNode extends RefinementNode<PatternSchema> {
 			  }
 			: input
 	}
+
+	static from = reify(
+		class extends Hkt {
+			f = (input: conform<this[Hkt.key], PatternInput>) => {
+				return new PatternNode(
+					typeof input === "string"
+						? parseRegexLiteral(input)
+						: input instanceof RegExp
+						? { source: input.source, flags: input.flags }
+						: input
+				)
+			}
+		}
+	)
 
 	applicableTo(
 		basis: Basis | undefined

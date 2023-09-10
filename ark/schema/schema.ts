@@ -19,13 +19,16 @@ export type BasisInput = inputFor<BasisKind> | undefined
 export type node = {
 	<const input extends PredicateInputs<basis>, basis extends BasisInput>(
 		...input: input
-	): PredicateNode<Hkt.apply<PredicateNode, input>>
+	): PredicateNode<Hkt.apply<typeof PredicateNode.from, input>>
 
 	<const branches extends readonly PredicateInputs[]>(
 		...branches: branches
 	): UnionNode<
 		{
-			[i in keyof branches]: Hkt.apply<PredicateNode, branches[i]>
+			[i in keyof branches]: Hkt.apply<
+				(typeof PredicateNode)["from"],
+				branches[i]
+			>
 		}[keyof branches]
 	>
 
@@ -76,9 +79,9 @@ export abstract class BaseNode<
 	abstract writeDefaultDescription(): string
 }
 
-export type inputFor<kind extends NodeKind> = Parameters<
-	NodeClassesByKind[kind]["parse"]
->[0]
+export type inputFor<kind extends NodeKind> = {
+	[k in NodeKind]: Parameters<NodeClassesByKind[k]["from"]>
+}[kind]
 
 export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,

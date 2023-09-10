@@ -7,9 +7,9 @@ import type { DivisibilityNode } from "./divisor.js"
 import type { DomainNode } from "./domain.js"
 import type { IdentityNode } from "./identity.js"
 import type { NarrowNode } from "./narrow.js"
-import type { PropConstraint } from "./prop.js"
+import type { PatternNode } from "./pattern.js"
+import type { PropNode } from "./prop.js"
 import type { PrototypeNode } from "./prototype.js"
-import type { PatternNode } from "./regex.js"
 
 export type BasisClassesByKind = {
 	domain: typeof DomainNode
@@ -31,7 +31,7 @@ export type RefinementClassesByKind = {
 	divisor: typeof DivisibilityNode
 	bound: typeof BoundNode
 	regex: typeof PatternNode
-	prop: typeof PropConstraint
+	prop: typeof PropNode
 	narrow: typeof NarrowNode
 }
 
@@ -39,7 +39,7 @@ export type RefinementsByKind = {
 	divisor: DivisibilityNode
 	bound: BoundNode
 	regex: PatternNode
-	prop: PropConstraint
+	prop: PropNode
 	narrow: NarrowNode
 }
 

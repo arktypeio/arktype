@@ -42,10 +42,6 @@ export class PrototypeNode<
 		}
 	)
 
-	static parse(input: PrototypeInput) {
-		return typeof input === "function" ? { rule: input } : input
-	}
-
 	protected possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 
 	hash() {

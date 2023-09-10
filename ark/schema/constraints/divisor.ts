@@ -1,3 +1,5 @@
+import type { conform } from "@arktype/util"
+import { Hkt, reify } from "@arktype/util"
 import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode, RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -9,9 +11,15 @@ export interface DivisibilitySchema extends ConstraintSchema {
 export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 	readonly kind = "divisor"
 
-	static parse(input: number | DivisibilitySchema) {
-		return typeof input === "number" ? { divisor: input } : input
-	}
+	static from = reify(
+		class extends Hkt {
+			f = (input: conform<this[Hkt.key], number | DivisibilitySchema>) => {
+				return new DivisibilityNode(
+					typeof input === "number" ? { divisor: input } : input
+				)
+			}
+		}
+	)
 
 	applicableTo(
 		basis: Basis | undefined
