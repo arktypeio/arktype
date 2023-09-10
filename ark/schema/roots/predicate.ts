@@ -53,14 +53,16 @@ export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 
 	static from = reify(
 		class extends Hkt {
-			f = (input: conform<this[Hkt.key], PredicateInputs>) => {
+			f = (
+				input: conform<this[Hkt.key], PredicateInputs>
+			): typeof input extends PredicateInputs<infer basis>
+				? BasisInput extends basis
+					? unknown
+					: inferBasis<basis>
+				: never => {
 				return new PredicateNode(
 					isArray(input) ? { constraints: input } : input
-				) as {} as typeof input extends PredicateInputs<infer basis>
-					? BasisInput extends basis
-						? unknown
-						: inferBasis<basis>
-					: never
+				) as never
 			}
 		}
 	)
