@@ -100,8 +100,8 @@ export type requiredKeyOf<o> = {
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
 const ShallowClone = class {
-	constructor({ ...properties }: object) {
-		return properties
+	constructor(properties: object) {
+		Object.assign(this, properties)
 	}
 } as new <t extends object>(base: t) => t
 

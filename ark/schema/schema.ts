@@ -1,5 +1,5 @@
-import type { conform, Constructor, extend, Fn } from "@arktype/util"
-import { DynamicBase, Hkt } from "@arktype/util"
+import type { conform, Constructor, extend, Fn, Hkt } from "@arktype/util"
+import { DynamicBase } from "@arktype/util"
 import type {
 	BasisKind,
 	ConstraintClassesByKind,
@@ -37,19 +37,12 @@ export type node = {
 export const node = ((...input: PredicateInputs[]) =>
 	new PredicateNode(PredicateNode.parse(input as never))) as node
 
-export abstract class NodeParserDefinition {
-	declare [Hkt.key]: unknown
-
-	abstract parse(...args: never[]): BaseNode<any>
-}
-
 export abstract class BaseNode<
 	schema extends BaseSchema = BaseSchema
 > extends DynamicBase<schema> {
 	abstract kind: NodeKind
 
 	abstract infer: unknown
-
 	// TODO: protect
 	constructor(public schema: schema) {
 		super(schema)

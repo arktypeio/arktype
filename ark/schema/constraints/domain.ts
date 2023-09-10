@@ -10,10 +10,6 @@ export interface DomainSchema<
 	rule: domain
 }
 
-export type DomainInput<
-	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = domain | DomainSchema<domain>
-
 export class DomainNode<
 	schema extends DomainSchema = DomainSchema
 > extends ConstraintNode<schema> {

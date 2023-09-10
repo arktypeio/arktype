@@ -70,10 +70,10 @@ export class PrototypeNode<
 		return other.kind !== "prototype"
 			? null
 			: constructorExtends(this.rule, other.rule)
-			? this
+			? this.schema
 			: constructorExtends(other.rule, this.rule)
 			? // this cast is safe since we know other's constructor extends this one
-			  (other as PrototypeNode<schema>)
+			  (other.schema as schema)
 			: Disjoint.from("prototype", this, other)
 	}
 }

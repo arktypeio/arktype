@@ -16,9 +16,7 @@ type TypesByDomain = {
 	null: null
 }
 
-export type inferDomain<kind extends Domain> = Domain extends kind
-	? unknown
-	: TypesByDomain[kind]
+export type inferDomain<kind extends Domain> = TypesByDomain[kind]
 
 export type Domain = evaluate<keyof TypesByDomain>
 
