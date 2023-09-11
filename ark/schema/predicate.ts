@@ -4,14 +4,16 @@ import type {
 	Basis,
 	BasisKind,
 	Constraint,
-	ConstraintKind
+	ConstraintKind,
+	RefinementKind
 } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
-import { BaseNode, type BaseSchema, type inputFor } from "./schema.js"
+import type { BaseSchema, inputFor, Node } from "./schema.js"
+import { BaseNode } from "./schema.js"
 
 export interface PredicateSchema<basis extends Basis = Basis>
 	extends BaseSchema {
-	constraints: [basis: basis, ...unknown[]]
+	constraints: readonly [basis: basis, ...Node<RefinementKind>[]]
 }
 
 export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
@@ -31,8 +33,6 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		}
 	)
 
-	branches = [this]
-
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
 	}
@@ -42,15 +42,17 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	}
 
 	intersect(other: PredicateNode) {
-		let result: readonly Constraint[] | Disjoint = this.rule
+		let result: readonly Constraint[] | Disjoint = this.constraints
 		for (const constraint of other.constraints) {
 			if (result instanceof Disjoint) {
 				break
 			}
-			result = constraint.apply(result)
+			result = this.addConstraint(constraint)
 		}
 		// TODO: attributes
-		return result instanceof Disjoint ? result : new PredicateNode(result)
+		return result instanceof Disjoint
+			? result
+			: new PredicateNode({ constraints: result })
 	}
 
 	keyof() {

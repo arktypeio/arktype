@@ -1,4 +1,4 @@
-import type { AbstractableConstructor, Domain, entryOf } from "@arktype/util"
+import type { entryOf } from "@arktype/util"
 import {
 	entriesOf,
 	fromEntries,
@@ -7,7 +7,7 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { BoundNode, BoundSchema } from "./constraints/bound.js"
+import type { BoundNode } from "./constraints/bound.js"
 import type { Constraint } from "./constraints/constraint.js"
 import type { DomainNode } from "./constraints/domain.js"
 import type { IdentityNode } from "./constraints/identity.js"

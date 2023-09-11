@@ -90,7 +90,7 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		return this.branches.length === 0
 	}
 
-	array(): PredicateNode<t[]> {
+	array(): TypeNode<t[]> {
 		return new TypeNode({ branches: [] })
 	}
 
@@ -99,6 +99,8 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
 }
+
+export const node = TypeNode.from
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant() {
