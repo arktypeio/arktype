@@ -17,6 +17,7 @@ export class IdentityNode<
 
 	static from = reify(
 		class extends Hkt {
+			declare [Hkt.key]: IdentitySchema
 			f = (
 				input: conform<this[Hkt.key], IdentitySchema>
 			): IdentityNode<typeof input> => {

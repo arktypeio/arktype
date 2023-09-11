@@ -14,17 +14,6 @@ export type PatternInput = RegexLiteral | RegExp | PatternSchema
 export class PatternNode extends RefinementNode<PatternSchema> {
 	readonly kind = "regex"
 
-	static parse(input: RegexLiteral | RegExp | PatternSchema) {
-		return typeof input === "string"
-			? parseRegexLiteral(input)
-			: input instanceof RegExp
-			? {
-					source: input.source,
-					flags: input.flags
-			  }
-			: input
-	}
-
 	static from = reify(
 		class extends Hkt {
 			f = (input: conform<this[Hkt.key], PatternInput>) => {

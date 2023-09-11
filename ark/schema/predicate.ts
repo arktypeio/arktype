@@ -23,8 +23,7 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	static from = reify(
 		class extends Hkt {
 			f = (
-				basis: conform<this[Hkt.key], inputFor<BasisKind>>,
-				...constraints: inputFor<ConstraintKind>[]
+				basis: conform<this[Hkt.key], inputFor<BasisKind>[0]>
 			): PredicateNode<typeof basis> => {
 				return new PredicateNode(
 					isArray(input) ? { constraints: input } : input

@@ -11,7 +11,7 @@ export interface DomainSchema<
 }
 
 export class DomainNode<
-	/** @ts-expect-error */
+	// @ts-expect-error
 	out schema extends DomainSchema = DomainSchema
 > extends ConstraintNode<schema> {
 	readonly kind = "domain"

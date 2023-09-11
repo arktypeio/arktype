@@ -12,7 +12,7 @@ export interface BaseSchema {
 	description?: string
 }
 
-export type BasisInput = inputFor<BasisKind> | undefined
+export type BasisInput = parametersFor<BasisKind> | undefined
 
 export abstract class BaseNode<
 	schema extends BaseSchema = BaseSchema
@@ -53,7 +53,7 @@ export abstract class BaseNode<
 	abstract writeDefaultDescription(): string
 }
 
-export type inputFor<kind extends NodeKind> = {
+export type parametersFor<kind extends NodeKind> = {
 	[k in NodeKind]: Parameters<NodeClassesByKind[k]["from"]>
 }[kind]
 

@@ -11,7 +11,7 @@ export const reify = <def extends new () => Hkt>(def: def) =>
 
 export type reify<hkt extends Hkt> = hkt & {
 	<In extends Parameters<hkt["f"]>[0]>(
-		In: conform<In, Hkt.narrow<In>>
+		In: In
 	): Hkt.apply<hkt, In> extends Hkt
 		? reify<Hkt.apply<hkt, In>>
 		: Hkt.apply<hkt, In>
