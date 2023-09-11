@@ -1,8 +1,9 @@
-import type { conform, Constructor, extend, Fn, Hkt } from "@arktype/util"
+import type { extend } from "@arktype/util"
 import { DynamicBase } from "@arktype/util"
 import type {
 	BasisKind,
 	ConstraintClassesByKind,
+	ConstraintKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
 import type { PredicateNode } from "./predicate.js"
@@ -12,7 +13,7 @@ export interface BaseSchema {
 	description?: string
 }
 
-export type BasisInput = parametersFor<BasisKind> | undefined
+export type BasisInput = inputFor<BasisKind> | undefined
 
 export abstract class BaseNode<
 	schema extends BaseSchema = BaseSchema
@@ -53,8 +54,8 @@ export abstract class BaseNode<
 	abstract writeDefaultDescription(): string
 }
 
-export type parametersFor<kind extends NodeKind> = {
-	[k in NodeKind]: Parameters<NodeClassesByKind[k]["from"]>
+export type inputFor<kind extends ConstraintKind> = {
+	[k in kind]: Parameters<ConstraintClassesByKind[k]["from"]>[0]
 }[kind]
 
 export type NodeClassesByKind = extend<

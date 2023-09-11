@@ -1,36 +1,46 @@
-import type { conform } from "@arktype/util"
-import { Hkt, isArray, reify, throwInternalError } from "@arktype/util"
+import type { exact } from "@arktype/util"
+import { throwInternalError } from "@arktype/util"
 import type {
 	Basis,
 	BasisKind,
 	Constraint,
-	ConstraintKind,
+	ConstraintNode,
 	RefinementKind
 } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
-import type { BaseSchema, inputFor, Node } from "./schema.js"
+import type { BaseSchema, BasisInput, inputFor, Node } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export interface PredicateSchema<basis extends Basis = Basis>
 	extends BaseSchema {
-	constraints: readonly [basis: basis, ...Node<RefinementKind>[]]
+	basis: basis
 }
+
+type parseBasis<basis extends BasisInput> = basis extends inputFor<"domain">
+	? "domain"
+	: basis extends inputFor<"prototype">
+	? "prototype"
+	: basis extends inputFor<"identity">
+	? "identity"
+	: never
+
+export type PredicateInput<basis extends BasisInput = BasisInput> =
+	| Record<PropertyKey, never>
+	| { narrow?: inputFor<"narrow"> }
+	| ({ basis: basis } & {})
+
+const s: PredicateInput = {
+	foo: ""
+}
+
+export const predicate = <input extends PredicateInput>(input: input) =>
+	({}) as parseBasis<input["basis"]>
+
+const z = predicate({ basis: "string" })
 
 export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	readonly kind = "predicate"
 	declare infer: t
-
-	static from = reify(
-		class extends Hkt {
-			f = (
-				basis: conform<this[Hkt.key], inputFor<BasisKind>[0]>
-			): PredicateNode<typeof basis> => {
-				return new PredicateNode(
-					isArray(input) ? { constraints: input } : input
-				) as never
-			}
-		}
-	)
 
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
