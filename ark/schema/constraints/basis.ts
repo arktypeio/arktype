@@ -1,21 +1,17 @@
-import type { Disjoint } from "../disjoint.js"
-import type { BaseSchema } from "../schema.js"
-import { BaseNode } from "../schema.js"
-import type { Constraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 import type { UnitNode } from "./unit.js"
 
 export type BasisClassesByKind = {
 	domain: typeof DomainNode
-	identity: typeof UnitNode
 	prototype: typeof PrototypeNode
+	unit: typeof UnitNode
 }
 
 export type BasesByKind = {
 	domain: DomainNode
-	identity: UnitNode
 	prototype: PrototypeNode
+	unit: UnitNode
 }
 
 export type BasisKind = keyof BasesByKind

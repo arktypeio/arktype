@@ -3,8 +3,7 @@ import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	Hkt,
-	objectKindDescriptions,
-	reify
+	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"

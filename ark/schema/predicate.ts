@@ -1,8 +1,12 @@
 import { throwInternalError } from "@arktype/util"
-import type { Basis } from "./constraints/basis.js"
+import type {
+	Basis,
+	BasisClassesByKind,
+	BasisKind
+} from "./constraints/basis.js"
 import type { Refinement, RefinementNode } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
-import type { BaseSchema, BasisInput, inputFor } from "./schema.js"
+import type { BaseSchema, BasisInput, inputFor, parse } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export interface PredicateSchema<basis extends Basis = Basis>
@@ -10,13 +14,11 @@ export interface PredicateSchema<basis extends Basis = Basis>
 	basis: basis
 }
 
-type parseBasis<basis extends BasisInput> = basis extends inputFor<"domain">
-	? "domain"
-	: basis extends inputFor<"prototype">
-	? "prototype"
-	: basis extends inputFor<"identity">
-	? "identity"
-	: never
+type parseBasis<input extends BasisInput> = {
+	[k in BasisKind]: input extends inputFor<k>
+		? parse<BasisClassesByKind[k], input>
+		: never
+}[BasisKind]
 
 export type PredicateInput<basis extends BasisInput = BasisInput> =
 	| Record<PropertyKey, never>
