@@ -1,18 +1,19 @@
 import type { conform } from "@arktype/util"
-import { Hkt, reify, throwParseError } from "@arktype/util"
+import { Hkt, throwParseError } from "@arktype/util"
+import type { Basis } from "../bases/basis.js"
+import type { DomainNode } from "../bases/domain.js"
+import type { BaseSchema } from "../schema.js"
 import { parser } from "../schema.js"
-import type { Basis, ConstraintSchema } from "./constraint.js"
-import { ConstraintNode, RefinementNode } from "./constraint.js"
-import type { DomainNode } from "./domain.js"
+import { ConstraintNode } from "./constraint.js"
 
-export interface PatternSchema extends ConstraintSchema {
+export interface PatternSchema extends BaseSchema {
 	source: string
 	flags: string
 }
 
 export type PatternInput = RegexLiteral | RegExp | PatternSchema
 
-export class PatternNode extends RefinementNode<PatternSchema> {
+export class PatternNode extends ConstraintNode<PatternSchema> {
 	readonly kind = "regex"
 
 	protected constructor(schema: PatternSchema) {

@@ -23,7 +23,7 @@ export type Basis<kind extends BasisKind = BasisKind> = BasesByKind[kind]
 
 export interface ConstraintSchema extends BaseSchema {}
 
-export abstract class ConstraintNode<
+export abstract class BasisNode<
 	schema extends ConstraintSchema
 > extends BaseNode<schema> {
 	reduce(other: Constraint): Constraint | Disjoint | null {

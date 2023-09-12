@@ -1,18 +1,19 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
+import type { Basis } from "../bases/basis.js"
+import type { DomainNode } from "../bases/domain.js"
+import type { PrototypeNode } from "../bases/prototype.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
+import type { BaseSchema } from "../schema.js"
 import { parser } from "../schema.js"
-import type { Basis, ConstraintSchema } from "./constraint.js"
-import { RefinementNode } from "./constraint.js"
-import type { DomainNode } from "./domain.js"
-import type { PrototypeNode } from "./prototype.js"
+import { ConstraintNode } from "./constraint.js"
 
-export interface NarrowSchema extends ConstraintSchema {
+export interface NarrowSchema extends BaseSchema {
 	rule: Narrow
 }
 
-export class NarrowNode extends RefinementNode<NarrowSchema> {
+export class NarrowNode extends ConstraintNode<NarrowSchema> {
 	readonly kind = "narrow"
 
 	protected constructor(schema: NarrowSchema) {

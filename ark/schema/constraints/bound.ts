@@ -1,11 +1,13 @@
 import type { conform } from "@arktype/util"
-import { Hkt, reify } from "@arktype/util"
+import { Hkt } from "@arktype/util"
+import type { Basis } from "../bases/basis.js"
+import type { DomainNode } from "../bases/domain.js"
+import type { PrototypeNode } from "../bases/prototype.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseSchema } from "../schema.js"
 import { parser } from "../schema.js"
-import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
-import { RefinementNode } from "./constraint.js"
-import type { DomainNode } from "./domain.js"
-import type { PrototypeNode } from "./prototype.js"
+import type { Constraint } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
 export type BoundKind = "date" | "number"
 
@@ -14,7 +16,7 @@ export type BoundSet =
 	| readonly [BoundNode<"min">, BoundNode<"max">]
 
 export interface BoundSchema<limitKind extends LimitKind = LimitKind>
-	extends ConstraintSchema {
+	extends BaseSchema {
 	readonly limitKind: limitKind
 	readonly limit: number
 	readonly exclusive: boolean
@@ -27,7 +29,7 @@ export type RelativeComparator<limitKind extends LimitKind = LimitKind> = {
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends RefinementNode<BoundSchema<limitKind>> {
+> extends ConstraintNode<BoundSchema<limitKind>> {
 	readonly kind = "bound"
 
 	protected constructor(schema: BoundSchema<limitKind>) {
