@@ -1,36 +1,53 @@
-import { throwInternalError } from "@arktype/util"
+import type { conform } from "@arktype/util"
+import { Hkt, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
 	BasisClassesByKind,
 	BasisKind
 } from "./constraints/basis.js"
-import type { Refinement, RefinementNode } from "./constraints/refinement.js"
+import type {
+	Refinement,
+	RefinementClassesByKind,
+	RefinementKind,
+	RefinementNode
+} from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { BaseSchema, BasisInput, inputFor, parse } from "./schema.js"
-import { BaseNode } from "./schema.js"
+import { BaseNode, parser } from "./schema.js"
 
 export interface PredicateSchema<basis extends Basis = Basis>
 	extends BaseSchema {
 	basis: basis
 }
 
-type parseBasis<input extends BasisInput> = {
-	[k in BasisKind]: input extends inputFor<k>
-		? parse<BasisClassesByKind[k], input>
+type parseBasis<input extends BasisInput> = conform<
+	{
+		[k in BasisKind]: input extends inputFor<k>
+			? parse<BasisClassesByKind[k], input>
+			: never
+	}[BasisKind],
+	Basis
+>
+
+type basisOf<k extends RefinementKind> =
+	Refinement<k>["applicableTo"] extends ((
+		_: Basis
+	) => _ is infer basis extends Basis)
+		? basis
 		: never
-}[BasisKind]
+
+type refinementsOf<basis> = {
+	[k in RefinementKind as basis extends basisOf<k> ? k : never]?: Refinement<k>
+}
 
 export type PredicateInput<basis extends BasisInput = BasisInput> =
 	| Record<PropertyKey, never>
 	| { narrow?: inputFor<"narrow"> }
-	| ({ basis: basis } & {})
+	| ({ basis: basis } & refinementsOf<parseBasis<basis>>)
 
-const s: PredicateInput = {
-	foo: ""
-}
-
-export const predicate = <input extends PredicateInput>(input: input) =>
-	({}) as parseBasis<input["basis"]>
+export const predicate = <basis extends BasisInput>(
+	input: PredicateInput<basis>
+) => ({}) as PredicateNode<parseBasis<basis>["infer"]>
 
 const z = predicate({ basis: "string" })
 
