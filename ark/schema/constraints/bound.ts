@@ -1,13 +1,13 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
-import type { Basis } from "../bases/basis.js"
-import type { DomainNode } from "../bases/domain.js"
-import type { PrototypeNode } from "../bases/prototype.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
 import { parser } from "../schema.js"
-import type { Constraint } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import type { Basis } from "./basis.js"
+import type { DomainNode } from "./domain.js"
+import type { PrototypeNode } from "./prototype.js"
+import { RefinementNode } from "./refinement.js"
+import type { Refinement } from "./refinement.js"
 
 export type BoundKind = "date" | "number"
 
@@ -29,7 +29,7 @@ export type RelativeComparator<limitKind extends LimitKind = LimitKind> = {
 
 export class BoundNode<
 	limitKind extends LimitKind = LimitKind
-> extends ConstraintNode<BoundSchema<limitKind>> {
+> extends RefinementNode<BoundSchema<limitKind>> {
 	readonly kind = "bound"
 
 	protected constructor(schema: BoundSchema<limitKind>) {
@@ -77,7 +77,7 @@ export class BoundNode<
 		return this.limitKind === (kind as never)
 	}
 
-	reduceWith(other: Constraint): BoundNode<limitKind> | Disjoint | null {
+	reduceWith(other: Refinement): BoundNode<limitKind> | Disjoint | null {
 		if (other.kind !== "bound") {
 			return null
 		}

@@ -1,44 +1,34 @@
+import type { extend } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
 import { BaseNode } from "../schema.js"
-import type { BoundNode } from "./bound.js"
-import type { DivisibilityNode } from "./divisor.js"
-import type { NarrowNode } from "./narrow.js"
-import type { PatternNode } from "./pattern.js"
-import type { PropNode } from "./prop.js"
+import type { BasesByKind, BasisClassesByKind } from "./basis.js"
+import type {
+	RefinementClassesByKind,
+	RefinementsByKind
+} from "./refinement.js"
 
-export type ConstraintClassesByKind = {
-	divisor: typeof DivisibilityNode
-	bound: typeof BoundNode
-	regex: typeof PatternNode
-	prop: typeof PropNode
-	narrow: typeof NarrowNode
-}
+export type ConstraintClassesByKind = extend<
+	BasisClassesByKind,
+	RefinementClassesByKind
+>
 
-export type ConstraintsByKind = {
-	divisor: DivisibilityNode
-	bound: BoundNode
-	regex: PatternNode
-	prop: PropNode
-	narrow: NarrowNode
-}
+export type ConstraintsByKind = extend<BasesByKind, RefinementsByKind>
 
 export type ConstraintKind = keyof ConstraintsByKind
 
 export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintsByKind[kind]
 
-export abstract class ConstraintNode<
-	schema extends BaseSchema
-> extends BaseNode<schema> {
-	declare infer: unknown
+export interface ConstraintSchema extends BaseSchema {}
 
+export abstract class ConstraintNode<
+	schema extends ConstraintSchema
+> extends BaseNode<schema> {
 	reduce(other: Constraint): Constraint | Disjoint | null {
 		return this as never
 	}
 
 	// TODO: only own keys
 	abstract reduceWith(other: Constraint): schema | null | Disjoint
-
-	abstract applicableTo(basis: Basis | undefined): basis is Basis | undefined
 }

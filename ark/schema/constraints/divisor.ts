@@ -1,16 +1,16 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
-import type { Basis } from "../bases/basis.js"
-import type { DomainNode } from "../bases/domain.js"
 import type { BaseSchema } from "../schema.js"
 import { parser } from "../schema.js"
-import { type Constraint, ConstraintNode } from "./constraint.js"
+import type { Basis } from "./basis.js"
+import type { DomainNode } from "./domain.js"
+import { type Refinement, RefinementNode } from "./refinement.js"
 
 export interface DivisibilitySchema extends BaseSchema {
 	divisor: number
 }
 
-export class DivisibilityNode extends ConstraintNode<DivisibilitySchema> {
+export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 	readonly kind = "divisor"
 
 	protected constructor(schema: DivisibilitySchema) {
@@ -43,7 +43,7 @@ export class DivisibilityNode extends ConstraintNode<DivisibilitySchema> {
 		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 
-	reduceWith(other: Constraint) {
+	reduceWith(other: Refinement) {
 		return other.kind === "divisor"
 			? {
 					divisor:

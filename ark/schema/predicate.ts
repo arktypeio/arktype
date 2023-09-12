@@ -1,10 +1,6 @@
 import { throwInternalError } from "@arktype/util"
-import type {
-	Basis,
-	Constraint,
-	ConstraintNode,
-	ConstraintSchema
-} from "./constraints/constraint.js"
+import type { Basis } from "./constraints/basis.js"
+import type { Refinement, RefinementNode } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { BaseSchema, BasisInput, inputFor } from "./schema.js"
 import { BaseNode } from "./schema.js"
@@ -40,7 +36,7 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	readonly kind = "predicate"
 	declare infer: t
 
-	declare constraints: ConstraintNode<ConstraintSchema>[]
+	declare constraints: RefinementNode<BaseSchema>[]
 
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
@@ -51,7 +47,7 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	}
 
 	intersect(other: PredicateNode) {
-		let result: readonly Constraint[] | Disjoint = this.constraints
+		let result: readonly Refinement[] | Disjoint = this.constraints
 		for (const constraint of other.constraints) {
 			if (result instanceof Disjoint) {
 				break
@@ -81,9 +77,9 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	}
 
 	protected addConstraint(
-		constraint: Constraint
-	): readonly Constraint[] | Disjoint {
-		const result: Constraint[] = []
+		constraint: Refinement
+	): readonly Refinement[] | Disjoint {
+		const result: Refinement[] = []
 		let includesConstraint = false
 		for (let i = 0; i < this.constraints.length; i++) {
 			const elementResult = constraint.reduce(this.constraints[i])

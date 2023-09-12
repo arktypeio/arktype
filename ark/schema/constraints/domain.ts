@@ -1,13 +1,14 @@
 import type { conform, Domain, inferDomain } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import type { BaseSchema } from "../schema.js"
 import { parser } from "../schema.js"
-import type { Constraint, ConstraintSchema } from "./basis.js"
-import { ConstraintNode } from "./basis.js"
+import type { Constraint } from "./constraint.js"
+import { ConstraintNode } from "./constraint.js"
 
 export interface DomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends ConstraintSchema {
+> extends BaseSchema {
 	rule: domain
 }
 

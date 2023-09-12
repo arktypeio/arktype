@@ -1,6 +1,7 @@
 import type { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
 import { BaseNode } from "../schema.js"
+import type { Constraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 import type { UnitNode } from "./unit.js"
@@ -20,19 +21,6 @@ export type BasesByKind = {
 export type BasisKind = keyof BasesByKind
 
 export type Basis<kind extends BasisKind = BasisKind> = BasesByKind[kind]
-
-export interface ConstraintSchema extends BaseSchema {}
-
-export abstract class BasisNode<
-	schema extends ConstraintSchema
-> extends BaseNode<schema> {
-	reduce(other: Constraint): Constraint | Disjoint | null {
-		return this as never
-	}
-
-	// TODO: only own keys
-	abstract reduceWith(other: Constraint): schema | null | Disjoint
-}
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

@@ -1,7 +1,7 @@
 import type { extend, Hkt } from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
+import type { BasisKind } from "./constraints/basis.js"
 import type {
-	BasisKind,
 	ConstraintClassesByKind,
 	ConstraintKind,
 	ConstraintsByKind
