@@ -14,15 +14,19 @@ export interface NarrowSchema extends ConstraintSchema {
 export class NarrowNode extends RefinementNode<NarrowSchema> {
 	readonly kind = "narrow"
 
-	static from = reify(
-		class extends Hkt {
-			f = (input: conform<this[Hkt.key], Narrow | NarrowSchema>) => {
-				return new NarrowNode(
-					typeof input === "function" ? { rule: input } : input
-				)
-			}
+	protected constructor(schema: NarrowSchema) {
+		super(schema)
+	}
+
+	static hkt = new (class extends Hkt {
+		f = (input: conform<this[Hkt.key], Narrow | NarrowSchema>) => {
+			return new NarrowNode(
+				typeof input === "function" ? { rule: input } : input
+			)
 		}
-	)
+	})()
+
+	static from = reify(this.hkt)
 
 	applicableTo(
 		basis: Basis | undefined

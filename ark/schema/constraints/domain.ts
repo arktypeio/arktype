@@ -18,21 +18,23 @@ export class DomainNode<
 
 	declare infer: inferDomain<schema["rule"]>
 
-	static from = reify(
-		class extends Hkt {
-			f = (
-				input: conform<this[Hkt.key], NonEnumerableDomain | DomainSchema>
-			) => {
-				return new DomainNode(
-					typeof input === "string" ? { rule: input } : input
-				) as {} as typeof input extends DomainSchema
-					? DomainNode<typeof input>
-					: typeof input extends NonEnumerableDomain
-					? DomainNode<{ rule: typeof input }>
-					: never
-			}
+	protected constructor(schema: schema) {
+		super(schema)
+	}
+
+	static hkt = new (class extends Hkt {
+		f = (input: conform<this[Hkt.key], NonEnumerableDomain | DomainSchema>) => {
+			return new DomainNode(
+				typeof input === "string" ? { rule: input } : input
+			) as {} as typeof input extends DomainSchema
+				? DomainNode<typeof input>
+				: typeof input extends NonEnumerableDomain
+				? DomainNode<{ rule: typeof input }>
+				: never
 		}
-	)
+	})()
+
+	static from = reify(this.hkt)
 
 	hash() {
 		return this.rule

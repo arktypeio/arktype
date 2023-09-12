@@ -22,7 +22,7 @@ export abstract class BaseNode<
 
 	abstract infer: unknown
 	// TODO: protect
-	constructor(public schema: schema) {
+	protected constructor(public schema: schema) {
 		super(schema)
 	}
 

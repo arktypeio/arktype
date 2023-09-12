@@ -26,21 +26,25 @@ export class PrototypeNode<
 
 	declare infer: InstanceType<schema["rule"]>
 
-	static from = reify(
-		class extends Hkt {
-			f = (
-				input: conform<this[Hkt.key], AbstractableConstructor | PrototypeSchema>
-			) => {
-				return new PrototypeNode(
-					typeof input === "function" ? { rule: input } : input
-				) as {} as typeof input extends PrototypeSchema
-					? PrototypeNode<typeof input>
-					: typeof input extends AbstractableConstructor
-					? { rule: typeof input }
-					: never
-			}
+	protected constructor(schema: schema) {
+		super(schema)
+	}
+
+	static hkt = new (class extends Hkt {
+		f = (
+			input: conform<this[Hkt.key], AbstractableConstructor | PrototypeSchema>
+		) => {
+			return new PrototypeNode(
+				typeof input === "function" ? { rule: input } : input
+			) as {} as typeof input extends PrototypeSchema
+				? PrototypeNode<typeof input>
+				: typeof input extends AbstractableConstructor
+				? { rule: typeof input }
+				: never
 		}
-	)
+	})()
+
+	static from = reify(this.hkt)
 
 	protected possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 

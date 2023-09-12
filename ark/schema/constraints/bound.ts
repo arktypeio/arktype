@@ -29,17 +29,17 @@ export class BoundNode<
 > extends RefinementNode<BoundSchema<limitKind>> {
 	readonly kind = "bound"
 
-	static parse(input: BoundSchema) {
-		return input
+	protected constructor(schema: BoundSchema<limitKind>) {
+		super(schema)
 	}
 
-	static from = reify(
-		class extends Hkt {
-			f = (input: conform<this[Hkt.key], BoundSchema>) => {
-				return new BoundNode(input)
-			}
+	static hkt = new (class extends Hkt {
+		f = (input: conform<this[Hkt.key], BoundSchema>) => {
+			return new BoundNode(input)
 		}
-	)
+	})()
+
+	static from = reify(this.hkt)
 
 	comparator = `${this.limitKind === "min" ? ">" : "<"}${
 		this.exclusive ? "" : "="

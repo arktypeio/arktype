@@ -5,6 +5,7 @@ import type {
 	BasisKind,
 	Constraint,
 	ConstraintNode,
+	ConstraintSchema,
 	RefinementKind
 } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
@@ -41,6 +42,8 @@ const z = predicate({ basis: "string" })
 export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	readonly kind = "predicate"
 	declare infer: t
+
+	declare constraints: ConstraintNode<ConstraintSchema>[]
 
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"

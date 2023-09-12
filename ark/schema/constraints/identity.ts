@@ -15,16 +15,19 @@ export class IdentityNode<
 	readonly kind = "identity"
 	declare infer: schema["is"]
 
-	static from = reify(
-		class extends Hkt {
-			declare [Hkt.key]: IdentitySchema
-			f = (
-				input: conform<this[Hkt.key], IdentitySchema>
-			): IdentityNode<typeof input> => {
-				return new IdentityNode(input)
-			}
+	protected constructor(schema: schema) {
+		super(schema)
+	}
+
+	static hkt = new (class extends Hkt {
+		f = (
+			input: conform<this[Hkt.key], IdentitySchema>
+		): IdentityNode<typeof input> => {
+			return new IdentityNode(input)
 		}
-	)
+	})()
+
+	static from = reify(this.hkt)
 
 	hash() {
 		return compileSerializedValue(this.is)

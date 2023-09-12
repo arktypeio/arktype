@@ -6,8 +6,7 @@ export declare abstract class Hkt<f extends Fn = Fn> {
 	abstract f: f
 }
 
-export const reify = <def extends new () => Hkt>(def: def) =>
-	new def().f as reify<InstanceType<def>>
+export const reify = <def extends Hkt>(def: def) => def.f as reify<def>
 
 export type reify<hkt extends Hkt> = hkt & {
 	<In extends Parameters<hkt["f"]>[0]>(

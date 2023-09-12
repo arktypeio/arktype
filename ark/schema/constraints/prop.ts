@@ -30,13 +30,17 @@ export class PropNode<
 	readonly kind = "prop"
 	declare infer: inferPropSchema<schema>
 
-	static from = reify(
-		class extends Hkt {
-			f = (input: conform<this[Hkt.key], PropSchema>) => {
-				return new PropNode(input)
-			}
+	protected constructor(schema: PropSchema) {
+		super(schema)
+	}
+
+	static hkt = new (class extends Hkt {
+		f = (input: conform<this[Hkt.key], PropSchema>) => {
+			return new PropNode(input)
 		}
-	)
+	})()
+
+	static from = reify(this.hkt)
 
 	applicableTo(
 		basis: Basis | undefined

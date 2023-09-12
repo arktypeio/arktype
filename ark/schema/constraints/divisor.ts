@@ -11,15 +11,19 @@ export interface DivisibilitySchema extends ConstraintSchema {
 export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 	readonly kind = "divisor"
 
-	static from = reify(
-		class extends Hkt {
-			f = (input: conform<this[Hkt.key], number | DivisibilitySchema>) => {
-				return new DivisibilityNode(
-					typeof input === "number" ? { divisor: input } : input
-				)
-			}
+	protected constructor(schema: DivisibilitySchema) {
+		super(schema)
+	}
+
+	static hkt = new (class extends Hkt {
+		f = (input: conform<this[Hkt.key], number | DivisibilitySchema>) => {
+			return new DivisibilityNode(
+				typeof input === "number" ? { divisor: input } : input
+			)
 		}
-	)
+	})()
+
+	static from = reify(this.hkt)
 
 	applicableTo(
 		basis: Basis | undefined

@@ -1,7 +1,5 @@
-import type { conform } from "@arktype/util"
-import { Hkt, isArray, reify } from "@arktype/util"
 import { Disjoint } from "./disjoint.js"
-import { PredicateNode } from "./predicate.js"
+import type { PredicateNode } from "./predicate.js"
 import { BaseNode, type BaseSchema } from "./schema.js"
 
 export interface TypeSchema extends BaseSchema {
@@ -12,31 +10,6 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 	readonly kind = "type"
 
 	declare infer: t
-
-	static from = reify(
-		class extends Hkt {
-			f = (
-				input: conform<this[Hkt.key], TypeSchema | TypeSchema["branches"]>
-			): TypeNode<
-				typeof input extends TypeSchema
-					? typeof input
-					: typeof input extends readonly PredicateNode[]
-					? { branches: typeof input }
-					: never
-			> => {
-				return new TypeNode(
-					isArray(input)
-						? {
-								branches: input.map((predicateInput) =>
-									// TODO: fix
-									PredicateNode.from(predicateInput as never)
-								) as PredicateNode[]
-						  }
-						: input
-				) as never
-			}
-		}
-	)
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
@@ -99,8 +72,6 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
 }
-
-export const node = TypeNode.from
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant() {

@@ -14,19 +14,23 @@ export type PatternInput = RegexLiteral | RegExp | PatternSchema
 export class PatternNode extends RefinementNode<PatternSchema> {
 	readonly kind = "regex"
 
-	static from = reify(
-		class extends Hkt {
-			f = (input: conform<this[Hkt.key], PatternInput>) => {
-				return new PatternNode(
-					typeof input === "string"
-						? parseRegexLiteral(input)
-						: input instanceof RegExp
-						? { source: input.source, flags: input.flags }
-						: input
-				)
-			}
+	protected constructor(schema: PatternSchema) {
+		super(schema)
+	}
+
+	static hkt = new (class extends Hkt {
+		f = (input: conform<this[Hkt.key], PatternInput>) => {
+			return new PatternNode(
+				typeof input === "string"
+					? parseRegexLiteral(input)
+					: input instanceof RegExp
+					? { source: input.source, flags: input.flags }
+					: input
+			)
 		}
-	)
+	})()
+
+	static from = reify(this.hkt)
 
 	applicableTo(
 		basis: Basis | undefined
