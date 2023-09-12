@@ -10,7 +10,7 @@ import {
 import type { BoundNode } from "./constraints/bound.js"
 import type { Constraint } from "./constraints/constraint.js"
 import type { DomainNode } from "./constraints/domain.js"
-import type { IdentityNode } from "./constraints/identity.js"
+import type { UnitNode } from "./constraints/unit.js"
 import type { PrototypeNode } from "./constraints/prototype.js"
 import type { PredicateNode } from "./predicate.js"
 
@@ -20,8 +20,8 @@ type DisjointKinds = {
 		r: DomainNode
 	}
 	identity?: {
-		l: IdentityNode
-		r: IdentityNode
+		l: UnitNode
+		r: UnitNode
 	}
 	prototype?: {
 		l: PrototypeNode

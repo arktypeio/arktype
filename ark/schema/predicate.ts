@@ -1,15 +1,12 @@
-import type { exact } from "@arktype/util"
 import { throwInternalError } from "@arktype/util"
 import type {
 	Basis,
-	BasisKind,
 	Constraint,
 	ConstraintNode,
-	ConstraintSchema,
-	RefinementKind
+	ConstraintSchema
 } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
-import type { BaseSchema, BasisInput, inputFor, Node } from "./schema.js"
+import type { BaseSchema, BasisInput, inputFor } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export interface PredicateSchema<basis extends Basis = Basis>

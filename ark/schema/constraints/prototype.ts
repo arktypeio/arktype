@@ -8,6 +8,7 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
+import { parser } from "../schema.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
@@ -44,7 +45,7 @@ export class PrototypeNode<
 		}
 	})()
 
-	static from = reify(this.hkt)
+	static from = parser(this)
 
 	protected possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 

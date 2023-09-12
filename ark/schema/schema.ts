@@ -1,5 +1,5 @@
-import type { extend } from "@arktype/util"
-import { DynamicBase } from "@arktype/util"
+import type { extend, Hkt } from "@arktype/util"
+import { DynamicBase, reify } from "@arktype/util"
 import type {
 	BasisKind,
 	ConstraintClassesByKind,
@@ -13,6 +13,11 @@ export interface BaseSchema {
 	description?: string
 }
 
+export type parser<node extends { hkt: Hkt }> = reify<node["hkt"]>
+
+export const parser = <node extends { hkt: Hkt }>(node: node) =>
+	reify(node.hkt) as parser<node>
+
 export type BasisInput = inputFor<BasisKind> | undefined
 
 export abstract class BaseNode<
@@ -21,7 +26,7 @@ export abstract class BaseNode<
 	abstract kind: NodeKind
 
 	abstract infer: unknown
-	// TODO: protect
+
 	protected constructor(public schema: schema) {
 		super(schema)
 	}

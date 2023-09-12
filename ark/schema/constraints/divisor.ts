@@ -1,5 +1,6 @@
 import type { conform } from "@arktype/util"
 import { Hkt, reify } from "@arktype/util"
+import { parser } from "../schema.js"
 import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
 import { RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -23,7 +24,7 @@ export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 		}
 	})()
 
-	static from = reify(this.hkt)
+	static from = parser(this)
 
 	applicableTo(
 		basis: Basis | undefined

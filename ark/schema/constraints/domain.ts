@@ -1,6 +1,7 @@
 import type { conform, Domain, inferDomain } from "@arktype/util"
 import { Hkt, reify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import { parser } from "../schema.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
@@ -34,7 +35,7 @@ export class DomainNode<
 		}
 	})()
 
-	static from = reify(this.hkt)
+	static from = parser(this)
 
 	hash() {
 		return this.rule

@@ -1,5 +1,6 @@
 import type { conform } from "@arktype/util"
 import { Hkt, reify, throwParseError } from "@arktype/util"
+import { parser } from "../schema.js"
 import type { Basis, ConstraintSchema } from "./constraint.js"
 import { ConstraintNode, RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -30,7 +31,7 @@ export class PatternNode extends RefinementNode<PatternSchema> {
 		}
 	})()
 
-	static from = reify(this.hkt)
+	static from = parser(this)
 
 	applicableTo(
 		basis: Basis | undefined

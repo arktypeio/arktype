@@ -1,6 +1,7 @@
 import type { conform } from "@arktype/util"
 import { Hkt, reify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import { parser } from "../schema.js"
 import type { Basis, Constraint, ConstraintSchema } from "./constraint.js"
 import { RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -39,7 +40,7 @@ export class BoundNode<
 		}
 	})()
 
-	static from = reify(this.hkt)
+	static from = parser(this)
 
 	comparator = `${this.limitKind === "min" ? ">" : "<"}${
 		this.exclusive ? "" : "="

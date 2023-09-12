@@ -1,6 +1,7 @@
 import type { conform } from "@arktype/util"
 import { Hkt, reify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import { parser } from "../schema.js"
 import { TypeNode } from "../type.js"
 import type { Basis, ConstraintSchema } from "./constraint.js"
 import { RefinementNode } from "./constraint.js"
@@ -40,7 +41,7 @@ export class PropNode<
 		}
 	})()
 
-	static from = reify(this.hkt)
+	static from = parser(this)
 
 	applicableTo(
 		basis: Basis | undefined

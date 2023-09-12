@@ -1,9 +1,10 @@
 import type { conform } from "@arktype/util"
-import { Hkt, reify } from "@arktype/util"
+import { Hkt } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
+import { parser } from "../schema.js"
 import type { Basis, ConstraintSchema } from "./constraint.js"
-import { ConstraintNode, RefinementNode } from "./constraint.js"
+import { RefinementNode } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 
@@ -26,7 +27,7 @@ export class NarrowNode extends RefinementNode<NarrowSchema> {
 		}
 	})()
 
-	static from = reify(this.hkt)
+	static from = parser(this)
 
 	applicableTo(
 		basis: Basis | undefined

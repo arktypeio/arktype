@@ -5,7 +5,7 @@ import { BaseNode } from "../schema.js"
 import type { BoundNode } from "./bound.js"
 import type { DivisibilityNode } from "./divisor.js"
 import type { DomainNode } from "./domain.js"
-import type { IdentityNode } from "./identity.js"
+import type { UnitNode } from "./unit.js"
 import type { NarrowNode } from "./narrow.js"
 import type { PatternNode } from "./pattern.js"
 import type { PropNode } from "./prop.js"
@@ -13,13 +13,13 @@ import type { PrototypeNode } from "./prototype.js"
 
 export type BasisClassesByKind = {
 	domain: typeof DomainNode
-	identity: typeof IdentityNode
+	identity: typeof UnitNode
 	prototype: typeof PrototypeNode
 }
 
 export type BasesByKind = {
 	domain: DomainNode
-	identity: IdentityNode
+	identity: UnitNode
 	prototype: PrototypeNode
 }
 
