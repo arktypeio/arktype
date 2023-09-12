@@ -1,5 +1,5 @@
 import type { conform, Domain, inferDomain } from "@arktype/util"
-import { Hkt, reify } from "@arktype/util"
+import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { parser } from "../schema.js"
 import type { Constraint, ConstraintSchema } from "./constraint.js"

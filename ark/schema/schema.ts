@@ -18,6 +18,11 @@ export type parser<node extends { hkt: Hkt }> = reify<node["hkt"]>
 export const parser = <node extends { hkt: Hkt }>(node: node) =>
 	reify(node.hkt) as parser<node>
 
+export type parse<
+	node extends { hkt: Hkt },
+	parameters extends Parameters<node["hkt"]["f"]>[0]
+> = Hkt.apply<node["hkt"], parameters>
+
 export type BasisInput = inputFor<BasisKind> | undefined
 
 export abstract class BaseNode<
