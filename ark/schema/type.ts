@@ -1,7 +1,8 @@
 import type { conform } from "@arktype/util"
+import type { ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BaseSchema, parse } from "./schema.js"
+import type { BaseSchema, inputFor, parse } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export interface TypeSchema extends BaseSchema {
@@ -15,17 +16,17 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 
 	declare condition: string
 
-	static from = <const branches extends readonly unknown[]>(
-		...branches: {
-			[i in keyof branches]: conform<
-				branches[i],
-				branches[i] extends PredicateInput<infer basis>
-					? PredicateInput<basis>
-					: PredicateInput
-			>
-		}
-	) =>
-		new TypeNode<
+	static from: {
+		<const branches extends readonly unknown[]>(
+			...branches: {
+				[i in keyof branches]: conform<
+					branches[i],
+					branches[i] extends PredicateInput<infer basis>
+						? PredicateInput<basis>
+						: PredicateInput
+				>
+			}
+		): TypeNode<
 			{
 				[i in keyof branches]: parse<
 					typeof PredicateNode,
@@ -34,10 +35,23 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 					? t
 					: unknown
 			}[number]
-		>(branches as never)
+		>
+		literal: <const branches extends readonly unknown[]>(
+			...branches: branches
+		) => TypeNode<branches[number]>
+	} = Object.assign((...branches: never[]) => new TypeNode(branches as never), {
+		literal: (...branches: never[]) => new TypeNode(branches as never)
+	}) as never
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
+	}
+
+	constrain<kind extends ConstraintKind>(
+		kind: kind,
+		definition: inputFor<kind>
+	): TypeNode<t> {
+		return this
 	}
 
 	hash() {
