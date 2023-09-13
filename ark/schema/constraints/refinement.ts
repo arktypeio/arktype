@@ -20,7 +20,7 @@ export type RefinementsByKind = {
 	divisor: DivisibilityNode
 	min: MinNode
 	max: MaxNode
-	regex: PatternNode
+	pattern: PatternNode
 	prop: PropNode
 	narrow: NarrowNode
 }
@@ -29,7 +29,7 @@ export type RefinementInputsByKind = {
 	divisor: DivisibilityInput
 	min: BoundInput
 	max: BoundInput
-	regex: PatternInput
+	pattern: PatternInput
 	prop: PropInput
 	narrow: NarrowInput
 }

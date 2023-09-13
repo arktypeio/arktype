@@ -14,7 +14,7 @@ export interface PatternSchema extends BaseSchema {
 export type PatternInput = RegexLiteral | RegExp | PatternSchema
 
 export class PatternNode extends RefinementNode<PatternSchema> {
-	readonly kind = "regex"
+	readonly kind = "pattern"
 
 	protected constructor(schema: PatternSchema) {
 		super(schema)
