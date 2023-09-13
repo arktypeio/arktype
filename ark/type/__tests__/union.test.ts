@@ -16,7 +16,7 @@ suite("union", () => {
 	test("nary", () => {
 		const nary = type("false|null|undefined|0|''")
 		attest(nary.infer).typed as false | "" | 0 | null | undefined
-		const expected = node.literal(false, null, undefined, 0, "")
+		const expected = node.units(false, null, undefined, 0, "")
 		attest(nary.condition).is(expected.condition)
 	})
 	test("subtype pruning", () => {

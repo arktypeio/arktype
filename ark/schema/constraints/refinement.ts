@@ -1,6 +1,6 @@
 import type { BaseSchema } from "../schema.js"
 import type { Basis } from "./basis.js"
-import type { BoundInput, MaxNode, MinNode } from "./bound.js"
+import type { BoundInput, MaxNode, MinNode } from "./bounds.js"
 import { ConstraintNode } from "./constraint.js"
 import type { DivisibilityInput, DivisibilityNode } from "./divisor.js"
 import type { NarrowInput, NarrowNode } from "./narrow.js"

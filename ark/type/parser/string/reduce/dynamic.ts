@@ -1,5 +1,5 @@
 import type { TypeNode } from "@arktype/schema"
-import { BoundNode } from "@arktype/schema"
+import { BoundNode, MinNode } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
@@ -20,7 +20,7 @@ import {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound?: BoundNode<"min">
+	leftBound?: MinNode
 	"&"?: TypeNode
 	"|"?: TypeNode
 }
@@ -89,8 +89,7 @@ export class DynamicState {
 			)
 		}
 		// TODO: date?
-		this.branches.leftBound = new BoundNode({
-			limitKind: "min",
+		this.branches.leftBound = MinNode.from({
 			exclusive: comparator.length === 1,
 			limit: limit as number
 		})

@@ -15,7 +15,7 @@ import {
 import {
 	type BoundSchema,
 	type NumericallyBoundableData
-} from "../constraints/bound.js"
+} from "../constraints/bounds.js"
 import { domainDescriptions } from "../constraints/domain.js"
 
 export class ArkTypeError extends TypeError {

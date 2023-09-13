@@ -25,6 +25,8 @@ export class MinNode extends RefinementNode<BoundSchema> {
 
 	readonly kind = "min"
 
+	readonly comparator = `>${this.exclusive ? "" : "="}` as const
+
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], BoundInput>) => {
 			return new MinNode(
@@ -75,6 +77,8 @@ export class MaxNode extends RefinementNode<BoundSchema> {
 	protected constructor(schema: BoundSchema) {
 		super(schema)
 	}
+
+	readonly comparator = `<${this.exclusive ? "" : "="}` as const
 
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], BoundInput>) => {

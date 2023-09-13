@@ -1,5 +1,6 @@
 import type { conform } from "@arktype/util"
 import type { ConstraintKind } from "./constraints/constraint.js"
+import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { BaseSchema, inputFor, parse } from "./schema.js"
@@ -21,8 +22,14 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 	static from = ((...branches: never[]) =>
 		new TypeNode(branches as never)) as NodeParser
 
-	static enumerate = ((...branches: never[]) =>
-		new TypeNode(branches as never)) as NodeParser
+	static fromUnits = ((...branches: never[]) =>
+		new TypeNode(branches as never)) as UnitsNodeParser
+
+	extractUnit(): UnitNode | undefined {
+		return this.branches.length === 1 && this.branches[0].hasKind("unit")
+			? this.branches[0]
+			: undefined
+	}
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
@@ -91,11 +98,15 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		const intersection = this.intersect(other)
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
+
+	getPath(...path: (string | TypeNode<string>)[]): TypeNode {
+		return this
+	}
 }
 
-export const node = TypeNode.from
-
-export const enumerate = TypeNode.enumerate
+export const node = Object.assign(TypeNode.from, {
+	units: TypeNode.fromUnits
+})
 
 type NodeParser = {
 	<const branches extends readonly unknown[]>(
@@ -119,13 +130,11 @@ type NodeParser = {
 	>
 }
 
-type LiteralNodeParser = {
+type UnitsNodeParser = {
 	<const branches extends readonly unknown[]>(
 		...branches: branches
 	): TypeNode<branches[number]>
 }
-
-const z = node({ is: "foo" }) //=>
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant() {

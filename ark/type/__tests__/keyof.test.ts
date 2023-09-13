@@ -20,7 +20,7 @@ suite("keyof", () => {
 	test("primitive", () => {
 		const t = type("keyof bigint")
 		attest(t.infer).typed as keyof bigint
-		const expected = node.literal(
+		const expected = node.units(
 			"toLocaleString",
 			"toString",
 			"valueOf",
@@ -48,7 +48,7 @@ suite("keyof", () => {
 	test("tuple expression", () => {
 		const t = type(["keyof", { a: "string" }])
 		attest(t.infer).typed as "a"
-		attest(t.condition).equals(node.literal("a").condition)
+		attest(t.condition).equals(node.units("a").condition)
 	})
 	test("union including non-object", () => {
 		attest(() => type({ a: "number" }).or("boolean").keyof()).throws(
@@ -63,13 +63,13 @@ suite("keyof", () => {
 	test("multiple keyofs", () => {
 		const t = type("keyof keyof string")
 		attest(t.infer).typed as "toString" | "valueOf"
-		attest(t.condition).equals(node.literal("toString", "valueOf").condition)
+		attest(t.condition).equals(node.units("toString", "valueOf").condition)
 	})
 	test("groupable", () => {
 		const t = type("(keyof symbol & string)[]")
 		attest(t.infer).typed as ("toString" | "valueOf" | "description")[]
 		attest(t.condition).equals(
-			node.literal("toString", "valueOf", "description").array().condition
+			node.units("toString", "valueOf", "description").array().condition
 		)
 	})
 	test("intersection precedence", () => {
@@ -78,7 +78,7 @@ suite("keyof", () => {
 			| typeof Symbol.toStringTag
 			| typeof Symbol.toPrimitive
 		attest(t.condition).is(
-			node.literal(Symbol.toStringTag, Symbol.toPrimitive).condition
+			node.units(Symbol.toStringTag, Symbol.toPrimitive).condition
 		)
 	})
 	test("union precedence", () => {

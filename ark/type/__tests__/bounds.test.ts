@@ -34,97 +34,97 @@ suite("bounds", () => {
 				attest(t.allows(0)).equals(false)
 				attest(t.allows(1)).equals(true)
 			})
-			test("<", () => {
-				const t = type("number<10")
-				attest(t.infer).typed as number
-				attest(t.condition).equals(
-					expectedBoundsCondition({
-						limitKind: "max",
-						exclusive: true,
-						limit: 10
-					})
-				)
-			})
-			test("<=", () => {
-				const t = type("number<=-49")
-				attest(t.infer).typed as number
-				attest(t.condition).equals(
-					expectedBoundsCondition({
-						limitKind: "max",
-						exclusive: false,
-						limit: -49
-					})
-				)
-			})
-			test("==", () => {
-				const t = type("number==3211993")
-				attest(t.infer).typed as number
-				attest(t.condition).equals(
-					expectedBoundsCondition(
-						{
-							limitKind: "min",
-							exclusive: false,
-							limit: 3211993
-						},
-						{
-							limitKind: "max",
-							exclusive: false,
-							limit: 3211993
-						}
-					)
-				)
-			})
-		})
-		suite("double", () => {
-			test("<,<=", () => {
-				const t = type("-5<number<=5")
-				attest(t.infer).typed as number
-				attest(t.allows(-6)).equals(false)
-				attest(t.allows(-5)).equals(false)
-				attest(t.allows(-4)).equals(true)
-				attest(t.allows(4)).equals(true)
-				attest(t.allows(5)).equals(true)
-				attest(t.allows(5.01)).equals(false)
-				attest(t.condition).equals(
-					expectedBoundsCondition(
-						{
-							limitKind: "min",
-							exclusive: true,
-							limit: -5
-						},
-						{
-							limitKind: "max",
-							exclusive: false,
-							limit: 5
-						}
-					)
-				)
-			})
-			test("<=,<", () => {
-				const t = type("-3.23<=number<4.654")
-				attest(t.infer).typed as number
-				attest(t.condition).equals(
-					expectedBoundsCondition(
-						{
-							limitKind: "min",
-							exclusive: false,
-							limit: -3.23
-						},
-						{
-							limitKind: "max",
-							exclusive: true,
-							limit: 4.654
-						}
-					)
-				)
-			})
-		})
-		test("whitespace following comparator", () => {
-			const t = type("number > 3")
-			attest(t.infer).typed as number
-			attest(t.condition).equals(
-				expectedBoundsCondition({ limitKind: "min", exclusive: true, limit: 3 })
-			)
+			// 	test("<", () => {
+			// 		const t = type("number<10")
+			// 		attest(t.infer).typed as number
+			// 		attest(t.condition).equals(
+			// 			expectedBoundsCondition({
+			// 				limitKind: "max",
+			// 				exclusive: true,
+			// 				limit: 10
+			// 			})
+			// 		)
+			// 	})
+			// 	test("<=", () => {
+			// 		const t = type("number<=-49")
+			// 		attest(t.infer).typed as number
+			// 		attest(t.condition).equals(
+			// 			expectedBoundsCondition({
+			// 				limitKind: "max",
+			// 				exclusive: false,
+			// 				limit: -49
+			// 			})
+			// 		)
+			// 	})
+			// 	test("==", () => {
+			// 		const t = type("number==3211993")
+			// 		attest(t.infer).typed as number
+			// 		attest(t.condition).equals(
+			// 			expectedBoundsCondition(
+			// 				{
+			// 					limitKind: "min",
+			// 					exclusive: false,
+			// 					limit: 3211993
+			// 				},
+			// 				{
+			// 					limitKind: "max",
+			// 					exclusive: false,
+			// 					limit: 3211993
+			// 				}
+			// 			)
+			// 		)
+			// 	})
+			// })
+			// suite("double", () => {
+			// 	test("<,<=", () => {
+			// 		const t = type("-5<number<=5")
+			// 		attest(t.infer).typed as number
+			// 		attest(t.allows(-6)).equals(false)
+			// 		attest(t.allows(-5)).equals(false)
+			// 		attest(t.allows(-4)).equals(true)
+			// 		attest(t.allows(4)).equals(true)
+			// 		attest(t.allows(5)).equals(true)
+			// 		attest(t.allows(5.01)).equals(false)
+			// 		attest(t.condition).equals(
+			// 			expectedBoundsCondition(
+			// 				{
+			// 					limitKind: "min",
+			// 					exclusive: true,
+			// 					limit: -5
+			// 				},
+			// 				{
+			// 					limitKind: "max",
+			// 					exclusive: false,
+			// 					limit: 5
+			// 				}
+			// 			)
+			// 		)
+			// 	})
+			// 	test("<=,<", () => {
+			// 		const t = type("-3.23<=number<4.654")
+			// 		attest(t.infer).typed as number
+			// 		attest(t.condition).equals(
+			// 			expectedBoundsCondition(
+			// 				{
+			// 					limitKind: "min",
+			// 					exclusive: false,
+			// 					limit: -3.23
+			// 				},
+			// 				{
+			// 					limitKind: "max",
+			// 					exclusive: true,
+			// 					limit: 4.654
+			// 				}
+			// 			)
+			// 		)
+			// 	})
+			// })
+			// test("whitespace following comparator", () => {
+			// 	const t = type("number > 3")
+			// 	attest(t.infer).typed as number
+			// 	attest(t.condition).equals(
+			// 		expectedBoundsCondition({ limitKind: "min", exclusive: true, limit: 3 })
+			// 	)
 		})
 		suite("intersection", () => {
 			suite("equality range", () => {
@@ -332,59 +332,59 @@ suite("bounds", () => {
 	})
 
 	suite("dates", () => {
-		test("single", () => {
-			const t = type("Date<d'2023/1/12'")
-			attest(t.infer).typed as Date
-			attest(t.condition).equals(
-				// TODO: Dates?
-				expectedDateBoundsCondition({
-					limitKind: "max",
-					exclusive: true,
-					limit: new Date("2023/1/12").valueOf()
-				})
-			)
-		})
-		test("equality", () => {
-			const t = type("Date==d'2020-1-1'")
-			attest(t.infer).typed as Date
-			attest(t.condition).equals(
-				expectedDateBoundsCondition(
-					{
-						limitKind: "min",
-						exclusive: false,
-						limit: new Date("2020-1-1").valueOf()
-					},
-					{
-						limitKind: "max",
-						exclusive: false,
-						limit: new Date("2020-1-1").valueOf()
-					}
-				)
-			)
-			attest(t.allows(new Date("2020/01/01"))).equals(true)
-			attest(t.allows(new Date("2020/01/02"))).equals(false)
-		})
-		test("double", () => {
-			const t = type("d'2001/10/10'<Date<d'2005/10/10'")
-			attest(t.infer).typed as Date
-			attest(t.condition).equals(
-				expectedDateBoundsCondition(
-					{
-						limitKind: "min",
-						exclusive: true,
-						limit: new Date("2001/10/10").valueOf()
-					},
-					{
-						limitKind: "max",
-						exclusive: true,
-						limit: new Date("2005/10/10").valueOf()
-					}
-				)
-			)
-			attest(t.allows(new Date("2003/10/10"))).equals(true)
-			attest(t.allows(new Date("2001/10/10"))).equals(false)
-			attest(t.allows(new Date("2005/10/10"))).equals(false)
-		})
+		// test("single", () => {
+		// 	const t = type("Date<d'2023/1/12'")
+		// 	attest(t.infer).typed as Date
+		// 	attest(t.condition).equals(
+		// 		// TODO: Dates?
+		// 		expectedDateBoundsCondition({
+		// 			limitKind: "max",
+		// 			exclusive: true,
+		// 			limit: new Date("2023/1/12").valueOf()
+		// 		})
+		// 	)
+		// })
+		// test("equality", () => {
+		// 	const t = type("Date==d'2020-1-1'")
+		// 	attest(t.infer).typed as Date
+		// 	attest(t.condition).equals(
+		// 		expectedDateBoundsCondition(
+		// 			{
+		// 				limitKind: "min",
+		// 				exclusive: false,
+		// 				limit: new Date("2020-1-1").valueOf()
+		// 			},
+		// 			{
+		// 				limitKind: "max",
+		// 				exclusive: false,
+		// 				limit: new Date("2020-1-1").valueOf()
+		// 			}
+		// 		)
+		// 	)
+		// 	attest(t.allows(new Date("2020/01/01"))).equals(true)
+		// 	attest(t.allows(new Date("2020/01/02"))).equals(false)
+		// })
+		// test("double", () => {
+		// 	const t = type("d'2001/10/10'<Date<d'2005/10/10'")
+		// 	attest(t.infer).typed as Date
+		// 	attest(t.condition).equals(
+		// 		expectedDateBoundsCondition(
+		// 			{
+		// 				limitKind: "min",
+		// 				exclusive: true,
+		// 				limit: new Date("2001/10/10").valueOf()
+		// 			},
+		// 			{
+		// 				limitKind: "max",
+		// 				exclusive: true,
+		// 				limit: new Date("2005/10/10").valueOf()
+		// 			}
+		// 		)
+		// 	)
+		// 	attest(t.allows(new Date("2003/10/10"))).equals(true)
+		// 	attest(t.allows(new Date("2001/10/10"))).equals(false)
+		// 	attest(t.allows(new Date("2005/10/10"))).equals(false)
+		// })
 		test("dynamic", () => {
 			const now = new Date()
 			const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)

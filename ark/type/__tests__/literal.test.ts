@@ -33,7 +33,7 @@ suite("literal", () => {
 				| { ark: boolean }
 				| typeof s
 			attest(t.condition).equals(
-				node.literal(true, "foo", 5, 1n, null, undefined, o, s).condition
+				node.units(true, "foo", 5, 1n, null, undefined, o, s).condition
 			)
 		})
 	})
@@ -57,7 +57,7 @@ suite("literal", () => {
 				| { ark: boolean }
 				| typeof s
 			attest(t.condition).equals(
-				node.literal(true, "foo", 5, 1n, null, undefined, o, s).condition
+				node.units(true, "foo", 5, 1n, null, undefined, o, s).condition
 			)
 		})
 	})

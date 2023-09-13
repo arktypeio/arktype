@@ -67,7 +67,8 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			if (i !== def.length - 1) {
 				return throwParseError(prematureRestMessage)
 			}
-			const elementType = value.getPath(builtins.arrayIndexTypeNode())
+			// TODO: Fix builtins.arrayIndexTypeNode()
+			const elementType = value.getPath()
 			// TODO: first variadic i
 			props.push({ key: builtins.arrayIndexTypeNode(), value: elementType })
 		} else {

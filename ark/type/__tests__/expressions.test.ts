@@ -74,7 +74,7 @@ suite("root expression", () => {
 	test("=== branches", () => {
 		const t = type("===", "foo", "bar", "baz")
 		attest(t.infer).typed as "foo" | "bar" | "baz"
-		attest(t.condition).equals(node.literal("foo", "bar", "baz").condition)
+		attest(t.condition).equals(node.units("foo", "bar", "baz").condition)
 	})
 	test("instanceof single", () => {
 		const t = type("instanceof", RegExp)
@@ -84,7 +84,7 @@ suite("root expression", () => {
 	test("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest(t.infer).typed as unknown[] | Date
-		attest(t.condition).equals(node([Array], [Date]).condition)
+		attest(t.condition).equals(node(Array, Date).condition)
 	})
 	test("postfix", () => {
 		const t = type({ a: "string" }, "[]")

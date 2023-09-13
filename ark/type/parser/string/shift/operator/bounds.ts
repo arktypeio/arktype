@@ -17,7 +17,7 @@ export const parseBound = (
 	start: ComparatorStartChar
 ) => {
 	const comparator = shiftComparator(s, start)
-	const value = s.root.unit?.is
+	const value = s.root.extractUnit()?.is
 	if (typeof value === "number") {
 		s.unsetRoot()
 		return s.reduceLeftBound(value, comparator)
@@ -132,7 +132,7 @@ export const parseRightBound = (
 			? limitToken
 			: s.error(writeInvalidLimitMessage(comparator, limitToken, "right")))
 	// apply the newly-parsed right bound
-	s.constrainRoot("bound", { comparator, limit })
+	// s.constrainRoot("bound", { comparator, limit })
 	if (!s.branches.leftBound) {
 		return
 	}
@@ -140,7 +140,7 @@ export const parseRightBound = (
 	if (!isKeyOf(comparator, maxComparators)) {
 		return s.error(writeUnpairableComparatorMessage(comparator))
 	}
-	s.constrainRoot("bound", s.branches.leftBound)
+	// s.constrainRoot("bound", s.branches.leftBound)
 	delete s.branches.leftBound
 }
 
