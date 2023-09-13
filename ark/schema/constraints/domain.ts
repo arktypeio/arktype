@@ -9,7 +9,7 @@ import { ConstraintNode } from "./constraint.js"
 export interface DomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > extends BaseSchema {
-	rule: domain
+	domain: domain
 }
 
 export type DomainInput = NonEnumerableDomain | DomainSchema
@@ -20,7 +20,7 @@ export class DomainNode<
 > extends ConstraintNode<schema> {
 	readonly kind = "domain"
 
-	declare infer: inferDomain<schema["rule"]>
+	declare infer: inferDomain<schema["domain"]>
 
 	protected constructor(schema: schema) {
 		super(schema)
@@ -29,11 +29,11 @@ export class DomainNode<
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], DomainInput>) => {
 			return new DomainNode(
-				typeof input === "string" ? { rule: input } : input
+				typeof input === "string" ? { domain: input } : input
 			) as {} as typeof input extends DomainSchema
 				? DomainNode<typeof input>
 				: typeof input extends NonEnumerableDomain
-				? DomainNode<{ rule: typeof input }>
+				? DomainNode<{ domain: typeof input }>
 				: never
 		}
 	})()
@@ -41,11 +41,11 @@ export class DomainNode<
 	static from = parser(this)
 
 	hash() {
-		return this.rule
+		return this.domain
 	}
 
 	writeDefaultDescription() {
-		return domainDescriptions[this.rule]
+		return domainDescriptions[this.domain]
 	}
 
 	reduceWith(other: Constraint) {

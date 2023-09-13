@@ -15,7 +15,7 @@ import { ConstraintNode } from "./constraint.js"
 export interface PrototypeSchema<
 	constructor extends AbstractableConstructor = AbstractableConstructor
 > extends BaseSchema {
-	rule: constructor
+	prototype: constructor
 }
 
 export type PrototypeInput = AbstractableConstructor | PrototypeSchema
@@ -25,7 +25,7 @@ export class PrototypeNode<
 > extends ConstraintNode<schema> {
 	readonly kind = "prototype"
 
-	declare infer: InstanceType<schema["rule"]>
+	declare infer: InstanceType<schema["prototype"]>
 
 	protected constructor(schema: schema) {
 		super(schema)
@@ -34,7 +34,7 @@ export class PrototypeNode<
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], PrototypeInput>) => {
 			return new PrototypeNode(
-				typeof input === "function" ? { rule: input } : input
+				typeof input === "function" ? { prototype: input } : input
 			) as {} as typeof input extends PrototypeSchema
 				? PrototypeNode<typeof input>
 				: typeof input extends AbstractableConstructor
@@ -45,32 +45,32 @@ export class PrototypeNode<
 
 	static from = parser(this)
 
-	protected possibleObjectKind = getExactBuiltinConstructorName(this.rule)
+	protected possibleObjectKind = getExactBuiltinConstructorName(this.prototype)
 
 	hash() {
-		return this.possibleObjectKind ?? compileSerializedValue(this.rule)
+		return this.possibleObjectKind ?? compileSerializedValue(this.prototype)
 	}
 
 	writeDefaultDescription() {
 		return this.possibleObjectKind
 			? objectKindDescriptions[this.possibleObjectKind]
-			: `an instance of ${this.rule}`
+			: `an instance of ${this.prototype}`
 	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
 		...constructors: constructors
-	): this is PrototypeNode<{ rule: constructors[number] }> {
+	): this is PrototypeNode<{ prototype: constructors[number] }> {
 		return constructors.some((constructor) =>
-			constructorExtends(this.rule, constructor)
+			constructorExtends(this.prototype, constructor)
 		)
 	}
 
 	reduceWith(other: Constraint) {
 		return other.kind !== "prototype"
 			? null
-			: constructorExtends(this.rule, other.rule)
+			: constructorExtends(this.prototype, other.prototype)
 			? this.schema
-			: constructorExtends(other.rule, this.rule)
+			: constructorExtends(other.prototype, this.prototype)
 			? // this cast is safe since we know other's constructor extends this one
 			  (other.schema as schema)
 			: Disjoint.from("prototype", this, other)

@@ -12,16 +12,6 @@ export interface BaseSchema {
 	description?: string
 }
 
-export type parser<node extends { hkt: Hkt }> = reify<node["hkt"]>
-
-export const parser = <node extends { hkt: Hkt }>(node: node) =>
-	reify(node.hkt) as parser<node>
-
-export type parse<
-	node extends { hkt: Hkt },
-	parameters extends Parameters<node["hkt"]["f"]>[0]
-> = Hkt.apply<node["hkt"], parameters>
-
 export abstract class BaseNode<
 	schema extends BaseSchema = BaseSchema
 > extends DynamicBase<schema> {
@@ -37,20 +27,17 @@ export abstract class BaseNode<
 		return this.kind === kind
 	}
 
-	// 	intersect(other: this): this | Disjoint {
-	// 		if (this === other) {
-	// 			return this
-	// 		}
-	// 		const intersection = methods.intersect(this.definition, other.definition)
-	// 		return intersection instanceof Disjoint
-	// 			? intersection
-	// 			: new this.ownConstructor(intersection as never)
+	// intersect(other: this): this | Disjoint {
+	// 	if (this === other) {
+	// 		return this
 	// 	}
+	// 	const intersection = methods.intersect(this.definition, other.definition)
+	// 	return intersection instanceof Disjoint
+	// 		? intersection
+	// 		: new this.ownConstructor(intersection as never)
 	// }
 
 	id = this.hash()
-
-	// TODO: remove-
 
 	equals(other: BaseNode) {
 		return this.id === other.id
@@ -60,6 +47,16 @@ export abstract class BaseNode<
 
 	abstract writeDefaultDescription(): string
 }
+
+export type parser<node extends { hkt: Hkt }> = reify<node["hkt"]>
+
+export const parser = <node extends { hkt: Hkt }>(node: node) =>
+	reify(node.hkt) as parser<node>
+
+export type parse<
+	node extends { hkt: Hkt },
+	parameters extends Parameters<node["hkt"]["f"]>[0]
+> = Hkt.apply<node["hkt"], parameters>
 
 export type inputFor<kind extends ConstraintKind> = {
 	[k in kind]: Parameters<ConstraintClassesByKind[k]["from"]>[0]

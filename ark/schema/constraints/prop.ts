@@ -1,9 +1,10 @@
 import type { conform } from "@arktype/util"
-import { Hkt, reify } from "@arktype/util"
+import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
 import { parser } from "../schema.js"
 import { TypeNode } from "../type.js"
+import { builtins } from "../utils.js"
 import type { Basis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
@@ -80,8 +81,7 @@ export class PropNode<
 				: {
 						key,
 						required,
-						// TODO: builtins.never()
-						value: new TypeNode({ branches: [] }) as never
+						value: builtins.never()
 				  }
 		}
 		return {

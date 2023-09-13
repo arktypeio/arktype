@@ -131,7 +131,7 @@ const boundable = (basis: Basis | undefined): basis is BoundableBasis => {
 		return false
 	}
 	if (basis.hasKind("domain")) {
-		return basis.rule === "number" || basis.rule === "string"
+		return basis.domain === "number" || basis.domain === "string"
 	}
 	if (basis.hasKind("prototype")) {
 		return basis.extendsOneOf(Array, Date)
@@ -140,8 +140,8 @@ const boundable = (basis: Basis | undefined): basis is BoundableBasis => {
 }
 
 type BoundableBasis =
-	| DomainNode<{ rule: "number" | "string" }>
-	| PrototypeNode<{ rule: typeof Array | typeof Date }>
+	| DomainNode<{ domain: "number" | "string" }>
+	| PrototypeNode<{ prototype: typeof Array | typeof Date }>
 
 const unitsByBoundedKind = {
 	date: "",

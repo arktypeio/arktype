@@ -1,4 +1,5 @@
-import { node } from "@arktype/schema"
+import { node, serializeRegex } from "@arktype/schema"
+import { wellFormedIntegerMatcher } from "@arktype/util"
 import type { Out } from "../../parser/tuple.js"
 import { Scope } from "../../scope.js"
 import type { RootScope } from "../ark.js"
@@ -15,8 +16,10 @@ const parsedNumber = node(
 )
 
 const parsedInteger = node(
-	"string"
-	// regex: serializeRegex(wellFormedIntegerMatcher),
+	{
+		basis: "string",
+		pattern: serializeRegex(wellFormedIntegerMatcher)
+	}
 	// morph: (s) => parseInt(s)
 	// TODO:
 	// morph: (s, problems) => {

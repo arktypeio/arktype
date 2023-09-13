@@ -36,9 +36,11 @@ export class PatternNode extends RefinementNode<PatternSchema> {
 
 	applicableTo(
 		basis: Basis | undefined
-	): basis is DomainNode<{ rule: "string" }> {
+	): basis is DomainNode<{ domain: "string" }> {
 		return (
-			basis !== undefined && basis.hasKind("domain") && basis.rule === "string"
+			basis !== undefined &&
+			basis.hasKind("domain") &&
+			basis.domain === "string"
 		)
 	}
 

@@ -31,9 +31,11 @@ export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 
 	applicableTo(
 		basis: Basis | undefined
-	): basis is DomainNode<{ rule: "number" }> {
+	): basis is DomainNode<{ domain: "number" }> {
 		return (
-			basis !== undefined && basis.hasKind("domain") && basis.rule === "number"
+			basis !== undefined &&
+			basis.hasKind("domain") &&
+			basis.domain === "number"
 		)
 	}
 

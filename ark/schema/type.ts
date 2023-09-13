@@ -8,6 +8,7 @@ import { BaseNode } from "./schema.js"
 import { inferred } from "./utils.js"
 
 export interface TypeSchema extends BaseSchema {
+	alias?: string
 	branches: readonly PredicateNode[]
 }
 
