@@ -1,7 +1,27 @@
 {
-    "extends": "./dev/configs/tsconfig.base.json",
-    "compilerOptions": {
-        "noErrorTruncation": false
-    },
-    "exclude": ["dev/arktype.io", "node_modules", "dist"]
+	"compilerOptions": {
+		"module": "ESNext",
+		"target": "ES2022",
+		"moduleResolution": "NodeNext",
+		"noEmit": true,
+		"skipLibCheck": true,
+		"strict": true,
+		// https://github.com/egoist/tsup/issues/647
+		// "composite": true,
+		"isolatedModules": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"exactOptionalPropertyTypes": true,
+		"noFallthroughCasesInSwitch": true,
+		"stripInternal": true,
+		"lib": ["ESNext"],
+		"jsx": "react",
+		"customConditions": ["arktype-repo"]
+	},
+	"ts-node": {
+		"esm": true,
+		"swc": true,
+		"transpileOnly": true
+	},
+	"exclude": ["./ark/docs"]
 }

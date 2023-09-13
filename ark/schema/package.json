@@ -1,0 +1,38 @@
+{
+	"name": "@arktype/schema",
+	"version": "0.0.1",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git"
+	},
+	"type": "module",
+	"main": "./dist/main.js",
+	"types": "./dist/main.d.ts",
+	"exports": {
+		".": {
+			"arktype-repo": "./main.js",
+			"import": "./dist/main.js",
+			"require": "./dist/main.js"
+		},
+		"./internal/*": {
+			"arktype-repo": "./*",
+			"import": "./dist/*",
+			"require": "./dist/*"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsup --config ../repo/tsup.config.ts"
+	},
+	"dependencies": {
+		"@arktype/util": "workspace:*"
+	}
+}

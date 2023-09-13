@@ -1,0 +1,30 @@
+{
+	"name": "@arktype/attest",
+	"version": "0.0.1",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"type": "module",
+	"main": "./dist/main.cjs",
+	"types": "./dist/main.d.cts",
+	"exports": {
+		".": {
+			"arktype-repo": "./main.js",
+			"import": "./dist/main.js",
+			"require": "./dist/main.cjs"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsup --config ../repo/tsup.config.ts"
+	},
+	"dependencies": {
+		"ts-morph": "19.0.0",
+		"@arktype/util": "workspace:*",
+		"@arktype/fs": "workspace:*"
+	}
+}

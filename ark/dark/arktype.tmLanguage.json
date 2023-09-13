@@ -1,0 +1,142 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"scopeName": "source.arktype.injection.ts",
+	"injectionSelector": "L:source.ts - comment",
+	"patterns": [
+		{
+			"include": "#definition"
+		}
+	],
+	"repository": {
+		"definition": {
+			"contentName": "meta.embedded.arktype.definition",
+			"begin": "(([^\\)\\(\\s]*)?((\\.)?(type|scope|define|arrayOf|intersection|keyOf|morph|narrow|union|Scope\\.root)|(\\.)(morph|and|or)))\\(",
+			"beginCaptures": {
+				"1": {
+					"name": "entity.name.function.ts"
+				},
+				"4": {
+					"name": "punctuation.accessor"
+				},
+				"6": {
+					"name": "punctuation.accessor"
+				}
+			},
+			"end": "(?<=([^\"'`]*([\"'`])[^\"'`]*\\2)*[^\"'`]*)\\)",
+			"patterns": [
+				{
+					"include": "#nested"
+				}
+			]
+		},
+		"quoted": {
+			"name": "quoted",
+			"match": "([\"'`])(.*?)?((?<!\\\\)(\\1))",
+			"captures": {
+				"1": {
+					"name": "string.quoted"
+				},
+				"2": {
+					"patterns": [
+						{
+							"include": "#operator"
+						},
+						{
+							"include": "#regex"
+						},
+						{
+							"name": "keyword.operator",
+							"match": "[^ \\w]"
+						},
+						{
+							"include": "source.ts#type"
+						}
+					]
+				},
+				"3": {
+					"name": "string.quoted"
+				}
+			}
+		},
+		"regex": {
+			"match": "(\\/)(.*)((?<!\\\\)(\\1))",
+			"captures": {
+				"1": { "name": "keyword.operator" },
+				"2": {
+					"patterns": [
+						{
+							"name": "entity.name.type.ts",
+							"match": "[A-Za-z]"
+						},
+						{
+							"name": "constant.numeric.decimal.ts",
+							"match": "[0-9]"
+						},
+						{
+							"name": "keyword.operator",
+							"match": "[^ \\w]"
+						},
+						{ "include": "#operator" },
+						{ "include": "#quoted" }
+					]
+				},
+				"3": { "name": "keyword.operator" }
+			}
+		},
+		"operator": {
+			"name": "keyword.operator",
+			"match": "[<>=%`'&]|\""
+		},
+		"object": {
+			"begin": "(\\s*)?\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.block.ts"
+				}
+			},
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.block.ts"
+				}
+			},
+			"patterns": [
+				{
+					"match": "\\w+\\:",
+					"name": "meta.object-literal.key.ts"
+				},
+				{
+					"include": "#nested"
+				}
+			]
+		},
+		"tuple": {
+			"begin": "(\\s*)?\\[",
+			"end": "\\]",
+			"patterns": [
+				{
+					"include": "#nested"
+				}
+			]
+		},
+		"nested": {
+			"patterns": [
+				{
+					"include": "#object"
+				},
+				{
+					"include": "#tuple"
+				},
+				{
+					"include": "#quoted"
+				},
+				{
+					"include": "source.ts#comment"
+				},
+				{
+					"include": "source.ts"
+				}
+			]
+		}
+	}
+}

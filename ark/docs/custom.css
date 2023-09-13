@@ -1,0 +1,138 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+@import url("https://fonts.googleapis.com/css?family=Raleway:300,400,500,700&display=swap");
+
+:root {
+	--ifm-font-family-base: Raleway, sans-serif;
+}
+
+/* Equivalent to <Paper elevation={24}> in MUI */
+.navbar {
+	box-shadow:
+		rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
+		rgba(0, 0, 0, 0.14) 0px 24px 38px 3px,
+		rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
+}
+
+.navbar__items {
+	font-size: x-large;
+}
+
+.navbar__brand:hover,
+.clean-btn:hover,
+.navbar__item:hover {
+	scale: 1.1;
+	transition: all 0.2s ease-out;
+}
+
+.navbar-github::before {
+	content: "";
+	width: 36px;
+	height: 36px;
+	display: flex;
+	background: url("/img/github.svg");
+}
+
+[data-theme="dark"] .navbar-github::before {
+	background: url("/img/githubDark.svg");
+}
+
+[class*="ToggleIcon"] {
+	width: 36px;
+	height: 36px;
+}
+
+.footer {
+	background-color: #085b92;
+}
+
+header {
+	text-align: center;
+	position: relative;
+	overflow: hidden;
+	background: #085b92;
+}
+
+[data-theme="dark"] .navbar {
+	background-color: #1b1b1b;
+}
+
+[data-theme="dark"] {
+	background-color: #1b1b1b;
+	--ifm-color-primary: #009eff;
+	--ifm-color-primary-dark: #008ee6;
+	--ifm-color-primary-darker: #0086d9;
+	--ifm-color-primary-darkest: #006fb3;
+	--ifm-color-primary-light: #1aa8ff;
+	--ifm-color-primary-lighter: #26adff;
+	--ifm-color-primary-lightest: #4dbbff;
+	--ifm-tabs-color-active: #fffff0;
+	--ifm-tabs-color-active-border: #fffff0;
+}
+
+[data-theme="light"] {
+	background-color: #fffff0;
+	--ifm-color-primary: #085b92;
+	--ifm-color-primary-dark: #075283;
+	--ifm-color-primary-darker: #074d7c;
+	--ifm-color-primary-darkest: #064066;
+	--ifm-color-primary-light: #0964a1;
+	--ifm-color-primary-lighter: #0969a8;
+	--ifm-color-primary-lightest: #0a76be;
+	--ifm-tabs-color-active: #1b1b1b;
+	--ifm-tabs-color-active-border: #1b1b1b;
+}
+
+.installationTabs {
+	overflow: hidden;
+	height: 2.5rem;
+	margin-top: -1.5rem;
+}
+
+.npmTab {
+	--ifm-tabs-color-active: #ff3939;
+	--ifm-tabs-color-active-border: #ff3939;
+}
+
+.pnpmTab {
+	--ifm-tabs-color-active: #f69220;
+	--ifm-tabs-color-active-border: #f69220;
+}
+
+.yarnTab {
+	--ifm-tabs-color-active: #6fd3ff;
+	--ifm-tabs-color-active-border: #6fd3ff;
+}
+
+.theme-code-block {
+	--prism-background-color: #1b1b1baa;
+	--ifm-pre-padding: 0.5rem;
+}
+
+.inferable-code {
+	position: relative;
+	border-radius: 0.5rem;
+	background: #fffff0;
+}
+
+.inferable-code .theme-code-block {
+	--prism-background-color: linear-gradient(
+		to top right,
+		#0d1117ff,
+		#0d1117dd
+	) !important;
+}
+
+.inferable-code img {
+	display: none;
+}
+
+.inferable-code:hover img {
+	display: block;
+	position: absolute;
+	bottom: 0px;
+	right: 1rem;
+}

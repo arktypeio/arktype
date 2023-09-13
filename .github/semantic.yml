@@ -1,4 +1,6 @@
 titleOnly: true
 scopes:
-    - attest
-    - arktype.io
+  - attest
+  - arkdark
+  - arktype
+  - arktype.io

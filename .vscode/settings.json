@@ -1,28 +1,42 @@
 {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": ["source.fixAll.eslint"],
-    "eslint.codeActionsOnSave.rules": [
-        "import/order",
-        "sort-imports",
-        "import/no-duplicates",
-        "unicorn/prefer-node-protocol",
-        "@typescript-eslint/consistent-type-imports",
-        "object-shorthand",
-        "prefer-arrow-functions/prefer-arrow-functions"
-    ],
-    "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
-    "typescript.preferences.importModuleSpecifierEnding": "js",
-    "prettier.ignorePath": "dev/configs/.prettierignore",
-    "prettier.prettierPath": "./node_modules/prettier",
-    "mochaExplorer.nodeArgv": [
-        "--loader=ts-node/esm",
-        "--no-warnings=ExperimentalWarning"
-    ],
-    "mochaExplorer.require": "dev/configs/mocha.fixtures.ts",
-    "mochaExplorer.timeout": 0,
-    "mochaExplorer.env": {
-        "ATTEST_CONFIG": "{ \"skipTypes\": true }"
-    },
-    "testExplorer.useNativeTesting": true
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": ["source.fixAll.eslint"],
+	"eslint.codeActionsOnSave.rules": [
+		"import/order",
+		"sort-imports",
+		"import/no-duplicates",
+		"@typescript-eslint/consistent-type-imports",
+		"object-shorthand",
+		"prefer-arrow-functions/prefer-arrow-functions"
+	],
+	"eslint.rules.customizations": [
+		// This will still be caught when run from the CLI, but it's too often
+		// I'm in the middle of writing something and see this. It's already
+		// made apparent by default anyways, as TS renders the variable in gray
+		{ "rule": "@typescript-eslint/no-unused-vars", "severity": "off" }
+	],
+	"typescript.preferences.autoImportFileExcludePatterns": [
+		"dist",
+		// Ideally we could just exclude main.ts in general, but for now that prevents suggestions from e.g. @arktype/util:
+		// https://github.com/microsoft/TypeScript/issues/51418
+		"./ark/type/main.ts"
+	],
+	"typescript.preferences.importModuleSpecifierEnding": "js",
+	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"prettier.ignorePath": "dev/.prettierignore",
+	"prettier.prettierPath": "./node_modules/prettier/index.cjs",
+	// NOTE: these are also maintained in package.json under "mocha"
+	"mochaExplorer.nodeArgv": [
+		"--loader=ts-node/esm",
+		"--no-warnings=ExperimentalWarning",
+		"--conditions=arktype-repo"
+	],
+	"mochaExplorer.require": "dev/mocha.fixtures.ts",
+	"mochaExplorer.timeout": 0,
+	"mochaExplorer.env": {
+		"ATTEST_CONFIG": "{ \"skipTypes\": true }"
+	},
+	"testExplorer.useNativeTesting": true
 }

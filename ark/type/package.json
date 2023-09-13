@@ -1,0 +1,40 @@
+{
+	"name": "arktype",
+	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
+	"version": "1.0.19-beta",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git"
+	},
+	"type": "module",
+	"main": "./dist/main.js",
+	"types": "./dist/main.d.ts",
+	"exports": {
+		".": {
+			"arktype-repo": "./main.js",
+			"import": "./dist/main.js",
+			"require": "./dist/main.js"
+		},
+		"./internal/*": {
+			"arktype-repo": "./*",
+			"import": "./dist/*",
+			"require": "./dist/*"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsup --config ../repo/tsup.config.ts"
+	},
+	"dependencies": {
+		"@arktype/util": "workspace:*",
+		"@arktype/schema": "workspace:*"
+	}
+}

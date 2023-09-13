@@ -2,26 +2,26 @@ name: Setup repo
 description: Install dependencies and perform setup for https://github.com/arktypeio/arktype
 
 inputs:
-    node:
-        default: lts/*
+  node:
+    default: lts/*
 
 runs:
-    using: composite
-    steps:
-        - name: Setup pnpm
-          uses: pnpm/action-setup@v2
-          with:
-              version: 8.3.1
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8.3.1
 
-        - name: Setup Node (${{ inputs.node }})
-          uses: actions/setup-node@v3
-          with:
-              node-version: ${{ inputs.node }}
+    - name: Setup Node (${{ inputs.node }})
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ inputs.node }}
 
-        - name: Install dependencies
-          shell: bash
-          run: pnpm install
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install
 
-        - name: Build
-          shell: bash
-          run: pnpm buildRepo
+    - name: Build
+      shell: bash
+      run: pnpm buildRepo

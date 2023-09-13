@@ -1,0 +1,77 @@
+{
+	"name": "arkdark",
+	"displayName": "ArkDark",
+	"description": "ArkType syntax highlighting and theme⛵",
+	"version": "3.5.1",
+	"private": true,
+	"publisher": "arktypeio",
+	"type": "module",
+	"scripts": {
+		"vspublish": "pnpx vsce publish"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype"
+	},
+	"engines": {
+		"vscode": "^1.0.0"
+	},
+	"icon": "icon.png",
+	"categories": [
+		"Themes",
+		"Programming Languages"
+	],
+	"extensionDependencies": [
+		"usernamehw.errorlens"
+	],
+	"contributes": {
+		"themes": [
+			{
+				"label": "ArkDark",
+				"uiTheme": "vs-dark",
+				"path": "./color-theme.json"
+			}
+		],
+		"grammars": [
+			{
+				"injectTo": [
+					"source.ts",
+					"source.ts.tsx",
+					"source.js",
+					"source.js.jsx"
+				],
+				"scopeName": "source.arktype.injection.ts",
+				"path": "arktype.tmLanguage.json"
+			}
+		],
+		"configurationDefaults": {
+			"errorLens.followCursor": "closestProblem",
+			"errorLens.delay": 0,
+			"errorLens.editorHoverPartsEnabled": {
+				"buttonsEnabled": false
+			},
+			"errorLens.replace": [
+				{
+					"matcher": ".*\n([^\n]*)$",
+					"message": "$1"
+				},
+				{
+					"matcher": "Argument of type '.*' is not assignable to parameter of type '\"(.*)\"'.",
+					"message": "$1"
+				},
+				{
+					"matcher": "Type '.*' is not assignable to type '\"(.*)\"'.",
+					"message": "$1"
+				},
+				{
+					"matcher": "Type '.*' is not assignable to type 'indexParseError<(.*)>'.",
+					"message": "$1"
+				},
+				{
+					"matcher": ".*\n([^\n]*)$",
+					"message": "$1"
+				}
+			]
+		}
+	}
+}

@@ -1,0 +1,81 @@
+export type Stringifiable =
+	| string
+	| boolean
+	| number
+	| bigint
+	| null
+	| undefined
+
+/**
+ * Force an operation like `{ a: 0 } & { b: 1 }` to be computed so that it displays `{ a: 0; b: 1 }`.
+ *
+ * Also works for some non-intersections, e.g. `keyof SomeObj` => `"a" | "b" | ...`
+ */
+export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
+
+export type exact<t, u> = {
+	[k in keyof t]: k extends keyof u ? t[k] : never
+}
+
+export type defer<t> = [t][t extends any ? 0 : never]
+
+export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
+
+export type mergeAll<t extends readonly unknown[]> = t["length"] extends 1
+	? t[0]
+	: mergeAllRecurse<t>
+
+type mergeAllRecurse<t extends readonly unknown[]> = t extends readonly [
+	infer head,
+	...infer tail
+]
+	? merge<head, mergeAll<tail>>
+	: []
+
+/**
+ * Simple interesection (&) combined with evaluate to improve display
+ */
+export type and<l, r> = evaluate<l & r>
+
+/**
+ * Interesection (`&`) that avoids evaluating `unknown` to `{}`
+ */
+export type andPreserveUnknown<l, r> = unknown extends l & r
+	? unknown
+	: evaluate<l & r>
+
+export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
+
+export type isNever<t> = [t] extends [never] ? true : false
+
+export type isUnknown<t> = unknown extends t
+	? [t] extends [{}]
+		? false
+		: true
+	: false
+
+export type conform<t, base> = t extends base ? t : base
+
+export type equals<t, u> = (<_>() => _ extends t ? 1 : 2) extends <
+	_
+>() => _ extends u ? 1 : 2
+	? true
+	: false
+
+export const id = Symbol("id")
+
+export type id = typeof id
+
+export type nominal<t, id extends string> = t & {
+	readonly [id]: id
+}
+
+export type satisfy<t, u extends { [k in keyof t]: t[k] }> = u
+
+export type extend<t, u> = evaluate<t & u>
+
+export type defined<t> = t & ({} | null)
+
+export type autocomplete<suggestions extends string> =
+	| suggestions
+	| (string & {})
