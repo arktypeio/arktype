@@ -14,6 +14,10 @@ export interface BoundSchema extends BaseSchema {
 	readonly exclusive: boolean
 }
 
+export type BoundNode = MinNode | MaxNode
+
+export type BoundInput = number | BoundSchema
+
 export class MinNode extends RefinementNode<BoundSchema> {
 	protected constructor(schema: BoundSchema) {
 		super(schema)
@@ -22,8 +26,10 @@ export class MinNode extends RefinementNode<BoundSchema> {
 	readonly kind = "min"
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], BoundSchema>) => {
-			return new MinNode(input)
+		f = (input: conform<this[Hkt.key], BoundInput>) => {
+			return new MinNode(
+				typeof input === "number" ? { limit: input, exclusive: false } : input
+			)
 		}
 	})()
 
@@ -71,8 +77,10 @@ export class MaxNode extends RefinementNode<BoundSchema> {
 	}
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], BoundSchema>) => {
-			return new MaxNode(input)
+		f = (input: conform<this[Hkt.key], BoundInput>) => {
+			return new MaxNode(
+				typeof input === "number" ? { limit: input, exclusive: false } : input
+			)
 		}
 	})()
 

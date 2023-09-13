@@ -10,6 +10,8 @@ export interface DivisibilitySchema extends BaseSchema {
 	divisor: number
 }
 
+export type DivisibilityInput = number | DivisibilitySchema
+
 export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 	readonly kind = "divisor"
 
@@ -18,7 +20,7 @@ export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 	}
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], number | DivisibilitySchema>) => {
+		f = (input: conform<this[Hkt.key], DivisibilityInput>) => {
 			return new DivisibilityNode(
 				typeof input === "number" ? { divisor: input } : input
 			)

@@ -1,6 +1,5 @@
 import type { extend, Hkt } from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
-import type { BasisKind } from "./constraints/basis.js"
 import type {
 	ConstraintClassesByKind,
 	ConstraintKind,
@@ -22,8 +21,6 @@ export type parse<
 	node extends { hkt: Hkt },
 	parameters extends Parameters<node["hkt"]["f"]>[0]
 > = Hkt.apply<node["hkt"], parameters>
-
-export type BasisInput = inputFor<BasisKind> | undefined
 
 export abstract class BaseNode<
 	schema extends BaseSchema = BaseSchema

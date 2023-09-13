@@ -13,6 +13,8 @@ export interface NarrowSchema extends BaseSchema {
 	rule: Narrow
 }
 
+export type NarrowInput = Narrow | NarrowSchema
+
 export class NarrowNode extends RefinementNode<NarrowSchema> {
 	readonly kind = "narrow"
 
@@ -21,7 +23,7 @@ export class NarrowNode extends RefinementNode<NarrowSchema> {
 	}
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], Narrow | NarrowSchema>) => {
+		f = (input: conform<this[Hkt.key], NarrowInput>) => {
 			return new NarrowNode(
 				typeof input === "function" ? { rule: input } : input
 			)

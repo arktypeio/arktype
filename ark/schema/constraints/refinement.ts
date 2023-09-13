@@ -1,11 +1,11 @@
 import type { BaseSchema } from "../schema.js"
 import type { Basis } from "./basis.js"
-import type { MaxNode, MinNode } from "./bound.js"
+import type { BoundInput, MaxNode, MinNode } from "./bound.js"
 import { ConstraintNode } from "./constraint.js"
-import type { DivisibilityNode } from "./divisor.js"
-import type { NarrowNode } from "./narrow.js"
-import type { PatternNode } from "./pattern.js"
-import type { PropNode } from "./prop.js"
+import type { DivisibilityInput, DivisibilityNode } from "./divisor.js"
+import type { NarrowInput, NarrowNode } from "./narrow.js"
+import type { PatternInput, PatternNode } from "./pattern.js"
+import type { PropInput, PropNode } from "./prop.js"
 
 export type RefinementClassesByKind = {
 	divisor: typeof DivisibilityNode
@@ -25,10 +25,22 @@ export type RefinementsByKind = {
 	narrow: NarrowNode
 }
 
+export type RefinementInputsByKind = {
+	divisor: DivisibilityInput
+	min: BoundInput
+	max: BoundInput
+	regex: PatternInput
+	prop: PropInput
+	narrow: NarrowInput
+}
+
 export type RefinementKind = keyof RefinementsByKind
 
 export type Refinement<kind extends RefinementKind = RefinementKind> =
 	RefinementsByKind[kind]
+
+export type RefinementInput<kind extends RefinementKind = RefinementKind> =
+	RefinementInputsByKind[kind]
 
 export abstract class RefinementNode<
 	schema extends BaseSchema

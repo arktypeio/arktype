@@ -1,6 +1,6 @@
-import type { DomainNode } from "./domain.js"
-import type { PrototypeNode } from "./prototype.js"
-import type { UnitNode } from "./unit.js"
+import type { DomainInput, DomainNode } from "./domain.js"
+import type { PrototypeInput, PrototypeNode } from "./prototype.js"
+import type { UnitInput, UnitNode } from "./unit.js"
 
 export type BasisClassesByKind = {
 	domain: typeof DomainNode
@@ -14,9 +14,18 @@ export type BasesByKind = {
 	unit: UnitNode
 }
 
+export type BasisInputsByKind = {
+	domain: DomainInput
+	prototype: PrototypeInput
+	unit: UnitInput
+}
+
 export type BasisKind = keyof BasesByKind
 
 export type Basis<kind extends BasisKind = BasisKind> = BasesByKind[kind]
+
+export type BasisInput<kind extends BasisKind = BasisKind> =
+	BasisInputsByKind[kind]
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

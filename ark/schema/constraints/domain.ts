@@ -12,6 +12,8 @@ export interface DomainSchema<
 	rule: domain
 }
 
+export type DomainInput = NonEnumerableDomain | DomainSchema
+
 export class DomainNode<
 	// @ts-expect-error
 	out schema extends DomainSchema = DomainSchema
@@ -25,7 +27,7 @@ export class DomainNode<
 	}
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], NonEnumerableDomain | DomainSchema>) => {
+		f = (input: conform<this[Hkt.key], DomainInput>) => {
 			return new DomainNode(
 				typeof input === "string" ? { rule: input } : input
 			) as {} as typeof input extends DomainSchema

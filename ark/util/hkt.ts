@@ -9,11 +9,7 @@ export declare abstract class Hkt<f extends Fn = Fn> {
 export const reify = <def extends Hkt>(def: def) => def.f as reify<def>
 
 export type reify<hkt extends Hkt> = hkt & {
-	<In extends Parameters<hkt["f"]>[0]>(
-		In: In
-	): Hkt.apply<hkt, In> extends Hkt
-		? reify<Hkt.apply<hkt, In>>
-		: Hkt.apply<hkt, In>
+	<In extends Parameters<hkt["f"]>[0]>(In: In): Hkt.apply<hkt, In>
 }
 
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */

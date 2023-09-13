@@ -32,9 +32,7 @@ export class PrototypeNode<
 	}
 
 	static hkt = new (class extends Hkt {
-		f = (
-			input: conform<this[Hkt.key], AbstractableConstructor | PrototypeSchema>
-		) => {
+		f = (input: conform<this[Hkt.key], PrototypeInput>) => {
 			return new PrototypeNode(
 				typeof input === "function" ? { rule: input } : input
 			) as {} as typeof input extends PrototypeSchema

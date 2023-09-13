@@ -4,6 +4,7 @@ import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { BaseSchema, inputFor, parse } from "./schema.js"
 import { BaseNode } from "./schema.js"
+import { inferred } from "./utils.js"
 
 export interface TypeSchema extends BaseSchema {
 	branches: readonly PredicateNode[]
@@ -12,7 +13,8 @@ export interface TypeSchema extends BaseSchema {
 export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 	readonly kind = "type"
 
-	declare infer: t
+	declare infer: t;
+	declare [inferred]: t
 
 	declare condition: string
 
@@ -113,6 +115,8 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 }
 
 export const node = TypeNode.from
+
+const z = node({ is: "foo" }) //=>
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant() {

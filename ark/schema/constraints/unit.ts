@@ -11,6 +11,8 @@ export interface UnitSchema<value = unknown> extends BaseSchema {
 	is: value
 }
 
+export type UnitInput = UnitSchema
+
 export class UnitNode<
 	schema extends UnitSchema = UnitSchema
 > extends ConstraintNode<schema> {
@@ -22,7 +24,7 @@ export class UnitNode<
 	}
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], UnitSchema>): UnitNode<typeof input> => {
+		f = (input: conform<this[Hkt.key], UnitInput>): UnitNode<typeof input> => {
 			return new UnitNode(input)
 		}
 	})()
@@ -43,4 +45,4 @@ export class UnitNode<
 	}
 }
 
-export const identityNode = UnitNode.from
+export const unitNode = UnitNode.from

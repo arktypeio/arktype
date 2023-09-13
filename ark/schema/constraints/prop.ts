@@ -26,6 +26,8 @@ type inferKey<k extends PropSchema["key"]> = k extends string | symbol
 	? k["infer"] & PropertyKey
 	: never
 
+export type PropInput = PropSchema
+
 export class PropNode<
 	schema extends PropSchema = PropSchema
 > extends RefinementNode<PropSchema> {
@@ -37,7 +39,7 @@ export class PropNode<
 	}
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], PropSchema>) => {
+		f = (input: conform<this[Hkt.key], PropInput>) => {
 			return new PropNode(input)
 		}
 	})()

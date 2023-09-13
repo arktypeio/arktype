@@ -14,7 +14,6 @@ import {
 } from "@arktype/util"
 import {
 	type BoundSchema,
-	describeBound,
 	type NumericallyBoundableData
 } from "../constraints/bound.js"
 import { domainDescriptions } from "../constraints/domain.js"
@@ -223,9 +222,10 @@ export class BoundProblem extends Problem<
 	readonly code = "bound"
 
 	get mustBe() {
-		return `${describeBound(this.rule)}${
-			this.data.units ? ` ${this.data.units}` : ""
-		}`
+		return "within bounds"
+		// return `${describeBound(this.rule)}${
+		// 	this.data.units ? ` ${this.data.units}` : ""
+		// }`
 	}
 
 	override get was() {
