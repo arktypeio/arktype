@@ -11,7 +11,7 @@ export type RefinementClassesByKind = {
 	divisor: typeof DivisibilityNode
 	min: typeof MinNode
 	max: typeof MaxNode
-	regex: typeof PatternNode
+	pattern: typeof PatternNode
 	prop: typeof PropNode
 	narrow: typeof NarrowNode
 }

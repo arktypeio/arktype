@@ -2,13 +2,15 @@ import type { extend, Hkt } from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
+	ConstraintInputsByKind,
 	ConstraintKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
-import type { PredicateNode } from "./predicate.js"
-import type { TypeNode } from "./type.js"
+import type { PredicateInput, PredicateNode } from "./predicate.js"
+import type { TypeInput, TypeNode } from "./type.js"
 
 export interface BaseSchema {
+	alias?: string
 	description?: string
 }
 
@@ -58,9 +60,13 @@ export type parse<
 	parameters extends Parameters<node["hkt"]["f"]>[0]
 > = Hkt.apply<node["hkt"], parameters>
 
-export type inputFor<kind extends ConstraintKind> = {
-	[k in kind]: Parameters<ConstraintClassesByKind[k]["from"]>[0]
-}[kind]
+export type inputOf<kind extends NodeKind> = extend<
+	ConstraintInputsByKind,
+	{
+		type: TypeInput
+		predicate: PredicateInput
+	}
+>[kind]
 
 export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,

@@ -3,13 +3,17 @@ import type { ConstraintKind } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BaseSchema, inputFor, parse } from "./schema.js"
+import type { BaseSchema, inputOf, parse } from "./schema.js"
 import { BaseNode } from "./schema.js"
 import { inferred } from "./utils.js"
 
 export interface TypeSchema extends BaseSchema {
-	alias?: string
 	branches: readonly PredicateNode[]
+}
+
+// TODO: improve this
+export interface TypeInput extends BaseSchema {
+	branches: readonly PredicateInput[]
 }
 
 export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
@@ -38,7 +42,7 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
-		definition: inputFor<kind>
+		definition: inputOf<kind>
 	): TypeNode<t> {
 		return this
 	}

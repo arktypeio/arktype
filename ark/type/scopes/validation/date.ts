@@ -94,12 +94,13 @@ export const tryParseDatePattern = (
 	return writeFormattedMustBe(opts.format)
 }
 
-// morph: (s, state) => {
-// 	const result = tryParseDatePattern(s)
-// 	return typeof result === "string"
-// 		? // TODO: Fix
-// 		  state.mustBe(result, s, state.basePath)
-// 		: result
-// }
-
-export const parsedDate = node("string")
+export const parsedDate = node({
+	basis: "string",
+	morph: (s, state) => {
+		const result = tryParseDatePattern(s)
+		return typeof result === "string"
+			? // TODO: Fix
+			  state.mustBe(result, s, state.basePath)
+			: result
+	}
+})

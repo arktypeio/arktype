@@ -5,6 +5,7 @@ import {
 	type Morph,
 	type Narrow,
 	node,
+	type PredicateAttributes,
 	type Problem,
 	type TypeNode
 } from "@arktype/schema"
@@ -268,6 +269,8 @@ export type inferTupleExpression<
 	? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>"
 	? parseMorph<def[0], def[2], $, args>
+	: def[1] extends "@"
+	? inferDefinition<def[0], $, args>
 	: def extends readonly ["===", ...infer values]
 	? values[number]
 	: def extends readonly [
@@ -318,6 +321,8 @@ export type validateInfixExpression<
 				? Narrow<extractIn<inferDefinition<def[0], $, args>>>
 				: def[1] extends "=>"
 				? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
+				: def[1] extends "@"
+				? PredicateAttributes | string
 				: validateDefinition<def[2], $, args>
 	  ]
 

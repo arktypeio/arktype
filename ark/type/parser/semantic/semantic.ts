@@ -75,7 +75,7 @@ export type PostfixExpression<
 	operand = unknown
 > = readonly [operand, operator]
 
-export type InfixOperator = "|" | "&" | Comparator | "%" | ":" | "=>"
+export type InfixOperator = "|" | "&" | Comparator | "%" | ":" | "=>" | "@"
 
 export type InfixExpression<
 	operator extends InfixOperator = InfixOperator,

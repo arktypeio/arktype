@@ -1,4 +1,4 @@
-import type { conform, extend } from "@arktype/util"
+import type { conform, extend, listable } from "@arktype/util"
 import { Hkt, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
@@ -6,15 +6,17 @@ import type {
 	BasisInput,
 	BasisKind
 } from "./constraints/basis.js"
-import type { Constraint, ConstraintInput } from "./constraints/constraint.js"
+import type { Constraint } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
-import type { parse } from "./schema.js"
+import type { TraversalState } from "./io/traverse.js"
+import type { BaseSchema, inputOf, parse } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export type PredicateSchema<basis extends Basis = Basis> = extend<
 	Basis,
 	{
+		alias?: string
 		basis: basis
 	}
 > &
@@ -44,17 +46,28 @@ type refinementsOf<basis> = {
 	[k in refinementKindOf<basis>]?: Refinement<k>
 }
 
+type refinementInputsOf<basis> = {
+	[k in refinementKindOf<basis>]?: inputOf<k>
+}
+
+export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
+
+export interface PredicateAttributes extends BaseSchema {
+	morph?: listable<Morph>
+}
+
 export type PredicateInput<basis extends BasisInput = BasisInput> =
 	| basis
 	| Record<PropertyKey, never>
-	| { narrow?: ConstraintInput<"narrow"> }
-	| ({ basis: basis } & refinementsOf<parseBasis<basis>>)
+	| ({ narrow?: inputOf<"narrow"> } & PredicateAttributes)
+	| ({ basis: basis } & refinementInputsOf<parseBasis<basis>> &
+			PredicateAttributes)
 
 export type parsePredicate<input extends PredicateInput> =
 	input extends PredicateInput<infer basis>
-		? BasisInput extends basis
-			? unknown
-			: PredicateNode<parseBasis<basis>["infer"]>
+		? PredicateNode<
+				BasisInput extends basis ? unknown : parseBasis<basis>["infer"]
+		  >
 		: never
 
 export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
