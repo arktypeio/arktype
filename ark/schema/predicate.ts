@@ -6,13 +6,9 @@ import type {
 	BasisKind
 } from "./constraints/basis.js"
 import type { Constraint } from "./constraints/constraint.js"
-import type {
-	Refinement,
-	RefinementKind,
-	RefinementNode
-} from "./constraints/refinement.js"
+import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
-import type { BaseSchema, BasisInput, inputFor, parse } from "./schema.js"
+import type { BasisInput, inputFor, parse } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export type PredicateSchema<basis extends Basis = Basis> = extend<
