@@ -1,11 +1,10 @@
 import {
 	builtins,
 	type CastTo,
-	node,
 	type ProblemCode,
 	type TypeNode
 } from "@arktype/schema"
-import type { Dict, evaluate, Hkt, isAny, nominal } from "@arktype/util"
+import type { Dict, evaluate, isAny, nominal } from "@arktype/util"
 import {
 	domainOf,
 	hasDomain,
@@ -32,25 +31,24 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { parseString } from "./parser/string/string.js"
-import { scope } from "./scopes/ark.js"
 import type {
-	arkKind,
 	DeclarationParser,
 	DefinitionParser,
-	extractIn,
-	extractOut,
 	Generic,
 	GenericProps,
 	KeyCheckKind,
 	TypeConfig,
-	TypeParser
+	TypeParser,
+	arkKind,
+	extractIn,
+	extractOut
 } from "./type.js"
 import {
+	Type,
 	addArkKind,
 	createTypeParser,
 	generic,
 	hasArkKind,
-	Type,
 	validateUninstantiatedGeneric
 } from "./type.js"
 
