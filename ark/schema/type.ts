@@ -18,32 +18,11 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 
 	declare condition: string
 
-	static from: {
-		<const branches extends readonly unknown[]>(
-			...branches: {
-				[i in keyof branches]: conform<
-					branches[i],
-					branches[i] extends PredicateInput<infer basis>
-						? PredicateInput<basis>
-						: PredicateInput
-				>
-			}
-		): TypeNode<
-			{
-				[i in keyof branches]: parse<
-					typeof PredicateNode,
-					conform<branches[i], PredicateInput>
-				> extends PredicateNode<infer t>
-					? t
-					: unknown
-			}[number]
-		>
-		literal: <const branches extends readonly unknown[]>(
-			...branches: branches
-		) => TypeNode<branches[number]>
-	} = Object.assign((...branches: never[]) => new TypeNode(branches as never), {
-		literal: (...branches: never[]) => new TypeNode(branches as never)
-	}) as never
+	static from = ((...branches: never[]) =>
+		new TypeNode(branches as never)) as NodeParser
+
+	static enumerate = ((...branches: never[]) =>
+		new TypeNode(branches as never)) as NodeParser
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
@@ -115,6 +94,36 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 }
 
 export const node = TypeNode.from
+
+export const enumerate = TypeNode.enumerate
+
+type NodeParser = {
+	<const branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: conform<
+				branches[i],
+				branches[i] extends PredicateInput<infer basis>
+					? PredicateInput<basis>
+					: PredicateInput
+			>
+		}
+	): TypeNode<
+		{
+			[i in keyof branches]: parse<
+				typeof PredicateNode,
+				conform<branches[i], PredicateInput>
+			> extends PredicateNode<infer t>
+				? t
+				: unknown
+		}[number]
+	>
+}
+
+type LiteralNodeParser = {
+	<const branches extends readonly unknown[]>(
+		...branches: branches
+	): TypeNode<branches[number]>
+}
 
 const z = node({ is: "foo" }) //=>
 
