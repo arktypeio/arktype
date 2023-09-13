@@ -1,6 +1,8 @@
+import type { conform } from "@arktype/util"
 import { Disjoint } from "./disjoint.js"
-import type { PredicateNode } from "./predicate.js"
-import { BaseNode, type BaseSchema } from "./schema.js"
+import type { PredicateInput, PredicateNode } from "./predicate.js"
+import type { BaseSchema, parse } from "./schema.js"
+import { BaseNode } from "./schema.js"
 
 export interface TypeSchema extends BaseSchema {
 	branches: readonly PredicateNode[]
@@ -10,6 +12,29 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 	readonly kind = "type"
 
 	declare infer: t
+
+	declare condition: string
+
+	static from = <const branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: conform<
+				branches[i],
+				branches[i] extends PredicateInput<infer basis>
+					? PredicateInput<basis>
+					: PredicateInput
+			>
+		}
+	) =>
+		new TypeNode<
+			{
+				[i in keyof branches]: parse<
+					typeof PredicateNode,
+					conform<branches[i], PredicateInput>
+				> extends PredicateNode<infer t>
+					? t
+					: unknown
+			}[number]
+		>(branches as never)
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
@@ -72,6 +97,8 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
 }
+
+export const node = TypeNode.from
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant() {

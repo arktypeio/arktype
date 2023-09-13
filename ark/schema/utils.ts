@@ -1,12 +1,11 @@
 import { cached } from "@arktype/util"
-import { TypeNode } from "./type.js"
-
-const node = (...args: any[]) => new TypeNode({ branches: [] })
+import type { TypeNode } from "./type.js"
+import { node } from "./type.js"
 
 // // TODO: integrate with default scopes
 export const builtins = {
-	never: cached(() => new TypeNode<never>({ branches: [] })),
-	unknown: cached(() => node()),
+	never: cached(() => node()),
+	unknown: cached(() => node({})),
 	// TODO: fix
 	nonVariadicArrayIndex: cached(() => node("number")),
 	arrayIndexTypeNode: cached(() => node("number")),

@@ -1,24 +1,27 @@
-import type { conform } from "@arktype/util"
+import type { conform, extend } from "@arktype/util"
 import { Hkt, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
 	BasisClassesByKind,
 	BasisKind
 } from "./constraints/basis.js"
+import type { Constraint } from "./constraints/constraint.js"
 import type {
 	Refinement,
-	RefinementClassesByKind,
 	RefinementKind,
 	RefinementNode
 } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { BaseSchema, BasisInput, inputFor, parse } from "./schema.js"
-import { BaseNode, parser } from "./schema.js"
+import { BaseNode } from "./schema.js"
 
-export interface PredicateSchema<basis extends Basis = Basis>
-	extends BaseSchema {
-	basis: basis
-}
+export type PredicateSchema<basis extends Basis = Basis> = extend<
+	Basis,
+	{
+		basis: basis
+	}
+> &
+	refinementsOf<basis>
 
 type parseBasis<input extends BasisInput> = conform<
 	{
@@ -36,26 +39,44 @@ type basisOf<k extends RefinementKind> =
 		? basis
 		: never
 
+type refinementKindOf<basis> = {
+	[k in RefinementKind]: basis extends basisOf<k> ? k : never
+}[RefinementKind]
+
 type refinementsOf<basis> = {
-	[k in RefinementKind as basis extends basisOf<k> ? k : never]?: Refinement<k>
+	[k in refinementKindOf<basis>]?: Refinement<k>
 }
 
 export type PredicateInput<basis extends BasisInput = BasisInput> =
+	| basis
 	| Record<PropertyKey, never>
 	| { narrow?: inputFor<"narrow"> }
 	| ({ basis: basis } & refinementsOf<parseBasis<basis>>)
 
-export const predicate = <basis extends BasisInput>(
-	input: PredicateInput<basis>
-) => ({}) as PredicateNode<parseBasis<basis>["infer"]>
-
-const z = predicate({ basis: "string" })
+export type parsePredicate<input extends PredicateInput> =
+	input extends PredicateInput<infer basis>
+		? BasisInput extends basis
+			? unknown
+			: PredicateNode<parseBasis<basis>["infer"]>
+		: never
 
 export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	readonly kind = "predicate"
 	declare infer: t
 
-	declare constraints: RefinementNode<BaseSchema>[]
+	declare constraints: Constraint[]
+
+	protected constructor(schema: PredicateSchema) {
+		super(schema)
+	}
+
+	static hkt = new (class extends Hkt {
+		f = (input: conform<this[Hkt.key], PredicateInput>) =>
+			new PredicateNode(input as never) as parsePredicate<typeof input>
+	})()
+
+	static from = <basis extends BasisInput>(input: PredicateInput<basis>) =>
+		new PredicateNode<parseBasis<basis>["infer"]>({} as never)
 
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
@@ -66,7 +87,7 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	}
 
 	intersect(other: PredicateNode) {
-		let result: readonly Refinement[] | Disjoint = this.constraints
+		let result: readonly Constraint[] | Disjoint = this.constraints
 		for (const constraint of other.constraints) {
 			if (result instanceof Disjoint) {
 				break
@@ -74,9 +95,7 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 			result = this.addConstraint(constraint)
 		}
 		// TODO: attributes
-		return result instanceof Disjoint
-			? result
-			: new PredicateNode({ constraints: result })
+		return result instanceof Disjoint ? result : this //new PredicateNode(this.constraints)
 	}
 
 	keyof() {
@@ -96,9 +115,9 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	}
 
 	protected addConstraint(
-		constraint: Refinement
-	): readonly Refinement[] | Disjoint {
-		const result: Refinement[] = []
+		constraint: Constraint
+	): readonly Constraint[] | Disjoint {
+		const result: Constraint[] = []
 		let includesConstraint = false
 		for (let i = 0; i < this.constraints.length; i++) {
 			const elementResult = constraint.reduce(this.constraints[i])
