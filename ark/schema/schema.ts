@@ -1,10 +1,11 @@
-import type { extend, Hkt } from "@arktype/util"
+import type { extend, Hkt, requireKeys } from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
+import type { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
 
@@ -20,23 +21,18 @@ export abstract class BaseNode<
 
 	abstract infer: unknown
 
+	description: string
+	alias: string
+
 	protected constructor(public schema: schema) {
 		super(schema)
+		this.description ??= this.writeDefaultDescription()
+		this.alias ??= "generated"
 	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
 		return this.kind === kind
 	}
-
-	// intersect(other: this): this | Disjoint {
-	// 	if (this === other) {
-	// 		return this
-	// 	}
-	// 	const intersection = methods.intersect(this.definition, other.definition)
-	// 	return intersection instanceof Disjoint
-	// 		? intersection
-	// 		: new this.ownConstructor(intersection as never)
-	// }
 
 	id = this.hash()
 
