@@ -70,10 +70,7 @@ const json = node({
 	description: "a JSON-parsable string"
 })
 
-// "creditCard": "a valid credit card number",
-// "parsedDate": "a valid date",
-
-export type InferredValidation = {
+export interface InferredValidation {
 	alpha: string
 	alphanumeric: string
 	lowercase: string

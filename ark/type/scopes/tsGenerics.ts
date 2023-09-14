@@ -2,7 +2,7 @@ import { Scope } from "../scope.js"
 import type { Generic } from "../type.js"
 import type { RootScope } from "./ark.js"
 
-export type InferredTsGenerics = {
+export interface InferredTsGenerics {
 	Record: Generic<
 		["K", "V"],
 		{

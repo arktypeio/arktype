@@ -2,7 +2,7 @@ import { node } from "@arktype/schema"
 import { Scope } from "../scope.js"
 import type { RootScope } from "./ark.js"
 
-export type InferredJsObjects = {
+export interface InferredJsObjects {
 	Function: Function
 	Date: Date
 	Error: Error

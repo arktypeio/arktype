@@ -15,7 +15,7 @@ import { validationTypes } from "./validation/validation.js"
 
 /** Root scopes can be inferred automatically from node definitions, but
  * explicitly typing them can improve responsiveness */
-export type RootScope<exports extends Record<string, unknown>> = Scope<{
+export type RootScope<exports> = Scope<{
 	exports: exports
 	locals: {}
 	ambient: {}
@@ -37,22 +37,11 @@ export const arktypes: Module<ArkResolutions> = ark.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
-export type Ark = {
-	// using a mapped type like this is much more efficient than an intersection here
-	[k in
-		| keyof InferredTsKeywords
-		| keyof InferredJsObjects
-		| keyof InferredValidation
-		| keyof InferredTsGenerics]: k extends keyof InferredTsKeywords
-		? InferredTsKeywords[k]
-		: k extends keyof InferredJsObjects
-		? InferredJsObjects[k]
-		: k extends keyof InferredValidation
-		? InferredValidation[k]
-		: k extends keyof InferredTsGenerics
-		? InferredTsGenerics[k]
-		: never
-}
+export interface Ark
+	extends InferredTsKeywords,
+		InferredJsObjects,
+		InferredValidation,
+		InferredTsGenerics {}
 
 export const scope: ScopeParser<{}, Ark> = ark.scope as never
 
