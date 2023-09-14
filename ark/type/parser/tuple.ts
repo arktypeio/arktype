@@ -370,7 +370,7 @@ export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
 export type TuplePostfixOperator = "[]"
 
-export type TupleInfixOperator = "&" | "|" | "=>" | ":"
+export type TupleInfixOperator = "&" | "|" | "=>" | ":" | "@"
 
 export type IndexOneExpression<
 	token extends IndexOneOperator = IndexOneOperator
@@ -424,6 +424,10 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 	return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Narrow)
 }
 
+const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) => {
+	return ctx.scope.parse(def[0], ctx)
+}
+
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>
 } = {
@@ -431,7 +435,8 @@ const indexOneParsers: {
 	"&": parseBranchTuple,
 	"[]": parseArrayTuple,
 	":": parseNarrowTuple,
-	"=>": parseMorphTuple
+	"=>": parseMorphTuple,
+	"@": parseAttributeTuple
 }
 
 export type FunctionalTupleOperator = ":" | "=>"

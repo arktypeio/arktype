@@ -3,6 +3,7 @@ import type {
 	inferNarrow,
 	Morph,
 	Narrow,
+	PredicateAttributes,
 	TypeNode
 } from "@arktype/schema"
 import {
@@ -39,6 +40,7 @@ import type {
 } from "./parser/tuple.js"
 import type { Module, Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
+import { type } from "./scopes/ark.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -65,6 +67,8 @@ export type TypeParser<$> = {
 				: one extends "=>"
 				? // TODO: centralize
 				  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
+				: one extends "@"
+				? [string | PredicateAttributes]
 				: [validateTypeRoot<rest[0], $>]
 			: []
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>

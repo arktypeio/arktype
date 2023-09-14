@@ -87,8 +87,6 @@ export type RegexLiteral<source extends string = string> = `/${source}/`
 
 export type inferTerminal<token, $, args> = token extends keyof args | keyof $
 	? resolve<token, $, args>
-	: token extends CastTo<infer t>
-	? t
 	: token extends StringLiteral<infer Text>
 	? Text
 	: token extends RegexLiteral

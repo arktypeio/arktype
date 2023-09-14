@@ -32,23 +32,23 @@ import {
 } from "./parser/string/shift/operand/unenclosed.js"
 import { parseString } from "./parser/string/string.js"
 import type {
+	arkKind,
 	DeclarationParser,
 	DefinitionParser,
+	extractIn,
+	extractOut,
 	Generic,
 	GenericProps,
 	KeyCheckKind,
 	TypeConfig,
-	TypeParser,
-	arkKind,
-	extractIn,
-	extractOut
+	TypeParser
 } from "./type.js"
 import {
-	Type,
 	addArkKind,
 	createTypeParser,
 	generic,
 	hasArkKind,
+	Type,
 	validateUninstantiatedGeneric
 } from "./type.js"
 
@@ -122,9 +122,6 @@ type bootstrapExports<def> = bootstrapAliases<{
 
 /** These are legal as values of a scope but not as definitions in other contexts */
 type PreparsedResolution = Module | GenericProps
-
-// Note- adding HKT breaks node inference since nodes are HKTs but used them differently
-// | Hkt
 
 type bootstrapAliases<def> = {
 	[k in Exclude<
