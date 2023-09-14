@@ -1,11 +1,10 @@
-import type { extend, Hkt, requireKeys } from "@arktype/util"
+import type { extend, Hkt } from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
-import type { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
 

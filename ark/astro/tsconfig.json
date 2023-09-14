@@ -1,0 +1,18 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"moduleResolution": "nodenext",
+		"target": "ES2021",
+		"jsx": "react",
+		"types": [
+			"@types/node",
+			"@docusaurus/module-type-aliases",
+			"@docusaurus/preset-classic"
+		],
+		"lib": ["DOM"],
+		// disable arktype-dev imports here until Docusaurus supports ESM
+		// https://github.com/facebook/docusaurus/issues/6520
+		"customConditions": []
+	},
+	"exclude": []
+}
