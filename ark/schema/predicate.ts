@@ -10,7 +10,7 @@ import type { Constraint } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { TraversalState } from "./io/traverse.js"
-import type { BaseSchema, inputOf, parse } from "./schema.js"
+import type { BaseSchema, inputOf, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export type PredicateSchema<basis extends Basis = Basis> = extend<
@@ -25,7 +25,7 @@ export type PredicateSchema<basis extends Basis = Basis> = extend<
 type parseBasis<input extends BasisInput> = conform<
 	{
 		[k in BasisKind]: input extends BasisInput<k>
-			? parse<BasisClassesByKind[k], input>
+			? parseNode<BasisClassesByKind[k], input>
 			: never
 	}[BasisKind],
 	Basis

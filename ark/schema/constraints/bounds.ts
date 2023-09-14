@@ -2,7 +2,7 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
-import { parser } from "../schema.js"
+import { nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
 import type { Constraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -35,7 +35,7 @@ export class MinNode extends RefinementNode<BoundSchema> {
 		}
 	})()
 
-	static from = parser(this)
+	static from = nodeParser(this)
 
 	hash() {
 		return ""
@@ -88,7 +88,7 @@ export class MaxNode extends RefinementNode<BoundSchema> {
 		}
 	})()
 
-	static from = parser(this)
+	static from = nodeParser(this)
 
 	hash() {
 		return ""

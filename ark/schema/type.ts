@@ -3,7 +3,7 @@ import type { ConstraintKind } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BaseSchema, inputOf, parse } from "./schema.js"
+import type { BaseSchema, inputOf, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 import { inferred } from "./utils.js"
 
@@ -125,7 +125,7 @@ type NodeParser = {
 		}
 	): TypeNode<
 		{
-			[i in keyof branches]: parse<
+			[i in keyof branches]: parseNode<
 				typeof PredicateNode,
 				conform<branches[i], PredicateInput>
 			> extends PredicateNode<infer t>

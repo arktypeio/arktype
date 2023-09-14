@@ -8,7 +8,7 @@ import {
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseSchema } from "../schema.js"
-import { parser } from "../schema.js"
+import { nodeParser } from "../schema.js"
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
@@ -43,7 +43,7 @@ export class PrototypeNode<
 		}
 	})()
 
-	static from = parser(this)
+	static from = nodeParser(this)
 
 	protected possibleObjectKind = getExactBuiltinConstructorName(this.prototype)
 

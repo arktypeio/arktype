@@ -3,7 +3,6 @@ import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
-	ConstraintKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
@@ -50,12 +49,12 @@ export abstract class BaseNode<
 	abstract writeDefaultDescription(): string
 }
 
-export type parser<node extends { hkt: Hkt }> = reify<node["hkt"]>
+export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
 
-export const parser = <node extends { hkt: Hkt }>(node: node) =>
-	reify(node.hkt) as parser<node>
+export const nodeParser = <node extends { hkt: Hkt }>(node: node) =>
+	reify(node.hkt) as nodeParser<node>
 
-export type parse<
+export type parseNode<
 	node extends { hkt: Hkt },
 	parameters extends Parameters<node["hkt"]["f"]>[0]
 > = Hkt.apply<node["hkt"], parameters>

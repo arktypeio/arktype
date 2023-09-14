@@ -1,7 +1,7 @@
 import type { conform } from "@arktype/util"
 import { Hkt, throwParseError } from "@arktype/util"
 import type { BaseSchema } from "../schema.js"
-import { parser } from "../schema.js"
+import { nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
 import { RefinementNode } from "./refinement.js"
@@ -32,7 +32,7 @@ export class PatternNode extends RefinementNode<PatternSchema> {
 		}
 	})()
 
-	static from = parser(this)
+	static from = nodeParser(this)
 
 	applicableTo(
 		basis: Basis | undefined

@@ -2,7 +2,7 @@ import type { conform, Domain, inferDomain } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema } from "../schema.js"
-import { parser } from "../schema.js"
+import { nodeParser } from "../schema.js"
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
 
@@ -38,7 +38,7 @@ export class DomainNode<
 		}
 	})()
 
-	static from = parser(this)
+	static from = nodeParser(this)
 
 	hash() {
 		return this.domain

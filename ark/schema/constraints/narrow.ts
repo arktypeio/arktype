@@ -3,7 +3,7 @@ import { Hkt } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import type { BaseSchema } from "../schema.js"
-import { parser } from "../schema.js"
+import { nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
@@ -30,7 +30,7 @@ export class NarrowNode extends RefinementNode<NarrowSchema> {
 		}
 	})()
 
-	static from = parser(this)
+	static from = nodeParser(this)
 
 	applicableTo(
 		basis: Basis | undefined
