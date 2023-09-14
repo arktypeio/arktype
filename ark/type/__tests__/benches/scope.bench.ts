@@ -1,6 +1,10 @@
 import { bench } from "@arktype/attest"
-import { scope } from "arktype"
+// import { scope } from "arktype"
+import type { ScopeParser } from "../../scope.js"
+import type { Ark } from "../../scopes/ark.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
+
+declare const scope: ScopeParser<Ark, Ark>
 
 // const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } }).compile()
 // const dejaVu: typeof recursive.dejaVu.infer = {}
@@ -18,23 +22,22 @@ import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 bench("cyclic 10 intersection", () => {
 	const s = scope(cyclic10).type("user&user2").infer
-	// TODO: double check this, seems high
-}).types([19581, "instantiations"])
+}).types([15964, "instantiations"])
 
 bench("cyclic(10)", () => {
 	const types = scope(cyclic10).export()
 })
 	// .median([47.02, "us"])
-	.types([3369, "instantiations"])
+	.types([3827, "instantiations"])
 
 bench("cyclic(100)", () => {
 	const types = scope(cyclic100).export()
 })
 	// .median([417.71, "us"])
-	.types([15378, "instantiations"])
+	.types([31106, "instantiations"])
 
 bench("cyclic(500)", () => {
 	const types = scope(cyclic500).export()
 })
 	// .median([2.62, "ms"])
-	.types([67195, "instantiations"])
+	.types([158351, "instantiations"])

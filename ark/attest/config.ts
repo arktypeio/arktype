@@ -37,6 +37,21 @@ const getDefaultConfig = (): AttestConfig => {
 	}
 }
 
+const hasFlag = (flag: string) => process.argv.some((arg) => arg.includes(flag))
+
+const getParamValue = (param: string) => {
+	const paramIndex = process.argv.findIndex((arg) => arg.includes(param))
+	if (paramIndex === -1) {
+		return undefined
+	}
+	const value = process.argv[paramIndex + 1]
+	return value === "true"
+		? true
+		: value === "false"
+		? false
+		: parseFloat(value) ?? value
+}
+
 const addEnvConfig = (config: AttestConfig) => {
 	if (process.env.ATTEST_CONFIG) {
 		Object.assign(config, JSON.parse(process.env.ATTEST_CONFIG))
@@ -64,19 +79,4 @@ export const getConfig = (options?: Partial<AttestConfig>): AttestConfig => {
 	ensureDir(cachedConfig.cacheDir)
 	ensureDir(cachedConfig.snapCacheDir)
 	return cachedConfig
-}
-
-const hasFlag = (flag: string) => process.argv.some((arg) => arg.includes(flag))
-
-const getParamValue = (param: string) => {
-	const paramIndex = process.argv.findIndex((arg) => arg.includes(param))
-	if (paramIndex === -1) {
-		return undefined
-	}
-	const value = process.argv[paramIndex + 1]
-	return value === "true"
-		? true
-		: value === "false"
-		? false
-		: parseFloat(value) ?? value
 }

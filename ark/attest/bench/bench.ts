@@ -1,4 +1,3 @@
-import * as process from "node:process"
 import type { SourcePosition } from "@arktype/fs"
 import { caller } from "@arktype/fs"
 import type { AttestConfig } from "../config.js"

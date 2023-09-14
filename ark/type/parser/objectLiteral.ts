@@ -52,6 +52,19 @@ export type inferObjectLiteral<def extends object, $, args> = evaluate<
 	}
 >
 
+export type validateObjectLiteral<def, $, args> = {
+	[k in keyof def]: k extends IndexedKey<infer indexDef>
+		? validateString<indexDef, $, args> extends error<infer message>
+			? // add a nominal type here to avoid allowing the error message as input
+			  indexParseError<message>
+			: inferDefinition<indexDef, $, args> extends PropertyKey
+			? // if the indexDef is syntactically and semantically valid,
+			  // move on to the validating the value definition
+			  validateDefinition<def[k], $, args>
+			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
+		: validateObjectValue<def[k], $, args>
+}
+
 type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
 	k,
 	valueDef
@@ -69,19 +82,6 @@ type optionalKeyFrom<k extends PropertyKey, valueDef> = parseEntry<
 > extends infer result extends EntryParseResult<"optional">
 	? result["innerKey"]
 	: never
-
-export type validateObjectLiteral<def, $, args> = {
-	[k in keyof def]: k extends IndexedKey<infer indexDef>
-		? validateString<indexDef, $, args> extends error<infer message>
-			? // add a nominal type here to avoid allowing the error message as input
-			  indexParseError<message>
-			: inferDefinition<indexDef, $, args> extends PropertyKey
-			? // if the indexDef is syntactically and semantically valid,
-			  // move on to the validating the value definition
-			  validateDefinition<def[k], $, args>
-			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
-		: validateObjectValue<def[k], $, args>
-}
 
 declare const indexParseSymbol: unique symbol
 

@@ -197,13 +197,6 @@ type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
 type exportedName<r extends Resolutions> = keyof r["exports"] & string
 
-// r["exports"][k] extends Kind<any>
-//             ? <const def>(
-//                   def: validateTypeRoot<def, $<r>>
-//               ) => inferTypeRoot<def, $<r>> extends infer t
-//                   ? Apply<r["exports"][k], t>
-//                   : never
-
 export type Module<r extends Resolutions = any> = {
 	// just adding the nominal id this way and mapping it is cheaper than an intersection
 	[k in exportedName<r> | arkKind]: k extends string
