@@ -118,4 +118,21 @@ suite("scope", () => {
 			}).export()
 		}).types.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
 	})
+	test("cross-scope reference", () => {
+		const { Apple } = scope({
+			Apple: {
+				pear: "Pear"
+			},
+			Pear: {
+				tasty: "true"
+			}
+		}).export()
+
+		const { X } = scope({
+			X: Apple
+		}).export()
+
+		const { data } = X({ pear: { tasty: true } })
+		attest(data).snap()
+	})
 })
