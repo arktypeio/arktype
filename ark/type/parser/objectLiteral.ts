@@ -10,7 +10,6 @@ import type {
 	parseEntry,
 	validateObjectValue
 } from "./shared.js"
-import { type } from "../scopes/ark.js"
 
 const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 	...Object.entries(o),
@@ -53,12 +52,6 @@ export type inferObjectLiteral<def extends object, $, args> = evaluate<
 	}
 >
 
-// as k extends `[${infer tail}${"]" | ""}`
-// ? tail extends `${string}]`
-// 	? k
-// 	: `[${validateString<tail, $, args>}]`
-// : k
-
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexedKey<infer indexDef>
 		? validateString<indexDef, $, args> extends ErrorMessage<infer message>
@@ -71,10 +64,6 @@ export type validateObjectLiteral<def, $, args> = {
 			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
 		: validateObjectValue<def[k], $, args>
 }
-
-// const t = type({
-// 	"[string ]": "string"
-// })
 
 type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
 	k,

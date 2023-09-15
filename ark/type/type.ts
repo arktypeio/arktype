@@ -91,10 +91,6 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => Type<preinferred, $>
 }
 
-export type MatchParser<$> = {
-	<const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
-}
-
 export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 	const parser = (...args: unknown[]): Type | Generic => {
 		if (args.length === 1) {
