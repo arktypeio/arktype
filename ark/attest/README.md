@@ -51,9 +51,11 @@ test("error and type error snap", () => {
 })
 ```
 
-Here is an example of benchmarking:
+Benches are run separately from tests and don't require any special setup. If the below file was `benches.ts`, you could run it using something like `tsx benches.ts` or `ts-node benches.ts`:
 
 ```ts
+import { bench } from "@arktype/attest"
+
 bench(
 	"bench call single stat median",
 	() => "boofoozoo".includes("foo")
