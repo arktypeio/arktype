@@ -1,10 +1,9 @@
-import { LinearProgress, Stack } from "@mui/material"
 import React, { useEffect, useState } from "react"
-import type { DemoProps } from "./stackblitzGenerators/createStackblitzDemo"
+import type { DemoProps } from "./stackblitzGenerators/createStackblitzDemo.js"
 import {
 	createStackblitzDemo,
 	DEMO_ELEMENT_ID
-} from "./stackblitzGenerators/createStackblitzDemo"
+} from "./stackblitzGenerators/createStackblitzDemo.js"
 
 export const StackBlitzDemo = (demoProps: DemoProps) => {
 	const [isLoading, setIsLoading] = useState(true)
@@ -12,9 +11,9 @@ export const StackBlitzDemo = (demoProps: DemoProps) => {
 		createStackblitzDemo(demoProps).then(() => setIsLoading(false))
 	}, [])
 	return (
-		<Stack width="100%" height="600px">
+		<div style={{ display: "flex", width: "100%", height: 600 }}>
 			{isLoading ? <LinearProgress /> : null}
 			<div id={DEMO_ELEMENT_ID} />
-		</Stack>
+		</div>
 	)
 }

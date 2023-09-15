@@ -10,8 +10,10 @@
 		"astro": "astro"
 	},
 	"dependencies": {
+		"@arktype/util": "0.0.1",
 		"@astrojs/starlight": "0.10.0",
 		"@astrojs/react": "3.0.2",
+		"@stackblitz/sdk": "1.9.0",
 		"astro": "3.1.0",
 		"sharp": "0.32.5",
 		"react": "18.2.0",

@@ -1,4 +1,4 @@
-import type { EmbedId } from "./createStackblitzDemo"
+import type { EmbedId } from "./createStackblitzDemo.js"
 
 export const buildStackblitzIndexText = (embedId: EmbedId) => {
 	const demoInfo = demoAdapters[embedId]

@@ -1,9 +1,9 @@
 import sdk from "@stackblitz/sdk"
-import demoContents from "../generated/demo"
-import scopeContents from "../generated/scope"
-import typeContents from "../generated/type"
-import { buildStackblitzIndexText } from "./buildStackblitzIndexText"
-import { defaultStaticFiles } from "./defaultFiles"
+import demoContents from "../generated/demo.js"
+import scopeContents from "../generated/scope.js"
+import typeContents from "../generated/type.js"
+import { buildStackblitzIndexText } from "./buildStackblitzIndexText.js"
+import { defaultStaticFiles } from "./defaultFiles.js"
 
 export const embedIds = { type: 1, scope: 1, demo: 1 }
 export type EmbedId = keyof typeof embedIds
@@ -21,7 +21,7 @@ export const contentsByEmbedId: Record<EmbedId, string> = {
 export const DEMO_ELEMENT_ID = "arktype-demo"
 
 export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
-	sdk.embedProject(
+	sdk.default.embedProject(
 		DEMO_ELEMENT_ID,
 		{
 			files: {
