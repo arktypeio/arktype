@@ -14,13 +14,9 @@ export const Header = ({ title, tagline }: Record<string, string>) => {
 				justifyContent: "center"
 			}}
 		>
-			{useIsMobile() ? null : (
-				<LogoCloud names={["typescript", "vscode", "intellij", "vim"]} />
-			)}
-			{useIsMobile() ? null : (
-				<LogoCloud names={["javascript", "chromium", "node", "deno"]} />
-			)}
-			<Boat />
+			<LogoCloud main="ts" right="vscode" top="neovim" bottom="intellij" />
+			<LogoCloud main="js" right="chromium" top="node" bottom="deno" />
+			{/* <Boat /> */}
 		</header>
 	)
 }

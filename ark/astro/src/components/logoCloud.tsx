@@ -1,59 +1,87 @@
 import { motion } from "framer-motion"
 import React from "react"
+import Chromium from "../assets/chromium.svg"
+import Deno from "../assets/deno.svg"
+import Intellij from "../assets/intellij.svg"
+import Js from "../assets/js.svg"
+import Neovim from "../assets/neovim.svg"
+import Node from "../assets/node.svg"
+import Ts from "../assets/ts.svg"
+import Vscode from "../assets/vscode.svg"
 
 export type SvgLogoProps = {
-	name: string
+	name: LogoName
+}
+
+type LogoName = keyof typeof logos
+
+const logos = {
+	js: Js,
+	chromium: Chromium,
+	node: Node,
+	deno: Deno,
+	ts: Ts,
+	neovim: Neovim,
+	vscode: Vscode,
+	intellij: Intellij
 }
 
 const SvgLogo = ({ name }: SvgLogoProps) => (
-	<img style={{ height: "100%" }} src={`/img/integrationLogos/${name}.svg`} />
+	<img style={{ height: "100%" }} src={logos[name]?.src} />
 )
 
 export type LogoCloudProps = {
-	names: [string, string, string, string]
+	main: LogoName
+	right: LogoName
+	top: LogoName
+	bottom: LogoName
 }
 
-export const LogoCloud = ({ names }: LogoCloudProps) => (
+export const LogoCloud = ({ main, right, top, bottom }: LogoCloudProps) => (
 	<div style={{ position: "relative", height: "100%", width: 200 }}>
-		<motion.div
+		<div
 			style={{
 				position: "absolute",
 				height: 70,
-				opacity: 0.1
+				opacity: 0.1,
+				top: 55,
+				left: 70
 			}}
-			initial={{ top: 55, left: 70 }}
 		>
-			<SvgLogo name={names[0]} />
-		</motion.div>
-		<motion.div
+			<SvgLogo name={main} />
+		</div>
+		<div
 			style={{
 				position: "absolute",
 				height: 60,
-				opacity: 0.25
+				opacity: 0.25,
+				top: 30,
+				left: 130
 			}}
-			initial={{ top: 30, left: 130 }}
 		>
-			<SvgLogo name={names[1]} />
-		</motion.div>
-		<motion.div
+			<SvgLogo name={right} />
+		</div>
+		<div
 			style={{
 				position: "absolute",
 				height: 50,
-				opacity: 0.25
+				opacity: 0.25,
+				top: 100,
+				left: 30
 			}}
-			initial={{ top: 100, left: 30 }}
 		>
-			<SvgLogo name={names[2]} />
-		</motion.div>
+			<SvgLogo name={bottom} />
+		</div>
 		<motion.div
 			style={{
 				position: "absolute",
 				height: 45,
-				opacity: 0.25
+				opacity: 0.25,
+				top: 20,
+				left: 50
 			}}
-			initial={{ top: 20, left: 50 }}
 		>
-			<SvgLogo name={names[3]} />
+			<SvgLogo name={top} />
 		</motion.div>
 	</div>
 )

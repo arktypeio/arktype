@@ -1,6 +1,6 @@
-import BoatSvg from "@site/static/img/boat.svg"
 import { motion } from "framer-motion"
 import React from "react"
+import BoatSvg from "../assets/boat.svg"
 
 const BOB_HEIGHT_PX = 2
 const BOB_WIDTH_PX = 16
