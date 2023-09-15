@@ -10,12 +10,12 @@ import Ts from "../assets/ts.svg"
 import Vscode from "../assets/vscode.svg"
 
 export type SvgLogoProps = {
-	name: LogoName
+	name: PlatformName
 }
 
-type LogoName = keyof typeof logos
+type PlatformName = keyof typeof platforms
 
-const logos = {
+const platforms = {
 	js: Js,
 	chromium: Chromium,
 	node: Node,
@@ -27,17 +27,22 @@ const logos = {
 }
 
 const SvgLogo = ({ name }: SvgLogoProps) => (
-	<img style={{ height: "100%" }} src={logos[name]?.src} />
+	<img style={{ height: "100%" }} src={platforms[name]?.src} />
 )
 
-export type LogoCloudProps = {
-	main: LogoName
-	right: LogoName
-	top: LogoName
-	bottom: LogoName
+export type PlatformCloudProps = {
+	main: PlatformName
+	right: PlatformName
+	top: PlatformName
+	bottom: PlatformName
 }
 
-export const LogoCloud = ({ main, right, top, bottom }: LogoCloudProps) => (
+export const PlatformCloud = ({
+	main,
+	right,
+	top,
+	bottom
+}: PlatformCloudProps) => (
 	<div style={{ position: "relative", height: "100%", width: 200 }}>
 		<div
 			style={{

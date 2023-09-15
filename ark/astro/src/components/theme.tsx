@@ -15,7 +15,7 @@
 // 				primary: {
 // 					dark: "#085b92",
 // 					light: "#80cff8",
-// 					main: "#009EFF"
+// 					main: "#009eff"
 // 				},
 // 				secondary: {
 // 					main: "#eb9f2e",

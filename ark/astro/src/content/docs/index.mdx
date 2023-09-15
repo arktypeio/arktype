@@ -1,25 +1,25 @@
 ---
 title: ArkType
-description: Get started building your docs site with Starlight.
+description: Documentation for ArkType, an open-source runtime validation library for TypeScript
 template: splash
 hero:
   tagline: TypeScript's 1:1 validator, optimized from editor to runtime
-  image:
-    file: ../../assets/logo.svg
+  #   image:
+  #     file: ../../assets/logo.svg
   actions:
     - text: Example Guide
       link: /guides/example/
       icon: right-arrow
       variant: primary
-    - text: Read the Starlight docs
+    - text: Read more
       link: https://starlight.astro.build
       icon: external
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components"
-import { Header } from "../../components/header.tsx"
+import { HeroAnimation } from "../../components/HeroAnimation.tsx"
 
-<Header />
+<HeroAnimation client:only />
 
 ## Next steps
 

@@ -2,10 +2,9 @@ import { motion } from "framer-motion"
 import React from "react"
 import BoatSvg from "../assets/boat.svg"
 
-const BOB_HEIGHT_PX = 2
-const BOB_WIDTH_PX = 16
-
-export const Boat = () => {
+export const FloatYourBoat = () => {
+	const BOB_HEIGHT_PX = 2
+	const BOB_WIDTH_PX = 16
 	const width = window.innerWidth
 	const loopDuration = width / BOB_WIDTH_PX
 	const bobFrames: number[] = []
@@ -15,8 +14,7 @@ export const Boat = () => {
 	return (
 		<motion.div
 			style={{
-				position: "absolute",
-				bottom: -20,
+				position: "relative",
 				opacity: 0.4,
 				zIndex: 1
 			}}

@@ -7,6 +7,11 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: "ArkType",
+			logo: {
+				src: "./src/assets/logo.svg",
+				replacesTitle: true
+			},
+			customCss: ["./src/styles.css"],
 			social: {
 				twitch: "https://twitch.tv/arktypeio",
 				twitter: "https://twitter.com/arktypeio",
@@ -28,5 +33,6 @@ export default defineConfig({
 			]
 		}),
 		react()
-	]
+	],
+	site: "https://arktype.io"
 })
