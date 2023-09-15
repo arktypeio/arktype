@@ -38,5 +38,6 @@
 	"mochaExplorer.env": {
 		"ATTEST_CONFIG": "{ \"skipTypes\": true }"
 	},
-	"testExplorer.useNativeTesting": true
+	"testExplorer.useNativeTesting": true,
+	"mdx.experimentalLanguageServer": true
 }

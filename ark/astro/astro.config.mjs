@@ -7,7 +7,10 @@ export default defineConfig({
 		starlight({
 			title: "My Docs",
 			social: {
-				github: "https://github.com/withastro/starlight"
+				discord: "https://arktype.io/discord",
+				github: "https://github.com/arktypeio/arktype",
+				twitch: "https://twitch.tv/arktypeio",
+				twitter: "https://twitter.com/arktypeio"
 			},
 			sidebar: [
 				{

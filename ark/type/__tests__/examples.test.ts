@@ -14,7 +14,7 @@ suite("snippets", () => {
 		)
 	})
 	test("type", async () => {
-		const typeSnippet = await import("../../docs/examples/type.js")
+		const typeSnippet = await import("./benches/type.js")
 		attest(typeSnippet.user.infer).typed as {
 			name: string
 			device: {
