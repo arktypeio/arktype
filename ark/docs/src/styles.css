@@ -35,7 +35,6 @@
 }
 
 header {
-	opacity: 0.95;
 	backdrop-filter: blur(8px);
 	box-shadow:
 		rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
@@ -49,6 +48,11 @@ h1 {
 
 .header {
 	background-color: transparent;
+}
+
+header * {
+	/* Ensure navbar items are in front of boat animation but slightly transparent */
+	z-index: 12;
 }
 
 /* cascadiaCodeFamily = `"Cascadia Code", sans-serif`

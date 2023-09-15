@@ -62,7 +62,7 @@ export const PlatformCloud = ({
 				position: "absolute",
 				height: 60,
 				opacity: 0.25,
-				top: 30,
+				top: 50,
 				left: 130
 			}}
 		>
@@ -73,7 +73,7 @@ export const PlatformCloud = ({
 				position: "absolute",
 				height: 50,
 				opacity: 0.25,
-				top: 75,
+				top: 100,
 				left: 30
 			}}
 		>
@@ -84,7 +84,7 @@ export const PlatformCloud = ({
 				position: "absolute",
 				height: 45,
 				opacity: 0.25,
-				top: 20,
+				top: 50,
 				left: 50
 			}}
 		>
