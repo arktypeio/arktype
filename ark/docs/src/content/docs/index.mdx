@@ -19,7 +19,9 @@ hero:
 import { Card, CardGrid } from "@astrojs/starlight/components"
 import { HeroContents } from "../../components/HeroContents.tsx"
 
-<HeroContents client:only />
+<div class="not-content">
+	<HeroContents client:only />
+</div>
 
 ## Next steps
 

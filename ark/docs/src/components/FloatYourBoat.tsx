@@ -16,9 +16,10 @@ export const FloatYourBoat = () => {
 			style={{
 				position: "relative",
 				opacity: 0.4,
+				top: "3rem",
 				zIndex: 1
 			}}
-			initial={{ left: "-5%" }}
+			initial={{ left: "-7%" }}
 			animate={{
 				left: "100%",
 				y: bobFrames

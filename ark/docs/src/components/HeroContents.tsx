@@ -6,9 +6,8 @@ export const HeroContents = () => (
 	<div
 		style={{
 			position: "absolute",
-			top: "2rem",
+			top: "3rem",
 			left: 0,
-			height: "100%",
 			width: "100vw"
 		}}
 	>
@@ -20,8 +19,8 @@ export const HeroContents = () => (
 				justifyContent: "space-between"
 			}}
 		>
-			<PlatformCloud main="ts" right="vscode" top="neovim" bottom="intellij" />
-			<PlatformCloud main="js" right="chromium" top="node" bottom="deno" />
+			<PlatformCloud main="ts" right="vscode" top="neovim" left="intellij" />
+			<PlatformCloud main="js" right="chromium" top="node" left="bun" />
 		</div>
 		<FloatYourBoat />
 	</div>

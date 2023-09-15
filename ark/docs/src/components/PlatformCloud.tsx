@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import React from "react"
+import Bun from "../assets/bun.svg"
 import Chromium from "../assets/chromium.svg"
 import Deno from "../assets/deno.svg"
 import Intellij from "../assets/intellij.svg"
@@ -23,7 +24,8 @@ const platforms = {
 	ts: Ts,
 	neovim: Neovim,
 	vscode: Vscode,
-	intellij: Intellij
+	intellij: Intellij,
+	bun: Bun
 }
 
 const SvgLogo = ({ name }: SvgLogoProps) => (
@@ -34,14 +36,14 @@ export type PlatformCloudProps = {
 	main: PlatformName
 	right: PlatformName
 	top: PlatformName
-	bottom: PlatformName
+	left: PlatformName
 }
 
 export const PlatformCloud = ({
 	main,
 	right,
 	top,
-	bottom
+	left
 }: PlatformCloudProps) => (
 	<div style={{ position: "relative", height: "100%", width: 200 }}>
 		<div
@@ -71,11 +73,11 @@ export const PlatformCloud = ({
 				position: "absolute",
 				height: 50,
 				opacity: 0.25,
-				top: 100,
+				top: 75,
 				left: 30
 			}}
 		>
-			<SvgLogo name={bottom} />
+			<SvgLogo name={left} />
 		</div>
 		<motion.div
 			style={{
