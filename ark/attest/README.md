@@ -56,6 +56,10 @@ Benches are run separately from tests and don't require any special setup. If th
 ```ts
 import { bench } from "@arktype/attest"
 
+type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
+	? head | tail | MakeComplexType<tail>
+	: S
+
 bench(
 	"bench call single stat median",
 	() => "boofoozoo".includes("foo")
