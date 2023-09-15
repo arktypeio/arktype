@@ -1,7 +1,0 @@
-{
-	"extends": "../tsconfig.json",
-	"compilerOptions": {
-		// reenable here so we can use source imports in examples
-		"customConditions": ["arktype-repo"]
-	}
-}
