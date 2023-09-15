@@ -1,5 +1,5 @@
 import type { TypeNode } from "@arktype/schema"
-import { type error, throwParseError } from "@arktype/util"
+import { type ErrorMessage, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../scope.js"
 import { type inferAst } from "../semantic/semantic.js"
 import { writeUnsatisfiableExpressionError } from "../semantic/validate.js"
@@ -86,8 +86,8 @@ type next<s extends StaticState, $, args> = s["root"] extends undefined
 	: parseOperator<s, $, args>
 
 export type extractFinalizedResult<s extends StaticState> =
-	s["finalizer"] extends error
+	s["finalizer"] extends ErrorMessage
 		? s["finalizer"]
 		: s["finalizer"] extends ""
 		? s["root"]
-		: error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
+		: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>

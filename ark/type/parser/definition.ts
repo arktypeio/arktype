@@ -5,7 +5,7 @@ import type {
 	Dict,
 	domainOf,
 	equals,
-	error,
+	ErrorMessage,
 	evaluate,
 	isAny,
 	isUnknown,
@@ -73,7 +73,7 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
 	: never
 
 export type validateDefinition<def, $, args> = null extends undefined
-	? `'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`
+	? ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
 	: [def] extends [Terminal]
 	? unknown extends def
 		? // if def is any, never is the only way we can make validation fail
@@ -81,9 +81,7 @@ export type validateDefinition<def, $, args> = null extends undefined
 		  never
 		: def
 	: def extends string
-	? validateString<def, $, args> extends error<infer message>
-		? message
-		: def
+	? validateString<def, $, args>
 	: def extends readonly unknown[]
 	? validateTuple<def, $, args>
 	: def extends BadDefinitionType

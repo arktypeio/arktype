@@ -1,6 +1,7 @@
 import type {
 	BigintLiteral,
-	error,
+	Completion,
+	ErrorMessage,
 	NumberLiteral,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
@@ -37,7 +38,7 @@ export type validateAst<ast, $, args> = ast extends string
 	? validateAst<operand, $, args>
 	: ast extends GenericInstantiationAst
 	? validateGenericArgs<ast["2"], $, args>
-	: error<writeUnexpectedExpressionMessage<astToString<ast>>>
+	: ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>>
 
 type writeUnexpectedExpressionMessage<expression extends string> =
 	`Unexpectedly failed to parse the expression resulting from ${expression}`
@@ -46,8 +47,8 @@ type validateGenericArgs<argAsts extends unknown[], $, args> = argAsts extends [
 	infer head,
 	...infer tail
 ]
-	? validateAst<head, $, args> extends error<infer message>
-		? error<message>
+	? validateAst<head, $, args> extends ErrorMessage<infer message>
+		? ErrorMessage<message>
 		: validateGenericArgs<tail, $, args>
 	: undefined
 
@@ -63,40 +64,42 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
 	infer value
 >
 	? number extends value
-		? error<writeMalformedNumericLiteralMessage<def, "number">>
+		? ErrorMessage<writeMalformedNumericLiteralMessage<def, "number">>
 		: undefined
 	: def extends BigintLiteral<infer value>
 	? bigint extends value
-		? error<writeMalformedNumericLiteralMessage<def, "bigint">>
+		? ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 		: undefined
 	: def extends keyof $
 	? // these problems would've been caught during a fullStringParse, but it's most
 	  // efficient to check for them here in case the string was naively parsed
 	  $[def] extends GenericProps
-		? error<writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>>
+		? ErrorMessage<
+				writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>
+		  >
 		: $[def] extends Module
-		? error<writeMissingSubmoduleAccessMessage<def>>
+		? ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 		: undefined
+	: def extends ErrorMessage
+	? def
 	: undefined
 
-export type validateString<def extends string, $, args> = parseString<
-	def,
+export type validateString<def extends string, $, args> = validateAst<
+	parseString<def, $, args>,
 	$,
 	args
-> extends infer ast
-	? ast extends error<infer message>
-		? error<message>
-		: validateAst<ast, $, args> extends error<infer message>
-		? error<message>
-		: def
-	: never
+> extends infer result extends ErrorMessage
+	? result extends Completion<infer text>
+		? text
+		: result
+	: def
 
 type validateInfix<ast extends InfixExpression, $, args> = validateAst<
 	ast[0],
 	$,
 	args
-> extends error<infer message>
-	? error<message>
-	: validateAst<ast[2], $, args> extends error<infer message>
-	? error<message>
+> extends ErrorMessage<infer message>
+	? ErrorMessage<message>
+	: validateAst<ast[2], $, args> extends ErrorMessage<infer message>
+	? ErrorMessage<message>
 	: undefined

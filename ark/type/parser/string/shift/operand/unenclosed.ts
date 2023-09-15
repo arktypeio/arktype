@@ -1,5 +1,11 @@
 import { node, type TypeNode } from "@arktype/schema"
-import type { BigintLiteral, error, join, NumberLiteral } from "@arktype/util"
+import type {
+	BigintLiteral,
+	Completion,
+	ErrorMessage,
+	join,
+	NumberLiteral
+} from "@arktype/util"
 import {
 	stringify,
 	throwParseError,
@@ -42,7 +48,7 @@ export type parseUnenclosed<
 	? token extends "keyof"
 		? state.addPrefix<s, "keyof", unscanned>
 		: tryResolve<s, token, $, args> extends infer result
-		? result extends error<infer message>
+		? result extends ErrorMessage<infer message>
 			? state.error<message>
 			: result extends keyof $
 			? $[result] extends GenericProps
@@ -81,26 +87,6 @@ export const parseGenericInstantiation = (
 	)
 	return g(...parsedArgs.result).root
 }
-
-// export type parseKindInstantiation<
-//     name extends string,
-//     k extends Kind,
-//     s extends StaticState,
-//     $,
-//     args
-//     // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
-// > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
-//     ? parseGenericArgs<name, ["t"], unscanned, $, args> extends infer result
-//         ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
-//             ? state.setRoot<
-//                   s,
-//                   CastTo<Apply<k, inferAst<argAsts[0], $, args>>>,
-//                   nextUnscanned
-//               >
-//             : // propagate error
-//               result
-//         : never
-//     : state.error<writeInvalidGenericArgsMessage<name, ["t"], []>>
 
 export type parseGenericInstantiation<
 	name extends string,
@@ -192,9 +178,9 @@ type tryResolve<
 			  // hit this branch for a non-scope dot access rather than failing
 			  // initially when we try to infer r. if this can be removed without breaking
 			  // any submodule test cases, do it!
-			  error<writeNonSubmoduleDotMessage<submodule>>
+			  ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
 			: unresolvableError<s, reference, $[submodule], args, [submodule]>
-		: error<writeNonSubmoduleDotMessage<submodule>>
+		: ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
 	: unresolvableError<s, token, $, args, []>
 
 export const writeNonSubmoduleDotMessage = <name extends string>(
@@ -222,8 +208,10 @@ export type unresolvableError<
 	args,
 	submodulePath extends string[]
 > = validReferenceFromToken<token, $, args, submodulePath> extends never
-	? error<writeUnresolvableMessage<qualifiedReference<token, submodulePath>>>
-	: error<`${s["scanned"]}${qualifiedReference<
+	? ErrorMessage<
+			writeUnresolvableMessage<qualifiedReference<token, submodulePath>>
+	  >
+	: Completion<`${s["scanned"]}${qualifiedReference<
 			validReferenceFromToken<token, $, args, submodulePath>,
 			submodulePath
 	  >}`>

@@ -1,6 +1,6 @@
 import type { TypeNode } from "@arktype/schema"
 import { throwParseError } from "@arktype/util"
-import type { error, join, nominal } from "@arktype/util"
+import type { ErrorMessage, join, nominal } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import { DynamicState } from "./string/reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
@@ -173,7 +173,7 @@ type parseGenericArgsRecurse<
 					nextDefs,
 					nextAsts
 			  >
-			: finalArgState["finalizer"] extends error
+			: finalArgState["finalizer"] extends ErrorMessage
 			? finalArgState
 			: state.error<writeUnclosedGroupMessage<">">>
 		: never

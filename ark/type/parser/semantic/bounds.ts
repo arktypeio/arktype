@@ -1,5 +1,5 @@
 import type { NumericallyBoundableData } from "@arktype/schema"
-import type { error } from "@arktype/util"
+import type { ErrorMessage } from "@arktype/util"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {
 	BoundKind,
@@ -21,7 +21,7 @@ export type validateRange<
 > = l extends LimitLiteral
 	? validateBound<r, InvertedComparators[comparator], l, "left", $, args>
 	: l extends [infer leftAst, Comparator, unknown]
-	? error<writeDoubleRightBoundMessage<astToString<leftAst>>>
+	? ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
 	: validateBound<l, comparator, r & LimitLiteral, "right", $, args>
 
 export type validateBound<
@@ -35,12 +35,12 @@ export type validateBound<
 	? [bounded] extends [NumericallyBoundableData]
 		? limit extends number
 			? validateAst<boundedAst, $, args>
-			: error<writeInvalidLimitMessage<comparator, limit, boundKind>>
+			: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
 		: bounded extends Date
 		? limit extends DateLiteral
 			? validateAst<boundedAst, $, args>
-			: error<writeInvalidLimitMessage<comparator, limit, boundKind>>
-		: error<
+			: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
+		: ErrorMessage<
 				writeUnboundableMessage<
 					astToString<
 						boundKind extends "left"

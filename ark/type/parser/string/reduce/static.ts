@@ -1,5 +1,9 @@
-import type { BoundSchema } from "@arktype/schema"
-import type { defined, error, ErrorSuffixToken } from "@arktype/util"
+import type {
+	Completion,
+	defined,
+	ErrorMessage,
+	ZeroWidthSpace
+} from "@arktype/util"
 import type {
 	Comparator,
 	InvertedComparators,
@@ -21,7 +25,7 @@ export type StaticState = {
 	root: unknown
 	branches: BranchState
 	groups: BranchState[]
-	finalizer: Scanner.FinalizingLookahead | error | undefined
+	finalizer: Scanner.FinalizingLookahead | ErrorMessage | undefined
 	scanned: string
 	unscanned: string
 }
@@ -49,7 +53,16 @@ export namespace state {
 		root: undefined
 		branches: initialBranches
 		groups: []
-		finalizer: `${message}${ErrorSuffixToken}`
+		finalizer: ErrorMessage<message>
+		scanned: ""
+		unscanned: ""
+	}>
+
+	export type completion<text extends string> = from<{
+		root: undefined
+		branches: initialBranches
+		groups: []
+		finalizer: Completion<text>
 		scanned: ""
 		unscanned: ""
 	}>

@@ -1,5 +1,5 @@
 import { node } from "@arktype/schema"
-import { type Dict, type error, type evaluate } from "@arktype/util"
+import { type Dict, type ErrorMessage, type evaluate } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { validateString } from "./semantic/validate.js"
@@ -10,6 +10,7 @@ import type {
 	parseEntry,
 	validateObjectValue
 } from "./shared.js"
+import { type } from "../scopes/ark.js"
 
 const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 	...Object.entries(o),
@@ -52,9 +53,15 @@ export type inferObjectLiteral<def extends object, $, args> = evaluate<
 	}
 >
 
+// as k extends `[${infer tail}${"]" | ""}`
+// ? tail extends `${string}]`
+// 	? k
+// 	: `[${validateString<tail, $, args>}]`
+// : k
+
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexedKey<infer indexDef>
-		? validateString<indexDef, $, args> extends error<infer message>
+		? validateString<indexDef, $, args> extends ErrorMessage<infer message>
 			? // add a nominal type here to avoid allowing the error message as input
 			  indexParseError<message>
 			: inferDefinition<indexDef, $, args> extends PropertyKey
@@ -64,6 +71,10 @@ export type validateObjectLiteral<def, $, args> = {
 			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
 		: validateObjectValue<def[k], $, args>
 }
+
+// const t = type({
+// 	"[string ]": "string"
+// })
 
 type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
 	k,

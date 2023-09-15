@@ -44,4 +44,4 @@ export type parseOperand<
 			? parseEnclosed<s, `d${enclosing}`, nextUnscanned>
 			: parseUnenclosed<s, $, args>
 		: parseUnenclosed<s, $, args>
-	: state.error<`${s["scanned"]}${BaseCompletions<$, args>}`>
+	: state.completion<`${s["scanned"]}${BaseCompletions<$, args>}`>
