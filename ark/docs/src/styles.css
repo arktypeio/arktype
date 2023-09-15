@@ -34,13 +34,23 @@
 	--sl-color-black: #fffff0;
 }
 
-/* Equivalent to <Paper elevation={24}> in MUI */
-.navbar {
+header {
+	opacity: 0.95;
+	backdrop-filter: blur(8px);
 	box-shadow:
 		rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
 		rgba(0, 0, 0, 0.14) 0px 24px 38px 3px,
 		rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
 }
+
+h1 {
+	font-weight: 400;
+}
+
+.header {
+	background-color: transparent;
+}
+
 /* cascadiaCodeFamily = `"Cascadia Code", sans-serif`
 
 // // Consider #0bda96 as an accent color?

@@ -1,11 +1,9 @@
 {
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
-		"moduleResolution": "nodenext",
-		"target": "ES2021",
 		"jsx": "react",
-		"types": ["@types/node"],
 		"lib": ["DOM"]
 	},
-	"exclude": []
+	"include": ["src"],
+	"exclude": ["node_modules"]
 }

@@ -2,12 +2,18 @@ import React from "react"
 import { FloatYourBoat } from "./FloatYourBoat.js"
 import { PlatformCloud } from "./PlatformCloud.js"
 
-export const HeroAnimation = () => (
-	<>
+export const HeroContents = () => (
+	<div
+		style={{
+			position: "absolute",
+			top: "2rem",
+			left: 0,
+			height: "100%",
+			width: "100vw"
+		}}
+	>
 		<div
 			style={{
-				position: "relative",
-				bottom: 200,
 				display: " flex",
 				flexDirection: "row",
 				flexBasis: "row",
@@ -18,5 +24,5 @@ export const HeroAnimation = () => (
 			<PlatformCloud main="js" right="chromium" top="node" bottom="deno" />
 		</div>
 		<FloatYourBoat />
-	</>
+	</div>
 )
