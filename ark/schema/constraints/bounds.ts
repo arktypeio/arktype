@@ -98,7 +98,7 @@ export class MaxNode extends RefinementNode<BoundSchema> {
 		return boundable(basis)
 	}
 
-	reduceWith(other: Constraint) {
+	intersectOwnKeys(other: Node) {
 		if (other.kind === "min") {
 			return this.limit < other.limit ||
 				(this.limit === other.limit && (this.exclusive || other.exclusive))
@@ -130,10 +130,10 @@ const boundable = (basis: Basis | undefined): basis is BoundableBasis => {
 	if (basis === undefined) {
 		return false
 	}
-	if (basis.hasKind("domain")) {
+	if (basis.kind === "domain") {
 		return basis.domain === "number" || basis.domain === "string"
 	}
-	if (basis.hasKind("prototype")) {
+	if (basis.kind === "prototype") {
 		return basis.extendsOneOf(Array, Date)
 	}
 	return false

@@ -1,7 +1,7 @@
 import type { conform, Domain, inferDomain } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseSchema, parseNode } from "../schema.js"
+import type { BaseSchema, Node, parseNode } from "../schema.js"
 import { nodeParser } from "../schema.js"
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
@@ -48,7 +48,7 @@ export class DomainNode<
 		return domainDescriptions[this.domain]
 	}
 
-	intersectOwnKeys(other: Constraint) {
+	intersectOwnKeys(other: Node) {
 		return other.kind === "domain" ? Disjoint.from("domain", this, other) : null
 	}
 }

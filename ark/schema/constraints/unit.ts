@@ -2,7 +2,7 @@ import type { conform } from "@arktype/util"
 import { Hkt, stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseSchema } from "../schema.js"
+import type { BaseSchema, Node } from "../schema.js"
 import { nodeParser } from "../schema.js"
 import type { Constraint } from "./constraint.js"
 import { ConstraintNode } from "./constraint.js"
@@ -40,7 +40,7 @@ export class UnitNode<
 		return stringify(this.is)
 	}
 
-	intersectOwnKeys(other: Constraint) {
+	intersectOwnKeys(other: Node) {
 		return other.kind === "unit" ? Disjoint.from("unit", this, other) : null
 	}
 }

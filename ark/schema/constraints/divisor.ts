@@ -1,6 +1,6 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
-import type { BaseSchema } from "../schema.js"
+import type { BaseSchema, Node } from "../schema.js"
 import { nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
@@ -47,7 +47,7 @@ export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 
-	intersectOwnKeys(other: Refinement) {
+	intersectOwnKeys(other: Node) {
 		return other.kind === "divisor"
 			? {
 					divisor:
