@@ -34,7 +34,7 @@ export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 	): basis is DomainNode<{ domain: "number" }> {
 		return (
 			basis !== undefined &&
-			basis.hasKind("domain") &&
+			basis.kind === "domain" &&
 			basis.domain === "number"
 		)
 	}
@@ -47,7 +47,7 @@ export class DivisibilityNode extends RefinementNode<DivisibilitySchema> {
 		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 
-	reduceWith(other: Refinement) {
+	intersectOwnKeys(other: Refinement) {
 		return other.kind === "divisor"
 			? {
 					divisor:

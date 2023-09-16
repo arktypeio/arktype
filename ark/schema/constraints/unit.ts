@@ -40,7 +40,7 @@ export class UnitNode<
 		return stringify(this.is)
 	}
 
-	reduceWith(other: Constraint) {
+	intersectOwnKeys(other: Constraint) {
 		return other.kind === "unit" ? Disjoint.from("unit", this, other) : null
 	}
 }

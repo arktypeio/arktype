@@ -37,11 +37,4 @@ export interface ConstraintSchema extends BaseSchema {}
 
 export abstract class ConstraintNode<
 	schema extends ConstraintSchema
-> extends BaseNode<schema> {
-	reduce(other: Constraint): Constraint | Disjoint | null {
-		return this as never
-	}
-
-	// TODO: only own keys
-	abstract reduceWith(other: Constraint): schema | null | Disjoint
-}
+> extends BaseNode<schema> {}

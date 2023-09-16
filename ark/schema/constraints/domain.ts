@@ -48,7 +48,7 @@ export class DomainNode<
 		return domainDescriptions[this.domain]
 	}
 
-	reduceWith(other: Constraint) {
+	intersectOwnKeys(other: Constraint) {
 		return other.kind === "domain" ? Disjoint.from("domain", this, other) : null
 	}
 }

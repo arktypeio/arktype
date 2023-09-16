@@ -39,7 +39,7 @@ export class PatternNode extends RefinementNode<PatternSchema> {
 	): basis is DomainNode<{ domain: "string" }> {
 		return (
 			basis !== undefined &&
-			basis.hasKind("domain") &&
+			basis.kind === "domain" &&
 			basis.domain === "string"
 		)
 	}
@@ -56,7 +56,7 @@ export class PatternNode extends RefinementNode<PatternSchema> {
 	}
 
 	// For now, non-equal regex are naively intersected
-	reduceWith() {
+	intersectOwnKeys() {
 		return null
 	}
 }

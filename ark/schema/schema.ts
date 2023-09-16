@@ -5,9 +5,9 @@ import type {
 	ConstraintInputsByKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
+import type { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
-import { Disjoint } from "./disjoint.js"
 
 export interface BaseSchema {
 	alias?: string
@@ -39,10 +39,6 @@ export abstract class BaseNode<
 	abstract intersectOwnKeys(
 		other: Node
 	): Omit<schema, keyof BaseSchema> | Disjoint | null
-
-	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
-		return this.kind === kind
-	}
 
 	id = this.hash()
 

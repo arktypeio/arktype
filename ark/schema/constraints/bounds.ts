@@ -1,13 +1,13 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseSchema } from "../schema.js"
+import type { BaseSchema, Node } from "../schema.js"
 import { nodeParser } from "../schema.js"
-import type { Basis } from "./basis.js"
+import type { BasesByKind, Basis } from "./basis.js"
 import type { Constraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
-import { RefinementNode } from "./refinement.js"
+import { RefinementNode, RefinementsByKind } from "./refinement.js"
 
 export interface BoundSchema extends BaseSchema {
 	readonly limit: number
@@ -41,7 +41,7 @@ export class MinNode extends RefinementNode<BoundSchema> {
 		return ""
 	}
 
-	reduceWith(other: Constraint) {
+	intersectOwnKeys(other: Constraint) {
 		if (other.kind === "max") {
 			return this.limit > other.limit ||
 				(this.limit === other.limit && (this.exclusive || other.exclusive))

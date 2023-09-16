@@ -65,7 +65,7 @@ export class PrototypeNode<
 		)
 	}
 
-	reduceWith(other: Constraint) {
+	intersectOwnKeys(other: Constraint) {
 		return other.kind !== "prototype"
 			? null
 			: constructorExtends(this.prototype, other.prototype)

@@ -37,8 +37,8 @@ export class NarrowNode extends RefinementNode<NarrowSchema> {
 	): basis is DomainNode | PrototypeNode | undefined {
 		return (
 			basis === undefined ||
-			basis.hasKind("domain") ||
-			basis.hasKind("prototype")
+			basis.kind === "domain" ||
+			basis.kind === "prototype"
 		)
 	}
 
@@ -50,7 +50,7 @@ export class NarrowNode extends RefinementNode<NarrowSchema> {
 		return `valid according to ${this.rule.name}`
 	}
 
-	reduceWith() {
+	intersectOwnKeys() {
 		return null
 	}
 }

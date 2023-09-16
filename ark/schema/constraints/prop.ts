@@ -1,7 +1,7 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseSchema } from "../schema.js"
+import type { BaseSchema, Node } from "../schema.js"
 import { nodeParser } from "../schema.js"
 import { TypeNode } from "../type.js"
 import { builtins } from "../utils.js"
@@ -52,8 +52,8 @@ export class PropNode<
 	): basis is DomainNode | PrototypeNode | undefined {
 		return (
 			basis === undefined ||
-			basis.hasKind("domain") ||
-			basis.hasKind("prototype")
+			basis.kind === "domain" ||
+			basis.kind === "prototype"
 		)
 	}
 
@@ -65,7 +65,10 @@ export class PropNode<
 		return `${String(this.key)}${this.required ? "" : "?"}: ${this.value}`
 	}
 
-	reduceWith(other: PropNode) {
+	intersectOwnKeys(other: Node) {
+		if (other.kind !== "prop") {
+			return null
+		}
 		if (this.key instanceof TypeNode || other.key instanceof TypeNode) {
 			return null
 		}

@@ -31,7 +31,8 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		new TypeNode(branches as never)) as UnitsNodeParser
 
 	extractUnit(): UnitNode | undefined {
-		return this.branches.length === 1 && this.branches[0].hasKind("unit")
+		// TODO: Fix
+		return this.branches.length === 1 && this.branches[0].kind === "predicate"
 			? this.branches[0]
 			: undefined
 	}
