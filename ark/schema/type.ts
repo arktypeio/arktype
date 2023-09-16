@@ -3,7 +3,7 @@ import type { ConstraintKind } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BaseSchema, inputOf, parseNode } from "./schema.js"
+import type { BaseSchema, Node, inputOf, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 import { inferred } from "./utils.js"
 
@@ -69,9 +69,9 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 
 	and<other extends TypeNode>(
 		other: other // TODO: inferIntersection
-	) {
+	): TypeNode<t & other["infer"]> {
 		const result = this.intersect(other)
-		return result instanceof Disjoint ? result.throw() : result
+		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
 	intersect(other: TypeNode): TypeNode | Disjoint {
@@ -79,6 +79,11 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		return resultBranches.length === 0
 			? Disjoint.from("union", this.branches, other.branches)
 			: new TypeNode({ branches: resultBranches })
+	}
+
+	intersectOwnKeys(other: Node) {
+		const 
+		return other
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {

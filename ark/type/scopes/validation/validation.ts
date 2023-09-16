@@ -34,6 +34,31 @@ const parsedInteger = node({
 	}
 })
 
+const url = node({
+	basis: "string",
+	narrow: (s: string) => {
+		try {
+			new URL(s)
+		} catch {
+			return false
+		}
+		return true
+	},
+	description: "a valid URL"
+})
+
+const parsedUrl = node({
+	basis: "string",
+	morph: (s: string, state) => {
+		try {
+			return new URL(s)
+		} catch {
+			return state.mustBe("a valid url", s, state.basePath)
+		}
+	},
+	description: "a valid url"
+})
+
 // https://www.regular-expressions.info/email.html
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
@@ -78,6 +103,8 @@ export interface InferredValidation {
 	creditCard: string
 	email: string
 	uuid: string
+	url: string
+	parsedUrl: (In: string) => Out<URL>
 	parsedNumber: (In: string) => Out<number>
 	parsedInteger: (In: string) => Out<number>
 	parsedDate: (In: string) => Out<Date>
@@ -95,6 +122,8 @@ export const validation: RootScope<InferredValidation> = Scope.root({
 	creditCard,
 	email,
 	uuid,
+	url,
+	parsedUrl,
 	parsedNumber,
 	parsedInteger,
 	parsedDate,

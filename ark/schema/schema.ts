@@ -29,6 +29,10 @@ export abstract class BaseNode<
 		this.alias ??= "generated"
 	}
 
+	intersect() {}
+
+	abstract intersectOwnKeys(other: Node): Omit<schema, keyof BaseSchema>
+
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
 		return this.kind === kind
 	}
