@@ -7,6 +7,7 @@ import type {
 } from "./constraints/constraint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
+import { Disjoint } from "./disjoint.js"
 
 export interface BaseSchema {
 	alias?: string
@@ -29,9 +30,15 @@ export abstract class BaseNode<
 		this.alias ??= "generated"
 	}
 
-	intersect() {}
+	intersect<other extends Node>(
+		other: other
+	): Node<other["kind"] | this["kind"]> | Disjoint | null {
+		return null
+	}
 
-	abstract intersectOwnKeys(other: Node): Omit<schema, keyof BaseSchema>
+	abstract intersectOwnKeys(
+		other: Node
+	): Omit<schema, keyof BaseSchema> | Disjoint | null
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
 		return this.kind === kind

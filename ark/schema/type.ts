@@ -74,15 +74,15 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	intersect(other: TypeNode): TypeNode | Disjoint {
-		const resultBranches = intersectBranches(this.branches, other.branches)
-		return resultBranches.length === 0
-			? Disjoint.from("union", this.branches, other.branches)
-			: new TypeNode({ branches: resultBranches })
-	}
-
 	intersectOwnKeys(other: Node) {
-		return other
+		if (other.kind === "type" || other.kind === "predicate") {
+			const branches = other.kind === "type" ? other.branches : [other]
+			const resultBranches = intersectBranches(this.branches, branches)
+			return resultBranches.length === 0
+				? Disjoint.from("union", this.branches, branches)
+				: { branches: resultBranches }
+		}
+		return this.constrain(other.kind, other)
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {

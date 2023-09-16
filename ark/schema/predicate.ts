@@ -10,7 +10,7 @@ import type { Constraint } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { TraversalState } from "./io/traverse.js"
-import type { BaseSchema, inputOf, parseNode } from "./schema.js"
+import type { BaseSchema, Node, inputOf, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export type PredicateSchema<basis extends Basis = Basis> = extend<
@@ -96,16 +96,22 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		return true
 	}
 
-	intersect(other: PredicateNode) {
+	intersectOwnKeys(other: Node) {
+		if (other.kind === "type") {
+			return null
+		}
+		const constraints = other.kind === "predicate" ? other.constraints : [other]
 		let result: readonly Constraint[] | Disjoint = this.constraints
-		for (const constraint of other.constraints) {
+		for (const constraint of constraints) {
 			if (result instanceof Disjoint) {
 				break
 			}
 			result = this.addConstraint(constraint)
 		}
-		// TODO: attributes
-		return result instanceof Disjoint ? result : this //new PredicateNode(this.constraints)
+		return result instanceof Disjoint
+			? result
+			: // TODO: convert this
+			  { constraints: this.constraints }
 	}
 
 	keyof() {
