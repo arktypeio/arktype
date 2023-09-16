@@ -82,7 +82,6 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 	}
 
 	intersectOwnKeys(other: Node) {
-		const 
 		return other
 	}
 
