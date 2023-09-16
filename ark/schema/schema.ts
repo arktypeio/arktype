@@ -19,7 +19,7 @@ export abstract class BaseNode<
 > extends DynamicBase<schema> {
 	abstract kind: NodeKind
 
-	abstract infer: unknown
+	declare infer: unknown
 
 	description: string
 	alias: string
@@ -45,6 +45,8 @@ export abstract class BaseNode<
 	equals(other: BaseNode) {
 		return this.id === other.id
 	}
+
+	// abstract attach(parent: never): basis is Basis | undefined
 
 	abstract hash(): string
 

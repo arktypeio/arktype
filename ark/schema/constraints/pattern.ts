@@ -1,10 +1,9 @@
 import type { conform } from "@arktype/util"
 import { Hkt, throwParseError } from "@arktype/util"
 import type { BaseSchema } from "../schema.js"
-import { nodeParser } from "../schema.js"
+import { BaseNode, nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
-import { RefinementNode } from "./refinement.js"
 
 export interface PatternSchema extends BaseSchema {
 	source: string
@@ -13,7 +12,7 @@ export interface PatternSchema extends BaseSchema {
 
 export type PatternInput = RegexLiteral | RegExp | PatternSchema
 
-export class PatternNode extends RefinementNode<PatternSchema> {
+export class PatternNode extends BaseNode<PatternSchema> {
 	readonly kind = "pattern"
 
 	protected constructor(schema: PatternSchema) {

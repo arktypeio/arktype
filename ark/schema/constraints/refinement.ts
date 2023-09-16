@@ -1,7 +1,4 @@
-import type { BaseSchema } from "../schema.js"
-import type { Basis } from "./basis.js"
 import type { BoundInput, MaxNode, MinNode } from "./bounds.js"
-import { ConstraintNode } from "./constraint.js"
 import type { DivisibilityInput, DivisibilityNode } from "./divisor.js"
 import type { NarrowInput, NarrowNode } from "./narrow.js"
 import type { PatternInput, PatternNode } from "./pattern.js"
@@ -41,11 +38,3 @@ export type Refinement<kind extends RefinementKind = RefinementKind> =
 
 export type RefinementInput<kind extends RefinementKind = RefinementKind> =
 	RefinementInputsByKind[kind]
-
-export abstract class RefinementNode<
-	schema extends BaseSchema
-> extends ConstraintNode<schema> {
-	declare infer: unknown
-
-	abstract applicableTo(basis: Basis | undefined): basis is Basis | undefined
-}

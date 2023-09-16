@@ -2,9 +2,7 @@ import type { conform, Domain, inferDomain } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema, Node, parseNode } from "../schema.js"
-import { nodeParser } from "../schema.js"
-import type { Constraint } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import { BaseNode, nodeParser } from "../schema.js"
 
 export interface DomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -15,9 +13,9 @@ export interface DomainSchema<
 export type DomainInput = NonEnumerableDomain | DomainSchema
 
 export class DomainNode<
-	// @ts-expect-error
+	// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
 	out schema extends DomainSchema = DomainSchema
-> extends ConstraintNode<schema> {
+> extends BaseNode<schema> {
 	readonly kind = "domain"
 
 	declare infer: inferDomain<schema["domain"]>

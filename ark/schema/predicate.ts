@@ -1,5 +1,5 @@
 import type { conform, extend, listable } from "@arktype/util"
-import { Hkt, throwInternalError } from "@arktype/util"
+import { Hkt, throwInternalError, transform } from "@arktype/util"
 import type {
 	Basis,
 	BasisClassesByKind,
@@ -10,7 +10,7 @@ import type { Constraint } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { TraversalState } from "./io/traverse.js"
-import type { BaseSchema, Node, inputOf, parseNode } from "./schema.js"
+import type { BaseSchema, inputOf, Node, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export type PredicateSchema<basis extends Basis = Basis> = extend<
@@ -110,8 +110,10 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		}
 		return result instanceof Disjoint
 			? result
-			: // TODO: convert this
-			  { constraints: this.constraints }
+			: transform(
+					result,
+					([, constraint]) => [constraint.kind, constraint] as const
+			  )
 	}
 
 	keyof() {

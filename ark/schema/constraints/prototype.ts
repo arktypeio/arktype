@@ -8,9 +8,8 @@ import {
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseSchema } from "../schema.js"
-import { nodeParser } from "../schema.js"
+import { BaseNode, nodeParser } from "../schema.js"
 import type { Constraint } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
 
 export interface PrototypeSchema<
 	constructor extends AbstractableConstructor = AbstractableConstructor
@@ -22,7 +21,7 @@ export type PrototypeInput = AbstractableConstructor | PrototypeSchema
 
 export class PrototypeNode<
 	schema extends PrototypeSchema = PrototypeSchema
-> extends ConstraintNode<schema> {
+> extends BaseNode<schema> {
 	readonly kind = "prototype"
 
 	declare infer: InstanceType<schema["prototype"]>

@@ -3,11 +3,10 @@ import { Hkt } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import type { BaseSchema } from "../schema.js"
-import { nodeParser } from "../schema.js"
+import { BaseNode, nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
-import { RefinementNode } from "./refinement.js"
 
 export interface NarrowSchema extends BaseSchema {
 	rule: Narrow
@@ -15,7 +14,7 @@ export interface NarrowSchema extends BaseSchema {
 
 export type NarrowInput = Narrow | NarrowSchema
 
-export class NarrowNode extends RefinementNode<NarrowSchema> {
+export class NarrowNode extends BaseNode<NarrowSchema> {
 	readonly kind = "narrow"
 
 	protected constructor(schema: NarrowSchema) {

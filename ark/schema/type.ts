@@ -3,7 +3,7 @@ import type { ConstraintKind } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BaseSchema, Node, inputOf, parseNode } from "./schema.js"
+import type { BaseSchema, inputOf, Node, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 import { inferred } from "./utils.js"
 

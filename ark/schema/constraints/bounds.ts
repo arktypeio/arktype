@@ -2,12 +2,11 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema, Node } from "../schema.js"
-import { nodeParser } from "../schema.js"
-import type { BasesByKind, Basis } from "./basis.js"
+import { BaseNode, nodeParser } from "../schema.js"
+import type { Basis } from "./basis.js"
 import type { Constraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
-import { RefinementNode, RefinementsByKind } from "./refinement.js"
 
 export interface BoundSchema extends BaseSchema {
 	readonly limit: number
@@ -18,7 +17,7 @@ export type BoundNode = MinNode | MaxNode
 
 export type BoundInput = number | BoundSchema
 
-export class MinNode extends RefinementNode<BoundSchema> {
+export class MinNode extends BaseNode<BoundSchema> {
 	protected constructor(schema: BoundSchema) {
 		super(schema)
 	}
@@ -71,7 +70,7 @@ export class MinNode extends RefinementNode<BoundSchema> {
 	}
 }
 
-export class MaxNode extends RefinementNode<BoundSchema> {
+export class MaxNode extends BaseNode<BoundSchema> {
 	readonly kind = "max"
 
 	protected constructor(schema: BoundSchema) {

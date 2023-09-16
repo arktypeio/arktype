@@ -3,9 +3,7 @@ import { Hkt, stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseSchema, Node } from "../schema.js"
-import { nodeParser } from "../schema.js"
-import type { Constraint } from "./constraint.js"
-import { ConstraintNode } from "./constraint.js"
+import { BaseNode, nodeParser } from "../schema.js"
 
 export interface UnitSchema<value = unknown> extends BaseSchema {
 	is: value
@@ -15,7 +13,7 @@ export type UnitInput = UnitSchema
 
 export class UnitNode<
 	schema extends UnitSchema = UnitSchema
-> extends ConstraintNode<schema> {
+> extends BaseNode<schema> {
 	readonly kind = "unit"
 	declare infer: schema["is"]
 

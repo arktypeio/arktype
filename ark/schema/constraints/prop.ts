@@ -2,13 +2,12 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseSchema, Node } from "../schema.js"
-import { nodeParser } from "../schema.js"
+import { BaseNode, nodeParser } from "../schema.js"
 import { TypeNode } from "../type.js"
 import { builtins } from "../utils.js"
 import type { Basis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
-import { RefinementNode } from "./refinement.js"
 
 export interface PropSchema extends BaseSchema {
 	key: string | symbol | TypeNode
@@ -31,7 +30,7 @@ export type PropInput = PropSchema
 
 export class PropNode<
 	schema extends PropSchema = PropSchema
-> extends RefinementNode<PropSchema> {
+> extends BaseNode<PropSchema> {
 	readonly kind = "prop"
 	declare infer: inferPropSchema<schema>
 

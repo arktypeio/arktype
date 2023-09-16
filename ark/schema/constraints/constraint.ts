@@ -32,9 +32,3 @@ export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 
 export type ConstraintInput<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintInputsByKind[kind]
-
-export interface ConstraintSchema extends BaseSchema {}
-
-export abstract class ConstraintNode<
-	schema extends ConstraintSchema
-> extends BaseNode<schema> {}
