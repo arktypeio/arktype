@@ -1,3 +1,4 @@
+import type { Basis } from "./basis.js"
 import type { BoundInput, MaxNode, MinNode } from "./bounds.js"
 import type { DivisibilityInput, DivisibilityNode } from "./divisor.js"
 import type { NarrowInput, NarrowNode } from "./narrow.js"
@@ -38,3 +39,7 @@ export type Refinement<kind extends RefinementKind = RefinementKind> =
 
 export type RefinementInput<kind extends RefinementKind = RefinementKind> =
 	RefinementInputsByKind[kind]
+
+export interface BaseRefinement {
+	applicableTo(basis: Basis | undefined): basis is Basis | undefined
+}

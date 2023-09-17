@@ -10,17 +10,13 @@ import type { Constraint } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { TraversalState } from "./io/traverse.js"
-import type { BaseSchema, inputOf, Node, parseNode } from "./schema.js"
+import type { BaseAttributes, inputOf, Node, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
-export type PredicateSchema<basis extends Basis = Basis> = extend<
-	Basis,
-	{
-		alias?: string
-		basis: basis
-	}
-> &
-	refinementsOf<basis>
+export type PredicateSchema<basis extends Basis = Basis> =
+	PredicateAttributes & {
+		basis?: basis
+	} & refinementsOf<Basis extends basis ? any : basis>
 
 type parseBasis<input extends BasisInput> = conform<
 	{
@@ -52,7 +48,7 @@ type refinementInputsOf<basis> = {
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export interface PredicateAttributes extends BaseSchema {
+export interface PredicateAttributes extends BaseAttributes {
 	morph?: listable<Morph>
 }
 
@@ -138,7 +134,7 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		const result: Constraint[] = []
 		let includesConstraint = false
 		for (let i = 0; i < this.constraints.length; i++) {
-			const elementResult = constraint.reduce(this.constraints[i])
+			const elementResult = constraint.intersect(this.constraints[i])
 			if (elementResult === null) {
 				result.push(this.constraints[i])
 			} else if (elementResult instanceof Disjoint) {

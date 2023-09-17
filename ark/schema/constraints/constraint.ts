@@ -1,6 +1,6 @@
 import type { extend } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseSchema } from "../schema.js"
+import type { BaseAttributes } from "../schema.js"
 import { BaseNode } from "../schema.js"
 import type {
 	BasesByKind,

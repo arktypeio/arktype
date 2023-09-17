@@ -9,13 +9,13 @@ import type { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
 
-export interface BaseSchema {
+export interface BaseAttributes {
 	alias?: string
 	description?: string
 }
 
 export abstract class BaseNode<
-	schema extends BaseSchema = BaseSchema
+	schema extends BaseAttributes = BaseAttributes
 > extends DynamicBase<schema> {
 	abstract kind: NodeKind
 
@@ -38,7 +38,7 @@ export abstract class BaseNode<
 
 	abstract intersectOwnKeys(
 		other: Node
-	): Omit<schema, keyof BaseSchema> | Disjoint | null
+	): Omit<schema, keyof BaseAttributes> | Disjoint | null
 
 	id = this.hash()
 

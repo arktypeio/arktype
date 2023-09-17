@@ -1,17 +1,22 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
-import type { BaseSchema, Node } from "../schema.js"
+import type { PredicateNode, PredicateSchema } from "../predicate.js"
+import type { BaseAttributes, Node } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
+import type { BaseRefinement } from "./refinement.js"
 
-export interface DivisibilitySchema extends BaseSchema {
+export interface DivisibilitySchema extends BaseAttributes {
 	divisor: number
 }
 
 export type DivisibilityInput = number | DivisibilitySchema
 
-export class DivisibilityNode extends BaseNode<DivisibilitySchema> {
+export class DivisibilityNode
+	extends BaseNode<DivisibilitySchema>
+	implements BaseRefinement
+{
 	readonly kind = "divisor"
 
 	protected constructor(schema: DivisibilitySchema) {

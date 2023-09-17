@@ -7,13 +7,13 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseSchema } from "../schema.js"
+import type { BaseAttributes } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
 import type { Constraint } from "./constraint.js"
 
 export interface PrototypeSchema<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends BaseSchema {
+> extends BaseAttributes {
 	prototype: constructor
 }
 

@@ -3,16 +3,16 @@ import type { ConstraintKind } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BaseSchema, inputOf, Node, parseNode } from "./schema.js"
+import type { BaseAttributes, inputOf, Node, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 import { inferred } from "./utils.js"
 
-export interface TypeSchema extends BaseSchema {
+export interface TypeSchema extends BaseAttributes {
 	branches: readonly PredicateNode[]
 }
 
 // TODO: improve this
-export interface TypeInput extends BaseSchema {
+export interface TypeInput extends BaseAttributes {
 	branches: readonly PredicateInput[]
 }
 
