@@ -1,16 +1,27 @@
 import type { conform, extend, listable } from "@arktype/util"
 import { Hkt, throwInternalError, transform } from "@arktype/util"
 import type {
+	BasesByKind,
 	Basis,
 	BasisClassesByKind,
 	BasisInput,
 	BasisKind
 } from "./constraints/basis.js"
 import type { Constraint } from "./constraints/constraint.js"
-import type { Refinement, RefinementKind } from "./constraints/refinement.js"
+import type {
+	Refinement,
+	RefinementKind,
+	RefinementsByKind
+} from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { TraversalState } from "./io/traverse.js"
-import type { BaseAttributes, inputOf, Node, parseNode } from "./schema.js"
+import type {
+	BaseAttributes,
+	inputOf,
+	Node,
+	NodeKind,
+	parseNode
+} from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export type PredicateSchema<basis extends Basis = Basis> =
@@ -92,13 +103,23 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		return true
 	}
 
-	intersectOwnKeys(other: Node) {
+	extractUnit() {
+		// TODO: Fix
+		return this.constraints.find((constraint) => constraint.kind === "unit") as
+			| Node<"unit">
+			| undefined
+	}
+
+	intersectAsymmetric(other: Node) {
 		if (other.kind === "type") {
 			return null
 		}
-		const constraints = other.kind === "predicate" ? other.constraints : [other]
+		return [other as Node<Exclude<NodeKind, "type" | "predicate">>]
+	}
+
+	intersect(other: PredicateNode) {
 		let result: readonly Constraint[] | Disjoint = this.constraints
-		for (const constraint of constraints) {
+		for (const constraint of other.constraints) {
 			if (result instanceof Disjoint) {
 				break
 			}
@@ -106,9 +127,12 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		}
 		return result instanceof Disjoint
 			? result
-			: transform(
-					result,
-					([, constraint]) => [constraint.kind, constraint] as const
+			: // TODO: fix, add attributes
+			  new PredicateNode(
+					transform(
+						result,
+						([, constraint]) => [constraint.kind, constraint] as const
+					) as never
 			  )
 	}
 

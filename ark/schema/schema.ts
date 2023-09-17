@@ -30,16 +30,6 @@ export abstract class BaseNode<
 		this.alias ??= "generated"
 	}
 
-	intersect<other extends Node>(
-		other: other
-	): Node<other["kind"] | this["kind"]> | Disjoint | null {
-		return null
-	}
-
-	abstract intersectOwnKeys(
-		other: Node
-	): Omit<schema, keyof BaseAttributes> | Disjoint | null
-
 	id = this.hash()
 
 	equals(other: BaseNode) {
@@ -52,6 +42,10 @@ export abstract class BaseNode<
 
 	abstract writeDefaultDescription(): string
 }
+
+// abstract intersectOwnKeys(
+// 	other: Node
+// ): Omit<schema, keyof BaseAttributes> | Disjoint | null
 
 export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
 

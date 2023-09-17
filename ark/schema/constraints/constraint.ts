@@ -36,15 +36,33 @@ export type ConstraintInput<kind extends ConstraintKind = ConstraintKind> =
 export abstract class BaseConstraint<
 	schema extends BaseAttributes
 > extends BaseNode<schema> {
-	abstract intersectSymmetric(other: this): schema | Disjoint | null
+	abstract kind: ConstraintKind
+
+	abstract intersectSymmetric(
+		// this representation avoids circularity errors caused by `this`
+		other: Constraint<this["kind"]>
+	): schema | Disjoint | null
 
 	abstract intersectAsymmetric(other: Constraint): schema | Disjoint | null
 
-	intersectOwnKeys(other: Node) {
+	intersect<other extends Constraint>(
+		other: other
+	):
+		| Constraint<other["kind"] | this["kind"]>
+		| Extract<
+				Disjoint | null,
+				ReturnType<this["intersectOwnKeys"] | other["intersectOwnKeys"]>
+		  > {
+		return null as never
+	}
+
+	intersectOwnKeys(other: Constraint) {
 		return other.kind === this.kind
-			? this.intersectSymmetric(other as never)
-			: other.kind === "type" || other.kind === "predicate"
-			? null
-			: this.intersectAsymmetric(other)
+			? (this.intersectSymmetric(other as never) as ReturnType<
+					this["intersectSymmetric"]
+			  >)
+			: (this.intersectAsymmetric(other) as ReturnType<
+					this["intersectAsymmetric"]
+			  >)
 	}
 }

@@ -2,12 +2,12 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../schema.js"
-import { BaseNode, nodeParser } from "../schema.js"
-import type { BasesByKind, Basis } from "./basis.js"
+import { nodeParser } from "../schema.js"
+import type { Basis } from "./basis.js"
 import { BaseConstraint, type Constraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
-import type { BaseRefinement, RefinementsByKind } from "./refinement.js"
+import type { BaseRefinement } from "./refinement.js"
 
 export interface BoundSchema extends BaseAttributes {
 	readonly limit: number
@@ -103,22 +103,6 @@ export class MaxNode
 
 	applicableTo(basis: Basis | undefined): basis is BoundableBasis {
 		return boundable(basis)
-	}
-
-	intersectOwnKeys(other: Node) {
-		if (other.kind === "min") {
-			return this.limit < other.limit ||
-				(this.limit === other.limit && (this.exclusive || other.exclusive))
-				? Disjoint.from("bound", this, other)
-				: null
-		}
-		if (other.kind === "max") {
-			return this.limit < other.limit ||
-				(this.limit === other.limit && this.exclusive)
-				? this
-				: other
-		}
-		return null
 	}
 
 	intersectSymmetric(other: MaxNode) {

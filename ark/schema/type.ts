@@ -30,10 +30,9 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 	static fromUnits = ((...branches: never[]) =>
 		new TypeNode(branches as never)) as UnitsNodeParser
 
-	extractUnit(): Node<"unit"> | undefined {
-		// TODO: Fix
+	extractUnit() {
 		return this.branches.length === 1 && this.branches[0].kind === "predicate"
-			? this.branches[0]
+			? this.branches[0].extractUnit()
 			: undefined
 	}
 
@@ -75,15 +74,12 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	intersectOwnKeys(other: Node) {
-		if (other.kind === "type" || other.kind === "predicate") {
-			const branches = other.kind === "type" ? other.branches : [other]
-			const resultBranches = intersectBranches(this.branches, branches)
-			return resultBranches.length === 0
-				? Disjoint.from("union", this.branches, branches)
-				: { branches: resultBranches }
-		}
-		return this.constrain(other.kind, other)
+	intersect(other: TypeNode) {
+		const resultBranches = intersectBranches(this.branches, other.branches)
+		return resultBranches.length === 0
+			? Disjoint.from("union", this.branches, other.branches)
+			: // TODO: attributes
+			  new TypeNode({ branches: resultBranches })
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
