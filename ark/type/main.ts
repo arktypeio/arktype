@@ -1,19 +1,19 @@
+export { Problem, Problems } from "@arktype/schema"
+export type { CastTo } from "@arktype/schema"
+export type { Out } from "./parser/tuple.js"
+export type { Module, Scope } from "./scope.js"
 export {
+	ark,
+	arktypes,
+	declare,
+	define,
 	scope,
 	type,
-	arktypes,
-	type Ark,
-	ark,
-	define,
-	declare
+	type Ark
 } from "./scopes/ark.js"
-export type { Out } from "./parser/tuple.js"
-export type { Scope, Module } from "./scope.js"
-export { Type } from "./type.js"
-export type { validateTypeRoot, inferTypeRoot } from "./type.js"
 export { jsObjects } from "./scopes/jsObjects.js"
-export { tsKeywords } from "./scopes/tsKeywords.js"
 export { tsGenerics } from "./scopes/tsGenerics.js"
+export { tsKeywords } from "./scopes/tsKeywords.js"
 export { validation } from "./scopes/validation/validation.js"
-export type { CastTo } from "@arktype/schema"
-export { Problems, Problem } from "@arktype/schema"
+export { Type } from "./type.js"
+export type { inferTypeRoot, validateTypeRoot } from "./type.js"

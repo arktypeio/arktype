@@ -24,10 +24,11 @@ import type {
 } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
-export type PredicateSchema<basis extends Basis = Basis> =
-	PredicateAttributes & {
-		basis?: basis
-	} & refinementsOf<Basis extends basis ? any : basis>
+export type PredicateSchema<basis extends Basis = Basis> = BaseAttributes & {
+	basis?: basis
+	morphs: readonly Morph[]
+	constraints: readonly Constraint[]
+} & refinementsOf<Basis extends basis ? any : basis>
 
 type parseBasis<input extends BasisInput> = conform<
 	{
@@ -82,6 +83,7 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	declare infer: t
 
 	declare constraints: Constraint[]
+	readonly typeId = hashPredicateType(this.schema)
 
 	protected constructor(schema: PredicateSchema) {
 		super(schema)
@@ -118,22 +120,48 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 	}
 
 	intersect(other: PredicateNode) {
-		let result: readonly Constraint[] | Disjoint = this.constraints
-		for (const constraint of other.constraints) {
-			if (result instanceof Disjoint) {
-				break
+		const schema: Partial<PredicateSchema> = {}
+		if (this.morphs.length) {
+			if (other.morphs.length) {
+				if (!this.morphs.every((morph, i) => morph === other.morphs[i])) {
+					throw new Error(`Invalid intersection of morphs.`)
+				}
 			}
-			result = this.addConstraint(constraint)
+			schema.morphs = this.morphs
+		} else if (other.morphs.length) {
+			schema.morphs = other.morphs
 		}
-		return result instanceof Disjoint
-			? result
-			: // TODO: fix, add attributes
-			  new PredicateNode(
-					transform(
-						result,
-						([, constraint]) => [constraint.kind, constraint] as const
-					) as never
-			  )
+		let constraints: readonly Constraint[] | Disjoint = this.constraints
+		if (this.typeId !== other.typeId) {
+			for (const constraint of other.constraints) {
+				if (constraints instanceof Disjoint) {
+					break
+				}
+				constraints = this.addConstraint(constraint)
+			}
+			if (constraints instanceof Disjoint) {
+				return constraints
+			}
+		}
+		schema.constraints = constraints
+		const typeId = hashPredicateType(schema as PredicateSchema)
+		if (typeId === this.typeId) {
+			if (this.schema.description) {
+				schema.description = this.schema.description
+			}
+			if (this.schema.alias) {
+				schema.alias = this.schema.alias
+			}
+		}
+		if (typeId === other.typeId) {
+			if (other.schema.description) {
+				schema.description = other.schema.description
+			}
+			if (other.schema.alias) {
+				schema.alias = other.schema.alias
+			}
+		}
+		return new PredicateNode(schema as PredicateSchema)
 	}
 
 	keyof() {
@@ -178,6 +206,10 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		return result
 	}
 }
+
+// TODO: cache
+const hashPredicateType = (schema: Pick<PredicateSchema, "constraints">) =>
+	schema.constraints.map((child) => child.hash()).join("")
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

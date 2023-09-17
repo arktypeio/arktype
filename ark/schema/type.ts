@@ -1,9 +1,8 @@
 import type { conform } from "@arktype/util"
 import type { ConstraintKind } from "./constraints/constraint.js"
-import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BaseAttributes, inputOf, Node, parseNode } from "./schema.js"
+import type { BaseAttributes, inputOf, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 import { inferred } from "./utils.js"
 
@@ -76,10 +75,12 @@ export class TypeNode<t = unknown> extends BaseNode<TypeSchema> {
 
 	intersect(other: TypeNode) {
 		const resultBranches = intersectBranches(this.branches, other.branches)
-		return resultBranches.length === 0
-			? Disjoint.from("union", this.branches, other.branches)
-			: // TODO: attributes
-			  new TypeNode({ branches: resultBranches })
+		if (resultBranches.length === 0) {
+			return Disjoint.from("union", this.branches, other.branches)
+		}
+		return new TypeNode({
+			branches: resultBranches
+		})
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {

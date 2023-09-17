@@ -5,7 +5,6 @@ import type {
 	ConstraintInputsByKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
-import type { Disjoint } from "./disjoint.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
 
@@ -36,16 +35,10 @@ export abstract class BaseNode<
 		return this.id === other.id
 	}
 
-	// abstract attach(parent: never): basis is Basis | undefined
-
 	abstract hash(): string
 
 	abstract writeDefaultDescription(): string
 }
-
-// abstract intersectOwnKeys(
-// 	other: Node
-// ): Omit<schema, keyof BaseAttributes> | Disjoint | null
 
 export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
 
