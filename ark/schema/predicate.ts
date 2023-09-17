@@ -1,34 +1,22 @@
-import type { conform, extend, listable } from "@arktype/util"
-import { Hkt, throwInternalError, transform } from "@arktype/util"
+import type { conform, listable } from "@arktype/util"
+import { Hkt, throwInternalError } from "@arktype/util"
 import type {
-	BasesByKind,
 	Basis,
 	BasisClassesByKind,
 	BasisInput,
 	BasisKind
 } from "./constraints/basis.js"
 import type { Constraint } from "./constraints/constraint.js"
-import type {
-	Refinement,
-	RefinementKind,
-	RefinementsByKind
-} from "./constraints/refinement.js"
+import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { TraversalState } from "./io/traverse.js"
-import type {
-	BaseAttributes,
-	inputOf,
-	Node,
-	NodeKind,
-	parseNode
-} from "./schema.js"
+import type { BaseAttributes, inputOf, Node, parseNode } from "./schema.js"
 import { BaseNode } from "./schema.js"
 
 export type PredicateSchema<basis extends Basis = Basis> = BaseAttributes & {
-	basis?: basis
 	morphs: readonly Morph[]
 	constraints: readonly Constraint[]
-} & refinementsOf<Basis extends basis ? any : basis>
+}
 
 type parseBasis<input extends BasisInput> = conform<
 	{
@@ -110,13 +98,6 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		return this.constraints.find((constraint) => constraint.kind === "unit") as
 			| Node<"unit">
 			| undefined
-	}
-
-	intersectAsymmetric(other: Node) {
-		if (other.kind === "type") {
-			return null
-		}
-		return [other as Node<Exclude<NodeKind, "type" | "predicate">>]
 	}
 
 	intersect(other: PredicateNode) {

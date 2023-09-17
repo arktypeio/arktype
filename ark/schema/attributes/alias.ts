@@ -1,4 +1,4 @@
-export abstract class Aliasable {
+export abstract class Alias {
 	alias: string
 
 	constructor(schema: { alias?: string }) {
