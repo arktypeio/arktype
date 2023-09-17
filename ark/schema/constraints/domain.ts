@@ -4,6 +4,8 @@ import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node, parseNode } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
+import type { Constraint } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface DomainSchema<
@@ -17,7 +19,7 @@ export type DomainInput = NonEnumerableDomain | DomainSchema
 export class DomainNode<
 	// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
 	out schema extends DomainSchema = DomainSchema
-> extends BaseNode<schema> {
+> extends BaseConstraint<schema> {
 	readonly kind = "domain"
 
 	declare infer: inferDomain<schema["domain"]>
@@ -48,8 +50,12 @@ export class DomainNode<
 		return domainDescriptions[this.domain]
 	}
 
-	intersectOwnKeys(other: Node) {
-		return other.kind === "domain" ? Disjoint.from("domain", this, other) : null
+	intersectSymmetric(other: DomainNode) {
+		return Disjoint.from("domain", this, other)
+	}
+
+	intersectAsymmetric() {
+		return null
 	}
 }
 

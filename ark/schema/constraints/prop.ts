@@ -6,6 +6,7 @@ import { BaseNode, nodeParser } from "../schema.js"
 import { TypeNode } from "../type.js"
 import { builtins } from "../utils.js"
 import type { Basis } from "./basis.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -30,7 +31,7 @@ type inferKey<k extends PropSchema["key"]> = k extends string | symbol
 export type PropInput = PropSchema
 
 export class PropNode<schema extends PropSchema = PropSchema>
-	extends BaseNode<PropSchema>
+	extends BaseConstraint<PropSchema>
 	implements BaseRefinement
 {
 	readonly kind = "prop"
@@ -66,10 +67,7 @@ export class PropNode<schema extends PropSchema = PropSchema>
 		return `${String(this.key)}${this.required ? "" : "?"}: ${this.value}`
 	}
 
-	intersectOwnKeys(other: Node) {
-		if (other.kind !== "prop") {
-			return null
-		}
+	intersectSymmetric(other: PropNode) {
 		if (this.key instanceof TypeNode || other.key instanceof TypeNode) {
 			return null
 		}
@@ -93,6 +91,10 @@ export class PropNode<schema extends PropSchema = PropSchema>
 			required,
 			value
 		}
+	}
+
+	intersectAsymmetric() {
+		return null
 	}
 }
 

@@ -9,7 +9,9 @@ import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
-import type { Constraint } from "./constraint.js"
+import type { BasesByKind } from "./basis.js"
+import { BaseConstraint, type Constraint } from "./constraint.js"
+import type { RefinementsByKind } from "./refinement.js"
 
 export interface PrototypeSchema<
 	constructor extends AbstractableConstructor = AbstractableConstructor
@@ -21,7 +23,7 @@ export type PrototypeInput = AbstractableConstructor | PrototypeSchema
 
 export class PrototypeNode<
 	schema extends PrototypeSchema = PrototypeSchema
-> extends BaseNode<schema> {
+> extends BaseConstraint<schema> {
 	readonly kind = "prototype"
 
 	declare infer: InstanceType<schema["prototype"]>
@@ -64,7 +66,7 @@ export class PrototypeNode<
 		)
 	}
 
-	intersectOwnKeys(other: Constraint) {
+	intersectSymmetric(other: Constraint) {
 		return other.kind !== "prototype"
 			? null
 			: constructorExtends(this.prototype, other.prototype)
@@ -73,6 +75,10 @@ export class PrototypeNode<
 			? // this cast is safe since we know other's constructor extends this one
 			  (other.schema as schema)
 			: Disjoint.from("prototype", this, other)
+	}
+
+	intersectAsymmetric() {
+		return null
 	}
 }
 

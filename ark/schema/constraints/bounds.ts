@@ -3,11 +3,11 @@ import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
-import type { Basis } from "./basis.js"
-import type { Constraint } from "./constraint.js"
+import type { BasesByKind, Basis } from "./basis.js"
+import { BaseConstraint, type Constraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
-import type { BaseRefinement } from "./refinement.js"
+import type { BaseRefinement, RefinementsByKind } from "./refinement.js"
 
 export interface BoundSchema extends BaseAttributes {
 	readonly limit: number
@@ -18,7 +18,10 @@ export type BoundNode = MinNode | MaxNode
 
 export type BoundInput = number | BoundSchema
 
-export class MinNode extends BaseNode<BoundSchema> implements BaseRefinement {
+export class MinNode
+	extends BaseConstraint<BoundSchema>
+	implements BaseRefinement
+{
 	protected constructor(schema: BoundSchema) {
 		super(schema)
 	}
@@ -41,18 +44,19 @@ export class MinNode extends BaseNode<BoundSchema> implements BaseRefinement {
 		return ""
 	}
 
-	intersectOwnKeys(other: Constraint) {
+	intersectSymmetric(other: MinNode) {
+		return this.limit > other.limit ||
+			(this.limit === other.limit && this.exclusive)
+			? this
+			: other
+	}
+
+	intersectAsymmetric(other: Constraint) {
 		if (other.kind === "max") {
 			return this.limit > other.limit ||
 				(this.limit === other.limit && (this.exclusive || other.exclusive))
 				? Disjoint.from("bound", this, other)
 				: null
-		}
-		if (other.kind === "min") {
-			return this.limit > other.limit ||
-				(this.limit === other.limit && this.exclusive)
-				? this
-				: other
 		}
 		return null
 	}
@@ -71,7 +75,10 @@ export class MinNode extends BaseNode<BoundSchema> implements BaseRefinement {
 	}
 }
 
-export class MaxNode extends BaseNode<BoundSchema> implements BaseRefinement {
+export class MaxNode
+	extends BaseConstraint<BoundSchema>
+	implements BaseRefinement
+{
 	readonly kind = "max"
 
 	protected constructor(schema: BoundSchema) {
@@ -110,6 +117,23 @@ export class MaxNode extends BaseNode<BoundSchema> implements BaseRefinement {
 				(this.limit === other.limit && this.exclusive)
 				? this
 				: other
+		}
+		return null
+	}
+
+	intersectSymmetric(other: MaxNode) {
+		return this.limit > other.limit ||
+			(this.limit === other.limit && this.exclusive)
+			? this
+			: other
+	}
+
+	intersectAsymmetric(other: Constraint) {
+		if (other.kind === "max") {
+			return this.limit > other.limit ||
+				(this.limit === other.limit && (this.exclusive || other.exclusive))
+				? Disjoint.from("bound", this, other)
+				: null
 		}
 		return null
 	}

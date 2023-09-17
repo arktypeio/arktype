@@ -1,11 +1,13 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
+import { Disjoint } from "../disjoint.js"
 import type { PredicateNode, PredicateSchema } from "../predicate.js"
 import type { BaseAttributes, Node } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
-import type { Basis } from "./basis.js"
+import type { BasesByKind, Basis } from "./basis.js"
+import { BaseConstraint, Constraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
-import type { BaseRefinement } from "./refinement.js"
+import type { BaseRefinement, RefinementsByKind } from "./refinement.js"
 
 export interface DivisibilitySchema extends BaseAttributes {
 	divisor: number
@@ -14,7 +16,7 @@ export interface DivisibilitySchema extends BaseAttributes {
 export type DivisibilityInput = number | DivisibilitySchema
 
 export class DivisibilityNode
-	extends BaseNode<DivisibilitySchema>
+	extends BaseConstraint<DivisibilitySchema>
 	implements BaseRefinement
 {
 	readonly kind = "divisor"
@@ -51,14 +53,16 @@ export class DivisibilityNode
 		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 
-	intersectOwnKeys(other: Node) {
-		return other.kind === "divisor"
-			? {
-					divisor:
-						(this.divisor * other.divisor) /
-						greatestCommonDivisor(this.divisor, other.divisor)
-			  }
-			: null
+	intersectSymmetric(other: DivisibilityNode) {
+		return {
+			divisor:
+				(this.divisor * other.divisor) /
+				greatestCommonDivisor(this.divisor, other.divisor)
+		}
+	}
+
+	intersectAsymmetric() {
+		return null
 	}
 }
 

@@ -3,6 +3,7 @@ import { Hkt, throwParseError } from "@arktype/util"
 import type { BaseAttributes } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
@@ -14,7 +15,7 @@ export interface PatternSchema extends BaseAttributes {
 export type PatternInput = RegexLiteral | RegExp | PatternSchema
 
 export class PatternNode
-	extends BaseNode<PatternSchema>
+	extends BaseConstraint<PatternSchema>
 	implements BaseRefinement
 {
 	readonly kind = "pattern"
@@ -59,7 +60,11 @@ export class PatternNode
 	}
 
 	// For now, non-equal regex are naively intersected
-	intersectOwnKeys() {
+	intersectSymmetric() {
+		return null
+	}
+
+	intersectAsymmetric() {
 		return null
 	}
 }

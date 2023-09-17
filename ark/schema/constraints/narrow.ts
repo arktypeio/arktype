@@ -5,6 +5,7 @@ import type { TraversalState } from "../io/traverse.js"
 import type { BaseAttributes } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
 import type { Basis } from "./basis.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -16,7 +17,7 @@ export interface NarrowSchema extends BaseAttributes {
 export type NarrowInput = Narrow | NarrowSchema
 
 export class NarrowNode
-	extends BaseNode<NarrowSchema>
+	extends BaseConstraint<NarrowSchema>
 	implements BaseRefinement
 {
 	readonly kind = "narrow"
@@ -53,7 +54,11 @@ export class NarrowNode
 		return `valid according to ${this.rule.name}`
 	}
 
-	intersectOwnKeys() {
+	intersectSymmetric() {
+		return null
+	}
+
+	intersectAsymmetric() {
 		return null
 	}
 }

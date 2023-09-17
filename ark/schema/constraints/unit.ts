@@ -4,6 +4,7 @@ import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Node } from "../schema.js"
 import { BaseNode, nodeParser } from "../schema.js"
+import { BaseConstraint } from "./constraint.js"
 
 export interface UnitSchema<value = unknown> extends BaseAttributes {
 	is: value
@@ -13,7 +14,7 @@ export type UnitInput = UnitSchema
 
 export class UnitNode<
 	schema extends UnitSchema = UnitSchema
-> extends BaseNode<schema> {
+> extends BaseConstraint<schema> {
 	readonly kind = "unit"
 	declare infer: schema["is"]
 
@@ -38,8 +39,13 @@ export class UnitNode<
 		return stringify(this.is)
 	}
 
-	intersectOwnKeys(other: Node) {
-		return other.kind === "unit" ? Disjoint.from("unit", this, other) : null
+	intersectSymmetric(other: UnitNode) {
+		return Disjoint.from("unit", this, other)
+	}
+
+	intersectAsymmetric(other: Node) {
+		// TODO: allows
+		return null
 	}
 }
 
