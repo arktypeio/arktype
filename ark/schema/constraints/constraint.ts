@@ -1,7 +1,7 @@
 import type { extend } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node } from "../schema.js"
-import { BaseNode } from "../schema.js"
+import type { BaseAttributes, Node } from "../type.js"
+import { TypeNode } from "../type.js"
 import type {
 	BasesByKind,
 	BasisClassesByKind,
@@ -35,7 +35,7 @@ export type ConstraintInput<kind extends ConstraintKind = ConstraintKind> =
 
 export abstract class BaseConstraint<
 	schema extends BaseAttributes
-> extends BaseNode<schema> {
+> extends TypeNode<schema> {
 	abstract kind: ConstraintKind
 
 	abstract intersectSymmetric(

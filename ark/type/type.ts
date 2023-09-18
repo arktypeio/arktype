@@ -19,6 +19,7 @@ import type {
 	BuiltinObjectKind,
 	BuiltinObjects,
 	conform,
+	DynamicBase,
 	Primitive
 } from "@arktype/util"
 import { CompiledFunction, transform } from "@arktype/util"

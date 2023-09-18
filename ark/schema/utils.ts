@@ -1,6 +1,6 @@
 import { cached } from "@arktype/util"
+import { node } from "./node.js"
 import type { TypeNode } from "./type.js"
-import { node } from "./type.js"
 
 // // TODO: integrate with default scopes
 export const builtins = {

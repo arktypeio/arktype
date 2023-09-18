@@ -10,8 +10,8 @@ import type { Constraint } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { TraversalState } from "./io/traverse.js"
-import type { BaseAttributes, inputOf, Node, parseNode } from "./schema.js"
-import { BaseNode } from "./schema.js"
+import type { BaseAttributes, inputOf, Node, parseNode } from "./type.js"
+import { TypeNode } from "./type.js"
 
 export type PredicateSchema<basis extends Basis = Basis> = BaseAttributes & {
 	morphs: readonly Morph[]
@@ -66,12 +66,13 @@ export type parsePredicate<input extends PredicateInput> =
 		  >
 		: never
 
-export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
+export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 	readonly kind = "predicate"
-	declare infer: t
 
-	declare constraints: Constraint[]
-	readonly typeId = hashPredicateType(this.schema)
+	inId = this.constraints.map((constraint) => constraint.inId).join("")
+	outId = this.constraints.map((constraint) => constraint.outId).join("")
+	typeId = this.constraints.map((constraint) => constraint.inId).join("")
+	metaId = this.constraints.map((constraint) => constraint.inId).join("")
 
 	protected constructor(schema: PredicateSchema) {
 		super(schema)
@@ -87,17 +88,6 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
-	}
-
-	allows() {
-		return true
-	}
-
-	extractUnit() {
-		// TODO: Fix
-		return this.constraints.find((constraint) => constraint.kind === "unit") as
-			| Node<"unit">
-			| undefined
 	}
 
 	intersect(other: PredicateNode) {
@@ -145,22 +135,6 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		return new PredicateNode(schema as PredicateSchema)
 	}
 
-	keyof() {
-		return this
-	}
-
-	references() {
-		return [this]
-	}
-
-	array() {
-		return this as never
-	}
-
-	hash() {
-		return ""
-	}
-
 	protected addConstraint(
 		constraint: Constraint
 	): readonly Constraint[] | Disjoint {
@@ -187,10 +161,6 @@ export class PredicateNode<t = unknown> extends BaseNode<PredicateSchema> {
 		return result
 	}
 }
-
-// TODO: cache
-const hashPredicateType = (schema: Pick<PredicateSchema, "constraints">) =>
-	schema.constraints.map((child) => child.hash()).join("")
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,
