@@ -1,5 +1,5 @@
-import type { extend, Hkt } from "@arktype/util"
-import { DynamicBase, reify } from "@arktype/util"
+import type { extend, Hkt, nominal } from "@arktype/util"
+import { DynamicBase, hasKey, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
