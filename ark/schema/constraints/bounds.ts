@@ -1,10 +1,11 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node } from "../type.js"
+import type { BaseAttributes } from "../type.js"
 import { nodeParser } from "../type.js"
 import type { Basis } from "./basis.js"
-import { BaseConstraint, type Constraint } from "./constraint.js"
+import type { ConstraintNode } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { PrototypeNode } from "./prototype.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -51,7 +52,7 @@ export class MinNode
 			: other
 	}
 
-	intersectAsymmetric(other: Constraint) {
+	intersectAsymmetric(other: ConstraintNode) {
 		if (other.kind === "max") {
 			return this.limit > other.limit ||
 				(this.limit === other.limit && (this.exclusive || other.exclusive))
@@ -112,7 +113,7 @@ export class MaxNode
 			: other
 	}
 
-	intersectAsymmetric(other: Constraint) {
+	intersectAsymmetric(other: ConstraintNode) {
 		if (other.kind === "max") {
 			return this.limit > other.limit ||
 				(this.limit === other.limit && (this.exclusive || other.exclusive))

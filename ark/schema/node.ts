@@ -1,17 +1,7 @@
 import type { conform } from "@arktype/util"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { parseNode } from "./type.js"
-import { TypeNode } from "./type.js"
-
-export const node = Object.assign(TypeNode.from, {
-	units: TypeNode.fromUnits
-})
-
-// static from = ((...branches: never[]) =>
-// new TypeNode(branches as never)) as NodeParser
-
-// const fromUnits = ((...branches: never[]) =>
-// new TypeNode(branches as never)) as UnitsNodeParser
+import type { parseNode, TypeNode } from "./type.js"
+import { UnionNode } from "./union.js"
 
 type NodeParser = {
 	<const branches extends readonly unknown[]>(
@@ -40,3 +30,13 @@ type UnitsNodeParser = {
 		...branches: branches
 	): TypeNode<branches[number]>
 }
+
+const from = ((...branches: never[]) =>
+	new (UnionNode as any)(branches)) as {} as NodeParser
+
+const fromUnits = ((...branches: never[]) =>
+	new (UnionNode as any)(branches)) as {} as UnitsNodeParser
+
+export const node = Object.assign(from, {
+	units: fromUnits
+})

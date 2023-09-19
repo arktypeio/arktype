@@ -8,10 +8,9 @@ import {
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes } from "../type.js"
-import { nodeParser, TypeNode } from "../type.js"
-import type { BasesByKind } from "./basis.js"
-import { BaseConstraint, type Constraint } from "./constraint.js"
-import type { RefinementsByKind } from "./refinement.js"
+import { nodeParser } from "../type.js"
+import type { ConstraintNode } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 
 export interface PrototypeSchema<
 	constructor extends AbstractableConstructor = AbstractableConstructor
@@ -66,7 +65,7 @@ export class PrototypeNode<
 		)
 	}
 
-	intersectSymmetric(other: Constraint) {
+	intersectSymmetric(other: ConstraintNode) {
 		return other.kind !== "prototype"
 			? null
 			: constructorExtends(this.prototype, other.prototype)

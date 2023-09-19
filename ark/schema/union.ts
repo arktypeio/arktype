@@ -1,26 +1,29 @@
-import type { ConstraintKind } from "./constraints/constraint.js"
+import type { ConstraintNode } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import type { MorphInput, MorphNode } from "./morph.js"
-import { node } from "./node.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BaseAttributes, inputOf } from "./type.js"
+import type { BaseAttributes } from "./type.js"
 import { TypeNode } from "./type.js"
 
 export interface TypeSchema extends BaseAttributes {
 	branches: readonly BranchNode[]
 }
 
-export type BranchNode = PredicateNode | MorphNode
+export type BranchNode = PredicateNode | MorphNode | ConstraintNode
 
 // TODO: improve this
 export interface TypeInput extends BaseAttributes {
-	branches: readonly BranchInput[]
+	branches: UnionInput
 }
 
 export type BranchInput = PredicateInput | MorphInput
 
+export type UnionInput = readonly BranchInput[]
+
 export class UnionNode<t = unknown> extends TypeNode<t, TypeSchema> {
-	readonly kind = "type"
+	readonly kind = "union"
+
+	branches = this.schema.branches
 
 	inId = ""
 	outId = ""
@@ -29,27 +32,6 @@ export class UnionNode<t = unknown> extends TypeNode<t, TypeSchema> {
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
-	}
-
-	constrain<kind extends ConstraintKind>(
-		kind: kind,
-		definition: inputOf<kind>
-	): TypeNode<t> {
-		return this
-	}
-
-	references() {
-		return this.branches.flatMap((branch) => branch.references())
-	}
-
-	intersect(other: TypeNode) {
-		const resultBranches = intersectBranches(this.branches, other.branches)
-		if (resultBranches.length === 0) {
-			return Disjoint.from("union", this.branches, other.branches)
-		}
-		return node({
-			branches: resultBranches
-		})
 	}
 }
 
@@ -88,23 +70,23 @@ export const reduceBranches = (branches: PredicateNode[]) => {
 }
 
 export const intersectBranches = (
-	l: readonly PredicateNode[],
-	r: readonly PredicateNode[]
-): readonly PredicateNode[] => {
+	l: readonly BranchNode[],
+	r: readonly BranchNode[]
+): readonly BranchNode[] => {
 	// Branches that are determined to be a subtype of an opposite branch are
 	// guaranteed to be a member of the final reduced intersection, so long as
 	// each individual set of branches has been correctly reduced to exclude
 	// redundancies.
-	const finalBranches: PredicateNode[] = []
+	const finalBranches: BranchNode[] = []
 	// Each rBranch is initialized to an empty array to which distinct
 	// intersections will be appended. If the rBranch is identified as a
 	// subtype or equal of any lBranch, the corresponding value should be
 	// set to null so we can avoid including previous/future intersections
 	// in the final result.
-	const candidatesByR: (PredicateNode[] | null)[] = r.map(() => [])
+	const candidatesByR: (BranchNode[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
 		const lBranch = l[lIndex]
-		let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
+		let currentCandidateByR: { [rIndex in number]: BranchNode } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			const rBranch = r[rIndex]
 			if (!candidatesByR[rIndex]) {

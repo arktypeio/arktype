@@ -1,14 +1,7 @@
-import type { conform } from "@arktype/util"
-import { Hkt } from "@arktype/util"
-import type { BasisInput } from "./constraints/basis.js"
 import { compileSerializedValue } from "./io/compile.js"
 import type { TraversalState } from "./io/traverse.js"
-import type {
-	parsePredicate,
-	PredicateInput,
-	PredicateNode
-} from "./predicate.js"
-import type { BaseAttributes, Node } from "./type.js"
+import type { PredicateInput, PredicateNode } from "./predicate.js"
+import type { BaseAttributes } from "./type.js"
 import { TypeNode } from "./type.js"
 
 export type MorphSchema = BaseAttributes & {
@@ -25,7 +18,7 @@ export type MorphInput = BaseAttributes & {
 	morphs: readonly Morph[]
 }
 
-export class MorphNode<t = unknown> extends TypeNode<MorphSchema> {
+export class MorphNode<t = unknown> extends TypeNode<t, MorphSchema> {
 	readonly kind = "predicate"
 
 	protected constructor(schema: MorphSchema) {
@@ -37,10 +30,11 @@ export class MorphNode<t = unknown> extends TypeNode<MorphSchema> {
 	typeId = JSON.stringify({
 		in: this.in.typeId,
 		out: this.out.typeId,
-		// TODO: serialized
 		morphs: this.morphs.map((morph) => compileSerializedValue(morph))
 	})
 	metaId = this.writeMetaId()
+
+	branches = [this]
 
 	private writeMetaId() {
 		const base: Record<string, string> = {

@@ -4,11 +4,16 @@ import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
 	ConstraintKind,
+	ConstraintNode,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
+import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
+import type { MorphNode } from "./morph.js"
+import { node } from "./node.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
-import type { BranchNode, TypeInput } from "./union.js"
+import type { BranchNode, UnionInput, UnionNode } from "./union.js"
+import { intersectBranches } from "./union.js"
 import { inferred } from "./utils.js"
 
 export interface BaseAttributes {
@@ -47,12 +52,6 @@ export abstract class TypeNode<
 		return this.typeId === other.typeId
 	}
 
-	extractUnit() {
-		return this.branches.length === 1 && this.branches[0].kind === "predicate"
-			? this.branches[0].extractUnit()
-			: undefined
-	}
-
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
 		definition: inputOf<kind>
@@ -60,9 +59,15 @@ export abstract class TypeNode<
 		return this
 	}
 
-	references() {
-		return this.branches.flatMap((branch) => branch.references())
+	extractUnit(): UnitNode | undefined {
+		return this.branches.length === 1 && this.branches[0].kind === "predicate"
+			? this.branches[0].extractUnit()
+			: undefined
 	}
+
+	// references() {
+	// 	return this.branches.flatMap((branch) => branch.references())
+	// }
 
 	keyof() {
 		return this
@@ -76,37 +81,44 @@ export abstract class TypeNode<
 		return true
 	}
 
-	and<other extends TypeNode>(
-		other: other // TODO: inferIntersection
-	): TypeNode<t & other["infer"]> {
+	// TODO: inferIntersection
+	and<other extends TypeNode>(other: other): TypeNode<t & other["infer"]> {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	intersect(other: TypeNode) {
+	intersect<other extends TypeNode>(
+		other: other
+	): Node<intersectNodeKinds<this["kind"], other["kind"]>> | Disjoint {
 		const resultBranches = intersectBranches(this.branches, other.branches)
 		if (resultBranches.length === 0) {
 			return Disjoint.from("union", this.branches, other.branches)
 		}
-		return new TypeNode({
-			branches: resultBranches
-		})
+		return node(...resultBranches) as never
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
 		return this
 	}
 
+	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
+		return this.kind === kind
+	}
+
 	isUnknown(): this is PredicateNode<unknown> {
-		return this.branches[1].constraints.length === 0
+		return this.hasKind("predicate") ? this.constraints.length === 0 : false
 	}
 
 	isNever(): this is TypeNode<never> {
 		return this.branches.length === 0
 	}
 
+	getPath() {
+		return this
+	}
+
 	array(): TypeNode<t[]> {
-		return new TypeNode({ branches: [] })
+		return node()
 	}
 
 	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
@@ -114,6 +126,24 @@ export abstract class TypeNode<
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
 }
+
+type HierarchicalNodeOrder = [
+	UnionNode,
+	MorphNode,
+	PredicateNode,
+	ConstraintNode
+]
+
+type intersectNodeKinds<
+	l extends NodeKind,
+	r extends NodeKind
+> = "union" extends l | r
+	? NodeKind
+	: "morph" extends l | r
+	? "morph"
+	: "predicate" extends l | r
+	? "predicate" | ConstraintKind
+	: (l | r) & ConstraintKind
 
 export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
 
@@ -128,7 +158,7 @@ export type parseNode<
 export type inputOf<kind extends NodeKind> = extend<
 	ConstraintInputsByKind,
 	{
-		type: TypeInput
+		union: UnionInput
 		predicate: PredicateInput
 	}
 >[kind]
@@ -136,7 +166,7 @@ export type inputOf<kind extends NodeKind> = extend<
 export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,
 	{
-		type: typeof TypeNode
+		union: typeof UnionNode
 		predicate: typeof PredicateNode
 	}
 >
@@ -144,7 +174,7 @@ export type NodeClassesByKind = extend<
 export type NodesByKind = extend<
 	ConstraintsByKind,
 	{
-		type: TypeNode
+		union: UnionNode
 		predicate: PredicateNode
 	}
 >

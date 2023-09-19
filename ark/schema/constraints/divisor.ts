@@ -1,13 +1,11 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
-import type { PredicateNode, PredicateSchema } from "../predicate.js"
-import type { BaseAttributes, Node } from "../type.js"
-import { nodeParser, TypeNode } from "../type.js"
-import type { BasesByKind, Basis } from "./basis.js"
-import { BaseConstraint, Constraint } from "./constraint.js"
+import type { BaseAttributes } from "../type.js"
+import { nodeParser } from "../type.js"
+import type { Basis } from "./basis.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
-import type { BaseRefinement, RefinementsByKind } from "./refinement.js"
+import type { BaseRefinement } from "./refinement.js"
 
 export interface DivisibilitySchema extends BaseAttributes {
 	divisor: number

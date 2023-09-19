@@ -42,7 +42,7 @@ export type entryOf<o> = {
 export type entriesOf<o extends object> = entryOf<o>[]
 
 export const entriesOf = <o extends object>(o: o) =>
-	Object.entries(o) as evaluate<entriesOf<o>>
+	Object.entries(o) as entriesOf<o>
 
 type Entry<key extends PropertyKey = PropertyKey, value = unknown> = readonly [
 	key: key,
@@ -67,7 +67,7 @@ export const transform = <
 	Object.fromEntries(
 		entriesOf(o).flatMap((entry) => {
 			const result = flatMapEntry(entry)
-			return isArray(result[0]) ? result : [result]
+			return isArray(result[0]) ? (result as never) : [result]
 		})
 	) as evaluate<
 		intersectUnion<

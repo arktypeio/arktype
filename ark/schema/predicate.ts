@@ -6,16 +6,15 @@ import type {
 	BasisInput,
 	BasisKind
 } from "./constraints/basis.js"
-import type { Constraint } from "./constraints/constraint.js"
+import type { ConstraintNode } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import type { TraversalState } from "./io/traverse.js"
-import type { BaseAttributes, inputOf, Node, parseNode } from "./type.js"
+import type { BaseAttributes, inputOf, parseNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export type PredicateSchema<basis extends Basis = Basis> = BaseAttributes & {
-	morphs: readonly Morph[]
-	constraints: readonly Constraint[]
+export type PredicateSchema = BaseAttributes & {
+	constraints: readonly ConstraintNode[]
 }
 
 type parseBasis<input extends BasisInput> = conform<
@@ -78,6 +77,8 @@ export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 		super(schema)
 	}
 
+	branches = [this]
+
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], PredicateInput>) =>
 			new PredicateNode(input as never) as parsePredicate<typeof input>
@@ -90,55 +91,55 @@ export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
 	}
 
-	intersect(other: PredicateNode) {
-		const schema: Partial<PredicateSchema> = {}
-		if (this.morphs.length) {
-			if (other.morphs.length) {
-				if (!this.morphs.every((morph, i) => morph === other.morphs[i])) {
-					throw new Error(`Invalid intersection of morphs.`)
-				}
-			}
-			schema.morphs = this.morphs
-		} else if (other.morphs.length) {
-			schema.morphs = other.morphs
-		}
-		let constraints: readonly Constraint[] | Disjoint = this.constraints
-		if (this.typeId !== other.typeId) {
-			for (const constraint of other.constraints) {
-				if (constraints instanceof Disjoint) {
-					break
-				}
-				constraints = this.addConstraint(constraint)
-			}
-			if (constraints instanceof Disjoint) {
-				return constraints
-			}
-		}
-		schema.constraints = constraints
-		const typeId = hashPredicateType(schema as PredicateSchema)
-		if (typeId === this.typeId) {
-			if (this.schema.description) {
-				schema.description = this.schema.description
-			}
-			if (this.schema.alias) {
-				schema.alias = this.schema.alias
-			}
-		}
-		if (typeId === other.typeId) {
-			if (other.schema.description) {
-				schema.description = other.schema.description
-			}
-			if (other.schema.alias) {
-				schema.alias = other.schema.alias
-			}
-		}
-		return new PredicateNode(schema as PredicateSchema)
-	}
+	// intersect(other: PredicateNode) {
+	// 	const schema: Partial<PredicateSchema> = {}
+	// 	if (this.morphs.length) {
+	// 		if (other.morphs.length) {
+	// 			if (!this.morphs.every((morph, i) => morph === other.morphs[i])) {
+	// 				throw new Error(`Invalid intersection of morphs.`)
+	// 			}
+	// 		}
+	// 		schema.morphs = this.morphs
+	// 	} else if (other.morphs.length) {
+	// 		schema.morphs = other.morphs
+	// 	}
+	// 	let constraints: readonly Constraint[] | Disjoint = this.constraints
+	// 	if (this.typeId !== other.typeId) {
+	// 		for (const constraint of other.constraints) {
+	// 			if (constraints instanceof Disjoint) {
+	// 				break
+	// 			}
+	// 			constraints = this.addConstraint(constraint)
+	// 		}
+	// 		if (constraints instanceof Disjoint) {
+	// 			return constraints
+	// 		}
+	// 	}
+	// 	schema.constraints = constraints
+	// 	const typeId = hashPredicateType(schema as PredicateSchema)
+	// 	if (typeId === this.typeId) {
+	// 		if (this.schema.description) {
+	// 			schema.description = this.schema.description
+	// 		}
+	// 		if (this.schema.alias) {
+	// 			schema.alias = this.schema.alias
+	// 		}
+	// 	}
+	// 	if (typeId === other.typeId) {
+	// 		if (other.schema.description) {
+	// 			schema.description = other.schema.description
+	// 		}
+	// 		if (other.schema.alias) {
+	// 			schema.alias = other.schema.alias
+	// 		}
+	// 	}
+	// 	return new PredicateNode(schema as PredicateSchema)
+	// }
 
 	protected addConstraint(
-		constraint: Constraint
-	): readonly Constraint[] | Disjoint {
-		const result: Constraint[] = []
+		constraint: ConstraintNode
+	): readonly ConstraintNode[] | Disjoint {
+		const result: ConstraintNode[] = []
 		let includesConstraint = false
 		for (let i = 0; i < this.constraints.length; i++) {
 			const elementResult = constraint.intersect(this.constraints[i])

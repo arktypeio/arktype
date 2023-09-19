@@ -13,6 +13,7 @@ import type { PrototypeNode } from "./constraints/prototype.js"
 import type { Refinement } from "./constraints/refinement.js"
 import type { UnitNode } from "./constraints/unit.js"
 import type { PredicateNode } from "./predicate.js"
+import type { BranchNode } from "./union.js"
 
 type DisjointKinds = {
 	domain?: {
@@ -41,8 +42,8 @@ type DisjointKinds = {
 				r: unknown
 		  }
 	union?: {
-		l: readonly PredicateNode[]
-		r: readonly PredicateNode[]
+		l: readonly BranchNode[]
+		r: readonly BranchNode[]
 	}
 }
 
