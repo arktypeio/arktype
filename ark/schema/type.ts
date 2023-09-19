@@ -8,6 +8,7 @@ import type {
 } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
+import type { MorphInput, MorphNode } from "./morph.js"
 import { node } from "./node.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { BranchNode, UnionInput, UnionNode } from "./union.js"
@@ -151,6 +152,7 @@ export type inputOf<kind extends NodeKind> = extend<
 	{
 		union: UnionInput
 		predicate: PredicateInput
+		morph: MorphInput
 	}
 >[kind]
 
@@ -159,6 +161,7 @@ export type NodeClassesByKind = extend<
 	{
 		union: typeof UnionNode
 		predicate: typeof PredicateNode
+		morph: typeof MorphNode
 	}
 >
 
@@ -167,6 +170,7 @@ export type NodesByKind = extend<
 	{
 		union: UnionNode
 		predicate: PredicateNode
+		morph: MorphNode
 	}
 >
 

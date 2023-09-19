@@ -19,7 +19,7 @@ export type MorphInput = BaseAttributes & {
 }
 
 export class MorphNode<t = unknown> extends TypeNode<t, MorphSchema> {
-	readonly kind = "predicate"
+	readonly kind = "morph"
 
 	protected constructor(schema: MorphSchema) {
 		super(schema)
