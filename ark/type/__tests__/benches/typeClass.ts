@@ -27,13 +27,13 @@ const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 
 class Foo extends Class({ a: "string|number[]" }) {}
 
-const data = new Foo({})
+const data = new Foo({}) //=>
 
 const a = data.a //=>
 
 class Bar extends Foo.and({ b: "boolean" }) {}
 
-const data2 = new Bar({})
+const data2 = new Bar({}) //=>
 
 const a2 = data2.a //=>
 const b = data2.b //=>
