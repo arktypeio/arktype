@@ -1,18 +1,39 @@
-import type { DynamicBase } from "@arktype/util"
-import type { Ark } from "../../scopes/ark.js"
-import type { inferTypeRoot, validateTypeRoot } from "../../type.js"
+import { DynamicBase } from "@arktype/util"
+import { ark, type Ark } from "../../scopes/ark.js"
+import { type inferTypeRoot, Type, type validateTypeRoot } from "../../type.js"
 
-export type ClassParser<$> = <def>(
-	def: validateTypeRoot<def, $>
-) => inferTypeRoot<def, $> extends infer t extends object
-	? typeof DynamicBase<t>
-	: never
+const Class = <def>(def: validateTypeRoot<def, Ark>) => {
+	const validator = new Type(def, ark)
+	return class TypeConstructor<t = inferTypeRoot<def, Ark>> extends DynamicBase<
+		t & object
+	> {
+		static infer: inferTypeRoot<def, Ark>
 
-declare const Class: ClassParser<Ark>
+		constructor(input: unknown) {
+			const { data, problems } = validator(input)
+			if (problems) {
+				return problems.throw()
+			}
+			super(data as never)
+		}
+
+		static and<def>(def: validateTypeRoot<def, Ark>) {
+			return class extends TypeConstructor<
+				(typeof TypeConstructor)["infer"] & inferTypeRoot<def, Ark>
+			> {}
+		}
+	}
+}
 
 class Foo extends Class({ a: "string|number[]" }) {}
 
-const n = new Foo({} as never)
+const data = new Foo({})
 
-const z = n.a
-//    ^?
+const a = data.a //=>
+
+class Bar extends Foo.and({ b: "boolean" }) {}
+
+const data2 = new Bar({})
+
+const a2 = data2.a //=>
+const b = data2.b //=>
