@@ -52,16 +52,16 @@ export abstract class BaseConstraint<
 	typeId = ""
 	metaId = ""
 
-	// intersect<other extends ConstraintNode>(
-	// 	other: other
-	// ):
-	// 	| ConstraintNode<other["kind"] | this["kind"]>
-	// 	| Extract<
-	// 			Disjoint | null,
-	// 			ReturnType<this["intersectOwnKeys"] | other["intersectOwnKeys"]>
-	// 	  > {
-	// 	return null as never
-	// }
+	intersectConstraint<other extends ConstraintNode>(
+		other: other
+	):
+		| ConstraintNode<other["kind"] | this["kind"]>
+		| Extract<
+				Disjoint | null,
+				ReturnType<this["intersectOwnKeys"] | other["intersectOwnKeys"]>
+		  > {
+		return null as never
+	}
 
 	intersectOwnKeys(other: ConstraintNode) {
 		return other.kind === this.kind

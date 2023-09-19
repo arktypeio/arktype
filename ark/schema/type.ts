@@ -125,16 +125,16 @@ export abstract class TypeNode<
 	}
 }
 
-type intersectNodeKinds<
-	l extends NodeKind,
-	r extends NodeKind
-> = "union" extends l | r
+type intersectNodeKinds<l extends NodeKind, r extends NodeKind> = [
+	l,
+	r
+] extends ["unit", unknown] | [unknown, "unit"]
+	? "unit"
+	: "union" extends l | r
 	? NodeKind
 	: "morph" extends l | r
 	? "morph"
-	: "predicate" extends l | r
-	? "predicate" | ConstraintKind
-	: (l | r) & ConstraintKind
+	: "predicate" | ((l | r) & ConstraintKind)
 
 export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
 

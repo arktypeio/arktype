@@ -142,7 +142,7 @@ export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 		const result: ConstraintNode[] = []
 		let includesConstraint = false
 		for (let i = 0; i < this.constraints.length; i++) {
-			const elementResult = constraint.intersect(this.constraints[i])
+			const elementResult = constraint.intersectConstraint(this.constraints[i])
 			if (elementResult === null) {
 				result.push(this.constraints[i])
 			} else if (elementResult instanceof Disjoint) {
