@@ -4,12 +4,10 @@ import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
 	ConstraintKind,
-	ConstraintNode,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
-import type { MorphNode } from "./morph.js"
 import { node } from "./node.js"
 import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { BranchNode, UnionInput, UnionNode } from "./union.js"
@@ -109,7 +107,7 @@ export abstract class TypeNode<
 		return this.hasKind("predicate") ? this.constraints.length === 0 : false
 	}
 
-	isNever(): this is TypeNode<never> {
+	isNever(): this is UnionNode<never> {
 		return this.branches.length === 0
 	}
 
@@ -126,13 +124,6 @@ export abstract class TypeNode<
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
 }
-
-type HierarchicalNodeOrder = [
-	UnionNode,
-	MorphNode,
-	PredicateNode,
-	ConstraintNode
-]
 
 type intersectNodeKinds<
 	l extends NodeKind,
