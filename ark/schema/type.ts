@@ -8,9 +8,9 @@ import type {
 } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
+import type { IntersectionInput, IntersectionNode } from "./intersection.js"
 import type { MorphInput, MorphNode } from "./morph.js"
 import { node } from "./node.js"
-import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { BranchNode, UnionInput, UnionNode } from "./union.js"
 import { intersectBranches } from "./union.js"
 import { inferred } from "./utils.js"
@@ -104,7 +104,7 @@ export abstract class TypeNode<
 		return this.kind === kind
 	}
 
-	isUnknown(): this is PredicateNode<unknown> {
+	isUnknown(): this is IntersectionNode<unknown> {
 		return this.hasKind("predicate") ? this.constraints.length === 0 : false
 	}
 
@@ -151,7 +151,7 @@ export type inputOf<kind extends NodeKind> = extend<
 	ConstraintInputsByKind,
 	{
 		union: UnionInput
-		predicate: PredicateInput
+		predicate: IntersectionInput
 		morph: MorphInput
 	}
 >[kind]
@@ -160,7 +160,7 @@ export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,
 	{
 		union: typeof UnionNode
-		predicate: typeof PredicateNode
+		predicate: typeof IntersectionNode
 		morph: typeof MorphNode
 	}
 >
@@ -169,7 +169,7 @@ export type NodesByKind = extend<
 	ConstraintsByKind,
 	{
 		union: UnionNode
-		predicate: PredicateNode
+		predicate: IntersectionNode
 		morph: MorphNode
 	}
 >

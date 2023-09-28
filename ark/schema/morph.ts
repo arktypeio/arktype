@@ -1,20 +1,20 @@
+import type { IntersectionInput, IntersectionNode } from "./intersection.js"
 import { compileSerializedValue } from "./io/compile.js"
 import type { TraversalState } from "./io/traverse.js"
-import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { BaseAttributes } from "./type.js"
 import { TypeNode } from "./type.js"
 
 export type MorphSchema = BaseAttributes & {
-	in: PredicateNode
-	out: PredicateNode
+	in: IntersectionNode
+	out: IntersectionNode
 	morphs: readonly Morph[]
 }
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type MorphInput = BaseAttributes & {
-	in?: PredicateInput
-	out?: PredicateInput
+	in?: IntersectionInput
+	out?: IntersectionInput
 	morphs: readonly Morph[]
 }
 

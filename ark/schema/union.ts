@@ -1,7 +1,7 @@
 import type { ConstraintNode } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
+import type { IntersectionInput, IntersectionNode } from "./intersection.js"
 import type { MorphInput, MorphNode } from "./morph.js"
-import type { PredicateInput, PredicateNode } from "./predicate.js"
 import type { BaseAttributes } from "./type.js"
 import { TypeNode } from "./type.js"
 
@@ -9,14 +9,14 @@ export interface TypeSchema extends BaseAttributes {
 	branches: readonly BranchNode[]
 }
 
-export type BranchNode = PredicateNode | MorphNode | ConstraintNode
+export type BranchNode = IntersectionNode | MorphNode | ConstraintNode
 
 // TODO: improve this
 export interface TypeInput extends BaseAttributes {
 	branches: UnionInput
 }
 
-export type BranchInput = PredicateInput | MorphInput
+export type BranchInput = IntersectionInput | MorphInput
 
 export type UnionInput = readonly BranchInput[]
 
@@ -40,7 +40,7 @@ export class UnionNode<t = unknown> extends TypeNode<t, TypeSchema> {
 // 	return discriminate(this.branches)
 // }
 
-export const reduceBranches = (branches: PredicateNode[]) => {
+export const reduceBranches = (branches: IntersectionNode[]) => {
 	if (branches.length < 2) {
 		return branches
 	}

@@ -3,7 +3,7 @@ import type {
 	inferNarrow,
 	Morph,
 	Narrow,
-	PredicateAttributes,
+	IntersectionAttributes,
 	TypeNode
 } from "@arktype/schema"
 import {
@@ -68,7 +68,7 @@ export type TypeParser<$> = {
 				? // TODO: centralize
 				  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
 				: one extends "@"
-				? [string | PredicateAttributes]
+				? [string | IntersectionAttributes]
 				: [validateTypeRoot<rest[0], $>]
 			: []
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>

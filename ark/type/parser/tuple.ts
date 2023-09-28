@@ -2,10 +2,10 @@ import {
 	builtins,
 	type CheckResult,
 	type inferNarrow,
+	type IntersectionAttributes,
 	type Morph,
 	type Narrow,
 	node,
-	type PredicateAttributes,
 	type Problem,
 	type TypeNode
 } from "@arktype/schema"
@@ -322,7 +322,7 @@ export type validateInfixExpression<
 				: def[1] extends "=>"
 				? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
 				: def[1] extends "@"
-				? PredicateAttributes | string
+				? IntersectionAttributes | string
 				: validateDefinition<def[2], $, args>
 	  ]
 

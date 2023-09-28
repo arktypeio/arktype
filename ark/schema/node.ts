@@ -1,5 +1,5 @@
 import type { conform } from "@arktype/util"
-import type { PredicateInput, PredicateNode } from "./predicate.js"
+import type { IntersectionInput, IntersectionNode } from "./intersection.js"
 import type { parseNode, TypeNode } from "./type.js"
 import { UnionNode } from "./union.js"
 
@@ -8,17 +8,17 @@ type NodeParser = {
 		...branches: {
 			[i in keyof branches]: conform<
 				branches[i],
-				branches[i] extends PredicateInput<infer basis>
-					? PredicateInput<basis>
-					: PredicateInput
+				branches[i] extends IntersectionInput<infer basis>
+					? IntersectionInput<basis>
+					: IntersectionInput
 			>
 		}
 	): TypeNode<
 		{
 			[i in keyof branches]: parseNode<
-				typeof PredicateNode,
-				conform<branches[i], PredicateInput>
-			> extends PredicateNode<infer t>
+				typeof IntersectionNode,
+				conform<branches[i], IntersectionInput>
+			> extends IntersectionNode<infer t>
 				? t
 				: unknown
 		}[number]

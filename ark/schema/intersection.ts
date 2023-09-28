@@ -13,7 +13,7 @@ import type { TraversalState } from "./io/traverse.js"
 import type { BaseAttributes, inputOf, parseNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export type PredicateSchema = BaseAttributes & {
+export type IntersectionSchema = BaseAttributes & {
 	constraints: readonly ConstraintNode[]
 }
 
@@ -47,25 +47,28 @@ type refinementInputsOf<basis> = {
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export interface PredicateAttributes extends BaseAttributes {
+export interface IntersectionAttributes extends BaseAttributes {
 	morph?: listable<Morph>
 }
 
-export type PredicateInput<basis extends BasisInput = BasisInput> =
+export type IntersectionInput<basis extends BasisInput = BasisInput> =
 	| basis
 	| Record<PropertyKey, never>
-	| ({ narrow?: inputOf<"narrow"> } & PredicateAttributes)
+	| ({ narrow?: inputOf<"narrow"> } & IntersectionAttributes)
 	| ({ basis: basis } & refinementInputsOf<parseBasis<basis>> &
-			PredicateAttributes)
+			IntersectionAttributes)
 
-export type parsePredicate<input extends PredicateInput> =
-	input extends PredicateInput<infer basis>
-		? PredicateNode<
+export type parseIntersection<input extends IntersectionInput> =
+	input extends IntersectionInput<infer basis>
+		? IntersectionNode<
 				BasisInput extends basis ? unknown : parseBasis<basis>["infer"]
 		  >
 		: never
 
-export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
+export class IntersectionNode<t = unknown> extends TypeNode<
+	t,
+	IntersectionSchema
+> {
 	readonly kind = "predicate"
 
 	inId = this.constraints.map((constraint) => constraint.inId).join("")
@@ -73,19 +76,19 @@ export class PredicateNode<t = unknown> extends TypeNode<t, PredicateSchema> {
 	typeId = this.constraints.map((constraint) => constraint.inId).join("")
 	metaId = this.constraints.map((constraint) => constraint.inId).join("")
 
-	protected constructor(schema: PredicateSchema) {
+	protected constructor(schema: IntersectionSchema) {
 		super(schema)
 	}
 
 	branches = [this]
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], PredicateInput>) =>
-			new PredicateNode(input as never) as parsePredicate<typeof input>
+		f = (input: conform<this[Hkt.key], IntersectionInput>) =>
+			new IntersectionNode(input as never) as parseIntersection<typeof input>
 	})()
 
-	static from = <basis extends BasisInput>(input: PredicateInput<basis>) =>
-		new PredicateNode<parseBasis<basis>["infer"]>({} as never)
+	static from = <basis extends BasisInput>(input: IntersectionInput<basis>) =>
+		new IntersectionNode<parseBasis<basis>["infer"]>({} as never)
 
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"
