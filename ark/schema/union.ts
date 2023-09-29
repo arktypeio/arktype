@@ -1,3 +1,4 @@
+import type { BasisInput } from "./constraints/basis.js"
 import type { ConstraintNode } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import type { IntersectionInput, IntersectionNode } from "./intersection.js"
@@ -11,14 +12,14 @@ export interface TypeSchema extends BaseAttributes {
 
 export type BranchNode = IntersectionNode | MorphNode | ConstraintNode
 
-// TODO: improve this
-export interface TypeInput extends BaseAttributes {
-	branches: UnionInput
+export interface UnionInput extends BaseAttributes {
+	branches: readonly BranchInput[]
 }
 
-export type BranchInput = IntersectionInput | MorphInput
-
-export type UnionInput = readonly BranchInput[]
+export type BranchInput<
+	t extends BasisInput = BasisInput,
+	u extends BasisInput = BasisInput
+> = IntersectionInput<t> | MorphInput<t, u>
 
 export class UnionNode<t = unknown> extends TypeNode<t, TypeSchema> {
 	readonly kind = "union"

@@ -63,10 +63,10 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 > {
 	readonly kind = "intersection"
 
-	inId = this.constraints.map((constraint) => constraint.inId).join("")
-	outId = this.constraints.map((constraint) => constraint.outId).join("")
-	typeId = this.constraints.map((constraint) => constraint.inId).join("")
-	metaId = this.constraints.map((constraint) => constraint.inId).join("")
+	inId = this.constraints.map((constraint) => constraint.inId).join("&")
+	outId = this.constraints.map((constraint) => constraint.outId).join("&")
+	typeId = this.constraints.map((constraint) => constraint.typeId).join("&")
+	metaId = this.constraints.map((constraint) => constraint.metaId).join("&")
 
 	protected constructor(schema: IntersectionSchema) {
 		super(schema)

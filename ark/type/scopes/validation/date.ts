@@ -95,8 +95,8 @@ export const tryParseDatePattern = (
 }
 
 export const parsedDate = node({
-	basis: "string",
-	morph: (s, state) => {
+	in: "string",
+	morphs: (s, state) => {
 		const result = tryParseDatePattern(s)
 		return typeof result === "string"
 			? // TODO: Fix

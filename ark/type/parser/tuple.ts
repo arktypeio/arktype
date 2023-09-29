@@ -1,14 +1,13 @@
-import {
-	builtins,
-	type CheckResult,
-	type inferNarrow,
-	type IntersectionAttributes,
-	type Morph,
-	type Narrow,
-	node,
-	type Problem,
-	type TypeNode
+import type {
+	BaseAttributes,
+	CheckResult,
+	inferNarrow,
+	Morph,
+	Narrow,
+	Problem,
+	TypeNode
 } from "@arktype/schema"
+import { builtins, node } from "@arktype/schema"
 import type {
 	AbstractableConstructor,
 	BuiltinObjectKind,
@@ -322,7 +321,7 @@ export type validateInfixExpression<
 				: def[1] extends "=>"
 				? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
 				: def[1] extends "@"
-				? IntersectionAttributes | string
+				? BaseAttributes | string
 				: validateDefinition<def[2], $, args>
 	  ]
 

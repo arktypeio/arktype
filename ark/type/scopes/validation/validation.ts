@@ -19,9 +19,11 @@ const parsedNumber = node({
 })
 
 const parsedInteger = node({
-	basis: "string",
-	pattern: wellFormedIntegerMatcher,
-	morph: (s: string, problems) => {
+	in: {
+		basis: "string",
+		pattern: wellFormedIntegerMatcher
+	},
+	morphs: (s: string, problems) => {
 		// if (!isWellFormedInteger(s)) {
 		// 	return problems.mustBe("a well-formed integer string")
 		// }
@@ -48,8 +50,8 @@ const url = node({
 })
 
 const parsedUrl = node({
-	basis: "string",
-	morph: (s: string, state) => {
+	in: "string",
+	morphs: (s: string, state) => {
 		try {
 			return new URL(s)
 		} catch {

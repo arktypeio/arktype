@@ -1,9 +1,9 @@
 import type {
+	BaseAttributes,
 	CheckResult,
 	inferNarrow,
 	Morph,
 	Narrow,
-	IntersectionAttributes,
 	TypeNode
 } from "@arktype/schema"
 import {
@@ -68,7 +68,7 @@ export type TypeParser<$> = {
 				? // TODO: centralize
 				  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
 				: one extends "@"
-				? [string | IntersectionAttributes]
+				? [string | BaseAttributes]
 				: [validateTypeRoot<rest[0], $>]
 			: []
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>

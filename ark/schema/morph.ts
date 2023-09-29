@@ -1,3 +1,5 @@
+import type { listable } from "@arktype/util"
+import type { BasisInput } from "./constraints/basis.js"
 import type { IntersectionInput, IntersectionNode } from "./intersection.js"
 import { compileSerializedValue } from "./io/compile.js"
 import type { TraversalState } from "./io/traverse.js"
@@ -12,10 +14,13 @@ export type MorphSchema = BaseAttributes & {
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export type MorphInput = BaseAttributes & {
-	in?: IntersectionInput
-	out?: IntersectionInput
-	morphs: readonly Morph[]
+export type MorphInput<
+	i extends BasisInput = BasisInput,
+	o extends BasisInput = BasisInput
+> = BaseAttributes & {
+	in?: IntersectionInput<i>
+	out?: IntersectionInput<o>
+	morphs: listable<Morph>
 }
 
 export class MorphNode<t = unknown> extends TypeNode<t, MorphSchema> {

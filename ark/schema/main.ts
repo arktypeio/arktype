@@ -1,6 +1,7 @@
 export * from "./type.js"
 export * from "./utils.js"
 export * from "./union.js"
+export * from "./morph.js"
 export * from "./intersection.js"
 export * from "./node.js"
 export * from "./constraints/narrow.js"
