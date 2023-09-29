@@ -41,7 +41,7 @@ type UnitsNodeParser = {
 	): TypeNode<branches[number]>
 }
 
-const from = ((...branches: never[]) =>
+const from = ((...branches: BranchInput[]) =>
 	new (UnionNode as any)(branches)) as {} as NodeParser
 
 const fromUnits = ((...branches: never[]) =>
