@@ -1,4 +1,10 @@
-import type { extend, Hkt } from "@arktype/util"
+import type {
+	AbstractableConstructor,
+	Dict,
+	extend,
+	Hkt,
+	satisfy
+} from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
@@ -42,7 +48,16 @@ export abstract class TypeNode<
 	abstract inId: string
 	abstract outId: string
 	abstract typeId: string
-	abstract metaId: string
+	metaId = this.writeMetaId()
+
+	private writeMetaId() {
+		return JSON.stringify({
+			type: this.typeId,
+			description: this.description,
+			alias: this.alias
+		})
+	}
+
 	abstract writeDefaultDescription(): string
 	abstract branches: readonly BranchNode[]
 	declare children: TypeNode[]
@@ -59,7 +74,8 @@ export abstract class TypeNode<
 	}
 
 	extractUnit(): UnitNode | undefined {
-		return this.branches.length === 1 && this.branches[0].kind === "predicate"
+		return this.branches.length === 1 &&
+			this.branches[0].kind === "intersection"
 			? this.branches[0].extractUnit()
 			: undefined
 	}
@@ -105,7 +121,7 @@ export abstract class TypeNode<
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {
-		return this.hasKind("predicate") ? this.constraints.length === 0 : false
+		return this.hasKind("intersection") ? this.constraints.length === 0 : false
 	}
 
 	isNever(): this is UnionNode<never> {
@@ -135,7 +151,7 @@ type intersectNodeKinds<l extends NodeKind, r extends NodeKind> = [
 	? NodeKind
 	: "morph" extends l | r
 	? "morph"
-	: "predicate" | ((l | r) & ConstraintKind)
+	: "intersection" | ((l | r) & ConstraintKind)
 
 export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
 
@@ -147,32 +163,45 @@ export type parseNode<
 	parameters extends Parameters<node["hkt"]["f"]>[0]
 > = Hkt.apply<node["hkt"], parameters>
 
-export type inputOf<kind extends NodeKind> = extend<
-	ConstraintInputsByKind,
+export type CompositeInputsByKind = satisfy<
+	Dict<CompositeKind>,
 	{
 		union: UnionInput
-		predicate: IntersectionInput
+		intersection: IntersectionInput
 		morph: MorphInput
 	}
->[kind]
+>
+
+export type NodeInputsByKind = extend<
+	CompositeInputsByKind,
+	ConstraintInputsByKind
+>
+
+export type inputOf<kind extends NodeKind> = NodeInputsByKind[kind]
+
+export type CompositeClassesByKind = satisfy<
+	Dict<CompositeKind>,
+	{
+		union: typeof UnionNode
+		morph: typeof MorphNode
+		intersection: typeof IntersectionNode
+	}
+>
 
 export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,
-	{
-		union: typeof UnionNode
-		predicate: typeof IntersectionNode
-		morph: typeof MorphNode
-	}
+	CompositeClassesByKind
 >
 
-export type NodesByKind = extend<
-	ConstraintsByKind,
-	{
-		union: UnionNode
-		predicate: IntersectionNode
-		morph: MorphNode
-	}
->
+export type CompositeNodesByKind = {
+	union: UnionNode
+	intersection: IntersectionNode
+	morph: MorphNode
+}
+
+export type CompositeKind = keyof CompositeNodesByKind
+
+export type NodesByKind = extend<ConstraintsByKind, CompositeNodesByKind>
 
 export type NodeKind = keyof NodesByKind
 

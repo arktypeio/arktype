@@ -25,10 +25,10 @@ export class UnionNode<t = unknown> extends TypeNode<t, TypeSchema> {
 
 	branches = this.schema.branches
 
-	inId = ""
-	outId = ""
-	typeId = ""
-	metaId = ""
+	inId = this.branches.map((constraint) => constraint.inId).join("|")
+	outId = this.branches.map((constraint) => constraint.outId).join("|")
+	typeId = this.branches.map((constraint) => constraint.typeId).join("|")
+	metaId = this.branches.map((constraint) => constraint.metaId).join("|")
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")

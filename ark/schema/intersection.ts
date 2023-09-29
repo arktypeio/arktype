@@ -1,4 +1,4 @@
-import type { conform, listable } from "@arktype/util"
+import type { conform } from "@arktype/util"
 import { Hkt, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
@@ -9,7 +9,6 @@ import type {
 import type { ConstraintNode } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
-import type { TraversalState } from "./io/traverse.js"
 import type { BaseAttributes, inputOf, parseNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
@@ -45,18 +44,11 @@ type refinementInputsOf<basis> = {
 	[k in refinementKindOf<basis>]?: inputOf<k>
 }
 
-export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
-
-export interface IntersectionAttributes extends BaseAttributes {
-	morph?: listable<Morph>
-}
-
 export type IntersectionInput<basis extends BasisInput = BasisInput> =
 	| basis
 	| Record<PropertyKey, never>
-	| ({ narrow?: inputOf<"narrow"> } & IntersectionAttributes)
-	| ({ basis: basis } & refinementInputsOf<parseBasis<basis>> &
-			IntersectionAttributes)
+	| ({ narrow?: inputOf<"narrow"> } & BaseAttributes)
+	| ({ basis: basis } & refinementInputsOf<parseBasis<basis>> & BaseAttributes)
 
 export type parseIntersection<input extends IntersectionInput> =
 	input extends IntersectionInput<infer basis>
@@ -69,7 +61,7 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 	t,
 	IntersectionSchema
 > {
-	readonly kind = "predicate"
+	readonly kind = "intersection"
 
 	inId = this.constraints.map((constraint) => constraint.inId).join("")
 	outId = this.constraints.map((constraint) => constraint.outId).join("")

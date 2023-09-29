@@ -32,22 +32,8 @@ export class MorphNode<t = unknown> extends TypeNode<t, MorphSchema> {
 		out: this.out.typeId,
 		morphs: this.morphs.map((morph) => compileSerializedValue(morph))
 	})
-	metaId = this.writeMetaId()
 
 	branches = [this]
-
-	private writeMetaId() {
-		const base: Record<string, string> = {
-			type: this.typeId
-		}
-		if (this.schema.description) {
-			base.description = this.schema.description
-		}
-		if (this.schema.alias) {
-			base.alias = this.schema.alias
-		}
-		return JSON.stringify(base)
-	}
 
 	writeDefaultDescription() {
 		return ""
