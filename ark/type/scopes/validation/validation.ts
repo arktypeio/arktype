@@ -11,10 +11,14 @@ import { parsedDate } from "./date.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
+// Next goal: Ensure that unknown keys are not allowed
+
 const parsedNumber = node({
 	basis: "string",
 	pattern: wellFormedNumberMatcher,
 	morph: (s: string) => parseFloat(s),
+	// @ts-expect-error
+	david: "hmm",
 	description: "a well-formed numeric string"
 })
 
@@ -50,15 +54,17 @@ const url = node({
 })
 
 const parsedUrl = node({
-	in: "string",
+	in: {
+		basis: "string"
+	},
 	morphs: (s: string, state) => {
 		try {
 			return new URL(s)
 		} catch {
-			return state.mustBe("a valid url", s, state.basePath)
+			return state.mustBe("a valid URL", s, state.basePath)
 		}
 	},
-	description: "a valid url"
+	description: "a valid URL"
 })
 
 // https://www.regular-expressions.info/email.html

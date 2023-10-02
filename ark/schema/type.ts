@@ -1,10 +1,4 @@
-import type {
-	AbstractableConstructor,
-	Dict,
-	extend,
-	Hkt,
-	satisfy
-} from "@arktype/util"
+import type { Dict, extend, Hkt, satisfy } from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
@@ -109,7 +103,7 @@ export abstract class TypeNode<
 		if (resultBranches.length === 0) {
 			return Disjoint.from("union", this.branches, other.branches)
 		}
-		return node(...resultBranches) as never
+		return node(...(resultBranches as any)) as never
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {

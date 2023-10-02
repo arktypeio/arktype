@@ -17,9 +17,9 @@ export interface UnionInput extends BaseAttributes {
 }
 
 export type BranchInput<
-	t extends BasisInput = BasisInput,
-	u extends BasisInput = BasisInput
-> = IntersectionInput<t> | MorphInput<t, u>
+	basis extends BasisInput = BasisInput,
+	outBasis extends BasisInput = BasisInput
+> = IntersectionInput<basis> | MorphInput<basis, outBasis>
 
 export class UnionNode<t = unknown> extends TypeNode<t, TypeSchema> {
 	readonly kind = "union"

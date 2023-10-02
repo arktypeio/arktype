@@ -11,12 +11,11 @@ type NodeParser = {
 		...branches: {
 			[i in keyof branches]: conform<
 				branches[i],
-				branches[i] extends BranchInput<infer t, infer u>
-					? BranchInput<t, u>
+				branches[i] extends BranchInput<infer basis, infer outBasis>
+					? BranchInput<basis, outBasis>
 					: BranchInput
 			>
 		}
-		// TODO: add morph nodes
 	): TypeNode<
 		{
 			[i in keyof branches]: parseBranch<branches[i]>
@@ -25,14 +24,17 @@ type NodeParser = {
 }
 
 type parseBranch<branch> = branch extends IntersectionInput
-	? parseNode<
-			typeof IntersectionNode,
-			conform<branch, IntersectionInput>
-	  > extends IntersectionNode<infer t>
+	? parseIntersection<branch>
+	: branch extends MorphInput
+	? (
+			In: parseIntersection<branch["in"]>
+	  ) => Out<parseIntersection<branch["out"]>>
+	: unknown
+
+type parseIntersection<input> = input extends IntersectionInput
+	? parseNode<typeof IntersectionNode, input> extends IntersectionNode<infer t>
 		? t
 		: unknown
-	: branch extends MorphInput
-	? (In: parseBranch<branch["in"]>) => Out<parseBranch<branch["out"]>>
 	: unknown
 
 type UnitsNodeParser = {

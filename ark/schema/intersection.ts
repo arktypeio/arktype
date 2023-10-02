@@ -47,7 +47,7 @@ type refinementInputsOf<basis> = {
 export type IntersectionInput<basis extends BasisInput = BasisInput> =
 	| basis
 	| Record<PropertyKey, never>
-	| ({ narrow?: inputOf<"narrow"> } & BaseAttributes)
+	| ({ narrow: inputOf<"narrow"> } & BaseAttributes)
 	| ({ basis: basis } & refinementInputsOf<parseBasis<basis>> & BaseAttributes)
 
 export type parseIntersection<input extends IntersectionInput> =
