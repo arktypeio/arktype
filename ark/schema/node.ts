@@ -30,7 +30,7 @@ type validateBranchInput<input> = conform<
 >
 
 type parseBranch<branch> = branch extends IntersectionInput
-	? parseIntersection<branch>
+	? parseIntersection<branch>["infer"]
 	: branch extends MorphInput
 	? (
 			In: parseIntersection<branch["in"]>

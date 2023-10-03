@@ -2,9 +2,18 @@ import type {
 	AbstractableConstructor,
 	exactMessageOnError
 } from "@arktype/util"
-import type { DomainInput, DomainNode, NonEnumerableDomain } from "./domain.js"
-import type { PrototypeInput, PrototypeNode } from "./prototype.js"
-import type { UnitInput, UnitNode } from "./unit.js"
+import type {
+	DomainInput,
+	DomainNode,
+	DomainSchema,
+	NonEnumerableDomain
+} from "./domain.js"
+import type {
+	PrototypeInput,
+	PrototypeNode,
+	PrototypeSchema
+} from "./prototype.js"
+import type { UnitInput, UnitNode, UnitSchema } from "./unit.js"
 
 export type BasisClassesByKind = {
 	domain: typeof DomainNode
@@ -35,7 +44,14 @@ export type validateBasisInput<basis extends BasisInput> = basis extends
 	| NonEnumerableDomain
 	| AbstractableConstructor
 	? basis
-	: exactMessageOnError<basis, BasisInput>
+	: exactMessageOnError<
+			basis,
+			basis extends UnitSchema
+				? UnitSchema
+				: basis extends PrototypeSchema
+				? PrototypeSchema
+				: DomainSchema
+	  >
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

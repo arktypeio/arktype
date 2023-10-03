@@ -98,9 +98,11 @@ const semver = node({
 })
 
 const json = node({
-	basis: "string",
-	morphs: (s: string) => JSON.parse(s),
-	description: "a JSON-parsable string"
+	in: {
+		basis: "string",
+		description: "a JSON-parsable string"
+	},
+	morphs: (s: string) => JSON.parse(s)
 })
 
 export interface InferredValidation {
