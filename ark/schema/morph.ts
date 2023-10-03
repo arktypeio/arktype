@@ -14,12 +14,9 @@ export type MorphSchema = BaseAttributes & {
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export type MorphInput<
-	i extends BasisInput = BasisInput,
-	o extends BasisInput = BasisInput
-> = BaseAttributes & {
-	in?: IntersectionInput<i>
-	out?: IntersectionInput<o>
+export type MorphInput = BaseAttributes & {
+	in?: IntersectionInput
+	out?: IntersectionInput
 	morphs: listable<Morph>
 }
 

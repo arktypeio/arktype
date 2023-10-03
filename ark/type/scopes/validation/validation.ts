@@ -16,9 +16,8 @@ import { parsedDate } from "./date.js"
 const parsedNumber = node({
 	basis: "string",
 	pattern: wellFormedNumberMatcher,
-	morph: (s: string) => parseFloat(s),
-	// @ts-expect-error
-	david: "hmm",
+	divisor: 5,
+	// morph: (s: string) => parseFloat(s),
 	description: "a well-formed numeric string"
 })
 

@@ -1,3 +1,5 @@
+import type { ErrorMessage } from "./errors.js"
+
 export type Stringifiable =
 	| string
 	| boolean
@@ -15,6 +17,12 @@ export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
 export type exact<t, u> = {
 	[k in keyof t]: k extends keyof u ? t[k] : never
+}
+
+export type exactMessageOnError<t, u> = {
+	[k in keyof t]: k extends keyof u
+		? t[k]
+		: ErrorMessage<`'${k & string}' is not a valid key`>
 }
 
 export type defer<t> = [t][t extends any ? 0 : never]

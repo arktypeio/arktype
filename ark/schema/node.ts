@@ -1,6 +1,10 @@
 import type { conform } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
-import type { IntersectionInput, IntersectionNode } from "./intersection.js"
+import type {
+	extractBranchInput,
+	IntersectionInput,
+	IntersectionNode
+} from "./intersection.js"
 import type { MorphInput } from "./morph.js"
 import type { parseNode, TypeNode } from "./type.js"
 import type { BranchInput } from "./union.js"
@@ -11,9 +15,7 @@ type NodeParser = {
 		...branches: {
 			[i in keyof branches]: conform<
 				branches[i],
-				branches[i] extends BranchInput<infer basis, infer outBasis>
-					? BranchInput<basis, outBasis>
-					: BranchInput
+				extractBranchInput<branches[i]>
 			>
 		}
 	): TypeNode<
