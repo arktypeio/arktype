@@ -5,7 +5,7 @@ import type {
 	listable
 } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
-import type { BasisInput } from "./constraints/basis.js"
+import type { BasisInput, validateBasisInput } from "./constraints/basis.js"
 import type {
 	BasisedBranchInput,
 	IntersectionInput,
@@ -54,7 +54,7 @@ type validateMorphInput<input> = {
 }
 
 type validateIntersectionInput<input> = input extends BasisInput
-	? exactMessageOnError<input, BasisInput>
+	? validateBasisInput<input>
 	: input extends BasisedBranchInput<infer basis>
 	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
 	: input extends NarrowedBranchInput
