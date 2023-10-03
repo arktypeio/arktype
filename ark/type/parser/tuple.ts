@@ -1,10 +1,9 @@
 import type {
 	BaseAttributes,
-	CheckResult,
+	inferMorphOut,
 	inferNarrow,
 	Morph,
 	Narrow,
-	Problem,
 	TypeNode
 } from "@arktype/schema"
 import { builtins, node } from "@arktype/schema"
@@ -398,13 +397,6 @@ export type parseMorph<inDef, morph, $, args> = morph extends Morph
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export type Out<o = any> = ["=>", o]
-
-export type inferMorphOut<out> = out extends CheckResult<infer t>
-	? out extends null
-		? // avoid treating any/never as CheckResult
-		  out
-		: t
-	: Exclude<out, Problem>
 
 export const writeMalformedFunctionalExpressionMessage = (
 	operator: FunctionalTupleOperator,

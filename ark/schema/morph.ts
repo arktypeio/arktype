@@ -1,6 +1,5 @@
 import type { listable } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
-import type { BasisInput } from "./constraints/basis.js"
 import type {
 	IntersectionInput,
 	IntersectionNode,
@@ -8,7 +7,8 @@ import type {
 	validateIntersectionInput
 } from "./intersection.js"
 import { compileSerializedValue } from "./io/compile.js"
-import type { TraversalState } from "./io/traverse.js"
+import type { Problem } from "./io/problems.js"
+import type { CheckResult, TraversalState } from "./io/traverse.js"
 import type { BaseAttributes } from "./type.js"
 import { TypeNode } from "./type.js"
 
@@ -25,6 +25,13 @@ export type MorphInput = BaseAttributes & {
 	out?: IntersectionInput
 	morphs: listable<Morph>
 }
+
+export type inferMorphOut<out> = out extends CheckResult<infer t>
+	? out extends null
+		? // avoid treating any/never as CheckResult
+		  out
+		: t
+	: Exclude<out, Problem>
 
 export class MorphNode<i = any, o = unknown> extends TypeNode<
 	(In: i) => Out<o>,
@@ -66,13 +73,10 @@ export type parseMorph<input> = input extends MorphInput
 				: unknown,
 			input["out"] extends {}
 				? parseIntersection<input["out"]>["infer"]
-				: input["morphs"] extends Morph<any, infer o>
-				? o
-				: input["morphs"] extends readonly [
-						...unknown[],
-						infer tail extends Morph
-				  ]
-				? ReturnType<tail>
+				: input["morphs"] extends
+						| Morph<any, infer o>
+						| readonly [...unknown[], Morph<any, infer o>]
+				? inferMorphOut<o>
 				: never
 	  >
 	: never

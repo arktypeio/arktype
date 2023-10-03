@@ -1,6 +1,7 @@
 import type {
 	BaseAttributes,
 	CheckResult,
+	inferMorphOut,
 	inferNarrow,
 	Morph,
 	Narrow,
@@ -19,7 +20,6 @@ import type {
 	BuiltinObjectKind,
 	BuiltinObjects,
 	conform,
-	DynamicBase,
 	Primitive
 } from "@arktype/util"
 import { CompiledFunction, transform } from "@arktype/util"
@@ -34,7 +34,6 @@ import type { inferIntersection } from "./parser/semantic/intersections.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
-	inferMorphOut,
 	MorphAst,
 	Out,
 	TupleInfixOperator

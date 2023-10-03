@@ -23,6 +23,10 @@ const parsedNumber = node({
 })
 
 const parsedInteger = node({
+	in: {
+		basis: "string",
+		pattern: wellFormedIntegerMatcher
+	},
 	morphs: (s: string, problems) => {
 		// if (!isWellFormedInteger(s)) {
 		// 	return problems.mustBe("a well-formed integer string")
@@ -33,10 +37,6 @@ const parsedInteger = node({
 		// 	: problems.mustBe(
 		// 			"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
 		// 	  )
-	},
-	in: {
-		basis: "string",
-		pattern: wellFormedIntegerMatcher
 	}
 })
 
