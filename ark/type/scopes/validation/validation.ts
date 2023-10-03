@@ -11,8 +11,6 @@ import { parsedDate } from "./date.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
-// Next goal: Ensure that unknown keys are not allowed
-
 const parsedNumber = node({
 	in: {
 		basis: "string",
@@ -80,7 +78,6 @@ const uuidMatcher =
 	/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-// "a valid UUID"
 const uuid = node({
 	basis: "string",
 	pattern: uuidMatcher,
