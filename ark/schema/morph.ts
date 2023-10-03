@@ -1,8 +1,10 @@
 import type { listable } from "@arktype/util"
+import type { Out } from "arktype/internal/parser/tuple.js"
 import type { BasisInput } from "./constraints/basis.js"
 import type {
 	IntersectionInput,
 	IntersectionNode,
+	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
 import { compileSerializedValue } from "./io/compile.js"
@@ -24,7 +26,10 @@ export type MorphInput = BaseAttributes & {
 	morphs: listable<Morph>
 }
 
-export class MorphNode<t = unknown> extends TypeNode<t, MorphSchema> {
+export class MorphNode<i = any, o = unknown> extends TypeNode<
+	(In: i) => Out<o>,
+	MorphSchema
+> {
 	readonly kind = "morph"
 
 	protected constructor(schema: MorphSchema) {
@@ -53,3 +58,21 @@ export type validateMorphInput<input> = {
 		? MorphInput[k]
 		: `'${k & string}' is not a valid morph schema key`
 }
+
+export type parseMorph<input> = input extends MorphInput
+	? MorphNode<
+			input["in"] extends {}
+				? parseIntersection<input["in"]>["infer"]
+				: unknown,
+			input["out"] extends {}
+				? parseIntersection<input["out"]>["infer"]
+				: input["morphs"] extends Morph<any, infer o>
+				? o
+				: input["morphs"] extends readonly [
+						...unknown[],
+						infer tail extends Morph
+				  ]
+				? ReturnType<tail>
+				: never
+	  >
+	: never

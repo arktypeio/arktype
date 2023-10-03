@@ -1,11 +1,11 @@
 import type { conform } from "@arktype/util"
-import type { Out } from "arktype/internal/parser/tuple.js"
 import type {
 	IntersectionInput,
+	IntersectionNode,
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import type { MorphInput, validateMorphInput } from "./morph.js"
+import type { MorphInput, parseMorph, validateMorphInput } from "./morph.js"
 import type { TypeNode } from "./type.js"
 import type { BranchInput } from "./union.js"
 import { UnionNode } from "./union.js"
@@ -17,7 +17,7 @@ type NodeParser = {
 		}
 	): TypeNode<
 		{
-			[i in keyof branches]: parseBranch<branches[i]>
+			[i in keyof branches]: parseBranch<branches[i]>["infer"]
 		}[number]
 	>
 }
@@ -29,13 +29,11 @@ type validateBranchInput<input> = conform<
 		: validateIntersectionInput<input>
 >
 
-type parseBranch<branch> = branch extends IntersectionInput
-	? parseIntersection<branch>["infer"]
-	: branch extends MorphInput
-	? (
-			In: parseIntersection<branch["in"]>
-	  ) => Out<parseIntersection<branch["out"]>>
-	: unknown
+type parseBranch<branch> = branch extends MorphInput
+	? parseMorph<branch>
+	: branch extends IntersectionInput
+	? parseIntersection<branch>
+	: IntersectionNode
 
 type UnitsNodeParser = {
 	<const branches extends readonly unknown[]>(
