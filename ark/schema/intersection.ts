@@ -49,37 +49,17 @@ type refinementInputsOf<basis> = {
 	[k in refinementKindOf<basis>]?: inputOf<k>
 }
 
-type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
-	[k in keyof branch]: k extends keyof expected
-		? branch[k]
-		: ErrorMessage<`'${k &
-				string}' is not allowed by ${branch["basis"] extends string
-				? `basis '${branch["basis"]}'`
-				: `this schema's basis`}`>
-}
-
-export type extractBranchInput<branch> = branch extends BasisInput
-	? exactMessageOnError<branch, BasisInput>
-	: branch extends UnknownBranchInput
-	? {}
-	: branch extends NarrowedBranchInput
-	? exactMessageOnError<branch, NarrowedBranchInput>
-	: branch extends BasisedBranchInput<infer basis>
-	? exactBasisMessageOnError<branch, BasisedBranchInput<basis>>
-	: IntersectionInput
-
-type BasisedBranchInput<basis extends BasisInput = BasisInput> = {
+export type BasisedBranchInput<basis extends BasisInput = BasisInput> = {
 	basis: basis
 } & refinementInputsOf<parseBasis<basis>> &
 	BaseAttributes
 
-type UnknownBranchInput = Record<PropertyKey, never>
-
-type NarrowedBranchInput = { narrow: inputOf<"narrow"> } & BaseAttributes
+export type NarrowedBranchInput = {
+	narrow?: inputOf<"narrow">
+} & BaseAttributes
 
 export type IntersectionInput<basis extends BasisInput = BasisInput> =
 	| basis
-	| UnknownBranchInput
 	| NarrowedBranchInput
 	| BasisedBranchInput<basis>
 

@@ -14,18 +14,15 @@ import { parsedDate } from "./date.js"
 // Next goal: Ensure that unknown keys are not allowed
 
 const parsedNumber = node({
-	basis: "string",
-	pattern: wellFormedNumberMatcher,
-	divisor: 5,
-	// morph: (s: string) => parseFloat(s),
-	description: "a well-formed numeric string"
+	in: {
+		basis: "string",
+		pattern: wellFormedNumberMatcher,
+		description: "a well-formed numeric string"
+	},
+	morphs: (s: string) => parseFloat(s)
 })
 
 const parsedInteger = node({
-	in: {
-		basis: "string",
-		pattern: wellFormedIntegerMatcher
-	},
 	morphs: (s: string, problems) => {
 		// if (!isWellFormedInteger(s)) {
 		// 	return problems.mustBe("a well-formed integer string")
@@ -36,6 +33,10 @@ const parsedInteger = node({
 		// 	: problems.mustBe(
 		// 			"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
 		// 	  )
+	},
+	in: {
+		basis: "string",
+		pattern: wellFormedIntegerMatcher
 	}
 })
 
