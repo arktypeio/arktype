@@ -99,7 +99,7 @@ const semver = node({
 
 const json = node({
 	basis: "string",
-	morph: (s: string) => JSON.parse(s),
+	morphs: (s: string) => JSON.parse(s),
 	description: "a JSON-parsable string"
 })
 

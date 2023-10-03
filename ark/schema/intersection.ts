@@ -1,19 +1,16 @@
-import type {
-	conform,
-	ErrorMessage,
-	exact,
-	exactMessageOnError
-} from "@arktype/util"
+import type { conform, ErrorMessage, exactMessageOnError } from "@arktype/util"
 import { Hkt, throwInternalError } from "@arktype/util"
 import type {
 	Basis,
 	BasisClassesByKind,
 	BasisInput,
-	BasisKind
+	BasisKind,
+	validateBasisInput
 } from "./constraints/basis.js"
 import type { ConstraintNode } from "./constraints/constraint.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
+import type { MorphInput } from "./morph.js"
 import type { BaseAttributes, inputOf, parseNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
@@ -32,8 +29,8 @@ type parseBasis<input extends BasisInput> = conform<
 
 type basisOf<k extends RefinementKind> =
 	Refinement<k>["applicableTo"] extends ((
-		_: Basis
-	) => _ is infer basis extends Basis)
+		_: Basis | undefined
+	) => _ is infer basis extends Basis | undefined)
 		? basis
 		: never
 
@@ -63,12 +60,30 @@ export type IntersectionInput<basis extends BasisInput = BasisInput> =
 	| NarrowedBranchInput
 	| BasisedBranchInput<basis>
 
-export type parseIntersection<input extends IntersectionInput> =
-	input extends IntersectionInput<infer basis>
-		? IntersectionNode<
-				BasisInput extends basis ? unknown : parseBasis<basis>["infer"]
-		  >
-		: never
+export type parseIntersection<input> = input extends IntersectionInput<
+	infer basis
+>
+	? IntersectionNode<
+			BasisInput extends basis ? unknown : parseBasis<basis>["infer"]
+	  >
+	: never
+
+type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
+	[k in keyof branch]: k extends keyof expected
+		? branch[k]
+		: ErrorMessage<`'${k &
+				string}' is not allowed by ${branch["basis"] extends string
+				? `basis '${branch["basis"]}'`
+				: `this schema's basis`}`>
+}
+
+export type validateIntersectionInput<input> = input extends BasisInput
+	? validateBasisInput<input>
+	: input extends BasisedBranchInput<infer basis>
+	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
+	: input extends NarrowedBranchInput
+	? exactMessageOnError<input, NarrowedBranchInput>
+	: IntersectionInput | MorphInput
 
 export class IntersectionNode<t = unknown> extends TypeNode<
 	t,
@@ -93,7 +108,7 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 	})()
 
 	static from = <basis extends BasisInput>(input: IntersectionInput<basis>) =>
-		new IntersectionNode<parseBasis<basis>["infer"]>({} as never)
+		new IntersectionNode({} as never) as parseIntersection<basis>
 
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"

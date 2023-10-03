@@ -1,6 +1,10 @@
 import type { listable } from "@arktype/util"
 import type { BasisInput } from "./constraints/basis.js"
-import type { IntersectionInput, IntersectionNode } from "./intersection.js"
+import type {
+	IntersectionInput,
+	IntersectionNode,
+	validateIntersectionInput
+} from "./intersection.js"
 import { compileSerializedValue } from "./io/compile.js"
 import type { TraversalState } from "./io/traverse.js"
 import type { BaseAttributes } from "./type.js"
@@ -40,4 +44,12 @@ export class MorphNode<t = unknown> extends TypeNode<t, MorphSchema> {
 	writeDefaultDescription() {
 		return ""
 	}
+}
+
+export type validateMorphInput<input> = {
+	[k in keyof input]: k extends "in" | "out"
+		? validateIntersectionInput<input[k]>
+		: k extends keyof MorphInput
+		? MorphInput[k]
+		: `'${k & string}' is not a valid morph schema key`
 }
