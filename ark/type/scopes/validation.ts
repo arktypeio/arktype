@@ -1,42 +1,9 @@
 import { node } from "@arktype/schema"
-import {
-	wellFormedIntegerMatcher,
-	wellFormedNumberMatcher
-} from "@arktype/util"
-import type { Out } from "../../parser/tuple.js"
-import { Scope } from "../../scope.js"
-import type { RootScope } from "../ark.js"
-import { creditCard } from "./creditCard.js"
-import { parsedDate } from "./date.js"
+import { Scope } from "../scope.js"
+import type { RootScope } from "./ark.js"
+import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
-
-const parsedNumber = node({
-	in: {
-		basis: "string",
-		pattern: wellFormedNumberMatcher,
-		description: "a well-formed numeric string"
-	},
-	morphs: (s: string) => parseFloat(s)
-})
-
-const parsedInteger = node({
-	in: {
-		basis: "string",
-		pattern: wellFormedIntegerMatcher
-	},
-	morphs: (s: string, problems) => {
-		// if (!isWellFormedInteger(s)) {
-		// 	return problems.mustBe("a well-formed integer string")
-		// }
-		// const parsed = parseInt(s)
-		// return Number.isSafeInteger(parsed)
-		// 	? parsed
-		// 	: problems.mustBe(
-		// 			"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
-		// 	  )
-	}
-})
 
 const url = node({
 	basis: "string",
@@ -47,20 +14,6 @@ const url = node({
 			return false
 		}
 		return true
-	},
-	description: "a valid URL"
-})
-
-const parsedUrl = node({
-	in: {
-		basis: "string"
-	},
-	morphs: (s: string, state) => {
-		try {
-			return new URL(s)
-		} catch {
-			return state.mustBe("a valid URL", s, state.basePath)
-		}
 	},
 	description: "a valid URL"
 })
@@ -94,14 +47,6 @@ const semver = node({
 	description: "a valid semantic version (see https://semver.org/)"
 })
 
-const json = node({
-	in: {
-		basis: "string",
-		description: "a JSON-parsable string"
-	},
-	morphs: (s: string) => JSON.parse(s)
-})
-
 export interface InferredValidation {
 	alpha: string
 	alphanumeric: string
@@ -111,12 +56,7 @@ export interface InferredValidation {
 	email: string
 	uuid: string
 	url: string
-	parsedUrl: (In: string) => Out<URL>
-	parsedNumber: (In: string) => Out<number>
-	parsedInteger: (In: string) => Out<number>
-	parsedDate: (In: string) => Out<Date>
 	semver: string
-	json: (In: string) => Out<unknown>
 	integer: number
 }
 
@@ -130,18 +70,12 @@ export const validation: RootScope<InferredValidation> = Scope.root({
 	email,
 	uuid,
 	url,
-	parsedUrl,
-	parsedNumber,
-	parsedInteger,
-	parsedDate,
 	semver,
-	json,
 	integer: node({
 		basis: "number",
 		divisor: 1,
 		description: "an integer"
 	})
-	// TODO: fix inference
-}) as never
+})
 
-export const validationTypes = validation.export()
+export const validationModule = validation.export()

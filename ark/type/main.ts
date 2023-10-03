@@ -14,6 +14,6 @@ export {
 export { jsObjects } from "./scopes/jsObjects.js"
 export { tsGenerics } from "./scopes/tsGenerics.js"
 export { tsKeywords } from "./scopes/tsKeywords.js"
-export { validation } from "./scopes/validation/validation.js"
+export { validation } from "./scopes/validation.js"
 export { Type } from "./type.js"
 export type { inferTypeRoot, validateTypeRoot } from "./type.js"

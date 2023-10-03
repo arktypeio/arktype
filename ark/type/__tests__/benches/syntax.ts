@@ -26,7 +26,7 @@ export const upcomingTsSyntax = type({
 
 export const validationSyntax = type({
 	keywords: "email|uuid|creditCard|integer", // and many more
-	builtinParsers: "parsedDate", // parses a Date from a string
+	builtinParsers: "parse.date", // parses a Date from a string
 	nativeRegexLiteral: /@arktype\.io/,
 	embeddedRegexLiteral: "email&/@arktype\\.io/",
 	divisibility: "number%10", // a multiple of 10

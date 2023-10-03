@@ -26,4 +26,4 @@ export const jsObjects: RootScope<InferredJsObjects> = Scope.root({
 	Promise: node(Promise)
 })
 
-export const jsObjectTypes = jsObjects.export()
+export const jsObjectsModule = jsObjects.export()

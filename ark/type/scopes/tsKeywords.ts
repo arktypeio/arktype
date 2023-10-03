@@ -36,4 +36,4 @@ export const tsKeywords: RootScope<InferredTsKeywords> = Scope.root({
 	undefined: node.units(undefined)
 })
 
-export const tsKeywordTypes = tsKeywords.export()
+export const tsKeywordsModule = tsKeywords.export()

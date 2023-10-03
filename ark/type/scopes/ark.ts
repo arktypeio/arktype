@@ -6,12 +6,14 @@ import type {
 	TypeParser
 } from "../type.js"
 import type { InferredJsObjects } from "./jsObjects.js"
-import { jsObjectTypes } from "./jsObjects.js"
-import { type InferredTsGenerics, tsGenericTypes } from "./tsGenerics.js"
+import { jsObjectsModule } from "./jsObjects.js"
+import type { InferredParsing, ParsingModule } from "./parsing.js"
+import { parsingModule } from "./parsing.js"
+import { type InferredTsGenerics, tsGenericsModule } from "./tsGenerics.js"
 import type { InferredTsKeywords } from "./tsKeywords.js"
-import { tsKeywordTypes } from "./tsKeywords.js"
-import type { InferredValidation } from "./validation/validation.js"
-import { validationTypes } from "./validation/validation.js"
+import { tsKeywordsModule } from "./tsKeywords.js"
+import type { InferredValidation } from "./validation.js"
+import { validationModule } from "./validation.js"
 
 /** Root scopes can be inferred automatically from node definitions, but
  * explicitly typing them can improve responsiveness */
@@ -24,13 +26,14 @@ export type RootScope<exports> = Scope<{
 export type ArkResolutions = { exports: Ark; locals: {}; ambient: Ark }
 
 export const ark: Scope<ArkResolutions> = Scope.root({
-	...tsKeywordTypes,
-	...jsObjectTypes,
-	...validationTypes,
+	...tsKeywordsModule,
+	...jsObjectsModule,
+	...validationModule,
+	parse: parsingModule,
 	// again, unfortunately TS won't handle comparing generics well here, so we
 	// have to cast. that said, since each individual root scope is checked,
 	// this is low risk
-	...tsGenericTypes
+	...tsGenericsModule
 }).toAmbient() as never
 
 export const arktypes: Module<ArkResolutions> = ark.export()
@@ -41,7 +44,9 @@ export interface Ark
 	extends InferredTsKeywords,
 		InferredJsObjects,
 		InferredValidation,
-		InferredTsGenerics {}
+		InferredTsGenerics {
+	parse: ParsingModule
+}
 
 export const scope: ScopeParser<{}, Ark> = ark.scope as never
 

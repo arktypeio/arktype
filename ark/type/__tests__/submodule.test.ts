@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { node } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import type { Ark, Module, Scope } from "arktype"
 import { scope, type } from "arktype"

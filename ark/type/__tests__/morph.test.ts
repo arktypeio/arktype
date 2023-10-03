@@ -30,7 +30,7 @@ suite("morph", () => {
 		attest(result.data).equals(false).typed as boolean
 	})
 	test("chained to type", () => {
-		const t = type(["string>5", "=>", arktypes.parsedDate])
+		const t = type(["string>5", "=>", arktypes.parse.date])
 		attest(t).typed as Type<(In: string) => Out<Date>>
 		attest(t("5/21/1993").data?.getDate()).equals(21)
 		attest(t("foobar").problems?.summary).snap(

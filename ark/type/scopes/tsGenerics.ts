@@ -25,4 +25,4 @@ export const tsGenerics: RootScope<InferredTsGenerics> = Scope.root({
 	// careful to keep the inferred types in sync
 }) as never // satisfies RootScope<{ [k in keyof InferredTsGenerics]: any }> as never
 
-export const tsGenericTypes = tsGenerics.export()
+export const tsGenericsModule = tsGenerics.export()
