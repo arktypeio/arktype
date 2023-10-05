@@ -1,5 +1,6 @@
-import { attest } from "@arktype/attest"
+import { attest, } from "@arktype/attest"
 import { compose } from "@arktype/util"
+import { suite, test } from "mocha"
 
 abstract class Describable {
 	description: string

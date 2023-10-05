@@ -26,8 +26,7 @@
 	],
 	"typescript.preferences.importModuleSpecifierEnding": "js",
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
-	"typescript.tsdk": "node_modules/typescript/lib",
-	"prettier.ignorePath": "dev/.prettierignore",
+	"prettier.ignorePath": "ark/repo/.prettierignore",
 	"prettier.prettierPath": "./node_modules/prettier/index.cjs",
 	// NOTE: these are also maintained in package.json under "mocha"
 	"mochaExplorer.nodeArgv": [
@@ -35,7 +34,7 @@
 		"--no-warnings=ExperimentalWarning",
 		"--conditions=arktype-repo"
 	],
-	"mochaExplorer.require": "dev/mocha.fixtures.ts",
+	"mochaExplorer.require": "ark/repo/mocha.fixtures.ts",
 	"mochaExplorer.timeout": 0,
 	"mochaExplorer.env": {
 		"ATTEST_CONFIG": "{ \"skipTypes\": true }"
