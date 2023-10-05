@@ -1,8 +1,10 @@
 import type { Fn } from "./functions.js"
 import type { conform } from "./generics.js"
 
-export declare abstract class Hkt<f extends Fn = Fn> {
-	readonly [Hkt.key]: unknown
+declare const key: unique symbol
+
+export abstract class Hkt<f extends Fn = Fn> {
+	declare readonly [key]: unknown
 	abstract f: f
 }
 
@@ -14,8 +16,6 @@ export type reify<hkt extends Hkt> = hkt & {
 
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */
 export namespace Hkt {
-	export declare const key: unique symbol
-
 	export type key = typeof key
 
 	export type apply<

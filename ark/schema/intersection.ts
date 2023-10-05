@@ -1,5 +1,5 @@
-import type { conform, ErrorMessage, exactMessageOnError } from "@arktype/util"
 import { Hkt, throwInternalError } from "@arktype/util"
+import type { conform, ErrorMessage, exactMessageOnError } from "@arktype/util"
 import type {
 	Basis,
 	BasisClassesByKind,

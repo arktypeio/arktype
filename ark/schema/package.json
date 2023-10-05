@@ -18,7 +18,7 @@
 		".": {
 			"arktype-repo": "./main.js",
 			"import": "./dist/main.js",
-			"require": "./dist/main.js"
+			"require": "./dist/main.cjs"
 		},
 		"./internal/*": {
 			"arktype-repo": "./*",
