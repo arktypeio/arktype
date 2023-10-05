@@ -261,6 +261,25 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 ### Current Sponsors 🥰
 
-| [tmm](https://github.com/tmm)                                             | [xrexy](https://github.com/xrexy)                                          | [thomasballinger](https://github.com/thomasballinger)                    | [codeandcats](https://github.com/codeandcats)                             | [jacksteamdev](https://github.com/jacksteamdev)                            | [neodon](https://github.com/neodon)                                     |[mewhhaha](https://github.com/mewhhaha)                                     |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| <img height="64px" src="https://avatars.githubusercontent.com/u/6759464"> | <img height="64px" src="https://avatars.githubusercontent.com/u/71969236"> | <img height="64px" src="https://avatars.githubusercontent.com/u/458879"> | <img height="64px" src="https://avatars.githubusercontent.com/u/6035934"> | <img height="64px" src="https://avatars.githubusercontent.com/u/23390212"> | <img height="64px" src="https://avatars.githubusercontent.com/u/82944"> | <img height="64px" src="https://avatars.githubusercontent.com/u/3399205">
+<table>
+	<tr>
+		<th>tmm</th>
+		<th>xrexy</th>
+		<th>thomasballinger</th>
+		<th>codeandcats</th>
+		<th>jacksteamdev</th>
+		<th>neodon</th>
+		<th>mewhhaha</th>
+		<th>fubhy</th>
+    </tr>
+    <tr>
+    	<td><a href="https://github.com/tmm"><img height="64px" src="https://avatars.githubusercontent.com/u/6759464"></a></td>
+    	<td><a href="https://github.com/xrexy"><img height="64px" src="https://avatars.githubusercontent.com/u/71969236"></a></td>
+    	<td><a href="https://github.com/thomasballinger"><img height="64px" src="https://avatars.githubusercontent.com/u/458879"></a></td>
+    	<td><a href="https://github.com/codeandcats"><img height="64px" src="https://avatars.githubusercontent.com/u/6035934"></a></td>
+    	<td><a href="https://github.com/jacksteamdev"><img height="64px" src="https://avatars.githubusercontent.com/u/23390212"></a></td>
+    	<td><a href="https://github.com/neodon"><img height="64px" src="https://avatars.githubusercontent.com/u/82944"></a></td>
+		<td><a href="https://github.com/mewhhaha"><img height="64px" src="https://avatars.githubusercontent.com/u/3399205"></a></td>
+		<td><a href="https://github.com/fubhy"><img height="64px" src="https://avatars.githubusercontent.com/u/1172528"></a></td>
+    </tr>
+</table>
