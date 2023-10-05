@@ -1,4 +1,3 @@
-import type { BasisInput } from "./constraints/basis.js"
 import type { ConstraintNode } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import type { IntersectionInput, IntersectionNode } from "./intersection.js"
