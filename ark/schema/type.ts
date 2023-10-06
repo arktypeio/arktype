@@ -457,10 +457,10 @@ type UnitsNodeParser = {
 }
 
 const from = ((...branches: BranchInput[]) =>
-	new (UnionNode as any)(branches)) as {} as NodeParser
+	new (UnionNode as any)({ branches })) as {} as NodeParser
 
 const fromUnits = ((...branches: never[]) =>
-	new (UnionNode as any)(branches)) as {} as UnitsNodeParser
+	new (UnionNode as any)({ branches })) as {} as UnitsNodeParser
 
 export const node = Object.assign(from, {
 	units: fromUnits
