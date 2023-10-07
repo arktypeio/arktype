@@ -3,7 +3,7 @@ import type {
 	inferMorphOut,
 	inferNarrow,
 	Morph,
-	Narrow,
+	Predicate,
 	TypeNode
 } from "@arktype/schema"
 import { builtins, node } from "@arktype/schema"
@@ -316,7 +316,7 @@ export type validateInfixExpression<
 				: def[1] extends "&"
 				? validateDefinition<def[2], $, args>
 				: def[1] extends ":"
-				? Narrow<extractIn<inferDefinition<def[0], $, args>>>
+				? Predicate<extractIn<inferDefinition<def[0], $, args>>>
 				: def[1] extends "=>"
 				? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
 				: def[1] extends "@"
@@ -412,7 +412,7 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Narrow)
+	return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Predicate)
 }
 
 const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) => {

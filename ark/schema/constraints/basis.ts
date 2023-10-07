@@ -8,28 +8,24 @@ import type {
 	DomainSchema,
 	NonEnumerableDomain
 } from "./domain.js"
-import type {
-	PrototypeInput,
-	PrototypeNode,
-	PrototypeSchema
-} from "./prototype.js"
+import type { ProtoInput, ProtoNode, ProtoSchema } from "./proto.js"
 import type { UnitInput, UnitNode, UnitSchema } from "./unit.js"
 
 export type BasisClassesByKind = {
 	domain: typeof DomainNode
-	prototype: typeof PrototypeNode
+	proto: typeof ProtoNode
 	unit: typeof UnitNode
 }
 
 export type BasesByKind = {
 	domain: DomainNode
-	prototype: PrototypeNode
+	proto: ProtoNode
 	unit: UnitNode
 }
 
 export type BasisInputsByKind = {
 	domain: DomainInput
-	prototype: PrototypeInput
+	proto: ProtoInput
 	unit: UnitInput
 }
 
@@ -44,16 +40,14 @@ export type validateBasisInput<basis> = basis extends
 	| NonEnumerableDomain
 	| AbstractableConstructor
 	? basis
-	: basis extends BasisInput
-	? exactMessageOnError<
+	: exactMessageOnError<
 			basis,
 			basis extends UnitSchema
 				? UnitSchema
-				: basis extends PrototypeSchema
-				? PrototypeSchema
+				: basis extends ProtoSchema
+				? ProtoSchema
 				: DomainSchema
 	  >
-	: never
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

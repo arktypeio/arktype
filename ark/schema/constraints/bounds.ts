@@ -7,7 +7,7 @@ import type { Basis } from "./basis.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
-import type { PrototypeNode } from "./prototype.js"
+import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface BoundSchema extends BaseAttributes {
@@ -142,7 +142,7 @@ const boundable = (basis: Basis | undefined): basis is BoundableBasis => {
 	if (basis.kind === "domain") {
 		return basis.domain === "number" || basis.domain === "string"
 	}
-	if (basis.kind === "prototype") {
+	if (basis.kind === "proto") {
 		return basis.extendsOneOf(Array, Date)
 	}
 	return false
@@ -150,7 +150,7 @@ const boundable = (basis: Basis | undefined): basis is BoundableBasis => {
 
 type BoundableBasis =
 	| DomainNode<{ domain: "number" | "string" }>
-	| PrototypeNode<{ prototype: typeof Array | typeof Date }>
+	| ProtoNode<{ proto: typeof Array | typeof Date }>
 
 const unitsByBoundedKind = {
 	date: "",

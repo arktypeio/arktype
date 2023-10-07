@@ -7,7 +7,7 @@ import { nodeParser, TypeNode } from "../type.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
-import type { PrototypeNode } from "./prototype.js"
+import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface PropSchema extends BaseAttributes {
@@ -50,11 +50,9 @@ export class PropNode<schema extends PropSchema = PropSchema>
 
 	applicableTo(
 		basis: Basis | undefined
-	): basis is DomainNode | PrototypeNode | undefined {
+	): basis is DomainNode | ProtoNode | undefined {
 		return (
-			basis === undefined ||
-			basis.kind === "domain" ||
-			basis.kind === "prototype"
+			basis === undefined || basis.kind === "domain" || basis.kind === "proto"
 		)
 	}
 

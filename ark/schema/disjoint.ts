@@ -9,7 +9,7 @@ import {
 } from "@arktype/util"
 import type { BoundNode } from "./constraints/bounds.js"
 import type { DomainNode } from "./constraints/domain.js"
-import type { PrototypeNode } from "./constraints/prototype.js"
+import type { ProtoNode } from "./constraints/proto.js"
 import type { Refinement } from "./constraints/refinement.js"
 import type { UnitNode } from "./constraints/unit.js"
 import type { BranchNode } from "./union.js"
@@ -23,9 +23,9 @@ type DisjointKinds = {
 		l: UnitNode
 		r: UnitNode
 	}
-	prototype?: {
-		l: PrototypeNode
-		r: PrototypeNode
+	proto?: {
+		l: ProtoNode
+		r: ProtoNode
 	}
 	bound?: {
 		l: BoundNode

@@ -12,68 +12,68 @@ import { nodeParser } from "../type.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
-export interface PrototypeSchema<
+export interface ProtoSchema<
 	constructor extends AbstractableConstructor = AbstractableConstructor
 > extends BaseAttributes {
-	prototype: constructor
+	proto: constructor
 }
 
-export type PrototypeInput = AbstractableConstructor | PrototypeSchema
+export type ProtoInput<
+	constructor extends AbstractableConstructor = AbstractableConstructor
+> = constructor | ProtoSchema<constructor>
 
-export class PrototypeNode<
-	schema extends PrototypeSchema = PrototypeSchema
+export class ProtoNode<
+	schema extends ProtoSchema = ProtoSchema
 > extends BaseConstraint<schema> {
-	readonly kind = "prototype"
+	readonly kind = "proto"
 
-	declare infer: InstanceType<schema["prototype"]>
+	declare infer: InstanceType<schema["proto"]>
 
 	protected constructor(schema: schema) {
 		super(schema)
 	}
 
 	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], PrototypeInput>) => {
-			return new PrototypeNode(
-				typeof input === "function" ? { prototype: input } : input
-			) as {} as typeof input extends PrototypeSchema
-				? PrototypeNode<typeof input>
-				: typeof input extends AbstractableConstructor
-				? { rule: typeof input }
-				: never
+		f = (input: conform<this[Hkt.key], ProtoInput>) => {
+			return new ProtoNode<
+				typeof input extends ProtoInput<infer constructor>
+					? { proto: constructor }
+					: never
+			>(typeof input === "function" ? { proto: input } : (input as any))
 		}
 	})()
 
 	static from = nodeParser(this)
 
-	protected possibleObjectKind = getExactBuiltinConstructorName(this.prototype)
+	protected possibleObjectKind = getExactBuiltinConstructorName(this.proto)
 
 	hash() {
-		return this.possibleObjectKind ?? compileSerializedValue(this.prototype)
+		return this.possibleObjectKind ?? compileSerializedValue(this.proto)
 	}
 
 	writeDefaultDescription() {
 		return this.possibleObjectKind
 			? objectKindDescriptions[this.possibleObjectKind]
-			: `an instance of ${this.prototype}`
+			: `an instance of ${this.proto}`
 	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
 		...constructors: constructors
-	): this is PrototypeNode<{ prototype: constructors[number] }> {
+	): this is ProtoNode<{ proto: constructors[number] }> {
 		return constructors.some((constructor) =>
-			constructorExtends(this.prototype, constructor)
+			constructorExtends(this.proto, constructor)
 		)
 	}
 
 	intersectSymmetric(other: ConstraintNode) {
-		return other.kind !== "prototype"
+		return other.kind !== "proto"
 			? null
-			: constructorExtends(this.prototype, other.prototype)
+			: constructorExtends(this.proto, other.proto)
 			? this.schema
-			: constructorExtends(other.prototype, this.prototype)
+			: constructorExtends(other.proto, this.proto)
 			? // this cast is safe since we know other's constructor extends this one
 			  (other.schema as schema)
-			: Disjoint.from("prototype", this, other)
+			: Disjoint.from("proto", this, other)
 	}
 
 	intersectAsymmetric() {

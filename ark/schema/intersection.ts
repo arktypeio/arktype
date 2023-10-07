@@ -9,12 +9,11 @@ import type {
 } from "./constraints/basis.js"
 import type { ConstraintNode } from "./constraints/constraint.js"
 import type { DomainInput } from "./constraints/domain.js"
-import type { PrototypeInput } from "./constraints/prototype.js"
+import type { ProtoInput } from "./constraints/proto.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import type { UnitInput } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { MorphInput } from "./morph.js"
-import { node } from "./parse.js"
 import type { BaseAttributes, inputOf, parseNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
@@ -30,6 +29,8 @@ type parseBasis<input extends BasisInput> = conform<
 	}[BasisKind],
 	Basis
 >
+
+type ZZZ = parseBasis<typeof Date> //=>
 
 type basisOf<k extends RefinementKind> =
 	Refinement<k>["applicableTo"] extends ((
@@ -53,17 +54,17 @@ type refinementInputsOf<basis> = {
 type IntersectionBasisInput<basis extends BasisInput = BasisInput> =
 	| {
 			domain: conform<basis, DomainInput>
-			prototype?: never
+			proto?: never
 			unit?: never
 	  }
 	| {
 			domain?: never
-			prototype: conform<basis, PrototypeInput>
+			proto: conform<basis, ProtoInput>
 			unit?: never
 	  }
 	| {
 			domain?: never
-			prototype?: never
+			proto?: never
 			unit: conform<basis, UnitInput>
 	  }
 

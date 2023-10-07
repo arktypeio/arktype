@@ -55,3 +55,5 @@ const fromUnits = (...branches: unknown[]) =>
 export const node = Object.assign(from as NodeParser, {
 	units: fromUnits as UnitsNodeParser
 })
+
+const z = node(Promise)

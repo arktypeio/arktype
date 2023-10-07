@@ -4,7 +4,7 @@ import type {
 	inferMorphOut,
 	inferNarrow,
 	Morph,
-	Narrow,
+	Predicate,
 	TypeNode
 } from "@arktype/schema"
 import {
@@ -62,7 +62,7 @@ export type TypeParser<$> = {
 			? conform<rest, readonly AbstractableConstructor[]>
 			: one extends TupleInfixOperator
 			? one extends ":"
-				? [Narrow<extractIn<inferTypeRoot<zero, $>>>]
+				? [Predicate<extractIn<inferTypeRoot<zero, $>>>]
 				: one extends "=>"
 				? // TODO: centralize
 				  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
@@ -240,7 +240,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
-	narrow<def extends Narrow<extractOut<t>>>(
+	narrow<def extends Predicate<extractOut<t>>>(
 		def: def
 	): Type<inferNarrow<extractOut<t>, def>, $> {
 		return new Type(this.root.constrain("narrow", def), this.scope) as never

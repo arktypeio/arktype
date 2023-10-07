@@ -7,14 +7,14 @@ import { nodeParser, TypeNode } from "../type.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
-import type { PrototypeNode } from "./prototype.js"
+import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface NarrowSchema extends BaseAttributes {
-	rule: Narrow
+	predicate: Predicate
 }
 
-export type NarrowInput = Narrow | NarrowSchema
+export type NarrowInput = Predicate | NarrowSchema
 
 export class NarrowNode
 	extends BaseConstraint<NarrowSchema>
@@ -29,7 +29,7 @@ export class NarrowNode
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], NarrowInput>) => {
 			return new NarrowNode(
-				typeof input === "function" ? { rule: input } : input
+				typeof input === "function" ? { predicate: input } : input
 			)
 		}
 	})()
@@ -38,20 +38,18 @@ export class NarrowNode
 
 	applicableTo(
 		basis: Basis | undefined
-	): basis is DomainNode | PrototypeNode | undefined {
+	): basis is DomainNode | ProtoNode | undefined {
 		return (
-			basis === undefined ||
-			basis.kind === "domain" ||
-			basis.kind === "prototype"
+			basis === undefined || basis.kind === "domain" || basis.kind === "proto"
 		)
 	}
 
 	hash() {
-		return compileSerializedValue(this.rule)
+		return compileSerializedValue(this.predicate)
 	}
 
 	writeDefaultDescription() {
-		return `valid according to ${this.rule.name}`
+		return `valid according to ${this.predicate.name}`
 	}
 
 	intersectSymmetric() {
@@ -69,12 +67,12 @@ export class NarrowNode
 // in the order they're specified, checking them in the order
 // resulting from this intersection should also be safe.
 
-export type Narrow<data = any> = (
+export type Predicate<data = any> = (
 	data: data,
 	traversal: TraversalState
 ) => boolean
 
-export type NarrowCast<data = any, narrowed extends data = data> = (
+export type PredicateCast<data = any, narrowed extends data = data> = (
 	data: data
 ) => data is narrowed
 
