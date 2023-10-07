@@ -1,5 +1,5 @@
-import { Hkt, throwInternalError } from "@arktype/util"
 import type { conform, ErrorMessage, exactMessageOnError } from "@arktype/util"
+import { throwInternalError } from "@arktype/util"
 import type {
 	Basis,
 	BasisClassesByKind,
@@ -101,14 +101,6 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 	}
 
 	branches = [this]
-
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], IntersectionInput>) =>
-			new IntersectionNode(input as never) as parseIntersection<typeof input>
-	})()
-
-	static from = <basis extends BasisInput>(input: IntersectionInput<basis>) =>
-		new IntersectionNode({} as never) as parseIntersection<basis>
 
 	writeDefaultDescription() {
 		return this.constraints.length ? this.constraints.join(" and ") : "a value"

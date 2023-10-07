@@ -1,26 +1,17 @@
-import type { conform, Dict, extend, Hkt, satisfy } from "@arktype/util"
+import type { Dict, extend, Hkt, satisfy } from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
 	ConstraintKind,
-	ConstraintNode,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
 import type { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
-import type {
-	IntersectionInput,
-	IntersectionNode,
-	parseIntersection,
-	validateIntersectionInput
-} from "./intersection.js"
-import type {
-	MorphInput,
-	MorphNode,
-	parseMorph,
-	validateMorphInput
-} from "./morph.js"
+import type { IntersectionInput, IntersectionNode } from "./intersection.js"
+import type { MorphInput, MorphNode } from "./morph.js"
+import type { BranchNode, UnionInput, UnionNode } from "./union.js"
+import { inferred } from "./utils.js"
 
 export interface BaseAttributes {
 	alias?: string
@@ -110,7 +101,7 @@ export abstract class TypeNode<
 		if (resultBranches.length === 0) {
 			return Disjoint.from("union", this.branches, other.branches)
 		}
-		return node(...(resultBranches as any)) as never
+		return this as never //node(...(resultBranches as any)) as never
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
@@ -134,7 +125,7 @@ export abstract class TypeNode<
 	}
 
 	array(): TypeNode<t[]> {
-		return node()
+		return this as never
 	}
 
 	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
@@ -208,70 +199,6 @@ export type NodeKind = keyof NodesByKind
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
 
-// Unions
-import { inferred } from "./utils.js"
-
-export interface TypeSchema extends BaseAttributes {
-	branches: readonly BranchNode[]
-}
-
-export type BranchNode = IntersectionNode | MorphNode | ConstraintNode
-
-export interface UnionInput extends BaseAttributes {
-	branches: readonly BranchInput[]
-}
-
-export type BranchInput = IntersectionInput | MorphInput
-
-export class UnionNode<t = unknown> extends TypeNode<t, TypeSchema> {
-	readonly kind = "union"
-
-	branches = this.schema.branches
-
-	inId = this.branches.map((constraint) => constraint.inId).join("|")
-	outId = this.branches.map((constraint) => constraint.outId).join("|")
-	typeId = this.branches.map((constraint) => constraint.typeId).join("|")
-	metaId = this.branches.map((constraint) => constraint.metaId).join("|")
-
-	writeDefaultDescription() {
-		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
-	}
-}
-
-// // discriminate is cached so we don't have to worry about this running multiple times
-// get discriminant() {
-// 	return discriminate(this.branches)
-// }
-
-export const reduceBranches = (branches: IntersectionNode[]) => {
-	if (branches.length < 2) {
-		return branches
-	}
-	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
-	for (let i = 0; i < branches.length; i++) {
-		for (
-			let j = i + 1;
-			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
-			j++
-		) {
-			if (branches[i] === branches[j]) {
-				// if the two branches are equal, only "j" is marked as
-				// redundant so at least one copy could still be included in
-				// the final set of branches.
-				uniquenessByIndex[j] = false
-				continue
-			}
-			const intersection = branches[i].intersect(branches[j])
-			if (intersection === branches[i]) {
-				uniquenessByIndex[i] = false
-			} else if (intersection === branches[j]) {
-				uniquenessByIndex[j] = false
-			}
-		}
-	}
-	return branches.filter((_, i) => uniquenessByIndex[i])
-}
-
 export const intersectBranches = (
 	l: readonly BranchNode[],
 	r: readonly BranchNode[]
@@ -344,124 +271,3 @@ export const intersectBranches = (
 	}
 	return finalBranches
 }
-
-type NodeParser = {
-	<const branches extends readonly unknown[]>(
-		...branches: {
-			[i in keyof branches]: validateBranchInput<branches[i]>
-		}
-	): TypeNode<
-		{
-			[i in keyof branches]: parseBranch<branches[i]>["infer"]
-		}[number]
-	>
-}
-
-type validateBranchInput<input> = conform<
-	input,
-	"morphs" extends keyof input
-		? validateMorphInput<input>
-		: validateIntersectionInput<input>
->
-
-type parseBranch<branch> = branch extends MorphInput
-	? parseMorph<branch>
-	: branch extends IntersectionInput
-	? parseIntersection<branch>
-	: IntersectionNode
-
-type UnitsNodeParser = {
-	<const branches extends readonly unknown[]>(
-		...branches: branches
-	): TypeNode<branches[number]>
-}
-
-const from = ((...branches: BranchInput[]) =>
-	new (UnionNode as any)({ branches })) as {} as NodeParser
-
-const fromUnits = ((...branches: unknown[]) =>
-	new (UnionNode as any)({ branches })) as {} as UnitsNodeParser
-
-export const node = Object.assign(from, {
-	units: fromUnits
-})
-
-// export const compileDiscriminant = (
-// 	discriminant: Discriminant,
-// 	ctx: CompilationContext
-// ) => {
-// 	if (discriminant.isPureRootLiteral) {
-// 		// TODO: ctx?
-// 		return compileDiscriminatedLiteral(discriminant.cases)
-// 	}
-// 	let compiledPath = In
-// 	for (const segment of discriminant.path) {
-// 		// we need to access the path as optional so we don't throw if it isn't present
-// 		compiledPath += compilePropAccess(segment, true)
-// 	}
-// 	const condition =
-// 		discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
-// 	let compiledCases = ""
-// 	for (const k in discriminant.cases) {
-// 		const caseCondition = k === "default" ? "default" : `case ${k}`
-// 		const caseBranches = discriminant.cases[k]
-// 		ctx.discriminants.push(discriminant)
-// 		const caseChecks = isArray(caseBranches)
-// 			? compileIndiscriminable(caseBranches, ctx)
-// 			: compileDiscriminant(caseBranches, ctx)
-// 		ctx.discriminants.pop()
-// 		compiledCases += `${caseCondition}: {
-//     ${caseChecks ? `${caseChecks}\n     break` : "break"}
-// }`
-// 	}
-// 	if (!discriminant.cases.default) {
-// 		// TODO: error message for traversal
-// 		compiledCases += `default: {
-//     return false
-// }`
-// 	}
-// 	return `switch(${condition}) {
-//     ${compiledCases}
-// }`
-// }
-
-// const compileDiscriminatedLiteral = (cases: DiscriminatedCases) => {
-// 	// TODO: error messages for traversal
-// 	const caseKeys = Object.keys(cases)
-// 	if (caseKeys.length === 2) {
-// 		return `if( ${In} !== ${caseKeys[0]} && ${In} !== ${caseKeys[1]}) {
-//     return false
-// }`
-// 	}
-// 	// for >2 literals, we fall through all cases, breaking on the last
-// 	const compiledCases =
-// 		caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
-// 	// if none of the cases are met, the check fails (this is optimal for perf)
-// 	return `switch(${In}) {
-//     ${compiledCases}
-//     default:
-//         return false
-// }`
-// }
-
-// export const compileIndiscriminable = (
-// 	branches: readonly Predicate[],
-// 	ctx: CompilationContext
-// ) => {
-// 	if (branches.length === 0) {
-// 		return compileFailureResult("custom", "nothing", ctx)
-// 	}
-// 	if (branches.length === 1) {
-// 		return branches[0].compile(ctx)
-// 	}
-// 	return branches
-// 		.map(
-// 			(branch) => `(() => {
-// ${branch.compile(ctx)}
-// return true
-// })()`
-// 		)
-// 		.join(" || ")
-// }
-
-// type inferPredicateDefinition<t> = t

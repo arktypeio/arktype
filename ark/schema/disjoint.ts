@@ -12,7 +12,7 @@ import type { DomainNode } from "./constraints/domain.js"
 import type { PrototypeNode } from "./constraints/prototype.js"
 import type { Refinement } from "./constraints/refinement.js"
 import type { UnitNode } from "./constraints/unit.js"
-import type { BranchNode } from "./type.js"
+import type { BranchNode } from "./union.js"
 
 type DisjointKinds = {
 	domain?: {
