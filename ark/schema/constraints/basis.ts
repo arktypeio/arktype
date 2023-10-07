@@ -40,11 +40,12 @@ export type Basis<kind extends BasisKind = BasisKind> = BasesByKind[kind]
 export type BasisInput<kind extends BasisKind = BasisKind> =
 	BasisInputsByKind[kind]
 
-export type validateBasisInput<basis extends BasisInput> = basis extends
+export type validateBasisInput<basis> = basis extends
 	| NonEnumerableDomain
 	| AbstractableConstructor
 	? basis
-	: exactMessageOnError<
+	: basis extends BasisInput
+	? exactMessageOnError<
 			basis,
 			basis extends UnitSchema
 				? UnitSchema
@@ -52,6 +53,7 @@ export type validateBasisInput<basis extends BasisInput> = basis extends
 				? PrototypeSchema
 				: DomainSchema
 	  >
+	: never
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

@@ -8,9 +8,13 @@ import type {
 	validateBasisInput
 } from "./constraints/basis.js"
 import type { ConstraintNode } from "./constraints/constraint.js"
+import type { DomainInput } from "./constraints/domain.js"
+import type { PrototypeInput } from "./constraints/prototype.js"
 import type { Refinement, RefinementKind } from "./constraints/refinement.js"
+import type { UnitInput } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { MorphInput } from "./morph.js"
+import { node } from "./parse.js"
 import type { BaseAttributes, inputOf, parseNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
@@ -46,10 +50,27 @@ type refinementInputsOf<basis> = {
 	[k in refinementKindOf<basis>]?: inputOf<k>
 }
 
-export type BasisedBranchInput<basis extends BasisInput = BasisInput> = {
-	basis: basis
-} & refinementInputsOf<parseBasis<basis>> &
-	BaseAttributes
+type IntersectionBasisInput<basis extends BasisInput = BasisInput> =
+	| {
+			domain: conform<basis, DomainInput>
+			prototype?: never
+			unit?: never
+	  }
+	| {
+			domain?: never
+			prototype: conform<basis, PrototypeInput>
+			unit?: never
+	  }
+	| {
+			domain?: never
+			prototype?: never
+			unit: conform<basis, UnitInput>
+	  }
+
+export type BasisedBranchInput<basis extends BasisInput = BasisInput> =
+	IntersectionBasisInput<basis> &
+		refinementInputsOf<parseBasis<basis>> &
+		BaseAttributes
 
 export type NarrowedBranchInput = {
 	narrow?: inputOf<"narrow">
@@ -71,19 +92,20 @@ export type parseIntersection<input> = input extends IntersectionInput<
 type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 	[k in keyof branch]: k extends keyof expected
 		? branch[k]
-		: ErrorMessage<`'${k &
-				string}' is not allowed by ${branch["basis"] extends string
-				? `basis '${branch["basis"]}'`
+		: ErrorMessage<`'${k & string}' is not allowed by ${branch[keyof branch &
+				BasisKind] extends string
+				? `basis '${branch[keyof branch & BasisKind]}'`
 				: `this schema's basis`}`>
 }
 
-export type validateIntersectionInput<input> = input extends BasisInput
-	? validateBasisInput<input>
-	: input extends BasisedBranchInput<infer basis>
-	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
-	: input extends NarrowedBranchInput
-	? exactMessageOnError<input, NarrowedBranchInput>
-	: IntersectionInput | MorphInput
+export type validateIntersectionInput<input> =
+	input extends validateBasisInput<input>
+		? input
+		: input extends BasisedBranchInput<infer basis>
+		? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
+		: input extends NarrowedBranchInput
+		? exactMessageOnError<input, NarrowedBranchInput>
+		: IntersectionInput | MorphInput
 
 export class IntersectionNode<t = unknown> extends TypeNode<
 	t,

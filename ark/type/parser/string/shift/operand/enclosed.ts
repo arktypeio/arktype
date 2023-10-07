@@ -41,10 +41,10 @@ export const parseEnclosed = (
 		s.root = node("string")
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
 		// TODO:  s.ctx
-		s.root = node({ is: enclosed })
+		s.root = node({ unit: enclosed })
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = node({ is: date })
+		s.root = node({ unit: date })
 		// TODO: meta
 		// {
 		//     parsedFrom: token as DateLiteral

@@ -50,7 +50,7 @@ const from = (...branches: BranchInput[]) => {
 }
 
 const fromUnits = (...branches: unknown[]) =>
-	from(...branches.map((value) => UnitNode.from({ is: value })))
+	from(...branches.map((value) => UnitNode.from({ unit: value })))
 
 export const node = Object.assign(from as NodeParser, {
 	units: fromUnits as UnitsNodeParser

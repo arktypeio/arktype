@@ -3,11 +3,11 @@ import { Hkt, stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Node } from "../type.js"
-import { nodeParser, TypeNode } from "../type.js"
+import { nodeParser } from "../type.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface UnitSchema<value = unknown> extends BaseAttributes {
-	is: value
+	unit: value
 }
 
 export type UnitInput = UnitSchema
@@ -16,7 +16,7 @@ export class UnitNode<
 	schema extends UnitSchema = UnitSchema
 > extends BaseConstraint<schema> {
 	readonly kind = "unit"
-	declare infer: schema["is"]
+	declare infer: schema["unit"]
 
 	protected constructor(schema: schema) {
 		super(schema)
@@ -31,12 +31,12 @@ export class UnitNode<
 	static from = nodeParser(this)
 
 	hash() {
-		return compileSerializedValue(this.is)
+		return compileSerializedValue(this.unit)
 	}
 
 	writeDefaultDescription() {
 		// TODO: add reference to for objects
-		return stringify(this.is)
+		return stringify(this.unit)
 	}
 
 	intersectSymmetric(other: UnitNode) {
