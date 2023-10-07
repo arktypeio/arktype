@@ -30,8 +30,6 @@ type parseBasis<input extends BasisInput> = conform<
 	Basis
 >
 
-type ZZZ = parseBasis<typeof Date> //=>
-
 type basisOf<k extends RefinementKind> =
 	Refinement<k>["applicableTo"] extends ((
 		_: Basis | undefined
