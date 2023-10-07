@@ -345,6 +345,47 @@ export const intersectBranches = (
 	return finalBranches
 }
 
+type NodeParser = {
+	<const branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: validateBranchInput<branches[i]>
+		}
+	): TypeNode<
+		{
+			[i in keyof branches]: parseBranch<branches[i]>["infer"]
+		}[number]
+	>
+}
+
+type validateBranchInput<input> = conform<
+	input,
+	"morphs" extends keyof input
+		? validateMorphInput<input>
+		: validateIntersectionInput<input>
+>
+
+type parseBranch<branch> = branch extends MorphInput
+	? parseMorph<branch>
+	: branch extends IntersectionInput
+	? parseIntersection<branch>
+	: IntersectionNode
+
+type UnitsNodeParser = {
+	<const branches extends readonly unknown[]>(
+		...branches: branches
+	): TypeNode<branches[number]>
+}
+
+const from = ((...branches: BranchInput[]) =>
+	new (UnionNode as any)({ branches })) as {} as NodeParser
+
+const fromUnits = ((...branches: unknown[]) =>
+	new (UnionNode as any)({ branches })) as {} as UnitsNodeParser
+
+export const node = Object.assign(from, {
+	units: fromUnits
+})
+
 // export const compileDiscriminant = (
 // 	discriminant: Discriminant,
 // 	ctx: CompilationContext
@@ -424,44 +465,3 @@ export const intersectBranches = (
 // }
 
 // type inferPredicateDefinition<t> = t
-
-type NodeParser = {
-	<const branches extends readonly unknown[]>(
-		...branches: {
-			[i in keyof branches]: validateBranchInput<branches[i]>
-		}
-	): TypeNode<
-		{
-			[i in keyof branches]: parseBranch<branches[i]>["infer"]
-		}[number]
-	>
-}
-
-type validateBranchInput<input> = conform<
-	input,
-	"morphs" extends keyof input
-		? validateMorphInput<input>
-		: validateIntersectionInput<input>
->
-
-type parseBranch<branch> = branch extends MorphInput
-	? parseMorph<branch>
-	: branch extends IntersectionInput
-	? parseIntersection<branch>
-	: IntersectionNode
-
-type UnitsNodeParser = {
-	<const branches extends readonly unknown[]>(
-		...branches: branches
-	): TypeNode<branches[number]>
-}
-
-const from = ((...branches: BranchInput[]) =>
-	new (UnionNode as any)({ branches })) as {} as NodeParser
-
-const fromUnits = ((...branches: never[]) =>
-	new (UnionNode as any)({ branches })) as {} as UnitsNodeParser
-
-export const node = Object.assign(from, {
-	units: fromUnits
-})
