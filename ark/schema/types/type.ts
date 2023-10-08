@@ -14,7 +14,7 @@ import { DomainNode } from "../constraints/domain.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
-import { BaseNode } from "../node.js"
+import { allowKeys, BaseNode } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
 	IntersectionInput,
@@ -173,6 +173,8 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 	IntersectionSchema
 > {
 	readonly kind = "intersection"
+
+	static allowedKeys = allowKeys<IntersectionSchema>({ constraints: 1 })
 
 	inId = this.constraints.map((constraint) => constraint.inId).join("&")
 	outId = this.constraints.map((constraint) => constraint.outId).join("&")

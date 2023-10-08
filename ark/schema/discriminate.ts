@@ -40,8 +40,8 @@ export type DiscriminantKinds = {
 }
 
 const discriminantKinds: keySet<DiscriminantKind> = {
-	domain: true,
-	value: true
+	domain: 1,
+	value: 1
 }
 
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
