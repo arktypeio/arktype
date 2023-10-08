@@ -1,9 +1,8 @@
 import type { conform, Domain, inferDomain } from "@arktype/util"
-import { Hkt } from "@arktype/util"
+import { hasDomain, hasKey, Hkt, isKeyOf } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { nodeParser } from "../node.js"
-import type { BaseAttributes } from "../types/type.js"
-import { BaseConstraint } from "./constraint.js"
+import { allowKeys, type BaseAttributes } from "../node.js"
+import { BaseConstraint, constraintParser } from "./constraint.js"
 
 export interface DomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -25,6 +24,16 @@ export class DomainNode<
 		super(schema)
 	}
 
+	static allowedKeys = allowKeys<DomainSchema>({ domain: 1 })
+
+	static parsable(input: unknown): input is DomainInput {
+		return (
+			(typeof input === "string" &&
+				isKeyOf(input, nonEnumerableDomainDescriptions)) ||
+			(hasDomain(input, "object") && hasKey(input, "domain"))
+		)
+	}
+
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], DomainInput>) => {
 			return new DomainNode(
@@ -37,7 +46,7 @@ export class DomainNode<
 		}
 	})()
 
-	static from = nodeParser(this)
+	static from = constraintParser(this)
 
 	hash() {
 		return this.domain
@@ -58,20 +67,25 @@ export class DomainNode<
 
 export const domainNode = DomainNode.from
 
-/** Each domain's completion for the phrase "Must be _____" */
-export const domainDescriptions = {
-	bigint: "a bigint",
+const enumerableDomainDescriptions = {
 	boolean: "boolean",
 	null: "null",
+	undefined: "undefined"
+}
+
+const nonEnumerableDomainDescriptions = {
+	bigint: "a bigint",
 	number: "a number",
 	object: "an object",
 	string: "a string",
-	symbol: "a symbol",
-	undefined: "undefined"
+	symbol: "a symbol"
+}
+
+/** Each domain's completion for the phrase "Must be _____" */
+export const domainDescriptions = {
+	...nonEnumerableDomainDescriptions,
+	...enumerableDomainDescriptions
 } as const satisfies Record<Domain, string>
 
 // only domains with an infinite number of values are allowed as bases
-export type NonEnumerableDomain = Exclude<
-	Domain,
-	"null" | "undefined" | "boolean"
->
+export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions

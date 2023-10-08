@@ -2,10 +2,9 @@ import type { conform } from "@arktype/util"
 import { Hkt, stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { nodeParser } from "../node.js"
-import type { BaseAttributes } from "../types/type.js"
+import { allowKeys, type BaseAttributes } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
-import { BaseConstraint } from "./constraint.js"
+import { BaseConstraint, constraintParser } from "./constraint.js"
 
 export interface UnitSchema<value = unknown> extends BaseAttributes {
 	unit: value
@@ -23,13 +22,15 @@ export class UnitNode<
 		super(schema)
 	}
 
+	static allowedKeys = allowKeys<UnitSchema>({ unit: 1 })
+
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], UnitInput>): UnitNode<typeof input> => {
 			return new UnitNode(input)
 		}
 	})()
 
-	static from = nodeParser(this)
+	static from = constraintParser(this)
 
 	hash() {
 		return compileSerializedValue(this.unit)

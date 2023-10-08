@@ -2,11 +2,12 @@ import { reify } from "@arktype/util"
 import type { extend, Hkt } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import { BaseNode } from "../node.js"
-import type { BaseAttributes } from "../types/type.js"
+import type { BaseAttributes } from "../node.js"
 import type {
 	BasesByKind,
 	BasisClassesByKind,
-	BasisInputsByKind
+	BasisInputsByKind,
+	BasisKind
 } from "./basis.js"
 import type {
 	RefinementClassesByKind,
@@ -34,10 +35,28 @@ export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
 export type ConstraintInput<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintInputsByKind[kind]
 
-export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
+export type parseConstraint<
+	node extends { hkt: Hkt },
+	parameters extends Parameters<node["hkt"]["f"]>[0]
+> = Hkt.apply<node["hkt"], parameters>
 
-export const nodeParser = <node extends { hkt: Hkt }>(node: node) =>
-	reify(node.hkt) as nodeParser<node>
+export type constraintParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
+
+export const constraintParser = <node extends { hkt: Hkt }>(node: node) =>
+	reify(node.hkt) as constraintParser<node>
+
+type CandidateDiscriminantKey<k extends ConstraintKind> = Exclude<
+	keyof ConstraintNode<k>["schema"],
+	keyof BaseAttributes
+>
+
+export const discriminatingConstraintKeys = {
+	domain: "domain",
+	proto: "proto",
+	unit: "unit"
+} as const satisfies {
+	[k in BasisKind]: CandidateDiscriminantKey<k>
+}
 
 export abstract class BaseConstraint<
 	schema extends BaseAttributes
@@ -50,8 +69,6 @@ export abstract class BaseConstraint<
 	): schema | Disjoint | null
 
 	abstract intersectAsymmetric(other: ConstraintNode): schema | Disjoint | null
-
-	branches = []
 
 	inId = ""
 	outId = ""

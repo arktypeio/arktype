@@ -1,30 +1,39 @@
-import type { conform, Dict, satisfy } from "@arktype/util"
-import type { ConstraintKind } from "../constraints/constraint.js"
+import {
+	type conform,
+	type Dict,
+	entriesOf,
+	type satisfy,
+	throwInternalError
+} from "@arktype/util"
+import type {
+	ConstraintInput,
+	ConstraintKind,
+	ConstraintNode
+} from "../constraints/constraint.js"
+import { DomainNode } from "../constraints/domain.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
-import type { inputOf, Node } from "../node.js"
+import type { BaseAttributes, Node } from "../node.js"
 import { BaseNode } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
 	IntersectionInput,
+	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import { IntersectionNode } from "./intersection.js"
 import type {
 	MorphInput,
 	MorphNode,
 	parseMorph,
 	validateMorphInput
 } from "./morph.js"
-import type { BranchInput, BranchNode, UnionInput } from "./union.js"
-import { UnionNode } from "./union.js"
-
-export interface BaseAttributes {
-	alias?: string
-	description?: string
-}
-
+import type {
+	BranchInput,
+	BranchNode,
+	UnionInput,
+	UnionSchema
+} from "./union.js"
 export abstract class TypeNode<
 	t = unknown,
 	schema extends BaseAttributes = BaseAttributes
@@ -45,10 +54,13 @@ export abstract class TypeNode<
 	}
 
 	static from(...branches: BranchInput[]) {
+		const constraintSets = branches.map((branch) =>
+			typeof branch === "string" ? DomainNode.from("string") : {}
+		)
 		if (branches.length === 1) {
-			return new (IntersectionNode as any)(branches[0])
+			return new IntersectionNode({ constraints: entriesOf(branches[0]) })
 		}
-		return new (UnionNode as any)({ branches })
+		return new UnionNode({ branches })
 	}
 
 	static fromUnits(...branches: unknown[]) {
@@ -60,7 +72,7 @@ export abstract class TypeNode<
 
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
-		definition: inputOf<kind>
+		definition: ConstraintInput<kind>
 	): TypeNode<t> {
 		return this
 	}
@@ -141,9 +153,115 @@ export abstract class TypeNode<
 	}
 }
 
+export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
+	readonly kind = "union"
+
+	branches = this.schema.branches
+
+	inId = this.branches.map((constraint) => constraint.inId).join("|")
+	outId = this.branches.map((constraint) => constraint.outId).join("|")
+	typeId = this.branches.map((constraint) => constraint.typeId).join("|")
+	metaId = this.branches.map((constraint) => constraint.metaId).join("|")
+
+	writeDefaultDescription() {
+		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
+	}
+}
+
+export class IntersectionNode<t = unknown> extends TypeNode<
+	t,
+	IntersectionSchema
+> {
+	readonly kind = "intersection"
+
+	inId = this.constraints.map((constraint) => constraint.inId).join("&")
+	outId = this.constraints.map((constraint) => constraint.outId).join("&")
+	typeId = this.constraints.map((constraint) => constraint.typeId).join("&")
+	metaId = this.constraints.map((constraint) => constraint.metaId).join("&")
+
+	branches = [this]
+
+	writeDefaultDescription() {
+		return this.constraints.length ? this.constraints.join(" and ") : "a value"
+	}
+
+	// intersect(other: PredicateNode) {
+	// 	const schema: Partial<PredicateSchema> = {}
+	// 	if (this.morphs.length) {
+	// 		if (other.morphs.length) {
+	// 			if (!this.morphs.every((morph, i) => morph === other.morphs[i])) {
+	// 				throw new Error(`Invalid intersection of morphs.`)
+	// 			}
+	// 		}
+	// 		schema.morphs = this.morphs
+	// 	} else if (other.morphs.length) {
+	// 		schema.morphs = other.morphs
+	// 	}
+	// 	let constraints: readonly Constraint[] | Disjoint = this.constraints
+	// 	if (this.typeId !== other.typeId) {
+	// 		for (const constraint of other.constraints) {
+	// 			if (constraints instanceof Disjoint) {
+	// 				break
+	// 			}
+	// 			constraints = this.addConstraint(constraint)
+	// 		}
+	// 		if (constraints instanceof Disjoint) {
+	// 			return constraints
+	// 		}
+	// 	}
+	// 	schema.constraints = constraints
+	// 	const typeId = hashPredicateType(schema as PredicateSchema)
+	// 	if (typeId === this.typeId) {
+	// 		if (this.schema.description) {
+	// 			schema.description = this.schema.description
+	// 		}
+	// 		if (this.schema.alias) {
+	// 			schema.alias = this.schema.alias
+	// 		}
+	// 	}
+	// 	if (typeId === other.typeId) {
+	// 		if (other.schema.description) {
+	// 			schema.description = other.schema.description
+	// 		}
+	// 		if (other.schema.alias) {
+	// 			schema.alias = other.schema.alias
+	// 		}
+	// 	}
+	// 	return new PredicateNode(schema as PredicateSchema)
+	// }
+
+	protected addConstraint(
+		constraint: ConstraintNode
+	): readonly ConstraintNode[] | Disjoint {
+		const result: ConstraintNode[] = []
+		let includesConstraint = false
+		for (let i = 0; i < this.constraints.length; i++) {
+			const elementResult = constraint.intersectConstraint(this.constraints[i])
+			if (elementResult === null) {
+				result.push(this.constraints[i])
+			} else if (elementResult instanceof Disjoint) {
+				return elementResult
+			} else if (!includesConstraint) {
+				result.push(elementResult)
+				includesConstraint = true
+			} else if (!result.includes(elementResult)) {
+				return throwInternalError(
+					`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+				)
+			}
+		}
+		if (!includesConstraint) {
+			result.push(this as never)
+		}
+		return result
+	}
+}
+
 export const node = Object.assign(TypeNode.from as NodeParser, {
 	units: TypeNode.fromUnits as UnitsNodeParser
 })
+
+const z = node({}) //?
 
 type NodeParser = {
 	<const branches extends readonly unknown[]>(

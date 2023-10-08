@@ -1,11 +1,10 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { nodeParser } from "../node.js"
-import type { BaseAttributes } from "../types/type.js"
+import { allowKeys, type BaseAttributes } from "../node.js"
 import type { Basis } from "./basis.js"
 import type { ConstraintNode } from "./constraint.js"
-import { BaseConstraint } from "./constraint.js"
+import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -19,6 +18,8 @@ export type BoundNode = MinNode | MaxNode
 
 export type BoundInput = number | BoundSchema
 
+const allowedBoundKeys = allowKeys<BoundSchema>({ limit: 1, exclusive: 1 })
+
 export class MinNode
 	extends BaseConstraint<BoundSchema>
 	implements BaseRefinement
@@ -26,6 +27,8 @@ export class MinNode
 	protected constructor(schema: BoundSchema) {
 		super(schema)
 	}
+
+	static allowedKeys = allowedBoundKeys
 
 	readonly kind = "min"
 
@@ -39,7 +42,7 @@ export class MinNode
 		}
 	})()
 
-	static from = nodeParser(this)
+	static from = constraintParser(this)
 
 	hash() {
 		return ""
@@ -82,6 +85,8 @@ export class MaxNode
 {
 	readonly kind = "max"
 
+	static allowedKeys = allowedBoundKeys
+
 	protected constructor(schema: BoundSchema) {
 		super(schema)
 	}
@@ -96,7 +101,7 @@ export class MaxNode
 		}
 	})()
 
-	static from = nodeParser(this)
+	static from = constraintParser(this)
 
 	hash() {
 		return ""

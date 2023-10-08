@@ -7,10 +7,9 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes } from "../types/type.js"
-import { nodeParser } from "../node.js"
+import { allowKeys, type BaseAttributes } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
-import { BaseConstraint } from "./constraint.js"
+import { BaseConstraint, constraintParser } from "./constraint.js"
 
 export interface ProtoSchema<
 	constructor extends AbstractableConstructor = AbstractableConstructor
@@ -29,6 +28,8 @@ export class ProtoNode<
 
 	declare infer: InstanceType<schema["proto"]>
 
+	static allowedKeys = allowKeys<ProtoSchema>({ proto: 1 })
+
 	protected constructor(schema: schema) {
 		super(schema)
 	}
@@ -43,7 +44,7 @@ export class ProtoNode<
 		}
 	})()
 
-	static from = nodeParser(this)
+	static from = constraintParser(this)
 
 	protected possibleObjectKind = getExactBuiltinConstructorName(this.proto)
 

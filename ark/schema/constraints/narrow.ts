@@ -2,10 +2,9 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import { nodeParser } from "../node.js"
-import type { BaseAttributes } from "../types/type.js"
+import { allowKeys, type BaseAttributes } from "../node.js"
 import type { Basis } from "./basis.js"
-import { BaseConstraint } from "./constraint.js"
+import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -22,6 +21,8 @@ export class NarrowNode
 {
 	readonly kind = "narrow"
 
+	static allowedKeys = allowKeys<NarrowSchema>({ predicate: 1 })
+
 	protected constructor(schema: NarrowSchema) {
 		super(schema)
 	}
@@ -34,7 +35,7 @@ export class NarrowNode
 		}
 	})()
 
-	static from = nodeParser(this)
+	static from = constraintParser(this)
 
 	applicableTo(
 		basis: Basis | undefined

@@ -16,6 +16,15 @@ export interface BaseAttributes {
 	description?: string
 }
 
+const baseAttributeKeys = {
+	alias: 1,
+	description: 1
+} as const satisfies { [k in keyof BaseAttributes]-?: 1 }
+
+export const allowKeys = <schema extends BaseAttributes>(keys: {
+	[k in Exclude<keyof schema, keyof BaseAttributes>]-?: 1
+}) => ({ ...baseAttributeKeys, ...keys })
+
 export abstract class BaseNode<
 	schema extends BaseAttributes = BaseAttributes
 > extends DynamicBase<schema> {

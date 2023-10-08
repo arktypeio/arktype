@@ -3,13 +3,13 @@ import type { Out } from "arktype/internal/parser/tuple.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
+import type { BaseAttributes } from "../node.js"
 import type {
 	IntersectionInput,
-	IntersectionNode,
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import type { BaseAttributes } from "./type.js"
+import type { IntersectionNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
 export type MorphSchema = BaseAttributes & {
@@ -38,10 +38,6 @@ export class MorphNode<i = any, o = unknown> extends TypeNode<
 	MorphSchema
 > {
 	readonly kind = "morph"
-
-	protected constructor(schema: MorphSchema) {
-		super(schema)
-	}
 
 	inId = this.in.inId
 	outId = this.out.outId

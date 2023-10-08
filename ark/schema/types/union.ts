@@ -1,10 +1,9 @@
-import type { ConstraintNode } from "../constraints/constraint.js"
-import { Disjoint } from "../disjoint.js"
-import type { IntersectionInput, IntersectionNode } from "./intersection.js"
+import type { BaseAttributes } from "../node.js"
+import type { IntersectionInput } from "./intersection.js"
 import type { MorphInput, MorphNode } from "./morph.js"
-import { type BaseAttributes, TypeNode } from "./type.js"
+import type { IntersectionNode } from "./type.js"
 
-export interface TypeSchema extends BaseAttributes {
+export interface UnionSchema extends BaseAttributes {
 	branches: readonly BranchNode[]
 }
 
@@ -16,27 +15,12 @@ export interface UnionInput extends BaseAttributes {
 
 export type BranchInput = IntersectionInput | MorphInput
 
-export class UnionNode<t = unknown> extends TypeNode<t, TypeSchema> {
-	readonly kind = "union"
-
-	branches = this.schema.branches
-
-	inId = this.branches.map((constraint) => constraint.inId).join("|")
-	outId = this.branches.map((constraint) => constraint.outId).join("|")
-	typeId = this.branches.map((constraint) => constraint.typeId).join("|")
-	metaId = this.branches.map((constraint) => constraint.metaId).join("|")
-
-	writeDefaultDescription() {
-		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
-	}
-}
-
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant() {
 // 	return discriminate(this.branches)
 // }
 
-export const reduceBranches = (branches: IntersectionNode[]) => {
+export const reduceBranches = (branches: BranchNode[]) => {
 	if (branches.length < 2) {
 		return branches
 	}

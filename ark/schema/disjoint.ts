@@ -27,6 +27,7 @@ type DisjointKinds = {
 		l: ProtoNode
 		r: ProtoNode
 	}
+	// TODO: test
 	presence?:
 		| {
 				l: true

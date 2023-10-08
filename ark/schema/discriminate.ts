@@ -7,8 +7,8 @@ import type {
 } from "@arktype/util"
 import { entriesOf, isKeyOf, throwInternalError } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "./disjoint.js"
-import type { IntersectionNode } from "./types/intersection.js"
 import { compileSerializedValue } from "./io/compile.js"
+import type { IntersectionNode } from "./types/type.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
