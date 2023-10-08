@@ -1,5 +1,25 @@
 # arktype
 
+## 1.0.22-alpha
+
+### Patch Changes
+
+-   ### Fix a bug inferring certain recursive unions.
+
+    Previously, a scoped type like this failed to infer correctly. Thanks to [@Vanilagy](https://github.com/Vanilagy) for the repro!
+
+    ```ts
+    scope({
+        a: {
+            name: '"a"'
+        },
+        b: {
+            name: '"b"',
+            children: "(a|b)[]"
+        }
+    })
+    ```
+
 ## 1.0.21-alpha
 
 ### Patch Changes
