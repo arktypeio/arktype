@@ -1,5 +1,5 @@
-import type { ConstraintNode } from "./constraints/constraint.js"
-import { Disjoint } from "./disjoint.js"
+import type { ConstraintNode } from "../constraints/constraint.js"
+import { Disjoint } from "../disjoint.js"
 import type { IntersectionInput, IntersectionNode } from "./intersection.js"
 import type { MorphInput, MorphNode } from "./morph.js"
 import { type BaseAttributes, TypeNode } from "./type.js"
@@ -8,7 +8,7 @@ export interface TypeSchema extends BaseAttributes {
 	branches: readonly BranchNode[]
 }
 
-export type BranchNode = IntersectionNode | MorphNode | ConstraintNode
+export type BranchNode = IntersectionNode | MorphNode
 
 export interface UnionInput extends BaseAttributes {
 	branches: readonly BranchInput[]

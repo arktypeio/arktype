@@ -6,15 +6,16 @@ import type {
 	BasisInput,
 	BasisKind,
 	validateBasisInput
-} from "./constraints/basis.js"
-import type { ConstraintNode } from "./constraints/constraint.js"
-import type { DomainInput } from "./constraints/domain.js"
-import type { ProtoInput } from "./constraints/proto.js"
-import type { Refinement, RefinementKind } from "./constraints/refinement.js"
-import type { UnitInput } from "./constraints/unit.js"
-import { Disjoint } from "./disjoint.js"
+} from "../constraints/basis.js"
+import type { ConstraintNode } from "../constraints/constraint.js"
+import type { DomainInput } from "../constraints/domain.js"
+import type { ProtoInput } from "../constraints/proto.js"
+import type { Refinement, RefinementKind } from "../constraints/refinement.js"
+import type { UnitInput } from "../constraints/unit.js"
+import { Disjoint } from "../disjoint.js"
+import type { inputOf, parseConstraint } from "../node.js"
 import type { MorphInput } from "./morph.js"
-import type { BaseAttributes, inputOf, parseConstraint } from "./type.js"
+import type { BaseAttributes } from "./type.js"
 import { TypeNode } from "./type.js"
 
 export type IntersectionSchema = BaseAttributes & {

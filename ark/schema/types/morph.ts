@@ -1,14 +1,14 @@
 import type { listable } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
+import { compileSerializedValue } from "../io/compile.js"
+import type { Problem } from "../io/problems.js"
+import type { CheckResult, TraversalState } from "../io/traverse.js"
 import type {
 	IntersectionInput,
 	IntersectionNode,
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import { compileSerializedValue } from "./io/compile.js"
-import type { Problem } from "./io/problems.js"
-import type { CheckResult, TraversalState } from "./io/traverse.js"
 import type { BaseAttributes } from "./type.js"
 import { TypeNode } from "./type.js"
 

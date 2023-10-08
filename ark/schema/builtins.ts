@@ -1,6 +1,6 @@
 import { cached } from "@arktype/util"
-import { node } from "./type.js"
-import { type TypeNode } from "./type.js"
+import { node } from "./types/type.js"
+import { type TypeNode } from "./types/type.js"
 
 export const builtins = {
 	never: cached(() => node()),

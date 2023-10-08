@@ -1,8 +1,8 @@
 import type { conform, Domain, inferDomain } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../type.js"
-import { nodeParser } from "../type.js"
+import { nodeParser } from "../node.js"
+import type { BaseAttributes } from "../types/type.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface DomainSchema<

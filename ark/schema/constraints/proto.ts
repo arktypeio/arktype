@@ -7,8 +7,8 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes } from "../type.js"
-import { nodeParser } from "../type.js"
+import type { BaseAttributes } from "../types/type.js"
+import { nodeParser } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 

@@ -1,7 +1,8 @@
-import type { extend } from "@arktype/util"
+import { reify } from "@arktype/util"
+import type { extend, Hkt } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../type.js"
-import { TypeNode } from "../type.js"
+import { BaseNode } from "../node.js"
+import type { BaseAttributes } from "../types/type.js"
 import type {
 	BasesByKind,
 	BasisClassesByKind,
@@ -33,9 +34,14 @@ export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
 export type ConstraintInput<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintInputsByKind[kind]
 
+export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
+
+export const nodeParser = <node extends { hkt: Hkt }>(node: node) =>
+	reify(node.hkt) as nodeParser<node>
+
 export abstract class BaseConstraint<
 	schema extends BaseAttributes
-> extends TypeNode<unknown, schema> {
+> extends BaseNode<schema> {
 	abstract kind: ConstraintKind
 
 	abstract intersectSymmetric(

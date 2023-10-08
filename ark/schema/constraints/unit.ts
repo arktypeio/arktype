@@ -2,8 +2,9 @@ import type { conform } from "@arktype/util"
 import { Hkt, stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes, Node } from "../type.js"
-import { nodeParser } from "../type.js"
+import { nodeParser } from "../node.js"
+import type { BaseAttributes } from "../types/type.js"
+import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface UnitSchema<value = unknown> extends BaseAttributes {
@@ -43,7 +44,7 @@ export class UnitNode<
 		return Disjoint.from("unit", this, other)
 	}
 
-	intersectAsymmetric(other: Node) {
+	intersectAsymmetric(other: ConstraintNode) {
 		// TODO: allows
 		return null
 	}

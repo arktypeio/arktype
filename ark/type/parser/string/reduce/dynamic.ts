@@ -89,7 +89,7 @@ export class DynamicState {
 			)
 		}
 		// TODO: date?
-		this.branches.leftBound = MinNode.fromConstraint({
+		this.branches.leftBound = MinNode.from({
 			exclusive: comparator.length === 1,
 			limit: limit as number
 		})

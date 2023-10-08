@@ -1,28 +1,24 @@
-import type { conform, Dict, extend, Hkt, satisfy } from "@arktype/util"
-import { DynamicBase, reify } from "@arktype/util"
-import type {
-	ConstraintClassesByKind,
-	ConstraintInputsByKind,
-	ConstraintKind,
-	ConstraintsByKind
-} from "./constraints/constraint.js"
-import { UnitNode } from "./constraints/unit.js"
-import { Disjoint } from "./disjoint.js"
-import { IntersectionNode } from "./intersection.js"
+import type { conform, Dict, satisfy } from "@arktype/util"
+import type { ConstraintKind } from "../constraints/constraint.js"
+import { UnitNode } from "../constraints/unit.js"
+import { Disjoint } from "../disjoint.js"
+import type { inputOf, Node } from "../node.js"
+import { BaseNode } from "../node.js"
+import { inferred } from "../utils.js"
 import type {
 	IntersectionInput,
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
+import { IntersectionNode } from "./intersection.js"
 import type {
 	MorphInput,
 	MorphNode,
 	parseMorph,
 	validateMorphInput
 } from "./morph.js"
-import { UnionNode } from "./union.js"
 import type { BranchInput, BranchNode, UnionInput } from "./union.js"
-import { inferred } from "./utils.js"
+import { UnionNode } from "./union.js"
 
 export interface BaseAttributes {
 	alias?: string
@@ -32,8 +28,8 @@ export interface BaseAttributes {
 export abstract class TypeNode<
 	t = unknown,
 	schema extends BaseAttributes = BaseAttributes
-> extends DynamicBase<schema> {
-	abstract kind: NodeKind
+> extends BaseNode<schema> {
+	abstract kind: TypeKind
 
 	declare infer: t;
 	declare [inferred]: t
@@ -59,26 +55,8 @@ export abstract class TypeNode<
 		return this.from(...branches.map((value) => UnitNode.from({ unit: value })))
 	}
 
-	abstract inId: string
-	abstract outId: string
-	abstract typeId: string
-	metaId = this.writeMetaId()
-
-	private writeMetaId() {
-		return JSON.stringify({
-			type: this.typeId,
-			description: this.description,
-			alias: this.alias
-		})
-	}
-
-	abstract writeDefaultDescription(): string
 	abstract branches: readonly BranchNode[]
 	declare children: TypeNode[]
-
-	equals(other: TypeNode) {
-		return this.typeId === other.typeId
-	}
 
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
@@ -118,9 +96,20 @@ export abstract class TypeNode<
 
 	intersect<other extends TypeNode>(
 		other: other
-	): Node<intersectNodeKinds<this["kind"], other["kind"]>> | Disjoint {
+	): Node<intersectTypeKinds<this["kind"], other["kind"]>> | Disjoint {
 		const resultBranches = intersectBranches(this.branches, other.branches)
 		if (resultBranches.length === 0) {
+			if (
+				(this.branches.length === 0 || other.branches.length === 0) &&
+				this.branches.length !== other.branches.length
+			) {
+				// if exactly one operand is never, we can use it to discriminate based on presence
+				return Disjoint.from(
+					"presence",
+					this.branches.length !== 0,
+					other.branches.length !== 0
+				)
+			}
 			return Disjoint.from("union", this.branches, other.branches)
 		}
 		return this as never //node(...(resultBranches as any)) as never
@@ -128,10 +117,6 @@ export abstract class TypeNode<
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
 		return this
-	}
-
-	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
-		return this.kind === kind
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {
@@ -191,29 +176,17 @@ type UnitsNodeParser = {
 	): TypeNode<branches[number]>
 }
 
-type intersectNodeKinds<l extends NodeKind, r extends NodeKind> = [
-	l,
-	r
-] extends ["unit", unknown] | [unknown, "unit"]
-	? "unit"
-	: "union" extends l | r
-	? NodeKind
+type intersectTypeKinds<
+	l extends TypeKind,
+	r extends TypeKind
+> = "union" extends l | r
+	? TypeKind
 	: "morph" extends l | r
 	? "morph"
-	: "intersection" | ((l | r) & ConstraintKind)
+	: "intersection"
 
-export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
-
-export const nodeParser = <node extends { hkt: Hkt }>(node: node) =>
-	reify(node.hkt) as nodeParser<node>
-
-export type parseConstraint<
-	node extends { hkt: Hkt },
-	parameters extends Parameters<node["hkt"]["f"]>[0]
-> = Hkt.apply<node["hkt"], parameters>
-
-export type CompositeInputsByKind = satisfy<
-	Dict<CompositeKind>,
+export type TypeInputsByKind = satisfy<
+	Dict<TypeKind>,
 	{
 		union: UnionInput
 		intersection: IntersectionInput
@@ -221,15 +194,8 @@ export type CompositeInputsByKind = satisfy<
 	}
 >
 
-export type NodeInputsByKind = extend<
-	CompositeInputsByKind,
-	ConstraintInputsByKind
->
-
-export type inputOf<kind extends NodeKind> = NodeInputsByKind[kind]
-
-export type CompositeClassesByKind = satisfy<
-	Dict<CompositeKind>,
+export type TypeClassesByKind = satisfy<
+	Dict<TypeKind>,
 	{
 		union: typeof UnionNode
 		morph: typeof MorphNode
@@ -237,24 +203,13 @@ export type CompositeClassesByKind = satisfy<
 	}
 >
 
-export type NodeClassesByKind = extend<
-	ConstraintClassesByKind,
-	CompositeClassesByKind
->
-
-export type CompositeNodesByKind = {
+export type TypeNodesByKind = {
 	union: UnionNode
 	intersection: IntersectionNode
 	morph: MorphNode
 }
 
-export type CompositeKind = keyof CompositeNodesByKind
-
-export type NodesByKind = extend<ConstraintsByKind, CompositeNodesByKind>
-
-export type NodeKind = keyof NodesByKind
-
-export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
+export type TypeKind = keyof TypeNodesByKind
 
 export const intersectBranches = (
 	l: readonly BranchNode[],
