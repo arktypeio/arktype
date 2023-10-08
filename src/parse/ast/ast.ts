@@ -55,16 +55,8 @@ export type validateExpression<
         ? validateAst<operand, $>
         : never
     : ast extends InfixExpression<infer operator, infer l, infer r>
-    ? operator extends "&"
-        ? tryCatch<
-              inferIntersection<inferAst<l, $>, inferAst<r, $>>,
-              validateInfix<ast, $>
-          >
-        : operator extends "|"
-        ? tryCatch<
-              inferUnion<inferAst<l, $>, inferAst<r, $>>,
-              validateInfix<ast, $>
-          >
+    ? operator extends "&" | "|"
+        ? validateInfix<ast, $>
         : operator extends Scanner.Comparator
         ? validateBound<l, r, $>
         : operator extends "%"
