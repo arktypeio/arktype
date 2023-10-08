@@ -14,7 +14,7 @@ import type { Refinement, RefinementKind } from "./constraints/refinement.js"
 import type { UnitInput } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import type { MorphInput } from "./morph.js"
-import type { BaseAttributes, inputOf, parseNode } from "./type.js"
+import type { BaseAttributes, inputOf, parseConstraint } from "./type.js"
 import { TypeNode } from "./type.js"
 
 export type IntersectionSchema = BaseAttributes & {
@@ -24,7 +24,7 @@ export type IntersectionSchema = BaseAttributes & {
 type parseBasis<input extends BasisInput> = conform<
 	{
 		[k in BasisKind]: input extends BasisInput<k>
-			? parseNode<BasisClassesByKind[k], input>
+			? parseConstraint<BasisClassesByKind[k], input>
 			: never
 	}[BasisKind],
 	Basis
@@ -116,10 +116,6 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 	outId = this.constraints.map((constraint) => constraint.outId).join("&")
 	typeId = this.constraints.map((constraint) => constraint.typeId).join("&")
 	metaId = this.constraints.map((constraint) => constraint.metaId).join("&")
-
-	protected constructor(schema: IntersectionSchema) {
-		super(schema)
-	}
 
 	branches = [this]
 

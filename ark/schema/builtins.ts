@@ -1,5 +1,5 @@
 import { cached } from "@arktype/util"
-import { node } from "./parse.js"
+import { node } from "./type.js"
 import { type TypeNode } from "./type.js"
 
 export const builtins = {

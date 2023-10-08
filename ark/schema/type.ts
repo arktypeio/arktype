@@ -1,4 +1,4 @@
-import type { Dict, extend, Hkt, satisfy } from "@arktype/util"
+import type { conform, Dict, extend, Hkt, satisfy } from "@arktype/util"
 import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
@@ -6,11 +6,22 @@ import type {
 	ConstraintKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
-import type { UnitNode } from "./constraints/unit.js"
+import { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
-import type { IntersectionInput, IntersectionNode } from "./intersection.js"
-import type { MorphInput, MorphNode } from "./morph.js"
-import type { BranchNode, UnionInput, UnionNode } from "./union.js"
+import { IntersectionNode } from "./intersection.js"
+import type {
+	IntersectionInput,
+	parseIntersection,
+	validateIntersectionInput
+} from "./intersection.js"
+import type {
+	MorphInput,
+	MorphNode,
+	parseMorph,
+	validateMorphInput
+} from "./morph.js"
+import { UnionNode } from "./union.js"
+import type { BranchInput, BranchNode, UnionInput } from "./union.js"
 import { inferred } from "./utils.js"
 
 export interface BaseAttributes {
@@ -35,6 +46,17 @@ export abstract class TypeNode<
 		super(schema)
 		this.description ??= this.writeDefaultDescription()
 		this.alias ??= "generated"
+	}
+
+	static from(...branches: BranchInput[]) {
+		if (branches.length === 1) {
+			return new (IntersectionNode as any)(branches[0])
+		}
+		return new (UnionNode as any)({ branches })
+	}
+
+	static fromUnits(...branches: unknown[]) {
+		return this.from(...branches.map((value) => UnitNode.from({ unit: value })))
 	}
 
 	abstract inId: string
@@ -134,6 +156,41 @@ export abstract class TypeNode<
 	}
 }
 
+export const node = Object.assign(TypeNode.from as NodeParser, {
+	units: TypeNode.fromUnits as UnitsNodeParser
+})
+
+type NodeParser = {
+	<const branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: validateBranchInput<branches[i]>
+		}
+	): TypeNode<
+		{
+			[i in keyof branches]: parseBranch<branches[i]>["infer"]
+		}[number]
+	>
+}
+
+type validateBranchInput<input> = conform<
+	input,
+	"morphs" extends keyof input
+		? validateMorphInput<input>
+		: validateIntersectionInput<input>
+>
+
+type parseBranch<branch> = branch extends MorphInput
+	? parseMorph<branch>
+	: branch extends IntersectionInput
+	? parseIntersection<branch>
+	: IntersectionNode
+
+type UnitsNodeParser = {
+	<const branches extends readonly unknown[]>(
+		...branches: branches
+	): TypeNode<branches[number]>
+}
+
 type intersectNodeKinds<l extends NodeKind, r extends NodeKind> = [
 	l,
 	r
@@ -150,7 +207,7 @@ export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
 export const nodeParser = <node extends { hkt: Hkt }>(node: node) =>
 	reify(node.hkt) as nodeParser<node>
 
-export type parseNode<
+export type parseConstraint<
 	node extends { hkt: Hkt },
 	parameters extends Parameters<node["hkt"]["f"]>[0]
 > = Hkt.apply<node["hkt"], parameters>
