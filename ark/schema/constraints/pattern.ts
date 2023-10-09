@@ -1,6 +1,6 @@
 import type { conform } from "@arktype/util"
 import { Hkt, throwParseError } from "@arktype/util"
-import { allowKeys, type BaseAttributes } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -18,8 +18,6 @@ export class PatternNode
 	implements BaseRefinement
 {
 	readonly kind = "pattern"
-
-	static allowedKeys = allowKeys<PatternSchema>({ source: 1, flags: 1 })
 
 	protected constructor(schema: PatternSchema) {
 		super(schema)

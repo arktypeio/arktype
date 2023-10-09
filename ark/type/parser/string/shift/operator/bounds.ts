@@ -83,9 +83,9 @@ export type ComparatorStartChar = Comparator extends `${infer char}${string}`
 	: never
 
 export const comparatorStartChars: keySet<ComparatorStartChar> = {
-	"<": true,
-	">": true,
-	"=": true
+	"<": 1,
+	">": 1,
+	"=": 1
 }
 
 const shiftComparator = (

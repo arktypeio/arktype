@@ -1,10 +1,8 @@
 import type { extend, Hkt } from "@arktype/util"
-import { DynamicBase, hasKey, reify, throwParseError } from "@arktype/util"
-import type { BasisClassesByKind } from "./constraints/basis.js"
+import { DynamicBase, reify } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
-	ConstraintKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
 import type {
@@ -22,25 +20,6 @@ const baseAttributeKeys = {
 	alias: 1,
 	description: 1
 } as const satisfies { [k in keyof BaseAttributes]-?: 1 }
-
-export const allowKeys = <schema extends BaseAttributes>(keys: {
-	[k in Exclude<keyof schema, keyof BaseAttributes>]-?: 1
-}) => ({ ...baseAttributeKeys, ...keys })
-
-export const allowsKeys = <kind extends NodeKind>(
-	kind: kind,
-	allowedKeys: BasisClassesByKind[kind]["allowedKeys"],
-	input: object
-) => {
-	const unknownKeys = Object.keys(input).filter((k) => !hasKey(allowedKeys, k))
-	if (unknownKeys.length) {
-		throwParseError(
-			`Keys ${unknownKeys.join(
-				", "
-			)} are not allowed on schema of kind '${kind}'`
-		)
-	}
-}
 
 export abstract class BaseNode<
 	schema extends BaseAttributes = BaseAttributes

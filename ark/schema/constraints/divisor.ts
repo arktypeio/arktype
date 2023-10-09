@@ -1,6 +1,6 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
-import { allowKeys, type BaseAttributes } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -17,8 +17,6 @@ export class DivisibilityNode
 	implements BaseRefinement
 {
 	readonly kind = "divisor"
-
-	static allowedKeys = allowKeys<DivisibilitySchema>({ divisor: 1 })
 
 	protected constructor(schema: DivisibilitySchema) {
 		super(schema)

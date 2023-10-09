@@ -1,3 +1,11 @@
+import {
+	arkKind,
+	builtins,
+	In,
+	inferred,
+	registry,
+	TraversalState
+} from "@arktype/schema"
 import type {
 	BaseAttributes,
 	CheckResult,
@@ -6,14 +14,6 @@ import type {
 	Morph,
 	Predicate,
 	TypeNode
-} from "@arktype/schema"
-import {
-	arkKind,
-	builtins,
-	In,
-	inferred,
-	registry,
-	TraversalState
 } from "@arktype/schema"
 import type {
 	AbstractableConstructor,

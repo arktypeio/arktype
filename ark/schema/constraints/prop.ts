@@ -2,7 +2,7 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { allowKeys, type BaseAttributes } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import { TypeNode } from "../types/type.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
@@ -35,8 +35,6 @@ export class PropNode<schema extends PropSchema = PropSchema>
 {
 	readonly kind = "prop"
 	declare infer: inferPropSchema<schema>
-
-	static allowedKeys = allowKeys<PropSchema>({ key: 1, value: 1, required: 1 })
 
 	protected constructor(schema: PropSchema) {
 		super(schema)

@@ -2,7 +2,7 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import { allowKeys, type BaseAttributes } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -20,8 +20,6 @@ export class NarrowNode
 	implements BaseRefinement
 {
 	readonly kind = "narrow"
-
-	static allowedKeys = allowKeys<NarrowSchema>({ predicate: 1 })
 
 	protected constructor(schema: NarrowSchema) {
 		super(schema)

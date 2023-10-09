@@ -2,7 +2,7 @@ import type { conform } from "@arktype/util"
 import { Hkt, stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { allowKeys, type BaseAttributes } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 
@@ -21,8 +21,6 @@ export class UnitNode<
 	protected constructor(schema: schema) {
 		super(schema)
 	}
-
-	static allowedKeys = allowKeys<UnitSchema>({ unit: 1 })
 
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], UnitInput>): UnitNode<typeof input> => {

@@ -1,7 +1,7 @@
 import type { conform, Domain, inferDomain } from "@arktype/util"
 import { hasDomain, hasKey, Hkt, isKeyOf } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { allowKeys, type BaseAttributes } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 
 export interface DomainSchema<
@@ -23,8 +23,6 @@ export class DomainNode<
 	protected constructor(schema: schema) {
 		super(schema)
 	}
-
-	static allowedKeys = allowKeys<DomainSchema>({ domain: 1 })
 
 	static parsable(input: unknown): input is DomainInput {
 		return (

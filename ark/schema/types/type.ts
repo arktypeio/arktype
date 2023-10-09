@@ -14,7 +14,7 @@ import { DomainNode } from "../constraints/domain.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
-import { allowKeys, BaseNode } from "../node.js"
+import { BaseNode } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
 	IntersectionInput,
@@ -58,9 +58,11 @@ export abstract class TypeNode<
 			typeof branch === "string" ? DomainNode.from("string") : {}
 		)
 		if (branches.length === 1) {
-			return new IntersectionNode({ constraints: entriesOf(branches[0]) })
+			return new IntersectionNode({
+				constraints: entriesOf(branches[0] as never)
+			})
 		}
-		return new UnionNode({ branches })
+		return new UnionNode({ branches } as never)
 	}
 
 	static fromUnits(...branches: unknown[]) {
@@ -173,8 +175,6 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 	IntersectionSchema
 > {
 	readonly kind = "intersection"
-
-	static allowedKeys = allowKeys<IntersectionSchema>({ constraints: 1 })
 
 	inId = this.constraints.map((constraint) => constraint.inId).join("&")
 	outId = this.constraints.map((constraint) => constraint.outId).join("&")

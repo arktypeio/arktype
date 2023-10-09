@@ -7,7 +7,7 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { allowKeys, type BaseAttributes } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 
@@ -27,8 +27,6 @@ export class ProtoNode<
 	readonly kind = "proto"
 
 	declare infer: InstanceType<schema["proto"]>
-
-	static allowedKeys = allowKeys<ProtoSchema>({ proto: 1 })
 
 	protected constructor(schema: schema) {
 		super(schema)
