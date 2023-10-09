@@ -34,6 +34,7 @@ import type {
 	UnionInput,
 	UnionSchema
 } from "./union.js"
+
 export abstract class TypeNode<
 	t = unknown,
 	schema extends BaseAttributes = BaseAttributes
@@ -42,7 +43,7 @@ export abstract class TypeNode<
 
 	declare infer: t;
 	declare [inferred]: t
-	declare condition: string
+	condition = ""
 
 	description: string
 	alias: string
@@ -53,7 +54,11 @@ export abstract class TypeNode<
 		this.alias ??= "generated"
 	}
 
-	static from(...branches: BranchInput[]) {
+	static from(
+		// ensure "from" can't be accessed on subclasses since e.g. Union.from could create an Intersection
+		this: typeof TypeNode,
+		...branches: BranchInput[]
+	) {
 		const constraintSets = branches.map((branch) =>
 			typeof branch === "string" ? DomainNode.from("string") : {}
 		)
@@ -155,10 +160,21 @@ export abstract class TypeNode<
 	}
 }
 
+export const schema = <const branches extends readonly unknown[]>(
+	...branches: {
+		[i in keyof branches]: validateBranchInput<branches[i]>
+	}
+) => branches
+
 export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 	readonly kind = "union"
+	declare static instance: UnionNode
 
 	branches = this.schema.branches
+
+	static parser = schema({
+		morphs: []
+	})
 
 	inId = this.branches.map((constraint) => constraint.inId).join("|")
 	outId = this.branches.map((constraint) => constraint.outId).join("|")
@@ -262,8 +278,6 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 export const node = Object.assign(TypeNode.from as NodeParser, {
 	units: TypeNode.fromUnits as UnitsNodeParser
 })
-
-const z = node({}) //?
 
 type NodeParser = {
 	<const branches extends readonly unknown[]>(

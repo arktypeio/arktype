@@ -5,13 +5,17 @@ import type { IntersectionNode } from "./type.js"
 
 export interface UnionSchema extends BaseAttributes {
 	branches: readonly BranchNode[]
+	ordered: boolean
 }
 
 export type BranchNode = IntersectionNode | MorphNode
 
-export interface UnionInput extends BaseAttributes {
+export interface UnionSchemaInput extends BaseAttributes {
 	branches: readonly BranchInput[]
+	ordered?: boolean
 }
+
+export type UnionInput = UnionSchemaInput | UnionSchemaInput["branches"]
 
 export type BranchInput = IntersectionInput | MorphInput
 
