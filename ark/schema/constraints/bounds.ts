@@ -1,7 +1,7 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { type BaseAttributes } from "../node.js"
+import { baseAttributeProps, type BaseAttributes, schema } from "../node.js"
 import type { Basis } from "./basis.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
@@ -17,6 +17,19 @@ export interface BoundSchema extends BaseAttributes {
 export type BoundNode = MinNode | MaxNode
 
 export type BoundInput = number | BoundSchema
+
+const boundSchema = schema("number", {
+	domain: "object",
+	prop: [
+		...baseAttributeProps,
+		{ key: "limit", value: "number" },
+		{
+			key: "exclusive",
+			value: [{ unit: true }, { unit: false }],
+			optional: true
+		}
+	]
+})
 
 export class MinNode
 	extends BaseConstraint<BoundSchema>
@@ -37,6 +50,8 @@ export class MinNode
 			)
 		}
 	})()
+
+	static schema = boundSchema
 
 	static from = constraintParser(this)
 
@@ -94,6 +109,8 @@ export class MaxNode
 			)
 		}
 	})()
+
+	static schema = boundSchema
 
 	static from = constraintParser(this)
 
