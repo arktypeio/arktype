@@ -40,7 +40,8 @@ export type validateBasisInput<basis> = basis extends
 	| NonEnumerableDomain
 	| AbstractableConstructor
 	? basis
-	: exactMessageOnError<
+	: basis extends object
+	? exactMessageOnError<
 			basis,
 			basis extends UnitSchema
 				? UnitSchema
@@ -48,6 +49,7 @@ export type validateBasisInput<basis> = basis extends
 				? ProtoSchema
 				: DomainSchema
 	  >
+	: never
 
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,

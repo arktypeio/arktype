@@ -1,6 +1,6 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
-import { type BaseAttributes } from "../node.js"
+import { baseAttributeProps, type BaseAttributes, schema } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -29,6 +29,11 @@ export class DivisibilityNode
 			)
 		}
 	})()
+
+	static schema = schema("number", {
+		domain: "object",
+		prop: [...baseAttributeProps, { key: "divisor", value: "number" }]
+	})
 
 	static from = constraintParser(this)
 

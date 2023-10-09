@@ -1,3 +1,4 @@
+import type { listable } from "@arktype/util"
 import type { Basis } from "./basis.js"
 import type { BoundInput, MaxNode, MinNode } from "./bounds.js"
 import type { DivisibilityInput, DivisibilityNode } from "./divisor.js"
@@ -32,6 +33,15 @@ export type RefinementInputsByKind = {
 	narrow: NarrowInput
 }
 
+type hasReducableIntersection<kind extends RefinementKind> =
+	null extends ReturnType<Refinement<kind>["intersectSymmetric"]> ? false : true
+
+export type RefinementIntersectionInputsByKind = {
+	[k in keyof RefinementInputsByKind]: hasReducableIntersection<k> extends true
+		? RefinementInput<k>
+		: listable<RefinementInput<k>>
+}
+
 export type RefinementKind = keyof RefinementsByKind
 
 export type Refinement<kind extends RefinementKind = RefinementKind> =
@@ -39,6 +49,10 @@ export type Refinement<kind extends RefinementKind = RefinementKind> =
 
 export type RefinementInput<kind extends RefinementKind = RefinementKind> =
 	RefinementInputsByKind[kind]
+
+export type RefinementIntersectionInput<
+	kind extends RefinementKind = RefinementKind
+> = RefinementIntersectionInputsByKind[kind]
 
 export interface BaseRefinement {
 	applicableTo(basis: Basis | undefined): basis is Basis | undefined

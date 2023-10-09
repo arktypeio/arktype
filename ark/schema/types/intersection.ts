@@ -9,11 +9,15 @@ import type {
 import type { ConstraintNode } from "../constraints/constraint.js"
 import type { DomainInput } from "../constraints/domain.js"
 import type { ProtoInput } from "../constraints/proto.js"
-import type { Refinement, RefinementKind } from "../constraints/refinement.js"
+import type {
+	Refinement,
+	RefinementIntersectionInput,
+	RefinementKind
+} from "../constraints/refinement.js"
 import type { UnitInput } from "../constraints/unit.js"
 import type { BaseAttributes, inputOf, parseConstraint } from "../node.js"
 import type { MorphInput } from "./morph.js"
-import type { IntersectionNode } from "./type.js"
+import { type IntersectionNode } from "./type.js"
 
 export type IntersectionSchema = BaseAttributes & {
 	constraints: readonly ConstraintNode[]
@@ -44,7 +48,7 @@ export type refinementsOf<basis> = {
 }
 
 type refinementInputsOf<basis> = {
-	[k in refinementKindOf<basis>]?: inputOf<k>
+	[k in refinementKindOf<basis>]?: RefinementIntersectionInput<k>
 }
 
 type IntersectionBasisInput<basis extends BasisInput = BasisInput> =
@@ -88,7 +92,7 @@ export type parseIntersection<input> = input extends IntersectionInput<
 
 type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 	[k in keyof branch]: k extends keyof expected
-		? branch[k]
+		? conform<branch[k], expected[k]>
 		: ErrorMessage<`'${k & string}' is not allowed by ${branch[keyof branch &
 				BasisKind] extends string
 				? `basis '${branch[keyof branch & BasisKind]}'`
@@ -98,7 +102,7 @@ type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 export type validateIntersectionInput<input> =
 	input extends validateBasisInput<input>
 		? input
-		: input extends BasisedBranchInput<infer basis>
+		: input extends IntersectionBasisInput<infer basis>
 		? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
 		: input extends NarrowedBranchInput
 		? exactMessageOnError<input, NarrowedBranchInput>

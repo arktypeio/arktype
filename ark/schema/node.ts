@@ -5,10 +5,12 @@ import type {
 	ConstraintInputsByKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
+import type { PropInput } from "./constraints/prop.js"
 import type {
 	TypeClassesByKind,
 	TypeInputsByKind,
-	TypeNodesByKind
+	TypeNodesByKind,
+	validateBranchInput
 } from "./types/type.js"
 
 export interface BaseAttributes {
@@ -16,10 +18,24 @@ export interface BaseAttributes {
 	description?: string
 }
 
-const baseAttributeKeys = {
-	alias: 1,
-	description: 1
-} as const satisfies { [k in keyof BaseAttributes]-?: 1 }
+export const baseAttributeProps = [
+	{
+		key: "alias",
+		value: "string",
+		optional: true
+	},
+	{
+		key: "description",
+		value: "string",
+		optional: true
+	}
+] as const satisfies readonly PropInput[]
+
+export const schema = <const branches extends readonly unknown[]>(
+	...branches: {
+		[i in keyof branches]: validateBranchInput<branches[i]>
+	}
+) => branches
 
 export abstract class BaseNode<
 	schema extends BaseAttributes = BaseAttributes

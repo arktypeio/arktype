@@ -1,9 +1,9 @@
+import { entriesOf, throwInternalError } from "@arktype/util"
 import {
 	type conform,
 	type Dict,
-	entriesOf,
-	type satisfy,
-	throwInternalError
+	type listable,
+	type satisfy
 } from "@arktype/util"
 import type {
 	ConstraintInput,
@@ -160,21 +160,13 @@ export abstract class TypeNode<
 	}
 }
 
-export const schema = <const branches extends readonly unknown[]>(
-	...branches: {
-		[i in keyof branches]: validateBranchInput<branches[i]>
-	}
-) => branches
+export type TypeInput = listable<IntersectionInput | MorphInput>
 
 export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 	readonly kind = "union"
 	declare static instance: UnionNode
 
 	branches = this.schema.branches
-
-	static parser = schema({
-		morphs: []
-	})
 
 	inId = this.branches.map((constraint) => constraint.inId).join("|")
 	outId = this.branches.map((constraint) => constraint.outId).join("|")
@@ -291,7 +283,7 @@ type NodeParser = {
 	>
 }
 
-type validateBranchInput<input> = conform<
+export type validateBranchInput<input> = conform<
 	input,
 	"morphs" extends keyof input
 		? validateMorphInput<input>

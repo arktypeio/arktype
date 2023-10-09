@@ -3,6 +3,7 @@ import { Hkt } from "@arktype/util"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type BaseAttributes } from "../node.js"
+import type { TypeInput } from "../types/type.js"
 import { TypeNode } from "../types/type.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
@@ -27,7 +28,11 @@ type inferKey<k extends PropSchema["key"]> = k extends string | symbol
 	? k["infer"] & PropertyKey
 	: never
 
-export type PropInput = PropSchema
+export interface PropInput extends BaseAttributes {
+	key: string | symbol | TypeInput
+	value: TypeInput
+	optional?: boolean
+}
 
 export class PropNode<schema extends PropSchema = PropSchema>
 	extends BaseConstraint<PropSchema>
@@ -42,7 +47,7 @@ export class PropNode<schema extends PropSchema = PropSchema>
 
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], PropInput>) => {
-			return new PropNode(input)
+			return new PropNode(input as never)
 		}
 	})()
 
