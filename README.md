@@ -271,6 +271,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 		<th>neodon</th>
 		<th>mewhhaha</th>
 		<th>fubhy</th>
+		<th>Timeraa</th>
     </tr>
     <tr>
     	<td><a href="https://github.com/tmm"><img height="64px" src="https://avatars.githubusercontent.com/u/6759464"></a></td>
@@ -279,7 +280,8 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
     	<td><a href="https://github.com/codeandcats"><img height="64px" src="https://avatars.githubusercontent.com/u/6035934"></a></td>
     	<td><a href="https://github.com/jacksteamdev"><img height="64px" src="https://avatars.githubusercontent.com/u/23390212"></a></td>
     	<td><a href="https://github.com/neodon"><img height="64px" src="https://avatars.githubusercontent.com/u/82944"></a></td>
-		<td><a href="https://github.com/mewhhaha"><img height="64px" src="https://avatars.githubusercontent.com/u/3399205"></a></td>
-		<td><a href="https://github.com/fubhy"><img height="64px" src="https://avatars.githubusercontent.com/u/1172528"></a></td>
+	<td><a href="https://github.com/mewhhaha"><img height="64px" src="https://avatars.githubusercontent.com/u/3399205"></a></td>
+	<td><a href="https://github.com/fubhy"><img height="64px" src="https://avatars.githubusercontent.com/u/1172528"></a></td>
+	<td><a href="https://github.com/Timeraa"><img height="64px" src="https://avatars.githubusercontent.com/u/29104008"></a></td>
     </tr>
 </table>
