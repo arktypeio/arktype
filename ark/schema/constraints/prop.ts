@@ -34,14 +34,10 @@ export interface PropInput extends BaseAttributes {
 	optional?: boolean
 }
 
-export class PropNode<schema extends PropSchema = PropSchema>
-	extends BaseConstraint<PropSchema>
-	implements BaseRefinement
-{
+export class PropNode extends BaseConstraint implements BaseRefinement {
 	readonly kind = "prop"
-	declare infer: inferPropSchema<schema>
 
-	protected constructor(schema: PropSchema) {
+	protected constructor(public schema: PropSchema) {
 		super(schema)
 	}
 

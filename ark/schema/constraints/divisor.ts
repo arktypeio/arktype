@@ -12,10 +12,7 @@ export interface DivisibilitySchema extends BaseAttributes {
 
 export type DivisibilityInput = number | DivisibilitySchema
 
-export class DivisibilityNode
-	extends BaseConstraint<DivisibilitySchema>
-	implements BaseRefinement
-{
+export class DivisibilityNode extends BaseConstraint implements BaseRefinement {
 	readonly kind = "divisor"
 
 	protected constructor(schema: DivisibilitySchema) {

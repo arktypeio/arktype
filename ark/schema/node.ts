@@ -37,9 +37,7 @@ export const schema = <const branches extends readonly unknown[]>(
 	}
 ) => branches
 
-export abstract class BaseNode<
-	schema extends BaseAttributes = BaseAttributes
-> extends DynamicBase<schema> {
+export abstract class BaseNode {
 	abstract kind: NodeKind
 
 	declare condition: string
@@ -47,10 +45,9 @@ export abstract class BaseNode<
 	description: string
 	alias: string
 
-	protected constructor(public schema: schema) {
-		super(schema)
-		this.description ??= this.writeDefaultDescription()
-		this.alias ??= "generated"
+	protected constructor(attributes: BaseAttributes) {
+		this.description = attributes.description ?? this.writeDefaultDescription()
+		this.alias = attributes.alias ?? "generated"
 	}
 
 	abstract inId: string
@@ -66,6 +63,7 @@ export abstract class BaseNode<
 		})
 	}
 
+	abstract schema: BaseAttributes
 	abstract writeDefaultDescription(): string
 
 	equals(other: BaseNode) {

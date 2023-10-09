@@ -58,17 +58,17 @@ export const discriminatingConstraintKeys = {
 	[k in BasisKind]: CandidateDiscriminantKey<k>
 }
 
-export abstract class BaseConstraint<
-	schema extends BaseAttributes
-> extends BaseNode<schema> {
+export abstract class BaseConstraint extends BaseNode {
 	abstract kind: ConstraintKind
 
 	abstract intersectSymmetric(
 		// this representation avoids circularity errors caused by `this`
 		other: ConstraintNode<this["kind"]>
-	): schema | Disjoint | null
+	): this["schema"] | Disjoint | null
 
-	abstract intersectAsymmetric(other: ConstraintNode): schema | Disjoint | null
+	abstract intersectAsymmetric(
+		other: ConstraintNode
+	): this["schema"] | Disjoint | null
 
 	inId = ""
 	outId = ""

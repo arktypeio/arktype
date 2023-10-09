@@ -1,9 +1,10 @@
-import { entriesOf, throwInternalError } from "@arktype/util"
 import {
 	type conform,
 	type Dict,
+	entriesOf,
 	type listable,
-	type satisfy
+	type satisfy,
+	throwInternalError
 } from "@arktype/util"
 import type {
 	ConstraintInput,
@@ -409,3 +410,7 @@ export const intersectBranches = (
 	}
 	return finalBranches
 }
+
+// TODO: CHECK
+// @ts-expect-error
+const z = UnionNode.from()

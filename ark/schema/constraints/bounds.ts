@@ -31,11 +31,8 @@ const boundSchema = schema("number", {
 	]
 })
 
-export class MinNode
-	extends BaseConstraint<BoundSchema>
-	implements BaseRefinement
-{
-	protected constructor(schema: BoundSchema) {
+export class MinNode extends BaseConstraint implements BaseRefinement {
+	protected constructor(public schema: BoundSchema) {
 		super(schema)
 	}
 
