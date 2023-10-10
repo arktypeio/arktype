@@ -75,7 +75,6 @@ export abstract class BaseConstraint<
 	inId = ""
 	outId = ""
 	typeId = ""
-	metaId = ""
 
 	intersectConstraint<other extends ConstraintNode>(
 		other: other
