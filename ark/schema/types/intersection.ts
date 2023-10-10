@@ -7,14 +7,14 @@ import type {
 	validateBasisInput
 } from "../constraints/basis.js"
 import type { ConstraintNode } from "../constraints/constraint.js"
-import type { DomainInput } from "../constraints/domain.js"
-import type { ProtoInput } from "../constraints/proto.js"
+import type { DomainInput, DomainNode } from "../constraints/domain.js"
+import type { ProtoInput, ProtoNode } from "../constraints/proto.js"
 import type {
 	Refinement,
 	RefinementIntersectionInput,
 	RefinementKind
 } from "../constraints/refinement.js"
-import type { UnitInput } from "../constraints/unit.js"
+import type { UnitNode, UnitSchema } from "../constraints/unit.js"
 import type { BaseAttributes, inputOf, parseConstraint } from "../node.js"
 import type { MorphInput } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
@@ -23,14 +23,15 @@ export type IntersectionSchema = BaseAttributes & {
 	constraints: readonly ConstraintNode[]
 }
 
-type parseBasis<input extends BasisInput> = conform<
-	{
-		[k in BasisKind]: input extends BasisInput<k>
-			? parseConstraint<BasisClassesByKind[k], input>
-			: never
-	}[BasisKind],
-	Basis
+type parseBasis<input extends BasisInput> = input extends DomainInput<
+	infer domain
 >
+	? DomainNode<domain>
+	: input extends ProtoInput<infer proto>
+	? ProtoNode<proto>
+	: input extends UnitSchema<infer unit>
+	? UnitNode<unit>
+	: never
 
 type basisOf<k extends RefinementKind> =
 	Refinement<k>["applicableTo"] extends ((
@@ -65,7 +66,7 @@ type IntersectionBasisInput<basis extends BasisInput = BasisInput> =
 	| {
 			domain?: never
 			proto?: never
-			unit: conform<basis, UnitInput>
+			unit: conform<basis, UnitSchema>
 	  }
 
 export type BasisedBranchInput<basis extends BasisInput = BasisInput> =

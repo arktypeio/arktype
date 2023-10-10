@@ -10,7 +10,9 @@ export interface DomainSchema<
 	domain: domain
 }
 
-export type DomainInput = NonEnumerableDomain | DomainSchema
+export type DomainInput<
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> = domain | DomainSchema<domain>
 
 const nonEnumerableDomain = schema(
 	{ unit: "bigint" },
@@ -31,10 +33,7 @@ export class DomainNode<
 
 	declare infer: inferDomain<domain>
 
-	constructor(
-		schema: domain | DomainSchema<domain>,
-		prevalidated?: Prevalidated
-	) {
+	constructor(schema: DomainInput<domain>, prevalidated?: Prevalidated) {
 		super(typeof schema === "string" ? { domain: schema } : schema)
 	}
 

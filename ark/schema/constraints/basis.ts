@@ -9,7 +9,7 @@ import type {
 	NonEnumerableDomain
 } from "./domain.js"
 import type { ProtoChildren, ProtoInput, ProtoNode } from "./proto.js"
-import type { UnitInput, UnitNode, UnitSchema } from "./unit.js"
+import type { UnitNode, UnitSchema } from "./unit.js"
 
 export type BasisClassesByKind = {
 	domain: typeof DomainNode
@@ -26,7 +26,7 @@ export type BasesByKind = {
 export type BasisInputsByKind = {
 	domain: DomainInput
 	proto: ProtoInput
-	unit: UnitInput
+	unit: UnitSchema
 }
 
 export type BasisKind = keyof BasesByKind

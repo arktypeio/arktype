@@ -9,8 +9,6 @@ export interface UnitSchema<value = unknown> extends BaseAttributes {
 	readonly unit: value
 }
 
-export type UnitInput = UnitSchema
-
 export class UnitNode<const unit = unknown> extends BaseConstraint<UnitSchema> {
 	readonly kind = "unit"
 	declare infer: unit
