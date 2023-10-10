@@ -3,7 +3,7 @@ import type { Out } from "arktype/internal/parser/tuple.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
-import { type BaseChildren } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import type {
 	IntersectionInput,
 	parseIntersection,
@@ -12,7 +12,7 @@ import type {
 import type { IntersectionNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export type MorphSchema = BaseChildren & {
+export type MorphSchema = BaseAttributes & {
 	in: IntersectionNode
 	out: IntersectionNode
 	morphs: readonly Morph[]
@@ -20,7 +20,7 @@ export type MorphSchema = BaseChildren & {
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export type MorphInput = BaseChildren & {
+export type MorphInput = BaseAttributes & {
 	in?: IntersectionInput
 	out?: IntersectionInput
 	morphs: listable<Morph>

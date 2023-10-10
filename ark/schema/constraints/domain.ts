@@ -1,42 +1,47 @@
-import type { conform, Domain, inferDomain } from "@arktype/util"
-import { hasDomain, hasKey, Hkt, isKeyOf } from "@arktype/util"
+import type { Domain, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { type BaseChildren } from "../node.js"
-import { BaseConstraint, constraintParser } from "./constraint.js"
+import type { BaseAttributes, Prevalidated } from "../node.js"
+import { baseChildrenProps, schema } from "../node.js"
+import { BaseConstraint } from "./constraint.js"
 
 export interface DomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends BaseChildren {
+> extends BaseAttributes {
 	domain: domain
 }
 
 export type DomainInput = NonEnumerableDomain | DomainSchema
 
+const nonEnumerableDomain = schema(
+	{ unit: "bigint" },
+	{ unit: "number" },
+	{ unit: "object" },
+	{ unit: "string" },
+	{ unit: "symbol" }
+)
+
+// only domains with an infinite number of values are allowed as bases
+export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
+
 export class DomainNode<
 	// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
-	out children extends DomainSchema = DomainSchema
-> extends BaseConstraint<children> {
+	out domain extends NonEnumerableDomain = NonEnumerableDomain
+> extends BaseConstraint<DomainSchema> {
 	readonly kind = "domain"
 
-	declare infer: inferDomain<children["domain"]>
+	declare infer: inferDomain<domain>
 
-	protected constructor(schema: children) {
-		super(schema)
+	constructor(
+		schema: domain | DomainSchema<domain>,
+		prevalidated?: Prevalidated
+	) {
+		super(typeof schema === "string" ? { domain: schema } : schema)
 	}
 
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], DomainInput>) => {
-			return new DomainNode(
-				typeof input === "string" ? { domain: input } : input
-			) as {} as typeof input extends DomainSchema
-				? DomainNode<typeof input>
-				: typeof input extends NonEnumerableDomain
-				? DomainNode<{ domain: typeof input }>
-				: never
-		}
-	})()
-
-	static from = constraintParser(this)
+	static schema = schema(...nonEnumerableDomain, {
+		domain: "object",
+		prop: [...baseChildrenProps, { key: "domain", value: nonEnumerableDomain }]
+	})
 
 	hash() {
 		return this.domain
@@ -54,8 +59,6 @@ export class DomainNode<
 		return null
 	}
 }
-
-export const domainNode = DomainNode.from
 
 const enumerableDomainDescriptions = {
 	boolean: "boolean",
@@ -76,6 +79,3 @@ export const domainDescriptions = {
 	...nonEnumerableDomainDescriptions,
 	...enumerableDomainDescriptions
 } as const satisfies Record<Domain, string>
-
-// only domains with an infinite number of values are allowed as bases
-export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions

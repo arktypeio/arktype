@@ -1,19 +1,18 @@
-import type { AbstractableConstructor, conform } from "@arktype/util"
+import type { AbstractableConstructor } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
-	Hkt,
 	objectKindDescriptions
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { type BaseChildren } from "../node.js"
+import type { BaseAttributes, Prevalidated } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
-import { BaseConstraint, constraintParser } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 
 export interface ProtoChildren<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends BaseChildren {
+> extends BaseAttributes {
 	proto: constructor
 }
 
@@ -22,27 +21,18 @@ export type ProtoInput<
 > = constructor | ProtoChildren<constructor>
 
 export class ProtoNode<
-	children extends ProtoChildren = ProtoChildren
-> extends BaseConstraint<children> {
+	proto extends AbstractableConstructor = AbstractableConstructor
+> extends BaseConstraint<ProtoChildren> {
 	readonly kind = "proto"
 
-	declare infer: InstanceType<children["proto"]>
+	declare infer: InstanceType<proto>
 
-	protected constructor(schema: children) {
-		super(schema)
+	constructor(
+		schema: proto | ProtoChildren<proto>,
+		prevalidated?: Prevalidated
+	) {
+		super(typeof schema === "function" ? { proto: schema } : schema)
 	}
-
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], ProtoInput>) => {
-			return new ProtoNode<
-				typeof input extends ProtoInput<infer constructor>
-					? { proto: constructor }
-					: never
-			>(typeof input === "function" ? { proto: input } : (input as any))
-		}
-	})()
-
-	static from = constraintParser(this)
 
 	protected possibleObjectKind = getExactBuiltinConstructorName(this.proto)
 
@@ -58,7 +48,7 @@ export class ProtoNode<
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
 		...constructors: constructors
-	): this is ProtoNode<{ proto: constructors[number] }> {
+	): this is ProtoNode<constructors[number]> {
 		return constructors.some((constructor) =>
 			constructorExtends(this.proto, constructor)
 		)
@@ -70,8 +60,7 @@ export class ProtoNode<
 			: constructorExtends(this.proto, other.proto)
 			? this.children
 			: constructorExtends(other.proto, this.proto)
-			? // this cast is safe since we know other's constructor extends this one
-			  (other.children as children)
+			? other.children
 			: Disjoint.from("proto", this, other)
 	}
 

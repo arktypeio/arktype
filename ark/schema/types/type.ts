@@ -14,7 +14,7 @@ import type {
 import { DomainNode } from "../constraints/domain.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseChildren, Node } from "../node.js"
+import type { BaseAttributes, Node } from "../node.js"
 import { BaseNode } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
@@ -38,7 +38,7 @@ import type {
 
 export abstract class TypeNode<
 	t = unknown,
-	children extends BaseChildren = BaseChildren
+	children extends BaseAttributes = BaseAttributes
 > extends BaseNode<children> {
 	abstract kind: TypeKind
 
@@ -61,7 +61,7 @@ export abstract class TypeNode<
 		...branches: BranchInput[]
 	) {
 		const constraintSets = branches.map((branch) =>
-			typeof branch === "string" ? DomainNode.from("string") : {}
+			typeof branch === "string" ? new DomainNode("string") : {}
 		)
 		if (branches.length === 1) {
 			return new IntersectionNode({
@@ -72,7 +72,7 @@ export abstract class TypeNode<
 	}
 
 	static fromUnits(...branches: unknown[]) {
-		return this.from(...branches.map((value) => UnitNode.from({ unit: value })))
+		return this.from(...branches.map((value) => new UnitNode({ unit: value })))
 	}
 
 	abstract branches: readonly BranchNode[]

@@ -13,7 +13,7 @@ import type {
 	validateBranchInput
 } from "./types/type.js"
 
-export interface BaseChildren {
+export interface BaseAttributes {
 	alias?: string
 	description?: string
 }
@@ -37,8 +37,12 @@ export const schema = <const branches extends readonly unknown[]>(
 	}
 ) => branches
 
+const prevalidated = Symbol("used to bypass validation when creating a node")
+
+export type Prevalidated = typeof prevalidated
+
 export abstract class BaseNode<
-	children extends BaseChildren = BaseChildren
+	children extends BaseAttributes = BaseAttributes
 > extends DynamicBase<children> {
 	abstract kind: NodeKind
 
@@ -47,7 +51,9 @@ export abstract class BaseNode<
 	description: string
 	alias: string
 
-	protected constructor(public children: children) {
+	protected static readonly prevalidated = prevalidated
+
+	constructor(public children: children) {
 		super(children)
 		this.description = children.description ?? this.writeDefaultDescription()
 		this.alias = children.alias ?? "generated"

@@ -1,34 +1,23 @@
-import type { conform } from "@arktype/util"
-import { Hkt, stringify } from "@arktype/util"
+import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { type BaseChildren } from "../node.js"
+import type { BaseAttributes, Prevalidated } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
-import { BaseConstraint, constraintParser } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 
-export interface UnitSchema<value = unknown> extends BaseChildren {
-	unit: value
+export interface UnitSchema<value = unknown> extends BaseAttributes {
+	readonly unit: value
 }
 
 export type UnitInput = UnitSchema
 
-export class UnitNode<
-	schema extends UnitSchema = UnitSchema
-> extends BaseConstraint<schema> {
+export class UnitNode<const unit = unknown> extends BaseConstraint<UnitSchema> {
 	readonly kind = "unit"
-	declare infer: schema["unit"]
+	declare infer: unit
 
-	protected constructor(schema: schema) {
+	constructor(schema: UnitSchema<unit>, prevalidated?: Prevalidated) {
 		super(schema)
 	}
-
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], UnitInput>): UnitNode<typeof input> => {
-			return new UnitNode(input)
-		}
-	})()
-
-	static from = constraintParser(this)
 
 	hash() {
 		return compileSerializedValue(this.unit)
@@ -48,5 +37,3 @@ export class UnitNode<
 		return null
 	}
 }
-
-export const unitNode = UnitNode.from

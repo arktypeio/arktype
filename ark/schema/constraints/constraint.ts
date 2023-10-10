@@ -1,7 +1,7 @@
 import type { extend, Hkt } from "@arktype/util"
 import { reify } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseChildren } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"
 import type {
 	BasesByKind,
@@ -47,7 +47,7 @@ export const constraintParser = <node extends { hkt: Hkt }>(node: node) =>
 
 type CandidateDiscriminantKey<k extends ConstraintKind> = Exclude<
 	keyof ConstraintNode<k>["children"],
-	keyof BaseChildren
+	keyof BaseAttributes
 >
 
 export const discriminatingConstraintKeys = {
@@ -59,7 +59,7 @@ export const discriminatingConstraintKeys = {
 }
 
 export abstract class BaseConstraint<
-	children extends BaseChildren = BaseChildren
+	children extends BaseAttributes = BaseAttributes
 > extends BaseNode<children> {
 	abstract kind: ConstraintKind
 

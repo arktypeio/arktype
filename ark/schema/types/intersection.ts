@@ -15,11 +15,11 @@ import type {
 	RefinementKind
 } from "../constraints/refinement.js"
 import type { UnitInput } from "../constraints/unit.js"
-import type { BaseChildren, inputOf, parseConstraint } from "../node.js"
+import type { BaseAttributes, inputOf, parseConstraint } from "../node.js"
 import type { MorphInput } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
-export type IntersectionSchema = BaseChildren & {
+export type IntersectionSchema = BaseAttributes & {
 	constraints: readonly ConstraintNode[]
 }
 
@@ -71,11 +71,11 @@ type IntersectionBasisInput<basis extends BasisInput = BasisInput> =
 export type BasisedBranchInput<basis extends BasisInput = BasisInput> =
 	IntersectionBasisInput<basis> &
 		refinementInputsOf<parseBasis<basis>> &
-		BaseChildren
+		BaseAttributes
 
 export type NarrowedBranchInput = {
 	narrow?: inputOf<"narrow">
-} & BaseChildren
+} & BaseAttributes
 
 export type IntersectionInput<basis extends BasisInput = BasisInput> =
 	| basis

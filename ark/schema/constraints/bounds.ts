@@ -1,7 +1,8 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { type BaseChildren, baseChildrenProps, schema } from "../node.js"
+import { baseChildrenProps, schema } from "../node.js"
+import type { BaseAttributes, Prevalidated } from "../node.js"
 import type { Basis } from "./basis.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
@@ -9,7 +10,7 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface BoundChildren extends BaseChildren {
+export interface BoundChildren extends BaseAttributes {
 	readonly limit: number
 	readonly exclusive: boolean
 }
@@ -35,8 +36,10 @@ export class MinNode
 	extends BaseConstraint<BoundChildren>
 	implements BaseRefinement
 {
-	protected constructor(public schema: BoundChildren) {
-		super(schema)
+	constructor(schema: BoundInput, prevalidated?: Prevalidated) {
+		super(
+			typeof schema === "number" ? { limit: schema, exclusive: false } : schema
+		)
 	}
 
 	readonly kind = "min"
@@ -96,8 +99,10 @@ export class MaxNode
 {
 	readonly kind = "max"
 
-	protected constructor(schema: BoundChildren) {
-		super(schema)
+	constructor(schema: BoundInput, prevalidated?: Prevalidated) {
+		super(
+			typeof schema === "number" ? { limit: schema, exclusive: false } : schema
+		)
 	}
 
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
@@ -165,8 +170,8 @@ const boundable = (basis: Basis | undefined): basis is BoundableBasis => {
 }
 
 type BoundableBasis =
-	| DomainNode<{ domain: "number" | "string" }>
-	| ProtoNode<{ proto: typeof Array | typeof Date }>
+	| DomainNode<"number" | "string">
+	| ProtoNode<typeof Array | typeof Date>
 
 const unitsByBoundedKind = {
 	date: "",

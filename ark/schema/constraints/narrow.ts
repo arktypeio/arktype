@@ -1,39 +1,31 @@
-import type { conform } from "@arktype/util"
-import { Hkt } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import { type BaseChildren } from "../node.js"
+import type { BaseAttributes, Prevalidated } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface NarrowChildren extends BaseChildren {
-	predicate: Predicate
+export interface NarrowChildren<predicate extends Predicate = Predicate>
+	extends BaseAttributes {
+	predicate: predicate
 }
 
 export type NarrowInput = Predicate | NarrowChildren
 
-export class NarrowNode
+export class NarrowNode<predicate extends Predicate = Predicate>
 	extends BaseConstraint<NarrowChildren>
 	implements BaseRefinement
 {
 	readonly kind = "narrow"
 
-	protected constructor(schema: NarrowChildren) {
-		super(schema)
+	constructor(
+		schema: predicate | NarrowChildren<predicate>,
+		prevalidated?: Prevalidated
+	) {
+		super(typeof schema === "function" ? { predicate: schema } : schema)
 	}
-
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], NarrowInput>) => {
-			return new NarrowNode(
-				typeof input === "function" ? { predicate: input } : input
-			)
-		}
-	})()
-
-	static from = constraintParser(this)
 
 	applicableTo(
 		basis: Basis | undefined

@@ -1,17 +1,15 @@
-import type { conform } from "@arktype/util"
-import { Hkt } from "@arktype/util"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { type BaseChildren } from "../node.js"
+import { type BaseAttributes } from "../node.js"
 import type { TypeInput } from "../types/type.js"
 import { TypeNode } from "../types/type.js"
 import type { Basis } from "./basis.js"
-import { BaseConstraint, constraintParser } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PropChildren extends BaseChildren {
+export interface PropChildren extends BaseAttributes {
 	key: string | symbol | TypeNode
 	value: TypeNode
 	required: boolean
@@ -28,7 +26,7 @@ type inferKey<k extends PropChildren["key"]> = k extends string | symbol
 	? k["infer"] & PropertyKey
 	: never
 
-export interface PropInput extends BaseChildren {
+export interface PropInput extends BaseAttributes {
 	key: string | symbol | TypeInput
 	value: TypeInput
 	optional?: boolean
@@ -40,17 +38,9 @@ export class PropNode
 {
 	readonly kind = "prop"
 
-	protected constructor(public schema: PropChildren) {
-		super(schema)
+	constructor(public schema: PropInput) {
+		super(schema as never)
 	}
-
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], PropInput>) => {
-			return new PropNode(input as never)
-		}
-	})()
-
-	static from = constraintParser(this)
 
 	applicableTo(
 		basis: Basis | undefined

@@ -1,16 +1,17 @@
-import type { conform } from "@arktype/util"
-import { Hkt } from "@arktype/util"
-import { type BaseChildren, baseChildrenProps, schema } from "../node.js"
+import type { BaseAttributes, Prevalidated } from "../node.js"
+import { baseChildrenProps, schema } from "../node.js"
 import type { Basis } from "./basis.js"
-import { BaseConstraint, constraintParser } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface DivisibilityChildren extends BaseChildren {
+export type DivisibilityInput = number | DivisibilitySchema
+
+export interface DivisibilitySchema extends BaseAttributes {
 	divisor: number
 }
 
-export type DivisibilityInput = number | DivisibilityChildren
+export type DivisibilityChildren = DivisibilitySchema
 
 export class DivisibilityNode
 	extends BaseConstraint<DivisibilityChildren>
@@ -18,8 +19,8 @@ export class DivisibilityNode
 {
 	readonly kind = "divisor"
 
-	protected constructor(children: DivisibilityChildren) {
-		super(children)
+	constructor(schema: DivisibilitySchema, prevalidated?: Prevalidated) {
+		super(typeof schema === "number" ? { divisor: schema } : schema)
 	}
 
 	static schema = schema("number", {
@@ -27,19 +28,7 @@ export class DivisibilityNode
 		prop: [...baseChildrenProps, { key: "divisor", value: "number" }]
 	})
 
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], DivisibilityInput>) => {
-			return new DivisibilityNode(
-				typeof input === "number" ? { divisor: input } : input
-			)
-		}
-	})()
-
-	static from = constraintParser(this)
-
-	applicableTo(
-		basis: Basis | undefined
-	): basis is DomainNode<{ domain: "number" }> {
+	applicableTo(basis: Basis | undefined): basis is DomainNode<"number"> {
 		return (
 			basis !== undefined &&
 			basis.kind === "domain" &&

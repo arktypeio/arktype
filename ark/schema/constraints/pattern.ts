@@ -1,12 +1,11 @@
-import type { conform } from "@arktype/util"
-import { Hkt, throwParseError } from "@arktype/util"
-import { type BaseChildren } from "../node.js"
+import { throwParseError } from "@arktype/util"
+import type { BaseAttributes, Prevalidated } from "../node.js"
 import type { Basis } from "./basis.js"
-import { BaseConstraint, constraintParser } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PatternSchema extends BaseChildren {
+export interface PatternSchema extends BaseAttributes {
 	source: string
 	flags: string
 }
@@ -19,27 +18,17 @@ export class PatternNode
 {
 	readonly kind = "pattern"
 
-	protected constructor(schema: PatternSchema) {
-		super(schema)
+	constructor(input: PatternSchema, prevalidated?: Prevalidated) {
+		super(
+			typeof input === "string"
+				? parseRegexLiteral(input)
+				: input instanceof RegExp
+				? { source: input.source, flags: input.flags }
+				: input
+		)
 	}
 
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], PatternInput>) => {
-			return new PatternNode(
-				typeof input === "string"
-					? parseRegexLiteral(input)
-					: input instanceof RegExp
-					? { source: input.source, flags: input.flags }
-					: input
-			)
-		}
-	})()
-
-	static from = constraintParser(this)
-
-	applicableTo(
-		basis: Basis | undefined
-	): basis is DomainNode<{ domain: "string" }> {
+	applicableTo(basis: Basis | undefined): basis is DomainNode<"string"> {
 		return (
 			basis !== undefined &&
 			basis.kind === "domain" &&
