@@ -13,12 +13,12 @@ import type {
 	validateBranchInput
 } from "./types/type.js"
 
-export interface BaseAttributes {
+export interface BaseChildren {
 	alias?: string
 	description?: string
 }
 
-export const baseAttributeProps = [
+export const baseChildrenProps = [
 	{
 		key: "alias",
 		value: "string",
@@ -37,7 +37,9 @@ export const schema = <const branches extends readonly unknown[]>(
 	}
 ) => branches
 
-export abstract class BaseNode {
+export abstract class BaseNode<
+	children extends BaseChildren = BaseChildren
+> extends DynamicBase<children> {
 	abstract kind: NodeKind
 
 	declare condition: string
@@ -45,9 +47,10 @@ export abstract class BaseNode {
 	description: string
 	alias: string
 
-	protected constructor(attributes: BaseAttributes) {
-		this.description = attributes.description ?? this.writeDefaultDescription()
-		this.alias = attributes.alias ?? "generated"
+	protected constructor(public children: children) {
+		super(children)
+		this.description = children.description ?? this.writeDefaultDescription()
+		this.alias = children.alias ?? "generated"
 	}
 
 	abstract inId: string
@@ -63,7 +66,6 @@ export abstract class BaseNode {
 		})
 	}
 
-	abstract schema: BaseAttributes
 	abstract writeDefaultDescription(): string
 
 	equals(other: BaseNode) {

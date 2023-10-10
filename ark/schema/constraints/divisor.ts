@@ -1,23 +1,31 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
-import { baseAttributeProps, type BaseAttributes, schema } from "../node.js"
+import { type BaseChildren, baseChildrenProps, schema } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface DivisibilitySchema extends BaseAttributes {
+export interface DivisibilityChildren extends BaseChildren {
 	divisor: number
 }
 
-export type DivisibilityInput = number | DivisibilitySchema
+export type DivisibilityInput = number | DivisibilityChildren
 
-export class DivisibilityNode extends BaseConstraint implements BaseRefinement {
+export class DivisibilityNode
+	extends BaseConstraint<DivisibilityChildren>
+	implements BaseRefinement
+{
 	readonly kind = "divisor"
 
-	protected constructor(schema: DivisibilitySchema) {
-		super(schema)
+	protected constructor(children: DivisibilityChildren) {
+		super(children)
 	}
+
+	static schema = schema("number", {
+		domain: "object",
+		prop: [...baseChildrenProps, { key: "divisor", value: "number" }]
+	})
 
 	static hkt = new (class extends Hkt {
 		f = (input: conform<this[Hkt.key], DivisibilityInput>) => {
@@ -26,11 +34,6 @@ export class DivisibilityNode extends BaseConstraint implements BaseRefinement {
 			)
 		}
 	})()
-
-	static schema = schema("number", {
-		domain: "object",
-		prop: [...baseAttributeProps, { key: "divisor", value: "number" }]
-	})
 
 	static from = constraintParser(this)
 

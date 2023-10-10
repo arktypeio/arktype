@@ -1,16 +1,16 @@
-import type { BaseAttributes } from "../node.js"
+import type { BaseChildren } from "../node.js"
 import type { IntersectionInput } from "./intersection.js"
 import type { MorphInput, MorphNode } from "./morph.js"
 import type { IntersectionNode } from "./type.js"
 
-export interface UnionSchema extends BaseAttributes {
+export interface UnionSchema extends BaseChildren {
 	branches: readonly BranchNode[]
 	ordered: boolean
 }
 
 export type BranchNode = IntersectionNode | MorphNode
 
-export interface UnionSchemaInput extends BaseAttributes {
+export interface UnionSchemaInput extends BaseChildren {
 	branches: readonly BranchInput[]
 	ordered?: boolean
 }

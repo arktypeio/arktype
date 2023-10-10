@@ -1,8 +1,8 @@
-import { reify } from "@arktype/util"
 import type { extend, Hkt } from "@arktype/util"
+import { reify } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
+import type { BaseChildren } from "../node.js"
 import { BaseNode } from "../node.js"
-import type { BaseAttributes } from "../node.js"
 import type {
 	BasesByKind,
 	BasisClassesByKind,
@@ -46,8 +46,8 @@ export const constraintParser = <node extends { hkt: Hkt }>(node: node) =>
 	reify(node.hkt) as constraintParser<node>
 
 type CandidateDiscriminantKey<k extends ConstraintKind> = Exclude<
-	keyof ConstraintNode<k>["schema"],
-	keyof BaseAttributes
+	keyof ConstraintNode<k>["children"],
+	keyof BaseChildren
 >
 
 export const discriminatingConstraintKeys = {
@@ -58,17 +58,19 @@ export const discriminatingConstraintKeys = {
 	[k in BasisKind]: CandidateDiscriminantKey<k>
 }
 
-export abstract class BaseConstraint extends BaseNode {
+export abstract class BaseConstraint<
+	children extends BaseChildren = BaseChildren
+> extends BaseNode<children> {
 	abstract kind: ConstraintKind
 
 	abstract intersectSymmetric(
 		// this representation avoids circularity errors caused by `this`
 		other: ConstraintNode<this["kind"]>
-	): this["schema"] | Disjoint | null
+	): this["children"] | Disjoint | null
 
 	abstract intersectAsymmetric(
 		other: ConstraintNode
-	): this["schema"] | Disjoint | null
+	): this["children"] | Disjoint | null
 
 	inId = ""
 	outId = ""

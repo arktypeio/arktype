@@ -2,7 +2,7 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { type BaseAttributes } from "../node.js"
+import { type BaseChildren } from "../node.js"
 import type { TypeInput } from "../types/type.js"
 import { TypeNode } from "../types/type.js"
 import type { Basis } from "./basis.js"
@@ -11,33 +11,36 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PropSchema extends BaseAttributes {
+export interface PropChildren extends BaseChildren {
 	key: string | symbol | TypeNode
 	value: TypeNode
 	required: boolean
 }
 
-type inferPropSchema<schema extends PropSchema> =
+type inferPropSchema<schema extends PropChildren> =
 	schema["required"] extends true
 		? { [k in inferKey<schema["key"]>]: schema["value"]["infer"] }
 		: { [k in inferKey<schema["key"]>]?: schema["value"]["infer"] }
 
-type inferKey<k extends PropSchema["key"]> = k extends string | symbol
+type inferKey<k extends PropChildren["key"]> = k extends string | symbol
 	? k
 	: k extends TypeNode
 	? k["infer"] & PropertyKey
 	: never
 
-export interface PropInput extends BaseAttributes {
+export interface PropInput extends BaseChildren {
 	key: string | symbol | TypeInput
 	value: TypeInput
 	optional?: boolean
 }
 
-export class PropNode extends BaseConstraint implements BaseRefinement {
+export class PropNode
+	extends BaseConstraint<PropChildren>
+	implements BaseRefinement
+{
 	readonly kind = "prop"
 
-	protected constructor(public schema: PropSchema) {
+	protected constructor(public schema: PropChildren) {
 		super(schema)
 	}
 

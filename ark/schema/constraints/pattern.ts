@@ -1,12 +1,12 @@
 import type { conform } from "@arktype/util"
 import { Hkt, throwParseError } from "@arktype/util"
-import { type BaseAttributes } from "../node.js"
+import { type BaseChildren } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PatternSchema extends BaseAttributes {
+export interface PatternSchema extends BaseChildren {
 	source: string
 	flags: string
 }

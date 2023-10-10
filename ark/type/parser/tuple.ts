@@ -1,5 +1,5 @@
 import type {
-	BaseAttributes,
+	BaseChildren,
 	inferMorphOut,
 	inferNarrow,
 	Morph,
@@ -320,7 +320,7 @@ export type validateInfixExpression<
 				: def[1] extends "=>"
 				? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
 				: def[1] extends "@"
-				? BaseAttributes | string
+				? BaseChildren | string
 				: validateDefinition<def[2], $, args>
 	  ]
 

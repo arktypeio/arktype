@@ -2,26 +2,26 @@ import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import { type BaseAttributes } from "../node.js"
+import { type BaseChildren } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface NarrowSchema extends BaseAttributes {
+export interface NarrowChildren extends BaseChildren {
 	predicate: Predicate
 }
 
-export type NarrowInput = Predicate | NarrowSchema
+export type NarrowInput = Predicate | NarrowChildren
 
 export class NarrowNode
-	extends BaseConstraint<NarrowSchema>
+	extends BaseConstraint<NarrowChildren>
 	implements BaseRefinement
 {
 	readonly kind = "narrow"
 
-	protected constructor(schema: NarrowSchema) {
+	protected constructor(schema: NarrowChildren) {
 		super(schema)
 	}
 

@@ -1,7 +1,7 @@
 import type { conform } from "@arktype/util"
 import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { baseAttributeProps, type BaseAttributes, schema } from "../node.js"
+import { type BaseChildren, baseChildrenProps, schema } from "../node.js"
 import type { Basis } from "./basis.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
@@ -9,19 +9,19 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface BoundSchema extends BaseAttributes {
+export interface BoundChildren extends BaseChildren {
 	readonly limit: number
 	readonly exclusive: boolean
 }
 
 export type BoundNode = MinNode | MaxNode
 
-export type BoundInput = number | BoundSchema
+export type BoundInput = number | BoundChildren
 
 const boundSchema = schema("number", {
 	domain: "object",
 	prop: [
-		...baseAttributeProps,
+		...baseChildrenProps,
 		{ key: "limit", value: "number" },
 		{
 			key: "exclusive",
@@ -31,8 +31,11 @@ const boundSchema = schema("number", {
 	]
 })
 
-export class MinNode extends BaseConstraint implements BaseRefinement {
-	protected constructor(public schema: BoundSchema) {
+export class MinNode
+	extends BaseConstraint<BoundChildren>
+	implements BaseRefinement
+{
+	protected constructor(public schema: BoundChildren) {
 		super(schema)
 	}
 
@@ -88,12 +91,12 @@ export class MinNode extends BaseConstraint implements BaseRefinement {
 }
 
 export class MaxNode
-	extends BaseConstraint<BoundSchema>
+	extends BaseConstraint<BoundChildren>
 	implements BaseRefinement
 {
 	readonly kind = "max"
 
-	protected constructor(schema: BoundSchema) {
+	protected constructor(schema: BoundChildren) {
 		super(schema)
 	}
 

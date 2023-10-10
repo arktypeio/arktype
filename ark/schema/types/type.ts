@@ -14,7 +14,7 @@ import type {
 import { DomainNode } from "../constraints/domain.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node } from "../node.js"
+import type { BaseChildren, Node } from "../node.js"
 import { BaseNode } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
@@ -38,8 +38,8 @@ import type {
 
 export abstract class TypeNode<
 	t = unknown,
-	schema extends BaseAttributes = BaseAttributes
-> extends BaseNode<schema> {
+	children extends BaseChildren = BaseChildren
+> extends BaseNode<children> {
 	abstract kind: TypeKind
 
 	declare infer: t;
@@ -49,7 +49,7 @@ export abstract class TypeNode<
 	description: string
 	alias: string
 
-	protected constructor(public schema: schema) {
+	protected constructor(public schema: children) {
 		super(schema)
 		this.description ??= this.writeDefaultDescription()
 		this.alias ??= "generated"
@@ -76,7 +76,6 @@ export abstract class TypeNode<
 	}
 
 	abstract branches: readonly BranchNode[]
-	declare children: TypeNode[]
 
 	constrain<kind extends ConstraintKind>(
 		kind: kind,

@@ -1,12 +1,12 @@
 import type { conform, Domain, inferDomain } from "@arktype/util"
 import { hasDomain, hasKey, Hkt, isKeyOf } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { type BaseAttributes } from "../node.js"
+import { type BaseChildren } from "../node.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 
 export interface DomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends BaseAttributes {
+> extends BaseChildren {
 	domain: domain
 }
 
@@ -14,22 +14,14 @@ export type DomainInput = NonEnumerableDomain | DomainSchema
 
 export class DomainNode<
 	// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
-	out schema extends DomainSchema = DomainSchema
-> extends BaseConstraint<schema> {
+	out children extends DomainSchema = DomainSchema
+> extends BaseConstraint<children> {
 	readonly kind = "domain"
 
-	declare infer: inferDomain<schema["domain"]>
+	declare infer: inferDomain<children["domain"]>
 
-	protected constructor(schema: schema) {
+	protected constructor(schema: children) {
 		super(schema)
-	}
-
-	static parsable(input: unknown): input is DomainInput {
-		return (
-			(typeof input === "string" &&
-				isKeyOf(input, nonEnumerableDomainDescriptions)) ||
-			(hasDomain(input, "object") && hasKey(input, "domain"))
-		)
 	}
 
 	static hkt = new (class extends Hkt {

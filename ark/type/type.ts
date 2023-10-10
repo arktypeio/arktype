@@ -7,7 +7,7 @@ import {
 	TraversalState
 } from "@arktype/schema"
 import type {
-	BaseAttributes,
+	BaseChildren,
 	CheckResult,
 	inferMorphOut,
 	inferNarrow,
@@ -67,7 +67,7 @@ export type TypeParser<$> = {
 				? // TODO: centralize
 				  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
 				: one extends "@"
-				? [string | BaseAttributes]
+				? [string | BaseChildren]
 				: [validateTypeRoot<rest[0], $>]
 			: []
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>

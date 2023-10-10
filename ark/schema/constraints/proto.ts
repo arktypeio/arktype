@@ -7,28 +7,28 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { type BaseAttributes } from "../node.js"
+import { type BaseChildren } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 
-export interface ProtoSchema<
+export interface ProtoChildren<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> extends BaseAttributes {
+> extends BaseChildren {
 	proto: constructor
 }
 
 export type ProtoInput<
 	constructor extends AbstractableConstructor = AbstractableConstructor
-> = constructor | ProtoSchema<constructor>
+> = constructor | ProtoChildren<constructor>
 
 export class ProtoNode<
-	schema extends ProtoSchema = ProtoSchema
-> extends BaseConstraint<schema> {
+	children extends ProtoChildren = ProtoChildren
+> extends BaseConstraint<children> {
 	readonly kind = "proto"
 
-	declare infer: InstanceType<schema["proto"]>
+	declare infer: InstanceType<children["proto"]>
 
-	protected constructor(schema: schema) {
+	protected constructor(schema: children) {
 		super(schema)
 	}
 
@@ -68,10 +68,10 @@ export class ProtoNode<
 		return other.kind !== "proto"
 			? null
 			: constructorExtends(this.proto, other.proto)
-			? this.schema
+			? this.children
 			: constructorExtends(other.proto, this.proto)
 			? // this cast is safe since we know other's constructor extends this one
-			  (other.schema as schema)
+			  (other.children as children)
 			: Disjoint.from("proto", this, other)
 	}
 

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import type { BoundSchema } from "@arktype/schema"
+import type { BoundChildren } from "@arktype/schema"
 import { node, writeIncompatibleRangeMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
@@ -18,10 +18,10 @@ import {
 	writeInvalidLimitMessage
 } from "../parser/string/shift/operator/bounds.js"
 
-export const expectedBoundsCondition = (...bounds: BoundSchema[]) => ""
+export const expectedBoundsCondition = (...bounds: BoundChildren[]) => ""
 // node("number", ...bounds).condition
 
-export const expectedDateBoundsCondition = (...bounds: BoundSchema[]) => ""
+export const expectedDateBoundsCondition = (...bounds: BoundChildren[]) => ""
 // node(Date, ...bounds).condition
 
 suite("bounds", () => {

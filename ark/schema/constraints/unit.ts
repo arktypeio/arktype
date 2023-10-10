@@ -2,11 +2,11 @@ import type { conform } from "@arktype/util"
 import { Hkt, stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { type BaseAttributes } from "../node.js"
+import { type BaseChildren } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint, constraintParser } from "./constraint.js"
 
-export interface UnitSchema<value = unknown> extends BaseAttributes {
+export interface UnitSchema<value = unknown> extends BaseChildren {
 	unit: value
 }
 

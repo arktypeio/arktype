@@ -13,7 +13,7 @@ import {
 	stringify
 } from "@arktype/util"
 import {
-	type BoundSchema,
+	type BoundChildren,
 	type NumericallyBoundableData
 } from "../constraints/bounds.js"
 import { domainDescriptions } from "../constraints/domain.js"
@@ -216,7 +216,7 @@ export class KeyProblem extends Problem<KeyProblemKind> {
 }
 
 export class BoundProblem extends Problem<
-	BoundSchema,
+	BoundChildren,
 	NumericallyBoundableData
 > {
 	readonly code = "bound"
