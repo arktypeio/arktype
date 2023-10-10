@@ -164,7 +164,6 @@ export type TypeInput = listable<IntersectionInput | MorphInput>
 
 export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 	readonly kind = "union"
-	declare static instance: UnionNode
 
 	branches = this.schema.branches
 
@@ -409,7 +408,3 @@ export const intersectBranches = (
 	}
 	return finalBranches
 }
-
-// TODO: CHECK
-// @ts-expect-error
-const z = UnionNode.from()
