@@ -87,16 +87,6 @@ export abstract class BaseNode<
 	}
 }
 
-export type nodeParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
-
-export const nodeParser = <node extends { hkt: Hkt }>(node: node) =>
-	reify(node.hkt) as nodeParser<node>
-
-export type parseConstraint<
-	node extends { hkt: Hkt },
-	parameters extends Parameters<node["hkt"]["f"]>[0]
-> = Hkt.apply<node["hkt"], parameters>
-
 export type NodeInputsByKind = extend<TypeInputsByKind, ConstraintInputsByKind>
 
 export type inputOf<kind extends NodeKind> = NodeInputsByKind[kind]

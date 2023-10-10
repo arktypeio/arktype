@@ -13,7 +13,7 @@ export class UnitNode<const unit = unknown> extends BaseConstraint<UnitSchema> {
 	readonly kind = "unit"
 	declare infer: unit
 
-	constructor(schema: UnitSchema<unit>, prevalidated?: Prevalidated) {
+	constructor(schema: UnitSchema<unit>) {
 		super(schema)
 	}
 

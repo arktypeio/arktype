@@ -6,7 +6,7 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes, Prevalidated } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
@@ -27,10 +27,7 @@ export class ProtoNode<
 
 	declare infer: InstanceType<proto>
 
-	constructor(
-		schema: proto | ProtoChildren<proto>,
-		prevalidated?: Prevalidated
-	) {
+	constructor(schema: proto | ProtoChildren<proto>) {
 		super(typeof schema === "function" ? { proto: schema } : schema)
 	}
 

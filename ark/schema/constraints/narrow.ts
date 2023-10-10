@@ -1,8 +1,8 @@
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import type { BaseAttributes, Prevalidated } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import type { Basis } from "./basis.js"
-import { BaseConstraint, constraintParser } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -20,10 +20,7 @@ export class NarrowNode<predicate extends Predicate = Predicate>
 {
 	readonly kind = "narrow"
 
-	constructor(
-		schema: predicate | NarrowChildren<predicate>,
-		prevalidated?: Prevalidated
-	) {
+	constructor(schema: predicate | NarrowChildren<predicate>) {
 		super(typeof schema === "function" ? { predicate: schema } : schema)
 	}
 

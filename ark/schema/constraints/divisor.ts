@@ -1,4 +1,4 @@
-import type { BaseAttributes, Prevalidated } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import { baseChildrenProps, schema } from "../node.js"
 import type { Basis } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
@@ -19,7 +19,7 @@ export class DivisibilityNode
 {
 	readonly kind = "divisor"
 
-	constructor(schema: DivisibilitySchema, prevalidated?: Prevalidated) {
+	constructor(schema: DivisibilitySchema) {
 		super(typeof schema === "number" ? { divisor: schema } : schema)
 	}
 

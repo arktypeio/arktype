@@ -1,11 +1,9 @@
-import type { conform } from "@arktype/util"
-import { Hkt } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import type { BaseAttributes } from "../node.js"
 import { baseChildrenProps, schema } from "../node.js"
-import type { BaseAttributes, Prevalidated } from "../node.js"
 import type { Basis } from "./basis.js"
 import type { ConstraintNode } from "./constraint.js"
-import { BaseConstraint, constraintParser } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -36,27 +34,17 @@ export class MinNode
 	extends BaseConstraint<BoundChildren>
 	implements BaseRefinement
 {
-	constructor(schema: BoundInput, prevalidated?: Prevalidated) {
+	readonly kind = "min"
+
+	static schema = boundSchema
+
+	constructor(schema: BoundInput) {
 		super(
 			typeof schema === "number" ? { limit: schema, exclusive: false } : schema
 		)
 	}
 
-	readonly kind = "min"
-
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
-
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], BoundInput>) => {
-			return new MinNode(
-				typeof input === "number" ? { limit: input, exclusive: false } : input
-			)
-		}
-	})()
-
-	static schema = boundSchema
-
-	static from = constraintParser(this)
 
 	hash() {
 		return ""
@@ -99,25 +87,15 @@ export class MaxNode
 {
 	readonly kind = "max"
 
-	constructor(schema: BoundInput, prevalidated?: Prevalidated) {
+	static schema = boundSchema
+
+	constructor(schema: BoundInput) {
 		super(
 			typeof schema === "number" ? { limit: schema, exclusive: false } : schema
 		)
 	}
 
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
-
-	static hkt = new (class extends Hkt {
-		f = (input: conform<this[Hkt.key], BoundInput>) => {
-			return new MaxNode(
-				typeof input === "number" ? { limit: input, exclusive: false } : input
-			)
-		}
-	})()
-
-	static schema = boundSchema
-
-	static from = constraintParser(this)
 
 	hash() {
 		return ""

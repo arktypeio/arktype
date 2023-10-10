@@ -1,5 +1,4 @@
-import type { extend, Hkt } from "@arktype/util"
-import { reify } from "@arktype/util"
+import type { extend } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { BaseNode } from "../node.js"
@@ -34,16 +33,6 @@ export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
 
 export type ConstraintInput<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintInputsByKind[kind]
-
-export type parseConstraint<
-	node extends { hkt: Hkt },
-	parameters extends Parameters<node["hkt"]["f"]>[0]
-> = Hkt.apply<node["hkt"], parameters>
-
-export type constraintParser<node extends { hkt: Hkt }> = reify<node["hkt"]>
-
-export const constraintParser = <node extends { hkt: Hkt }>(node: node) =>
-	reify(node.hkt) as constraintParser<node>
 
 type CandidateDiscriminantKey<k extends ConstraintKind> = Exclude<
 	keyof ConstraintNode<k>["children"],

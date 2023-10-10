@@ -1,6 +1,6 @@
 import type { Domain, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Prevalidated } from "../node.js"
+import type { BaseAttributes } from "../node.js"
 import { baseChildrenProps, schema } from "../node.js"
 import { BaseConstraint } from "./constraint.js"
 
@@ -33,7 +33,7 @@ export class DomainNode<
 
 	declare infer: inferDomain<domain>
 
-	constructor(schema: DomainInput<domain>, prevalidated?: Prevalidated) {
+	constructor(schema: DomainInput<domain>) {
 		super(typeof schema === "string" ? { domain: schema } : schema)
 	}
 

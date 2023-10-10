@@ -1,7 +1,6 @@
 import type { conform, ErrorMessage, exactMessageOnError } from "@arktype/util"
 import type {
 	Basis,
-	BasisClassesByKind,
 	BasisInput,
 	BasisKind,
 	validateBasisInput
@@ -15,7 +14,7 @@ import type {
 	RefinementKind
 } from "../constraints/refinement.js"
 import type { UnitNode, UnitSchema } from "../constraints/unit.js"
-import type { BaseAttributes, inputOf, parseConstraint } from "../node.js"
+import type { BaseAttributes, inputOf } from "../node.js"
 import type { MorphInput } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
@@ -23,7 +22,7 @@ export type IntersectionSchema = BaseAttributes & {
 	constraints: readonly ConstraintNode[]
 }
 
-type parseBasis<input extends BasisInput> = input extends DomainInput<
+export type parseBasis<input extends BasisInput> = input extends DomainInput<
 	infer domain
 >
 	? DomainNode<domain>
@@ -83,13 +82,13 @@ export type IntersectionInput<basis extends BasisInput = BasisInput> =
 	| NarrowedBranchInput
 	| BasisedBranchInput<basis>
 
-export type parseIntersection<input> = input extends IntersectionInput<
-	infer basis
+export type parseIntersection<input> = IntersectionNode<
+	input extends BasisInput
+		? BasisInput extends input
+			? unknown
+			: parseBasis<input>["infer"]
+		: unknown
 >
-	? IntersectionNode<
-			BasisInput extends basis ? unknown : parseBasis<basis>["infer"]
-	  >
-	: never
 
 type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 	[k in keyof branch]: k extends keyof expected

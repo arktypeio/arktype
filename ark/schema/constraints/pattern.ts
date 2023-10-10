@@ -18,7 +18,7 @@ export class PatternNode
 {
 	readonly kind = "pattern"
 
-	constructor(input: PatternSchema, prevalidated?: Prevalidated) {
+	constructor(input: PatternSchema) {
 		super(
 			typeof input === "string"
 				? parseRegexLiteral(input)

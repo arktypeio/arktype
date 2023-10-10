@@ -1,6 +1,6 @@
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { type BaseAttributes } from "../node.js"
+import type { BaseAttributes, Prevalidated } from "../node.js"
 import type { TypeInput } from "../types/type.js"
 import { TypeNode } from "../types/type.js"
 import type { Basis } from "./basis.js"
@@ -38,7 +38,10 @@ export class PropNode
 {
 	readonly kind = "prop"
 
-	constructor(public schema: PropInput) {
+	constructor(
+		public schema: PropInput,
+		prevalidated?: Prevalidated
+	) {
 		super(schema as never)
 	}
 
