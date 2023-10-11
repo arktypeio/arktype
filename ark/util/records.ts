@@ -12,7 +12,7 @@ export type Dict<k extends string = string, v = unknown> = {
  * OR
  * B, with all properties of A undefined
  **/
-export type xor<a, b> =
+export type propwiseXor<a, b> =
 	| evaluate<a & { [k in keyof b]?: undefined }>
 	| evaluate<b & { [k in keyof a]?: undefined }>
 

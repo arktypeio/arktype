@@ -9,8 +9,7 @@
 		"sort-imports",
 		"import/no-duplicates",
 		"@typescript-eslint/consistent-type-imports",
-		"object-shorthand",
-		"prefer-arrow-functions/prefer-arrow-functions"
+		"object-shorthand"
 	],
 	"eslint.rules.customizations": [
 		// This will still be caught when run from the CLI, but it's too often
