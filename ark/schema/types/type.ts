@@ -1,10 +1,13 @@
 import {
 	type conform,
 	type Dict,
-	entriesOf,
+	domainOf,
+	hasKey,
+	isArray,
 	type listable,
 	type satisfy,
-	throwInternalError
+	throwInternalError,
+	throwParseError
 } from "@arktype/util"
 import type {
 	ConstraintInput,
@@ -12,6 +15,7 @@ import type {
 	ConstraintNode
 } from "../constraints/constraint.js"
 import { DomainNode } from "../constraints/domain.js"
+import { ProtoNode } from "../constraints/proto.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
@@ -23,12 +27,8 @@ import type {
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import type {
-	MorphInput,
-	MorphNode,
-	parseMorph,
-	validateMorphInput
-} from "./morph.js"
+import type { MorphInput, parseMorph, validateMorphInput } from "./morph.js"
+import { MorphNode } from "./morph.js"
 import type {
 	BranchInput,
 	BranchNode,
@@ -61,14 +61,15 @@ export abstract class TypeNode<
 		...branches: BranchInput[]
 	) {
 		const constraintSets = branches.map((branch) =>
-			typeof branch === "string" ? new DomainNode("string") : {}
+			typeof branch === "object" && hasKey(branch, "morphs")
+				? new MorphNode(branch)
+				: new IntersectionNode(branch)
 		)
-		if (branches.length === 1) {
-			return new IntersectionNode({
-				constraints: entriesOf(branches[0] as never)
-			})
+		// DO reduce bitach
+		if (constraintSets.length === 1) {
+			return new IntersectionNode(branches[0])
 		}
-		return new UnionNode({ branches } as never)
+		return new UnionNode({ branches: constraintSets })
 	}
 
 	static fromUnits(...branches: unknown[]) {
@@ -183,6 +184,24 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 > {
 	readonly kind = "intersection"
 
+	readonly constraints: readonly ConstraintNode[] = []
+
+	constructor(schema: IntersectionInput) {
+		const children =
+			typeof schema === "object"
+				? {}
+				: [
+						typeof schema === "string"
+							? new DomainNode(schema)
+							: typeof schema === "function"
+							? new ProtoNode(schema)
+							: throwParseError(
+									`${domainOf(schema)} is not a valid intersection input.'`
+							  )
+				  ]
+		super({})
+	}
+
 	inId = this.constraints.map((constraint) => constraint.inId).join("&")
 	outId = this.constraints.map((constraint) => constraint.outId).join("&")
 	typeId = this.constraints.map((constraint) => constraint.typeId).join("&")
@@ -275,12 +294,16 @@ type NodeParser = {
 		...branches: {
 			[i in keyof branches]: validateBranchInput<branches[i]>
 		}
-	): TypeNode<
-		{
-			[i in keyof branches]: parseBranch<branches[i]>["infer"]
-		}[number]
-	>
+	): parseNode<branches>
 }
+
+type parseNode<branches extends readonly unknown[]> = {
+	[i in keyof branches]: parseBranch<branches[i]>
+}[number] extends infer t
+	? branches["length"] extends 1
+		? t
+		: TypeNode<t>
+	: never
 
 export type validateBranchInput<input> = conform<
 	input,

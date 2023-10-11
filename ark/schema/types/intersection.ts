@@ -1,11 +1,19 @@
-import type { conform, ErrorMessage, exactMessageOnError } from "@arktype/util"
+import type {
+	conform,
+	ErrorMessage,
+	exactMessageOnError,
+	listable
+} from "@arktype/util"
 import type {
 	Basis,
 	BasisInput,
 	BasisKind,
 	validateBasisInput
 } from "../constraints/basis.js"
-import type { ConstraintNode } from "../constraints/constraint.js"
+import type {
+	ConstraintKind,
+	ConstraintNode
+} from "../constraints/constraint.js"
 import type { DomainInput, DomainNode } from "../constraints/domain.js"
 import type { ProtoInput, ProtoNode } from "../constraints/proto.js"
 import type {
@@ -14,12 +22,12 @@ import type {
 	RefinementKind
 } from "../constraints/refinement.js"
 import type { UnitNode, UnitSchema } from "../constraints/unit.js"
-import type { BaseAttributes, inputOf } from "../node.js"
+import type { BaseAttributes, inputOf, Node } from "../node.js"
 import type { MorphInput } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
 export type IntersectionSchema = BaseAttributes & {
-	constraints: readonly ConstraintNode[]
+	[k in ConstraintKind]?: listable<ConstraintNode<k>>
 }
 
 export type parseBasis<input extends BasisInput> = input extends DomainInput<
@@ -51,36 +59,40 @@ type refinementInputsOf<basis> = {
 	[k in refinementKindOf<basis>]?: RefinementIntersectionInput<k>
 }
 
-type IntersectionBasisInput<basis extends BasisInput = BasisInput> =
+type IntersectionBasisInputValue = BasisInput | Node<BasisKind>
+
+type IntersectionBasisInput<
+	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
+> =
 	| {
-			domain: conform<basis, DomainInput>
+			domain: conform<basis, DomainInput | DomainNode>
 			proto?: never
 			unit?: never
 	  }
 	| {
 			domain?: never
-			proto: conform<basis, ProtoInput>
+			proto: conform<basis, ProtoInput | ProtoNode>
 			unit?: never
 	  }
 	| {
 			domain?: never
 			proto?: never
-			unit: conform<basis, UnitSchema>
+			unit: conform<basis, UnitSchema | UnitNode>
 	  }
 
-export type BasisedBranchInput<basis extends BasisInput = BasisInput> =
-	IntersectionBasisInput<basis> &
-		refinementInputsOf<parseBasis<basis>> &
-		BaseAttributes
+export type BasisedBranchInput<
+	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
+> = IntersectionBasisInput<basis> &
+	refinementInputsOf<parseBasis<basis>> &
+	BaseAttributes
 
 export type NarrowedBranchInput = {
 	narrow?: inputOf<"narrow">
 } & BaseAttributes
 
-export type IntersectionInput<basis extends BasisInput = BasisInput> =
-	| basis
-	| NarrowedBranchInput
-	| BasisedBranchInput<basis>
+export type IntersectionInput<
+	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
+> = basis | NarrowedBranchInput | BasisedBranchInput<basis>
 
 export type parseIntersection<input> = IntersectionNode<
 	input extends BasisInput

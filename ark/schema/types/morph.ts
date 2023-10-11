@@ -1,5 +1,6 @@
 import type { listable } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
+import { builtins } from "../builtins.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
@@ -38,6 +39,14 @@ export class MorphNode<i = any, o = unknown> extends TypeNode<
 	MorphSchema
 > {
 	readonly kind = "morph"
+
+	constructor(schema: MorphInput) {
+		super({
+			in: builtins.unknown(),
+			out: builtins.unknown(),
+			morphs: []
+		})
+	}
 
 	inId = this.in.inId
 	outId = this.out.outId
