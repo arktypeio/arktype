@@ -39,7 +39,11 @@
 		},
 		{
 			"name": "properties and strings",
-			"scope": ["variable.other.property", "string"],
+			"scope": [
+				"variable.other.property",
+				"variable.other.constant.property",
+				"string"
+			],
 			"settings": {
 				"foreground": "#f5cf8f"
 			}

@@ -9,12 +9,11 @@ const creditCard = type(
 )
 
 enum Foo {
-	bar,
-	baz,
-	qux
+	Bar
 }
 
-Foo.bar
+// Should be highlighted
+Foo.BAR
 
 type({
 	a: "string|number"
