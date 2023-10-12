@@ -34,19 +34,6 @@ export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
 export type ConstraintInput<kind extends ConstraintKind = ConstraintKind> =
 	ConstraintInputsByKind[kind]
 
-type CandidateDiscriminantKey<k extends ConstraintKind> = Exclude<
-	keyof ConstraintNode<k>["children"],
-	keyof BaseAttributes
->
-
-export const discriminatingConstraintKeys = {
-	domain: "domain",
-	proto: "proto",
-	unit: "unit"
-} as const satisfies {
-	[k in BasisKind]: CandidateDiscriminantKey<k>
-}
-
 export abstract class BaseConstraint<
 	children extends BaseAttributes = BaseAttributes
 > extends BaseNode<children> {

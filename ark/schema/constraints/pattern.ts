@@ -5,15 +5,20 @@ import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PatternSchema extends BaseAttributes {
-	source: string
+export interface PatternSchemaObject extends BaseAttributes {
+	rule: string
+	flags?: string
+}
+
+export type PatternSchema = RegexLiteral | RegExp | PatternSchemaObject
+
+export interface PatternChildren extends BaseAttributes {
+	rule: string
 	flags: string
 }
 
-export type PatternInput = RegexLiteral | RegExp | PatternSchema
-
 export class PatternNode
-	extends BaseConstraint<PatternSchema>
+	extends BaseConstraint<PatternChildren>
 	implements BaseRefinement
 {
 	readonly kind = "pattern"
@@ -23,20 +28,18 @@ export class PatternNode
 			typeof input === "string"
 				? parseRegexLiteral(input)
 				: input instanceof RegExp
-				? { source: input.source, flags: input.flags }
-				: input
+				? { rule: input.source, flags: input.flags }
+				: { ...input, flags: input.flags ?? "" }
 		)
 	}
 
 	applicableTo(basis: Basis | undefined): basis is DomainNode<"string"> {
 		return (
-			basis !== undefined &&
-			basis.kind === "domain" &&
-			basis.domain === "string"
+			basis !== undefined && basis.kind === "domain" && basis.rule === "string"
 		)
 	}
 
-	instance = new RegExp(this.source, this.flags)
+	instance = new RegExp(this.rule, this.flags)
 	literal = serializeRegex(this.instance)
 
 	hash() {
@@ -67,7 +70,7 @@ const regexLiteralMatcher = /^\/(.+)\/([a-z]*)$/
 // export const patternConstraint = (input: PatternInput): PatternDefinition =>
 // 	typeof input === "string" ? parseRegexLiteral(input) : input
 
-export const parseRegexLiteral = (literal: string): PatternSchema => {
+export const parseRegexLiteral = (literal: string): PatternChildren => {
 	const match = regexLiteralMatcher.exec(literal)
 	if (!match || !match[1]) {
 		return throwParseError(
@@ -75,7 +78,7 @@ export const parseRegexLiteral = (literal: string): PatternSchema => {
 		)
 	}
 	return {
-		source: match[1],
+		rule: match[1],
 		flags: match[2]
 	}
 }

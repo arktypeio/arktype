@@ -5,22 +5,22 @@ import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export type DivisibilityInput = number | DivisibilitySchema
+export type DivisorSchema = number | DivisorSchemaObject
 
-export interface DivisibilitySchema extends BaseAttributes {
-	divisor: number
+export interface DivisorSchemaObject extends BaseAttributes {
+	rule: number
 }
 
-export type DivisibilityChildren = DivisibilitySchema
+export type DivisorChildren = DivisorSchemaObject
 
-export class DivisibilityNode
-	extends BaseConstraint<DivisibilityChildren>
+export class DivisorNode
+	extends BaseConstraint<DivisorChildren>
 	implements BaseRefinement
 {
 	readonly kind = "divisor"
 
-	constructor(schema: DivisibilitySchema) {
-		super(typeof schema === "number" ? { divisor: schema } : schema)
+	constructor(schema: DivisorSchema) {
+		super(typeof schema === "number" ? { rule: schema } : schema)
 	}
 
 	static schema = schema("number", {
@@ -30,9 +30,7 @@ export class DivisibilityNode
 
 	applicableTo(basis: Basis | undefined): basis is DomainNode<"number"> {
 		return (
-			basis !== undefined &&
-			basis.kind === "domain" &&
-			basis.domain === "number"
+			basis !== undefined && basis.kind === "domain" && basis.rule === "number"
 		)
 	}
 
@@ -41,14 +39,13 @@ export class DivisibilityNode
 	}
 
 	writeDefaultDescription() {
-		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
+		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
-	intersectSymmetric(other: DivisibilityNode) {
+	intersectSymmetric(other: DivisorNode) {
 		return {
-			divisor:
-				(this.divisor * other.divisor) /
-				greatestCommonDivisor(this.divisor, other.divisor)
+			rule:
+				(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
 		}
 	}
 

@@ -3,7 +3,6 @@ import {
 	type Dict,
 	domainOf,
 	hasKey,
-	isArray,
 	type listable,
 	type satisfy,
 	throwInternalError,
@@ -73,7 +72,7 @@ export abstract class TypeNode<
 	}
 
 	static fromUnits(...branches: unknown[]) {
-		return this.from(...branches.map((value) => new UnitNode({ unit: value })))
+		return this.from(...branches.map((value) => new UnitNode({ rule: value })))
 	}
 
 	abstract branches: readonly BranchNode[]

@@ -4,50 +4,39 @@ import type { BaseAttributes } from "../node.js"
 import { baseChildrenProps, schema } from "../node.js"
 import { BaseConstraint } from "./constraint.js"
 
-export interface DomainSchema<
-	domain extends NonEnumerableDomain = NonEnumerableDomain
+export interface DomainSchemaObject<
+	rule extends NonEnumerableDomain = NonEnumerableDomain
 > extends BaseAttributes {
-	domain: domain
+	rule: rule
 }
 
-export type DomainInput<
-	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = domain | DomainSchema<domain>
+export type DomainSchema<
+	rule extends NonEnumerableDomain = NonEnumerableDomain
+> = rule | DomainSchemaObject<rule>
 
-const nonEnumerableDomain = schema(
-	{ unit: "bigint" },
-	{ unit: "number" },
-	{ unit: "object" },
-	{ unit: "string" },
-	{ unit: "symbol" }
-)
+export type DomainChildren = DomainSchemaObject
 
 // only domains with an infinite number of values are allowed as bases
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
 
 export class DomainNode<
 	// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
-	out domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends BaseConstraint<DomainSchema> {
+	out rule extends NonEnumerableDomain = NonEnumerableDomain
+> extends BaseConstraint<DomainChildren> {
 	readonly kind = "domain"
 
-	declare infer: inferDomain<domain>
+	declare infer: inferDomain<rule>
 
-	constructor(schema: DomainInput<domain>) {
-		super(typeof schema === "string" ? { domain: schema } : schema)
+	constructor(schema: DomainSchema<rule>) {
+		super(typeof schema === "string" ? { rule: schema } : schema)
 	}
 
-	static schema = schema(...nonEnumerableDomain, {
-		domain: "object",
-		prop: [...baseChildrenProps, { key: "domain", value: nonEnumerableDomain }]
-	})
-
 	hash() {
-		return this.domain
+		return this.rule
 	}
 
 	writeDefaultDescription() {
-		return domainDescriptions[this.domain]
+		return domainDescriptions[this.rule]
 	}
 
 	intersectSymmetric(other: DomainNode) {

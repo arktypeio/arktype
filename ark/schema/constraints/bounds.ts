@@ -1,6 +1,5 @@
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
-import { baseChildrenProps, schema } from "../node.js"
 import type { Basis } from "./basis.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
@@ -9,26 +8,23 @@ import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface BoundChildren extends BaseAttributes {
-	readonly limit: number
+	readonly rule: number
 	readonly exclusive: boolean
+}
+
+export interface BoundSchemaObject extends BaseAttributes {
+	readonly rule: number
+	readonly exclusive?: boolean
 }
 
 export type BoundNode = MinNode | MaxNode
 
-export type BoundInput = number | BoundChildren
+export type BoundSchema = number | BoundSchemaObject
 
-const boundSchema = schema("number", {
-	domain: "object",
-	prop: [
-		...baseChildrenProps,
-		{ key: "limit", value: "number" },
-		{
-			key: "exclusive",
-			value: [{ unit: true }, { unit: false }],
-			optional: true
-		}
-	]
-})
+const parseBoundSchema = (schema: BoundSchema): BoundChildren =>
+	typeof schema === "number"
+		? { rule: schema, exclusive: false }
+		: { ...schema, exclusive: schema.exclusive ?? false }
 
 export class MinNode
 	extends BaseConstraint<BoundChildren>
@@ -36,12 +32,8 @@ export class MinNode
 {
 	readonly kind = "min"
 
-	static schema = boundSchema
-
-	constructor(schema: BoundInput) {
-		super(
-			typeof schema === "number" ? { limit: schema, exclusive: false } : schema
-		)
+	constructor(schema: BoundSchema) {
+		super(parseBoundSchema(schema))
 	}
 
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
@@ -51,16 +43,16 @@ export class MinNode
 	}
 
 	intersectSymmetric(other: MinNode) {
-		return this.limit > other.limit ||
-			(this.limit === other.limit && this.exclusive)
+		return this.rule > other.rule ||
+			(this.rule === other.rule && this.exclusive)
 			? this
 			: other
 	}
 
 	intersectAsymmetric(other: ConstraintNode) {
 		if (other.kind === "max") {
-			return this.limit > other.limit ||
-				(this.limit === other.limit && (this.exclusive || other.exclusive))
+			return this.rule > other.rule ||
+				(this.rule === other.rule && (this.exclusive || other.exclusive))
 				? Disjoint.from("bound", this, other)
 				: null
 		}
@@ -77,7 +69,7 @@ export class MinNode
 		// ? "after"
 		// : "at or after"
 		const comparison = this.exclusive ? "more than" : "at least"
-		return `${comparison} ${this.limit}`
+		return `${comparison} ${this.rule}`
 	}
 }
 
@@ -87,12 +79,8 @@ export class MaxNode
 {
 	readonly kind = "max"
 
-	static schema = boundSchema
-
-	constructor(schema: BoundInput) {
-		super(
-			typeof schema === "number" ? { limit: schema, exclusive: false } : schema
-		)
+	constructor(schema: BoundSchema) {
+		super(parseBoundSchema(schema))
 	}
 
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
@@ -106,16 +94,16 @@ export class MaxNode
 	}
 
 	intersectSymmetric(other: MaxNode) {
-		return this.limit > other.limit ||
-			(this.limit === other.limit && this.exclusive)
+		return this.rule > other.rule ||
+			(this.rule === other.rule && this.exclusive)
 			? this
 			: other
 	}
 
 	intersectAsymmetric(other: ConstraintNode) {
 		if (other.kind === "max") {
-			return this.limit > other.limit ||
-				(this.limit === other.limit && (this.exclusive || other.exclusive))
+			return this.rule > other.rule ||
+				(this.rule === other.rule && (this.exclusive || other.exclusive))
 				? Disjoint.from("bound", this, other)
 				: null
 		}
@@ -128,7 +116,7 @@ export class MaxNode
 		// ? "before"
 		// : "at or before"
 		const comparison = this.exclusive ? "less than" : "at most"
-		return `${comparison} ${this.limit}`
+		return `${comparison} ${this.rule}`
 	}
 }
 
@@ -139,7 +127,7 @@ const boundable = (basis: Basis | undefined): basis is BoundableBasis => {
 		return false
 	}
 	if (basis.kind === "domain") {
-		return basis.domain === "number" || basis.domain === "string"
+		return basis.rule === "number" || basis.rule === "string"
 	}
 	if (basis.kind === "proto") {
 		return basis.extendsOneOf(Array, Date)

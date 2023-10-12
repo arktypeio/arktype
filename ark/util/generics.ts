@@ -1,4 +1,5 @@
 import type { ErrorMessage } from "./errors.js"
+import type { unionToTuple } from "./unionToTuple.js"
 
 export type Stringifiable =
 	| string
@@ -87,3 +88,16 @@ export type defined<t> = t & ({} | null)
 export type autocomplete<suggestions extends string> =
 	| suggestions
 	| (string & {})
+
+export type widen<t, supertypes> = collectWidenedType<
+	t,
+	unionToTuple<supertypes>
+>
+
+type collectWidenedType<
+	t,
+	remaining extends unknown[],
+	result = never
+> = remaining extends [infer head, ...infer tail]
+	? collectWidenedType<t, tail, t extends head ? result | head : result>
+	: result

@@ -1,13 +1,13 @@
 import type { listable } from "@arktype/util"
 import type { Basis } from "./basis.js"
-import type { BoundInput, MaxNode, MinNode } from "./bounds.js"
-import type { DivisibilityInput, DivisibilityNode } from "./divisor.js"
-import type { NarrowInput, NarrowNode } from "./narrow.js"
-import type { PatternInput, PatternNode } from "./pattern.js"
+import type { BoundSchema, MaxNode, MinNode } from "./bounds.js"
+import type { DivisorNode, DivisorSchema } from "./divisor.js"
+import type { NarrowNode, NarrowSchema } from "./narrow.js"
+import type { PatternNode, PatternSchema } from "./pattern.js"
 import type { PropInput, PropNode } from "./prop.js"
 
 export type RefinementClassesByKind = {
-	divisor: typeof DivisibilityNode
+	divisor: typeof DivisorNode
 	min: typeof MinNode
 	max: typeof MaxNode
 	pattern: typeof PatternNode
@@ -16,7 +16,7 @@ export type RefinementClassesByKind = {
 }
 
 export type RefinementsByKind = {
-	divisor: DivisibilityNode
+	divisor: DivisorNode
 	min: MinNode
 	max: MaxNode
 	pattern: PatternNode
@@ -25,12 +25,12 @@ export type RefinementsByKind = {
 }
 
 export type RefinementInputsByKind = {
-	divisor: DivisibilityInput
-	min: BoundInput
-	max: BoundInput
-	pattern: PatternInput
+	divisor: DivisorSchema
+	min: BoundSchema
+	max: BoundSchema
+	pattern: PatternSchema
 	prop: PropInput
-	narrow: NarrowInput
+	narrow: NarrowSchema
 }
 
 type hasReducableIntersection<kind extends RefinementKind> =

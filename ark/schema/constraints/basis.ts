@@ -1,14 +1,15 @@
 import type {
 	AbstractableConstructor,
-	exactMessageOnError
+	exactMessageOnError,
+	widen
 } from "@arktype/util"
 import type {
-	DomainInput,
 	DomainNode,
 	DomainSchema,
+	DomainSchemaObject,
 	NonEnumerableDomain
 } from "./domain.js"
-import type { ProtoChildren, ProtoInput, ProtoNode } from "./proto.js"
+import type { ProtoNode, ProtoSchema, ProtoSchemaObject } from "./proto.js"
 import type { UnitNode, UnitSchema } from "./unit.js"
 
 export type BasisClassesByKind = {
@@ -24,8 +25,8 @@ export type BasesByKind = {
 }
 
 export type BasisInputsByKind = {
-	domain: DomainInput
-	proto: ProtoInput
+	domain: DomainSchema
+	proto: ProtoSchema
 	unit: UnitSchema
 }
 
@@ -43,11 +44,7 @@ export type validateBasisInput<basis> = basis extends
 	: basis extends object
 	? exactMessageOnError<
 			basis,
-			basis extends UnitSchema
-				? UnitSchema
-				: basis extends ProtoChildren
-				? ProtoChildren
-				: DomainSchema
+			widen<basis, DomainSchemaObject | ProtoSchemaObject | UnitSchema>
 	  >
 	: never
 

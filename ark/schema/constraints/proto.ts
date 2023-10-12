@@ -10,53 +10,57 @@ import type { BaseAttributes } from "../node.js"
 import type { ConstraintNode } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
-export interface ProtoChildren<
-	constructor extends AbstractableConstructor = AbstractableConstructor
+export interface ProtoSchemaObject<
+	rule extends AbstractableConstructor = AbstractableConstructor
 > extends BaseAttributes {
-	proto: constructor
+	rule: rule
 }
 
-export type ProtoInput<
-	constructor extends AbstractableConstructor = AbstractableConstructor
-> = constructor | ProtoChildren<constructor>
+export type ProtoSchema<
+	rule extends AbstractableConstructor = AbstractableConstructor
+> = rule | ProtoChildren<rule>
+
+export type ProtoChildren<
+	rule extends AbstractableConstructor = AbstractableConstructor
+> = ProtoSchemaObject<rule>
 
 export class ProtoNode<
-	proto extends AbstractableConstructor = AbstractableConstructor
+	rule extends AbstractableConstructor = AbstractableConstructor
 > extends BaseConstraint<ProtoChildren> {
 	readonly kind = "proto"
 
-	declare infer: InstanceType<proto>
+	declare infer: InstanceType<rule>
 
-	constructor(schema: proto | ProtoChildren<proto>) {
-		super(typeof schema === "function" ? { proto: schema } : schema)
+	constructor(schema: rule | ProtoChildren<rule>) {
+		super(typeof schema === "function" ? { rule: schema } : schema)
 	}
 
-	protected possibleObjectKind = getExactBuiltinConstructorName(this.proto)
+	protected possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 
 	hash() {
-		return this.possibleObjectKind ?? compileSerializedValue(this.proto)
+		return this.possibleObjectKind ?? compileSerializedValue(this.rule)
 	}
 
 	writeDefaultDescription() {
 		return this.possibleObjectKind
 			? objectKindDescriptions[this.possibleObjectKind]
-			: `an instance of ${this.proto}`
+			: `an instance of ${this.rule}`
 	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
 		...constructors: constructors
 	): this is ProtoNode<constructors[number]> {
 		return constructors.some((constructor) =>
-			constructorExtends(this.proto, constructor)
+			constructorExtends(this.rule, constructor)
 		)
 	}
 
 	intersectSymmetric(other: ConstraintNode) {
 		return other.kind !== "proto"
 			? null
-			: constructorExtends(this.proto, other.proto)
+			: constructorExtends(this.rule, other.rule)
 			? this.children
-			: constructorExtends(other.proto, this.proto)
+			: constructorExtends(other.rule, this.rule)
 			? other.children
 			: Disjoint.from("proto", this, other)
 	}

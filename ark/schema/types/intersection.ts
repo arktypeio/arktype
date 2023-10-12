@@ -1,4 +1,5 @@
 import type {
+	AbstractableConstructor,
 	conform,
 	ErrorMessage,
 	exactMessageOnError,
@@ -14,8 +15,12 @@ import type {
 	ConstraintKind,
 	ConstraintNode
 } from "../constraints/constraint.js"
-import type { DomainInput, DomainNode } from "../constraints/domain.js"
-import type { ProtoInput, ProtoNode } from "../constraints/proto.js"
+import type {
+	DomainNode,
+	DomainSchema,
+	NonEnumerableDomain
+} from "../constraints/domain.js"
+import type { ProtoNode, ProtoSchema } from "../constraints/proto.js"
 import type {
 	Refinement,
 	RefinementIntersectionInput,
@@ -30,11 +35,11 @@ export type IntersectionSchema = BaseAttributes & {
 	[k in ConstraintKind]?: listable<ConstraintNode<k>>
 }
 
-export type parseBasis<input extends BasisInput> = input extends DomainInput<
+export type parseBasis<input extends BasisInput> = input extends DomainSchema<
 	infer domain
 >
 	? DomainNode<domain>
-	: input extends ProtoInput<infer proto>
+	: input extends ProtoSchema<infer proto>
 	? ProtoNode<proto>
 	: input extends UnitSchema<infer unit>
 	? UnitNode<unit>
@@ -65,13 +70,13 @@ type IntersectionBasisInput<
 	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
 > =
 	| {
-			domain: conform<basis, DomainInput | DomainNode>
+			domain: conform<basis, DomainSchema | DomainNode>
 			proto?: never
 			unit?: never
 	  }
 	| {
 			domain?: never
-			proto: conform<basis, ProtoInput | ProtoNode>
+			proto: conform<basis, ProtoSchema | ProtoNode>
 			unit?: never
 	  }
 	| {
@@ -86,19 +91,19 @@ export type BasisedBranchInput<
 	refinementInputsOf<parseBasis<basis>> &
 	BaseAttributes
 
-export type NarrowedBranchInput = {
+export type UnknownBranchInput = {
 	narrow?: inputOf<"narrow">
 } & BaseAttributes
 
 export type IntersectionInput<
 	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
-> = basis | NarrowedBranchInput | BasisedBranchInput<basis>
+> = basis | UnknownBranchInput | BasisedBranchInput<basis>
 
 export type parseIntersection<input> = IntersectionNode<
-	input extends BasisInput
-		? BasisInput extends input
-			? unknown
-			: parseBasis<input>["infer"]
+	input extends AbstractableConstructor | NonEnumerableDomain
+		? parseBasis<input>["infer"]
+		: input extends IntersectionBasisInput<infer basis>
+		? parseBasis<basis>["infer"]
 		: unknown
 >
 
@@ -116,8 +121,8 @@ export type validateIntersectionInput<input> =
 		? input
 		: input extends IntersectionBasisInput<infer basis>
 		? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
-		: input extends NarrowedBranchInput
-		? exactMessageOnError<input, NarrowedBranchInput>
+		: input extends UnknownBranchInput
+		? exactMessageOnError<input, UnknownBranchInput>
 		: IntersectionInput | MorphInput
 
 // export class ArrayPredicate extends composePredicate(

@@ -7,21 +7,26 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface NarrowChildren<predicate extends Predicate = Predicate>
+export interface NarrowSchemaObject<rule extends Predicate = Predicate>
 	extends BaseAttributes {
-	predicate: predicate
+	rule: rule
 }
 
-export type NarrowInput = Predicate | NarrowChildren
+export type NarrowSchema<rule extends Predicate = Predicate> =
+	| rule
+	| NarrowSchemaObject<rule>
 
-export class NarrowNode<predicate extends Predicate = Predicate>
+export type NarrowChildren<rule extends Predicate = Predicate> =
+	NarrowSchemaObject<rule>
+
+export class NarrowNode<rule extends Predicate = Predicate>
 	extends BaseConstraint<NarrowChildren>
 	implements BaseRefinement
 {
 	readonly kind = "narrow"
 
-	constructor(schema: predicate | NarrowChildren<predicate>) {
-		super(typeof schema === "function" ? { predicate: schema } : schema)
+	constructor(schema: rule | NarrowChildren<rule>) {
+		super(typeof schema === "function" ? { rule: schema } : schema)
 	}
 
 	applicableTo(
@@ -33,11 +38,11 @@ export class NarrowNode<predicate extends Predicate = Predicate>
 	}
 
 	hash() {
-		return compileSerializedValue(this.predicate)
+		return compileSerializedValue(this.rule)
 	}
 
 	writeDefaultDescription() {
-		return `valid according to ${this.predicate.name}`
+		return `valid according to ${this.rule.name}`
 	}
 
 	intersectSymmetric() {

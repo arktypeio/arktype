@@ -1,5 +1,5 @@
 import type { TypeNode } from "@arktype/schema"
-import { BoundNode, MinNode } from "@arktype/schema"
+import { MinNode } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
@@ -81,7 +81,7 @@ export class DynamicState {
 		if (this.branches.leftBound) {
 			return this.error(
 				writeMultipleLeftBoundsMessage(
-					this.branches.leftBound.limit,
+					this.branches.leftBound.rule,
 					this.branches.leftBound.comparator,
 					limit,
 					invertedComparator
@@ -91,7 +91,7 @@ export class DynamicState {
 		// TODO: date?
 		this.branches.leftBound = new MinNode({
 			exclusive: comparator.length === 1,
-			limit: limit as number
+			rule: limit as number
 		})
 	}
 
@@ -148,7 +148,7 @@ export class DynamicState {
 		if (this.branches.leftBound) {
 			return this.error(
 				writeOpenRangeMessage(
-					this.branches.leftBound.limit,
+					this.branches.leftBound.rule,
 					this.branches.leftBound.comparator
 				)
 			)
