@@ -40,7 +40,6 @@ import type {
 } from "./parser/tuple.js"
 import type { Module, Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
-import { type } from "./scopes/ark.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
