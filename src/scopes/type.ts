@@ -105,9 +105,9 @@ export type AnonymousTypeName = `λ${string}`
 export const isAnonymousName = (name: string): name is AnonymousTypeName =>
     name[0] === "λ"
 
-export type asIn<t> = asIo<t, "in">
+export type asIn<t> = asIo<t, "in"> extends t ? t : asIo<t, "in">
 
-export type asOut<t> = asIo<t, "out">
+export type asOut<t> = asIo<t, "out"> extends t ? t : asIo<t, "out">
 
 type asIo<t, io extends "in" | "out"> = t extends ParsedMorph<infer i, infer o>
     ? io extends "in"
