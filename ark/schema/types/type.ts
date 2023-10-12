@@ -21,7 +21,7 @@ import type { BaseAttributes, Node } from "../node.js"
 import { BaseNode } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
-	IntersectionInput,
+	AnyIntersectionChildren,
 	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionInput
@@ -66,7 +66,7 @@ export abstract class TypeNode<
 		)
 		// DO reduce bitach
 		if (constraintSets.length === 1) {
-			return new IntersectionNode(branches[0])
+			return branches[0]
 		}
 		return new UnionNode({ branches: constraintSets })
 	}
@@ -160,7 +160,7 @@ export abstract class TypeNode<
 	}
 }
 
-export type TypeInput = listable<IntersectionInput | MorphInput>
+export type TypeInput = listable<IntersectionSchema | MorphInput>
 
 export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 	readonly kind = "union"
@@ -179,26 +179,24 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 
 export class IntersectionNode<t = unknown> extends TypeNode<
 	t,
-	IntersectionSchema
+	AnyIntersectionChildren
 > {
 	readonly kind = "intersection"
 
 	readonly constraints: readonly ConstraintNode[] = []
 
-	constructor(schema: IntersectionInput) {
+	constructor(schema: IntersectionSchema) {
 		const children =
 			typeof schema === "object"
 				? {}
-				: [
-						typeof schema === "string"
-							? new DomainNode(schema)
-							: typeof schema === "function"
-							? new ProtoNode(schema)
-							: throwParseError(
-									`${domainOf(schema)} is not a valid intersection input.'`
-							  )
-				  ]
-		super({})
+				: typeof schema === "string"
+				? { domain: new DomainNode(schema) }
+				: typeof schema === "function"
+				? { proto: new ProtoNode(schema) }
+				: throwParseError(
+						`${domainOf(schema)} is not a valid intersection input.'`
+				  )
+		super(children)
 	}
 
 	inId = this.constraints.map((constraint) => constraint.inId).join("&")
@@ -313,7 +311,7 @@ export type validateBranchInput<input> = conform<
 
 type parseBranch<branch> = branch extends MorphInput
 	? parseMorph<branch>
-	: branch extends IntersectionInput
+	: branch extends IntersectionSchema
 	? parseIntersection<branch>
 	: IntersectionNode
 
@@ -336,7 +334,7 @@ export type TypeInputsByKind = satisfy<
 	Dict<TypeKind>,
 	{
 		union: UnionInput
-		intersection: IntersectionInput
+		intersection: IntersectionSchema
 		morph: MorphInput
 	}
 >

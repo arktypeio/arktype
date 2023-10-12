@@ -7,25 +7,25 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface NarrowSchemaObject<rule extends Predicate = Predicate>
+export interface PredicateSchemaObject<rule extends Predicate = Predicate>
 	extends BaseAttributes {
 	rule: rule
 }
 
-export type NarrowSchema<rule extends Predicate = Predicate> =
+export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
-	| NarrowSchemaObject<rule>
+	| PredicateSchemaObject<rule>
 
-export type NarrowChildren<rule extends Predicate = Predicate> =
-	NarrowSchemaObject<rule>
+export type PredicateChildren<rule extends Predicate = Predicate> =
+	PredicateSchemaObject<rule>
 
-export class NarrowNode<rule extends Predicate = Predicate>
-	extends BaseConstraint<NarrowChildren>
+export class PredicateNode<rule extends Predicate = Predicate>
+	extends BaseConstraint<PredicateChildren>
 	implements BaseRefinement
 {
-	readonly kind = "narrow"
+	readonly kind = "predicate"
 
-	constructor(schema: rule | NarrowChildren<rule>) {
+	constructor(schema: rule | PredicateChildren<rule>) {
 		super(typeof schema === "function" ? { rule: schema } : schema)
 	}
 

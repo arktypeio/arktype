@@ -6,7 +6,7 @@ import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
 import { type BaseAttributes } from "../node.js"
 import type {
-	IntersectionInput,
+	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
@@ -22,8 +22,8 @@ export type MorphSchema = BaseAttributes & {
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type MorphInput = BaseAttributes & {
-	in?: IntersectionInput
-	out?: IntersectionInput
+	in?: IntersectionSchema
+	out?: IntersectionSchema
 	morphs: listable<Morph>
 }
 

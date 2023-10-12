@@ -31,7 +31,7 @@ import type { BaseAttributes, inputOf, Node } from "../node.js"
 import type { MorphInput } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
-export type IntersectionSchema = BaseAttributes & {
+export type AnyIntersectionChildren = BaseAttributes & {
 	[k in ConstraintKind]?: listable<ConstraintNode<k>>
 }
 
@@ -92,10 +92,10 @@ export type BasisedBranchInput<
 	BaseAttributes
 
 export type UnknownBranchInput = {
-	narrow?: inputOf<"narrow">
+	predicates?: inputOf<"predicate">
 } & BaseAttributes
 
-export type IntersectionInput<
+export type IntersectionSchema<
 	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
 > = basis | UnknownBranchInput | BasisedBranchInput<basis>
 
@@ -123,7 +123,7 @@ export type validateIntersectionInput<input> =
 		? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
 		: input extends UnknownBranchInput
 		? exactMessageOnError<input, UnknownBranchInput>
-		: IntersectionInput | MorphInput
+		: IntersectionSchema | MorphInput
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,
