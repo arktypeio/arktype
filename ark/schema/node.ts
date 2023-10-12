@@ -1,11 +1,11 @@
-import type { extend, Hkt } from "@arktype/util"
-import { DynamicBase, reify } from "@arktype/util"
+import type { extend } from "@arktype/util"
+import { DynamicBase } from "@arktype/util"
 import type {
 	ConstraintClassesByKind,
 	ConstraintInputsByKind,
 	ConstraintsByKind
 } from "./constraints/constraint.js"
-import type { PropInput } from "./constraints/prop.js"
+import type { PropSchema } from "./constraints/prop.js"
 import type {
 	TypeClassesByKind,
 	TypeInputsByKind,
@@ -29,7 +29,7 @@ export const baseChildrenProps = [
 		value: "string",
 		optional: true
 	}
-] as const satisfies readonly PropInput[]
+] as const satisfies readonly PropSchema[]
 
 export const schema = <const branches extends readonly unknown[]>(
 	...branches: {

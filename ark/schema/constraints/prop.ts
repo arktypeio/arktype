@@ -12,13 +12,13 @@ import type { BaseRefinement } from "./refinement.js"
 export interface PropChildren extends BaseAttributes {
 	key: string | symbol | TypeNode
 	value: TypeNode
-	required: boolean
+	optional: boolean
 }
 
 type inferPropSchema<schema extends PropChildren> =
-	schema["required"] extends true
-		? { [k in inferKey<schema["key"]>]: schema["value"]["infer"] }
-		: { [k in inferKey<schema["key"]>]?: schema["value"]["infer"] }
+	schema["optional"] extends true
+		? { [k in inferKey<schema["key"]>]?: schema["value"]["infer"] }
+		: { [k in inferKey<schema["key"]>]: schema["value"]["infer"] }
 
 type inferKey<k extends PropChildren["key"]> = k extends string | symbol
 	? k
@@ -26,7 +26,7 @@ type inferKey<k extends PropChildren["key"]> = k extends string | symbol
 	? k["infer"] & PropertyKey
 	: never
 
-export interface PropInput extends BaseAttributes {
+export interface PropSchema extends BaseAttributes {
 	key: string | symbol | TypeInput
 	value: TypeInput
 	optional?: boolean
@@ -38,10 +38,7 @@ export class PropNode
 {
 	readonly kind = "prop"
 
-	constructor(
-		public schema: PropInput,
-		prevalidated?: Prevalidated
-	) {
+	constructor(schema: PropSchema, prevalidated?: Prevalidated) {
 		super(schema as never)
 	}
 
@@ -58,7 +55,7 @@ export class PropNode
 	}
 
 	writeDefaultDescription() {
-		return `${String(this.key)}${this.required ? "" : "?"}: ${this.value}`
+		return `${String(this.key)}${this.optional ? "" : "?"}: ${this.value}`
 	}
 
 	intersectSymmetric(other: PropNode) {
@@ -69,20 +66,20 @@ export class PropNode
 			return null
 		}
 		const key = this.key
-		const required = this.required || other.required
+		const optional = this.optional && other.optional
 		const value = this.value.intersect(other.value)
 		if (value instanceof Disjoint) {
-			return required
+			return optional
 				? value
 				: {
 						key,
-						required,
+						optional,
 						value: builtins.never()
 				  }
 		}
 		return {
 			key,
-			required,
+			optional,
 			value
 		}
 	}

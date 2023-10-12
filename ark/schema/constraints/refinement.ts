@@ -4,7 +4,7 @@ import type { BoundSchema, MaxNode, MinNode } from "./bounds.js"
 import type { DivisorNode, DivisorSchema } from "./divisor.js"
 import type { NarrowNode, NarrowSchema } from "./narrow.js"
 import type { PatternNode, PatternSchema } from "./pattern.js"
-import type { PropInput, PropNode } from "./prop.js"
+import type { PropNode, PropSchema } from "./prop.js"
 
 export type RefinementClassesByKind = {
 	divisor: typeof DivisorNode
@@ -29,7 +29,7 @@ export type RefinementInputsByKind = {
 	min: BoundSchema
 	max: BoundSchema
 	pattern: PatternSchema
-	prop: PropInput
+	prop: PropSchema
 	narrow: NarrowSchema
 }
 
