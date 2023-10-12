@@ -87,8 +87,6 @@ export abstract class BaseNode<
 	}
 }
 
-export type NodeInputsByKind = extend<TypeInputsByKind, ConstraintInputsByKind>
-
 export type inputOf<kind extends NodeKind> = NodeInputsByKind[kind]
 
 export type NodeClassesByKind = extend<
@@ -96,8 +94,15 @@ export type NodeClassesByKind = extend<
 	TypeClassesByKind
 >
 
-export type NodesByKind = extend<ConstraintsByKind, TypeNodesByKind>
+export type NodeKind = keyof NodeClassesByKind
 
-export type NodeKind = keyof NodesByKind
+export type NodeClass<kind extends NodeKind = NodeKind> =
+	NodeClassesByKind[kind]
+
+export type Schema<kind extends NodeKind> = ConstructorParameters<
+	NodeClass<kind>
+>
+
+export type NodesByKind = extend<ConstraintsByKind, TypeNodesByKind>
 
 export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]

@@ -243,7 +243,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	narrow<def extends Predicate<extractOut<t>>>(
 		def: def
 	): Type<inferNarrow<extractOut<t>, def>, $> {
-		return new Type(this.root.constrain("narrow", def), this.scope) as never
+		return new Type(this.root.constrain("predicate", def), this.scope) as never
 	}
 
 	array(): Type<t[], $> {

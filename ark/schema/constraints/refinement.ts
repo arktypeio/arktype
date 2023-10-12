@@ -1,4 +1,5 @@
 import type { listable } from "@arktype/util"
+import type { Node } from "../node.js"
 import type { Basis } from "./basis.js"
 import type { BoundSchema, MaxNode, MinNode } from "./bounds.js"
 import type { DivisorNode, DivisorSchema } from "./divisor.js"
@@ -15,40 +16,16 @@ export type RefinementClassesByKind = {
 	predicate: typeof PredicateNode
 }
 
-export type RefinementsByKind = {
-	divisor: DivisorNode
-	min: MinNode
-	max: MaxNode
-	pattern: PatternNode
-	prop: PropNode
-	predicate: PredicateNode
-}
-
-export type RefinementInputsByKind = {
-	divisor: DivisorSchema
-	min: BoundSchema
-	max: BoundSchema
-	pattern: PatternSchema
-	prop: PropSchema
-	predicate: PredicateSchema
-}
-
 type hasReducableIntersection<kind extends RefinementKind> =
-	null extends ReturnType<Refinement<kind>["intersectSymmetric"]> ? false : true
+	null extends ReturnType<Node<kind>["intersectSymmetric"]> ? false : true
 
 export type RefinementIntersectionInputsByKind = {
-	[k in keyof RefinementInputsByKind]: hasReducableIntersection<k> extends true
+	[k in RefinementKind]: hasReducableIntersection<k> extends true
 		? RefinementInput<k>
 		: listable<RefinementInput<k>>
 }
 
-export type RefinementKind = keyof RefinementsByKind
-
-export type Refinement<kind extends RefinementKind = RefinementKind> =
-	RefinementsByKind[kind]
-
-export type RefinementInput<kind extends RefinementKind = RefinementKind> =
-	RefinementInputsByKind[kind]
+export type RefinementKind = keyof RefinementClassesByKind
 
 export type RefinementIntersectionInput<
 	kind extends RefinementKind = RefinementKind

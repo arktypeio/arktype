@@ -18,21 +18,7 @@ export type BasisClassesByKind = {
 	unit: typeof UnitNode
 }
 
-export type BasesByKind = {
-	domain: DomainNode
-	proto: ProtoNode
-	unit: UnitNode
-}
-
-export type BasisInputsByKind = {
-	domain: DomainSchema
-	proto: ProtoSchema
-	unit: UnitSchema
-}
-
-export type BasisKind = keyof BasesByKind
-
-export type Basis<kind extends BasisKind = BasisKind> = BasesByKind[kind]
+export type BasisKind = keyof BasisClassesByKind
 
 export type BasisInput<kind extends BasisKind = BasisKind> =
 	BasisInputsByKind[kind]

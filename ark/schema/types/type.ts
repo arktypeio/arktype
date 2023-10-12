@@ -48,7 +48,7 @@ export abstract class TypeNode<
 	description: string
 	alias: string
 
-	protected constructor(public schema: children) {
+	constructor(public schema: children) {
 		super(schema)
 		this.description ??= this.writeDefaultDescription()
 		this.alias ??= "generated"
@@ -164,6 +164,10 @@ export type TypeInput = listable<IntersectionSchema | MorphInput>
 
 export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
 	readonly kind = "union"
+
+	constructor(schema: UnionSchema) {
+		super(schema)
+	}
 
 	branches = this.schema.branches
 

@@ -412,7 +412,9 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Predicate)
+	return ctx.scope
+		.parse(def[0], ctx)
+		.constrain("predicate", def[2] as Predicate)
 }
 
 const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) => {

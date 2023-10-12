@@ -1,6 +1,5 @@
 import { throwParseError } from "@arktype/util"
 import type { BaseAttributes, Prevalidated } from "../node.js"
-import type { Basis } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -12,24 +11,19 @@ export interface PatternSchemaObject extends BaseAttributes {
 
 export type PatternSchema = RegexLiteral | RegExp | PatternSchemaObject
 
-export interface PatternChildren extends BaseAttributes {
-	rule: string
-	flags: string
-}
-
 export class PatternNode
 	extends BaseConstraint<PatternChildren>
 	implements BaseRefinement
 {
 	readonly kind = "pattern"
 
-	constructor(input: PatternSchema) {
+	constructor(schema: PatternSchema) {
 		super(
-			typeof input === "string"
-				? parseRegexLiteral(input)
-				: input instanceof RegExp
-				? { rule: input.source, flags: input.flags }
-				: { ...input, flags: input.flags ?? "" }
+			typeof schema === "string"
+				? parseRegexLiteral(schema)
+				: schema instanceof RegExp
+				? { rule: schema.source, flags: schema.flags }
+				: { ...schema, flags: schema.flags ?? "" }
 		)
 	}
 
