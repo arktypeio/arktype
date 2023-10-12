@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.23-alpha
+
+### Patch Changes
+
+-   Preserve named classes not including morphs
+
 ## 1.0.22-alpha
 
 ### Patch Changes
