@@ -5,16 +5,8 @@ import type {
 	exactMessageOnError,
 	listable
 } from "@arktype/util"
-import type {
-	Basis,
-	BasisInput,
-	BasisKind,
-	validateBasisInput
-} from "../constraints/basis.js"
-import type {
-	ConstraintKind,
-	ConstraintNode
-} from "../constraints/constraint.js"
+import type { BasisKind, validateBasisInput } from "../constraints/basis.js"
+import type { ConstraintKind } from "../constraints/constraint.js"
 import type {
 	DomainNode,
 	DomainSchema,
@@ -22,49 +14,46 @@ import type {
 } from "../constraints/domain.js"
 import type { ProtoNode, ProtoSchema } from "../constraints/proto.js"
 import type {
-	Refinement,
 	RefinementIntersectionInput,
 	RefinementKind
 } from "../constraints/refinement.js"
 import type { UnitNode, UnitSchema } from "../constraints/unit.js"
-import type { BaseAttributes, inputOf, Node } from "../node.js"
+import type { BaseAttributes, Node, Schema } from "../node.js"
 import type { MorphInput } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
 export type AnyIntersectionChildren = BaseAttributes & {
-	[k in ConstraintKind]?: listable<ConstraintNode<k>>
+	[k in ConstraintKind]?: listable<Node<k>>
 }
 
-export type parseBasis<input extends BasisInput> = input extends DomainSchema<
-	infer domain
->
-	? DomainNode<domain>
-	: input extends ProtoSchema<infer proto>
-	? ProtoNode<proto>
-	: input extends UnitSchema<infer unit>
-	? UnitNode<unit>
-	: never
-
-type basisOf<k extends RefinementKind> =
-	Refinement<k>["applicableTo"] extends ((
-		_: Basis | undefined
-	) => _ is infer basis extends Basis | undefined)
-		? basis
+export type parseBasis<input extends Schema<BasisKind>> =
+	input extends DomainSchema<infer domain>
+		? DomainNode<domain>
+		: input extends ProtoSchema<infer proto>
+		? ProtoNode<proto>
+		: input extends UnitSchema<infer unit>
+		? UnitNode<unit>
 		: never
+
+type basisOf<k extends RefinementKind> = Node<k>["applicableTo"] extends ((
+	_: Node<BasisKind> | undefined
+) => _ is infer basis extends Node<BasisKind> | undefined)
+	? basis
+	: never
 
 type refinementKindOf<basis> = {
 	[k in RefinementKind]: basis extends basisOf<k> ? k : never
 }[RefinementKind]
 
 export type refinementsOf<basis> = {
-	[k in refinementKindOf<basis>]?: Refinement<k>
+	[k in refinementKindOf<basis>]?: Node<k>
 }
 
 type refinementInputsOf<basis> = {
 	[k in refinementKindOf<basis>]?: RefinementIntersectionInput<k>
 }
 
-type IntersectionBasisInputValue = BasisInput | Node<BasisKind>
+type IntersectionBasisInputValue = Schema<BasisKind> | Node<BasisKind>
 
 type IntersectionBasisInput<
 	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
@@ -92,7 +81,7 @@ export type BasisedBranchInput<
 	BaseAttributes
 
 export type UnknownBranchInput = {
-	predicates?: inputOf<"predicate">
+	predicates?: Schema<"predicate">
 } & BaseAttributes
 
 export type IntersectionSchema<

@@ -1,6 +1,5 @@
-import type { BaseAttributes } from "../node.js"
-import { baseChildrenProps, schema } from "../node.js"
-import type { Basis } from "./basis.js"
+import type { BaseAttributes, Node } from "../node.js"
+import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -23,12 +22,9 @@ export class DivisorNode
 		super(typeof schema === "number" ? { rule: schema } : schema)
 	}
 
-	static schema = schema("number", {
-		domain: "object",
-		prop: [...baseChildrenProps, { key: "divisor", value: "number" }]
-	})
-
-	applicableTo(basis: Basis | undefined): basis is DomainNode<"number"> {
+	applicableTo(
+		basis: Node<BasisKind> | undefined
+	): basis is DomainNode<"number"> {
 		return (
 			basis !== undefined && basis.kind === "domain" && basis.rule === "number"
 		)

@@ -1,7 +1,7 @@
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
-import type { Basis } from "./basis.js"
-import type { ConstraintNode } from "./constraint.js"
+import type { BaseAttributes, Node } from "../node.js"
+import type { BasisKind } from "./basis.js"
+import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
@@ -49,7 +49,7 @@ export class MinNode
 			: other
 	}
 
-	intersectAsymmetric(other: ConstraintNode) {
+	intersectAsymmetric(other: Node<ConstraintKind>) {
 		if (other.kind === "max") {
 			return this.rule > other.rule ||
 				(this.rule === other.rule && (this.exclusive || other.exclusive))
@@ -59,7 +59,7 @@ export class MinNode
 		return null
 	}
 
-	applicableTo(basis: Basis | undefined): basis is BoundableBasis {
+	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
 		return boundable(basis)
 	}
 
@@ -89,10 +89,6 @@ export class MaxNode
 		return ""
 	}
 
-	applicableTo(basis: Basis | undefined): basis is BoundableBasis {
-		return boundable(basis)
-	}
-
 	intersectSymmetric(other: MaxNode) {
 		return this.rule > other.rule ||
 			(this.rule === other.rule && this.exclusive)
@@ -100,7 +96,7 @@ export class MaxNode
 			: other
 	}
 
-	intersectAsymmetric(other: ConstraintNode) {
+	intersectAsymmetric(other: Node<ConstraintKind>) {
 		if (other.kind === "max") {
 			return this.rule > other.rule ||
 				(this.rule === other.rule && (this.exclusive || other.exclusive))
@@ -108,6 +104,10 @@ export class MaxNode
 				: null
 		}
 		return null
+	}
+
+	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
+		return boundable(basis)
 	}
 
 	writeDefaultDescription() {
@@ -122,7 +122,9 @@ export class MaxNode
 
 export type BoundKind = "date" | "number"
 
-const boundable = (basis: Basis | undefined): basis is BoundableBasis => {
+const boundable = (
+	basis: Node<BasisKind> | undefined
+): basis is BoundableBasis => {
 	if (basis === undefined) {
 		return false
 	}

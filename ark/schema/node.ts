@@ -1,35 +1,12 @@
 import type { extend } from "@arktype/util"
 import { DynamicBase } from "@arktype/util"
-import type {
-	ConstraintClassesByKind,
-	ConstraintInputsByKind,
-	ConstraintsByKind
-} from "./constraints/constraint.js"
-import type { PropSchema } from "./constraints/prop.js"
-import type {
-	TypeClassesByKind,
-	TypeInputsByKind,
-	TypeNodesByKind,
-	validateBranchInput
-} from "./types/type.js"
+import type { ConstraintClassesByKind } from "./constraints/constraint.js"
+import type { TypeClassesByKind, validateBranchInput } from "./types/type.js"
 
 export interface BaseAttributes {
 	alias?: string
 	description?: string
 }
-
-export const baseChildrenProps = [
-	{
-		key: "alias",
-		value: "string",
-		optional: true
-	},
-	{
-		key: "description",
-		value: "string",
-		optional: true
-	}
-] as const satisfies readonly PropSchema[]
 
 export const schema = <const branches extends readonly unknown[]>(
 	...branches: {
@@ -87,8 +64,6 @@ export abstract class BaseNode<
 	}
 }
 
-export type inputOf<kind extends NodeKind> = NodeInputsByKind[kind]
-
 export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,
 	TypeClassesByKind
@@ -103,6 +78,6 @@ export type Schema<kind extends NodeKind> = ConstructorParameters<
 	NodeClass<kind>
 >
 
-export type NodesByKind = extend<ConstraintsByKind, TypeNodesByKind>
-
-export type Node<kind extends NodeKind = NodeKind> = NodesByKind[kind]
+export type Node<kind extends NodeKind = NodeKind> = InstanceType<
+	NodeClass<kind>
+>

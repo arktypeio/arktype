@@ -8,10 +8,11 @@ import {
 	transform
 } from "@arktype/util"
 import type { BoundNode } from "./constraints/bounds.js"
+import type { ConstraintKind } from "./constraints/constraint.js"
 import type { DomainNode } from "./constraints/domain.js"
 import type { ProtoNode } from "./constraints/proto.js"
-import type { Refinement } from "./constraints/refinement.js"
 import type { UnitNode } from "./constraints/unit.js"
+import type { Node } from "./node.js"
 import type { BranchNode } from "./types/union.js"
 
 type DisjointKinds = {
@@ -44,10 +45,10 @@ type DisjointKinds = {
 	assignability?:
 		| {
 				l: unknown
-				r: Refinement
+				r: Node<ConstraintKind>
 		  }
 		| {
-				l: Refinement
+				l: Node<ConstraintKind>
 				r: unknown
 		  }
 	union?: {

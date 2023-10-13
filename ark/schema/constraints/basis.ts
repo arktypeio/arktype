@@ -20,9 +20,6 @@ export type BasisClassesByKind = {
 
 export type BasisKind = keyof BasisClassesByKind
 
-export type BasisInput<kind extends BasisKind = BasisKind> =
-	BasisInputsByKind[kind]
-
 export type validateBasisInput<basis> = basis extends
 	| NonEnumerableDomain
 	| AbstractableConstructor

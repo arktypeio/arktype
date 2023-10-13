@@ -8,16 +8,12 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import type {
-	ConstraintInput,
-	ConstraintKind,
-	ConstraintNode
-} from "../constraints/constraint.js"
+import type { ConstraintKind } from "../constraints/constraint.js"
 import { DomainNode } from "../constraints/domain.js"
 import { ProtoNode } from "../constraints/proto.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node } from "../node.js"
+import type { BaseAttributes, Node, Schema } from "../node.js"
 import { BaseNode } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
@@ -79,7 +75,7 @@ export abstract class TypeNode<
 
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
-		definition: ConstraintInput<kind>
+		definition: Schema<kind>
 	): TypeNode<t> {
 		return this
 	}
@@ -187,7 +183,7 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 > {
 	readonly kind = "intersection"
 
-	readonly constraints: readonly ConstraintNode[] = []
+	readonly constraints: readonly Node<ConstraintKind>[] = []
 
 	constructor(schema: IntersectionSchema) {
 		const children =
@@ -260,9 +256,9 @@ export class IntersectionNode<t = unknown> extends TypeNode<
 	// }
 
 	protected addConstraint(
-		constraint: ConstraintNode
-	): readonly ConstraintNode[] | Disjoint {
-		const result: ConstraintNode[] = []
+		constraint: Node<ConstraintKind>
+	): readonly Node<ConstraintKind>[] | Disjoint {
+		const result: Node<ConstraintKind>[] = []
 		let includesConstraint = false
 		for (let i = 0; i < this.constraints.length; i++) {
 			const elementResult = constraint.intersectConstraint(this.constraints[i])
