@@ -1,36 +1,31 @@
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import type { BaseAttributes } from "../node.js"
-import type { Basis } from "./basis.js"
+import type { BaseAttributes, Node } from "../node.js"
+import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PredicateSchemaObject<rule extends Predicate = Predicate>
+export interface PredicateSchema<rule extends Predicate = Predicate>
 	extends BaseAttributes {
 	rule: rule
 }
 
-export type PredicateSchema<rule extends Predicate = Predicate> =
-	| rule
-	| PredicateSchemaObject<rule>
-
-export type PredicateChildren<rule extends Predicate = Predicate> =
-	PredicateSchemaObject<rule>
-
 export class PredicateNode<rule extends Predicate = Predicate>
-	extends BaseConstraint<PredicateChildren>
+	extends BaseConstraint
 	implements BaseRefinement
 {
 	readonly kind = "predicate"
+	readonly rule: rule
 
-	constructor(schema: rule | PredicateChildren<rule>) {
-		super(typeof schema === "function" ? { rule: schema } : schema)
+	constructor(public schema: PredicateSchema<rule>) {
+		super(schema)
+		this.rule = schema.rule
 	}
 
 	applicableTo(
-		basis: Basis | undefined
+		basis: Node<BasisKind> | undefined
 	): basis is DomainNode | ProtoNode | undefined {
 		return (
 			basis === undefined || basis.kind === "domain" || basis.kind === "proto"

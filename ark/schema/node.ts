@@ -8,6 +8,13 @@ export interface BaseAttributes {
 	description?: string
 }
 
+export type NodeIds = {
+	in: string
+	out: string
+	type: string
+	reference: string
+}
+
 export const schema = <const branches extends readonly unknown[]>(
 	...branches: {
 		[i in keyof branches]: validateBranchInput<branches[i]>
@@ -18,10 +25,22 @@ const prevalidated = Symbol("used to bypass validation when creating a node")
 
 export type Prevalidated = typeof prevalidated
 
-export abstract class BaseNode<
-	children extends BaseAttributes = BaseAttributes
-> extends DynamicBase<children> {
+export const createReferenceId = (
+	referenceObject: Record<string, unknown>,
+	schema: BaseAttributes
+) => {
+	if (schema.description) {
+		referenceObject.description = schema.description
+	}
+	if (schema.alias) {
+		referenceObject.alias = schema.alias
+	}
+	return JSON.stringify(referenceObject)
+}
+
+export abstract class BaseNode {
 	abstract kind: NodeKind
+	abstract schema: BaseAttributes
 
 	declare condition: string
 
@@ -30,29 +49,18 @@ export abstract class BaseNode<
 
 	protected static readonly prevalidated = prevalidated
 
-	constructor(public children: children) {
-		super(children)
-		this.description = children.description ?? this.writeDefaultDescription()
-		this.alias = children.alias ?? "generated"
-	}
-
-	abstract inId: string
-	abstract outId: string
-	abstract typeId: string
-	metaId = this.writeMetaId()
-
-	private writeMetaId() {
-		return JSON.stringify({
-			type: this.typeId,
-			description: this.description,
-			alias: this.alias
-		})
+	constructor(
+		schema: BaseAttributes,
+		public ids: NodeIds
+	) {
+		this.description = schema.description ?? this.writeDefaultDescription()
+		this.alias = schema.alias ?? "generated"
 	}
 
 	abstract writeDefaultDescription(): string
 
 	equals(other: BaseNode) {
-		return this.typeId === other.typeId
+		return this.ids.type === other.ids.type
 	}
 
 	allows(data: unknown) {

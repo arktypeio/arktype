@@ -1,4 +1,4 @@
-import type { AbstractableConstructor } from "@arktype/util"
+import type { AbstractableConstructor, BuiltinObjectKind } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -6,36 +6,30 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes } from "../node.js"
-import type { ConstraintNode } from "./constraint.js"
+import type { BaseAttributes, Node } from "../node.js"
+import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
-export interface ProtoSchemaObject<
+export interface ProtoSchema<
 	rule extends AbstractableConstructor = AbstractableConstructor
 > extends BaseAttributes {
-	rule: rule
+	readonly rule: rule
 }
-
-export type ProtoSchema<
-	rule extends AbstractableConstructor = AbstractableConstructor
-> = rule | ProtoChildren<rule>
-
-export type ProtoChildren<
-	rule extends AbstractableConstructor = AbstractableConstructor
-> = ProtoSchemaObject<rule>
 
 export class ProtoNode<
 	rule extends AbstractableConstructor = AbstractableConstructor
-> extends BaseConstraint<ProtoChildren> {
+> extends BaseConstraint {
 	readonly kind = "proto"
 
 	declare infer: InstanceType<rule>
+	readonly rule: rule
+	protected possibleObjectKind: BuiltinObjectKind | undefined
 
-	constructor(schema: rule | ProtoChildren<rule>) {
-		super(typeof schema === "function" ? { rule: schema } : schema)
+	constructor(public schema: ProtoSchema<rule>) {
+		super(schema)
+		this.rule = schema.rule
+		this.possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 	}
-
-	protected possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 
 	hash() {
 		return this.possibleObjectKind ?? compileSerializedValue(this.rule)
@@ -55,13 +49,13 @@ export class ProtoNode<
 		)
 	}
 
-	intersectSymmetric(other: ConstraintNode) {
+	intersectSymmetric(other: Node<ConstraintKind>) {
 		return other.kind !== "proto"
 			? null
 			: constructorExtends(this.rule, other.rule)
-			? this.children
+			? this
 			: constructorExtends(other.rule, this.rule)
-			? other.children
+			? other
 			: Disjoint.from("proto", this, other)
 	}
 

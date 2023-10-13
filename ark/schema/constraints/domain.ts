@@ -1,20 +1,13 @@
 import type { Domain, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
-import { baseChildrenProps, schema } from "../node.js"
 import { BaseConstraint } from "./constraint.js"
 
-export interface DomainSchemaObject<
+export interface DomainSchema<
 	rule extends NonEnumerableDomain = NonEnumerableDomain
 > extends BaseAttributes {
 	rule: rule
 }
-
-export type DomainSchema<
-	rule extends NonEnumerableDomain = NonEnumerableDomain
-> = rule | DomainSchemaObject<rule>
-
-export type DomainChildren = DomainSchemaObject
 
 // only domains with an infinite number of values are allowed as bases
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
@@ -22,13 +15,15 @@ export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
 export class DomainNode<
 	// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
 	out rule extends NonEnumerableDomain = NonEnumerableDomain
-> extends BaseConstraint<DomainChildren> {
+> extends BaseConstraint {
 	readonly kind = "domain"
 
 	declare infer: inferDomain<rule>
+	readonly rule: rule
 
-	constructor(schema: DomainSchema<rule>) {
-		super(typeof schema === "string" ? { rule: schema } : schema)
+	constructor(public schema: DomainSchema<rule>) {
+		super(schema)
+		this.rule = schema.rule
 	}
 
 	hash() {

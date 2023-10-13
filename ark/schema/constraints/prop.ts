@@ -1,26 +1,19 @@
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Prevalidated } from "../node.js"
+import type { BaseAttributes, Node, Prevalidated } from "../node.js"
 import type { TypeInput } from "../types/type.js"
 import { TypeNode } from "../types/type.js"
-import type { Basis } from "./basis.js"
+import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PropChildren extends BaseAttributes {
-	key: string | symbol | TypeNode
-	value: TypeNode
-	optional: boolean
-}
+type inferPropNode<node extends PropNode> = node["optional"] extends true
+	? { [k in inferKey<node["key"]>]?: node["value"]["infer"] }
+	: { [k in inferKey<node["key"]>]: node["value"]["infer"] }
 
-type inferPropSchema<schema extends PropChildren> =
-	schema["optional"] extends true
-		? { [k in inferKey<schema["key"]>]?: schema["value"]["infer"] }
-		: { [k in inferKey<schema["key"]>]: schema["value"]["infer"] }
-
-type inferKey<k extends PropChildren["key"]> = k extends string | symbol
+type inferKey<k extends PropNode["key"]> = k extends string | symbol
 	? k
 	: k extends TypeNode
 	? k["infer"] & PropertyKey
@@ -32,18 +25,25 @@ export interface PropSchema extends BaseAttributes {
 	optional?: boolean
 }
 
-export class PropNode
-	extends BaseConstraint<PropChildren>
-	implements BaseRefinement
-{
+export class PropNode extends BaseConstraint implements BaseRefinement {
 	readonly kind = "prop"
 
-	constructor(schema: PropSchema, prevalidated?: Prevalidated) {
-		super(schema as never)
+	readonly key: string | symbol | TypeNode
+	readonly value: TypeNode
+	readonly optional: boolean
+
+	constructor(
+		public schema: PropSchema,
+		prevalidated?: Prevalidated
+	) {
+		super(schema)
+		this.key = schema.key as never
+		this.value = schema.value as never
+		this.optional = schema.optional ?? false
 	}
 
 	applicableTo(
-		basis: Basis | undefined
+		basis: Node<BasisKind> | undefined
 	): basis is DomainNode | ProtoNode | undefined {
 		return (
 			basis === undefined || basis.kind === "domain" || basis.kind === "proto"

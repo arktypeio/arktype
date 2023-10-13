@@ -5,27 +5,25 @@ import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PatternSchemaObject extends BaseAttributes {
+export interface PatternSchema extends BaseAttributes {
 	rule: string
 	flags?: string
 }
-
-export type PatternSchema = RegexLiteral | RegExp | PatternSchemaObject
 
 export class PatternNode extends BaseConstraint implements BaseRefinement {
 	readonly kind = "pattern"
 
 	readonly rule: string
 	readonly flags: string
+	readonly instance: RegExp
+	readonly literal: RegexLiteral
 
 	constructor(public schema: PatternSchema) {
-		super(
-			typeof schema === "string"
-				? parseRegexLiteral(schema)
-				: schema instanceof RegExp
-				? { rule: schema.source, flags: schema.flags }
-				: { ...schema, flags: schema.flags ?? "" }
-		)
+		super(schema)
+		this.rule = schema.rule
+		this.flags = schema.flags ?? ""
+		this.instance = new RegExp(this.rule, this.flags)
+		this.literal = serializeRegex(this.instance)
 	}
 
 	applicableTo(
@@ -35,9 +33,6 @@ export class PatternNode extends BaseConstraint implements BaseRefinement {
 			basis !== undefined && basis.kind === "domain" && basis.rule === "string"
 		)
 	}
-
-	instance = new RegExp(this.rule, this.flags)
-	literal = serializeRegex(this.instance)
 
 	hash() {
 		return ""
@@ -67,7 +62,7 @@ const regexLiteralMatcher = /^\/(.+)\/([a-z]*)$/
 // export const patternConstraint = (input: PatternInput): PatternDefinition =>
 // 	typeof input === "string" ? parseRegexLiteral(input) : input
 
-export const parseRegexLiteral = (literal: string): PatternChildren => {
+export const parseRegexLiteral = (literal: string): PatternSchema => {
 	const match = regexLiteralMatcher.exec(literal)
 	if (!match || !match[1]) {
 		return throwParseError(

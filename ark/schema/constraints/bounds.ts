@@ -1,3 +1,4 @@
+import type { Comparator } from "arktype/internal/parser/string/shift/operator/bounds.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
@@ -7,35 +8,50 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface BoundChildren extends BaseAttributes {
-	readonly rule: number
-	readonly exclusive: boolean
-}
-
-export interface BoundSchemaObject extends BaseAttributes {
+export interface BoundSchema extends BaseAttributes {
 	readonly rule: number
 	readonly exclusive?: boolean
 }
 
-export type BoundNode = MinNode | MaxNode
-
-export type BoundSchema = number | BoundSchemaObject
-
-const parseBoundSchema = (schema: BoundSchema): BoundChildren =>
+const parseBoundSchema = (schema: BoundSchema) =>
 	typeof schema === "number"
 		? { rule: schema, exclusive: false }
 		: { ...schema, exclusive: schema.exclusive ?? false }
 
-export class MinNode
-	extends BaseConstraint<BoundChildren>
+export abstract class BoundNode
+	extends BaseConstraint
 	implements BaseRefinement
 {
-	readonly kind = "min"
+	readonly rule: number
+	readonly exclusive: boolean
+	abstract comparator: Comparator
 
-	constructor(schema: BoundSchema) {
-		super(parseBoundSchema(schema))
+	constructor(public schema: BoundSchema) {
+		super(schema)
+		this.rule = schema.rule
+		this.exclusive = schema.exclusive ?? false
 	}
 
+	hash() {
+		return ""
+	}
+
+	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
+		if (basis === undefined) {
+			return false
+		}
+		if (basis.kind === "domain") {
+			return basis.rule === "number" || basis.rule === "string"
+		}
+		if (basis.kind === "proto") {
+			return basis.extendsOneOf(Array, Date)
+		}
+		return false
+	}
+}
+
+export class MinNode extends BoundNode {
+	readonly kind = "min"
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
 
 	hash() {
@@ -59,10 +75,6 @@ export class MinNode
 		return null
 	}
 
-	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
-		return boundable(basis)
-	}
-
 	writeDefaultDescription() {
 		// Date
 		// rule.exclusive
@@ -73,16 +85,8 @@ export class MinNode
 	}
 }
 
-export class MaxNode
-	extends BaseConstraint<BoundChildren>
-	implements BaseRefinement
-{
+export class MaxNode extends BoundNode {
 	readonly kind = "max"
-
-	constructor(schema: BoundSchema) {
-		super(parseBoundSchema(schema))
-	}
-
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
 
 	hash() {
@@ -106,10 +110,6 @@ export class MaxNode
 		return null
 	}
 
-	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
-		return boundable(basis)
-	}
-
 	writeDefaultDescription() {
 		// Date
 		// rule.exclusive
@@ -121,21 +121,6 @@ export class MaxNode
 }
 
 export type BoundKind = "date" | "number"
-
-const boundable = (
-	basis: Node<BasisKind> | undefined
-): basis is BoundableBasis => {
-	if (basis === undefined) {
-		return false
-	}
-	if (basis.kind === "domain") {
-		return basis.rule === "number" || basis.rule === "string"
-	}
-	if (basis.kind === "proto") {
-		return basis.extendsOneOf(Array, Date)
-	}
-	return false
-}
 
 type BoundableBasis =
 	| DomainNode<"number" | "string">

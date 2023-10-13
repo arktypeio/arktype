@@ -1,20 +1,22 @@
 import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes } from "../node.js"
-import type { ConstraintNode } from "./constraint.js"
+import type { BaseAttributes, Node } from "../node.js"
+import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface UnitSchema<rule = unknown> extends BaseAttributes {
 	readonly rule: rule
 }
 
-export class UnitNode<const rule = unknown> extends BaseConstraint<UnitSchema> {
+export class UnitNode<const rule = unknown> extends BaseConstraint {
 	readonly kind = "unit"
 	declare infer: rule
+	readonly rule: rule
 
-	constructor(schema: UnitSchema<rule>) {
+	constructor(public schema: UnitSchema<rule>) {
 		super(schema)
+		this.rule = schema.rule
 	}
 
 	hash() {
@@ -30,8 +32,7 @@ export class UnitNode<const rule = unknown> extends BaseConstraint<UnitSchema> {
 		return Disjoint.from("unit", this, other)
 	}
 
-	intersectAsymmetric(other: ConstraintNode) {
-		// TODO: allows
+	intersectAsymmetric(other: Node<ConstraintKind>) {
 		return null
 	}
 }

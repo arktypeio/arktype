@@ -1,21 +1,15 @@
 import type { BaseAttributes } from "../node.js"
 import type { IntersectionSchema } from "./intersection.js"
-import type { MorphInput, MorphNode } from "./morph.js"
+import type { MorphNode, MorphSchema } from "./morph.js"
 import type { IntersectionNode } from "./type.js"
-
-export interface UnionSchema extends BaseAttributes {
-	branches: readonly BranchNode[]
-}
 
 export type BranchNode = IntersectionNode | MorphNode
 
-export interface UnionSchemaInput extends BaseAttributes {
+export interface UnionSchema extends BaseAttributes {
 	branches: readonly BranchInput[]
 }
 
-export type UnionInput = UnionSchemaInput | UnionSchemaInput["branches"]
-
-export type BranchInput = IntersectionSchema | MorphInput
+export type BranchInput = IntersectionSchema | MorphSchema
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant() {

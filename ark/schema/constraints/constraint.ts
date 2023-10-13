@@ -1,6 +1,6 @@
 import type { extend } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node } from "../node.js"
+import type { BaseAttributes, Node, Schema } from "../node.js"
 import { BaseNode } from "../node.js"
 import type { BasisClassesByKind } from "./basis.js"
 import type { RefinementClassesByKind } from "./refinement.js"
@@ -12,19 +12,17 @@ export type ConstraintClassesByKind = extend<
 
 export type ConstraintKind = keyof ConstraintClassesByKind
 
-export abstract class BaseConstraint<
-	children extends BaseAttributes = BaseAttributes
-> extends BaseNode<children> {
+export abstract class BaseConstraint extends BaseNode {
 	abstract kind: ConstraintKind
 
 	abstract intersectSymmetric(
 		// this representation avoids circularity errors caused by `this`
 		other: Node<this["kind"]>
-	): this["children"] | Disjoint | null
+	): Schema<this["kind"]> | Disjoint | null
 
 	abstract intersectAsymmetric(
 		other: Node<ConstraintKind>
-	): this["children"] | Disjoint | null
+	): Schema<this["kind"]> | Disjoint | null
 
 	inId = ""
 	outId = ""

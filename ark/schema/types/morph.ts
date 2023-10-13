@@ -13,15 +13,9 @@ import type {
 import type { IntersectionNode } from "./type.js"
 import { TypeNode } from "./type.js"
 
-export type MorphSchema = BaseAttributes & {
-	in: IntersectionNode
-	out: IntersectionNode
-	morphs: readonly Morph[]
-}
-
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export type MorphInput = BaseAttributes & {
+export interface MorphSchema extends BaseAttributes {
 	in?: IntersectionSchema
 	out?: IntersectionSchema
 	morphs: listable<Morph>
@@ -35,17 +29,19 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 	: Exclude<out, Problem>
 
 export class MorphNode<i = any, o = unknown> extends TypeNode<
-	(In: i) => Out<o>,
-	MorphSchema
+	(In: i) => Out<o>
 > {
-	readonly kind = "morph"
+	readonly kind = "morph";
+	readonly in: IntersectionNode
+	readonly out: IntersectionNode
+	readonly morphs: readonly Morph[]
 
-	constructor(schema: MorphInput) {
-		super({
-			in: builtins.unknown(),
-			out: builtins.unknown(),
-			morphs: []
-		})
+	constructor(public schema: MorphSchema) {
+		super(schema)
+		this.in = builtins.unknown()
+		this.out = builtins.unknown()
+		this.morphs =
+			typeof schema.morphs === "function" ? [schema.morphs] : schema.morphs
 	}
 
 	inId = this.in.inId
@@ -66,12 +62,12 @@ export class MorphNode<i = any, o = unknown> extends TypeNode<
 export type validateMorphInput<input> = {
 	[k in keyof input]: k extends "in" | "out"
 		? validateIntersectionInput<input[k]>
-		: k extends keyof MorphInput
-		? MorphInput[k]
+		: k extends keyof MorphSchema
+		? MorphSchema[k]
 		: `'${k & string}' is not a valid morph schema key`
 }
 
-export type parseMorph<input> = input extends MorphInput
+export type parseMorph<input> = input extends MorphSchema
 	? MorphNode<
 			input["in"] extends {}
 				? parseIntersection<input["in"]>["infer"]

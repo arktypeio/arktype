@@ -13,56 +13,41 @@ import { DomainNode } from "../constraints/domain.js"
 import { ProtoNode } from "../constraints/proto.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node, Schema } from "../node.js"
-import { BaseNode } from "../node.js"
+import type { Node, Schema } from "../node.js"
+import { BaseNode, createReferenceId } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
-	AnyIntersectionChildren,
 	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import type { MorphInput, parseMorph, validateMorphInput } from "./morph.js"
+import type { MorphSchema, parseMorph, validateMorphInput } from "./morph.js"
 import { MorphNode } from "./morph.js"
-import type {
-	BranchInput,
-	BranchNode,
-	UnionInput,
-	UnionSchema
-} from "./union.js"
+import type { BranchInput, BranchNode, UnionSchema } from "./union.js"
 
-export abstract class TypeNode<
-	t = unknown,
-	children extends BaseAttributes = BaseAttributes
-> extends BaseNode<children> {
+const createBranches = (branches: readonly BranchInput[]) =>
+	branches.map((branch) =>
+		typeof branch === "object" && hasKey(branch, "morphs")
+			? new MorphNode(branch)
+			: new IntersectionNode(branch)
+	)
+
+export abstract class TypeNode<t = unknown> extends BaseNode {
 	abstract kind: TypeKind
 
 	declare infer: t;
 	declare [inferred]: t
 	condition = ""
 
-	description: string
-	alias: string
-
-	constructor(public schema: children) {
-		super(schema)
-		this.description ??= this.writeDefaultDescription()
-		this.alias ??= "generated"
-	}
-
 	static from(
 		// ensure "from" can't be accessed on subclasses since e.g. Union.from could create an Intersection
 		this: typeof TypeNode,
 		...branches: BranchInput[]
 	) {
-		const constraintSets = branches.map((branch) =>
-			typeof branch === "object" && hasKey(branch, "morphs")
-				? new MorphNode(branch)
-				: new IntersectionNode(branch)
-		)
+		const constraintSets = createBranches(branches)
 		// DO reduce bitach
 		if (constraintSets.length === 1) {
-			return branches[0]
+			return constraintSets[0]
 		}
 		return new UnionNode({ branches: constraintSets })
 	}
@@ -156,31 +141,37 @@ export abstract class TypeNode<
 	}
 }
 
-export type TypeInput = listable<IntersectionSchema | MorphInput>
+export type TypeInput = listable<IntersectionSchema | MorphSchema>
 
-export class UnionNode<t = unknown> extends TypeNode<t, UnionSchema> {
+export class UnionNode<t = unknown> extends TypeNode<t> {
 	readonly kind = "union"
 
-	constructor(schema: UnionSchema) {
-		super(schema)
+	readonly branches: BranchNode[]
+
+	constructor(public schema: UnionSchema) {
+		const branches = createBranches(schema.branches)
+		super(schema, {
+			in: branches.map((constraint) => constraint.ids.in).join("|"),
+			out: branches.map((constraint) => constraint.ids.out).join("|"),
+			type: branches.map((constraint) => constraint.ids.type).join("|"),
+			reference: createReferenceId(
+				{
+					branches: branches
+						.map((constraint) => constraint.ids.reference)
+						.join("|")
+				},
+				schema
+			)
+		})
+		this.branches = branches
 	}
-
-	branches = this.schema.branches
-
-	inId = this.branches.map((constraint) => constraint.inId).join("|")
-	outId = this.branches.map((constraint) => constraint.outId).join("|")
-	typeId = this.branches.map((constraint) => constraint.typeId).join("|")
-	metaId = this.branches.map((constraint) => constraint.metaId).join("|")
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
 	}
 }
 
-export class IntersectionNode<t = unknown> extends TypeNode<
-	t,
-	AnyIntersectionChildren
-> {
+export class IntersectionNode<t = unknown> extends TypeNode<t> {
 	readonly kind = "intersection"
 
 	readonly constraints: readonly Node<ConstraintKind>[] = []
