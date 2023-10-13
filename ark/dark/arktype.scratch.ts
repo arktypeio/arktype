@@ -16,7 +16,7 @@ enum Foo {
 Foo.BAR
 
 type({
-	a: "string|number"
+	a: "string|number[]"
 })
 
 export const tsGenerics = Scope.root({

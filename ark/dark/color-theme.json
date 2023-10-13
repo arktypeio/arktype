@@ -101,6 +101,7 @@
 		"editorOverviewRuler.errorForeground": "#9558f8",
 		"editorBracketHighlight.foreground1": "#f5cf8f",
 		"editorBracketHighlight.foreground2": "#eb9f2e",
+		"editorBracketHighlight.foreground3": "#f5cf8f",
 		"editorBracketHighlight.unexpectedBracket.foreground": "#eb9f2e",
 		"editorCursor.foreground": "#408fde",
 		"terminalCursor.foreground": "#408fde",
