@@ -5,18 +5,20 @@ import type { BaseAttributes, Node } from "../node.js"
 import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
-export interface UnitSchema<rule = unknown> extends BaseAttributes {
+export interface UnitChildren<rule = unknown> extends BaseAttributes {
 	readonly rule: rule
 }
 
-export class UnitNode<const rule = unknown> extends BaseConstraint {
+export type UnitSchema<rule = unknown> = UnitChildren<rule>
+
+export class UnitNode<const rule = unknown> extends BaseConstraint<
+	UnitChildren<rule>
+> {
 	readonly kind = "unit"
 	declare infer: rule
-	readonly rule: rule
 
-	constructor(public schema: UnitSchema<rule>) {
-		super(schema)
-		this.rule = schema.rule
+	static from(schema: UnitSchema) {
+		return new UnitNode(schema)
 	}
 
 	hash() {

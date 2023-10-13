@@ -3,7 +3,7 @@ import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes } from "../node.js"
 import { BaseConstraint } from "./constraint.js"
 
-export interface DomainSchema<
+export interface DomainChildren<
 	rule extends NonEnumerableDomain = NonEnumerableDomain
 > extends BaseAttributes {
 	rule: rule
@@ -12,18 +12,20 @@ export interface DomainSchema<
 // only domains with an infinite number of values are allowed as bases
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
 
+export type DomainSchema<
+	rule extends NonEnumerableDomain = NonEnumerableDomain
+> = rule | DomainChildren<rule>
+
 export class DomainNode<
 	// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
 	out rule extends NonEnumerableDomain = NonEnumerableDomain
-> extends BaseConstraint {
+> extends BaseConstraint<DomainChildren<rule>> {
 	readonly kind = "domain"
 
 	declare infer: inferDomain<rule>
-	readonly rule: rule
 
-	constructor(public schema: DomainSchema<rule>) {
-		super(schema)
-		this.rule = schema.rule
+	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
+		return
 	}
 
 	hash() {

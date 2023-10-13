@@ -4,17 +4,22 @@ import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface DivisorSchema extends BaseAttributes {
+export interface DivisorChildren extends BaseAttributes {
 	rule: number
 }
 
-export class DivisorNode extends BaseConstraint implements BaseRefinement {
-	readonly kind = "divisor"
-	readonly rule: number
+export type DivisorSchema = number | DivisorChildren
 
-	constructor(public schema: DivisorSchema) {
-		super(schema)
-		this.rule = schema.rule
+export class DivisorNode
+	extends BaseConstraint<DivisorChildren>
+	implements BaseRefinement
+{
+	readonly kind = "divisor"
+
+	static from(schema: DivisorSchema) {
+		return new DivisorNode(
+			typeof schema === "number" ? { rule: schema } : schema
+		)
 	}
 
 	applicableTo(

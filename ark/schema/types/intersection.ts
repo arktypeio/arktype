@@ -8,8 +8,8 @@ import type {
 import type { BasisKind, validateBasisInput } from "../constraints/basis.js"
 import type { ConstraintKind } from "../constraints/constraint.js"
 import type {
+	DomainChildren,
 	DomainNode,
-	DomainSchema,
 	NonEnumerableDomain
 } from "../constraints/domain.js"
 import type { ProtoNode, ProtoSchema } from "../constraints/proto.js"
@@ -17,9 +17,9 @@ import type {
 	RefinementIntersectionInput,
 	RefinementKind
 } from "../constraints/refinement.js"
-import type { UnitNode, UnitSchema } from "../constraints/unit.js"
+import type { UnitChildren, UnitNode } from "../constraints/unit.js"
 import type { BaseAttributes, Node, Schema } from "../node.js"
-import type { MorphInput } from "./morph.js"
+import type { MorphSchema } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
 export type AnyIntersectionChildren = BaseAttributes & {
@@ -27,11 +27,11 @@ export type AnyIntersectionChildren = BaseAttributes & {
 }
 
 export type parseBasis<input extends Schema<BasisKind>> =
-	input extends DomainSchema<infer domain>
+	input extends DomainChildren<infer domain>
 		? DomainNode<domain>
 		: input extends ProtoSchema<infer proto>
 		? ProtoNode<proto>
-		: input extends UnitSchema<infer unit>
+		: input extends UnitChildren<infer unit>
 		? UnitNode<unit>
 		: never
 
@@ -59,7 +59,7 @@ type IntersectionBasisInput<
 	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
 > =
 	| {
-			domain: conform<basis, DomainSchema | DomainNode>
+			domain: conform<basis, DomainChildren | DomainNode>
 			proto?: never
 			unit?: never
 	  }
@@ -71,7 +71,7 @@ type IntersectionBasisInput<
 	| {
 			domain?: never
 			proto?: never
-			unit: conform<basis, UnitSchema | UnitNode>
+			unit: conform<basis, UnitChildren | UnitNode>
 	  }
 
 export type BasisedBranchInput<
@@ -112,7 +112,7 @@ export type validateIntersectionInput<input> =
 		? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
 		: input extends UnknownBranchInput
 		? exactMessageOnError<input, UnknownBranchInput>
-		: IntersectionSchema | MorphInput
+		: IntersectionSchema | MorphSchema
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

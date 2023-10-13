@@ -1,10 +1,8 @@
 import {
 	type conform,
-	type Dict,
 	domainOf,
 	hasKey,
 	type listable,
-	type satisfy,
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
@@ -300,7 +298,7 @@ export type validateBranchInput<input> = conform<
 		: validateIntersectionInput<input>
 >
 
-type parseBranch<branch> = branch extends MorphInput
+type parseBranch<branch> = branch extends MorphSchema
 	? parseMorph<branch>
 	: branch extends IntersectionSchema
 	? parseIntersection<branch>
@@ -321,31 +319,13 @@ type intersectTypeKinds<
 	? "morph"
 	: "intersection"
 
-export type TypeInputsByKind = satisfy<
-	Dict<TypeKind>,
-	{
-		union: UnionInput
-		intersection: IntersectionSchema
-		morph: MorphInput
-	}
->
-
-export type TypeClassesByKind = satisfy<
-	Dict<TypeKind>,
-	{
-		union: typeof UnionNode
-		morph: typeof MorphNode
-		intersection: typeof IntersectionNode
-	}
->
-
-export type TypeNodesByKind = {
-	union: UnionNode
-	intersection: IntersectionNode
-	morph: MorphNode
+export type TypeClassesByKind = {
+	union: typeof UnionNode
+	morph: typeof MorphNode
+	intersection: typeof IntersectionNode
 }
 
-export type TypeKind = keyof TypeNodesByKind
+export type TypeKind = keyof TypeClassesByKind
 
 export const intersectBranches = (
 	l: readonly BranchNode[],

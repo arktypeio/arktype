@@ -3,9 +3,13 @@ import type {
 	exactMessageOnError,
 	widen
 } from "@arktype/util"
-import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
+import type {
+	DomainChildren,
+	DomainNode,
+	NonEnumerableDomain
+} from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
-import type { UnitNode, UnitSchema } from "./unit.js"
+import type { UnitChildren, UnitNode } from "./unit.js"
 
 export type BasisClassesByKind = {
 	domain: typeof DomainNode
@@ -22,7 +26,7 @@ export type validateBasisInput<basis> = basis extends
 	: basis extends object
 	? exactMessageOnError<
 			basis,
-			widen<basis, DomainSchema | ProtoSchema | UnitSchema>
+			widen<basis, DomainChildren | ProtoSchema | UnitChildren>
 	  >
 	: never
 

@@ -38,9 +38,10 @@ export const createReferenceId = (
 	return JSON.stringify(referenceObject)
 }
 
-export abstract class BaseNode {
+export abstract class BaseNode<
+	children extends BaseAttributes = BaseAttributes
+> extends DynamicBase<children> {
 	abstract kind: NodeKind
-	abstract schema: BaseAttributes
 
 	declare condition: string
 
@@ -50,11 +51,16 @@ export abstract class BaseNode {
 	protected static readonly prevalidated = prevalidated
 
 	constructor(
-		schema: BaseAttributes,
+		public children: children,
 		public ids: NodeIds
 	) {
-		this.description = schema.description ?? this.writeDefaultDescription()
-		this.alias = schema.alias ?? "generated"
+		super(children)
+		this.description = children.description ?? this.writeDefaultDescription()
+		this.alias = children.alias ?? "generated"
+	}
+
+	static from(schema: unknown) {
+		return
 	}
 
 	abstract writeDefaultDescription(): string
@@ -84,7 +90,11 @@ export type NodeClass<kind extends NodeKind = NodeKind> =
 
 export type Schema<kind extends NodeKind> = ConstructorParameters<
 	NodeClass<kind>
->
+>[0]
+
+export type Children<kind extends NodeKind> = ConstructorParameters<
+	NodeClass<kind>
+>[0]
 
 export type Node<kind extends NodeKind = NodeKind> = InstanceType<
 	NodeClass<kind>

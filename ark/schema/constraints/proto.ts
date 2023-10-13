@@ -16,6 +16,10 @@ export interface ProtoSchema<
 	readonly rule: rule
 }
 
+class Foo {
+	protected constructor() {}
+}
+
 export class ProtoNode<
 	rule extends AbstractableConstructor = AbstractableConstructor
 > extends BaseConstraint {

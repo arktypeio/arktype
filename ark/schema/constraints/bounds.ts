@@ -8,29 +8,20 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface BoundSchema extends BaseAttributes {
+export interface BoundChildren extends BaseAttributes {
 	readonly rule: number
 	readonly exclusive?: boolean
 }
 
-const parseBoundSchema = (schema: BoundSchema) =>
-	typeof schema === "number"
-		? { rule: schema, exclusive: false }
-		: { ...schema, exclusive: schema.exclusive ?? false }
+export type BoundSchema = number | BoundChildren
 
 export abstract class BoundNode
-	extends BaseConstraint
+	extends BaseConstraint<BoundChildren>
 	implements BaseRefinement
 {
-	readonly rule: number
-	readonly exclusive: boolean
 	abstract comparator: Comparator
 
-	constructor(public schema: BoundSchema) {
-		super(schema)
-		this.rule = schema.rule
-		this.exclusive = schema.exclusive ?? false
-	}
+	exclusive = this.children.exclusive ?? false
 
 	hash() {
 		return ""
@@ -53,6 +44,10 @@ export abstract class BoundNode
 export class MinNode extends BoundNode {
 	readonly kind = "min"
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
+
+	static from(schema: BoundSchema) {
+		return new MinNode(typeof schema === "number" ? { rule: schema } : schema)
+	}
 
 	hash() {
 		return ""
@@ -88,6 +83,10 @@ export class MinNode extends BoundNode {
 export class MaxNode extends BoundNode {
 	readonly kind = "max"
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
+
+	static from(schema: BoundSchema) {
+		return new MaxNode(typeof schema === "number" ? { rule: schema } : schema)
+	}
 
 	hash() {
 		return ""

@@ -1,11 +1,11 @@
 import type { listable } from "@arktype/util"
-import type { Node } from "../node.js"
-import type { Basis } from "./basis.js"
-import type { BoundSchema, MaxNode, MinNode } from "./bounds.js"
-import type { DivisorNode, DivisorSchema } from "./divisor.js"
-import type { PatternNode, PatternSchema } from "./pattern.js"
-import type { PredicateNode, PredicateSchema } from "./predicate.js"
-import type { PropNode, PropSchema } from "./prop.js"
+import type { Node, Schema } from "../node.js"
+import type { BasisKind } from "./basis.js"
+import type { MaxNode, MinNode } from "./bounds.js"
+import type { DivisorNode } from "./divisor.js"
+import type { PatternNode } from "./pattern.js"
+import type { PredicateNode } from "./predicate.js"
+import type { PropNode } from "./prop.js"
 
 export type RefinementClassesByKind = {
 	divisor: typeof DivisorNode
@@ -21,8 +21,8 @@ type hasReducableIntersection<kind extends RefinementKind> =
 
 export type RefinementIntersectionInputsByKind = {
 	[k in RefinementKind]: hasReducableIntersection<k> extends true
-		? RefinementInput<k>
-		: listable<RefinementInput<k>>
+		? Schema<k>
+		: listable<Schema<k>>
 }
 
 export type RefinementKind = keyof RefinementClassesByKind
@@ -32,5 +32,7 @@ export type RefinementIntersectionInput<
 > = RefinementIntersectionInputsByKind[kind]
 
 export interface BaseRefinement {
-	applicableTo(basis: Basis | undefined): basis is Basis | undefined
+	applicableTo(
+		basis: Node<BasisKind> | undefined
+	): basis is Node<BasisKind> | undefined
 }
