@@ -256,7 +256,7 @@ export class IntersectionNode<
 	}
 
 	static from(schema: IntersectionSchema) {
-		return new IntersectionNode(schema as never)
+		return new IntersectionNode({})
 	}
 
 	branches = [this]
