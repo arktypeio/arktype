@@ -13,7 +13,7 @@ import {
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes, Node, NodeClass, Schema } from "../node.js"
+import type { BaseAttributes, Children, Node, Schema } from "../node.js"
 import { BaseNode, createReferenceId } from "../node.js"
 import { inferred } from "../utils.js"
 import {
@@ -53,8 +53,6 @@ export abstract class TypeNode<
 	declare [inferred]: t
 	condition = ""
 
-	abstract branches: readonly BranchNode[]
-
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
 		definition: Schema<kind>
@@ -88,27 +86,18 @@ export abstract class TypeNode<
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
+	abstract intersectSymmetric(
+		other: Node<this["kind"]>
+	): Children<TypeKind> | Disjoint | null
+
+	abstract intersectAsymmetric(
+		other: Node<TypeKind>
+	): Children<TypeKind> | Disjoint | null
+
 	intersect<other extends TypeNode>(
 		other: other
 	): Node<intersectTypeKinds<this["kind"], other["kind"]>> | Disjoint {
-		// if (this.branches.length === 1 && other.branches.length === 1) {
-		// }
-		const resultBranches = intersectBranches(this.branches, other.branches)
-		if (resultBranches.length === 0) {
-			if (
-				(this.branches.length === 0 || other.branches.length === 0) &&
-				this.branches.length !== other.branches.length
-			) {
-				// if exactly one operand is never, we can use it to discriminate based on presence
-				return Disjoint.from(
-					"presence",
-					this.branches.length !== 0,
-					other.branches.length !== 0
-				)
-			}
-			return Disjoint.from("union", this.branches, other.branches)
-		}
-		return this as never //node(...(resultBranches as any)) as never
+		return this as never
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
@@ -120,7 +109,7 @@ export abstract class TypeNode<
 	}
 
 	isNever(): this is UnionNode<never> {
-		return this.branches.length === 0
+		return this.hasKind("union") ? this.branches.length === 0 : false
 	}
 
 	getPath() {
@@ -142,7 +131,6 @@ export type TypeInput = listable<IntersectionSchema | MorphSchema>
 export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 	readonly kind = "union"
 
-	declare branches: readonly BranchNode[]
 	defaultDescription: string
 
 	constructor(children: UnionChildren) {
@@ -171,6 +159,32 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 			...schema,
 			branches: createBranches(schema.branches)
 		})
+	}
+
+	intersectSymmetric(other: UnionNode): Disjoint | Children<TypeKind> {
+		const resultBranches = intersectBranches(this.branches, other.branches)
+		if (resultBranches.length === 0) {
+			if (
+				(this.branches.length === 0 || other.branches.length === 0) &&
+				this.branches.length !== other.branches.length
+			) {
+				// if exactly one operand is never, we can use it to discriminate based on presence
+				return Disjoint.from(
+					"presence",
+					this.branches.length !== 0,
+					other.branches.length !== 0
+				)
+			}
+			return Disjoint.from("union", this.branches, other.branches)
+		}
+		return this as never //node(...(resultBranches as any)) as never
+	}
+
+	intersectAsymmetric(
+		other: Node<"morph" | "intersection">
+	): Node<TypeKind> | Disjoint {
+		// TODO: intersect branches
+		return this
 	}
 }
 
@@ -222,7 +236,13 @@ export class MorphNode<i = any, o = unknown> extends TypeNode<
 		return new MorphNode(children)
 	}
 
-	branches = [this]
+	intersectSymmetric(other: MorphNode): Disjoint | Children<TypeKind> {
+		return this as never //node(...(resultBranches as any)) as never
+	}
+
+	intersectAsymmetric(other: Node<TypeKind>): Node<TypeKind> | Disjoint {
+		return this as never
+	}
 }
 
 export class IntersectionNode<
@@ -309,6 +329,10 @@ export class IntersectionNode<
 		// 	}
 		// }
 		// return new PredicateNode(schema as PredicateSchema)
+	}
+
+	intersectAsymmetric() {
+		return null
 	}
 
 	protected addConstraint(

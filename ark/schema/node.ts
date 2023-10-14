@@ -71,25 +71,6 @@ export abstract class BaseNode<
 
 	abstract defaultDescription: string
 
-	abstract intersectSymmetric(
-		// this representation avoids circularity errors caused by `this`
-		other: Node<this["kind"]>
-	): Children<this["kind"]> | Disjoint | null
-
-	abstract intersectAsymmetric(
-		other: Node<widenKind<this["kind"]>>
-	): Children<this["kind"]> | Disjoint | null
-
-	intersectOwnKeys(
-		other: Node<widenKind<this["kind"]>>
-	): ReturnType<this["intersectAsymmetric" | "intersectSymmetric"]> {
-		return (
-			other.kind === this.kind
-				? this.intersectSymmetric(other as never)
-				: this.intersectAsymmetric(other as never)
-		) as never
-	}
-
 	equals(other: BaseNode) {
 		return this.ids.type === other.ids.type
 	}
