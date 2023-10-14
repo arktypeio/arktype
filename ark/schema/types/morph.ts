@@ -10,10 +10,15 @@ import type {
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import type { IntersectionNode } from "./type.js"
-import { TypeNode } from "./type.js"
+import { IntersectionNode, TypeNode } from "./type.js"
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
+
+export interface MorphChildren extends BaseAttributes {
+	in?: IntersectionNode
+	out?: IntersectionNode
+	morphs: readonly Morph[]
+}
 
 export interface MorphSchema extends BaseAttributes {
 	in?: IntersectionSchema
@@ -29,28 +34,35 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 	: Exclude<out, Problem>
 
 export class MorphNode<i = any, o = unknown> extends TypeNode<
-	(In: i) => Out<o>
+	(In: i) => Out<o>,
+	MorphChildren
 > {
-	readonly kind = "morph";
-	readonly in: IntersectionNode
-	readonly out: IntersectionNode
-	readonly morphs: readonly Morph[]
+	readonly kind = "morph"
 
-	constructor(public schema: MorphSchema) {
-		super(schema)
-		this.in = builtins.unknown()
-		this.out = builtins.unknown()
-		this.morphs =
-			typeof schema.morphs === "function" ? [schema.morphs] : schema.morphs
+	constructor(children: MorphChildren) {
+		super(children, {
+			in: children.in,
+			out: children.outId,
+			type: JSON.stringify({
+				in: this.in.typeId,
+				out: this.out.typeId,
+				morphs: this.morphs.map((morph) => compileSerializedValue(morph))
+			})
+		})
 	}
 
-	inId = this.in.inId
-	outId = this.out.outId
-	typeId = JSON.stringify({
-		in: this.in.typeId,
-		out: this.out.typeId,
-		morphs: this.morphs.map((morph) => compileSerializedValue(morph))
-	})
+	static from(schema: MorphSchema) {
+		const children = {} as MorphChildren
+		children.morphs =
+			typeof schema.morphs === "function" ? [schema.morphs] : schema.morphs
+		if (schema.in) {
+			children.in = IntersectionNode.from(schema.in)
+		}
+		if (schema.out) {
+			children.out = IntersectionNode.from()
+		}
+		return new MorphNode(children)
+	}
 
 	branches = [this]
 

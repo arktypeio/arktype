@@ -1,20 +1,17 @@
 import {
 	type conform,
-	domainOf,
 	hasKey,
 	type listable,
-	throwInternalError,
-	throwParseError
+	throwInternalError
 } from "@arktype/util"
 import type { ConstraintKind } from "../constraints/constraint.js"
-import { DomainNode } from "../constraints/domain.js"
-import { ProtoNode } from "../constraints/proto.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
-import type { Node, Schema } from "../node.js"
+import type { BaseAttributes, Node, Schema } from "../node.js"
 import { BaseNode, createReferenceId } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
+	AnyIntersectionChildren,
 	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionInput
@@ -26,33 +23,19 @@ import type { BranchInput, BranchNode, UnionSchema } from "./union.js"
 const createBranches = (branches: readonly BranchInput[]) =>
 	branches.map((branch) =>
 		typeof branch === "object" && hasKey(branch, "morphs")
-			? new MorphNode(branch)
-			: new IntersectionNode(branch)
+			? MorphNode.from(branch)
+			: IntersectionNode.from(branch)
 	)
 
-export abstract class TypeNode<t = unknown> extends BaseNode {
+export abstract class TypeNode<
+	t = unknown,
+	children extends BaseAttributes = BaseAttributes
+> extends BaseNode<children> {
 	abstract kind: TypeKind
 
 	declare infer: t;
 	declare [inferred]: t
 	condition = ""
-
-	static from(
-		// ensure "from" can't be accessed on subclasses since e.g. Union.from could create an Intersection
-		this: typeof TypeNode,
-		...branches: BranchInput[]
-	) {
-		const constraintSets = createBranches(branches)
-		// DO reduce bitach
-		if (constraintSets.length === 1) {
-			return constraintSets[0]
-		}
-		return new UnionNode({ branches: constraintSets })
-	}
-
-	static fromUnits(...branches: unknown[]) {
-		return this.from(...branches.map((value) => new UnitNode({ rule: value })))
-	}
 
 	abstract branches: readonly BranchNode[]
 
@@ -148,6 +131,7 @@ export class UnionNode<t = unknown> extends TypeNode<t> {
 
 	constructor(public schema: UnionSchema) {
 		const branches = createBranches(schema.branches)
+		// TODO: add kind to ids?
 		super(schema, {
 			in: branches.map((constraint) => constraint.ids.in).join("|"),
 			out: branches.map((constraint) => constraint.ids.out).join("|"),
@@ -169,29 +153,35 @@ export class UnionNode<t = unknown> extends TypeNode<t> {
 	}
 }
 
-export class IntersectionNode<t = unknown> extends TypeNode<t> {
+export class IntersectionNode<
+	t = unknown,
+	children extends AnyIntersectionChildren = AnyIntersectionChildren
+> extends TypeNode<t, AnyIntersectionChildren> {
 	readonly kind = "intersection"
 
-	readonly constraints: readonly Node<ConstraintKind>[] = []
+	readonly constraints: readonly Node<ConstraintKind>[]
 
-	constructor(schema: IntersectionSchema) {
-		const children =
-			typeof schema === "object"
-				? {}
-				: typeof schema === "string"
-				? { domain: new DomainNode(schema) }
-				: typeof schema === "function"
-				? { proto: new ProtoNode(schema) }
-				: throwParseError(
-						`${domainOf(schema)} is not a valid intersection input.'`
-				  )
-		super(children)
+	constructor(children: children) {
+		const constraints = Object.values(children)
+		super(children, {
+			in: constraints.map((constraint) => constraint.ids.in).join("&"),
+			out: constraints.map((constraint) => constraint.ids.out).join("&"),
+			type: constraints.map((constraint) => constraint.ids.type).join("&"),
+			reference: createReferenceId(
+				{
+					branches: constraints
+						.map((constraint) => constraint.ids.reference)
+						.join("|")
+				},
+				children
+			)
+		})
+		this.constraints = constraints
 	}
 
-	inId = this.constraints.map((constraint) => constraint.inId).join("&")
-	outId = this.constraints.map((constraint) => constraint.outId).join("&")
-	typeId = this.constraints.map((constraint) => constraint.typeId).join("&")
-	metaId = this.constraints.map((constraint) => constraint.metaId).join("&")
+	static from(schema: IntersectionSchema) {
+		return new IntersectionNode(schema as never)
+	}
 
 	branches = [this]
 
@@ -271,8 +261,21 @@ export class IntersectionNode<t = unknown> extends TypeNode<t> {
 	}
 }
 
-export const node = Object.assign(TypeNode.from as NodeParser, {
-	units: TypeNode.fromUnits as UnitsNodeParser
+const parseNode = (...branches: BranchInput[]) => {
+	const constraintSets = createBranches(branches)
+	// DO reduce bitach
+	if (constraintSets.length === 1) {
+		return constraintSets[0]
+	}
+	return new UnionNode({ branches: constraintSets })
+}
+
+const parseUnits = (...branches: unknown[]) => {
+	return parseNode(...branches.map((value) => new UnitNode({ rule: value })))
+}
+
+export const node = Object.assign(parseNode as NodeParser, {
+	units: parseUnits as UnitsNodeParser
 })
 
 type NodeParser = {
