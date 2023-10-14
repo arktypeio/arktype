@@ -1,4 +1,4 @@
-import { attest, } from "@arktype/attest"
+import { attest } from "@arktype/attest"
 import { compose } from "@arktype/util"
 import { suite, test } from "mocha"
 
@@ -62,6 +62,8 @@ suite("traits", () => {
 		) {}
 
 		const t = {} as ConstructorParameters<typeof Labeled>
-		attest(t).types.toString.snap()
+		attest(t).types.toString.snap(
+			"[rule: { limit?: number; }, attributes: { description?: string; } | undefined]"
+		)
 	})
 })

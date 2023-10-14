@@ -57,11 +57,8 @@ export class PropNode
 		return ""
 	}
 
-	intersectSymmetric(other: PropNode) {
+	intersectSymmetric(other: PropNode): PropChildren | Disjoint | null {
 		if (this.key instanceof TypeNode || other.key instanceof TypeNode) {
-			return null
-		}
-		if (this.key !== other.key) {
 			return null
 		}
 		const key = this.key

@@ -18,7 +18,7 @@ suite("intersectParameters", () => {
 	test("objects evaluated", () => {
 		type t = intersectParameters<[{ a: string }], [{ b: boolean }]>
 		// Snapshotted so that { a: string } & { b: boolean } fails
-		attest({} as t).types.toString.snap()
+		attest({} as t).types.toString.snap("[{ a: string; b: boolean; }]")
 	})
 	test("unknown preserved", () => {
 		type t = intersectParameters<[unknown], []>

@@ -133,6 +133,6 @@ suite("scope", () => {
 		}).export()
 
 		const { data } = X({ pear: { tasty: true } })
-		attest(data).snap()
+		attest(data).snap({ pear: { tasty: true } })
 	})
 })

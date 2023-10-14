@@ -3,29 +3,60 @@ import type {
 	conform,
 	ErrorMessage,
 	evaluate,
-	exactMessageOnError,
-	listable
+	exactMessageOnError
 } from "@arktype/util"
 import type { BasisKind, validateBasisInput } from "../constraints/basis.js"
-import type { ConstraintKind } from "../constraints/constraint.js"
+import { MaxNode, MinNode } from "../constraints/bounds.js"
+import { DivisorNode } from "../constraints/divisor.js"
 import type {
-	DomainNode,
 	DomainSchema,
 	NonEnumerableDomain
 } from "../constraints/domain.js"
-import type { ProtoNode, ProtoSchema } from "../constraints/proto.js"
+import { DomainNode } from "../constraints/domain.js"
+import { PatternNode } from "../constraints/pattern.js"
+import { PredicateNode } from "../constraints/predicate.js"
+import { PropNode } from "../constraints/prop.js"
+import type { ProtoSchema } from "../constraints/proto.js"
+import { ProtoNode } from "../constraints/proto.js"
 import type {
 	RefinementIntersectionInput,
 	RefinementKind
 } from "../constraints/refinement.js"
-import type { UnitNode, UnitSchema } from "../constraints/unit.js"
+import type { UnitSchema } from "../constraints/unit.js"
+import { UnitNode } from "../constraints/unit.js"
 import type { BaseAttributes, Node, Schema } from "../node.js"
 import type { MorphSchema } from "./morph.js"
-import { type IntersectionNode, node } from "./type.js"
+import { type IntersectionNode } from "./type.js"
 
-export type AnyIntersectionChildren = BaseAttributes & {
-	[k in ConstraintKind]?: listable<Node<k>>
+const reducibleChildClasses = {
+	domain: DomainNode,
+	proto: ProtoNode,
+	unit: UnitNode,
+	divisor: DivisorNode,
+	max: MaxNode,
+	min: MinNode
 }
+
+const irreducibleChildClasses = {
+	patterns: PatternNode,
+	predicates: PredicateNode,
+	props: PropNode
+}
+
+const intersectionChildClasses = {
+	...reducibleChildClasses,
+	...irreducibleChildClasses
+}
+
+type IntersectionChildClasses = typeof intersectionChildClasses
+
+export type AnyIntersectionChildren = evaluate<
+	BaseAttributes & {
+		[k in keyof IntersectionChildClasses]?: k extends keyof typeof reducibleChildClasses
+			? InstanceType<IntersectionChildClasses[k]>
+			: readonly InstanceType<IntersectionChildClasses[k]>[]
+	}
+>
 
 export type parseBasis<input extends Schema<BasisKind>> =
 	input extends DomainSchema<infer domain>

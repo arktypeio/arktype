@@ -16,6 +16,8 @@ export type RefinementClassesByKind = {
 	predicate: typeof PredicateNode
 }
 
+export type RefinementKind = keyof RefinementClassesByKind
+
 type hasReducableIntersection<kind extends RefinementKind> =
 	null extends ReturnType<Node<kind>["intersectSymmetric"]> ? false : true
 
@@ -24,8 +26,6 @@ export type RefinementIntersectionInputsByKind = {
 		? Schema<k>
 		: listable<Schema<k>>
 }
-
-export type RefinementKind = keyof RefinementClassesByKind
 
 export type RefinementIntersectionInput<
 	kind extends RefinementKind = RefinementKind

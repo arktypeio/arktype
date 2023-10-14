@@ -50,7 +50,9 @@ suite("tuple expressions", () => {
 		// TODO: reenable
 		test("this", () => {
 			const t = type([{ a: "string" }, "|", { b: "this" }])
-			attest(t.infer).types.toString.snap()
+			attest(t.infer).types.toString.snap(
+				"{ a: string; } | { b: { a: string; } | any; }"
+			)
 			const types = scope({
 				a: {
 					a: "string"

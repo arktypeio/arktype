@@ -98,7 +98,7 @@ suite("generics", () => {
 			})
 			const expectedContents = type({ a: "string|this" })
 			attest(t.condition).equals(type({ box: expectedContents }).condition)
-			attest(t.infer).types.toString.snap()
+			attest(t.infer).types.toString.snap("{ box: { a: string | any; }; }")
 		})
 		test("too few args", () => {
 			const pair = type("<t, u>", ["t", "u"])

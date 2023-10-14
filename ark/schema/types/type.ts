@@ -5,7 +5,10 @@ import {
 	throwInternalError
 } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
-import type { ConstraintKind } from "../constraints/constraint.js"
+import {
+	BaseConstraint,
+	type ConstraintKind
+} from "../constraints/constraint.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
@@ -58,10 +61,7 @@ export abstract class TypeNode<
 	}
 
 	extractUnit(): UnitNode | undefined {
-		return this.branches.length === 1 &&
-			this.branches[0].kind === "intersection"
-			? this.branches[0].extractUnit()
-			: undefined
+		return this.hasKind("intersection") ? this.unit : undefined
 	}
 
 	// references() {
@@ -236,6 +236,11 @@ export class IntersectionNode<
 
 	constructor(children: children) {
 		const constraints = Object.values(children)
+			.flat()
+			.filter(
+				(child): child is Node<ConstraintKind> =>
+					child instanceof BaseConstraint
+			)
 		super(children, {
 			in: constraints.map((constraint) => constraint.ids.in).join("&"),
 			out: constraints.map((constraint) => constraint.ids.out).join("&"),
