@@ -60,7 +60,7 @@ export class MinNode extends BoundNode {
 			: other
 	}
 
-	intersectAsymmetric(other: Node<ConstraintKind>) {
+	intersectAsymmetric(other: Node<ConstraintKind>): Disjoint | null {
 		if (other.kind === "max") {
 			return this.rule > other.rule ||
 				(this.rule === other.rule && (this.exclusive || other.exclusive))
@@ -99,7 +99,7 @@ export class MaxNode extends BoundNode {
 			: other
 	}
 
-	intersectAsymmetric(other: Node<ConstraintKind>) {
+	intersectAsymmetric(other: Node<ConstraintKind>): Disjoint | null {
 		if (other.kind === "max") {
 			return this.rule > other.rule ||
 				(this.rule === other.rule && (this.exclusive || other.exclusive))

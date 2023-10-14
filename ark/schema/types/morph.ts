@@ -1,10 +1,9 @@
 import type { listable } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
-import { builtins } from "../builtins.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
-import { type BaseAttributes } from "../node.js"
+import { type BaseAttributes, createReferenceId } from "../node.js"
 import type {
 	IntersectionSchema,
 	parseIntersection,
@@ -40,14 +39,29 @@ export class MorphNode<i = any, o = unknown> extends TypeNode<
 	readonly kind = "morph"
 
 	constructor(children: MorphChildren) {
+		const inId = children.in?.ids.in ?? ""
+		const outId = children.out?.ids.out ?? ""
+		const morphsId = children.morphs.map((morph) =>
+			compileSerializedValue(morph)
+		)
+		const typeId = JSON.stringify({
+			in: children.in?.ids.type ?? "",
+			out: children.out?.ids.type ?? "",
+			morphs: morphsId
+		})
+		// TODO: check unknown id
 		super(children, {
-			in: children.in,
-			out: children.outId,
-			type: JSON.stringify({
-				in: this.in.typeId,
-				out: this.out.typeId,
-				morphs: this.morphs.map((morph) => compileSerializedValue(morph))
-			})
+			in: inId,
+			out: outId,
+			type: typeId,
+			reference: createReferenceId(
+				{
+					in: children.in?.ids.reference ?? "",
+					out: children.out?.ids.reference ?? "",
+					morphs: morphsId
+				},
+				children
+			)
 		})
 	}
 
@@ -59,7 +73,7 @@ export class MorphNode<i = any, o = unknown> extends TypeNode<
 			children.in = IntersectionNode.from(schema.in)
 		}
 		if (schema.out) {
-			children.out = IntersectionNode.from()
+			children.out = IntersectionNode.from(schema.out)
 		}
 		return new MorphNode(children)
 	}
