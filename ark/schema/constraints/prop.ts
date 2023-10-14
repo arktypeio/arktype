@@ -19,28 +19,29 @@ type inferKey<k extends PropNode["key"]> = k extends string | symbol
 	? k["infer"] & PropertyKey
 	: never
 
+export interface PropChildren extends BaseAttributes {
+	key: string | symbol | TypeNode
+	value: TypeNode
+	optional?: boolean
+}
+
 export interface PropSchema extends BaseAttributes {
 	key: string | symbol | TypeInput
 	value: TypeInput
 	optional?: boolean
 }
 
-export class PropNode extends BaseConstraint implements BaseRefinement {
+export class PropNode
+	extends BaseConstraint<PropChildren>
+	implements BaseRefinement
+{
 	readonly kind = "prop"
 
-	readonly key: string | symbol | TypeNode
-	readonly value: TypeNode
-	readonly optional: boolean
-
-	constructor(
-		public schema: PropSchema,
-		prevalidated?: Prevalidated
-	) {
-		super(schema)
-		this.key = schema.key as never
-		this.value = schema.value as never
-		this.optional = schema.optional ?? false
+	static from(schema: PropSchema) {
+		return new PropNode(schema as never)
 	}
+
+	optional = this.children.optional ?? false
 
 	applicableTo(
 		basis: Node<BasisKind> | undefined

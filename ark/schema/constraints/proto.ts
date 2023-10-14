@@ -1,4 +1,4 @@
-import type { AbstractableConstructor, BuiltinObjectKind } from "@arktype/util"
+import type { AbstractableConstructor } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -10,29 +10,29 @@ import type { BaseAttributes, Node } from "../node.js"
 import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
-export interface ProtoSchema<
+export interface ProtoChildren<
 	rule extends AbstractableConstructor = AbstractableConstructor
 > extends BaseAttributes {
 	readonly rule: rule
 }
 
-class Foo {
-	protected constructor() {}
-}
+export type ProtoSchema<
+	rule extends AbstractableConstructor = AbstractableConstructor
+> = rule | ProtoChildren
 
 export class ProtoNode<
 	rule extends AbstractableConstructor = AbstractableConstructor
-> extends BaseConstraint {
+> extends BaseConstraint<ProtoChildren> {
 	readonly kind = "proto"
 
 	declare infer: InstanceType<rule>
-	readonly rule: rule
-	protected possibleObjectKind: BuiltinObjectKind | undefined
 
-	constructor(public schema: ProtoSchema<rule>) {
-		super(schema)
-		this.rule = schema.rule
-		this.possibleObjectKind = getExactBuiltinConstructorName(this.rule)
+	possibleObjectKind = getExactBuiltinConstructorName(this.rule)
+
+	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
+		return new ProtoNode<rule>(
+			typeof schema === "function" ? { rule: schema } : schema
+		)
 	}
 
 	hash() {
@@ -53,10 +53,8 @@ export class ProtoNode<
 		)
 	}
 
-	intersectSymmetric(other: Node<ConstraintKind>) {
-		return other.kind !== "proto"
-			? null
-			: constructorExtends(this.rule, other.rule)
+	intersectSymmetric(other: ProtoNode) {
+		return constructorExtends(this.rule, other.rule)
 			? this
 			: constructorExtends(other.rule, this.rule)
 			? other

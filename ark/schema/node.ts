@@ -59,10 +59,6 @@ export abstract class BaseNode<
 		this.alias = children.alias ?? "generated"
 	}
 
-	static from(schema: unknown) {
-		return
-	}
-
 	abstract writeDefaultDescription(): string
 
 	equals(other: BaseNode) {
@@ -88,8 +84,8 @@ export type NodeKind = keyof NodeClassesByKind
 export type NodeClass<kind extends NodeKind = NodeKind> =
 	NodeClassesByKind[kind]
 
-export type Schema<kind extends NodeKind> = ConstructorParameters<
-	NodeClass<kind>
+export type Schema<kind extends NodeKind> = Parameters<
+	NodeClass<kind>["from"]
 >[0]
 
 export type Children<kind extends NodeKind> = ConstructorParameters<

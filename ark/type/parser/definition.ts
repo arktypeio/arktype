@@ -1,5 +1,5 @@
 import type { CastTo } from "@arktype/schema"
-import { node, serializeRegex, TypeNode } from "@arktype/schema"
+import { node, TypeNode } from "@arktype/schema"
 import type {
 	defined,
 	Dict,

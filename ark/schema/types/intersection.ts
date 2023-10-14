@@ -12,7 +12,7 @@ import type {
 	DomainNode,
 	NonEnumerableDomain
 } from "../constraints/domain.js"
-import type { ProtoNode, ProtoSchema } from "../constraints/proto.js"
+import type { ProtoChildren, ProtoNode } from "../constraints/proto.js"
 import type {
 	RefinementIntersectionInput,
 	RefinementKind
@@ -29,7 +29,7 @@ export type AnyIntersectionChildren = BaseAttributes & {
 export type parseBasis<input extends Schema<BasisKind>> =
 	input extends DomainChildren<infer domain>
 		? DomainNode<domain>
-		: input extends ProtoSchema<infer proto>
+		: input extends ProtoChildren<infer proto>
 		? ProtoNode<proto>
 		: input extends UnitChildren<infer unit>
 		? UnitNode<unit>
@@ -65,7 +65,7 @@ type IntersectionBasisInput<
 	  }
 	| {
 			domain?: never
-			proto: conform<basis, ProtoSchema | ProtoNode>
+			proto: conform<basis, ProtoChildren | ProtoNode>
 			unit?: never
 	  }
 	| {

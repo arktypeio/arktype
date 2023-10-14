@@ -9,6 +9,10 @@ export interface UnionSchema extends BaseAttributes {
 	branches: readonly BranchInput[]
 }
 
+export interface UnionChildren extends BaseAttributes {
+	branches: readonly BranchNode[]
+}
+
 export type BranchInput = IntersectionSchema | MorphSchema
 
 // // discriminate is cached so we don't have to worry about this running multiple times

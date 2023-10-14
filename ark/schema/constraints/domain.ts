@@ -25,7 +25,9 @@ export class DomainNode<
 	declare infer: inferDomain<rule>
 
 	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
-		return
+		return new DomainNode(
+			typeof schema === "string" ? { rule: schema } : schema
+		)
 	}
 
 	hash() {

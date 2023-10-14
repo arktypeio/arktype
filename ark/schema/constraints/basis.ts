@@ -8,7 +8,7 @@ import type {
 	DomainNode,
 	NonEnumerableDomain
 } from "./domain.js"
-import type { ProtoNode, ProtoSchema } from "./proto.js"
+import type { ProtoChildren, ProtoNode } from "./proto.js"
 import type { UnitChildren, UnitNode } from "./unit.js"
 
 export type BasisClassesByKind = {
@@ -26,7 +26,7 @@ export type validateBasisInput<basis> = basis extends
 	: basis extends object
 	? exactMessageOnError<
 			basis,
-			widen<basis, DomainChildren | ProtoSchema | UnitChildren>
+			widen<basis, DomainChildren | ProtoChildren | UnitChildren>
 	  >
 	: never
 

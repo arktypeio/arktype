@@ -17,8 +17,8 @@ export class UnitNode<const rule = unknown> extends BaseConstraint<
 	readonly kind = "unit"
 	declare infer: rule
 
-	static from(schema: UnitSchema) {
-		return new UnitNode(schema)
+	static from<const rule>(schema: UnitSchema<rule>) {
+		return new UnitNode<rule>(schema)
 	}
 
 	hash() {
@@ -30,7 +30,7 @@ export class UnitNode<const rule = unknown> extends BaseConstraint<
 		return stringify(this.rule)
 	}
 
-	intersectSymmetric(other: UnitNode) {
+	intersectSymmetric(other: UnitNode): Disjoint {
 		return Disjoint.from("unit", this, other)
 	}
 

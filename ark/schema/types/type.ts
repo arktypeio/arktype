@@ -18,7 +18,12 @@ import type {
 } from "./intersection.js"
 import type { MorphSchema, parseMorph, validateMorphInput } from "./morph.js"
 import { MorphNode } from "./morph.js"
-import type { BranchInput, BranchNode, UnionSchema } from "./union.js"
+import type {
+	BranchInput,
+	BranchNode,
+	UnionChildren,
+	UnionSchema
+} from "./union.js"
 
 const createBranches = (branches: readonly BranchInput[]) =>
 	branches.map((branch) =>
@@ -124,28 +129,35 @@ export abstract class TypeNode<
 
 export type TypeInput = listable<IntersectionSchema | MorphSchema>
 
-export class UnionNode<t = unknown> extends TypeNode<t> {
+export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 	readonly kind = "union"
 
-	readonly branches: BranchNode[]
+	declare branches: readonly BranchNode[]
 
-	constructor(public schema: UnionSchema) {
-		const branches = createBranches(schema.branches)
+	constructor(children: UnionChildren) {
 		// TODO: add kind to ids?
-		super(schema, {
-			in: branches.map((constraint) => constraint.ids.in).join("|"),
-			out: branches.map((constraint) => constraint.ids.out).join("|"),
-			type: branches.map((constraint) => constraint.ids.type).join("|"),
+		super(children, {
+			in: children.branches.map((constraint) => constraint.ids.in).join("|"),
+			out: children.branches.map((constraint) => constraint.ids.out).join("|"),
+			type: children.branches
+				.map((constraint) => constraint.ids.type)
+				.join("|"),
 			reference: createReferenceId(
 				{
-					branches: branches
+					branches: children.branches
 						.map((constraint) => constraint.ids.reference)
 						.join("|")
 				},
-				schema
+				children
 			)
 		})
-		this.branches = branches
+	}
+
+	static from(schema: UnionSchema) {
+		return new UnionNode({
+			...schema,
+			branches: createBranches(schema.branches)
+		})
 	}
 
 	writeDefaultDescription() {

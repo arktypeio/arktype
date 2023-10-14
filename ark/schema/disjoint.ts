@@ -39,8 +39,8 @@ type DisjointKinds = {
 				r: true
 		  }
 	bound?: {
-		l: BoundNode
-		r: BoundNode
+		l: Node<"min" | "max">
+		r: Node<"min" | "max">
 	}
 	assignability?:
 		| {
