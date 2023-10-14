@@ -35,13 +35,15 @@ export class PropNode
 	extends BaseConstraint<PropChildren>
 	implements BaseRefinement
 {
+	readonly optional = this.children.optional ?? false
 	readonly kind = "prop"
+	readonly defaultDescription = `${String(this.key)}${
+		this.optional ? "" : "?"
+	}: ${this.value}`
 
 	static from(schema: PropSchema) {
 		return new PropNode(schema as never)
 	}
-
-	optional = this.children.optional ?? false
 
 	applicableTo(
 		basis: Node<BasisKind> | undefined
@@ -53,10 +55,6 @@ export class PropNode
 
 	hash() {
 		return ""
-	}
-
-	writeDefaultDescription() {
-		return `${String(this.key)}${this.optional ? "" : "?"}: ${this.value}`
 	}
 
 	intersectSymmetric(other: PropNode) {

@@ -21,6 +21,8 @@ export class PatternNode
 	instance = new RegExp(this.rule, this.flags)
 	literal = serializeRegex(this.instance)
 
+	defaultDescription = `matched by ${this.literal}`
+
 	static from(schema: PatternSchema) {
 		return new PatternNode(
 			typeof schema === "string"
@@ -41,10 +43,6 @@ export class PatternNode
 
 	hash() {
 		return ""
-	}
-
-	writeDefaultDescription() {
-		return `matched by ${this.literal}`
 	}
 
 	// For now, non-equal regex are naively intersected

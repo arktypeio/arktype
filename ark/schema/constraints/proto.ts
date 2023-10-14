@@ -28,6 +28,9 @@ export class ProtoNode<
 	declare infer: InstanceType<rule>
 
 	possibleObjectKind = getExactBuiltinConstructorName(this.rule)
+	defaultDescription = this.possibleObjectKind
+		? objectKindDescriptions[this.possibleObjectKind]
+		: `an instance of ${this.rule}`
 
 	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
 		return new ProtoNode<rule>(
@@ -37,12 +40,6 @@ export class ProtoNode<
 
 	hash() {
 		return this.possibleObjectKind ?? compileSerializedValue(this.rule)
-	}
-
-	writeDefaultDescription() {
-		return this.possibleObjectKind
-			? objectKindDescriptions[this.possibleObjectKind]
-			: `an instance of ${this.rule}`
 	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(

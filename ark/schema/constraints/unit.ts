@@ -17,17 +17,15 @@ export class UnitNode<const rule = unknown> extends BaseConstraint<
 	readonly kind = "unit"
 	declare infer: rule
 
+	// TODO: add reference to for objects
+	defaultDescription = stringify(this.rule)
+
 	static from<const rule>(schema: UnitSchema<rule>) {
 		return new UnitNode<rule>(schema)
 	}
 
 	hash() {
 		return compileSerializedValue(this.rule)
-	}
-
-	writeDefaultDescription() {
-		// TODO: add reference to for objects
-		return stringify(this.rule)
 	}
 
 	intersectSymmetric(other: UnitNode): Disjoint {

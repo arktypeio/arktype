@@ -1,7 +1,7 @@
 import type { BaseAttributes } from "../node.js"
 import type { IntersectionSchema } from "./intersection.js"
-import type { MorphNode, MorphSchema } from "./morph.js"
-import type { IntersectionNode } from "./type.js"
+import type { MorphSchema } from "./morph.js"
+import type { IntersectionNode, MorphNode } from "./type.js"
 
 export type BranchNode = IntersectionNode | MorphNode
 

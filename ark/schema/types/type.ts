@@ -4,9 +4,11 @@ import {
 	type listable,
 	throwInternalError
 } from "@arktype/util"
+import type { Out } from "arktype/internal/parser/tuple.js"
 import type { ConstraintKind } from "../constraints/constraint.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
+import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Node, Schema } from "../node.js"
 import { BaseNode, createReferenceId } from "../node.js"
 import { inferred } from "../utils.js"
@@ -16,8 +18,12 @@ import type {
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import type { MorphSchema, parseMorph, validateMorphInput } from "./morph.js"
-import { MorphNode } from "./morph.js"
+import type {
+	MorphChildren,
+	MorphSchema,
+	parseMorph,
+	validateMorphInput
+} from "./morph.js"
 import type {
 	BranchInput,
 	BranchNode,
@@ -133,6 +139,7 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 	readonly kind = "union"
 
 	declare branches: readonly BranchNode[]
+	defaultDescription: string
 
 	constructor(children: UnionChildren) {
 		// TODO: add kind to ids?
@@ -151,6 +158,8 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 				children
 			)
 		})
+		this.defaultDescription =
+			this.branches.length === 0 ? "never" : this.branches.join(" or ")
 	}
 
 	static from(schema: UnionSchema) {
@@ -161,8 +170,59 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 	}
 
 	writeDefaultDescription() {
-		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
+		return
 	}
+}
+
+export class MorphNode<i = any, o = unknown> extends TypeNode<
+	(In: i) => Out<o>,
+	MorphChildren
+> {
+	readonly kind = "morph"
+
+	constructor(children: MorphChildren) {
+		const inId = children.in?.ids.in ?? ""
+		const outId = children.out?.ids.out ?? ""
+		const morphsId = children.morphs.map((morph) =>
+			compileSerializedValue(morph)
+		)
+		const typeId = JSON.stringify({
+			in: children.in?.ids.type ?? "",
+			out: children.out?.ids.type ?? "",
+			morphs: morphsId
+		})
+		// TODO: check unknown id
+		super(children, {
+			in: inId,
+			out: outId,
+			type: typeId,
+			reference: createReferenceId(
+				{
+					in: children.in?.ids.reference ?? "",
+					out: children.out?.ids.reference ?? "",
+					morphs: morphsId
+				},
+				children
+			)
+		})
+	}
+
+	defaultDescription = ""
+
+	static from(schema: MorphSchema) {
+		const children = {} as MorphChildren
+		children.morphs =
+			typeof schema.morphs === "function" ? [schema.morphs] : schema.morphs
+		if (schema.in) {
+			children.in = IntersectionNode.from(schema.in)
+		}
+		if (schema.out) {
+			children.out = IntersectionNode.from(schema.out)
+		}
+		return new MorphNode(children)
+	}
+
+	branches = [this]
 }
 
 export class IntersectionNode<
@@ -172,6 +232,7 @@ export class IntersectionNode<
 	readonly kind = "intersection"
 
 	readonly constraints: readonly Node<ConstraintKind>[]
+	readonly defaultDescription: string
 
 	constructor(children: children) {
 		const constraints = Object.values(children)
@@ -189,6 +250,9 @@ export class IntersectionNode<
 			)
 		})
 		this.constraints = constraints
+		this.defaultDescription = this.constraints.length
+			? this.constraints.join(" and ")
+			: "a value"
 	}
 
 	static from(schema: IntersectionSchema) {
@@ -196,10 +260,6 @@ export class IntersectionNode<
 	}
 
 	branches = [this]
-
-	writeDefaultDescription() {
-		return this.constraints.length ? this.constraints.join(" and ") : "a value"
-	}
 
 	// intersect(other: PredicateNode) {
 	// 	const schema: Partial<PredicateSchema> = {}

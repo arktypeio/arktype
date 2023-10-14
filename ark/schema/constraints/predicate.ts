@@ -21,6 +21,7 @@ export class PredicateNode<rule extends Predicate = Predicate>
 	implements BaseRefinement
 {
 	readonly kind = "predicate"
+	readonly defaultDescription = `valid according to ${this.rule.name}`
 
 	static from(schema: PredicateSchema) {
 		return new PredicateNode(
@@ -38,10 +39,6 @@ export class PredicateNode<rule extends Predicate = Predicate>
 
 	hash() {
 		return compileSerializedValue(this.rule)
-	}
-
-	writeDefaultDescription() {
-		return `valid according to ${this.rule.name}`
 	}
 
 	intersectSymmetric() {

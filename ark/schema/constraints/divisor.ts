@@ -15,6 +15,8 @@ export class DivisorNode
 	implements BaseRefinement
 {
 	readonly kind = "divisor"
+	readonly defaultDescription =
+		this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 
 	static from(schema: DivisorSchema) {
 		return new DivisorNode(
@@ -32,10 +34,6 @@ export class DivisorNode
 
 	hash() {
 		return ""
-	}
-
-	writeDefaultDescription() {
-		return this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 	}
 
 	intersectSymmetric(other: DivisorNode) {

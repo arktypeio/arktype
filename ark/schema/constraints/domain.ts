@@ -24,6 +24,8 @@ export class DomainNode<
 
 	declare infer: inferDomain<rule>
 
+	defaultDescription = domainDescriptions[this.rule]
+
 	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
 		return new DomainNode(
 			typeof schema === "string" ? { rule: schema } : schema
@@ -32,10 +34,6 @@ export class DomainNode<
 
 	hash() {
 		return this.rule
-	}
-
-	writeDefaultDescription() {
-		return domainDescriptions[this.rule]
 	}
 
 	intersectSymmetric(other: DomainNode) {

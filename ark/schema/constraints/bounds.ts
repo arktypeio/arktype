@@ -1,4 +1,3 @@
-import type { Comparator } from "arktype/internal/parser/string/shift/operator/bounds.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
@@ -19,7 +18,7 @@ export abstract class BoundNode
 	extends BaseConstraint<BoundChildren>
 	implements BaseRefinement
 {
-	abstract comparator: Comparator
+	abstract comparator: string
 
 	exclusive = this.children.exclusive ?? false
 
@@ -45,6 +44,13 @@ export class MinNode extends BoundNode {
 	readonly kind = "min"
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
 
+	// Date
+	// rule.exclusive
+	// ? "after"
+	// : "at or after"
+	comparisonDescription = this.exclusive ? "more than" : "at least"
+	defaultDescription = `${this.comparisonDescription} ${this.rule}`
+
 	static from(schema: BoundSchema) {
 		return new MinNode(typeof schema === "number" ? { rule: schema } : schema)
 	}
@@ -69,20 +75,18 @@ export class MinNode extends BoundNode {
 		}
 		return null
 	}
-
-	writeDefaultDescription() {
-		// Date
-		// rule.exclusive
-		// ? "after"
-		// : "at or after"
-		const comparison = this.exclusive ? "more than" : "at least"
-		return `${comparison} ${this.rule}`
-	}
 }
 
 export class MaxNode extends BoundNode {
 	readonly kind = "max"
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
+
+	// Date
+	// rule.exclusive
+	// ? "before"
+	// : "at or before"
+	comparisonDescription = this.exclusive ? "less than" : "at most"
+	defaultDescription = `${this.comparisonDescription} ${this.rule}`
 
 	static from(schema: BoundSchema) {
 		return new MaxNode(typeof schema === "number" ? { rule: schema } : schema)
@@ -107,15 +111,6 @@ export class MaxNode extends BoundNode {
 				: null
 		}
 		return null
-	}
-
-	writeDefaultDescription() {
-		// Date
-		// rule.exclusive
-		// ? "before"
-		// : "at or before"
-		const comparison = this.exclusive ? "less than" : "at most"
-		return `${comparison} ${this.rule}`
 	}
 }
 
