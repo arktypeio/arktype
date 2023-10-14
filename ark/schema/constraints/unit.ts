@@ -34,7 +34,7 @@ export class UnitNode<const rule = unknown> extends BaseConstraint<
 		return Disjoint.from("unit", this, other)
 	}
 
-	intersectAsymmetric(other: Node<ConstraintKind>) {
+	intersectAsymmetric() {
 		return null
 	}
 }

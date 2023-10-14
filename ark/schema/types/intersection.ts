@@ -2,36 +2,37 @@ import type {
 	AbstractableConstructor,
 	conform,
 	ErrorMessage,
+	evaluate,
 	exactMessageOnError,
 	listable
 } from "@arktype/util"
 import type { BasisKind, validateBasisInput } from "../constraints/basis.js"
 import type { ConstraintKind } from "../constraints/constraint.js"
 import type {
-	DomainChildren,
 	DomainNode,
+	DomainSchema,
 	NonEnumerableDomain
 } from "../constraints/domain.js"
-import type { ProtoChildren, ProtoNode } from "../constraints/proto.js"
+import type { ProtoNode, ProtoSchema } from "../constraints/proto.js"
 import type {
 	RefinementIntersectionInput,
 	RefinementKind
 } from "../constraints/refinement.js"
-import type { UnitChildren, UnitNode } from "../constraints/unit.js"
+import type { UnitNode, UnitSchema } from "../constraints/unit.js"
 import type { BaseAttributes, Node, Schema } from "../node.js"
 import type { MorphSchema } from "./morph.js"
-import { type IntersectionNode } from "./type.js"
+import { type IntersectionNode, node } from "./type.js"
 
 export type AnyIntersectionChildren = BaseAttributes & {
 	[k in ConstraintKind]?: listable<Node<k>>
 }
 
 export type parseBasis<input extends Schema<BasisKind>> =
-	input extends DomainChildren<infer domain>
+	input extends DomainSchema<infer domain>
 		? DomainNode<domain>
-		: input extends ProtoChildren<infer proto>
+		: input extends ProtoSchema<infer proto>
 		? ProtoNode<proto>
-		: input extends UnitChildren<infer unit>
+		: input extends UnitSchema<infer unit>
 		? UnitNode<unit>
 		: never
 
@@ -59,19 +60,19 @@ type IntersectionBasisInput<
 	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
 > =
 	| {
-			domain: conform<basis, DomainChildren | DomainNode>
+			domain: conform<basis, DomainSchema | DomainNode>
 			proto?: never
 			unit?: never
 	  }
 	| {
 			domain?: never
-			proto: conform<basis, ProtoChildren | ProtoNode>
+			proto: conform<basis, ProtoSchema | ProtoNode>
 			unit?: never
 	  }
 	| {
 			domain?: never
 			proto?: never
-			unit: conform<basis, UnitChildren | UnitNode>
+			unit: conform<basis, UnitSchema | UnitNode>
 	  }
 
 export type BasisedBranchInput<

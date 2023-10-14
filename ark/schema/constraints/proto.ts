@@ -53,7 +53,7 @@ export class ProtoNode<
 		)
 	}
 
-	intersectSymmetric(other: ProtoNode) {
+	intersectSymmetric(other: ProtoNode): ProtoNode | Disjoint {
 		return constructorExtends(this.rule, other.rule)
 			? this
 			: constructorExtends(other.rule, this.rule)

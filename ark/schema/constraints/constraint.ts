@@ -33,7 +33,7 @@ export abstract class BaseConstraint<
 		other: Node<ConstraintKind>
 	): Schema<this["kind"]> | Disjoint | null
 
-	intersectConstraint<other extends Node<ConstraintKind>>(
+	intersectConstraint<other extends BaseConstraint>(
 		other: other
 	):
 		| Node<other["kind"] | this["kind"]>
@@ -45,7 +45,7 @@ export abstract class BaseConstraint<
 	}
 
 	intersectOwnKeys(
-		other: Node<ConstraintKind>
+		other: BaseConstraint
 	):
 		| ReturnType<this["intersectAsymmetric"]>
 		| ReturnType<this["intersectSymmetric"]>
