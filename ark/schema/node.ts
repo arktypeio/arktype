@@ -1,7 +1,15 @@
 import type { extend } from "@arktype/util"
 import { DynamicBase } from "@arktype/util"
-import type { ConstraintClassesByKind } from "./constraints/constraint.js"
-import type { TypeClassesByKind, validateBranchInput } from "./types/type.js"
+import type {
+	ConstraintClassesByKind,
+	ConstraintKind
+} from "./constraints/constraint.js"
+import type { Disjoint } from "./disjoint.js"
+import type {
+	TypeClassesByKind,
+	TypeKind,
+	validateBranchInput
+} from "./types/type.js"
 
 export interface BaseAttributes {
 	alias?: string
@@ -63,6 +71,25 @@ export abstract class BaseNode<
 
 	abstract defaultDescription: string
 
+	abstract intersectSymmetric(
+		// this representation avoids circularity errors caused by `this`
+		other: Node<this["kind"]>
+	): Children<this["kind"]> | Disjoint | null
+
+	abstract intersectAsymmetric(
+		other: Node<widenKind<this["kind"]>>
+	): Children<this["kind"]> | Disjoint | null
+
+	intersectOwnKeys(
+		other: Node<widenKind<this["kind"]>>
+	): ReturnType<this["intersectAsymmetric" | "intersectSymmetric"]> {
+		return (
+			other.kind === this.kind
+				? this.intersectSymmetric(other as never)
+				: this.intersectAsymmetric(other as never)
+		) as never
+	}
+
 	equals(other: BaseNode) {
 		return this.ids.type === other.ids.type
 	}
@@ -75,6 +102,10 @@ export abstract class BaseNode<
 		return this.kind === kind
 	}
 }
+
+type widenKind<kind extends NodeKind> = kind extends ConstraintKind
+	? ConstraintKind
+	: TypeKind
 
 export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,

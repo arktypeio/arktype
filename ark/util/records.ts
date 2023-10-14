@@ -23,7 +23,7 @@ export type requireKeys<o, key extends keyof o> = o & {
 export const hasKey = <o extends object, k extends PropertyKey>(
 	o: o,
 	k: k
-): o is Extract<o, { [_ in k]: {} | null }> => k in o
+): o is o & { [_ in k]: {} | null } => k in o
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
 

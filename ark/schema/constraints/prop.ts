@@ -1,6 +1,6 @@
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node, Prevalidated } from "../node.js"
+import type { BaseAttributes, Node } from "../node.js"
 import type { TypeInput } from "../types/type.js"
 import { TypeNode } from "../types/type.js"
 import type { BasisKind } from "./basis.js"

@@ -7,6 +7,7 @@ import type {
 } from "@arktype/util"
 import type { BasisKind, validateBasisInput } from "../constraints/basis.js"
 import { MaxNode, MinNode } from "../constraints/bounds.js"
+import type { ConstraintKind } from "../constraints/constraint.js"
 import { DivisorNode } from "../constraints/divisor.js"
 import type {
 	DomainSchema,
@@ -24,7 +25,7 @@ import type {
 } from "../constraints/refinement.js"
 import type { UnitSchema } from "../constraints/unit.js"
 import { UnitNode } from "../constraints/unit.js"
-import type { BaseAttributes, Node, Schema } from "../node.js"
+import type { BaseAttributes, Node, NodeClass, Schema } from "../node.js"
 import type { MorphSchema } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
@@ -37,13 +38,13 @@ const reducibleChildClasses = {
 	min: MinNode
 }
 
-const irreducibleChildClasses = {
-	patterns: PatternNode,
-	predicates: PredicateNode,
-	props: PropNode
+export const irreducibleChildClasses = {
+	pattern: PatternNode,
+	predicate: PredicateNode,
+	prop: PropNode
 }
 
-const intersectionChildClasses = {
+const intersectionChildClasses: { [k in ConstraintKind]: NodeClass<k> } = {
 	...reducibleChildClasses,
 	...irreducibleChildClasses
 }
@@ -54,7 +55,7 @@ export type AnyIntersectionChildren = evaluate<
 	BaseAttributes & {
 		[k in keyof IntersectionChildClasses]?: k extends keyof typeof reducibleChildClasses
 			? InstanceType<IntersectionChildClasses[k]>
-			: readonly InstanceType<IntersectionChildClasses[k]>[]
+			: InstanceType<IntersectionChildClasses[k]>[]
 	}
 >
 

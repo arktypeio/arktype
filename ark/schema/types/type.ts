@@ -1,6 +1,7 @@
 import {
 	type conform,
 	hasKey,
+	isKeyOf,
 	type listable,
 	throwInternalError
 } from "@arktype/util"
@@ -12,14 +13,15 @@ import {
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes, Node, Schema } from "../node.js"
+import type { BaseAttributes, Node, NodeClass, Schema } from "../node.js"
 import { BaseNode, createReferenceId } from "../node.js"
 import { inferred } from "../utils.js"
-import type {
-	AnyIntersectionChildren,
-	IntersectionSchema,
-	parseIntersection,
-	validateIntersectionInput
+import {
+	type AnyIntersectionChildren,
+	type IntersectionSchema,
+	irreducibleChildClasses,
+	type parseIntersection,
+	type validateIntersectionInput
 } from "./intersection.js"
 import type {
 	MorphChildren,
@@ -89,6 +91,8 @@ export abstract class TypeNode<
 	intersect<other extends TypeNode>(
 		other: other
 	): Node<intersectTypeKinds<this["kind"], other["kind"]>> | Disjoint {
+		// if (this.branches.length === 1 && other.branches.length === 1) {
+		// }
 		const resultBranches = intersectBranches(this.branches, other.branches)
 		if (resultBranches.length === 0) {
 			if (
@@ -168,10 +172,6 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 			branches: createBranches(schema.branches)
 		})
 	}
-
-	writeDefaultDescription() {
-		return
-	}
 }
 
 export class MorphNode<i = any, o = unknown> extends TypeNode<
@@ -247,9 +247,9 @@ export class IntersectionNode<
 			type: constraints.map((constraint) => constraint.ids.type).join("&"),
 			reference: createReferenceId(
 				{
-					branches: constraints
+					constraints: constraints
 						.map((constraint) => constraint.ids.reference)
-						.join("|")
+						.join("&")
 				},
 				children
 			)
@@ -266,50 +266,50 @@ export class IntersectionNode<
 
 	branches = [this]
 
-	// intersect(other: PredicateNode) {
-	// 	const schema: Partial<PredicateSchema> = {}
-	// 	if (this.morphs.length) {
-	// 		if (other.morphs.length) {
-	// 			if (!this.morphs.every((morph, i) => morph === other.morphs[i])) {
-	// 				throw new Error(`Invalid intersection of morphs.`)
-	// 			}
-	// 		}
-	// 		schema.morphs = this.morphs
-	// 	} else if (other.morphs.length) {
-	// 		schema.morphs = other.morphs
-	// 	}
-	// 	let constraints: readonly Constraint[] | Disjoint = this.constraints
-	// 	if (this.typeId !== other.typeId) {
-	// 		for (const constraint of other.constraints) {
-	// 			if (constraints instanceof Disjoint) {
-	// 				break
-	// 			}
-	// 			constraints = this.addConstraint(constraint)
-	// 		}
-	// 		if (constraints instanceof Disjoint) {
-	// 			return constraints
-	// 		}
-	// 	}
-	// 	schema.constraints = constraints
-	// 	const typeId = hashPredicateType(schema as PredicateSchema)
-	// 	if (typeId === this.typeId) {
-	// 		if (this.schema.description) {
-	// 			schema.description = this.schema.description
-	// 		}
-	// 		if (this.schema.alias) {
-	// 			schema.alias = this.schema.alias
-	// 		}
-	// 	}
-	// 	if (typeId === other.typeId) {
-	// 		if (other.schema.description) {
-	// 			schema.description = other.schema.description
-	// 		}
-	// 		if (other.schema.alias) {
-	// 			schema.alias = other.schema.alias
-	// 		}
-	// 	}
-	// 	return new PredicateNode(schema as PredicateSchema)
-	// }
+	intersectSymmetric(
+		other: IntersectionNode
+	): AnyIntersectionChildren | Disjoint {
+		let constraints: readonly Node<ConstraintKind>[] | Disjoint =
+			this.constraints
+		for (const constraint of other.constraints) {
+			if (constraints instanceof Disjoint) {
+				break
+			}
+			constraints = this.addConstraint(constraint)
+		}
+		if (constraints instanceof Disjoint) {
+			return constraints
+		}
+		const children: AnyIntersectionChildren = {}
+		for (const node of constraints) {
+			if (isKeyOf(node.kind, irreducibleChildClasses)) {
+				children[node.kind] ??= []
+				children[node.kind]!.push(node as never)
+			} else {
+				children[node.kind] = node as never
+			}
+		}
+		return children
+		// schema.constraints = constraints
+		// const typeId = hashPredicateType(schema as PredicateSchema)
+		// if (typeId === this.typeId) {
+		// 	if (this.schema.description) {
+		// 		schema.description = this.schema.description
+		// 	}
+		// 	if (this.schema.alias) {
+		// 		schema.alias = this.schema.alias
+		// 	}
+		// }
+		// if (typeId === other.typeId) {
+		// 	if (other.schema.description) {
+		// 		schema.description = other.schema.description
+		// 	}
+		// 	if (other.schema.alias) {
+		// 		schema.alias = other.schema.alias
+		// 	}
+		// }
+		// return new PredicateNode(schema as PredicateSchema)
+	}
 
 	protected addConstraint(
 		constraint: Node<ConstraintKind>

@@ -24,15 +24,6 @@ export abstract class BaseConstraint<
 		})
 	}
 
-	abstract intersectSymmetric(
-		// this representation avoids circularity errors caused by `this`
-		other: Node<this["kind"]>
-	): Schema<this["kind"]> | Disjoint | null
-
-	abstract intersectAsymmetric(
-		other: Node<ConstraintKind>
-	): Schema<this["kind"]> | Disjoint | null
-
 	intersectConstraint<other extends BaseConstraint>(
 		other: other
 	):
@@ -42,16 +33,5 @@ export abstract class BaseConstraint<
 				ReturnType<this["intersectOwnKeys"] | other["intersectOwnKeys"]>
 		  > {
 		return null as never
-	}
-
-	intersectOwnKeys(
-		other: BaseConstraint
-	):
-		| ReturnType<this["intersectAsymmetric"]>
-		| ReturnType<this["intersectSymmetric"]>
-	intersectOwnKeys(other: Node<ConstraintKind>) {
-		return other.kind === this.kind
-			? this.intersectSymmetric(other as never)
-			: this.intersectAsymmetric(other)
 	}
 }
