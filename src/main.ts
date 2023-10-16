@@ -1,6 +1,11 @@
 export { scope } from "./scopes/scope.js"
 export { type, ark, arkScope } from "./scopes/ark.js"
-export type { Infer } from "./parse/definition.js"
+export type { PrecompiledDefaults } from "./scopes/ark.js"
+export type {
+    Infer,
+    validateDefinition,
+    inferDefinition
+} from "./parse/definition.js"
 export type { Scope, Space } from "./scopes/scope.js"
 export {
     arrayOf,
