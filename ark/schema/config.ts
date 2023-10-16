@@ -1,7 +1,5 @@
-namespace global {
+declare global {
 	export interface ArkConfig {
-		preserve?: object
+		preserve(): never
 	}
 }
-
-export type ArkConfig = global.ArkConfig

@@ -12,9 +12,9 @@ class MyClass {
 	pub = true
 }
 
-namespace global {
+declare global {
 	export interface ArkConfig {
-		preserve: MyClass
+		preserve(): MyClass
 	}
 }
 
