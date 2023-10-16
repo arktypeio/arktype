@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.24-alpha
+
+### Patch Changes
+
+-   Add inferDefinition, validateDefinition and PrecompiledDefaults to primary entrypoint
+
 ## 1.0.23-alpha
 
 ### Patch Changes
