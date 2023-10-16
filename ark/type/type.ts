@@ -7,6 +7,7 @@ import {
 	TraversalState
 } from "@arktype/schema"
 import type {
+	ArkConfig,
 	BaseAttributes,
 	CheckResult,
 	inferMorphOut,
@@ -377,7 +378,6 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
 	: { [k in keyof t]: extractMorphs<t[k], io> }
 
 /** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObjectKind = BuiltinObjects[Exclude<
-	BuiltinObjectKind,
-	"Object" | "Array"
->]
+type TerminallyInferredObjectKind =
+	| ArkConfig["preserve"]
+	| BuiltinObjects[Exclude<BuiltinObjectKind, "Object" | "Array">]
