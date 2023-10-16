@@ -5,34 +5,34 @@ import type {
 	evaluate,
 	exactMessageOnError
 } from "@arktype/util"
-import type { BasisKind, validateBasisInput } from "../constraints/basis.js"
+import {
+	basisClassesByKind,
+	type BasisKind,
+	type validateBasisInput
+} from "../constraints/basis.js"
 import { MaxNode, MinNode } from "../constraints/bounds.js"
 import type { ConstraintKind } from "../constraints/constraint.js"
 import { DivisorNode } from "../constraints/divisor.js"
 import type {
+	DomainNode,
 	DomainSchema,
 	NonEnumerableDomain
 } from "../constraints/domain.js"
-import { DomainNode } from "../constraints/domain.js"
 import { PatternNode } from "../constraints/pattern.js"
 import { PredicateNode } from "../constraints/predicate.js"
 import { PropNode } from "../constraints/prop.js"
-import type { ProtoSchema } from "../constraints/proto.js"
-import { ProtoNode } from "../constraints/proto.js"
+import type { ProtoNode, ProtoSchema } from "../constraints/proto.js"
 import type {
 	RefinementIntersectionInput,
 	RefinementKind
 } from "../constraints/refinement.js"
-import type { UnitSchema } from "../constraints/unit.js"
-import { UnitNode } from "../constraints/unit.js"
+import type { UnitNode, UnitSchema } from "../constraints/unit.js"
 import type { BaseAttributes, Node, NodeClass, Schema } from "../node.js"
 import type { MorphSchema } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
 export const reducibleChildClasses = {
-	domain: DomainNode,
-	proto: ProtoNode,
-	unit: UnitNode,
+	...basisClassesByKind,
 	divisor: DivisorNode,
 	max: MaxNode,
 	min: MinNode

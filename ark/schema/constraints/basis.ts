@@ -3,18 +3,19 @@ import type {
 	exactMessageOnError,
 	widen
 } from "@arktype/util"
-import type {
-	DomainChildren,
-	DomainNode,
-	NonEnumerableDomain
-} from "./domain.js"
-import type { ProtoChildren, ProtoNode } from "./proto.js"
-import type { UnitChildren, UnitNode } from "./unit.js"
+import type { DomainChildren, NonEnumerableDomain } from "./domain.js"
+import { DomainNode } from "./domain.js"
+import type { ProtoChildren } from "./proto.js"
+import { ProtoNode } from "./proto.js"
+import type { UnitChildren } from "./unit.js"
+import { UnitNode } from "./unit.js"
 
-export type BasisClassesByKind = {
-	domain: typeof DomainNode
-	proto: typeof ProtoNode
-	unit: typeof UnitNode
+export type BasisClassesByKind = typeof basisClassesByKind
+
+export const basisClassesByKind = {
+	domain: DomainNode,
+	proto: ProtoNode,
+	unit: UnitNode
 }
 
 export type BasisKind = keyof BasisClassesByKind

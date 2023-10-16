@@ -9,12 +9,14 @@ import {
 	transform
 } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
+import { basisClassesByKind, type BasisKind } from "../constraints/basis.js"
 import {
 	BaseConstraint,
 	type ConstraintKind
 } from "../constraints/constraint.js"
 import { DomainNode } from "../constraints/domain.js"
 import { ProtoNode } from "../constraints/proto.js"
+import type { RefinementKind } from "../constraints/refinement.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
@@ -22,12 +24,16 @@ import type { BaseAttributes, Children, Node, Schema } from "../node.js"
 import { BaseNode, createReferenceId, isBaseAttributeKey } from "../node.js"
 import { inferred } from "../utils.js"
 import {
-	type AnyIntersectionChildren,
-	type IntersectionSchema,
 	irreducibleChildClasses,
-	type parseIntersection,
-	reducibleChildClasses,
-	type validateIntersectionInput
+	reducibleChildClasses
+} from "./intersection.js"
+import type {
+	AnyIntersectionChildren,
+	BasisedBranchInput,
+	IntersectionSchema,
+	parseIntersection,
+	UnknownBranchInput,
+	validateIntersectionInput
 } from "./intersection.js"
 import type {
 	MorphChildren,
@@ -261,12 +267,34 @@ export class IntersectionNode<
 	readonly defaultDescription: string
 
 	constructor(children: children) {
-		const constraints = Object.values(children)
-			.flat()
-			.filter(
-				(child): child is Node<ConstraintKind> =>
-					child instanceof BaseConstraint
-			)
+		let basis: Node<BasisKind> | undefined
+		const refinements: Node<RefinementKind>[] = []
+		for (const child of Object.values(children).flat()) {
+			if (child instanceof BaseConstraint) {
+				if (
+					child.kind === "domain" ||
+					child.kind === "proto" ||
+					child.kind === "unit"
+				) {
+					if (basis) {
+						throwParseError(
+							`An intersection may have at least one basis (remove either ${basis.kind} or ${child.kind})`
+						)
+					}
+					basis = child
+				} else {
+					refinements.push(child)
+				}
+			}
+		}
+		refinements.forEach((refinement) => {
+			if (!refinement.applicableTo(basis)) {
+				throwParseError(
+					`Refinement of kind ${refinement.kind} is not allowed by basis ${basis}`
+				)
+			}
+		})
+		const constraints = basis ? [basis, ...refinements] : refinements
 		super(children, {
 			in: constraints.map((constraint) => constraint.ids.in).join("&"),
 			out: constraints.map((constraint) => constraint.ids.out).join("&"),
@@ -287,27 +315,7 @@ export class IntersectionNode<
 	}
 
 	static from(schema: IntersectionSchema) {
-		const children: AnyIntersectionChildren =
-			typeof schema === "string"
-				? { domain: DomainNode.from(schema) }
-				: typeof schema === "function"
-				? { proto: ProtoNode.from(schema) }
-				: typeof schema === "object"
-				? transform(schema as Dict, ([k, input]) => [
-						k,
-						isBaseAttributeKey(k)
-							? input
-							: isKeyOf(k, reducibleChildClasses)
-							? (reducibleChildClasses[k].from as any)(input)
-							: isKeyOf(k, irreducibleChildClasses)
-							? listFrom(input).map((constraintInput) =>
-									irreducibleChildClasses[k].from(constraintInput as never)
-							  )
-							: throwParseError(`Unexpected intersection schema key '${k}'.`)
-				  ])
-				: throwParseError(
-						`${domainOf(schema)} is not a valid intersection schema input.`
-				  )
+		const children = parseIntersectionChildren(schema)
 		return new IntersectionNode(children)
 	}
 
@@ -386,6 +394,45 @@ export class IntersectionNode<
 		return result
 	}
 }
+
+const parseIntersectionChildren = (
+	schema: IntersectionSchema
+): AnyIntersectionChildren => {
+	switch (typeof schema) {
+		case "string":
+			return { domain: DomainNode.from(schema) }
+		case "function":
+			return { proto: ProtoNode.from(schema) }
+		case "object":
+			return parseIntersectionObjectSchema(schema)
+		default:
+			return throwParseError(
+				`${domainOf(schema)} is not a valid intersection schema input.`
+			)
+	}
+}
+
+const parseIntersectionObjectSchema = (
+	schema: UnknownBranchInput | BasisedBranchInput
+): AnyIntersectionChildren =>
+	transform(schema as Dict, ([k, input]) => {
+		switch (true) {
+			case isBaseAttributeKey(k):
+				return [k, input]
+			case isKeyOf(k, reducibleChildClasses):
+				const node = (reducibleChildClasses as any)[k].from(input)
+				return [k, node]
+			case isKeyOf(k, irreducibleChildClasses):
+				return [
+					k,
+					listFrom(input).map((constraintInput) =>
+						(irreducibleChildClasses as any)[k].from(constraintInput)
+					)
+				]
+			default:
+				return throwParseError(`Unexpected intersection schema key '${k}'`)
+		}
+	})
 
 const parseNode = (...branches: BranchInput[]) => {
 	const constraintSets = createBranches(branches)

@@ -1,15 +1,7 @@
 import type { extend } from "@arktype/util"
 import { DynamicBase } from "@arktype/util"
-import type {
-	ConstraintClassesByKind,
-	ConstraintKind
-} from "./constraints/constraint.js"
-import type { Disjoint } from "./disjoint.js"
-import type {
-	TypeClassesByKind,
-	TypeKind,
-	validateBranchInput
-} from "./types/type.js"
+import type { ConstraintClassesByKind } from "./constraints/constraint.js"
+import type { TypeClassesByKind, validateBranchInput } from "./types/type.js"
 
 export interface BaseAttributes {
 	alias?: string
