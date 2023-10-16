@@ -16,6 +16,14 @@ export interface BaseAttributes {
 	description?: string
 }
 
+const baseAttributeKeys = {
+	alias: 1,
+	description: 1
+} as const satisfies Record<keyof BaseAttributes, 1>
+
+export const isBaseAttributeKey = (k: string): k is keyof BaseAttributes =>
+	k in baseAttributeKeys
+
 export type NodeIds = {
 	in: string
 	out: string
@@ -82,11 +90,11 @@ export abstract class BaseNode<
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
 		return this.kind === kind
 	}
-}
 
-type widenKind<kind extends NodeKind> = kind extends ConstraintKind
-	? ConstraintKind
-	: TypeKind
+	toString() {
+		return this.description
+	}
+}
 
 export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,

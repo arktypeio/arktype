@@ -1,23 +1,25 @@
+/* eslint-disable @typescript-eslint/no-restricted-imports */
 import { type } from "arktype"
+import type { TypeNode } from "./ark/schema/main.js"
+import { node } from "./ark/schema/main.js"
 
-const user = type({
-	name: "string",
-	age: "number",
-	luckyNumbers: "(number|bigint)[]"
-})
-
-class MyClass {
-	#private = true
-
-	pub = true
-}
-
-declare global {
-	export interface ArkConfig {
-		preserve(): MyClass
+const compileType = (node: TypeNode) => {
+	switch (node.kind) {
+		case "union":
+			return "throw Error('unsupported')"
+		case "morph":
+			return "throw Error('unsupported')"
+		case "intersection":
+			return node.description
 	}
 }
 
-const t = type("instanceof", MyClass)
+const n = node({
+	domain: "string",
+	min: 2,
+	max: 5
+})
 
-type Out = typeof t.infer
+n //?
+
+const result = compileType(n) //?

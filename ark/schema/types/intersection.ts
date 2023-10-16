@@ -29,7 +29,7 @@ import type { BaseAttributes, Node, NodeClass, Schema } from "../node.js"
 import type { MorphSchema } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
 
-const reducibleChildClasses = {
+export const reducibleChildClasses = {
 	domain: DomainNode,
 	proto: ProtoNode,
 	unit: UnitNode,
@@ -44,10 +44,11 @@ export const irreducibleChildClasses = {
 	prop: PropNode
 }
 
-const intersectionChildClasses: { [k in ConstraintKind]: NodeClass<k> } = {
-	...reducibleChildClasses,
-	...irreducibleChildClasses
-}
+export const intersectionChildClasses: { [k in ConstraintKind]: NodeClass<k> } =
+	{
+		...reducibleChildClasses,
+		...irreducibleChildClasses
+	}
 
 type IntersectionChildClasses = typeof intersectionChildClasses
 

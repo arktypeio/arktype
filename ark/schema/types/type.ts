@@ -1,26 +1,32 @@
+import type { conform, Dict, listable } from "@arktype/util"
 import {
-	type conform,
+	domainOf,
 	hasKey,
 	isKeyOf,
-	type listable,
-	throwInternalError
+	listFrom,
+	throwInternalError,
+	throwParseError,
+	transform
 } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
 import {
 	BaseConstraint,
 	type ConstraintKind
 } from "../constraints/constraint.js"
+import { DomainNode } from "../constraints/domain.js"
+import { ProtoNode } from "../constraints/proto.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Children, Node, Schema } from "../node.js"
-import { BaseNode, createReferenceId } from "../node.js"
+import { BaseNode, createReferenceId, isBaseAttributeKey } from "../node.js"
 import { inferred } from "../utils.js"
 import {
 	type AnyIntersectionChildren,
 	type IntersectionSchema,
 	irreducibleChildClasses,
 	type parseIntersection,
+	reducibleChildClasses,
 	type validateIntersectionInput
 } from "./intersection.js"
 import type {
@@ -281,10 +287,29 @@ export class IntersectionNode<
 	}
 
 	static from(schema: IntersectionSchema) {
-		return new IntersectionNode({})
+		const children: AnyIntersectionChildren =
+			typeof schema === "string"
+				? { domain: DomainNode.from(schema) }
+				: typeof schema === "function"
+				? { proto: ProtoNode.from(schema) }
+				: typeof schema === "object"
+				? transform(schema as Dict, ([k, input]) => [
+						k,
+						isBaseAttributeKey(k)
+							? input
+							: isKeyOf(k, reducibleChildClasses)
+							? (reducibleChildClasses[k].from as any)(input)
+							: isKeyOf(k, irreducibleChildClasses)
+							? listFrom(input).map((constraintInput) =>
+									irreducibleChildClasses[k].from(constraintInput as never)
+							  )
+							: throwParseError(`Unexpected intersection schema key '${k}'.`)
+				  ])
+				: throwParseError(
+						`${domainOf(schema)} is not a valid intersection schema input.`
+				  )
+		return new IntersectionNode(children)
 	}
-
-	branches = [this]
 
 	intersectSymmetric(
 		other: IntersectionNode
