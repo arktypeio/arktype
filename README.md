@@ -296,23 +296,89 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 <table>
 	<tr>
+		<th>fubhy</th>
+		<th>sam-goodwin</th>
 		<th>tmm</th>
-		<th>xrexy</th>
 		<th>thomasballinger</th>
-		<th>codeandcats</th>
 		<th>jacksteamdev</th>
+	</tr>
+	<tr>
+		<td>
+			<a href="https://github.com/fubhy"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/1172528"
+			/></a>
+		</td>
+		<td>
+			<a href="https://github.com/sam-goodwin"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/38672686"
+			/></a>
+		</td>
+		<td>
+			<a href="https://github.com/tmm"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/6759464"
+			/></a>
+		</td>
+		<td>
+			<a href="https://github.com/thomasballinger"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/458879"
+			/></a>
+		</td>
+		<td>
+			<a href="https://github.com/jacksteamdev"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/23390212"
+			/></a>
+		</td>
+	</tr>
+	<tr>
 		<th>neodon</th>
 		<th>mewhhaha</th>
-		<th>fubhy</th>
-    </tr>
-    <tr>
-    	<td><a href="https://github.com/tmm"><img height="64px" src="https://avatars.githubusercontent.com/u/6759464"></a></td>
-    	<td><a href="https://github.com/xrexy"><img height="64px" src="https://avatars.githubusercontent.com/u/71969236"></a></td>
-    	<td><a href="https://github.com/thomasballinger"><img height="64px" src="https://avatars.githubusercontent.com/u/458879"></a></td>
-    	<td><a href="https://github.com/codeandcats"><img height="64px" src="https://avatars.githubusercontent.com/u/6035934"></a></td>
-    	<td><a href="https://github.com/jacksteamdev"><img height="64px" src="https://avatars.githubusercontent.com/u/23390212"></a></td>
-    	<td><a href="https://github.com/neodon"><img height="64px" src="https://avatars.githubusercontent.com/u/82944"></a></td>
-		<td><a href="https://github.com/mewhhaha"><img height="64px" src="https://avatars.githubusercontent.com/u/3399205"></a></td>
-		<td><a href="https://github.com/fubhy"><img height="64px" src="https://avatars.githubusercontent.com/u/1172528"></a></td>
-    </tr>
+		<th>codeandcats</th>
+		<th>xrexy</th>
+		<th>Timeraa</th>
+	</tr>
+	<tr>
+		<td>
+			<a href="https://github.com/neodon"
+				><img height="64px" src="https://avatars.githubusercontent.com/u/82944"
+			/></a>
+		</td>
+		<td>
+			<a href="https://github.com/mewhhaha"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/3399205"
+			/></a>
+		</td>
+		<td>
+			<a href="https://github.com/codeandcats"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/6035934"
+			/></a>
+		</td>
+		<td>
+			<a href="https://github.com/xrexy"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/71969236"
+			/></a>
+		</td>
+		<td>
+			<a href="https://github.com/Timeraa"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/29104008"
+			/></a>
+		</td>
+	</tr>
 </table>
