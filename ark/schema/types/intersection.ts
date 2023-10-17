@@ -22,7 +22,11 @@ import type {
 	RefinementIntersectionInput,
 	RefinementKind
 } from "../constraints/refinement.js"
-import type { UnitNode, UnitSchema } from "../constraints/unit.js"
+import type {
+	CollapsedUnitSchema,
+	UnitNode,
+	UnitSchema
+} from "../constraints/unit.js"
 import type { BaseAttributes, Node, NodeClass, Schema } from "../node.js"
 import type { MorphSchema } from "./morph.js"
 import { type IntersectionNode } from "./type.js"
@@ -40,21 +44,17 @@ export const irreducibleChildClasses = {
 	prop: PropNode
 }
 
+export type IrreducibleConstraintKind = keyof typeof irreducibleChildClasses
+
 export const intersectionChildClasses: { [k in ConstraintKind]: NodeClass<k> } =
 	{
 		...reducibleChildClasses,
 		...irreducibleChildClasses
 	}
 
-type IntersectionChildClasses = typeof intersectionChildClasses
-
-export type AnyIntersectionChildren = evaluate<
-	BaseAttributes & {
-		[k in keyof IntersectionChildClasses]?: k extends keyof typeof reducibleChildClasses
-			? InstanceType<IntersectionChildClasses[k]>
-			: InstanceType<IntersectionChildClasses[k]>[]
-	}
->
+export interface IntersectionChildren extends BaseAttributes {
+	constraints: readonly Node<ConstraintKind>[]
+}
 
 export type parseBasis<input extends Schema<BasisKind>> =
 	input extends DomainSchema<infer domain>
@@ -135,21 +135,17 @@ type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 				: `this schema's basis`}`>
 }
 
-type UnitIntersectionInput = {
-	is: unknown
-}
-
 export type validateIntersectionInput<input> = input extends
 	| NonEnumerableDomain
 	| AbstractableConstructor
 	? input
-	: input extends UnitIntersectionInput
-	? exactMessageOnError<input, UnitIntersectionInput>
+	: input extends CollapsedUnitSchema
+	? exactMessageOnError<input, CollapsedUnitSchema>
 	: input extends IntersectionBasisInput<infer basis>
 	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
 	: input extends UnknownBranchInput
 	? exactMessageOnError<input, UnknownBranchInput>
-	: UnitIntersectionInput | IntersectionSchema | MorphSchema
+	: CollapsedUnitSchema | IntersectionSchema | MorphSchema
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

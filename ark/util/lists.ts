@@ -65,7 +65,10 @@ export type arraySubclassToReadonly<t extends unknown[]> =
 
 export const listFrom = <t>(data: t) =>
 	(Array.isArray(data) ? data : [data]) as t extends readonly unknown[]
-		? t
+		? [t] extends [null]
+			? // check for any/never
+			  t[]
+			: t
 		: t[]
 
 export const spliterate = <item, included extends item>(
