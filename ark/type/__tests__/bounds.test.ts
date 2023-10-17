@@ -1,13 +1,14 @@
 import { attest } from "@arktype/attest"
 import type { BoundChildren } from "@arktype/schema"
-import { node, writeIncompatibleRangeMessage } from "@arktype/schema"
+import {
+	node,
+	writeIncompatibleRangeMessage,
+	writeUnboundableMessage
+} from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
 import { suite, test } from "mocha"
-import {
-	writeDoubleRightBoundMessage,
-	writeUnboundableMessage
-} from "../parser/semantic/bounds.js"
+import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,

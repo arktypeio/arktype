@@ -304,7 +304,6 @@ export class IntersectionNode<
 	readonly basis: Node<BasisKind> = this.refinements[0]?.isBasis()
 		? (this.refinements.shift() as any)
 		: undefined
-
 	readonly defaultDescription = this.constraints.length
 		? this.constraints.join(" and ")
 		: "a value"

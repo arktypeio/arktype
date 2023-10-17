@@ -36,4 +36,6 @@ export interface BaseRefinement {
 	applicableTo(
 		basis: Node<BasisKind> | undefined
 	): basis is Node<BasisKind> | undefined
+
+	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined): string
 }

@@ -41,6 +41,10 @@ export class PatternNode
 		)
 	}
 
+	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return `${this} must be applied to a string (was ${basis ?? "unknown"})`
+	}
+
 	hash() {
 		return ""
 	}

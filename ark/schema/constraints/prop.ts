@@ -53,6 +53,10 @@ export class PropNode
 		)
 	}
 
+	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return `${this} is not allowed as a prop on ${basis}`
+	}
+
 	hash() {
 		return ""
 	}

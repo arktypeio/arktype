@@ -37,6 +37,10 @@ export class PredicateNode<rule extends Predicate = Predicate>
 		)
 	}
 
+	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return `${this} cannot narrow ${basis}`
+	}
+
 	hash() {
 		return compileSerializedValue(this.rule)
 	}

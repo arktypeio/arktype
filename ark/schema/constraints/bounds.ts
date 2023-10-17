@@ -38,6 +38,10 @@ export abstract class BoundNode
 		}
 		return false
 	}
+
+	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return writeUnboundableMessage(`${basis}`)
+	}
 }
 
 export class MinNode extends BoundNode {
@@ -137,3 +141,11 @@ export const writeIncompatibleRangeMessage = (
 ) => `Bound kinds ${l} and ${r} are incompatible`
 
 export type NumericallyBoundableData = string | number | readonly unknown[]
+
+export const writeUnboundableMessage = <root extends string>(
+	root: root
+): writeUnboundableMessage<root> =>
+	`Bounded expression ${root} must be a number, string, Array, or Date`
+
+export type writeUnboundableMessage<root extends string> =
+	`Bounded expression ${root} must be a number, string, Array, or Date`

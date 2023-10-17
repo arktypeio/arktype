@@ -32,6 +32,10 @@ export class DivisorNode
 		)
 	}
 
+	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return writeIndivisibleMessage(`${basis}`)
+	}
+
 	hash() {
 		return ""
 	}

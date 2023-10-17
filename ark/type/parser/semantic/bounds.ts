@@ -1,4 +1,7 @@
-import type { NumericallyBoundableData } from "@arktype/schema"
+import type {
+	NumericallyBoundableData,
+	writeUnboundableMessage
+} from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {
@@ -58,11 +61,3 @@ export const writeDoubleRightBoundMessage = <root extends string>(
 
 type writeDoubleRightBoundMessage<root extends string> =
 	`Expression ${root} must have at most one right bound`
-
-export const writeUnboundableMessage = <root extends string>(
-	root: root
-): writeUnboundableMessage<root> =>
-	`Bounded expression ${root} must be a number, string, Array, or Date`
-
-type writeUnboundableMessage<root extends string> =
-	`Bounded expression ${root} must be a number, string, Array, or Date`

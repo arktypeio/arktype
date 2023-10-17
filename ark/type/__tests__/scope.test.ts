@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
+import { writeUnboundableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
 import { suite, test } from "mocha"
-import { writeUnboundableMessage } from "../parser/semantic/bounds.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
