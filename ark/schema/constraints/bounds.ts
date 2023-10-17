@@ -5,6 +5,7 @@ import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
+import type { BaseRefinement } from "./refinement.js"
 
 export interface BoundChildren extends BaseAttributes {
 	readonly rule: number
@@ -13,7 +14,10 @@ export interface BoundChildren extends BaseAttributes {
 
 export type BoundSchema = number | BoundChildren
 
-export abstract class BoundNode extends BaseConstraint<BoundChildren> {
+export abstract class BoundNode
+	extends BaseConstraint<BoundChildren>
+	implements BaseRefinement
+{
 	abstract comparator: string
 
 	exclusive = this.children.exclusive ?? false

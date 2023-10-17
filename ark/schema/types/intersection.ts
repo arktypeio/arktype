@@ -118,13 +118,13 @@ export type IntersectionSchema<
 	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
 > = basis | UnknownBranchInput | BasisedBranchInput<basis>
 
-export type parseIntersection<input> = IntersectionNode<
-	input extends AbstractableConstructor | NonEnumerableDomain
-		? parseBasis<input>["infer"]
-		: input extends IntersectionBasisInput<infer basis>
-		? parseBasis<basis>["infer"]
-		: unknown
->
+export type parseIntersection<input> = input extends
+	| AbstractableConstructor
+	| NonEnumerableDomain
+	? IntersectionNode<parseBasis<input>["infer"]>
+	: input extends IntersectionBasisInput<infer basis>
+	? IntersectionNode<parseBasis<basis>["infer"]>
+	: IntersectionNode<unknown>
 
 type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 	[k in keyof branch]: k extends keyof expected

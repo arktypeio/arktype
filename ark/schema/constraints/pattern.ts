@@ -3,6 +3,7 @@ import type { BaseAttributes, Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
+import type { BaseRefinement } from "./refinement.js"
 
 export interface PatternChildren extends BaseAttributes {
 	rule: string
@@ -11,7 +12,10 @@ export interface PatternChildren extends BaseAttributes {
 
 export type PatternSchema = RegexLiteral | RegExp | PatternChildren
 
-export class PatternNode extends BaseConstraint<PatternChildren> {
+export class PatternNode
+	extends BaseConstraint<PatternChildren>
+	implements BaseRefinement
+{
 	readonly kind = "pattern"
 
 	instance = new RegExp(this.rule, this.flags)

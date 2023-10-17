@@ -297,14 +297,14 @@ export class IntersectionNode<
 				)
 			}
 		)
+		assertValidRefinements(this.basis, this.refinements)
 	}
 
-	readonly basis = this.constraints[0]?.isBasis()
-		? this.constraints[0]
+	readonly refinements: Node<RefinementKind>[] = [...this.constraints] as never
+	readonly basis: Node<BasisKind> = this.refinements[0]?.isBasis()
+		? (this.refinements.shift() as any)
 		: undefined
-	readonly refinements = this.basis
-		? this.constraints.slice(1)
-		: this.constraints
+
 	readonly defaultDescription = this.constraints.length
 		? this.constraints.join(" and ")
 		: "a value"
@@ -391,7 +391,7 @@ const addConstraint = (
 
 const assertValidRefinements: (
 	basis: Node<BasisKind> | undefined,
-	refinements: Node<ConstraintKind>[]
+	refinements: Node<RefinementKind>[]
 ) => asserts refinements is Node<RefinementKind>[] = (basis, refinements) => {
 	for (const refinement of refinements) {
 		if (!refinement.applicableTo(basis)) {

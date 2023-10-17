@@ -14,7 +14,8 @@ const compileType = (node: TypeNode) => {
 }
 
 const n = node({
-	domain: "string"
+	domain: "string",
+	divisor: 5
 })
 
 n //?

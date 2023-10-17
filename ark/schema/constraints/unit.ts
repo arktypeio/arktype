@@ -38,10 +38,6 @@ export class UnitNode<const rule = unknown> extends BaseConstraint<
 		)
 	}
 
-	applicableTo(basis: Node<BasisKind> | undefined): basis is undefined {
-		return basis === undefined
-	}
-
 	hash() {
 		return compileSerializedValue(this.rule)
 	}

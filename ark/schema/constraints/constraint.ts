@@ -60,8 +60,4 @@ export abstract class BaseConstraint<
 			this.kind === "domain" || this.kind === "proto" || this.kind === "unit"
 		)
 	}
-
-	abstract applicableTo(
-		basis: Node<BasisKind> | undefined
-	): basis is Node<BasisKind> | undefined
 }

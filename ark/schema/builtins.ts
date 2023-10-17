@@ -5,6 +5,8 @@ import { type TypeNode } from "./types/type.js"
 export const builtins = {
 	never: cached(() => node()),
 	unknown: cached(() => node({})),
+	object: cached(() => node("object")),
+	number: cached(() => node("number")),
 	// TODO: fix
 	nonVariadicArrayIndex: cached(() => node("number")),
 	arrayIndexTypeNode: cached(() => node("number")),

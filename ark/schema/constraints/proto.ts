@@ -38,10 +38,6 @@ export class ProtoNode<
 		)
 	}
 
-	applicableTo(basis: Node<BasisKind> | undefined): basis is undefined {
-		return basis === undefined
-	}
-
 	hash() {
 		return this.possibleObjectKind ?? compileSerializedValue(this.rule)
 	}
