@@ -9,7 +9,7 @@ import {
 	transform
 } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
-import { basisClassesByKind, type BasisKind } from "../constraints/basis.js"
+import { type BasisKind } from "../constraints/basis.js"
 import {
 	BaseConstraint,
 	type ConstraintKind
@@ -23,10 +23,6 @@ import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Children, Node, Schema } from "../node.js"
 import { BaseNode, createReferenceId, isBaseAttributeKey } from "../node.js"
 import { inferred } from "../utils.js"
-import {
-	irreducibleChildClasses,
-	reducibleChildClasses
-} from "./intersection.js"
 import type {
 	AnyIntersectionChildren,
 	BasisedBranchInput,
@@ -34,6 +30,10 @@ import type {
 	parseIntersection,
 	UnknownBranchInput,
 	validateIntersectionInput
+} from "./intersection.js"
+import {
+	irreducibleChildClasses,
+	reducibleChildClasses
 } from "./intersection.js"
 import type {
 	MorphChildren,
@@ -264,6 +264,8 @@ export class IntersectionNode<
 	readonly kind = "intersection"
 
 	readonly constraints: readonly Node<ConstraintKind>[]
+	readonly basis: Node<BasisKind> | undefined
+	readonly refinements: readonly Node<RefinementKind>[]
 	readonly defaultDescription: string
 
 	constructor(children: children) {
@@ -309,6 +311,8 @@ export class IntersectionNode<
 			)
 		})
 		this.constraints = constraints
+		this.refinements = refinements
+		this.basis = basis
 		this.defaultDescription = this.constraints.length
 			? this.constraints.join(" and ")
 			: "a value"
