@@ -291,33 +291,10 @@ export class IntersectionNode<
 					? 1
 					: -1
 			)
-		let basis: Node<BasisKind> | undefined
-		const refinements: Node<RefinementKind>[] = []
-		for (const child of Object.values(children).flat()) {
-			if (child instanceof BaseConstraint) {
-				if (
-					child.kind === "domain" ||
-					child.kind === "proto" ||
-					child.kind === "unit"
-				) {
-					if (basis) {
-						throwParseError(
-							`An intersection may have at least one basis (remove either ${basis.kind} or ${child.kind})`
-						)
-					}
-					basis = child
-				} else {
-					refinements.push(child)
-				}
-			}
-		}
-		refinements.forEach((refinement) => {
-			if (!refinement.applicableTo(basis)) {
-				throwParseError(
-					`Refinement of kind ${refinement.kind} is not allowed by basis ${basis}`
-				)
-			}
-		})
+		const initialConstraint = constraints.at(0)
+		const basis = initialConstraint?.isBasis() ? initialConstraint : undefined
+		const refinements = basis ? constraints.slice(1) : constraints
+		assertValidRefinements(basis, refinements)
 		super(children, {
 			in: constraints.map((constraint) => constraint.ids.in).join("&"),
 			out: constraints.map((constraint) => constraint.ids.out).join("&"),
@@ -398,6 +375,19 @@ export class IntersectionNode<
 			result.push(this as never)
 		}
 		return result
+	}
+}
+
+const assertValidRefinements: (
+	basis: Node<BasisKind> | undefined,
+	refinements: Node<ConstraintKind>[]
+) => asserts refinements is Node<RefinementKind>[] = (basis, refinements) => {
+	for (const refinement of refinements) {
+		if (!refinement.applicableTo(basis)) {
+			throwParseError(
+				`Refinement of kind ${refinement.kind} is not allowed by basis ${basis}`
+			)
+		}
 	}
 }
 
