@@ -2,7 +2,6 @@ import type { BaseAttributes, Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
-import type { BaseRefinement } from "./refinement.js"
 
 export interface DivisorChildren extends BaseAttributes {
 	rule: number
@@ -10,10 +9,7 @@ export interface DivisorChildren extends BaseAttributes {
 
 export type DivisorSchema = number | DivisorChildren
 
-export class DivisorNode
-	extends BaseConstraint<DivisorChildren>
-	implements BaseRefinement
-{
+export class DivisorNode extends BaseConstraint<DivisorChildren> {
 	readonly kind = "divisor"
 	readonly defaultDescription =
 		this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`

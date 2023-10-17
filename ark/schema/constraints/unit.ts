@@ -2,7 +2,7 @@ import { stringify } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Node } from "../node.js"
-import type { ConstraintKind } from "./constraint.js"
+import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface UnitChildren<rule = unknown> extends BaseAttributes {
@@ -22,6 +22,10 @@ export class UnitNode<const rule = unknown> extends BaseConstraint<
 
 	static from<const rule>(schema: UnitSchema<rule>) {
 		return new UnitNode<rule>(schema)
+	}
+
+	applicableTo(basis: Node<BasisKind> | undefined): basis is undefined {
+		return basis === undefined
 	}
 
 	hash() {

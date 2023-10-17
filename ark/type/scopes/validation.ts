@@ -7,7 +7,7 @@ import { creditCard } from "./utils/creditCard.js"
 
 const url = node({
 	domain: "string",
-	narrow: (s: string) => {
+	predicate: (s: string) => {
 		try {
 			new URL(s)
 		} catch {

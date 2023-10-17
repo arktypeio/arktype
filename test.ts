@@ -15,9 +15,7 @@ const compileType = (node: TypeNode) => {
 }
 
 const n = node({
-	domain: "string",
-	min: 2,
-	max: 5
+	domain: "string"
 })
 
 n //?

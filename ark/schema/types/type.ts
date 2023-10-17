@@ -33,6 +33,7 @@ import type {
 } from "./intersection.js"
 import {
 	irreducibleChildClasses,
+	precedenceByConstraint,
 	reducibleChildClasses
 } from "./intersection.js"
 import type {
@@ -269,6 +270,27 @@ export class IntersectionNode<
 	readonly defaultDescription: string
 
 	constructor(children: children) {
+		const constraints = Object.values(children)
+			.flat()
+			.filter(
+				(value): value is Node<ConstraintKind> =>
+					value instanceof BaseConstraint
+			)
+			.sort((l, r) =>
+				// sort by precedence, then alphabetically by kind, then by id
+				precedenceByConstraint[l.kind] > precedenceByConstraint[r.kind]
+					? 1
+					: precedenceByConstraint[l.kind] < precedenceByConstraint[r.kind]
+					? -1
+					: l.kind > r.kind
+					? 1
+					: l.kind < r.kind
+					? -1
+					: // TODO: can sort only based on this?
+					l.ids.reference > r.ids.reference
+					? 1
+					: -1
+			)
 		let basis: Node<BasisKind> | undefined
 		const refinements: Node<RefinementKind>[] = []
 		for (const child of Object.values(children).flat()) {
@@ -296,7 +318,6 @@ export class IntersectionNode<
 				)
 			}
 		})
-		const constraints = basis ? [basis, ...refinements] : refinements
 		super(children, {
 			in: constraints.map((constraint) => constraint.ids.in).join("&"),
 			out: constraints.map((constraint) => constraint.ids.out).join("&"),
@@ -347,25 +368,6 @@ export class IntersectionNode<
 			}
 		}
 		return children
-		// schema.constraints = constraints
-		// const typeId = hashPredicateType(schema as PredicateSchema)
-		// if (typeId === this.typeId) {
-		// 	if (this.schema.description) {
-		// 		schema.description = this.schema.description
-		// 	}
-		// 	if (this.schema.alias) {
-		// 		schema.alias = this.schema.alias
-		// 	}
-		// }
-		// if (typeId === other.typeId) {
-		// 	if (other.schema.description) {
-		// 		schema.description = other.schema.description
-		// 	}
-		// 	if (other.schema.alias) {
-		// 		schema.alias = other.schema.alias
-		// 	}
-		// }
-		// return new PredicateNode(schema as PredicateSchema)
 	}
 
 	intersectAsymmetric() {

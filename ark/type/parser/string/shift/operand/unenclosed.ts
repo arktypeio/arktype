@@ -146,12 +146,12 @@ const maybeParseUnenclosedLiteral = (
 	const maybeNumber = tryParseWellFormedNumber(token)
 	if (maybeNumber !== undefined) {
 		// ctx
-		return node({ unit: maybeNumber })
+		return node({ is: maybeNumber })
 	}
 	const maybeBigint = tryParseWellFormedBigint(token)
 	if (maybeBigint !== undefined) {
 		// ctx
-		return node({ unit: maybeBigint })
+		return node({ is: maybeBigint })
 	}
 }
 

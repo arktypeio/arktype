@@ -7,7 +7,6 @@ import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
-import type { BaseRefinement } from "./refinement.js"
 
 type inferPropNode<node extends PropNode> = node["optional"] extends true
 	? { [k in inferKey<node["key"]>]?: node["value"]["infer"] }
@@ -31,10 +30,7 @@ export interface PropSchema extends BaseAttributes {
 	optional?: boolean
 }
 
-export class PropNode
-	extends BaseConstraint<PropChildren>
-	implements BaseRefinement
-{
+export class PropNode extends BaseConstraint<PropChildren> {
 	readonly optional = this.children.optional ?? false
 	readonly kind = "prop"
 	readonly defaultDescription = `${String(this.key)}${

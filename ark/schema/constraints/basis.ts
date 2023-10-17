@@ -20,17 +20,6 @@ export const basisClassesByKind = {
 
 export type BasisKind = keyof BasisClassesByKind
 
-export type validateBasisInput<basis> = basis extends
-	| NonEnumerableDomain
-	| AbstractableConstructor
-	? basis
-	: basis extends object
-	? exactMessageOnError<
-			basis,
-			widen<basis, DomainChildren | ProtoChildren | UnitChildren>
-	  >
-	: never
-
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,
 // 	node: Node<RefinementKind>

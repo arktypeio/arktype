@@ -32,6 +32,6 @@ const creditCardMatcher =
 export const creditCard = node({
 	domain: "string",
 	pattern: creditCardMatcher,
-	narrow: isLuhnValid,
+	predicate: isLuhnValid,
 	description: "a valid credit card number"
 })

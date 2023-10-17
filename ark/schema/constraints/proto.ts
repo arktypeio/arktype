@@ -7,6 +7,7 @@ import {
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Node } from "../node.js"
+import type { BasisKind } from "./basis.js"
 import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
@@ -36,6 +37,10 @@ export class ProtoNode<
 		return new ProtoNode<rule>(
 			typeof schema === "function" ? { rule: schema } : schema
 		)
+	}
+
+	applicableTo(basis: Node<BasisKind> | undefined): basis is undefined {
+		return basis === undefined
 	}
 
 	hash() {

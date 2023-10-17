@@ -30,9 +30,3 @@ export type RefinementIntersectionInputsByKind = {
 export type RefinementIntersectionInput<
 	kind extends RefinementKind = RefinementKind
 > = RefinementIntersectionInputsByKind[kind]
-
-export interface BaseRefinement {
-	applicableTo(
-		basis: Node<BasisKind> | undefined
-	): basis is Node<BasisKind> | undefined
-}

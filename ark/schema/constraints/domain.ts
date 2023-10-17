@@ -1,12 +1,13 @@
 import type { Domain, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
+import type { BaseAttributes, Node } from "../node.js"
+import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface DomainChildren<
 	rule extends NonEnumerableDomain = NonEnumerableDomain
 > extends BaseAttributes {
-	rule: rule
+	readonly rule: rule
 }
 
 // only domains with an infinite number of values are allowed as bases
@@ -30,6 +31,10 @@ export class DomainNode<
 		return new DomainNode(
 			typeof schema === "string" ? { rule: schema } : schema
 		)
+	}
+
+	applicableTo(basis: Node<BasisKind> | undefined): basis is undefined {
+		return basis === undefined
 	}
 
 	hash() {

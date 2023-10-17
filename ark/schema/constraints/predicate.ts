@@ -5,7 +5,6 @@ import type { BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
-import type { BaseRefinement } from "./refinement.js"
 
 export interface PredicateChildren<rule extends Predicate = Predicate>
 	extends BaseAttributes {
@@ -16,10 +15,9 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
 	| PredicateChildren<rule>
 
-export class PredicateNode<rule extends Predicate = Predicate>
-	extends BaseConstraint<PredicateChildren<rule>>
-	implements BaseRefinement
-{
+export class PredicateNode<
+	rule extends Predicate = Predicate
+> extends BaseConstraint<PredicateChildren<rule>> {
 	readonly kind = "predicate"
 	readonly defaultDescription = `valid according to ${this.rule.name}`
 

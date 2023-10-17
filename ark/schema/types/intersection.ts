@@ -5,11 +5,7 @@ import type {
 	evaluate,
 	exactMessageOnError
 } from "@arktype/util"
-import {
-	basisClassesByKind,
-	type BasisKind,
-	type validateBasisInput
-} from "../constraints/basis.js"
+import { basisClassesByKind, type BasisKind } from "../constraints/basis.js"
 import { MaxNode, MinNode } from "../constraints/bounds.js"
 import type { ConstraintKind } from "../constraints/constraint.js"
 import { DivisorNode } from "../constraints/divisor.js"
@@ -87,25 +83,25 @@ type refinementInputsOf<basis> = {
 	[k in refinementKindOf<basis>]?: RefinementIntersectionInput<k>
 }
 
-type IntersectionBasisInputValue = Schema<BasisKind> | Node<BasisKind>
+type IntersectionBasisInputValue = Schema<BasisKind>
 
 type IntersectionBasisInput<
 	basis extends IntersectionBasisInputValue = IntersectionBasisInputValue
 > =
 	| {
-			domain: conform<basis, DomainSchema | DomainNode>
+			domain: conform<basis, DomainSchema>
 			proto?: never
 			unit?: never
 	  }
 	| {
 			domain?: never
-			proto: conform<basis, ProtoSchema | ProtoNode>
+			proto: conform<basis, ProtoSchema>
 			unit?: never
 	  }
 	| {
 			domain?: never
 			proto?: never
-			unit: conform<basis, UnitSchema | UnitNode>
+			unit: conform<basis, UnitSchema>
 	  }
 
 export type BasisedBranchInput<
@@ -115,7 +111,7 @@ export type BasisedBranchInput<
 	BaseAttributes
 
 export type UnknownBranchInput = {
-	predicates?: Schema<"predicate">
+	predicate?: RefinementIntersectionInput<"predicate">
 } & BaseAttributes
 
 export type IntersectionSchema<
@@ -139,14 +135,21 @@ type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 				: `this schema's basis`}`>
 }
 
-export type validateIntersectionInput<input> =
-	input extends validateBasisInput<input>
-		? input
-		: input extends IntersectionBasisInput<infer basis>
-		? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
-		: input extends UnknownBranchInput
-		? exactMessageOnError<input, UnknownBranchInput>
-		: IntersectionSchema | MorphSchema
+type UnitIntersectionInput = {
+	is: unknown
+}
+
+export type validateIntersectionInput<input> = input extends
+	| NonEnumerableDomain
+	| AbstractableConstructor
+	? input
+	: input extends UnitIntersectionInput
+	? exactMessageOnError<input, UnitIntersectionInput>
+	: input extends IntersectionBasisInput<infer basis>
+	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
+	: input extends UnknownBranchInput
+	? exactMessageOnError<input, UnknownBranchInput>
+	: UnitIntersectionInput | IntersectionSchema | MorphSchema
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,
@@ -168,21 +171,18 @@ export type validateIntersectionInput<input> =
 // 	Boundable
 // ) {}
 
-// // TODO: naming
-// export const constraintsByPrecedence: Record<
-// 	BasisKind | RefinementKind,
-// 	number
-// > = {
-// 	// basis
-// 	domain: 0,
-// 	class: 0,
-// 	unit: 0,
-// 	// shallow
-// 	bound: 1,
-// 	divisor: 1,
-// 	regex: 1,
-// 	// deep
-// 	props: 2,
-// 	// narrow
-// 	narrow: 3
-// }
+export const precedenceByConstraint: Record<ConstraintKind, number> = {
+	// basis
+	domain: 0,
+	proto: 0,
+	unit: 0,
+	// shallow
+	min: 1,
+	max: 1,
+	divisor: 1,
+	pattern: 1,
+	// deep
+	prop: 2,
+	// narrow
+	predicate: 3
+}
