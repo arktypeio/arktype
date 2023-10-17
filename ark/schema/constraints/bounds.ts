@@ -2,7 +2,7 @@ import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import type { ConstraintKind } from "./constraint.js"
-import { BaseConstraint } from "./constraint.js"
+import { BaseConstraint, getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -40,7 +40,7 @@ export abstract class BoundNode
 	}
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return writeUnboundableMessage(`${basis}`)
+		return writeUnboundableMessage(getBasisName(basis))
 	}
 }
 

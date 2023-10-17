@@ -61,3 +61,6 @@ export abstract class BaseConstraint<
 		)
 	}
 }
+
+export const getBasisName = (basis: Node<BasisKind> | undefined) =>
+	basis?.basisName ?? "unknown"

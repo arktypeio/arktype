@@ -1,7 +1,7 @@
 import type { Domain, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
-import type { BasisKind } from "./basis.js"
+import type { BaseBasis, BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface DomainChildren<
@@ -18,14 +18,18 @@ export type DomainSchema<
 > = rule | DomainChildren<rule>
 
 export class DomainNode<
-	// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
-	out rule extends NonEnumerableDomain = NonEnumerableDomain
-> extends BaseConstraint<DomainChildren<rule>> {
+		// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
+		out rule extends NonEnumerableDomain = NonEnumerableDomain
+	>
+	extends BaseConstraint<DomainChildren<rule>>
+	implements BaseBasis
+{
 	readonly kind = "domain"
 
 	declare infer: inferDomain<rule>
 
 	defaultDescription = domainDescriptions[this.rule]
+	basisName = this.rule
 
 	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
 		return new DomainNode(
@@ -50,7 +54,7 @@ const enumerableDomainDescriptions = {
 	boolean: "boolean",
 	null: "null",
 	undefined: "undefined"
-}
+} as const
 
 const nonEnumerableDomainDescriptions = {
 	bigint: "a bigint",
@@ -58,10 +62,10 @@ const nonEnumerableDomainDescriptions = {
 	object: "an object",
 	string: "a string",
 	symbol: "a symbol"
-}
+} as const
 
 /** Each domain's completion for the phrase "Must be _____" */
 export const domainDescriptions = {
 	...nonEnumerableDomainDescriptions,
 	...enumerableDomainDescriptions
-} as const satisfies Record<Domain, string>
+} satisfies Record<Domain, string>

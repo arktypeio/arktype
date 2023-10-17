@@ -4,7 +4,7 @@ import type { BaseAttributes, Node } from "../node.js"
 import type { TypeInput } from "../types/type.js"
 import { TypeNode } from "../types/type.js"
 import type { BasisKind } from "./basis.js"
-import { BaseConstraint } from "./constraint.js"
+import { BaseConstraint, getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -54,7 +54,7 @@ export class PropNode
 	}
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return `${this} is not allowed as a prop on ${basis}`
+		return `${this} is not allowed as a prop on ${getBasisName(basis)}`
 	}
 
 	hash() {

@@ -20,6 +20,10 @@ export const basisClassesByKind = {
 
 export type BasisKind = keyof BasisClassesByKind
 
+export interface BaseBasis {
+	basisName: string
+}
+
 // export const assertAllowsConstraint = (
 // 	basis: Node<BasisKind> | null,
 // 	node: Node<RefinementKind>

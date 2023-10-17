@@ -1,7 +1,7 @@
 import { throwParseError } from "@arktype/util"
 import type { BaseAttributes, Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
-import { BaseConstraint } from "./constraint.js"
+import { BaseConstraint, getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
@@ -42,7 +42,7 @@ export class PatternNode
 	}
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return `${this} must be applied to a string (was ${basis ?? "unknown"})`
+		return `Match operand ${getBasisName(basis)} must be a string`
 	}
 
 	hash() {

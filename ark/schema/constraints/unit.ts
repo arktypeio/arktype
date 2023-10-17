@@ -2,7 +2,7 @@ import { hasKey, stringify, throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Node } from "../node.js"
-import type { BasisKind } from "./basis.js"
+import type { BaseBasis, BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface UnitChildren<rule = unknown> extends BaseAttributes {
@@ -17,14 +17,16 @@ export type UnitSchema<rule = unknown> =
 	| UnitChildren<rule>
 	| CollapsedUnitSchema<rule>
 
-export class UnitNode<const rule = unknown> extends BaseConstraint<
-	UnitChildren<rule>
-> {
+export class UnitNode<const rule = unknown>
+	extends BaseConstraint<UnitChildren<rule>>
+	implements BaseBasis
+{
 	readonly kind = "unit"
 	declare infer: rule
 
 	// TODO: add reference to for objects
 	defaultDescription = stringify(this.rule)
+	basisName = this.defaultDescription
 
 	static from<const rule>(schema: UnitSchema<rule>) {
 		return new UnitNode<rule>(

@@ -7,7 +7,7 @@ import {
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Node } from "../node.js"
-import type { BasisKind } from "./basis.js"
+import type { BaseBasis, BasisKind } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface ProtoChildren<
@@ -21,8 +21,11 @@ export type ProtoSchema<
 > = rule | ProtoChildren
 
 export class ProtoNode<
-	rule extends AbstractableConstructor = AbstractableConstructor
-> extends BaseConstraint<ProtoChildren> {
+		rule extends AbstractableConstructor = AbstractableConstructor
+	>
+	extends BaseConstraint<ProtoChildren>
+	implements BaseBasis
+{
 	readonly kind = "proto"
 
 	declare infer: InstanceType<rule>
@@ -30,7 +33,8 @@ export class ProtoNode<
 	possibleObjectKind = getExactBuiltinConstructorName(this.rule)
 	defaultDescription = this.possibleObjectKind
 		? objectKindDescriptions[this.possibleObjectKind]
-		: `an instance of ${this.rule}`
+		: `an instance of ${this.rule.name}`
+	basisName = `${this.rule.name}`
 
 	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
 		return new ProtoNode<rule>(

@@ -1,6 +1,6 @@
 import type { BaseAttributes, Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
-import { BaseConstraint } from "./constraint.js"
+import { BaseConstraint, getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
@@ -33,7 +33,7 @@ export class DivisorNode
 	}
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return writeIndivisibleMessage(`${basis}`)
+		return writeIndivisibleMessage(getBasisName(basis))
 	}
 
 	hash() {

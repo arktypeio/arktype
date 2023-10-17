@@ -394,9 +394,7 @@ const assertValidRefinements: (
 ) => asserts refinements is Node<RefinementKind>[] = (basis, refinements) => {
 	for (const refinement of refinements) {
 		if (!refinement.applicableTo(basis)) {
-			throwParseError(
-				`Refinement of kind ${refinement.kind} is not allowed by basis ${basis}`
-			)
+			throwParseError(refinement.writeInvalidBasisMessage(basis))
 		}
 	}
 }
