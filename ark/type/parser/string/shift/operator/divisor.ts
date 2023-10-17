@@ -1,4 +1,4 @@
-import { tryParseWellFormedInteger } from "@arktype/util"
+import { tryParseInteger } from "@arktype/util"
 import type { NumberLiteral } from "@arktype/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -6,10 +6,9 @@ import type { Scanner } from "../scanner.js"
 
 export const parseDivisor = (s: DynamicStateWithRoot) => {
 	const divisorToken = s.scanner.shiftUntilNextTerminator()
-	const divisor = tryParseWellFormedInteger(
-		divisorToken,
-		writeInvalidDivisorMessage(divisorToken)
-	)
+	const divisor = tryParseInteger(divisorToken, {
+		errorOnFail: writeInvalidDivisorMessage(divisorToken)
+	})
 	if (divisor === 0) {
 		s.error(writeInvalidDivisorMessage(0))
 	}

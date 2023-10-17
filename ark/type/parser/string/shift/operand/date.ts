@@ -1,4 +1,4 @@
-import { throwParseError, tryParseWellFormedNumber } from "@arktype/util"
+import { throwParseError, tryParseNumber } from "@arktype/util"
 
 export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
@@ -42,7 +42,7 @@ const maybeParseDate = <errorOnFail extends boolean | string>(
 	if (isValidDate(stringParsedDate)) {
 		return stringParsedDate
 	}
-	const epochMillis = tryParseWellFormedNumber(source)
+	const epochMillis = tryParseNumber(source)
 	if (epochMillis !== undefined) {
 		const numberParsedDate = new Date(epochMillis)
 		if (isValidDate(numberParsedDate)) {

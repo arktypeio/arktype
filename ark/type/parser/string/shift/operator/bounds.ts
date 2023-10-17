@@ -1,5 +1,5 @@
 import type { keySet } from "@arktype/util"
-import { isKeyOf, tryParseWellFormedNumber } from "@arktype/util"
+import { isKeyOf, tryParseNumber } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
@@ -127,7 +127,7 @@ export const parseRightBound = (
 	)
 	s.setRoot(previousRoot)
 	const limit =
-		tryParseWellFormedNumber(limitToken) ??
+		tryParseNumber(limitToken) ??
 		(isDateLiteral(limitToken)
 			? limitToken
 			: s.error(writeInvalidLimitMessage(comparator, limitToken, "right")))

@@ -77,12 +77,12 @@ const parseKind = (def: string, kind: ValidationKind) =>
 const isKindLike = (def: string, kind: ValidationKind) =>
 	kind === "number" ? isNumberLike(def) : isIntegerLike(def)
 
-export const tryParseWellFormedNumber = <ErrorOnFail extends boolean | string>(
+export const tryParseNumber = <errorOnFail extends boolean | string>(
 	token: string,
-	errorOnFail?: ErrorOnFail
-) => parseWellFormed(token, "number", errorOnFail)
+	options?: NumericParseOptions<errorOnFail>
+) => parseNumeric(token, "number", options)
 
-export type tryParseWellFormedNumber<
+export type tryParseNumber<
 	token extends string,
 	messageOnFail extends string
 > = token extends NumberLiteral<infer value>
@@ -91,15 +91,15 @@ export type tryParseWellFormedNumber<
 		: value
 	: messageOnFail
 
-export const tryParseWellFormedInteger = <errorOnFail extends boolean | string>(
+export const tryParseInteger = <errorOnFail extends boolean | string>(
 	token: string,
-	errorOnFail?: errorOnFail
-) => parseWellFormed(token, "integer", errorOnFail)
+	options?: NumericParseOptions<errorOnFail>
+) => parseNumeric(token, "integer", options)
 
 // We use bigint to check if the string matches an integer, but here we
 // convert it to a plain number by exploiting the fact that TS stringifies
 // numbers and bigints the same way.
-export type tryParseWellFormedInteger<
+export type tryParseInteger<
 	token extends string,
 	messageOnFail extends string
 > = token extends IntegerLiteral<infer value>
@@ -110,31 +110,36 @@ export type tryParseWellFormedInteger<
 		: never
 	: messageOnFail
 
-const parseWellFormed = <ErrorOnFail extends boolean | string>(
+export type NumericParseOptions<errorOnFail extends boolean | string> = {
+	errorOnFail?: errorOnFail
+	strict?: boolean
+}
+
+const parseNumeric = <errorOnFail extends boolean | string>(
 	token: string,
 	kind: ValidationKind,
-	errorOnFail?: ErrorOnFail
-): ErrorOnFail extends true | string ? number : number | undefined => {
+	options?: NumericParseOptions<errorOnFail>
+): errorOnFail extends true | string ? number : number | undefined => {
 	const value = parseKind(token, kind)
 	if (!Number.isNaN(value)) {
-		if (isWellFormed(token, kind)) {
-			return value
-		}
 		if (isKindLike(token, kind)) {
-			// If the definition looks like the correct numeric kind but is
-			// not well-formed, always throw.
-			return throwParseError(writeMalformedNumericLiteralMessage(token, kind))
+			if (options?.strict) {
+				return isWellFormed(token, kind)
+					? value
+					: throwParseError(writeMalformedNumericLiteralMessage(token, kind))
+			}
+			return value
 		}
 	}
 	return (
-		errorOnFail
+		options?.errorOnFail
 			? throwParseError(
-					errorOnFail === true
+					options?.errorOnFail === true
 						? `Failed to parse ${numericLiteralDescriptions[kind]} from '${token}'`
-						: errorOnFail
+						: options?.errorOnFail
 			  )
 			: undefined
-	) as any
+	) as never
 }
 
 export const tryParseWellFormedBigint = (def: string) => {

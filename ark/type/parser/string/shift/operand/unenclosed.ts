@@ -10,7 +10,7 @@ import {
 	stringify,
 	throwParseError,
 	tryParseWellFormedBigint,
-	tryParseWellFormedNumber
+	tryParseNumber
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
 import {
@@ -143,7 +143,7 @@ const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
 ): TypeNode | undefined => {
-	const maybeNumber = tryParseWellFormedNumber(token)
+	const maybeNumber = tryParseNumber(token)
 	if (maybeNumber !== undefined) {
 		// ctx
 		return node({ is: maybeNumber })
