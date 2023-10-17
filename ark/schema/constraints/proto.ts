@@ -8,7 +8,6 @@ import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseAttributes, Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
-import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface ProtoChildren<

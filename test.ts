@@ -1,13 +1,5 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { type } from "arktype"
-import type {
-	BaseAttributes,
-	IntersectionSchema,
-	Morph,
-	MorphSchema,
-	TraversalState,
-	TypeNode
-} from "./ark/schema/main.js"
+import type { TypeNode } from "./ark/schema/main.js"
 import { node } from "./ark/schema/main.js"
 
 const compileType = (node: TypeNode) => {

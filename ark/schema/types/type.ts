@@ -281,19 +281,22 @@ export class IntersectionNode<
 				? 1
 				: -1
 		)
-		super(children, {
-			in: constraints.map((constraint) => constraint.ids.in).join("&"),
-			out: constraints.map((constraint) => constraint.ids.out).join("&"),
-			type: constraints.map((constraint) => constraint.ids.type).join("&"),
-			reference: createReferenceId(
-				{
-					constraints: constraints
-						.map((constraint) => constraint.ids.reference)
-						.join("&")
-				},
-				children
-			)
-		})
+		super(
+			{ ...children, constraints },
+			{
+				in: constraints.map((constraint) => constraint.ids.in).join("&"),
+				out: constraints.map((constraint) => constraint.ids.out).join("&"),
+				type: constraints.map((constraint) => constraint.ids.type).join("&"),
+				reference: createReferenceId(
+					{
+						constraints: constraints
+							.map((constraint) => constraint.ids.reference)
+							.join("&")
+					},
+					children
+				)
+			}
+		)
 	}
 
 	readonly basis = this.constraints[0]?.isBasis()
@@ -381,7 +384,7 @@ const addConstraint = (
 		}
 	}
 	if (!includesConstraint) {
-		result.push(this as never)
+		result.push(constraint)
 	}
 	return result
 }

@@ -1,8 +1,7 @@
-import { type extend, isKeyOf } from "@arktype/util"
+import { type extend } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Children, Node, Schema } from "../node.js"
+import type { BaseAttributes, Children, Node } from "../node.js"
 import { BaseNode } from "../node.js"
-import { basisClassesByKind } from "./basis.js"
 import type { BasisClassesByKind, BasisKind } from "./basis.js"
 import type { RefinementClassesByKind } from "./refinement.js"
 
@@ -16,6 +15,8 @@ export type ConstraintKind = keyof ConstraintClassesByKind
 export abstract class BaseConstraint<
 	children extends BaseAttributes = BaseAttributes
 > extends BaseNode<children> {
+	abstract kind: ConstraintKind
+
 	constructor(children: children) {
 		super(children, {
 			in: "",
@@ -55,7 +56,9 @@ export abstract class BaseConstraint<
 	}
 
 	isBasis(): this is Node<BasisKind> {
-		return this.kind in basisClassesByKind
+		return (
+			this.kind === "domain" || this.kind === "proto" || this.kind === "unit"
+		)
 	}
 
 	abstract applicableTo(
