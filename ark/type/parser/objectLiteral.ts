@@ -1,13 +1,15 @@
 import { node } from "@arktype/schema"
+import type { PropSchema } from "@arktype/schema"
 import { type Dict, type ErrorMessage, type evaluate } from "@arktype/util"
+import { stringify } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { validateString } from "./semantic/validate.js"
+import { parseEntry } from "./shared.js"
 import type {
 	EntryParseResult,
 	IndexedKey,
 	OptionalValue,
-	parseEntry,
 	validateObjectValue
 } from "./shared.js"
 
@@ -17,18 +19,24 @@ const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 ]
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
-	// const named: mutable<NamedPropsInput> = {}
-	// for (const entry of stringAndSymbolicEntriesOf(def)) {
-	// 	const { innerKey, innerValue, kind } = parseEntry(entry, "required")
-	// 	ctx.path.push(innerKey as string)
-	// 	const valueNode = ctx.scope.parse(innerValue, ctx)
-	// 	named[innerKey] = {
-	// 		prerequisite: false,
-	// 		value: valueNode,
-	// 		optional: kind === "optional"
-	// 	}
-	// 	ctx.path.pop()
-	// }
+	const props: PropSchema[] = []
+	for (const entry of stringAndSymbolicEntriesOf(def)) {
+		const result = parseEntry(entry)
+		ctx.path.push(
+			`${
+				typeof result.innerKey === "symbol"
+					? `[${stringify(result.innerKey)}]`
+					: result.innerKey
+			}`
+		)
+		const valueNode = ctx.scope.parse(result.innerValue, ctx)
+		props.push({
+			key: result.innerKey,
+			value: valueNode,
+			optional: result.kind === "optional"
+		})
+		ctx.path.pop()
+	}
 	return node("object")
 }
 

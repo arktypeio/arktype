@@ -1,5 +1,5 @@
 {
-	"name": "arktype",
+	"name": "arktypeio",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
 	"license": "MIT",
 	"funding": "https://github.com/arktypeio/arktype?sponsor=1",
@@ -15,6 +15,7 @@
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype.git"
 	},
+	"private": true,
 	"type": "module",
 	"scripts": {
 		"prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",

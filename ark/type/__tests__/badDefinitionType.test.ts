@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { type } from "arktype"
 import { suite, test } from "mocha"
 import { writeBadDefinitionTypeMessage } from "../parser/definition.js"
 
@@ -40,10 +41,9 @@ suite("definitions", () => {
 		)
 	})
 	test("any", () => {
-		// @ts-expect-error
-		attest(() => type({ bad: {} as any })).types.errors(
-			`Type 'any' is not assignable to type 'never'`
-		)
+		// doesn't error, so this test is just to ensure it doesn't infinitely recurse
+		const t = type({ bad: {} as any })
+		attest(t.infer).typed as {}
 	})
 	test("unknown", () => {
 		// @ts-expect-error just results in base completions, so we just check there's an error

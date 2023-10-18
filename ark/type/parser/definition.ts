@@ -36,15 +36,14 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case "Object":
-			if (hasArkKind(def, "node") && def instanceof TypeNode) {
+			if (def instanceof TypeNode) {
 				return def
 			}
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
 			return parseTuple(def as List, ctx)
 		case "RegExp":
-			//, serializeRegex(def as RegExp), 	ctx
-			return node("string")
+			return node({ domain: "string", pattern: def as RegExp })
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
 			if (resolvedDef instanceof Type) {

@@ -127,7 +127,10 @@ export const addArkKind = <kind extends ArkKind>(
 	value: Omit<ArkKinds[kind], arkKind> & { [arkKind]?: kind },
 	kind: kind
 ): ArkKinds[kind] =>
-	Object.defineProperty(value, arkKind, { enumerable: false }) as never
+	Object.defineProperty(value, arkKind, {
+		value: kind,
+		enumerable: false
+	}) as never
 
 export type arkKind = typeof arkKind
 

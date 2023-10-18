@@ -36,7 +36,7 @@ type validateObjectValueString<def, $, args> =
 		? `${validateDefinition<innerValue, $, args>}?`
 		: validateDefinition<def, $, args>
 
-type DefinitionEntry = readonly [PropertyKey, unknown]
+type DefinitionEntry = readonly [string | symbol, unknown]
 
 const getInnerValue = (value: unknown): unknown => {
 	if (typeof value === "string") {
@@ -59,7 +59,6 @@ export const parseEntry = ([key, value]: DefinitionEntry) => {
 				? { innerKey: `${key.slice(0, -2)}?`, kind: "required" }
 				: { innerKey: key.slice(0, -1), kind: "optional" }
 			: { innerKey: key, kind: "required" }
-
 	return {
 		innerKey: keyParseResult.innerKey,
 		innerValue: getInnerValue(value),
