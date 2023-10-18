@@ -47,10 +47,6 @@ export class PatternNode
 		return `Match operand ${getBasisName(basis)} must be a string`
 	}
 
-	hash() {
-		return ""
-	}
-
 	// For now, non-equal regex are naively intersected
 	intersectSymmetric() {
 		return null

@@ -2,7 +2,6 @@ import type {
 	AbstractableConstructor,
 	conform,
 	ErrorMessage,
-	evaluate,
 	exactMessageOnError
 } from "@arktype/util"
 import { basisClassesByKind, type BasisKind } from "../constraints/basis.js"
@@ -166,19 +165,3 @@ export type validateIntersectionInput<input> = input extends
 // 	Instantiatable<typeof Date>,
 // 	Boundable
 // ) {}
-
-export const precedenceByConstraint: Record<ConstraintKind, number> = {
-	// basis
-	domain: 0,
-	proto: 0,
-	unit: 0,
-	// shallow
-	min: 1,
-	max: 1,
-	divisor: 1,
-	pattern: 1,
-	// deep
-	prop: 2,
-	// narrow
-	predicate: 3
-}

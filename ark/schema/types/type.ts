@@ -9,7 +9,10 @@ import {
 } from "@arktype/util"
 import type { Out } from "arktype/internal/parser/tuple.js"
 import { type BasisKind } from "../constraints/basis.js"
-import { type ConstraintKind } from "../constraints/constraint.js"
+import {
+	type ConstraintKind,
+	precedenceByConstraint
+} from "../constraints/constraint.js"
 import { DomainNode } from "../constraints/domain.js"
 import { ProtoNode } from "../constraints/proto.js"
 import type { RefinementKind } from "../constraints/refinement.js"
@@ -30,8 +33,7 @@ import type {
 } from "./intersection.js"
 import {
 	intersectionChildClasses,
-	irreducibleChildClasses,
-	precedenceByConstraint
+	irreducibleChildClasses
 } from "./intersection.js"
 import type {
 	MorphChildren,

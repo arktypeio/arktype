@@ -1,6 +1,6 @@
-import { type extend } from "@arktype/util"
+import type { extend, optionalizeKeys } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Children, Node } from "../node.js"
+import type { BaseAttributes, Children, Node, NodeIds } from "../node.js"
 import { BaseNode } from "../node.js"
 import type { BasisClassesByKind, BasisKind } from "./basis.js"
 import type { RefinementClassesByKind } from "./refinement.js"
@@ -11,6 +11,11 @@ export type ConstraintClassesByKind = extend<
 >
 
 export type ConstraintKind = keyof ConstraintClassesByKind
+
+export type ConstraintIdsInput = optionalizeKeys<
+	NodeIds,
+	"out" | "type" | "reference"
+>
 
 export abstract class BaseConstraint<
 	children extends BaseAttributes = BaseAttributes
@@ -64,3 +69,19 @@ export abstract class BaseConstraint<
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
+
+export const precedenceByConstraint: Record<ConstraintKind, number> = {
+	// basis
+	domain: 0,
+	proto: 0,
+	unit: 0,
+	// shallow
+	min: 1,
+	max: 1,
+	divisor: 1,
+	pattern: 1,
+	// deep
+	prop: 2,
+	// narrow
+	predicate: 3
+}

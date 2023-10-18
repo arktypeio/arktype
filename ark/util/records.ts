@@ -99,6 +99,12 @@ export type requiredKeyOf<o> = {
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
+export type optionalizeKeys<o, keys extends keyof o> = evaluate<
+	{ [k in Exclude<keyof o, keys>]: o[k] } & {
+		[k in keys]?: o[k]
+	}
+>
+
 const ShallowClone = class {
 	constructor(properties: object) {
 		Object.assign(this, properties)
@@ -107,10 +113,6 @@ const ShallowClone = class {
 
 // @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation)
 export class DynamicBase<t extends object> extends ShallowClone<t> {}
-
-export type PickPartial<o extends object, key extends keyof o> = {
-	[k in key]?: o[k]
-}
 
 export const shallowClone = <input extends object>(input: input): input =>
 	Object.create(

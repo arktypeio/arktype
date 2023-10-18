@@ -44,9 +44,8 @@ export class UnitNode<const rule = unknown>
 		return stringify(children.rule)
 	}
 
-	hash() {
-		return compileSerializedValue(this.rule)
-	}
+	// id:
+	// compileSerializedValue(this.rule)
 
 	intersectSymmetric(other: UnitNode): Disjoint {
 		return Disjoint.from("unit", this, other)

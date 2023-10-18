@@ -22,6 +22,9 @@ export class PredicateNode<rule extends Predicate = Predicate>
 {
 	readonly kind = "predicate"
 
+	// id
+	// compileSerializedValue(this.rule)
+
 	static from(schema: PredicateSchema) {
 		return new PredicateNode(
 			typeof schema === "function" ? { rule: schema } : schema
@@ -42,10 +45,6 @@ export class PredicateNode<rule extends Predicate = Predicate>
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `${this} cannot narrow ${getBasisName(basis)}`
-	}
-
-	hash() {
-		return compileSerializedValue(this.rule)
 	}
 
 	intersectSymmetric() {

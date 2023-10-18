@@ -22,10 +22,6 @@ export abstract class BoundNode
 
 	exclusive = this.children.exclusive ?? false
 
-	hash() {
-		return ""
-	}
-
 	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
 		if (basis === undefined) {
 			return false
@@ -61,10 +57,6 @@ export class MinNode extends BoundNode {
 		return `${comparisonDescription} ${children.rule}`
 	}
 
-	hash() {
-		return ""
-	}
-
 	intersectSymmetric(other: MinNode) {
 		return this.rule > other.rule ||
 			(this.rule === other.rule && this.exclusive)
@@ -98,10 +90,6 @@ export class MaxNode extends BoundNode {
 
 	static from(schema: BoundSchema) {
 		return new MaxNode(typeof schema === "number" ? { rule: schema } : schema)
-	}
-
-	hash() {
-		return ""
 	}
 
 	intersectSymmetric(other: MaxNode) {

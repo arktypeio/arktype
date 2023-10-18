@@ -31,6 +31,9 @@ export class ProtoNode<
 
 	declare infer: InstanceType<rule>
 
+	// id
+	// this.knownObjectKind ?? compileSerializedValue(this.rule)
+
 	knownObjectKind = objectKindOf(this.rule)
 	basisName = `${this.rule.name}`
 
@@ -45,10 +48,6 @@ export class ProtoNode<
 		return knownObjectKind
 			? objectKindDescriptions[knownObjectKind]
 			: `an instance of ${children.rule.name}`
-	}
-
-	hash() {
-		return this.knownObjectKind ?? compileSerializedValue(this.rule)
 	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(

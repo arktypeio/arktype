@@ -1,7 +1,7 @@
 import type { Domain, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node } from "../node.js"
-import type { BaseBasis, BasisKind } from "./basis.js"
+import type { BaseAttributes } from "../node.js"
+import type { BaseBasis } from "./basis.js"
 import { BaseConstraint } from "./constraint.js"
 
 export interface DomainChildren<
@@ -38,10 +38,6 @@ export class DomainNode<
 
 	static writeDefaultDescription(children: DomainChildren) {
 		return domainDescriptions[children.rule]
-	}
-
-	hash() {
-		return this.rule
 	}
 
 	intersectSymmetric(other: DomainNode) {

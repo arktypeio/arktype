@@ -38,10 +38,6 @@ export class DivisorNode
 		return writeIndivisibleMessage(getBasisName(basis))
 	}
 
-	hash() {
-		return ""
-	}
-
 	intersectSymmetric(other: DivisorNode) {
 		return {
 			rule:
