@@ -8,14 +8,6 @@ export interface BaseAttributes {
 	description?: string
 }
 
-const baseAttributeKeys = {
-	alias: 1,
-	description: 1
-} as const satisfies Record<keyof BaseAttributes, 1>
-
-export const isBaseAttributeKey = (k: string): k is keyof BaseAttributes =>
-	k in baseAttributeKeys
-
 export type NodeIds = {
 	in: string
 	out: string
@@ -45,6 +37,17 @@ export const createReferenceId = (
 	}
 	return JSON.stringify(referenceObject)
 }
+
+// TODO: map schema keys to id kinds
+// For each key, if the value is a Node or list of Nodes, recurse?
+type SchemaValueKind = "meta" | "in" | "out" | "type"
+
+// TODO: Terminal nodes have a condition that is compiled directly
+// Also should be associated with a problem type for if that conditions fails
+
+// Nonterminal nodes would compile their logic in some arbitrary function TBD
+
+// NOTE: utilize composition, don't worry about e.g. having to call a function from each terminal node
 
 export abstract class BaseNode<
 	children extends BaseAttributes = BaseAttributes
