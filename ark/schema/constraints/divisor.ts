@@ -15,13 +15,15 @@ export class DivisorNode
 	implements BaseRefinement
 {
 	readonly kind = "divisor"
-	readonly defaultDescription =
-		this.rule === 1 ? "an integer" : `a multiple of ${this.rule}`
 
 	static from(schema: DivisorSchema) {
 		return new DivisorNode(
 			typeof schema === "number" ? { rule: schema } : schema
 		)
+	}
+
+	static writeDefaultDescription(children: DivisorChildren) {
+		return children.rule === 1 ? "an integer" : `a multiple of ${children.rule}`
 	}
 
 	applicableTo(

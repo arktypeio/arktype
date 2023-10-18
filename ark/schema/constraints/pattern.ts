@@ -21,8 +21,6 @@ export class PatternNode
 	instance = new RegExp(this.rule, this.flags)
 	literal = serializeRegex(this.instance)
 
-	defaultDescription = `matched by ${this.literal}`
-
 	static from(schema: PatternSchema) {
 		return new PatternNode(
 			typeof schema === "string"
@@ -31,6 +29,10 @@ export class PatternNode
 				? { rule: schema.source, flags: schema.flags }
 				: schema
 		)
+	}
+
+	static writeDefaultDescription(children: PatternChildren) {
+		return `matched by /${children.rule}/${children.flags}`
 	}
 
 	applicableTo(

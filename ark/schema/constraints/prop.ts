@@ -37,12 +37,15 @@ export class PropNode
 {
 	readonly optional = this.children.optional ?? false
 	readonly kind = "prop"
-	readonly defaultDescription = `${String(this.key)}${
-		this.optional ? "" : "?"
-	}: ${this.value}`
 
 	static from(schema: PropSchema) {
 		return new PropNode(schema as never)
+	}
+
+	static writeDefaultDescription(children: PropChildren) {
+		return `${String(children.key)}${children.optional ? "" : "?"}: ${
+			children.value
+		}`
 	}
 
 	applicableTo(

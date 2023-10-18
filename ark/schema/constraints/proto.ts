@@ -2,7 +2,8 @@ import type { AbstractableConstructor } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
-	objectKindDescriptions
+	objectKindDescriptions,
+	objectKindOf
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
@@ -30,10 +31,7 @@ export class ProtoNode<
 
 	declare infer: InstanceType<rule>
 
-	possibleObjectKind = getExactBuiltinConstructorName(this.rule)
-	defaultDescription = this.possibleObjectKind
-		? objectKindDescriptions[this.possibleObjectKind]
-		: `an instance of ${this.rule.name}`
+	knownObjectKind = objectKindOf(this.rule)
 	basisName = `${this.rule.name}`
 
 	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
@@ -42,8 +40,15 @@ export class ProtoNode<
 		)
 	}
 
+	static writeDefaultDescription(children: ProtoChildren) {
+		const knownObjectKind = getExactBuiltinConstructorName(children.rule)
+		return knownObjectKind
+			? objectKindDescriptions[knownObjectKind]
+			: `an instance of ${children.rule.name}`
+	}
+
 	hash() {
-		return this.possibleObjectKind ?? compileSerializedValue(this.rule)
+		return this.knownObjectKind ?? compileSerializedValue(this.rule)
 	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(

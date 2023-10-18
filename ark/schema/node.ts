@@ -54,6 +54,7 @@ export abstract class BaseNode<
 	declare condition: string
 
 	alias: string
+	description: string
 
 	protected static readonly prevalidated = prevalidated
 
@@ -63,13 +64,10 @@ export abstract class BaseNode<
 	) {
 		super(children)
 		this.alias = children.alias ?? "generated"
+		this.description =
+			children.description ??
+			(this.constructor as NodeClass).writeDefaultDescription(children as never)
 	}
-
-	get description() {
-		return this.children.description ?? this.defaultDescription
-	}
-
-	abstract defaultDescription: string
 
 	equals(other: BaseNode) {
 		return this.ids.type === other.ids.type

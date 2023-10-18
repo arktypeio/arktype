@@ -28,13 +28,16 @@ export class DomainNode<
 
 	declare infer: inferDomain<rule>
 
-	defaultDescription = domainDescriptions[this.rule]
 	basisName = this.rule
 
 	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
 		return new DomainNode(
 			typeof schema === "string" ? { rule: schema } : schema
 		)
+	}
+
+	static writeDefaultDescription(children: DomainChildren) {
+		return domainDescriptions[children.rule]
 	}
 
 	hash() {

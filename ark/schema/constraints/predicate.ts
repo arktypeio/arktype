@@ -21,12 +21,15 @@ export class PredicateNode<rule extends Predicate = Predicate>
 	implements BaseRefinement
 {
 	readonly kind = "predicate"
-	readonly defaultDescription = `valid according to ${this.rule.name}`
 
 	static from(schema: PredicateSchema) {
 		return new PredicateNode(
 			typeof schema === "function" ? { rule: schema } : schema
 		)
+	}
+
+	static writeDefaultDescription(children: PredicateChildren) {
+		return `valid according to ${children.rule.name}`
 	}
 
 	applicableTo(

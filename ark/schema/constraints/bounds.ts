@@ -48,15 +48,17 @@ export class MinNode extends BoundNode {
 	readonly kind = "min"
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
 
-	// Date
-	// rule.exclusive
-	// ? "after"
-	// : "at or after"
-	comparisonDescription = this.exclusive ? "more than" : "at least"
-	defaultDescription = `${this.comparisonDescription} ${this.rule}`
-
 	static from(schema: BoundSchema) {
 		return new MinNode(typeof schema === "number" ? { rule: schema } : schema)
+	}
+
+	static writeDefaultDescription(children: BoundChildren) {
+		// Date
+		// rule.exclusive
+		// ? "after"
+		// : "at or after"
+		const comparisonDescription = children.exclusive ? "more than" : "at least"
+		return `${comparisonDescription} ${children.rule}`
 	}
 
 	hash() {
@@ -85,12 +87,14 @@ export class MaxNode extends BoundNode {
 	readonly kind = "max"
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
 
-	// Date
-	// rule.exclusive
-	// ? "before"
-	// : "at or before"
-	comparisonDescription = this.exclusive ? "less than" : "at most"
-	defaultDescription = `${this.comparisonDescription} ${this.rule}`
+	static writeDefaultDescription(children: BoundChildren) {
+		// Date
+		// rule.exclusive
+		// ? "before"
+		// : "at or before"
+		const comparisonDescription = children.exclusive ? "less than" : "at most"
+		return `${comparisonDescription} ${children.rule}`
+	}
 
 	static from(schema: BoundSchema) {
 		return new MaxNode(typeof schema === "number" ? { rule: schema } : schema)

@@ -25,8 +25,7 @@ export class UnitNode<const rule = unknown>
 	declare infer: rule
 
 	// TODO: add reference to for objects
-	defaultDescription = stringify(this.rule)
-	basisName = this.defaultDescription
+	basisName = stringify(this.rule)
 
 	static from<const rule>(schema: UnitSchema<rule>) {
 		return new UnitNode<rule>(
@@ -38,6 +37,10 @@ export class UnitNode<const rule = unknown>
 						`Unit schema requires either an 'is' key or a 'rule' key`
 				  )
 		)
+	}
+
+	static writeDefaultDescription(children: UnitChildren) {
+		return stringify(children.rule)
 	}
 
 	hash() {

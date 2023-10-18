@@ -14,7 +14,11 @@ const compileType = (node: TypeNode) => {
 }
 
 const n = node({
-	domain: "string"
+	domain: "string",
+	pattern: {
+		rule: ".*",
+		description: "very special"
+	}
 })
 
 n //?

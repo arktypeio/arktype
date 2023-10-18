@@ -141,8 +141,6 @@ export type TypeInput = listable<IntersectionSchema | MorphSchema>
 export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 	readonly kind = "union"
 
-	defaultDescription: string
-
 	constructor(children: UnionChildren) {
 		// TODO: add kind to ids?
 		super(children, {
@@ -160,8 +158,6 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 				children
 			)
 		})
-		this.defaultDescription =
-			this.branches.length === 0 ? "never" : this.branches.join(" or ")
 	}
 
 	static from(schema: UnionSchema) {
@@ -169,6 +165,12 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 			...schema,
 			branches: createBranches(schema.branches)
 		})
+	}
+
+	static writeDefaultDescription(children: UnionChildren) {
+		return children.branches.length === 0
+			? "never"
+			: children.branches.join(" or ")
 	}
 
 	intersectSymmetric(other: UnionNode): Disjoint | Children<TypeKind> {
@@ -231,7 +233,9 @@ export class MorphNode<i = any, o = unknown> extends TypeNode<
 		})
 	}
 
-	defaultDescription = ""
+	static writeDefaultDescription(children: MorphChildren) {
+		return ""
+	}
 
 	static from(schema: MorphSchema) {
 		const children = {} as MorphChildren
@@ -304,13 +308,16 @@ export class IntersectionNode<
 	readonly basis: Node<BasisKind> = this.refinements[0]?.isBasis()
 		? (this.refinements.shift() as any)
 		: undefined
-	readonly defaultDescription = this.constraints.length
-		? this.constraints.join(" and ")
-		: "a value"
 
 	static from(schema: IntersectionSchema) {
 		const children = parseIntersectionChildren(schema)
 		return new IntersectionNode(children)
+	}
+
+	static writeDefaultDescription(children: IntersectionChildren) {
+		return children.constraints.length
+			? children.constraints.join(" and ")
+			: "a value"
 	}
 
 	intersectSymmetric(other: IntersectionNode): IntersectionChildren | Disjoint {
