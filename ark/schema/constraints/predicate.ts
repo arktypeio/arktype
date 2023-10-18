@@ -17,10 +17,14 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| PredicateChildren<rule>
 
 export class PredicateNode<rule extends Predicate = Predicate>
-	extends BaseConstraint<PredicateChildren<rule>>
+	extends BaseConstraint<PredicateChildren<rule>, typeof PredicateNode>
 	implements BaseRefinement
 {
 	readonly kind = "predicate"
+
+	static keyKinds = this.declareKeyKinds({
+		rule: "in"
+	})
 
 	// id
 	// compileSerializedValue(this.rule)

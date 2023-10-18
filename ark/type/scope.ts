@@ -1,8 +1,8 @@
 import {
+	type BaseType,
 	builtins,
 	type CastTo,
-	type ProblemCode,
-	type TypeNode
+	type ProblemCode
 } from "@arktype/schema"
 import type { Dict, evaluate, isAny, nominal } from "@arktype/util"
 import {
@@ -222,10 +222,10 @@ export type ParseContext = {
 	baseName: string
 	path: string[]
 	scope: Scope
-	args: Record<string, TypeNode> | undefined
+	args: Record<string, BaseType> | undefined
 }
 
-type MergedResolutions = Record<string, TypeNode | Generic>
+type MergedResolutions = Record<string, BaseType | Generic>
 
 type ParseContextInput = Pick<ParseContext, "baseName" | "args">
 
@@ -235,7 +235,7 @@ export class Scope<r extends Resolutions = any> {
 
 	config: TypeConfig
 
-	private parseCache: Record<string, TypeNode> = {}
+	private parseCache: Record<string, BaseType> = {}
 	private resolutions: MergedResolutions
 
 	/** The set of names defined at the root-level of the scope mapped to their
@@ -243,7 +243,7 @@ export class Scope<r extends Resolutions = any> {
 	aliases: Record<string, unknown> = {}
 	private exportedNames: exportedName<r>[] = []
 	private ambient: Scope | null
-	private references: TypeNode[] = []
+	private references: BaseType[] = []
 
 	constructor(def: Dict, config: ScopeConfig) {
 		for (const k in def) {
@@ -319,7 +319,7 @@ export class Scope<r extends Resolutions = any> {
 		return this.parse(def, this.createRootContext(input))
 	}
 
-	parse(def: unknown, ctx: ParseContext): TypeNode {
+	parse(def: unknown, ctx: ParseContext): BaseType {
 		if (typeof def === "string") {
 			if (ctx.args !== undefined) {
 				// we can only rely on the cache if there are no contextual
@@ -336,7 +336,7 @@ export class Scope<r extends Resolutions = any> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	maybeResolve(name: string): TypeNode | Generic | undefined {
+	maybeResolve(name: string): BaseType | Generic | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -386,7 +386,7 @@ export class Scope<r extends Resolutions = any> {
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): TypeNode | undefined {
+	maybeResolveNode(name: string): BaseType | undefined {
 		const result = this.maybeResolve(name)
 		return hasArkKind(result, "node") ? result : undefined
 	}

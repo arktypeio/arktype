@@ -1,5 +1,5 @@
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node } from "../node.js"
+import type { BaseAttributes, Node, StaticBaseNode } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import type { ConstraintKind } from "./constraint.js"
 import { BaseConstraint, getBasisName } from "./constraint.js"
@@ -14,11 +14,16 @@ export interface BoundChildren extends BaseAttributes {
 
 export type BoundSchema = number | BoundChildren
 
-export abstract class BoundNode
-	extends BaseConstraint<BoundChildren>
+export abstract class BaseBound<nodeClass extends StaticBaseNode<BoundChildren>>
+	extends BaseConstraint<BoundChildren, nodeClass>
 	implements BaseRefinement
 {
 	abstract comparator: string
+
+	static keyKinds = this.declareKeyKinds({
+		rule: "in",
+		exclusive: "in"
+	})
 
 	exclusive = this.children.exclusive ?? false
 
@@ -40,7 +45,7 @@ export abstract class BoundNode
 	}
 }
 
-export class MinNode extends BoundNode {
+export class MinNode extends BaseBound<typeof MinNode> {
 	readonly kind = "min"
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
 
@@ -75,7 +80,7 @@ export class MinNode extends BoundNode {
 	}
 }
 
-export class MaxNode extends BoundNode {
+export class MaxNode extends BaseBound<typeof MaxNode> {
 	readonly kind = "max"
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
 

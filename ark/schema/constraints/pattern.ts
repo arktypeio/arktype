@@ -13,10 +13,15 @@ export interface PatternChildren extends BaseAttributes {
 export type PatternSchema = RegexLiteral | RegExp | PatternChildren
 
 export class PatternNode
-	extends BaseConstraint<PatternChildren>
+	extends BaseConstraint<PatternChildren, typeof PatternNode>
 	implements BaseRefinement
 {
 	readonly kind = "pattern"
+
+	static keyKinds = this.declareKeyKinds({
+		rule: "in",
+		flags: "in"
+	})
 
 	instance = new RegExp(this.rule, this.flags)
 	literal = serializeRegex(this.instance)

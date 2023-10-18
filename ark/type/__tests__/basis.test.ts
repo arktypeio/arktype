@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import type { TypeNode } from "@arktype/schema"
+import type { BaseType } from "@arktype/schema"
 import { type } from "arktype"
 import { suite, test } from "mocha"
 import { writeUnsatisfiableExpressionError } from "../parser/semantic/validate.js"
@@ -9,10 +9,10 @@ suite("basis intersections", () => {
 		const a = [0]
 		const literal = type("===", a)
 		const cls = type("instanceof", Array)
-		attest(literal.and(cls).root).equals(literal.root).typed as TypeNode<
+		attest(literal.and(cls).root).equals(literal.root).typed as BaseType<
 			never[]
 		>
-		attest(cls.and(literal).root).equals(literal.root).typed as TypeNode<
+		attest(cls.and(literal).root).equals(literal.root).typed as BaseType<
 			never[]
 		>
 	})
@@ -27,9 +27,9 @@ suite("basis intersections", () => {
 		const literal = type("'foo'")
 		const domain = type("string")
 		attest(literal.and(domain).root).equals(literal.root)
-			.typed as TypeNode<"foo">
+			.typed as BaseType<"foo">
 		attest(domain.and(literal).root).equals(literal.root)
-			.typed as TypeNode<"foo">
+			.typed as BaseType<"foo">
 	})
 	test("unsatisfiable domain & literal", () => {
 		const literal = type("'foo'")
@@ -44,7 +44,7 @@ suite("basis intersections", () => {
 	test("domain & class", () => {
 		const domain = type("object")
 		const cls = type("instanceof", Date)
-		attest(domain.and(cls).root).equals(cls.root).typed as TypeNode<Date>
-		attest(cls.and(domain).root).equals(cls.root).typed as TypeNode<Date>
+		attest(domain.and(cls).root).equals(cls.root).typed as BaseType<Date>
+		attest(cls.and(domain).root).equals(cls.root).typed as BaseType<Date>
 	})
 })

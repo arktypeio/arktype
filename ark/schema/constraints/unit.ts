@@ -18,7 +18,7 @@ export type UnitSchema<rule = unknown> =
 	| CollapsedUnitSchema<rule>
 
 export class UnitNode<const rule = unknown>
-	extends BaseConstraint<UnitChildren<rule>>
+	extends BaseConstraint<UnitChildren<rule>, typeof UnitNode>
 	implements BaseBasis
 {
 	readonly kind = "unit"
@@ -27,6 +27,10 @@ export class UnitNode<const rule = unknown>
 
 	// TODO: add reference to for objects
 	basisName = stringify(this.rule)
+
+	static keyKinds = this.declareKeyKinds({
+		rule: "in"
+	})
 
 	static from<const rule>(schema: UnitSchema<rule>) {
 		return new UnitNode<rule>(

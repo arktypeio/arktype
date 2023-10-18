@@ -24,7 +24,7 @@ export type ProtoSchema<
 export class ProtoNode<
 		rule extends AbstractableConstructor = AbstractableConstructor
 	>
-	extends BaseConstraint<ProtoChildren>
+	extends BaseConstraint<ProtoChildren, typeof ProtoNode>
 	implements BaseBasis
 {
 	readonly kind = "proto"
@@ -36,6 +36,10 @@ export class ProtoNode<
 
 	knownObjectKind = objectKindOf(this.rule)
 	basisName = `${this.rule.name}`
+
+	static keyKinds = this.declareKeyKinds({
+		rule: "in"
+	})
 
 	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
 		return new ProtoNode<rule>(

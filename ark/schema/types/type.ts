@@ -19,7 +19,14 @@ import type { RefinementKind } from "../constraints/refinement.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes, Children, Node, Schema } from "../node.js"
+import type {
+	BaseAttributes,
+	Children,
+	Node,
+	NodeClass,
+	Schema,
+	StaticBaseNode
+} from "../node.js"
 import { BaseNode, createReferenceId } from "../node.js"
 import { inferred } from "../utils.js"
 import type {
@@ -55,20 +62,24 @@ const createBranches = (branches: readonly BranchSchema[]) =>
 			: IntersectionNode.from(branch)
 	)
 
-export abstract class TypeNode<
-	t = unknown,
-	children extends BaseAttributes = BaseAttributes
-> extends BaseNode<children> {
+export type TypeNode<t = unknown> = BaseType<
+	t,
+	BaseAttributes,
+	StaticBaseNode<BaseAttributes>
+>
+
+export abstract class BaseType<
+	t,
+	children extends BaseAttributes,
+	nodeClass extends StaticBaseNode<children>
+> extends BaseNode<children, nodeClass> {
 	abstract kind: TypeKind
 
 	declare infer: t;
 	declare [inferred]: t
 	condition = ""
 
-	constrain<kind extends ConstraintKind>(
-		kind: kind,
-		definition: Schema<kind>
-	): TypeNode<t> {
+	constrain<kind extends ConstraintKind>(kind: kind, definition: Schema<kind>) {
 		return this
 	}
 
@@ -100,7 +111,7 @@ export abstract class TypeNode<
 
 	abstract intersectSymmetric(
 		other: Node<this["kind"]>
-	): Children<TypeKind> | Disjoint | null
+	): Children<TypeKind> | Disjoint
 
 	abstract intersectAsymmetric(
 		other: Node<TypeKind>
@@ -113,7 +124,7 @@ export abstract class TypeNode<
 	}
 
 	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
-		return this
+		return this as never
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {
@@ -140,8 +151,16 @@ export abstract class TypeNode<
 
 export type TypeInput = listable<IntersectionSchema | MorphSchema>
 
-export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
+export class UnionNode<t = unknown> extends BaseType<
+	t,
+	UnionChildren,
+	typeof UnionNode
+> {
 	readonly kind = "union"
+
+	static keyKinds = this.declareKeyKinds({
+		branches: "in"
+	})
 
 	constructor(children: UnionChildren) {
 		// TODO: add kind to ids?
@@ -194,19 +213,24 @@ export class UnionNode<t = unknown> extends TypeNode<t, UnionChildren> {
 		return this as never //node(...(resultBranches as any)) as never
 	}
 
-	intersectAsymmetric(
-		other: Node<"morph" | "intersection">
-	): Node<TypeKind> | Disjoint {
+	intersectAsymmetric(other: Node<TypeKind>): Node<TypeKind> | Disjoint {
 		// TODO: intersect branches
-		return this
+		return this as never
 	}
 }
 
-export class MorphNode<i = any, o = unknown> extends TypeNode<
+export class MorphNode<i = any, o = unknown> extends BaseType<
 	(In: i) => Out<o>,
-	MorphChildren
+	MorphChildren,
+	typeof MorphNode
 > {
 	readonly kind = "morph"
+
+	static keyKinds = this.declareKeyKinds({
+		in: "in",
+		out: "out",
+		morphs: "type"
+	})
 
 	constructor(children: MorphChildren) {
 		const inId = children.in?.ids.in ?? ""
@@ -256,18 +280,23 @@ export class MorphNode<i = any, o = unknown> extends TypeNode<
 		return this as never //node(...(resultBranches as any)) as never
 	}
 
-	intersectAsymmetric(other: Node<TypeKind>): Node<TypeKind> | Disjoint {
+	intersectAsymmetric(other: Node<TypeKind>): MorphNode | Disjoint | null {
 		return this as never
 	}
 }
 
-export class IntersectionNode<
-	t = unknown,
-	children extends IntersectionChildren = IntersectionChildren
-> extends TypeNode<t, children> {
+export class IntersectionNode<t = unknown> extends BaseType<
+	t,
+	IntersectionChildren,
+	typeof IntersectionNode
+> {
 	readonly kind = "intersection"
 
-	constructor(children: children) {
+	static keyKinds = this.declareKeyKinds({
+		constraints: "in"
+	})
+
+	constructor(children: IntersectionChildren) {
 		const constraints = intersectConstraints([], children.constraints)
 		if (constraints instanceof Disjoint) {
 			return constraints.throw()

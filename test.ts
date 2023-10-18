@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import type { TypeNode } from "./ark/schema/main.js"
+import type { BaseType } from "./ark/schema/main.js"
 import { node } from "./ark/schema/main.js"
 
-const compileType = (node: TypeNode) => {
+const compileType = (node: BaseType) => {
 	switch (node.kind) {
 		case "union":
 			return "throw Error('unsupported')"
@@ -24,3 +24,10 @@ const n = node({
 n //?
 
 const result = compileType(n) //?
+
+class Foo {
+	static blah = this
+}
+
+const z = new Foo()
+z.constructor //?

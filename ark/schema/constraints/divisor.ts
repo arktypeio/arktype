@@ -11,7 +11,7 @@ export interface DivisorChildren extends BaseAttributes {
 export type DivisorSchema = number | DivisorChildren
 
 export class DivisorNode
-	extends BaseConstraint<DivisorChildren>
+	extends BaseConstraint<DivisorChildren, typeof DivisorNode>
 	implements BaseRefinement
 {
 	readonly kind = "divisor"
@@ -21,6 +21,10 @@ export class DivisorNode
 			typeof schema === "number" ? { rule: schema } : schema
 		)
 	}
+
+	static keyKinds = this.declareKeyKinds({
+		rule: "in"
+	})
 
 	static writeDefaultDescription(children: DivisorChildren) {
 		return children.rule === 1 ? "an integer" : `a multiple of ${children.rule}`

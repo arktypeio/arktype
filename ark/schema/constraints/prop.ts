@@ -1,8 +1,8 @@
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
-import type { TypeInput } from "../types/type.js"
-import { TypeNode } from "../types/type.js"
+import type { TypeInput, TypeNode } from "../types/type.js"
+import { BaseType } from "../types/type.js"
 import type { BasisKind } from "./basis.js"
 import { BaseConstraint, getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -32,11 +32,17 @@ export interface PropSchema extends BaseAttributes {
 }
 
 export class PropNode
-	extends BaseConstraint<PropChildren>
+	extends BaseConstraint<PropChildren, typeof PropNode>
 	implements BaseRefinement
 {
 	readonly optional = this.children.optional ?? false
 	readonly kind = "prop"
+
+	static keyKinds = this.declareKeyKinds({
+		key: "in",
+		value: "in",
+		optional: "in"
+	})
 
 	static from(schema: PropSchema) {
 		return new PropNode(schema as never)
@@ -62,7 +68,7 @@ export class PropNode
 
 	// TODO: split into multiple prop kinds
 	intersectSymmetric(other: PropNode): PropChildren | Disjoint | null {
-		if (this.key instanceof TypeNode || other.key instanceof TypeNode) {
+		if (this.key instanceof BaseType || other.key instanceof BaseType) {
 			return null
 		}
 		if (this.key !== other.key) {

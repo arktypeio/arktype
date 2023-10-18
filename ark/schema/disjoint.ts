@@ -7,7 +7,7 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { BoundNode } from "./constraints/bounds.js"
+import type { BaseBound } from "./constraints/bounds.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
 import type { DomainNode } from "./constraints/domain.js"
 import type { ProtoNode } from "./constraints/proto.js"

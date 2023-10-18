@@ -1,5 +1,5 @@
 import type { CastTo } from "@arktype/schema"
-import { node, TypeNode } from "@arktype/schema"
+import { BaseType, node } from "@arktype/schema"
 import type {
 	defined,
 	Dict,
@@ -32,11 +32,11 @@ import type { BaseCompletions, inferString } from "./string/string.js"
 import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
 import { parseTuple } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
+export const parseObject = (def: object, ctx: ParseContext): BaseType => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case "Object":
-			if (def instanceof TypeNode) {
+			if (def instanceof BaseType) {
 				return def
 			}
 			return parseObjectLiteral(def as Dict, ctx)

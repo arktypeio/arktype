@@ -1,4 +1,10 @@
-import type { extend } from "@arktype/util"
+import type {
+	AbstractableConstructor,
+	conform,
+	Constructor,
+	Dict,
+	extend
+} from "@arktype/util"
 import { DynamicBase } from "@arktype/util"
 import type { ConstraintClassesByKind } from "./constraints/constraint.js"
 import type { TypeClassesByKind, validateBranchInput } from "./types/type.js"
@@ -49,20 +55,50 @@ type SchemaValueKind = "meta" | "in" | "out" | "type"
 
 // NOTE: utilize composition, don't worry about e.g. having to call a function from each terminal node
 
+export interface StaticBaseNode<children extends BaseAttributes> {
+	new (children: children): BaseNode<children, any>
+	keyKinds: Record<keyof children, SchemaValueKind>
+	writeDefaultDescription(children: children): string
+}
+
+type childrenOf<nodeClass> = ConstructorParameters<
+	conform<nodeClass, AbstractableConstructor>
+>[0]
+
+type extensionKeyOf<nodeClass> = Exclude<
+	keyof childrenOf<nodeClass>,
+	keyof BaseAttributes
+>
+
 export abstract class BaseNode<
-	children extends BaseAttributes = BaseAttributes
+	children extends BaseAttributes,
+	nodeClass extends StaticBaseNode<children>
 > extends DynamicBase<children> {
 	abstract kind: NodeKind
 
 	declare condition: string
+	nodeClass = this.constructor as nodeClass
 
 	alias: string
 	description: string
 
 	protected static readonly prevalidated = prevalidated
 
+	protected static declareKeyKinds<nodeClass>(
+		this: nodeClass,
+		keyKinds: {
+			[k in extensionKeyOf<nodeClass>]: SchemaValueKind
+		}
+	): { [k in keyof childrenOf<nodeClass>]-?: SchemaValueKind } {
+		return {
+			alias: "meta",
+			description: "meta",
+			...(keyKinds as any)
+		}
+	}
+
 	constructor(
-		public children: children,
+		public children: ConstructorParameters<nodeClass>[0] & object,
 		public ids: NodeIds
 	) {
 		super(children)

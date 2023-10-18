@@ -21,7 +21,7 @@ export class DomainNode<
 		// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
 		out rule extends NonEnumerableDomain = NonEnumerableDomain
 	>
-	extends BaseConstraint<DomainChildren<rule>>
+	extends BaseConstraint<DomainChildren<rule>, typeof DomainNode>
 	implements BaseBasis
 {
 	readonly kind = "domain"
@@ -29,6 +29,10 @@ export class DomainNode<
 	declare infer: inferDomain<rule>
 
 	basisName = this.rule
+
+	static keyKinds = this.declareKeyKinds({
+		rule: "in"
+	})
 
 	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
 		return new DomainNode(
