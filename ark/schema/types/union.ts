@@ -6,14 +6,14 @@ import type { IntersectionNode, MorphNode } from "./type.js"
 export type BranchNode = IntersectionNode | MorphNode
 
 export interface UnionSchema extends BaseAttributes {
-	branches: readonly BranchInput[]
+	branches: readonly BranchSchema[]
 }
 
 export interface UnionChildren extends BaseAttributes {
 	branches: readonly BranchNode[]
 }
 
-export type BranchInput = IntersectionSchema | MorphSchema
+export type BranchSchema = IntersectionSchema | MorphSchema
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant() {

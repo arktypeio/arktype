@@ -22,6 +22,7 @@ export class UnitNode<const rule = unknown>
 	implements BaseBasis
 {
 	readonly kind = "unit"
+	readonly is = this.rule
 	declare infer: rule
 
 	// TODO: add reference to for objects

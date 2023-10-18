@@ -40,13 +40,13 @@ import type {
 	validateMorphInput
 } from "./morph.js"
 import type {
-	BranchInput,
 	BranchNode,
+	BranchSchema,
 	UnionChildren,
 	UnionSchema
 } from "./union.js"
 
-const createBranches = (branches: readonly BranchInput[]) =>
+const createBranches = (branches: readonly BranchSchema[]) =>
 	branches.map((branch) =>
 		typeof branch === "object" && hasKey(branch, "morphs")
 			? MorphNode.from(branch)
@@ -453,17 +453,25 @@ const parseIntersectionObjectSchema = ({
 	return children
 }
 
-const parseNode = (...branches: BranchInput[]) => {
-	const constraintSets = createBranches(branches)
+const parseNode = (...schemas: BranchSchema[]) => {
+	const branches = createBranches(schemas)
 	// DO reduce bitach
-	if (constraintSets.length === 1) {
-		return constraintSets[0]
+	if (branches.length === 1) {
+		return branches[0]
 	}
-	return new UnionNode({ branches: constraintSets })
+	return new UnionNode({ branches })
 }
 
-const parseUnits = (...branches: unknown[]) => {
-	return parseNode(...branches.map((value) => new UnitNode({ rule: value })))
+const parseUnits = (...values: unknown[]) => {
+	// TODO: unique list, bypass validation
+	const branches = values.map(
+		(value) =>
+			new IntersectionNode({ constraints: [new UnitNode({ rule: value })] })
+	)
+	if (branches.length === 1) {
+		return branches[0]
+	}
+	return new UnionNode({ branches })
 }
 
 export const node = Object.assign(parseNode as NodeParser, {
