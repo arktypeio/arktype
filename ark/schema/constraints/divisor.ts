@@ -22,7 +22,7 @@ export class DivisorNode
 		)
 	}
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		rule: "in"
 	})
 

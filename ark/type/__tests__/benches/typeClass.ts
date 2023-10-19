@@ -5,10 +5,9 @@ import { type inferTypeRoot, Type, type validateTypeRoot } from "../../type.js"
 const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 	const validator = new Type(def, ark)
 
-	return class TypeConstructor<
-		t = inferTypeRoot<def, Ark>,
-		extensions = {}
-	> extends DynamicBase<t & extensions & object> {
+	return class TypeConstructor<t = inferTypeRoot<def, Ark>> extends DynamicBase<
+		t & object
+	> {
 		static infer: inferTypeRoot<def, Ark>
 
 		constructor(input: unknown) {
@@ -24,9 +23,10 @@ const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 			def: validateTypeRoot<andDef, Ark>
 		) {
 			return class extends (this as typeof TypeConstructor<
-				cls["infer"] & inferTypeRoot<andDef, Ark>,
-				Omit<InstanceType<cls>, keyof cls["infer"]>
-			>) {}
+				InstanceType<cls> & inferTypeRoot<andDef, Ark>
+			>) {
+				static infer: cls["infer"] & inferTypeRoot<andDef, Ark>
+			}
 		}
 	}
 }
@@ -42,6 +42,8 @@ const data = new Foo({}) //=>
 const a = data.a //=>
 
 class Bar extends Foo.and({ b: "boolean" }) {}
+
+type Z = typeof Bar.infer //=>
 
 const data2 = new Bar({}) //=>
 

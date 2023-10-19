@@ -10,6 +10,12 @@ export type SerializationOptions = {
 	onUndefined?: string
 }
 
+export type Jsonifiable =
+	| {
+			[k: string]: string | boolean | number | null | Jsonifiable
+	  }
+	| readonly Jsonifiable[]
+
 export const snapshot = <t>(
 	data: t,
 	opts: SerializationOptions = { onUndefined: "(undefined)" }

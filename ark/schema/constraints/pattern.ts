@@ -18,7 +18,7 @@ export class PatternNode
 {
 	readonly kind = "pattern"
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		rule: "in",
 		flags: "in"
 	})

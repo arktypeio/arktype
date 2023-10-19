@@ -38,7 +38,7 @@ export class PropNode
 	readonly optional = this.children.optional ?? false
 	readonly kind = "prop"
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		key: "in",
 		value: "in",
 		optional: "in"

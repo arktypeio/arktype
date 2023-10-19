@@ -22,7 +22,7 @@ export class PredicateNode<rule extends Predicate = Predicate>
 {
 	readonly kind = "predicate"
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		rule: "in"
 	})
 

@@ -37,7 +37,7 @@ export class ProtoNode<
 	knownObjectKind = objectKindOf(this.rule)
 	basisName = `${this.rule.name}`
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		rule: "in"
 	})
 

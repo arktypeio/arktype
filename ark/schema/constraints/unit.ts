@@ -28,7 +28,7 @@ export class UnitNode<const rule = unknown>
 	// TODO: add reference to for objects
 	basisName = stringify(this.rule)
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		rule: "in"
 	})
 

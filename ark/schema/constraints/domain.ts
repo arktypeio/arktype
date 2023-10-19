@@ -30,7 +30,7 @@ export class DomainNode<
 
 	basisName = this.rule
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		rule: "in"
 	})
 

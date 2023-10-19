@@ -1,12 +1,14 @@
 import type {
 	AbstractableConstructor,
 	conform,
-	Constructor,
 	Dict,
-	extend
+	extend,
+	Jsonifiable,
+	listable
 } from "@arktype/util"
-import { DynamicBase } from "@arktype/util"
+import { DynamicBase, hasDomain, isArray } from "@arktype/util"
 import type { ConstraintClassesByKind } from "./constraints/constraint.js"
+import { compileSerializedValue } from "./main.js"
 import type { TypeClassesByKind, validateBranchInput } from "./types/type.js"
 
 export interface BaseAttributes {
@@ -18,7 +20,7 @@ export type NodeIds = {
 	in: string
 	out: string
 	type: string
-	reference: string
+	meta: string
 }
 
 export const schema = <const branches extends readonly unknown[]>(
@@ -44,10 +46,6 @@ export const createReferenceId = (
 	return JSON.stringify(referenceObject)
 }
 
-// TODO: map schema keys to id kinds
-// For each key, if the value is a Node or list of Nodes, recurse?
-type SchemaValueKind = "meta" | "in" | "out" | "type"
-
 // TODO: Terminal nodes have a condition that is compiled directly
 // Also should be associated with a problem type for if that conditions fails
 
@@ -57,7 +55,7 @@ type SchemaValueKind = "meta" | "in" | "out" | "type"
 
 export interface StaticBaseNode<children extends BaseAttributes> {
 	new (children: children): BaseNode<children, any>
-	keyKinds: Record<keyof children, SchemaValueKind>
+	keyKinds: Record<keyof children, keyof NodeIds>
 	writeDefaultDescription(children: children): string
 }
 
@@ -77,30 +75,71 @@ export abstract class BaseNode<
 	abstract kind: NodeKind
 
 	declare condition: string
+
 	nodeClass = this.constructor as nodeClass
+	jsonifiable = BaseNode.unwrapChildren(this.children)
 
 	alias: string
 	description: string
+	ids: NodeIds
 
 	protected static readonly prevalidated = prevalidated
 
-	protected static declareKeyKinds<nodeClass>(
+	protected static unwrapChildren<nodeClass>(
+		this: nodeClass,
+		children: childrenOf<nodeClass>
+	) {
+		const jsonifiable: Jsonifiable = {}
+		for (const k in children) {
+			const child: unknown = children[k]
+			if (
+				typeof child === "string" ||
+				typeof child === "boolean" ||
+				typeof child === "number" ||
+				child === null
+			) {
+				jsonifiable[k] = child
+			} else if (typeof child === "object") {
+				if (child instanceof BaseNode) {
+					jsonifiable[k] = child.jsonifiable
+				} else if (
+					isArray(child) &&
+					child.every(
+						(element): element is BaseNode<any, any> =>
+							element instanceof BaseNode
+					)
+				) {
+					jsonifiable[k] = child.map((element) => element.jsonifiable)
+				}
+			} else {
+				jsonifiable[k] = compileSerializedValue(child)
+			}
+		}
+		return jsonifiable
+	}
+
+	protected static declareKeys<nodeClass>(
 		this: nodeClass,
 		keyKinds: {
-			[k in extensionKeyOf<nodeClass>]: SchemaValueKind
+			[k in extensionKeyOf<nodeClass>]: childrenOf<nodeClass>[k] extends
+				| string
+				| boolean
+				| number
+				| null
+				? keyof NodeIds
+				: keyof NodeIds
 		}
-	): { [k in keyof childrenOf<nodeClass>]-?: SchemaValueKind } {
+	) {
 		return {
 			alias: "meta",
 			description: "meta",
-			...(keyKinds as any)
+			...keyKinds
+		} satisfies Dict<string, keyof NodeIds> as {} as {
+			[k in keyof childrenOf<nodeClass>]-?: keyof NodeIds
 		}
 	}
 
-	constructor(
-		public children: ConstructorParameters<nodeClass>[0] & object,
-		public ids: NodeIds
-	) {
+	constructor(public children: children) {
 		super(children)
 		this.alias = children.alias ?? "generated"
 		this.description =

@@ -153,7 +153,7 @@ export class UnionNode<t = unknown> extends BaseType<
 > {
 	readonly kind = "union"
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		branches: "in"
 	})
 
@@ -221,7 +221,7 @@ export class MorphNode<i = any, o = unknown> extends BaseType<
 > {
 	readonly kind = "morph"
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		in: "in",
 		out: "out",
 		morphs: "type"
@@ -287,7 +287,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 > {
 	readonly kind = "intersection"
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		constraints: "in"
 	})
 

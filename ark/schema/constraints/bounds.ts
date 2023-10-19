@@ -20,7 +20,7 @@ export abstract class BaseBound<nodeClass extends StaticBaseNode<BoundChildren>>
 {
 	abstract comparator: string
 
-	static keyKinds = this.declareKeyKinds({
+	static keyKinds = this.declareKeys({
 		rule: "in",
 		exclusive: "in"
 	})

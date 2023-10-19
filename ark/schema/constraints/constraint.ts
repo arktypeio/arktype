@@ -1,12 +1,6 @@
-import type { extend, optionalizeKeys } from "@arktype/util"
+import type { extend } from "@arktype/util"
 import type { Disjoint } from "../disjoint.js"
-import type {
-	BaseAttributes,
-	Children,
-	Node,
-	NodeIds,
-	StaticBaseNode
-} from "../node.js"
+import type { BaseAttributes, Children, Node, StaticBaseNode } from "../node.js"
 import { BaseNode } from "../node.js"
 import type { BasisClassesByKind, BasisKind } from "./basis.js"
 import type { RefinementClassesByKind } from "./refinement.js"
@@ -18,11 +12,6 @@ export type ConstraintClassesByKind = extend<
 
 export type ConstraintKind = keyof ConstraintClassesByKind
 
-export type ConstraintIdsInput = optionalizeKeys<
-	NodeIds,
-	"out" | "type" | "reference"
->
-
 export abstract class BaseConstraint<
 	children extends BaseAttributes,
 	nodeClass extends StaticBaseNode<children>
@@ -30,12 +19,7 @@ export abstract class BaseConstraint<
 	abstract kind: ConstraintKind
 
 	constructor(children: children) {
-		super(children, {
-			in: "",
-			out: "",
-			type: "",
-			reference: ""
-		})
+		super(children)
 	}
 
 	abstract intersectSymmetric(
