@@ -1,3 +1,4 @@
+import type { TypeNode } from "@arktype/schema"
 import { BaseType, node } from "@arktype/schema"
 import type {
 	BigintLiteral,
@@ -110,7 +111,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): BaseType =>
+const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -122,7 +123,7 @@ const unenclosedToNode = (s: DynamicState, token: string): BaseType =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): BaseType | undefined => {
+): TypeNode | undefined => {
 	if (s.ctx.args?.[token]) {
 		return s.ctx.args[token]
 	}
@@ -142,7 +143,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): BaseType | undefined => {
+): TypeNode | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
 		return node({ is: maybeNumber })

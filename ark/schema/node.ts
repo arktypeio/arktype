@@ -108,7 +108,7 @@ export abstract class BaseNode<
 			(this.constructor as NodeClass).writeDefaultDescription(children as never)
 	}
 
-	equals(other: BaseNode) {
+	equals(other: BaseNode<any, any>) {
 		return this.ids.type === other.ids.type
 	}
 

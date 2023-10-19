@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import type { BaseType } from "./ark/schema/main.js"
+import type { TypeNode } from "./ark/schema/main.js"
 import { node } from "./ark/schema/main.js"
 
-const compileType = (node: BaseType) => {
+const compileType = (node: TypeNode) => {
 	switch (node.kind) {
 		case "union":
 			return "throw Error('unsupported')"

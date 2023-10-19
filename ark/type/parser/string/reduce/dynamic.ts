@@ -1,4 +1,4 @@
-import type { BaseType } from "@arktype/schema"
+import type { TypeNode } from "@arktype/schema"
 import { MinNode } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
@@ -21,15 +21,15 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: MinNode
-	"&"?: BaseType
-	"|"?: BaseType
+	"&"?: TypeNode
+	"|"?: TypeNode
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: BaseType | undefined
+	root: TypeNode | undefined
 	branches: BranchState = {
 		prefixes: []
 	}
@@ -57,11 +57,11 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<BaseType["constrain"]>) {
+	constrainRoot(...args: Parameters<TypeNode["constrain"]>) {
 		this.root = this.root!.constrain(...args)
 	}
 
-	setRoot(root: BaseType) {
+	setRoot(root: TypeNode) {
 		this.root = root
 	}
 

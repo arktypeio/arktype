@@ -23,7 +23,6 @@ import type {
 	BaseAttributes,
 	Children,
 	Node,
-	NodeClass,
 	Schema,
 	StaticBaseNode
 } from "../node.js"
@@ -62,11 +61,7 @@ const createBranches = (branches: readonly BranchSchema[]) =>
 			: IntersectionNode.from(branch)
 	)
 
-export type TypeNode<t = unknown> = BaseType<
-	t,
-	BaseAttributes,
-	StaticBaseNode<BaseAttributes>
->
+export type TypeNode<t = unknown> = BaseType<t, any, any>
 
 export abstract class BaseType<
 	t,
@@ -548,10 +543,18 @@ type intersectTypeKinds<
 	l extends TypeKind,
 	r extends TypeKind
 > = "union" extends l | r
-	? TypeKind
-	: "morph" extends l | r
+	? // if either branch could be a union, the result could be
+	  // any kind depending on how it's reduced
+	  TypeKind
+	: // if either branch is exactly "morph", we know the result will
+	// also be a morph
+	l extends "morph"
 	? "morph"
-	: "intersection"
+	: r extends "morph"
+	? "morph"
+	: // otherwise, it is an intersection or possibly a morph depending
+	  // on unknown kind inputs (e.g. BranchNode)
+	  l | r
 
 export type TypeClassesByKind = {
 	union: typeof UnionNode

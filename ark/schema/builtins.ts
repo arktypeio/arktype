@@ -1,6 +1,6 @@
 import { cached } from "@arktype/util"
+import type { TypeNode } from "./types/type.js"
 import { node } from "./types/type.js"
-import { type BaseType } from "./types/type.js"
 
 export const builtins = {
 	never: cached(() => node()),
@@ -12,4 +12,4 @@ export const builtins = {
 	arrayIndexTypeNode: cached(() => node("number")),
 	string: cached(() => node("string")),
 	array: cached(() => node(Array))
-} satisfies Record<string, () => BaseType>
+} satisfies Record<string, () => TypeNode>
