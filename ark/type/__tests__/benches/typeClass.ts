@@ -4,9 +4,11 @@ import { type inferTypeRoot, Type, type validateTypeRoot } from "../../type.js"
 
 const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 	const validator = new Type(def, ark)
-	return class TypeConstructor<t = inferTypeRoot<def, Ark>> extends DynamicBase<
-		t & object
-	> {
+
+	return class TypeConstructor<
+		t = inferTypeRoot<def, Ark>,
+		extensions = {}
+	> extends DynamicBase<t & extensions & object> {
 		static infer: inferTypeRoot<def, Ark>
 
 		constructor(input: unknown) {
@@ -17,15 +19,23 @@ const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 			super(data as never)
 		}
 
-		static and<def>(def: validateTypeRoot<def, Ark>) {
-			return class extends TypeConstructor<
-				(typeof TypeConstructor)["infer"] & inferTypeRoot<def, Ark>
-			> {}
+		static and<cls extends typeof TypeConstructor, andDef>(
+			this: cls,
+			def: validateTypeRoot<andDef, Ark>
+		) {
+			return class extends (this as typeof TypeConstructor<
+				cls["infer"] & inferTypeRoot<andDef, Ark>,
+				Omit<InstanceType<cls>, keyof cls["infer"]>
+			>) {}
 		}
 	}
 }
 
-class Foo extends Class({ a: "string|number[]" }) {}
+class Foo extends Class({ a: "string|number[]" }) {
+	getA() {
+		return this.a
+	}
+}
 
 const data = new Foo({}) //=>
 
@@ -34,6 +44,8 @@ const a = data.a //=>
 class Bar extends Foo.and({ b: "boolean" }) {}
 
 const data2 = new Bar({}) //=>
+
+const inherited = data2.getA() //=>
 
 const a2 = data2.a //=>
 const b = data2.b //=>
