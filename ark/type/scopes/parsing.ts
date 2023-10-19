@@ -14,7 +14,7 @@ const number = node({
 		pattern: wellFormedNumberMatcher,
 		description: "a well-formed numeric string"
 	},
-	morphs: (s: string) => parseFloat(s)
+	morph: (s: string) => parseFloat(s)
 })
 
 const integer = node({
@@ -22,7 +22,7 @@ const integer = node({
 		domain: "string",
 		pattern: wellFormedIntegerMatcher
 	},
-	morphs: (s: string, problems) => {
+	morph: (s: string, problems) => {
 		// if (!isWellFormedInteger(s)) {
 		// 	return problems.mustBe("a well-formed integer string")
 		// }
@@ -41,7 +41,7 @@ const url = node({
 		domain: "string",
 		description: "a valid URL"
 	},
-	morphs: (s: string, state) => {
+	morph: (s: string, state) => {
 		try {
 			return new URL(s)
 		} catch {
@@ -55,7 +55,7 @@ const json = node({
 		domain: "string",
 		description: "a JSON-parsable string"
 	},
-	morphs: (s: string): unknown => JSON.parse(s)
+	morph: (s: string): unknown => JSON.parse(s)
 })
 
 const date = parsedDate

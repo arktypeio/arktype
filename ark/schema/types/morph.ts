@@ -14,13 +14,13 @@ export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 export interface MorphChildren extends BaseAttributes {
 	in?: IntersectionNode
 	out?: IntersectionNode
-	morphs: readonly Morph[]
+	morph: readonly Morph[]
 }
 
 export interface MorphSchema extends BaseAttributes {
 	in?: IntersectionSchema
 	out?: IntersectionSchema
-	morphs: listable<Morph>
+	morph: listable<Morph>
 }
 
 export type inferMorphOut<out> = out extends CheckResult<infer t>
@@ -45,7 +45,7 @@ export type parseMorph<input> = input extends MorphSchema
 				: unknown,
 			input["out"] extends {}
 				? parseIntersection<input["out"]>["infer"]
-				: input["morphs"] extends
+				: input["morph"] extends
 						| Morph<any, infer o>
 						| readonly [...unknown[], Morph<any, infer o>]
 				? inferMorphOut<o>

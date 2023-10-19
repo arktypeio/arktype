@@ -158,22 +158,7 @@ export class UnionNode<t = unknown> extends BaseType<
 	})
 
 	constructor(children: UnionChildren) {
-		// TODO: add kind to ids?
-		super(children, {
-			in: children.branches.map((constraint) => constraint.ids.in).join("|"),
-			out: children.branches.map((constraint) => constraint.ids.out).join("|"),
-			type: children.branches
-				.map((constraint) => constraint.ids.type)
-				.join("|"),
-			reference: createReferenceId(
-				{
-					branches: children.branches
-						.map((constraint) => constraint.ids.reference)
-						.join("|")
-				},
-				children
-			)
-		})
+		super(children)
 	}
 
 	static from(schema: UnionSchema) {
@@ -224,34 +209,11 @@ export class MorphNode<i = any, o = unknown> extends BaseType<
 	static keyKinds = this.declareKeys({
 		in: "in",
 		out: "out",
-		morphs: "type"
+		morph: "morph"
 	})
 
 	constructor(children: MorphChildren) {
-		const inId = children.in?.ids.in ?? ""
-		const outId = children.out?.ids.out ?? ""
-		const morphsId = children.morphs.map((morph) =>
-			compileSerializedValue(morph)
-		)
-		const typeId = JSON.stringify({
-			in: children.in?.ids.type ?? "",
-			out: children.out?.ids.type ?? "",
-			morphs: morphsId
-		})
-		// TODO: check unknown id
-		super(children, {
-			in: inId,
-			out: outId,
-			type: typeId,
-			reference: createReferenceId(
-				{
-					in: children.in?.ids.reference ?? "",
-					out: children.out?.ids.reference ?? "",
-					morphs: morphsId
-				},
-				children
-			)
-		})
+		super(children)
 	}
 
 	static writeDefaultDescription(children: MorphChildren) {
@@ -260,8 +222,8 @@ export class MorphNode<i = any, o = unknown> extends BaseType<
 
 	static from(schema: MorphSchema) {
 		const children = {} as MorphChildren
-		children.morphs =
-			typeof schema.morphs === "function" ? [schema.morphs] : schema.morphs
+		children.morph =
+			typeof schema.morph === "function" ? [schema.morph] : schema.morph
 		if (schema.in) {
 			children.in = IntersectionNode.from(schema.in)
 		}
@@ -306,27 +268,11 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				? 1
 				: l.kind < r.kind
 				? -1
-				: // TODO: can sort only based on this?
-				l.ids.reference > r.ids.reference
+				: l.ids.meta > r.ids.meta
 				? 1
 				: -1
 		)
-		super(
-			{ ...children, constraints },
-			{
-				in: constraints.map((constraint) => constraint.ids.in).join("&"),
-				out: constraints.map((constraint) => constraint.ids.out).join("&"),
-				type: constraints.map((constraint) => constraint.ids.type).join("&"),
-				reference: createReferenceId(
-					{
-						constraints: constraints
-							.map((constraint) => constraint.ids.reference)
-							.join("&")
-					},
-					children
-				)
-			}
-		)
+		super({ ...children, constraints })
 		assertValidRefinements(this.basis, this.refinements)
 	}
 

@@ -3,24 +3,16 @@ import type {
 	conform,
 	Dict,
 	extend,
-	Jsonifiable,
-	listable
+	Json
 } from "@arktype/util"
-import { DynamicBase, hasDomain, isArray } from "@arktype/util"
+import { DynamicBase, isArray } from "@arktype/util"
 import type { ConstraintClassesByKind } from "./constraints/constraint.js"
-import { compileSerializedValue } from "./main.js"
+import { compileSerializedValue } from "./io/compile.js"
 import type { TypeClassesByKind, validateBranchInput } from "./types/type.js"
 
 export interface BaseAttributes {
 	alias?: string
 	description?: string
-}
-
-export type NodeIds = {
-	in: string
-	out: string
-	type: string
-	meta: string
 }
 
 export const schema = <const branches extends readonly unknown[]>(
@@ -73,23 +65,28 @@ export abstract class BaseNode<
 	nodeClass extends StaticBaseNode<children>
 > extends DynamicBase<children> {
 	abstract kind: NodeKind
-
 	declare condition: string
 
-	nodeClass = this.constructor as nodeClass
-	jsonifiable = BaseNode.unwrapChildren(this.children)
-
+	json: Json
 	alias: string
 	description: string
-	ids: NodeIds
+	ids: NodeIds = new NodeIds(this)
+	nodeClass = this.constructor as nodeClass
 
-	protected static readonly prevalidated = prevalidated
+	constructor(public children: children) {
+		super(children)
+		this.alias = children.alias ?? "generated"
+		this.description =
+			children.description ??
+			(this.constructor as NodeClass).writeDefaultDescription(children as never)
+		this.json = BaseNode.unwrapChildren(children)
+	}
 
 	protected static unwrapChildren<nodeClass>(
 		this: nodeClass,
 		children: childrenOf<nodeClass>
 	) {
-		const jsonifiable: Jsonifiable = {}
+		const json: Json = {}
 		for (const k in children) {
 			const child: unknown = children[k]
 			if (
@@ -98,10 +95,10 @@ export abstract class BaseNode<
 				typeof child === "number" ||
 				child === null
 			) {
-				jsonifiable[k] = child
+				json[k] = child
 			} else if (typeof child === "object") {
 				if (child instanceof BaseNode) {
-					jsonifiable[k] = child.jsonifiable
+					json[k] = child.json
 				} else if (
 					isArray(child) &&
 					child.every(
@@ -109,25 +106,19 @@ export abstract class BaseNode<
 							element instanceof BaseNode
 					)
 				) {
-					jsonifiable[k] = child.map((element) => element.jsonifiable)
+					json[k] = child.map((element) => element.json)
 				}
 			} else {
-				jsonifiable[k] = compileSerializedValue(child)
+				json[k] = compileSerializedValue(child)
 			}
 		}
-		return jsonifiable
+		return json
 	}
 
 	protected static declareKeys<nodeClass>(
 		this: nodeClass,
 		keyKinds: {
-			[k in extensionKeyOf<nodeClass>]: childrenOf<nodeClass>[k] extends
-				| string
-				| boolean
-				| number
-				| null
-				? keyof NodeIds
-				: keyof NodeIds
+			[k in extensionKeyOf<nodeClass>]: keyof NodeIds
 		}
 	) {
 		return {
@@ -139,16 +130,16 @@ export abstract class BaseNode<
 		}
 	}
 
-	constructor(public children: children) {
-		super(children)
-		this.alias = children.alias ?? "generated"
-		this.description =
-			children.description ??
-			(this.constructor as NodeClass).writeDefaultDescription(children as never)
+	serialize(kind: keyof NodeIds = "meta") {
+		return JSON.stringify(this.json)
+	}
+
+	toJSON() {
+		return this.json
 	}
 
 	equals(other: BaseNode<any, any>) {
-		return this.ids.type === other.ids.type
+		return this.ids.morph === other.ids.morph
 	}
 
 	allows(data: unknown) {
@@ -161,6 +152,32 @@ export abstract class BaseNode<
 
 	toString() {
 		return this.description
+	}
+}
+
+export class NodeIds {
+	private cache: { -readonly [k in keyof NodeIds]?: string } = {}
+
+	constructor(private node: BaseNode<any, any>) {}
+
+	get in() {
+		this.cache.in ??= this.node.serialize("in")
+		return this.cache.in
+	}
+
+	get out() {
+		this.cache.out ??= this.node.serialize("out")
+		return this.cache.out
+	}
+
+	get morph() {
+		this.cache.morph ??= this.node.serialize("morph")
+		return this.cache.morph
+	}
+
+	get meta() {
+		this.cache.meta ??= this.node.serialize("meta")
+		return this.cache.meta
 	}
 }
 
