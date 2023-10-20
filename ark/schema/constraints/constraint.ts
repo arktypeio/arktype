@@ -45,6 +45,10 @@ export abstract class BaseConstraint<
 				ReturnType<(this | other)["intersectAsymmetric" | "intersectSymmetric"]>
 		  >
 	intersect(other: BaseConstraint<BaseAttributes, any>) {
+		if (other.ids.morph === this.ids.morph) {
+			// TODO: meta
+			return this
+		}
 		if (other.kind === this.kind) {
 			return this.intersectSymmetric(other as never)
 		}

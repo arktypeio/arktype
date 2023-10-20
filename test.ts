@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 import type { TypeNode } from "./ark/schema/main.js"
-import { builtins, node } from "./ark/schema/main.js"
+import { Disjoint, node } from "./ark/schema/main.js"
 
 const compileType = (node: TypeNode) => {
 	switch (node.kind) {
@@ -13,24 +13,27 @@ const compileType = (node: TypeNode) => {
 	}
 }
 
-const n = node({
-	domain: "string",
-	pattern: {
-		rule: ".*",
-		description: "very special"
-	},
-	prop: {
-		key: "s",
-		value: builtins.unknown()
+const l = node(
+	{
+		domain: "number",
+		divisor: 2
 	}
+	// {
+	// 	domain: "number",
+	// 	divisor: 3
+	// }
+)
+
+const r = node({
+	domain: "number",
+	divisor: 5
 })
 
-n.json //?
+const result = l.intersect(r) //?
 
-const z = node({
-	unit: { is: Symbol() }
-})
-
-z.json //?
-
-const result = compileType(n) //?
+if (result instanceof Disjoint) {
+	result.throw()
+} else {
+	result.json //?
+	result.description //?
+}

@@ -213,7 +213,7 @@ const intersectTypeNodes = (
 		return finalizeBranchIntersection(intersectBranches(l.branches, [r]))
 	}
 	if (r.kind === "union") {
-		return finalizeBranchIntersection(intersectBranches(r.branches, [l]))
+		return finalizeBranchIntersection(intersectBranches([l], r.branches))
 	}
 	return intersectBranchNodes(l, r)
 }
