@@ -1,6 +1,12 @@
-import type { extend } from "@arktype/util"
-import type { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Children, Node, StaticBaseNode } from "../node.js"
+import type { Constructor, extend } from "@arktype/util"
+import { Disjoint } from "../disjoint.js"
+import type {
+	BaseAttributes,
+	Children,
+	Node,
+	NodeClass,
+	StaticBaseNode
+} from "../node.js"
 import { BaseNode } from "../node.js"
 import type { BasisClassesByKind, BasisKind } from "./basis.js"
 import type { RefinementClassesByKind } from "./refinement.js"
@@ -30,25 +36,33 @@ export abstract class BaseConstraint<
 		other: Node<Exclude<ConstraintKind, this["kind"]>>
 	): Children<this["kind"]> | Disjoint | null
 
-	intersectConstraint<other extends BaseConstraint<BaseAttributes, any>>(
+	intersect<other extends BaseConstraint<BaseAttributes, any>>(
 		other: other
 	):
 		| Node<other["kind"] | this["kind"]>
 		| Extract<
 				Disjoint | null,
-				ReturnType<this["intersectOwnKeys"] | other["intersectOwnKeys"]>
-		  > {
-		return null as never
-	}
-
-	intersectOwnKeys(
-		other: BaseConstraint<BaseAttributes, any>
-	): ReturnType<this["intersectAsymmetric" | "intersectSymmetric"]> {
-		return (
-			other.kind === this.kind
-				? this.intersectSymmetric(other as never)
-				: this.intersectAsymmetric(other as never)
-		) as never
+				ReturnType<(this | other)["intersectAsymmetric" | "intersectSymmetric"]>
+		  >
+	intersect(other: BaseConstraint<BaseAttributes, any>) {
+		if (other.kind === this.kind) {
+			return this.intersectSymmetric(other as never)
+		}
+		let resultClass: StaticBaseNode<any> | undefined
+		let result = this.intersectAsymmetric(other as never)
+		if (result) {
+			resultClass = this.nodeClass as never
+		} else {
+			result = other.intersectAsymmetric(this as never)
+			if (result) {
+				resultClass === other.nodeClass
+			}
+		}
+		if (result === null || result instanceof Disjoint) {
+			return result
+		}
+		// TODO: Add meta
+		return new resultClass!(result)
 	}
 
 	isBasis(): this is Node<BasisKind> {

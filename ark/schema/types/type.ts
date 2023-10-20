@@ -59,7 +59,7 @@ const createBranches = (branches: readonly BranchSchema[]) =>
 			: IntersectionNode.from(branch)
 	)
 
-export type TypeNode<t = unknown> = BaseType<t, any, any>
+export type TypeNode<t = unknown> = BaseType<t, {}, any>
 
 export abstract class BaseType<
 	t,
@@ -102,22 +102,25 @@ export abstract class BaseType<
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	abstract intersectSymmetric(
-		other: Node<this["kind"]>
-	): Children<TypeKind> | Disjoint
-
-	abstract intersectAsymmetric(
-		other: Node<TypeKind>
-	): Children<TypeKind> | Disjoint | null
+	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
+		return this as never
+	}
 
 	intersect<other extends TypeNode>(
 		other: other
 	): Node<intersectTypeKinds<this["kind"], other["kind"]>> | Disjoint {
-		return this as never
-	}
-
-	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
-		return this as never
+		const result = intersectTypeNodes(this as never, other as never)
+		if (result instanceof Disjoint || result instanceof BaseType) {
+			// if the result is already instantiated (as opposed to a children object),
+			// we don't want to add metadata
+			return result as never
+		}
+		// TODO: meta
+		return "branches" in result
+			? new UnionNode(result)
+			: "morph" in result
+			? new MorphNode(result)
+			: (new IntersectionNode(result) as any)
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {
@@ -172,29 +175,75 @@ export class UnionNode<t = unknown> extends BaseType<
 			: children.branches.join(" or ")
 	}
 
-	intersectSymmetric(other: UnionNode): Disjoint | UnionChildren {
-		const resultBranches = intersectBranches(this.branches, other.branches)
-		if (resultBranches.length === 0) {
-			if (
-				(this.branches.length === 0 || other.branches.length === 0) &&
-				this.branches.length !== other.branches.length
-			) {
-				// if exactly one operand is never, we can use it to discriminate based on presence
-				return Disjoint.from(
-					"presence",
-					this.branches.length !== 0,
-					other.branches.length !== 0
-				)
-			}
-			return Disjoint.from("union", this.branches, other.branches)
+	intersectSymmetric(other: UnionNode) {
+		if (
+			(this.branches.length === 0 || other.branches.length === 0) &&
+			this.branches.length !== other.branches.length
+		) {
+			// if exactly one operand is never, we can use it to discriminate based on presence
+			return Disjoint.from(
+				"presence",
+				this.branches.length !== 0,
+				other.branches.length !== 0
+			)
 		}
-		return { branches: this.branches }
+		return finalizeBranchIntersection(
+			intersectBranches(this.branches, other.branches)
+		)
 	}
+}
 
-	intersectAsymmetric(other: Node<TypeKind>): Node<TypeKind> | Disjoint {
-		// TODO: intersect branches
-		return this as never
+const finalizeBranchIntersection = (
+	resultBranches: ReturnType<typeof intersectBranches>
+): UnionChildren | BranchNode | Disjoint =>
+	resultBranches instanceof Disjoint
+		? resultBranches
+		: resultBranches.length === 1
+		? resultBranches[0]
+		: { branches: resultBranches }
+
+const intersectTypeNodes = (
+	l: Node<TypeKind>,
+	r: Node<TypeKind>
+): Children<TypeKind> | Disjoint => {
+	if (l.kind === "union") {
+		if (r.kind === "union") {
+			return l.intersectSymmetric(r)
+		}
+		return finalizeBranchIntersection(intersectBranches(l.branches, [r]))
 	}
+	if (r.kind === "union") {
+		return finalizeBranchIntersection(intersectBranches(r.branches, [l]))
+	}
+	return intersectBranchNodes(l, r)
+}
+
+const intersectBranchNodes = (
+	l: BranchNode,
+	r: BranchNode
+): Children<"intersection" | "morph"> | Disjoint => {
+	if (l.kind === "intersection") {
+		if (r.kind === "intersection") {
+			return l.intersectSymmetric(r)
+		}
+		const inTersection = r.in ? l.intersect(r.in) : l
+		return inTersection instanceof Disjoint
+			? inTersection
+			: {
+					...r.children,
+					in: inTersection
+			  }
+	}
+	if (r.kind === "morph") {
+		return l.intersectSymmetric(r)
+	}
+	const inTersection = l.in?.intersect(r) ?? r
+	return inTersection instanceof Disjoint
+		? inTersection
+		: {
+				...l.children,
+				in: inTersection
+		  }
 }
 
 export class MorphNode<i = any, o = unknown> extends BaseType<
@@ -231,12 +280,41 @@ export class MorphNode<i = any, o = unknown> extends BaseType<
 		return new MorphNode(children)
 	}
 
-	intersectSymmetric(other: MorphNode): Disjoint | Children<TypeKind> {
-		return this as never //node(...(resultBranches as any)) as never
-	}
-
-	intersectAsymmetric(other: Node<TypeKind>): MorphNode | Disjoint | null {
-		return this as never
+	intersectSymmetric(other: MorphNode): MorphChildren | Disjoint {
+		if (this.morph.some((morph, i) => morph !== other.morph[i])) {
+			// TODO: is this always a parse error? what about for union reduction etc.
+			return throwParseError(`Invalid intersection of morphs`)
+		}
+		const result: MorphChildren = {
+			morph: this.morph
+		}
+		if (this.in) {
+			if (other.in) {
+				const inTersection = this.in.intersect(other.in)
+				if (inTersection instanceof Disjoint) {
+					return inTersection
+				}
+				result.in = inTersection
+			} else {
+				result.in = this.in
+			}
+		} else if (other.in) {
+			result.in = other.in
+		}
+		if (this.out) {
+			if (other.out) {
+				const outTersection = this.out.intersect(other.out)
+				if (outTersection instanceof Disjoint) {
+					return outTersection
+				}
+				result.out = outTersection
+			} else {
+				result.out = this.out
+			}
+		} else if (other.out) {
+			result.out = other.out
+		}
+		return result
 	}
 }
 
@@ -302,10 +380,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		return constraints instanceof Disjoint
 			? constraints
 			: unflattenConstraints(constraints)
-	}
-
-	intersectAsymmetric() {
-		return null
 	}
 
 	filter<kind extends ConstraintKind>(kind: kind): Node<kind>[] {
@@ -378,7 +452,7 @@ const addConstraint = (
 	const result: Node<ConstraintKind>[] = []
 	let includesConstraint = false
 	for (let i = 0; i < constraints.length; i++) {
-		const elementResult = constraint.intersectConstraint(constraints[i])
+		const elementResult = constraint.intersect(constraints[i])
 		if (elementResult === null) {
 			result.push(constraints[i])
 		} else if (elementResult instanceof Disjoint) {
@@ -534,7 +608,7 @@ export type TypeKind = keyof TypeClassesByKind
 export const intersectBranches = (
 	l: readonly BranchNode[],
 	r: readonly BranchNode[]
-): readonly BranchNode[] => {
+): readonly BranchNode[] | Disjoint => {
 	// Branches that are determined to be a subtype of an opposite branch are
 	// guaranteed to be a member of the final reduced intersection, so long as
 	// each individual set of branches has been correctly reduced to exclude
@@ -600,6 +674,9 @@ export const intersectBranches = (
 	// All remaining candidates are distinct, so include them in the final result
 	for (const candidates of candidatesByR) {
 		candidates?.forEach((candidate) => finalBranches.push(candidate))
+	}
+	if (finalBranches.length === 0) {
+		return Disjoint.from("union", l, r)
 	}
 	return finalBranches
 }
