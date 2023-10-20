@@ -172,7 +172,7 @@ export class UnionNode<t = unknown> extends BaseType<
 			: children.branches.join(" or ")
 	}
 
-	intersectSymmetric(other: UnionNode): Disjoint | Children<TypeKind> {
+	intersectSymmetric(other: UnionNode): Disjoint | UnionChildren {
 		const resultBranches = intersectBranches(this.branches, other.branches)
 		if (resultBranches.length === 0) {
 			if (
@@ -188,7 +188,7 @@ export class UnionNode<t = unknown> extends BaseType<
 			}
 			return Disjoint.from("union", this.branches, other.branches)
 		}
-		return this as never //node(...(resultBranches as any)) as never
+		return { branches: this.branches }
 	}
 
 	intersectAsymmetric(other: Node<TypeKind>): Node<TypeKind> | Disjoint {
