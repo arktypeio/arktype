@@ -30,19 +30,6 @@ const prevalidated = Symbol("used to bypass validation when creating a node")
 
 export type Prevalidated = typeof prevalidated
 
-export const createReferenceId = (
-	referenceObject: Record<string, unknown>,
-	schema: BaseAttributes
-) => {
-	if (schema.description) {
-		referenceObject.description = schema.description
-	}
-	if (schema.alias) {
-		referenceObject.alias = schema.alias
-	}
-	return JSON.stringify(referenceObject)
-}
-
 // TODO: Terminal nodes have a condition that is compiled directly
 // Also should be associated with a problem type for if that conditions fails
 
@@ -83,7 +70,7 @@ export abstract class BaseNode<
 		this.alias = children.alias ?? "generated"
 		this.description =
 			children.description ??
-			(this.constructor as NodeClass).writeDefaultDescription(children as never)
+			(this.constructor as nodeClass).writeDefaultDescription(children)
 		this.json = BaseNode.unwrapChildren(children)
 	}
 
