@@ -15,6 +15,11 @@ export interface BaseAttributes {
 	description?: string
 }
 
+export const baseAttributeKeys = {
+	alias: 1,
+	description: 1
+} as const satisfies Record<keyof BaseAttributes, 1>
+
 export const schema = <const branches extends readonly unknown[]>(
 	...branches: {
 		[i in keyof branches]: validateBranchInput<branches[i]>

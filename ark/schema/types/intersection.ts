@@ -2,7 +2,8 @@ import type {
 	AbstractableConstructor,
 	conform,
 	ErrorMessage,
-	exactMessageOnError
+	exactMessageOnError,
+	extend
 } from "@arktype/util"
 import { basisClassesByKind, type BasisKind } from "../constraints/basis.js"
 import { MaxNode, MinNode } from "../constraints/bounds.js"
@@ -51,9 +52,14 @@ export const intersectionChildClasses: { [k in ConstraintKind]: NodeClass<k> } =
 		...irreducibleChildClasses
 	}
 
-export interface IntersectionChildren extends BaseAttributes {
-	constraints: readonly Node<ConstraintKind>[]
-}
+export type IntersectionChildren = extend<
+	BaseAttributes,
+	{
+		[k in ConstraintKind]?: k extends IrreducibleConstraintKind
+			? readonly Node<k>[]
+			: Node<k>
+	}
+>
 
 export type parseBasis<input extends Schema<BasisKind>> =
 	input extends DomainSchema<infer domain>

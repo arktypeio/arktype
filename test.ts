@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 import type { TypeNode } from "./ark/schema/main.js"
-import { node } from "./ark/schema/main.js"
+import { builtins, node } from "./ark/schema/main.js"
 
 const compileType = (node: TypeNode) => {
 	switch (node.kind) {
@@ -18,16 +18,19 @@ const n = node({
 	pattern: {
 		rule: ".*",
 		description: "very special"
+	},
+	prop: {
+		key: "s",
+		value: builtins.unknown()
 	}
 })
 
-n //?
+n.json //?
+
+const z = node({
+	unit: { is: Symbol() }
+})
+
+z.json //?
 
 const result = compileType(n) //?
-
-class Foo {
-	static blah = this
-}
-
-const z = new Foo()
-z.constructor //?
