@@ -54,7 +54,7 @@ import type {
 
 const createBranches = (branches: readonly BranchSchema[]) =>
 	branches.map((branch) =>
-		typeof branch === "object" && hasKey(branch, "morphs")
+		typeof branch === "object" && "morph" in branch
 			? MorphNode.from(branch)
 			: IntersectionNode.from(branch)
 	)
@@ -70,14 +70,15 @@ export abstract class BaseType<
 
 	declare infer: t;
 	declare [inferred]: t
-	condition = ""
 
 	constrain<kind extends ConstraintKind>(kind: kind, definition: Schema<kind>) {
+		const constraint = new (intersectionChildClasses[kind] as any)(definition)
+		// const constraints = addConstraint(t)
 		return this
 	}
 
 	extractUnit(): UnitNode | undefined {
-		return this.hasKind("intersection") ? this.get("unit") : undefined
+		return this.hasKind("intersection") ? this.unit : undefined
 	}
 
 	// references() {
