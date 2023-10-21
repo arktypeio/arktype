@@ -3,7 +3,9 @@ import type {
 	conform,
 	Dict,
 	extend,
-	Json
+	Json,
+	keySet,
+	PartialRecord
 } from "@arktype/util"
 import { DynamicBase, isArray } from "@arktype/util"
 import type { ConstraintClassesByKind } from "./constraints/constraint.js"
@@ -31,16 +33,12 @@ const prevalidated = Symbol("used to bypass validation when creating a node")
 
 export type Prevalidated = typeof prevalidated
 
-// TODO: Terminal nodes have a condition that is compiled directly
-// Also should be associated with a problem type for if that conditions fails
-
-// Nonterminal nodes would compile their logic in some arbitrary function TBD
-
-// NOTE: utilize composition, don't worry about e.g. having to call a function from each terminal node
-
 export interface StaticBaseNode<children extends BaseAttributes> {
 	new (children: children): BaseNode<children, any>
 	keyKinds: Record<keyof children, keyof NodeIds>
+	intersections: {
+		[k in NodeKind]?: (r: Node<k>) => children | Disjoint | null
+	}
 	writeDefaultDescription(children: children): string
 }
 
@@ -155,20 +153,24 @@ export abstract class BaseNode<
 		other: never
 	): Children<this["kind"]> | Disjoint | null
 
-	intersect<
-		other extends Parameters<
-			InstanceType<nodeClass>["intersectSymmetric" | "intersectAsymmetric"]
-		>[0]
-	>(
+	intersect<other extends Node>(
 		other: other
-	):
-		| Node<other["kind"] | this["kind"]>
-		| (other extends InstanceType<nodeClass>
-				? never
-				: Extract<
-						Disjoint | null,
-						ReturnType<(this | other)["intersectAsymmetric"]>
-				  >)
+	): this["kind"] extends other["kind"]
+		? ReturnType<InstanceType<nodeClass>["intersectSymmetric"]>
+		:
+				| ([null, null] extends [
+						ReturnType<InstanceType<nodeClass>["intersectAsymmetric"]>,
+						ReturnType<InstanceType<nodeClass>["intersectAsymmetric"]>
+				  ]
+						? null
+						: never)
+				| Node<other["kind"] | this["kind"]>
+				| (other extends InstanceType<nodeClass>
+						? never
+						: Extract<
+								Disjoint | null,
+								ReturnType<(this | other)["intersectAsymmetric"]>
+						  >)
 	intersect(other: BaseNode<Record<string, unknown>, any>) {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta

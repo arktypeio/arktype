@@ -53,6 +53,8 @@ export class MinNode extends BaseBound<typeof MinNode> {
 		return new MinNode(typeof schema === "number" ? { rule: schema } : schema)
 	}
 
+	static intersectsWith = {}
+
 	static writeDefaultDescription(children: BoundChildren) {
 		// Date
 		// rule.exclusive

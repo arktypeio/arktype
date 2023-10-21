@@ -20,6 +20,10 @@ export type requireKeys<o, key extends keyof o> = o & {
 	[requiredKey in key]-?: defined<o[requiredKey]>
 }
 
+export type PartialRecord<k extends string = string, v = unknown> = {
+	[_ in k]?: v
+}
+
 export const hasKey = <o extends object, k extends PropertyKey>(
 	o: o,
 	k: k
