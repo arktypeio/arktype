@@ -22,10 +22,6 @@ export abstract class BaseConstraint<
 		super(children)
 	}
 
-	abstract intersectAsymmetric(
-		other: Node<ConstraintKind>
-	): Children<this["kind"]> | Disjoint | null
-
 	isBasis(): this is Node<BasisKind> {
 		return (
 			this.kind === "domain" || this.kind === "proto" || this.kind === "unit"

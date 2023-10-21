@@ -1,10 +1,11 @@
 import type {
 	AbstractableConstructor,
 	conform,
+	Constructor,
 	Dict,
 	extend,
+	instanceOf,
 	Json,
-	keySet,
 	PartialRecord
 } from "@arktype/util"
 import { DynamicBase, isArray } from "@arktype/util"
@@ -36,10 +37,15 @@ export type Prevalidated = typeof prevalidated
 export interface StaticBaseNode<children extends BaseAttributes> {
 	new (children: children): BaseNode<children, any>
 	keyKinds: Record<keyof children, keyof NodeIds>
-	intersections: {
-		[k in NodeKind]?: (r: Node<k>) => children | Disjoint | null
-	}
+	intersections: PartialRecord<NodeKind>
 	writeDefaultDescription(children: children): string
+}
+
+type IntersectionDefinitions<nodeClass> = {
+	[k in NodeKind]?: (
+		l: instanceOf<nodeClass>,
+		r: Node<k>
+	) => childrenOf<nodeClass> | Disjoint | null
 }
 
 type childrenOf<nodeClass> = ConstructorParameters<
@@ -121,6 +127,13 @@ export abstract class BaseNode<
 		}
 	}
 
+	protected static defineIntersections<
+		nodeClass,
+		intersections extends IntersectionDefinitions<nodeClass>
+	>(this: nodeClass, intersections: intersections) {
+		return intersections
+	}
+
 	serialize(kind: keyof NodeIds = "meta") {
 		return JSON.stringify(this.json)
 	}
@@ -145,32 +158,7 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	abstract intersectSymmetric(
-		other: Node<this["kind"]>
-	): Children<this["kind"]> | Disjoint | null
-
-	abstract intersectAsymmetric(
-		other: never
-	): Children<this["kind"]> | Disjoint | null
-
-	intersect<other extends Node>(
-		other: other
-	): this["kind"] extends other["kind"]
-		? ReturnType<InstanceType<nodeClass>["intersectSymmetric"]>
-		:
-				| ([null, null] extends [
-						ReturnType<InstanceType<nodeClass>["intersectAsymmetric"]>,
-						ReturnType<InstanceType<nodeClass>["intersectAsymmetric"]>
-				  ]
-						? null
-						: never)
-				| Node<other["kind"] | this["kind"]>
-				| (other extends InstanceType<nodeClass>
-						? never
-						: Extract<
-								Disjoint | null,
-								ReturnType<(this | other)["intersectAsymmetric"]>
-						  >)
+	intersect<other extends Node>(other: other): other | Disjoint | null
 	intersect(other: BaseNode<Record<string, unknown>, any>) {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta

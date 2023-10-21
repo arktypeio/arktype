@@ -1,4 +1,5 @@
 import type { ErrorMessage } from "./errors.js"
+import { type AbstractableConstructor } from "./objectKinds.js"
 import type { unionToTuple } from "./unionToTuple.js"
 
 export type Stringifiable =
@@ -25,6 +26,10 @@ export type exactMessageOnError<t extends object, u extends object> = {
 		? t[k]
 		: ErrorMessage<`'${k & string}' is not a valid key`>
 }
+
+export type instanceOf<t> = t extends AbstractableConstructor<infer instance>
+	? instance
+	: never
 
 export type defer<t> = [t][t extends any ? 0 : never]
 

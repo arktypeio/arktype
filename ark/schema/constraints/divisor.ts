@@ -26,6 +26,12 @@ export class DivisorNode
 		rule: "in"
 	})
 
+	static intersections = this.defineIntersections({
+		divisor: (l, r) => ({
+			rule: (l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
+		})
+	})
+
 	static writeDefaultDescription(children: DivisorChildren) {
 		return children.rule === 1 ? "an integer" : `a multiple of ${children.rule}`
 	}
@@ -40,17 +46,6 @@ export class DivisorNode
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return writeIndivisibleMessage(getBasisName(basis))
-	}
-
-	intersectSymmetric(other: DivisorNode) {
-		return {
-			rule:
-				(this.rule * other.rule) / greatestCommonDivisor(this.rule, other.rule)
-		}
-	}
-
-	intersectAsymmetric() {
-		return null
 	}
 }
 
