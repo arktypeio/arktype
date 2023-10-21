@@ -1,22 +1,34 @@
 import type { listable } from "@arktype/util"
 import type { Node, Schema } from "../node.js"
 import type { BasisKind } from "./basis.js"
-import type { MaxNode, MinNode } from "./bounds.js"
-import type { DivisorNode } from "./divisor.js"
-import type { PatternNode } from "./pattern.js"
-import type { PredicateNode } from "./predicate.js"
-import type { PropNode } from "./prop.js"
+import { MaxNode, MinNode } from "./bounds.js"
+import { DivisorNode } from "./divisor.js"
+import { PatternNode } from "./pattern.js"
+import { PredicateNode } from "./predicate.js"
+import { PropNode } from "./prop.js"
 
-export type RefinementClassesByKind = {
-	divisor: typeof DivisorNode
-	min: typeof MinNode
-	max: typeof MaxNode
-	pattern: typeof PatternNode
-	prop: typeof PropNode
-	predicate: typeof PredicateNode
+export const refinementClassesByKind = {
+	divisor: DivisorNode,
+	min: MinNode,
+	max: MaxNode,
+	pattern: PatternNode,
+	prop: PropNode,
+	predicate: PredicateNode
 }
 
+export type RefinementClassesByKind = typeof refinementClassesByKind
+
 export type RefinementKind = keyof RefinementClassesByKind
+
+export type IrreducibleRefinementKind = {
+	[k in RefinementKind]: hasReducableIntersection<k> extends false ? k : never
+}[RefinementKind]
+
+export const irreducibleRefinementKinds = {
+	pattern: 1,
+	predicate: 1,
+	prop: 1
+} as const satisfies Record<IrreducibleRefinementKind, 1>
 
 type hasReducableIntersection<kind extends RefinementKind> =
 	null extends ReturnType<Node<kind>["intersectSymmetric"]> ? false : true

@@ -1,80 +1,67 @@
-import type { conform, listable } from "@arktype/util"
 import {
-	domainOf,
-	hasKey,
-	isKeyOf,
-	listFrom,
-	throwInternalError,
-	throwParseError,
-	transform
+	type conform,
+	type evaluate,
+	isArray,
+	type listable
 } from "@arktype/util"
-import type { Out } from "arktype/internal/parser/tuple.js"
-import { type BasisKind } from "../constraints/basis.js"
 import { type ConstraintKind } from "../constraints/constraint.js"
-import { DomainNode } from "../constraints/domain.js"
-import { ProtoNode } from "../constraints/proto.js"
-import type { RefinementKind } from "../constraints/refinement.js"
 import { UnitNode } from "../constraints/unit.js"
 import { Disjoint } from "../disjoint.js"
-import type {
-	BaseAttributes,
-	Children,
-	Node,
-	Schema,
-	StaticBaseNode
-} from "../node.js"
-import { baseAttributeKeys, BaseNode } from "../node.js"
+import type { BaseAttributes, Children, Node, Schema } from "../node.js"
+import { BaseNode } from "../node.js"
 import { inferred } from "../utils.js"
-import type {
-	BasisedBranchInput,
-	IntersectionChildren,
-	IntersectionSchema,
-	IrreducibleConstraintKind,
-	parseIntersection,
-	UnknownBranchInput,
-	validateIntersectionInput
-} from "./intersection.js"
 import {
-	intersectionChildClasses,
-	irreducibleChildClasses,
-	reducibleChildClasses
-} from "./intersection.js"
-import type {
-	MorphChildren,
-	MorphSchema,
-	parseMorph,
-	validateMorphInput
+	MorphNode,
+	type MorphSchema,
+	type parseMorph,
+	type validateMorphInput
 } from "./morph.js"
-import type {
-	BranchNode,
-	BranchSchema,
-	UnionChildren,
-	UnionSchema
-} from "./union.js"
+import {
+	type IntersectionSchema,
+	type parseIntersection,
+	type validateIntersectionInput,
+	ValidatorNode
+} from "./validator.js"
 
 const createBranches = (branches: readonly BranchSchema[]) =>
 	branches.map((branch) =>
 		typeof branch === "object" && "morph" in branch
 			? MorphNode.from(branch)
-			: IntersectionNode.from(branch)
+			: ValidatorNode.from(branch)
 	)
 
+export type BranchNode = ValidatorNode | MorphNode
+
+export interface UnionSchema extends BaseAttributes {
+	branches: readonly BranchSchema[]
+}
+
+export type TypeSchema = UnionSchema | BranchSchema
+
+export interface TypeChildren extends BaseAttributes {
+	branches: readonly BranchNode[]
+}
+
+export type BranchSchema = IntersectionSchema | MorphSchema
+
 export class TypeNode<t = unknown> extends BaseNode<
-	UnionChildren,
+	TypeChildren,
 	typeof TypeNode
 > {
 	declare infer: t;
 	declare [inferred]: t
 
-	readonly kind = "union"
+	readonly kind = "type"
 
 	static keyKinds = this.declareKeys({
 		branches: "in"
 	})
 
-	constructor(children: UnionChildren) {
+	constructor(children: TypeChildren) {
 		super(children)
 	}
+
+	only = this.branches.length === 1 ? this.branches[0] : undefined
 
 	static from(schema: UnionSchema) {
 		return new TypeNode({
@@ -83,10 +70,30 @@ export class TypeNode<t = unknown> extends BaseNode<
 		})
 	}
 
-	static writeDefaultDescription(children: UnionChildren) {
+	static writeDefaultDescription(children: TypeChildren) {
 		return children.branches.length === 0
 			? "never"
 			: children.branches.join(" or ")
+	}
+
+	unwrapOnly<kind extends UnwrappableKind>(kind: kind): Node<kind> | undefined
+	unwrapOnly(kind: UnwrappableKind) {
+		if (!this.only) {
+			return
+		}
+		if (kind === "morph") {
+			return this.only.kind === "morph" ? this.only : undefined
+		}
+		const onlyValidator = this.only.kind === "validator" ? this.only : undefined
+		if (kind === "validator") {
+			return onlyValidator
+		}
+		const onlyConstraintOfKind = onlyValidator?.[kind]
+		return isArray(onlyConstraintOfKind)
+			? onlyConstraintOfKind.length === 1
+				? onlyConstraintOfKind[0]
+				: undefined
+			: onlyConstraintOfKind
 	}
 
 	intersectSymmetric(other: TypeNode) {
@@ -107,13 +114,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 	}
 
 	constrain<kind extends ConstraintKind>(kind: kind, definition: Schema<kind>) {
-		const constraint = new (intersectionChildClasses[kind] as any)(definition)
-		// const constraints = addConstraint(t)
 		return this
-	}
-
-	extractUnit(): UnitNode | undefined {
-		return this.hasKind("intersection") ? this.unit : undefined
 	}
 
 	// references() {
@@ -144,27 +145,21 @@ export class TypeNode<t = unknown> extends BaseNode<
 
 	intersect<other extends TypeNode>(
 		other: other
-	): Node<intersectTypeKinds<this["kind"], other["kind"]>> | Disjoint {
-		const result = intersectTypeNodes(this as never, other as never)
-		if (result instanceof Disjoint || result instanceof TypeNode) {
-			// if the result is already instantiated (as opposed to a children object),
-			// we don't want to add metadata
-			return result as never
+	): TypeNode<this["infer"] & other["infer"]> | Disjoint {
+		const resultBranches = intersectBranches(this.branches, other.branches)
+		if (resultBranches instanceof Disjoint) {
+			return resultBranches
 		}
 		// TODO: meta
-		return "branches" in result
-			? new UnionNode(result)
-			: "morph" in result
-			? new MorphNode(result)
-			: (new IntersectionNode(result) as any)
+		return new TypeNode({ branches: resultBranches })
 	}
 
-	isUnknown(): this is IntersectionNode<unknown> {
-		return this.hasKind("intersection") ? this.constraints.length === 0 : false
+	isUnknown(): this is TypeNode<unknown> {
+		return this.unwrapOnly("validator")?.constraints.length === 0
 	}
 
-	isNever(): this is UnionNode<never> {
-		return this.hasKind("union") ? this.branches.length === 0 : false
+	isNever(): this is TypeNode<never> {
+		return this.branches.length === 0
 	}
 
 	getPath() {
@@ -183,37 +178,23 @@ export class TypeNode<t = unknown> extends BaseNode<
 
 export type TypeInput = listable<IntersectionSchema | MorphSchema>
 
+export type UnwrappableKind = "validator" | "morph" | ConstraintKind
+
 const finalizeBranchIntersection = (
 	resultBranches: ReturnType<typeof intersectBranches>
-): UnionChildren | BranchNode | Disjoint =>
+): TypeChildren | BranchNode | Disjoint =>
 	resultBranches instanceof Disjoint
 		? resultBranches
 		: resultBranches.length === 1
 		? resultBranches[0]
 		: { branches: resultBranches }
 
-const intersectTypeNodes = (
-	l: Node<TypeKind>,
-	r: Node<TypeKind>
-): Children<TypeKind> | Disjoint => {
-	if (l.kind === "union") {
-		if (r.kind === "union") {
-			return l.intersectSymmetric(r)
-		}
-		return finalizeBranchIntersection(intersectBranches(l.branches, [r]))
-	}
-	if (r.kind === "union") {
-		return finalizeBranchIntersection(intersectBranches([l], r.branches))
-	}
-	return intersectBranchNodes(l, r)
-}
-
 const intersectBranchNodes = (
 	l: BranchNode,
 	r: BranchNode
-): Children<"intersection" | "morph"> | Disjoint => {
-	if (l.kind === "intersection") {
-		if (r.kind === "intersection") {
+): Children<"validator" | "morph"> | Disjoint => {
+	if (l.kind === "validator") {
+		if (r.kind === "validator") {
 			return l.intersectSymmetric(r)
 		}
 		const inTersection = r.in ? l.intersect(r.in) : l
@@ -236,290 +217,24 @@ const intersectBranchNodes = (
 		  }
 }
 
-export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
-	readonly kind = "morph"
-
-	static keyKinds = this.declareKeys({
-		in: "in",
-		out: "out",
-		morph: "morph"
-	})
-
-	static writeDefaultDescription(children: MorphChildren) {
-		return ""
-	}
-
-	static from(schema: MorphSchema) {
-		const children = {} as MorphChildren
-		children.morph =
-			typeof schema.morph === "function" ? [schema.morph] : schema.morph
-		if (schema.in) {
-			children.in = IntersectionNode.from(schema.in)
-		}
-		if (schema.out) {
-			children.out = IntersectionNode.from(schema.out)
-		}
-		return new MorphNode(children)
-	}
-
-	intersectSymmetric(other: MorphNode): MorphChildren | Disjoint {
-		if (this.morph.some((morph, i) => morph !== other.morph[i])) {
-			// TODO: is this always a parse error? what about for union reduction etc.
-			return throwParseError(`Invalid intersection of morphs`)
-		}
-		const result: MorphChildren = {
-			morph: this.morph
-		}
-		if (this.in) {
-			if (other.in) {
-				const inTersection = this.in.intersect(other.in)
-				if (inTersection instanceof Disjoint) {
-					return inTersection
-				}
-				result.in = inTersection
-			} else {
-				result.in = this.in
-			}
-		} else if (other.in) {
-			result.in = other.in
-		}
-		if (this.out) {
-			if (other.out) {
-				const outTersection = this.out.intersect(other.out)
-				if (outTersection instanceof Disjoint) {
-					return outTersection
-				}
-				result.out = outTersection
-			} else {
-				result.out = this.out
-			}
-		} else if (other.out) {
-			result.out = other.out
-		}
-		return result
-	}
-}
-
-export class IntersectionNode extends BaseNode<
-	IntersectionChildren,
-	typeof IntersectionNode
-> {
-	readonly kind = "intersection"
-
-	static keyKinds = this.declareKeys(
-		transform(intersectionChildClasses, ([kind]) => [kind, "in"] as const)
-	)
-
-	declare constraints: readonly Node<ConstraintKind>[]
-	declare refinements: readonly Node<RefinementKind>[]
-	basis: Node<BasisKind> | undefined
-
-	constructor(children: IntersectionChildren) {
-		const rawConstraints = flattenConstraints(children)
-		const reducedConstraints = intersectConstraints([], rawConstraints)
-		if (reducedConstraints instanceof Disjoint) {
-			return reducedConstraints.throw()
-		}
-		let reducedChildren = children
-		if (reducedConstraints.length < rawConstraints.length) {
-			reducedChildren = unflattenConstraints(reducedConstraints)
-			if ("alias" in children) {
-				reducedChildren.alias = children.alias
-			}
-			if ("description" in children) {
-				reducedChildren.description = children.description
-			}
-		}
-		super(reducedChildren)
-		this.constraints = reducedConstraints
-		this.basis = this.constraints[0]?.isBasis()
-			? (this.constraints[0] as never)
-			: undefined
-		this.refinements = (
-			this.constraints[0]?.isBasis()
-				? this.constraints.slice(1)
-				: this.constraints
-		) as never
-		assertValidRefinements(this.basis, this.refinements)
-	}
-
-	static from(schema: IntersectionSchema) {
-		const children = parseIntersectionChildren(schema)
-		return new IntersectionNode(children)
-	}
-
-	static writeDefaultDescription(children: IntersectionChildren) {
-		const constraints = flattenConstraints(children)
-		return constraints.length === 0 ? "a value" : constraints.join(" and ")
-	}
-
-	intersectSymmetric(other: IntersectionNode): IntersectionChildren | Disjoint {
-		const constraints = intersectConstraints(
-			this.constraints,
-			other.constraints
-		)
-		return constraints instanceof Disjoint
-			? constraints
-			: unflattenConstraints(constraints)
-	}
-
-	filter<kind extends ConstraintKind>(kind: kind): Node<kind>[] {
-		return this.constraints.filter(
-			(node): node is Node<kind> => node.kind === kind
-		)
-	}
-
-	get<kind extends ConstraintKind>(
-		kind: kind
-	):
-		| (kind extends IrreducibleConstraintKind ? Node<kind>[] : Node<kind>)
-		| undefined
-	get(kind: ConstraintKind) {
-		const constraintsOfKind = this.filter(kind)
-		if (constraintsOfKind.length === 0) {
-			return
-		}
-		return isKeyOf(kind, irreducibleChildClasses)
-			? constraintsOfKind
-			: constraintsOfKind[0]
-	}
-}
-
-const flattenConstraints = (children: IntersectionChildren) =>
-	Object.values(children)
-		.flat()
-		.filter((v): v is Node<ConstraintKind> => v instanceof BaseNode)
-
-const unflattenConstraints = (constraints: readonly Node<ConstraintKind>[]) => {
-	return constraints.reduce<IntersectionChildren>((result, node) => {
-		if (isKeyOf(node.kind, irreducibleChildClasses)) {
-			const existing = result[node.kind] as
-				| Node<IrreducibleConstraintKind>[]
-				| undefined
-			if (existing) {
-				existing.push(node as never)
-			} else {
-				result[node.kind] = [node as never]
-			}
-		} else if (result[node.kind]) {
-			throwInternalError(
-				`Unexpected intersection of children of kind ${node.kind}`
-			)
-		} else {
-			result[node.kind] = node as never
-		}
-		return result
-	}, {})
-}
-
-const intersectConstraints = (
-	l: readonly Node<ConstraintKind>[],
-	r: readonly Node<ConstraintKind>[]
-) => {
-	let constraints: Node<ConstraintKind>[] | Disjoint = [...l]
-	for (const constraint of r) {
-		if (constraints instanceof Disjoint) {
-			break
-		}
-		constraints = addConstraint(constraints, constraint)
-	}
-	return constraints
-}
-
-const addConstraint = (
-	constraints: readonly Node<ConstraintKind>[],
-	constraint: Node<ConstraintKind>
-): Node<ConstraintKind>[] | Disjoint => {
-	const result: Node<ConstraintKind>[] = []
-	let includesConstraint = false
-	for (let i = 0; i < constraints.length; i++) {
-		const elementResult = constraint.intersect(constraints[i])
-		if (elementResult === null) {
-			result.push(constraints[i])
-		} else if (elementResult instanceof Disjoint) {
-			return elementResult
-		} else if (!includesConstraint) {
-			result.push(elementResult)
-			includesConstraint = true
-		} else if (!result.includes(elementResult)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
-			)
-		}
-	}
-	if (!includesConstraint) {
-		result.push(constraint)
-	}
-	return result
-}
-
-const assertValidRefinements: (
-	basis: Node<BasisKind> | undefined,
-	refinements: readonly Node<RefinementKind>[]
-) => asserts refinements is Node<RefinementKind>[] = (basis, refinements) => {
-	for (const refinement of refinements) {
-		if (!refinement.applicableTo(basis)) {
-			throwParseError(refinement.writeInvalidBasisMessage(basis))
-		}
-	}
-}
-
-const parseIntersectionChildren = (
-	schema: IntersectionSchema
-): IntersectionChildren => {
-	switch (typeof schema) {
-		case "string":
-			return { domain: DomainNode.from(schema) }
-		case "function":
-			return { proto: ProtoNode.from(schema) }
-		case "object":
-			if ("is" in schema) {
-				return { unit: UnitNode.from(schema) }
-			}
-			return parseIntersectionObjectSchema(schema)
-		default:
-			return throwParseError(
-				`${domainOf(schema)} is not a valid intersection schema input.`
-			)
-	}
-}
-
-const parseIntersectionObjectSchema = (
-	schema: UnknownBranchInput | BasisedBranchInput
-) =>
-	transform(schema as BasisedBranchInput, ([k, v]) =>
-		isKeyOf(k, irreducibleChildClasses)
-			? [
-					k,
-					listFrom(v).map((childSchema) =>
-						irreducibleChildClasses[k].from(childSchema as never)
-					)
-			  ]
-			: isKeyOf(k, reducibleChildClasses)
-			? [k, (reducibleChildClasses[k].from as any)(v)]
-			: isKeyOf(k, baseAttributeKeys)
-			? [k, v]
-			: throwParseError(`'${k}' is not valid on an intersection schema`)
-	)
-
 const parseNode = (...schemas: BranchSchema[]) => {
 	const branches = createBranches(schemas)
 	// DO reduce bitach
 	if (branches.length === 1) {
 		return branches[0]
 	}
-	return new UnionNode({ branches })
+	return new TypeNode({ branches })
 }
 
 const parseUnits = (...values: unknown[]) => {
 	// TODO: unique list, bypass validation
 	const branches = values.map(
-		(value) => new IntersectionNode({ unit: new UnitNode({ rule: value }) })
+		(value) => new ValidatorNode({ unit: new UnitNode({ rule: value }) })
 	)
 	if (branches.length === 1) {
 		return branches[0]
 	}
-	return new UnionNode({ branches })
+	return new TypeNode({ branches })
 }
 
 export const node = Object.assign(parseNode as NodeParser, {
@@ -553,7 +268,7 @@ type parseBranch<branch> = branch extends MorphSchema
 	? parseMorph<branch>
 	: branch extends IntersectionSchema
 	? parseIntersection<branch>
-	: IntersectionNode
+	: TypeNode
 
 type UnitsNodeParser = {
 	<const branches extends readonly unknown[]>(
@@ -564,7 +279,7 @@ type UnitsNodeParser = {
 type intersectTypeKinds<
 	l extends TypeKind,
 	r extends TypeKind
-> = "union" extends l | r
+> = "type" extends l | r
 	? // if either branch could be a union, the result could be
 	  // any kind depending on how it's reduced
 	  TypeKind
@@ -579,12 +294,12 @@ type intersectTypeKinds<
 	  l | r
 
 export type TypeClassesByKind = {
-	union: typeof UnionNode
+	type: typeof TypeNode
 	morph: typeof MorphNode
-	intersection: typeof IntersectionNode
+	validator: typeof ValidatorNode
 }
 
-export type TypeKind = keyof TypeClassesByKind
+export type TypeKind = evaluate<keyof TypeClassesByKind>
 
 export const intersectBranches = (
 	l: readonly BranchNode[],
@@ -661,3 +376,115 @@ export const intersectBranches = (
 	}
 	return finalBranches
 }
+
+// // discriminate is cached so we don't have to worry about this running multiple times
+// get discriminant() {
+// 	return discriminate(this.branches)
+// }
+
+export const reduceBranches = (branches: BranchNode[]) => {
+	if (branches.length < 2) {
+		return branches
+	}
+	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
+	for (let i = 0; i < branches.length; i++) {
+		for (
+			let j = i + 1;
+			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
+			j++
+		) {
+			if (branches[i] === branches[j]) {
+				// if the two branches are equal, only "j" is marked as
+				// redundant so at least one copy could still be included in
+				// the final set of branches.
+				uniquenessByIndex[j] = false
+				continue
+			}
+			const intersection = branches[i].intersect(branches[j])
+			if (intersection === branches[i]) {
+				uniquenessByIndex[i] = false
+			} else if (intersection === branches[j]) {
+				uniquenessByIndex[j] = false
+			}
+		}
+	}
+	return branches.filter((_, i) => uniquenessByIndex[i])
+}
+
+// export const compileDiscriminant = (
+// 	discriminant: Discriminant,
+// 	ctx: CompilationContext
+// ) => {
+// 	if (discriminant.isPureRootLiteral) {
+// 		// TODO: ctx?
+// 		return compileDiscriminatedLiteral(discriminant.cases)
+// 	}
+// 	let compiledPath = In
+// 	for (const segment of discriminant.path) {
+// 		// we need to access the path as optional so we don't throw if it isn't present
+// 		compiledPath += compilePropAccess(segment, true)
+// 	}
+// 	const condition =
+// 		discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
+// 	let compiledCases = ""
+// 	for (const k in discriminant.cases) {
+// 		const caseCondition = k === "default" ? "default" : `case ${k}`
+// 		const caseBranches = discriminant.cases[k]
+// 		ctx.discriminants.push(discriminant)
+// 		const caseChecks = isArray(caseBranches)
+// 			? compileIndiscriminable(caseBranches, ctx)
+// 			: compileDiscriminant(caseBranches, ctx)
+// 		ctx.discriminants.pop()
+// 		compiledCases += `${caseCondition}: {
+//     ${caseChecks ? `${caseChecks}\n     break` : "break"}
+// }`
+// 	}
+// 	if (!discriminant.cases.default) {
+// 		// TODO: error message for traversal
+// 		compiledCases += `default: {
+//     return false
+// }`
+// 	}
+// 	return `switch(${condition}) {
+//     ${compiledCases}
+// }`
+// }
+
+// const compileDiscriminatedLiteral = (cases: DiscriminatedCases) => {
+// 	// TODO: error messages for traversal
+// 	const caseKeys = Object.keys(cases)
+// 	if (caseKeys.length === 2) {
+// 		return `if( ${In} !== ${caseKeys[0]} && ${In} !== ${caseKeys[1]}) {
+//     return false
+// }`
+// 	}
+// 	// for >2 literals, we fall through all cases, breaking on the last
+// 	const compiledCases =
+// 		caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
+// 	// if none of the cases are met, the check fails (this is optimal for perf)
+// 	return `switch(${In}) {
+//     ${compiledCases}
+//     default:
+//         return false
+// }`
+// }
+
+// export const compileIndiscriminable = (
+// 	branches: readonly Predicate[],
+// 	ctx: CompilationContext
+// ) => {
+// 	if (branches.length === 0) {
+// 		return compileFailureResult("custom", "nothing", ctx)
+// 	}
+// 	if (branches.length === 1) {
+// 		return branches[0].compile(ctx)
+// 	}
+// 	return branches
+// 		.map(
+// 			(branch) => `(() => {
+// ${branch.compile(ctx)}
+// return true
+// })()`
+// 		)
+// 		.join(" || ")
+// }

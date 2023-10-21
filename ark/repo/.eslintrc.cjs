@@ -1,3 +1,4 @@
+// @ts-check
 const { defineConfig } = require("eslint-define-config")
 
 module.exports = defineConfig({
@@ -59,7 +60,12 @@ module.exports = defineConfig({
 			}
 		],
 		"@typescript-eslint/default-param-last": "warn",
-		"@typescript-eslint/consistent-type-imports": "warn",
+		"@typescript-eslint/consistent-type-imports": [
+			"warn",
+			{
+				fixStyle: "inline-type-imports"
+			}
+		],
 		"@typescript-eslint/no-empty-interface": "off",
 		/**
 		 * Require the use of arrow functions where possible
