@@ -4,18 +4,18 @@ import {
 	isArray,
 	type listable
 } from "@arktype/util"
-import { type ConstraintKind } from "../constraints/constraint.js"
-import { UnitNode } from "../constraints/unit.js"
-import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Children, Node, Schema } from "../node.js"
-import { BaseNode } from "../node.js"
-import { inferred } from "../utils.js"
+import { type ConstraintKind } from "./constraints/constraint.js"
+import { UnitNode } from "./constraints/unit.js"
+import { Disjoint } from "./disjoint.js"
 import {
 	MorphNode,
 	type MorphSchema,
 	type parseMorph,
 	type validateMorphInput
 } from "./morph.js"
+import type { BaseAttributes, Children, Node, Schema } from "./node.js"
+import { BaseNode } from "./node.js"
+import { inferred } from "./utils.js"
 import {
 	type IntersectionSchema,
 	type parseIntersection,
@@ -61,8 +61,6 @@ export class TypeNode<t = unknown> extends BaseNode<
 		super(children)
 	}
 
-	only = this.branches.length === 1 ? this.branches[0] : undefined
-
 	static from(schema: UnionSchema) {
 		return new TypeNode({
 			...schema,
@@ -75,6 +73,8 @@ export class TypeNode<t = unknown> extends BaseNode<
 			? "never"
 			: children.branches.join(" or ")
 	}
+
+	only = this.branches.length === 1 ? this.branches[0] : undefined
 
 	unwrapOnly<kind extends UnwrappableKind>(kind: kind): Node<kind> | undefined
 	unwrapOnly(kind: UnwrappableKind) {
@@ -94,23 +94,6 @@ export class TypeNode<t = unknown> extends BaseNode<
 				? onlyConstraintOfKind[0]
 				: undefined
 			: onlyConstraintOfKind
-	}
-
-	intersectSymmetric(other: TypeNode) {
-		if (
-			(this.branches.length === 0 || other.branches.length === 0) &&
-			this.branches.length !== other.branches.length
-		) {
-			// if exactly one operand is never, we can use it to discriminate based on presence
-			return Disjoint.from(
-				"presence",
-				this.branches.length !== 0,
-				other.branches.length !== 0
-			)
-		}
-		return finalizeBranchIntersection(
-			intersectBranches(this.branches, other.branches)
-		)
 	}
 
 	constrain<kind extends ConstraintKind>(kind: kind, definition: Schema<kind>) {
@@ -143,15 +126,28 @@ export class TypeNode<t = unknown> extends BaseNode<
 		return this as never
 	}
 
-	intersect<other extends TypeNode>(
-		other: other
-	): TypeNode<this["infer"] & other["infer"]> | Disjoint {
+	intersectSymmetric(other: TypeNode): TypeNode | Disjoint {
+		if (
+			(this.branches.length === 0 || other.branches.length === 0) &&
+			this.branches.length !== other.branches.length
+		) {
+			// if exactly one operand is never, we can use it to discriminate based on presence
+			return Disjoint.from(
+				"presence",
+				this.branches.length !== 0,
+				other.branches.length !== 0
+			)
+		}
 		const resultBranches = intersectBranches(this.branches, other.branches)
 		if (resultBranches instanceof Disjoint) {
 			return resultBranches
 		}
 		// TODO: meta
 		return new TypeNode({ branches: resultBranches })
+	}
+
+	intersectAsymmetric() {
+		return null
 	}
 
 	isUnknown(): this is TypeNode<unknown> {
@@ -170,7 +166,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		return this as never
 	}
 
-	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
+	extends<other extends TypeNode>(other: other): this is other {
 		const intersection = this.intersect(other)
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
@@ -178,24 +174,15 @@ export class TypeNode<t = unknown> extends BaseNode<
 
 export type TypeInput = listable<IntersectionSchema | MorphSchema>
 
-export type UnwrappableKind = "validator" | "morph" | ConstraintKind
-
-const finalizeBranchIntersection = (
-	resultBranches: ReturnType<typeof intersectBranches>
-): TypeChildren | BranchNode | Disjoint =>
-	resultBranches instanceof Disjoint
-		? resultBranches
-		: resultBranches.length === 1
-		? resultBranches[0]
-		: { branches: resultBranches }
+export type UnwrappableKind = BranchNode["kind"] | ConstraintKind
 
 const intersectBranchNodes = (
 	l: BranchNode,
 	r: BranchNode
-): Children<"validator" | "morph"> | Disjoint => {
+): Children<BranchNode["kind"]> | Disjoint => {
 	if (l.kind === "validator") {
 		if (r.kind === "validator") {
-			return l.intersectSymmetric(r)
+			return l.intersect(r)
 		}
 		const inTersection = r.in ? l.intersect(r.in) : l
 		return inTersection instanceof Disjoint

@@ -1,8 +1,9 @@
 import { type listable, throwParseError } from "@arktype/util"
-import { Disjoint } from "../disjoint.js"
-import type { Problem } from "../io/problems.js"
-import type { CheckResult, TraversalState } from "../io/traverse.js"
-import { type BaseAttributes, BaseNode } from "../node.js"
+import { Disjoint } from "./disjoint.js"
+import type { Problem } from "./io/problems.js"
+import type { CheckResult, TraversalState } from "./io/traverse.js"
+import { type BaseAttributes, BaseNode, type Children } from "./node.js"
+import { type BranchNode } from "./type.js"
 import { ValidatorNode } from "./validator.js"
 import type {
 	IntersectionSchema,
@@ -85,6 +86,16 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 			result.out = other.out
 		}
 		return result
+	}
+
+	intersectAsymmetric(r: ValidatorNode) {
+		const inTersection = this.in?.intersect(r) ?? r
+		return inTersection instanceof Disjoint
+			? inTersection
+			: {
+					...this.children,
+					in: inTersection
+			  }
 	}
 }
 

@@ -7,8 +7,9 @@ import type {
 } from "@arktype/util"
 import { DynamicBase, isArray } from "@arktype/util"
 import type { ConstraintClassesByKind } from "./constraints/constraint.js"
+import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue } from "./io/compile.js"
-import type { TypeClassesByKind, validateBranchInput } from "./types/type.js"
+import type { TypeClassesByKind, validateBranchInput } from "./type.js"
 
 export interface BaseAttributes {
 	alias?: string
@@ -144,6 +145,53 @@ export abstract class BaseNode<
 
 	toString() {
 		return this.description
+	}
+
+	abstract intersectSymmetric(
+		other: Node<this["kind"]>
+	): Children<this["kind"]> | Disjoint | null
+
+	abstract intersectAsymmetric(
+		other: never
+	): Children<this["kind"]> | Disjoint | null
+
+	intersect<
+		other extends Parameters<
+			InstanceType<nodeClass>["intersectSymmetric" | "intersectAsymmetric"]
+		>[0]
+	>(
+		other: other
+	):
+		| Node<other["kind"] | this["kind"]>
+		| (other extends InstanceType<nodeClass>
+				? never
+				: Extract<
+						Disjoint | null,
+						ReturnType<(this | other)["intersectAsymmetric"]>
+				  >)
+	intersect(other: BaseNode<Record<string, unknown>, any>) {
+		if (other.ids.morph === this.ids.morph) {
+			// TODO: meta
+			return this
+		}
+		if (other.kind === this.kind) {
+			return this.intersectSymmetric(other as never)
+		}
+		let resultClass: StaticBaseNode<any> | undefined
+		let result = this.intersectAsymmetric(other as never)
+		if (result) {
+			resultClass = this.nodeClass as never
+		} else {
+			result = other.intersectAsymmetric(this as never)
+			if (result) {
+				resultClass === other.nodeClass
+			}
+		}
+		if (result === null || result instanceof Disjoint) {
+			return result
+		}
+		// TODO: Add meta
+		return new resultClass!(result)
 	}
 }
 

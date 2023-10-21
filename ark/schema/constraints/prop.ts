@@ -1,7 +1,7 @@
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
-import { type TypeInput, TypeNode } from "../types/type.js"
+import { type TypeInput, TypeNode } from "../type.js"
 import type { BasisKind } from "./basis.js"
 import { BaseConstraint, getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
