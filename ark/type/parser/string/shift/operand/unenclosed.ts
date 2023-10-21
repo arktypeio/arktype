@@ -1,5 +1,5 @@
 import type { TypeNode } from "@arktype/schema"
-import { BaseType, node } from "@arktype/schema"
+import { TypeNode, node } from "@arktype/schema"
 import type {
 	BigintLiteral,
 	Completion,
@@ -128,7 +128,7 @@ const maybeParseReference = (
 		return s.ctx.args[token]
 	}
 	const resolution = s.ctx.scope.maybeResolve(token)
-	if (resolution instanceof BaseType) {
+	if (resolution instanceof TypeNode) {
 		return resolution
 	}
 	if (resolution === undefined) {

@@ -1,5 +1,5 @@
 import type { CastTo, TypeNode } from "@arktype/schema"
-import { BaseType, node } from "@arktype/schema"
+import { TypeNode, node } from "@arktype/schema"
 import type {
 	defined,
 	Dict,
@@ -36,7 +36,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case "Object":
-			if (def instanceof BaseType) {
+			if (def instanceof TypeNode) {
 				return def
 			}
 			return parseObjectLiteral(def as Dict, ctx)

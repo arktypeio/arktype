@@ -2,7 +2,7 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseAttributes, Node } from "../node.js"
 import type { TypeInput, TypeNode } from "../types/type.js"
-import { BaseType } from "../types/type.js"
+import { TypeNode } from "../types/type.js"
 import type { BasisKind } from "./basis.js"
 import { BaseConstraint, getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -68,7 +68,7 @@ export class PropNode
 
 	// TODO: split into multiple prop kinds
 	intersectSymmetric(other: PropNode): PropChildren | Disjoint | null {
-		if (this.key instanceof BaseType || other.key instanceof BaseType) {
+		if (this.key instanceof TypeNode || other.key instanceof TypeNode) {
 			return null
 		}
 		if (this.key !== other.key) {

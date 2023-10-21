@@ -59,17 +59,52 @@ const createBranches = (branches: readonly BranchSchema[]) =>
 			: IntersectionNode.from(branch)
 	)
 
-export type TypeNode<t = unknown> = BaseType<t, {}, any>
-
-export abstract class BaseType<
-	t,
-	children extends BaseAttributes,
-	nodeClass extends StaticBaseNode<children>
-> extends BaseNode<children, nodeClass> {
-	abstract kind: TypeKind
-
+export class TypeNode<t = unknown> extends BaseNode<
+	UnionChildren,
+	typeof TypeNode
+> {
 	declare infer: t;
 	declare [inferred]: t
+
+	readonly kind = "union"
+
+	static keyKinds = this.declareKeys({
+		branches: "in"
+	})
+
+	constructor(children: UnionChildren) {
+		super(children)
+	}
+
+	static from(schema: UnionSchema) {
+		return new TypeNode({
+			...schema,
+			branches: createBranches(schema.branches)
+		})
+	}
+
+	static writeDefaultDescription(children: UnionChildren) {
+		return children.branches.length === 0
+			? "never"
+			: children.branches.join(" or ")
+	}
+
+	intersectSymmetric(other: TypeNode) {
+		if (
+			(this.branches.length === 0 || other.branches.length === 0) &&
+			this.branches.length !== other.branches.length
+		) {
+			// if exactly one operand is never, we can use it to discriminate based on presence
+			return Disjoint.from(
+				"presence",
+				this.branches.length !== 0,
+				other.branches.length !== 0
+			)
+		}
+		return finalizeBranchIntersection(
+			intersectBranches(this.branches, other.branches)
+		)
+	}
 
 	constrain<kind extends ConstraintKind>(kind: kind, definition: Schema<kind>) {
 		const constraint = new (intersectionChildClasses[kind] as any)(definition)
@@ -111,7 +146,7 @@ export abstract class BaseType<
 		other: other
 	): Node<intersectTypeKinds<this["kind"], other["kind"]>> | Disjoint {
 		const result = intersectTypeNodes(this as never, other as never)
-		if (result instanceof Disjoint || result instanceof BaseType) {
+		if (result instanceof Disjoint || result instanceof TypeNode) {
 			// if the result is already instantiated (as opposed to a children object),
 			// we don't want to add metadata
 			return result as never
@@ -147,52 +182,6 @@ export abstract class BaseType<
 }
 
 export type TypeInput = listable<IntersectionSchema | MorphSchema>
-
-export class UnionNode<t = unknown> extends BaseType<
-	t,
-	UnionChildren,
-	typeof UnionNode
-> {
-	readonly kind = "union"
-
-	static keyKinds = this.declareKeys({
-		branches: "in"
-	})
-
-	constructor(children: UnionChildren) {
-		super(children)
-	}
-
-	static from(schema: UnionSchema) {
-		return new UnionNode({
-			...schema,
-			branches: createBranches(schema.branches)
-		})
-	}
-
-	static writeDefaultDescription(children: UnionChildren) {
-		return children.branches.length === 0
-			? "never"
-			: children.branches.join(" or ")
-	}
-
-	intersectSymmetric(other: UnionNode) {
-		if (
-			(this.branches.length === 0 || other.branches.length === 0) &&
-			this.branches.length !== other.branches.length
-		) {
-			// if exactly one operand is never, we can use it to discriminate based on presence
-			return Disjoint.from(
-				"presence",
-				this.branches.length !== 0,
-				other.branches.length !== 0
-			)
-		}
-		return finalizeBranchIntersection(
-			intersectBranches(this.branches, other.branches)
-		)
-	}
-}
 
 const finalizeBranchIntersection = (
 	resultBranches: ReturnType<typeof intersectBranches>
@@ -247,11 +236,7 @@ const intersectBranchNodes = (
 		  }
 }
 
-export class MorphNode<i = any, o = unknown> extends BaseType<
-	(In: i) => Out<o>,
-	MorphChildren,
-	typeof MorphNode
-> {
+export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 	readonly kind = "morph"
 
 	static keyKinds = this.declareKeys({
@@ -259,10 +244,6 @@ export class MorphNode<i = any, o = unknown> extends BaseType<
 		out: "out",
 		morph: "morph"
 	})
-
-	constructor(children: MorphChildren) {
-		super(children)
-	}
 
 	static writeDefaultDescription(children: MorphChildren) {
 		return ""
@@ -319,8 +300,7 @@ export class MorphNode<i = any, o = unknown> extends BaseType<
 	}
 }
 
-export class IntersectionNode<t = unknown> extends BaseType<
-	t,
+export class IntersectionNode extends BaseNode<
 	IntersectionChildren,
 	typeof IntersectionNode
 > {
