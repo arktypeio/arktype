@@ -1,7 +1,5 @@
 import type { extend } from "@arktype/util"
-import { type Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Children, Node, StaticBaseNode } from "../node.js"
-import { BaseNode } from "../node.js"
+import type { Node } from "../node.js"
 import type { BasisClassesByKind, BasisKind } from "./basis.js"
 import type { RefinementClassesByKind } from "./refinement.js"
 

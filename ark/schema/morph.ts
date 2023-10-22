@@ -69,6 +69,15 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 				result.out = r.out
 			}
 			return result
+		},
+		validator: (l, r) => {
+			const inTersection = l.in?.intersect(r) ?? r
+			return inTersection instanceof Disjoint
+				? inTersection
+				: {
+						...l.children,
+						in: inTersection
+				  }
 		}
 	})
 
@@ -87,16 +96,6 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 			children.out = ValidatorNode.from(schema.out)
 		}
 		return new MorphNode(children)
-	}
-
-	intersectAsymmetric(r: ValidatorNode) {
-		const inTersection = this.in?.intersect(r) ?? r
-		return inTersection instanceof Disjoint
-			? inTersection
-			: {
-					...this.children,
-					in: inTersection
-			  }
 	}
 }
 

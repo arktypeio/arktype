@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import type { TypeNode } from "./ark/schema/main.js"
+import { MorphNode, type TypeNode, ValidatorNode } from "./ark/schema/main.js"
 import { Disjoint, node } from "./ark/schema/main.js"
 
 const compileType = (node: TypeNode) => {
@@ -12,6 +12,10 @@ const compileType = (node: TypeNode) => {
 			return node.description
 	}
 }
+
+const f = new ValidatorNode({ branches: [] }).intersect(
+	new MorphNode({ branches: [] })
+)
 
 const l = node(
 	{

@@ -1,15 +1,13 @@
 import type {
 	AbstractableConstructor,
 	conform,
-	Constructor,
 	Dict,
 	evaluate,
 	extend,
 	Fn,
 	instanceOf,
 	isAny,
-	Json,
-	PartialRecord
+	Json
 } from "@arktype/util"
 import { DynamicBase, isArray } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
@@ -206,14 +204,24 @@ export abstract class BaseNode<
 	intersect<other extends Node>(
 		other: other
 	): other["kind"] extends keyof nodeClass["intersections"]
-		? ReturnType<nodeClass["intersections"][other["kind"]] & {}>
+		? ReturnType<
+				nodeClass["intersections"][other["kind"]] & {}
+		  > extends infer lrIntersection
+			? lrIntersection extends null | Disjoint
+				? lrIntersection
+				: Node<this["kind"]>
+			: never
 		: other["nodeClass"]["intersections"] extends Record<
 				this["kind"],
-				infer intersection extends Fn
+				Fn<never, infer rlIntersection>
 		  >
-		? ReturnType<intersection>
+		? rlIntersection extends null | Disjoint
+			? rlIntersection
+			: Node<other["kind"]>
 		: null
-	intersect(other: BaseNode<BaseAttributes, StaticBaseNode<BaseAttributes>>) {
+	intersect(
+		other: BaseNode<BaseAttributes, StaticBaseNode<BaseAttributes>>
+	): BaseNode<any, any> | Disjoint | null {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta
 			return this

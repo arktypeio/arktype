@@ -13,7 +13,7 @@ import {
 	type parseMorph,
 	type validateMorphInput
 } from "./morph.js"
-import type { BaseAttributes, Children, Node, Schema } from "./node.js"
+import type { BaseAttributes, Node, Schema } from "./node.js"
 import { BaseNode } from "./node.js"
 import { inferred } from "./utils.js"
 import {
