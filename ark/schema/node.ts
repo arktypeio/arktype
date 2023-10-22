@@ -7,7 +7,8 @@ import type {
 	Fn,
 	instanceOf,
 	isAny,
-	Json
+	Json,
+	returnOf
 } from "@arktype/util"
 import { DynamicBase, isArray } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
@@ -203,22 +204,7 @@ export abstract class BaseNode<
 
 	intersect<other extends Node>(
 		other: other
-	): other["kind"] extends keyof nodeClass["intersections"]
-		? ReturnType<
-				nodeClass["intersections"][other["kind"]] & {}
-		  > extends infer lrIntersection
-			? lrIntersection extends null | Disjoint
-				? lrIntersection
-				: Node<this["kind"]>
-			: never
-		: other["nodeClass"]["intersections"] extends Record<
-				this["kind"],
-				Fn<never, infer rlIntersection>
-		  >
-		? rlIntersection extends null | Disjoint
-			? rlIntersection
-			: Node<other["kind"]>
-		: null
+	): IntersectionResult<this["kind"], other["kind"]>
 	intersect(
 		other: BaseNode<BaseAttributes, StaticBaseNode<BaseAttributes>>
 	): BaseNode<any, any> | Disjoint | null {
@@ -245,6 +231,23 @@ export abstract class BaseNode<
 		return null
 	}
 }
+
+type IntersectionResult<
+	l extends NodeKind,
+	r extends NodeKind
+> = r extends keyof NodeClass<l>["intersections"]
+	? instantiateIntersection<l, returnOf<NodeClass<l>["intersections"][r]>>
+	: NodeClass<r>["intersections"] extends Record<
+			r,
+			Fn<never, infer rlIntersection>
+	  >
+	? instantiateIntersection<r, rlIntersection>
+	: null
+
+type instantiateIntersection<
+	kind extends NodeKind,
+	result
+> = result extends null | Disjoint ? result : Node<kind>
 
 export class NodeIds {
 	private cache: { -readonly [k in keyof NodeIds]?: string } = {}

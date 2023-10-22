@@ -1,6 +1,7 @@
 import {
 	type conform,
 	type evaluate,
+	hasKey,
 	isArray,
 	type listable
 } from "@arktype/util"
@@ -22,13 +23,6 @@ import {
 	type validateIntersectionInput,
 	ValidatorNode
 } from "./validator.js"
-
-const createBranches = (branches: readonly BranchSchema[]) =>
-	branches.map((branch) =>
-		typeof branch === "object" && "morph" in branch
-			? MorphNode.from(branch)
-			: ValidatorNode.from(branch)
-	)
 
 export type BranchNode = ValidatorNode | MorphNode
 
@@ -82,11 +76,29 @@ export class TypeNode<t = unknown> extends BaseNode<
 		super(children)
 	}
 
-	static from(schema: UnionSchema) {
-		return new TypeNode({
-			...schema,
-			branches: createBranches(schema.branches)
-		})
+	static from<const branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: validateBranchInput<branches[i]>
+		}
+	): parseNode<branches>
+	static from(...schemas: BranchSchema[]) {
+		const branches = schemas.map((branch) =>
+			typeof branch === "object" && "morph" in branch
+				? MorphNode.from(branch)
+				: ValidatorNode.from(branch)
+		)
+		return new TypeNode({ branches })
+	}
+
+	static fromUnits<const branches extends readonly unknown[]>(
+		...branches: branches
+	): TypeNode<branches[number]>
+	static fromUnits(...values: unknown[]) {
+		// TODO: unique list, bypass validation
+		const branches = values.map(
+			(value) => new ValidatorNode({ unit: new UnitNode({ rule: value }) })
+		)
+		return new TypeNode({ branches })
 	}
 
 	static writeDefaultDescription(children: TypeChildren) {
@@ -173,37 +185,9 @@ export type TypeInput = listable<IntersectionSchema | MorphSchema>
 
 export type UnwrappableKind = BranchNode["kind"] | ConstraintKind
 
-const parseNode = (...schemas: BranchSchema[]) => {
-	const branches = createBranches(schemas)
-	// DO reduce bitach
-	if (branches.length === 1) {
-		return branches[0]
-	}
-	return new TypeNode({ branches })
-}
-
-const parseUnits = (...values: unknown[]) => {
-	// TODO: unique list, bypass validation
-	const branches = values.map(
-		(value) => new ValidatorNode({ unit: new UnitNode({ rule: value }) })
-	)
-	if (branches.length === 1) {
-		return branches[0]
-	}
-	return new TypeNode({ branches })
-}
-
-export const node = Object.assign(parseNode as NodeParser, {
-	units: parseUnits as UnitsNodeParser
+export const node = Object.assign(TypeNode.from, {
+	units: TypeNode.fromUnits
 })
-
-type NodeParser = {
-	<const branches extends readonly unknown[]>(
-		...branches: {
-			[i in keyof branches]: validateBranchInput<branches[i]>
-		}
-	): parseNode<branches>
-}
 
 type parseNode<branches extends readonly unknown[]> = {
 	[i in keyof branches]: parseBranch<branches[i]>
@@ -225,29 +209,6 @@ type parseBranch<branch> = branch extends MorphSchema
 	: branch extends IntersectionSchema
 	? parseIntersection<branch>
 	: TypeNode
-
-type UnitsNodeParser = {
-	<const branches extends readonly unknown[]>(
-		...branches: branches
-	): TypeNode<branches[number]>
-}
-
-type intersectTypeKinds<
-	l extends TypeKind,
-	r extends TypeKind
-> = "type" extends l | r
-	? // if either branch could be a union, the result could be
-	  // any kind depending on how it's reduced
-	  TypeKind
-	: // if either branch is exactly "morph", we know the result will
-	// also be a morph
-	l extends "morph"
-	? "morph"
-	: r extends "morph"
-	? "morph"
-	: // otherwise, it is an intersection or possibly a morph depending
-	  // on unknown kind inputs (e.g. BranchNode)
-	  l | r
 
 export type TypeClassesByKind = {
 	type: typeof TypeNode

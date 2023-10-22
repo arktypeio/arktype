@@ -5,6 +5,10 @@ export type Fn<
 	returns = unknown
 > = (...args: args) => returns
 
+export type paramsOf<t> = t extends Fn<infer p> ? p : never
+
+export type returnOf<t> = t extends Fn<never, infer r> ? r : never
+
 export const cached = <T>(thunk: () => T) => {
 	let isCached = false
 	let result: T | undefined
