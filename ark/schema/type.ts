@@ -18,6 +18,7 @@ import type { BaseAttributes, Node, Schema } from "./node.js"
 import { BaseNode } from "./node.js"
 import { inferred } from "./utils.js"
 import {
+	constraintClassesByKind,
 	type IntersectionSchema,
 	type parseIntersection,
 	type validateIntersectionInput,
@@ -52,6 +53,14 @@ export class TypeNode<t = unknown> extends BaseNode<
 		branches: "in"
 	})
 
+	private static intersectBranch = (l: TypeNode, r: BranchNode) => {
+		const resultBranches = intersectBranches(l.branches, [r])
+		if (resultBranches instanceof Disjoint) {
+			return resultBranches
+		}
+		return { branches: resultBranches }
+	}
+
 	static intersections = this.defineIntersections({
 		type: (l, r) => {
 			if (
@@ -70,6 +79,22 @@ export class TypeNode<t = unknown> extends BaseNode<
 				return resultBranches
 			}
 			return { branches: resultBranches }
+		},
+		morph: this.intersectBranch,
+		validator: this.intersectBranch,
+		constraint: (l, r) => {
+			const branches: BranchNode[] = []
+			for (const branch of l.branches) {
+				const branchResult = branch.intersect(r)
+				if (!(branchResult instanceof Disjoint)) {
+					branches.push(branchResult)
+				}
+			}
+			return branches.length === 0
+				? Disjoint.from("union", l.branches, r)
+				: {
+						branches
+				  }
 		}
 	})
 
@@ -130,8 +155,14 @@ export class TypeNode<t = unknown> extends BaseNode<
 			: onlyConstraintOfKind
 	}
 
-	constrain<kind extends ConstraintKind>(kind: kind, definition: Schema<kind>) {
-		return this
+	constrain<kind extends ConstraintKind>(
+		kind: kind,
+		definition: Schema<kind>
+	): TypeNode {
+		const result = this.intersect(
+			(constraintClassesByKind[kind].from as any)(definition)
+		)
+		return result instanceof Disjoint ? result.throw() : result
 	}
 
 	// references() {

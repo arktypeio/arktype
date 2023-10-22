@@ -237,6 +237,11 @@ type IntersectionResult<
 	r extends NodeKind
 > = r extends keyof NodeClass<l>["intersections"]
 	? instantiateIntersection<l, returnOf<NodeClass<l>["intersections"][r]>>
+	: [r, NodeClass<l>["intersections"]] extends [
+			ConstraintKind,
+			Record<"constraint", Fn<never, infer lrIntersection>>
+	  ]
+	? instantiateIntersection<l, lrIntersection>
 	: NodeClass<r>["intersections"] extends Record<
 			r,
 			Fn<never, infer rlIntersection>

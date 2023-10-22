@@ -50,10 +50,15 @@ type DisjointKinds = {
 				l: Node<ConstraintKind>
 				r: unknown
 		  }
-	union?: {
-		l: readonly BranchNode[]
-		r: readonly BranchNode[]
-	}
+	union?:
+		| {
+				l: readonly BranchNode[]
+				r: readonly BranchNode[] | Node<ConstraintKind>
+		  }
+		| {
+				l: readonly BranchNode[] | Node<ConstraintKind>
+				r: readonly BranchNode[]
+		  }
 }
 
 export type DisjointKindEntries = entryOf<DisjointKinds>[]

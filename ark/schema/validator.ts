@@ -39,7 +39,7 @@ import {
 	type Schema
 } from "./node.js"
 
-const constraintClassesByKind = {
+export const constraintClassesByKind = {
 	...refinementClassesByKind,
 	...basisClassesByKind
 }
@@ -66,6 +66,12 @@ export class ValidatorNode extends BaseNode<
 	static intersections = this.defineIntersections({
 		validator: (l, r) => {
 			const constraints = intersectConstraints(l.constraints, r.constraints)
+			return constraints instanceof Disjoint
+				? constraints
+				: unflattenConstraints(constraints)
+		},
+		constraint: (l, r) => {
+			const constraints = addConstraint(l.constraints, r)
 			return constraints instanceof Disjoint
 				? constraints
 				: unflattenConstraints(constraints)
@@ -116,27 +122,6 @@ export class ValidatorNode extends BaseNode<
 	static writeDefaultDescription(children: ValidatorChildren) {
 		const constraints = flattenConstraints(children)
 		return constraints.length === 0 ? "a value" : constraints.join(" and ")
-	}
-
-	filter<kind extends ConstraintKind>(kind: kind): Node<kind>[] {
-		return this.constraints.filter(
-			(node): node is Node<kind> => node.kind === kind
-		)
-	}
-
-	get<kind extends ConstraintKind>(
-		kind: kind
-	):
-		| (kind extends IrreducibleRefinementKind ? Node<kind>[] : Node<kind>)
-		| undefined
-	get(kind: ConstraintKind) {
-		const constraintsOfKind = this.filter(kind)
-		if (constraintsOfKind.length === 0) {
-			return
-		}
-		return isKeyOf(kind, irreducibleRefinementKinds)
-			? constraintsOfKind
-			: constraintsOfKind[0]
 	}
 }
 

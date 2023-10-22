@@ -6,11 +6,11 @@ const l = node(
 	{
 		domain: "number",
 		divisor: 2
+	},
+	{
+		domain: "number",
+		divisor: 3
 	}
-	// {
-	// 	domain: "number",
-	// 	divisor: 3
-	// }
 )
 
 const r = node({

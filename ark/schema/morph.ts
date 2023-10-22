@@ -1,5 +1,6 @@
 import { type listable, throwParseError } from "@arktype/util"
 import { type Out } from "arktype/internal/parser/tuple.js"
+import { builtins } from "./builtins.js"
 import { Disjoint } from "./disjoint.js"
 import type { Problem } from "./io/problems.js"
 import type { CheckResult, TraversalState } from "./io/traverse.js"
@@ -78,6 +79,16 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 				: {
 						...l.children,
 						in: inTersection
+				  }
+		},
+		constraint: (l, r): MorphChildren | Disjoint => {
+			const input = l.in ?? builtins.unknown().unwrapOnly("validator")!
+			const constrainedInput = input.intersect(r)
+			return constrainedInput instanceof Disjoint
+				? constrainedInput
+				: {
+						...l.children,
+						in: constrainedInput
 				  }
 		}
 	})
