@@ -1,8 +1,7 @@
 import type { Domain, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes } from "../node.js"
+import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
-import { BaseConstraint } from "./constraint.js"
 
 export interface DomainChildren<
 	rule extends NonEnumerableDomain = NonEnumerableDomain
@@ -21,10 +20,10 @@ export class DomainNode<
 		// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
 		out rule extends NonEnumerableDomain = NonEnumerableDomain
 	>
-	extends BaseConstraint<DomainChildren<rule>, typeof DomainNode>
+	extends BaseNode<DomainChildren<rule>, typeof DomainNode>
 	implements BaseBasis
 {
-	readonly kind = "domain"
+	static readonly kind = "domain"
 
 	declare infer: inferDomain<rule>
 
@@ -44,13 +43,9 @@ export class DomainNode<
 		return domainDescriptions[children.rule]
 	}
 
-	intersectSymmetric(other: DomainNode) {
-		return Disjoint.from("domain", this, other)
-	}
-
-	intersectAsymmetric() {
-		return null
-	}
+	static intersections = this.defineIntersections({
+		domain: (l, r) => Disjoint.from("domain", l, r)
+	})
 }
 
 const enumerableDomainDescriptions = {

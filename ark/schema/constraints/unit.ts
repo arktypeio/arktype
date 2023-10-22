@@ -1,9 +1,7 @@
 import { hasKey, stringify, throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes, Node } from "../node.js"
-import type { BaseBasis, BasisKind } from "./basis.js"
-import { BaseConstraint } from "./constraint.js"
+import { type BaseAttributes, BaseNode } from "../node.js"
+import type { BaseBasis } from "./basis.js"
 
 export interface UnitChildren<rule = unknown> extends BaseAttributes {
 	readonly rule: rule
@@ -18,10 +16,10 @@ export type UnitSchema<rule = unknown> =
 	| CollapsedUnitSchema<rule>
 
 export class UnitNode<const rule = unknown>
-	extends BaseConstraint<UnitChildren<rule>, typeof UnitNode>
+	extends BaseNode<UnitChildren<rule>, typeof UnitNode>
 	implements BaseBasis
 {
-	readonly kind = "unit"
+	static readonly kind = "unit"
 	readonly is = this.rule
 	declare infer: rule
 
@@ -30,6 +28,12 @@ export class UnitNode<const rule = unknown>
 
 	static keyKinds = this.declareKeys({
 		rule: "in"
+	})
+
+	static intersections = this.defineIntersections({
+		unit: (l, r) => Disjoint.from("unit", l, r),
+		constraint: (l, r) =>
+			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
 	})
 
 	static from<const rule>(schema: UnitSchema<rule>) {
@@ -46,16 +50,5 @@ export class UnitNode<const rule = unknown>
 
 	static writeDefaultDescription(children: UnitChildren) {
 		return stringify(children.rule)
-	}
-
-	// id:
-	// compileSerializedValue(this.rule)
-
-	intersectSymmetric(other: UnitNode): Disjoint {
-		return Disjoint.from("unit", this, other)
-	}
-
-	intersectAsymmetric() {
-		return null
 	}
 }

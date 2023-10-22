@@ -1,8 +1,7 @@
-import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import type { BaseAttributes, Node } from "../node.js"
+import { type BaseAttributes, BaseNode, type Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
-import { BaseConstraint, getBasisName } from "./constraint.js"
+import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -17,13 +16,17 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| PredicateChildren<rule>
 
 export class PredicateNode<rule extends Predicate = Predicate>
-	extends BaseConstraint<PredicateChildren<rule>, typeof PredicateNode>
+	extends BaseNode<PredicateChildren<rule>, typeof PredicateNode>
 	implements BaseRefinement
 {
-	readonly kind = "predicate"
+	static readonly kind = "predicate"
 
 	static keyKinds = this.declareKeys({
 		rule: "in"
+	})
+
+	static intersections = this.defineIntersections({
+		predicate: () => null
 	})
 
 	// id
@@ -49,14 +52,6 @@ export class PredicateNode<rule extends Predicate = Predicate>
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `${this} cannot narrow ${getBasisName(basis)}`
-	}
-
-	intersectSymmetric() {
-		return null
-	}
-
-	intersectAsymmetric() {
-		return null
 	}
 }
 

@@ -1,7 +1,7 @@
 import { throwParseError } from "@arktype/util"
-import type { BaseAttributes, Node } from "../node.js"
+import { type BaseAttributes, BaseNode, type Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
-import { BaseConstraint, getBasisName } from "./constraint.js"
+import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
@@ -13,14 +13,19 @@ export interface PatternChildren extends BaseAttributes {
 export type PatternSchema = RegexLiteral | RegExp | PatternChildren
 
 export class PatternNode
-	extends BaseConstraint<PatternChildren, typeof PatternNode>
+	extends BaseNode<PatternChildren, typeof PatternNode>
 	implements BaseRefinement
 {
-	readonly kind = "pattern"
+	static readonly kind = "pattern"
 
 	static keyKinds = this.declareKeys({
 		rule: "in",
 		flags: "in"
+	})
+
+	static intersections = this.defineIntersections({
+		// For now, non-equal regex are naively intersected
+		pattern: () => null
 	})
 
 	instance = new RegExp(this.rule, this.flags)
@@ -50,15 +55,6 @@ export class PatternNode
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `Match operand ${getBasisName(basis)} must be a string`
-	}
-
-	// For now, non-equal regex are naively intersected
-	intersectSymmetric() {
-		return null
-	}
-
-	intersectAsymmetric() {
-		return null
 	}
 }
 

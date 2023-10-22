@@ -1,6 +1,6 @@
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node } from "../node.js"
+import { type BaseAttributes, BaseNode, type Node } from "../node.js"
 import { type TypeInput, TypeNode } from "../type.js"
 import type { BasisKind } from "./basis.js"
 import { BaseConstraint, getBasisName } from "./constraint.js"
@@ -31,16 +31,44 @@ export interface PropSchema extends BaseAttributes {
 }
 
 export class PropNode
-	extends BaseConstraint<PropChildren, typeof PropNode>
+	extends BaseNode<PropChildren, typeof PropNode>
 	implements BaseRefinement
 {
 	readonly optional = this.children.optional ?? false
-	readonly kind = "prop"
+	static readonly kind = "prop"
 
 	static keyKinds = this.declareKeys({
 		key: "in",
 		value: "in",
 		optional: "in"
+	})
+
+	static intersections = this.defineIntersections({
+		prop: (l, r) => {
+			if (l.key instanceof TypeNode || r.key instanceof TypeNode) {
+				return null
+			}
+			if (l.key !== r.key) {
+				return null
+			}
+			const key = l.key
+			const optional = l.optional && r.optional
+			const value = l.value.intersect(r.value)
+			if (value instanceof Disjoint) {
+				return optional
+					? value
+					: {
+							key,
+							optional,
+							value: builtins.never()
+					  }
+			}
+			return {
+				key,
+				optional,
+				value
+			}
+		}
 	})
 
 	static from(schema: PropSchema) {
@@ -66,31 +94,7 @@ export class PropNode
 	}
 
 	// TODO: split into multiple prop kinds
-	intersectSymmetric(other: PropNode): PropChildren | Disjoint | null {
-		if (this.key instanceof TypeNode || other.key instanceof TypeNode) {
-			return null
-		}
-		if (this.key !== other.key) {
-			return null
-		}
-		const key = this.key
-		const optional = this.optional && other.optional
-		const value = this.value.intersect(other.value)
-		if (value instanceof Disjoint) {
-			return optional
-				? value
-				: {
-						key,
-						optional,
-						value: builtins.never()
-				  }
-		}
-		return {
-			key,
-			optional,
-			value
-		}
-	}
+	intersectSymmetric(other: PropNode): PropChildren | Disjoint | null {}
 
 	intersectAsymmetric() {
 		return null

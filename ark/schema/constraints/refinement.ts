@@ -1,5 +1,5 @@
 import type { listable } from "@arktype/util"
-import type { Node, Schema } from "../node.js"
+import type { IrreducibleRefinementKind, Node, Schema } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { MaxNode, MinNode } from "./bounds.js"
 import { DivisorNode } from "./divisor.js"
@@ -20,21 +20,8 @@ export type RefinementClassesByKind = typeof refinementClassesByKind
 
 export type RefinementKind = keyof RefinementClassesByKind
 
-export type IrreducibleRefinementKind = {
-	[k in RefinementKind]: hasReducableIntersection<k> extends false ? k : never
-}[RefinementKind]
-
-export const irreducibleRefinementKinds = {
-	pattern: 1,
-	predicate: 1,
-	prop: 1
-} as const satisfies Record<IrreducibleRefinementKind, 1>
-
-type hasReducableIntersection<kind extends RefinementKind> =
-	null extends ReturnType<Node<kind>["intersectSymmetric"]> ? false : true
-
 export type RefinementIntersectionInputsByKind = {
-	[k in RefinementKind]: hasReducableIntersection<k> extends true
+	[k in RefinementKind]: k extends IrreducibleRefinementKind
 		? Schema<k>
 		: listable<Schema<k>>
 }

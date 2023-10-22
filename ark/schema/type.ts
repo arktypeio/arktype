@@ -51,10 +51,31 @@ export class TypeNode<t = unknown> extends BaseNode<
 	declare infer: t;
 	declare [inferred]: t
 
-	readonly kind = "type"
+	static readonly kind = "type"
 
 	static keyKinds = this.declareKeys({
 		branches: "in"
+	})
+
+	static intersections = this.defineIntersections({
+		type: (l, r) => {
+			if (
+				(l.branches.length === 0 || r.branches.length === 0) &&
+				l.branches.length !== r.branches.length
+			) {
+				// if exactly one operand is never, we can use it to discriminate based on presence
+				return Disjoint.from(
+					"presence",
+					l.branches.length !== 0,
+					r.branches.length !== 0
+				)
+			}
+			const resultBranches = intersectBranches(l.branches, r.branches)
+			if (resultBranches instanceof Disjoint) {
+				return resultBranches
+			}
+			return { branches: resultBranches }
+		}
 	})
 
 	constructor(children: TypeChildren) {
@@ -126,30 +147,6 @@ export class TypeNode<t = unknown> extends BaseNode<
 		return this as never
 	}
 
-	intersectSymmetric(other: TypeNode): TypeNode | Disjoint {
-		if (
-			(this.branches.length === 0 || other.branches.length === 0) &&
-			this.branches.length !== other.branches.length
-		) {
-			// if exactly one operand is never, we can use it to discriminate based on presence
-			return Disjoint.from(
-				"presence",
-				this.branches.length !== 0,
-				other.branches.length !== 0
-			)
-		}
-		const resultBranches = intersectBranches(this.branches, other.branches)
-		if (resultBranches instanceof Disjoint) {
-			return resultBranches
-		}
-		// TODO: meta
-		return new TypeNode({ branches: resultBranches })
-	}
-
-	intersectAsymmetric() {
-		return null
-	}
-
 	isUnknown(): this is TypeNode<unknown> {
 		return this.unwrapOnly("validator")?.constraints.length === 0
 	}
@@ -175,34 +172,6 @@ export class TypeNode<t = unknown> extends BaseNode<
 export type TypeInput = listable<IntersectionSchema | MorphSchema>
 
 export type UnwrappableKind = BranchNode["kind"] | ConstraintKind
-
-const intersectBranchNodes = (
-	l: BranchNode,
-	r: BranchNode
-): Children<BranchNode["kind"]> | Disjoint => {
-	if (l.kind === "validator") {
-		if (r.kind === "validator") {
-			return l.intersect(r)
-		}
-		const inTersection = r.in ? l.intersect(r.in) : l
-		return inTersection instanceof Disjoint
-			? inTersection
-			: {
-					...r.children,
-					in: inTersection
-			  }
-	}
-	if (r.kind === "morph") {
-		return l.intersectSymmetric(r)
-	}
-	const inTersection = l.in?.intersect(r) ?? r
-	return inTersection instanceof Disjoint
-		? inTersection
-		: {
-				...l.children,
-				in: inTersection
-		  }
-}
 
 const parseNode = (...schemas: BranchSchema[]) => {
 	const branches = createBranches(schemas)

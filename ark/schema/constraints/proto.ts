@@ -6,10 +6,8 @@ import {
 	objectKindOf
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { compileSerializedValue } from "../io/compile.js"
-import type { BaseAttributes, Node } from "../node.js"
-import type { BaseBasis, BasisKind } from "./basis.js"
-import { BaseConstraint } from "./constraint.js"
+import { type BaseAttributes, BaseNode } from "../node.js"
+import type { BaseBasis } from "./basis.js"
 
 export interface ProtoChildren<
 	rule extends AbstractableConstructor = AbstractableConstructor
@@ -24,10 +22,10 @@ export type ProtoSchema<
 export class ProtoNode<
 		rule extends AbstractableConstructor = AbstractableConstructor
 	>
-	extends BaseConstraint<ProtoChildren, typeof ProtoNode>
+	extends BaseNode<ProtoChildren, typeof ProtoNode>
 	implements BaseBasis
 {
-	readonly kind = "proto"
+	static readonly kind = "proto"
 
 	declare infer: InstanceType<rule>
 
@@ -39,6 +37,15 @@ export class ProtoNode<
 
 	static keyKinds = this.declareKeys({
 		rule: "in"
+	})
+
+	static intersections = this.defineIntersections({
+		proto: (l, r) =>
+			constructorExtends(l.rule, r.rule)
+				? l
+				: constructorExtends(r.rule, l.rule)
+				? r
+				: Disjoint.from("proto", l, r)
 	})
 
 	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
@@ -60,18 +67,6 @@ export class ProtoNode<
 		return constructors.some((constructor) =>
 			constructorExtends(this.rule, constructor)
 		)
-	}
-
-	intersectSymmetric(other: ProtoNode): ProtoNode | Disjoint {
-		return constructorExtends(this.rule, other.rule)
-			? this
-			: constructorExtends(other.rule, this.rule)
-			? other
-			: Disjoint.from("proto", this, other)
-	}
-
-	intersectAsymmetric() {
-		return null
 	}
 }
 

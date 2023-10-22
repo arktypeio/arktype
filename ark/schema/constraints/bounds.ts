@@ -1,8 +1,12 @@
 import { Disjoint } from "../disjoint.js"
-import type { BaseAttributes, Node, StaticBaseNode } from "../node.js"
+import {
+	type BaseAttributes,
+	BaseNode,
+	type Node,
+	type StaticBaseNode
+} from "../node.js"
 import type { BasisKind } from "./basis.js"
-import type { ConstraintKind } from "./constraint.js"
-import { BaseConstraint, getBasisName } from "./constraint.js"
+import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -15,7 +19,7 @@ export interface BoundChildren extends BaseAttributes {
 export type BoundSchema = number | BoundChildren
 
 export abstract class BaseBound<nodeClass extends StaticBaseNode<BoundChildren>>
-	extends BaseConstraint<BoundChildren, nodeClass>
+	extends BaseNode<BoundChildren, nodeClass>
 	implements BaseRefinement
 {
 	abstract comparator: string
@@ -46,14 +50,21 @@ export abstract class BaseBound<nodeClass extends StaticBaseNode<BoundChildren>>
 }
 
 export class MinNode extends BaseBound<typeof MinNode> {
-	readonly kind = "min"
+	static readonly kind = "min"
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
 
 	static from(schema: BoundSchema) {
 		return new MinNode(typeof schema === "number" ? { rule: schema } : schema)
 	}
 
-	static intersectsWith = {}
+	static intersections = this.defineIntersections({
+		min: (l, r) =>
+			l.rule > r.rule || (l.rule === r.rule && l.exclusive) ? l : r,
+		max: (l, r) =>
+			l.rule > r.rule || (l.rule === r.rule && (l.exclusive || r.exclusive))
+				? Disjoint.from("bound", l, r)
+				: null
+	})
 
 	static writeDefaultDescription(children: BoundChildren) {
 		// Date
@@ -63,28 +74,16 @@ export class MinNode extends BaseBound<typeof MinNode> {
 		const comparisonDescription = children.exclusive ? "more than" : "at least"
 		return `${comparisonDescription} ${children.rule}`
 	}
-
-	intersectSymmetric(other: MinNode) {
-		return this.rule > other.rule ||
-			(this.rule === other.rule && this.exclusive)
-			? this
-			: other
-	}
-
-	intersectAsymmetric(other: Node<ConstraintKind>): Disjoint | null {
-		if (other.kind === "max") {
-			return this.rule > other.rule ||
-				(this.rule === other.rule && (this.exclusive || other.exclusive))
-				? Disjoint.from("bound", this, other)
-				: null
-		}
-		return null
-	}
 }
 
 export class MaxNode extends BaseBound<typeof MaxNode> {
-	readonly kind = "max"
+	static readonly kind = "max"
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
+
+	static intersections = this.defineIntersections({
+		max: (l, r) =>
+			l.rule > r.rule || (l.rule === r.rule && l.exclusive) ? l : r
+	})
 
 	static writeDefaultDescription(children: BoundChildren) {
 		// Date
@@ -97,23 +96,6 @@ export class MaxNode extends BaseBound<typeof MaxNode> {
 
 	static from(schema: BoundSchema) {
 		return new MaxNode(typeof schema === "number" ? { rule: schema } : schema)
-	}
-
-	intersectSymmetric(other: MaxNode) {
-		return this.rule > other.rule ||
-			(this.rule === other.rule && this.exclusive)
-			? this
-			: other
-	}
-
-	intersectAsymmetric(other: Node<ConstraintKind>): Disjoint | null {
-		if (other.kind === "max") {
-			return this.rule > other.rule ||
-				(this.rule === other.rule && (this.exclusive || other.exclusive))
-				? Disjoint.from("bound", this, other)
-				: null
-		}
-		return null
 	}
 }
 

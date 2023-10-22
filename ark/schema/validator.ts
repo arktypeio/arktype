@@ -1,3 +1,10 @@
+import type {
+	AbstractableConstructor,
+	conform,
+	ErrorMessage,
+	exactMessageOnError,
+	extend
+} from "@arktype/util"
 import {
 	domainOf,
 	isKeyOf,
@@ -6,42 +13,31 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type {
-	AbstractableConstructor,
-	conform,
-	ErrorMessage,
-	exactMessageOnError,
-	extend
-} from "@arktype/util"
-import { basisClassesByKind } from "./constraints/basis.js"
 import type { BasisKind, parseBasis } from "./constraints/basis.js"
+import { basisClassesByKind } from "./constraints/basis.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
 import type { DomainSchema, NonEnumerableDomain } from "./constraints/domain.js"
 import { DomainNode } from "./constraints/domain.js"
 import type { ProtoSchema } from "./constraints/proto.js"
 import { ProtoNode } from "./constraints/proto.js"
-import {
-	irreducibleRefinementKinds,
-	refinementClassesByKind
-} from "./constraints/refinement.js"
 import type {
-	IrreducibleRefinementKind,
 	RefinementIntersectionInput,
 	RefinementKind
 } from "./constraints/refinement.js"
+import { refinementClassesByKind } from "./constraints/refinement.js"
 import type { CollapsedUnitSchema, UnitSchema } from "./constraints/unit.js"
 import { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
-import { MorphNode, type MorphSchema } from "./morph.js"
+import { type MorphSchema } from "./morph.js"
 import {
 	baseAttributeKeys,
 	type BaseAttributes,
 	BaseNode,
-	type Children,
+	type IrreducibleRefinementKind,
+	irreducibleRefinementKinds,
 	type Node,
 	type Schema
 } from "./node.js"
-import { type BranchNode } from "./type.js"
 
 const constraintClassesByKind = {
 	...refinementClassesByKind,
@@ -61,11 +57,20 @@ export class ValidatorNode extends BaseNode<
 	ValidatorChildren,
 	typeof ValidatorNode
 > {
-	readonly kind = "validator"
+	static readonly kind = "validator"
 
 	static keyKinds = this.declareKeys(
 		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
 	)
+
+	static intersections = this.defineIntersections({
+		validator: (l, r) => {
+			const constraints = intersectConstraints(l.constraints, r.constraints)
+			return constraints instanceof Disjoint
+				? constraints
+				: unflattenConstraints(constraints)
+		}
+	})
 
 	declare constraints: readonly Node<ConstraintKind>[]
 	declare refinements: readonly Node<RefinementKind>[]
@@ -111,17 +116,6 @@ export class ValidatorNode extends BaseNode<
 	static writeDefaultDescription(children: ValidatorChildren) {
 		const constraints = flattenConstraints(children)
 		return constraints.length === 0 ? "a value" : constraints.join(" and ")
-	}
-
-	intersectSymmetric(r: ValidatorNode): ValidatorChildren | Disjoint {
-		const constraints = intersectConstraints(this.constraints, r.constraints)
-		return constraints instanceof Disjoint
-			? constraints
-			: unflattenConstraints(constraints)
-	}
-
-	intersectAsymmetric() {
-		return null
 	}
 
 	filter<kind extends ConstraintKind>(kind: kind): Node<kind>[] {

@@ -41,12 +41,17 @@ const data = new Foo({}) //=>
 
 const a = data.a //=>
 
-class Bar extends Foo.and({ b: "boolean" }) {}
+class Bar extends Foo.and({ b: "boolean" }) {
+	getB() {
+		return this.b
+	}
+}
 
 type Z = typeof Bar.infer //=>
 
 const data2 = new Bar({}) //=>
 
+const implemented = data2.getB() //=>
 const inherited = data2.getA() //=>
 
 const a2 = data2.a //=>

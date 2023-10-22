@@ -3,13 +3,20 @@ import type {
 	conform,
 	Constructor,
 	Dict,
+	evaluate,
 	extend,
+	Fn,
 	instanceOf,
+	isAny,
 	Json,
 	PartialRecord
 } from "@arktype/util"
 import { DynamicBase, isArray } from "@arktype/util"
-import type { ConstraintClassesByKind } from "./constraints/constraint.js"
+import { type BasisKind } from "./constraints/basis.js"
+import type {
+	ConstraintClassesByKind,
+	ConstraintKind
+} from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue } from "./io/compile.js"
 import type { TypeClassesByKind, validateBranchInput } from "./type.js"
@@ -36,21 +43,55 @@ export type Prevalidated = typeof prevalidated
 
 export interface StaticBaseNode<children extends BaseAttributes> {
 	new (children: children): BaseNode<children, any>
+	kind: NodeKind
 	keyKinds: Record<keyof children, keyof NodeIds>
-	intersections: PartialRecord<NodeKind>
+	intersections: IntersectionDefinitions<any>
 	writeDefaultDescription(children: children): string
 }
 
-type IntersectionDefinitions<nodeClass> = {
-	[k in NodeKind]?: (
-		l: instanceOf<nodeClass>,
-		r: Node<k>
-	) => childrenOf<nodeClass> | Disjoint | null
-}
+type IntersectionGroup = NodeKind | "constraint"
+
+type IntersectionDefinitions<nodeClass> = evaluate<
+	{
+		[k in kindOf<nodeClass>]: intersectionOf<nodeClass, k>
+	} & {
+		[k in IntersectionGroup]?: intersectionOf<nodeClass, k>
+	}
+>
+
+export const irreducibleRefinementKinds = {
+	pattern: 1,
+	predicate: 1,
+	prop: 1
+} as const
+
+export type IrreducibleRefinementKind = keyof typeof irreducibleRefinementKinds
+
+type intersectionOf<nodeClass, k extends IntersectionGroup> = (
+	// allow assignment from instance type to base
+	l: isAny<nodeClass> extends true ? never : instanceOf<nodeClass>,
+	r: Node<
+		k extends NodeKind ? k : k extends "constraint" ? ConstraintKind : never
+	>
+) =>
+	| childrenOf<nodeClass>
+	| Disjoint
+	// ensure null is not allowed as a return on reducible symmetric intersections
+	| (k extends kindOf<nodeClass>
+			? k extends IrreducibleRefinementKind
+				? null
+				: never
+			: null)
 
 type childrenOf<nodeClass> = ConstructorParameters<
 	conform<nodeClass, AbstractableConstructor>
 >[0]
+
+type kindOf<nodeClass> = instanceOf<nodeClass> extends {
+	kind: infer kind extends NodeKind
+}
+	? kind
+	: never
 
 type extensionKeyOf<nodeClass> = Exclude<
 	keyof childrenOf<nodeClass>,
@@ -61,14 +102,12 @@ export abstract class BaseNode<
 	children extends BaseAttributes,
 	nodeClass extends StaticBaseNode<children>
 > extends DynamicBase<children> {
-	abstract kind: NodeKind
-	declare condition: string
-
 	json: Json
 	alias: string
 	description: string
 	ids: NodeIds = new NodeIds(this)
 	nodeClass = this.constructor as nodeClass
+	readonly kind: nodeClass["kind"] = this.nodeClass.kind
 
 	constructor(public children: children) {
 		super(children)
@@ -154,34 +193,48 @@ export abstract class BaseNode<
 		return this.kind === kind
 	}
 
+	isBasis(): this is Node<BasisKind> {
+		return (
+			this.kind === "domain" || this.kind === "proto" || this.kind === "unit"
+		)
+	}
+
 	toString() {
 		return this.description
 	}
 
-	intersect<other extends Node>(other: other): other | Disjoint | null
-	intersect(other: BaseNode<Record<string, unknown>, any>) {
+	intersect<other extends Node>(
+		other: other
+	): other["kind"] extends keyof nodeClass["intersections"]
+		? ReturnType<nodeClass["intersections"][other["kind"]] & {}>
+		: other["nodeClass"]["intersections"] extends Record<
+				this["kind"],
+				infer intersection extends Fn
+		  >
+		? ReturnType<intersection>
+		: null
+	intersect(other: BaseNode<BaseAttributes, StaticBaseNode<BaseAttributes>>) {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta
 			return this
 		}
-		if (other.kind === this.kind) {
-			return this.intersectSymmetric(other as never)
+		const lrIntersection = this.nodeClass.intersections[other.kind]
+		if (lrIntersection) {
+			const result = lrIntersection(this as never, other as never)
+			// TODO: meta
+			return result instanceof Disjoint
+				? result
+				: new this.nodeClass(result as never)
 		}
-		let resultClass: StaticBaseNode<any> | undefined
-		let result = this.intersectAsymmetric(other as never)
-		if (result) {
-			resultClass = this.nodeClass as never
-		} else {
-			result = other.intersectAsymmetric(this as never)
-			if (result) {
-				resultClass === other.nodeClass
-			}
+		const rlIntersection = other.nodeClass.intersections[this.kind]
+		if (rlIntersection) {
+			const result = rlIntersection(other as never, this as never)
+			// TODO: meta
+			return result instanceof Disjoint
+				? result.invert()
+				: new this.nodeClass(result as never)
 		}
-		if (result === null || result instanceof Disjoint) {
-			return result
-		}
-		// TODO: Add meta
-		return new resultClass!(result)
+		return null
 	}
 }
 

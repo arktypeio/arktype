@@ -1,6 +1,6 @@
-import type { BaseAttributes, Node } from "../node.js"
+import { type BaseAttributes, BaseNode, type Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
-import { BaseConstraint, getBasisName } from "./constraint.js"
+import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
@@ -11,10 +11,10 @@ export interface DivisorChildren extends BaseAttributes {
 export type DivisorSchema = number | DivisorChildren
 
 export class DivisorNode
-	extends BaseConstraint<DivisorChildren, typeof DivisorNode>
+	extends BaseNode<DivisorChildren, typeof DivisorNode>
 	implements BaseRefinement
 {
-	readonly kind = "divisor"
+	static readonly kind = "divisor"
 
 	static from(schema: DivisorSchema) {
 		return new DivisorNode(

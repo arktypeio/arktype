@@ -2,14 +2,13 @@ import { type listable, throwParseError } from "@arktype/util"
 import { Disjoint } from "./disjoint.js"
 import type { Problem } from "./io/problems.js"
 import type { CheckResult, TraversalState } from "./io/traverse.js"
-import { type BaseAttributes, BaseNode, type Children } from "./node.js"
-import { type BranchNode } from "./type.js"
-import { ValidatorNode } from "./validator.js"
+import { type BaseAttributes, BaseNode } from "./node.js"
 import type {
 	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionInput
 } from "./validator.js"
+import { ValidatorNode } from "./validator.js"
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
@@ -26,12 +25,51 @@ export interface MorphSchema extends BaseAttributes {
 }
 
 export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
-	readonly kind = "morph"
+	static readonly kind = "morph"
 
 	static keyKinds = this.declareKeys({
 		in: "in",
 		out: "out",
 		morph: "morph"
+	})
+
+	static intersections = this.defineIntersections({
+		morph: (l, r) => {
+			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
+				// TODO: is this always a parse error? what about for union reduction etc.
+				return throwParseError(`Invalid intersection of morphs`)
+			}
+			const result: MorphChildren = {
+				morph: l.morph
+			}
+			if (l.in) {
+				if (r.in) {
+					const inTersection = l.in.intersect(r.in)
+					if (inTersection instanceof Disjoint) {
+						return inTersection
+					}
+					result.in = inTersection
+				} else {
+					result.in = l.in
+				}
+			} else if (r.in) {
+				result.in = r.in
+			}
+			if (l.out) {
+				if (r.out) {
+					const outTersection = l.out.intersect(r.out)
+					if (outTersection instanceof Disjoint) {
+						return outTersection
+					}
+					result.out = outTersection
+				} else {
+					result.out = l.out
+				}
+			} else if (r.out) {
+				result.out = r.out
+			}
+			return result
+		}
 	})
 
 	static writeDefaultDescription(children: MorphChildren) {
@@ -49,43 +87,6 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 			children.out = ValidatorNode.from(schema.out)
 		}
 		return new MorphNode(children)
-	}
-
-	intersectSymmetric(other: MorphNode): MorphChildren | Disjoint {
-		if (this.morph.some((morph, i) => morph !== other.morph[i])) {
-			// TODO: is this always a parse error? what about for union reduction etc.
-			return throwParseError(`Invalid intersection of morphs`)
-		}
-		const result: MorphChildren = {
-			morph: this.morph
-		}
-		if (this.in) {
-			if (other.in) {
-				const inTersection = this.in.intersect(other.in)
-				if (inTersection instanceof Disjoint) {
-					return inTersection
-				}
-				result.in = inTersection
-			} else {
-				result.in = this.in
-			}
-		} else if (other.in) {
-			result.in = other.in
-		}
-		if (this.out) {
-			if (other.out) {
-				const outTersection = this.out.intersect(other.out)
-				if (outTersection instanceof Disjoint) {
-					return outTersection
-				}
-				result.out = outTersection
-			} else {
-				result.out = this.out
-			}
-		} else if (other.out) {
-			result.out = other.out
-		}
-		return result
 	}
 
 	intersectAsymmetric(r: ValidatorNode) {

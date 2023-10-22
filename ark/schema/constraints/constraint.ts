@@ -12,23 +12,6 @@ export type ConstraintClassesByKind = extend<
 
 export type ConstraintKind = keyof ConstraintClassesByKind
 
-export abstract class BaseConstraint<
-	children extends BaseAttributes,
-	nodeClass extends StaticBaseNode<children>
-> extends BaseNode<children, nodeClass> {
-	abstract kind: ConstraintKind
-
-	constructor(children: children) {
-		super(children)
-	}
-
-	isBasis(): this is Node<BasisKind> {
-		return (
-			this.kind === "domain" || this.kind === "proto" || this.kind === "unit"
-		)
-	}
-}
-
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
 
