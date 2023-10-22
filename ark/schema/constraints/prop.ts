@@ -3,7 +3,7 @@ import { Disjoint } from "../disjoint.js"
 import { type BaseAttributes, BaseNode, type Node } from "../node.js"
 import { type TypeInput, TypeNode } from "../type.js"
 import type { BasisKind } from "./basis.js"
-import { BaseConstraint, getBasisName } from "./constraint.js"
+import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
@@ -91,13 +91,6 @@ export class PropNode
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `${this} is not allowed as a prop on ${getBasisName(basis)}`
-	}
-
-	// TODO: split into multiple prop kinds
-	intersectSymmetric(other: PropNode): PropChildren | Disjoint | null {}
-
-	intersectAsymmetric() {
-		return null
 	}
 }
 

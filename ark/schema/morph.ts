@@ -1,4 +1,5 @@
 import { type listable, throwParseError } from "@arktype/util"
+import { type Out } from "arktype/internal/parser/tuple.js"
 import { Disjoint } from "./disjoint.js"
 import type { Problem } from "./io/problems.js"
 import type { CheckResult, TraversalState } from "./io/traverse.js"
@@ -116,14 +117,12 @@ export type validateMorphInput<input> = {
 
 export type parseMorph<input> = input extends MorphSchema
 	? (
-			In: input["in"] extends {}
-				? parseIntersection<input["in"]>["infer"]
-				: unknown
+			In: input["in"] extends {} ? parseIntersection<input["in"]> : unknown
 	  ) => input["out"] extends {}
-			? parseIntersection<input["out"]>["infer"]
+			? Out<parseIntersection<input["out"]>>
 			: input["morph"] extends
 					| Morph<any, infer o>
 					| readonly [...unknown[], Morph<any, infer o>]
-			? inferMorphOut<o>
+			? Out<inferMorphOut<o>>
 			: never
 	: never

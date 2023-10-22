@@ -2,21 +2,6 @@
 import { MorphNode, type TypeNode, ValidatorNode } from "./ark/schema/main.js"
 import { Disjoint, node } from "./ark/schema/main.js"
 
-const compileType = (node: TypeNode) => {
-	switch (node.kind) {
-		case "union":
-			return "throw Error('unsupported')"
-		case "morph":
-			return "throw Error('unsupported')"
-		case "intersection":
-			return node.description
-	}
-}
-
-const f = new ValidatorNode({ branches: [] }).intersect(
-	new MorphNode({ branches: [] })
-)
-
 const l = node(
 	{
 		domain: "number",

@@ -1,5 +1,4 @@
-import type { CastTo, TypeNode } from "@arktype/schema"
-import { TypeNode, node } from "@arktype/schema"
+import { type CastTo, node, TypeNode } from "@arktype/schema"
 import type {
 	defined,
 	Dict,

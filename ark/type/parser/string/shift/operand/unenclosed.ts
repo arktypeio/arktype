@@ -1,5 +1,4 @@
-import type { TypeNode } from "@arktype/schema"
-import { TypeNode, node } from "@arktype/schema"
+import { node, TypeNode } from "@arktype/schema"
 import type {
 	BigintLiteral,
 	Completion,

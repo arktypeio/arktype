@@ -44,6 +44,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 > {
 	declare infer: t;
 	declare [inferred]: t
+	declare condition: string
 
 	static readonly kind = "type"
 
@@ -189,13 +190,11 @@ export const node = Object.assign(TypeNode.from, {
 	units: TypeNode.fromUnits
 })
 
-type parseNode<branches extends readonly unknown[]> = {
-	[i in keyof branches]: parseBranch<branches[i]>
-}[number] extends infer t
-	? branches["length"] extends 1
-		? t
-		: TypeNode<t>
-	: never
+type parseNode<branches extends readonly unknown[]> = TypeNode<
+	{
+		[i in keyof branches]: parseBranch<branches[i]>
+	}[number]
+>
 
 export type validateBranchInput<input> = conform<
 	input,
@@ -208,7 +207,7 @@ type parseBranch<branch> = branch extends MorphSchema
 	? parseMorph<branch>
 	: branch extends IntersectionSchema
 	? parseIntersection<branch>
-	: TypeNode
+	: unknown
 
 export type TypeClassesByKind = {
 	type: typeof TypeNode
