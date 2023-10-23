@@ -165,6 +165,10 @@ suite("morph", () => {
 		// attest(types.bOrA).typed as typeof types.aOrB
 		// attest(types.bOrA.node).equals(types.aOrB.node)
 	})
+	test("union with output", () => {
+		const t = type("number|parse.number")
+		attest(t.infer).typed as number
+	})
 	test("deep intersection", () => {
 		const types = scope({
 			a: { a: ["number>0", "=>", (data) => data + 1] },

@@ -360,13 +360,20 @@ type bindGenericInstantiation<params extends string[], $, args> = {
 	>
 }
 
-export type extractIn<t> = extractMorphs<t, "in"> extends t
+export type extractIn<t> = includesMorphs<t> extends true
 	? t
 	: extractMorphs<t, "in">
 
-export type extractOut<t> = extractMorphs<t, "out"> extends t
+export type extractOut<t> = includesMorphs<t> extends true
 	? t
 	: extractMorphs<t, "out">
+
+type includesMorphs<t> = [t, extractMorphs<t, "out">] extends [
+	extractMorphs<t, "out">,
+	t
+]
+	? true
+	: false
 
 type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
 	infer i,
