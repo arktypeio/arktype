@@ -349,4 +349,3 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 		</td>
 	</tr>
 </table>
-
