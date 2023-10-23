@@ -285,6 +285,10 @@ describe("morph", () => {
             ]
         ])
     })
+    it("union with output", () => {
+        const t = type("number|parsedNumber")
+        attest(t.infer).typed as number
+    })
     it("double intersection", () => {
         attest(() => {
             scope({
