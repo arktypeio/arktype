@@ -2,6 +2,7 @@
 import { MorphNode, type TypeNode, ValidatorNode } from "./ark/schema/main.js"
 import { Disjoint, node } from "./ark/schema/main.js"
 
+// 2, 3, 6, 9
 const l = node(
 	{
 		domain: "number",
@@ -13,6 +14,7 @@ const l = node(
 	}
 )
 
+// 5, 15, -5
 const r = node({
 	domain: "number",
 	divisor: 5

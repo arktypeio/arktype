@@ -1,7 +1,6 @@
 import {
 	type conform,
 	type evaluate,
-	hasKey,
 	isArray,
 	type listable
 } from "@arktype/util"
@@ -122,7 +121,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 	static fromUnits(...values: unknown[]) {
 		// TODO: unique list, bypass validation
 		const branches = values.map(
-			(value) => new ValidatorNode({ unit: new UnitNode({ rule: value }) })
+			(value) => new ValidatorNode({ unit: new UnitNode({ unit: value }) })
 		)
 		return new TypeNode({ branches })
 	}

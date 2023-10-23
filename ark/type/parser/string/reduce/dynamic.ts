@@ -81,7 +81,7 @@ export class DynamicState {
 		if (this.branches.leftBound) {
 			return this.error(
 				writeMultipleLeftBoundsMessage(
-					this.branches.leftBound.rule,
+					this.branches.leftBound.min,
 					this.branches.leftBound.comparator,
 					limit,
 					invertedComparator
@@ -91,7 +91,7 @@ export class DynamicState {
 		// TODO: date?
 		this.branches.leftBound = new MinNode({
 			exclusive: comparator.length === 1,
-			rule: limit as number
+			min: limit as number
 		})
 	}
 
@@ -148,7 +148,7 @@ export class DynamicState {
 		if (this.branches.leftBound) {
 			return this.error(
 				writeOpenRangeMessage(
-					this.branches.leftBound.rule,
+					this.branches.leftBound.min,
 					this.branches.leftBound.comparator
 				)
 			)

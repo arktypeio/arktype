@@ -8,7 +8,7 @@ import type { BaseRefinement } from "./refinement.js"
 
 export interface PredicateChildren<rule extends Predicate = Predicate>
 	extends BaseAttributes {
-	rule: rule
+	predicate: rule
 }
 
 export type PredicateSchema<rule extends Predicate = Predicate> =
@@ -22,7 +22,7 @@ export class PredicateNode<rule extends Predicate = Predicate>
 	static readonly kind = "predicate"
 
 	static keyKinds = this.declareKeys({
-		rule: "in"
+		predicate: "in"
 	})
 
 	static intersections = this.defineIntersections({
@@ -34,12 +34,12 @@ export class PredicateNode<rule extends Predicate = Predicate>
 
 	static from(schema: PredicateSchema) {
 		return new PredicateNode(
-			typeof schema === "function" ? { rule: schema } : schema
+			typeof schema === "function" ? { predicate: schema } : schema
 		)
 	}
 
 	static writeDefaultDescription(children: PredicateChildren) {
-		return `valid according to ${children.rule.name}`
+		return `valid according to ${children.predicate.name}`
 	}
 
 	applicableTo(

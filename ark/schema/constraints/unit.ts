@@ -4,7 +4,7 @@ import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
 export interface UnitChildren<rule = unknown> extends BaseAttributes {
-	readonly rule: rule
+	readonly unit: rule
 }
 
 export type CollapsedUnitSchema<rule = unknown> = {
@@ -20,14 +20,14 @@ export class UnitNode<const rule = unknown>
 	implements BaseBasis
 {
 	static readonly kind = "unit"
-	readonly is = this.rule
+	readonly is = this.unit
 	declare infer: rule
 
 	// TODO: add reference to for objects
-	basisName = stringify(this.rule)
+	basisName = stringify(this.unit)
 
 	static keyKinds = this.declareKeys({
-		rule: "in"
+		unit: "in"
 	})
 
 	static intersections = this.defineIntersections({
@@ -39,7 +39,7 @@ export class UnitNode<const rule = unknown>
 	static from<const rule>(schema: UnitSchema<rule>) {
 		return new UnitNode<rule>(
 			hasKey(schema, "is")
-				? { rule: schema.is }
+				? { unit: schema.is }
 				: hasKey(schema, "rule")
 				? schema
 				: throwParseError(
@@ -49,6 +49,6 @@ export class UnitNode<const rule = unknown>
 	}
 
 	static writeDefaultDescription(children: UnitChildren) {
-		return stringify(children.rule)
+		return stringify(children.unit)
 	}
 }

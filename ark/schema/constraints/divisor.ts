@@ -5,7 +5,7 @@ import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface DivisorChildren extends BaseAttributes {
-	rule: number
+	divisor: number
 }
 
 export type DivisorSchema = number | DivisorChildren
@@ -18,29 +18,34 @@ export class DivisorNode
 
 	static from(schema: DivisorSchema) {
 		return new DivisorNode(
-			typeof schema === "number" ? { rule: schema } : schema
+			typeof schema === "number" ? { divisor: schema } : schema
 		)
 	}
 
 	static keyKinds = this.declareKeys({
-		rule: "in"
+		divisor: "in"
 	})
 
 	static intersections = this.defineIntersections({
 		divisor: (l, r) => ({
-			rule: (l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
+			divisor:
+				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
 		})
 	})
 
 	static writeDefaultDescription(children: DivisorChildren) {
-		return children.rule === 1 ? "an integer" : `a multiple of ${children.rule}`
+		return children.divisor === 1
+			? "an integer"
+			: `a multiple of ${children.divisor}`
 	}
 
 	applicableTo(
 		basis: Node<BasisKind> | undefined
 	): basis is DomainNode<"number"> {
 		return (
-			basis !== undefined && basis.kind === "domain" && basis.rule === "number"
+			basis !== undefined &&
+			basis.kind === "domain" &&
+			basis.domain === "number"
 		)
 	}
 

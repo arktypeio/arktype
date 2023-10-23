@@ -12,22 +12,17 @@ import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface BoundChildren extends BaseAttributes {
-	readonly rule: number
-	readonly exclusive?: boolean
+	exclusive?: boolean
 }
 
-export type BoundSchema = number | BoundChildren
-
-export abstract class BaseBound<nodeClass extends StaticBaseNode<BoundChildren>>
-	extends BaseNode<BoundChildren, nodeClass>
+export abstract class BaseBound<
+		children extends BoundChildren,
+		nodeClass extends StaticBaseNode<children>
+	>
+	extends BaseNode<children, nodeClass>
 	implements BaseRefinement
 {
 	abstract comparator: string
-
-	static keyKinds = this.declareKeys({
-		rule: "in",
-		exclusive: "in"
-	})
 
 	exclusive = this.children.exclusive ?? false
 
@@ -36,7 +31,7 @@ export abstract class BaseBound<nodeClass extends StaticBaseNode<BoundChildren>>
 			return false
 		}
 		if (basis.kind === "domain") {
-			return basis.rule === "number" || basis.rule === "string"
+			return basis.domain === "number" || basis.domain === "string"
 		}
 		if (basis.kind === "proto") {
 			return basis.extendsOneOf(Array, Date)
@@ -49,53 +44,73 @@ export abstract class BaseBound<nodeClass extends StaticBaseNode<BoundChildren>>
 	}
 }
 
-export class MinNode extends BaseBound<typeof MinNode> {
+export interface MinChildren extends BoundChildren {
+	min: number
+}
+
+export type MinSchema = number | MinChildren
+
+export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 	static readonly kind = "min"
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
 
-	static from(schema: BoundSchema) {
-		return new MinNode(typeof schema === "number" ? { rule: schema } : schema)
+	static keyKinds = this.declareKeys({
+		min: "in",
+		exclusive: "in"
+	})
+
+	static from(schema: MinSchema) {
+		return new MinNode(typeof schema === "number" ? { min: schema } : schema)
 	}
 
 	static intersections = this.defineIntersections({
-		min: (l, r) =>
-			l.rule > r.rule || (l.rule === r.rule && l.exclusive) ? l : r,
+		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r),
 		max: (l, r) =>
-			l.rule > r.rule || (l.rule === r.rule && (l.exclusive || r.exclusive))
+			l.min > r.max || (l.min === r.max && (l.exclusive || r.exclusive))
 				? Disjoint.from("bound", l, r)
 				: null
 	})
 
-	static writeDefaultDescription(children: BoundChildren) {
+	static writeDefaultDescription(children: MinChildren) {
 		// Date
 		// rule.exclusive
 		// ? "after"
 		// : "at or after"
 		const comparisonDescription = children.exclusive ? "more than" : "at least"
-		return `${comparisonDescription} ${children.rule}`
+		return `${comparisonDescription} ${children.min}`
 	}
 }
 
-export class MaxNode extends BaseBound<typeof MaxNode> {
+export interface MaxChildren extends BoundChildren {
+	max: number
+}
+
+export type MaxSchema = number | MaxChildren
+
+export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 	static readonly kind = "max"
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
 
 	static intersections = this.defineIntersections({
-		max: (l, r) =>
-			l.rule > r.rule || (l.rule === r.rule && l.exclusive) ? l : r
+		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r)
 	})
 
-	static writeDefaultDescription(children: BoundChildren) {
+	static keyKinds = this.declareKeys({
+		max: "in",
+		exclusive: "in"
+	})
+
+	static writeDefaultDescription(children: MaxChildren) {
 		// Date
 		// rule.exclusive
 		// ? "before"
 		// : "at or before"
 		const comparisonDescription = children.exclusive ? "less than" : "at most"
-		return `${comparisonDescription} ${children.rule}`
+		return `${comparisonDescription} ${children.max}`
 	}
 
-	static from(schema: BoundSchema) {
-		return new MaxNode(typeof schema === "number" ? { rule: schema } : schema)
+	static from(schema: MaxSchema) {
+		return new MaxNode(typeof schema === "number" ? { max: schema } : schema)
 	}
 }
 

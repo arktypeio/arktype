@@ -6,7 +6,7 @@ import type { BaseBasis } from "./basis.js"
 export interface DomainChildren<
 	rule extends NonEnumerableDomain = NonEnumerableDomain
 > extends BaseAttributes {
-	readonly rule: rule
+	readonly domain: rule
 }
 
 // only domains with an infinite number of values are allowed as bases
@@ -27,20 +27,20 @@ export class DomainNode<
 
 	declare infer: inferDomain<rule>
 
-	basisName = this.rule
+	basisName = this.domain
 
 	static keyKinds = this.declareKeys({
-		rule: "in"
+		domain: "in"
 	})
 
 	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
 		return new DomainNode(
-			typeof schema === "string" ? { rule: schema } : schema
+			typeof schema === "string" ? { domain: schema } : schema
 		)
 	}
 
 	static writeDefaultDescription(children: DomainChildren) {
-		return domainDescriptions[children.rule]
+		return domainDescriptions[children.domain]
 	}
 
 	static intersections = this.defineIntersections({

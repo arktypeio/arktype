@@ -5,6 +5,7 @@ import {
 	objectKindDescriptions,
 	objectKindOf
 } from "@arktype/util"
+import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
@@ -12,7 +13,7 @@ import type { BaseBasis } from "./basis.js"
 export interface ProtoChildren<
 	rule extends AbstractableConstructor = AbstractableConstructor
 > extends BaseAttributes {
-	readonly rule: rule
+	readonly proto: rule
 }
 
 export type ProtoSchema<
@@ -32,40 +33,44 @@ export class ProtoNode<
 	// id
 	// this.knownObjectKind ?? compileSerializedValue(this.rule)
 
-	knownObjectKind = objectKindOf(this.rule)
-	basisName = `${this.rule.name}`
+	knownObjectKind = objectKindOf(this.proto)
+	basisName = `${this.proto.name}`
 
 	static keyKinds = this.declareKeys({
-		rule: "in"
+		proto: "in"
 	})
 
 	static intersections = this.defineIntersections({
 		proto: (l, r) =>
-			constructorExtends(l.rule, r.rule)
+			constructorExtends(l.proto, r.proto)
 				? l
-				: constructorExtends(r.rule, l.rule)
+				: constructorExtends(r.proto, l.proto)
 				? r
-				: Disjoint.from("proto", l, r)
+				: Disjoint.from("proto", l, r),
+		domain: (l, r): ProtoChildren | Disjoint =>
+			r.domain === "object"
+				? l
+				: Disjoint.from("domain", builtins.object().unwrapOnly("domain")!, r)
 	})
 
 	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
 		return new ProtoNode<rule>(
-			typeof schema === "function" ? { rule: schema } : schema
+			typeof schema === "function" ? { proto: schema } : schema
 		)
 	}
 
 	static writeDefaultDescription(children: ProtoChildren) {
-		const knownObjectKind = getExactBuiltinConstructorName(children.rule)
+		const knownObjectKind = getExactBuiltinConstructorName(children.proto)
 		return knownObjectKind
 			? objectKindDescriptions[knownObjectKind]
-			: `an instance of ${children.rule.name}`
+			: `an instance of ${children.proto.name}`
 	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
 		...constructors: constructors
 	): this is ProtoNode<constructors[number]> {
 		return constructors.some((constructor) =>
-			constructorExtends(this.rule, constructor)
+			constructorExtends(this.proto, constructor)
 		)
 	}
 }

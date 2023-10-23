@@ -6,7 +6,7 @@ import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface PatternChildren extends BaseAttributes {
-	rule: string
+	source: string
 	flags?: string
 }
 
@@ -19,7 +19,7 @@ export class PatternNode
 	static readonly kind = "pattern"
 
 	static keyKinds = this.declareKeys({
-		rule: "in",
+		source: "in",
 		flags: "in"
 	})
 
@@ -28,7 +28,7 @@ export class PatternNode
 		pattern: () => null
 	})
 
-	instance = new RegExp(this.rule, this.flags)
+	instance = new RegExp(this.source, this.flags)
 	literal = serializeRegex(this.instance)
 
 	static from(schema: PatternSchema) {
@@ -36,20 +36,22 @@ export class PatternNode
 			typeof schema === "string"
 				? parseRegexLiteral(schema)
 				: schema instanceof RegExp
-				? { rule: schema.source, flags: schema.flags }
+				? { source: schema.source, flags: schema.flags }
 				: schema
 		)
 	}
 
 	static writeDefaultDescription(children: PatternChildren) {
-		return `matched by /${children.rule}/${children.flags}`
+		return `matched by /${children.source}/${children.flags}`
 	}
 
 	applicableTo(
 		basis: Node<BasisKind> | undefined
 	): basis is DomainNode<"string"> {
 		return (
-			basis !== undefined && basis.kind === "domain" && basis.rule === "string"
+			basis !== undefined &&
+			basis.kind === "domain" &&
+			basis.domain === "string"
 		)
 	}
 
@@ -73,7 +75,7 @@ export const parseRegexLiteral = (literal: string): PatternChildren => {
 		)
 	}
 	return {
-		rule: match[1],
+		source: match[1],
 		flags: match[2]
 	}
 }
