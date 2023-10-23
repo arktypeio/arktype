@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.25-alpha
+
+### Patch Changes
+
+-   Fix an issue causing some morphs to not be properly extracted when .infer(red)
+
 ## 1.0.24-alpha
 
 ### Patch Changes
