@@ -45,7 +45,7 @@ export abstract class BaseBound<
 }
 
 export interface MinChildren extends BoundChildren {
-	min: number
+	readonly min: number
 }
 
 export type MinSchema = number | MinChildren
@@ -54,7 +54,7 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 	static readonly kind = "min"
 	readonly comparator = `>${this.exclusive ? "" : "="}` as const
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		min: "in",
 		exclusive: "in"
 	})
@@ -63,7 +63,7 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 		return new MinNode(typeof schema === "number" ? { min: schema } : schema)
 	}
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r),
 		max: (l, r) =>
 			l.min > r.max || (l.min === r.max && (l.exclusive || r.exclusive))
@@ -82,7 +82,7 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 }
 
 export interface MaxChildren extends BoundChildren {
-	max: number
+	readonly max: number
 }
 
 export type MaxSchema = number | MaxChildren
@@ -91,11 +91,11 @@ export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 	static readonly kind = "max"
 	readonly comparator = `<${this.exclusive ? "" : "="}` as const
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r)
 	})
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		max: "in",
 		exclusive: "in"
 	})

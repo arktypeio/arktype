@@ -17,7 +17,7 @@ export const basisClassesByKind = {
 export type BasisKind = keyof BasisClassesByKind
 
 export interface BaseBasis {
-	basisName: string
+	readonly basisName: string
 }
 
 export type parseBasis<input extends Schema<BasisKind>> =

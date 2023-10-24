@@ -5,7 +5,7 @@ import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface DivisorChildren extends BaseAttributes {
-	divisor: number
+	readonly divisor: number
 }
 
 export type DivisorSchema = number | DivisorChildren
@@ -22,11 +22,11 @@ export class DivisorNode
 		)
 	}
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		divisor: "in"
 	})
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		divisor: (l, r) => ({
 			divisor: Math.abs(
 				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)

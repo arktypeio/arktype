@@ -6,44 +6,40 @@ import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
 export interface PatternChildren extends BaseAttributes {
-	source: string
-	flags?: string
+	readonly pattern: RegExp
 }
 
-export type PatternSchema = RegexLiteral | RegExp | PatternChildren
+export interface ExpandedPatternSchema extends BaseAttributes {
+	readonly pattern: RegexLiteral | RegExp
+}
+
+export type PatternSchema = RegexLiteral | RegExp | ExpandedPatternSchema
 
 export class PatternNode
 	extends BaseNode<PatternChildren, typeof PatternNode>
 	implements BaseRefinement
 {
 	static readonly kind = "pattern"
-	readonly flags = this.children.flags ?? ""
 
-	static keyKinds = this.declareKeys({
-		source: "in",
-		flags: "in"
+	static readonly keyKinds = this.declareKeys({
+		pattern: "in"
 	})
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
 	})
 
-	instance = new RegExp(this.source, this.flags)
-	literal = serializeRegex(this.instance)
-
 	static from(schema: PatternSchema) {
 		return new PatternNode(
-			typeof schema === "string"
-				? parseRegexLiteral(schema)
-				: schema instanceof RegExp
-				? { source: schema.source, flags: schema.flags }
-				: schema
+			typeof schema === "string" || schema instanceof RegExp
+				? { pattern: parseRegexInput(schema) }
+				: { ...schema, pattern: parseRegexInput(schema.pattern) }
 		)
 	}
 
 	static writeDefaultDescription(children: PatternChildren) {
-		return `matched by /${children.source}/${children.flags}`
+		return `matched by ${children.pattern}`
 	}
 
 	applicableTo(
@@ -68,15 +64,15 @@ export type RegexLiteral = `/${string}/${string}`
 
 const regexLiteralMatcher = /^\/(.+)\/([a-z]*)$/
 
-export const parseRegexLiteral = (literal: string): PatternChildren => {
+const parseRegexInput = (input: string | RegExp) =>
+	input instanceof RegExp ? input : parseRegexLiteral(input)
+
+export const parseRegexLiteral = (literal: string) => {
 	const match = regexLiteralMatcher.exec(literal)
 	if (!match || !match[1]) {
 		return throwParseError(
 			`'${literal}' is not a valid RegexLiteral (should be /source/flags)`
 		)
 	}
-	return {
-		source: match[1],
-		flags: match[2]
-	}
+	return new RegExp(match[1], match[2])
 }

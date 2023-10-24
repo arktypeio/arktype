@@ -30,14 +30,14 @@ export class ProtoNode<
 
 	declare infer: InstanceType<rule>
 
-	knownObjectKind = objectKindOf(this.proto)
-	basisName = `${this.proto.name}`
+	readonly knownObjectKind = objectKindOf(this.proto)
+	readonly basisName = `${this.proto.name}`
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		proto: "in"
 	})
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		proto: (l, r) =>
 			constructorExtends(l.proto, r.proto)
 				? l

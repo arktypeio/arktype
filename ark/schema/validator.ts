@@ -1,10 +1,3 @@
-import type {
-	AbstractableConstructor,
-	conform,
-	ErrorMessage,
-	exactMessageOnError,
-	extend
-} from "@arktype/util"
 import {
 	domainOf,
 	isKeyOf,
@@ -12,6 +5,14 @@ import {
 	throwInternalError,
 	throwParseError,
 	transform
+} from "@arktype/util"
+import type {
+	AbstractableConstructor,
+	conform,
+	ErrorMessage,
+	exactMessageOnError,
+	extend,
+	mutable
 } from "@arktype/util"
 import type { BasisKind, parseBasis } from "./constraints/basis.js"
 import { basisClassesByKind } from "./constraints/basis.js"
@@ -47,7 +48,7 @@ export const constraintClassesByKind = {
 export type ValidatorChildren = extend<
 	BaseAttributes,
 	{
-		[k in ConstraintKind]?: k extends IrreducibleRefinementKind
+		readonly [k in ConstraintKind]?: k extends IrreducibleRefinementKind
 			? readonly Node<k>[]
 			: Node<k>
 	}
@@ -59,8 +60,8 @@ export class ValidatorNode extends BaseNode<
 > {
 	static readonly kind = "validator"
 
-	declare constraints: readonly Node<ConstraintKind>[]
-	declare refinements: readonly Node<RefinementKind>[]
+	declare readonly constraints: readonly Node<ConstraintKind>[]
+	declare readonly refinements: readonly Node<RefinementKind>[]
 
 	constructor(children: ValidatorChildren) {
 		const rawConstraints = flattenConstraints(children)
@@ -68,17 +69,17 @@ export class ValidatorNode extends BaseNode<
 		if (reducedConstraints instanceof Disjoint) {
 			return reducedConstraints.throw()
 		}
-		let reducedChildren = children
 		if (reducedConstraints.length < rawConstraints.length) {
-			reducedChildren = unflattenConstraints(reducedConstraints)
+			const reducedChildren = unflattenConstraints(reducedConstraints)
 			if ("alias" in children) {
 				reducedChildren.alias = children.alias
 			}
 			if ("description" in children) {
 				reducedChildren.description = children.description
 			}
+			children = reducedChildren
 		}
-		super(reducedChildren)
+		super(children)
 		this.constraints = reducedConstraints
 		this.basis = this.constraints[0]?.isBasis()
 			? (this.constraints[0] as never)
@@ -91,11 +92,11 @@ export class ValidatorNode extends BaseNode<
 		assertValidRefinements(this.basis, this.refinements)
 	}
 
-	static keyKinds = this.declareKeys(
+	static readonly keyKinds = this.declareKeys(
 		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
 	)
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		validator: (l, r) => {
 			const constraints = intersectConstraints(l.constraints, r.constraints)
 			return constraints instanceof Disjoint
@@ -110,10 +111,10 @@ export class ValidatorNode extends BaseNode<
 		}
 	})
 
-	basis: Node<BasisKind> | undefined;
+	readonly basis: Node<BasisKind> | undefined;
 	// for ease of use when comparing to MorphNode
-	in = this
-	out = undefined
+	readonly in = this
+	readonly out = undefined
 
 	static from(schema: IntersectionSchema) {
 		const children = parseIntersectionChildren(schema)
@@ -132,7 +133,7 @@ const flattenConstraints = (children: ValidatorChildren) =>
 		.filter((v): v is Node<ConstraintKind> => v instanceof BaseNode)
 
 const unflattenConstraints = (constraints: readonly Node<ConstraintKind>[]) => {
-	return constraints.reduce<ValidatorChildren>((result, node) => {
+	return constraints.reduce<mutable<ValidatorChildren>>((result, node) => {
 		if (isKeyOf(node.kind, irreducibleRefinementKinds)) {
 			const existing = result[node.kind] as
 				| Node<IrreducibleRefinementKind>[]

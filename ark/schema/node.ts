@@ -27,8 +27,8 @@ import { registry } from "./io/registry.js"
 import type { TypeClassesByKind, validateBranchInput } from "./type.js"
 
 export interface BaseAttributes {
-	alias?: string
-	description?: string
+	readonly alias?: string
+	readonly description?: string
 }
 
 export const baseAttributeKeys = {
@@ -110,18 +110,18 @@ export abstract class BaseNode<
 	children extends BaseAttributes,
 	nodeClass extends StaticBaseNode<children>
 > extends DynamicBase<children> {
-	json: Json
-	alias: string
-	description: string
-	ids: NodeIds = new NodeIds(this)
-	nodeClass = this.constructor as nodeClass
+	readonly json: Json
+	readonly alias: string
+	readonly description: string
+	readonly ids: NodeIds = new NodeIds(this)
+	readonly nodeClass = this.constructor as nodeClass
 	readonly kind: nodeClass["kind"] = this.nodeClass.kind
 
 	allows(data: unknown) {
 		return true
 	}
 
-	constructor(public children: children) {
+	constructor(public readonly children: children) {
 		super(children)
 		this.alias = $ark.register(this, children.alias)
 		this.description =

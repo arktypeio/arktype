@@ -19,15 +19,15 @@ type inferKey<k extends PropNode["key"]> = k extends string | symbol
 	: never
 
 export interface PropChildren extends BaseAttributes {
-	key: string | symbol | TypeNode
-	value: TypeNode
-	optional?: boolean
+	readonly key: string | symbol | TypeNode
+	readonly value: TypeNode
+	readonly optional?: boolean
 }
 
 export interface PropSchema extends BaseAttributes {
-	key: string | symbol | TypeInput
-	value: TypeInput
-	optional?: boolean
+	readonly key: string | symbol | TypeInput
+	readonly value: TypeInput
+	readonly optional?: boolean
 }
 
 export class PropNode
@@ -37,13 +37,13 @@ export class PropNode
 	readonly optional = this.children.optional ?? false
 	static readonly kind = "prop"
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		key: "in",
 		value: "in",
 		optional: "in"
 	})
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		prop: (l, r) => {
 			if (l.key instanceof TypeNode || r.key instanceof TypeNode) {
 				return null

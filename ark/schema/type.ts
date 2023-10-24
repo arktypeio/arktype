@@ -44,7 +44,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 > {
 	declare infer: t;
 	declare [inferred]: t
-	declare condition: string
+	declare readonly condition: string
 
 	static readonly kind = "type"
 
@@ -52,7 +52,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		super(children)
 	}
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		branches: "in"
 	})
 
@@ -64,7 +64,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		return { branches: resultBranches }
 	}
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		type: (l, r) => {
 			if (
 				(l.branches.length === 0 || r.branches.length === 0) &&

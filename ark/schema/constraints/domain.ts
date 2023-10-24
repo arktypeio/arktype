@@ -29,7 +29,7 @@ export class DomainNode<
 
 	basisName = this.domain
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		domain: "in"
 	})
 
@@ -43,7 +43,7 @@ export class DomainNode<
 		return domainDescriptions[children.domain]
 	}
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		domain: (l, r) => Disjoint.from("domain", l, r)
 	})
 }

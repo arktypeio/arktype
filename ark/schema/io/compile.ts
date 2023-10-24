@@ -131,7 +131,7 @@ export const compile = (node: Node): string => {
 		case "min":
 			return `${In} ${node.comparator} ${node.min}`
 		case "pattern":
-			return `/${node.source}/${node.flags}.test(${In})`
+			return `${node.pattern}.test(${In})`
 		case "predicate":
 			return `${compileSerializedValue(node)}(${In})`
 		default:

@@ -24,13 +24,13 @@ export class UnitNode<const rule = unknown>
 	declare infer: rule
 
 	// TODO: add reference to for objects
-	basisName = stringify(this.unit)
+	readonly basisName = stringify(this.unit)
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		unit: "in"
 	})
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		constraint: (l, r) =>
 			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)

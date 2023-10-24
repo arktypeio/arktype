@@ -1,4 +1,4 @@
-import { type listable, throwParseError } from "@arktype/util"
+import { type listable, type mutable, throwParseError } from "@arktype/util"
 import { type Out } from "arktype/internal/parser/tuple.js"
 import { builtins } from "./builtins.js"
 import { Disjoint } from "./disjoint.js"
@@ -15,33 +15,33 @@ import { ValidatorNode } from "./validator.js"
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export interface MorphChildren extends BaseAttributes {
-	in?: ValidatorNode
-	out?: ValidatorNode
-	morph: readonly Morph[]
+	readonly in?: ValidatorNode
+	readonly out?: ValidatorNode
+	readonly morph: readonly Morph[]
 }
 
 export interface MorphSchema extends BaseAttributes {
-	in?: IntersectionSchema
-	out?: IntersectionSchema
-	morph: listable<Morph>
+	readonly in?: IntersectionSchema
+	readonly out?: IntersectionSchema
+	readonly morph: listable<Morph>
 }
 
 export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 	static readonly kind = "morph"
 
-	static keyKinds = this.declareKeys({
+	static readonly keyKinds = this.declareKeys({
 		in: "in",
 		out: "out",
 		morph: "morph"
 	})
 
-	static intersections = this.defineIntersections({
+	static readonly intersections = this.defineIntersections({
 		morph: (l, r) => {
 			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
 				// TODO: is this always a parse error? what about for union reduction etc.
 				return throwParseError(`Invalid intersection of morphs`)
 			}
-			const result: MorphChildren = {
+			const result: mutable<MorphChildren> = {
 				morph: l.morph
 			}
 			if (l.in) {
@@ -98,7 +98,7 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 	}
 
 	static from(schema: MorphSchema) {
-		const children = {} as MorphChildren
+		const children = {} as mutable<MorphChildren>
 		children.morph =
 			typeof schema.morph === "function" ? [schema.morph] : schema.morph
 		if (schema.in) {
