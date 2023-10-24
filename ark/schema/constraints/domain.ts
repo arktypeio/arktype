@@ -27,7 +27,7 @@ export class DomainNode<
 
 	declare infer: inferDomain<rule>
 
-	basisName = this.domain
+	readonly basisName = this.domain
 
 	static readonly keyKinds = this.declareKeys({
 		domain: "in"

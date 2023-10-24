@@ -17,10 +17,12 @@ import type {
 } from "@arktype/schema"
 import type {
 	AbstractableConstructor,
+	autocomplete,
 	BuiltinObjectKind,
 	BuiltinObjects,
 	conform,
-	Primitive
+	Primitive,
+	returnOf
 } from "@arktype/util"
 import { CompiledFunction, transform } from "@arktype/util"
 import type {
@@ -40,6 +42,7 @@ import type {
 } from "./parser/tuple.js"
 import type { Module, Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
+import { type Ark, type } from "./scopes/ark.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a

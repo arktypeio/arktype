@@ -12,6 +12,7 @@ export type CompiledSuccessKind = "true" | "in" | "out"
 export type CompiledFailureKind = "false" | "problems"
 
 export type CompilationContext = {
+	data: string
 	successKind: CompiledSuccessKind
 	failureKind: CompiledFailureKind
 	path: CompiledPathSegment[]
@@ -23,6 +24,7 @@ export const createCompilationContext = (
 	successKind: CompiledSuccessKind,
 	failureKind: CompiledFailureKind
 ): CompilationContext => ({
+	data: In,
 	successKind,
 	failureKind,
 	path: [],

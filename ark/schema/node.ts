@@ -10,7 +10,7 @@ import type {
 	Json,
 	returnOf
 } from "@arktype/util"
-import { CompiledFunction, DynamicBase, isArray } from "@arktype/util"
+import { DynamicBase, isArray } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
 import type {
 	ConstraintClassesByKind,
@@ -19,9 +19,7 @@ import type {
 import { Disjoint } from "./disjoint.js"
 import {
 	type CompilationContext,
-	compile,
-	compileSerializedValue,
-	In
+	compileSerializedValue
 } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import type { TypeClassesByKind, validateBranchInput } from "./type.js"
@@ -183,6 +181,16 @@ export abstract class BaseNode<
 		intersections extends IntersectionDefinitions<nodeClass>
 	>(this: nodeClass, intersections: intersections) {
 		return intersections
+	}
+
+	protected static defineCompiler<nodeClass>(
+		this: nodeClass,
+		compiler: (
+			children: childrenOf<nodeClass>,
+			ctx: CompilationContext
+		) => string
+	) {
+		return compiler
 	}
 
 	serialize(kind: keyof NodeIds = "meta") {

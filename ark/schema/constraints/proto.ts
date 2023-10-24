@@ -37,6 +37,8 @@ export class ProtoNode<
 		proto: "in"
 	})
 
+	// readonly literalKeys = prototypeKeysOf(this.rule.prototype)
+
 	static readonly intersections = this.defineIntersections({
 		proto: (l, r) =>
 			constructorExtends(l.proto, r.proto)
@@ -71,12 +73,3 @@ export class ProtoNode<
 		)
 	}
 }
-
-// readonly literalKeys = prototypeKeysOf(this.rule.prototype)
-
-// compile() {
-// 	return `${In} instanceof ${
-// 		getExactBuiltinConstructorName(this.rule) ??
-// 		registry().register(this.rule)
-// 	}`
-// }
