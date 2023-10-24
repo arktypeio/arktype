@@ -1,8 +1,11 @@
 import {
 	type conform,
 	type evaluate,
+	hasDomain,
+	hasKey,
 	isArray,
-	type listable
+	type listable,
+	type mutable
 } from "@arktype/util"
 import { type ConstraintKind } from "./constraints/constraint.js"
 import { UnitNode } from "./constraints/unit.js"
@@ -26,14 +29,16 @@ import {
 
 export type BranchNode = ValidatorNode | MorphNode
 
-export interface UnionSchema extends BaseAttributes {
-	branches: readonly BranchSchema[]
+export interface ExpandedTypeSchema<
+	branches extends readonly BranchSchema[] = readonly BranchSchema[]
+> extends BaseAttributes {
+	readonly branches: branches
 }
 
-export type TypeSchema = UnionSchema | BranchSchema
+export type TypeSchema = listable<BranchSchema> | ExpandedTypeSchema
 
 export interface TypeChildren extends BaseAttributes {
-	branches: readonly BranchNode[]
+	readonly branches: readonly BranchNode[]
 }
 
 export type BranchSchema = IntersectionSchema | MorphSchema
@@ -106,13 +111,25 @@ export class TypeNode<t = unknown> extends BaseNode<
 			[i in keyof branches]: validateBranchInput<branches[i]>
 		}
 	): parseNode<branches>
-	static from(...schemas: BranchSchema[]) {
-		const branches = schemas.map((branch) =>
+	static from<const branches extends readonly BranchSchema[]>(
+		schema: ExpandedTypeSchema<branches>
+	): parseNode<branches>
+	static from(...schemas: [ExpandedTypeSchema] | BranchSchema[]) {
+		const result = {} as mutable<TypeChildren>
+		let schemaBranches: readonly BranchSchema[]
+		if (hasDomain(schemas[0], "object") && "branches" in schemas[0]) {
+			const { branches, ...attributes } = schemas[0]
+			Object.assign(result, attributes)
+			schemaBranches = branches
+		} else {
+			schemaBranches = schemas
+		}
+		result.branches = schemaBranches.map((branch) =>
 			typeof branch === "object" && "morph" in branch
 				? MorphNode.from(branch)
 				: ValidatorNode.from(branch)
 		)
-		return new TypeNode({ branches })
+		return new TypeNode(result)
 	}
 
 	static fromUnits<const branches extends readonly unknown[]>(
@@ -206,7 +223,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		return this as never
 	}
 
-	extends<other extends TypeNode>(other: other): this is other {
+	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
 		const intersection = this.intersect(other)
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}

@@ -9,8 +9,14 @@ const l = node(
 	},
 	{
 		domain: "number",
-		divisor: 3
+		divisor: 5
 	}
 )
 
+const z = node("number")
+
+z.json //?
+
 const result = compile(l) //?
+
+l.json //?

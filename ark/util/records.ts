@@ -31,9 +31,6 @@ export const hasKey = <o extends object, k extends PropertyKey>(
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
 
-export const hasKeys = (value: unknown) =>
-	hasDomain(value, "object") ? Object.keys(value).length !== 0 : false
-
 export type mutable<o> = {
 	-readonly [k in keyof o]: o[k]
 }

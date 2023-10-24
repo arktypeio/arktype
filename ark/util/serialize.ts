@@ -12,9 +12,11 @@ export type SerializationOptions = {
 
 export type Json =
 	| {
-			[k: string]: string | boolean | number | null | Json
+			[k: string]: JsonData
 	  }
-	| readonly Json[]
+	| readonly JsonData[]
+
+export type JsonData = string | boolean | number | null | Json
 
 export const snapshot = <t>(
 	data: t,

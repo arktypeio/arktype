@@ -8,9 +8,10 @@ import type {
 	instanceOf,
 	isAny,
 	Json,
+	JsonData,
 	returnOf
 } from "@arktype/util"
-import { DynamicBase, isArray } from "@arktype/util"
+import { DynamicBase, hasKey, isArray } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
 import type {
 	ConstraintClassesByKind,
@@ -22,7 +23,11 @@ import {
 	compileSerializedValue
 } from "./io/compile.js"
 import { registry } from "./io/registry.js"
-import type { TypeClassesByKind, validateBranchInput } from "./type.js"
+import type {
+	TypeChildren,
+	TypeClassesByKind,
+	validateBranchInput
+} from "./type.js"
 
 export interface BaseAttributes {
 	readonly alias?: string
@@ -132,31 +137,16 @@ export abstract class BaseNode<
 		this: nodeClass,
 		children: childrenOf<nodeClass>
 	) {
+		if (
+			"branches" in children &&
+			(children as TypeChildren).branches.length === 1
+		) {
+			// collapse single branch schemas like { branches: [{ domain: "string" }] } to { domain: "string" }
+			return (children as TypeChildren).branches[0].json
+		}
 		const json: Json = {}
 		for (const k in children) {
-			const child: unknown = children[k]
-			if (
-				typeof child === "string" ||
-				typeof child === "boolean" ||
-				typeof child === "number" ||
-				child === null
-			) {
-				json[k] = child
-			} else if (typeof child === "object") {
-				if (child instanceof BaseNode) {
-					json[k] = child.json
-				} else if (
-					isArray(child) &&
-					child.every(
-						(element): element is BaseNode<any, any> =>
-							element instanceof BaseNode
-					)
-				) {
-					json[k] = child.map((element) => element.json)
-				}
-			} else {
-				json[k] = compileSerializedValue(child)
-			}
+			json[k] = unwrapChild(children[k])
 		}
 		return json
 	}
@@ -247,6 +237,35 @@ export abstract class BaseNode<
 		}
 		return null
 	}
+}
+
+const unwrapChild = (child: unknown): JsonData => {
+	if (
+		typeof child === "string" ||
+		typeof child === "boolean" ||
+		typeof child === "number" ||
+		child === null
+	) {
+		return child
+	} else if (typeof child === "object") {
+		if (child instanceof BaseNode) {
+			// collapse schemas like { domain: { domain: "string" } } to { domain: "string" }
+			if (
+				Object.keys(child.json).length === 1 &&
+				hasKey(child.json, child.kind)
+			) {
+				return child.json[child.kind]
+			}
+		} else if (
+			isArray(child) &&
+			child.every(
+				(element): element is BaseNode<any, any> => element instanceof BaseNode
+			)
+		) {
+			return child.map((element) => element.json)
+		}
+	}
+	return compileSerializedValue(child)
 }
 
 type IntersectionResult<
