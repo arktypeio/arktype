@@ -18,10 +18,7 @@ import type {
 	ConstraintKind
 } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
-import {
-	type CompilationContext,
-	compileSerializedValue
-} from "./io/compile.js"
+import { type CompilationState, compileSerializedValue } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import type {
 	TypeChildren,
@@ -175,10 +172,7 @@ export abstract class BaseNode<
 
 	protected static defineCompiler<nodeClass>(
 		this: nodeClass,
-		compiler: (
-			children: childrenOf<nodeClass>,
-			ctx: CompilationContext
-		) => string
+		compiler: (children: childrenOf<nodeClass>, ctx: CompilationState) => string
 	) {
 		return compiler
 	}

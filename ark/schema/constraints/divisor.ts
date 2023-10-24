@@ -26,7 +26,7 @@ export class DivisorNode
 		(children, ctx) => `${ctx.data} % ${children.divisor} === 0`
 	)
 
-	static readonly compile = this.defineCompiler((children, ctx) => ``)
+	static readonly compile = this.defineCompiler((children, ctx) => "")
 
 	static readonly keyKinds = this.declareKeys({
 		divisor: "in"
