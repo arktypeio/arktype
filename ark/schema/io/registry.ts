@@ -1,13 +1,5 @@
-import {
-	type autocomplete,
-	domainOf,
-	objectKindOf,
-	throwInternalError
-} from "@arktype/util"
+import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
 import { isDotAccessible } from "./compile.js"
-import type { TraversalState } from "./traverse.js"
-
-type RegisteredInternalkey = "state"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
@@ -15,7 +7,6 @@ export const registry = () => new Registry()
 
 class Registry {
 	[k: string]: unknown
-	declare state: typeof TraversalState
 
 	constructor() {
 		const global = globalThis as any
@@ -25,15 +16,7 @@ class Registry {
 		global.$ark = this
 	}
 
-	registerInternal<key extends RegisteredInternalkey>(
-		key: key,
-		value: Registry[key]
-	) {
-		this[key] = value as never
-	}
-
-	register(value: object | symbol) {
-		const baseName = baseNameFor(value)
+	register(value: object | symbol, baseName = baseNameFor(value)) {
 		let variableName = baseName
 		let suffix = 2
 		while (variableName in this && this[variableName] !== value) {
@@ -43,8 +26,7 @@ class Registry {
 		return this.reference(variableName)
 	}
 
-	reference = <key extends autocomplete<RegisteredInternalkey>>(key: key) =>
-		`$ark.${key}` as const
+	reference = (key: string) => `$ark.${key}` as const
 }
 
 const baseNameFor = (value: object | symbol) => {

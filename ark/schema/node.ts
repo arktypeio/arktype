@@ -10,14 +10,20 @@ import type {
 	Json,
 	returnOf
 } from "@arktype/util"
-import { DynamicBase, isArray } from "@arktype/util"
+import { CompiledFunction, DynamicBase, isArray } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
 import type {
 	ConstraintClassesByKind,
 	ConstraintKind
 } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
-import { compileSerializedValue } from "./io/compile.js"
+import {
+	type CompilationContext,
+	compile,
+	compileSerializedValue,
+	In
+} from "./io/compile.js"
+import { registry } from "./io/registry.js"
 import type { TypeClassesByKind, validateBranchInput } from "./type.js"
 
 export interface BaseAttributes {
@@ -45,6 +51,7 @@ export interface StaticBaseNode<children extends BaseAttributes> {
 	kind: NodeKind
 	keyKinds: Record<keyof children, keyof NodeIds>
 	intersections: IntersectionDefinitions<any>
+	// compile(children: children, ctx: CompilationContext): string
 	writeDefaultDescription(children: children): string
 }
 
@@ -97,6 +104,8 @@ type extensionKeyOf<nodeClass> = Exclude<
 	keyof BaseAttributes
 >
 
+const $ark = registry()
+
 export abstract class BaseNode<
 	children extends BaseAttributes,
 	nodeClass extends StaticBaseNode<children>
@@ -108,9 +117,13 @@ export abstract class BaseNode<
 	nodeClass = this.constructor as nodeClass
 	readonly kind: nodeClass["kind"] = this.nodeClass.kind
 
+	allows(data: unknown) {
+		return true
+	}
+
 	constructor(public children: children) {
 		super(children)
-		this.alias = children.alias ?? "generated"
+		this.alias = $ark.register(this, children.alias)
 		this.description =
 			children.description ??
 			(this.constructor as nodeClass).writeDefaultDescription(children)
@@ -182,10 +195,6 @@ export abstract class BaseNode<
 
 	equals(other: BaseNode<any, any>) {
 		return this.ids.morph === other.ids.morph
-	}
-
-	allows(data: unknown) {
-		return true
 	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {

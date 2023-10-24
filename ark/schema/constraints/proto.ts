@@ -30,9 +30,6 @@ export class ProtoNode<
 
 	declare infer: InstanceType<rule>
 
-	// id
-	// this.knownObjectKind ?? compileSerializedValue(this.rule)
-
 	knownObjectKind = objectKindOf(this.proto)
 	basisName = `${this.proto.name}`
 

@@ -59,31 +59,8 @@ export class ValidatorNode extends BaseNode<
 > {
 	static readonly kind = "validator"
 
-	static keyKinds = this.declareKeys(
-		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
-	)
-
-	static intersections = this.defineIntersections({
-		validator: (l, r) => {
-			const constraints = intersectConstraints(l.constraints, r.constraints)
-			return constraints instanceof Disjoint
-				? constraints
-				: unflattenConstraints(constraints)
-		},
-		constraint: (l, r) => {
-			const constraints = addConstraint(l.constraints, r)
-			return constraints instanceof Disjoint
-				? constraints
-				: unflattenConstraints(constraints)
-		}
-	})
-
 	declare constraints: readonly Node<ConstraintKind>[]
 	declare refinements: readonly Node<RefinementKind>[]
-	basis: Node<BasisKind> | undefined;
-	// for ease of use when comparing to MorphNode
-	in = this
-	out = undefined
 
 	constructor(children: ValidatorChildren) {
 		const rawConstraints = flattenConstraints(children)
@@ -113,6 +90,30 @@ export class ValidatorNode extends BaseNode<
 		) as never
 		assertValidRefinements(this.basis, this.refinements)
 	}
+
+	static keyKinds = this.declareKeys(
+		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
+	)
+
+	static intersections = this.defineIntersections({
+		validator: (l, r) => {
+			const constraints = intersectConstraints(l.constraints, r.constraints)
+			return constraints instanceof Disjoint
+				? constraints
+				: unflattenConstraints(constraints)
+		},
+		constraint: (l, r) => {
+			const constraints = addConstraint(l.constraints, r)
+			return constraints instanceof Disjoint
+				? constraints
+				: unflattenConstraints(constraints)
+		}
+	})
+
+	basis: Node<BasisKind> | undefined;
+	// for ease of use when comparing to MorphNode
+	in = this
+	out = undefined
 
 	static from(schema: IntersectionSchema) {
 		const children = parseIntersectionChildren(schema)

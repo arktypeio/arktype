@@ -48,6 +48,10 @@ export class TypeNode<t = unknown> extends BaseNode<
 
 	static readonly kind = "type"
 
+	constructor(children: TypeChildren) {
+		super(children)
+	}
+
 	static keyKinds = this.declareKeys({
 		branches: "in"
 	})
@@ -96,10 +100,6 @@ export class TypeNode<t = unknown> extends BaseNode<
 				  }
 		}
 	})
-
-	constructor(children: TypeChildren) {
-		super(children)
-	}
 
 	static from<const branches extends readonly unknown[]>(
 		...branches: {

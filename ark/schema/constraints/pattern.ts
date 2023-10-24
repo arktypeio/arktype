@@ -17,6 +17,7 @@ export class PatternNode
 	implements BaseRefinement
 {
 	static readonly kind = "pattern"
+	readonly flags = this.children.flags ?? ""
 
 	static keyKinds = this.declareKeys({
 		source: "in",

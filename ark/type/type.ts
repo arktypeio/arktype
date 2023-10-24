@@ -152,7 +152,7 @@ export type TypeConfig = {
 	mustBe?: string
 }
 
-registry().registerInternal("state", TraversalState)
+registry().register(TraversalState, "state")
 
 export class Type<t = unknown, $ = any> extends CompiledFunction<
 	(data: unknown) => CheckResult<extractOut<t>>

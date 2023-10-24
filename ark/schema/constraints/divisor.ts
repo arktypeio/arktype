@@ -28,8 +28,9 @@ export class DivisorNode
 
 	static intersections = this.defineIntersections({
 		divisor: (l, r) => ({
-			divisor:
+			divisor: Math.abs(
 				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+			)
 		})
 	})
 
