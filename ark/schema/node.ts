@@ -17,6 +17,7 @@ import type {
 	ConstraintClassesByKind,
 	ConstraintKind
 } from "./constraints/constraint.js"
+import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import {
 	type CompilationState,
@@ -54,6 +55,7 @@ export interface StaticBaseNode<children extends BaseAttributes> {
 	new (children: children): BaseNode<children, any>
 	kind: NodeKind
 	keyKinds: Record<keyof children, keyof NodeIds>
+	from(input: children, ctx: RefinementContext): BaseNode<children, any>
 	intersections: IntersectionDefinitions<any>
 	// compile(children: children, state: CompilationState): string
 	writeDefaultDescription(children: children): string

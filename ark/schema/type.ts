@@ -21,10 +21,10 @@ import { BaseNode } from "./node.js"
 import { inferred } from "./utils.js"
 import {
 	constraintClassesByKind,
-	type IntersectionSchema,
 	type parseIntersection,
 	type validateIntersectionInput,
-	ValidatorNode
+	ValidatorNode,
+	type ValidatorSchema
 } from "./validator.js"
 
 export type BranchNode = ValidatorNode | MorphNode
@@ -41,7 +41,7 @@ export interface TypeChildren extends BaseAttributes {
 	readonly branches: readonly BranchNode[]
 }
 
-export type BranchSchema = IntersectionSchema | MorphSchema
+export type BranchSchema = ValidatorSchema | MorphSchema
 
 export class TypeNode<t = unknown> extends BaseNode<
 	TypeChildren,
@@ -229,7 +229,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 	}
 }
 
-export type TypeInput = listable<IntersectionSchema | MorphSchema>
+export type TypeInput = listable<ValidatorSchema | MorphSchema>
 
 export type UnwrappableKind = BranchNode["kind"] | ConstraintKind
 
@@ -252,7 +252,7 @@ export type validateBranchInput<input> = conform<
 
 type parseBranch<branch> = branch extends MorphSchema
 	? parseMorph<branch>
-	: branch extends IntersectionSchema
+	: branch extends ValidatorSchema
 	? parseIntersection<branch>
 	: unknown
 

@@ -32,6 +32,7 @@ export class ProtoNode<
 
 	readonly knownObjectKind = objectKindOf(this.proto)
 	readonly basisName = `${this.proto.name}`
+	readonly domain = "object"
 
 	static readonly keyKinds = this.declareKeys({
 		proto: "in"

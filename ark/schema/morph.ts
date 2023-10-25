@@ -6,9 +6,10 @@ import type { Problem } from "./io/problems.js"
 import type { CheckResult, TraversalState } from "./io/traverse.js"
 import { type BaseAttributes, BaseNode } from "./node.js"
 import type {
-	IntersectionSchema,
 	parseIntersection,
-	validateIntersectionInput
+	validateIntersectionInput,
+	ValidatorChildren,
+	ValidatorSchema
 } from "./validator.js"
 import { ValidatorNode } from "./validator.js"
 
@@ -21,8 +22,8 @@ export interface MorphChildren extends BaseAttributes {
 }
 
 export interface MorphSchema extends BaseAttributes {
-	readonly in?: IntersectionSchema
-	readonly out?: IntersectionSchema
+	readonly in?: ValidatorSchema | ValidatorChildren
+	readonly out?: ValidatorSchema | ValidatorChildren
 	readonly morph: listable<Morph>
 }
 

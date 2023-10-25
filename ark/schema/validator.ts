@@ -22,6 +22,7 @@ import { DomainNode } from "./constraints/domain.js"
 import type { ProtoSchema } from "./constraints/proto.js"
 import { ProtoNode } from "./constraints/proto.js"
 import type {
+	RefinementContext,
 	RefinementIntersectionInput,
 	RefinementKind
 } from "./constraints/refinement.js"
@@ -116,8 +117,9 @@ export class ValidatorNode extends BaseNode<
 	readonly in = this
 	readonly out = undefined
 
-	static from(schema: IntersectionSchema) {
-		const children = parseIntersectionChildren(schema)
+	//explicitly allow ValidatorNode since ValidatorChildren is more flexible than ValidatorSchema
+	static from(schema: ValidatorSchema | ValidatorChildren) {
+		const children = parseIntersectionChildren(schema as never)
 		return new ValidatorNode(children)
 	}
 
@@ -207,7 +209,7 @@ const assertValidRefinements: (
 }
 
 const parseIntersectionChildren = (
-	schema: IntersectionSchema
+	schema: ValidatorSchema
 ): ValidatorChildren => {
 	switch (typeof schema) {
 		case "string":
@@ -218,7 +220,9 @@ const parseIntersectionChildren = (
 			if ("is" in schema) {
 				return { unit: UnitNode.from(schema) }
 			}
-			return parseIntersectionObjectSchema(schema)
+			// this could also be UnknownBranchInput but basised makes the type
+			// easier to deal with internally
+			return parseIntersectionObjectSchema(schema as BasisedBranchInput)
 		default:
 			return throwParseError(
 				`${domainOf(schema)} is not a valid intersection schema input.`
@@ -226,10 +230,32 @@ const parseIntersectionChildren = (
 	}
 }
 
-const parseIntersectionObjectSchema = (
-	schema: UnknownBranchInput | BasisedBranchInput
-) =>
-	transform(schema as BasisedBranchInput, ([k, v]) =>
+const parseIntersectionObjectSchema = ({
+	unit,
+	proto,
+	domain,
+	...refinementsAndAttributes
+}: BasisedBranchInput) => {
+	let basis: Node<BasisKind> | undefined
+	if (unit) {
+		basis = UnitNode.from(unit)
+	}
+	if (proto) {
+		const result = basis?.intersect(ProtoNode.from(proto))
+		if (result instanceof Disjoint) {
+			return result.throw()
+		}
+		basis = result
+	}
+	if (domain) {
+		const result = basis?.intersect(DomainNode.from(domain))
+		if (result instanceof Disjoint) {
+			return result.throw()
+		}
+		basis = result
+	}
+	const refinementContext: RefinementContext = { basis }
+	return transform(refinementsAndAttributes, ([k, v]) =>
 		isKeyOf(k, irreducibleRefinementKinds)
 			? [
 					k,
@@ -238,11 +264,12 @@ const parseIntersectionObjectSchema = (
 					)
 			  ]
 			: isKeyOf(k, constraintClassesByKind)
-			? [k, (constraintClassesByKind[k].from as any)(v)]
+			? [k, constraintClassesByKind[k].from(v as never, refinementContext)]
 			: isKeyOf(k, baseAttributeKeys)
 			? [k, v]
-			: throwParseError(`'${k}' is not valid on an intersection schema`)
-	)
+			: throwParseError(`'${k}' is not a valid refinement kind`)
+	) as ValidatorChildren
+}
 
 type basisOf<k extends RefinementKind> = Node<k>["applicableTo"] extends ((
 	_: Node<BasisKind> | undefined
@@ -293,7 +320,7 @@ export type UnknownBranchInput = {
 	predicate?: RefinementIntersectionInput<"predicate">
 } & BaseAttributes
 
-export type IntersectionSchema<
+export type ValidatorSchema<
 	basis extends ValidatorBasisInputValue = ValidatorBasisInputValue
 > = basis | UnknownBranchInput | BasisedBranchInput<basis>
 
@@ -324,7 +351,7 @@ export type validateIntersectionInput<input> = input extends
 	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
 	: input extends UnknownBranchInput
 	? exactMessageOnError<input, UnknownBranchInput>
-	: CollapsedUnitSchema | IntersectionSchema | MorphSchema
+	: CollapsedUnitSchema | ValidatorSchema | MorphSchema
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

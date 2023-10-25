@@ -1,5 +1,4 @@
-import type { TypeNode } from "@arktype/schema"
-import { MinNode } from "@arktype/schema"
+import type { ExpandedMinSchema, TypeNode } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
@@ -20,7 +19,7 @@ import {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound?: MinNode
+	leftBound?: ExpandedMinSchema
 	"&"?: TypeNode
 	"|"?: TypeNode
 }
@@ -82,17 +81,17 @@ export class DynamicState {
 			return this.error(
 				writeMultipleLeftBoundsMessage(
 					this.branches.leftBound.min,
-					this.branches.leftBound.comparator,
+					toMinComparator(this.branches.leftBound),
 					limit,
 					invertedComparator
 				)
 			)
 		}
 		// TODO: date?
-		this.branches.leftBound = new MinNode({
+		this.branches.leftBound = {
 			exclusive: comparator.length === 1,
 			min: limit as number
-		})
+		}
 	}
 
 	finalizeBranches() {
@@ -149,7 +148,7 @@ export class DynamicState {
 			return this.error(
 				writeOpenRangeMessage(
 					this.branches.leftBound.min,
-					this.branches.leftBound.comparator
+					toMinComparator(this.branches.leftBound)
 				)
 			)
 		}
@@ -163,13 +162,10 @@ export class DynamicState {
 	}
 
 	previousOperator() {
-		// this.branches.range?.min
-		//     ? this.branches.range.min.comparator
-		//     :
-		return (
-			this.branches.prefixes.at(-1) ??
-			(this.branches["&"] ? "&" : this.branches["|"] ? "|" : undefined)
-		)
+		return this.branches.leftBound
+			? toMinComparator(this.branches.leftBound)
+			: this.branches.prefixes.at(-1) ??
+					(this.branches["&"] ? "&" : this.branches["|"] ? "|" : undefined)
 	}
 
 	shiftedByOne() {
@@ -177,3 +173,6 @@ export class DynamicState {
 		return this
 	}
 }
+
+const toMinComparator = (leftBound: ExpandedMinSchema) =>
+	`>${leftBound.exclusive ? "" : "="}` as const

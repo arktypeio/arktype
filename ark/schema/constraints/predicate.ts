@@ -15,8 +15,8 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
 	| PredicateChildren<rule>
 
-export class PredicateNode<rule extends Predicate = Predicate>
-	extends BaseNode<PredicateChildren<rule>, typeof PredicateNode>
+export class PredicateNode
+	extends BaseNode<PredicateChildren, typeof PredicateNode>
 	implements BaseRefinement
 {
 	static readonly kind = "predicate"

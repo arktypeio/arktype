@@ -131,6 +131,7 @@ export const parseRightBound = (
 		(isDateLiteral(limitToken)
 			? limitToken
 			: s.error(writeInvalidLimitMessage(comparator, limitToken, "right")))
+	// TODO: Fix
 	// apply the newly-parsed right bound
 	// s.constrainRoot("bound", { comparator, limit })
 	if (!s.branches.leftBound) {

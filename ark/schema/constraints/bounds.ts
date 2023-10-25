@@ -1,3 +1,4 @@
+import { throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import {
 	type BaseAttributes,
@@ -9,9 +10,10 @@ import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
-import type { BaseRefinement } from "./refinement.js"
+import type { BaseRefinement, RefinementContext } from "./refinement.js"
 
 export interface BoundChildren extends BaseAttributes {
+	boundKind: BoundKind
 	exclusive?: boolean
 }
 
@@ -27,16 +29,7 @@ export abstract class BaseBound<
 	exclusive = this.children.exclusive ?? false
 
 	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
-		if (basis === undefined) {
-			return false
-		}
-		if (basis.kind === "domain") {
-			return basis.domain === "number" || basis.domain === "string"
-		}
-		if (basis.kind === "proto") {
-			return basis.extendsOneOf(Array, Date)
-		}
-		return false
+		return this.boundKind === getBoundKind(basis)
 	}
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
@@ -48,7 +41,9 @@ export interface MinChildren extends BoundChildren {
 	readonly min: number
 }
 
-export type MinSchema = number | MinChildren
+export type ExpandedMinSchema = Omit<MinChildren, "boundKind">
+
+export type MinSchema = number | ExpandedMinSchema
 
 export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 	static readonly kind = "min"
@@ -56,11 +51,17 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 
 	static readonly keyKinds = this.declareKeys({
 		min: "in",
-		exclusive: "in"
+		exclusive: "in",
+		boundKind: "in"
 	})
 
-	static from(schema: MinSchema) {
-		return new MinNode(typeof schema === "number" ? { min: schema } : schema)
+	static from(schema: MinSchema, ctx: RefinementContext) {
+		const boundKind = getBoundKind(ctx.basis)
+		return new MinNode(
+			typeof schema === "number"
+				? { min: schema, boundKind }
+				: { ...schema, boundKind }
+		)
 	}
 
 	static readonly intersections = this.defineIntersections({
@@ -72,11 +73,14 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 	})
 
 	static writeDefaultDescription(children: MinChildren) {
-		// Date
-		// rule.exclusive
-		// ? "after"
-		// : "at or after"
-		const comparisonDescription = children.exclusive ? "more than" : "at least"
+		const comparisonDescription =
+			children.boundKind === "date"
+				? children.exclusive
+					? "after"
+					: "at or after"
+				: children.exclusive
+				? "more than"
+				: "at least"
 		return `${comparisonDescription} ${children.min}`
 	}
 }
@@ -85,7 +89,9 @@ export interface MaxChildren extends BoundChildren {
 	readonly max: number
 }
 
-export type MaxSchema = number | MaxChildren
+export type ExpandedMaxSchema = Omit<MaxChildren, "boundKind">
+
+export type MaxSchema = number | ExpandedMaxSchema
 
 export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 	static readonly kind = "max"
@@ -97,44 +103,72 @@ export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 
 	static readonly keyKinds = this.declareKeys({
 		max: "in",
-		exclusive: "in"
+		exclusive: "in",
+		boundKind: "in"
 	})
 
 	static writeDefaultDescription(children: MaxChildren) {
-		// Date
-		// rule.exclusive
-		// ? "before"
-		// : "at or before"
-		const comparisonDescription = children.exclusive ? "less than" : "at most"
+		const comparisonDescription =
+			children.boundKind === "date"
+				? children.exclusive
+					? "before"
+					: "at or before"
+				: children.exclusive
+				? "less than"
+				: "at most"
 		return `${comparisonDescription} ${children.max}`
 	}
 
-	static from(schema: MaxSchema) {
-		return new MaxNode(typeof schema === "number" ? { max: schema } : schema)
+	static from(schema: MaxSchema, ctx: RefinementContext) {
+		const boundKind = getBoundKind(ctx.basis)
+		return new MaxNode(
+			typeof schema === "number"
+				? { max: schema, boundKind }
+				: { ...schema, boundKind }
+		)
 	}
 }
 
-export type BoundKind = "date" | "number"
+const getBoundKind = (basis: Node<BasisKind> | undefined): BoundKind => {
+	if (basis === undefined) {
+		return throwParseError(writeUnboundableMessage("unknown"))
+	}
+	if (basis.domain === "number" || basis.domain === "string") {
+		return basis.domain
+	}
+	if (
+		(basis.kind === "unit" && basis.unit instanceof Array) ||
+		(basis.kind === "proto" && basis.extendsOneOf(Array))
+	) {
+		return "array"
+	}
+	if (
+		(basis.kind === "unit" && basis.unit instanceof Date) ||
+		(basis.kind === ("proto" as never) &&
+			(basis as {} as ProtoNode).extendsOneOf(Date))
+	) {
+		return "date"
+	}
+	return throwParseError(writeUnboundableMessage(basis.basisName))
+}
 
 type BoundableBasis =
 	| DomainNode<"number" | "string">
 	| ProtoNode<typeof Array | typeof Date>
 
-const unitsByBoundedKind = {
+const unitsByBoundKind = {
 	date: "",
 	number: "",
 	string: "characters",
 	array: "elements"
 } as const
 
-export type BoundableDataKind = keyof typeof unitsByBoundedKind
+export type BoundKind = keyof typeof unitsByBoundKind
 
 export type LimitKind = "min" | "max"
 
-export const writeIncompatibleRangeMessage = (
-	l: BoundableDataKind,
-	r: BoundableDataKind
-) => `Bound kinds ${l} and ${r} are incompatible`
+export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
+	`Bound kinds ${l} and ${r} are incompatible`
 
 export type NumericallyBoundableData = string | number | readonly unknown[]
 

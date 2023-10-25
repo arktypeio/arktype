@@ -1,4 +1,4 @@
-import { hasKey, stringify, throwParseError } from "@arktype/util"
+import { domainOf, hasKey, stringify, throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
@@ -21,6 +21,7 @@ export class UnitNode<const rule = unknown>
 {
 	static readonly kind = "unit"
 	readonly is = this.unit
+	readonly domain = domainOf(this.unit)
 	declare infer: rule
 
 	// TODO: add reference to for objects
