@@ -11,7 +11,7 @@ import type {
 	JsonData,
 	returnOf
 } from "@arktype/util"
-import { DynamicBase, hasKey, isArray } from "@arktype/util"
+import { DynamicBase, hasKey, isArray, isKeyOf } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
 import type {
 	ConstraintClassesByKind,
@@ -51,7 +51,7 @@ export interface StaticBaseNode<children extends BaseAttributes> {
 	kind: NodeKind
 	keyKinds: Record<keyof children, keyof NodeIds>
 	intersections: IntersectionDefinitions<any>
-	// compile(children: children, ctx: CompilationContext): string
+	// compile(children: children, state: CompilationState): string
 	writeDefaultDescription(children: children): string
 }
 
@@ -104,6 +104,8 @@ type extensionKeyOf<nodeClass> = Exclude<
 	keyof BaseAttributes
 >
 
+type UnknownNode = BaseNode<any, any>
+
 const $ark = registry()
 
 export abstract class BaseNode<
@@ -114,6 +116,7 @@ export abstract class BaseNode<
 	readonly alias: string
 	readonly description: string
 	readonly ids: NodeIds = new NodeIds(this)
+	readonly onlyChild: UnknownNode | undefined
 	readonly nodeClass = this.constructor as nodeClass
 	readonly kind: nodeClass["kind"] = this.nodeClass.kind
 
@@ -127,19 +130,23 @@ export abstract class BaseNode<
 		this.description =
 			children.description ??
 			(this.constructor as nodeClass).writeDefaultDescription(children)
-		this.json = BaseNode.unwrapChildren(children)
+		this.json = BaseNode.toSerializable(children)
+		this.onlyChild =
+			Object.keys(this.children).length === 1 &&
+			isKeyOf(this.kind, this.children)
+				? (this.children[this.kind] as UnknownNode)
+				: undefined
 	}
 
-	protected static unwrapChildren<nodeClass>(
+	protected static toSerializable<nodeClass>(
 		this: nodeClass,
 		children: childrenOf<nodeClass>
 	) {
-		if (
-			"branches" in children &&
-			(children as TypeChildren).branches.length === 1
-		) {
+		// TS doesn't like to narrow the input type
+		const maybeTypeChildren: object = children
+		if (isTypeChildren(maybeTypeChildren)) {
 			// collapse single branch schemas like { branches: [{ domain: "string" }] } to { domain: "string" }
-			return (children as TypeChildren).branches[0].json
+			return maybeTypeChildren.branches[0].json
 		}
 		const json: Json = {}
 		for (const k in children) {
@@ -203,6 +210,7 @@ export abstract class BaseNode<
 		return this.description
 	}
 
+	// TODO: add input kind, caching
 	intersect<other extends Node>(
 		other: other
 	): IntersectionResult<this["kind"], other["kind"]>
@@ -241,26 +249,28 @@ const unwrapChild = (child: unknown): JsonData => {
 		child === null
 	) {
 		return child
-	} else if (typeof child === "object") {
+	}
+	if (typeof child === "object") {
 		if (child instanceof BaseNode) {
-			// collapse schemas like { domain: { domain: "string" } } to { domain: "string" }
-			if (
-				Object.keys(child.json).length === 1 &&
-				hasKey(child.json, child.kind)
-			) {
-				return child.json[child.kind]
-			}
-		} else if (
+			return unwrapNode(child)
+		}
+		if (
 			isArray(child) &&
 			child.every(
-				(element): element is BaseNode<any, any> => element instanceof BaseNode
+				(element): element is UnknownNode => element instanceof BaseNode
 			)
 		) {
-			return child.map((element) => element.json)
+			return child.map((element) => unwrapNode(element))
 		}
 	}
 	return compileSerializedValue(child)
 }
+
+/** collapse schemas like { domain: { domain: "string" } } to { domain: "string" } **/
+const unwrapNode = (child: UnknownNode) => child.onlyChild?.json ?? child.json
+
+const isTypeChildren = (children: object): children is TypeChildren =>
+	"branches" in children
 
 type IntersectionResult<
 	l extends NodeKind,

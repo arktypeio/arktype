@@ -90,7 +90,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		},
 		morph: this.intersectBranch,
 		validator: this.intersectBranch,
-		constraint: (l, r) => {
+		constraint: (l, r): Disjoint | TypeChildren => {
 			const branches: BranchNode[] = []
 			for (const branch of l.branches) {
 				const branchResult = branch.intersect(r)

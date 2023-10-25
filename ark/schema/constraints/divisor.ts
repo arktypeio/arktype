@@ -23,10 +23,12 @@ export class DivisorNode
 	}
 
 	static readonly compileCondition = this.defineCompiler(
-		(children, ctx) => `${ctx.data} % ${children.divisor} === 0`
+		(children, state) => `${state.data} % ${children.divisor} === 0`
 	)
 
-	static readonly compile = this.defineCompiler((children, ctx) => "")
+	// static readonly compile = this.defineCompiler((children, state) =>
+	// 	state.check()
+	// )
 
 	static readonly keyKinds = this.declareKeys({
 		divisor: "in"
