@@ -1,4 +1,8 @@
 import { throwParseError } from "@arktype/util"
+import {
+	type MaxComparator,
+	type MinComparator
+} from "arktype/internal/parser/string/shift/operator/bounds.js"
 import { Disjoint } from "../disjoint.js"
 import {
 	type BaseAttributes,
@@ -17,6 +21,10 @@ export interface BoundChildren extends BaseAttributes {
 	exclusive?: boolean
 }
 
+export type BoundSchema = Omit<BoundChildren, "boundKind">
+
+export type BoundLimit = number | string
+
 export abstract class BaseBound<
 		children extends BoundChildren,
 		nodeClass extends StaticBaseNode<children>
@@ -24,16 +32,18 @@ export abstract class BaseBound<
 	extends BaseNode<children, nodeClass>
 	implements BaseRefinement
 {
-	abstract comparator: string
+	readonly exclusive = this.children.exclusive ?? false
 
-	exclusive = this.children.exclusive ?? false
+	readonly comparator = schemaToComparator(this as never)
 
 	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
 		return this.boundKind === getBoundKind(basis)
 	}
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return writeUnboundableMessage(getBasisName(basis))
+		return `BoundKind ${this.boundKind} is not applicable to ${getBasisName(
+			basis
+		)}`
 	}
 }
 
@@ -41,13 +51,14 @@ export interface MinChildren extends BoundChildren {
 	readonly min: number
 }
 
-export type ExpandedMinSchema = Omit<MinChildren, "boundKind">
+export interface ExpandedMinSchema extends BoundSchema {
+	readonly min: BoundLimit
+}
 
-export type MinSchema = number | ExpandedMinSchema
+export type MinSchema = BoundLimit | ExpandedMinSchema
 
 export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 	static readonly kind = "min"
-	readonly comparator = `>${this.exclusive ? "" : "="}` as const
 
 	static readonly keyKinds = this.declareKeys({
 		min: "in",
@@ -58,11 +69,16 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 	static from(schema: MinSchema, ctx: RefinementContext) {
 		const boundKind = getBoundKind(ctx.basis)
 		return new MinNode(
-			typeof schema === "number"
-				? { min: schema, boundKind }
-				: { ...schema, boundKind }
+			typeof schema === "object"
+				? { ...schema, min: parseLimit(schema.min), boundKind }
+				: { min: parseLimit(schema), boundKind }
 		)
 	}
+
+	static readonly compile = this.defineTerminalCompiler(
+		(children) =>
+			`${this.argName} ${schemaToComparator(children)} ${children.min}`
+	)
 
 	static readonly intersections = this.defineIntersections({
 		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r),
@@ -89,13 +105,14 @@ export interface MaxChildren extends BoundChildren {
 	readonly max: number
 }
 
-export type ExpandedMaxSchema = Omit<MaxChildren, "boundKind">
+export interface ExpandedMaxSchema extends BoundSchema {
+	readonly max: BoundLimit
+}
 
-export type MaxSchema = number | ExpandedMaxSchema
+export type MaxSchema = BoundLimit | ExpandedMaxSchema
 
 export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 	static readonly kind = "max"
-	readonly comparator = `<${this.exclusive ? "" : "="}` as const
 
 	static readonly intersections = this.defineIntersections({
 		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r)
@@ -106,6 +123,11 @@ export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 		exclusive: "in",
 		boundKind: "in"
 	})
+
+	static readonly compile = this.defineTerminalCompiler(
+		(children) =>
+			`${this.argName} ${schemaToComparator(children)} ${children.max}`
+	)
 
 	static writeDefaultDescription(children: MaxChildren) {
 		const comparisonDescription =
@@ -122,12 +144,17 @@ export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 	static from(schema: MaxSchema, ctx: RefinementContext) {
 		const boundKind = getBoundKind(ctx.basis)
 		return new MaxNode(
-			typeof schema === "number"
-				? { max: schema, boundKind }
-				: { ...schema, boundKind }
+			typeof schema === "object"
+				? { ...schema, max: parseLimit(schema.max), boundKind }
+				: { max: parseLimit(schema), boundKind }
 		)
 	}
 }
+
+const parseLimit = (limitLiteral: BoundLimit): number =>
+	typeof limitLiteral === "string"
+		? new Date(limitLiteral).valueOf()
+		: limitLiteral
 
 const getBoundKind = (basis: Node<BasisKind> | undefined): BoundKind => {
 	if (basis === undefined) {
@@ -166,6 +193,15 @@ const unitsByBoundKind = {
 export type BoundKind = keyof typeof unitsByBoundKind
 
 export type LimitKind = "min" | "max"
+
+export const schemaToComparator = <
+	schema extends ExpandedMinSchema | ExpandedMaxSchema
+>(
+	schema: schema
+) =>
+	`${"min" in schema ? ">" : "<"}${
+		schema.exclusive ? "" : "="
+	}` as schema extends ExpandedMinSchema ? MinComparator : MaxComparator
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 	`Bound kinds ${l} and ${r} are incompatible`

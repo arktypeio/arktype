@@ -1,9 +1,4 @@
-import type {
-	Completion,
-	defined,
-	ErrorMessage,
-	ZeroWidthSpace
-} from "@arktype/util"
+import type { Completion, defined, ErrorMessage } from "@arktype/util"
 import type {
 	Comparator,
 	InvertedComparators,

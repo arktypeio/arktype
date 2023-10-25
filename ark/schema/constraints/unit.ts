@@ -1,5 +1,6 @@
 import { domainOf, hasKey, stringify, throwParseError } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
+import { compileSerializedValue } from "../io/compile.js"
 import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
@@ -30,6 +31,10 @@ export class UnitNode<const rule = unknown>
 	static readonly keyKinds = this.declareKeys({
 		unit: "in"
 	})
+
+	static readonly compile = this.defineTerminalCompiler(
+		(children) => `${this.argName} === ${compileSerializedValue(children.unit)}`
+	)
 
 	static readonly intersections = this.defineIntersections({
 		unit: (l, r) => Disjoint.from("unit", l, r),

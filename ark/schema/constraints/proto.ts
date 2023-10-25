@@ -7,6 +7,7 @@ import {
 } from "@arktype/util"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
+import { compileSerializedValue } from "../io/compile.js"
 import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
@@ -52,6 +53,13 @@ export class ProtoNode<
 				? l
 				: Disjoint.from("domain", builtins.object().unwrapOnly("domain")!, r)
 	})
+
+	static readonly compile = this.defineTerminalCompiler(
+		(children) =>
+			`${this.argName} instanceof ${
+				objectKindOf(children.proto) ?? compileSerializedValue(children.proto)
+			}`
+	)
 
 	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
 		return new ProtoNode<rule>(

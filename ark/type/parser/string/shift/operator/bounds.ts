@@ -131,9 +131,15 @@ export const parseRightBound = (
 		(isDateLiteral(limitToken)
 			? limitToken
 			: s.error(writeInvalidLimitMessage(comparator, limitToken, "right")))
-	// TODO: Fix
 	// apply the newly-parsed right bound
-	// s.constrainRoot("bound", { comparator, limit })
+	const exclusive = comparator.length === 1
+	// if the comparator is ==, both max and min will be applied
+	if (comparator[0] !== ">") {
+		s.constrainRoot("max", { max: limit, exclusive })
+	}
+	if (comparator[0] !== "<") {
+		s.constrainRoot("min", { min: limit, exclusive })
+	}
 	if (!s.branches.leftBound) {
 		return
 	}
@@ -141,7 +147,7 @@ export const parseRightBound = (
 	if (!isKeyOf(comparator, maxComparators)) {
 		return s.error(writeUnpairableComparatorMessage(comparator))
 	}
-	// s.constrainRoot("bound", s.branches.leftBound)
+	s.constrainRoot("min", s.branches.leftBound)
 	delete s.branches.leftBound
 }
 

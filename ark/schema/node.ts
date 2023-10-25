@@ -185,17 +185,12 @@ export abstract class BaseNode<
 
 	protected static readonly argName = In
 
-	protected static defineCompiler<nodeClass>(
+	protected static defineTerminalCompiler<nodeClass>(
 		this: nodeClass,
 		compiler: (children: childrenOf<nodeClass>) => string
 	) {
 		return compiler
 	}
-
-	protected static compileCheck<nodeClass>(
-		this: nodeClass,
-		compiler: (children: childrenOf<nodeClass>) => string
-	) {}
 
 	serialize(kind: keyof NodeIds = "meta") {
 		return JSON.stringify(this.json)

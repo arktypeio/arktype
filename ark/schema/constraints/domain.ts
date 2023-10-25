@@ -33,6 +33,12 @@ export class DomainNode<
 		domain: "in"
 	})
 
+	static readonly compile = this.defineTerminalCompiler((children) =>
+		children.domain === "object"
+			? `((typeof ${this.argName} === "object" && ${this.argName} !== null) || typeof ${this.argName} === "function")`
+			: `typeof ${this.argName} === "${children.domain}"`
+	)
+
 	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
 		return new DomainNode(
 			typeof schema === "string" ? { domain: schema } : schema

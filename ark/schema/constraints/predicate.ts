@@ -1,3 +1,4 @@
+import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type BaseAttributes, BaseNode, type Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
@@ -24,6 +25,11 @@ export class PredicateNode
 	static readonly keyKinds = this.declareKeys({
 		predicate: "in"
 	})
+
+	static readonly compile = this.defineTerminalCompiler(
+		(children) =>
+			`${compileSerializedValue(children.predicate)}(${this.argName})`
+	)
 
 	static readonly intersections = this.defineIntersections({
 		predicate: () => null

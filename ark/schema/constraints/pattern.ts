@@ -38,6 +38,10 @@ export class PatternNode
 		)
 	}
 
+	static readonly compile = this.defineTerminalCompiler(
+		(children) => `${children.pattern}.test(${this.argName})`
+	)
+
 	static writeDefaultDescription(children: PatternChildren) {
 		return `matched by ${children.pattern}`
 	}

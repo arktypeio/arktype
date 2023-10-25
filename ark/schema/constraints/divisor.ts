@@ -22,13 +22,9 @@ export class DivisorNode
 		)
 	}
 
-	static readonly compileCondition = this.defineCompiler(
+	static readonly compile = this.defineTerminalCompiler(
 		(children) => `${this.argName} % ${children.divisor} === 0`
 	)
-
-	// static readonly compile = this.defineCompiler((children, state) =>
-	// 	state.check()
-	// )
 
 	static readonly keyKinds = this.declareKeys({
 		divisor: "in"

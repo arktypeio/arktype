@@ -20,7 +20,6 @@ export type CompilationConfig = {
 
 export class CompilationState {
 	path: CompiledPathSegment[] = []
-	bases: Node<BasisKind>[] = []
 	discriminants: Discriminant[] = []
 
 	constructor(public config: CompilationConfig) {}
@@ -46,10 +45,6 @@ export class CompilationState {
 			}
 		}
 		return name
-	}
-
-	get lastBasis() {
-		return this.bases.at(-1)
 	}
 
 	pushNamedKey(name: string) {
