@@ -18,7 +18,11 @@ import type {
 	ConstraintKind
 } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
-import { type CompilationState, compileSerializedValue } from "./io/compile.js"
+import {
+	type CompilationState,
+	compileSerializedValue,
+	In
+} from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import type {
 	TypeChildren,
@@ -177,12 +181,19 @@ export abstract class BaseNode<
 		return intersections
 	}
 
+	protected static readonly argName = In
+
 	protected static defineCompiler<nodeClass>(
 		this: nodeClass,
-		compiler: (children: childrenOf<nodeClass>, ctx: CompilationState) => string
+		compiler: (children: childrenOf<nodeClass>) => string
 	) {
 		return compiler
 	}
+
+	protected static compileCheck<nodeClass>(
+		this: nodeClass,
+		compiler: (children: childrenOf<nodeClass>) => string
+	) {}
 
 	serialize(kind: keyof NodeIds = "meta") {
 		return JSON.stringify(this.json)
@@ -192,7 +203,7 @@ export abstract class BaseNode<
 		return this.json
 	}
 
-	equals(other: BaseNode<any, any>) {
+	equals(other: UnknownNode) {
 		return this.ids.morph === other.ids.morph
 	}
 

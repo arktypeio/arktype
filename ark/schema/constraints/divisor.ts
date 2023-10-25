@@ -23,7 +23,7 @@ export class DivisorNode
 	}
 
 	static readonly compileCondition = this.defineCompiler(
-		(children, state) => `${state.data} % ${children.divisor} === 0`
+		(children) => `${this.argName} % ${children.divisor} === 0`
 	)
 
 	// static readonly compile = this.defineCompiler((children, state) =>
