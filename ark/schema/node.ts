@@ -22,8 +22,8 @@ import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import type {
-	TypeChildren,
 	TypeClassesByKind,
+	TypeInner,
 	validateBranchInput
 } from "./type.js"
 
@@ -47,14 +47,14 @@ const prevalidated = Symbol("used to bypass validation when creating a node")
 
 export type Prevalidated = typeof prevalidated
 
-export interface StaticBaseNode<children extends BaseAttributes> {
-	new (children: children): BaseNode<children, any>
+export interface StaticBaseNode<inner extends BaseAttributes> {
+	new (inner: inner): BaseNode<inner, any>
 	kind: NodeKind
-	keyKinds: Record<keyof children, keyof NodeIds>
-	from(input: children, ctx: RefinementContext): BaseNode<children, any>
+	keyKinds: Record<keyof inner, keyof NodeIds>
+	from(input: inner, ctx: RefinementContext): BaseNode<inner, any>
 	intersections: IntersectionDefinitions<any>
-	compile(children: children): string
-	writeDefaultDescription(children: children): string
+	compile(inner: inner): string
+	writeDefaultDescription(inner: inner): string
 }
 
 type IntersectionGroup = NodeKind | "constraint"
@@ -143,17 +143,17 @@ export abstract class BaseNode<
 
 	protected static toSerializable<nodeClass>(
 		this: nodeClass,
-		children: innerOf<nodeClass>
+		inner: innerOf<nodeClass>
 	) {
 		// TS doesn't like to narrow the input type
-		const maybeTypeChildren: object = children
-		if (isTypeChildren(maybeTypeChildren)) {
+		const maybeTypeInner: object = inner
+		if (isTypeInner(maybeTypeInner)) {
 			// collapse single branch schemas like { branches: [{ domain: "string" }] } to { domain: "string" }
-			return maybeTypeChildren.branches[0].json
+			return maybeTypeInner.branches[0].json
 		}
 		const json: Json = {}
-		for (const k in children) {
-			json[k] = unwrapChild(children[k])
+		for (const k in inner) {
+			json[k] = innerToJson(inner[k])
 		}
 		return json
 	}
@@ -184,7 +184,7 @@ export abstract class BaseNode<
 
 	protected static defineCompiler<nodeClass>(
 		this: nodeClass,
-		compiler: (children: innerOf<nodeClass>) => string
+		compiler: (inner: innerOf<nodeClass>) => string
 	) {
 		return compiler
 	}
@@ -246,37 +246,36 @@ export abstract class BaseNode<
 	}
 }
 
-const unwrapChild = (child: unknown): JsonData => {
+const innerToJson = (inner: unknown): JsonData => {
 	if (
-		typeof child === "string" ||
-		typeof child === "boolean" ||
-		typeof child === "number" ||
-		child === null
+		typeof inner === "string" ||
+		typeof inner === "boolean" ||
+		typeof inner === "number" ||
+		inner === null
 	) {
-		return child
+		return inner
 	}
-	if (typeof child === "object") {
-		if (child instanceof BaseNode) {
-			return unwrapNode(child)
+	if (typeof inner === "object") {
+		if (inner instanceof BaseNode) {
+			return unwrapNode(inner)
 		}
 		if (
-			isArray(child) &&
-			child.every(
+			isArray(inner) &&
+			inner.every(
 				(element): element is UnknownNode => element instanceof BaseNode
 			)
 		) {
-			return child.map((element) => unwrapNode(element))
+			return inner.map((element) => unwrapNode(element))
 		}
 	}
-	return compileSerializedValue(child)
+	return compileSerializedValue(inner)
 }
 
 /** collapse schemas like { domain: { domain: "string" } } to { domain: "string" } **/
 const unwrapNode = (child: UnknownNode) =>
-	child.onlyChild ? unwrapChild(child.onlyChild) : child.json
+	child.onlyChild ? innerToJson(child.onlyChild) : child.json
 
-const isTypeChildren = (children: object): children is TypeChildren =>
-	"branches" in children
+const isTypeInner = (inner: object): inner is TypeInner => "branches" in inner
 
 type IntersectionResult<
 	l extends NodeKind,
@@ -340,7 +339,7 @@ export type Schema<kind extends NodeKind> = Parameters<
 	NodeClass<kind>["from"]
 >[0]
 
-export type Children<kind extends NodeKind> = ConstructorParameters<
+export type unwrap<kind extends NodeKind> = ConstructorParameters<
 	NodeClass<kind>
 >[0]
 

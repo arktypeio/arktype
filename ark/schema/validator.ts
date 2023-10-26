@@ -46,7 +46,7 @@ export const constraintClassesByKind = {
 	...basisClassesByKind
 }
 
-export type ValidatorChildren = extend<
+export type ValidatorInner = extend<
 	BaseAttributes,
 	{
 		readonly [k in ConstraintKind]?: k extends IrreducibleRefinementKind
@@ -56,7 +56,7 @@ export type ValidatorChildren = extend<
 >
 
 export class ValidatorNode extends BaseNode<
-	ValidatorChildren,
+	ValidatorInner,
 	typeof ValidatorNode
 > {
 	static readonly kind = "validator"
@@ -64,23 +64,23 @@ export class ValidatorNode extends BaseNode<
 	declare readonly constraints: readonly Node<ConstraintKind>[]
 	declare readonly refinements: readonly Node<RefinementKind>[]
 
-	constructor(children: ValidatorChildren) {
-		const rawConstraints = flattenConstraints(children)
+	constructor(inner: ValidatorInner) {
+		const rawConstraints = flattenConstraints(inner)
 		const reducedConstraints = intersectConstraints([], rawConstraints)
 		if (reducedConstraints instanceof Disjoint) {
 			return reducedConstraints.throw()
 		}
 		if (reducedConstraints.length < rawConstraints.length) {
-			const reducedChildren = unflattenConstraints(reducedConstraints)
-			if ("alias" in children) {
-				reducedChildren.alias = children.alias
+			const reducedInner = unflattenConstraints(reducedConstraints)
+			if ("alias" in inner) {
+				reducedInner.alias = inner.alias
 			}
-			if ("description" in children) {
-				reducedChildren.description = children.description
+			if ("description" in inner) {
+				reducedInner.description = inner.description
 			}
-			children = reducedChildren
+			inner = reducedInner
 		}
-		super(children)
+		super(inner)
 		this.constraints = reducedConstraints
 		this.basis = this.constraints[0]?.isBasis()
 			? this.constraints[0]
@@ -93,7 +93,7 @@ export class ValidatorNode extends BaseNode<
 		assertValidRefinements(this.basis, this.refinements)
 	}
 
-	static compile = this.defineCompiler((children) => "true")
+	static compile = this.defineCompiler((inner) => "true")
 
 	static readonly keyKinds = this.declareKeys(
 		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
@@ -119,25 +119,25 @@ export class ValidatorNode extends BaseNode<
 	readonly in = this
 	readonly out = undefined
 
-	//explicitly allow ValidatorNode since ValidatorChildren is more flexible than ValidatorSchema
-	static from(schema: ValidatorSchema | ValidatorChildren) {
-		const children = parseIntersectionChildren(schema as never)
-		return new ValidatorNode(children)
+	//explicitly allow ValidatorNode since ValidatorInner is more flexible than ValidatorSchema
+	static from(schema: ValidatorSchema | ValidatorInner) {
+		const inner = parseIntersectionSchema(schema as never)
+		return new ValidatorNode(inner)
 	}
 
-	static writeDefaultDescription(children: ValidatorChildren) {
-		const constraints = flattenConstraints(children)
+	static writeDefaultDescription(inner: ValidatorInner) {
+		const constraints = flattenConstraints(inner)
 		return constraints.length === 0 ? "a value" : constraints.join(" and ")
 	}
 }
 
-const flattenConstraints = (children: ValidatorChildren) =>
-	Object.values(children)
+const flattenConstraints = (inner: ValidatorInner) =>
+	Object.values(inner)
 		.flat()
 		.filter((v): v is Node<ConstraintKind> => v instanceof BaseNode)
 
 const unflattenConstraints = (constraints: readonly Node<ConstraintKind>[]) => {
-	return constraints.reduce<mutable<ValidatorChildren>>((result, node) => {
+	return constraints.reduce<mutable<ValidatorInner>>((result, node) => {
 		if (isKeyOf(node.kind, irreducibleRefinementKinds)) {
 			const existing = result[node.kind] as
 				| Node<IrreducibleRefinementKind>[]
@@ -148,9 +148,7 @@ const unflattenConstraints = (constraints: readonly Node<ConstraintKind>[]) => {
 				result[node.kind] = [node as never]
 			}
 		} else if (result[node.kind]) {
-			throwInternalError(
-				`Unexpected intersection of children of kind ${node.kind}`
-			)
+			throwInternalError(`Unexpected intersection ${node.kind} nodes`)
 		} else {
 			result[node.kind] = node as never
 		}
@@ -213,9 +211,7 @@ const assertValidRefinements: (
 	}
 }
 
-const parseIntersectionChildren = (
-	schema: ValidatorSchema
-): ValidatorChildren => {
+const parseIntersectionSchema = (schema: ValidatorSchema): ValidatorInner => {
 	switch (typeof schema) {
 		case "string":
 			return { domain: DomainNode.from(schema) }
@@ -248,8 +244,8 @@ const parseIntersectionObjectSchema = (schema: BasisedBranchInput) => {
 		isKeyOf(k, irreducibleRefinementKinds)
 			? [
 					k,
-					listFrom(v).map((childSchema) =>
-						constraintClassesByKind[k].from(childSchema as never)
+					listFrom(v).map((innerSchema) =>
+						constraintClassesByKind[k].from(innerSchema as never)
 					)
 			  ]
 			: isKeyOf(k, constraintClassesByKind)
@@ -257,7 +253,7 @@ const parseIntersectionObjectSchema = (schema: BasisedBranchInput) => {
 			: isKeyOf(k, baseAttributeKeys)
 			? [k, v]
 			: throwParseError(`'${k}' is not a valid refinement kind`)
-	) as ValidatorChildren
+	) as ValidatorInner
 }
 
 type basisOf<k extends RefinementKind> = Node<k>["applicableTo"] extends ((

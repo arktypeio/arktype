@@ -1,8 +1,6 @@
 import type { SerializablePrimitive } from "@arktype/util"
 import { hasDomain, isArray, serializePrimitive } from "@arktype/util"
-import { type BasisKind } from "../constraints/basis.js"
 import type { Discriminant } from "../discriminate.js"
-import { type Node } from "../node.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
@@ -130,37 +128,6 @@ export const compilePropAccess = (name: string, optional = false) =>
 	isDotAccessible(name)
 		? `${optional ? "?" : ""}.${name}`
 		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
-
-export const compile = (node: Node): string => {
-	switch (node.kind) {
-		case "type":
-			return node.branches.map((child) => compile(child)).join(" || ")
-		case "validator":
-			return node.constraints.map((child) => compile(child)).join(" && ")
-		case "domain":
-			return node.domain === "object"
-				? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-				: `typeof ${In} === "${node.domain}"`
-		case "proto":
-			return `${In} instanceof ${
-				node.knownObjectKind ?? compileSerializedValue(node.proto)
-			}`
-		case "divisor":
-			return `${In} % ${node.divisor} === 0`
-		case "unit":
-			return `${In} === ${compileSerializedValue(node.unit)}`
-		case "max":
-			return `${In} ${node.comparator} ${node.max}`
-		case "min":
-			return `${In} ${node.comparator} ${node.min}`
-		case "pattern":
-			return `${node.pattern}.test(${In})`
-		case "predicate":
-			return `${compileSerializedValue(node)}(${In})`
-		default:
-			throw new Error(`Unsupported`)
-	}
-}
 
 // const compiledSizeByBoundedKind: Record<BoundedKind, string> = {
 // 	date: `${In}.valueOf()`,

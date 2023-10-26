@@ -37,14 +37,14 @@ export interface ExpandedTypeSchema<
 
 export type TypeSchema = listable<BranchSchema> | ExpandedTypeSchema
 
-export interface TypeChildren extends BaseAttributes {
+export interface TypeInner extends BaseAttributes {
 	readonly branches: readonly BranchNode[]
 }
 
 export type BranchSchema = ValidatorSchema | MorphSchema
 
 export class TypeNode<t = unknown> extends BaseNode<
-	TypeChildren,
+	TypeInner,
 	typeof TypeNode
 > {
 	declare infer: t;
@@ -53,8 +53,8 @@ export class TypeNode<t = unknown> extends BaseNode<
 
 	static readonly kind = "type"
 
-	constructor(children: TypeChildren) {
-		super(children)
+	constructor(inner: TypeInner) {
+		super(inner)
 	}
 
 	static readonly keyKinds = this.declareKeys({
@@ -69,7 +69,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		return { branches: resultBranches }
 	}
 
-	static compile = this.defineCompiler((children) => "true")
+	static compile = this.defineCompiler((inner) => "true")
 
 	static readonly intersections = this.defineIntersections({
 		type: (l, r) => {
@@ -92,7 +92,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		},
 		morph: this.intersectBranch,
 		validator: this.intersectBranch,
-		constraint: (l, r): Disjoint | TypeChildren => {
+		constraint: (l, r): Disjoint | TypeInner => {
 			const branches: BranchNode[] = []
 			for (const branch of l.branches) {
 				const branchResult = branch.intersect(r)
@@ -117,7 +117,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		}
 	): parseNode<branches>
 	static from(...schemas: [ExpandedTypeSchema] | BranchSchema[]) {
-		const result = {} as mutable<TypeChildren>
+		const result = {} as mutable<TypeInner>
 		let schemaBranches: readonly BranchSchema[]
 		if (hasDomain(schemas[0], "object") && "branches" in schemas[0]) {
 			const { branches, ...attributes } = schemas[0]
@@ -145,10 +145,8 @@ export class TypeNode<t = unknown> extends BaseNode<
 		return new TypeNode({ branches })
 	}
 
-	static writeDefaultDescription(children: TypeChildren) {
-		return children.branches.length === 0
-			? "never"
-			: children.branches.join(" or ")
+	static writeDefaultDescription(inner: TypeInner) {
+		return inner.branches.length === 0 ? "never" : inner.branches.join(" or ")
 	}
 
 	only = this.branches.length === 1 ? this.branches[0] : undefined

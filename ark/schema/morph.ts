@@ -8,26 +8,26 @@ import { type BaseAttributes, BaseNode } from "./node.js"
 import type {
 	parseIntersection,
 	validateIntersectionInput,
-	ValidatorChildren,
+	ValidatorInner,
 	ValidatorSchema
 } from "./validator.js"
 import { ValidatorNode } from "./validator.js"
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export interface MorphChildren extends BaseAttributes {
+export interface MorphInner extends BaseAttributes {
 	readonly in?: ValidatorNode
 	readonly out?: ValidatorNode
 	readonly morph: readonly Morph[]
 }
 
 export interface MorphSchema extends BaseAttributes {
-	readonly in?: ValidatorSchema | ValidatorChildren
-	readonly out?: ValidatorSchema | ValidatorChildren
+	readonly in?: ValidatorSchema | ValidatorInner
+	readonly out?: ValidatorSchema | ValidatorInner
 	readonly morph: listable<Morph>
 }
 
-export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
+export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
 	static readonly kind = "morph"
 
 	static readonly keyKinds = this.declareKeys({
@@ -42,7 +42,7 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 				// TODO: is this always a parse error? what about for union reduction etc.
 				return throwParseError(`Invalid intersection of morphs`)
 			}
-			const result: mutable<MorphChildren> = {
+			const result: mutable<MorphInner> = {
 				morph: l.morph
 			}
 			if (l.in) {
@@ -82,7 +82,7 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 						in: inTersection
 				  }
 		},
-		constraint: (l, r): MorphChildren | Disjoint => {
+		constraint: (l, r): MorphInner | Disjoint => {
 			const input = l.in ?? builtins.unknown().unwrapOnly("validator")!
 			const constrainedInput = input.intersect(r)
 			return constrainedInput instanceof Disjoint
@@ -94,23 +94,23 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 		}
 	})
 
-	static compile = this.defineCompiler((children) => "true")
+	static compile = this.defineCompiler((inner) => "true")
 
-	static writeDefaultDescription(children: MorphChildren) {
+	static writeDefaultDescription(inner: MorphInner) {
 		return ""
 	}
 
 	static from(schema: MorphSchema) {
-		const children = {} as mutable<MorphChildren>
-		children.morph =
+		const inner = {} as mutable<MorphInner>
+		inner.morph =
 			typeof schema.morph === "function" ? [schema.morph] : schema.morph
 		if (schema.in) {
-			children.in = ValidatorNode.from(schema.in)
+			inner.in = ValidatorNode.from(schema.in)
 		}
 		if (schema.out) {
-			children.out = ValidatorNode.from(schema.out)
+			inner.out = ValidatorNode.from(schema.out)
 		}
-		return new MorphNode(children)
+		return new MorphNode(inner)
 	}
 }
 

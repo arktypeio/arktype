@@ -16,7 +16,7 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement, RefinementContext } from "./refinement.js"
 
-export type BoundChildren = extend<
+export type BoundInner = extend<
 	BaseAttributes,
 	{
 		readonly boundKind: BoundKind
@@ -24,15 +24,15 @@ export type BoundChildren = extend<
 	}
 >
 
-export type BoundSchema = Omit<BoundChildren, "boundKind">
+export type BoundSchema = Omit<BoundInner, "boundKind">
 
 export type BoundLimit = number | string
 
 export abstract class BaseBound<
-		children extends BoundChildren,
-		nodeClass extends StaticBaseNode<children>
+		inner extends BoundInner,
+		nodeClass extends StaticBaseNode<inner>
 	>
-	extends BaseNode<children, nodeClass>
+	extends BaseNode<inner, nodeClass>
 	implements BaseRefinement
 {
 	readonly exclusive = this.inner.exclusive ?? false
@@ -50,8 +50,8 @@ export abstract class BaseBound<
 	}
 }
 
-export type MinChildren = extend<
-	BoundChildren,
+export type MinInner = extend<
+	BoundInner,
 	{
 		readonly min: number
 	}
@@ -66,7 +66,7 @@ export type ExpandedMinSchema = extend<
 
 export type MinSchema = BoundLimit | ExpandedMinSchema
 
-export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
+export class MinNode extends BaseBound<MinInner, typeof MinNode> {
 	static readonly kind = "min"
 
 	static readonly keyKinds = this.declareKeys({
@@ -85,8 +85,7 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 	}
 
 	static readonly compile = this.defineCompiler(
-		(children) =>
-			`${this.argName} ${schemaToComparator(children)} ${children.min}`
+		(inner) => `${this.argName} ${schemaToComparator(inner)} ${inner.min}`
 	)
 
 	static readonly intersections = this.defineIntersections({
@@ -97,21 +96,21 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 				: null
 	})
 
-	static writeDefaultDescription(children: MinChildren) {
+	static writeDefaultDescription(inner: MinInner) {
 		const comparisonDescription =
-			children.boundKind === "date"
-				? children.exclusive
+			inner.boundKind === "date"
+				? inner.exclusive
 					? "after"
 					: "at or after"
-				: children.exclusive
+				: inner.exclusive
 				? "more than"
 				: "at least"
-		return `${comparisonDescription} ${children.min}`
+		return `${comparisonDescription} ${inner.min}`
 	}
 }
 
-export type MaxChildren = extend<
-	BoundChildren,
+export type MaxInner = extend<
+	BoundInner,
 	{
 		readonly max: number
 	}
@@ -126,7 +125,7 @@ export type ExpandedMaxSchema = extend<
 
 export type MaxSchema = BoundLimit | ExpandedMaxSchema
 
-export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
+export class MaxNode extends BaseBound<MaxInner, typeof MaxNode> {
 	static readonly kind = "max"
 
 	static readonly intersections = this.defineIntersections({
@@ -140,20 +139,19 @@ export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 	})
 
 	static readonly compile = this.defineCompiler(
-		(children) =>
-			`${this.argName} ${schemaToComparator(children)} ${children.max}`
+		(inner) => `${this.argName} ${schemaToComparator(inner)} ${inner.max}`
 	)
 
-	static writeDefaultDescription(children: MaxChildren) {
+	static writeDefaultDescription(inner: MaxInner) {
 		const comparisonDescription =
-			children.boundKind === "date"
-				? children.exclusive
+			inner.boundKind === "date"
+				? inner.exclusive
 					? "before"
 					: "at or before"
-				: children.exclusive
+				: inner.exclusive
 				? "less than"
 				: "at most"
-		return `${comparisonDescription} ${children.max}`
+		return `${comparisonDescription} ${inner.max}`
 	}
 
 	static from(schema: MaxSchema, ctx: RefinementContext) {

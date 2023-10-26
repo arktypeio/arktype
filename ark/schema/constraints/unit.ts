@@ -10,7 +10,7 @@ import { compileSerializedValue } from "../io/compile.js"
 import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
-export interface UnitChildren<rule = unknown> extends BaseAttributes {
+export interface UnitInner<rule = unknown> extends BaseAttributes {
 	readonly unit: rule
 }
 
@@ -22,11 +22,11 @@ export type DiscriminableUnitSchema<rule = unknown> = extend<
 >
 
 export type UnitSchema<rule = unknown> =
-	| UnitChildren<rule>
+	| UnitInner<rule>
 	| DiscriminableUnitSchema<rule>
 
 export class UnitNode<const rule = unknown>
-	extends BaseNode<UnitChildren<rule>, typeof UnitNode>
+	extends BaseNode<UnitInner<rule>, typeof UnitNode>
 	implements BaseBasis
 {
 	static readonly kind = "unit"
@@ -42,7 +42,7 @@ export class UnitNode<const rule = unknown>
 	})
 
 	static readonly compile = this.defineCompiler(
-		(children) => `${this.argName} === ${compileSerializedValue(children.unit)}`
+		(inner) => `${this.argName} === ${compileSerializedValue(inner.unit)}`
 	)
 
 	static readonly intersections = this.defineIntersections({
@@ -63,7 +63,7 @@ export class UnitNode<const rule = unknown>
 		)
 	}
 
-	static writeDefaultDescription(children: UnitChildren) {
-		return stringify(children.unit)
+	static writeDefaultDescription(inner: UnitInner) {
+		return stringify(inner.unit)
 	}
 }

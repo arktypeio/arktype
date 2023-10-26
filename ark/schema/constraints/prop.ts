@@ -18,7 +18,7 @@ type inferKey<k extends PropNode["key"]> = k extends string | symbol
 	? k["infer"] & PropertyKey
 	: never
 
-export interface PropChildren extends BaseAttributes {
+export interface PropInner extends BaseAttributes {
 	readonly key: string | symbol | TypeNode
 	readonly value: TypeNode
 	readonly optional?: boolean
@@ -31,7 +31,7 @@ export interface PropSchema extends BaseAttributes {
 }
 
 export class PropNode
-	extends BaseNode<PropChildren, typeof PropNode>
+	extends BaseNode<PropInner, typeof PropNode>
 	implements BaseRefinement
 {
 	readonly optional = this.inner.optional ?? false
@@ -75,12 +75,10 @@ export class PropNode
 		return new PropNode(schema as never)
 	}
 
-	static compile = this.defineCompiler((children) => "true")
+	static compile = this.defineCompiler((inner) => "true")
 
-	static writeDefaultDescription(children: PropChildren) {
-		return `${String(children.key)}${children.optional ? "" : "?"}: ${
-			children.value
-		}`
+	static writeDefaultDescription(inner: PropInner) {
+		return `${String(inner.key)}${inner.optional ? "" : "?"}: ${inner.value}`
 	}
 
 	applicableTo(

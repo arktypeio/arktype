@@ -7,17 +7,17 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PredicateChildren<rule extends Predicate = Predicate>
+export interface PredicateInner<rule extends Predicate = Predicate>
 	extends BaseAttributes {
 	readonly predicate: rule
 }
 
 export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
-	| PredicateChildren<rule>
+	| PredicateInner<rule>
 
 export class PredicateNode
-	extends BaseNode<PredicateChildren, typeof PredicateNode>
+	extends BaseNode<PredicateInner, typeof PredicateNode>
 	implements BaseRefinement
 {
 	static readonly kind = "predicate"
@@ -27,8 +27,7 @@ export class PredicateNode
 	})
 
 	static readonly compile = this.defineCompiler(
-		(children) =>
-			`${compileSerializedValue(children.predicate)}(${this.argName})`
+		(inner) => `${compileSerializedValue(inner.predicate)}(${this.argName})`
 	)
 
 	static readonly intersections = this.defineIntersections({
@@ -41,8 +40,8 @@ export class PredicateNode
 		)
 	}
 
-	static writeDefaultDescription(children: PredicateChildren) {
-		return `valid according to ${children.predicate.name}`
+	static writeDefaultDescription(inner: PredicateInner) {
+		return `valid according to ${inner.predicate.name}`
 	}
 
 	applicableTo(

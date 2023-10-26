@@ -5,7 +5,7 @@ import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PatternChildren extends BaseAttributes {
+export interface PatternInner extends BaseAttributes {
 	readonly pattern: RegExp
 }
 
@@ -16,7 +16,7 @@ export interface ExpandedPatternSchema extends BaseAttributes {
 export type PatternSchema = RegexLiteral | RegExp | ExpandedPatternSchema
 
 export class PatternNode
-	extends BaseNode<PatternChildren, typeof PatternNode>
+	extends BaseNode<PatternInner, typeof PatternNode>
 	implements BaseRefinement
 {
 	static readonly kind = "pattern"
@@ -39,11 +39,11 @@ export class PatternNode
 	}
 
 	static readonly compile = this.defineCompiler(
-		(children) => `${children.pattern}.test(${this.argName})`
+		(inner) => `${inner.pattern}.test(${this.argName})`
 	)
 
-	static writeDefaultDescription(children: PatternChildren) {
-		return `matched by ${children.pattern}`
+	static writeDefaultDescription(inner: PatternInner) {
+		return `matched by ${inner.pattern}`
 	}
 
 	applicableTo(

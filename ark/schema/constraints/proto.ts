@@ -11,7 +11,7 @@ import { compileSerializedValue } from "../io/compile.js"
 import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
-export interface ProtoChildren<
+export interface ProtoInner<
 	proto extends AbstractableConstructor = AbstractableConstructor
 > extends BaseAttributes {
 	readonly proto: proto
@@ -19,12 +19,12 @@ export interface ProtoChildren<
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor
-> = proto | ProtoChildren
+> = proto | ProtoInner
 
 export class ProtoNode<
 		proto extends AbstractableConstructor = AbstractableConstructor
 	>
-	extends BaseNode<ProtoChildren, typeof ProtoNode>
+	extends BaseNode<ProtoInner, typeof ProtoNode>
 	implements BaseBasis
 {
 	static readonly kind = "proto"
@@ -48,16 +48,16 @@ export class ProtoNode<
 				: constructorExtends(r.proto, l.proto)
 				? r
 				: Disjoint.from("proto", l, r),
-		domain: (l, r): ProtoChildren | Disjoint =>
+		domain: (l, r): ProtoInner | Disjoint =>
 			r.domain === "object"
 				? l
 				: Disjoint.from("domain", builtins.object().unwrapOnly("domain")!, r)
 	})
 
 	static readonly compile = this.defineCompiler(
-		(children) =>
+		(inner) =>
 			`${this.argName} instanceof ${
-				objectKindOf(children.proto) ?? compileSerializedValue(children.proto)
+				objectKindOf(inner.proto) ?? compileSerializedValue(inner.proto)
 			}`
 	)
 
@@ -67,11 +67,11 @@ export class ProtoNode<
 		)
 	}
 
-	static writeDefaultDescription(children: ProtoChildren) {
-		const knownObjectKind = getExactBuiltinConstructorName(children.proto)
+	static writeDefaultDescription(inner: ProtoInner) {
+		const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
 		return knownObjectKind
 			? objectKindDescriptions[knownObjectKind]
-			: `an instance of ${children.proto.name}`
+			: `an instance of ${inner.proto.name}`
 	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(

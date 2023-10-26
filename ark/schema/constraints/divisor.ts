@@ -4,14 +4,14 @@ import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface DivisorChildren extends BaseAttributes {
+export interface DivisorInner extends BaseAttributes {
 	readonly divisor: number
 }
 
-export type DivisorSchema = number | DivisorChildren
+export type DivisorSchema = number | DivisorInner
 
 export class DivisorNode
-	extends BaseNode<DivisorChildren, typeof DivisorNode>
+	extends BaseNode<DivisorInner, typeof DivisorNode>
 	implements BaseRefinement
 {
 	static readonly kind = "divisor"
@@ -23,7 +23,7 @@ export class DivisorNode
 	}
 
 	static readonly compile = this.defineCompiler(
-		(children) => `${this.argName} % ${children.divisor} === 0`
+		(inner) => `${this.argName} % ${inner.divisor} === 0`
 	)
 
 	static readonly keyKinds = this.declareKeys({
@@ -38,10 +38,8 @@ export class DivisorNode
 		})
 	})
 
-	static writeDefaultDescription(children: DivisorChildren) {
-		return children.divisor === 1
-			? "an integer"
-			: `a multiple of ${children.divisor}`
+	static writeDefaultDescription(inner: DivisorInner) {
+		return inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
 	}
 
 	applicableTo(
