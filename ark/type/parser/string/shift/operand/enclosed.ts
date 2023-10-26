@@ -36,19 +36,12 @@ export const parseEnclosed = (
 			// rethrow as a ParseError
 			s.error(`${e instanceof Error ? e.message : e}`)
 		}
-		// flags are not currently supported for embedded regex literals
-		//  regex: token as RegexLiteral }  s.ctx
-		s.root = node("string")
+		s.root = node({ domain: "string", pattern: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
-		// TODO:  s.ctx
 		s.root = node({ is: enclosed })
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = node({ is: date })
-		// TODO: meta
-		// {
-		//     parsedFrom: token as DateLiteral
-		// }
+		s.root = node({ is: date, description: token })
 	}
 }
 

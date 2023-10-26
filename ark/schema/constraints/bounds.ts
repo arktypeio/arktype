@@ -1,4 +1,4 @@
-import { throwParseError } from "@arktype/util"
+import { type extend, throwParseError } from "@arktype/util"
 import {
 	type MaxComparator,
 	type MinComparator
@@ -16,10 +16,13 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement, RefinementContext } from "./refinement.js"
 
-export interface BoundChildren extends BaseAttributes {
-	boundKind: BoundKind
-	exclusive?: boolean
-}
+export type BoundChildren = extend<
+	BaseAttributes,
+	{
+		readonly boundKind: BoundKind
+		readonly exclusive?: boolean
+	}
+>
 
 export type BoundSchema = Omit<BoundChildren, "boundKind">
 
@@ -47,13 +50,19 @@ export abstract class BaseBound<
 	}
 }
 
-export interface MinChildren extends BoundChildren {
-	readonly min: number
-}
+export type MinChildren = extend<
+	BoundChildren,
+	{
+		readonly min: number
+	}
+>
 
-export interface ExpandedMinSchema extends BoundSchema {
-	readonly min: BoundLimit
-}
+export type ExpandedMinSchema = extend<
+	BoundSchema,
+	{
+		readonly min: BoundLimit
+	}
+>
 
 export type MinSchema = BoundLimit | ExpandedMinSchema
 
@@ -101,13 +110,19 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 	}
 }
 
-export interface MaxChildren extends BoundChildren {
-	readonly max: number
-}
+export type MaxChildren = extend<
+	BoundChildren,
+	{
+		readonly max: number
+	}
+>
 
-export interface ExpandedMaxSchema extends BoundSchema {
-	readonly max: BoundLimit
-}
+export type ExpandedMaxSchema = extend<
+	BoundSchema,
+	{
+		readonly max: BoundLimit
+	}
+>
 
 export type MaxSchema = BoundLimit | ExpandedMaxSchema
 

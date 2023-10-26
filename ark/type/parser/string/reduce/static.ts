@@ -8,6 +8,7 @@ import type {
 } from "../shift/operator/bounds.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
+	OpenLeftBound,
 	StringifiablePrefixOperator,
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
@@ -29,7 +30,7 @@ export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound: { limit: LimitLiteral; comparator: MinComparator } | undefined
+	leftBound: OpenLeftBound | undefined
 	"&": unknown
 	"|": unknown
 }

@@ -11,7 +11,7 @@ import type {
 	JsonData,
 	returnOf
 } from "@arktype/util"
-import { DynamicBase, hasKey, isArray, isKeyOf } from "@arktype/util"
+import { DynamicBase, isArray, isKeyOf } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
 import type {
 	ConstraintClassesByKind,
@@ -19,11 +19,7 @@ import type {
 } from "./constraints/constraint.js"
 import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
-import {
-	type CompilationState,
-	compileSerializedValue,
-	In
-} from "./io/compile.js"
+import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import type {
 	TypeChildren,

@@ -1,3 +1,4 @@
+import { type ExpandedMinSchema } from "@arktype/schema"
 import type { keySet } from "@arktype/util"
 import { isKeyOf, tryParseNumber } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
@@ -5,10 +6,13 @@ import type {
 	DynamicState,
 	DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
-import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
+import {
+	type OpenLeftBound,
+	writeUnpairableComparatorMessage
+} from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { DateLiteral } from "../operand/date.js"
-import { isDateLiteral } from "../operand/date.js"
+import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
 import { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
 
@@ -17,15 +21,17 @@ export const parseBound = (
 	start: ComparatorStartChar
 ) => {
 	const comparator = shiftComparator(s, start)
-	const value = s.root.unwrapOnly("unit")?.unit
-	if (typeof value === "number") {
-		s.unsetRoot()
-		return s.reduceLeftBound(value, comparator)
-	} else if (value instanceof Date) {
-		s.unsetRoot()
-		// TODO:   s.root.unit?.meta.parsedFrom ??
-		const literal = `d'${value.toISOString()}'` as const
-		return s.reduceLeftBound(literal, comparator)
+	const unit = s.root.unwrapOnly("unit")
+	if (unit) {
+		if (typeof unit.is === "number") {
+			s.unsetRoot()
+			return s.reduceLeftBound(unit.is, comparator)
+		}
+		if (unit.is instanceof Date) {
+			s.unsetRoot()
+			const literal = `d'${unit.description ?? unit.is.toISOString()}'` as const
+			return s.reduceLeftBound(literal, comparator)
+		}
 	}
 	return parseRightBound(s, comparator)
 }
@@ -110,6 +116,15 @@ type shiftComparator<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
+const openLeftBoundToSchema = (
+	leftBound: OpenLeftBound
+): ExpandedMinSchema => ({
+	min: isDateLiteral(leftBound.limit)
+		? extractDateLiteralSource(leftBound.limit)
+		: leftBound.limit,
+	exclusive: leftBound.comparator.length === 1
+})
+
 // TODO: allow numeric limits for Dates?
 export const parseRightBound = (
 	s: DynamicStateWithRoot,
@@ -129,7 +144,7 @@ export const parseRightBound = (
 	const limit =
 		tryParseNumber(limitToken) ??
 		(isDateLiteral(limitToken)
-			? limitToken
+			? extractDateLiteralSource(limitToken)
 			: s.error(writeInvalidLimitMessage(comparator, limitToken, "right")))
 	// apply the newly-parsed right bound
 	const exclusive = comparator.length === 1
@@ -147,7 +162,7 @@ export const parseRightBound = (
 	if (!isKeyOf(comparator, maxComparators)) {
 		return s.error(writeUnpairableComparatorMessage(comparator))
 	}
-	s.constrainRoot("min", s.branches.leftBound)
+	s.constrainRoot("min", openLeftBoundToSchema(s.branches.leftBound))
 	delete s.branches.leftBound
 }
 

@@ -12,7 +12,7 @@ import {
 	minComparators
 } from "../shift/operator/bounds.js"
 import { Scanner } from "../shift/scanner.js"
-import type { StringifiablePrefixOperator } from "./shared.js"
+import type { OpenLeftBound, StringifiablePrefixOperator } from "./shared.js"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
@@ -23,8 +23,7 @@ import {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	// TODO: change to literal
-	leftBound?: ExpandedMinSchema
+	leftBound?: OpenLeftBound
 	"&"?: TypeNode
 	"|"?: TypeNode
 }
@@ -85,17 +84,16 @@ export class DynamicState {
 		if (this.branches.leftBound) {
 			return this.error(
 				writeMultipleLeftBoundsMessage(
-					this.branches.leftBound.min,
-					schemaToComparator(this.branches.leftBound),
+					this.branches.leftBound.limit,
+					this.branches.leftBound.comparator,
 					limit,
 					invertedComparator
 				)
 			)
 		}
-		// TODO: date?
 		this.branches.leftBound = {
-			exclusive: comparator.length === 1,
-			min: limit as number
+			comparator: invertedComparator,
+			limit
 		}
 	}
 
@@ -152,8 +150,8 @@ export class DynamicState {
 		if (this.branches.leftBound) {
 			return this.error(
 				writeOpenRangeMessage(
-					this.branches.leftBound.min,
-					schemaToComparator(this.branches.leftBound)
+					this.branches.leftBound.limit,
+					this.branches.leftBound.comparator
 				)
 			)
 		}
@@ -167,10 +165,11 @@ export class DynamicState {
 	}
 
 	previousOperator() {
-		return this.branches.leftBound
-			? schemaToComparator(this.branches.leftBound)
-			: this.branches.prefixes.at(-1) ??
-					(this.branches["&"] ? "&" : this.branches["|"] ? "|" : undefined)
+		return (
+			this.branches.leftBound?.comparator ??
+			this.branches.prefixes.at(-1) ??
+			(this.branches["&"] ? "&" : this.branches["|"] ? "|" : undefined)
+		)
 	}
 
 	shiftedByOne() {

@@ -1,4 +1,4 @@
-import type { AbstractableConstructor } from "@arktype/util"
+import type { AbstractableConstructor, instanceOf } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -12,24 +12,24 @@ import { type BaseAttributes, BaseNode } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
 export interface ProtoChildren<
-	rule extends AbstractableConstructor = AbstractableConstructor
+	proto extends AbstractableConstructor = AbstractableConstructor
 > extends BaseAttributes {
-	readonly proto: rule
+	readonly proto: proto
 }
 
 export type ProtoSchema<
-	rule extends AbstractableConstructor = AbstractableConstructor
-> = rule | ProtoChildren
+	proto extends AbstractableConstructor = AbstractableConstructor
+> = proto | ProtoChildren
 
 export class ProtoNode<
-		rule extends AbstractableConstructor = AbstractableConstructor
+		proto extends AbstractableConstructor = AbstractableConstructor
 	>
 	extends BaseNode<ProtoChildren, typeof ProtoNode>
 	implements BaseBasis
 {
 	static readonly kind = "proto"
 
-	declare infer: InstanceType<rule>
+	declare infer: instanceOf<proto>
 
 	readonly knownObjectKind = objectKindOf(this.proto)
 	readonly basisName = `${this.proto.name}`

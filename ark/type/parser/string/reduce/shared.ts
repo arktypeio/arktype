@@ -8,6 +8,8 @@ import { invertedComparators } from "../shift/operator/bounds.js"
 
 export type StringifiablePrefixOperator = "keyof"
 
+export type OpenLeftBound = { limit: LimitLiteral; comparator: MinComparator }
+
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
 	unscanned: unscanned
 ): writeUnmatchedGroupCloseMessage<unscanned> =>

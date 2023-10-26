@@ -27,10 +27,6 @@ export type exactMessageOnError<t extends object, u extends object> = {
 		: ErrorMessage<`'${k & string}' is not a valid key`>
 }
 
-export type instanceOf<t> = t extends AbstractableConstructor<infer instance>
-	? instance
-	: never
-
 export type defer<t> = [t][t extends any ? 0 : never]
 
 export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>

@@ -120,6 +120,9 @@ export type AbstractableConstructor<instance = {}> = abstract new (
 	...args: never[]
 ) => instance
 
+export type instanceOf<constructor> =
+	constructor extends AbstractableConstructor<infer instance> ? instance : never
+
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
 	const result: (string | symbol)[] = []

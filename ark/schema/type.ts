@@ -106,13 +106,13 @@ export class TypeNode<t = unknown> extends BaseNode<
 		}
 	})
 
+	static from<const branches extends readonly BranchSchema[]>(
+		schema: ExpandedTypeSchema<branches>
+	): parseNode<branches>
 	static from<const branches extends readonly unknown[]>(
 		...branches: {
 			[i in keyof branches]: validateBranchInput<branches[i]>
 		}
-	): parseNode<branches>
-	static from<const branches extends readonly BranchSchema[]>(
-		schema: ExpandedTypeSchema<branches>
 	): parseNode<branches>
 	static from(...schemas: [ExpandedTypeSchema] | BranchSchema[]) {
 		const result = {} as mutable<TypeChildren>

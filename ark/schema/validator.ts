@@ -27,7 +27,7 @@ import type {
 	RefinementKind
 } from "./constraints/refinement.js"
 import { refinementClassesByKind } from "./constraints/refinement.js"
-import type { CollapsedUnitSchema, UnitSchema } from "./constraints/unit.js"
+import type { DiscriminableUnitSchema, UnitSchema } from "./constraints/unit.js"
 import { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import { type MorphSchema } from "./morph.js"
@@ -320,13 +320,22 @@ export type UnknownBranchInput = {
 	predicate?: RefinementIntersectionInput<"predicate">
 } & BaseAttributes
 
+type DiscriminableBasisInputValue =
+	| AbstractableConstructor
+	| NonEnumerableDomain
+	| DiscriminableUnitSchema
+
 export type ValidatorSchema<
 	basis extends ValidatorBasisInputValue = ValidatorBasisInputValue
-> = basis | UnknownBranchInput | BasisedBranchInput<basis>
+> =
+	| conform<basis, DiscriminableBasisInputValue>
+	| UnknownBranchInput
+	| BasisedBranchInput<basis>
 
 export type parseIntersection<input> = input extends
 	| AbstractableConstructor
 	| NonEnumerableDomain
+	| DiscriminableUnitSchema
 	? parseBasis<input>["infer"]
 	: input extends ValidatorBasisInput<infer basis>
 	? parseBasis<basis>["infer"]
@@ -341,17 +350,21 @@ type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 				: `this schema's basis`}`>
 }
 
+type Z = validateIntersectionInput<{
+	unit: string
+}>
+
 export type validateIntersectionInput<input> = input extends
 	| NonEnumerableDomain
 	| AbstractableConstructor
 	? input
-	: input extends CollapsedUnitSchema
-	? exactMessageOnError<input, CollapsedUnitSchema>
+	: input extends DiscriminableUnitSchema
+	? exactMessageOnError<input, DiscriminableUnitSchema>
 	: input extends ValidatorBasisInput<infer basis>
 	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
 	: input extends UnknownBranchInput
 	? exactMessageOnError<input, UnknownBranchInput>
-	: CollapsedUnitSchema | ValidatorSchema | MorphSchema
+	: DiscriminableUnitSchema | ValidatorSchema | MorphSchema
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,
