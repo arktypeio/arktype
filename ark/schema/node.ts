@@ -9,6 +9,7 @@ import type {
 	isAny,
 	Json,
 	JsonData,
+	listable,
 	returnOf
 } from "@arktype/util"
 import { DynamicBase, isArray, isKeyOf } from "@arktype/util"
@@ -24,8 +25,10 @@ import { registry } from "./io/registry.js"
 import type {
 	TypeClassesByKind,
 	TypeInner,
+	TypeNode,
 	validateBranchInput
 } from "./type.js"
+import { type ValidatorInner, type ValidatorNode } from "./validator.js"
 
 export interface BaseAttributes {
 	readonly alias?: string
@@ -95,6 +98,15 @@ type innerOf<nodeClass> = ConstructorParameters<
 	conform<nodeClass, AbstractableConstructor>
 >[0]
 
+type childOf<inner> = {
+	[k in keyof inner]-?: inner[k] extends
+		| listable<infer node extends { kind: NodeKind }>
+		| undefined
+		? node
+		: never
+}[keyof inner] &
+	unknown
+
 type kindOf<nodeClass> = instanceOf<nodeClass> extends {
 	kind: infer kind extends NodeKind
 }
@@ -115,10 +127,11 @@ export abstract class BaseNode<
 	nodeClass extends StaticBaseNode<inner>
 > extends DynamicBase<inner> {
 	readonly json: Json
+	protected readonly collapsedJson: JsonData
+	readonly children = [] as readonly childOf<inner>[]
 	readonly alias: string
 	readonly description: string
 	readonly ids: NodeIds = new NodeIds(this)
-	readonly onlyChild: UnknownNode | undefined
 	readonly nodeClass = this.constructor as nodeClass
 	readonly kind: nodeClass["kind"] = this.nodeClass.kind
 	readonly condition: string
@@ -133,29 +146,55 @@ export abstract class BaseNode<
 		this.description =
 			inner.description ??
 			(this.constructor as nodeClass).writeDefaultDescription(inner)
-		this.json = BaseNode.toSerializable(inner)
-		this.onlyChild =
-			Object.keys(this.inner).length === 1 && isKeyOf(this.kind, this.inner)
-				? (this.inner[this.kind] as UnknownNode)
-				: undefined
+		this.json = this.innerToJson(inner)
+		this.collapsedJson =
+			Object.keys(this.json).length === 1 && isKeyOf(this.kind, this.json)
+				? this.json[this.kind]
+				: this.json
 		this.condition = this.nodeClass.compile(inner)
 	}
 
-	protected static toSerializable<nodeClass>(
-		this: nodeClass,
-		inner: innerOf<nodeClass>
-	) {
-		// TS doesn't like to narrow the input type
-		const maybeTypeInner: object = inner
-		if (isTypeInner(maybeTypeInner)) {
+	// this function should only be called during initialization to
+	// avoiding adding duplicate children
+	private innerToJson(inner: BaseAttributes) {
+		if (isTypeInner(inner)) {
 			// collapse single branch schemas like { branches: [{ domain: "string" }] } to { domain: "string" }
-			return maybeTypeInner.branches[0].json
+			return inner.branches[0].json
 		}
 		const json: Json = {}
 		for (const k in inner) {
-			json[k] = innerToJson(inner[k])
+			json[k] = this.innerValueToJson((inner as Dict)[k])
 		}
 		return json
+	}
+
+	private innerValueToJson(inner: unknown): JsonData {
+		if (
+			typeof inner === "string" ||
+			typeof inner === "boolean" ||
+			typeof inner === "number" ||
+			inner === null
+		) {
+			return inner
+		}
+		if (typeof inner === "object") {
+			if (inner instanceof BaseNode) {
+				;(this.children as unknown[]).push(inner)
+				return inner.collapsedJson
+			}
+			if (
+				isArray(inner) &&
+				inner.every(
+					(element): element is UnknownNode => element instanceof BaseNode
+				)
+			) {
+				return inner.map((element) => {
+					;(this.children as unknown[]).push(element)
+					return element.collapsedJson
+				})
+			}
+		}
+		return compileSerializedValue(inner)
 	}
 
 	protected static declareKeys<nodeClass>(
@@ -245,35 +284,6 @@ export abstract class BaseNode<
 		return null
 	}
 }
-
-const innerToJson = (inner: unknown): JsonData => {
-	if (
-		typeof inner === "string" ||
-		typeof inner === "boolean" ||
-		typeof inner === "number" ||
-		inner === null
-	) {
-		return inner
-	}
-	if (typeof inner === "object") {
-		if (inner instanceof BaseNode) {
-			return unwrapNode(inner)
-		}
-		if (
-			isArray(inner) &&
-			inner.every(
-				(element): element is UnknownNode => element instanceof BaseNode
-			)
-		) {
-			return inner.map((element) => unwrapNode(element))
-		}
-	}
-	return compileSerializedValue(inner)
-}
-
-/** collapse schemas like { domain: { domain: "string" } } to { domain: "string" } **/
-const unwrapNode = (child: UnknownNode) =>
-	child.onlyChild ? innerToJson(child.onlyChild) : child.json
 
 const isTypeInner = (inner: object): inner is TypeInner => "branches" in inner
 
