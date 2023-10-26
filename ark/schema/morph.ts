@@ -78,7 +78,7 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 			return inTersection instanceof Disjoint
 				? inTersection
 				: {
-						...l.children,
+						...l.inner,
 						in: inTersection
 				  }
 		},
@@ -88,11 +88,13 @@ export class MorphNode extends BaseNode<MorphChildren, typeof MorphNode> {
 			return constrainedInput instanceof Disjoint
 				? constrainedInput
 				: {
-						...l.children,
+						...l.inner,
 						in: constrainedInput
 				  }
 		}
 	})
+
+	static compile = this.defineCompiler((children) => "true")
 
 	static writeDefaultDescription(children: MorphChildren) {
 		return ""

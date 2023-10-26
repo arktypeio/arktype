@@ -41,7 +41,7 @@ export class UnitNode<const rule = unknown>
 		unit: "in"
 	})
 
-	static readonly compile = this.defineTerminalCompiler(
+	static readonly compile = this.defineCompiler(
 		(children) => `${this.argName} === ${compileSerializedValue(children.unit)}`
 	)
 

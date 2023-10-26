@@ -83,7 +83,7 @@ export class ValidatorNode extends BaseNode<
 		super(children)
 		this.constraints = reducedConstraints
 		this.basis = this.constraints[0]?.isBasis()
-			? (this.constraints[0] as never)
+			? this.constraints[0]
 			: undefined
 		this.refinements = (
 			this.constraints[0]?.isBasis()
@@ -92,6 +92,8 @@ export class ValidatorNode extends BaseNode<
 		) as never
 		assertValidRefinements(this.basis, this.refinements)
 	}
+
+	static compile = this.defineCompiler((children) => "true")
 
 	static readonly keyKinds = this.declareKeys(
 		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
@@ -175,6 +177,9 @@ const addConstraint = (
 	constraint: Node<ConstraintKind>
 ): Node<ConstraintKind>[] | Disjoint => {
 	const result: Node<ConstraintKind>[] = []
+	if (constraint.isBasis() && !constraints.at(0)?.isBasis()) {
+		return [constraint, ...constraints]
+	}
 	let includesConstraint = false
 	for (let i = 0; i < constraints.length; i++) {
 		const elementResult = constraint.intersect(constraints[i])
@@ -230,32 +235,16 @@ const parseIntersectionChildren = (
 	}
 }
 
-const parseIntersectionObjectSchema = ({
-	unit,
-	proto,
-	domain,
-	...refinementsAndAttributes
-}: BasisedBranchInput) => {
-	let basis: Node<BasisKind> | undefined
-	if (unit) {
-		basis = UnitNode.from(unit)
-	}
-	if (proto) {
-		const result = basis?.intersect(ProtoNode.from(proto))
-		if (result instanceof Disjoint) {
-			return result.throw()
-		}
-		basis = result
-	}
-	if (domain) {
-		const result = basis?.intersect(DomainNode.from(domain))
-		if (result instanceof Disjoint) {
-			return result.throw()
-		}
-		basis = result
-	}
+const parseIntersectionObjectSchema = (schema: BasisedBranchInput) => {
+	const basis: Node<BasisKind> | undefined = schema.unit
+		? UnitNode.from(schema.unit)
+		: schema.proto
+		? ProtoNode.from(schema.proto)
+		: schema.domain
+		? DomainNode.from(schema.domain)
+		: undefined
 	const refinementContext: RefinementContext = { basis }
-	return transform(refinementsAndAttributes, ([k, v]) =>
+	return transform(schema, ([k, v]) =>
 		isKeyOf(k, irreducibleRefinementKinds)
 			? [
 					k,
@@ -264,7 +253,7 @@ const parseIntersectionObjectSchema = ({
 					)
 			  ]
 			: isKeyOf(k, constraintClassesByKind)
-			? [k, constraintClassesByKind[k].from(v as never, refinementContext)]
+			? [k, (constraintClassesByKind[k].from as any)(v, refinementContext)]
 			: isKeyOf(k, baseAttributeKeys)
 			? [k, v]
 			: throwParseError(`'${k}' is not a valid refinement kind`)
@@ -349,10 +338,6 @@ type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
 				? `basis '${branch[keyof branch & BasisKind]}'`
 				: `this schema's basis`}`>
 }
-
-type Z = validateIntersectionInput<{
-	unit: string
-}>
 
 export type validateIntersectionInput<input> = input extends
 	| NonEnumerableDomain

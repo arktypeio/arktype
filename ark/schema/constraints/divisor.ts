@@ -22,7 +22,7 @@ export class DivisorNode
 		)
 	}
 
-	static readonly compile = this.defineTerminalCompiler(
+	static readonly compile = this.defineCompiler(
 		(children) => `${this.argName} % ${children.divisor} === 0`
 	)
 

@@ -33,7 +33,7 @@ export class DomainNode<
 		domain: "in"
 	})
 
-	static readonly compile = this.defineTerminalCompiler((children) =>
+	static readonly compile = this.defineCompiler((children) =>
 		children.domain === "object"
 			? `((typeof ${this.argName} === "object" && ${this.argName} !== null) || typeof ${this.argName} === "function")`
 			: `typeof ${this.argName} === "${children.domain}"`

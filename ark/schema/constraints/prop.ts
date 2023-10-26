@@ -34,7 +34,7 @@ export class PropNode
 	extends BaseNode<PropChildren, typeof PropNode>
 	implements BaseRefinement
 {
-	readonly optional = this.children.optional ?? false
+	readonly optional = this.inner.optional ?? false
 	static readonly kind = "prop"
 
 	static readonly keyKinds = this.declareKeys({
@@ -74,6 +74,8 @@ export class PropNode
 	static from(schema: PropSchema) {
 		return new PropNode(schema as never)
 	}
+
+	static compile = this.defineCompiler((children) => "true")
 
 	static writeDefaultDescription(children: PropChildren) {
 		return `${String(children.key)}${children.optional ? "" : "?"}: ${

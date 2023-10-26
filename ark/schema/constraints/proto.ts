@@ -54,7 +54,7 @@ export class ProtoNode<
 				: Disjoint.from("domain", builtins.object().unwrapOnly("domain")!, r)
 	})
 
-	static readonly compile = this.defineTerminalCompiler(
+	static readonly compile = this.defineCompiler(
 		(children) =>
 			`${this.argName} instanceof ${
 				objectKindOf(children.proto) ?? compileSerializedValue(children.proto)

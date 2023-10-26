@@ -26,7 +26,7 @@ export class PredicateNode
 		predicate: "in"
 	})
 
-	static readonly compile = this.defineTerminalCompiler(
+	static readonly compile = this.defineCompiler(
 		(children) =>
 			`${compileSerializedValue(children.predicate)}(${this.argName})`
 	)

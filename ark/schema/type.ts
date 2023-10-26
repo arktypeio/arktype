@@ -69,6 +69,8 @@ export class TypeNode<t = unknown> extends BaseNode<
 		return { branches: resultBranches }
 	}
 
+	static compile = this.defineCompiler((children) => "true")
+
 	static readonly intersections = this.defineIntersections({
 		type: (l, r) => {
 			if (

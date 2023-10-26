@@ -35,7 +35,7 @@ export abstract class BaseBound<
 	extends BaseNode<children, nodeClass>
 	implements BaseRefinement
 {
-	readonly exclusive = this.children.exclusive ?? false
+	readonly exclusive = this.inner.exclusive ?? false
 
 	readonly comparator = schemaToComparator(this as never)
 
@@ -84,7 +84,7 @@ export class MinNode extends BaseBound<MinChildren, typeof MinNode> {
 		)
 	}
 
-	static readonly compile = this.defineTerminalCompiler(
+	static readonly compile = this.defineCompiler(
 		(children) =>
 			`${this.argName} ${schemaToComparator(children)} ${children.min}`
 	)
@@ -139,7 +139,7 @@ export class MaxNode extends BaseBound<MaxChildren, typeof MaxNode> {
 		boundKind: "in"
 	})
 
-	static readonly compile = this.defineTerminalCompiler(
+	static readonly compile = this.defineCompiler(
 		(children) =>
 			`${this.argName} ${schemaToComparator(children)} ${children.max}`
 	)

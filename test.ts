@@ -4,8 +4,8 @@ import { compile, node } from "./ark/schema/main.js"
 // 2, 3, 6, 9
 const l = node(
 	{
-		domain: "number",
-		divisor: 2
+		divisor: 2,
+		domain: "number"
 	},
 	{
 		domain: "number",
@@ -15,8 +15,12 @@ const l = node(
 
 const z = node("number")
 
-z.json //?
+// z.json //?
 
-const result = compile(l) //?
+// z.condition //?
 
-l.json //?
+// // const result = compile(l) //?
+
+// l.json //?
+
+l.unwrapOnly("divisor")?.condition //?

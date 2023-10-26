@@ -38,7 +38,7 @@ export class PatternNode
 		)
 	}
 
-	static readonly compile = this.defineTerminalCompiler(
+	static readonly compile = this.defineCompiler(
 		(children) => `${children.pattern}.test(${this.argName})`
 	)
 

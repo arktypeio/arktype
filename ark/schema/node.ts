@@ -53,7 +53,7 @@ export interface StaticBaseNode<children extends BaseAttributes> {
 	keyKinds: Record<keyof children, keyof NodeIds>
 	from(input: children, ctx: RefinementContext): BaseNode<children, any>
 	intersections: IntersectionDefinitions<any>
-	// compile(children: children, state: CompilationState): string
+	compile(children: children): string
 	writeDefaultDescription(children: children): string
 }
 
@@ -82,7 +82,7 @@ type intersectionOf<nodeClass, k extends IntersectionGroup> = (
 		k extends NodeKind ? k : k extends "constraint" ? ConstraintKind : never
 	>
 ) =>
-	| childrenOf<nodeClass>
+	| innerOf<nodeClass>
 	| Disjoint
 	// ensure null is not allowed as a return on reducible symmetric intersections
 	| (k extends kindOf<nodeClass>
@@ -91,7 +91,7 @@ type intersectionOf<nodeClass, k extends IntersectionGroup> = (
 				: never
 			: null)
 
-type childrenOf<nodeClass> = ConstructorParameters<
+type innerOf<nodeClass> = ConstructorParameters<
 	conform<nodeClass, AbstractableConstructor>
 >[0]
 
@@ -102,7 +102,7 @@ type kindOf<nodeClass> = instanceOf<nodeClass> extends {
 	: never
 
 type extensionKeyOf<nodeClass> = Exclude<
-	keyof childrenOf<nodeClass>,
+	keyof innerOf<nodeClass>,
 	keyof BaseAttributes
 >
 
@@ -111,9 +111,9 @@ type UnknownNode = BaseNode<any, any>
 const $ark = registry()
 
 export abstract class BaseNode<
-	children extends BaseAttributes,
-	nodeClass extends StaticBaseNode<children>
-> extends DynamicBase<children> {
+	inner extends BaseAttributes,
+	nodeClass extends StaticBaseNode<inner>
+> extends DynamicBase<inner> {
 	readonly json: Json
 	readonly alias: string
 	readonly description: string
@@ -121,28 +121,29 @@ export abstract class BaseNode<
 	readonly onlyChild: UnknownNode | undefined
 	readonly nodeClass = this.constructor as nodeClass
 	readonly kind: nodeClass["kind"] = this.nodeClass.kind
+	readonly condition: string
 
 	allows(data: unknown) {
 		return true
 	}
 
-	constructor(public readonly children: children) {
-		super(children)
-		this.alias = $ark.register(this, children.alias)
+	constructor(public readonly inner: inner) {
+		super(inner)
+		this.alias = $ark.register(this, inner.alias)
 		this.description =
-			children.description ??
-			(this.constructor as nodeClass).writeDefaultDescription(children)
-		this.json = BaseNode.toSerializable(children)
+			inner.description ??
+			(this.constructor as nodeClass).writeDefaultDescription(inner)
+		this.json = BaseNode.toSerializable(inner)
 		this.onlyChild =
-			Object.keys(this.children).length === 1 &&
-			isKeyOf(this.kind, this.children)
-				? (this.children[this.kind] as UnknownNode)
+			Object.keys(this.inner).length === 1 && isKeyOf(this.kind, this.inner)
+				? (this.inner[this.kind] as UnknownNode)
 				: undefined
+		this.condition = this.nodeClass.compile(inner)
 	}
 
 	protected static toSerializable<nodeClass>(
 		this: nodeClass,
-		children: childrenOf<nodeClass>
+		children: innerOf<nodeClass>
 	) {
 		// TS doesn't like to narrow the input type
 		const maybeTypeChildren: object = children
@@ -168,7 +169,7 @@ export abstract class BaseNode<
 			description: "meta",
 			...keyKinds
 		} satisfies Dict<string, keyof NodeIds> as {} as {
-			[k in keyof childrenOf<nodeClass>]-?: keyof NodeIds
+			[k in keyof innerOf<nodeClass>]-?: keyof NodeIds
 		}
 	}
 
@@ -181,9 +182,9 @@ export abstract class BaseNode<
 
 	protected static readonly argName = In
 
-	protected static defineTerminalCompiler<nodeClass>(
+	protected static defineCompiler<nodeClass>(
 		this: nodeClass,
-		compiler: (children: childrenOf<nodeClass>) => string
+		compiler: (children: innerOf<nodeClass>) => string
 	) {
 		return compiler
 	}
@@ -220,7 +221,7 @@ export abstract class BaseNode<
 	): IntersectionResult<this["kind"], other["kind"]>
 	intersect(
 		other: BaseNode<BaseAttributes, StaticBaseNode<BaseAttributes>>
-	): BaseNode<any, any> | Disjoint | null {
+	): UnknownNode | Disjoint | null {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta
 			return this
@@ -271,7 +272,8 @@ const unwrapChild = (child: unknown): JsonData => {
 }
 
 /** collapse schemas like { domain: { domain: "string" } } to { domain: "string" } **/
-const unwrapNode = (child: UnknownNode) => child.onlyChild?.json ?? child.json
+const unwrapNode = (child: UnknownNode) =>
+	child.onlyChild ? unwrapChild(child.onlyChild) : child.json
 
 const isTypeChildren = (children: object): children is TypeChildren =>
 	"branches" in children
@@ -301,7 +303,7 @@ type instantiateIntersection<
 export class NodeIds {
 	private cache: { -readonly [k in keyof NodeIds]?: string } = {}
 
-	constructor(private node: BaseNode<any, any>) {}
+	constructor(private node: UnknownNode) {}
 
 	get in() {
 		this.cache.in ??= this.node.serialize("in")
