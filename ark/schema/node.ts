@@ -9,7 +9,6 @@ import type {
 	isAny,
 	Json,
 	JsonData,
-	listable,
 	returnOf
 } from "@arktype/util"
 import { DynamicBase, isArray, isKeyOf } from "@arktype/util"
@@ -25,10 +24,8 @@ import { registry } from "./io/registry.js"
 import type {
 	TypeClassesByKind,
 	TypeInner,
-	TypeNode,
 	validateBranchInput
 } from "./type.js"
-import { type ValidatorInner, type ValidatorNode } from "./validator.js"
 
 export interface BaseAttributes {
 	readonly alias?: string
