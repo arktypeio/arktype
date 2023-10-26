@@ -37,6 +37,12 @@ export class PropNode
 	readonly optional = this.inner.optional ?? false
 	static readonly kind = "prop"
 
+	static childrenOf(inner: PropInner) {
+		return inner.key instanceof TypeNode
+			? [inner.key, inner.value]
+			: [inner.value]
+	}
+
 	static readonly keyKinds = this.declareKeys({
 		key: "in",
 		value: "in",

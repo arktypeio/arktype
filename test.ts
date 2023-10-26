@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { compile, node } from "./ark/schema/main.js"
+import { node } from "./ark/schema/main.js"
 
 // 2, 3, 6, 9
 const l = node(
@@ -15,6 +15,10 @@ const l = node(
 
 const z = node("number")
 
+l.children.length //?
+
+l.references.length //?
+
 // z.json //?
 
 // z.condition //?
@@ -23,4 +27,5 @@ const z = node("number")
 
 // l.json //?
 
+l.children.flat(Infinity).length //?
 l.unwrapOnly("divisor")?.condition //?

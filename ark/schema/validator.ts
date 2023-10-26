@@ -99,6 +99,14 @@ export class ValidatorNode extends BaseNode<
 		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
 	)
 
+	static childrenOf(inner: ValidatorInner) {
+		return Object.values(inner)
+			.flat()
+			.filter(
+				(value): value is Node<ConstraintKind> => value instanceof BaseNode
+			)
+	}
+
 	static readonly intersections = this.defineIntersections({
 		validator: (l, r) => {
 			const constraints = intersectConstraints(l.constraints, r.constraints)

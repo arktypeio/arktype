@@ -55,6 +55,7 @@ export interface StaticBaseNode<inner extends BaseAttributes> {
 	kind: NodeKind
 	keyKinds: Record<keyof inner, keyof NodeIds>
 	from(input: inner, ctx: RefinementContext): BaseNode<inner, any>
+	childrenOf?(inner: inner): readonly UnknownNode[]
 	intersections: IntersectionDefinitions<any>
 	compile(inner: inner): string
 	writeDefaultDescription(inner: inner): string
@@ -98,14 +99,13 @@ type innerOf<nodeClass> = ConstructorParameters<
 	conform<nodeClass, AbstractableConstructor>
 >[0]
 
-type childOf<inner> = {
-	[k in keyof inner]-?: inner[k] extends
-		| listable<infer node extends { kind: NodeKind }>
-		| undefined
-		? node
-		: never
-}[keyof inner] &
-	unknown
+type childrenOf<nodeClass extends StaticBaseNode<any>> =
+	nodeClass["childrenOf"] extends Fn<
+		never,
+		infer children extends readonly unknown[]
+	>
+		? children
+		: readonly []
 
 type kindOf<nodeClass> = instanceOf<nodeClass> extends {
 	kind: infer kind extends NodeKind
@@ -127,8 +127,10 @@ export abstract class BaseNode<
 	nodeClass extends StaticBaseNode<inner>
 > extends DynamicBase<inner> {
 	readonly json: Json
-	protected readonly collapsedJson: JsonData
-	readonly children = [] as readonly childOf<inner>[]
+	readonly collapsedJson: JsonData
+	readonly children: childrenOf<nodeClass>
+	readonly references: readonly UnknownNode[]
+	protected readonly contributesReferences: readonly UnknownNode[]
 	readonly alias: string
 	readonly description: string
 	readonly ids: NodeIds = new NodeIds(this)
@@ -146,55 +148,17 @@ export abstract class BaseNode<
 		this.description =
 			inner.description ??
 			(this.constructor as nodeClass).writeDefaultDescription(inner)
-		this.json = this.innerToJson(inner)
+		this.json = innerToJson(inner)
 		this.collapsedJson =
 			Object.keys(this.json).length === 1 && isKeyOf(this.kind, this.json)
 				? this.json[this.kind]
 				: this.json
 		this.condition = this.nodeClass.compile(inner)
-	}
-
-	// this function should only be called during initialization to
-	// avoiding adding duplicate children
-	private innerToJson(inner: BaseAttributes) {
-		if (isTypeInner(inner)) {
-			// collapse single branch schemas like { branches: [{ domain: "string" }] } to { domain: "string" }
-			return inner.branches[0].json
-		}
-		const json: Json = {}
-		for (const k in inner) {
-			json[k] = this.innerValueToJson((inner as Dict)[k])
-		}
-		return json
-	}
-
-	private innerValueToJson(inner: unknown): JsonData {
-		if (
-			typeof inner === "string" ||
-			typeof inner === "boolean" ||
-			typeof inner === "number" ||
-			inner === null
-		) {
-			return inner
-		}
-		if (typeof inner === "object") {
-			if (inner instanceof BaseNode) {
-				;(this.children as unknown[]).push(inner)
-				return inner.collapsedJson
-			}
-			if (
-				isArray(inner) &&
-				inner.every(
-					(element): element is UnknownNode => element instanceof BaseNode
-				)
-			) {
-				return inner.map((element) => {
-					;(this.children as unknown[]).push(element)
-					return element.collapsedJson
-				})
-			}
-		}
-		return compileSerializedValue(inner)
+		this.children = this.nodeClass.childrenOf?.(inner) ?? ([] as any)
+		this.references = (this.children as UnknownNode[]).flatMap(
+			(child) => child.contributesReferences
+		)
+		this.contributesReferences = [this, ...this.references]
 	}
 
 	protected static declareKeys<nodeClass>(
@@ -283,6 +247,47 @@ export abstract class BaseNode<
 		}
 		return null
 	}
+}
+
+// this function should only be called during initialization to
+// avoiding adding duplicate children
+const innerToJson = (inner: BaseAttributes) => {
+	if (isTypeInner(inner)) {
+		// collapse single branch schemas like { branches: [{ domain: "string" }] } to { domain: "string" }
+		return inner.branches[0].json
+	}
+	const json: Json = {}
+	for (const k in inner) {
+		json[k] = innerValueToJson((inner as Dict)[k])
+	}
+	return json
+}
+
+const innerValueToJson = (inner: unknown): JsonData => {
+	if (
+		typeof inner === "string" ||
+		typeof inner === "boolean" ||
+		typeof inner === "number" ||
+		inner === null
+	) {
+		return inner
+	}
+	if (typeof inner === "object") {
+		if (inner instanceof BaseNode) {
+			return inner.collapsedJson
+		}
+		if (
+			isArray(inner) &&
+			inner.every(
+				(element): element is UnknownNode => element instanceof BaseNode
+			)
+		) {
+			return inner.map((element) => {
+				return element.collapsedJson
+			})
+		}
+	}
+	return compileSerializedValue(inner)
 }
 
 const isTypeInner = (inner: object): inner is TypeInner => "branches" in inner

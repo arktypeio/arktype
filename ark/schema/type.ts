@@ -49,12 +49,15 @@ export class TypeNode<t = unknown> extends BaseNode<
 > {
 	declare infer: t;
 	declare [inferred]: t
-	declare readonly condition: string
 
 	static readonly kind = "type"
 
 	constructor(inner: TypeInner) {
 		super(inner)
+	}
+
+	static childrenOf(inner: TypeInner) {
+		return inner.branches
 	}
 
 	static readonly keyKinds = this.declareKeys({

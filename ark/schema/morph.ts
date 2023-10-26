@@ -30,6 +30,16 @@ export interface MorphSchema extends BaseAttributes {
 export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
 	static readonly kind = "morph"
 
+	static childrenOf(inner: MorphInner) {
+		return inner.in
+			? inner.out
+				? [inner.in, inner.out]
+				: [inner.in]
+			: inner.out
+			? [inner.out]
+			: []
+	}
+
 	static readonly keyKinds = this.declareKeys({
 		in: "in",
 		out: "out",
