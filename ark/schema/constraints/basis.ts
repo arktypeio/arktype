@@ -16,7 +16,7 @@ export const basisClassesByKind = {
 
 export type BasisKind = keyof BasisClassesByKind
 
-export interface BaseBasis {
+export type BaseBasis = {
 	readonly basisName: string
 }
 

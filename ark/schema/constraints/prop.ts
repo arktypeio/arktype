@@ -1,6 +1,11 @@
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { type BaseAttributes, BaseNode, type Node } from "../node.js"
+import {
+	type BaseAttributes,
+	BaseNode,
+	type Node,
+	type withAttributes
+} from "../node.js"
 import { type TypeInput, TypeNode } from "../type.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
@@ -18,17 +23,17 @@ type inferKey<k extends PropNode["key"]> = k extends string | symbol
 	? k["infer"] & PropertyKey
 	: never
 
-export interface PropInner extends BaseAttributes {
+export type PropInner = withAttributes<{
 	readonly key: string | symbol | TypeNode
 	readonly value: TypeNode
 	readonly optional?: boolean
-}
+}>
 
-export interface PropSchema extends BaseAttributes {
+export type PropSchema = withAttributes<{
 	readonly key: string | symbol | TypeInput
 	readonly value: TypeInput
 	readonly optional?: boolean
-}
+}>
 
 export class PropNode
 	extends BaseNode<PropInner, typeof PropNode>

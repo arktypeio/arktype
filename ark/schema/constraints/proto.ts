@@ -8,14 +8,14 @@ import {
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { type BaseAttributes, BaseNode } from "../node.js"
+import { type BaseAttributes, BaseNode, type withAttributes } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
-export interface ProtoInner<
+export type ProtoInner<
 	proto extends AbstractableConstructor = AbstractableConstructor
-> extends BaseAttributes {
+> = withAttributes<{
 	readonly proto: proto
-}
+}>
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor

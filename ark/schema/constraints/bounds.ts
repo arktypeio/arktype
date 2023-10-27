@@ -8,7 +8,8 @@ import {
 	type BaseAttributes,
 	BaseNode,
 	type Node,
-	type StaticBaseNode
+	type StaticBaseNode,
+	type withAttributes
 } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
@@ -16,13 +17,10 @@ import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement, RefinementContext } from "./refinement.js"
 
-export type BoundInner = extend<
-	BaseAttributes,
-	{
-		readonly boundKind: BoundKind
-		readonly exclusive?: boolean
-	}
->
+export type BoundInner = withAttributes<{
+	readonly boundKind: BoundKind
+	readonly exclusive?: boolean
+}>
 
 export type BoundSchema = Omit<BoundInner, "boundKind">
 

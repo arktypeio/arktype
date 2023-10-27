@@ -34,7 +34,7 @@ export type RefinementContext = {
 	basis: Node<BasisKind> | undefined
 }
 
-export interface BaseRefinement {
+export type BaseRefinement = {
 	applicableTo(
 		basis: Node<BasisKind> | undefined
 	): basis is Node<BasisKind> | undefined

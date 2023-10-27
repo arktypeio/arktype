@@ -1,3 +1,10 @@
+import type {
+	AbstractableConstructor,
+	conform,
+	ErrorMessage,
+	exactMessageOnError,
+	mutable
+} from "@arktype/util"
 import {
 	domainOf,
 	isKeyOf,
@@ -5,14 +12,6 @@ import {
 	throwInternalError,
 	throwParseError,
 	transform
-} from "@arktype/util"
-import type {
-	AbstractableConstructor,
-	conform,
-	ErrorMessage,
-	exactMessageOnError,
-	extend,
-	mutable
 } from "@arktype/util"
 import type { BasisKind, parseBasis } from "./constraints/basis.js"
 import { basisClassesByKind } from "./constraints/basis.js"
@@ -38,7 +37,8 @@ import {
 	type IrreducibleRefinementKind,
 	irreducibleRefinementKinds,
 	type Node,
-	type Schema
+	type Schema,
+	type withAttributes
 } from "./node.js"
 
 export const constraintClassesByKind = {
@@ -46,14 +46,11 @@ export const constraintClassesByKind = {
 	...basisClassesByKind
 }
 
-export type ValidatorInner = extend<
-	BaseAttributes,
-	{
-		readonly [k in ConstraintKind]?: k extends IrreducibleRefinementKind
-			? readonly Node<k>[]
-			: Node<k>
-	}
->
+export type ValidatorInner = withAttributes<{
+	readonly [k in ConstraintKind]?: k extends IrreducibleRefinementKind
+		? readonly Node<k>[]
+		: Node<k>
+}>
 
 export class ValidatorNode extends BaseNode<
 	ValidatorInner,

@@ -1,10 +1,15 @@
-import { type listable, type mutable, throwParseError } from "@arktype/util"
+import {
+	type extend,
+	type listable,
+	type mutable,
+	throwParseError
+} from "@arktype/util"
 import { type Out } from "arktype/internal/parser/tuple.js"
 import { builtins } from "./builtins.js"
 import { Disjoint } from "./disjoint.js"
 import type { Problem } from "./io/problems.js"
 import type { CheckResult, TraversalState } from "./io/traverse.js"
-import { type BaseAttributes, BaseNode } from "./node.js"
+import { type BaseAttributes, BaseNode, type withAttributes } from "./node.js"
 import type {
 	parseIntersection,
 	validateIntersectionInput,
@@ -15,17 +20,17 @@ import { ValidatorNode } from "./validator.js"
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export interface MorphInner extends BaseAttributes {
+export type MorphInner = withAttributes<{
 	readonly in?: ValidatorNode
 	readonly out?: ValidatorNode
 	readonly morph: readonly Morph[]
-}
+}>
 
-export interface MorphSchema extends BaseAttributes {
+export type MorphSchema = withAttributes<{
 	readonly in?: ValidatorSchema | ValidatorInner
 	readonly out?: ValidatorSchema | ValidatorInner
 	readonly morph: listable<Morph>
-}
+}>
 
 export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
 	static readonly kind = "morph"

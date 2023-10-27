@@ -7,19 +7,16 @@ import {
 } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { type BaseAttributes, BaseNode } from "../node.js"
+import { type BaseAttributes, BaseNode, type withAttributes } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
-export interface UnitInner<rule = unknown> extends BaseAttributes {
+export type UnitInner<rule = unknown> = withAttributes<{
 	readonly unit: rule
-}
+}>
 
-export type DiscriminableUnitSchema<rule = unknown> = extend<
-	BaseAttributes,
-	{
-		readonly is: rule
-	}
->
+export type DiscriminableUnitSchema<rule = unknown> = withAttributes<{
+	readonly is: rule
+}>
 
 export type UnitSchema<rule = unknown> =
 	| UnitInner<rule>

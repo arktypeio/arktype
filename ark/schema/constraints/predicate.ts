@@ -1,16 +1,21 @@
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import { type BaseAttributes, BaseNode, type Node } from "../node.js"
+import {
+	type BaseAttributes,
+	BaseNode,
+	type Node,
+	type withAttributes
+} from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PredicateInner<rule extends Predicate = Predicate>
-	extends BaseAttributes {
-	readonly predicate: rule
-}
+export type PredicateInner<rule extends Predicate = Predicate> =
+	withAttributes<{
+		readonly predicate: rule
+	}>
 
 export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule

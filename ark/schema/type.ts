@@ -1,6 +1,7 @@
 import {
 	type conform,
 	type evaluate,
+	type extend,
 	hasDomain,
 	hasKey,
 	isArray,
@@ -16,7 +17,7 @@ import {
 	type parseMorph,
 	type validateMorphInput
 } from "./morph.js"
-import type { BaseAttributes, Node, Schema } from "./node.js"
+import type { BaseAttributes, Node, Schema, withAttributes } from "./node.js"
 import { BaseNode } from "./node.js"
 import { inferred } from "./utils.js"
 import {
@@ -29,17 +30,17 @@ import {
 
 export type BranchNode = ValidatorNode | MorphNode
 
-export interface ExpandedTypeSchema<
+export type ExpandedTypeSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
-> extends BaseAttributes {
+> = withAttributes<{
 	readonly branches: branches
-}
+}>
 
 export type TypeSchema = listable<BranchSchema> | ExpandedTypeSchema
 
-export interface TypeInner extends BaseAttributes {
+export type TypeInner = withAttributes<{
 	readonly branches: readonly BranchNode[]
-}
+}>
 
 export type BranchSchema = ValidatorSchema | MorphSchema
 

@@ -1,17 +1,22 @@
 import { throwParseError } from "@arktype/util"
-import { type BaseAttributes, BaseNode, type Node } from "../node.js"
+import {
+	type BaseAttributes,
+	BaseNode,
+	type Node,
+	type withAttributes
+} from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
-export interface PatternInner extends BaseAttributes {
+export type PatternInner = withAttributes<{
 	readonly pattern: RegExp
-}
+}>
 
-export interface ExpandedPatternSchema extends BaseAttributes {
+export type ExpandedPatternSchema = withAttributes<{
 	readonly pattern: RegexLiteral | RegExp
-}
+}>
 
 export type PatternSchema = RegexLiteral | RegExp | ExpandedPatternSchema
 

@@ -27,10 +27,12 @@ import type {
 	validateBranchInput
 } from "./type.js"
 
-export interface BaseAttributes {
+export type BaseAttributes = {
 	readonly alias?: string
 	readonly description?: string
 }
+
+export type withAttributes<o extends object> = extend<BaseAttributes, o>
 
 export const baseAttributeKeys = {
 	alias: 1,
@@ -47,7 +49,7 @@ const prevalidated = Symbol("used to bypass validation when creating a node")
 
 export type Prevalidated = typeof prevalidated
 
-export interface StaticBaseNode<inner extends BaseAttributes> {
+export type StaticBaseNode<inner extends BaseAttributes> = {
 	new (inner: inner): BaseNode<inner, any>
 	kind: NodeKind
 	keyKinds: Record<keyof inner, keyof NodeIds>

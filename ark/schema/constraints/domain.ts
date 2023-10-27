@@ -1,13 +1,13 @@
 import type { Domain, inferDomain } from "@arktype/util"
 import { Disjoint } from "../disjoint.js"
-import { type BaseAttributes, BaseNode } from "../node.js"
+import { BaseNode, type withAttributes } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
-export interface DomainInner<
+export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends BaseAttributes {
+> = withAttributes<{
 	readonly domain: domain
-}
+}>
 
 // only domains with an infinite number of values are allowed as bases
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
