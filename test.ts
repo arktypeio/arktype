@@ -15,9 +15,11 @@ const l = node(
 
 const z = node("number")
 
-l.children.length //?
+console.log(z.allows.toString())
 
-l.references.length //?
+const o = z.allows(5) //?
+
+const n = z.allows(true) //?
 
 // z.json //?
 

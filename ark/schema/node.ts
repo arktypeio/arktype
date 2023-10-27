@@ -11,7 +11,7 @@ import type {
 	JsonData,
 	returnOf
 } from "@arktype/util"
-import { DynamicBase, isArray, isKeyOf } from "@arktype/util"
+import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
 import type {
 	ConstraintClassesByKind,
@@ -136,10 +136,7 @@ export abstract class BaseNode<
 	readonly nodeClass = this.constructor as nodeClass
 	readonly kind: nodeClass["kind"] = this.nodeClass.kind
 	readonly condition: string
-
-	allows(data: unknown) {
-		return true
-	}
+	readonly allows: (data: unknown) => boolean
 
 	constructor(public readonly inner: inner) {
 		super(inner)
@@ -158,6 +155,10 @@ export abstract class BaseNode<
 			(child) => child.contributesReferences
 		)
 		this.contributesReferences = [this, ...this.references]
+		this.allows = new CompiledFunction(
+			BaseNode.argName,
+			`return ${this.condition}`
+		)
 	}
 
 	protected static declareKeys<nodeClass>(
@@ -248,8 +249,6 @@ export abstract class BaseNode<
 	}
 }
 
-// this function should only be called during initialization to
-// avoiding adding duplicate children
 const innerToJson = (inner: BaseAttributes) => {
 	if (isTypeInner(inner)) {
 		// collapse single branch schemas like { branches: [{ domain: "string" }] } to { domain: "string" }
