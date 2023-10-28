@@ -15,6 +15,7 @@ import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
+	type Inner,
 	type IntersectionMap,
 	type LeftIntersections,
 	type Node,
@@ -121,10 +122,6 @@ export const irreducibleRefinementKinds = {
 
 export type IrreducibleRefinementKind = keyof typeof irreducibleRefinementKinds
 
-type innerOf<nodeClass> = ConstructorParameters<
-	conform<nodeClass, AbstractableConstructor>
->[0]
-
 type kindOf<nodeClass> = instanceOf<nodeClass> extends {
 	kind: infer kind extends NodeKind
 }
@@ -132,7 +129,7 @@ type kindOf<nodeClass> = instanceOf<nodeClass> extends {
 	: never
 
 type extensionKeyOf<nodeClass> = Exclude<
-	keyof innerOf<nodeClass>,
+	keyof Inner<kindOf<nodeClass>>,
 	keyof BaseAttributes
 >
 
@@ -194,7 +191,7 @@ export abstract class BaseNode<
 			description: "meta",
 			...keyKinds
 		} satisfies Dict<string, keyof NodeIds> as {} as {
-			[k in keyof innerOf<nodeClass>]-?: keyof NodeIds
+			[k in keyof Inner<kindOf<nodeClass>>]-?: keyof NodeIds
 		}
 	}
 
@@ -209,7 +206,7 @@ export abstract class BaseNode<
 
 	protected static defineCompiler<nodeClass>(
 		this: nodeClass,
-		compiler: (inner: innerOf<nodeClass>) => string
+		compiler: (inner: Inner<kindOf<nodeClass>>) => string
 	) {
 		return compiler
 	}

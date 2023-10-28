@@ -13,7 +13,6 @@
 		"resolveJsonModule": true,
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
-		"noErrorTruncation": true,
 		"stripInternal": true,
 		"lib": ["ESNext"],
 		"jsx": "react",
