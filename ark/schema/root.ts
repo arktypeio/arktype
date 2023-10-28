@@ -40,7 +40,9 @@ export abstract class RootNode<
 	}
 
 	// TODO: inferIntersection
-	and<other extends UnknownNode>(other: other): Root<t & other["infer"]> {
+	and<other extends UnknownNode>(
+		other: other
+	): IntersectionResult<this["kind"], other["kind"]> {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}

@@ -123,7 +123,7 @@ export type NodeKind = keyof NodeClassesByKind
 
 export type NodeClass<kind extends NodeKind = NodeKind> =
 	NodeClassesByKind[kind]
-
+5
 export type Schema<kind extends NodeKind> = Parameters<
 	NodeClass<kind>["from"]
 >[0]
@@ -137,8 +137,3 @@ export type Node<kind extends NodeKind = NodeKind> = instanceOf<NodeClass<kind>>
 export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind> & {
 	[inferred]: t
 }
-
-declare const a: Root<{ a: 1 }>
-declare const b: Root<{ b: 1 }>
-
-const z = a.and(b)

@@ -24,6 +24,7 @@ import {
 	type Node,
 	type NodeClass,
 	type NodeKind,
+	type RootKind,
 	type TypeKind
 } from "./node.js"
 import { type UnionInner } from "./union.js"
@@ -386,11 +387,19 @@ const isTypeInner = (inner: object): inner is UnionInner => "branches" in inner
 export type IntersectionResult<
 	l extends NodeKind,
 	r extends NodeKind
-> = r extends keyof Intersections[l]
-	? instantiateIntersection<Intersections[l][r]>
-	: l extends keyof Intersections[r]
-	? instantiateIntersection<Intersections[r][l]>
-	: null
+> = l extends unknown
+	? // ensure l and r are distributed so cases like
+	  // IntersectionResult<RootKind, RootKind> are handled correctly
+	  r extends keyof Intersections[l]
+		? instantiateIntersection<Intersections[l][r]>
+		: "constraint" extends keyof Intersections[l]
+		? instantiateIntersection<Intersections[l]["constraint"]>
+		: l extends keyof Intersections[r]
+		? instantiateIntersection<Intersections[r][l]>
+		: "constraint" extends keyof Intersections[r]
+		? instantiateIntersection<Intersections[r]["constraint"]>
+		: null
+	: never
 
 type instantiateIntersection<result> = result extends NodeKind
 	? Node<result>
