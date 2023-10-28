@@ -9,7 +9,9 @@ import type {
 	isAny,
 	Json,
 	JsonData,
-	returnOf
+	PartialRecord,
+	returnOf,
+	satisfy
 } from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
@@ -18,7 +20,12 @@ import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
-import { type Node, type NodeClass, type NodeKind } from "./node.js"
+import {
+	type Node,
+	type NodeClass,
+	type NodeKind,
+	type TypeKind
+} from "./node.js"
 import { type UnionInner } from "./union.js"
 import { inferred } from "./utils.js"
 
@@ -52,6 +59,91 @@ type IntersectionDefinitions<nodeClass> = evaluate<
 		[k in kindOf<nodeClass>]: intersectionOf<nodeClass, k>
 	} & {
 		[k in IntersectionGroup]?: intersectionOf<nodeClass, k>
+	}
+>
+const orderedNodeKinds = [
+	"union",
+	"morph",
+	"intersection",
+	"unit",
+	"proto",
+	"domain",
+	"divisor",
+	"max",
+	"min",
+	"pattern",
+	"predicate",
+	"prop"
+] as const satisfies readonly NodeKind[]
+
+type OrderedNodeKinds = typeof orderedNodeKinds
+
+type allowedAsymmetricOperandOf<
+	kind extends NodeKind,
+	remaining extends readonly NodeKind[] = OrderedNodeKinds
+> = remaining extends [infer head, ...infer tail extends readonly NodeKind[]]
+	? head extends kind
+		?
+				| remaining[number]
+				// TypeKinds must intersect with constraint, and unit being the
+				// highest precedence constraint is the only other node that can unambiguously.
+				| (kind extends TypeKind | "unit" ? "constraint" : never)
+		: allowedAsymmetricOperandOf<kind, tail>
+	: kind
+
+export type Intersections = satisfy<
+	{
+		[k in NodeKind]: extend<
+			{ [_ in k]: NodeKind | Disjoint | null },
+			PartialRecord<allowedAsymmetricOperandOf<k>, NodeKind | Disjoint | null>
+		>
+	},
+	{
+		union: {
+			union: TypeKind | Disjoint
+			morph: "union" | "morph" | Disjoint
+			intersection: "union" | "intersection" | Disjoint
+			constraint: TypeKind | BasisKind | Disjoint
+		}
+		morph: {
+			morph: "morph" | Disjoint
+			intersection: "morph" | Disjoint
+			constraint: "morph" | Disjoint
+		}
+		intersection: {
+			intersection: "intersection" | Disjoint
+			constraint: "intersection" | Disjoint
+		}
+		unit: {
+			unit: "unit" | Disjoint
+			constraint: "unit" | Disjoint
+		}
+		proto: {
+			proto: "proto" | Disjoint
+			domain: "proto" | Disjoint
+		}
+		domain: {
+			domain: "domain" | Disjoint
+		}
+		divisor: {
+			divisor: "divisor"
+		}
+		max: {
+			max: "max"
+			min: Disjoint | null
+		}
+		min: {
+			min: "min"
+		}
+		pattern: {
+			pattern: "pattern" | null
+		}
+		predicate: {
+			predicate: "predicate" | null
+		}
+		prop: {
+			prop: "prop" | null
+		}
 	}
 >
 

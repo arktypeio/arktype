@@ -12,19 +12,3 @@ export type ConstraintKind = keyof ConstraintClassesByKind
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
-
-export const precedenceByConstraint: Record<ConstraintKind, number> = {
-	// basis
-	domain: 0,
-	proto: 0,
-	unit: 0,
-	// shallow
-	min: 1,
-	max: 1,
-	divisor: 1,
-	pattern: 1,
-	// deep
-	prop: 2,
-	// narrow
-	predicate: 3
-}
