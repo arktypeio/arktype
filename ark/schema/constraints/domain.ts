@@ -1,6 +1,7 @@
 import type { Domain, inferDomain } from "@arktype/util"
-import { BaseNode, type withAttributes } from "../base.js"
+import { type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
+import { RootNode } from "../root.js"
 import type { BaseBasis } from "./basis.js"
 
 export type DomainInner<
@@ -20,12 +21,10 @@ export class DomainNode<
 		// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
 		out rule extends NonEnumerableDomain = NonEnumerableDomain
 	>
-	extends BaseNode<DomainInner<rule>, typeof DomainNode>
+	extends RootNode<DomainInner<rule>, typeof DomainNode, inferDomain<rule>>
 	implements BaseBasis
 {
 	static readonly kind = "domain"
-
-	declare infer: inferDomain<rule>
 
 	readonly basisName = this.domain
 

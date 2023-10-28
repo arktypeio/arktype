@@ -28,6 +28,3 @@ const n = z.allows(true) //?
 // // const result = compile(l) //?
 
 // l.json //?
-
-l.children.flat(Infinity).length //?
-l.unwrapOnly("divisor")?.condition //?

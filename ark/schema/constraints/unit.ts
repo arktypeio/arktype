@@ -1,13 +1,8 @@
-import {
-	domainOf,
-	type extend,
-	hasKey,
-	stringify,
-	throwParseError
-} from "@arktype/util"
-import { type BaseAttributes, BaseNode, type withAttributes } from "../base.js"
+import { domainOf, hasKey, stringify, throwParseError } from "@arktype/util"
+import { type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
+import { RootNode } from "../root.js"
 import type { BaseBasis } from "./basis.js"
 
 export type UnitInner<rule = unknown> = withAttributes<{
@@ -23,13 +18,12 @@ export type UnitSchema<rule = unknown> =
 	| DiscriminableUnitSchema<rule>
 
 export class UnitNode<const rule = unknown>
-	extends BaseNode<UnitInner<rule>, typeof UnitNode>
+	extends RootNode<UnitInner<rule>, typeof UnitNode, rule>
 	implements BaseBasis
 {
 	static readonly kind = "unit"
 	readonly is = this.unit
 	readonly domain = domainOf(this.unit)
-	declare infer: rule
 
 	// TODO: add reference to for objects
 	readonly basisName = stringify(this.unit)

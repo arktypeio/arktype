@@ -1,10 +1,10 @@
 import { type listable, type mutable, throwParseError } from "@arktype/util"
 import { type Out } from "arktype/internal/parser/tuple.js"
-import { BaseNode, type withAttributes } from "./base.js"
+import { type withAttributes } from "./base.js"
 import { builtins } from "./builtins.js"
+import { type BasisKind } from "./constraints/basis.js"
 import { Disjoint } from "./disjoint.js"
 import type {
-	IntersectionInner,
 	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionInput
@@ -12,29 +12,33 @@ import type {
 import { IntersectionNode } from "./intersection.js"
 import type { Problem } from "./io/problems.js"
 import type { CheckResult, TraversalState } from "./io/traverse.js"
+import { type Node } from "./node.js"
+import { RootNode } from "./root.js"
+
+export type ValidatorNode = Node<"intersection" | BasisKind>
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type MorphInner = withAttributes<{
-	readonly in?: IntersectionNode
-	readonly out?: IntersectionNode
+	readonly in?: ValidatorNode
+	readonly out?: ValidatorNode
 	readonly morph: readonly Morph[]
 }>
 
 export type MorphSchema = withAttributes<{
-	readonly in?: IntersectionSchema | IntersectionInner
-	readonly out?: IntersectionSchema | IntersectionInner
+	readonly in?: IntersectionSchema
+	readonly out?: IntersectionSchema
 	readonly morph: listable<Morph>
 }>
 
-export class MorphNode<i = unknown, o = unknown> extends BaseNode<
+export class MorphNode<i = unknown, o = unknown> extends RootNode<
 	MorphInner,
 	typeof MorphNode,
 	i
 > {
 	static readonly kind = "morph"
 
-	static childrenOf(inner: MorphInner) {
+	static childrenOf(inner: MorphInner): ValidatorNode[] {
 		return inner.in
 			? inner.out
 				? [inner.in, inner.out]

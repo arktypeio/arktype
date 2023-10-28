@@ -1,4 +1,4 @@
-import { type BaseAttributes, BaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type RootInput, type RootKind } from "../node.js"

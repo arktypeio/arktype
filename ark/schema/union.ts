@@ -1,6 +1,5 @@
 import { type listable } from "@arktype/util"
 import type { withAttributes } from "./base.js"
-import { BaseNode } from "./base.js"
 import { type BasisKind } from "./constraints/basis.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
@@ -14,6 +13,7 @@ import {
 	type Node,
 	type validateBranchInput
 } from "./node.js"
+import { RootNode } from "./root.js"
 
 export type BranchNode = IntersectionNode | MorphNode | Node<BasisKind>
 
@@ -31,7 +31,7 @@ export type UnionInner = withAttributes<{
 
 export type BranchSchema = IntersectionSchema | MorphSchema
 
-export class UnionNode<t = unknown> extends BaseNode<
+export class UnionNode<t = unknown> extends RootNode<
 	UnionInner,
 	typeof UnionNode,
 	t

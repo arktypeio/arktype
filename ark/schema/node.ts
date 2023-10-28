@@ -2,15 +2,11 @@ import type {
 	conform,
 	evaluate,
 	extend,
+	instanceOf,
 	listable,
 	mutable
 } from "@arktype/util"
 import { hasDomain } from "@arktype/util"
-import {
-	type BaseAttributes,
-	type BaseNode,
-	type StaticBaseNode
-} from "./base.js"
 import { type BasisKind } from "./constraints/basis.js"
 import type { ConstraintClassesByKind } from "./constraints/constraint.js"
 import { UnitNode } from "./constraints/unit.js"
@@ -32,6 +28,7 @@ import {
 	type UnionInner,
 	UnionNode
 } from "./union.js"
+import { type inferred } from "./utils.js"
 
 export type NodeInput = listable<IntersectionSchema | MorphSchema>
 
@@ -60,7 +57,7 @@ type TypeNodeParser = {
 		...branches: {
 			[i in keyof branches]: validateBranchInput<branches[i]>
 		}
-	): TypeNode<inferNodeBranches<branches>>
+	): Root<inferNodeBranches<branches>>
 }
 
 // const parseKind = <kind extends NodeKind, schema extends Schema<kind>>(
@@ -89,12 +86,6 @@ export const node = Object.assign(parseNode, {
 })
 
 export type RootInput = listable<IntersectionSchema | MorphSchema>
-
-export type TypeNode<t = unknown> = BaseNode<
-	BaseAttributes,
-	StaticBaseNode<BaseAttributes>,
-	t
->
 
 export type inferNodeBranches<branches extends readonly unknown[]> = {
 	[i in keyof branches]: parseBranch<branches[i]>
@@ -141,6 +132,13 @@ export type unwrap<kind extends NodeKind> = ConstructorParameters<
 	NodeClass<kind>
 >[0]
 
-export type Node<kind extends NodeKind = NodeKind> = InstanceType<
-	NodeClass<kind>
->
+export type Node<kind extends NodeKind = NodeKind> = instanceOf<NodeClass<kind>>
+
+export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind> & {
+	[inferred]: t
+}
+
+declare const a: Root<{ a: 1 }>
+declare const b: Root<{ b: 1 }>
+
+const z = a.and(b)

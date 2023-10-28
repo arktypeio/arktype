@@ -12,22 +12,13 @@ import type {
 	returnOf
 } from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
-import { builtins } from "./builtins.js"
 import { type BasisKind } from "./constraints/basis.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
 import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
-import { constraintClassesByKind } from "./intersection.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
-import {
-	type Node,
-	type NodeClass,
-	type NodeKind,
-	type RootKind,
-	type Schema,
-	type TypeNode
-} from "./node.js"
+import { type Node, type NodeClass, type NodeKind } from "./node.js"
 import { type UnionInner } from "./union.js"
 import { inferred } from "./utils.js"
 
@@ -111,7 +102,7 @@ type extensionKeyOf<nodeClass> = Exclude<
 	keyof BaseAttributes
 >
 
-type UnknownNode = BaseNode<any, any>
+export type UnknownNode = BaseNode<any, any>
 
 const $ark = registry()
 
@@ -217,7 +208,7 @@ export abstract class BaseNode<
 	}
 
 	// TODO: add input kind, caching
-	intersect<other extends Node>(
+	intersect<other extends UnknownNode>(
 		other: other
 	): IntersectionResult<this["kind"], other["kind"]>
 	intersect(
@@ -244,60 +235,6 @@ export abstract class BaseNode<
 				: new this.nodeClass(result as never)
 		}
 		return null
-	}
-
-	constrain<kind extends ConstraintKind>(
-		this: Node<RootKind>,
-		kind: kind,
-		definition: Schema<kind>
-	): TypeNode {
-		const result = this.intersect(
-			(constraintClassesByKind[kind].from as any)(definition)
-		)
-		return result instanceof Disjoint ? result.throw() : result
-	}
-
-	// references() {
-	// 	return this.branches.flatMap((branch) => branch.references())
-	// }
-
-	keyof() {
-		return this
-		// return this.rule.reduce(
-		// 	(result, branch) => result.and(branch.keyof()),
-		// 	builtins.unknown()
-		// )
-	}
-
-	// TODO: inferIntersection
-	and<other extends TypeNode>(other: other): TypeNode<t & other["infer"]> {
-		const result = this.intersect(other)
-		return result instanceof Disjoint ? result.throw() : (result as never)
-	}
-
-	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
-		return this as never
-	}
-
-	isUnknown(): this is TypeNode<unknown> {
-		return this.equals(builtins.unknown())
-	}
-
-	isNever(): this is TypeNode<never> {
-		return this.equals(builtins.never())
-	}
-
-	getPath() {
-		return this
-	}
-
-	array(): TypeNode<t[]> {
-		return this as never
-	}
-
-	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
-		const intersection = this.intersect(other)
-		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
 }
 
@@ -342,7 +279,7 @@ const innerValueToJson = (inner: unknown): JsonData => {
 
 const isTypeInner = (inner: object): inner is UnionInner => "branches" in inner
 
-type IntersectionResult<
+export type IntersectionResult<
 	l extends NodeKind,
 	r extends NodeKind
 > = r extends keyof NodeClass<l>["intersections"]

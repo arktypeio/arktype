@@ -39,6 +39,7 @@ import { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import { type MorphSchema } from "./morph.js"
 import { type Node, type Schema } from "./node.js"
+import { RootNode } from "./root.js"
 
 export const constraintClassesByKind = {
 	...refinementClassesByKind,
@@ -51,7 +52,7 @@ export type IntersectionInner = withAttributes<{
 		: Node<k>
 }>
 
-export class IntersectionNode<t = unknown> extends BaseNode<
+export class IntersectionNode<t = unknown> extends RootNode<
 	IntersectionInner,
 	typeof IntersectionNode,
 	t
@@ -105,13 +106,13 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 	}
 
 	static readonly intersections = this.defineIntersections({
-		intersection: (l, r) => {
+		intersection: (l, r): IntersectionInner | Disjoint => {
 			const constraints = intersectConstraints(l.constraints, r.constraints)
 			return constraints instanceof Disjoint
 				? constraints
 				: unflattenConstraints(constraints)
 		},
-		constraint: (l, r) => {
+		constraint: (l, r): IntersectionInner | Disjoint => {
 			const constraints = addConstraint(l.constraints, r)
 			return constraints instanceof Disjoint
 				? constraints

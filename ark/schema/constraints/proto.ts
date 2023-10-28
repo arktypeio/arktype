@@ -5,10 +5,11 @@ import {
 	objectKindDescriptions,
 	objectKindOf
 } from "@arktype/util"
-import { BaseNode, type withAttributes } from "../base.js"
+import { type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
+import { RootNode } from "../root.js"
 import type { BaseBasis } from "./basis.js"
 import { type DomainNode } from "./domain.js"
 
@@ -25,12 +26,10 @@ export type ProtoSchema<
 export class ProtoNode<
 		proto extends AbstractableConstructor = AbstractableConstructor
 	>
-	extends BaseNode<ProtoInner, typeof ProtoNode>
+	extends RootNode<ProtoInner, typeof ProtoNode, instanceOf<proto>>
 	implements BaseBasis
 {
 	static readonly kind = "proto"
-
-	declare infer: instanceOf<proto>
 
 	readonly knownObjectKind = objectKindOf(this.proto)
 	readonly basisName = `${this.proto.name}`
