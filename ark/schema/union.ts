@@ -4,6 +4,7 @@ import { type BasisKind } from "./constraints/basis.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import {
+	type IntersectionInner,
 	type IntersectionNode,
 	type IntersectionSchema
 } from "./intersection.js"

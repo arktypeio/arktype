@@ -1,8 +1,4 @@
-import {
-	type ExpandedMinSchema,
-	schemaToComparator,
-	type UnionNode
-} from "@arktype/schema"
+import { type Root } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
@@ -24,15 +20,15 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: OpenLeftBound
-	"&"?: UnionNode
-	"|"?: UnionNode
+	"&"?: Root
+	"|"?: Root
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: UnionNode | undefined
+	root: Root | undefined
 	branches: BranchState = {
 		prefixes: []
 	}
@@ -60,11 +56,11 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<UnionNode["constrain"]>) {
+	constrainRoot(...args: Parameters<Root["constrain"]>) {
 		this.root = this.root!.constrain(...args)
 	}
 
-	setRoot(root: UnionNode) {
+	setRoot(root: Root) {
 		this.root = root
 	}
 

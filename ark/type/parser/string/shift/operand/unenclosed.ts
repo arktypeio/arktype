@@ -1,4 +1,4 @@
-import { node, UnionNode } from "@arktype/schema"
+import { BaseNode, node, type Root, RootNode } from "@arktype/schema"
 import type {
 	BigintLiteral,
 	Completion,
@@ -110,7 +110,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): UnionNode =>
+const unenclosedToNode = (s: DynamicState, token: string): Root =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -122,12 +122,12 @@ const unenclosedToNode = (s: DynamicState, token: string): UnionNode =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): UnionNode | undefined => {
+): Root | undefined => {
 	if (s.ctx.args?.[token]) {
 		return s.ctx.args[token]
 	}
 	const resolution = s.ctx.scope.maybeResolve(token)
-	if (resolution instanceof UnionNode) {
+	if (resolution instanceof RootNode) {
 		return resolution
 	}
 	if (resolution === undefined) {
@@ -142,7 +142,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): UnionNode | undefined => {
+): Root | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
 		return node({ is: maybeNumber })

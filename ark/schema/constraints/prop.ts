@@ -1,8 +1,8 @@
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node, type RootInput, type RootKind } from "../node.js"
-import { type UnionNode } from "../union.js"
+import { type Node, type RootInput } from "../node.js"
+import { type Root, type RootKind } from "../root.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -16,7 +16,7 @@ export type PropDeclarations = {
 
 export type NamedPropInner = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Node<RootKind>
+	readonly value: Root
 }>
 
 export type NamedPropSchema = withAttributes<{
@@ -104,7 +104,7 @@ export type OptionalDeclaration = declareNode<
 >
 
 export class OptionalNode
-	extends BaseNode<RequiredDeclaration>
+	extends BaseNode<OptionalDeclaration>
 	implements BaseRefinement
 {
 	static readonly kind = "optional"

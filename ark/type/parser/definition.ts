@@ -1,4 +1,4 @@
-import { type CastTo, node, UnionNode } from "@arktype/schema"
+import { type CastTo, node, type Root, RootNode } from "@arktype/schema"
 import type {
 	defined,
 	Dict,
@@ -20,7 +20,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
-import { hasArkKind, Type } from "../type.js"
+import { Type } from "../type.js"
 import type {
 	inferObjectLiteral,
 	validateObjectLiteral
@@ -31,12 +31,12 @@ import type { BaseCompletions, inferString } from "./string/string.js"
 import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
 import { parseTuple } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): UnionNode => {
+export const parseObject = (def: object, ctx: ParseContext): Root => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case "Object":
-			if (def instanceof UnionNode) {
-				return def
+			if (def instanceof RootNode) {
+				return def as Root
 			}
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":

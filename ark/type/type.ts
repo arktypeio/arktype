@@ -1,3 +1,12 @@
+import type {
+	BaseAttributes,
+	CheckResult,
+	inferMorphOut,
+	inferNarrow,
+	Morph,
+	Predicate,
+	Root
+} from "@arktype/schema"
 import {
 	arkKind,
 	builtins,
@@ -7,22 +16,11 @@ import {
 	TraversalState
 } from "@arktype/schema"
 import type {
-	BaseAttributes,
-	CheckResult,
-	inferMorphOut,
-	inferNarrow,
-	Morph,
-	Predicate,
-	UnionNode
-} from "@arktype/schema"
-import type {
 	AbstractableConstructor,
-	autocomplete,
 	BuiltinObjectKind,
 	BuiltinObjects,
 	conform,
-	Primitive,
-	returnOf
+	Primitive
 } from "@arktype/util"
 import { CompiledFunction, transform } from "@arktype/util"
 import type {
@@ -42,7 +40,6 @@ import type {
 } from "./parser/tuple.js"
 import type { Module, Scope } from "./scope.js"
 import { bindThis } from "./scope.js"
-import { type Ark, type } from "./scopes/ark.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -121,7 +118,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 }
 
 export type ArkKinds = {
-	node: UnionNode
+	node: Root
 	generic: Generic
 	module: Module
 }
@@ -165,7 +162,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	declare inferIn: extractIn<t>
 
 	config: TypeConfig
-	root: UnionNode<t>
+	root: Root<t>
 	condition: string
 	allows: this["root"]["allows"]
 
@@ -173,7 +170,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		public definition: unknown,
 		public scope: Scope
 	) {
-		const root = parseTypeRoot(definition, scope) as UnionNode<t>
+		const root = parseTypeRoot(definition, scope) as Root<t>
 		super(
 			In,
 			`const state = new ${registry().reference("state")}();
@@ -338,7 +335,7 @@ export type GenericProps<
 	scope: Scope
 }
 
-export type BoundArgs = Record<string, UnionNode>
+export type BoundArgs = Record<string, Root>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 export type Generic<

@@ -1,4 +1,4 @@
-import type { UnionNode } from "@arktype/schema"
+import { type Root } from "@arktype/schema"
 import { type ErrorMessage, throwParseError } from "@arktype/util"
 import type { ParseContext } from "../../scope.js"
 import { type inferAst } from "../semantic/semantic.js"
@@ -13,7 +13,7 @@ import {
 	writeUnexpectedCharacterMessage
 } from "./shift/operator/operator.js"
 
-export const parseString = (def: string, ctx: ParseContext): UnionNode =>
+export const parseString = (def: string, ctx: ParseContext): Root =>
 	ctx.scope.maybeResolveNode(def) ??
 	((def.endsWith("[]") &&
 		ctx.scope.maybeResolveNode(def.slice(0, -2))?.array()) ||

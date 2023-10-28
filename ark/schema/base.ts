@@ -23,6 +23,7 @@ import {
 	type NodeKind,
 	type TypeKind
 } from "./node.js"
+import { type RootKind } from "./root.js"
 import { type UnionInner } from "./union.js"
 import { inferred } from "./utils.js"
 
@@ -53,13 +54,9 @@ export type declareNode<
 	}
 >
 
-export type NodeDeclaration = declareNode<
-	NodeKind,
-	NodeTypes<any>,
-	StaticBaseNode<any>
->
-
-type Z = kindOf<NodeClass<"intersection">>
+export type NodeDeclaration<
+	implementation extends StaticBaseNode<any> = StaticBaseNode<any>
+> = declareNode<NodeKind, NodeTypes<any>, implementation>
 
 export const baseAttributeKeys = {
 	alias: 1,
@@ -89,7 +86,8 @@ const orderedNodeKinds = [
 	"min",
 	"pattern",
 	"predicate",
-	"required"
+	"required",
+	"optional"
 ] as const satisfies readonly NodeKind[]
 
 type OrderedNodeKinds = typeof orderedNodeKinds
@@ -249,27 +247,33 @@ export abstract class BaseNode<
 	// TODO: add input kind, caching
 	intersect<other extends UnknownNode>(
 		other: other
-	): IntersectionResult<this["kind"], other["kind"]>
+	): intersectionOf<this["kind"], other["kind"]>
 	intersect(other: BaseNode<NodeDeclaration>): UnknownNode | Disjoint | null {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta
 			return this
 		}
-		const lrIntersection = this.nodeClass.intersections[other.kind]
-		if (lrIntersection) {
-			const result = lrIntersection(this as never, other as never)
-			// TODO: meta
-			return result instanceof Disjoint
-				? result
-				: new this.nodeClass(result as never)
+		const lrResult = this.nodeClass.intersections[other.kind]?.(
+			this as never,
+			other as never
+		)
+		if (lrResult) {
+			if (lrResult instanceof Disjoint) {
+				return lrResult
+			}
+			// TODO: meta, use kind entry?
+			return new this.nodeClass(lrResult as never) as never
 		}
-		const rlIntersection = other.nodeClass.intersections[this.kind]
-		if (rlIntersection) {
-			const result = rlIntersection(other as never, this as never)
+		const rlResult = other.nodeClass.intersections[this.kind]?.(
+			other as never,
+			this as never
+		)
+		if (rlResult) {
+			if (rlResult instanceof Disjoint) {
+				return rlResult.invert()
+			}
 			// TODO: meta
-			return result instanceof Disjoint
-				? result.invert()
-				: new this.nodeClass(result as never)
+			return new this.nodeClass(rlResult as never) as never
 		}
 		return null
 	}
@@ -316,25 +320,32 @@ const innerValueToJson = (inner: unknown): JsonData => {
 
 const isTypeInner = (inner: object): inner is UnionInner => "branches" in inner
 
-export type IntersectionResult<
+export type intersectionOf<
 	l extends NodeKind,
 	r extends NodeKind
-> = l extends unknown
-	? // ensure l and r are distributed so cases like
-	  // IntersectionResult<RootKind, RootKind> are handled correctly
-	  r extends keyof IntersectionMap<l>
-		? instantiateIntersection<IntersectionMap<l>[r]>
-		: [r, "constraint"] extends [ConstraintKind, keyof IntersectionMap<l>]
-		? instantiateIntersection<
-				IntersectionMap<l>["constraint" & keyof IntersectionMap<l>]
-		  >
-		: l extends keyof IntersectionMap<r>
-		? instantiateIntersection<IntersectionMap<r>[l]>
-		: [l, "constraint"] extends [ConstraintKind, keyof IntersectionMap<r>]
-		? instantiateIntersection<
-				IntersectionMap<r>["constraint" & keyof IntersectionMap<r>]
-		  >
-		: null
+> = collectResults<l, r, OrderedNodeKinds>
+
+type collectResults<
+	l extends NodeKind,
+	r extends NodeKind,
+	remaining extends readonly unknown[]
+> = remaining extends readonly [infer head, ...infer tail]
+	? l extends head
+		? collectSingleResult<l, r>
+		: r extends head
+		? collectSingleResult<r, l>
+		: collectResults<l, r, tail>
+	: never
+
+type collectSingleResult<
+	l extends NodeKind,
+	r extends NodeKind
+> = r extends keyof IntersectionMap<l>
+	? instantiateIntersection<IntersectionMap<l>[r]>
+	: r extends ConstraintKind
+	? "constraint" extends keyof IntersectionMap<l>
+		? instantiateIntersection<IntersectionMap<l>["constraint"]>
+		: never
 	: never
 
 type instantiateIntersection<result> = result extends NodeKind

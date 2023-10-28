@@ -71,6 +71,7 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 		morph: (l, r) => {
 			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
 				// TODO: is this always a parse error? what about for union reduction etc.
+				// TODO: check in for union reduction
 				return throwParseError(`Invalid intersection of morphs`)
 			}
 			const result: mutable<MorphInner> = {
@@ -114,7 +115,8 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 				  }
 		},
 		constraint: (l, r) => {
-			const input = l.in ?? builtins.unknown()
+			// TODO: remove cast?
+			const input = l.in ?? (builtins.unknown() as IntersectionNode<unknown>)
 			const constrainedInput = input.intersect(r)
 			return constrainedInput instanceof Disjoint
 				? constrainedInput

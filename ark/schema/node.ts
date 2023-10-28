@@ -1,13 +1,11 @@
 import type {
 	conform,
-	evaluate,
 	extend,
 	instanceOf,
 	listable,
 	mutable
 } from "@arktype/util"
 import { hasDomain } from "@arktype/util"
-import { type BasisKind } from "./constraints/basis.js"
 import type {
 	ConstraintDeclarationsByKind,
 	ConstraintKind
@@ -15,6 +13,7 @@ import type {
 import { UnitNode } from "./constraints/unit.js"
 import {
 	type IntersectionDeclaration,
+	type IntersectionInner,
 	IntersectionNode,
 	type IntersectionSchema,
 	type parseIntersection,
@@ -27,6 +26,7 @@ import {
 	type parseMorph,
 	type validateMorphInput
 } from "./morph.js"
+import { type Root } from "./root.js"
 import {
 	type BranchSchema,
 	type ExpandedUnionSchema,
@@ -34,31 +34,26 @@ import {
 	type UnionInner,
 	UnionNode
 } from "./union.js"
-import { type inferred } from "./utils.js"
 
-export type NodeInput = listable<IntersectionSchema | MorphSchema>
-
-const parseNode: TypeNodeParser = (
-	...schemas: [ExpandedUnionSchema] | BranchSchema[]
-) => {
+const parseNode = (...schemas: [ExpandedUnionSchema] | BranchSchema[]) => {
 	const result = {} as mutable<UnionInner>
 	let schemaBranches: readonly BranchSchema[]
 	if (hasDomain(schemas[0], "object") && "branches" in schemas[0]) {
 		const { branches, ...attributes } = schemas[0]
-		Object.assign(result, attribute)
+		Object.assign(result, attributes)
 		schemaBranches = branches
 	} else {
 		schemaBranches = schemas
 	}
 	result.branches = schemaBranches.map((branch) =>
 		typeof branch === "object" && "morph" in branch
-			? new MorphNode(branch)
-			: new IntersectionNode(branch)
+			? new MorphNode(branch as never)
+			: new IntersectionNode(branch as never)
 	)
 	return new UnionNode(result)
 }
 
-type TypeNodeParser = {
+type RootNodeParser = {
 	<const branches extends readonly unknown[]>(
 		...branches: {
 			[i in keyof branches]: validateBranchInput<branches[i]>
@@ -86,7 +81,7 @@ const parseUnits = <const branches extends readonly unknown[]>(
 	})
 }
 
-export const node = Object.assign(parseNode, {
+export const node = Object.assign(parseNode as RootNodeParser, {
 	units: parseUnits
 	// kind: parseKind
 })
@@ -106,7 +101,7 @@ export type validateBranchInput<input> = conform<
 
 export type parseBranch<branch> = branch extends MorphSchema
 	? parseMorph<branch>
-	: branch extends IntersectionSchema
+	: branch extends IntersectionSchema | IntersectionInner
 	? parseIntersection<branch>
 	: unknown
 
@@ -133,9 +128,7 @@ export type TypeDeclarationsByKind = {
 	intersection: IntersectionDeclaration
 }
 
-export type TypeKind = evaluate<keyof TypeDeclarationsByKind>
-
-export type RootKind = TypeKind | BasisKind
+export type TypeKind = keyof TypeDeclarationsByKind
 
 export type NodeDeclarationsByKind = extend<
 	ConstraintDeclarationsByKind,
@@ -163,7 +156,3 @@ export type IntersectionMap<kind extends NodeKind> =
 export type Node<kind extends NodeKind = NodeKind> = instanceOf<
 	NodeDeclarationsByKind[kind]["class"]
 >
-
-export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind> & {
-	[inferred]: t
-}

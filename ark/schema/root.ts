@@ -1,17 +1,14 @@
-import {
-	BaseNode,
-	type IntersectionResult,
-	type NodeDeclaration,
-	type StaticBaseNode
-} from "./base.js"
+import { BaseNode, type intersectionOf, type NodeDeclaration } from "./base.js"
 import { builtins } from "./builtins.js"
+import { type BasisKind } from "./constraints/basis.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { constraintClassesByKind } from "./intersection.js"
-import { type Node, type Root, type RootKind, type Schema } from "./node.js"
+import { type Node, type Schema, type TypeKind } from "./node.js"
 
-export interface StaticRootNode<declaration extends NodeDeclaration>
-	extends StaticBaseNode<declaration> {}
+export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind>
+
+export type RootKind = TypeKind | BasisKind
 
 export abstract class RootNode<
 	declaration extends NodeDeclaration,
@@ -38,7 +35,7 @@ export abstract class RootNode<
 	// TODO: inferIntersection
 	and<other extends Node>(
 		other: other
-	): IntersectionResult<this["kind"], other["kind"]> {
+	): Exclude<intersectionOf<this["kind"], other["kind"]>, Disjoint> {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
@@ -68,7 +65,7 @@ export abstract class RootNode<
 		return this as never
 	}
 
-	extends<other>(other: Root<other>): this is Root<other> {
+	extends<other>(this: Root, other: Root<other>): this is Root<other> {
 		const intersection = this.intersect(other)
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}
