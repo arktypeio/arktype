@@ -1,6 +1,6 @@
 import type { Domain, inferDomain } from "@arktype/util"
+import { BaseNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import { BaseNode, type withAttributes } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
 export type DomainInner<

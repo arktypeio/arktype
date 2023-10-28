@@ -13,6 +13,14 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
+import {
+	baseAttributeKeys,
+	type BaseAttributes,
+	BaseNode,
+	type IrreducibleRefinementKind,
+	irreducibleRefinementKinds,
+	type withAttributes
+} from "./base.js"
 import type { BasisKind, parseBasis } from "./constraints/basis.js"
 import { basisClassesByKind } from "./constraints/basis.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
@@ -30,38 +38,29 @@ import type { DiscriminableUnitSchema, UnitSchema } from "./constraints/unit.js"
 import { UnitNode } from "./constraints/unit.js"
 import { Disjoint } from "./disjoint.js"
 import { type MorphSchema } from "./morph.js"
-import {
-	baseAttributeKeys,
-	type BaseAttributes,
-	BaseNode,
-	type IrreducibleRefinementKind,
-	irreducibleRefinementKinds,
-	type Node,
-	type Schema,
-	type withAttributes
-} from "./node.js"
+import { type Node, type Schema } from "./node.js"
 
 export const constraintClassesByKind = {
 	...refinementClassesByKind,
 	...basisClassesByKind
 }
 
-export type ValidatorInner = withAttributes<{
+export type IntersectionInner = withAttributes<{
 	readonly [k in ConstraintKind]?: k extends IrreducibleRefinementKind
 		? readonly Node<k>[]
 		: Node<k>
 }>
 
-export class ValidatorNode extends BaseNode<
-	ValidatorInner,
-	typeof ValidatorNode
+export class IntersectionNode extends BaseNode<
+	IntersectionInner,
+	typeof IntersectionNode
 > {
-	static readonly kind = "validator"
+	static readonly kind = "intersection"
 
 	declare readonly constraints: readonly Node<ConstraintKind>[]
 	declare readonly refinements: readonly Node<RefinementKind>[]
 
-	constructor(inner: ValidatorInner) {
+	constructor(inner: IntersectionInner) {
 		const rawConstraints = flattenConstraints(inner)
 		const reducedConstraints = intersectConstraints([], rawConstraints)
 		if (reducedConstraints instanceof Disjoint) {
@@ -96,7 +95,7 @@ export class ValidatorNode extends BaseNode<
 		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
 	)
 
-	static childrenOf(inner: ValidatorInner) {
+	static childrenOf(inner: IntersectionInner) {
 		return Object.values(inner)
 			.flat()
 			.filter(
@@ -105,7 +104,7 @@ export class ValidatorNode extends BaseNode<
 	}
 
 	static readonly intersections = this.defineIntersections({
-		validator: (l, r) => {
+		intersection: (l, r) => {
 			const constraints = intersectConstraints(l.constraints, r.constraints)
 			return constraints instanceof Disjoint
 				? constraints
@@ -125,24 +124,24 @@ export class ValidatorNode extends BaseNode<
 	readonly out = undefined
 
 	//explicitly allow ValidatorNode since ValidatorInner is more flexible than ValidatorSchema
-	static from(schema: ValidatorSchema | ValidatorInner) {
+	static from(schema: IntersectionSchema | IntersectionInner) {
 		const inner = parseIntersectionSchema(schema as never)
-		return new ValidatorNode(inner)
+		return new IntersectionNode(inner)
 	}
 
-	static writeDefaultDescription(inner: ValidatorInner) {
+	static writeDefaultDescription(inner: IntersectionInner) {
 		const constraints = flattenConstraints(inner)
 		return constraints.length === 0 ? "a value" : constraints.join(" and ")
 	}
 }
 
-const flattenConstraints = (inner: ValidatorInner) =>
+const flattenConstraints = (inner: IntersectionInner) =>
 	Object.values(inner)
 		.flat()
 		.filter((v): v is Node<ConstraintKind> => v instanceof BaseNode)
 
 const unflattenConstraints = (constraints: readonly Node<ConstraintKind>[]) => {
-	return constraints.reduce<mutable<ValidatorInner>>((result, node) => {
+	return constraints.reduce<mutable<IntersectionInner>>((result, node) => {
 		if (isKeyOf(node.kind, irreducibleRefinementKinds)) {
 			const existing = result[node.kind] as
 				| Node<IrreducibleRefinementKind>[]
@@ -216,7 +215,9 @@ const assertValidRefinements: (
 	}
 }
 
-const parseIntersectionSchema = (schema: ValidatorSchema): ValidatorInner => {
+const parseIntersectionSchema = (
+	schema: IntersectionSchema
+): IntersectionInner => {
 	switch (typeof schema) {
 		case "string":
 			return { domain: DomainNode.from(schema) }
@@ -258,7 +259,7 @@ const parseIntersectionObjectSchema = (schema: BasisedBranchInput) => {
 			: isKeyOf(k, baseAttributeKeys)
 			? [k, v]
 			: throwParseError(`'${k}' is not a valid refinement kind`)
-	) as ValidatorInner
+	) as IntersectionInner
 }
 
 type basisOf<k extends RefinementKind> = Node<k>["applicableTo"] extends ((
@@ -279,10 +280,8 @@ type refinementInputsOf<basis> = {
 	[k in refinementKindOf<basis>]?: RefinementIntersectionInput<k>
 }
 
-type ValidatorBasisInputValue = Schema<BasisKind>
-
-type ValidatorBasisInput<
-	basis extends ValidatorBasisInputValue = ValidatorBasisInputValue
+type IntersectionBasisInput<
+	basis extends Schema<BasisKind> = Schema<BasisKind>
 > =
 	| {
 			domain: conform<basis, DomainSchema>
@@ -301,8 +300,8 @@ type ValidatorBasisInput<
 	  }
 
 export type BasisedBranchInput<
-	basis extends ValidatorBasisInputValue = ValidatorBasisInputValue
-> = ValidatorBasisInput<basis> &
+	basis extends Schema<BasisKind> = Schema<BasisKind>
+> = IntersectionBasisInput<basis> &
 	refinementInputsOf<parseBasis<basis>> &
 	BaseAttributes
 
@@ -315,8 +314,8 @@ type DiscriminableBasisInputValue =
 	| NonEnumerableDomain
 	| DiscriminableUnitSchema
 
-export type ValidatorSchema<
-	basis extends ValidatorBasisInputValue = ValidatorBasisInputValue
+export type IntersectionSchema<
+	basis extends Schema<BasisKind> = Schema<BasisKind>
 > =
 	| conform<basis, DiscriminableBasisInputValue>
 	| UnknownBranchInput
@@ -327,7 +326,7 @@ export type parseIntersection<input> = input extends
 	| NonEnumerableDomain
 	| DiscriminableUnitSchema
 	? parseBasis<input>["infer"]
-	: input extends ValidatorBasisInput<infer basis>
+	: input extends IntersectionBasisInput<infer basis>
 	? parseBasis<basis>["infer"]
 	: unknown
 
@@ -346,11 +345,11 @@ export type validateIntersectionInput<input> = input extends
 	? input
 	: input extends DiscriminableUnitSchema
 	? exactMessageOnError<input, DiscriminableUnitSchema>
-	: input extends ValidatorBasisInput<infer basis>
+	: input extends IntersectionBasisInput<infer basis>
 	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
 	: input extends UnknownBranchInput
 	? exactMessageOnError<input, UnknownBranchInput>
-	: DiscriminableUnitSchema | ValidatorSchema | MorphSchema
+	: DiscriminableUnitSchema | IntersectionSchema | MorphSchema
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

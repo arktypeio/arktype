@@ -3,14 +3,9 @@ import {
 	type MaxComparator,
 	type MinComparator
 } from "arktype/internal/parser/string/shift/operator/bounds.js"
+import { BaseNode, type StaticBaseNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import {
-	type BaseAttributes,
-	BaseNode,
-	type Node,
-	type StaticBaseNode,
-	type withAttributes
-} from "../node.js"
+import { type Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"

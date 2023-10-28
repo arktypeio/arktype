@@ -1,34 +1,29 @@
-import {
-	type extend,
-	type listable,
-	type mutable,
-	throwParseError
-} from "@arktype/util"
+import { type listable, type mutable, throwParseError } from "@arktype/util"
 import { type Out } from "arktype/internal/parser/tuple.js"
+import { BaseNode, type withAttributes } from "./base.js"
 import { builtins } from "./builtins.js"
 import { Disjoint } from "./disjoint.js"
+import type {
+	IntersectionInner,
+	IntersectionSchema,
+	parseIntersection,
+	validateIntersectionInput
+} from "./intersection.js"
+import { IntersectionNode } from "./intersection.js"
 import type { Problem } from "./io/problems.js"
 import type { CheckResult, TraversalState } from "./io/traverse.js"
-import { type BaseAttributes, BaseNode, type withAttributes } from "./node.js"
-import type {
-	parseIntersection,
-	validateIntersectionInput,
-	ValidatorInner,
-	ValidatorSchema
-} from "./validator.js"
-import { ValidatorNode } from "./validator.js"
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type MorphInner = withAttributes<{
-	readonly in?: ValidatorNode
-	readonly out?: ValidatorNode
+	readonly in?: IntersectionNode
+	readonly out?: IntersectionNode
 	readonly morph: readonly Morph[]
 }>
 
 export type MorphSchema = withAttributes<{
-	readonly in?: ValidatorSchema | ValidatorInner
-	readonly out?: ValidatorSchema | ValidatorInner
+	readonly in?: IntersectionSchema | IntersectionInner
+	readonly out?: IntersectionSchema | IntersectionInner
 	readonly morph: listable<Morph>
 }>
 
@@ -88,7 +83,7 @@ export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
 			}
 			return result
 		},
-		validator: (l, r) => {
+		intersection: (l, r) => {
 			const inTersection = l.in?.intersect(r) ?? r
 			return inTersection instanceof Disjoint
 				? inTersection
@@ -120,10 +115,10 @@ export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
 		inner.morph =
 			typeof schema.morph === "function" ? [schema.morph] : schema.morph
 		if (schema.in) {
-			inner.in = ValidatorNode.from(schema.in)
+			inner.in = IntersectionNode.from(schema.in)
 		}
 		if (schema.out) {
-			inner.out = ValidatorNode.from(schema.out)
+			inner.out = IntersectionNode.from(schema.out)
 		}
 		return new MorphNode(inner)
 	}

@@ -1,5 +1,6 @@
 import type { listable } from "@arktype/util"
-import type { IrreducibleRefinementKind, Node, Schema } from "../node.js"
+import type { IrreducibleRefinementKind } from "../base.js"
+import { type Node, type Schema } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { MaxNode, MinNode } from "./bounds.js"
 import { DivisorNode } from "./divisor.js"

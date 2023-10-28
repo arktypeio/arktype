@@ -1,67 +1,41 @@
-import {
-	type conform,
-	type evaluate,
-	hasDomain,
-	isArray,
-	type listable,
-	type mutable
-} from "@arktype/util"
-import { type ConstraintKind } from "./constraints/constraint.js"
-import { UnitNode } from "./constraints/unit.js"
-import {
-	type Discriminant,
-	discriminate,
-	type DiscriminatedCases
-} from "./discriminate.js"
+import { type listable } from "@arktype/util"
+import type { Node, withAttributes } from "./base.js"
+import { BaseNode } from "./base.js"
+import { type BasisKind } from "./constraints/basis.js"
+import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
-import { compilePropAccess } from "./io/compile.js"
-import {
-	MorphNode,
-	type MorphSchema,
-	type parseMorph,
-	type validateMorphInput
-} from "./morph.js"
-import type { Node, Schema, withAttributes } from "./node.js"
-import { BaseNode } from "./node.js"
-import { inferred } from "./utils.js"
-import {
-	constraintClassesByKind,
-	type parseIntersection,
-	type validateIntersectionInput,
-	ValidatorNode,
-	type ValidatorSchema
-} from "./validator.js"
+import { type MorphNode, type MorphSchema } from "./morph.js"
+import { type inferNodeBranches, type validateBranchInput } from "./node.js"
+import { type IntersectionNode, type IntersectionSchema } from "./intersection.js"
 
-export type BranchNode = ValidatorNode | MorphNode
+export type BranchNode = IntersectionNode | MorphNode | Node<BasisKind>
 
-export type ExpandedTypeSchema<
+export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
 > = withAttributes<{
 	readonly branches: branches
 }>
 
-export type TypeSchema = listable<BranchSchema> | ExpandedTypeSchema
+export type UnionSchema = listable<BranchSchema> | ExpandedUnionSchema
 
-export type TypeInner = withAttributes<{
+export type UnionInner = withAttributes<{
 	readonly branches: readonly BranchNode[]
 }>
 
-export type BranchSchema = ValidatorSchema | MorphSchema
+export type BranchSchema = IntersectionSchema | MorphSchema
 
-export class TypeNode<t = unknown> extends BaseNode<
-	TypeInner,
-	typeof TypeNode
+export class UnionNode<t = unknown> extends BaseNode<
+	UnionInner,
+	typeof UnionNode,
+	t
 > {
-	declare infer: t;
-	declare [inferred]: t
+	static readonly kind = "union"
 
-	static readonly kind = "type"
-
-	constructor(inner: TypeInner) {
+	constructor(inner: UnionInner) {
 		super(inner)
 	}
 
-	static childrenOf(inner: TypeInner) {
+	static childrenOf(inner: UnionInner) {
 		return inner.branches
 	}
 
@@ -69,7 +43,17 @@ export class TypeNode<t = unknown> extends BaseNode<
 		branches: "in"
 	})
 
-	private static intersectBranch = (l: TypeNode, r: BranchNode) => {
+	static from<const branches extends readonly unknown[]>(
+		schema: {
+			branches: {
+				[i in keyof branches]: validateBranchInput<branches[i]>
+			}
+		} & ExpandedUnionSchema
+	){
+		return new  UnionNode<inferNodeBranches<branches>>({...schema, branches: schema.branches.map(branch => )})
+	}
+
+	private static intersectBranch = (l: UnionNode, r: BranchNode) => {
 		const resultBranches = intersectBranches(l.branches, [r])
 		if (resultBranches instanceof Disjoint) {
 			return resultBranches
@@ -163,7 +147,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 	// 	}
 
 	static readonly intersections = this.defineIntersections({
-		type: (l, r) => {
+		union: (l, r) => {
 			if (
 				(l.branches.length === 0 || r.branches.length === 0) &&
 				l.branches.length !== r.branches.length
@@ -183,7 +167,7 @@ export class TypeNode<t = unknown> extends BaseNode<
 		},
 		morph: this.intersectBranch,
 		validator: this.intersectBranch,
-		constraint: (l, r): Disjoint | TypeInner => {
+		constraint: (l, r): Disjoint | UnionInner => {
 			const branches: BranchNode[] = []
 			for (const branch of l.branches) {
 				const branchResult = branch.intersect(r)
@@ -199,157 +183,10 @@ export class TypeNode<t = unknown> extends BaseNode<
 		}
 	})
 
-	static from<const branches extends readonly BranchSchema[]>(
-		schema: ExpandedTypeSchema<branches>
-	): parseNode<branches>
-	static from<const branches extends readonly unknown[]>(
-		...branches: {
-			[i in keyof branches]: validateBranchInput<branches[i]>
-		}
-	): parseNode<branches>
-	static from(...schemas: [ExpandedTypeSchema] | BranchSchema[]) {
-		const result = {} as mutable<TypeInner>
-		let schemaBranches: readonly BranchSchema[]
-		if (hasDomain(schemas[0], "object") && "branches" in schemas[0]) {
-			const { branches, ...attributes } = schemas[0]
-			Object.assign(result, attributes)
-			schemaBranches = branches
-		} else {
-			schemaBranches = schemas
-		}
-		result.branches = schemaBranches.map((branch) =>
-			typeof branch === "object" && "morph" in branch
-				? MorphNode.from(branch)
-				: ValidatorNode.from(branch)
-		)
-		return new TypeNode(result)
-	}
-
-	static fromUnits<const branches extends readonly unknown[]>(
-		...branches: branches
-	): TypeNode<branches[number]>
-	static fromUnits(...values: unknown[]) {
-		// TODO: unique list, bypass validation
-		const branches = values.map(
-			(value) => new ValidatorNode({ unit: new UnitNode({ unit: value }) })
-		)
-		return new TypeNode({ branches })
-	}
-
-	static writeDefaultDescription(inner: TypeInner) {
+	static writeDefaultDescription(inner: UnionInner) {
 		return inner.branches.length === 0 ? "never" : inner.branches.join(" or ")
 	}
-
-	only = this.branches.length === 1 ? this.branches[0] : undefined
-
-	unwrapOnly<kind extends UnwrappableKind>(kind: kind): Node<kind> | undefined
-	unwrapOnly(kind: UnwrappableKind) {
-		if (!this.only) {
-			return
-		}
-		if (kind === "morph") {
-			return this.only.kind === "morph" ? this.only : undefined
-		}
-		const onlyValidator = this.only.kind === "validator" ? this.only : undefined
-		if (kind === "validator") {
-			return onlyValidator
-		}
-		const onlyConstraintOfKind = onlyValidator?.[kind]
-		return isArray(onlyConstraintOfKind)
-			? onlyConstraintOfKind.length === 1
-				? onlyConstraintOfKind[0]
-				: undefined
-			: onlyConstraintOfKind
-	}
-
-	constrain<kind extends ConstraintKind>(
-		kind: kind,
-		definition: Schema<kind>
-	): TypeNode {
-		const result = this.intersect(
-			(constraintClassesByKind[kind].from as any)(definition)
-		)
-		return result instanceof Disjoint ? result.throw() : result
-	}
-
-	// references() {
-	// 	return this.branches.flatMap((branch) => branch.references())
-	// }
-
-	keyof() {
-		return this
-		// return this.rule.reduce(
-		// 	(result, branch) => result.and(branch.keyof()),
-		// 	builtins.unknown()
-		// )
-	}
-
-	// TODO: inferIntersection
-	and<other extends TypeNode>(other: other): TypeNode<t & other["infer"]> {
-		const result = this.intersect(other)
-		return result instanceof Disjoint ? result.throw() : (result as never)
-	}
-
-	or<other extends TypeNode>(other: other): TypeNode<t | other["infer"]> {
-		return this as never
-	}
-
-	isUnknown(): this is TypeNode<unknown> {
-		return this.unwrapOnly("validator")?.constraints.length === 0
-	}
-
-	isNever(): this is TypeNode<never> {
-		return this.branches.length === 0
-	}
-
-	getPath() {
-		return this
-	}
-
-	array(): TypeNode<t[]> {
-		return this as never
-	}
-
-	extends<other>(other: TypeNode<other>): this is TypeNode<other> {
-		const intersection = this.intersect(other)
-		return !(intersection instanceof Disjoint) && this.equals(intersection)
-	}
 }
-
-export type TypeInput = listable<ValidatorSchema | MorphSchema>
-
-export type UnwrappableKind = BranchNode["kind"] | ConstraintKind
-
-export const node = Object.assign(TypeNode.from, {
-	units: TypeNode.fromUnits
-})
-
-type parseNode<branches extends readonly unknown[]> = TypeNode<
-	{
-		[i in keyof branches]: parseBranch<branches[i]>
-	}[number]
->
-
-export type validateBranchInput<input> = conform<
-	input,
-	"morphs" extends keyof input
-		? validateMorphInput<input>
-		: validateIntersectionInput<input>
->
-
-type parseBranch<branch> = branch extends MorphSchema
-	? parseMorph<branch>
-	: branch extends ValidatorSchema
-	? parseIntersection<branch>
-	: unknown
-
-export type TypeClassesByKind = {
-	type: typeof TypeNode
-	morph: typeof MorphNode
-	validator: typeof ValidatorNode
-}
-
-export type TypeKind = evaluate<keyof TypeClassesByKind>
 
 export const intersectBranches = (
 	l: readonly BranchNode[],

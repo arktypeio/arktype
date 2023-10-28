@@ -1,4 +1,4 @@
-import type { TypeNode } from "@arktype/schema"
+import type { UnionNode } from "@arktype/schema"
 import { throwParseError } from "@arktype/util"
 import type { ErrorMessage, join, nominal } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
@@ -103,8 +103,8 @@ const parseGenericArgsRecurse = (
 	unscanned: string,
 	ctx: ParseContext,
 	argDefs: string[],
-	argNodes: TypeNode[]
-): ParsedArgs<TypeNode[]> => {
+	argNodes: UnionNode[]
+): ParsedArgs<UnionNode[]> => {
 	const s = parseUntilFinalizer(new DynamicState(unscanned, ctx))
 	// remove the finalizing token from the argDef
 	argDefs.push(s.scanner.scanned.slice(0, -1))

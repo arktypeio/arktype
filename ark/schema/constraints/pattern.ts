@@ -1,10 +1,6 @@
 import { throwParseError } from "@arktype/util"
-import {
-	type BaseAttributes,
-	BaseNode,
-	type Node,
-	type withAttributes
-} from "../node.js"
+import { BaseNode, type withAttributes } from "../base.js"
+import { type Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"

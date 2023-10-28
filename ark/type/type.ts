@@ -13,7 +13,7 @@ import type {
 	inferNarrow,
 	Morph,
 	Predicate,
-	TypeNode
+	UnionNode
 } from "@arktype/schema"
 import type {
 	AbstractableConstructor,
@@ -121,7 +121,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 }
 
 export type ArkKinds = {
-	node: TypeNode
+	node: UnionNode
 	generic: Generic
 	module: Module
 }
@@ -165,7 +165,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	declare inferIn: extractIn<t>
 
 	config: TypeConfig
-	root: TypeNode<t>
+	root: UnionNode<t>
 	condition: string
 	allows: this["root"]["allows"]
 
@@ -173,7 +173,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		public definition: unknown,
 		public scope: Scope
 	) {
-		const root = parseTypeRoot(definition, scope) as TypeNode<t>
+		const root = parseTypeRoot(definition, scope) as UnionNode<t>
 		super(
 			In,
 			`const state = new ${registry().reference("state")}();
@@ -338,7 +338,7 @@ export type GenericProps<
 	scope: Scope
 }
 
-export type BoundArgs = Record<string, TypeNode>
+export type BoundArgs = Record<string, UnionNode>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 export type Generic<

@@ -5,9 +5,9 @@ import {
 	stringify,
 	throwParseError
 } from "@arktype/util"
+import { type BaseAttributes, BaseNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { type BaseAttributes, BaseNode, type withAttributes } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
 export type UnitInner<rule = unknown> = withAttributes<{

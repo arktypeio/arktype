@@ -5,10 +5,10 @@ import {
 	objectKindDescriptions,
 	objectKindOf
 } from "@arktype/util"
+import { BaseNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { type BaseAttributes, BaseNode, type withAttributes } from "../node.js"
 import type { BaseBasis } from "./basis.js"
 
 export type ProtoInner<

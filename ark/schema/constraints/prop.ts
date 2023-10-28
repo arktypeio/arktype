@@ -1,12 +1,8 @@
+import { type BaseAttributes, BaseNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import {
-	type BaseAttributes,
-	BaseNode,
-	type Node,
-	type withAttributes
-} from "../node.js"
-import { type TypeInput, TypeNode } from "../type.js"
+import { type Node, type TypeInput } from "../node.js"
+import { UnionNode } from "../union.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
@@ -19,13 +15,13 @@ type inferPropNode<node extends PropNode> = node["optional"] extends true
 
 type inferKey<k extends PropNode["key"]> = k extends string | symbol
 	? k
-	: k extends TypeNode
+	: k extends UnionNode
 	? k["infer"] & PropertyKey
 	: never
 
 export type PropInner = withAttributes<{
-	readonly key: string | symbol | TypeNode
-	readonly value: TypeNode
+	readonly key: string | symbol | UnionNode
+	readonly value: UnionNode
 	readonly optional?: boolean
 }>
 
@@ -43,7 +39,7 @@ export class PropNode
 	static readonly kind = "prop"
 
 	static childrenOf(inner: PropInner) {
-		return inner.key instanceof TypeNode
+		return inner.key instanceof UnionNode
 			? [inner.key, inner.value]
 			: [inner.value]
 	}
@@ -56,7 +52,7 @@ export class PropNode
 
 	static readonly intersections = this.defineIntersections({
 		prop: (l, r) => {
-			if (l.key instanceof TypeNode || r.key instanceof TypeNode) {
+			if (l.key instanceof UnionNode || r.key instanceof UnionNode) {
 				return null
 			}
 			if (l.key !== r.key) {

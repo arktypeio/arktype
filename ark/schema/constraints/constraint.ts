@@ -1,5 +1,5 @@
 import type { extend } from "@arktype/util"
-import type { Node } from "../node.js"
+import { type Node } from "../node.js"
 import type { BasisClassesByKind, BasisKind } from "./basis.js"
 import type { RefinementClassesByKind } from "./refinement.js"
 

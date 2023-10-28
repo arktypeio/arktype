@@ -1,7 +1,7 @@
 import {
 	type ExpandedMinSchema,
 	schemaToComparator,
-	type TypeNode
+	type UnionNode
 } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
@@ -24,15 +24,15 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: OpenLeftBound
-	"&"?: TypeNode
-	"|"?: TypeNode
+	"&"?: UnionNode
+	"|"?: UnionNode
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: TypeNode | undefined
+	root: UnionNode | undefined
 	branches: BranchState = {
 		prefixes: []
 	}
@@ -60,11 +60,11 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<TypeNode["constrain"]>) {
+	constrainRoot(...args: Parameters<UnionNode["constrain"]>) {
 		this.root = this.root!.constrain(...args)
 	}
 
-	setRoot(root: TypeNode) {
+	setRoot(root: UnionNode) {
 		this.root = root
 	}
 
