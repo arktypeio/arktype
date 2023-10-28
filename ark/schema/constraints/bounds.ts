@@ -3,7 +3,7 @@ import {
 	type MaxComparator,
 	type MinComparator
 } from "arktype/internal/parser/string/shift/operator/bounds.js"
-import { BaseNode, type StaticBaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
@@ -21,11 +21,10 @@ export type BoundSchema = Omit<BoundInner, "boundKind">
 
 export type BoundLimit = number | string
 
-export abstract class BaseBound<
-		inner extends BoundInner,
-		nodeClass extends StaticBaseNode<inner>
-	>
-	extends BaseNode<inner, nodeClass>
+export type BoundDeclaration = MinDeclaration | MaxDeclaration
+
+export abstract class BaseBound<declaration extends BoundDeclaration>
+	extends BaseNode<declaration>
 	implements BaseRefinement
 {
 	readonly exclusive = this.inner.exclusive ?? false
@@ -59,7 +58,19 @@ export type ExpandedMinSchema = extend<
 
 export type MinSchema = BoundLimit | ExpandedMinSchema
 
-export class MinNode extends BaseBound<MinInner, typeof MinNode> {
+export type MinDeclaration = declareNode<
+	"min",
+	{
+		schema: MinSchema
+		inner: MinInner
+		intersections: {
+			min: "min"
+		}
+	},
+	typeof MinNode
+>
+
+export class MinNode extends BaseBound<MinDeclaration> {
 	static readonly kind = "min"
 
 	static readonly keyKinds = this.declareKeys({
@@ -82,11 +93,7 @@ export class MinNode extends BaseBound<MinInner, typeof MinNode> {
 	)
 
 	static readonly intersections = this.defineIntersections({
-		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r),
-		max: (l, r) =>
-			l.min > r.max || (l.min === r.max && (l.exclusive || r.exclusive))
-				? Disjoint.from("bound", l, r)
-				: null
+		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
 	})
 
 	static writeDefaultDescription(inner: MinInner) {
@@ -118,11 +125,28 @@ export type ExpandedMaxSchema = extend<
 
 export type MaxSchema = BoundLimit | ExpandedMaxSchema
 
-export class MaxNode extends BaseBound<MaxInner, typeof MaxNode> {
+export type MaxDeclaration = declareNode<
+	"max",
+	{
+		schema: MaxSchema
+		inner: MaxInner
+		intersections: {
+			max: "max"
+			min: Disjoint | null
+		}
+	},
+	typeof MaxNode
+>
+
+export class MaxNode extends BaseBound<MaxDeclaration> {
 	static readonly kind = "max"
 
 	static readonly intersections = this.defineIntersections({
-		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r)
+		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r),
+		min: (l, r) =>
+			l.max < r.min || (l.max === r.min && (l.exclusive || r.exclusive))
+				? Disjoint.from("bound", l, r)
+				: null
 	})
 
 	static readonly keyKinds = this.declareKeys({

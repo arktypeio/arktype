@@ -1,25 +1,40 @@
-import type { listable } from "@arktype/util"
+import type { extend, listable } from "@arktype/util"
 import type { IrreducibleRefinementKind } from "../base.js"
 import { type Node, type Schema } from "../node.js"
 import type { BasisKind } from "./basis.js"
-import { MaxNode, MinNode } from "./bounds.js"
-import { DivisorNode } from "./divisor.js"
-import { PatternNode } from "./pattern.js"
-import { PredicateNode } from "./predicate.js"
-import { PropNode } from "./prop.js"
+import {
+	type MaxDeclaration,
+	MaxNode,
+	type MinDeclaration,
+	MinNode
+} from "./bounds.js"
+import { type DivisorDeclaration, DivisorNode } from "./divisor.js"
+import { type PatternDeclaration, PatternNode } from "./pattern.js"
+import { type PredicateDeclaration, PredicateNode } from "./predicate.js"
+import { OptionalNode, type PropDeclarations, RequiredNode } from "./prop.js"
 
 export const refinementClassesByKind = {
 	divisor: DivisorNode,
 	min: MinNode,
 	max: MaxNode,
 	pattern: PatternNode,
-	prop: PropNode,
+	required: RequiredNode,
+	optional: OptionalNode,
 	predicate: PredicateNode
 }
 
-export type RefinementClassesByKind = typeof refinementClassesByKind
+export type RefinementDeclarationsByKind = extend<
+	PropDeclarations,
+	{
+		divisor: DivisorDeclaration
+		min: MinDeclaration
+		max: MaxDeclaration
+		pattern: PatternDeclaration
+		predicate: PredicateDeclaration
+	}
+>
 
-export type RefinementKind = keyof RefinementClassesByKind
+export type RefinementKind = keyof RefinementDeclarationsByKind
 
 export type RefinementIntersectionInputsByKind = {
 	[k in RefinementKind]: k extends IrreducibleRefinementKind

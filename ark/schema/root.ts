@@ -2,6 +2,7 @@ import {
 	type BaseAttributes,
 	BaseNode,
 	type IntersectionResult,
+	type NodeDeclaration,
 	type StaticBaseNode,
 	type UnknownNode
 } from "./base.js"
@@ -9,23 +10,20 @@ import { builtins } from "./builtins.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { constraintClassesByKind } from "./intersection.js"
-import { type Root, type RootKind, type Schema } from "./node.js"
+import { type Node, type Root, type RootKind, type Schema } from "./node.js"
 
-export interface StaticRootNode<inner extends BaseAttributes>
-	extends StaticBaseNode<inner> {
-	readonly kind: RootKind
-}
+export interface StaticRootNode<declaration extends NodeDeclaration>
+	extends StaticBaseNode<declaration> {}
 
 export abstract class RootNode<
-	inner extends BaseAttributes,
-	nodeClass extends StaticRootNode<inner>,
+	declaration extends NodeDeclaration,
 	t = unknown
-> extends BaseNode<inner, nodeClass, t> {
+> extends BaseNode<declaration, t> {
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
 		definition: Schema<kind>
 	): Root {
-		const result = this.intersect(
+		const result: Disjoint | Node<RootKind> = this.intersect(
 			(constraintClassesByKind[kind].from as any)(definition)
 		)
 		return result instanceof Disjoint ? result.throw() : result
@@ -40,7 +38,7 @@ export abstract class RootNode<
 	}
 
 	// TODO: inferIntersection
-	and<other extends UnknownNode>(
+	and<other extends Node>(
 		other: other
 	): IntersectionResult<this["kind"], other["kind"]> {
 		const result = this.intersect(other)

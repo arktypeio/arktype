@@ -1,18 +1,30 @@
-import { BaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import { type Node } from "../node.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { BaseRefinement } from "./refinement.js"
 
+export type DivisorSchema = number | DivisorInner
+
 export type DivisorInner = withAttributes<{
 	readonly divisor: number
 }>
 
-export type DivisorSchema = number | DivisorInner
+export type DivisorDeclaration = declareNode<
+	"divisor",
+	{
+		schema: DivisorSchema
+		inner: DivisorInner
+		intersections: {
+			divisor: "divisor"
+		}
+	},
+	typeof DivisorNode
+>
 
 export class DivisorNode
-	extends BaseNode<DivisorInner, typeof DivisorNode>
+	extends BaseNode<DivisorDeclaration>
 	implements BaseRefinement
 {
 	static readonly kind = "divisor"

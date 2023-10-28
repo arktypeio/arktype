@@ -1,91 +1,151 @@
-import { BaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type RootInput, type RootKind } from "../node.js"
-import { UnionNode } from "../union.js"
+import { type UnionNode } from "../union.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
 import type { DomainNode } from "./domain.js"
 import type { ProtoNode } from "./proto.js"
 import type { BaseRefinement } from "./refinement.js"
 
-type inferPropNode<node extends PropNode> = node["optional"] extends true
-	? { [k in inferKey<node["key"]>]?: node["value"]["infer"] }
-	: { [k in inferKey<node["key"]>]: node["value"]["infer"] }
+export type PropDeclarations = {
+	required: RequiredDeclaration
+	optional: OptionalDeclaration
+}
 
-type inferKey<k extends PropNode["key"]> = k extends string | symbol
-	? k
-	: k extends UnionNode
-	? k["infer"] & PropertyKey
-	: never
-
-export type PropInner = withAttributes<{
-	readonly key: string | symbol | Node<RootKind>
+export type NamedPropInner = withAttributes<{
+	readonly key: string | symbol
 	readonly value: Node<RootKind>
-	readonly optional?: boolean
 }>
 
-export type PropSchema = withAttributes<{
-	readonly key: string | symbol | RootInput
+export type NamedPropSchema = withAttributes<{
+	readonly key: string | symbol
 	readonly value: RootInput
-	readonly optional?: boolean
 }>
 
-export class PropNode
-	extends BaseNode<PropInner, typeof PropNode>
+export type RequiredDeclaration = declareNode<
+	"required",
+	{
+		schema: NamedPropSchema
+		inner: NamedPropInner
+		intersections: {
+			required: "required" | Disjoint | null
+		}
+	},
+	typeof RequiredNode
+>
+
+export class RequiredNode
+	extends BaseNode<RequiredDeclaration>
 	implements BaseRefinement
 {
-	readonly optional = this.inner.optional ?? false
-	static readonly kind = "prop"
+	static readonly kind = "required"
 
-	static childrenOf(inner: PropInner) {
-		return inner.key instanceof UnionNode
-			? [inner.key, inner.value]
-			: [inner.value]
+	static childrenOf(inner: NamedPropInner) {
+		return [inner.value]
 	}
 
 	static readonly keyKinds = this.declareKeys({
 		key: "in",
-		value: "in",
-		optional: "in"
+		value: "in"
 	})
 
 	static readonly intersections = this.defineIntersections({
-		prop: (l, r) => {
-			if (l.key instanceof UnionNode || r.key instanceof UnionNode) {
-				return null
-			}
+		required: (l, r) => {
 			if (l.key !== r.key) {
 				return null
 			}
 			const key = l.key
-			const optional = l.optional && r.optional
 			const value = l.value.intersect(r.value)
 			if (value instanceof Disjoint) {
-				return optional
-					? value
-					: {
-							key,
-							optional,
-							value: builtins.never()
-					  }
+				return value
 			}
 			return {
 				key,
-				optional,
 				value
 			}
 		}
 	})
 
-	static from(schema: PropSchema) {
-		return new PropNode(schema as never)
+	static from(schema: NamedPropSchema) {
+		return new RequiredNode(schema as never)
 	}
 
 	static compile = this.defineCompiler((inner) => "true")
 
-	static writeDefaultDescription(inner: PropInner) {
-		return `${String(inner.key)}${inner.optional ? "" : "?"}: ${inner.value}`
+	static writeDefaultDescription(inner: NamedPropInner) {
+		return `${String(inner.key)}: ${inner.value}`
+	}
+
+	applicableTo(
+		basis: Node<BasisKind> | undefined
+	): basis is DomainNode | ProtoNode | undefined {
+		return (
+			basis === undefined || basis.kind === "domain" || basis.kind === "proto"
+		)
+	}
+
+	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return `${this} is not allowed as a prop on ${getBasisName(basis)}`
+	}
+}
+
+export type OptionalDeclaration = declareNode<
+	"optional",
+	{
+		schema: NamedPropSchema
+		inner: NamedPropInner
+		intersections: {
+			optional: "optional" | Disjoint | null
+		}
+	},
+	typeof OptionalNode
+>
+
+export class OptionalNode
+	extends BaseNode<RequiredDeclaration>
+	implements BaseRefinement
+{
+	static readonly kind = "optional"
+
+	static childrenOf(inner: NamedPropInner) {
+		return [inner.value]
+	}
+
+	static readonly keyKinds = this.declareKeys({
+		key: "in",
+		value: "in"
+	})
+
+	static readonly intersections = this.defineIntersections({
+		optional: (l, r) => {
+			if (l.key !== r.key) {
+				return null
+			}
+			const key = l.key
+			const value = l.value.intersect(r.value)
+			if (value instanceof Disjoint) {
+				return {
+					key,
+					value: builtins.never()
+				}
+			}
+			return {
+				key,
+				value
+			}
+		}
+	})
+
+	static from(schema: NamedPropSchema) {
+		return new OptionalNode(schema as never)
+	}
+
+	static compile = this.defineCompiler((inner) => "true")
+
+	static writeDefaultDescription(inner: NamedPropInner) {
+		return `${String(inner.key)}?: ${inner.value}`
 	}
 
 	applicableTo(

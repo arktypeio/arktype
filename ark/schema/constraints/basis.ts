@@ -1,12 +1,10 @@
 import { type Schema } from "../node.js"
-import type { DomainSchema } from "./domain.js"
+import type { DomainDeclaration, DomainSchema } from "./domain.js"
 import { DomainNode } from "./domain.js"
-import type { ProtoSchema } from "./proto.js"
+import type { ProtoDeclaration, ProtoSchema } from "./proto.js"
 import { ProtoNode } from "./proto.js"
-import type { UnitSchema } from "./unit.js"
+import type { UnitDeclaration, UnitSchema } from "./unit.js"
 import { UnitNode } from "./unit.js"
-
-export type BasisClassesByKind = typeof basisClassesByKind
 
 export const basisClassesByKind = {
 	domain: DomainNode,
@@ -14,7 +12,13 @@ export const basisClassesByKind = {
 	unit: UnitNode
 }
 
-export type BasisKind = keyof BasisClassesByKind
+export type BasisDeclarationsByKind = {
+	domain: DomainDeclaration
+	proto: ProtoDeclaration
+	unit: UnitDeclaration
+}
+
+export type BasisKind = keyof BasisDeclarationsByKind
 
 export type BaseBasis = {
 	readonly basisName: string

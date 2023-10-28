@@ -1,5 +1,5 @@
 import { domainOf, hasKey, stringify, throwParseError } from "@arktype/util"
-import { type withAttributes } from "../base.js"
+import { type declareNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import { RootNode } from "../root.js"
@@ -17,8 +17,21 @@ export type UnitSchema<rule = unknown> =
 	| UnitInner<rule>
 	| DiscriminableUnitSchema<rule>
 
+export type UnitDeclaration = declareNode<
+	"unit",
+	{
+		schema: UnitSchema
+		inner: UnitInner
+		intersections: {
+			unit: "unit" | Disjoint
+			constraint: "unit" | Disjoint
+		}
+	},
+	typeof UnitNode
+>
+
 export class UnitNode<const rule = unknown>
-	extends RootNode<UnitInner<rule>, typeof UnitNode, rule>
+	extends RootNode<UnitDeclaration, rule>
 	implements BaseBasis
 {
 	static readonly kind = "unit"

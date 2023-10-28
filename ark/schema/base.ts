@@ -2,32 +2,27 @@ import type {
 	AbstractableConstructor,
 	conform,
 	Dict,
-	evaluate,
 	extend,
-	Fn,
 	instanceOf,
-	isAny,
 	Json,
-	JsonData,
-	PartialRecord,
-	returnOf,
-	satisfy
+	JsonData
 } from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
 import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
+import { IntersectionNode } from "./intersection.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
+	type Inner,
 	type Node,
-	type NodeClass,
 	type NodeKind,
-	type RootKind,
+	type OwnIntersections,
 	type TypeKind
 } from "./node.js"
-import { type UnionInner } from "./union.js"
+import { type UnionInner, type UnionNode } from "./union.js"
 import { inferred } from "./utils.js"
 
 export type BaseAttributes = {
@@ -37,31 +32,46 @@ export type BaseAttributes = {
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
 
+export type NodeTypes<kind extends NodeKind = NodeKind> = {
+	schema: unknown
+	inner: BaseAttributes
+	intersections: BaseIntersectionMap[kind]
+}
+
+export type declareNode<
+	kind extends NodeKind,
+	types extends NodeTypes<kind>,
+	implementation extends StaticBaseNode<any>
+> = extend<
+	types,
+	{
+		kind: kind
+		class: implementation
+	}
+>
+
+export type NodeDeclaration = declareNode<
+	NodeKind,
+	NodeTypes<any>,
+	StaticBaseNode<any>
+>
+
 export const baseAttributeKeys = {
 	alias: 1,
 	description: 1
 } as const satisfies Record<keyof BaseAttributes, 1>
 
-export type StaticBaseNode<inner extends BaseAttributes> = {
-	new (inner: inner): BaseNode<inner, any>
-	kind: NodeKind
-	keyKinds: Record<keyof inner, keyof NodeIds>
-	from(input: inner, ctx: RefinementContext): BaseNode<inner, any>
-	childrenOf?(inner: inner): readonly UnknownNode[]
-	intersections: IntersectionDefinitions<any>
-	compile(inner: inner): string
-	writeDefaultDescription(inner: inner): string
+export type StaticBaseNode<d extends NodeDeclaration> = {
+	new (inner: d["inner"]): BaseNode<d, any>
+	kind: d["kind"]
+	keyKinds: Record<keyof d["inner"], keyof NodeIds>
+	from(input: d["schema"], ctx: RefinementContext): BaseNode<d, any>
+	childrenOf?(inner: d["inner"]): readonly UnknownNode[]
+	intersections: d["intersections"]
+	compile(inner: d["inner"]): string
+	writeDefaultDescription(inner: d["inner"]): string
 }
 
-type IntersectionGroup = NodeKind | "constraint"
-
-type IntersectionDefinitions<nodeClass> = evaluate<
-	{
-		[k in kindOf<nodeClass>]: intersectionOf<nodeClass, k>
-	} & {
-		[k in IntersectionGroup]?: intersectionOf<nodeClass, k>
-	}
->
 const orderedNodeKinds = [
 	"union",
 	"morph",
@@ -74,7 +84,7 @@ const orderedNodeKinds = [
 	"min",
 	"pattern",
 	"predicate",
-	"prop"
+	"required"
 ] as const satisfies readonly NodeKind[]
 
 type OrderedNodeKinds = typeof orderedNodeKinds
@@ -95,106 +105,25 @@ type allowedAsymmetricOperandOf<
 		: allowedAsymmetricOperandOf<kind, tail>
 	: kind
 
-type validateIntersections<
-	intersections extends {
-		[k in NodeKind]: { [_ in k]: NodeKind | Disjoint | null } & PartialRecord<
-			NodeKind,
-			NodeKind | Disjoint | null
-		>
+export type BaseIntersectionMap = {
+	[lKey in NodeKind]: { [_ in lKey]: NodeKind | Disjoint | null } & {
+		[rKey in NodeKind]?: rKey extends allowedAsymmetricOperandOf<lKey>
+			? NodeKind | Disjoint | null
+			: never
 	}
-> = {
-	[k in keyof intersections]: k extends NodeKind
-		? {
-				[k2 in keyof intersections[k]]: k2 extends allowedAsymmetricOperandOf<k>
-					? conform<intersections[k][k2], NodeKind | Disjoint | null>
-					: never
-		  }
-		: never
 }
-
-export type Intersections = validateIntersections<{
-	union: {
-		union: TypeKind | Disjoint
-		morph: "union" | "morph" | Disjoint
-		intersection: "union" | "intersection" | Disjoint
-		constraint: TypeKind | BasisKind | Disjoint
-	}
-	morph: {
-		morph: "morph" | Disjoint
-		intersection: "morph" | Disjoint
-		constraint: "morph" | Disjoint
-	}
-	intersection: {
-		intersection: "intersection" | Disjoint
-		constraint: "intersection" | Disjoint
-	}
-	unit: {
-		unit: "unit" | Disjoint
-		constraint: "unit" | Disjoint
-	}
-	proto: {
-		proto: "proto" | Disjoint
-		domain: "proto" | Disjoint
-	}
-	domain: {
-		domain: "domain" | Disjoint
-	}
-	divisor: {
-		divisor: "divisor"
-	}
-	max: {
-		max: "max"
-		min: Disjoint | null
-	}
-	min: {
-		min: "min"
-	}
-	pattern: {
-		pattern: "pattern" | null
-	}
-	predicate: {
-		predicate: "predicate" | null
-	}
-	prop: {
-		prop: "prop" | null
-	}
-}>
 
 export const irreducibleRefinementKinds = {
 	pattern: 1,
 	predicate: 1,
-	prop: 1
+	required: 1
 } as const
 
 export type IrreducibleRefinementKind = keyof typeof irreducibleRefinementKinds
 
-type intersectionOf<nodeClass, k extends IntersectionGroup> = (
-	// allow assignment from instance type to base
-	l: isAny<nodeClass> extends true ? never : instanceOf<nodeClass>,
-	r: Node<
-		k extends NodeKind ? k : k extends "constraint" ? ConstraintKind : never
-	>
-) =>
-	| innerOf<nodeClass>
-	| Disjoint
-	// ensure null is not allowed as a return on reducible symmetric intersections
-	| (k extends kindOf<nodeClass>
-			? k extends IrreducibleRefinementKind
-				? null
-				: never
-			: null)
-
 type innerOf<nodeClass> = ConstructorParameters<
 	conform<nodeClass, AbstractableConstructor>
 >[0]
-
-type childrenOf<nodeClass extends StaticBaseNode<any>> =
-	nodeClass["childrenOf"] extends Fn<
-		never,
-		infer children extends readonly unknown[]
-	>
-		? children
-		: readonly []
 
 type kindOf<nodeClass> = instanceOf<nodeClass> extends {
 	kind: infer kind extends NodeKind
@@ -207,37 +136,37 @@ type extensionKeyOf<nodeClass> = Exclude<
 	keyof BaseAttributes
 >
 
-export type UnknownNode = BaseNode<any, any>
+export type UnknownNode = BaseNode<any>
 
 const $ark = registry()
 
 export abstract class BaseNode<
-	inner extends BaseAttributes,
-	nodeClass extends StaticBaseNode<inner>,
+	declaration extends NodeDeclaration,
 	t = unknown
-> extends DynamicBase<inner> {
+> extends DynamicBase<declaration["inner"]> {
 	declare infer: t;
 	declare [inferred]: t
 
 	readonly json: Json
 	readonly collapsedJson: JsonData
-	readonly children: childrenOf<nodeClass>
+	// TODO: type
+	readonly children: readonly UnknownNode[]
 	readonly references: readonly UnknownNode[]
 	protected readonly contributesReferences: readonly UnknownNode[]
 	readonly alias: string
 	readonly description: string
 	readonly ids: NodeIds = new NodeIds(this)
-	readonly nodeClass = this.constructor as nodeClass
-	readonly kind: nodeClass["kind"] = this.nodeClass.kind
+	readonly nodeClass = this.constructor as declaration["class"]
+	readonly kind: declaration["kind"] = this.nodeClass.kind
 	readonly condition: string
 	readonly allows: (data: unknown) => boolean
 
-	constructor(public readonly inner: inner) {
+	constructor(public readonly inner: declaration["inner"]) {
 		super(inner)
 		this.alias = $ark.register(this, inner.alias)
 		this.description =
 			inner.description ??
-			(this.constructor as nodeClass).writeDefaultDescription(inner)
+			(this.constructor as declaration["class"]).writeDefaultDescription(inner)
 		this.json = innerToJson(inner)
 		this.collapsedJson =
 			Object.keys(this.json).length === 1 && isKeyOf(this.kind, this.json)
@@ -270,10 +199,10 @@ export abstract class BaseNode<
 		}
 	}
 
-	protected static defineIntersections<
-		nodeClass,
-		intersections extends IntersectionDefinitions<nodeClass>
-	>(this: nodeClass, intersections: intersections) {
+	protected static defineIntersections<nodeClass>(
+		this: nodeClass,
+		intersections: OwnIntersections<kindOf<nodeClass>>
+	) {
 		return intersections
 	}
 
@@ -316,9 +245,7 @@ export abstract class BaseNode<
 	intersect<other extends UnknownNode>(
 		other: other
 	): IntersectionResult<this["kind"], other["kind"]>
-	intersect(
-		other: BaseNode<BaseAttributes, StaticBaseNode<BaseAttributes>>
-	): UnknownNode | Disjoint | null {
+	intersect(other: BaseNode<NodeDeclaration>): UnknownNode | Disjoint | null {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta
 			return this
@@ -390,37 +317,20 @@ export type IntersectionResult<
 > = l extends unknown
 	? // ensure l and r are distributed so cases like
 	  // IntersectionResult<RootKind, RootKind> are handled correctly
-	  r extends keyof Intersections[l]
-		? instantiateIntersection<Intersections[l][r]>
-		: "constraint" extends keyof Intersections[l]
-		? instantiateIntersection<Intersections[l]["constraint"]>
-		: l extends keyof Intersections[r]
-		? instantiateIntersection<Intersections[r][l]>
-		: "constraint" extends keyof Intersections[r]
-		? instantiateIntersection<Intersections[r]["constraint"]>
+	  r extends keyof OwnIntersections<l>
+		? instantiateIntersection<OwnIntersections<l>[r]>
+		: "constraint" extends keyof OwnIntersections<l>
+		? instantiateIntersection<OwnIntersections<l>["constraint"]>
+		: l extends keyof OwnIntersections<r>
+		? instantiateIntersection<OwnIntersections<r>[l]>
+		: "constraint" extends keyof OwnIntersections<r>
+		? instantiateIntersection<OwnIntersections<r>["constraint"]>
 		: null
 	: never
 
-type instantiateIntersection<result> = result extends NodeKind
-	? Node<result>
+type instantiateIntersection<result> = result extends Inner<infer kind>
+	? Node<kind>
 	: result
-
-/* export type IntersectionResult<
-	l extends NodeKind,
-	r extends NodeKind
-> = r extends keyof NodeClass<l>["intersections"]
-	? instantiateIntersection<l, returnOf<NodeClass<l>["intersections"][r]>>
-	: [r, NodeClass<l>["intersections"]] extends [
-			ConstraintKind,
-			Record<"constraint", Fn<never, infer lrIntersection>>
-	  ]
-	? instantiateIntersection<l, lrIntersection>
-	: NodeClass<r>["intersections"] extends Record<
-			r,
-			Fn<never, infer rlIntersection>
-	  >
-	? instantiateIntersection<r, rlIntersection>
-	: null */
 
 export class NodeIds {
 	private cache: { -readonly [k in keyof NodeIds]?: string } = {}

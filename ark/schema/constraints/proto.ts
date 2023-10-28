@@ -1,11 +1,11 @@
-import type { AbstractableConstructor, instanceOf } from "@arktype/util"
+import type { AbstractableConstructor } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
 	objectKindOf
 } from "@arktype/util"
-import { type withAttributes } from "../base.js"
+import { type declareNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
@@ -13,20 +13,33 @@ import { RootNode } from "../root.js"
 import type { BaseBasis } from "./basis.js"
 import { type DomainNode } from "./domain.js"
 
+export type ProtoSchema<
+	proto extends AbstractableConstructor = AbstractableConstructor
+> = proto | ProtoInner
+
 export type ProtoInner<
 	proto extends AbstractableConstructor = AbstractableConstructor
 > = withAttributes<{
 	readonly proto: proto
 }>
 
-export type ProtoSchema<
-	proto extends AbstractableConstructor = AbstractableConstructor
-> = proto | ProtoInner
+export type ProtoDeclaration = declareNode<
+	"proto",
+	{
+		schema: ProtoSchema
+		inner: ProtoInner
+		intersections: {
+			proto: "proto" | Disjoint
+			domain: "proto" | Disjoint
+		}
+	},
+	typeof ProtoNode
+>
 
 export class ProtoNode<
 		proto extends AbstractableConstructor = AbstractableConstructor
 	>
-	extends RootNode<ProtoInner, typeof ProtoNode, instanceOf<proto>>
+	extends RootNode<ProtoDeclaration>
 	implements BaseBasis
 {
 	static readonly kind = "proto"

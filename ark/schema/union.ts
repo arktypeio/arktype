@@ -1,5 +1,5 @@
 import { type listable } from "@arktype/util"
-import type { withAttributes } from "./base.js"
+import type { declareNode, withAttributes } from "./base.js"
 import { type BasisKind } from "./constraints/basis.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
@@ -11,6 +11,7 @@ import { type MorphNode, type MorphSchema } from "./morph.js"
 import {
 	type inferNodeBranches,
 	type Node,
+	type TypeKind,
 	type validateBranchInput
 } from "./node.js"
 import { RootNode } from "./root.js"
@@ -31,11 +32,22 @@ export type UnionInner = withAttributes<{
 
 export type BranchSchema = IntersectionSchema | MorphSchema
 
-export class UnionNode<t = unknown> extends RootNode<
-	UnionInner,
-	typeof UnionNode,
-	t
-> {
+export type UnionDeclaration = declareNode<
+	"union",
+	{
+		schema: UnionSchema
+		inner: UnionInner
+		intersections: {
+			union: TypeKind | Disjoint
+			morph: "union" | "morph" | Disjoint
+			intersection: "union" | "intersection" | Disjoint
+			constraint: TypeKind | BasisKind | Disjoint
+		}
+	},
+	typeof UnionNode
+>
+
+export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 	static readonly kind = "union"
 
 	constructor(inner: UnionInner) {
@@ -160,7 +172,7 @@ export class UnionNode<t = unknown> extends RootNode<
 	// 	}
 
 	static readonly intersections = this.defineIntersections({
-		union: (l, r): Disjoint | UnionInner => {
+		union: (l, r) => {
 			if (
 				(l.branches.length === 0 || r.branches.length === 0) &&
 				l.branches.length !== r.branches.length
@@ -180,7 +192,7 @@ export class UnionNode<t = unknown> extends RootNode<
 		},
 		morph: this.intersectBranch,
 		intersection: this.intersectBranch,
-		constraint: (l, r): Disjoint | UnionInner => {
+		constraint: (l, r) => {
 			const branches: BranchNode[] = []
 			for (const branch of l.branches) {
 				const branchResult = branch.intersect(r)

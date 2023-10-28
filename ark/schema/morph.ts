@@ -1,6 +1,6 @@
 import { type listable, type mutable, throwParseError } from "@arktype/util"
 import { type Out } from "arktype/internal/parser/tuple.js"
-import { type withAttributes } from "./base.js"
+import { type declareNode, type withAttributes } from "./base.js"
 import { builtins } from "./builtins.js"
 import { type BasisKind } from "./constraints/basis.js"
 import { Disjoint } from "./disjoint.js"
@@ -31,9 +31,22 @@ export type MorphSchema = withAttributes<{
 	readonly morph: listable<Morph>
 }>
 
+export type MorphDeclaration = declareNode<
+	"morph",
+	{
+		schema: MorphSchema
+		inner: MorphInner
+		intersections: {
+			morph: "morph" | Disjoint
+			intersection: "morph" | Disjoint
+			constraint: "morph" | Disjoint
+		}
+	},
+	typeof MorphNode
+>
+
 export class MorphNode<i = unknown, o = unknown> extends RootNode<
-	MorphInner,
-	typeof MorphNode,
+	MorphDeclaration,
 	i
 > {
 	static readonly kind = "morph"
@@ -55,7 +68,7 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 	})
 
 	static readonly intersections = this.defineIntersections({
-		morph: (l, r): MorphInner | Disjoint => {
+		morph: (l, r) => {
 			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
 				// TODO: is this always a parse error? what about for union reduction etc.
 				return throwParseError(`Invalid intersection of morphs`)
@@ -91,7 +104,7 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 			}
 			return result
 		},
-		intersection: (l, r): MorphInner | Disjoint => {
+		intersection: (l, r) => {
 			const inTersection = l.in?.intersect(r) ?? r
 			return inTersection instanceof Disjoint
 				? inTersection
@@ -100,7 +113,7 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 						in: inTersection
 				  }
 		},
-		constraint: (l, r): MorphInner | Disjoint => {
+		constraint: (l, r) => {
 			const input = l.in ?? builtins.unknown()
 			const constrainedInput = input.intersect(r)
 			return constrainedInput instanceof Disjoint

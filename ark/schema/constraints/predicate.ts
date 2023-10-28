@@ -1,4 +1,4 @@
-import { BaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../node.js"
@@ -17,8 +17,20 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
 	| PredicateInner<rule>
 
+export type PredicateDeclaration = declareNode<
+	"predicate",
+	{
+		schema: PredicateSchema
+		inner: PredicateInner
+		intersections: {
+			predicate: "predicate" | null
+		}
+	},
+	typeof PredicateNode
+>
+
 export class PredicateNode
-	extends BaseNode<PredicateInner, typeof PredicateNode>
+	extends BaseNode<PredicateDeclaration>
 	implements BaseRefinement
 {
 	static readonly kind = "predicate"

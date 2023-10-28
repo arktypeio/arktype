@@ -8,15 +8,20 @@ import type {
 } from "@arktype/util"
 import { hasDomain } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
-import type { ConstraintClassesByKind } from "./constraints/constraint.js"
+import type {
+	ConstraintDeclarationsByKind,
+	ConstraintKind
+} from "./constraints/constraint.js"
 import { UnitNode } from "./constraints/unit.js"
 import {
+	type IntersectionDeclaration,
 	IntersectionNode,
 	type IntersectionSchema,
 	type parseIntersection,
 	type validateIntersectionInput
 } from "./intersection.js"
 import {
+	type MorphDeclaration,
 	MorphNode,
 	type MorphSchema,
 	type parseMorph,
@@ -25,6 +30,7 @@ import {
 import {
 	type BranchSchema,
 	type ExpandedUnionSchema,
+	type UnionDeclaration,
 	type UnionInner,
 	UnionNode
 } from "./union.js"
@@ -104,35 +110,56 @@ export type parseBranch<branch> = branch extends MorphSchema
 	? parseIntersection<branch>
 	: unknown
 
-export type TypeClassesByKind = {
-	union: typeof UnionNode
-	morph: typeof MorphNode
-	intersection: typeof IntersectionNode
+type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
+	[rKind in keyof intersectionMap]: (
+		l: Node<lKind>,
+		r: Node<intersectionGroupOf<rKind>>
+	) => reifyIntersectionResult<intersectionMap[rKind]>
 }
 
-export type TypeKind = evaluate<keyof TypeClassesByKind>
+type intersectionGroupOf<rKind> = rKind extends NodeKind
+	? rKind
+	: rKind extends "constraint"
+	? ConstraintKind
+	: never
+
+type reifyIntersectionResult<result> = result extends NodeKind
+	? Inner<result>
+	: result
+
+export type TypeDeclarationsByKind = {
+	union: UnionDeclaration
+	morph: MorphDeclaration
+	intersection: IntersectionDeclaration
+}
+
+export type TypeKind = evaluate<keyof TypeDeclarationsByKind>
 
 export type RootKind = TypeKind | BasisKind
 
-export type NodeClassesByKind = extend<
-	ConstraintClassesByKind,
-	TypeClassesByKind
+export type NodeDeclarationsByKind = extend<
+	ConstraintDeclarationsByKind,
+	TypeDeclarationsByKind
 >
 
-export type NodeKind = keyof NodeClassesByKind
+export type NodeKind = keyof NodeDeclarationsByKind
 
 export type NodeClass<kind extends NodeKind = NodeKind> =
-	NodeClassesByKind[kind]
+	NodeDeclarationsByKind[kind]["class"]
 5
-export type Schema<kind extends NodeKind> = Parameters<
-	NodeClass<kind>["from"]
->[0]
+export type Schema<kind extends NodeKind> =
+	NodeDeclarationsByKind[kind]["schema"]
 
-export type unwrap<kind extends NodeKind> = ConstructorParameters<
-	NodeClass<kind>
->[0]
+export type Inner<kind extends NodeKind> = NodeDeclarationsByKind[kind]["inner"]
 
-export type Node<kind extends NodeKind = NodeKind> = instanceOf<NodeClass<kind>>
+export type OwnIntersections<kind extends NodeKind> = reifyIntersections<
+	kind,
+	NodeDeclarationsByKind[kind]["intersections"]
+>
+
+export type Node<kind extends NodeKind = NodeKind> = instanceOf<
+	NodeDeclarationsByKind[kind]["class"]
+>
 
 export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind> & {
 	[inferred]: t

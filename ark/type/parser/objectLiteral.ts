@@ -1,5 +1,5 @@
 import { node } from "@arktype/schema"
-import type { PropSchema } from "@arktype/schema"
+import type { NamedPropSchema } from "@arktype/schema"
 import { type Dict, type ErrorMessage, type evaluate } from "@arktype/util"
 import { stringify } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
@@ -19,7 +19,7 @@ const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 ]
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
-	const props: PropSchema[] = []
+	const props: NamedPropSchema[] = []
 	for (const entry of stringAndSymbolicEntriesOf(def)) {
 		const result = parseEntry(entry)
 		ctx.path.push(

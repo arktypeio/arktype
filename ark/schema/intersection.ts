@@ -17,6 +17,7 @@ import {
 	baseAttributeKeys,
 	type BaseAttributes,
 	BaseNode,
+	type declareNode,
 	type IrreducibleRefinementKind,
 	irreducibleRefinementKinds,
 	type withAttributes
@@ -52,9 +53,21 @@ export type IntersectionInner = withAttributes<{
 		: Node<k>
 }>
 
+export type IntersectionDeclaration = declareNode<
+	"intersection",
+	{
+		schema: IntersectionSchema
+		inner: IntersectionInner
+		intersections: {
+			intersection: "intersection" | Disjoint
+			constraint: "intersection" | Disjoint
+		}
+	},
+	typeof IntersectionNode
+>
+
 export class IntersectionNode<t = unknown> extends RootNode<
-	IntersectionInner,
-	typeof IntersectionNode,
+	IntersectionDeclaration,
 	t
 > {
 	static readonly kind = "intersection"
@@ -106,13 +119,13 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	}
 
 	static readonly intersections = this.defineIntersections({
-		intersection: (l, r): IntersectionInner | Disjoint => {
+		intersection: (l, r) => {
 			const constraints = intersectConstraints(l.constraints, r.constraints)
 			return constraints instanceof Disjoint
 				? constraints
 				: unflattenConstraints(constraints)
 		},
-		constraint: (l, r): IntersectionInner | Disjoint => {
+		constraint: (l, r) => {
 			const constraints = addConstraint(l.constraints, r)
 			return constraints instanceof Disjoint
 				? constraints
