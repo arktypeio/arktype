@@ -3,6 +3,7 @@ import type {
 	inferMorphOut,
 	inferNarrow,
 	Morph,
+	Out,
 	Predicate,
 	Root
 } from "@arktype/schema"
@@ -395,8 +396,6 @@ export type parseMorph<inDef, morph, $, args> = morph extends Morph
 	: never
 
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
-
-export type Out<o = any> = ["=>", o]
 
 export const writeMalformedFunctionalExpressionMessage = (
 	operator: FunctionalTupleOperator,

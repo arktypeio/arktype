@@ -13,7 +13,6 @@ import type {
 import { UnitNode } from "./constraints/unit.js"
 import {
 	type IntersectionDeclaration,
-	type IntersectionInner,
 	IntersectionNode,
 	type IntersectionSchema,
 	type parseIntersection,
@@ -101,7 +100,7 @@ export type validateBranchInput<input> = conform<
 
 export type parseBranch<branch> = branch extends MorphSchema
 	? parseMorph<branch>
-	: branch extends IntersectionSchema | IntersectionInner
+	: branch extends IntersectionSchema
 	? parseIntersection<branch>
 	: unknown
 

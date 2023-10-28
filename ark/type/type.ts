@@ -4,6 +4,7 @@ import type {
 	inferMorphOut,
 	inferNarrow,
 	Morph,
+	Out,
 	Predicate,
 	Root
 } from "@arktype/schema"
@@ -35,7 +36,6 @@ import type {
 	IndexOneOperator,
 	IndexZeroOperator,
 	MorphAst,
-	Out,
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import type { Module, Scope } from "./scope.js"

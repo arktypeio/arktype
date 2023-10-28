@@ -1,10 +1,9 @@
 import { attest } from "@arktype/attest"
-import type { Problem } from "@arktype/schema"
+import type { Out, Problem } from "@arktype/schema"
 import { writeUndiscriminatableMorphUnionMessage } from "@arktype/schema"
 import type { Ark, Type } from "arktype"
 import { arktypes, scope, type } from "arktype"
 import { suite, test } from "mocha"
-import type { Out } from "../parser/tuple.js"
 
 suite("morph", () => {
 	test("base", () => {

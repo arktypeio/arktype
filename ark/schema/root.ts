@@ -5,8 +5,12 @@ import type { ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { constraintClassesByKind } from "./intersection.js"
 import { type Node, type Schema, type TypeKind } from "./node.js"
+import { type inferred } from "./utils.js"
 
-export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind>
+export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind> & {
+	[inferred]: t
+	infer: t
+}
 
 export type RootKind = TypeKind | BasisKind
 

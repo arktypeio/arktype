@@ -15,15 +15,12 @@ import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
-	type Inner,
 	type IntersectionMap,
 	type LeftIntersections,
 	type Node,
-	type NodeClass,
 	type NodeKind,
 	type TypeKind
 } from "./node.js"
-import { type RootKind } from "./root.js"
 import { type UnionInner } from "./union.js"
 import { inferred } from "./utils.js"
 
@@ -168,8 +165,7 @@ export abstract class BaseNode<
 		super(inner)
 		this.alias = $ark.register(this, inner.alias)
 		this.description =
-			inner.description ??
-			(this.constructor as declaration["class"]).writeDefaultDescription(inner)
+			inner.description ?? this.nodeClass.writeDefaultDescription(inner)
 		this.json = innerToJson(inner)
 		this.collapsedJson =
 			Object.keys(this.json).length === 1 && isKeyOf(this.kind, this.json)

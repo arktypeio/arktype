@@ -1,6 +1,5 @@
 export { Problem, Problems } from "@arktype/schema"
-export type { CastTo } from "@arktype/schema"
-export type { Out } from "./parser/tuple.js"
+export type { CastTo, Out } from "@arktype/schema"
 export type { Module, Scope } from "./scope.js"
 export {
 	ark,

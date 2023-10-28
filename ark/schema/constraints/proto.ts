@@ -1,4 +1,4 @@
-import type { AbstractableConstructor } from "@arktype/util"
+import type { AbstractableConstructor, instanceOf } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -39,7 +39,7 @@ export type ProtoDeclaration = declareNode<
 export class ProtoNode<
 		proto extends AbstractableConstructor = AbstractableConstructor
 	>
-	extends RootNode<ProtoDeclaration>
+	extends RootNode<ProtoDeclaration, instanceOf<proto>>
 	implements BaseBasis
 {
 	static readonly kind = "proto"

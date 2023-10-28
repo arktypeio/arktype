@@ -1,5 +1,4 @@
 import { type listable, type mutable, throwParseError } from "@arktype/util"
-import { type Out } from "arktype/internal/parser/tuple.js"
 import { type declareNode, type withAttributes } from "./base.js"
 import { builtins } from "./builtins.js"
 import { type BasisKind } from "./constraints/basis.js"
@@ -18,6 +17,8 @@ import { RootNode } from "./root.js"
 export type ValidatorNode = Node<"intersection" | BasisKind>
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
+
+export type Out<o = any> = ["=>", o]
 
 export type MorphInner = withAttributes<{
 	readonly in?: ValidatorNode
