@@ -81,7 +81,10 @@ type OrderedNodeKinds = typeof orderedNodeKinds
 type allowedAsymmetricOperandOf<
 	kind extends NodeKind,
 	remaining extends readonly NodeKind[] = OrderedNodeKinds
-> = remaining extends [infer head, ...infer tail extends readonly NodeKind[]]
+> = remaining extends readonly [
+	infer head,
+	...infer tail extends readonly NodeKind[]
+]
 	? head extends kind
 		?
 				| remaining[number]
@@ -91,61 +94,70 @@ type allowedAsymmetricOperandOf<
 		: allowedAsymmetricOperandOf<kind, tail>
 	: kind
 
-export type Intersections = satisfy<
-	{
-		[k in NodeKind]: extend<
-			{ [_ in k]: NodeKind | Disjoint | null },
-			PartialRecord<allowedAsymmetricOperandOf<k>, NodeKind | Disjoint | null>
+type validateIntersections<
+	intersections extends {
+		[k in NodeKind]: { [_ in k]: NodeKind | Disjoint | null } & PartialRecord<
+			NodeKind,
+			NodeKind | Disjoint | null
 		>
-	},
-	{
-		union: {
-			union: TypeKind | Disjoint
-			morph: "union" | "morph" | Disjoint
-			intersection: "union" | "intersection" | Disjoint
-			constraint: TypeKind | BasisKind | Disjoint
-		}
-		morph: {
-			morph: "morph" | Disjoint
-			intersection: "morph" | Disjoint
-			constraint: "morph" | Disjoint
-		}
-		intersection: {
-			intersection: "intersection" | Disjoint
-			constraint: "intersection" | Disjoint
-		}
-		unit: {
-			unit: "unit" | Disjoint
-			constraint: "unit" | Disjoint
-		}
-		proto: {
-			proto: "proto" | Disjoint
-			domain: "proto" | Disjoint
-		}
-		domain: {
-			domain: "domain" | Disjoint
-		}
-		divisor: {
-			divisor: "divisor"
-		}
-		max: {
-			max: "max"
-			min: Disjoint | null
-		}
-		min: {
-			min: "min"
-		}
-		pattern: {
-			pattern: "pattern" | null
-		}
-		predicate: {
-			predicate: "predicate" | null
-		}
-		prop: {
-			prop: "prop" | null
-		}
 	}
->
+> = {
+	[k in keyof intersections]: k extends NodeKind
+		? {
+				[k2 in keyof intersections[k]]: k2 extends allowedAsymmetricOperandOf<k>
+					? conform<intersections[k][k2], NodeKind | Disjoint | null>
+					: never
+		  }
+		: never
+}
+
+export type Intersections = validateIntersections<{
+	union: {
+		union: TypeKind | Disjoint
+		morph: "union" | "morph" | Disjoint
+		intersection: "union" | "intersection" | Disjoint
+		constraint: TypeKind | BasisKind | Disjoint
+	}
+	morph: {
+		morph: "morph" | Disjoint
+		intersection: "morph" | Disjoint
+		constraint: "morph" | Disjoint
+	}
+	intersection: {
+		intersection: "intersection" | Disjoint
+		constraint: "intersection" | Disjoint
+	}
+	unit: {
+		unit: "unit" | Disjoint
+		constraint: "unit" | Disjoint
+	}
+	proto: {
+		proto: "proto" | Disjoint
+		domain: "proto" | Disjoint
+	}
+	domain: {
+		domain: "domain" | Disjoint
+	}
+	divisor: {
+		divisor: "divisor"
+	}
+	max: {
+		max: "max"
+		min: Disjoint | null
+	}
+	min: {
+		min: "min"
+	}
+	pattern: {
+		pattern: "pattern" | null
+	}
+	predicate: {
+		predicate: "predicate" | null
+	}
+	prop: {
+		prop: "prop" | null
+	}
+}>
 
 export const irreducibleRefinementKinds = {
 	pattern: 1,
@@ -374,6 +386,19 @@ const isTypeInner = (inner: object): inner is UnionInner => "branches" in inner
 export type IntersectionResult<
 	l extends NodeKind,
 	r extends NodeKind
+> = r extends keyof Intersections[l]
+	? instantiateIntersection<Intersections[l][r]>
+	: l extends keyof Intersections[r]
+	? instantiateIntersection<Intersections[r][l]>
+	: null
+
+type instantiateIntersection<result> = result extends NodeKind
+	? Node<result>
+	: result
+
+/* export type IntersectionResult<
+	l extends NodeKind,
+	r extends NodeKind
 > = r extends keyof NodeClass<l>["intersections"]
 	? instantiateIntersection<l, returnOf<NodeClass<l>["intersections"][r]>>
 	: [r, NodeClass<l>["intersections"]] extends [
@@ -386,12 +411,7 @@ export type IntersectionResult<
 			Fn<never, infer rlIntersection>
 	  >
 	? instantiateIntersection<r, rlIntersection>
-	: null
-
-type instantiateIntersection<
-	kind extends NodeKind,
-	result
-> = result extends null | Disjoint ? result : Node<kind>
+	: null */
 
 export class NodeIds {
 	private cache: { -readonly [k in keyof NodeIds]?: string } = {}
