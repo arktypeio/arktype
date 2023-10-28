@@ -1,7 +1,7 @@
 import { type BaseAttributes, BaseNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node, type TypeInput } from "../node.js"
+import { type Node, type RootInput, type RootKind } from "../node.js"
 import { UnionNode } from "../union.js"
 import type { BasisKind } from "./basis.js"
 import { getBasisName } from "./constraint.js"
@@ -20,14 +20,14 @@ type inferKey<k extends PropNode["key"]> = k extends string | symbol
 	: never
 
 export type PropInner = withAttributes<{
-	readonly key: string | symbol | UnionNode
-	readonly value: UnionNode
+	readonly key: string | symbol | Node<RootKind>
+	readonly value: Node<RootKind>
 	readonly optional?: boolean
 }>
 
 export type PropSchema = withAttributes<{
-	readonly key: string | symbol | TypeInput
-	readonly value: TypeInput
+	readonly key: string | symbol | RootInput
+	readonly value: RootInput
 	readonly optional?: boolean
 }>
 

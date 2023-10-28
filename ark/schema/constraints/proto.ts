@@ -10,6 +10,7 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { BaseBasis } from "./basis.js"
+import { type DomainNode } from "./domain.js"
 
 export type ProtoInner<
 	proto extends AbstractableConstructor = AbstractableConstructor
@@ -51,7 +52,12 @@ export class ProtoNode<
 		domain: (l, r): ProtoInner | Disjoint =>
 			r.domain === "object"
 				? l
-				: Disjoint.from("domain", builtins.object().unwrapOnly("domain")!, r)
+				: Disjoint.from(
+						"domain",
+						// TODO: cast needed?
+						builtins.object() as {} as DomainNode<"object">,
+						r
+				  )
 	})
 
 	static readonly compile = this.defineCompiler(

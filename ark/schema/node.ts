@@ -11,6 +11,7 @@ import {
 	type BaseNode,
 	type StaticBaseNode
 } from "./base.js"
+import { type BasisKind } from "./constraints/basis.js"
 import type { ConstraintClassesByKind } from "./constraints/constraint.js"
 import { UnitNode } from "./constraints/unit.js"
 import {
@@ -87,7 +88,7 @@ export const node = Object.assign(parseNode, {
 	// kind: parseKind
 })
 
-export type TypeInput = listable<IntersectionSchema | MorphSchema>
+export type RootInput = listable<IntersectionSchema | MorphSchema>
 
 export type TypeNode<t = unknown> = BaseNode<
 	BaseAttributes,
@@ -119,6 +120,8 @@ export type TypeClassesByKind = {
 }
 
 export type TypeKind = evaluate<keyof TypeClassesByKind>
+
+export type RootKind = TypeKind | BasisKind
 
 export type NodeClassesByKind = extend<
 	ConstraintClassesByKind,

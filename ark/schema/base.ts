@@ -12,16 +12,19 @@ import type {
 	returnOf
 } from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
+import { builtins } from "./builtins.js"
 import { type BasisKind } from "./constraints/basis.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
 import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
+import { constraintClassesByKind } from "./intersection.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
 	type Node,
 	type NodeClass,
 	type NodeKind,
+	type RootKind,
 	type Schema,
 	type TypeNode
 } from "./node.js"
@@ -244,6 +247,7 @@ export abstract class BaseNode<
 	}
 
 	constrain<kind extends ConstraintKind>(
+		this: Node<RootKind>,
 		kind: kind,
 		definition: Schema<kind>
 	): TypeNode {
@@ -276,11 +280,11 @@ export abstract class BaseNode<
 	}
 
 	isUnknown(): this is TypeNode<unknown> {
-		return this.unwrapOnly("validator")?.constraints.length === 0
+		return this.equals(builtins.unknown())
 	}
 
 	isNever(): this is TypeNode<never> {
-		return this.branches.length === 0
+		return this.equals(builtins.never())
 	}
 
 	getPath() {

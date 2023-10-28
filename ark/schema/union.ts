@@ -1,12 +1,19 @@
 import { type listable } from "@arktype/util"
-import type { Node, withAttributes } from "./base.js"
+import type { withAttributes } from "./base.js"
 import { BaseNode } from "./base.js"
 import { type BasisKind } from "./constraints/basis.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
+import {
+	type IntersectionNode,
+	type IntersectionSchema
+} from "./intersection.js"
 import { type MorphNode, type MorphSchema } from "./morph.js"
-import { type inferNodeBranches, type validateBranchInput } from "./node.js"
-import { type IntersectionNode, type IntersectionSchema } from "./intersection.js"
+import {
+	type inferNodeBranches,
+	type Node,
+	type validateBranchInput
+} from "./node.js"
 
 export type BranchNode = IntersectionNode | MorphNode | Node<BasisKind>
 
@@ -49,11 +56,17 @@ export class UnionNode<t = unknown> extends BaseNode<
 				[i in keyof branches]: validateBranchInput<branches[i]>
 			}
 		} & ExpandedUnionSchema
-	){
-		return new  UnionNode<inferNodeBranches<branches>>({...schema, branches: schema.branches.map(branch => )})
+	) {
+		return new UnionNode<inferNodeBranches<branches>>({
+			...schema,
+			branches: schema.branches.map((branch) => branch as never)
+		})
 	}
 
-	private static intersectBranch = (l: UnionNode, r: BranchNode) => {
+	private static intersectBranch = (
+		l: UnionNode,
+		r: BranchNode
+	): Disjoint | UnionInner => {
 		const resultBranches = intersectBranches(l.branches, [r])
 		if (resultBranches instanceof Disjoint) {
 			return resultBranches
@@ -147,7 +160,7 @@ export class UnionNode<t = unknown> extends BaseNode<
 	// 	}
 
 	static readonly intersections = this.defineIntersections({
-		union: (l, r) => {
+		union: (l, r): Disjoint | UnionInner => {
 			if (
 				(l.branches.length === 0 || r.branches.length === 0) &&
 				l.branches.length !== r.branches.length
@@ -166,7 +179,7 @@ export class UnionNode<t = unknown> extends BaseNode<
 			return { branches: resultBranches }
 		},
 		morph: this.intersectBranch,
-		validator: this.intersectBranch,
+		intersection: this.intersectBranch,
 		constraint: (l, r): Disjoint | UnionInner => {
 			const branches: BranchNode[] = []
 			for (const branch of l.branches) {

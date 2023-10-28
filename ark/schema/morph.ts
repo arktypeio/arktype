@@ -27,7 +27,11 @@ export type MorphSchema = withAttributes<{
 	readonly morph: listable<Morph>
 }>
 
-export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
+export class MorphNode<i = unknown, o = unknown> extends BaseNode<
+	MorphInner,
+	typeof MorphNode,
+	i
+> {
 	static readonly kind = "morph"
 
 	static childrenOf(inner: MorphInner) {
@@ -47,7 +51,7 @@ export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
 	})
 
 	static readonly intersections = this.defineIntersections({
-		morph: (l, r) => {
+		morph: (l, r): MorphInner | Disjoint => {
 			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
 				// TODO: is this always a parse error? what about for union reduction etc.
 				return throwParseError(`Invalid intersection of morphs`)
@@ -83,7 +87,7 @@ export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
 			}
 			return result
 		},
-		intersection: (l, r) => {
+		intersection: (l, r): MorphInner | Disjoint => {
 			const inTersection = l.in?.intersect(r) ?? r
 			return inTersection instanceof Disjoint
 				? inTersection
@@ -93,7 +97,7 @@ export class MorphNode extends BaseNode<MorphInner, typeof MorphNode> {
 				  }
 		},
 		constraint: (l, r): MorphInner | Disjoint => {
-			const input = l.in ?? builtins.unknown().unwrapOnly("validator")!
+			const input = l.in ?? builtins.unknown()
 			const constrainedInput = input.intersect(r)
 			return constrainedInput instanceof Disjoint
 				? constrainedInput

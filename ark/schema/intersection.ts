@@ -51,9 +51,10 @@ export type IntersectionInner = withAttributes<{
 		: Node<k>
 }>
 
-export class IntersectionNode extends BaseNode<
+export class IntersectionNode<t = unknown> extends BaseNode<
 	IntersectionInner,
-	typeof IntersectionNode
+	typeof IntersectionNode,
+	t
 > {
 	static readonly kind = "intersection"
 
@@ -95,7 +96,7 @@ export class IntersectionNode extends BaseNode<
 		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
 	)
 
-	static childrenOf(inner: IntersectionInner) {
+	static childrenOf(inner: IntersectionInner): readonly Node<ConstraintKind>[] {
 		return Object.values(inner)
 			.flat()
 			.filter(
