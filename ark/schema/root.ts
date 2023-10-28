@@ -1,10 +1,8 @@
 import {
-	type BaseAttributes,
 	BaseNode,
 	type IntersectionResult,
 	type NodeDeclaration,
-	type StaticBaseNode,
-	type UnknownNode
+	type StaticBaseNode
 } from "./base.js"
 import { builtins } from "./builtins.js"
 import type { ConstraintKind } from "./constraints/constraint.js"
@@ -45,11 +43,11 @@ export abstract class RootNode<
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<other extends UnknownNode>(
+	or<other extends Node>(
 		other: other
 	): Root<
 		t | other["infer"],
-		"union" | this["kind"] | (other["kind"] & RootKind)
+		"union" | Extract<this["kind"] | other["kind"], RootKind>
 	> {
 		return this as never
 	}

@@ -152,10 +152,13 @@ export type Schema<kind extends NodeKind> =
 
 export type Inner<kind extends NodeKind> = NodeDeclarationsByKind[kind]["inner"]
 
-export type OwnIntersections<kind extends NodeKind> = reifyIntersections<
+export type LeftIntersections<kind extends NodeKind> = reifyIntersections<
 	kind,
 	NodeDeclarationsByKind[kind]["intersections"]
 >
+
+export type IntersectionMap<kind extends NodeKind> =
+	NodeDeclarationsByKind[kind]["intersections"]
 
 export type Node<kind extends NodeKind = NodeKind> = instanceOf<
 	NodeDeclarationsByKind[kind]["class"]

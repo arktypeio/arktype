@@ -9,20 +9,21 @@ import type {
 } from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
 import { type BasisKind } from "./constraints/basis.js"
-import type { ConstraintKind } from "./constraints/constraint.js"
+import { type ConstraintKind } from "./constraints/constraint.js"
 import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
-import { IntersectionNode } from "./intersection.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
 	type Inner,
+	type IntersectionMap,
+	type LeftIntersections,
 	type Node,
+	type NodeClass,
 	type NodeKind,
-	type OwnIntersections,
 	type TypeKind
 } from "./node.js"
-import { type UnionInner, type UnionNode } from "./union.js"
+import { type UnionInner } from "./union.js"
 import { inferred } from "./utils.js"
 
 export type BaseAttributes = {
@@ -32,7 +33,7 @@ export type BaseAttributes = {
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
 
-export type NodeTypes<kind extends NodeKind = NodeKind> = {
+export type NodeTypes<kind extends NodeKind> = {
 	schema: unknown
 	inner: BaseAttributes
 	intersections: BaseIntersectionMap[kind]
@@ -41,7 +42,9 @@ export type NodeTypes<kind extends NodeKind = NodeKind> = {
 export type declareNode<
 	kind extends NodeKind,
 	types extends NodeTypes<kind>,
-	implementation extends StaticBaseNode<any>
+	implementation extends StaticBaseNode<
+		declareNode<kind, types, implementation>
+	>
 > = extend<
 	types,
 	{
@@ -56,18 +59,20 @@ export type NodeDeclaration = declareNode<
 	StaticBaseNode<any>
 >
 
+type Z = kindOf<NodeClass<"intersection">>
+
 export const baseAttributeKeys = {
 	alias: 1,
 	description: 1
 } as const satisfies Record<keyof BaseAttributes, 1>
 
 export type StaticBaseNode<d extends NodeDeclaration> = {
-	new (inner: d["inner"]): BaseNode<d, any>
+	new (inner: d["inner"]): instanceOf<d["class"]>
 	kind: d["kind"]
 	keyKinds: Record<keyof d["inner"], keyof NodeIds>
-	from(input: d["schema"], ctx: RefinementContext): BaseNode<d, any>
+	from(input: d["schema"], ctx: RefinementContext): instanceOf<d["class"]>
 	childrenOf?(inner: d["inner"]): readonly UnknownNode[]
-	intersections: d["intersections"]
+	intersections: LeftIntersections<d["kind"]>
 	compile(inner: d["inner"]): string
 	writeDefaultDescription(inner: d["inner"]): string
 }
@@ -201,7 +206,7 @@ export abstract class BaseNode<
 
 	protected static defineIntersections<nodeClass>(
 		this: nodeClass,
-		intersections: OwnIntersections<kindOf<nodeClass>>
+		intersections: LeftIntersections<kindOf<nodeClass>>
 	) {
 		return intersections
 	}
@@ -317,19 +322,23 @@ export type IntersectionResult<
 > = l extends unknown
 	? // ensure l and r are distributed so cases like
 	  // IntersectionResult<RootKind, RootKind> are handled correctly
-	  r extends keyof OwnIntersections<l>
-		? instantiateIntersection<OwnIntersections<l>[r]>
-		: "constraint" extends keyof OwnIntersections<l>
-		? instantiateIntersection<OwnIntersections<l>["constraint"]>
-		: l extends keyof OwnIntersections<r>
-		? instantiateIntersection<OwnIntersections<r>[l]>
-		: "constraint" extends keyof OwnIntersections<r>
-		? instantiateIntersection<OwnIntersections<r>["constraint"]>
+	  r extends keyof IntersectionMap<l>
+		? instantiateIntersection<IntersectionMap<l>[r]>
+		: [r, "constraint"] extends [ConstraintKind, keyof IntersectionMap<l>]
+		? instantiateIntersection<
+				IntersectionMap<l>["constraint" & keyof IntersectionMap<l>]
+		  >
+		: l extends keyof IntersectionMap<r>
+		? instantiateIntersection<IntersectionMap<r>[l]>
+		: [l, "constraint"] extends [ConstraintKind, keyof IntersectionMap<r>]
+		? instantiateIntersection<
+				IntersectionMap<r>["constraint" & keyof IntersectionMap<r>]
+		  >
 		: null
 	: never
 
-type instantiateIntersection<result> = result extends Inner<infer kind>
-	? Node<kind>
+type instantiateIntersection<result> = result extends NodeKind
+	? Node<result>
 	: result
 
 export class NodeIds {
