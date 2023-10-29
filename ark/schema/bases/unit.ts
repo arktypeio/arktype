@@ -35,6 +35,11 @@ export class UnitNode<const rule = unknown>
 	implements BaseBasis
 {
 	static readonly kind = "unit"
+
+	static {
+		this.classesByKind.unit = this
+	}
+
 	readonly is = this.unit
 	readonly domain = domainOf(this.unit)
 

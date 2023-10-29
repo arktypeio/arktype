@@ -42,6 +42,10 @@ export class RequiredNode
 {
 	static readonly kind = "required"
 
+	static {
+		this.classesByKind.required = this
+	}
+
 	static childrenOf(inner: NamedPropInner) {
 		return [inner.value]
 	}
@@ -109,6 +113,10 @@ export class OptionalNode
 {
 	static readonly kind = "optional"
 
+	static {
+		this.classesByKind.optional = this
+	}
+
 	static childrenOf(inner: NamedPropInner) {
 		return [inner.value]
 	}
@@ -128,7 +136,7 @@ export class OptionalNode
 			if (value instanceof Disjoint) {
 				return {
 					key,
-					value: builtins.never()
+					value: builtins().never
 				}
 			}
 			return {

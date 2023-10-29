@@ -140,6 +140,4 @@ export type LeftIntersections<kind extends NodeKind> = reifyIntersections<
 export type IntersectionMap<kind extends NodeKind> =
 	NodeDeclarationsByKind[kind]["intersections"]
 
-export type Node<kind extends NodeKind = NodeKind> = instanceOf<
-	NodeDeclarationsByKind[kind]["class"]
->
+export type Node<kind extends NodeKind = NodeKind> = instanceOf<NodeClass<kind>>

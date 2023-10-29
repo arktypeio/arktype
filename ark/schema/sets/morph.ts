@@ -52,6 +52,10 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 > {
 	static readonly kind = "morph"
 
+	static {
+		this.classesByKind.morph = this
+	}
+
 	static childrenOf(inner: MorphInner): ValidatorNode[] {
 		return inner.in
 			? inner.out
@@ -117,7 +121,7 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 		},
 		constraint: (l, r) => {
 			// TODO: remove cast?
-			const input = l.in ?? (builtins.unknown() as IntersectionNode<unknown>)
+			const input = l.in ?? (builtins().unknown as IntersectionNode<unknown>)
 			const constrainedInput = input.intersect(r)
 			return constrainedInput instanceof Disjoint
 				? constrainedInput

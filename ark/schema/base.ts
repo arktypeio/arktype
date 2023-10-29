@@ -1,4 +1,11 @@
-import type { Dict, extend, instanceOf, Json, JsonData } from "@arktype/util"
+import type {
+	Dict,
+	extend,
+	instanceOf,
+	Json,
+	JsonData,
+	satisfy
+} from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
 import { type RefinementContext } from "./constraints/refinement.js"
@@ -10,6 +17,7 @@ import {
 	type IntersectionMap,
 	type LeftIntersections,
 	type Node,
+	type NodeClass,
 	type NodeKind
 } from "./nodes.js"
 import { type ConstraintKind } from "./sets/intersection.js"
@@ -82,6 +90,12 @@ const orderedNodeKinds = [
 
 type OrderedNodeKinds = typeof orderedNodeKinds
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type assertIncludesAllKinds = satisfy<OrderedNodeKinds[number], NodeKind>
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
+
 type allowedAsymmetricOperandOf<
 	kind extends NodeKind,
 	remaining extends readonly NodeKind[] = OrderedNodeKinds
@@ -137,7 +151,6 @@ export abstract class BaseNode<
 	declare [inferred]: t
 
 	readonly json: Json
-	readonly collapsedJson: JsonData
 	// TODO: type
 	readonly children: readonly UnknownNode[]
 	readonly references: readonly UnknownNode[]
@@ -156,10 +169,6 @@ export abstract class BaseNode<
 		this.description =
 			inner.description ?? this.nodeClass.writeDefaultDescription(inner)
 		this.json = innerToJson(inner)
-		this.collapsedJson =
-			Object.keys(this.json).length === 1 && isKeyOf(this.kind, this.json)
-				? this.json[this.kind]
-				: this.json
 		this.condition = this.nodeClass.compile(inner)
 		this.children = this.nodeClass.childrenOf?.(inner) ?? ([] as any)
 		this.references = (this.children as UnknownNode[]).flatMap(
@@ -171,6 +180,8 @@ export abstract class BaseNode<
 			`return ${this.condition}`
 		)
 	}
+
+	protected static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
 
 	protected static declareKeys<nodeClass>(
 		this: nodeClass,
@@ -265,10 +276,6 @@ export abstract class BaseNode<
 }
 
 const innerToJson = (inner: BaseAttributes) => {
-	if (isTypeInner(inner)) {
-		// collapse single branch schemas like { branches: [{ domain: "string" }] } to { domain: "string" }
-		return inner.branches[0].json
-	}
 	const json: Json = {}
 	for (const k in inner) {
 		json[k] = innerValueToJson((inner as Dict)[k])
@@ -302,8 +309,6 @@ const innerValueToJson = (inner: unknown): JsonData => {
 	}
 	return compileSerializedValue(inner)
 }
-
-const isTypeInner = (inner: object): inner is UnionInner => "branches" in inner
 
 export type intersectionOf<
 	l extends NodeKind,

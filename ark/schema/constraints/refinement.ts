@@ -13,6 +13,8 @@ import { type PatternDeclaration, PatternNode } from "./pattern.js"
 import { type PredicateDeclaration, PredicateNode } from "./predicate.js"
 import { OptionalNode, type PropDeclarations, RequiredNode } from "./prop.js"
 
+// TODO: refinement => constraint
+// rename constraint to something else like intersction child
 export const refinementClassesByKind = {
 	divisor: DivisorNode,
 	min: MinNode,

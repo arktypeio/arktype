@@ -44,6 +44,10 @@ export class ProtoNode<
 {
 	static readonly kind = "proto"
 
+	static {
+		this.classesByKind.proto = this
+	}
+
 	readonly knownObjectKind = objectKindOf(this.proto)
 	readonly basisName = `${this.proto.name}`
 	readonly domain = "object"
@@ -67,7 +71,7 @@ export class ProtoNode<
 				: Disjoint.from(
 						"domain",
 						// TODO: cast needed?
-						builtins.object() as {} as DomainNode<"object">,
+						builtins().object as {} as DomainNode<"object">,
 						r
 				  )
 	})

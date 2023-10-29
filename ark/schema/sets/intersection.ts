@@ -47,6 +47,7 @@ import { type Node, type Schema } from "../nodes.js"
 import { RootNode } from "../root.js"
 import { type MorphSchema } from "./morph.js"
 
+// TODO: try removing and just using the static version
 export const constraintClassesByKind = {
 	...refinementClassesByKind,
 	...basisClassesByKind
@@ -76,6 +77,10 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	t
 > {
 	static readonly kind = "intersection"
+
+	static {
+		this.classesByKind.intersection = this
+	}
 
 	declare readonly constraints: readonly Node<ConstraintKind>[]
 	declare readonly refinements: readonly Node<RefinementKind>[]

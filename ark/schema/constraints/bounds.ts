@@ -69,6 +69,10 @@ export type MinDeclaration = declareNode<
 export class MinNode extends BaseBound<MinDeclaration> {
 	static readonly kind = "min"
 
+	static {
+		this.classesByKind.min = this
+	}
+
 	static readonly keyKinds = this.declareKeys({
 		min: "in",
 		exclusive: "in",
@@ -136,6 +140,10 @@ export type MaxDeclaration = declareNode<
 
 export class MaxNode extends BaseBound<MaxDeclaration> {
 	static readonly kind = "max"
+
+	static {
+		this.classesByKind.max = this
+	}
 
 	static readonly intersections = this.defineIntersections({
 		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r),

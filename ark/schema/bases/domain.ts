@@ -38,6 +38,10 @@ export class DomainNode<
 {
 	static readonly kind = "domain"
 
+	static {
+		this.classesByKind.domain = this
+	}
+
 	readonly basisName = this.domain
 
 	static readonly keyKinds = this.declareKeys({

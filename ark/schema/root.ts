@@ -4,7 +4,6 @@ import { builtins } from "./builtins.js"
 import { Disjoint } from "./disjoint.js"
 import { type Node, type Schema } from "./nodes.js"
 import type { ConstraintKind } from "./sets/intersection.js"
-import { constraintClassesByKind } from "./sets/intersection.js"
 import { type SetKind } from "./sets/set.js"
 import { type inferred } from "./utils.js"
 
@@ -24,7 +23,7 @@ export abstract class RootNode<
 		definition: Schema<kind>
 	): Root {
 		const result: Disjoint | Node<RootKind> = this.intersect(
-			(constraintClassesByKind[kind].from as any)(definition)
+			(RootNode.classesByKind[kind].from as any)(definition)
 		)
 		return result instanceof Disjoint ? result.throw() : result
 	}
@@ -55,11 +54,11 @@ export abstract class RootNode<
 	}
 
 	isUnknown(): this is Root<unknown> {
-		return this.equals(builtins.unknown())
+		return this.hasKind("intersection") && this.constraints.length === 0
 	}
 
 	isNever(): this is Root<never> {
-		return this.equals(builtins.never())
+		return this.hasKind("union") && this.branches.length === 0
 	}
 
 	getPath() {

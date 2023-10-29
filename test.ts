@@ -13,15 +13,15 @@ const l = node(
 	}
 )
 
-const z = node("number")
+const n = node("number")
 
-console.log(z.allows.toString())
+console.log(n.allows.toString())
 
-const o = z.allows(5) //?
+const o = n.allows(5) //?
 
-const n = z.allows(true) //?
+const f = n.allows(true) //?
 
-// z.json //?
+n.json //?
 
 // z.condition //?
 

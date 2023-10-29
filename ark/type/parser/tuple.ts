@@ -61,7 +61,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Root => {
 		const parsedEntry = parseEntry([`${i}`, elementDef])
 		const value = ctx.scope.parse(parsedEntry.innerValue, ctx)
 		if (isVariadic) {
-			if (!value.extends(builtins.array())) {
+			if (!value.extends(builtins().array)) {
 				return throwParseError(writeNonArrayRestMessage(elementDef))
 			}
 			if (i !== def.length - 1) {
@@ -70,7 +70,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Root => {
 			// TODO: Fix builtins.arrayIndexTypeNode()
 			const elementType = value.getPath()
 			// TODO: first variadic i
-			props.push({ key: builtins.arrayIndexTypeNode(), value: elementType })
+			props.push({ key: builtins().arrayIndexTypeNode, value: elementType })
 		} else {
 			props.push({
 				key: {

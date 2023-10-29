@@ -35,6 +35,10 @@ export class PredicateNode
 {
 	static readonly kind = "predicate"
 
+	static {
+		this.classesByKind.predicate = this
+	}
+
 	static readonly keyKinds = this.declareKeys({
 		predicate: "in"
 	})

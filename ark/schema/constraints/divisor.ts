@@ -29,6 +29,10 @@ export class DivisorNode
 {
 	static readonly kind = "divisor"
 
+	static {
+		this.classesByKind.divisor = this
+	}
+
 	static from(schema: DivisorSchema) {
 		return new DivisorNode(
 			typeof schema === "number" ? { divisor: schema } : schema

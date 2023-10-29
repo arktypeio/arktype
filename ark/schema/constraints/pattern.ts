@@ -34,6 +34,10 @@ export class PatternNode
 {
 	static readonly kind = "pattern"
 
+	static {
+		this.classesByKind.pattern = this
+	}
+
 	static readonly keyKinds = this.declareKeys({
 		pattern: "in"
 	})
