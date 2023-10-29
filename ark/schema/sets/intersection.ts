@@ -3,6 +3,7 @@ import type {
 	conform,
 	ErrorMessage,
 	exactMessageOnError,
+	extend,
 	mutable
 } from "@arktype/util"
 import {
@@ -21,26 +22,30 @@ import {
 	type IrreducibleRefinementKind,
 	irreducibleRefinementKinds,
 	type withAttributes
-} from "./base.js"
-import type { BasisKind, parseBasis } from "./constraints/basis.js"
-import { basisClassesByKind } from "./constraints/basis.js"
-import type { ConstraintKind } from "./constraints/constraint.js"
-import type { DomainSchema, NonEnumerableDomain } from "./constraints/domain.js"
-import { DomainNode } from "./constraints/domain.js"
-import type { ProtoSchema } from "./constraints/proto.js"
-import { ProtoNode } from "./constraints/proto.js"
+} from "../base.js"
+import type {
+	BasisDeclarationsByKind,
+	BasisKind,
+	parseBasis
+} from "../bases/basis.js"
+import { basisClassesByKind } from "../bases/basis.js"
+import type { DomainSchema, NonEnumerableDomain } from "../bases/domain.js"
+import { DomainNode } from "../bases/domain.js"
+import type { ProtoSchema } from "../bases/proto.js"
+import { ProtoNode } from "../bases/proto.js"
+import type { DiscriminableUnitSchema, UnitSchema } from "../bases/unit.js"
+import { UnitNode } from "../bases/unit.js"
 import type {
 	RefinementContext,
+	RefinementDeclarationsByKind,
 	RefinementIntersectionInput,
 	RefinementKind
-} from "./constraints/refinement.js"
-import { refinementClassesByKind } from "./constraints/refinement.js"
-import type { DiscriminableUnitSchema, UnitSchema } from "./constraints/unit.js"
-import { UnitNode } from "./constraints/unit.js"
-import { Disjoint } from "./disjoint.js"
+} from "../constraints/refinement.js"
+import { refinementClassesByKind } from "../constraints/refinement.js"
+import { Disjoint } from "../disjoint.js"
+import { type Node, type Schema } from "../nodes.js"
+import { RootNode } from "../root.js"
 import { type MorphSchema } from "./morph.js"
-import { type Node, type Schema } from "./node.js"
-import { RootNode } from "./root.js"
 
 export const constraintClassesByKind = {
 	...refinementClassesByKind,
@@ -365,6 +370,11 @@ export type validateIntersectionInput<input> = input extends
 	: input extends UnknownBranchInput
 	? exactMessageOnError<input, UnknownBranchInput>
 	: DiscriminableUnitSchema | IntersectionSchema | MorphSchema
+export type ConstraintKind = keyof ConstraintDeclarationsByKind
+export type ConstraintDeclarationsByKind = extend<
+	BasisDeclarationsByKind,
+	RefinementDeclarationsByKind
+>
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

@@ -1,15 +1,6 @@
-import type {
-	AbstractableConstructor,
-	conform,
-	Dict,
-	extend,
-	instanceOf,
-	Json,
-	JsonData
-} from "@arktype/util"
+import type { Dict, extend, instanceOf, Json, JsonData } from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
-import { type BasisKind } from "./constraints/basis.js"
-import { type ConstraintKind } from "./constraints/constraint.js"
+import { type BasisKind } from "./bases/basis.js"
 import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
@@ -19,10 +10,11 @@ import {
 	type IntersectionMap,
 	type LeftIntersections,
 	type Node,
-	type NodeKind,
-	type TypeKind
-} from "./node.js"
-import { type UnionInner } from "./union.js"
+	type NodeKind
+} from "./nodes.js"
+import { type ConstraintKind } from "./sets/intersection.js"
+import { type SetKind } from "./sets/set.js"
+import { type UnionInner } from "./sets/union.js"
 import { inferred } from "./utils.js"
 
 export type BaseAttributes = {
@@ -100,9 +92,9 @@ type allowedAsymmetricOperandOf<
 	? head extends kind
 		?
 				| remaining[number]
-				// TypeKinds must intersect with constraint, and unit being the
+				// SetKinds must intersect with constraint, and unit being the
 				// highest precedence constraint is the only other node that can unambiguously.
-				| (kind extends TypeKind | "unit" ? "constraint" : never)
+				| (kind extends SetKind | "unit" ? "constraint" : never)
 		: allowedAsymmetricOperandOf<kind, tail>
 	: kind
 

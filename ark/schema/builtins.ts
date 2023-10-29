@@ -1,5 +1,5 @@
 import { cached } from "@arktype/util"
-import { node } from "./node.js"
+import { node } from "./nodes.js"
 import { type Root, type RootNode } from "./root.js"
 
 export const builtins = {

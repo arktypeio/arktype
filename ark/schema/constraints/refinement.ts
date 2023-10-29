@@ -1,7 +1,7 @@
 import type { extend, listable } from "@arktype/util"
 import type { IrreducibleRefinementKind } from "../base.js"
-import { type Node, type Schema } from "../node.js"
-import type { BasisKind } from "./basis.js"
+import type { BasisKind } from "../bases/basis.js"
+import { type Node, type Schema } from "../nodes.js"
 import {
 	type MaxDeclaration,
 	MaxNode,

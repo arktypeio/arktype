@@ -1,4 +1,4 @@
-import { type Schema } from "../node.js"
+import { type Schema } from "../nodes.js"
 import type { DomainDeclaration, DomainSchema } from "./domain.js"
 import { DomainNode } from "./domain.js"
 import type { ProtoDeclaration, ProtoSchema } from "./proto.js"

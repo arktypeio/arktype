@@ -1,12 +1,12 @@
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import type { BasisKind } from "../bases/basis.js"
+import type { DomainNode } from "../bases/domain.js"
+import type { ProtoNode } from "../bases/proto.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import { type Node } from "../node.js"
-import type { BasisKind } from "./basis.js"
-import { getBasisName } from "./constraint.js"
-import type { DomainNode } from "./domain.js"
-import type { ProtoNode } from "./proto.js"
+import { type Node } from "../nodes.js"
 import type { BaseRefinement } from "./refinement.js"
+import { getBasisName } from "./shared.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
 	withAttributes<{

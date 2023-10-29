@@ -7,12 +7,12 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import type { ConstraintKind } from "./constraints/constraint.js"
-import type { DomainNode } from "./constraints/domain.js"
-import type { ProtoNode } from "./constraints/proto.js"
-import type { UnitNode } from "./constraints/unit.js"
-import { type Node } from "./node.js"
-import { type BranchNode } from "./union.js"
+import type { DomainNode } from "./bases/domain.js"
+import type { ProtoNode } from "./bases/proto.js"
+import type { UnitNode } from "./bases/unit.js"
+import { type Node } from "./nodes.js"
+import type { ConstraintKind } from "./sets/intersection.js"
+import { type BranchNode } from "./sets/union.js"
 
 type DisjointKinds = {
 	domain?: {

@@ -1,13 +1,13 @@
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import type { BasisKind } from "../bases/basis.js"
+import type { DomainNode } from "../bases/domain.js"
+import type { ProtoNode } from "../bases/proto.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node, type RootInput } from "../node.js"
-import { type Root, type RootKind } from "../root.js"
-import type { BasisKind } from "./basis.js"
-import { getBasisName } from "./constraint.js"
-import type { DomainNode } from "./domain.js"
-import type { ProtoNode } from "./proto.js"
+import { type Node, type RootInput } from "../nodes.js"
+import { type Root } from "../root.js"
 import type { BaseRefinement } from "./refinement.js"
+import { getBasisName } from "./shared.js"
 
 export type PropDeclarations = {
 	required: RequiredDeclaration

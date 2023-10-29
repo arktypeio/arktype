@@ -6,33 +6,29 @@ import type {
 	mutable
 } from "@arktype/util"
 import { hasDomain } from "@arktype/util"
-import type {
-	ConstraintDeclarationsByKind,
-	ConstraintKind
-} from "./constraints/constraint.js"
-import { UnitNode } from "./constraints/unit.js"
+import { UnitNode } from "./bases/unit.js"
+import { type Root } from "./root.js"
 import {
-	type IntersectionDeclaration,
+	type ConstraintDeclarationsByKind,
+	type ConstraintKind,
 	IntersectionNode,
 	type IntersectionSchema,
 	type parseIntersection,
 	type validateIntersectionInput
-} from "./intersection.js"
+} from "./sets/intersection.js"
 import {
-	type MorphDeclaration,
 	MorphNode,
 	type MorphSchema,
 	type parseMorph,
 	type validateMorphInput
-} from "./morph.js"
-import { type Root } from "./root.js"
+} from "./sets/morph.js"
+import { type SetDeclarationsByKind } from "./sets/set.js"
 import {
 	type BranchSchema,
 	type ExpandedUnionSchema,
-	type UnionDeclaration,
 	type UnionInner,
 	UnionNode
-} from "./union.js"
+} from "./sets/union.js"
 
 const parseNode = (...schemas: [ExpandedUnionSchema] | BranchSchema[]) => {
 	const result = {} as mutable<UnionInner>
@@ -121,17 +117,9 @@ type reifyIntersectionResult<result> = result extends NodeKind
 	? Inner<result>
 	: result
 
-export type TypeDeclarationsByKind = {
-	union: UnionDeclaration
-	morph: MorphDeclaration
-	intersection: IntersectionDeclaration
-}
-
-export type TypeKind = keyof TypeDeclarationsByKind
-
 export type NodeDeclarationsByKind = extend<
 	ConstraintDeclarationsByKind,
-	TypeDeclarationsByKind
+	SetDeclarationsByKind
 >
 
 export type NodeKind = keyof NodeDeclarationsByKind

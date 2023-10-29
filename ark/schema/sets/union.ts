@@ -1,21 +1,20 @@
 import { type listable } from "@arktype/util"
-import type { declareNode, withAttributes } from "./base.js"
-import { type BasisKind } from "./constraints/basis.js"
-import { discriminate } from "./discriminate.js"
-import { Disjoint } from "./disjoint.js"
+import type { declareNode, withAttributes } from "../base.js"
+import { type BasisKind } from "../bases/basis.js"
+import { discriminate } from "../discriminate.js"
+import { Disjoint } from "../disjoint.js"
 import {
-	type IntersectionInner,
+	type inferNodeBranches,
+	type Node,
+	type validateBranchInput
+} from "../nodes.js"
+import { RootNode } from "../root.js"
+import {
 	type IntersectionNode,
 	type IntersectionSchema
 } from "./intersection.js"
 import { type MorphNode, type MorphSchema } from "./morph.js"
-import {
-	type inferNodeBranches,
-	type Node,
-	type TypeKind,
-	type validateBranchInput
-} from "./node.js"
-import { RootNode } from "./root.js"
+import { type SetKind } from "./set.js"
 
 export type BranchNode = IntersectionNode | MorphNode | Node<BasisKind>
 
@@ -39,10 +38,10 @@ export type UnionDeclaration = declareNode<
 		schema: UnionSchema
 		inner: UnionInner
 		intersections: {
-			union: TypeKind | Disjoint
+			union: SetKind | Disjoint
 			morph: "union" | "morph" | Disjoint
 			intersection: "union" | "intersection" | Disjoint
-			constraint: TypeKind | BasisKind | Disjoint
+			constraint: SetKind | BasisKind | Disjoint
 		}
 	},
 	typeof UnionNode

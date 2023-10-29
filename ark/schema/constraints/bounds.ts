@@ -1,16 +1,12 @@
 import { type extend, throwParseError } from "@arktype/util"
-import {
-	type MaxComparator,
-	type MinComparator
-} from "arktype/internal/parser/string/shift/operator/bounds.js"
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import type { BasisKind } from "../bases/basis.js"
+import type { DomainNode } from "../bases/domain.js"
+import type { ProtoNode } from "../bases/proto.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node } from "../node.js"
-import type { BasisKind } from "./basis.js"
-import { getBasisName } from "./constraint.js"
-import type { DomainNode } from "./domain.js"
-import type { ProtoNode } from "./proto.js"
+import { type Node } from "../nodes.js"
 import type { BaseRefinement, RefinementContext } from "./refinement.js"
+import { getBasisName } from "./shared.js"
 
 export type BoundInner = withAttributes<{
 	readonly boundKind: BoundKind
@@ -229,9 +225,11 @@ export const schemaToComparator = <
 >(
 	schema: schema
 ) =>
-	`${"min" in schema ? ">" : "<"}${
-		schema.exclusive ? "" : "="
-	}` as schema extends ExpandedMinSchema ? MinComparator : MaxComparator
+	`${
+		("min" in schema ? ">" : "<") as schema extends ExpandedMinSchema
+			? ">"
+			: "<"
+	}${schema.exclusive ? "" : "="}`
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 	`Bound kinds ${l} and ${r} are incompatible`

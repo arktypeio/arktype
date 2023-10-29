@@ -1,18 +1,18 @@
 import { type listable, type mutable, throwParseError } from "@arktype/util"
-import { type declareNode, type withAttributes } from "./base.js"
-import { builtins } from "./builtins.js"
-import { type BasisKind } from "./constraints/basis.js"
-import { Disjoint } from "./disjoint.js"
+import { type declareNode, type withAttributes } from "../base.js"
+import { type BasisKind } from "../bases/basis.js"
+import { builtins } from "../builtins.js"
+import { Disjoint } from "../disjoint.js"
+import type { Problem } from "../io/problems.js"
+import type { CheckResult, TraversalState } from "../io/traverse.js"
+import { type Node } from "../nodes.js"
+import { RootNode } from "../root.js"
+import { IntersectionNode } from "./intersection.js"
 import type {
 	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionInput
 } from "./intersection.js"
-import { IntersectionNode } from "./intersection.js"
-import type { Problem } from "./io/problems.js"
-import type { CheckResult, TraversalState } from "./io/traverse.js"
-import { type Node } from "./node.js"
-import { RootNode } from "./root.js"
 
 export type ValidatorNode = Node<"intersection" | BasisKind>
 
