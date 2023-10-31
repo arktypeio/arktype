@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.26-alpha
+
+### Patch Changes
+
+-   Fix an issue where optional paths could be used as discriminants
+
 ## 1.0.25-alpha
 
 ### Patch Changes
