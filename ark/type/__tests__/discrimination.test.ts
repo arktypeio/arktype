@@ -97,6 +97,16 @@ if (!($arkRoot.isRainForest === true)) {
 			}
 		])
 	})
+	test("doesn't discriminate optional key", () => {
+		const t = type({
+			direction: "'forward' | 'backward'",
+			"operator?": "'by'"
+		}).or({
+			duration: "'s' | 'min' | 'h'",
+			operator: "'to'"
+		})
+		attest(t.root.hasKind("union") && t.root.discriminant).equals(null)
+	})
 	test("default case", () => {
 		const t = getPlaces().type([
 			"ocean|rainForest",

@@ -1,7 +1,7 @@
 import { type listable } from "@arktype/util"
 import type { declareNode, withAttributes } from "../base.js"
 import { type BasisKind } from "../bases/basis.js"
-import { discriminate } from "../discriminate.js"
+import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
 import {
 	type inferNodeBranches,
@@ -93,7 +93,7 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 	static compile = this.defineCompiler((inner) => "true")
 
 	// discriminate is cached so we don't have to worry about this running multiple times
-	get discriminant() {
+	get discriminant(): Discriminant | null {
 		return discriminate(this.branches)
 	}
 

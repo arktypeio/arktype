@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { Disjoint, node } from "./ark/schema/main.js"
+import { node } from "./ark/schema/main.js"
 
-// 2, 3, 6, 9
 const l = node(
 	{
 		divisor: 2,
@@ -14,6 +13,8 @@ const l = node(
 )
 
 const n = node("number")
+
+n.kind //?
 
 console.log(n.allows.toString())
 

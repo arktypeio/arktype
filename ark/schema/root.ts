@@ -1,6 +1,5 @@
 import { BaseNode, type intersectionOf, type NodeDeclaration } from "./base.js"
 import { type BasisKind } from "./bases/basis.js"
-import { builtins } from "./builtins.js"
 import { Disjoint } from "./disjoint.js"
 import { type Node, type Schema } from "./nodes.js"
 import type { ConstraintKind } from "./sets/intersection.js"
