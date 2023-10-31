@@ -145,9 +145,15 @@ const propKeysIntersection = composeKeyedIntersection<PropsRule>(
             return l
         }
         context.path.push(propKey)
+        const previousLOptional = context.lOptional
+        const previousROptional = context.rOptional
+        context.lOptional ||= isOptional(l)
+        context.rOptional ||= isOptional(r)
         const result = nodeIntersection(propToNode(l), propToNode(r), context)
+        const resultIsOptional = context.lOptional && context.rOptional
+        context.rOptional = previousROptional
+        context.lOptional = previousLOptional
         context.path.pop()
-        const resultIsOptional = isOptional(l) && isOptional(r)
         if (isDisjoint(result) && resultIsOptional) {
             // If an optional key has an empty intersection, the type can
             // still be satisfied as long as the key is not included. Set
