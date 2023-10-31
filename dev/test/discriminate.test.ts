@@ -77,6 +77,79 @@ describe("discriminate", () => {
             ]
         ])
     })
+    it("doesn't discriminate optional key", () => {
+        const a = type({
+            direction: "'forward' | 'backward'",
+            "operator?": "'by'"
+        })
+
+        const b = type({
+            duration: "'s' | 'min' | 'h'",
+            operator: "'to'"
+        })
+
+        const c = type([a, "|", b])
+        attest(c.flat).snap([
+            ["domain", "object"],
+            [
+                "branches",
+                [
+                    [
+                        [
+                            "requiredProp",
+                            [
+                                "direction",
+                                [
+                                    ["domain", "string"],
+                                    [
+                                        "switch",
+                                        {
+                                            path: [],
+                                            kind: "value",
+                                            cases: {
+                                                "'forward'": [],
+                                                "'backward'": []
+                                            }
+                                        }
+                                    ]
+                                ]
+                            ]
+                        ],
+                        ["optionalProp", ["operator", [["value", "by"]]]]
+                    ],
+                    [
+                        [
+                            "requiredProp",
+                            [
+                                "duration",
+                                [
+                                    ["domain", "string"],
+                                    [
+                                        "switch",
+                                        {
+                                            path: [],
+                                            kind: "value",
+                                            cases: {
+                                                "'s'": [],
+                                                "'min'": [],
+                                                "'h'": []
+                                            }
+                                        }
+                                    ]
+                                ]
+                            ]
+                        ],
+                        ["requiredProp", ["operator", [["value", "to"]]]]
+                    ]
+                ]
+            ]
+        ])
+        attest(
+            c.allows({
+                direction: "forward"
+            })
+        ).equals(true)
+    })
 
     it("undiscriminatable", () => {
         const t = getPlaces().type([
