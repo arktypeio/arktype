@@ -112,6 +112,8 @@ export type DisjointKind = keyof DisjointKinds
 
 export class IntersectionState {
     path = new Path()
+    lOptional = false
+    rOptional = false
     domain: Domain | undefined
     #disjoints: DisjointsByPath = {}
 
@@ -126,7 +128,13 @@ export class IntersectionState {
         l: DisjointKinds[kind]["l"],
         r: DisjointKinds[kind]["r"]
     ): Empty {
-        this.#disjoints[`${this.path}`] = { kind, l, r }
+        this.#disjoints[`${this.path}`] = {
+            kind,
+            l,
+            r,
+            lOptional: this.lOptional,
+            rOptional: this.rOptional
+        }
         return empty
     }
 }
@@ -135,6 +143,8 @@ export type DisjointsByPath = Record<string, DisjointContext>
 
 export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
     kind: kind
+    lOptional: boolean
+    rOptional: boolean
 } & DisjointKinds[kind]
 
 const empty = Symbol("empty")

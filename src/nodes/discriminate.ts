@@ -244,8 +244,12 @@ const calculateDiscriminants = (
                     // https://github.com/arktypeio/arktype/issues/593
                     continue
                 }
-                const { l, r, kind } = intersectionState.disjoints[path]
+                const { l, r, kind, lOptional, rOptional } =
+                    intersectionState.disjoints[path]
                 if (!isKeyOf(kind, discriminantKinds)) {
+                    continue
+                }
+                if (lOptional || rOptional) {
                     continue
                 }
                 const lSerialized = serializeDefinitionIfAllowed(kind, l)
