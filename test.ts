@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { node } from "./ark/schema/main.js"
+import { Disjoint, node } from "./ark/schema/main.js"
 
 // 2, 3, 6, 9
 const l = node(

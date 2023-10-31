@@ -6,7 +6,7 @@ import type {
 	JsonData,
 	satisfy
 } from "@arktype/util"
-import { CompiledFunction, DynamicBase, isArray, isKeyOf } from "@arktype/util"
+import { CompiledFunction, DynamicBase, isArray } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
 import { type RefinementContext } from "./constraints/refinement.js"
 import { Disjoint } from "./disjoint.js"
@@ -22,7 +22,6 @@ import {
 } from "./nodes.js"
 import { type ConstraintKind } from "./sets/intersection.js"
 import { type SetKind } from "./sets/set.js"
-import { type UnionInner } from "./sets/union.js"
 import { inferred } from "./utils.js"
 
 export type BaseAttributes = {

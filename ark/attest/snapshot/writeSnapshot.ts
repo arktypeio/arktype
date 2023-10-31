@@ -1,13 +1,13 @@
 import { existsSync, readdirSync, rmSync } from "node:fs"
 import { basename, join } from "node:path"
 import type { Node, ts } from "ts-morph"
-import { getConfig } from "../config.js"
 import { readJson, writeJson } from "../../fs/fs.js"
 import { shell } from "../../fs/shell.js"
-import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
-import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
+import { getConfig } from "../config.js"
 import { getTsMorphProject } from "../tsserver/cacheAssertions.js"
 import { getFileKey } from "../utils.js"
+import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
+import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
 	name: string
