@@ -1,6 +1,5 @@
 import type {
 	Dict,
-	entryOf,
 	extend,
 	Fn,
 	instanceOf,
@@ -43,7 +42,7 @@ export type BaseAttributes = {
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
 
-export type NodeTypes<kind extends NodeKind> = {
+export type DeclaredTypes<kind extends NodeKind> = {
 	schema: unknown
 	inner: BaseAttributes
 	intersections: BaseIntersectionMap[kind]
@@ -51,7 +50,7 @@ export type NodeTypes<kind extends NodeKind> = {
 
 export type declareNode<
 	kind extends NodeKind,
-	types extends NodeTypes<kind>,
+	types extends DeclaredTypes<kind>,
 	implementation extends StaticBaseNode<
 		declareNode<kind, types, implementation>
 	>
@@ -65,7 +64,7 @@ export type declareNode<
 
 export type NodeDeclaration<
 	implementation extends StaticBaseNode<any> = StaticBaseNode<any>
-> = declareNode<NodeKind, NodeTypes<any>, implementation>
+> = declareNode<NodeKind, DeclaredTypes<any>, implementation>
 
 export const baseAttributeKeys = {
 	alias: 1,
@@ -175,6 +174,9 @@ type extensionKeyOf<nodeClass> = Exclude<
 
 type childrenOf<nodeClass> = nodeClass extends { children: Fn<never, infer r> }
 	? r
+	: StaticBaseNode<any> extends nodeClass
+	? // allow children to be accessed from BaseNode
+	  readonly UnknownNode[]
 	: readonly []
 
 export type UnknownNode = BaseNode<any>
@@ -190,8 +192,8 @@ export abstract class BaseNode<
 
 	readonly json: Json
 	readonly children: childrenOf<declaration["class"]>
-	readonly references: readonly UnknownNode[]
-	protected readonly contributesReferences: readonly UnknownNode[]
+	readonly references: readonly Node[]
+	protected readonly contributesReferences: readonly Node[]
 	readonly alias: string
 	readonly description: string
 	readonly ids: NodeIds = new NodeIds(this)
@@ -208,10 +210,10 @@ export abstract class BaseNode<
 		this.json = this.nodeClass.serialize(inner)
 		this.condition = this.nodeClass.compile(inner)
 		this.children = this.nodeClass.children?.(inner) ?? ([] as any)
-		this.references = (this.children as UnknownNode[]).flatMap(
+		this.references = this.children.flatMap(
 			(child) => child.contributesReferences
 		)
-		this.contributesReferences = [this, ...this.references]
+		this.contributesReferences = [this as never, ...this.references]
 		this.allows = new CompiledFunction(
 			BaseNode.argName,
 			`return ${this.condition}`

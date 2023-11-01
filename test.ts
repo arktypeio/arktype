@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { builtins, DivisorNode, node } from "./ark/schema/main.js"
+import { node } from "./ark/schema/main.js"
 
 const l = node(
 	{

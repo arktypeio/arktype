@@ -2,10 +2,10 @@ import { type extend, type listable, throwParseError } from "@arktype/util"
 import {
 	BaseNode,
 	constraintKinds,
+	type DeclaredTypes,
 	type declareNode,
 	type IrreducibleConstraintKind,
 	type NodeDeclaration,
-	type NodeTypes,
 	type StaticBaseNode
 } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
@@ -15,7 +15,7 @@ import {
 	type NodeClass,
 	type Schema
 } from "../nodes.js"
-import { type Root, type RootNode } from "../root.js"
+import { type Root } from "../root.js"
 import { type MaxDeclaration, type MinDeclaration } from "./bounds.js"
 import { type DivisorDeclaration } from "./divisor.js"
 import { type PatternDeclaration } from "./pattern.js"
@@ -70,7 +70,7 @@ export interface StaticConstraintNode<d extends NodeDeclaration>
 
 export type declareConstraint<
 	kind extends ConstraintKind,
-	types extends NodeTypes<kind>,
+	types extends DeclaredTypes<kind>,
 	implementation extends StaticConstraintNode<
 		declareConstraint<kind, types, implementation>
 	>
