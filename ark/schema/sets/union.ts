@@ -17,13 +17,13 @@ export type BranchNode = IntersectionNode | MorphNode | Node<BasisKind>
 export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
 > = withAttributes<{
-	readonly branches: branches
+	readonly union: branches
 }>
 
 export type UnionSchema = readonly BranchSchema[] | ExpandedUnionSchema
 
 export type UnionInner = withAttributes<{
-	readonly branches: readonly BranchNode[]
+	readonly union: readonly BranchNode[]
 }>
 
 export type BranchSchema = IntersectionSchema | MorphSchema
@@ -55,11 +55,11 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 	}
 
 	static childrenOf(inner: UnionInner) {
-		return inner.branches
+		return inner.union
 	}
 
 	static readonly keyKinds = this.declareKeys({
-		branches: "in"
+		union: "in"
 	})
 
 	static parse(schema: UnionSchema) {
@@ -68,19 +68,19 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 		if (isArray(schema)) {
 			schemaBranches = schema
 		} else {
-			const { branches, ...attributes } = schema
+			const { union: branches, ...attributes } = schema
 			Object.assign(result, attributes)
 			schemaBranches = branches
 		}
-		result.branches = reduceBranches(
+		result.union = reduceBranches(
 			schemaBranches.map((branch) =>
 				typeof branch === "object" && "morph" in branch
 					? this.classesByKind.morph.parse(branch)
 					: this.classesByKind.intersection.parse(branch)
 			)
 		)
-		if (result.branches.length === 1) {
-			return result.branches[0]
+		if (result.union.length === 1) {
+			return result.union[0]
 		}
 		return new UnionNode(result)
 	}
@@ -89,18 +89,18 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 		l: UnionNode,
 		r: BranchNode
 	): Disjoint | UnionInner => {
-		const resultBranches = intersectBranches(l.branches, [r])
-		if (resultBranches instanceof Disjoint) {
-			return resultBranches
+		const union = intersectBranches(l.union, [r])
+		if (union instanceof Disjoint) {
+			return union
 		}
-		return { branches: resultBranches }
+		return { union }
 	}
 
 	static compile = this.defineCompiler((inner) => "true")
 
 	// discriminate is cached so we don't have to worry about this running multiple times
 	get discriminant(): Discriminant | null {
-		return discriminate(this.branches)
+		return discriminate(this.union)
 	}
 
 	// 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
@@ -184,42 +184,42 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 	static readonly intersections = this.defineIntersections({
 		union: (l, r) => {
 			if (
-				(l.branches.length === 0 || r.branches.length === 0) &&
-				l.branches.length !== r.branches.length
+				(l.union.length === 0 || r.union.length === 0) &&
+				l.union.length !== r.union.length
 			) {
 				// if exactly one operand is never, we can use it to discriminate based on presence
 				return Disjoint.from(
 					"presence",
-					l.branches.length !== 0,
-					r.branches.length !== 0
+					l.union.length !== 0,
+					r.union.length !== 0
 				)
 			}
-			const resultBranches = intersectBranches(l.branches, r.branches)
+			const resultBranches = intersectBranches(l.union, r.union)
 			if (resultBranches instanceof Disjoint) {
 				return resultBranches
 			}
-			return { branches: resultBranches }
+			return { union: resultBranches }
 		},
 		morph: this.intersectBranch,
 		intersection: this.intersectBranch,
 		rule: (l, r) => {
 			const branches: BranchNode[] = []
-			for (const branch of l.branches) {
+			for (const branch of l.union) {
 				const branchResult = branch.intersect(r)
 				if (!(branchResult instanceof Disjoint)) {
 					branches.push(branchResult)
 				}
 			}
 			return branches.length === 0
-				? Disjoint.from("union", l.branches, [r])
+				? Disjoint.from("union", l.union, [r])
 				: {
-						branches
+						union: branches
 				  }
 		}
 	})
 
 	static writeDefaultDescription(inner: UnionInner) {
-		return inner.branches.length === 0 ? "never" : inner.branches.join(" or ")
+		return inner.union.length === 0 ? "never" : inner.union.join(" or ")
 	}
 }
 

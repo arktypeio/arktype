@@ -7,9 +7,8 @@ import type {
 } from "@arktype/util"
 import {
 	domainOf,
-	entriesOf,
 	includes,
-	listFrom,
+	isArray,
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
@@ -20,29 +19,31 @@ import {
 	type declareNode,
 	type withAttributes
 } from "../base.js"
-import {
-	type BasisKind,
-	maybeParseCollapsedBasis,
-	parseBasis
-} from "../bases/basis.js"
+import { type BasisKind, maybeParseBasis, parseBasis } from "../bases/basis.js"
 import type { NonEnumerableDomain } from "../bases/domain.js"
-import type { DiscriminableUnitSchema } from "../bases/unit.js"
-import type {
-	ConstraintContext,
-	constraintInputsByKind,
-	ConstraintIntersectionInput,
-	ConstraintKind,
-	discriminableConstraintSchema
+import {
+	type ConstraintContext,
+	type constraintInputsByKind,
+	type ConstraintKind,
+	type discriminableConstraintSchema,
+	parseConstraint
 } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node, type RuleKind, type Schema } from "../nodes.js"
+import {
+	type DiscriminableSchema,
+	type Node,
+	type RuleKind,
+	type Schema
+} from "../nodes.js"
 import { RootNode } from "../root.js"
-import { type MorphSchema } from "./morph.js"
 
 export type IntersectionInner = withAttributes<{
-	basis: Node<BasisKind> | undefined
-	constraints: readonly Node<ConstraintKind>[]
+	intersection: CollapsedIntersectionInner
 }>
+
+export type CollapsedIntersectionInner =
+	| readonly [Node<BasisKind>, ...Node<ConstraintKind>[]]
+	| readonly Node<ConstraintKind>[]
 
 export type IntersectionDeclaration = declareNode<
 	"intersection",
@@ -51,7 +52,7 @@ export type IntersectionDeclaration = declareNode<
 		inner: IntersectionInner
 		intersections: {
 			intersection: "intersection" | Disjoint
-			rule: "intersection" | Disjoint
+			rule: "unit" | "intersection" | Disjoint
 		}
 	},
 	typeof IntersectionNode
@@ -62,6 +63,12 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	t
 > {
 	static readonly kind = "intersection"
+	readonly basis = this.intersection[0]?.isBasis()
+		? this.intersection[0]
+		: undefined
+	readonly constraints: readonly Node<ConstraintKind>[] = this.basis
+		? this.intersection.slice(1)
+		: (this.intersection as any)
 
 	static {
 		this.classesByKind.intersection = this
@@ -75,8 +82,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	static compile = this.defineCompiler((inner) => "true")
 
 	static readonly keyKinds = this.declareKeys({
-		basis: "in",
-		constraints: "in"
+		intersection: "in"
 	})
 
 	static childrenOf(inner: IntersectionInner): readonly Node<RuleKind>[] {
@@ -92,15 +98,15 @@ export class IntersectionNode<t = unknown> extends RootNode<
 				if (result instanceof Disjoint) {
 					break
 				}
-				result = intersectRule(result.basis, result.constraints, constraint)
+				result = intersectRule(result.intersection, constraint)
 			}
 			return result
 		},
-		rule: (l, r) => intersectRule(l.basis, l.constraints, r)
+		rule: (l, r) => intersectRule(l.intersection, r)
 	})
 
 	static parse(schema: IntersectionSchema) {
-		const collapsedResult = maybeParseCollapsedBasis(schema)
+		const collapsedResult = maybeParseBasis(schema)
 		if (collapsedResult) {
 			return collapsedResult
 		}
@@ -113,126 +119,99 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	}
 
 	private static parseIntersectionObjectSchema({
-		basis: basisSchema,
 		alias,
 		description,
-		...constraintSchemas
-	}: ExpandedIntersectionSchema) {
-		const basis = basisSchema ? parseBasis(basisSchema) : undefined
-		if (basis && Object.keys(constraintSchemas).length === 0) {
-			return basis
-		}
-		const constraintContext: ConstraintContext = { basis }
-		// TODO: reduction here?
-		const intersectionInner: mutable<IntersectionInner> = {
-			basis,
-			constraints:
-				"constraints" in constraintSchemas
-					? parseListedConstraints(
-							constraintSchemas.constraints,
-							constraintContext
-					  )
-					: parseMappedConstraints(
-							constraintSchemas as constraintInputsByKind<any>,
-							constraintContext
-					  )
-		}
+		...rules
+	}: Exclude<IntersectionSchema, Schema<BasisKind>>) {
+		const intersectionInner = {} as mutable<IntersectionInner>
 		if (alias) {
 			intersectionInner.alias = alias
 		}
 		if (description) {
 			intersectionInner.description = description
 		}
+		intersectionInner.intersection =
+			"intersection" in rules
+				? parseListedRules(rules.intersection)
+				: parseMappedRules(rules)
 		return new IntersectionNode(intersectionInner)
 	}
 
 	static writeDefaultDescription(inner: IntersectionInner) {
-		return `${inner.basis ?? "a value"}${
-			inner.constraints.length ? inner.constraints.join(" and ") : ""
-		}`
+		return inner.intersection.length === 0
+			? "a value"
+			: inner.intersection.join(" and ")
 	}
 }
 
-const parseMappedConstraints = (
-	constraints: constraintInputsByKind<any>,
-	ctx: ConstraintContext
-): Node<ConstraintKind>[] =>
-	entriesOf(constraints).flatMap(([k, schemas]) =>
-		includes(constraintKinds, k)
-			? listFrom(schemas).map((schema) =>
-					BaseNode.classesByKind[k].parse(schema as never, ctx)
-			  )
-			: throwParseError(`'${k}' is not a valid constraint kind`)
-	)
+const parseListedRules = (
+	schemas: CollapsedIntersectionSchema
+): CollapsedIntersectionInner => {
+	const basis = schemas[0] ? maybeParseBasis(schemas[0]) : undefined
+	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
+	const constraintContext: ConstraintContext = { basis }
+	for (let i = basis ? 1 : 0; i < schemas.length; i++) {
+		rules.push(parseConstraint(schemas[i] as never, constraintContext))
+	}
+	return rules
+}
 
-const parseListedConstraints = (
-	constraints: readonly discriminableConstraintSchema<any>[],
-	ctx: ConstraintContext
-): Node<ConstraintKind>[] =>
-	constraints.map((schema) => {
-		const kind = constraintKinds.find((kind) => kind in schema)
-		if (!kind) {
-			return throwParseError(`'${kind}' is not a valid constraint kind`)
+const parseMappedRules = ({
+	basis: basisSchema,
+	...constraintSchemasByKind
+}: MappedIntersectionSchema<any> & {
+	// at this point each key should be "basis" or a constraint kind
+	[k in keyof BaseAttributes]?: never
+}): CollapsedIntersectionInner => {
+	const basis = basisSchema ? parseBasis(basisSchema) : undefined
+	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
+	const constraintContext: ConstraintContext = { basis }
+	for (const k in constraintSchemasByKind) {
+		if (!includes(constraintKinds, k)) {
+			return throwParseError(`'${k}' is not a valid constraint kind`)
 		}
-		return BaseNode.classesByKind[kind].parse(schema as never, ctx)
-	})
-
-const intersectRule = (
-	basis: Node<BasisKind> | undefined,
-	constraints: readonly Node<ConstraintKind>[],
-	rule: Node<RuleKind>
-): IntersectionInner | Disjoint => {
-	if (rule.isBasis()) {
-		const result = basis?.intersect(rule) ?? rule
-		if (result instanceof Disjoint) {
-			return result
-		}
-		if (rule.hasKind("unit")) {
-			const disjoints: Disjoint[] = []
-			for (const constraint of constraints) {
-				const subresult = rule.intersect(constraint)
-				if (subresult instanceof Disjoint) {
-					disjoints.push(subresult)
-				}
-			}
-			// TODO: add rest to interesctionState
-			if (disjoints.length) {
-				return disjoints[0]
-			}
-			// TODO: return unit immediately here?
-			return {
-				basis: rule,
-				constraints: []
-			}
-		}
-		return {
-			basis: result,
-			constraints
+		const schemas = constraintSchemasByKind[k]
+		if (isArray(schemas)) {
+			rules.push(
+				...schemas.map((schema) =>
+					BaseNode.classesByKind[k].parse(schema as never, constraintContext)
+				)
+			)
+		} else {
+			rules.push(
+				BaseNode.classesByKind[k].parse(schemas as never, constraintContext)
+			)
 		}
 	}
-	const intersectedConstraints: Node<ConstraintKind>[] = []
+	return rules
+}
+
+const intersectRule = (
+	base: readonly Node<RuleKind>[],
+	rule: Node<RuleKind>
+): IntersectionInner | Disjoint => {
+	const result: Node<RuleKind>[] = []
 	let includesConstraint = false
-	for (let i = 0; i < constraints.length; i++) {
-		const elementResult = rule.intersect(constraints[i])
+	for (let i = 0; i < base.length; i++) {
+		const elementResult = rule.intersect(base[i])
 		if (elementResult === null) {
-			intersectedConstraints.push(constraints[i])
+			result.push(base[i])
 		} else if (elementResult instanceof Disjoint) {
 			return elementResult
 		} else if (!includesConstraint) {
-			intersectedConstraints.push(elementResult)
+			result.push(elementResult)
 			includesConstraint = true
-		} else if (!constraints.includes(elementResult)) {
+		} else if (!base.includes(elementResult)) {
 			return throwInternalError(
 				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
 			)
 		}
 	}
 	if (!includesConstraint) {
-		intersectedConstraints.push(rule)
+		result.push(rule)
 	}
 	return {
-		basis,
-		constraints
+		intersection: result as never
 	}
 }
 
@@ -250,60 +229,41 @@ const assertValidConstraints = (
 	}
 }
 
-type IntersectionBasisInput<
+export type MappedIntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > = {
-	basis: basis
-}
-
-export type MappedBasisedBranchInput<
-	basis extends Schema<BasisKind> = Schema<BasisKind>
-> = IntersectionBasisInput<basis> &
-	constraintInputsByKind<parseBasis<basis>> &
+	basis?: basis
+} & constraintInputsByKind<parseBasis<basis>> &
 	BaseAttributes
 
-export type ListedBasisedBranchInput<
+export type ListedIntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
-> = IntersectionBasisInput<basis> & {
-	constraints: readonly discriminableConstraintSchema<parseBasis<basis>>[]
+> = {
+	intersection: CollapsedIntersectionSchema<basis>
 } & BaseAttributes
 
-export type UnknownBranchInput = {
-	basis?: undefined
-	predicate?: ConstraintIntersectionInput<"predicate">
-} & BaseAttributes
+export type CollapsedIntersectionSchema<
+	basis extends Schema<BasisKind> = Schema<BasisKind>
+> =
+	| readonly [basis, ...discriminableConstraintSchema<parseBasis<basis>>[]]
+	| readonly discriminableConstraintSchema<unknown>[]
 
-type DiscriminableBasisInputValue =
-	| AbstractableConstructor
-	| NonEnumerableDomain
-	| DiscriminableUnitSchema
+// export type UnknownIntersectionSchema = {
+// 	basis?: undefined
+// 	predicate?: ConstraintIntersectionInput<"predicate">
+// } & BaseAttributes
 
 export type IntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
-> =
-	| conform<basis, DiscriminableBasisInputValue>
-	| ExpandedIntersectionSchema<basis>
+> = basis | MappedIntersectionSchema<basis> | ListedIntersectionSchema<basis>
 
-export type ExpandedIntersectionSchema<
-	basis extends Schema<BasisKind> = Schema<BasisKind>
-> =
-	| UnknownBranchInput
-	| MappedBasisedBranchInput<basis>
-	| ListedBasisedBranchInput<basis>
-
-export type parseIntersection<input> = input extends
-	| AbstractableConstructor
-	| NonEnumerableDomain
-	| DiscriminableUnitSchema
+export type parseIntersection<input> = input extends Schema<BasisKind>
 	? parseBasis<input>
-	: input extends IntersectionBasisInput<infer basis>
+	: input extends IntersectionSchema<infer basis>
 	? parseBasis<basis>
 	: unknown
 
-type exactBasisMessageOnError<
-	branch extends MappedBasisedBranchInput,
-	expected
-> = {
+type exactBasisMessageOnError<branch, expected> = {
 	[k in keyof branch]: k extends keyof expected
 		? conform<branch[k], expected[k]>
 		: ErrorMessage<`'${k & string}' is not allowed by ${branch[keyof branch &
@@ -312,19 +272,17 @@ type exactBasisMessageOnError<
 				: `this schema's basis`}`>
 }
 
-export type validateIntersectionInput<input> = input extends
+export type validateIntersectionSchema<schema> = schema extends
 	| NonEnumerableDomain
 	| AbstractableConstructor
-	? input
-	: input extends DiscriminableUnitSchema
-	? exactMessageOnError<input, DiscriminableUnitSchema>
-	: input extends IntersectionBasisInput<infer basis>
-	? input extends ListedBasisedBranchInput
-		? exactMessageOnError<input, ListedBasisedBranchInput<basis>>
-		: exactBasisMessageOnError<input, MappedBasisedBranchInput<basis>>
-	: input extends UnknownBranchInput
-	? exactMessageOnError<input, UnknownBranchInput>
-	: DiscriminableUnitSchema | IntersectionSchema | MorphSchema
+	? schema
+	: schema extends DiscriminableSchema<BasisKind>
+	? exactMessageOnError<schema, DiscriminableSchema<keyof schema & BasisKind>>
+	: schema extends IntersectionSchema<infer basis>
+	? schema extends ListedIntersectionSchema
+		? exactMessageOnError<schema, ListedIntersectionSchema<basis>>
+		: exactBasisMessageOnError<schema, MappedIntersectionSchema<basis>>
+	: IntersectionSchema
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

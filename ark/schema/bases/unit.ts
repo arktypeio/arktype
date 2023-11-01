@@ -1,4 +1,4 @@
-import { domainOf, stringify, throwParseError } from "@arktype/util"
+import { domainOf, stringify } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
@@ -9,13 +9,7 @@ export type UnitInner<rule = unknown> = withAttributes<{
 	readonly unit: rule
 }>
 
-export type DiscriminableUnitSchema<rule = unknown> = withAttributes<{
-	readonly is: rule
-}>
-
-export type UnitSchema<rule = unknown> =
-	| UnitInner<rule>
-	| DiscriminableUnitSchema<rule>
+export type UnitSchema<rule = unknown> = UnitInner<rule>
 
 export type UnitDeclaration = declareNode<
 	"unit",
@@ -40,7 +34,6 @@ export class UnitNode
 		this.classesByKind.unit = this
 	}
 
-	readonly is = this.unit
 	readonly domain = domainOf(this.unit)
 
 	// TODO: add reference to for objects
@@ -57,19 +50,11 @@ export class UnitNode
 	static readonly intersections = this.defineIntersections({
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		rule: (l, r) =>
-			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
+			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	})
 
 	static parse(schema: UnitSchema) {
-		return new UnitNode(
-			"is" in schema
-				? { ...schema, unit: schema.is }
-				: "unit" in schema
-				? schema
-				: throwParseError(
-						`Unit schema requires either an 'is' key or a 'unit' key`
-				  )
-		)
+		return new UnitNode(schema)
 	}
 
 	static writeDefaultDescription(inner: UnitInner) {

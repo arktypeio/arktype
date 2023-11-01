@@ -2,6 +2,7 @@ import {
 	domainOf,
 	type inferDomain,
 	type instanceOf,
+	type isAny,
 	stringify,
 	throwParseError
 } from "@arktype/util"
@@ -32,7 +33,10 @@ export type BaseBasis = {
 }
 
 export type parseBasis<schema extends Schema<BasisKind>> =
-	schema extends DomainSchema<infer domain>
+	//allow any to be used to access all constraints
+	isAny<schema> extends true
+		? any
+		: schema extends DomainSchema<infer domain>
 		? inferDomain<domain>
 		: schema extends ProtoSchema<infer proto>
 		? instanceOf<proto>
@@ -40,36 +44,26 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 		? unit
 		: never
 
-export const maybeParseCollapsedBasis = (schema: Schema<"intersection">) => {
+export const maybeParseBasis = (schema: Schema<"intersection">) => {
 	switch (typeof schema) {
 		case "string":
 			return DomainNode.parse(schema)
 		case "function":
 			return ProtoNode.parse(schema)
 		case "object":
-			return "is" in schema ? UnitNode.parse(schema) : undefined
+			return "unit" in schema
+				? UnitNode.parse(schema)
+				: "proto" in schema
+				? ProtoNode.parse(schema)
+				: "domain" in schema
+				? DomainNode.parse(schema)
+				: undefined
 	}
 }
 
-export const parseBasis = (schema: Schema<BasisKind>) => {
-	const collapsedResult = maybeParseCollapsedBasis(schema)
-	if (collapsedResult) {
-		return collapsedResult
-	}
-	if (typeof schema !== "object") {
-		return throwParseError(`${domainOf(schema)} is not a valid basis schema`)
-	}
-	if ("unit" in schema) {
-		return UnitNode.parse(schema)
-	}
-	if ("proto" in schema) {
-		return ProtoNode.parse(schema)
-	}
-	if ("domain" in schema) {
-		return DomainNode.parse(schema)
-	}
-	return throwParseError(
+export const parseBasis = (schema: Schema<BasisKind>) =>
+	maybeParseBasis(schema) ??
+	throwParseError(
 		`Basis schema must be a non-enumerable domain, a constructor, or have one of the following keys:
 is", "unit", "proto", "domain"`
 	)
-}

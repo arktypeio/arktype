@@ -11,7 +11,7 @@ import { IntersectionNode } from "./intersection.js"
 import type {
 	IntersectionSchema,
 	parseIntersection,
-	validateIntersectionInput
+	validateIntersectionSchema
 } from "./intersection.js"
 
 export type ValidatorNode = Node<"intersection" | BasisKind>
@@ -159,9 +159,9 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		: t
 	: Exclude<out, Problem>
 
-export type validateMorphInput<input> = {
+export type validateMorphSchema<input> = {
 	[k in keyof input]: k extends "in" | "out"
-		? validateIntersectionInput<input[k]>
+		? validateIntersectionSchema<input[k]>
 		: k extends keyof MorphSchema
 		? MorphSchema[k]
 		: `'${k & string}' is not a valid morph schema key`

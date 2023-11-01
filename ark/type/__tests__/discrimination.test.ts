@@ -86,7 +86,7 @@ if (!($arkRoot.isRainForest === true)) {
 }`)
 	})
 
-	test("undiscriminatable", () => {
+	test("undiscriminable", () => {
 		const t = getPlaces().type([
 			"ocean",
 			"|",
@@ -114,7 +114,7 @@ if (!($arkRoot.isRainForest === true)) {
 			{ temperature: "'hot'" }
 		])
 	})
-	test("discriminatable default", () => {
+	test("discriminable default", () => {
 		const t = getPlaces().type([
 			{ temperature: "'cold'" },
 			"|",

@@ -270,7 +270,7 @@ export class OptionalNode extends BaseNode<OptionalDeclaration> {
 // 	const named = { ...l.named, ...r.named }
 // 	const disjointsByPath: DisjointsSources = {}
 // 	for (const k in named) {
-// 		// TODO: not all discriminatable- if one optional and one required, even if disjoint
+// 		// TODO: not all discriminable- if one optional and one required, even if disjoint
 // 		let intersectedValue: NamedPropRule | Disjoint = named[k]
 // 		if (k in l.named) {
 // 			if (k in r.named) {

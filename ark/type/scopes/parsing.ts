@@ -21,7 +21,7 @@ const integer = node({
 		basis: "string",
 		pattern: wellFormedIntegerMatcher
 	},
-	morph: (s: string, problems) => {
+	morph: (s: string) => {
 		// if (!isWellFormedInteger(s)) {
 		// 	return problems.mustBe("a well-formed integer string")
 		// }
@@ -40,12 +40,13 @@ const url = node({
 		basis: "string",
 		description: "a valid URL"
 	},
-	morph: (s: string, state) => {
-		try {
-			return new URL(s)
-		} catch {
-			return state.mustBe("a valid URL", s, state.basePath)
-		}
+	morph: (s: string) => {
+		return new URL(s)
+		// try {
+		// 	return new URL(s)
+		// } catch {
+		// 	return state.mustBe("a valid URL", s, state.basePath)
+		// }
 	}
 })
 

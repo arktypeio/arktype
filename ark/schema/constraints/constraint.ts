@@ -1,13 +1,20 @@
-import type { extend, listable } from "@arktype/util"
-import type {
-	declareNode,
-	IrreducibleConstraintKind,
-	NodeDeclaration,
-	NodeTypes,
-	StaticBaseNode
+import { type extend, type listable, throwParseError } from "@arktype/util"
+import {
+	BaseNode,
+	constraintKinds,
+	type declareNode,
+	type IrreducibleConstraintKind,
+	type NodeDeclaration,
+	type NodeTypes,
+	type StaticBaseNode
 } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import { type Node, type NodeClass, type Schema } from "../nodes.js"
+import {
+	type DiscriminableSchema,
+	type Node,
+	type NodeClass,
+	type Schema
+} from "../nodes.js"
 import { type Root, type RootNode } from "../root.js"
 import { type MaxDeclaration, type MinDeclaration } from "./bounds.js"
 import { type DivisorDeclaration } from "./divisor.js"
@@ -48,9 +55,9 @@ export type constraintInputsByKind<basis> = {
 	[k in constraintKindOf<basis>]?: ConstraintIntersectionInput<k>
 }
 
-export type discriminableConstraintSchema<basis> = {
-	[k in constraintKindOf<basis>]: Extract<Schema<k>, { [_ in k]: unknown }>
-}[constraintKindOf<basis>]
+export type discriminableConstraintSchema<basis> = DiscriminableSchema<
+	constraintKindOf<basis>
+>
 
 export type ConstraintContext = {
 	basis: Node<BasisKind> | undefined
@@ -70,3 +77,18 @@ export type declareConstraint<
 		declareConstraint<kind, types, implementation>
 	>
 > = declareNode<kind, types, implementation>
+
+export const parseConstraint = (
+	schema: DiscriminableSchema<ConstraintKind>,
+	ctx: ConstraintContext
+) => {
+	const kind = constraintKinds.find((kind) => kind in schema)
+	if (!kind) {
+		return throwParseError(
+			`Constraint schema must contain one of the following keys: ${constraintKinds.join(
+				", "
+			)}`
+		)
+	}
+	return BaseNode.classesByKind[kind].parse(schema as never, ctx)
+}

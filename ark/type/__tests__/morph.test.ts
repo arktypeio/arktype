@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import type { Out, Problem } from "@arktype/schema"
-import { writeUndiscriminatableMorphUnionMessage } from "@arktype/schema"
+import { writeUndiscriminableMorphUnionMessage } from "@arktype/schema"
 import type { Ark, Type } from "arktype"
 import { arktypes, scope, type } from "arktype"
 import { suite, test } from "mocha"
@@ -260,7 +260,7 @@ suite("morph", () => {
 		//     }
 		// })
 	})
-	test("discriminatable tuple union", () => {
+	test("discriminable tuple union", () => {
 		const $ = scope({
 			a: () => $.type(["string"]).morph((s) => [...s, "!"]),
 			b: ["boolean"],
@@ -285,7 +285,7 @@ suite("morph", () => {
 				b: "string",
 				c: "a|b"
 			}).export()
-		}).throws(writeUndiscriminatableMorphUnionMessage("/"))
+		}).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
 	test("deep double intersection", () => {
 		attest(() => {
@@ -303,7 +303,7 @@ suite("morph", () => {
 				b: { a: "'foo'" },
 				c: "a|b"
 			}).export()
-		}).throws(writeUndiscriminatableMorphUnionMessage("/"))
+		}).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
 	test("deep undiscriminated reference", () => {
 		const $ = scope({
@@ -326,7 +326,7 @@ suite("morph", () => {
 				b: { b: "boolean" },
 				c: "a|b"
 			}).export()
-		}).throws(writeUndiscriminatableMorphUnionMessage("/"))
+		}).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
 	test("array double intersection", () => {
 		attest(() => {
@@ -346,7 +346,7 @@ suite("morph", () => {
 				b: { b: "boolean" },
 				c: { key: "a|b" }
 			}).export()
-		}).throws(writeUndiscriminatableMorphUnionMessage("key"))
+		}).throws(writeUndiscriminableMorphUnionMessage("key"))
 	})
 	test("helper morph intersection", () => {
 		attest(() =>
@@ -360,7 +360,7 @@ suite("morph", () => {
 			type("string")
 				.morph((s) => s.length)
 				.or("'foo'")
-		).throws(writeUndiscriminatableMorphUnionMessage("/"))
+		).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
 	test("problem not included in return", () => {
 		const parsedInt = type([

@@ -155,9 +155,9 @@ export const discriminate = (
 }
 
 // TODO: if deeply includes morphs?
-export const writeUndiscriminatableMorphUnionMessage = <path extends string>(
+export const writeUndiscriminableMorphUnionMessage = <path extends string>(
 	path: path
 ) =>
 	`${
 		path === "/" ? "A" : `At ${path}, a`
-	} union including one or more morphs must be discriminatable`
+	} union including one or more morphs must be discriminable`

@@ -6,7 +6,7 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import type { declareConstraint, ConstraintContext } from "./constraint.js"
+import type { ConstraintContext, declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type BoundInner = withAttributes<{

@@ -91,7 +91,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Root => {
 				optional: false
 			},
 			// , ctx
-			value: node({ is: def.length })
+			value: node({ unit: def.length })
 		})
 	}
 	//  props , ctx
@@ -463,9 +463,9 @@ const prefixParsers: {
 							)
 					  )
 			)
-		return node() // branches, ctx
+		return node(...branches)
 	},
-	"===": (def) => node({ is: 5 }) //node.unit(...def.slice(1))
+	"===": (def) => node({ unit: def.slice(1) })
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

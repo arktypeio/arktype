@@ -6,12 +6,12 @@ import { type Root } from "./root.js"
 import {
 	type IntersectionSchema,
 	type parseIntersection,
-	type validateIntersectionInput
+	type validateIntersectionSchema
 } from "./sets/intersection.js"
 import {
 	type MorphSchema,
 	type parseMorph,
-	type validateMorphInput
+	type validateMorphSchema
 } from "./sets/morph.js"
 import { type SetDeclarationsByKind } from "./sets/set.js"
 import { type BranchSchema, UnionNode } from "./sets/union.js"
@@ -55,7 +55,7 @@ const parseUnits = <const branches extends readonly unknown[]>(
 	}
 	// TODO: bypass reduction
 	return new UnionNode<branches[number]>({
-		branches: uniqueValues.map((unit) => new UnitNode({ unit }))
+		union: uniqueValues.map((unit) => new UnitNode({ unit }))
 	})
 }
 
@@ -72,9 +72,9 @@ export type inferNodeBranches<branches extends readonly unknown[]> = {
 
 export type validateBranchInput<input> = conform<
 	input,
-	"morphs" extends keyof input
-		? validateMorphInput<input>
-		: validateIntersectionInput<input>
+	"morph" extends keyof input
+		? validateMorphSchema<input>
+		: validateIntersectionSchema<input>
 >
 
 export type parseBranch<branch> = branch extends MorphSchema
@@ -119,6 +119,13 @@ export type NodeClass<kind extends NodeKind = NodeKind> =
 5
 export type Schema<kind extends NodeKind> =
 	NodeDeclarationsByKind[kind]["schema"]
+
+export type DiscriminableSchemasByKind = {
+	[k in NodeKind]: Extract<Schema<k>, { [_ in k]: unknown }>
+}
+
+export type DiscriminableSchema<kind extends NodeKind = NodeKind> =
+	DiscriminableSchemasByKind[kind]
 
 export type Inner<kind extends NodeKind> = NodeDeclarationsByKind[kind]["inner"]
 
