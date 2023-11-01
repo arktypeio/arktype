@@ -2,6 +2,7 @@ import type {
 	Dict,
 	entryOf,
 	extend,
+	Fn,
 	instanceOf,
 	Json,
 	JsonData,
@@ -84,7 +85,7 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 		: d["kind"] extends "intersection"
 		? Node<"intersection" | BasisKind>
 		: instanceOf<d["class"]>
-	childrenOf?(inner: d["inner"]): readonly UnknownNode[]
+	children?(inner: d["inner"]): readonly UnknownNode[]
 	intersections: LeftIntersections<d["kind"]>
 	compile(inner: d["inner"]): string
 	writeDefaultDescription(inner: d["inner"]): string
@@ -172,6 +173,10 @@ type extensionKeyOf<nodeClass> = Exclude<
 	keyof BaseAttributes
 >
 
+type childrenOf<nodeClass> = nodeClass extends { children: Fn<never, infer r> }
+	? r
+	: readonly []
+
 export type UnknownNode = BaseNode<any>
 
 const $ark = registry()
@@ -184,8 +189,7 @@ export abstract class BaseNode<
 	declare [inferred]: t
 
 	readonly json: Json
-	// TODO: type
-	readonly children: readonly UnknownNode[]
+	readonly children: childrenOf<declaration["class"]>
 	readonly references: readonly UnknownNode[]
 	protected readonly contributesReferences: readonly UnknownNode[]
 	readonly alias: string
@@ -203,7 +207,7 @@ export abstract class BaseNode<
 			inner.description ?? this.nodeClass.writeDefaultDescription(inner)
 		this.json = this.nodeClass.serialize(inner)
 		this.condition = this.nodeClass.compile(inner)
-		this.children = this.nodeClass.childrenOf?.(inner) ?? ([] as any)
+		this.children = this.nodeClass.children?.(inner) ?? ([] as any)
 		this.references = (this.children as UnknownNode[]).flatMap(
 			(child) => child.contributesReferences
 		)

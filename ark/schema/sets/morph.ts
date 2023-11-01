@@ -53,7 +53,7 @@ export class MorphNode<t = unknown> extends RootNode<MorphDeclaration, t> {
 		this.classesByKind.morph = this
 	}
 
-	static childrenOf(inner: MorphInner): ValidatorNode[] {
+	static children(inner: MorphInner): ValidatorNode[] {
 		return inner.in
 			? inner.out
 				? [inner.in, inner.out]

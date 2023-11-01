@@ -72,7 +72,7 @@ export class RequiredNode extends BaseNode<RequiredDeclaration> {
 		return `${String(inner.required)}: ${inner.value}`
 	}
 
-	static childrenOf(inner: RequiredPropInner) {
+	static children(inner: RequiredPropInner) {
 		return [inner.value]
 	}
 
@@ -145,7 +145,7 @@ export class OptionalNode extends BaseNode<OptionalDeclaration> {
 		return `${String(inner.optional)}?: ${inner.value}`
 	}
 
-	static childrenOf(inner: OptionalPropInner) {
+	static children(inner: OptionalPropInner) {
 		return [inner.value]
 	}
 

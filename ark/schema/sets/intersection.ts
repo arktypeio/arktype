@@ -85,7 +85,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 		intersection: "in"
 	})
 
-	static childrenOf(inner: IntersectionInner): readonly Node<RuleKind>[] {
+	static children(inner: IntersectionInner): readonly Node<RuleKind>[] {
 		return Object.values(inner)
 			.flat()
 			.filter((value): value is Node<RuleKind> => value instanceof BaseNode)
@@ -260,12 +260,15 @@ export type IntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > = basis | MappedIntersectionSchema<basis> | ListedIntersectionSchema<basis>
 
-export type parseIntersection<input> = input extends Schema<BasisKind>
-	? parseBasis<input>
-	: input extends IntersectionSchema<infer basis>
+export type parseIntersection<schema> = schema extends Schema<BasisKind>
+	? parseBasis<schema>
+	: schema extends IntersectionSchema<infer basis>
 	? Schema<BasisKind> extends basis
 		? IntersectionNode<unknown>
-		: parseBasis<basis>
+		: keyof schema & ConstraintKind extends never
+		? // if there are no constraint keys, reduce to the basis node
+		  parseBasis<basis>
+		: IntersectionNode<parseBasis<basis>["infer"]>
 	: Node<"intersection" | BasisKind>
 
 type exactBasisMessageOnError<branch, expected> = {

@@ -54,7 +54,7 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 		this.classesByKind.union = this
 	}
 
-	static childrenOf(inner: UnionInner) {
+	static children(inner: UnionInner) {
 		return inner.union
 	}
 
