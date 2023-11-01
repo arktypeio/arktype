@@ -53,11 +53,6 @@ export type IntersectionInner = withAttributes<{
 		: Node<k>
 }>
 
-const s: IntersectionSchema = {
-	domain: "number",
-	divisor: 5
-}
-
 export type IntersectionDeclaration = declareNode<
 	"intersection",
 	{
@@ -148,8 +143,54 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	readonly out = undefined
 
 	static parse(schema: IntersectionSchema) {
-		const inner = parseIntersectionSchema(schema as never)
-		return new IntersectionNode(inner)
+		if (typeof schema === "string") {
+			return DomainNode.parse(schema)
+		}
+		if (typeof schema === "function") {
+			return ProtoNode.parse(schema)
+		}
+		if (typeof schema === "object") {
+			if ("is" in schema) {
+				return UnitNode.parse(schema)
+			}
+			// this could also be UnknownBranchInput but basised makes the type
+			// easier to deal with internally
+			return this.parseIntersectionObjectSchema(schema as BasisedBranchInput)
+		}
+		return throwParseError(
+			`${domainOf(schema)} is not a valid intersection schema input.`
+		)
+	}
+
+	private static parseIntersectionObjectSchema(schema: BasisedBranchInput) {
+		const basis: Node<BasisKind> | undefined = schema.unit
+			? UnitNode.parse(schema.unit)
+			: schema.proto
+			? ProtoNode.parse(schema.proto)
+			: schema.domain
+			? DomainNode.parse(schema.domain)
+			: undefined
+		if (basis && Object.keys(schema).length === 1) {
+			return basis
+		}
+		const refinementContext: RefinementContext = { basis }
+		// TODO: reduction here?
+		return new IntersectionNode(
+			transform(schema, ([k, v]) =>
+				isKeyOf(k, irreducibleRefinementKinds)
+					? [
+							k,
+							listFrom(v).map((innerSchema) =>
+								BaseNode.classesByKind[k].parse(innerSchema as never)
+							)
+					  ]
+					: includes(constraintKinds, k)
+					? [k, (BaseNode.classesByKind[k].parse as any)(v, refinementContext)]
+					: isKeyOf(k, baseAttributeKeys)
+					? [k, v]
+					: throwParseError(`'${k}' is not a valid constraint kind`)
+			) as IntersectionInner
+		)
 	}
 
 	static writeDefaultDescription(inner: IntersectionInner) {
@@ -175,7 +216,7 @@ const unflattenConstraints = (constraints: readonly Node<ConstraintKind>[]) => {
 				result[node.kind] = [node as never]
 			}
 		} else if (result[node.kind]) {
-			throwInternalError(`Unexpected intersection ${node.kind} nodes`)
+			throwInternalError(`Unexpected intersection of ${node.kind} nodes`)
 		} else {
 			result[node.kind] = node as never
 		}
@@ -202,9 +243,6 @@ const addConstraint = (
 	constraint: Node<ConstraintKind>
 ): Node<ConstraintKind>[] | Disjoint => {
 	const result: Node<ConstraintKind>[] = []
-	if (constraint.isBasis() && !constraints.at(0)?.isBasis()) {
-		return [constraint, ...constraints]
-	}
 	let includesConstraint = false
 	for (let i = 0; i < constraints.length; i++) {
 		const elementResult = constraint.intersect(constraints[i])
@@ -239,53 +277,6 @@ const assertValidRefinements = (
 			throwParseError(constraint.nodeClass.writeInvalidBasisMessage(basis))
 		}
 	}
-}
-
-const parseIntersectionSchema = (
-	schema: IntersectionSchema
-): IntersectionInner => {
-	switch (typeof schema) {
-		case "string":
-			return { domain: DomainNode.parse(schema) }
-		case "function":
-			return { proto: ProtoNode.parse(schema) }
-		case "object":
-			if ("is" in schema) {
-				return { unit: UnitNode.parse(schema) }
-			}
-			// this could also be UnknownBranchInput but basised makes the type
-			// easier to deal with internally
-			return parseIntersectionObjectSchema(schema as BasisedBranchInput)
-		default:
-			return throwParseError(
-				`${domainOf(schema)} is not a valid intersection schema input.`
-			)
-	}
-}
-
-const parseIntersectionObjectSchema = (schema: BasisedBranchInput) => {
-	const basis: Node<BasisKind> | undefined = schema.unit
-		? UnitNode.parse(schema.unit)
-		: schema.proto
-		? ProtoNode.parse(schema.proto)
-		: schema.domain
-		? DomainNode.parse(schema.domain)
-		: undefined
-	const refinementContext: RefinementContext = { basis }
-	return transform(schema, ([k, v]) =>
-		isKeyOf(k, irreducibleRefinementKinds)
-			? [
-					k,
-					listFrom(v).map((innerSchema) =>
-						BaseNode.classesByKind[k].parse(innerSchema as never)
-					)
-			  ]
-			: includes(constraintKinds, k)
-			? [k, (BaseNode.classesByKind[k].parse as any)(v, refinementContext)]
-			: isKeyOf(k, baseAttributeKeys)
-			? [k, v]
-			: throwParseError(`'${k}' is not a valid constraint kind`)
-	) as IntersectionInner
 }
 
 type refinementKindOf<basis> = {

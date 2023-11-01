@@ -42,6 +42,8 @@ type RootNodeParser = {
 // 	schema: schema
 // ) => new TypeNode(kind, schema) as Node<kind, unknown>
 
+const parseNode = (...schemas: BranchSchema[]) => UnionNode.parse(schemas)
+
 const parseUnits = <const branches extends readonly unknown[]>(
 	...values: branches
 ) => {
@@ -56,8 +58,6 @@ const parseUnits = <const branches extends readonly unknown[]>(
 		branches: uniqueValues.map((unit) => new UnitNode({ unit }))
 	})
 }
-
-const parseNode = (...schemas: BranchSchema[]) => UnionNode.parse(schemas)
 
 export const node = Object.assign(parseNode as RootNodeParser, {
 	units: parseUnits

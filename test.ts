@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { node } from "./ark/schema/main.js"
+import { builtins, node } from "./ark/schema/main.js"
+
+const z = builtins().unknown //?
+const nfd = node("number")
+
+nfd.kind //?
 
 const l = node(
 	{

@@ -6,7 +6,13 @@ import type {
 	JsonData,
 	satisfy
 } from "@arktype/util"
-import { CompiledFunction, DynamicBase, isArray } from "@arktype/util"
+import {
+	CompiledFunction,
+	DynamicBase,
+	includes,
+	isArray,
+	throwInternalError
+} from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
@@ -94,7 +100,7 @@ export const basisKinds = [
 	"domain"
 ] as const satisfies readonly BasisKind[]
 
-export const constraintKinds = [
+export const refinementKinds = [
 	"divisor",
 	"max",
 	"min",
@@ -104,9 +110,13 @@ export const constraintKinds = [
 	"optional"
 ] as const satisfies readonly RefinementKind[]
 
+export const constraintKinds = [
+	...basisKinds,
+	...refinementKinds
+] as const satisfies readonly ConstraintKind[]
+
 export const orderedNodeKinds = [
 	...setKinds,
-	...basisKinds,
 	...constraintKinds
 ] as const satisfies readonly NodeKind[]
 
@@ -118,21 +128,19 @@ type assertIncludesAllKinds = satisfy<OrderedNodeKinds[number], NodeKind>
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
-type allowedAsymmetricOperandOf<
-	kind extends NodeKind,
-	remaining extends readonly NodeKind[] = OrderedNodeKinds
-> = remaining extends readonly [
-	infer head,
-	...infer tail extends readonly NodeKind[]
+type allowedAsymmetricOperandOf<kind extends NodeKind> =
+	| rightOf<kind>
+	// SetKinds must intersect with constraint, and unit being the
+	// highest precedence constraint is the only other node that can unambiguously.
+	| (kind extends SetKind | "unit" ? "constraint" : never)
+
+export type rightOf<kind extends NodeKind> = OrderedNodeKinds extends readonly [
+	...unknown[],
+	kind,
+	...infer right extends NodeKind[]
 ]
-	? head extends kind
-		?
-				| remaining[number]
-				// SetKinds must intersect with constraint, and unit being the
-				// highest precedence constraint is the only other node that can unambiguously.
-				| (kind extends SetKind | "unit" ? "constraint" : never)
-		: allowedAsymmetricOperandOf<kind, tail>
-	: kind
+	? right[number]
+	: never
 
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: { [_ in lKey]: NodeKind | Disjoint | null } & {
@@ -271,27 +279,19 @@ export abstract class BaseNode<
 			// TODO: meta
 			return this
 		}
-		const lrResult = this.nodeClass.intersections[other.kind]?.(
-			this as never,
-			other as never
-		)
-		if (lrResult) {
-			if (lrResult instanceof Disjoint) {
-				return lrResult
+		const l = leftOperandOf(this, other)
+		const r = l === this ? other : this
+		const intersector =
+			l.nodeClass.intersections[r.kind] ?? includes(constraintKinds, r.kind)
+				? l.nodeClass.intersections["constraint"]
+				: undefined
+		const result = intersector?.(l, r)
+		if (result) {
+			if (result instanceof Disjoint) {
+				return l === this ? result : result.invert()
 			}
 			// TODO: meta, use kind entry?
-			return new this.nodeClass(lrResult as never) as never
-		}
-		const rlResult = other.nodeClass.intersections[this.kind]?.(
-			other as never,
-			this as never
-		)
-		if (rlResult) {
-			if (rlResult instanceof Disjoint) {
-				return rlResult.invert()
-			}
-			// TODO: meta
-			return new this.nodeClass(rlResult as never) as never
+			return new l.nodeClass(result as never) as never
 		}
 		return null
 	}
@@ -316,7 +316,7 @@ const innerValueToJson = (inner: unknown): JsonData => {
 	}
 	if (typeof inner === "object") {
 		if (inner instanceof BaseNode) {
-			return inner.collapsedJson
+			return inner.json
 		}
 		if (
 			isArray(inner) &&
@@ -325,11 +325,24 @@ const innerValueToJson = (inner: unknown): JsonData => {
 			)
 		) {
 			return inner.map((element) => {
-				return element.collapsedJson
+				return element.json
 			})
 		}
 	}
 	return compileSerializedValue(inner)
+}
+
+const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
+	for (const kind of orderedNodeKinds) {
+		if (l.kind === kind) {
+			return l
+		} else if (r.kind === kind) {
+			return r
+		}
+	}
+	return throwInternalError(
+		`Unable to order unknown node kinds '${l.kind}' and '${r.kind}'.`
+	)
 }
 
 export type intersectionOf<

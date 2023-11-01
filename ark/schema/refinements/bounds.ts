@@ -2,6 +2,7 @@ import { type extend, throwParseError } from "@arktype/util"
 import { BaseNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { ProtoNode } from "../bases/proto.js"
+import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
@@ -26,8 +27,10 @@ export abstract class BaseBound<
 
 	readonly comparator = schemaToComparator(this as never)
 
+	// TODO; fix
 	static basis: Root<number | string | readonly unknown[] | Date> =
-		this.classesByKind.union.parse(["number", "string", Array, Date]) as never
+		builtins().number
+	//this.classesByKind.union.parse(["number", "string", Array, Date]) as never
 
 	// applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
 	// 	return this.boundKind === getBoundKind(basis)
