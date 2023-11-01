@@ -1,11 +1,13 @@
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import { BaseNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { DomainNode } from "../bases/domain.js"
 import type { ProtoNode } from "../bases/proto.js"
+import { builtins } from "../builtins.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
-import type { BaseRefinement } from "./refinement.js"
+import { type Root } from "../root.js"
+import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
@@ -17,7 +19,7 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
 	| PredicateInner<rule>
 
-export type PredicateDeclaration = declareNode<
+export type PredicateDeclaration = declareConstraint<
 	"predicate",
 	{
 		schema: PredicateSchema
@@ -29,10 +31,7 @@ export type PredicateDeclaration = declareNode<
 	typeof PredicateNode
 >
 
-export class PredicateNode
-	extends BaseNode<PredicateDeclaration>
-	implements BaseRefinement
-{
+export class PredicateNode extends BaseNode<PredicateDeclaration> {
 	static readonly kind = "predicate"
 
 	static {
@@ -43,6 +42,8 @@ export class PredicateNode
 		predicate: "in"
 	})
 
+	static basis: Root<unknown> = builtins().unknown
+
 	static readonly compile = this.defineCompiler(
 		(inner) => `${compileSerializedValue(inner.predicate)}(${this.argName})`
 	)
@@ -51,7 +52,7 @@ export class PredicateNode
 		predicate: () => null
 	})
 
-	static from(schema: PredicateSchema) {
+	static parse(schema: PredicateSchema) {
 		return new PredicateNode(
 			typeof schema === "function" ? { predicate: schema } : schema
 		)

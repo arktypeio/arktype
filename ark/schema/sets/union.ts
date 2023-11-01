@@ -1,13 +1,9 @@
-import { type listable } from "@arktype/util"
+import { isArray, type mutable } from "@arktype/util"
 import type { declareNode, withAttributes } from "../base.js"
 import { type BasisKind } from "../bases/basis.js"
 import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
-import {
-	type inferNodeBranches,
-	type Node,
-	type validateBranchInput
-} from "../nodes.js"
+import { type Node } from "../nodes.js"
 import { RootNode } from "../root.js"
 import {
 	type IntersectionNode,
@@ -24,7 +20,7 @@ export type ExpandedUnionSchema<
 	readonly branches: branches
 }>
 
-export type UnionSchema = listable<BranchSchema> | ExpandedUnionSchema
+export type UnionSchema = readonly BranchSchema[] | ExpandedUnionSchema
 
 export type UnionInner = withAttributes<{
 	readonly branches: readonly BranchNode[]
@@ -66,17 +62,27 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 		branches: "in"
 	})
 
-	static from<const branches extends readonly unknown[]>(
-		schema: {
-			branches: {
-				[i in keyof branches]: validateBranchInput<branches[i]>
-			}
-		} & ExpandedUnionSchema
-	) {
-		return new UnionNode<inferNodeBranches<branches>>({
-			...schema,
-			branches: schema.branches.map((branch) => branch as never)
-		})
+	static parse(schema: UnionSchema) {
+		const result = {} as mutable<UnionInner>
+		let schemaBranches: readonly BranchSchema[]
+		if (isArray(schema)) {
+			schemaBranches = schema
+		} else {
+			const { branches, ...attributes } = schema
+			Object.assign(result, attributes)
+			schemaBranches = branches
+		}
+		result.branches = reduceBranches(
+			schemaBranches.map((branch) =>
+				typeof branch === "object" && "morph" in branch
+					? this.classesByKind.morph.parse(branch)
+					: this.classesByKind.intersection.parse(branch)
+			)
+		)
+		if (result.branches.length === 1) {
+			return result.branches[0]
+		}
+		return new UnionNode(result)
 	}
 
 	private static intersectBranch = (

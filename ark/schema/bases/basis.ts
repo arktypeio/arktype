@@ -1,3 +1,4 @@
+import { type inferDomain, type instanceOf } from "@arktype/util"
 import { type Schema } from "../nodes.js"
 import type { DomainDeclaration, DomainSchema } from "./domain.js"
 import { DomainNode } from "./domain.js"
@@ -26,9 +27,9 @@ export type BaseBasis = {
 
 export type parseBasis<input extends Schema<BasisKind>> =
 	input extends DomainSchema<infer domain>
-		? DomainNode<domain>
+		? inferDomain<domain>
 		: input extends ProtoSchema<infer proto>
-		? ProtoNode<proto>
+		? instanceOf<proto>
 		: input extends UnitSchema<infer unit>
-		? UnitNode<unit>
+		? unit
 		: never

@@ -1,11 +1,10 @@
 import { type extend, throwParseError } from "@arktype/util"
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import { BaseNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import type { DomainNode } from "../bases/domain.js"
 import type { ProtoNode } from "../bases/proto.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
-import type { BaseRefinement, RefinementContext } from "./refinement.js"
+import type { ConstraintContext, declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type BoundInner = withAttributes<{
@@ -19,17 +18,23 @@ export type BoundLimit = number | string
 
 export type BoundDeclaration = MinDeclaration | MaxDeclaration
 
-export abstract class BaseBound<declaration extends BoundDeclaration>
-	extends BaseNode<declaration>
-	implements BaseRefinement
-{
+export abstract class BaseBound<
+	declaration extends BoundDeclaration
+> extends BaseNode<declaration> {
 	readonly exclusive = this.inner.exclusive ?? false
 
 	readonly comparator = schemaToComparator(this as never)
 
-	applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
-		return this.boundKind === getBoundKind(basis)
-	}
+	static basis = this.classesByKind.union.parse([
+		"number",
+		"string",
+		Array,
+		Date
+	])
+
+	// applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
+	// 	return this.boundKind === getBoundKind(basis)
+	// }
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `BoundKind ${this.boundKind} is not applicable to ${getBasisName(
@@ -54,7 +59,7 @@ export type ExpandedMinSchema = extend<
 
 export type MinSchema = BoundLimit | ExpandedMinSchema
 
-export type MinDeclaration = declareNode<
+export type MinDeclaration = declareConstraint<
 	"min",
 	{
 		schema: MinSchema
@@ -62,6 +67,7 @@ export type MinDeclaration = declareNode<
 		intersections: {
 			min: "min"
 		}
+		basis: Boundable
 	},
 	typeof MinNode
 >
@@ -79,7 +85,7 @@ export class MinNode extends BaseBound<MinDeclaration> {
 		boundKind: "in"
 	})
 
-	static from(schema: MinSchema, ctx: RefinementContext) {
+	static parse(schema: MinSchema, ctx: ConstraintContext) {
 		const boundKind = getBoundKind(ctx.basis)
 		return new MinNode(
 			typeof schema === "object"
@@ -125,7 +131,7 @@ export type ExpandedMaxSchema = extend<
 
 export type MaxSchema = BoundLimit | ExpandedMaxSchema
 
-export type MaxDeclaration = declareNode<
+export type MaxDeclaration = declareConstraint<
 	"max",
 	{
 		schema: MaxSchema
@@ -134,6 +140,7 @@ export type MaxDeclaration = declareNode<
 			max: "max"
 			min: Disjoint | null
 		}
+		basis: Boundable
 	},
 	typeof MaxNode
 >
@@ -175,7 +182,7 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 		return `${comparisonDescription} ${inner.max}`
 	}
 
-	static from(schema: MaxSchema, ctx: RefinementContext) {
+	static parse(schema: MaxSchema, ctx: ConstraintContext) {
 		const boundKind = getBoundKind(ctx.basis)
 		return new MaxNode(
 			typeof schema === "object"
@@ -213,10 +220,6 @@ const getBoundKind = (basis: Node<BasisKind> | undefined): BoundKind => {
 	return throwParseError(writeUnboundableMessage(basis.basisName))
 }
 
-type BoundableBasis =
-	| DomainNode<"number" | "string">
-	| ProtoNode<typeof Array | typeof Date>
-
 const unitsByBoundKind = {
 	date: "",
 	number: "",
@@ -242,7 +245,9 @@ export const schemaToComparator = <
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 	`Bound kinds ${l} and ${r} are incompatible`
 
-export type NumericallyBoundableData = string | number | readonly unknown[]
+export type NumericallyBoundable = string | number | readonly unknown[]
+
+export type Boundable = NumericallyBoundable | Date
 
 export const writeUnboundableMessage = <root extends string>(
 	root: root

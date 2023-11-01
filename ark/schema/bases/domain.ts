@@ -29,11 +29,8 @@ export type DomainDeclaration = declareNode<
 	typeof DomainNode
 >
 
-export class DomainNode<
-		// @ts-expect-error (coerce the variance of schema to out since TS gets confused by inferDomain)
-		out rule extends NonEnumerableDomain = NonEnumerableDomain
-	>
-	extends RootNode<DomainDeclaration, inferDomain<rule>>
+export class DomainNode
+	extends RootNode<DomainDeclaration>
 	implements BaseBasis
 {
 	static readonly kind = "domain"
@@ -54,7 +51,7 @@ export class DomainNode<
 			: `typeof ${this.argName} === "${inner.domain}"`
 	)
 
-	static from<rule extends NonEnumerableDomain>(schema: DomainSchema<rule>) {
+	static parse(schema: DomainSchema) {
 		return new DomainNode(
 			typeof schema === "string" ? { domain: schema } : schema
 		)

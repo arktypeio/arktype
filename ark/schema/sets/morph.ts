@@ -138,15 +138,15 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 		return ""
 	}
 
-	static from(schema: MorphSchema) {
+	static parse(schema: MorphSchema) {
 		const inner = {} as mutable<MorphInner>
 		inner.morph =
 			typeof schema.morph === "function" ? [schema.morph] : schema.morph
 		if (schema.in) {
-			inner.in = IntersectionNode.from(schema.in)
+			inner.in = IntersectionNode.parse(schema.in)
 		}
 		if (schema.out) {
-			inner.out = IntersectionNode.from(schema.out)
+			inner.out = IntersectionNode.parse(schema.out)
 		}
 		return new MorphNode(inner)
 	}

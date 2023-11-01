@@ -1,4 +1,4 @@
-import { domainOf, hasKey, stringify, throwParseError } from "@arktype/util"
+import { domainOf, stringify, throwParseError } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
@@ -30,8 +30,8 @@ export type UnitDeclaration = declareNode<
 	typeof UnitNode
 >
 
-export class UnitNode<const rule = unknown>
-	extends RootNode<UnitDeclaration, rule>
+export class UnitNode
+	extends RootNode<UnitDeclaration, unknown>
 	implements BaseBasis
 {
 	static readonly kind = "unit"
@@ -60,11 +60,11 @@ export class UnitNode<const rule = unknown>
 			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
 	})
 
-	static from<const rule>(schema: UnitSchema<rule>) {
-		return new UnitNode<rule>(
-			hasKey(schema, "is")
+	static parse(schema: UnitSchema) {
+		return new UnitNode(
+			"is" in schema
 				? { ...schema, unit: schema.is }
-				: hasKey(schema, "unit")
+				: "unit" in schema
 				? schema
 				: throwParseError(
 						`Unit schema requires either an 'is' key or a 'unit' key`

@@ -3,8 +3,8 @@ import { node } from "../nodes.js"
 
 bench("domain", () => {
 	return node("string").infer
-}).types()
+}).types([2, "instantiations"])
 
 bench("domain", () => {
-	return node("string").infer
-}).types()
+	return node("string").and(node("string"))
+}).types([2, "instantiations"])

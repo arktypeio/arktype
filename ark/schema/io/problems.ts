@@ -15,7 +15,7 @@ import {
 import { domainDescriptions } from "../bases/domain.js"
 import {
 	type BoundInner,
-	type NumericallyBoundableData
+	type NumericallyBoundable
 } from "../constraints/bounds.js"
 
 export class ArkTypeError extends TypeError {
@@ -215,10 +215,7 @@ export class KeyProblem extends Problem<KeyProblemKind> {
 	mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class BoundProblem extends Problem<
-	BoundInner,
-	NumericallyBoundableData
-> {
+export class BoundProblem extends Problem<BoundInner, NumericallyBoundable> {
 	readonly code = "bound"
 
 	get mustBe() {

@@ -1,4 +1,4 @@
-import type { AbstractableConstructor, instanceOf } from "@arktype/util"
+import type { AbstractableConstructor } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -36,10 +36,8 @@ export type ProtoDeclaration = declareNode<
 	typeof ProtoNode
 >
 
-export class ProtoNode<
-		proto extends AbstractableConstructor = AbstractableConstructor
-	>
-	extends RootNode<ProtoDeclaration, instanceOf<proto>>
+export class ProtoNode
+	extends RootNode<ProtoDeclaration, object>
 	implements BaseBasis
 {
 	static readonly kind = "proto"
@@ -71,7 +69,7 @@ export class ProtoNode<
 				: Disjoint.from(
 						"domain",
 						// TODO: cast needed?
-						builtins().object as {} as DomainNode<"object">,
+						builtins().object as DomainNode,
 						r
 				  )
 	})
@@ -83,8 +81,8 @@ export class ProtoNode<
 			}`
 	)
 
-	static from<rule extends AbstractableConstructor>(schema: ProtoSchema<rule>) {
-		return new ProtoNode<rule>(
+	static parse(schema: ProtoSchema) {
+		return new ProtoNode(
 			typeof schema === "function" ? { proto: schema } : schema
 		)
 	}
@@ -98,7 +96,7 @@ export class ProtoNode<
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
 		...constructors: constructors
-	): this is ProtoNode<constructors[number]> {
+	) {
 		return constructors.some((constructor) =>
 			constructorExtends(this.proto, constructor)
 		)

@@ -30,7 +30,8 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "tsup --config ../repo/tsup.config.ts"
+		"build": "tsup --config ../repo/tsup.config.ts",
+		"bench": "ts ./__tests__/parse.bench.ts"
 	},
 	"dependencies": {
 		"@arktype/util": "workspace:*"

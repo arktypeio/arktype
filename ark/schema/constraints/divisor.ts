@@ -1,8 +1,9 @@
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import type { DomainNode } from "../bases/domain.js"
+import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
-import type { BaseRefinement } from "./refinement.js"
+import { type Root } from "../root.js"
+import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type DivisorSchema = number | DivisorInner
@@ -11,7 +12,7 @@ export type DivisorInner = withAttributes<{
 	readonly divisor: number
 }>
 
-export type DivisorDeclaration = declareNode<
+export type DivisorDeclaration = declareConstraint<
 	"divisor",
 	{
 		schema: DivisorSchema
@@ -19,21 +20,19 @@ export type DivisorDeclaration = declareNode<
 		intersections: {
 			divisor: "divisor"
 		}
+		basis: number
 	},
 	typeof DivisorNode
 >
 
-export class DivisorNode
-	extends BaseNode<DivisorDeclaration>
-	implements BaseRefinement
-{
+export class DivisorNode extends BaseNode<DivisorDeclaration> {
 	static readonly kind = "divisor"
 
 	static {
 		this.classesByKind.divisor = this
 	}
 
-	static from(schema: DivisorSchema) {
+	static parse(schema: DivisorSchema) {
 		return new DivisorNode(
 			typeof schema === "number" ? { divisor: schema } : schema
 		)
@@ -59,15 +58,7 @@ export class DivisorNode
 		return inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
 	}
 
-	applicableTo(
-		basis: Node<BasisKind> | undefined
-	): basis is DomainNode<"number"> {
-		return (
-			basis !== undefined &&
-			basis.kind === "domain" &&
-			basis.domain === "number"
-		)
-	}
+	static basis: Root<number> = builtins().number
 
 	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return writeIndivisibleMessage(getBasisName(basis))

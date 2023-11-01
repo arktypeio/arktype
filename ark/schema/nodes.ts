@@ -6,11 +6,11 @@ import type {
 	mutable
 } from "@arktype/util"
 import { hasDomain } from "@arktype/util"
+import { type BasisDeclarationsByKind } from "./bases/basis.js"
 import { UnitNode } from "./bases/unit.js"
+import { type ConstraintDeclarationsByKind } from "./constraints/constraint.js"
 import { type Root } from "./root.js"
 import {
-	type ConstraintDeclarationsByKind,
-	type ConstraintKind,
 	IntersectionNode,
 	type IntersectionSchema,
 	type parseIntersection,
@@ -30,24 +30,6 @@ import {
 	UnionNode
 } from "./sets/union.js"
 
-const parseNode = (...schemas: [ExpandedUnionSchema] | BranchSchema[]) => {
-	const result = {} as mutable<UnionInner>
-	let schemaBranches: readonly BranchSchema[]
-	if (hasDomain(schemas[0], "object") && "branches" in schemas[0]) {
-		const { branches, ...attributes } = schemas[0]
-		Object.assign(result, attributes)
-		schemaBranches = branches
-	} else {
-		schemaBranches = schemas
-	}
-	result.branches = schemaBranches.map((branch) =>
-		typeof branch === "object" && "morph" in branch
-			? new MorphNode(branch as never)
-			: new IntersectionNode(branch as never)
-	)
-	return new UnionNode(result)
-}
-
 type RootNodeParser = {
 	<const branches extends readonly unknown[]>(
 		...branches: {
@@ -55,6 +37,19 @@ type RootNodeParser = {
 		}
 	): Root<inferNodeBranches<branches>>
 }
+
+// static from<const branches extends readonly unknown[]>(
+// 	schema: {
+// 		branches: {
+// 			[i in keyof branches]: validateBranchInput<branches[i]>
+// 		}
+// 	} & ExpandedUnionSchema
+// ) {
+// 	return new UnionNode<inferNodeBranches<branches>>({
+// 		...schema,
+// 		branches: schema.branches.map((branch) => branch as never)
+// 	})
+// }
 
 // const parseKind = <kind extends NodeKind, schema extends Schema<kind>>(
 // 	kind: kind,
@@ -75,6 +70,8 @@ const parseUnits = <const branches extends readonly unknown[]>(
 		branches: uniqueValues.map((unit) => new UnitNode({ unit }))
 	})
 }
+
+const parseNode = (...schemas: BranchSchema[]) => UnionNode.parse(schemas)
 
 export const node = Object.assign(parseNode as RootNodeParser, {
 	units: parseUnits
@@ -110,15 +107,22 @@ type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 type intersectionGroupOf<rKind> = rKind extends NodeKind
 	? rKind
 	: rKind extends "constraint"
-	? ConstraintKind
+	? RuleKind
 	: never
 
 type reifyIntersectionResult<result> = result extends NodeKind
 	? Inner<result>
 	: result
 
+export type RuleDeclarationsByKind = extend<
+	BasisDeclarationsByKind,
+	ConstraintDeclarationsByKind
+>
+
+export type RuleKind = keyof RuleDeclarationsByKind
+
 export type NodeDeclarationsByKind = extend<
-	ConstraintDeclarationsByKind,
+	RuleDeclarationsByKind,
 	SetDeclarationsByKind
 >
 

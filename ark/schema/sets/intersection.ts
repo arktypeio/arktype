@@ -3,7 +3,6 @@ import type {
 	conform,
 	ErrorMessage,
 	exactMessageOnError,
-	extend,
 	mutable
 } from "@arktype/util"
 import {
@@ -23,12 +22,7 @@ import {
 	irreducibleRefinementKinds,
 	type withAttributes
 } from "../base.js"
-import type {
-	BasisDeclarationsByKind,
-	BasisKind,
-	parseBasis
-} from "../bases/basis.js"
-import { basisClassesByKind } from "../bases/basis.js"
+import type { BasisKind, parseBasis } from "../bases/basis.js"
 import type { DomainSchema, NonEnumerableDomain } from "../bases/domain.js"
 import { DomainNode } from "../bases/domain.js"
 import type { ProtoSchema } from "../bases/proto.js"
@@ -36,25 +30,22 @@ import { ProtoNode } from "../bases/proto.js"
 import type { DiscriminableUnitSchema, UnitSchema } from "../bases/unit.js"
 import { UnitNode } from "../bases/unit.js"
 import type {
-	RefinementContext,
-	RefinementDeclarationsByKind,
-	RefinementIntersectionInput,
-	RefinementKind
-} from "../constraints/refinement.js"
-import { refinementClassesByKind } from "../constraints/refinement.js"
+	ConstraintContext,
+	ConstraintIntersectionInput,
+	ConstraintKind
+} from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node, type Schema } from "../nodes.js"
+import {
+	type Node,
+	type NodeClass,
+	type RuleKind,
+	type Schema
+} from "../nodes.js"
 import { RootNode } from "../root.js"
 import { type MorphSchema } from "./morph.js"
 
-// TODO: try removing and just using the static version
-export const constraintClassesByKind = {
-	...refinementClassesByKind,
-	...basisClassesByKind
-}
-
 export type IntersectionInner = withAttributes<{
-	readonly [k in ConstraintKind]?: k extends IrreducibleRefinementKind
+	readonly [k in RuleKind]?: k extends IrreducibleRefinementKind
 		? readonly Node<k>[]
 		: Node<k>
 }>
@@ -83,7 +74,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	}
 
 	declare readonly constraints: readonly Node<ConstraintKind>[]
-	declare readonly refinements: readonly Node<RefinementKind>[]
+	declare readonly refinements: readonly Node<ConstraintKind>[]
 
 	constructor(inner: IntersectionInner) {
 		const rawConstraints = flattenConstraints(inner)
@@ -148,8 +139,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	readonly in = this
 	readonly out = undefined
 
-	//explicitly allow ValidatorNode since ValidatorInner is more flexible than ValidatorSchema
-	static from(schema: IntersectionSchema | IntersectionInner) {
+	static parse(schema: IntersectionSchema) {
 		const inner = parseIntersectionSchema(schema as never)
 		return new IntersectionNode(inner)
 	}
@@ -231,10 +221,13 @@ const addConstraint = (
 
 const assertValidRefinements: (
 	basis: Node<BasisKind> | undefined,
-	refinements: readonly Node<RefinementKind>[]
-) => asserts refinements is Node<RefinementKind>[] = (basis, refinements) => {
+	refinements: readonly Node<ConstraintKind>[]
+) => asserts refinements is Node<ConstraintKind>[] = (basis, refinements) => {
 	for (const refinement of refinements) {
-		if (!refinement.applicableTo(basis)) {
+		if (
+			!refinement.nodeClass.basis.isUnknown() &&
+			(!basis || !basis.extends(refinement.nodeClass.basis))
+		) {
 			throwParseError(refinement.writeInvalidBasisMessage(basis))
 		}
 	}
@@ -245,12 +238,12 @@ const parseIntersectionSchema = (
 ): IntersectionInner => {
 	switch (typeof schema) {
 		case "string":
-			return { domain: DomainNode.from(schema) }
+			return { domain: DomainNode.parse(schema) }
 		case "function":
-			return { proto: ProtoNode.from(schema) }
+			return { proto: ProtoNode.parse(schema) }
 		case "object":
 			if ("is" in schema) {
-				return { unit: UnitNode.from(schema) }
+				return { unit: UnitNode.parse(schema) }
 			}
 			// this could also be UnknownBranchInput but basised makes the type
 			// easier to deal with internally
@@ -264,45 +257,41 @@ const parseIntersectionSchema = (
 
 const parseIntersectionObjectSchema = (schema: BasisedBranchInput) => {
 	const basis: Node<BasisKind> | undefined = schema.unit
-		? UnitNode.from(schema.unit)
+		? UnitNode.parse(schema.unit)
 		: schema.proto
-		? ProtoNode.from(schema.proto)
+		? ProtoNode.parse(schema.proto)
 		: schema.domain
-		? DomainNode.from(schema.domain)
+		? DomainNode.parse(schema.domain)
 		: undefined
-	const refinementContext: RefinementContext = { basis }
+	const refinementContext: ConstraintContext = { basis }
 	return transform(schema, ([k, v]) =>
 		isKeyOf(k, irreducibleRefinementKinds)
 			? [
 					k,
 					listFrom(v).map((innerSchema) =>
-						constraintClassesByKind[k].from(innerSchema as never)
+						constraintClassesByKind[k].parse(innerSchema as never)
 					)
 			  ]
 			: isKeyOf(k, constraintClassesByKind)
-			? [k, (constraintClassesByKind[k].from as any)(v, refinementContext)]
+			? [k, (constraintClassesByKind[k].parse as any)(v, refinementContext)]
 			: isKeyOf(k, baseAttributeKeys)
 			? [k, v]
 			: throwParseError(`'${k}' is not a valid refinement kind`)
 	) as IntersectionInner
 }
 
-type basisOf<k extends RefinementKind> = Node<k>["applicableTo"] extends ((
-	_: Node<BasisKind> | undefined
-) => _ is infer basis extends Node<BasisKind> | undefined)
-	? basis
-	: never
-
 type refinementKindOf<basis> = {
-	[k in RefinementKind]: basis extends basisOf<k> ? k : never
-}[RefinementKind]
+	[k in ConstraintKind]: basis extends NodeClass<k>["basis"]["infer"]
+		? k
+		: never
+}[ConstraintKind]
 
 export type refinementsOf<basis> = {
 	[k in refinementKindOf<basis>]?: Node<k>
 }
 
 type refinementInputsOf<basis> = {
-	[k in refinementKindOf<basis>]?: RefinementIntersectionInput<k>
+	[k in refinementKindOf<basis>]?: ConstraintIntersectionInput<k>
 }
 
 type IntersectionBasisInput<
@@ -331,7 +320,7 @@ export type BasisedBranchInput<
 	BaseAttributes
 
 export type UnknownBranchInput = {
-	predicate?: RefinementIntersectionInput<"predicate">
+	predicate?: ConstraintIntersectionInput<"predicate">
 } & BaseAttributes
 
 type DiscriminableBasisInputValue =
@@ -350,9 +339,9 @@ export type parseIntersection<input> = input extends
 	| AbstractableConstructor
 	| NonEnumerableDomain
 	| DiscriminableUnitSchema
-	? parseBasis<input>["infer"]
+	? parseBasis<input>
 	: input extends IntersectionBasisInput<infer basis>
-	? parseBasis<basis>["infer"]
+	? parseBasis<basis>
 	: unknown
 
 type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
@@ -375,11 +364,6 @@ export type validateIntersectionInput<input> = input extends
 	: input extends UnknownBranchInput
 	? exactMessageOnError<input, UnknownBranchInput>
 	: DiscriminableUnitSchema | IntersectionSchema | MorphSchema
-export type ConstraintKind = keyof ConstraintDeclarationsByKind
-export type ConstraintDeclarationsByKind = extend<
-	BasisDeclarationsByKind,
-	RefinementDeclarationsByKind
->
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

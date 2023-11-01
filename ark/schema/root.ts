@@ -1,8 +1,8 @@
 import { BaseNode, type intersectionOf, type NodeDeclaration } from "./base.js"
 import { type BasisKind } from "./bases/basis.js"
+import { type ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { type Node, type Schema } from "./nodes.js"
-import type { ConstraintKind } from "./sets/intersection.js"
 import { type SetKind } from "./sets/set.js"
 import { type inferred } from "./utils.js"
 
@@ -22,7 +22,7 @@ export abstract class RootNode<
 		definition: Schema<kind>
 	): Root {
 		const result: Disjoint | Node<RootKind> = this.intersect(
-			(RootNode.classesByKind[kind].from as any)(definition)
+			(RootNode.classesByKind[kind].parse as any)(definition)
 		)
 		return result instanceof Disjoint ? result.throw() : result
 	}
@@ -68,8 +68,12 @@ export abstract class RootNode<
 		return this as never
 	}
 
-	extends<other>(this: Root, other: Root<other>): this is Root<other> {
+	extends<other>(other: Root<other>): this is Root<other> {
 		const intersection = this.intersect(other)
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
+	}
+
+	subsumes(other: Root): other is Root<this["infer"]> {
+		return other.extends(this as never)
 	}
 }

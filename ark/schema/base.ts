@@ -8,7 +8,7 @@ import type {
 } from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
-import { type RefinementContext } from "./constraints/refinement.js"
+import { type ConstraintContext } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
@@ -18,9 +18,10 @@ import {
 	type LeftIntersections,
 	type Node,
 	type NodeClass,
-	type NodeKind
+	type NodeKind,
+	type RuleKind
 } from "./nodes.js"
-import { type ConstraintKind } from "./sets/intersection.js"
+import { type Root } from "./root.js"
 import { type SetKind } from "./sets/set.js"
 import { inferred } from "./utils.js"
 
@@ -64,7 +65,14 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 	new (inner: d["inner"]): instanceOf<d["class"]>
 	kind: d["kind"]
 	keyKinds: Record<keyof d["inner"], keyof NodeIds>
-	from(input: d["schema"], ctx: RefinementContext): instanceOf<d["class"]>
+	parse(
+		input: d["schema"],
+		ctx: ConstraintContext
+	): d["kind"] extends "union"
+		? Root
+		: d["kind"] extends "intersection"
+		? Node<"intersection" | BasisKind>
+		: instanceOf<d["class"]>
 	childrenOf?(inner: d["inner"]): readonly UnknownNode[]
 	intersections: LeftIntersections<d["kind"]>
 	compile(inner: d["inner"]): string
@@ -331,7 +339,7 @@ type collectSingleResult<
 	r extends NodeKind
 > = r extends keyof IntersectionMap<l>
 	? instantiateIntersection<IntersectionMap<l>[r]>
-	: r extends ConstraintKind
+	: r extends RuleKind
 	? "constraint" extends keyof IntersectionMap<l>
 		? instantiateIntersection<IntersectionMap<l>["constraint"]>
 		: never

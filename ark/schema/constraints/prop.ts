@@ -1,4 +1,4 @@
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import { BaseNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { DomainNode } from "../bases/domain.js"
 import type { ProtoNode } from "../bases/proto.js"
@@ -6,13 +6,15 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type RootInput } from "../nodes.js"
 import { type Root } from "../root.js"
-import type { BaseRefinement } from "./refinement.js"
+import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type PropDeclarations = {
 	required: RequiredDeclaration
 	optional: OptionalDeclaration
 }
+
+export type PropKind = keyof PropDeclarations
 
 export type NamedPropInner = withAttributes<{
 	readonly key: string | symbol
@@ -24,7 +26,28 @@ export type NamedPropSchema = withAttributes<{
 	readonly value: RootInput
 }>
 
-export type RequiredDeclaration = declareNode<
+abstract class PropNode<
+	declaration extends PropDeclarations[PropKind]
+> extends BaseNode<declaration> {
+	static childrenOf(inner: NamedPropInner) {
+		return [inner.value]
+	}
+
+	static readonly keyKinds = this.declareKeys({
+		key: "in",
+		value: "in"
+	})
+
+	static basis: Root<object> = builtins().object
+
+	static compile = this.defineCompiler((inner) => "true")
+
+	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return `${this} is not allowed as a prop on ${getBasisName(basis)}`
+	}
+}
+
+export type RequiredDeclaration = declareConstraint<
 	"required",
 	{
 		schema: NamedPropSchema
@@ -36,24 +59,12 @@ export type RequiredDeclaration = declareNode<
 	typeof RequiredNode
 >
 
-export class RequiredNode
-	extends BaseNode<RequiredDeclaration>
-	implements BaseRefinement
-{
+export class RequiredNode extends PropNode<RequiredDeclaration> {
 	static readonly kind = "required"
 
 	static {
 		this.classesByKind.required = this
 	}
-
-	static childrenOf(inner: NamedPropInner) {
-		return [inner.value]
-	}
-
-	static readonly keyKinds = this.declareKeys({
-		key: "in",
-		value: "in"
-	})
 
 	static readonly intersections = this.defineIntersections({
 		required: (l, r) => {
@@ -72,30 +83,16 @@ export class RequiredNode
 		}
 	})
 
-	static from(schema: NamedPropSchema) {
+	static parse(schema: NamedPropSchema) {
 		return new RequiredNode(schema as never)
 	}
-
-	static compile = this.defineCompiler((inner) => "true")
 
 	static writeDefaultDescription(inner: NamedPropInner) {
 		return `${String(inner.key)}: ${inner.value}`
 	}
-
-	applicableTo(
-		basis: Node<BasisKind> | undefined
-	): basis is DomainNode | ProtoNode | undefined {
-		return (
-			basis === undefined || basis.kind === "domain" || basis.kind === "proto"
-		)
-	}
-
-	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return `${this} is not allowed as a prop on ${getBasisName(basis)}`
-	}
 }
 
-export type OptionalDeclaration = declareNode<
+export type OptionalDeclaration = declareConstraint<
 	"optional",
 	{
 		schema: NamedPropSchema
@@ -107,24 +104,12 @@ export type OptionalDeclaration = declareNode<
 	typeof OptionalNode
 >
 
-export class OptionalNode
-	extends BaseNode<OptionalDeclaration>
-	implements BaseRefinement
-{
+export class OptionalNode extends PropNode<OptionalDeclaration> {
 	static readonly kind = "optional"
 
 	static {
 		this.classesByKind.optional = this
 	}
-
-	static childrenOf(inner: NamedPropInner) {
-		return [inner.value]
-	}
-
-	static readonly keyKinds = this.declareKeys({
-		key: "in",
-		value: "in"
-	})
 
 	static readonly intersections = this.defineIntersections({
 		optional: (l, r) => {
@@ -146,26 +131,12 @@ export class OptionalNode
 		}
 	})
 
-	static from(schema: NamedPropSchema) {
+	static parse(schema: NamedPropSchema) {
 		return new OptionalNode(schema as never)
 	}
 
-	static compile = this.defineCompiler((inner) => "true")
-
 	static writeDefaultDescription(inner: NamedPropInner) {
 		return `${String(inner.key)}?: ${inner.value}`
-	}
-
-	applicableTo(
-		basis: Node<BasisKind> | undefined
-	): basis is DomainNode | ProtoNode | undefined {
-		return (
-			basis === undefined || basis.kind === "domain" || basis.kind === "proto"
-		)
-	}
-
-	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return `${this} is not allowed as a prop on ${getBasisName(basis)}`
 	}
 }
 
