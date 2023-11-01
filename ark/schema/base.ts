@@ -282,9 +282,10 @@ export abstract class BaseNode<
 		const l = leftOperandOf(this, other)
 		const r = l === this ? other : this
 		const intersector =
-			l.nodeClass.intersections[r.kind] ?? includes(constraintKinds, r.kind)
+			l.nodeClass.intersections[r.kind] ??
+			(includes(constraintKinds, r.kind)
 				? l.nodeClass.intersections["constraint"]
-				: undefined
+				: undefined)
 		const result = intersector?.(l, r)
 		if (result) {
 			if (result instanceof Disjoint) {

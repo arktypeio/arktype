@@ -1,15 +1,10 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { builtins, node } from "./ark/schema/main.js"
-
-const z = builtins().unknown //?
-const nfd = node("number")
-
-nfd.kind //?
+import { builtins, DivisorNode, node } from "./ark/schema/main.js"
 
 const l = node(
 	{
-		divisor: 2,
-		domain: "number"
+		domain: "number",
+		divisor: 2
 	},
 	{
 		domain: "number",

@@ -81,6 +81,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 
 	constructor(inner: IntersectionInner) {
 		const rawConstraints = flattenConstraints(inner)
+		// TODO: sort constraints
 		const reducedConstraints = intersectConstraints([], rawConstraints)
 		if (reducedConstraints instanceof Disjoint) {
 			return reducedConstraints.throw()
@@ -137,10 +138,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 		}
 	})
 
-	readonly basis: Node<BasisKind> | undefined;
-	// for ease of use when comparing to MorphNode
-	readonly in = this
-	readonly out = undefined
+	readonly basis: Node<BasisKind> | undefined
 
 	static parse(schema: IntersectionSchema) {
 		if (typeof schema === "string") {
