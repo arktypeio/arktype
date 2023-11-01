@@ -1,5 +1,6 @@
 import type {
 	Dict,
+	entryOf,
 	extend,
 	instanceOf,
 	Json,
@@ -74,6 +75,7 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 	new (inner: d["inner"]): instanceOf<d["class"]>
 	kind: d["kind"]
 	keyKinds: Record<keyof d["inner"], keyof NodeIds>
+	serialize(inner: d["inner"]): Json
 	parse(
 		input: d["schema"],
 		ctx: ConstraintContext
@@ -199,7 +201,7 @@ export abstract class BaseNode<
 		this.alias = $ark.register(this, inner.alias)
 		this.description =
 			inner.description ?? this.nodeClass.writeDefaultDescription(inner)
-		this.json = innerToJson(inner)
+		this.json = this.nodeClass.serialize(inner)
 		this.condition = this.nodeClass.compile(inner)
 		this.children = this.nodeClass.childrenOf?.(inner) ?? ([] as any)
 		this.references = (this.children as UnknownNode[]).flatMap(
@@ -213,6 +215,41 @@ export abstract class BaseNode<
 	}
 
 	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
+
+	static serialize = this.defineSerializer((inner: object) => {
+		const json: Json = {}
+		for (const k in inner) {
+			json[k] = this.serializeValue((inner as Dict)[k])
+		}
+		return json
+	})
+
+	static serializeValue(v: unknown): JsonData {
+		if (
+			typeof v === "string" ||
+			typeof v === "boolean" ||
+			typeof v === "number" ||
+			v === null
+		) {
+			return v
+		}
+		if (typeof v === "object") {
+			if (v instanceof BaseNode) {
+				return v.json
+			}
+			if (
+				isArray(v) &&
+				v.every(
+					(element): element is UnknownNode => element instanceof BaseNode
+				)
+			) {
+				return v.map((element) => {
+					return element.json
+				})
+			}
+		}
+		return compileSerializedValue(v)
+	}
 
 	protected static declareKeys<nodeClass>(
 		this: nodeClass,
@@ -243,6 +280,13 @@ export abstract class BaseNode<
 		compiler: (inner: Inner<kindOf<nodeClass>>) => string
 	) {
 		return compiler
+	}
+
+	protected static defineSerializer<nodeClass>(
+		this: nodeClass,
+		serializer: (inner: Inner<kindOf<nodeClass>>) => Json
+	) {
+		return serializer
 	}
 
 	serialize(kind: keyof NodeIds = "meta") {
@@ -297,41 +341,6 @@ export abstract class BaseNode<
 		}
 		return null
 	}
-}
-
-const innerToJson = (inner: BaseAttributes) => {
-	const json: Json = {}
-	for (const k in inner) {
-		json[k] = innerValueToJson((inner as Dict)[k])
-	}
-	return json
-}
-
-const innerValueToJson = (inner: unknown): JsonData => {
-	if (
-		typeof inner === "string" ||
-		typeof inner === "boolean" ||
-		typeof inner === "number" ||
-		inner === null
-	) {
-		return inner
-	}
-	if (typeof inner === "object") {
-		if (inner instanceof BaseNode) {
-			return inner.json
-		}
-		if (
-			isArray(inner) &&
-			inner.every(
-				(element): element is UnknownNode => element instanceof BaseNode
-			)
-		) {
-			return inner.map((element) => {
-				return element.json
-			})
-		}
-	}
-	return compileSerializedValue(inner)
 }
 
 const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
