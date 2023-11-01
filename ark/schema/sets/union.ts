@@ -211,7 +211,7 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 				}
 			}
 			return branches.length === 0
-				? Disjoint.from("union", l.branches, r)
+				? Disjoint.from("union", l.branches, [r])
 				: {
 						branches
 				  }

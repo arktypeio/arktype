@@ -5,7 +5,7 @@ import type { DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import { type declareConstraint } from "./constraint.js"
+import { type declareRefinement } from "./refinement.js"
 import { getBasisName } from "./shared.js"
 
 export type PatternInner = withAttributes<{
@@ -18,7 +18,7 @@ export type ExpandedPatternSchema = withAttributes<{
 
 export type PatternSchema = RegexLiteral | RegExp | ExpandedPatternSchema
 
-export type PatternDeclaration = declareConstraint<
+export type PatternDeclaration = declareRefinement<
 	"pattern",
 	{
 		schema: PatternSchema
@@ -72,7 +72,7 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 		)
 	}
 
-	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `Match operand ${getBasisName(basis)} must be a string`
 	}
 }

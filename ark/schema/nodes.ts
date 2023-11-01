@@ -1,34 +1,20 @@
-import type {
-	conform,
-	extend,
-	instanceOf,
-	listable,
-	mutable
-} from "@arktype/util"
-import { hasDomain } from "@arktype/util"
+import type { conform, extend, instanceOf, listable } from "@arktype/util"
 import { type BasisDeclarationsByKind } from "./bases/basis.js"
 import { UnitNode } from "./bases/unit.js"
-import { type ConstraintDeclarationsByKind } from "./constraints/constraint.js"
+import { type RefinementDeclarationsByKind } from "./refinements/refinement.js"
 import { type Root } from "./root.js"
 import {
-	IntersectionNode,
 	type IntersectionSchema,
 	type parseIntersection,
 	type validateIntersectionInput
 } from "./sets/intersection.js"
 import {
-	MorphNode,
 	type MorphSchema,
 	type parseMorph,
 	type validateMorphInput
 } from "./sets/morph.js"
 import { type SetDeclarationsByKind } from "./sets/set.js"
-import {
-	type BranchSchema,
-	type ExpandedUnionSchema,
-	type UnionInner,
-	UnionNode
-} from "./sets/union.js"
+import { type BranchSchema, UnionNode } from "./sets/union.js"
 
 type RootNodeParser = {
 	<const branches extends readonly unknown[]>(
@@ -107,22 +93,22 @@ type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 type intersectionGroupOf<rKind> = rKind extends NodeKind
 	? rKind
 	: rKind extends "constraint"
-	? RuleKind
+	? ConstraintKind
 	: never
 
 type reifyIntersectionResult<result> = result extends NodeKind
 	? Inner<result>
 	: result
 
-export type RuleDeclarationsByKind = extend<
+export type ConstraintDeclarationsByKind = extend<
 	BasisDeclarationsByKind,
-	ConstraintDeclarationsByKind
+	RefinementDeclarationsByKind
 >
 
-export type RuleKind = keyof RuleDeclarationsByKind
+export type ConstraintKind = keyof ConstraintDeclarationsByKind
 
 export type NodeDeclarationsByKind = extend<
-	RuleDeclarationsByKind,
+	ConstraintDeclarationsByKind,
 	SetDeclarationsByKind
 >
 

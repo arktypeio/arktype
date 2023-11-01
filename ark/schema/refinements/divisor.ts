@@ -3,7 +3,7 @@ import type { BasisKind } from "../bases/basis.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import { type declareConstraint } from "./constraint.js"
+import { type declareRefinement } from "./refinement.js"
 import { getBasisName } from "./shared.js"
 
 export type DivisorSchema = number | DivisorInner
@@ -12,7 +12,7 @@ export type DivisorInner = withAttributes<{
 	readonly divisor: number
 }>
 
-export type DivisorDeclaration = declareConstraint<
+export type DivisorDeclaration = declareRefinement<
 	"divisor",
 	{
 		schema: DivisorSchema
@@ -60,7 +60,7 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 
 	static basis: Root<number> = builtins().number
 
-	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return writeIndivisibleMessage(getBasisName(basis))
 	}
 }

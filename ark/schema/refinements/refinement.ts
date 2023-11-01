@@ -15,7 +15,7 @@ import { type PatternDeclaration } from "./pattern.js"
 import { type PredicateDeclaration } from "./predicate.js"
 import { type PropDeclarations } from "./prop.js"
 
-export type ConstraintDeclarationsByKind = extend<
+export type RefinementDeclarationsByKind = extend<
 	PropDeclarations,
 	{
 		divisor: DivisorDeclaration
@@ -26,31 +26,33 @@ export type ConstraintDeclarationsByKind = extend<
 	}
 >
 
-export type ConstraintKind = keyof ConstraintDeclarationsByKind
+export type RefinementKind = keyof RefinementDeclarationsByKind
 
-export type ConstraintIntersectionInputsByKind = {
-	[k in ConstraintKind]: k extends IrreducibleRefinementKind
+export type RefinementIntersectionInputsByKind = {
+	[k in RefinementKind]: k extends IrreducibleRefinementKind
 		? Schema<k>
 		: listable<Schema<k>>
 }
 
-export type ConstraintIntersectionInput<
-	kind extends ConstraintKind = ConstraintKind
-> = ConstraintIntersectionInputsByKind[kind]
+export type RefinementIntersectionInput<
+	kind extends RefinementKind = RefinementKind
+> = RefinementIntersectionInputsByKind[kind]
 
-export type ConstraintContext = {
+export type RefinementContext = {
 	basis: Node<BasisKind> | undefined
 }
 
-export interface StaticConstraintNode<d extends NodeDeclaration>
+export interface StaticRefinementNode<d extends NodeDeclaration>
 	extends StaticBaseNode<d> {
 	basis: Root
+
+	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined): string
 }
 
-export type declareConstraint<
-	kind extends ConstraintKind,
+export type declareRefinement<
+	kind extends RefinementKind,
 	types extends NodeTypes<kind>,
-	implementation extends StaticConstraintNode<
-		declareConstraint<kind, types, implementation>
+	implementation extends StaticRefinementNode<
+		declareRefinement<kind, types, implementation>
 	>
 > = declareNode<kind, types, implementation>

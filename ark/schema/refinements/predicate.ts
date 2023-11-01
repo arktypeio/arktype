@@ -7,7 +7,7 @@ import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import { type declareConstraint } from "./constraint.js"
+import { type declareRefinement } from "./refinement.js"
 import { getBasisName } from "./shared.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
@@ -19,7 +19,7 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
 	| PredicateInner<rule>
 
-export type PredicateDeclaration = declareConstraint<
+export type PredicateDeclaration = declareRefinement<
 	"predicate",
 	{
 		schema: PredicateSchema
@@ -62,16 +62,8 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 		return `valid according to ${inner.predicate.name}`
 	}
 
-	applicableTo(
-		basis: Node<BasisKind> | undefined
-	): basis is DomainNode | ProtoNode | undefined {
-		return (
-			basis === undefined || basis.kind === "domain" || basis.kind === "proto"
-		)
-	}
-
-	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return `${this} cannot narrow ${getBasisName(basis)}`
+	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return `Cannot narrow ${getBasisName(basis)}`
 	}
 }
 

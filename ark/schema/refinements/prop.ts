@@ -6,7 +6,7 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type RootInput } from "../nodes.js"
 import { type Root } from "../root.js"
-import { type declareConstraint } from "./constraint.js"
+import { type declareRefinement } from "./refinement.js"
 import { getBasisName } from "./shared.js"
 
 export type PropDeclarations = {
@@ -47,7 +47,7 @@ abstract class PropNode<
 	}
 }
 
-export type RequiredDeclaration = declareConstraint<
+export type RequiredDeclaration = declareRefinement<
 	"required",
 	{
 		schema: NamedPropSchema
@@ -92,7 +92,7 @@ export class RequiredNode extends PropNode<RequiredDeclaration> {
 	}
 }
 
-export type OptionalDeclaration = declareConstraint<
+export type OptionalDeclaration = declareRefinement<
 	"optional",
 	{
 		schema: NamedPropSchema

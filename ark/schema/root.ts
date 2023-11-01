@@ -1,8 +1,8 @@
 import { BaseNode, type intersectionOf, type NodeDeclaration } from "./base.js"
 import { type BasisKind } from "./bases/basis.js"
-import { type ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { type Node, type Schema } from "./nodes.js"
+import { type RefinementKind } from "./refinements/refinement.js"
 import { type SetKind } from "./sets/set.js"
 import { type inferred } from "./utils.js"
 
@@ -17,7 +17,7 @@ export abstract class RootNode<
 	declaration extends NodeDeclaration,
 	t = unknown
 > extends BaseNode<declaration, t> {
-	constrain<kind extends ConstraintKind>(
+	constrain<kind extends RefinementKind>(
 		kind: kind,
 		definition: Schema<kind>
 	): Root {

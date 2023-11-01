@@ -4,7 +4,8 @@ import type { BasisKind } from "../bases/basis.js"
 import type { ProtoNode } from "../bases/proto.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
-import type { ConstraintContext, declareConstraint } from "./constraint.js"
+import { type Root } from "../root.js"
+import type { declareRefinement, RefinementContext } from "./refinement.js"
 import { getBasisName } from "./shared.js"
 
 export type BoundInner = withAttributes<{
@@ -25,21 +26,19 @@ export abstract class BaseBound<
 
 	readonly comparator = schemaToComparator(this as never)
 
-	static basis = this.classesByKind.union.parse([
-		"number",
-		"string",
-		Array,
-		Date
-	])
+	static basis: Root<number | string | readonly unknown[] | Date> =
+		this.classesByKind.union.parse(["number", "string", Array, Date]) as never
 
 	// applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
 	// 	return this.boundKind === getBoundKind(basis)
 	// }
 
-	writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return `BoundKind ${this.boundKind} is not applicable to ${getBasisName(
-			basis
-		)}`
+	// return `BoundKind ${this.boundKind} is not applicable to ${getBasisName(
+	// 	basis
+	// )}`
+
+	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+		return writeUnboundableMessage(getBasisName(basis))
 	}
 }
 
@@ -59,7 +58,7 @@ export type ExpandedMinSchema = extend<
 
 export type MinSchema = BoundLimit | ExpandedMinSchema
 
-export type MinDeclaration = declareConstraint<
+export type MinDeclaration = declareRefinement<
 	"min",
 	{
 		schema: MinSchema
@@ -85,7 +84,7 @@ export class MinNode extends BaseBound<MinDeclaration> {
 		boundKind: "in"
 	})
 
-	static parse(schema: MinSchema, ctx: ConstraintContext) {
+	static parse(schema: MinSchema, ctx: RefinementContext) {
 		const boundKind = getBoundKind(ctx.basis)
 		return new MinNode(
 			typeof schema === "object"
@@ -131,7 +130,7 @@ export type ExpandedMaxSchema = extend<
 
 export type MaxSchema = BoundLimit | ExpandedMaxSchema
 
-export type MaxDeclaration = declareConstraint<
+export type MaxDeclaration = declareRefinement<
 	"max",
 	{
 		schema: MaxSchema
@@ -182,7 +181,7 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 		return `${comparisonDescription} ${inner.max}`
 	}
 
-	static parse(schema: MaxSchema, ctx: ConstraintContext) {
+	static parse(schema: MaxSchema, ctx: RefinementContext) {
 		const boundKind = getBoundKind(ctx.basis)
 		return new MaxNode(
 			typeof schema === "object"

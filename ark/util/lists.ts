@@ -94,3 +94,8 @@ export const ReadonlyArray = Array as unknown as new <
 >(
 	...args: T
 ) => T
+
+export const includes = <array extends readonly unknown[]>(
+	array: array,
+	element: unknown
+): element is array[number] => array.includes(element)

@@ -8,19 +8,22 @@ import type {
 } from "@arktype/util"
 import { CompiledFunction, DynamicBase, isArray } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
-import { type ConstraintContext } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
+	type ConstraintKind,
 	type Inner,
 	type IntersectionMap,
 	type LeftIntersections,
 	type Node,
 	type NodeClass,
-	type NodeKind,
-	type RuleKind
+	type NodeKind
 } from "./nodes.js"
+import {
+	type RefinementContext,
+	type RefinementKind
+} from "./refinements/refinement.js"
 import { type Root } from "./root.js"
 import { type SetKind } from "./sets/set.js"
 import { inferred } from "./utils.js"
@@ -67,7 +70,7 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 	keyKinds: Record<keyof d["inner"], keyof NodeIds>
 	parse(
 		input: d["schema"],
-		ctx: ConstraintContext
+		ctx: RefinementContext
 	): d["kind"] extends "union"
 		? Root
 		: d["kind"] extends "intersection"
@@ -79,13 +82,19 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 	writeDefaultDescription(inner: d["inner"]): string
 }
 
-const orderedNodeKinds = [
+export const setKinds = [
 	"union",
 	"morph",
-	"intersection",
+	"intersection"
+] as const satisfies readonly SetKind[]
+
+export const basisKinds = [
 	"unit",
 	"proto",
-	"domain",
+	"domain"
+] as const satisfies readonly BasisKind[]
+
+export const constraintKinds = [
 	"divisor",
 	"max",
 	"min",
@@ -93,6 +102,12 @@ const orderedNodeKinds = [
 	"predicate",
 	"required",
 	"optional"
+] as const satisfies readonly RefinementKind[]
+
+export const orderedNodeKinds = [
+	...setKinds,
+	...basisKinds,
+	...constraintKinds
 ] as const satisfies readonly NodeKind[]
 
 type OrderedNodeKinds = typeof orderedNodeKinds
@@ -188,7 +203,7 @@ export abstract class BaseNode<
 		)
 	}
 
-	protected static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
+	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
 
 	protected static declareKeys<nodeClass>(
 		this: nodeClass,
@@ -339,7 +354,7 @@ type collectSingleResult<
 	r extends NodeKind
 > = r extends keyof IntersectionMap<l>
 	? instantiateIntersection<IntersectionMap<l>[r]>
-	: r extends RuleKind
+	: r extends ConstraintKind
 	? "constraint" extends keyof IntersectionMap<l>
 		? instantiateIntersection<IntersectionMap<l>["constraint"]>
 		: never

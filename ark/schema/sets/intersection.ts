@@ -7,6 +7,7 @@ import type {
 } from "@arktype/util"
 import {
 	domainOf,
+	includes,
 	isKeyOf,
 	listFrom,
 	throwInternalError,
@@ -17,9 +18,11 @@ import {
 	baseAttributeKeys,
 	type BaseAttributes,
 	BaseNode,
+	constraintKinds,
 	type declareNode,
 	type IrreducibleRefinementKind,
 	irreducibleRefinementKinds,
+	orderedNodeKinds,
 	type withAttributes
 } from "../base.js"
 import type { BasisKind, parseBasis } from "../bases/basis.js"
@@ -29,26 +32,31 @@ import type { ProtoSchema } from "../bases/proto.js"
 import { ProtoNode } from "../bases/proto.js"
 import type { DiscriminableUnitSchema, UnitSchema } from "../bases/unit.js"
 import { UnitNode } from "../bases/unit.js"
-import type {
-	ConstraintContext,
-	ConstraintIntersectionInput,
-	ConstraintKind
-} from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import {
+	type ConstraintKind,
 	type Node,
 	type NodeClass,
-	type RuleKind,
 	type Schema
 } from "../nodes.js"
+import type {
+	RefinementContext,
+	RefinementIntersectionInput,
+	RefinementKind
+} from "../refinements/refinement.js"
 import { RootNode } from "../root.js"
 import { type MorphSchema } from "./morph.js"
 
 export type IntersectionInner = withAttributes<{
-	readonly [k in RuleKind]?: k extends IrreducibleRefinementKind
+	readonly [k in ConstraintKind]?: k extends IrreducibleRefinementKind
 		? readonly Node<k>[]
 		: Node<k>
 }>
+
+const s: IntersectionSchema = {
+	domain: "number",
+	divisor: 5
+}
 
 export type IntersectionDeclaration = declareNode<
 	"intersection",
@@ -74,7 +82,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	}
 
 	declare readonly constraints: readonly Node<ConstraintKind>[]
-	declare readonly refinements: readonly Node<ConstraintKind>[]
+	declare readonly refinements: readonly Node<RefinementKind>[]
 
 	constructor(inner: IntersectionInner) {
 		const rawConstraints = flattenConstraints(inner)
@@ -108,7 +116,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	static compile = this.defineCompiler((inner) => "true")
 
 	static readonly keyKinds = this.declareKeys(
-		transform(constraintClassesByKind, ([kind]) => [kind, "in"] as const)
+		transform(orderedNodeKinds, ([, kind]) => [kind, "in"] as const)
 	)
 
 	static childrenOf(inner: IntersectionInner): readonly Node<ConstraintKind>[] {
@@ -219,16 +227,16 @@ const addConstraint = (
 	return result
 }
 
-const assertValidRefinements: (
+const assertValidRefinements = (
 	basis: Node<BasisKind> | undefined,
-	refinements: readonly Node<ConstraintKind>[]
-) => asserts refinements is Node<ConstraintKind>[] = (basis, refinements) => {
-	for (const refinement of refinements) {
+	refinements: readonly Node<RefinementKind>[]
+) => {
+	for (const constraint of refinements) {
 		if (
-			!refinement.nodeClass.basis.isUnknown() &&
-			(!basis || !basis.extends(refinement.nodeClass.basis))
+			!constraint.nodeClass.basis.isUnknown() &&
+			(!basis || !basis.extends(constraint.nodeClass.basis))
 		) {
-			throwParseError(refinement.writeInvalidBasisMessage(basis))
+			throwParseError(constraint.nodeClass.writeInvalidBasisMessage(basis))
 		}
 	}
 }
@@ -263,35 +271,35 @@ const parseIntersectionObjectSchema = (schema: BasisedBranchInput) => {
 		: schema.domain
 		? DomainNode.parse(schema.domain)
 		: undefined
-	const refinementContext: ConstraintContext = { basis }
+	const refinementContext: RefinementContext = { basis }
 	return transform(schema, ([k, v]) =>
 		isKeyOf(k, irreducibleRefinementKinds)
 			? [
 					k,
 					listFrom(v).map((innerSchema) =>
-						constraintClassesByKind[k].parse(innerSchema as never)
+						BaseNode.classesByKind[k].parse(innerSchema as never)
 					)
 			  ]
-			: isKeyOf(k, constraintClassesByKind)
-			? [k, (constraintClassesByKind[k].parse as any)(v, refinementContext)]
+			: includes(constraintKinds, k)
+			? [k, (BaseNode.classesByKind[k].parse as any)(v, refinementContext)]
 			: isKeyOf(k, baseAttributeKeys)
 			? [k, v]
-			: throwParseError(`'${k}' is not a valid refinement kind`)
+			: throwParseError(`'${k}' is not a valid constraint kind`)
 	) as IntersectionInner
 }
 
 type refinementKindOf<basis> = {
-	[k in ConstraintKind]: basis extends NodeClass<k>["basis"]["infer"]
+	[k in RefinementKind]: basis extends NodeClass<k>["basis"]["infer"]
 		? k
 		: never
-}[ConstraintKind]
+}[RefinementKind]
 
 export type refinementsOf<basis> = {
 	[k in refinementKindOf<basis>]?: Node<k>
 }
 
 type refinementInputsOf<basis> = {
-	[k in refinementKindOf<basis>]?: ConstraintIntersectionInput<k>
+	[k in refinementKindOf<basis>]?: RefinementIntersectionInput<k>
 }
 
 type IntersectionBasisInput<
@@ -316,11 +324,14 @@ type IntersectionBasisInput<
 export type BasisedBranchInput<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > = IntersectionBasisInput<basis> &
-	refinementInputsOf<parseBasis<basis>> &
+	refinementInputsOf<
+		// include all refinements for the base type
+		Schema<BasisKind> extends basis ? any : parseBasis<basis>
+	> &
 	BaseAttributes
 
 export type UnknownBranchInput = {
-	predicate?: ConstraintIntersectionInput<"predicate">
+	predicate?: RefinementIntersectionInput<"predicate">
 } & BaseAttributes
 
 type DiscriminableBasisInputValue =
