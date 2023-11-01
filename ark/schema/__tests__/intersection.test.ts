@@ -5,12 +5,12 @@ import { describe, test } from "mocha"
 describe("intersections", () => {
 	test("multiple rules", () => {
 		const l = node({
-			domain: "number",
+			basis: "number",
 			divisor: 3,
 			min: 5
 		})
 		const r = node({
-			domain: "number",
+			basis: "number",
 			divisor: 5
 		})
 		const result = l.and(r)
@@ -27,16 +27,16 @@ describe("intersections", () => {
 	test("union", () => {
 		const l = node(
 			{
-				domain: "number",
+				basis: "number",
 				divisor: 2
 			},
 			{
-				domain: "number",
+				basis: "number",
 				divisor: 3
 			}
 		)
 		const r = node({
-			domain: "number",
+			basis: "number",
 			divisor: 5
 		})
 		const result = l.and(r)

@@ -265,7 +265,7 @@ export type MappedBasisedBranchInput<
 export type ListedBasisedBranchInput<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > = IntersectionBasisInput<basis> & {
-	constraints?: readonly discriminableConstraintSchema<parseBasis<basis>>[]
+	constraints: readonly discriminableConstraintSchema<parseBasis<basis>>[]
 } & BaseAttributes
 
 export type UnknownBranchInput = {

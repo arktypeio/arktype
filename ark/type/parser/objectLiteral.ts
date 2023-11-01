@@ -1,5 +1,8 @@
-import { node } from "@arktype/schema"
-import type { NamedPropInner, NamedPropSchema } from "@arktype/schema"
+import {
+	node,
+	type OptionalPropInner,
+	type RequiredPropInner
+} from "@arktype/schema"
 import { type Dict, type ErrorMessage, type evaluate } from "@arktype/util"
 import { stringify } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
@@ -19,8 +22,8 @@ const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 ]
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
-	const required: NamedPropInner[] = []
-	const optional: NamedPropInner[] = []
+	const required: RequiredPropInner[] = []
+	const optional: OptionalPropInner[] = []
 	for (const entry of stringAndSymbolicEntriesOf(def)) {
 		const result = parseEntry(entry)
 		ctx.path.push(
@@ -31,14 +34,16 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 			}`
 		)
 		const valueNode = ctx.scope.parse(result.innerValue, ctx)
-		const schema: NamedPropInner = {
-			key: result.innerKey,
-			value: valueNode
-		}
 		if (result.kind === "optional") {
-			optional.push(schema)
+			optional.push({
+				optional: result.innerKey,
+				value: valueNode
+			})
 		} else {
-			required.push(schema)
+			required.push({
+				required: result.innerKey,
+				value: valueNode
+			})
 		}
 		ctx.path.pop()
 	}

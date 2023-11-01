@@ -36,7 +36,7 @@ export const parseEnclosed = (
 			// rethrow as a ParseError
 			s.error(`${e instanceof Error ? e.message : e}`)
 		}
-		s.root = node({ domain: "string", pattern: token as RegexLiteral })
+		s.root = node({ basis: "string", pattern: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
 		s.root = node({ is: enclosed })
 	} else {

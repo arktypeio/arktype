@@ -10,8 +10,7 @@ import {
 import type { DomainNode } from "./bases/domain.js"
 import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
-import { type RuleKind, type Node } from "./nodes.js"
-import { type BranchNode } from "./sets/union.js"
+import { type Node, type RuleKind } from "./nodes.js"
 
 type DisjointKinds = {
 	domain?: {

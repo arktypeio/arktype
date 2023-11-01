@@ -6,7 +6,7 @@ import { creditCard } from "./utils/creditCard.js"
 // Non-trivial expressions should have an explanation or attribution
 
 const url = node({
-	domain: "string",
+	basis: "string",
 	predicate: (s: string) => {
 		try {
 			new URL(s)
@@ -22,7 +22,7 @@ const url = node({
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
 const email = node({
-	domain: "string",
+	basis: "string",
 	pattern: emailMatcher,
 	description: "a valid email"
 })
@@ -32,7 +32,7 @@ const uuidMatcher =
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 const uuid = node({
-	domain: "string",
+	basis: "string",
 	pattern: uuidMatcher,
 	description: "a valid UUID"
 })
@@ -42,7 +42,7 @@ const semverMatcher =
 
 // https://semver.org/
 const semver = node({
-	domain: "string",
+	basis: "string",
 	pattern: semverMatcher,
 	description: "a valid semantic version (see https://semver.org/)"
 })
@@ -72,7 +72,7 @@ export const validation: RootScope<InferredValidation> = Scope.root({
 	url,
 	semver,
 	integer: node({
-		domain: "number",
+		basis: "number",
 		divisor: 1,
 		description: "an integer"
 	})

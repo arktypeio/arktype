@@ -9,7 +9,7 @@ import { parsedDate } from "./utils/date.js"
 
 const number = node({
 	in: {
-		domain: "string",
+		basis: "string",
 		pattern: wellFormedNumberMatcher,
 		description: "a well-formed numeric string"
 	},
@@ -18,7 +18,7 @@ const number = node({
 
 const integer = node({
 	in: {
-		domain: "string",
+		basis: "string",
 		pattern: wellFormedIntegerMatcher
 	},
 	morph: (s: string, problems) => {
@@ -37,7 +37,7 @@ const integer = node({
 
 const url = node({
 	in: {
-		domain: "string",
+		basis: "string",
 		description: "a valid URL"
 	},
 	morph: (s: string, state) => {
@@ -51,7 +51,7 @@ const url = node({
 
 const json = node({
 	in: {
-		domain: "string",
+		basis: "string",
 		description: "a JSON-parsable string"
 	},
 	morph: (s: string): unknown => JSON.parse(s)

@@ -42,7 +42,7 @@ export const parseObject = (def: object, ctx: ParseContext): Root => {
 		case "Array":
 			return parseTuple(def as List, ctx)
 		case "RegExp":
-			return node({ domain: "string", pattern: def as RegExp })
+			return node({ basis: "string", pattern: def as RegExp })
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
 			if (resolvedDef instanceof Type) {
