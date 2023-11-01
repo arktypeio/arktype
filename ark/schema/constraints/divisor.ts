@@ -18,7 +18,7 @@ export type DivisorDeclaration = declareConstraint<
 		schema: DivisorSchema
 		inner: DivisorInner
 		intersections: {
-			divisor: "divisor"
+			divisor: DivisorNode
 		}
 	},
 	typeof DivisorNode
@@ -32,9 +32,7 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 	}
 
 	static parse(schema: DivisorSchema) {
-		return new DivisorNode(
-			typeof schema === "number" ? { divisor: schema } : schema
-		)
+		return typeof schema === "number" ? { divisor: schema } : schema
 	}
 
 	static readonly compile = this.defineCompiler(

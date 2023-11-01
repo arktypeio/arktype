@@ -51,8 +51,8 @@ export type IntersectionDeclaration = declareNode<
 		schema: IntersectionSchema
 		inner: IntersectionInner
 		intersections: {
-			intersection: "intersection" | Disjoint
-			rule: "unit" | "intersection" | Disjoint
+			intersection: IntersectionNode | Disjoint
+			rule: IntersectionNode | Disjoint
 		}
 	},
 	typeof IntersectionNode
@@ -105,7 +105,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 		rule: (l, r) => intersectRule(l.intersection, r)
 	})
 
-	static parse(schema: IntersectionSchema) {
+	static parse(schema: IntersectionSchema): IntersectionInner {
 		const collapsedResult = maybeParseBasis(schema)
 		if (collapsedResult) {
 			return collapsedResult

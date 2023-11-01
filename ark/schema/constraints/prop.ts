@@ -31,16 +31,16 @@ export type RequiredDeclaration = declareConstraint<
 		schema: RequiredPropSchema
 		inner: RequiredPropInner
 		intersections: {
-			required: "required" | Disjoint | null
+			required: RequiredPropNode | Disjoint | null
 		}
 	},
-	typeof RequiredNode
+	typeof RequiredPropNode
 >
 
 const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 	`Props may only be applied to an object basis (was ${getBasisName(basis)})`
 
-export class RequiredNode extends BaseNode<RequiredDeclaration> {
+export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
 	static readonly kind = "required"
 
 	static {
@@ -65,7 +65,7 @@ export class RequiredNode extends BaseNode<RequiredDeclaration> {
 	})
 
 	static parse(schema: RequiredPropSchema) {
-		return new RequiredNode(schema as never)
+		return schema as never
 	}
 
 	static writeDefaultDescription(inner: RequiredPropInner) {
@@ -104,13 +104,13 @@ export type OptionalDeclaration = declareConstraint<
 		schema: OptionalPropSchema
 		inner: OptionalPropInner
 		intersections: {
-			optional: "optional" | Disjoint | null
+			optional: OptionalPropNode | Disjoint | null
 		}
 	},
-	typeof OptionalNode
+	typeof OptionalPropNode
 >
 
-export class OptionalNode extends BaseNode<OptionalDeclaration> {
+export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 	static readonly kind = "optional"
 
 	static {
@@ -138,7 +138,7 @@ export class OptionalNode extends BaseNode<OptionalDeclaration> {
 	})
 
 	static parse(schema: OptionalPropSchema) {
-		return new OptionalNode(schema as never)
+		return schema as never
 	}
 
 	static writeDefaultDescription(inner: OptionalPropInner) {

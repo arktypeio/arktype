@@ -1,10 +1,12 @@
 import type {
 	Dict,
+	evaluate,
 	extend,
 	Fn,
 	instanceOf,
 	Json,
 	JsonData,
+	requireKeys,
 	satisfy
 } from "@arktype/util"
 import {
@@ -29,9 +31,9 @@ import {
 	type Node,
 	type NodeClass,
 	type NodeKind,
-	type RuleKind
+	type RuleKind,
+	type Schema
 } from "./nodes.js"
-import { type Root } from "./root.js"
 import { type SetKind } from "./sets/set.js"
 import { inferred } from "./utils.js"
 
@@ -44,7 +46,9 @@ export type withAttributes<o extends object> = extend<BaseAttributes, o>
 
 export type DeclaredTypes<kind extends NodeKind> = {
 	schema: unknown
-	inner: BaseAttributes
+	// each node's inner definition must have a required key with the same name
+	// as its kind that can be used as a discriminator.
+	inner: BaseAttributes & { [k in kind]: unknown }
 	intersections: BaseIntersectionMap[kind]
 }
 
@@ -76,18 +80,12 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 	kind: d["kind"]
 	keyKinds: Record<keyof d["inner"], keyof NodeIds>
 	serialize(inner: d["inner"]): Json
-	parse(
-		input: d["schema"],
-		ctx: ConstraintContext
-	): d["kind"] extends "union"
-		? Root
-		: d["kind"] extends "intersection"
-		? Node<"intersection" | BasisKind>
-		: instanceOf<d["class"]>
-	children?(inner: d["inner"]): readonly UnknownNode[]
+	parse(input: d["schema"], ctx: ConstraintContext): d["inner"]
 	intersections: LeftIntersections<d["kind"]>
 	compile(inner: d["inner"]): string
 	writeDefaultDescription(inner: d["inner"]): string
+	normalize?(input: d["inner"]): UnknownNode
+	children?(inner: d["inner"]): readonly UnknownNode[]
 }
 
 export const setKinds = [
@@ -145,11 +143,16 @@ export type rightOf<kind extends NodeKind> = OrderedNodeKinds extends readonly [
 	: never
 
 export type BaseIntersectionMap = {
-	[lKey in NodeKind]: { [_ in lKey]: NodeKind | Disjoint | null } & {
-		[rKey in NodeKind]?: rKey extends allowedAsymmetricOperandOf<lKey>
-			? NodeKind | Disjoint | null
-			: never
-	}
+	[lKey in NodeKind]: requireKeys<
+		{
+			[rKey in
+				| NodeKind
+				| "rule"]?: rKey extends allowedAsymmetricOperandOf<lKey>
+				? Node<lKey> | Disjoint | null
+				: never
+		},
+		lKey
+	>
 }
 
 export const irreducibleConstraintKinds = {
@@ -192,8 +195,8 @@ export abstract class BaseNode<
 
 	readonly json: Json
 	readonly children: childrenOf<declaration["class"]>
-	readonly references: readonly Node[]
-	protected readonly contributesReferences: readonly Node[]
+	readonly references: readonly UnknownNode[]
+	protected readonly contributesReferences: readonly UnknownNode[]
 	readonly alias: string
 	readonly description: string
 	readonly ids: NodeIds = new NodeIds(this)
@@ -213,7 +216,7 @@ export abstract class BaseNode<
 		this.references = this.children.flatMap(
 			(child) => child.contributesReferences
 		)
-		this.contributesReferences = [this as never, ...this.references]
+		this.contributesReferences = [this, ...this.references]
 		this.allows = new CompiledFunction(
 			BaseNode.argName,
 			`return ${this.condition}`
@@ -293,6 +296,16 @@ export abstract class BaseNode<
 		serializer: (inner: Inner<kindOf<nodeClass>>) => Json
 	) {
 		return serializer
+	}
+
+	protected static defineParser<
+		nodeClass,
+		parser extends (
+			schema: Schema<kindOf<nodeClass>>,
+			ctx: ConstraintContext
+		) => Inner<kindOf<nodeClass>>
+	>(this: nodeClass, parser: parser) {
+		return parser
 	}
 
 	serialize(kind: keyof NodeIds = "meta") {
@@ -390,9 +403,8 @@ type collectSingleResult<
 		: never
 	: never
 
-type instantiateIntersection<result> = result extends NodeKind
-	? Node<result>
-	: result
+// TODO: add reductions
+type instantiateIntersection<result> = result
 
 export class NodeIds {
 	private cache: { -readonly [k in keyof NodeIds]?: string } = {}

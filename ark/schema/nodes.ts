@@ -103,8 +103,8 @@ type intersectionGroupOf<rKind> = rKind extends NodeKind
 	? RuleKind
 	: never
 
-type reifyIntersectionResult<result> = result extends NodeKind
-	? Inner<result>
+type reifyIntersectionResult<result> = result extends Node
+	? result["inner"]
 	: result
 
 export type RuleDeclarationsByKind = extend<

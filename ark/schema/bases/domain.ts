@@ -23,7 +23,7 @@ export type DomainDeclaration = declareNode<
 		schema: DomainSchema
 		inner: DomainInner
 		intersections: {
-			domain: "domain" | Disjoint
+			domain: DomainNode | Disjoint
 		}
 	},
 	typeof DomainNode
@@ -51,11 +51,9 @@ export class DomainNode<t = unknown>
 			: `typeof ${this.argName} === "${inner.domain}"`
 	)
 
-	static parse(schema: DomainSchema) {
-		return new DomainNode(
-			typeof schema === "string" ? { domain: schema } : schema
-		)
-	}
+	static parse = this.defineParser((schema) =>
+		typeof schema === "string" ? { domain: schema } : schema
+	)
 
 	static writeDefaultDescription(inner: DomainInner) {
 		return domainDescriptions[inner.domain]

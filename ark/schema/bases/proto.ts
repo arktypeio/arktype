@@ -11,7 +11,6 @@ import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import { RootNode } from "../root.js"
 import type { BaseBasis } from "./basis.js"
-import { type DomainNode } from "./domain.js"
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor
@@ -29,8 +28,8 @@ export type ProtoDeclaration = declareNode<
 		schema: ProtoSchema
 		inner: ProtoInner
 		intersections: {
-			proto: "proto" | Disjoint
-			domain: "proto" | Disjoint
+			proto: ProtoNode | Disjoint
+			domain: ProtoNode | Disjoint
 		}
 	},
 	typeof ProtoNode
@@ -74,11 +73,9 @@ export class ProtoNode<t extends object = object>
 			}`
 	)
 
-	static parse(schema: ProtoSchema) {
-		return new ProtoNode(
-			typeof schema === "function" ? { proto: schema } : schema
-		)
-	}
+	static parse = this.defineParser((schema) =>
+		typeof schema === "function" ? { proto: schema } : schema
+	)
 
 	static writeDefaultDescription(inner: ProtoInner) {
 		const knownObjectKind = getExactBuiltinConstructorName(inner.proto)

@@ -23,7 +23,7 @@ export type PredicateDeclaration = declareConstraint<
 		schema: PredicateSchema
 		inner: PredicateInner
 		intersections: {
-			predicate: "predicate" | null
+			predicate: PredicateNode | null
 		}
 	},
 	typeof PredicateNode
@@ -51,9 +51,7 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 	})
 
 	static parse(schema: PredicateSchema) {
-		return new PredicateNode(
-			typeof schema === "function" ? { predicate: schema } : schema
-		)
+		return typeof schema === "function" ? { predicate: schema } : schema
 	}
 
 	static writeDefaultDescription(inner: PredicateInner) {

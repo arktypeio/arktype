@@ -17,8 +17,8 @@ export type UnitDeclaration = declareNode<
 		schema: UnitSchema
 		inner: UnitInner
 		intersections: {
-			unit: "unit" | Disjoint
-			rule: "unit" | Disjoint
+			unit: UnitNode | Disjoint
+			rule: UnitNode | Disjoint
 		}
 	},
 	typeof UnitNode
@@ -53,9 +53,7 @@ export class UnitNode<t = unknown>
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	})
 
-	static parse(schema: UnitSchema) {
-		return new UnitNode(schema)
-	}
+	static parse = this.defineParser((schema) => schema)
 
 	static writeDefaultDescription(inner: UnitInner) {
 		return stringify(inner.unit)

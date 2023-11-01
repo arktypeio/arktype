@@ -24,7 +24,7 @@ export type PatternDeclaration = declareConstraint<
 		schema: PatternSchema
 		inner: PatternInner
 		intersections: {
-			pattern: "pattern" | null
+			pattern: PatternNode | null
 		}
 	},
 	typeof PatternNode
@@ -47,11 +47,9 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 	})
 
 	static parse(schema: PatternSchema) {
-		return new PatternNode(
-			typeof schema === "string" || schema instanceof RegExp
-				? { pattern: parseRegexInput(schema) }
-				: { ...schema, pattern: parseRegexInput(schema.pattern) }
-		)
+		return typeof schema === "string" || schema instanceof RegExp
+			? { pattern: parseRegexInput(schema) }
+			: { ...schema, pattern: parseRegexInput(schema.pattern) }
 	}
 
 	static readonly compile = this.defineCompiler(

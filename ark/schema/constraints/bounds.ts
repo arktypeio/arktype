@@ -67,7 +67,7 @@ export type MinDeclaration = declareConstraint<
 		schema: MinSchema
 		inner: MinInner
 		intersections: {
-			min: "min"
+			min: MinNode
 		}
 	},
 	typeof MinNode
@@ -88,11 +88,9 @@ export class MinNode extends BaseBound<MinDeclaration> {
 
 	static parse(schema: MinSchema, ctx: ConstraintContext) {
 		const boundKind = getBoundKind(ctx.basis)
-		return new MinNode(
-			typeof schema === "object"
-				? { ...schema, min: parseLimit(schema.min), boundKind }
-				: { min: parseLimit(schema), boundKind }
-		)
+		return typeof schema === "object"
+			? { ...schema, min: parseLimit(schema.min), boundKind }
+			: { min: parseLimit(schema), boundKind }
 	}
 
 	static readonly compile = this.defineCompiler(
@@ -138,7 +136,7 @@ export type MaxDeclaration = declareConstraint<
 		schema: MaxSchema
 		inner: MaxInner
 		intersections: {
-			max: "max"
+			max: MaxNode
 			min: Disjoint | null
 		}
 	},
@@ -182,14 +180,14 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 		return `${comparisonDescription} ${inner.max}`
 	}
 
-	static parse(schema: MaxSchema, ctx: ConstraintContext) {
-		const boundKind = getBoundKind(ctx.basis)
-		return new MaxNode(
-			typeof schema === "object"
+	static parse = this.defineParser(
+		(schema: MaxSchema, ctx: ConstraintContext) => {
+			const boundKind = getBoundKind(ctx.basis)
+			return typeof schema === "object"
 				? { ...schema, max: parseLimit(schema.max), boundKind }
 				: { max: parseLimit(schema), boundKind }
-		)
-	}
+		}
+	)
 }
 
 const parseLimit = (limitLiteral: BoundLimit): number =>

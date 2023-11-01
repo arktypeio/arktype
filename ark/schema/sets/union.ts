@@ -10,7 +10,6 @@ import {
 	type IntersectionSchema
 } from "./intersection.js"
 import { type MorphNode, type MorphSchema } from "./morph.js"
-import { type SetKind } from "./set.js"
 
 export type BranchNode = IntersectionNode | MorphNode | Node<BasisKind>
 
@@ -34,10 +33,10 @@ export type UnionDeclaration = declareNode<
 		schema: UnionSchema
 		inner: UnionInner
 		intersections: {
-			union: SetKind | Disjoint
-			morph: "union" | "morph" | Disjoint
-			intersection: "union" | "intersection" | Disjoint
-			rule: SetKind | BasisKind | Disjoint
+			union: UnionNode | Disjoint
+			morph: UnionNode | Disjoint
+			intersection: UnionNode | Disjoint
+			rule: UnionNode | Disjoint
 		}
 	},
 	typeof UnionNode
@@ -62,7 +61,7 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 		union: "in"
 	})
 
-	static parse(schema: UnionSchema) {
+	static parse = this.defineParser((schema) => {
 		const result = {} as mutable<UnionInner>
 		let schemaBranches: readonly BranchSchema[]
 		if (isArray(schema)) {
@@ -72,18 +71,13 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 			Object.assign(result, attributes)
 			schemaBranches = branches
 		}
-		result.union = reduceBranches(
-			schemaBranches.map((branch) =>
-				typeof branch === "object" && "morph" in branch
-					? this.classesByKind.morph.parse(branch)
-					: this.classesByKind.intersection.parse(branch)
-			)
+		result.union = schemaBranches.map((branch) =>
+			typeof branch === "object" && "morph" in branch
+				? this.classesByKind.morph.parse(branch)
+				: this.classesByKind.intersection.parse(branch)
 		)
-		if (result.union.length === 1) {
-			return result.union[0]
-		}
-		return new UnionNode(result)
-	}
+		return result
+	})
 
 	private static intersectBranch = (
 		l: UnionNode,

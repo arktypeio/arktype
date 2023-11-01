@@ -1,5 +1,14 @@
-import { type listable, type mutable, throwParseError } from "@arktype/util"
-import { type declareNode, type withAttributes } from "../base.js"
+import {
+	type listable,
+	type mutable,
+	type satisfy,
+	throwParseError
+} from "@arktype/util"
+import {
+	type BaseIntersectionMap,
+	type declareNode,
+	type withAttributes
+} from "../base.js"
 import { type BasisKind } from "../bases/basis.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
@@ -38,9 +47,9 @@ export type MorphDeclaration = declareNode<
 		schema: MorphSchema
 		inner: MorphInner
 		intersections: {
-			morph: "morph" | Disjoint
-			intersection: "morph" | Disjoint
-			rule: "morph" | Disjoint
+			morph: MorphNode | Disjoint
+			intersection: MorphNode | Disjoint
+			rule: MorphNode | Disjoint
 		}
 	},
 	typeof MorphNode
@@ -144,7 +153,7 @@ export class MorphNode<t = unknown> extends RootNode<MorphDeclaration, t> {
 		if (schema.out) {
 			inner.out = IntersectionNode.parse(schema.out)
 		}
-		return new MorphNode(inner)
+		return inner
 	}
 }
 
