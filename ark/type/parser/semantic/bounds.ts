@@ -1,5 +1,5 @@
 import type {
-	NumericallyBoundableData,
+	NumericallyBoundable,
 	writeUnboundableMessage
 } from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
@@ -35,7 +35,7 @@ export type validateBound<
 	$,
 	args
 > = inferAst<boundedAst, $, args> extends infer bounded
-	? [bounded] extends [NumericallyBoundableData]
+	? [bounded] extends [NumericallyBoundable]
 		? limit extends number
 			? validateAst<boundedAst, $, args>
 			: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>

@@ -24,11 +24,6 @@ export type PartialRecord<k extends string = string, v = unknown> = {
 	[_ in k]?: v
 }
 
-export const hasKey = <o extends object, k extends PropertyKey>(
-	o: o,
-	k: k
-): o is Extract<o, { [_ in k]: {} | null }> => k in o
-
 export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
 
 export type mutable<o> = {
