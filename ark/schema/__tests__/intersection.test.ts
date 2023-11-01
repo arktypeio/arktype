@@ -3,7 +3,7 @@ import { node } from "@arktype/schema"
 import { describe, test } from "mocha"
 
 describe("intersections", () => {
-	test("multiple constraints", () => {
+	test("multiple rules", () => {
 		const l = node({
 			domain: "number",
 			divisor: 3,

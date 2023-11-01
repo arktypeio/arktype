@@ -14,22 +14,22 @@ import {
 	throwInternalError
 } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
+import {
+	type ConstraintContext,
+	type ConstraintKind
+} from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
-	type ConstraintKind,
 	type Inner,
 	type IntersectionMap,
 	type LeftIntersections,
 	type Node,
 	type NodeClass,
-	type NodeKind
+	type NodeKind,
+	type RuleKind
 } from "./nodes.js"
-import {
-	type RefinementContext,
-	type RefinementKind
-} from "./refinements/refinement.js"
 import { type Root } from "./root.js"
 import { type SetKind } from "./sets/set.js"
 import { inferred } from "./utils.js"
@@ -76,7 +76,7 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 	keyKinds: Record<keyof d["inner"], keyof NodeIds>
 	parse(
 		input: d["schema"],
-		ctx: RefinementContext
+		ctx: ConstraintContext
 	): d["kind"] extends "union"
 		? Root
 		: d["kind"] extends "intersection"
@@ -100,7 +100,7 @@ export const basisKinds = [
 	"domain"
 ] as const satisfies readonly BasisKind[]
 
-export const refinementKinds = [
+export const constraintKinds = [
 	"divisor",
 	"max",
 	"min",
@@ -108,16 +108,16 @@ export const refinementKinds = [
 	"predicate",
 	"required",
 	"optional"
-] as const satisfies readonly RefinementKind[]
-
-export const constraintKinds = [
-	...basisKinds,
-	...refinementKinds
 ] as const satisfies readonly ConstraintKind[]
+
+export const ruleKinds = [
+	...basisKinds,
+	...constraintKinds
+] as const satisfies readonly RuleKind[]
 
 export const orderedNodeKinds = [
 	...setKinds,
-	...constraintKinds
+	...ruleKinds
 ] as const satisfies readonly NodeKind[]
 
 type OrderedNodeKinds = typeof orderedNodeKinds
@@ -130,9 +130,9 @@ type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 type allowedAsymmetricOperandOf<kind extends NodeKind> =
 	| rightOf<kind>
-	// SetKinds must intersect with constraint, and unit being the
-	// highest precedence constraint is the only other node that can unambiguously.
-	| (kind extends SetKind | "unit" ? "constraint" : never)
+	// SetKinds must intersect with rule, and unit being the
+	// highest precedence rule is the only other node that can unambiguously.
+	| (kind extends SetKind | "unit" ? "rule" : never)
 
 export type rightOf<kind extends NodeKind> = OrderedNodeKinds extends readonly [
 	...unknown[],
@@ -150,13 +150,14 @@ export type BaseIntersectionMap = {
 	}
 }
 
-export const irreducibleRefinementKinds = {
+export const irreducibleConstraintKinds = {
 	pattern: 1,
 	predicate: 1,
-	required: 1
+	required: 1,
+	optional: 1
 } as const
 
-export type IrreducibleRefinementKind = keyof typeof irreducibleRefinementKinds
+export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
 
 type kindOf<nodeClass> = instanceOf<nodeClass> extends {
 	kind: infer kind extends NodeKind
@@ -283,8 +284,8 @@ export abstract class BaseNode<
 		const r = l === this ? other : this
 		const intersector =
 			l.nodeClass.intersections[r.kind] ??
-			(includes(constraintKinds, r.kind)
-				? l.nodeClass.intersections["constraint"]
+			(includes(ruleKinds, r.kind)
+				? l.nodeClass.intersections["rule"]
 				: undefined)
 		const result = intersector?.(l, r)
 		if (result) {
@@ -368,9 +369,9 @@ type collectSingleResult<
 	r extends NodeKind
 > = r extends keyof IntersectionMap<l>
 	? instantiateIntersection<IntersectionMap<l>[r]>
-	: r extends ConstraintKind
-	? "constraint" extends keyof IntersectionMap<l>
-		? instantiateIntersection<IntersectionMap<l>["constraint"]>
+	: r extends RuleKind
+	? "rule" extends keyof IntersectionMap<l>
+		? instantiateIntersection<IntersectionMap<l>["rule"]>
 		: never
 	: never
 

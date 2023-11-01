@@ -24,7 +24,7 @@ export type UnitDeclaration = declareNode<
 		inner: UnitInner
 		intersections: {
 			unit: "unit" | Disjoint
-			constraint: "unit" | Disjoint
+			rule: "unit" | Disjoint
 		}
 	},
 	typeof UnitNode
@@ -56,7 +56,7 @@ export class UnitNode
 
 	static readonly intersections = this.defineIntersections({
 		unit: (l, r) => Disjoint.from("unit", l, r),
-		constraint: (l, r) =>
+		rule: (l, r) =>
 			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
 	})
 

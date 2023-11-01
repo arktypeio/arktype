@@ -37,7 +37,7 @@ export type UnionDeclaration = declareNode<
 			union: SetKind | Disjoint
 			morph: "union" | "morph" | Disjoint
 			intersection: "union" | "intersection" | Disjoint
-			constraint: SetKind | BasisKind | Disjoint
+			rule: SetKind | BasisKind | Disjoint
 		}
 	},
 	typeof UnionNode
@@ -202,7 +202,7 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 		},
 		morph: this.intersectBranch,
 		intersection: this.intersectBranch,
-		constraint: (l, r) => {
+		rule: (l, r) => {
 			const branches: BranchNode[] = []
 			for (const branch of l.branches) {
 				const branchResult = branch.intersect(r)

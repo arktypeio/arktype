@@ -3,11 +3,11 @@ import { builtins, DivisorNode, node } from "./ark/schema/main.js"
 
 const l = node(
 	{
-		domain: "number",
+		basis: "number",
 		divisor: 2
 	},
 	{
-		domain: "number",
+		basis: "number",
 		divisor: 5
 	}
 )

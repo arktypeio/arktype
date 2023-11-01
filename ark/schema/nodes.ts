@@ -1,7 +1,7 @@
 import type { conform, extend, instanceOf, listable } from "@arktype/util"
 import { type BasisDeclarationsByKind } from "./bases/basis.js"
 import { UnitNode } from "./bases/unit.js"
-import { type RefinementDeclarationsByKind } from "./refinements/refinement.js"
+import { type ConstraintDeclarationsByKind } from "./constraints/constraint.js"
 import { type Root } from "./root.js"
 import {
 	type IntersectionSchema,
@@ -92,23 +92,23 @@ type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 
 type intersectionGroupOf<rKind> = rKind extends NodeKind
 	? rKind
-	: rKind extends "constraint"
-	? ConstraintKind
+	: rKind extends "rule"
+	? RuleKind
 	: never
 
 type reifyIntersectionResult<result> = result extends NodeKind
 	? Inner<result>
 	: result
 
-export type ConstraintDeclarationsByKind = extend<
+export type RuleDeclarationsByKind = extend<
 	BasisDeclarationsByKind,
-	RefinementDeclarationsByKind
+	ConstraintDeclarationsByKind
 >
 
-export type ConstraintKind = keyof ConstraintDeclarationsByKind
+export type RuleKind = keyof RuleDeclarationsByKind
 
 export type NodeDeclarationsByKind = extend<
-	ConstraintDeclarationsByKind,
+	RuleDeclarationsByKind,
 	SetDeclarationsByKind
 >
 

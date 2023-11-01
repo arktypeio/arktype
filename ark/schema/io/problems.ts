@@ -16,7 +16,7 @@ import { domainDescriptions } from "../bases/domain.js"
 import {
 	type BoundInner,
 	type NumericallyBoundable
-} from "../refinements/bounds.js"
+} from "../constraints/bounds.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems

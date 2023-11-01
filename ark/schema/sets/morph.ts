@@ -40,7 +40,7 @@ export type MorphDeclaration = declareNode<
 		intersections: {
 			morph: "morph" | Disjoint
 			intersection: "morph" | Disjoint
-			constraint: "morph" | Disjoint
+			rule: "morph" | Disjoint
 		}
 	},
 	typeof MorphNode
@@ -119,7 +119,7 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 						in: inTersection
 				  }
 		},
-		constraint: (l, r) => {
+		rule: (l, r) => {
 			// TODO: remove cast?
 			const input = l.in ?? (builtins().unknown as IntersectionNode<unknown>)
 			const constrainedInput = input.intersect(r)

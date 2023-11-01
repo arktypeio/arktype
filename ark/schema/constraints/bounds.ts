@@ -6,7 +6,7 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import type { declareRefinement, RefinementContext } from "./refinement.js"
+import type { declareConstraint, ConstraintContext } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type BoundInner = withAttributes<{
@@ -61,7 +61,7 @@ export type ExpandedMinSchema = extend<
 
 export type MinSchema = BoundLimit | ExpandedMinSchema
 
-export type MinDeclaration = declareRefinement<
+export type MinDeclaration = declareConstraint<
 	"min",
 	{
 		schema: MinSchema
@@ -87,7 +87,7 @@ export class MinNode extends BaseBound<MinDeclaration> {
 		boundKind: "in"
 	})
 
-	static parse(schema: MinSchema, ctx: RefinementContext) {
+	static parse(schema: MinSchema, ctx: ConstraintContext) {
 		const boundKind = getBoundKind(ctx.basis)
 		return new MinNode(
 			typeof schema === "object"
@@ -133,7 +133,7 @@ export type ExpandedMaxSchema = extend<
 
 export type MaxSchema = BoundLimit | ExpandedMaxSchema
 
-export type MaxDeclaration = declareRefinement<
+export type MaxDeclaration = declareConstraint<
 	"max",
 	{
 		schema: MaxSchema
@@ -184,7 +184,7 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 		return `${comparisonDescription} ${inner.max}`
 	}
 
-	static parse(schema: MaxSchema, ctx: RefinementContext) {
+	static parse(schema: MaxSchema, ctx: ConstraintContext) {
 		const boundKind = getBoundKind(ctx.basis)
 		return new MaxNode(
 			typeof schema === "object"

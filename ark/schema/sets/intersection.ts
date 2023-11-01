@@ -7,50 +7,41 @@ import type {
 } from "@arktype/util"
 import {
 	domainOf,
+	entriesOf,
 	includes,
-	isKeyOf,
 	listFrom,
 	throwInternalError,
-	throwParseError,
-	transform
+	throwParseError
 } from "@arktype/util"
 import {
-	baseAttributeKeys,
 	type BaseAttributes,
 	BaseNode,
 	constraintKinds,
 	type declareNode,
-	type IrreducibleRefinementKind,
-	irreducibleRefinementKinds,
-	orderedNodeKinds,
 	type withAttributes
 } from "../base.js"
-import type { BasisKind, parseBasis } from "../bases/basis.js"
-import type { DomainSchema, NonEnumerableDomain } from "../bases/domain.js"
-import { DomainNode } from "../bases/domain.js"
-import type { ProtoSchema } from "../bases/proto.js"
-import { ProtoNode } from "../bases/proto.js"
-import type { DiscriminableUnitSchema, UnitSchema } from "../bases/unit.js"
-import { UnitNode } from "../bases/unit.js"
-import { Disjoint } from "../disjoint.js"
 import {
-	type ConstraintKind,
-	type Node,
-	type NodeClass,
-	type Schema
-} from "../nodes.js"
+	type BasisKind,
+	maybeParseCollapsedBasis,
+	parseBasis
+} from "../bases/basis.js"
+import type { NonEnumerableDomain } from "../bases/domain.js"
+import type { DiscriminableUnitSchema } from "../bases/unit.js"
 import type {
-	RefinementContext,
-	RefinementIntersectionInput,
-	RefinementKind
-} from "../refinements/refinement.js"
+	ConstraintContext,
+	constraintInputsByKind,
+	ConstraintIntersectionInput,
+	ConstraintKind,
+	discriminableConstraintSchema
+} from "../constraints/constraint.js"
+import { Disjoint } from "../disjoint.js"
+import { type Node, type RuleKind, type Schema } from "../nodes.js"
 import { RootNode } from "../root.js"
 import { type MorphSchema } from "./morph.js"
 
 export type IntersectionInner = withAttributes<{
-	readonly [k in ConstraintKind]?: k extends IrreducibleRefinementKind
-		? readonly Node<k>[]
-		: Node<k>
+	basis: Node<BasisKind> | undefined
+	constraints: readonly Node<ConstraintKind>[]
 }>
 
 export type IntersectionDeclaration = declareNode<
@@ -60,7 +51,7 @@ export type IntersectionDeclaration = declareNode<
 		inner: IntersectionInner
 		intersections: {
 			intersection: "intersection" | Disjoint
-			constraint: "intersection" | Disjoint
+			rule: "intersection" | Disjoint
 		}
 	},
 	typeof IntersectionNode
@@ -76,198 +67,180 @@ export class IntersectionNode<t = unknown> extends RootNode<
 		this.classesByKind.intersection = this
 	}
 
-	declare readonly constraints: readonly Node<ConstraintKind>[]
-	declare readonly refinements: readonly Node<RefinementKind>[]
-
 	constructor(inner: IntersectionInner) {
-		const rawConstraints = flattenConstraints(inner)
-		// TODO: sort constraints
-		const reducedConstraints = intersectConstraints([], rawConstraints)
-		if (reducedConstraints instanceof Disjoint) {
-			return reducedConstraints.throw()
-		}
-		if (reducedConstraints.length < rawConstraints.length) {
-			const reducedInner = unflattenConstraints(reducedConstraints)
-			if ("alias" in inner) {
-				reducedInner.alias = inner.alias
-			}
-			if ("description" in inner) {
-				reducedInner.description = inner.description
-			}
-			inner = reducedInner
-		}
 		super(inner)
-		this.constraints = reducedConstraints
-		this.basis = this.constraints[0]?.isBasis()
-			? this.constraints[0]
-			: undefined
-		this.refinements = (
-			this.constraints[0]?.isBasis()
-				? this.constraints.slice(1)
-				: this.constraints
-		) as never
-		assertValidRefinements(this.basis, this.refinements)
+		assertValidConstraints(this.basis, this.constraints)
 	}
 
 	static compile = this.defineCompiler((inner) => "true")
 
-	static readonly keyKinds = this.declareKeys(
-		transform(orderedNodeKinds, ([, kind]) => [kind, "in"] as const)
-	)
+	static readonly keyKinds = this.declareKeys({
+		basis: "in",
+		constraints: "in"
+	})
 
-	static childrenOf(inner: IntersectionInner): readonly Node<ConstraintKind>[] {
+	static childrenOf(inner: IntersectionInner): readonly Node<RuleKind>[] {
 		return Object.values(inner)
 			.flat()
-			.filter(
-				(value): value is Node<ConstraintKind> => value instanceof BaseNode
-			)
+			.filter((value): value is Node<RuleKind> => value instanceof BaseNode)
 	}
 
 	static readonly intersections = this.defineIntersections({
 		intersection: (l, r) => {
-			const constraints = intersectConstraints(l.constraints, r.constraints)
-			return constraints instanceof Disjoint
-				? constraints
-				: unflattenConstraints(constraints)
+			let result: IntersectionInner | Disjoint = l
+			for (const constraint of r.constraints) {
+				if (result instanceof Disjoint) {
+					break
+				}
+				result = intersectRule(result.basis, result.constraints, constraint)
+			}
+			return result
 		},
-		constraint: (l, r) => {
-			const constraints = addConstraint(l.constraints, r)
-			return constraints instanceof Disjoint
-				? constraints
-				: unflattenConstraints(constraints)
-		}
+		rule: (l, r) => intersectRule(l.basis, l.constraints, r)
 	})
 
-	readonly basis: Node<BasisKind> | undefined
-
 	static parse(schema: IntersectionSchema) {
-		if (typeof schema === "string") {
-			return DomainNode.parse(schema)
+		const collapsedResult = maybeParseCollapsedBasis(schema)
+		if (collapsedResult) {
+			return collapsedResult
 		}
-		if (typeof schema === "function") {
-			return ProtoNode.parse(schema)
+		if (typeof schema !== "object") {
+			return throwParseError(
+				`${domainOf(schema)} is not a valid intersection schema input`
+			)
 		}
-		if (typeof schema === "object") {
-			if ("is" in schema) {
-				return UnitNode.parse(schema)
-			}
-			// this could also be UnknownBranchInput but basised makes the type
-			// easier to deal with internally
-			return this.parseIntersectionObjectSchema(schema as BasisedBranchInput)
-		}
-		return throwParseError(
-			`${domainOf(schema)} is not a valid intersection schema input.`
-		)
+		return this.parseIntersectionObjectSchema(schema)
 	}
 
-	private static parseIntersectionObjectSchema(schema: BasisedBranchInput) {
-		const basis: Node<BasisKind> | undefined = schema.unit
-			? UnitNode.parse(schema.unit)
-			: schema.proto
-			? ProtoNode.parse(schema.proto)
-			: schema.domain
-			? DomainNode.parse(schema.domain)
-			: undefined
-		if (basis && Object.keys(schema).length === 1) {
+	private static parseIntersectionObjectSchema({
+		basis: basisSchema,
+		alias,
+		description,
+		...constraintSchemas
+	}: ExpandedIntersectionSchema) {
+		const basis = basisSchema ? parseBasis(basisSchema) : undefined
+		if (basis && Object.keys(constraintSchemas).length === 0) {
 			return basis
 		}
-		const refinementContext: RefinementContext = { basis }
+		const constraintContext: ConstraintContext = { basis }
 		// TODO: reduction here?
-		return new IntersectionNode(
-			transform(schema, ([k, v]) =>
-				isKeyOf(k, irreducibleRefinementKinds)
-					? [
-							k,
-							listFrom(v).map((innerSchema) =>
-								BaseNode.classesByKind[k].parse(innerSchema as never)
-							)
-					  ]
-					: includes(constraintKinds, k)
-					? [k, (BaseNode.classesByKind[k].parse as any)(v, refinementContext)]
-					: isKeyOf(k, baseAttributeKeys)
-					? [k, v]
-					: throwParseError(`'${k}' is not a valid constraint kind`)
-			) as IntersectionInner
-		)
+		const intersectionInner: mutable<IntersectionInner> = {
+			basis,
+			constraints:
+				"constraints" in constraintSchemas
+					? parseListedConstraints(
+							constraintSchemas.constraints,
+							constraintContext
+					  )
+					: parseMappedConstraints(
+							constraintSchemas as constraintInputsByKind<any>,
+							constraintContext
+					  )
+		}
+		if (alias) {
+			intersectionInner.alias = alias
+		}
+		if (description) {
+			intersectionInner.description = description
+		}
+		return new IntersectionNode(intersectionInner)
 	}
 
 	static writeDefaultDescription(inner: IntersectionInner) {
-		const constraints = flattenConstraints(inner)
-		return constraints.length === 0 ? "a value" : constraints.join(" and ")
+		return `${inner.basis ?? "a value"}${
+			inner.constraints.length ? inner.constraints.join(" and ") : ""
+		}`
 	}
 }
 
-const flattenConstraints = (inner: IntersectionInner) =>
-	Object.values(inner)
-		.flat()
-		.filter((v): v is Node<ConstraintKind> => v instanceof BaseNode)
+const parseMappedConstraints = (
+	constraints: constraintInputsByKind<any>,
+	ctx: ConstraintContext
+): Node<ConstraintKind>[] =>
+	entriesOf(constraints).flatMap(([k, schemas]) =>
+		includes(constraintKinds, k)
+			? listFrom(schemas).map((schema) =>
+					BaseNode.classesByKind[k].parse(schema as never, ctx)
+			  )
+			: throwParseError(`'${k}' is not a valid constraint kind`)
+	)
 
-const unflattenConstraints = (constraints: readonly Node<ConstraintKind>[]) => {
-	return constraints.reduce<mutable<IntersectionInner>>((result, node) => {
-		if (isKeyOf(node.kind, irreducibleRefinementKinds)) {
-			const existing = result[node.kind] as
-				| Node<IrreducibleRefinementKind>[]
-				| undefined
-			if (existing) {
-				existing.push(node as never)
-			} else {
-				result[node.kind] = [node as never]
-			}
-		} else if (result[node.kind]) {
-			throwInternalError(`Unexpected intersection of ${node.kind} nodes`)
-		} else {
-			result[node.kind] = node as never
+const parseListedConstraints = (
+	constraints: readonly discriminableConstraintSchema<any>[],
+	ctx: ConstraintContext
+): Node<ConstraintKind>[] =>
+	constraints.map((schema) => {
+		const kind = constraintKinds.find((kind) => kind in schema)
+		if (!kind) {
+			return throwParseError(`'${kind}' is not a valid constraint kind`)
 		}
-		return result
-	}, {})
-}
+		return BaseNode.classesByKind[kind].parse(schema as never, ctx)
+	})
 
-const intersectConstraints = (
-	l: readonly Node<ConstraintKind>[],
-	r: readonly Node<ConstraintKind>[]
-) => {
-	let constraints: Node<ConstraintKind>[] | Disjoint = [...l]
-	for (const constraint of r) {
-		if (constraints instanceof Disjoint) {
-			break
-		}
-		constraints = addConstraint(constraints, constraint)
-	}
-	return constraints
-}
-
-const addConstraint = (
+const intersectRule = (
+	basis: Node<BasisKind> | undefined,
 	constraints: readonly Node<ConstraintKind>[],
-	constraint: Node<ConstraintKind>
-): Node<ConstraintKind>[] | Disjoint => {
-	const result: Node<ConstraintKind>[] = []
+	rule: Node<RuleKind>
+): IntersectionInner | Disjoint => {
+	if (rule.isBasis()) {
+		const result = basis?.intersect(rule) ?? rule
+		if (result instanceof Disjoint) {
+			return result
+		}
+		if (rule.hasKind("unit")) {
+			const disjoints: Disjoint[] = []
+			for (const constraint of constraints) {
+				const subresult = rule.intersect(constraint)
+				if (subresult instanceof Disjoint) {
+					disjoints.push(subresult)
+				}
+			}
+			// TODO: add rest to interesctionState
+			if (disjoints.length) {
+				return disjoints[0]
+			}
+			// TODO: return unit immediately here?
+			return {
+				basis: rule,
+				constraints: []
+			}
+		}
+		return {
+			basis: result,
+			constraints
+		}
+	}
+	const intersectedConstraints: Node<ConstraintKind>[] = []
 	let includesConstraint = false
 	for (let i = 0; i < constraints.length; i++) {
-		const elementResult = constraint.intersect(constraints[i])
+		const elementResult = rule.intersect(constraints[i])
 		if (elementResult === null) {
-			result.push(constraints[i])
+			intersectedConstraints.push(constraints[i])
 		} else if (elementResult instanceof Disjoint) {
 			return elementResult
 		} else if (!includesConstraint) {
-			result.push(elementResult)
+			intersectedConstraints.push(elementResult)
 			includesConstraint = true
-		} else if (!result.includes(elementResult)) {
+		} else if (!constraints.includes(elementResult)) {
 			return throwInternalError(
 				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
 			)
 		}
 	}
 	if (!includesConstraint) {
-		result.push(constraint)
+		intersectedConstraints.push(rule)
 	}
-	return result
+	return {
+		basis,
+		constraints
+	}
 }
 
-const assertValidRefinements = (
+const assertValidConstraints = (
 	basis: Node<BasisKind> | undefined,
-	refinements: readonly Node<RefinementKind>[]
+	constraints: readonly Node<ConstraintKind>[]
 ) => {
-	for (const constraint of refinements) {
+	for (const constraint of constraints) {
 		if (
 			!constraint.nodeClass.basis.isUnknown() &&
 			(!basis || !basis.extends(constraint.nodeClass.basis))
@@ -277,50 +250,27 @@ const assertValidRefinements = (
 	}
 }
 
-type refinementKindOf<basis> = {
-	[k in RefinementKind]: basis extends NodeClass<k>["basis"]["infer"]
-		? k
-		: never
-}[RefinementKind]
-
-export type refinementsOf<basis> = {
-	[k in refinementKindOf<basis>]?: Node<k>
-}
-
-type refinementInputsOf<basis> = {
-	[k in refinementKindOf<basis>]?: RefinementIntersectionInput<k>
-}
-
 type IntersectionBasisInput<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
-> =
-	| {
-			domain: conform<basis, DomainSchema>
-			proto?: never
-			unit?: never
-	  }
-	| {
-			domain?: never
-			proto: conform<basis, ProtoSchema>
-			unit?: never
-	  }
-	| {
-			domain?: never
-			proto?: never
-			unit: conform<basis, UnitSchema>
-	  }
+> = {
+	basis: basis
+}
 
-export type BasisedBranchInput<
+export type MappedBasisedBranchInput<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > = IntersectionBasisInput<basis> &
-	refinementInputsOf<
-		// include all refinements for the base type
-		Schema<BasisKind> extends basis ? any : parseBasis<basis>
-	> &
+	constraintInputsByKind<parseBasis<basis>> &
 	BaseAttributes
 
+export type ListedBasisedBranchInput<
+	basis extends Schema<BasisKind> = Schema<BasisKind>
+> = IntersectionBasisInput<basis> & {
+	constraints?: readonly discriminableConstraintSchema<parseBasis<basis>>[]
+} & BaseAttributes
+
 export type UnknownBranchInput = {
-	predicate?: RefinementIntersectionInput<"predicate">
+	basis?: undefined
+	predicate?: ConstraintIntersectionInput<"predicate">
 } & BaseAttributes
 
 type DiscriminableBasisInputValue =
@@ -332,8 +282,14 @@ export type IntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > =
 	| conform<basis, DiscriminableBasisInputValue>
+	| ExpandedIntersectionSchema<basis>
+
+export type ExpandedIntersectionSchema<
+	basis extends Schema<BasisKind> = Schema<BasisKind>
+> =
 	| UnknownBranchInput
-	| BasisedBranchInput<basis>
+	| MappedBasisedBranchInput<basis>
+	| ListedBasisedBranchInput<basis>
 
 export type parseIntersection<input> = input extends
 	| AbstractableConstructor
@@ -344,7 +300,10 @@ export type parseIntersection<input> = input extends
 	? parseBasis<basis>
 	: unknown
 
-type exactBasisMessageOnError<branch extends BasisedBranchInput, expected> = {
+type exactBasisMessageOnError<
+	branch extends MappedBasisedBranchInput,
+	expected
+> = {
 	[k in keyof branch]: k extends keyof expected
 		? conform<branch[k], expected[k]>
 		: ErrorMessage<`'${k & string}' is not allowed by ${branch[keyof branch &
@@ -360,7 +319,9 @@ export type validateIntersectionInput<input> = input extends
 	: input extends DiscriminableUnitSchema
 	? exactMessageOnError<input, DiscriminableUnitSchema>
 	: input extends IntersectionBasisInput<infer basis>
-	? exactBasisMessageOnError<input, BasisedBranchInput<basis>>
+	? input extends ListedBasisedBranchInput
+		? exactMessageOnError<input, ListedBasisedBranchInput<basis>>
+		: exactBasisMessageOnError<input, MappedBasisedBranchInput<basis>>
 	: input extends UnknownBranchInput
 	? exactMessageOnError<input, UnknownBranchInput>
 	: DiscriminableUnitSchema | IntersectionSchema | MorphSchema

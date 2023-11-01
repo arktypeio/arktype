@@ -10,7 +10,7 @@ import {
 import type { DomainNode } from "./bases/domain.js"
 import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
-import { type ConstraintKind, type Node } from "./nodes.js"
+import { type RuleKind, type Node } from "./nodes.js"
 import { type BranchNode } from "./sets/union.js"
 
 type DisjointKinds = {
@@ -43,15 +43,15 @@ type DisjointKinds = {
 	assignability?:
 		| {
 				l: unknown
-				r: Node<ConstraintKind>
+				r: Node<RuleKind>
 		  }
 		| {
-				l: Node<ConstraintKind>
+				l: Node<RuleKind>
 				r: unknown
 		  }
 	union?: {
-		l: readonly Node<"intersection" | "morph" | ConstraintKind>[]
-		r: readonly Node<"intersection" | "morph" | ConstraintKind>[]
+		l: readonly Node<"intersection" | "morph" | RuleKind>[]
+		r: readonly Node<"intersection" | "morph" | RuleKind>[]
 	}
 }
 

@@ -5,7 +5,7 @@ import type { DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import { type declareRefinement } from "./refinement.js"
+import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type PatternInner = withAttributes<{
@@ -18,7 +18,7 @@ export type ExpandedPatternSchema = withAttributes<{
 
 export type PatternSchema = RegexLiteral | RegExp | ExpandedPatternSchema
 
-export type PatternDeclaration = declareRefinement<
+export type PatternDeclaration = declareConstraint<
 	"pattern",
 	{
 		schema: PatternSchema

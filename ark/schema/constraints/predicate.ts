@@ -1,13 +1,11 @@
 import { BaseNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import type { DomainNode } from "../bases/domain.js"
-import type { ProtoNode } from "../bases/proto.js"
 import { builtins } from "../builtins.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import { type declareRefinement } from "./refinement.js"
+import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
@@ -19,7 +17,7 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
 	| PredicateInner<rule>
 
-export type PredicateDeclaration = declareRefinement<
+export type PredicateDeclaration = declareConstraint<
 	"predicate",
 	{
 		schema: PredicateSchema
