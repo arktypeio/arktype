@@ -31,7 +31,7 @@ export type RequiredDeclaration = declareConstraint<
 		schema: RequiredPropSchema
 		inner: RequiredPropInner
 		intersections: {
-			required: RequiredPropNode | Disjoint | null
+			required: "required" | Disjoint | null
 		}
 	},
 	typeof RequiredPropNode
@@ -104,7 +104,7 @@ export type OptionalDeclaration = declareConstraint<
 		schema: OptionalPropSchema
 		inner: OptionalPropInner
 		intersections: {
-			optional: OptionalPropNode | Disjoint | null
+			optional: "optional" | Disjoint | null
 		}
 	},
 	typeof OptionalPropNode

@@ -24,7 +24,7 @@ export type PatternDeclaration = declareConstraint<
 		schema: PatternSchema
 		inner: PatternInner
 		intersections: {
-			pattern: PatternNode | null
+			pattern: "pattern" | null
 		}
 	},
 	typeof PatternNode

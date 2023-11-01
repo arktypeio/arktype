@@ -33,10 +33,10 @@ export type UnionDeclaration = declareNode<
 		schema: UnionSchema
 		inner: UnionInner
 		intersections: {
-			union: UnionNode | Disjoint
-			morph: UnionNode | Disjoint
-			intersection: UnionNode | Disjoint
-			rule: UnionNode | Disjoint
+			union: "union" | Disjoint
+			morph: "union" | Disjoint
+			intersection: "union" | Disjoint
+			rule: "union" | Disjoint
 		}
 	},
 	typeof UnionNode

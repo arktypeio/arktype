@@ -18,7 +18,7 @@ export type DivisorDeclaration = declareConstraint<
 		schema: DivisorSchema
 		inner: DivisorInner
 		intersections: {
-			divisor: DivisorNode
+			divisor: "divisor"
 		}
 	},
 	typeof DivisorNode

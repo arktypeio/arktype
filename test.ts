@@ -12,6 +12,8 @@ const l = node(
 	}
 )
 
+const z = node({}).intersect(node({}))
+
 const n = node("number")
 
 n.kind //?

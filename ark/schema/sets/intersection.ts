@@ -51,8 +51,8 @@ export type IntersectionDeclaration = declareNode<
 		schema: IntersectionSchema
 		inner: IntersectionInner
 		intersections: {
-			intersection: IntersectionNode | Disjoint
-			rule: IntersectionNode | Disjoint
+			intersection: "intersection" | Disjoint
+			rule: "intersection" | Disjoint
 		}
 	},
 	typeof IntersectionNode
@@ -116,6 +116,14 @@ export class IntersectionNode<t = unknown> extends RootNode<
 			)
 		}
 		return this.parseIntersectionObjectSchema(schema)
+	}
+
+	static reduce(inner: IntersectionInner) {
+		if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
+			// TODO: remove cast
+			return inner.intersection[0] as Node<BasisKind>
+		}
+		return new IntersectionNode(inner)
 	}
 
 	private static parseIntersectionObjectSchema({

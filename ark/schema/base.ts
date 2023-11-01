@@ -7,6 +7,7 @@ import type {
 	Json,
 	JsonData,
 	requireKeys,
+	returnOf,
 	satisfy
 } from "@arktype/util"
 import {
@@ -84,7 +85,7 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 	intersections: LeftIntersections<d["kind"]>
 	compile(inner: d["inner"]): string
 	writeDefaultDescription(inner: d["inner"]): string
-	normalize?(input: d["inner"]): UnknownNode
+	reduce?(input: d["inner"]): UnknownNode
 	children?(inner: d["inner"]): readonly UnknownNode[]
 }
 
@@ -148,7 +149,7 @@ export type BaseIntersectionMap = {
 			[rKey in
 				| NodeKind
 				| "rule"]?: rKey extends allowedAsymmetricOperandOf<lKey>
-				? Node<lKey> | Disjoint | null
+				? lKey | Disjoint | null
 				: never
 		},
 		lKey
@@ -282,6 +283,15 @@ export abstract class BaseNode<
 		return intersections
 	}
 
+	protected static defineReducer<
+		nodeClass,
+		reducer extends (inner: Inner<kindOf<nodeClass>>) => UnknownNode
+	>(this: nodeClass, reducer: reducer) {
+		return reducer
+	}
+
+	static reduce?(inner: never): UnknownNode
+
 	protected static readonly argName = In
 
 	protected static defineCompiler<nodeClass>(
@@ -404,7 +414,9 @@ type collectSingleResult<
 	: never
 
 // TODO: add reductions
-type instantiateIntersection<result> = result
+type instantiateIntersection<result> = result extends NodeKind
+	? returnOf<NodeClass<result>["reduce"]>
+	: result
 
 export class NodeIds {
 	private cache: { -readonly [k in keyof NodeIds]?: string } = {}

@@ -28,8 +28,8 @@ export type ProtoDeclaration = declareNode<
 		schema: ProtoSchema
 		inner: ProtoInner
 		intersections: {
-			proto: ProtoNode | Disjoint
-			domain: ProtoNode | Disjoint
+			proto: "proto" | Disjoint
+			domain: "proto" | Disjoint
 		}
 	},
 	typeof ProtoNode

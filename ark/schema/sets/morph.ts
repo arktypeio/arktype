@@ -46,10 +46,11 @@ export type MorphDeclaration = declareNode<
 	{
 		schema: MorphSchema
 		inner: MorphInner
+		// TODO: needed?
 		intersections: {
-			morph: MorphNode | Disjoint
-			intersection: MorphNode | Disjoint
-			rule: MorphNode | Disjoint
+			morph: "morph" | Disjoint
+			intersection: "morph" | Disjoint
+			rule: "morph" | Disjoint
 		}
 	},
 	typeof MorphNode

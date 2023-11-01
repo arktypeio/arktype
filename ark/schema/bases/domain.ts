@@ -23,7 +23,7 @@ export type DomainDeclaration = declareNode<
 		schema: DomainSchema
 		inner: DomainInner
 		intersections: {
-			domain: DomainNode | Disjoint
+			domain: "domain" | Disjoint
 		}
 	},
 	typeof DomainNode

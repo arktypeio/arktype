@@ -17,8 +17,8 @@ export type UnitDeclaration = declareNode<
 		schema: UnitSchema
 		inner: UnitInner
 		intersections: {
-			unit: UnitNode | Disjoint
-			rule: UnitNode | Disjoint
+			unit: "unit" | Disjoint
+			rule: "unit" | Disjoint
 		}
 	},
 	typeof UnitNode

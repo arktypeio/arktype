@@ -23,7 +23,7 @@ export type PredicateDeclaration = declareConstraint<
 		schema: PredicateSchema
 		inner: PredicateInner
 		intersections: {
-			predicate: PredicateNode | null
+			predicate: "predicate" | null
 		}
 	},
 	typeof PredicateNode

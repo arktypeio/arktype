@@ -136,7 +136,7 @@ export type MaxDeclaration = declareConstraint<
 		schema: MaxSchema
 		inner: MaxInner
 		intersections: {
-			max: MaxNode
+			max: "max"
 			min: Disjoint | null
 		}
 	},
