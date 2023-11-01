@@ -233,7 +233,7 @@ export type MappedIntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > = {
 	basis?: basis
-} & constraintInputsByKind<parseBasis<basis>> &
+} & constraintInputsByKind<parseBasis<basis>["infer"]> &
 	BaseAttributes
 
 export type ListedIntersectionSchema<
@@ -245,7 +245,10 @@ export type ListedIntersectionSchema<
 export type CollapsedIntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > =
-	| readonly [basis, ...discriminableConstraintSchema<parseBasis<basis>>[]]
+	| readonly [
+			basis,
+			...discriminableConstraintSchema<parseBasis<basis>["infer"]>[]
+	  ]
 	| readonly discriminableConstraintSchema<unknown>[]
 
 // export type UnknownIntersectionSchema = {
@@ -260,8 +263,10 @@ export type IntersectionSchema<
 export type parseIntersection<input> = input extends Schema<BasisKind>
 	? parseBasis<input>
 	: input extends IntersectionSchema<infer basis>
-	? parseBasis<basis>
-	: unknown
+	? Schema<BasisKind> extends basis
+		? IntersectionNode<unknown>
+		: parseBasis<basis>
+	: Node<"intersection" | BasisKind>
 
 type exactBasisMessageOnError<branch, expected> = {
 	[k in keyof branch]: k extends keyof expected

@@ -4,7 +4,7 @@ import { builtins } from "../builtins.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
-import { type Root } from "../root.js"
+import { type IntersectionNode } from "../sets/intersection.js"
 import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
@@ -40,7 +40,7 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 		predicate: "in"
 	})
 
-	static basis: Root<unknown> = builtins().unknown
+	static basis: IntersectionNode<unknown> = builtins().unknown
 
 	static readonly compile = this.defineCompiler(
 		(inner) => `${compileSerializedValue(inner.predicate)}(${this.argName})`

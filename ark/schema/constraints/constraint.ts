@@ -45,18 +45,16 @@ export type ConstraintIntersectionInput<
 	kind extends ConstraintKind = ConstraintKind
 > = ConstraintIntersectionInputsByKind[kind]
 
-export type constraintKindOf<basis> = {
-	[k in ConstraintKind]: basis extends NodeClass<k>["basis"]["infer"]
-		? k
-		: never
+export type constraintKindOf<t> = {
+	[k in ConstraintKind]: t extends NodeClass<k>["basis"]["infer"] ? k : never
 }[ConstraintKind]
 
-export type constraintInputsByKind<basis> = {
-	[k in constraintKindOf<basis>]?: ConstraintIntersectionInput<k>
+export type constraintInputsByKind<t> = {
+	[k in constraintKindOf<t>]?: ConstraintIntersectionInput<k>
 }
 
-export type discriminableConstraintSchema<basis> = DiscriminableSchema<
-	constraintKindOf<basis>
+export type discriminableConstraintSchema<t> = DiscriminableSchema<
+	constraintKindOf<t>
 >
 
 export type ConstraintContext = {

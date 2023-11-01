@@ -37,11 +37,11 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 	isAny<schema> extends true
 		? any
 		: schema extends DomainSchema<infer domain>
-		? inferDomain<domain>
+		? DomainNode<inferDomain<domain>>
 		: schema extends ProtoSchema<infer proto>
-		? instanceOf<proto>
+		? ProtoNode<instanceOf<proto>>
 		: schema extends UnitSchema<infer unit>
-		? unit
+		? UnitNode<unit>
 		: never
 
 export const maybeParseBasis = (schema: Schema<"intersection">) => {

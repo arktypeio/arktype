@@ -29,8 +29,8 @@ export type DomainDeclaration = declareNode<
 	typeof DomainNode
 >
 
-export class DomainNode
-	extends RootNode<DomainDeclaration>
+export class DomainNode<t = unknown>
+	extends RootNode<DomainDeclaration, t>
 	implements BaseBasis
 {
 	static readonly kind = "domain"

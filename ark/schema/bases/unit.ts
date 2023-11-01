@@ -24,8 +24,8 @@ export type UnitDeclaration = declareNode<
 	typeof UnitNode
 >
 
-export class UnitNode
-	extends RootNode<UnitDeclaration, unknown>
+export class UnitNode<t = unknown>
+	extends RootNode<UnitDeclaration, t>
 	implements BaseBasis
 {
 	static readonly kind = "unit"

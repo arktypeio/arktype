@@ -62,15 +62,7 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 		return `matched by ${inner.pattern}`
 	}
 
-	static basis: Root<string> = builtins().string
-
-	applicableTo(basis: Node<BasisKind> | undefined): basis is DomainNode {
-		return (
-			basis !== undefined &&
-			basis.kind === "domain" &&
-			basis.domain === "string"
-		)
-	}
+	static basis: DomainNode<string> = builtins().string
 
 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `Match operand ${getBasisName(basis)} must be a string`

@@ -36,8 +36,8 @@ export type ProtoDeclaration = declareNode<
 	typeof ProtoNode
 >
 
-export class ProtoNode
-	extends RootNode<ProtoDeclaration, object>
+export class ProtoNode<t extends object = object>
+	extends RootNode<ProtoDeclaration, t>
 	implements BaseBasis
 {
 	static readonly kind = "proto"
@@ -64,14 +64,7 @@ export class ProtoNode
 				? r
 				: Disjoint.from("proto", l, r),
 		domain: (l, r): ProtoInner | Disjoint =>
-			r.domain === "object"
-				? l
-				: Disjoint.from(
-						"domain",
-						// TODO: cast needed?
-						builtins().object as DomainNode,
-						r
-				  )
+			r.domain === "object" ? l : Disjoint.from("domain", builtins().object, r)
 	})
 
 	static readonly compile = this.defineCompiler(

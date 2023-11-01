@@ -46,10 +46,7 @@ export type MorphDeclaration = declareNode<
 	typeof MorphNode
 >
 
-export class MorphNode<i = unknown, o = unknown> extends RootNode<
-	MorphDeclaration,
-	i
-> {
+export class MorphNode<t = unknown> extends RootNode<MorphDeclaration, t> {
 	static readonly kind = "morph"
 
 	static {
@@ -120,8 +117,7 @@ export class MorphNode<i = unknown, o = unknown> extends RootNode<
 				  }
 		},
 		rule: (l, r) => {
-			// TODO: remove cast?
-			const input = l.in ?? (builtins().unknown as IntersectionNode<unknown>)
+			const input = l.in ?? builtins().unknown
 			const constrainedInput = input.intersect(r)
 			return constrainedInput instanceof Disjoint
 				? constrainedInput
@@ -168,13 +164,17 @@ export type validateMorphSchema<input> = {
 }
 
 export type parseMorph<input> = input extends MorphSchema
-	? (
-			In: input["in"] extends {} ? parseIntersection<input["in"]> : unknown
-	  ) => input["out"] extends {}
-			? Out<parseIntersection<input["out"]>>
-			: input["morph"] extends
-					| Morph<any, infer o>
-					| readonly [...unknown[], Morph<any, infer o>]
-			? Out<inferMorphOut<o>>
-			: never
+	? MorphNode<
+			(
+				In: input["in"] extends {}
+					? parseIntersection<input["in"]>["infer"]
+					: unknown
+			) => input["out"] extends {}
+				? Out<parseIntersection<input["out"]>["infer"]>
+				: input["morph"] extends
+						| Morph<any, infer o>
+						| readonly [...unknown[], Morph<any, infer o>]
+				? Out<inferMorphOut<o>>
+				: never
+	  >
 	: never

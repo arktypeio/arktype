@@ -14,14 +14,14 @@ import {
 	type validateMorphSchema
 } from "./sets/morph.js"
 import { type SetDeclarationsByKind } from "./sets/set.js"
-import { type BranchSchema, UnionNode } from "./sets/union.js"
+import { type BranchNode, type BranchSchema, UnionNode } from "./sets/union.js"
 
 type RootNodeParser = {
 	<const branches extends readonly unknown[]>(
 		...branches: {
 			[i in keyof branches]: validateBranchInput<branches[i]>
 		}
-	): Root<inferNodeBranches<branches>>
+	): parseNodeBranches<branches>
 }
 
 // static from<const branches extends readonly unknown[]>(
@@ -66,9 +66,16 @@ export const node = Object.assign(parseNode as RootNodeParser, {
 
 export type RootInput = listable<IntersectionSchema | MorphSchema>
 
-export type inferNodeBranches<branches extends readonly unknown[]> = {
-	[i in keyof branches]: parseBranch<branches[i]>
-}[number]
+export type parseNodeBranches<branches extends readonly unknown[]> =
+	branches["length"] extends 0
+		? UnionNode<never>
+		: branches["length"] extends 1
+		? parseBranch<branches[0]>
+		: Root<
+				{
+					[i in keyof branches]: parseBranch<branches[i]>["infer"]
+				}[number]
+		  >
 
 export type validateBranchInput<input> = conform<
 	input,
@@ -77,11 +84,11 @@ export type validateBranchInput<input> = conform<
 		: validateIntersectionSchema<input>
 >
 
-export type parseBranch<branch> = branch extends MorphSchema
-	? parseMorph<branch>
-	: branch extends IntersectionSchema
-	? parseIntersection<branch>
-	: unknown
+export type parseBranch<input> = input extends MorphSchema
+	? parseMorph<input>
+	: input extends IntersectionSchema
+	? parseIntersection<input>
+	: BranchNode
 
 type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 	[rKind in keyof intersectionMap]: (

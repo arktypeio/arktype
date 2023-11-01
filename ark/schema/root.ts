@@ -1,22 +1,44 @@
+import { type satisfy } from "@arktype/util"
 import { BaseNode, type intersectionOf, type NodeDeclaration } from "./base.js"
 import { type BasisKind } from "./bases/basis.js"
+import { type DomainNode } from "./bases/domain.js"
+import { type ProtoNode } from "./bases/proto.js"
+import { type UnitNode } from "./bases/unit.js"
 import { type ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { type Node, type Schema } from "./nodes.js"
+import { type IntersectionNode } from "./sets/intersection.js"
+import { type MorphNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
-import { type inferred } from "./utils.js"
+import { type UnionNode } from "./sets/union.js"
+import { inferred } from "./utils.js"
 
-export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind> & {
-	[inferred]: t
-	infer: t
-}
+type typedRootsByKind<t> = satisfy<
+	{ [k in RootKind]: Node<k> },
+	{
+		union: UnionNode<t>
+		morph: MorphNode<t>
+		intersection: IntersectionNode<t>
+		unit: UnitNode<t>
+		proto: ProtoNode<t & object>
+		domain: DomainNode<t>
+	}
+>
+
+export type Root<
+	t = unknown,
+	kind extends RootKind = RootKind
+> = typedRootsByKind<t>[kind]
 
 export type RootKind = SetKind | BasisKind
 
 export abstract class RootNode<
 	declaration extends NodeDeclaration,
-	t = unknown
+	t
 > extends BaseNode<declaration, t> {
+	declare [inferred]: t
+	declare infer: t
+
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
 		definition: Schema<kind>

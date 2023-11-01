@@ -1,5 +1,6 @@
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
+import { type DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
@@ -58,7 +59,7 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 		return inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
 	}
 
-	static basis: Root<number> = builtins().number
+	static basis: DomainNode<number> = builtins().number
 
 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return writeIndivisibleMessage(getBasisName(basis))

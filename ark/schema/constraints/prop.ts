@@ -1,5 +1,6 @@
 import { BaseNode, type withAttributes } from "../base.js"
 import { type BasisKind } from "../bases/basis.js"
+import { type DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type RootInput } from "../nodes.js"
@@ -80,7 +81,7 @@ export class RequiredNode extends BaseNode<RequiredDeclaration> {
 		value: "in"
 	})
 
-	static basis: Root<object> = builtins().object
+	static basis: DomainNode<object> = builtins().object
 
 	static compile = this.defineCompiler((inner) => "true")
 
@@ -153,7 +154,7 @@ export class OptionalNode extends BaseNode<OptionalDeclaration> {
 		value: "in"
 	})
 
-	static basis: Root<object> = builtins().object
+	static basis: DomainNode<object> = builtins().object
 
 	static compile = this.defineCompiler((inner) => "true")
 
