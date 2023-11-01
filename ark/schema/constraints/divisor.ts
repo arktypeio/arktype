@@ -1,9 +1,8 @@
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import { BaseNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import { type DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
-import { type Root } from "../root.js"
 import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
@@ -21,7 +20,6 @@ export type DivisorDeclaration = declareConstraint<
 		intersections: {
 			divisor: "divisor"
 		}
-		basis: number
 	},
 	typeof DivisorNode
 >

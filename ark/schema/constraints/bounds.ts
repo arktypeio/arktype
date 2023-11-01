@@ -69,7 +69,6 @@ export type MinDeclaration = declareConstraint<
 		intersections: {
 			min: "min"
 		}
-		basis: Boundable
 	},
 	typeof MinNode
 >
@@ -142,7 +141,6 @@ export type MaxDeclaration = declareConstraint<
 			max: "max"
 			min: Disjoint | null
 		}
-		basis: Boundable
 	},
 	typeof MaxNode
 >

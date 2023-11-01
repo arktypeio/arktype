@@ -38,7 +38,7 @@ import {
 import { RootNode } from "../root.js"
 
 export type IntersectionInner = withAttributes<{
-	intersection: CollapsedIntersectionInner
+	readonly intersection: CollapsedIntersectionInner
 }>
 
 export type CollapsedIntersectionInner =

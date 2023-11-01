@@ -15,12 +15,10 @@ describe("intersections", () => {
 		})
 		const result = l.and(r)
 		attest(result.json).snap({
-			branches: [
-				{
-					domain: { domain: "number" },
-					divisor: { divisor: 15 },
-					min: { min: 5 }
-				}
+			intersection: [
+				{ domain: "number" },
+				{ divisor: 15 },
+				{ min: 5, boundKind: "number" }
 			]
 		})
 	})
