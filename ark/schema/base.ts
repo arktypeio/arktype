@@ -153,7 +153,7 @@ export type StaticNodeDefinition<
 	kind: d["kind"]
 	keys: Record<Exclude<keyof d["inner"], keyof BaseAttributes>, keyof NodeIds>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	parse: (input: d["schema"], ctx: ParseContext) => d["inner"]
+	parse: (schema: d["schema"], ctx: ParseContext) => d["inner"]
 	writeDefaultDescription: (inner: d["inner"]) => string
 	compileCondition: (inner: d["inner"]) => string
 	children?: (inner: d["inner"]) => readonly UnknownNode[]
@@ -173,7 +173,7 @@ export abstract class BaseNode<
 	declare infer: t;
 	declare [inferred]: t
 
-	readonly nodeClass = this.constructor as NodeClass
+	readonly nodeClass = this.constructor as NodeClass<declaration["kind"]>
 	readonly definition = this.nodeClass
 		.definition as instantiateNodeClassDeclaration<any>
 	readonly json: Json
