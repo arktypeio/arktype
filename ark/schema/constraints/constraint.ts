@@ -4,13 +4,12 @@ import {
 	constraintKinds,
 	type IrreducibleConstraintKind
 } from "../base.js"
-import type { BasisKind } from "../bases/basis.js"
 import {
 	type DiscriminableSchema,
-	type Node,
 	type NodeClass,
 	type Schema
 } from "../nodes.js"
+import { type ParseContext } from "../utils.js"
 import { type MaxDeclaration, type MinDeclaration } from "./bounds.js"
 import { type DivisorDeclaration } from "./divisor.js"
 import { type PatternDeclaration } from "./pattern.js"
@@ -52,13 +51,9 @@ export type discriminableConstraintSchema<t> = DiscriminableSchema<
 	constraintKindOf<t>
 >
 
-export type ConstraintContext = {
-	basis: Node<BasisKind> | undefined
-}
-
 export const parseConstraint = (
 	schema: DiscriminableSchema<ConstraintKind>,
-	ctx: ConstraintContext
+	ctx: ParseContext
 ) => {
 	const kind = constraintKinds.find((kind) => kind in schema)
 	if (!kind) {

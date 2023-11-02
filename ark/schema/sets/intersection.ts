@@ -22,7 +22,6 @@ import {
 import { type BasisKind, maybeParseBasis, parseBasis } from "../bases/basis.js"
 import type { NonEnumerableDomain } from "../bases/domain.js"
 import {
-	type ConstraintContext,
 	type constraintInputsByKind,
 	type ConstraintKind,
 	type discriminableConstraintSchema,

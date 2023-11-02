@@ -17,10 +17,7 @@ import {
 	throwInternalError
 } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
-import {
-	type ConstraintContext,
-	type ConstraintKind
-} from "./constraints/constraint.js"
+import { type ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
@@ -33,7 +30,7 @@ import {
 	type RuleKind
 } from "./nodes.js"
 import { type SetKind } from "./sets/set.js"
-import { inferred } from "./utils.js"
+import { createParseContext, inferred, type ParseContext } from "./utils.js"
 
 export type BaseAttributes = {
 	readonly alias?: string
@@ -42,7 +39,7 @@ export type BaseAttributes = {
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
 
-export type DeclaredTypes<kind extends NodeKind> = {
+export type DeclaredTypes<kind extends NodeKind = NodeKind> = {
 	kind: kind
 	schema: unknown
 	// each node's inner definition must have a required key with the same name
@@ -54,10 +51,11 @@ export type DeclaredTypes<kind extends NodeKind> = {
 
 export type declareNode<
 	types extends {
-		[k in keyof DeclaredTypes<any>]: conform<
-			types[k],
-			DeclaredTypes<types["kind"]>[k]
-		>
+		[k in keyof DeclaredTypes]: types extends {
+			kind: infer kind extends NodeKind
+		}
+			? conform<types[k], DeclaredTypes<kind>[k]>
+			: never
 	}
 > = types
 
@@ -154,19 +152,18 @@ export type StaticNodeDefinition<
 	kind: d["kind"]
 	keys: Record<Exclude<keyof d["inner"], keyof BaseAttributes>, keyof NodeIds>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	parse: (input: d["schema"], ctx: ConstraintContext) => d["inner"]
+	parse: (input: d["schema"], ctx: ParseContext) => d["inner"]
 	writeDefaultDescription: (inner: d["inner"]) => string
 	compileCondition: (inner: d["inner"]) => string
 	children?: (inner: d["inner"]) => readonly UnknownNode[]
 	reduce?: (inner: d["inner"]) => UnknownNode
 }
 
-type instantiateNodeClassDeclaration<declaration extends StaticNodeDefinition> =
-	{
-		[k in keyof declaration]: k extends "keys"
-			? evaluate<declaration[k] & typeof baseAttributeKeys>
-			: declaration[k]
-	}
+type instantiateNodeClassDeclaration<declaration> = {
+	[k in keyof declaration]: k extends "keys"
+		? evaluate<declaration[k] & typeof baseAttributeKeys>
+		: declaration[k]
+}
 
 export abstract class BaseNode<
 	declaration extends BaseNodeDeclaration,
@@ -213,8 +210,12 @@ export abstract class BaseNode<
 			declaration: BaseNodeDeclaration
 			definition: StaticNodeDefinition<any>
 		}
-	>(this: nodeClass, schema: nodeClass["declaration"]["schema"]) {
-		return new (this as any)(this.definition.parse(schema, { basis: {} }))
+	>(
+		this: nodeClass,
+		schema: nodeClass["declaration"]["schema"],
+		ctx = createParseContext()
+	) {
+		return new (this as any)(this.definition.parse(schema, ctx))
 	}
 
 	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
@@ -256,7 +257,10 @@ export abstract class BaseNode<
 
 	protected static define<
 		nodeClass,
-		definition extends StaticNodeDefinition<nodeClass["declaration"]>
+		definition extends StaticNodeDefinition<
+			/** @ts-expect-error (trying to constraint further breaks types or causes circularities) */
+			nodeClass["declaration" & keyof nodeClass]
+		>
 	>(this: nodeClass, definition: definition) {
 		return {
 			...definition,
@@ -320,7 +324,7 @@ export abstract class BaseNode<
 				return l === this ? result : result.invert()
 			}
 			// TODO: meta, use kind entry?
-			return new l.nodeClass(result as never) as never
+			return new (l.nodeClass as any)(result)
 		}
 		return null
 	}
