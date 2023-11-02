@@ -31,10 +31,6 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 	static readonly kind = "pattern"
 	static readonly declaration: PatternDeclaration
 
-	static {
-		this.classesByKind.pattern = this
-	}
-
 	static readonly definition = this.define({
 		kind: "pattern",
 		keys: {

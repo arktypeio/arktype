@@ -33,10 +33,6 @@ export class DomainNode<t = unknown>
 	static readonly kind = "domain"
 	static readonly declaration: DomainDeclaration
 
-	static {
-		this.classesByKind.domain = this
-	}
-
 	static readonly definition = this.define({
 		kind: "domain",
 		keys: {

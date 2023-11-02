@@ -29,10 +29,6 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 	static readonly kind = "predicate"
 	static readonly declaration: PredicateDeclaration
 
-	static {
-		this.classesByKind.predicate = this
-	}
-
 	static readonly definition = this.define({
 		kind: "predicate",
 		keys: {

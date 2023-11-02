@@ -28,10 +28,6 @@ export class UnitNode<t = unknown>
 	static readonly kind = "unit"
 	static readonly declaration: UnitDeclaration
 
-	static {
-		this.classesByKind.unit = this
-	}
-
 	static readonly definition = this.define({
 		kind: "unit",
 		keys: {

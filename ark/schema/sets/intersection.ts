@@ -68,10 +68,6 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 		? this.intersection.slice(1)
 		: (this.intersection as any)
 
-	static {
-		this.classesByKind.intersection = this
-	}
-
 	constructor(inner: IntersectionInner) {
 		super(inner)
 		assertValidConstraints(this.basis, this.constraints)

@@ -48,10 +48,6 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 	static readonly kind = "morph"
 	static readonly declaration: MorphDeclaration
 
-	static {
-		this.classesByKind.morph = this
-	}
-
 	static definition = this.define({
 		kind: "morph",
 		keys: {

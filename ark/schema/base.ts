@@ -4,6 +4,7 @@ import {
 	type Dict,
 	DynamicBase,
 	type evaluate,
+	type exactMessageOnError,
 	type extend,
 	includes,
 	isArray,
@@ -35,29 +36,6 @@ export type BaseAttributes = {
 }
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
-
-export type DeclaredTypes<kind extends NodeKind = NodeKind> = {
-	kind: kind
-	schema: unknown
-	// each node's inner definition must have a required key with the same name
-	// as its kind that can be used as a discriminator.
-	inner: BaseAttributes & { [k in kind]: unknown }
-	intersections: BaseIntersectionMap[kind]
-	reductions?: rightOf<kind>
-}
-
-export type declareNode<
-	types extends {
-		[k in keyof DeclaredTypes]: types extends {
-			kind: infer kind extends NodeKind
-		}
-			? conform<types[k], DeclaredTypes<kind>[k]>
-			: never
-	} & { [k in Exclude<keyof types, keyof DeclaredTypes>]: never }
-> = types &
-	("reductions" extends keyof types ? unknown : { reductions: types["kind"] })
-
-export type BaseNodeDeclaration = declareNode<DeclaredTypes<any>>
 
 export const baseAttributeKeys = {
 	alias: "meta",
@@ -141,7 +119,31 @@ export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
 
 export type UnknownNode = BaseNode<any>
 
-const $ark = registry()
+export type DeclaredTypes<kind extends NodeKind = NodeKind> = {
+	kind: kind
+	schema: unknown
+	// each node's inner definition must have a required key with the same name
+	// as its kind that can be used as a discriminator.
+	inner: BaseAttributes & { [k in kind]: unknown }
+	intersections: BaseIntersectionMap[kind]
+	reductions?: rightOf<kind>
+}
+
+export type declareNode<
+	types extends exactMessageOnError<
+		types,
+		types extends {
+			kind: infer kind extends NodeKind
+		}
+			? DeclaredTypes<kind>
+			: never
+	>
+> = types &
+	("reductions" extends keyof types
+		? unknown
+		: { reductions: types["kind" & keyof types] })
+
+export type BaseNodeDeclaration = declareNode<DeclaredTypes<any>>
 
 export type StaticNodeDefinition<
 	d extends Required<BaseNodeDeclaration> = Required<BaseNodeDeclaration>
@@ -156,6 +158,10 @@ export type StaticNodeDefinition<
 	children?: (inner: d["inner"]) => readonly UnknownNode[]
 } & (d["reductions"] extends d["kind"] ? unknown : { reduceToNode: {} })
 
+export interface StaticCompositeDefinition<
+	d extends Required<BaseNodeDeclaration> = Required<BaseNodeDeclaration>
+> {}
+
 type instantiateNodeClassDeclaration<declaration> = {
 	[k in keyof declaration]: k extends "keys"
 		? evaluate<declaration[k] & typeof baseAttributeKeys>
@@ -167,6 +173,8 @@ type declarationOf<nodeClass> = nodeClass extends {
 }
 	? declaration
 	: never
+
+const $ark = registry()
 
 export abstract class BaseNode<
 	declaration extends BaseNodeDeclaration,
@@ -208,8 +216,6 @@ export abstract class BaseNode<
 		)
 	}
 
-	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
-
 	static serialize(inner: object) {
 		const json: Json = {}
 		for (const k in inner) {
@@ -245,6 +251,11 @@ export abstract class BaseNode<
 		return compileSerializedValue(v)
 	}
 
+	/** Each node class is attached when it is imported.
+	 * This helps avoid circular import issues that can otherwise occur.
+	 */
+	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
+
 	protected static define<nodeClass, definition>(
 		this: nodeClass,
 		definition: conform<
@@ -253,6 +264,8 @@ export abstract class BaseNode<
 			StaticNodeDefinition<nodeClass["declaration"]>
 		>
 	) {
+		// register the newly defined node class
+		;(this as any).classesByKind[definition.kind] = this
 		return {
 			...definition,
 			keys: {

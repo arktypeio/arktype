@@ -45,10 +45,6 @@ export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
 	static readonly kind = "required"
 	static readonly declaration: RequiredDeclaration
 
-	static {
-		this.classesByKind.required = this
-	}
-
 	static readonly definition = this.define({
 		kind: "required",
 		keys: {
@@ -105,10 +101,6 @@ export type OptionalDeclaration = declareNode<{
 export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 	static readonly kind = "optional"
 	static readonly declaration: OptionalDeclaration
-
-	static {
-		this.classesByKind.optional = this
-	}
 
 	static readonly definition = this.define({
 		kind: "optional",

@@ -39,10 +39,6 @@ export class ProtoNode<t extends object = object>
 	static readonly kind = "proto"
 	static readonly declaration: ProtoDeclaration
 
-	static {
-		this.classesByKind.proto = this
-	}
-
 	static readonly definition = this.define({
 		kind: "proto",
 		keys: {

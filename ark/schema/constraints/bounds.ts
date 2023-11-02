@@ -73,10 +73,6 @@ export class MinNode extends BaseBound<MinDeclaration> {
 	static readonly kind = "min"
 	static readonly declaration: MinDeclaration
 
-	static {
-		this.classesByKind.min = this
-	}
-
 	static readonly definition = this.define({
 		kind: "min",
 		keys: {
@@ -138,10 +134,6 @@ export type MaxDeclaration = declareNode<{
 export class MaxNode extends BaseBound<MaxDeclaration> {
 	static readonly kind = "max"
 	static readonly declaration: MaxDeclaration
-
-	static {
-		this.classesByKind.max = this
-	}
 
 	static readonly definition = this.define({
 		kind: "max",

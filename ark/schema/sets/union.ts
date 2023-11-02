@@ -44,10 +44,6 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 	static readonly kind = "union"
 	static readonly declaration: UnionDeclaration
 
-	static {
-		this.classesByKind.union = this
-	}
-
 	private static intersectBranch = (
 		l: UnionNode,
 		r: BranchNode

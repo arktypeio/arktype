@@ -24,11 +24,6 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 	static readonly kind = "divisor"
 	static readonly declaration: DivisorDeclaration
 
-	// TODO: can remove?
-	static {
-		this.classesByKind.divisor = this
-	}
-
 	static readonly definition = this.define({
 		kind: "divisor",
 		keys: {
