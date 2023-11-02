@@ -23,7 +23,6 @@ export type PredicateDeclaration = declareNode<{
 	intersections: {
 		predicate: "predicate" | null
 	}
-	class: typeof PredicateNode
 }>
 
 export class PredicateNode extends BaseNode<PredicateDeclaration> {

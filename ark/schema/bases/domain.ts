@@ -24,7 +24,6 @@ export type DomainDeclaration = declareNode<{
 	intersections: {
 		domain: "domain" | Disjoint
 	}
-	class: typeof DomainNode
 }>
 
 export class DomainNode<t = unknown>

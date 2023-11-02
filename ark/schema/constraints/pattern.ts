@@ -25,7 +25,6 @@ export type PatternDeclaration = declareNode<{
 	intersections: {
 		pattern: "pattern" | null
 	}
-	class: typeof PatternNode
 }>
 
 export class PatternNode extends BaseNode<PatternDeclaration> {

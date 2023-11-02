@@ -1,7 +1,13 @@
 import type { conform, extend, instanceOf, listable } from "@arktype/util"
-import { type BasisDeclarationsByKind } from "./bases/basis.js"
+import {
+	type BasisClassesByKind,
+	type BasisDeclarationsByKind
+} from "./bases/basis.js"
 import { UnitNode } from "./bases/unit.js"
-import { type ConstraintDeclarationsByKind } from "./constraints/constraint.js"
+import {
+	type ConstraintClassesByKind,
+	type ConstraintDeclarationsByKind
+} from "./constraints/constraint.js"
 import { type Root } from "./root.js"
 import {
 	type IntersectionSchema,
@@ -13,7 +19,10 @@ import {
 	type parseMorph,
 	type validateMorphSchema
 } from "./sets/morph.js"
-import { type SetDeclarationsByKind } from "./sets/set.js"
+import {
+	type SetClassesByKind,
+	type SetDeclarationsByKind
+} from "./sets/set.js"
 import { type BranchNode, type BranchSchema, UnionNode } from "./sets/union.js"
 
 type RootNodeParser = {
@@ -112,6 +121,11 @@ export type RuleDeclarationsByKind = extend<
 	ConstraintDeclarationsByKind
 >
 
+export type RuleClassesByKind = extend<
+	BasisClassesByKind,
+	ConstraintClassesByKind
+>
+
 export type RuleKind = keyof RuleDeclarationsByKind
 
 export type NodeDeclarationsByKind = extend<
@@ -121,8 +135,10 @@ export type NodeDeclarationsByKind = extend<
 
 export type NodeKind = keyof NodeDeclarationsByKind
 
+export type NodeClassesByKind = extend<RuleClassesByKind, SetClassesByKind>
+
 export type NodeClass<kind extends NodeKind = NodeKind> =
-	NodeDeclarationsByKind[kind]["class"]
+	NodeClassesByKind[kind]
 
 export type Schema<kind extends NodeKind> =
 	NodeDeclarationsByKind[kind]["schema"]

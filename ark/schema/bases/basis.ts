@@ -18,6 +18,12 @@ export type BasisDeclarationsByKind = {
 	unit: UnitDeclaration
 }
 
+export type BasisClassesByKind = {
+	domain: typeof DomainNode
+	proto: typeof ProtoNode
+	unit: typeof UnitNode
+}
+
 export type BasisKind = keyof BasisDeclarationsByKind
 
 export type BaseBasis = {

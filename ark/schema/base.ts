@@ -46,15 +46,16 @@ export type DeclaredTypes<kind extends NodeKind = NodeKind> = {
 	// as its kind that can be used as a discriminator.
 	inner: BaseAttributes & { [k in kind]: unknown }
 	intersections: BaseIntersectionMap[kind]
-	class: Constructor<UnknownNode>
 }
 
 export type declareNode<
 	types extends {
-		[k in keyof DeclaredTypes]: types extends {
+		[k in keyof DeclaredTypes | keyof types]: types extends {
 			kind: infer kind extends NodeKind
 		}
-			? conform<types[k], DeclaredTypes<kind>[k]>
+			? k extends keyof DeclaredTypes
+				? conform<types[k], DeclaredTypes<kind>[k]>
+				: never
 			: never
 	}
 > = types

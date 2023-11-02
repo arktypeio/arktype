@@ -19,7 +19,6 @@ export type UnitDeclaration = declareNode<{
 		unit: "unit" | Disjoint
 		rule: "unit" | Disjoint
 	}
-	class: typeof UnitNode
 }>
 
 export class UnitNode<t = unknown>

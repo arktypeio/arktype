@@ -42,7 +42,6 @@ export type MorphDeclaration = declareNode<{
 		intersection: "morph" | Disjoint
 		rule: "morph" | Disjoint
 	}
-	class: typeof MorphNode
 }>
 
 export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {

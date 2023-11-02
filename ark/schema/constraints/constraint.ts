@@ -10,11 +10,16 @@ import {
 	type Schema
 } from "../nodes.js"
 import { type ParseContext } from "../utils.js"
-import { type MaxDeclaration, type MinDeclaration } from "./bounds.js"
-import { type DivisorDeclaration } from "./divisor.js"
-import { type PatternDeclaration } from "./pattern.js"
-import { type PredicateDeclaration } from "./predicate.js"
-import { type PropDeclarationsByKind } from "./prop.js"
+import {
+	type MaxDeclaration,
+	type MaxNode,
+	type MinDeclaration,
+	type MinNode
+} from "./bounds.js"
+import { type DivisorDeclaration, type DivisorNode } from "./divisor.js"
+import { type PatternDeclaration, type PatternNode } from "./pattern.js"
+import { type PredicateDeclaration, type PredicateNode } from "./predicate.js"
+import { type PropClassesByKind, type PropDeclarationsByKind } from "./prop.js"
 
 export type ConstraintDeclarationsByKind = extend<
 	PropDeclarationsByKind,
@@ -24,6 +29,17 @@ export type ConstraintDeclarationsByKind = extend<
 		max: MaxDeclaration
 		pattern: PatternDeclaration
 		predicate: PredicateDeclaration
+	}
+>
+
+export type ConstraintClassesByKind = extend<
+	PropClassesByKind,
+	{
+		divisor: typeof DivisorNode
+		min: typeof MinNode
+		max: typeof MaxNode
+		pattern: typeof PatternNode
+		predicate: typeof PredicateNode
 	}
 >
 

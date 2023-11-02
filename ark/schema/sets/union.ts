@@ -37,7 +37,6 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		rule: "union" | Disjoint
 	}
-	class: typeof UnionNode
 }>
 
 export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {

@@ -35,6 +35,7 @@ import {
 	type Schema
 } from "../nodes.js"
 import { BaseRoot } from "../root.js"
+import { type ParseContext } from "../utils.js"
 
 export type IntersectionInner = withAttributes<{
 	readonly intersection: CollapsedIntersectionInner
@@ -52,7 +53,6 @@ export type IntersectionDeclaration = declareNode<{
 		intersection: "intersection" | Disjoint
 		rule: "intersection" | Disjoint
 	}
-	class: typeof IntersectionNode
 }>
 
 export class IntersectionNode<t = unknown> extends BaseRoot<
@@ -144,7 +144,7 @@ const parseListedRules = (
 ): CollapsedIntersectionInner => {
 	const basis = schemas[0] ? maybeParseBasis(schemas[0]) : undefined
 	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
-	const constraintContext: ConstraintContext = { basis }
+	const constraintContext: ParseContext = { basis }
 	for (let i = basis ? 1 : 0; i < schemas.length; i++) {
 		rules.push(parseConstraint(schemas[i] as never, constraintContext))
 	}
@@ -160,7 +160,7 @@ const parseMappedRules = ({
 }): CollapsedIntersectionInner => {
 	const basis = basisSchema ? parseBasis(basisSchema) : undefined
 	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
-	const constraintContext: ConstraintContext = { basis }
+	const constraintContext: ParseContext = { basis }
 	for (const k in constraintSchemasByKind) {
 		if (!includes(constraintKinds, k)) {
 			return throwParseError(`'${k}' is not a valid constraint kind`)

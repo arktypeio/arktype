@@ -67,7 +67,6 @@ export type MinDeclaration = declareNode<{
 	intersections: {
 		min: "min"
 	}
-	class: typeof MinNode
 }>
 
 export class MinNode extends BaseBound<MinDeclaration> {
@@ -134,7 +133,6 @@ export type MaxDeclaration = declareNode<{
 		max: "max"
 		min: Disjoint | null
 	}
-	class: typeof MaxNode
 }>
 
 export class MaxNode extends BaseBound<MaxDeclaration> {

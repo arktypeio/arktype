@@ -18,7 +18,6 @@ export type DivisorDeclaration = declareNode<{
 	intersections: {
 		divisor: "divisor"
 	}
-	class: typeof DivisorNode
 }>
 
 export class DivisorNode extends BaseNode<DivisorDeclaration> {

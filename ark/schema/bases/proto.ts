@@ -30,7 +30,6 @@ export type ProtoDeclaration = declareNode<{
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
-	class: typeof ProtoNode
 }>
 
 export class ProtoNode<t extends object = object>

@@ -12,6 +12,11 @@ export type PropDeclarationsByKind = {
 	optional: OptionalDeclaration
 }
 
+export type PropClassesByKind = {
+	required: typeof RequiredPropNode
+	optional: typeof OptionalPropNode
+}
+
 export type PropKind = keyof PropDeclarationsByKind
 
 export type RequiredPropInner = withAttributes<{
@@ -31,7 +36,6 @@ export type RequiredDeclaration = declareNode<{
 	intersections: {
 		required: "required" | Disjoint | null
 	}
-	class: typeof RequiredPropNode
 }>
 
 const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
@@ -96,7 +100,6 @@ export type OptionalDeclaration = declareNode<{
 	intersections: {
 		optional: "optional" | Disjoint | null
 	}
-	class: typeof OptionalPropNode
 }>
 
 export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
