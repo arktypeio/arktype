@@ -49,7 +49,7 @@ const createFile = (
 const getProgram = (env?: tsvfs.VirtualTypeScriptEnvironment) => {
 	return env?.languageService.getProgram()
 }
-const getInstantiationCountOfFile = (fileText: string, fileName: string) => {
+const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	const env = getIsolatedEnv()
 	const file = createFile(env, fileName, fileText)
 	getProgram(env)?.emit(file)
@@ -141,10 +141,10 @@ const getInstantiationsContributedByNode = (benchCall: ts.CallExpression) => {
 		benchCall,
 		ts.SyntaxKind.ExpressionStatement
 	)
-	const originalBenchExpressionText = (benchExpression as any).getText()
+	const originalBenchExpressionText = benchExpression.getText()
 	if (!instantiationsByPath[fakePath]) {
 		console.log(`⏳ attest: Analyzing type assertions...`)
-		const instantiationsWithNode = getInstantiationCountOfFile(
+		const instantiationsWithNode = getInstantiationsWithFile(
 			transformBenchSource(
 				originalFile,
 				originalBenchExpressionText,
@@ -157,7 +157,7 @@ const getInstantiationsContributedByNode = (benchCall: ts.CallExpression) => {
 		console.log(`⏳ Cached type assertions \n`)
 	}
 
-	const instantiationsWithoutNode = getInstantiationCountOfFile(
+	const instantiationsWithoutNode = getInstantiationsWithFile(
 		transformBenchSource(
 			originalFile,
 			originalBenchExpressionText,

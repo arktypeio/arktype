@@ -82,16 +82,6 @@ export class TsServer {
 	}
 }
 
-export type TypeData = {
-	location: LinePositionRange
-	type: {
-		actual: string
-		expected?: string
-		equivalent?: boolean
-	}
-	errors: string
-}
-
 export const getAbsolutePosition = (
 	file: ts.SourceFile,
 	position: SourcePosition

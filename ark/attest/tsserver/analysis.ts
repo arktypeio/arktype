@@ -9,7 +9,7 @@ import {
 } from "./getAssertionsInFile.js"
 import { getCachedAssertionData } from "./getCachedAssertionData.js"
 import { getDiagnosticsByFile } from "./getDiagnosticsByFile.js"
-import { getFileFromVirtualEnv, getProgram, getTsServer } from "./tsserver.js"
+import { getFileFromVirtualEnv, getProgram, TsServer } from "./tsserver.js"
 
 export type AssertionsByFile = Record<string, AssertionData[]>
 
@@ -51,7 +51,7 @@ export const getAssertionsByFile = ({
 	if (!isInitialCache) {
 		return getCachedAssertionData(config)
 	}
-	const filePaths = getTsServer().programFilePaths!
+	const filePaths = TsServer.getInstance().programFilePaths!
 	const diagnosticsByFile = getDiagnosticsByFile()
 	const assertionsByFile: AssertionsByFile = {}
 	for (const path of filePaths) {
