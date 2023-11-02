@@ -26,7 +26,7 @@ export const queueBaselineUpdateIfNeeded = (
 	}
 	if (isFirstQueuedUpdate) {
 		// remove any leftover cached snaps before the first is written
-		rmSync(getConfig().snapCacheDir, { recursive: true, force: true })
+		rmSync(getConfig().benchSnapCacheDir, { recursive: true, force: true })
 		isFirstQueuedUpdate = false
 	}
 	queueSnapshotUpdate({
@@ -34,7 +34,7 @@ export const queueBaselineUpdateIfNeeded = (
 		serializedValue,
 		snapFunctionName: ctx.kind,
 		baselinePath: ctx.qualifiedPath
-	})
+	},true)
 }
 
 /** Pretty print comparison and set the process.exitCode to 1 if delta threshold is exceeded */

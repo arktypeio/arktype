@@ -1,13 +1,22 @@
-import { existsSync, readdirSync, rmSync } from "node:fs"
+import {
+	existsSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync
+} from "node:fs"
 import { basename, join } from "node:path"
-import type { Node, ts } from "ts-morph"
-import { readJson, writeJson } from "../../fs/fs.js"
-import { shell } from "../../fs/shell.js"
+import { filePath, readJson, shell, writeJson } from "@arktype/fs"
+import type ts from "typescript"
 import { getConfig } from "../config.js"
-import { getTsMorphProject } from "../tsserver/cacheAssertions.js"
+import {
+	getAbsolutePosition,
+	getNodeFromPosition,
+	TsServer
+} from "../tsserver/tsserver.js"
 import { getFileKey } from "../utils.js"
-import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
+import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
 	name: string
@@ -37,12 +46,19 @@ export const writeCachedInlineSnapshotUpdates = () => {
 			`Unable to update snapshots as expected cache directory ${config.snapCacheDir} does not exist.`
 		)
 	}
+	const attestSnapUpdates = getQueuedUpdates(config.snapCacheDir)
+	const benchSnapUpdates = getQueuedUpdates(config.benchSnapCacheDir)
+	writeUpdates([...attestSnapUpdates, ...benchSnapUpdates])
+	rmSync(config.snapCacheDir, { recursive: true, force: true })
+	rmSync(config.benchSnapCacheDir, { recursive: true, force: true })
+}
+const getQueuedUpdates = (dir: string) => {
 	const queuedUpdates: QueuedUpdate[] = []
-	for (const updateFile of readdirSync(config.snapCacheDir)) {
+	for (const updateFile of readdirSync(dir)) {
 		if (/snap.*\.json$/.test(updateFile)) {
 			let snapshotData: SnapshotArgs | undefined
 			try {
-				snapshotData = readJson(join(config.snapCacheDir, updateFile))
+				snapshotData = readJson(join(dir, updateFile))
 			} catch {
 				// If we can't read the snapshot, log an error and move onto the next update
 				console.error(
@@ -59,21 +75,15 @@ export const writeCachedInlineSnapshotUpdates = () => {
 			}
 		}
 	}
-	writeUpdates(queuedUpdates)
-	rmSync(config.snapCacheDir, { recursive: true, force: true })
+	return queuedUpdates
 }
-
 const snapshotArgsToQueuedUpdate = ({
 	position,
 	serializedValue,
 	snapFunctionName = "snap",
 	baselinePath
 }: SnapshotArgs): QueuedUpdate => {
-	const snapCall = findCallExpressionAncestor(
-		getTsMorphProject(),
-		position,
-		snapFunctionName
-	)
+	const snapCall = findCallExpressionAncestor(position, snapFunctionName)
 	const newArgText =
 		typeof serializedValue === "string" && serializedValue.includes("\n")
 			? "`" + serializedValue.replaceAll("`", "\\`") + "`"
@@ -93,7 +103,7 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
 		return
 	}
 	for (const update of queuedUpdates) {
-		const originalArgs = update.snapCall.getArguments()
+		const originalArgs = update.snapCall.arguments
 		const previousValue = originalArgs.length
 			? originalArgs[0].getText()
 			: undefined
@@ -108,7 +118,7 @@ const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 		const updatedPaths = [
 			...new Set(
 				queuedUpdates.map((update) =>
-					update.snapCall.getSourceFile().getFilePath()
+					filePath(update.snapCall.getSourceFile().fileName)
 				)
 			)
 		]
@@ -119,7 +129,7 @@ const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 }
 
 const summarizeSnapUpdate = (
-	originalArgs: Node<ts.Node>[],
+	originalArgs: ts.NodeArray<ts.Expression>,
 	update: QueuedUpdate,
 	previousValue: string | undefined
 ) => {
@@ -128,9 +138,7 @@ const summarizeSnapUpdate = (
 	} `
 	updateSummary += update.baselinePath
 		? `baseline '${update.baselinePath.join("/")}' `
-		: `snap at ${getFileKey(update.snapCall.getSourceFile().getFilePath())}:${
-				update.position.line
-		  } `
+		: `snap at ${getFileKey(update.position.file)}:${update.position.line} `
 	updateSummary += previousValue
 		? `from ${previousValue} to `
 		: `${update.baselinePath ? "at" : "as"} `
@@ -140,12 +148,33 @@ const summarizeSnapUpdate = (
 }
 
 const writeUpdateToFile = (
-	originalArgs: Node<ts.Node>[],
+	originalArgs: ts.NodeArray<ts.Expression>,
 	update: QueuedUpdate
 ) => {
+	const file = update.snapCall.getSourceFile()
 	for (const originalArg of originalArgs) {
-		update.snapCall.removeArgument(originalArg)
+		const node = getNodeFromPosition(
+			update.snapCall.getSourceFile(),
+			getAbsolutePosition(file, update.position)
+		)
 	}
-	update.snapCall.addArgument(update.newArgText)
-	update.snapCall.getSourceFile().saveSync()
+	const updated = insertArgInSnapCall(update)
+	writeFileSync(update.position.file, updated)
+	update.snapCall.getSourceFile()
+}
+const insertArgInSnapCall = (update: QueuedUpdate) => {
+	const fileText = readFileSync(update.position.file, "utf-8")
+	const lines = fileText.split("\n")
+	const line = lines[update.position.line - 1]
+	let updatedLine = ""
+	for (let i = update.position.char; i < line.length; i++) {
+		if (line[i] === "(") {
+			updatedLine = `${line.substring(0, i + 1)}${
+				update.newArgText
+			}${line.slice(i + 1)}`
+			break
+		}
+	}
+	lines[update.position.line - 1] = updatedLine
+	return lines.join("\n")
 }

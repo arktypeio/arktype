@@ -9,11 +9,11 @@ const shouldThrow = (a: false) => {
 }
 
 test("value snap", () => {
-	attest(o).snap()
+	attest(o).snap({ ark: "type" })
 })
 
 test("type snap", () => {
-	attest(o).types.toString.snap()
+	attest(o).types.toString.snap('{ readonly ark: "type"; }')
 })
 
 test("type assertion", () => {
@@ -21,12 +21,16 @@ test("type assertion", () => {
 })
 
 test("chained snaps", () => {
-	attest(o).snap().types.toString.snap()
+	attest(o)
+		.snap({ ark: "type" })
+		.types.toString.snap('{ readonly ark: "type"; }')
 })
 
 test("error and type error snap", () => {
 	// @ts-expect-error
 	attest(() => shouldThrow(true))
-		.throws.snap()
-		.types.errors.snap()
+		.throws.snap("Error: true is not assignable to false")
+		.types.errors.snap(
+			"Argument of type 'true' is not assignable to parameter of type 'false'."
+		)
 })

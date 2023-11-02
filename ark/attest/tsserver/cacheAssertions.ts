@@ -1,34 +1,9 @@
 import { rmSync } from "node:fs"
 import { ensureDir, writeJson } from "@arktype/fs"
-import type { ProjectOptions } from "ts-morph"
-import { Project } from "ts-morph"
 import type { AttestOptions } from "../config.js"
 import { getConfig } from "../config.js"
 import { writeCachedInlineSnapshotUpdates } from "../snapshot/writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
-
-export const forceCreateTsMorphProject = (opts?: ProjectOptions) => {
-	const config = getConfig()
-	const tsMorphOptions: ProjectOptions = {
-		...opts,
-		compilerOptions: {
-			diagnostics: true
-		}
-	}
-	if (config.tsconfig) {
-		tsMorphOptions.tsConfigFilePath = config.tsconfig
-	}
-	const project = new Project(tsMorphOptions)
-	return project
-}
-
-let __projectCache: undefined | Project
-export const getTsMorphProject = () => {
-	if (!__projectCache) {
-		__projectCache = forceCreateTsMorphProject()
-	}
-	return __projectCache
-}
 
 export const setup = (options?: AttestOptions) => {
 	const config = getConfig(options)
@@ -38,6 +13,9 @@ export const setup = (options?: AttestOptions) => {
 	rmSync(config.cacheDir, { recursive: true, force: true })
 	ensureDir(config.cacheDir)
 	ensureDir(config.snapCacheDir)
+	console.log(
+		"Caching assertions - time may vary based on cwd and project size."
+	)
 	writeJson(
 		config.assertionCacheFile,
 		getAssertionsByFile({ isInitialCache: true })

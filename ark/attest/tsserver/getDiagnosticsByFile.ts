@@ -1,6 +1,8 @@
-import type { ts } from "ts-morph"
+import { readFileSync } from "fs"
+import type ts from "typescript"
 import { getFileKey } from "../utils.js"
-import { getTsMorphProject } from "./cacheAssertions.js"
+import { getInternalTypeChecker } from "./analysis.js"
+import { TsServer } from "./tsserver.js"
 
 export type DiagnosticData = {
 	start: number
@@ -11,12 +13,8 @@ export type DiagnosticData = {
 export type DiagnosticsByFile = Record<string, DiagnosticData[]>
 
 export const getDiagnosticsByFile = (): DiagnosticsByFile => {
-	const project = getTsMorphProject()
 	const diagnosticsByFile: DiagnosticsByFile = {}
-	// We have to use this internal checker to access errors ignore by @ts-ignore or @ts-expect-error
-	const diagnostics: ts.Diagnostic[] = (
-		project.getTypeChecker().compilerObject as any
-	).getDiagnostics()
+	const diagnostics: ts.Diagnostic[] = getInternalTypeChecker().getDiagnostics()
 	for (const diagnostic of diagnostics) {
 		addDiagnosticDataFrom(diagnostic, diagnosticsByFile)
 	}

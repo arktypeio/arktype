@@ -1,11 +1,16 @@
-import { caller } from "@arktype/fs"
-import type { Node, Project, SourceFile, ts } from "ts-morph"
-import { SyntaxKind } from "ts-morph"
-import { findCallExpressionAncestor } from "../snapshot/snapshot.js"
+import { caller, filePath } from "@arktype/fs"
+import tsvfs from "@typescript/vfs"
+import ts from "typescript"
+import { getInternalTypeChecker } from "../tsserver/analysis.js"
+import { getExpressionsByName } from "../tsserver/getAssertionsInFile.js"
 import {
-	forceCreateTsMorphProject,
-	getTsMorphProject
-} from "../tsserver/cacheAssertions.js"
+	getAbsolutePosition,
+	getNodeFromPosition,
+	getSourceFile,
+	getTsconfigInfoOrThrow,
+	getTsLibFiles,
+	TsServer
+} from "../tsserver/tsserver.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
 import type { Measure, MeasureComparison, TypeUnit } from "./measure.js"
@@ -15,77 +20,131 @@ export type BenchTypeAssertions = {
 	types: (instantiations?: Measure<TypeUnit>) => void
 }
 
-export const getInternalTypeChecker = (project: Project) =>
-	project.getTypeChecker().compilerObject as ts.TypeChecker & {
-		// This API is not publicly exposed
-		getInstantiationCount: () => number
+let __virtualEnv: tsvfs.VirtualTypeScriptEnvironment | undefined
+const getIsolatedEnv = () => {
+	if (__virtualEnv) {
+		return __virtualEnv
 	}
-
-export const getUpdatedInstantiationCount = (project: Project) => {
-	const typeChecker = getInternalTypeChecker(project)
-	// Every time the project is updated, we need to emit to recalculate instantiation count.
-	// If we try to get the count after modifying a file in memory without emitting, it will be 0.
-	project.emitToMemory()
-	return typeChecker.getInstantiationCount()
+	const tsconfigInfo = getTsconfigInfoOrThrow()
+	const libFiles = getTsLibFiles(tsconfigInfo.compilerOptions)
+	const system = tsvfs.createSystem(libFiles.defaultMapFromNodeModules)
+	__virtualEnv = tsvfs.createVirtualTypeScriptEnvironment(
+		system,
+		[],
+		ts,
+		tsconfigInfo.compilerOptions
+	)
+	return __virtualEnv
 }
 
-const emptyBenchFn = (statement: Node<ts.ExpressionStatement>) => {
-	const benchCall = statement
-		.getDescendantsOfKind(SyntaxKind.CallExpression)
-		.find(
-			(node) =>
-				node.getFirstChildByKind(SyntaxKind.Identifier)?.getText() === "bench"
-		)
-	if (!benchCall) {
-		throw new Error(
-			`Unable to find bench call from expression '${statement.getText()}'.`
-		)
-	}
-	benchCall.getArguments()[1].replaceWithText("()=>{}")
+const createFile = (
+	env: tsvfs.VirtualTypeScriptEnvironment,
+	fileName: string,
+	fileText: string
+) => {
+	env.createFile(fileName, fileText)
+	return env.getSourceFile(fileName)
 }
 
-const getInstantiationsWithFile = (fileText: string, fakePath: string) => {
-	const isolatedProject = forceCreateTsMorphProject({
-		skipAddingFilesFromTsConfig: true
-	})
-	isolatedProject.createSourceFile(fakePath, fileText)
-	return getUpdatedInstantiationCount(isolatedProject)
+const getProgram = (env?: tsvfs.VirtualTypeScriptEnvironment) => {
+	return env?.languageService.getProgram()
+}
+const getInstantiationCountOfFile = (fileText: string, fileName: string) => {
+	const env = getIsolatedEnv()
+	const file = createFile(env, fileName, fileText)
+	getProgram(env)?.emit(file)
+	const instantiationCount = getInternalTypeChecker(env).getInstantiationCount()
+	return instantiationCount
 }
 
 const transformBenchSource = (
-	originalFile: SourceFile,
-	isolatedBenchExressionText: string,
+	originalFile: ts.SourceFile,
+	isolatedBenchExpressionText: string,
 	includeBenchFn: boolean,
 	fakePath: string
 ) => {
-	const fileToTransform = originalFile.copy(fakePath)
-	const currentBenchStatement = fileToTransform.getFirstDescendantOrThrow(
-		(node) =>
-			node.isKind(SyntaxKind.ExpressionStatement) &&
-			node.getText() === isolatedBenchExressionText
-	) as Node<ts.ExpressionStatement>
+	getIsolatedEnv().createFile(fakePath, originalFile.getFullText())
+	const fileToTransform = getIsolatedEnv().getSourceFile(fakePath)!
+	const currentBenchStatement = getFirstChildByKindOrThrow(
+		fileToTransform,
+		ts.SyntaxKind.ExpressionStatement,
+		isolatedBenchExpressionText
+	)
 	if (!includeBenchFn) {
-		emptyBenchFn(currentBenchStatement)
+		return fileToTransform
+			.getFullText()
+			.replace(currentBenchStatement.getFullText(), "")
 	}
-	const text = fileToTransform.getText()
-	fileToTransform.delete()
-	return text
+	return fileToTransform.getText()
+}
+
+const isNodeOfType = <T extends ts.Node>(
+	node: ts.Node,
+	syntaxKind: ts.SyntaxKind
+): node is T => {
+	return node.kind === syntaxKind
+}
+const getFirstChildByKindOrThrow = <T extends ts.Node>(
+	node: ts.Node,
+	kind: ts.SyntaxKind,
+	isolatedBenchExpressionText: string
+): T => {
+	let firstDescendent: T | undefined = undefined
+
+	const iterateThroughChildren = (child: ts.Node) => {
+		if (
+			isNodeOfType<T>(child, kind) &&
+			child.getText() === isolatedBenchExpressionText
+		) {
+			firstDescendent = child
+		}
+		ts.forEachChild(child, iterateThroughChildren)
+	}
+
+	iterateThroughChildren(node)
+
+	if (!firstDescendent) {
+		throw new Error(`Unable to find a node of type ${ts.SyntaxKind[kind]}`)
+	}
+
+	return firstDescendent
+}
+
+const getFirstAncestorByKindOrThrow = <T extends ts.Node>(
+	call: ts.Node,
+	kind: ts.SyntaxKind
+): T => {
+	let ancestor: T | undefined = undefined
+	let possibleAncestorOfType: ts.Node | undefined = call
+
+	while (possibleAncestorOfType && !ancestor) {
+		if (isNodeOfType<T>(possibleAncestorOfType, kind)) {
+			ancestor = possibleAncestorOfType as T
+		}
+		possibleAncestorOfType = possibleAncestorOfType.parent
+	}
+
+	if (!ancestor) {
+		throw new Error(`Could not find an ancestor of kind ${ts.SyntaxKind[kind]}`)
+	}
+
+	return ancestor
 }
 
 const instantiationsByPath: { [path: string]: number } = {}
-const getInstantiationsContributedByNode = (
-	benchCall: Node<ts.CallExpression>
-) => {
+
+const getInstantiationsContributedByNode = (benchCall: ts.CallExpression) => {
 	const originalFile = benchCall.getSourceFile()
-	const originalPath = originalFile.getFilePath()
+	const originalPath = filePath(originalFile.fileName)
 	const fakePath = originalPath + ".nonexistent.ts"
-	const benchExpression = benchCall.getFirstAncestorByKindOrThrow(
-		SyntaxKind.ExpressionStatement
+	const benchExpression = getFirstAncestorByKindOrThrow<ts.ExpressionStatement>(
+		benchCall,
+		ts.SyntaxKind.ExpressionStatement
 	)
-	const originalBenchExpressionText = benchExpression.getText()
+	const originalBenchExpressionText = (benchExpression as any).getText()
 	if (!instantiationsByPath[fakePath]) {
 		console.log(`⏳ attest: Analyzing type assertions...`)
-		const instantiationsWithNode = getInstantiationsWithFile(
+		const instantiationsWithNode = getInstantiationCountOfFile(
 			transformBenchSource(
 				originalFile,
 				originalBenchExpressionText,
@@ -98,7 +157,7 @@ const getInstantiationsContributedByNode = (
 		console.log(`⏳ Cached type assertions \n`)
 	}
 
-	const instantiationsWithoutNode = getInstantiationsWithFile(
+	const instantiationsWithoutNode = getInstantiationCountOfFile(
 		transformBenchSource(
 			originalFile,
 			originalBenchExpressionText,
@@ -115,15 +174,18 @@ export const createBenchTypeAssertion = (
 ): BenchTypeAssertions => ({
 	types: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
 		ctx.lastSnapCallPosition = caller()
-		const project = getTsMorphProject()
-		project.addSourceFileAtPath(ctx.benchCallPosition.file)
-		const benchFnCall = findCallExpressionAncestor(
-			getTsMorphProject(),
-			ctx.benchCallPosition,
-			"bench"
+		const file = getSourceFile(ctx.benchCallPosition.file)
+		const benchNode = getNodeFromPosition(
+			file,
+			getAbsolutePosition(file, ctx.benchCallPosition)
+		)!
+		const benchFn = getExpressionsByName(benchNode, "bench")
+		if (!benchFn) {
+			throw new Error("Unable to retrieve bench expression node.")
+		}
+		const instantiationsContributed = getInstantiationsContributedByNode(
+			benchFn[0]
 		)
-		const instantiationsContributed =
-			getInstantiationsContributedByNode(benchFnCall)
 		const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
 			instantiationsContributed,
 			args[0]
