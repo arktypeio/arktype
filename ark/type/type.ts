@@ -177,15 +177,13 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		public scope: Scope
 	) {
 		const root = parseTypeRoot(definition, scope) as Root<t>
-		super(
-			In,
-			`const state = new ${registry().reference("state")}();
-			const morphs = [];
-			for(let i = 0; i < morphs.length; i++) {
-			    morphs[i]()
-			}
-			return state.finalize(${In});`
-		)
+		super(In, `return ${root.condition} ? { data: ${In} } : { problems: [] } `)
+		// const state = new ${registry().reference("state")}();
+		// const morphs = [];
+		// 	for(let i = 0; i < morphs.length; i++) {
+		// 	    morphs[i]()
+		// 	}
+		// 	return state.finalize(${In});
 		this.root = root
 		this.condition = root.ids.meta
 		this.allows = root.allows

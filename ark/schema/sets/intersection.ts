@@ -135,7 +135,7 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 			if (inner.intersection.length > 1) {
 				condition = `(${condition})`
 			}
-			return condition
+			return condition || "true"
 		},
 		writeDefaultDescription: (inner) => {
 			return inner.intersection.length === 0

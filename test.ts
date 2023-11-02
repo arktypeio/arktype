@@ -1,10 +1,6 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import {
-	IntersectionNode,
-	node,
-	PatternNode,
-	UnionNode
-} from "./ark/schema/main.js"
+import { type } from "arktype"
+import { IntersectionNode, node, UnionNode } from "./ark/schema/main.js"
 
 const l = node(
 	{
@@ -16,6 +12,11 @@ const l = node(
 		divisor: 5
 	}
 )
+
+const str = type("string")
+
+const ok = str("foo") //?
+const bad = str(555) //?
 
 l.condition //?
 

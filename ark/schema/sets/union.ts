@@ -132,7 +132,7 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 			if (inner.union.length > 1) {
 				condition = `(${condition})`
 			}
-			return condition
+			return condition || "false"
 		},
 		writeDefaultDescription: (inner) =>
 			inner.union.length === 0 ? "never" : inner.union.join(" or "),
