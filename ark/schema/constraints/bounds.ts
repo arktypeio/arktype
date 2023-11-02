@@ -87,7 +87,7 @@ export class MinNode extends BaseBound<MinDeclaration> {
 		intersections: {
 			min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
 		},
-		parse: (schema, ctx) => {
+		parseSchema: (schema, ctx) => {
 			const boundKind = getBoundKind(ctx.basis)
 			return typeof schema === "object"
 				? { ...schema, min: parseLimit(schema.min), boundKind }
@@ -158,7 +158,7 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 					? Disjoint.from("bound", l, r)
 					: null
 		},
-		parse: (schema, ctx) => {
+		parseSchema: (schema, ctx) => {
 			const boundKind = getBoundKind(ctx.basis)
 			return typeof schema === "object"
 				? { ...schema, max: parseLimit(schema.max), boundKind }

@@ -42,7 +42,7 @@ export class UnitNode<t = unknown>
 			rule: (l, r) =>
 				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 		},
-		parse: (schema) => schema,
+		parseSchema: (schema) => schema,
 		compileCondition: (inner) =>
 			`${this.argName} === ${compileSerializedValue(inner.unit)}`,
 		writeDefaultDescription: (inner) => stringify(inner.unit)

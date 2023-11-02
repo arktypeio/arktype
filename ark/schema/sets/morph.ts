@@ -117,7 +117,7 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 					  }
 			}
 		},
-		parse: (schema) => {
+		parseSchema: (schema) => {
 			const inner = {} as mutable<MorphInner>
 			inner.morph =
 				typeof schema.morph === "function" ? [schema.morph] : schema.morph

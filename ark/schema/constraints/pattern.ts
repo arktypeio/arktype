@@ -44,10 +44,11 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 			// For now, non-equal regex are naively intersected
 			pattern: () => null
 		},
-		parse: (schema) =>
+		parseSchema: (schema) =>
 			typeof schema === "string" || schema instanceof RegExp
 				? { pattern: parseRegexInput(schema) }
 				: { ...schema, pattern: parseRegexInput(schema.pattern) },
+		reduceToNode: (inner) => new PatternNode(inner),
 		compileCondition: (inner) => `${inner.pattern}.test(${this.argName})`,
 		writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
 	})

@@ -60,7 +60,7 @@ export class ProtoNode<t extends object = object>
 					? l
 					: Disjoint.from("domain", builtins().object, r)
 		},
-		parse: (schema) =>
+		parseSchema: (schema) =>
 			typeof schema === "function" ? { proto: schema } : schema,
 		compileCondition: (inner) =>
 			`${this.argName} instanceof ${

@@ -71,7 +71,7 @@ export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
 				}
 			}
 		},
-		parse: (schema) => schema as never,
+		parseSchema: (schema) => schema as never,
 		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) =>
 			`${String(inner.required)}: ${inner.value}`,
@@ -135,7 +135,7 @@ export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 				}
 			}
 		},
-		parse: (schema) => schema as never,
+		parseSchema: (schema) => schema as never,
 		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) =>
 			`${String(inner.optional)}?: ${inner.value}`,

@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { node } from "./ark/schema/main.js"
+import {
+	IntersectionNode,
+	node,
+	PatternNode,
+	UnionNode
+} from "./ark/schema/main.js"
 
 const l = node(
 	{
@@ -11,6 +16,12 @@ const l = node(
 		divisor: 5
 	}
 )
+
+PatternNode.parse("//")
+
+IntersectionNode.parse({ intersection: [] })
+
+UnionNode.parse({ union: [] })
 
 const z = node({}).intersect(node({})) //=>?
 

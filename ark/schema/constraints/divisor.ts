@@ -41,7 +41,7 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 				)
 			})
 		},
-		parse: (schema) =>
+		parseSchema: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,
 		compileCondition: (inner) => `${this.argName} % ${inner.divisor} === 0`,
 		writeDefaultDescription: (inner) =>

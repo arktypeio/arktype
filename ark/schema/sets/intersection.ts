@@ -61,7 +61,7 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 > {
 	static readonly kind = "intersection"
 	static readonly declaration: IntersectionDeclaration
-	readonly basis = this.intersection[0]?.isBasis()
+	readonly basis: Node<BasisKind> | undefined = this.intersection[0]?.isBasis()
 		? this.intersection[0]
 		: undefined
 	readonly constraints: readonly Node<ConstraintKind>[] = this.basis
@@ -95,17 +95,19 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 			},
 			rule: (l, r) => intersectRule(l.intersection, r)
 		},
-		parse: (schema) => {
+		parseSchema: (schema) => {
 			const collapsedResult = maybeParseBasis(schema)
 			if (collapsedResult) {
-				return collapsedResult
+				return { intersection: [collapsedResult] }
 			}
 			if (typeof schema !== "object") {
 				return throwParseError(
 					`${domainOf(schema)} is not a valid intersection schema input`
 				)
 			}
-			const { alias, description, ...rules } = schema
+			const { alias, description, ...rules } =
+				// maybeParseBasis handles collapsed basis schemas, so we're guaranteed to have an intersection schema here
+				schema as ExpandedIntersectionSchema
 			const intersectionInner = {} as mutable<IntersectionInner>
 			if (alias) {
 				intersectionInner.alias = alias
@@ -117,7 +119,14 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 				"intersection" in rules
 					? parseListedRules(rules.intersection)
 					: parseMappedRules(rules)
-			return new IntersectionNode(intersectionInner)
+			return intersectionInner
+		},
+		reduceToNode: (inner) => {
+			if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
+				// TODO: collapse description?
+				return inner.intersection[0]
+			}
+			return new IntersectionNode(inner)
 		},
 		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) => {
@@ -128,14 +137,7 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 		children: (inner) =>
 			Object.values(inner)
 				.flat()
-				.filter((value): value is Node<RuleKind> => value instanceof BaseNode),
-		reduce: (inner) => {
-			if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
-				// TODO; remove cast
-				return inner.intersection[0] as Node<BasisKind>
-			}
-			return new IntersectionNode(inner)
-		}
+				.filter((value): value is Node<RuleKind> => value instanceof BaseNode)
 	})
 }
 
@@ -253,7 +255,11 @@ export type CollapsedIntersectionSchema<
 
 export type IntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
-> = basis | MappedIntersectionSchema<basis> | ListedIntersectionSchema<basis>
+> = basis | ExpandedIntersectionSchema<basis>
+
+export type ExpandedIntersectionSchema<
+	basis extends Schema<BasisKind> = Schema<BasisKind>
+> = MappedIntersectionSchema<basis> | ListedIntersectionSchema<basis>
 
 export type parseIntersection<schema> = schema extends Schema<BasisKind>
 	? parseBasis<schema>

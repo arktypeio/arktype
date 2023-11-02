@@ -45,7 +45,7 @@ export class DomainNode<t = unknown>
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r)
 		},
-		parse: (schema) =>
+		parseSchema: (schema) =>
 			typeof schema === "string" ? { domain: schema } : schema,
 		compileCondition: (inner) =>
 			inner.domain === "object"

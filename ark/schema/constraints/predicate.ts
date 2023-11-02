@@ -41,8 +41,9 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 		intersections: {
 			predicate: () => null
 		},
-		parse: (schema) =>
+		parseSchema: (schema) =>
 			typeof schema === "function" ? { predicate: schema } : schema,
+		reduceToNode: (inner) => new PredicateNode(inner),
 		compileCondition: (inner) =>
 			`${compileSerializedValue(inner.predicate)}(${this.argName})`,
 		writeDefaultDescription: (inner) =>

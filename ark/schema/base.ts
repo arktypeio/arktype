@@ -4,9 +4,12 @@ import type {
 	Dict,
 	evaluate,
 	extend,
+	Fn,
+	instanceOf,
 	Json,
 	JsonData,
 	requireKeys,
+	returnOf,
 	satisfy
 } from "@arktype/util"
 import {
@@ -153,11 +156,11 @@ export type StaticNodeDefinition<
 	kind: d["kind"]
 	keys: Record<Exclude<keyof d["inner"], keyof BaseAttributes>, keyof NodeIds>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	parse: (schema: d["schema"], ctx: ParseContext) => d["inner"]
+	parseSchema: (schema: d["schema"], ctx: ParseContext) => d["inner"]
 	writeDefaultDescription: (inner: d["inner"]) => string
 	compileCondition: (inner: d["inner"]) => string
+	reduceToNode?: (inner: d["inner"]) => UnknownNode
 	children?: (inner: d["inner"]) => readonly UnknownNode[]
-	reduce?: (inner: d["inner"]) => UnknownNode
 }
 
 type instantiateNodeClassDeclaration<declaration> = {
@@ -206,17 +209,22 @@ export abstract class BaseNode<
 		)
 	}
 
-	static parse<
-		nodeClass extends {
-			declaration: BaseNodeDeclaration
-			definition: StaticNodeDefinition<any>
-		}
-	>(
+	static parse<nodeClass>(
 		this: nodeClass,
-		schema: nodeClass["declaration"]["schema"],
+		schema: nodeClass extends { declaration: { schema: infer schema } }
+			? schema
+			: never,
 		ctx = createParseContext()
-	) {
-		return new (this as any)(this.definition.parse(schema, ctx))
+	):
+		| instanceOf<nodeClass>
+		| (nodeClass extends {
+				declaration: { reduceToNode: Fn<never, infer reducedNode> }
+		  }
+				? reducedNode
+				: never) {
+		const definition = (this as any).definition as StaticNodeDefinition
+		const inner = definition.parseSchema(schema, ctx)
+		return definition.reduceToNode?.(inner) ?? new (this as any)(inner)
 	}
 
 	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
@@ -256,13 +264,14 @@ export abstract class BaseNode<
 		return compileSerializedValue(v)
 	}
 
-	protected static define<
-		nodeClass,
-		definition extends StaticNodeDefinition<
-			/** @ts-expect-error (trying to constraint further breaks types or causes circularities) */
-			nodeClass["declaration" & keyof nodeClass]
+	protected static define<nodeClass, definition>(
+		this: nodeClass,
+		definition: conform<
+			definition,
+			/** @ts-expect-error (trying to constrain further breaks types or causes circularities) */
+			StaticNodeDefinition<nodeClass["declaration"]>
 		>
-	>(this: nodeClass, definition: definition) {
+	) {
 		return {
 			...definition,
 			keys: {
@@ -270,7 +279,7 @@ export abstract class BaseNode<
 				description: "meta",
 				...definition.keys
 			}
-		} as instantiateNodeClassDeclaration<definition>
+		} as definition
 	}
 
 	protected static readonly argName = In

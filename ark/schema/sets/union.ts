@@ -99,7 +99,7 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 					  }
 			}
 		},
-		parse: (schema) => {
+		parseSchema: (schema) => {
 			const result = {} as mutable<UnionInner>
 			let schemaBranches: readonly BranchSchema[]
 			if (isArray(schema)) {
@@ -115,6 +115,14 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 					: this.classesByKind.intersection.parse(branch)
 			)
 			return result
+		},
+		reduceToNode: (inner) => {
+			const reducedBranches = reduceBranches(inner.union)
+			if (reducedBranches.length === 1) {
+				// TODO: description?
+				return reducedBranches[0]
+			}
+			return new UnionNode({ ...inner, union: reducedBranches })
 		},
 		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) =>
@@ -282,7 +290,7 @@ export const intersectBranches = (
 	return finalBranches
 }
 
-export const reduceBranches = (branches: BranchNode[]) => {
+export const reduceBranches = (branches: readonly BranchNode[]) => {
 	if (branches.length < 2) {
 		return branches
 	}
