@@ -79,77 +79,67 @@ export class IntersectionNode<t = unknown> extends RootNode<
 		assertValidConstraints(this.basis, this.constraints)
 	}
 
-	static compile = this.defineCompiler((inner) => "true")
-
-	static readonly keyKinds = this.declareKeys({
-		intersection: "in"
-	})
-
-	static children(inner: IntersectionInner): readonly Node<RuleKind>[] {
-		return Object.values(inner)
-			.flat()
-			.filter((value): value is Node<RuleKind> => value instanceof BaseNode)
-	}
-
-	static readonly intersections = this.defineIntersections({
-		intersection: (l, r) => {
-			let result: IntersectionInner | Disjoint = l
-			for (const constraint of r.constraints) {
-				if (result instanceof Disjoint) {
-					break
-				}
-				result = intersectRule(result.intersection, constraint)
-			}
-			return result
+	static readonly declaration = this.declare({
+		kind: "intersection",
+		keys: {
+			intersection: "in"
 		},
-		rule: (l, r) => intersectRule(l.intersection, r)
+		intersections: {
+			intersection: (l, r) => {
+				let result: IntersectionInner | Disjoint = l
+				for (const constraint of r.constraints) {
+					if (result instanceof Disjoint) {
+						break
+					}
+					result = intersectRule(result.intersection, constraint)
+				}
+				return result
+			},
+			rule: (l, r) => intersectRule(l.intersection, r)
+		},
+		parse: (schema) => {
+			const collapsedResult = maybeParseBasis(schema)
+			if (collapsedResult) {
+				return collapsedResult
+			}
+			if (typeof schema !== "object") {
+				return throwParseError(
+					`${domainOf(schema)} is not a valid intersection schema input`
+				)
+			}
+			const { alias, description, ...rules } = schema
+			const intersectionInner = {} as mutable<IntersectionInner>
+			if (alias) {
+				intersectionInner.alias = alias
+			}
+			if (description) {
+				intersectionInner.description = description
+			}
+			intersectionInner.intersection =
+				"intersection" in rules
+					? parseListedRules(rules.intersection)
+					: parseMappedRules(rules)
+			return new IntersectionNode(intersectionInner)
+		},
+		compileCondition: (inner) => "true",
+		writeDefaultDescription: (inner) => {
+			return inner.intersection.length === 0
+				? "a value"
+				: inner.intersection.join(" and ")
+		},
+		children: (inner) =>
+			Object.values(inner)
+				.flat()
+				.filter((value): value is Node<RuleKind> => value instanceof BaseNode)
 	})
 
-	static parse(schema: IntersectionSchema): IntersectionInner {
-		const collapsedResult = maybeParseBasis(schema)
-		if (collapsedResult) {
-			return collapsedResult
-		}
-		if (typeof schema !== "object") {
-			return throwParseError(
-				`${domainOf(schema)} is not a valid intersection schema input`
-			)
-		}
-		return this.parseIntersectionObjectSchema(schema)
-	}
-
-	static reduce(inner: IntersectionInner) {
+	static reduce = this.defineReducer((inner) => {
 		if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
-			// TODO: remove cast
+			// TODO; remove cast
 			return inner.intersection[0] as Node<BasisKind>
 		}
 		return new IntersectionNode(inner)
-	}
-
-	private static parseIntersectionObjectSchema({
-		alias,
-		description,
-		...rules
-	}: Exclude<IntersectionSchema, Schema<BasisKind>>) {
-		const intersectionInner = {} as mutable<IntersectionInner>
-		if (alias) {
-			intersectionInner.alias = alias
-		}
-		if (description) {
-			intersectionInner.description = description
-		}
-		intersectionInner.intersection =
-			"intersection" in rules
-				? parseListedRules(rules.intersection)
-				: parseMappedRules(rules)
-		return new IntersectionNode(intersectionInner)
-	}
-
-	static writeDefaultDescription(inner: IntersectionInner) {
-		return inner.intersection.length === 0
-			? "a value"
-			: inner.intersection.join(" and ")
-	}
+	})
 }
 
 const parseListedRules = (

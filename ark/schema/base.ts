@@ -72,22 +72,39 @@ export type NodeDeclaration<
 > = declareNode<NodeKind, DeclaredTypes<any>, implementation>
 
 export const baseAttributeKeys = {
-	alias: 1,
-	description: 1
-} as const satisfies Record<keyof BaseAttributes, 1>
+	alias: "meta",
+	description: "meta"
+} as const satisfies Record<keyof BaseAttributes, keyof NodeIds>
 
 export type StaticBaseNode<d extends NodeDeclaration> = {
-	new (inner: d["inner"]): instanceOf<d["class"]>
-	kind: d["kind"]
-	keyKinds: Record<keyof d["inner"], keyof NodeIds>
-	serialize(inner: d["inner"]): Json
-	parse(input: d["schema"], ctx: ConstraintContext): d["inner"]
-	intersections: LeftIntersections<d["kind"]>
-	compile(inner: d["inner"]): string
-	writeDefaultDescription(inner: d["inner"]): string
-	reduce?(input: d["inner"]): UnknownNode
-	children?(inner: d["inner"]): readonly UnknownNode[]
+	// new (inner: d["inner"]): instanceOf<d["class"]>
+	// kind: d["kind"]
+	// keyKinds: Record<keyof d["inner"], keyof NodeIds>
+	// serialize(inner: d["inner"]): Json
+	// parse(input: d["schema"], ctx: ConstraintContext): d["inner"]
+	// intersections: LeftIntersections<d["kind"]>
+	// compile(inner: d["inner"]): string
+	// writeDefaultDescription(inner: d["inner"]): string
+	// reduce(input: d["inner"]): UnknownNode
+	// children?(inner: d["inner"]): readonly UnknownNode[]
 }
+
+export type NodeClassDeclaration<kind extends NodeKind = NodeKind> = {
+	kind: kind
+	keys: Record<Exclude<keyof Inner<kind>, keyof BaseAttributes>, keyof NodeIds>
+	intersections: LeftIntersections<kind>
+	parse: (input: Schema<kind>, ctx: ConstraintContext) => Inner<kind>
+	writeDefaultDescription: (inner: Inner<kind>) => string
+	compileCondition: (inner: Inner<kind>) => string
+	children?: (inner: Inner<kind>) => readonly UnknownNode[]
+}
+
+type instantiateNodeClassDeclaration<declaration extends NodeClassDeclaration> =
+	{
+		[k in keyof declaration]: k extends "keys"
+			? evaluate<declaration[k] & typeof baseAttributeKeys>
+			: declaration[k]
+	}
 
 export const setKinds = [
 	"union",
@@ -194,6 +211,9 @@ export abstract class BaseNode<
 	declare infer: t;
 	declare [inferred]: t
 
+	declare declaration: instantiateNodeClassDeclaration<
+		NodeClassDeclaration<any>
+	>
 	readonly json: Json
 	readonly children: childrenOf<declaration["class"]>
 	readonly references: readonly UnknownNode[]
@@ -202,18 +222,18 @@ export abstract class BaseNode<
 	readonly description: string
 	readonly ids: NodeIds = new NodeIds(this)
 	readonly nodeClass = this.constructor as declaration["class"]
-	readonly kind: declaration["kind"] = this.nodeClass.kind
 	readonly condition: string
+	readonly kind: declaration["kind"] = this.nodeClass.kind
 	readonly allows: (data: unknown) => boolean
 
 	constructor(public readonly inner: declaration["inner"]) {
 		super(inner)
 		this.alias = $ark.register(this, inner.alias)
 		this.description =
-			inner.description ?? this.nodeClass.writeDefaultDescription(inner)
+			inner.description ?? this.declaration.writeDefaultDescription(inner)
 		this.json = this.nodeClass.serialize(inner)
-		this.condition = this.nodeClass.compile(inner)
-		this.children = this.nodeClass.children?.(inner) ?? ([] as any)
+		this.condition = this.declaration.compileCondition(inner)
+		this.children = this.declaration.children?.(inner) ?? ([] as any)
 		this.references = this.children.flatMap(
 			(child) => child.contributesReferences
 		)
@@ -261,6 +281,21 @@ export abstract class BaseNode<
 		return compileSerializedValue(v)
 	}
 
+	protected static declare<
+		nodeClass,
+		kind extends NodeKind,
+		declaration extends NodeClassDeclaration<kind>
+	>(this: nodeClass, declaration: { kind: kind } & declaration) {
+		return {
+			...declaration,
+			keys: {
+				alias: "meta",
+				description: "meta",
+				...declaration.keys
+			}
+		} as instantiateNodeClassDeclaration<declaration>
+	}
+
 	protected static declareKeys<nodeClass>(
 		this: nodeClass,
 		keyKinds: {
@@ -285,12 +320,10 @@ export abstract class BaseNode<
 
 	protected static defineReducer<
 		nodeClass,
-		reducer extends (inner: Inner<kindOf<nodeClass>>) => UnknownNode
+		reducer extends (In: Inner<kindOf<nodeClass>>) => Node
 	>(this: nodeClass, reducer: reducer) {
 		return reducer
 	}
-
-	static reduce?(inner: never): UnknownNode
 
 	protected static readonly argName = In
 

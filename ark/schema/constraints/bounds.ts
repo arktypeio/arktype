@@ -67,7 +67,7 @@ export type MinDeclaration = declareConstraint<
 		schema: MinSchema
 		inner: MinInner
 		intersections: {
-			min: MinNode
+			min: "min"
 		}
 	},
 	typeof MinNode

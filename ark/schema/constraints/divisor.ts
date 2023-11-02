@@ -31,29 +31,24 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 		this.classesByKind.divisor = this
 	}
 
-	static parse(schema: DivisorSchema) {
-		return typeof schema === "number" ? { divisor: schema } : schema
-	}
-
-	static readonly compile = this.defineCompiler(
-		(inner) => `${this.argName} % ${inner.divisor} === 0`
-	)
-
-	static readonly keyKinds = this.declareKeys({
-		divisor: "in"
+	static readonly declaration = this.declare({
+		kind: "divisor",
+		keys: {
+			divisor: "in"
+		},
+		intersections: {
+			divisor: (l, r) => ({
+				divisor: Math.abs(
+					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+				)
+			})
+		},
+		parse: (schema) =>
+			typeof schema === "number" ? { divisor: schema } : schema,
+		compileCondition: (inner) => `${this.argName} % ${inner.divisor} === 0`,
+		writeDefaultDescription: (inner) =>
+			inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
 	})
-
-	static readonly intersections = this.defineIntersections({
-		divisor: (l, r) => ({
-			divisor: Math.abs(
-				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-			)
-		})
-	})
-
-	static writeDefaultDescription(inner: DivisorInner) {
-		return inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
-	}
 
 	static basis: DomainNode<number> = builtins().number
 
