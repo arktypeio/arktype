@@ -4,7 +4,7 @@ import { type BasisKind } from "../bases/basis.js"
 import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
-import { BaseRoot } from "../root.js"
+import { BaseRoot, type RootKind } from "../root.js"
 import {
 	type IntersectionNode,
 	type IntersectionSchema
@@ -37,6 +37,7 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		rule: "union" | Disjoint
 	}
+	reductions: RootKind
 }>
 
 export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {

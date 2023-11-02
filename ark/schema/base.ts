@@ -30,7 +30,8 @@ import {
 	type NodeClass,
 	type NodeKind,
 	type reifyIntersections,
-	type RuleKind
+	type RuleKind,
+	type Schema
 } from "./nodes.js"
 import { type SetKind } from "./sets/set.js"
 import { createParseContext, inferred, type ParseContext } from "./utils.js"
@@ -49,18 +50,17 @@ export type DeclaredTypes<kind extends NodeKind = NodeKind> = {
 	// as its kind that can be used as a discriminator.
 	inner: BaseAttributes & { [k in kind]: unknown }
 	intersections: BaseIntersectionMap[kind]
+	reductions?: rightOf<kind>
 }
 
 export type declareNode<
 	types extends {
-		[k in keyof DeclaredTypes | keyof types]: types extends {
+		[k in keyof DeclaredTypes]: types extends {
 			kind: infer kind extends NodeKind
 		}
-			? k extends keyof DeclaredTypes
-				? conform<types[k], DeclaredTypes<kind>[k]>
-				: never
+			? conform<types[k], DeclaredTypes<kind>[k]>
 			: never
-	}
+	} & { [k in Exclude<keyof types, keyof DeclaredTypes>]: never }
 > = types
 
 export type BaseNodeDeclaration = declareNode<DeclaredTypes<any>>
@@ -158,15 +158,22 @@ export type StaticNodeDefinition<
 	parseSchema: (schema: d["schema"], ctx: ParseContext) => d["inner"]
 	writeDefaultDescription: (inner: d["inner"]) => string
 	compileCondition: (inner: d["inner"]) => string
-	reduceToNode?: (inner: d["inner"]) => UnknownNode
 	children?: (inner: d["inner"]) => readonly UnknownNode[]
-}
+} & (d["reductions"] extends NodeKind
+	? { reduceToNode: (inner: d["inner"]) => Node<d["kind"] | d["reductions"]> }
+	: { reduceToNode?: (inner: d["inner"]) => Node<d["kind"]> })
 
 type instantiateNodeClassDeclaration<declaration> = {
 	[k in keyof declaration]: k extends "keys"
 		? evaluate<declaration[k] & typeof baseAttributeKeys>
 		: declaration[k]
 }
+
+type declarationOf<nodeClass> = nodeClass extends {
+	declaration: infer declaration extends BaseNodeDeclaration
+}
+	? declaration
+	: never
 
 export abstract class BaseNode<
 	declaration extends BaseNodeDeclaration,
@@ -210,17 +217,12 @@ export abstract class BaseNode<
 
 	static parse<nodeClass>(
 		this: nodeClass,
-		schema: nodeClass extends { declaration: { schema: infer schema } }
-			? schema
-			: never,
+		schema: declarationOf<nodeClass>["schema"],
 		ctx = createParseContext()
-	):
-		| instanceOf<nodeClass>
-		| (nodeClass extends {
-				declaration: { reduceToNode: Fn<never, infer reducedNode> }
-		  }
-				? reducedNode
-				: never) {
+	): Node<
+		| declarationOf<nodeClass>["kind"]
+		| (returnOf<declarationOf<nodeClass>["reductions"]> & NodeKind)
+	> {
 		const definition = (this as any).definition as StaticNodeDefinition
 		const inner = definition.parseSchema(schema, ctx)
 		return definition.reduceToNode?.(inner) ?? new (this as any)(inner)
@@ -310,7 +312,7 @@ export abstract class BaseNode<
 	}
 
 	// TODO: add input kind, caching
-	intersect<other extends UnknownNode>(
+	intersect<other extends Node>(
 		other: other
 	): intersectionOf<this["kind"], other["kind"]>
 	intersect(other: BaseNode<BaseNodeDeclaration>) {
@@ -354,24 +356,16 @@ export type intersectionOf<l extends NodeKind, r extends NodeKind> = [
 	l,
 	r
 ] extends [r, l]
-	?
-			| returnOf<NodeClass<l>["parse"]>
-			| Extract<
-					IntersectionMap<l>[l & keyof IntersectionMap<l>],
-					Disjoint | null
-			  >
-	: collectResults<l, r, OrderedNodeKinds>
+	? instantiateIntersection<IntersectionMap<l>[l & keyof IntersectionMap<l>]>
+	: collectResults<l, r>
 
 type collectResults<
 	l extends NodeKind,
-	r extends NodeKind,
-	remaining extends readonly unknown[]
-> = remaining extends readonly [infer head, ...infer tail]
-	? l extends head
-		? collectSingleResult<l, r>
-		: r extends head
-		? collectSingleResult<r, l>
-		: collectResults<l, r, tail>
+	r extends NodeKind
+> = r extends rightOf<l>
+	? collectSingleResult<l, r>
+	: l extends rightOf<r>
+	? collectSingleResult<r, l>
 	: never
 
 type collectSingleResult<
@@ -387,7 +381,14 @@ type collectSingleResult<
 
 // TODO: add reductions
 type instantiateIntersection<result> = result extends NodeKind
-	? Node<result> //returnOf<NodeClass<result>["reduce"]>
+	? Node<
+			| result
+			| (NodeClass<result>["declaration"] extends {
+					reductions: infer reductionKind extends NodeKind
+			  }
+					? reductionKind
+					: never)
+	  >
 	: result
 
 export class NodeIds {

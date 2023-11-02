@@ -25,7 +25,7 @@ UnionNode.parse({ union: [] })
 
 const z = node({}).intersect(node({})) //=>?
 
-const n = node("number")
+const n = node("number").nodeClass.parse("string")
 
 n.kind //?
 
