@@ -1,8 +1,17 @@
 import { attest } from "@arktype/attest"
-import { node } from "@arktype/schema"
+import { type IntersectionNode, node, type Root } from "@arktype/schema"
 import { describe, test } from "mocha"
 
 describe("intersections", () => {
+	test("root type assignment", () => {
+		const t = node({ basis: "string", pattern: "/.*/" })
+		attest(t).typed as IntersectionNode<string>
+		attest(t.json).snap({
+			intersection: [{ domain: "string" }, { pattern: "$ark.regExp11" }]
+		})
+		// previously had issues with a union complexity error when assigning to Root | undefined
+		const root: Root | undefined = node({ basis: "string", pattern: "/.*/" })
+	})
 	test("multiple rules", () => {
 		const l = node({
 			basis: "number",

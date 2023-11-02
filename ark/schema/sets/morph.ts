@@ -1,20 +1,61 @@
-import { type listable, type mutable, throwParseError } from "@arktype/util"
-import { type declareNode, type withAttributes } from "../base.js"
-import { type BasisKind } from "../bases/basis.js"
+import {
+	type AbstractableConstructor,
+	type exactMessageOnError,
+	type listable,
+	type mutable,
+	throwParseError
+} from "@arktype/util"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import {
+	type BasisKind,
+	maybeParseBasis,
+	type parseBasis
+} from "../bases/basis.js"
+import { type NonEnumerableDomain } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
+import { type ConstraintKind } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
-import { type Node } from "../nodes.js"
+import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
 import { BaseRoot } from "../root.js"
 import type {
+	IntersectionNode,
 	IntersectionSchema,
-	parseIntersection,
 	validateIntersectionSchema
 } from "./intersection.js"
-import { IntersectionNode } from "./intersection.js"
 
-export type ValidatorNode = Node<"intersection" | BasisKind>
+export type ValidatorNode = Node<BasisKind | "intersection">
+
+export type ValidatorSchema<
+	basis extends Schema<BasisKind> = Schema<BasisKind>
+> = basis | IntersectionSchema<basis>
+
+export type validateValidatorSchema<schema> = schema extends
+	| NonEnumerableDomain
+	| AbstractableConstructor
+	? schema
+	: schema extends DiscriminableSchema<BasisKind>
+	? exactMessageOnError<schema, DiscriminableSchema<keyof schema & BasisKind>>
+	: schema extends IntersectionSchema
+	? validateIntersectionSchema<schema>
+	: ValidatorSchema
+
+export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
+	? parseBasis<schema>
+	: schema extends ValidatorSchema<infer basis>
+	? Schema<BasisKind> extends basis
+		? // basis will be un-narrowed if the the intersection has no constraints i.e. node({})
+		  IntersectionNode<unknown>
+		: keyof schema & ConstraintKind extends never
+		? // if there are no constraint keys, reduce to the basis node
+		  parseBasis<basis>
+		: IntersectionNode<parseBasis<basis>["infer"]>
+	: Node<"intersection" | BasisKind>
+
+export const parseValidatorSchema = (schema: ValidatorSchema): ValidatorNode =>
+	maybeParseBasis(schema) ??
+	BaseNode.classesByKind.intersection.parse(schema as IntersectionSchema)
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
@@ -27,8 +68,8 @@ export type MorphInner = withAttributes<{
 }>
 
 export type MorphSchema = withAttributes<{
-	readonly in?: IntersectionSchema
-	readonly out?: IntersectionSchema
+	readonly in?: ValidatorSchema
+	readonly out?: ValidatorSchema
 	readonly morph: listable<Morph>
 }>
 
@@ -36,7 +77,6 @@ export type MorphDeclaration = declareNode<{
 	kind: "morph"
 	schema: MorphSchema
 	inner: MorphInner
-	// TODO: needed?
 	intersections: {
 		morph: "morph" | Disjoint
 		intersection: "morph" | Disjoint
@@ -118,10 +158,10 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 			inner.morph =
 				typeof schema.morph === "function" ? [schema.morph] : schema.morph
 			if (schema.in) {
-				inner.in = IntersectionNode.parse(schema.in)
+				inner.in = parseValidatorSchema(schema.in)
 			}
 			if (schema.out) {
-				inner.out = IntersectionNode.parse(schema.out)
+				inner.out = parseValidatorSchema(schema.out)
 			}
 			return inner
 		},
@@ -145,23 +185,23 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		: t
 	: Exclude<out, Problem>
 
-export type validateMorphSchema<input> = {
-	[k in keyof input]: k extends "in" | "out"
-		? validateIntersectionSchema<input[k]>
+export type validateMorphSchema<schema> = {
+	[k in keyof schema]: k extends "in" | "out"
+		? validateValidatorSchema<schema[k]>
 		: k extends keyof MorphSchema
 		? MorphSchema[k]
 		: `'${k & string}' is not a valid morph schema key`
 }
 
-export type parseMorph<input> = input extends MorphSchema
+export type parseMorphSchema<schema> = schema extends MorphSchema
 	? MorphNode<
 			(
-				In: input["in"] extends {}
-					? parseIntersection<input["in"]>["infer"]
+				In: schema["in"] extends {}
+					? parseValidatorSchema<schema["in"]>["infer"]
 					: unknown
-			) => input["out"] extends {}
-				? Out<parseIntersection<input["out"]>["infer"]>
-				: input["morph"] extends
+			) => schema["out"] extends {}
+				? Out<parseValidatorSchema<schema["out"]>["infer"]>
+				: schema["morph"] extends
 						| Morph<any, infer o>
 						| readonly [...unknown[], Morph<any, infer o>]
 				? Out<inferMorphOut<o>>

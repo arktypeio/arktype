@@ -43,7 +43,7 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 		: never
 
 export const maybeParseBasis = (
-	schema: Schema<"intersection">
+	schema: Schema<"intersection" | BasisKind>
 ): Node<BasisKind> | undefined => {
 	switch (typeof schema) {
 		case "string":

@@ -1,4 +1,4 @@
-import { type satisfy } from "@arktype/util"
+import { type defer } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseNodeDeclaration,
@@ -17,17 +17,14 @@ import { type SetKind } from "./sets/set.js"
 import { type UnionNode } from "./sets/union.js"
 import { inferred } from "./utils.js"
 
-type typedRootsByKind<t> = satisfy<
-	{ [k in RootKind]: Node<k> },
-	{
-		union: UnionNode<t>
-		morph: MorphNode<t>
-		intersection: IntersectionNode<t>
-		unit: UnitNode<t>
-		proto: ProtoNode<t & object>
-		domain: DomainNode<t>
-	}
->
+type typedRootsByKind<t> = {
+	union: UnionNode<t>
+	morph: MorphNode<t>
+	intersection: IntersectionNode<t>
+	unit: UnitNode<t>
+	proto: ProtoNode<t & object>
+	domain: DomainNode<t>
+}
 
 export type Root<
 	t = unknown,

@@ -1,12 +1,10 @@
 import type {
-	AbstractableConstructor,
 	conform,
 	ErrorMessage,
 	exactMessageOnError,
 	mutable
 } from "@arktype/util"
 import {
-	domainOf,
 	includes,
 	isArray,
 	throwInternalError,
@@ -20,7 +18,6 @@ import {
 	type withAttributes
 } from "../base.js"
 import { type BasisKind, maybeParseBasis, parseBasis } from "../bases/basis.js"
-import type { NonEnumerableDomain } from "../bases/domain.js"
 import {
 	type constraintInputsByKind,
 	type ConstraintKind,
@@ -28,12 +25,7 @@ import {
 	parseConstraint
 } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import {
-	type DiscriminableSchema,
-	type Node,
-	type RuleKind,
-	type Schema
-} from "../nodes.js"
+import { type Node, type RuleKind, type Schema } from "../nodes.js"
 import { BaseRoot, type Root } from "../root.js"
 import { type ParseContext } from "../utils.js"
 
@@ -92,18 +84,12 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 			rule: (l, r) => intersectRule(l.intersection, r)
 		},
 		parseSchema: (schema) => {
-			const collapsedResult = maybeParseBasis(schema)
-			if (collapsedResult) {
-				return { intersection: [collapsedResult] }
+			if (isArray(schema)) {
+				return {
+					intersection: parseListedRules(schema)
+				}
 			}
-			if (typeof schema !== "object") {
-				return throwParseError(
-					`${domainOf(schema)} is not a valid intersection schema input`
-				)
-			}
-			const { alias, description, ...rules } =
-				// maybeParseBasis handles collapsed basis schemas, so we're guaranteed to have an intersection schema here
-				schema as ExpandedIntersectionSchema
+			const { alias, description, ...rules } = schema
 			const intersectionInner = {} as mutable<IntersectionInner>
 			if (alias) {
 				intersectionInner.alias = alias
@@ -252,29 +238,12 @@ export type CollapsedIntersectionSchema<
 	  ]
 	| readonly discriminableConstraintSchema<unknown>[]
 
-// export type UnknownIntersectionSchema = {
-// 	basis?: undefined
-// 	predicate?: ConstraintIntersectionInput<"predicate">
-// } & BaseAttributes
-
 export type IntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
-> = basis | ExpandedIntersectionSchema<basis>
-
-export type ExpandedIntersectionSchema<
-	basis extends Schema<BasisKind> = Schema<BasisKind>
-> = MappedIntersectionSchema<basis> | ListedIntersectionSchema<basis>
-
-export type parseIntersection<schema> = schema extends Schema<BasisKind>
-	? parseBasis<schema>
-	: schema extends IntersectionSchema<infer basis>
-	? Schema<BasisKind> extends basis
-		? IntersectionNode<unknown>
-		: keyof schema & ConstraintKind extends never
-		? // if there are no constraint keys, reduce to the basis node
-		  parseBasis<basis>
-		: IntersectionNode<parseBasis<basis>["infer"]>
-	: Node<"intersection" | BasisKind>
+> =
+	| MappedIntersectionSchema<basis>
+	| ListedIntersectionSchema<basis>
+	| CollapsedIntersectionSchema<basis>
 
 type exactBasisMessageOnError<branch, expected> = {
 	[k in keyof branch]: k extends keyof expected
@@ -285,17 +254,12 @@ type exactBasisMessageOnError<branch, expected> = {
 				: `this schema's basis`}`>
 }
 
-export type validateIntersectionSchema<schema> = schema extends
-	| NonEnumerableDomain
-	| AbstractableConstructor
-	? schema
-	: schema extends DiscriminableSchema<BasisKind>
-	? exactMessageOnError<schema, DiscriminableSchema<keyof schema & BasisKind>>
-	: schema extends IntersectionSchema<infer basis>
-	? schema extends ListedIntersectionSchema
-		? exactMessageOnError<schema, ListedIntersectionSchema<basis>>
-		: exactBasisMessageOnError<schema, MappedIntersectionSchema<basis>>
-	: IntersectionSchema
+export type validateIntersectionSchema<schema> =
+	schema extends IntersectionSchema<infer basis>
+		? schema extends ListedIntersectionSchema
+			? exactMessageOnError<schema, ListedIntersectionSchema<basis>>
+			: exactBasisMessageOnError<schema, MappedIntersectionSchema<basis>>
+		: never
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

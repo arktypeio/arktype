@@ -24,7 +24,7 @@ export abstract class BaseBound<
 > extends BaseNode<declaration> {
 	readonly exclusive = this.inner.exclusive ?? false
 
-	readonly comparator = schemaToComparator(this as never)
+	readonly comparator = schemaToComparator(this.inner)
 
 	// TODO; fix
 	static basis: Root<number | string | readonly unknown[] | Date> =

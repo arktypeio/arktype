@@ -1,4 +1,4 @@
-import type { conform, extend, instanceOf, listable } from "@arktype/util"
+import type { extend, instanceOf, listable } from "@arktype/util"
 import { BaseNode } from "./base.js"
 import {
 	type BasisClassesByKind,
@@ -10,26 +10,22 @@ import {
 	type ConstraintDeclarationsByKind
 } from "./constraints/constraint.js"
 import { type Root } from "./root.js"
-import {
-	type IntersectionSchema,
-	type parseIntersection,
-	type validateIntersectionSchema
-} from "./sets/intersection.js"
-import {
-	type MorphSchema,
-	type parseMorph,
-	type validateMorphSchema
-} from "./sets/morph.js"
+import { type MorphSchema, type ValidatorSchema } from "./sets/morph.js"
 import {
 	type SetClassesByKind,
 	type SetDeclarationsByKind
 } from "./sets/set.js"
-import { type BranchNode, type BranchSchema, UnionNode } from "./sets/union.js"
+import {
+	type BranchSchema,
+	type parseSchemaBranch,
+	UnionNode,
+	type validateSchemaBranch
+} from "./sets/union.js"
 
 type RootNodeParser = {
 	<const branches extends readonly unknown[]>(
 		...branches: {
-			[i in keyof branches]: validateBranchInput<branches[i]>
+			[i in keyof branches]: validateSchemaBranch<branches[i]>
 		}
 	): parseNodeBranches<branches>
 }
@@ -72,31 +68,18 @@ export const node = Object.assign(parseNode as RootNodeParser, {
 	kind: parseKind
 })
 
-export type RootInput = listable<IntersectionSchema | MorphSchema>
+export type RootInput = listable<ValidatorSchema | MorphSchema>
 
 export type parseNodeBranches<branches extends readonly unknown[]> =
 	branches["length"] extends 0
 		? UnionNode<never>
 		: branches["length"] extends 1
-		? parseBranch<branches[0]>
+		? parseSchemaBranch<branches[0]>
 		: Root<
 				{
-					[i in keyof branches]: parseBranch<branches[i]>["infer"]
+					[i in keyof branches]: parseSchemaBranch<branches[i]>["infer"]
 				}[number]
 		  >
-
-export type validateBranchInput<input> = conform<
-	input,
-	"morph" extends keyof input
-		? validateMorphSchema<input>
-		: validateIntersectionSchema<input>
->
-
-export type parseBranch<input> = input extends MorphSchema
-	? parseMorph<input>
-	: input extends IntersectionSchema
-	? parseIntersection<input>
-	: BranchNode
 
 export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 	[rKind in keyof intersectionMap]: (
