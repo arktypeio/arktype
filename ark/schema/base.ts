@@ -1,15 +1,10 @@
 import type {
 	conform,
-	Constructor,
 	Dict,
 	evaluate,
 	extend,
-	Fn,
-	instanceOf,
 	Json,
 	JsonData,
-	requireKeys,
-	returnOf,
 	satisfy
 } from "@arktype/util"
 import {
@@ -30,8 +25,7 @@ import {
 	type NodeClass,
 	type NodeKind,
 	type reifyIntersections,
-	type RuleKind,
-	type Schema
+	type RuleKind
 } from "./nodes.js"
 import { type SetKind } from "./sets/set.js"
 import { createParseContext, inferred, type ParseContext } from "./utils.js"
@@ -61,7 +55,8 @@ export type declareNode<
 			? conform<types[k], DeclaredTypes<kind>[k]>
 			: never
 	} & { [k in Exclude<keyof types, keyof DeclaredTypes>]: never }
-> = types
+> = types &
+	("reductions" extends keyof types ? unknown : { reductions: types["kind"] })
 
 export type BaseNodeDeclaration = declareNode<DeclaredTypes<any>>
 
@@ -150,7 +145,7 @@ export type UnknownNode = BaseNode<any>
 const $ark = registry()
 
 export type StaticNodeDefinition<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
+	d extends Required<BaseNodeDeclaration> = Required<BaseNodeDeclaration>
 > = {
 	kind: d["kind"]
 	keys: Record<Exclude<keyof d["inner"], keyof BaseAttributes>, keyof NodeIds>
@@ -158,10 +153,9 @@ export type StaticNodeDefinition<
 	parseSchema: (schema: d["schema"], ctx: ParseContext) => d["inner"]
 	writeDefaultDescription: (inner: d["inner"]) => string
 	compileCondition: (inner: d["inner"]) => string
+	reduceToNode?: (inner: d["inner"]) => Node<d["reductions"]>
 	children?: (inner: d["inner"]) => readonly UnknownNode[]
-} & (d["reductions"] extends NodeKind
-	? { reduceToNode: (inner: d["inner"]) => Node<d["kind"] | d["reductions"]> }
-	: { reduceToNode?: (inner: d["inner"]) => Node<d["kind"]> })
+} & (d["reductions"] extends d["kind"] ? unknown : { reduceToNode: {} })
 
 type instantiateNodeClassDeclaration<declaration> = {
 	[k in keyof declaration]: k extends "keys"
@@ -170,7 +164,7 @@ type instantiateNodeClassDeclaration<declaration> = {
 }
 
 type declarationOf<nodeClass> = nodeClass extends {
-	declaration: infer declaration extends BaseNodeDeclaration
+	declaration: infer declaration extends Required<BaseNodeDeclaration>
 }
 	? declaration
 	: never
@@ -219,10 +213,7 @@ export abstract class BaseNode<
 		this: nodeClass,
 		schema: declarationOf<nodeClass>["schema"],
 		ctx = createParseContext()
-	): Node<
-		| declarationOf<nodeClass>["kind"]
-		| (returnOf<declarationOf<nodeClass>["reductions"]> & NodeKind)
-	> {
+	): Node<declarationOf<nodeClass>["reductions"]> {
 		const definition = (this as any).definition as StaticNodeDefinition
 		const inner = definition.parseSchema(schema, ctx)
 		return definition.reduceToNode?.(inner) ?? new (this as any)(inner)
@@ -379,16 +370,8 @@ type collectSingleResult<
 		: never
 	: never
 
-// TODO: add reductions
 type instantiateIntersection<result> = result extends NodeKind
-	? Node<
-			| result
-			| (NodeClass<result>["declaration"] extends {
-					reductions: infer reductionKind extends NodeKind
-			  }
-					? reductionKind
-					: never)
-	  >
+	? Node<NodeClass<result>["declaration"]["reductions"]>
 	: result
 
 export class NodeIds {

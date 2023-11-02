@@ -53,7 +53,7 @@ export type IntersectionDeclaration = declareNode<{
 		intersection: "intersection" | Disjoint
 		rule: "intersection" | Disjoint
 	}
-	reductions: BasisKind
+	reductions: "intersection" | BasisKind
 }>
 
 export class IntersectionNode<t = unknown> extends BaseRoot<

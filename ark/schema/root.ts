@@ -44,14 +44,13 @@ export abstract class BaseRoot<
 	declare infer: t
 
 	constrain<kind extends ConstraintKind>(
-		this: Node<RootKind>,
+		// TODO: remove, simplify
+		this: Root,
 		kind: kind,
 		definition: Schema<kind>
 	): Root {
-		const result: Disjoint | Node<RootKind> = this.intersect(
-			(BaseRoot.classesByKind[kind].parse as any)(
-				definition
-			) as Node<ConstraintKind>
+		const result: Disjoint | Root = this.intersect(
+			(BaseRoot.classesByKind[kind].parse as any)(definition)
 		)
 		return result instanceof Disjoint ? result.throw() : result
 	}
@@ -66,6 +65,8 @@ export abstract class BaseRoot<
 
 	// TODO: inferIntersection
 	and<other extends Node>(
+		// TODO: remove, simplify
+		this: Root,
 		other: other
 	): Exclude<intersectionOf<this["kind"], other["kind"]>, Disjoint> {
 		const result = this.intersect(other)
