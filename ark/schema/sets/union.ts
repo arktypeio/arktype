@@ -44,40 +44,11 @@ export type UnionDeclaration = declareNode<
 
 export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 	static readonly kind = "union"
-
-	constructor(inner: UnionInner) {
-		super(inner)
-	}
+	static readonly declaration: UnionDeclaration
 
 	static {
 		this.classesByKind.union = this
 	}
-
-	static children(inner: UnionInner) {
-		return inner.union
-	}
-
-	static readonly keyKinds = this.declareKeys({
-		union: "in"
-	})
-
-	static parse = this.defineParser((schema) => {
-		const result = {} as mutable<UnionInner>
-		let schemaBranches: readonly BranchSchema[]
-		if (isArray(schema)) {
-			schemaBranches = schema
-		} else {
-			const { union: branches, ...attributes } = schema
-			Object.assign(result, attributes)
-			schemaBranches = branches
-		}
-		result.union = schemaBranches.map((branch) =>
-			typeof branch === "object" && "morph" in branch
-				? this.classesByKind.morph.parse(branch)
-				: this.classesByKind.intersection.parse(branch)
-		)
-		return result
-	})
 
 	private static intersectBranch = (
 		l: UnionNode,
@@ -90,7 +61,69 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 		return { union }
 	}
 
-	static compile = this.defineCompiler((inner) => "true")
+	static readonly definition = this.define({
+		kind: "union",
+		keys: {
+			union: "in"
+		},
+		intersections: {
+			union: (l, r) => {
+				if (
+					(l.union.length === 0 || r.union.length === 0) &&
+					l.union.length !== r.union.length
+				) {
+					// if exactly one operand is never, we can use it to discriminate based on presence
+					return Disjoint.from(
+						"presence",
+						l.union.length !== 0,
+						r.union.length !== 0
+					)
+				}
+				const resultBranches = intersectBranches(l.union, r.union)
+				if (resultBranches instanceof Disjoint) {
+					return resultBranches
+				}
+				return { union: resultBranches }
+			},
+			morph: this.intersectBranch,
+			intersection: this.intersectBranch,
+			rule: (l, r) => {
+				const branches: BranchNode[] = []
+				for (const branch of l.union) {
+					const branchResult = branch.intersect(r)
+					if (!(branchResult instanceof Disjoint)) {
+						branches.push(branchResult)
+					}
+				}
+				return branches.length === 0
+					? Disjoint.from("union", l.union, [r])
+					: {
+							union: branches
+					  }
+			}
+		},
+		parse: (schema) => {
+			const result = {} as mutable<UnionInner>
+			let schemaBranches: readonly BranchSchema[]
+			if (isArray(schema)) {
+				schemaBranches = schema
+			} else {
+				const { union: branches, ...attributes } = schema
+				Object.assign(result, attributes)
+				schemaBranches = branches
+			}
+			result.union = schemaBranches.map((branch) =>
+				typeof branch === "object" && "morph" in branch
+					? this.classesByKind.morph.parse(branch)
+					: this.classesByKind.intersection.parse(branch)
+			)
+			return result
+		},
+		compileCondition: (inner) => "true",
+		writeDefaultDescription: (inner) =>
+			inner.union.length === 0 ? "never" : inner.union.join(" or "),
+		children: (inner) => inner.union
+	})
 
 	// discriminate is cached so we don't have to worry about this running multiple times
 	get discriminant(): Discriminant | null {
@@ -174,47 +207,6 @@ export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
 	// 		${compiledCases}
 	// 	}`
 	// 	}
-
-	static readonly intersections = this.defineIntersections({
-		union: (l, r) => {
-			if (
-				(l.union.length === 0 || r.union.length === 0) &&
-				l.union.length !== r.union.length
-			) {
-				// if exactly one operand is never, we can use it to discriminate based on presence
-				return Disjoint.from(
-					"presence",
-					l.union.length !== 0,
-					r.union.length !== 0
-				)
-			}
-			const resultBranches = intersectBranches(l.union, r.union)
-			if (resultBranches instanceof Disjoint) {
-				return resultBranches
-			}
-			return { union: resultBranches }
-		},
-		morph: this.intersectBranch,
-		intersection: this.intersectBranch,
-		rule: (l, r) => {
-			const branches: BranchNode[] = []
-			for (const branch of l.union) {
-				const branchResult = branch.intersect(r)
-				if (!(branchResult instanceof Disjoint)) {
-					branches.push(branchResult)
-				}
-			}
-			return branches.length === 0
-				? Disjoint.from("union", l.union, [r])
-				: {
-						union: branches
-				  }
-		}
-	})
-
-	static writeDefaultDescription(inner: UnionInner) {
-		return inner.union.length === 0 ? "never" : inner.union.join(" or ")
-	}
 }
 
 export const intersectBranches = (

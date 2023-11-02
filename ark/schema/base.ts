@@ -32,6 +32,7 @@ import {
 	type Node,
 	type NodeClass,
 	type NodeKind,
+	type reifyIntersections,
 	type RuleKind,
 	type Schema
 } from "./nodes.js"
@@ -88,23 +89,6 @@ export type StaticBaseNode<d extends NodeDeclaration> = {
 	// reduce(input: d["inner"]): UnknownNode
 	// children?(inner: d["inner"]): readonly UnknownNode[]
 }
-
-export type NodeClassDeclaration<kind extends NodeKind = NodeKind> = {
-	kind: kind
-	keys: Record<Exclude<keyof Inner<kind>, keyof BaseAttributes>, keyof NodeIds>
-	intersections: LeftIntersections<kind>
-	parse: (input: Schema<kind>, ctx: ConstraintContext) => Inner<kind>
-	writeDefaultDescription: (inner: Inner<kind>) => string
-	compileCondition: (inner: Inner<kind>) => string
-	children?: (inner: Inner<kind>) => readonly UnknownNode[]
-}
-
-type instantiateNodeClassDeclaration<declaration extends NodeClassDeclaration> =
-	{
-		[k in keyof declaration]: k extends "keys"
-			? evaluate<declaration[k] & typeof baseAttributeKeys>
-			: declaration[k]
-	}
 
 export const setKinds = [
 	"union",
@@ -204,6 +188,23 @@ export type UnknownNode = BaseNode<any>
 
 const $ark = registry()
 
+export type StaticNodeDefinition<d extends NodeDeclaration> = {
+	kind: d["kind"]
+	keys: Record<Exclude<keyof d["inner"], keyof BaseAttributes>, keyof NodeIds>
+	intersections: reifyIntersections<d["kind"], d["intersections"]>
+	parse: (input: d["schema"], ctx: ConstraintContext) => d["inner"]
+	writeDefaultDescription: (inner: d["inner"]) => string
+	compileCondition: (inner: d["inner"]) => string
+	children?: (inner: d["inner"]) => readonly UnknownNode[]
+}
+
+type instantiateNodeClassDeclaration<declaration extends StaticNodeDefinition> =
+	{
+		[k in keyof declaration]: k extends "keys"
+			? evaluate<declaration[k] & typeof baseAttributeKeys>
+			: declaration[k]
+	}
+
 export abstract class BaseNode<
 	declaration extends NodeDeclaration,
 	t = unknown
@@ -212,7 +213,7 @@ export abstract class BaseNode<
 	declare [inferred]: t
 
 	declare declaration: instantiateNodeClassDeclaration<
-		NodeClassDeclaration<any>
+		StaticNodeDefinition<any>
 	>
 	readonly json: Json
 	readonly children: childrenOf<declaration["class"]>
@@ -281,19 +282,18 @@ export abstract class BaseNode<
 		return compileSerializedValue(v)
 	}
 
-	protected static declare<
+	protected static define<
 		nodeClass,
-		kind extends NodeKind,
-		declaration extends NodeClassDeclaration<kind>
-	>(this: nodeClass, declaration: { kind: kind } & declaration) {
+		definition extends StaticNodeDefinition<nodeClass["declaration"]>
+	>(this: nodeClass, definition: definition) {
 		return {
-			...declaration,
+			...definition,
 			keys: {
 				alias: "meta",
 				description: "meta",
-				...declaration.keys
+				...definition.keys
 			}
-		} as instantiateNodeClassDeclaration<declaration>
+		} as instantiateNodeClassDeclaration<definition>
 	}
 
 	protected static declareKeys<nodeClass>(

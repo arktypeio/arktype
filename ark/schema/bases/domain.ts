@@ -34,34 +34,30 @@ export class DomainNode<t = unknown>
 	implements BaseBasis
 {
 	static readonly kind = "domain"
+	static readonly declaration: DomainDeclaration
 
 	static {
 		this.classesByKind.domain = this
 	}
 
+	static readonly definition = this.define({
+		kind: "domain",
+		keys: {
+			domain: "in"
+		},
+		intersections: {
+			domain: (l, r) => Disjoint.from("domain", l, r)
+		},
+		parse: (schema) =>
+			typeof schema === "string" ? { domain: schema } : schema,
+		compileCondition: (inner) =>
+			inner.domain === "object"
+				? `((typeof ${this.argName} === "object" && ${this.argName} !== null) || typeof ${this.argName} === "function")`
+				: `typeof ${this.argName} === "${inner.domain}"`,
+		writeDefaultDescription: (inner) => domainDescriptions[inner.domain]
+	})
+
 	readonly basisName = this.domain
-
-	static readonly keyKinds = this.declareKeys({
-		domain: "in"
-	})
-
-	static readonly compile = this.defineCompiler((inner) =>
-		inner.domain === "object"
-			? `((typeof ${this.argName} === "object" && ${this.argName} !== null) || typeof ${this.argName} === "function")`
-			: `typeof ${this.argName} === "${inner.domain}"`
-	)
-
-	static parse = this.defineParser((schema) =>
-		typeof schema === "string" ? { domain: schema } : schema
-	)
-
-	static writeDefaultDescription(inner: DomainInner) {
-		return domainDescriptions[inner.domain]
-	}
-
-	static readonly intersections = this.defineIntersections({
-		domain: (l, r) => Disjoint.from("domain", l, r)
-	})
 }
 
 const enumerableDomainDescriptions = {

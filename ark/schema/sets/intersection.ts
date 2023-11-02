@@ -63,6 +63,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 	t
 > {
 	static readonly kind = "intersection"
+	static readonly declaration: IntersectionDeclaration
 	readonly basis = this.intersection[0]?.isBasis()
 		? this.intersection[0]
 		: undefined
@@ -79,7 +80,7 @@ export class IntersectionNode<t = unknown> extends RootNode<
 		assertValidConstraints(this.basis, this.constraints)
 	}
 
-	static readonly declaration = this.declare({
+	static readonly definition = this.define({
 		kind: "intersection",
 		keys: {
 			intersection: "in"

@@ -90,7 +90,7 @@ export type parseBranch<input> = input extends MorphSchema
 	? parseIntersection<input>
 	: BranchNode
 
-type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
+export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 	[rKind in keyof intersectionMap]: (
 		l: Node<lKind>,
 		r: Node<intersectionGroupOf<rKind>>

@@ -42,48 +42,42 @@ const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 
 export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
 	static readonly kind = "required"
+	static readonly declaration: RequiredDeclaration
 
 	static {
 		this.classesByKind.required = this
 	}
 
-	static readonly intersections = this.defineIntersections({
-		required: (l, r) => {
-			if (l.required !== r.required) {
-				return null
+	static readonly definition = this.define({
+		kind: "required",
+		keys: {
+			required: "in",
+			value: "in"
+		},
+		intersections: {
+			required: (l, r) => {
+				if (l.required !== r.required) {
+					return null
+				}
+				const required = l.required
+				const value = l.value.intersect(r.value)
+				if (value instanceof Disjoint) {
+					return value
+				}
+				return {
+					required,
+					value
+				}
 			}
-			const required = l.required
-			const value = l.value.intersect(r.value)
-			if (value instanceof Disjoint) {
-				return value
-			}
-			return {
-				required,
-				value
-			}
-		}
-	})
-
-	static parse(schema: RequiredPropSchema) {
-		return schema as never
-	}
-
-	static writeDefaultDescription(inner: RequiredPropInner) {
-		return `${String(inner.required)}: ${inner.value}`
-	}
-
-	static children(inner: RequiredPropInner) {
-		return [inner.value]
-	}
-
-	static readonly keyKinds = this.declareKeys({
-		required: "in",
-		value: "in"
+		},
+		parse: (schema) => schema as never,
+		compileCondition: (inner) => "true",
+		writeDefaultDescription: (inner) =>
+			`${String(inner.required)}: ${inner.value}`,
+		children: (inner) => [inner.value]
 	})
 
 	static basis: DomainNode<object> = builtins().object
-
-	static compile = this.defineCompiler((inner) => "true")
 
 	static writeInvalidBasisMessage = writeInvalidBasisMessage
 }
@@ -112,46 +106,42 @@ export type OptionalDeclaration = declareConstraint<
 
 export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 	static readonly kind = "optional"
+	static readonly declaration: OptionalDeclaration
 
 	static {
 		this.classesByKind.optional = this
 	}
 
-	static readonly intersections = this.defineIntersections({
-		optional: (l, r) => {
-			if (l.optional !== r.optional) {
-				return null
-			}
-			const optional = l.optional
-			const value = l.value.intersect(r.value)
-			if (value instanceof Disjoint) {
+	static readonly definition = this.define({
+		kind: "optional",
+		keys: {
+			optional: "in",
+			value: "in"
+		},
+		intersections: {
+			optional: (l, r) => {
+				if (l.optional !== r.optional) {
+					return null
+				}
+				const optional = l.optional
+				const value = l.value.intersect(r.value)
+				if (value instanceof Disjoint) {
+					return {
+						optional,
+						value: builtins().never
+					}
+				}
 				return {
 					optional,
-					value: builtins().never
+					value
 				}
 			}
-			return {
-				optional,
-				value
-			}
-		}
-	})
-
-	static parse(schema: OptionalPropSchema) {
-		return schema as never
-	}
-
-	static writeDefaultDescription(inner: OptionalPropInner) {
-		return `${String(inner.optional)}?: ${inner.value}`
-	}
-
-	static children(inner: OptionalPropInner) {
-		return [inner.value]
-	}
-
-	static readonly keyKinds = this.declareKeys({
-		optional: "in",
-		value: "in"
+		},
+		parse: (schema) => schema as never,
+		compileCondition: (inner) => "true",
+		writeDefaultDescription: (inner) =>
+			`${String(inner.optional)}?: ${inner.value}`,
+		children: (inner) => [inner.value]
 	})
 
 	static basis: DomainNode<object> = builtins().object

@@ -32,33 +32,28 @@ export type PatternDeclaration = declareConstraint<
 
 export class PatternNode extends BaseNode<PatternDeclaration> {
 	static readonly kind = "pattern"
+	static readonly declaration: PatternDeclaration
 
 	static {
 		this.classesByKind.pattern = this
 	}
 
-	static readonly keyKinds = this.declareKeys({
-		pattern: "in"
+	static readonly definition = this.define({
+		kind: "pattern",
+		keys: {
+			pattern: "in"
+		},
+		intersections: {
+			// For now, non-equal regex are naively intersected
+			pattern: () => null
+		},
+		parse: (schema) =>
+			typeof schema === "string" || schema instanceof RegExp
+				? { pattern: parseRegexInput(schema) }
+				: { ...schema, pattern: parseRegexInput(schema.pattern) },
+		compileCondition: (inner) => `${inner.pattern}.test(${this.argName})`,
+		writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
 	})
-
-	static readonly intersections = this.defineIntersections({
-		// For now, non-equal regex are naively intersected
-		pattern: () => null
-	})
-
-	static parse(schema: PatternSchema) {
-		return typeof schema === "string" || schema instanceof RegExp
-			? { pattern: parseRegexInput(schema) }
-			: { ...schema, pattern: parseRegexInput(schema.pattern) }
-	}
-
-	static readonly compile = this.defineCompiler(
-		(inner) => `${inner.pattern}.test(${this.argName})`
-	)
-
-	static writeDefaultDescription(inner: PatternInner) {
-		return `matched by ${inner.pattern}`
-	}
 
 	static basis: DomainNode<string> = builtins().string
 

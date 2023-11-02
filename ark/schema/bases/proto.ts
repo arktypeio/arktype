@@ -40,49 +40,48 @@ export class ProtoNode<t extends object = object>
 	implements BaseBasis
 {
 	static readonly kind = "proto"
+	static readonly declaration: ProtoDeclaration
 
 	static {
 		this.classesByKind.proto = this
 	}
 
+	static readonly definition = this.define({
+		kind: "proto",
+		keys: {
+			proto: "in"
+		},
+		intersections: {
+			proto: (l, r) =>
+				constructorExtends(l.proto, r.proto)
+					? l
+					: constructorExtends(r.proto, l.proto)
+					? r
+					: Disjoint.from("proto", l, r),
+			domain: (l, r): ProtoInner | Disjoint =>
+				r.domain === "object"
+					? l
+					: Disjoint.from("domain", builtins().object, r)
+		},
+		parse: (schema) =>
+			typeof schema === "function" ? { proto: schema } : schema,
+		compileCondition: (inner) =>
+			`${this.argName} instanceof ${
+				objectKindOf(inner.proto) ?? compileSerializedValue(inner.proto)
+			}`,
+		writeDefaultDescription: (inner) => {
+			const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
+			return knownObjectKind
+				? objectKindDescriptions[knownObjectKind]
+				: `an instance of ${inner.proto.name}`
+		}
+	})
+
 	readonly knownObjectKind = objectKindOf(this.proto)
 	readonly basisName = `${this.proto.name}`
 	readonly domain = "object"
 
-	static readonly keyKinds = this.declareKeys({
-		proto: "in"
-	})
-
 	// readonly literalKeys = prototypeKeysOf(this.rule.prototype)
-
-	static readonly intersections = this.defineIntersections({
-		proto: (l, r) =>
-			constructorExtends(l.proto, r.proto)
-				? l
-				: constructorExtends(r.proto, l.proto)
-				? r
-				: Disjoint.from("proto", l, r),
-		domain: (l, r): ProtoInner | Disjoint =>
-			r.domain === "object" ? l : Disjoint.from("domain", builtins().object, r)
-	})
-
-	static readonly compile = this.defineCompiler(
-		(inner) =>
-			`${this.argName} instanceof ${
-				objectKindOf(inner.proto) ?? compileSerializedValue(inner.proto)
-			}`
-	)
-
-	static parse = this.defineParser((schema) =>
-		typeof schema === "function" ? { proto: schema } : schema
-	)
-
-	static writeDefaultDescription(inner: ProtoInner) {
-		const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
-		return knownObjectKind
-			? objectKindDescriptions[knownObjectKind]
-			: `an instance of ${inner.proto.name}`
-	}
 
 	extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
 		...constructors: constructors

@@ -6,7 +6,7 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import type { ConstraintContext, declareConstraint } from "./constraint.js"
+import type { declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type BoundInner = withAttributes<{
@@ -75,43 +75,42 @@ export type MinDeclaration = declareConstraint<
 
 export class MinNode extends BaseBound<MinDeclaration> {
 	static readonly kind = "min"
+	static readonly declaration: MinDeclaration
 
 	static {
 		this.classesByKind.min = this
 	}
 
-	static readonly keyKinds = this.declareKeys({
-		min: "in",
-		exclusive: "in",
-		boundKind: "in"
+	static readonly definition = this.define({
+		kind: "min",
+		keys: {
+			min: "in",
+			exclusive: "in",
+			boundKind: "in"
+		},
+		intersections: {
+			min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
+		},
+		parse: (schema, ctx) => {
+			const boundKind = getBoundKind(ctx.basis)
+			return typeof schema === "object"
+				? { ...schema, min: parseLimit(schema.min), boundKind }
+				: { min: parseLimit(schema), boundKind }
+		},
+		compileCondition: (inner) =>
+			`${this.argName} ${schemaToComparator(inner)} ${inner.min}`,
+		writeDefaultDescription: (inner) => {
+			const comparisonDescription =
+				inner.boundKind === "date"
+					? inner.exclusive
+						? "after"
+						: "at or after"
+					: inner.exclusive
+					? "more than"
+					: "at least"
+			return `${comparisonDescription} ${inner.min}`
+		}
 	})
-
-	static parse(schema: MinSchema, ctx: ConstraintContext) {
-		const boundKind = getBoundKind(ctx.basis)
-		return typeof schema === "object"
-			? { ...schema, min: parseLimit(schema.min), boundKind }
-			: { min: parseLimit(schema), boundKind }
-	}
-
-	static readonly compile = this.defineCompiler(
-		(inner) => `${this.argName} ${schemaToComparator(inner)} ${inner.min}`
-	)
-
-	static readonly intersections = this.defineIntersections({
-		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
-	})
-
-	static writeDefaultDescription(inner: MinInner) {
-		const comparisonDescription =
-			inner.boundKind === "date"
-				? inner.exclusive
-					? "after"
-					: "at or after"
-				: inner.exclusive
-				? "more than"
-				: "at least"
-		return `${comparisonDescription} ${inner.min}`
-	}
 }
 
 export type MaxInner = extend<
@@ -145,49 +144,47 @@ export type MaxDeclaration = declareConstraint<
 
 export class MaxNode extends BaseBound<MaxDeclaration> {
 	static readonly kind = "max"
+	static readonly declaration: MaxDeclaration
 
 	static {
 		this.classesByKind.max = this
 	}
 
-	static readonly intersections = this.defineIntersections({
-		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r),
-		min: (l, r) =>
-			l.max < r.min || (l.max === r.min && (l.exclusive || r.exclusive))
-				? Disjoint.from("bound", l, r)
-				: null
-	})
-
-	static readonly keyKinds = this.declareKeys({
-		max: "in",
-		exclusive: "in",
-		boundKind: "in"
-	})
-
-	static readonly compile = this.defineCompiler(
-		(inner) => `${this.argName} ${schemaToComparator(inner)} ${inner.max}`
-	)
-
-	static writeDefaultDescription(inner: MaxInner) {
-		const comparisonDescription =
-			inner.boundKind === "date"
-				? inner.exclusive
-					? "before"
-					: "at or before"
-				: inner.exclusive
-				? "less than"
-				: "at most"
-		return `${comparisonDescription} ${inner.max}`
-	}
-
-	static parse = this.defineParser(
-		(schema: MaxSchema, ctx: ConstraintContext) => {
+	static readonly definition = this.define({
+		kind: "max",
+		keys: {
+			max: "in",
+			exclusive: "in",
+			boundKind: "in"
+		},
+		intersections: {
+			max: (l, r) =>
+				l.max > r.max || (l.max === r.max && l.exclusive) ? l : r,
+			min: (l, r) =>
+				l.max < r.min || (l.max === r.min && (l.exclusive || r.exclusive))
+					? Disjoint.from("bound", l, r)
+					: null
+		},
+		parse: (schema, ctx) => {
 			const boundKind = getBoundKind(ctx.basis)
 			return typeof schema === "object"
 				? { ...schema, max: parseLimit(schema.max), boundKind }
 				: { max: parseLimit(schema), boundKind }
+		},
+		compileCondition: (inner) =>
+			`${this.argName} ${schemaToComparator(inner)} ${inner.max}`,
+		writeDefaultDescription: (inner) => {
+			const comparisonDescription =
+				inner.boundKind === "date"
+					? inner.exclusive
+						? "before"
+						: "at or before"
+					: inner.exclusive
+					? "less than"
+					: "at most"
+			return `${comparisonDescription} ${inner.max}`
 		}
-	)
+	})
 }
 
 const parseLimit = (limitLiteral: BoundLimit): number =>

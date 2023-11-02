@@ -15,6 +15,7 @@ export type DivisorInner = withAttributes<{
 export type DivisorDeclaration = declareConstraint<
 	"divisor",
 	{
+		kind: "divisor"
 		schema: DivisorSchema
 		inner: DivisorInner
 		intersections: {
@@ -26,12 +27,14 @@ export type DivisorDeclaration = declareConstraint<
 
 export class DivisorNode extends BaseNode<DivisorDeclaration> {
 	static readonly kind = "divisor"
+	static readonly declaration: DivisorDeclaration
 
+	// TODO: can remove?
 	static {
 		this.classesByKind.divisor = this
 	}
 
-	static readonly declaration = this.declare({
+	static readonly definition = this.define({
 		kind: "divisor",
 		keys: {
 			divisor: "in"

@@ -29,33 +29,30 @@ export class UnitNode<t = unknown>
 	implements BaseBasis
 {
 	static readonly kind = "unit"
+	static readonly declaration: UnitDeclaration
 
 	static {
 		this.classesByKind.unit = this
 	}
 
+	static readonly definition = this.define({
+		kind: "unit",
+		keys: {
+			unit: "in"
+		},
+		intersections: {
+			unit: (l, r) => Disjoint.from("unit", l, r),
+			rule: (l, r) =>
+				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+		},
+		parse: (schema) => schema,
+		compileCondition: (inner) =>
+			`${this.argName} === ${compileSerializedValue(inner.unit)}`,
+		writeDefaultDescription: (inner) => stringify(inner.unit)
+	})
+
 	readonly domain = domainOf(this.unit)
 
 	// TODO: add reference to for objects
 	readonly basisName = stringify(this.unit)
-
-	static readonly keyKinds = this.declareKeys({
-		unit: "in"
-	})
-
-	static readonly compile = this.defineCompiler(
-		(inner) => `${this.argName} === ${compileSerializedValue(inner.unit)}`
-	)
-
-	static readonly intersections = this.defineIntersections({
-		unit: (l, r) => Disjoint.from("unit", l, r),
-		rule: (l, r) =>
-			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
-	})
-
-	static parse = this.defineParser((schema) => schema)
-
-	static writeDefaultDescription(inner: UnitInner) {
-		return stringify(inner.unit)
-	}
 }

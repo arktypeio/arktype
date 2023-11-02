@@ -58,104 +58,100 @@ export type MorphDeclaration = declareNode<
 
 export class MorphNode<t = unknown> extends RootNode<MorphDeclaration, t> {
 	static readonly kind = "morph"
+	static readonly declaration: MorphDeclaration
 
 	static {
 		this.classesByKind.morph = this
 	}
 
-	static children(inner: MorphInner): ValidatorNode[] {
-		return inner.in
-			? inner.out
-				? [inner.in, inner.out]
-				: [inner.in]
-			: inner.out
-			? [inner.out]
-			: []
-	}
-
-	static readonly keyKinds = this.declareKeys({
-		in: "in",
-		out: "out",
-		morph: "morph"
-	})
-
-	static readonly intersections = this.defineIntersections({
-		morph: (l, r) => {
-			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
-				// TODO: is this always a parse error? what about for union reduction etc.
-				// TODO: check in for union reduction
-				return throwParseError(`Invalid intersection of morphs`)
-			}
-			const result: mutable<MorphInner> = {
-				morph: l.morph
-			}
-			if (l.in) {
-				if (r.in) {
-					const inTersection = l.in.intersect(r.in)
-					if (inTersection instanceof Disjoint) {
-						return inTersection
-					}
-					result.in = inTersection
-				} else {
-					result.in = l.in
-				}
-			} else if (r.in) {
-				result.in = r.in
-			}
-			if (l.out) {
-				if (r.out) {
-					const outTersection = l.out.intersect(r.out)
-					if (outTersection instanceof Disjoint) {
-						return outTersection
-					}
-					result.out = outTersection
-				} else {
-					result.out = l.out
-				}
-			} else if (r.out) {
-				result.out = r.out
-			}
-			return result
+	static definition = this.define({
+		kind: "morph",
+		keys: {
+			in: "in",
+			out: "out",
+			morph: "morph"
 		},
-		intersection: (l, r) => {
-			const inTersection = l.in?.intersect(r) ?? r
-			return inTersection instanceof Disjoint
-				? inTersection
-				: {
-						...l.inner,
-						in: inTersection
-				  }
+		intersections: {
+			morph: (l, r) => {
+				if (l.morph.some((morph, i) => morph !== r.morph[i])) {
+					// TODO: is this always a parse error? what about for union reduction etc.
+					// TODO: check in for union reduction
+					return throwParseError(`Invalid intersection of morphs`)
+				}
+				const result: mutable<MorphInner> = {
+					morph: l.morph
+				}
+				if (l.in) {
+					if (r.in) {
+						const inTersection = l.in.intersect(r.in)
+						if (inTersection instanceof Disjoint) {
+							return inTersection
+						}
+						result.in = inTersection
+					} else {
+						result.in = l.in
+					}
+				} else if (r.in) {
+					result.in = r.in
+				}
+				if (l.out) {
+					if (r.out) {
+						const outTersection = l.out.intersect(r.out)
+						if (outTersection instanceof Disjoint) {
+							return outTersection
+						}
+						result.out = outTersection
+					} else {
+						result.out = l.out
+					}
+				} else if (r.out) {
+					result.out = r.out
+				}
+				return result
+			},
+			intersection: (l, r) => {
+				const inTersection = l.in?.intersect(r) ?? r
+				return inTersection instanceof Disjoint
+					? inTersection
+					: {
+							...l.inner,
+							in: inTersection
+					  }
+			},
+			rule: (l, r) => {
+				const input = l.in ?? builtins().unknown
+				const constrainedInput = input.intersect(r)
+				return constrainedInput instanceof Disjoint
+					? constrainedInput
+					: {
+							...l.inner,
+							in: constrainedInput
+					  }
+			}
 		},
-		rule: (l, r) => {
-			const input = l.in ?? builtins().unknown
-			const constrainedInput = input.intersect(r)
-			return constrainedInput instanceof Disjoint
-				? constrainedInput
-				: {
-						...l.inner,
-						in: constrainedInput
-				  }
-		}
+		parse: (schema) => {
+			const inner = {} as mutable<MorphInner>
+			inner.morph =
+				typeof schema.morph === "function" ? [schema.morph] : schema.morph
+			if (schema.in) {
+				inner.in = IntersectionNode.parse(schema.in)
+			}
+			if (schema.out) {
+				inner.out = IntersectionNode.parse(schema.out)
+			}
+			return inner
+		},
+		compileCondition: (inner) => "true",
+		writeDefaultDescription: (inner) => "",
+		children: (inner): ValidatorNode[] =>
+			inner.in
+				? inner.out
+					? [inner.in, inner.out]
+					: [inner.in]
+				: inner.out
+				? [inner.out]
+				: []
 	})
-
-	static compile = this.defineCompiler((inner) => "true")
-
-	static writeDefaultDescription(inner: MorphInner) {
-		return ""
-	}
-
-	static parse(schema: MorphSchema) {
-		const inner = {} as mutable<MorphInner>
-		inner.morph =
-			typeof schema.morph === "function" ? [schema.morph] : schema.morph
-		if (schema.in) {
-			inner.in = IntersectionNode.parse(schema.in)
-		}
-		if (schema.out) {
-			inner.out = IntersectionNode.parse(schema.out)
-		}
-		return inner
-	}
 }
 
 export type inferMorphOut<out> = out extends CheckResult<infer t>
