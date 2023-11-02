@@ -44,11 +44,14 @@ export abstract class BaseRoot<
 	declare infer: t
 
 	constrain<kind extends ConstraintKind>(
+		this: Node<RootKind>,
 		kind: kind,
 		definition: Schema<kind>
 	): Root {
 		const result: Disjoint | Node<RootKind> = this.intersect(
-			(BaseRoot.classesByKind[kind].parse as any)(definition)
+			(BaseRoot.classesByKind[kind].parse as any)(
+				definition
+			) as Node<ConstraintKind>
 		)
 		return result instanceof Disjoint ? result.throw() : result
 	}
@@ -94,7 +97,10 @@ export abstract class BaseRoot<
 		return this as never
 	}
 
-	extends<other>(other: Root<other>): this is Root<other> {
+	extends<other extends Node>(
+		this: Node<RootKind>,
+		other: other
+	): this is Root<other["infer"]> {
 		const intersection = this.intersect(other)
 		return !(intersection instanceof Disjoint) && this.equals(intersection)
 	}

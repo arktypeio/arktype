@@ -125,15 +125,14 @@ export type rightOf<kind extends NodeKind> = OrderedNodeKinds extends readonly [
 	: never
 
 export type BaseIntersectionMap = {
-	[lKey in NodeKind]: requireKeys<
-		{
+	[lKey in NodeKind]: evaluate<
+		{ [rKey in lKey]: lKey | Disjoint | null } & {
 			[rKey in
 				| NodeKind
 				| "rule"]?: rKey extends allowedAsymmetricOperandOf<lKey>
 				? lKey | Disjoint | null
 				: never
-		},
-		lKey
+		}
 	>
 }
 
@@ -314,9 +313,7 @@ export abstract class BaseNode<
 	intersect<other extends UnknownNode>(
 		other: other
 	): intersectionOf<this["kind"], other["kind"]>
-	intersect(
-		other: BaseNode<BaseNodeDeclaration>
-	): UnknownNode | Disjoint | null {
+	intersect(other: BaseNode<BaseNodeDeclaration>) {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta
 			return this
@@ -353,10 +350,17 @@ const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
 	)
 }
 
-export type intersectionOf<
-	l extends NodeKind,
-	r extends NodeKind
-> = collectResults<l, r, OrderedNodeKinds>
+export type intersectionOf<l extends NodeKind, r extends NodeKind> = [
+	l,
+	r
+] extends [r, l]
+	?
+			| returnOf<NodeClass<l>["parse"]>
+			| Extract<
+					IntersectionMap<l>[l & keyof IntersectionMap<l>],
+					Disjoint | null
+			  >
+	: collectResults<l, r, OrderedNodeKinds>
 
 type collectResults<
 	l extends NodeKind,
