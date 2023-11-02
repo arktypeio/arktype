@@ -140,18 +140,15 @@ export const getTsLibFiles = (tsconfigOptions: ts.CompilerOptions) => {
 }
 
 export const getFileFromVirtualEnv = (path: string) => {
-	return getTsServer().virtualEnv.getSourceFile(path)!
+	return TsServer.getInstance().virtualEnv.getSourceFile(path)!
 }
 
 export const getProgram = (env?: tsvfs.VirtualTypeScriptEnvironment) =>
-	env
-		? env.languageService.getProgram()
-		: getTsServer().virtualEnv.languageService.getProgram()
+	env?.languageService.getProgram() ??
+	TsServer.getInstance().virtualEnv.languageService.getProgram()
 
 export const getSourceFile = (path: string) =>
-	getTsServer().getSourceFileOrThrow(path)
+	TsServer.getInstance().getSourceFileOrThrow(path)
 
 export const getNodeFromPosition = (file: ts.SourceFile, position: number) =>
-	getTsServer().getNodeFromPosition(file, position)!
-
-export const getTsServer = () => TsServer.getInstance()
+	TsServer.getInstance().getNodeFromPosition(file, position)!
