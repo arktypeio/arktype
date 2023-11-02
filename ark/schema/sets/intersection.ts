@@ -35,7 +35,7 @@ import {
 	type RuleKind,
 	type Schema
 } from "../nodes.js"
-import { RootNode } from "../root.js"
+import { BaseRoot } from "../root.js"
 
 export type IntersectionInner = withAttributes<{
 	readonly intersection: CollapsedIntersectionInner
@@ -45,20 +45,18 @@ export type CollapsedIntersectionInner =
 	| readonly [Node<BasisKind>, ...Node<ConstraintKind>[]]
 	| readonly Node<ConstraintKind>[]
 
-export type IntersectionDeclaration = declareNode<
-	"intersection",
-	{
-		schema: IntersectionSchema
-		inner: IntersectionInner
-		intersections: {
-			intersection: "intersection" | Disjoint
-			rule: "intersection" | Disjoint
-		}
-	},
-	typeof IntersectionNode
->
+export type IntersectionDeclaration = declareNode<{
+	kind: "intersection"
+	schema: IntersectionSchema
+	inner: IntersectionInner
+	intersections: {
+		intersection: "intersection" | Disjoint
+		rule: "intersection" | Disjoint
+	}
+	class: typeof IntersectionNode
+}>
 
-export class IntersectionNode<t = unknown> extends RootNode<
+export class IntersectionNode<t = unknown> extends BaseRoot<
 	IntersectionDeclaration,
 	t
 > {
@@ -131,15 +129,14 @@ export class IntersectionNode<t = unknown> extends RootNode<
 		children: (inner) =>
 			Object.values(inner)
 				.flat()
-				.filter((value): value is Node<RuleKind> => value instanceof BaseNode)
-	})
-
-	static reduce = this.defineReducer((inner) => {
-		if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
-			// TODO; remove cast
-			return inner.intersection[0] as Node<BasisKind>
+				.filter((value): value is Node<RuleKind> => value instanceof BaseNode),
+		reduce: (inner) => {
+			if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
+				// TODO; remove cast
+				return inner.intersection[0] as Node<BasisKind>
+			}
+			return new IntersectionNode(inner)
 		}
-		return new IntersectionNode(inner)
 	})
 }
 

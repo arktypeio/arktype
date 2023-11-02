@@ -1,5 +1,9 @@
 import { type satisfy } from "@arktype/util"
-import { BaseNode, type intersectionOf, type NodeDeclaration } from "./base.js"
+import {
+	BaseNode,
+	type BaseNodeDeclaration,
+	type intersectionOf
+} from "./base.js"
 import { type BasisKind } from "./bases/basis.js"
 import { type DomainNode } from "./bases/domain.js"
 import { type ProtoNode } from "./bases/proto.js"
@@ -32,8 +36,8 @@ export type Root<
 
 export type RootKind = SetKind | BasisKind
 
-export abstract class RootNode<
-	declaration extends NodeDeclaration,
+export abstract class BaseRoot<
+	declaration extends BaseNodeDeclaration,
 	t
 > extends BaseNode<declaration, t> {
 	declare [inferred]: t
@@ -44,7 +48,7 @@ export abstract class RootNode<
 		definition: Schema<kind>
 	): Root {
 		const result: Disjoint | Node<RootKind> = this.intersect(
-			(RootNode.classesByKind[kind].parse as any)(definition)
+			(BaseRoot.classesByKind[kind].parse as any)(definition)
 		)
 		return result instanceof Disjoint ? result.throw() : result
 	}

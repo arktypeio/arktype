@@ -1,4 +1,4 @@
-import { node, type Root, RootNode } from "@arktype/schema"
+import { BaseRoot, node, type Root } from "@arktype/schema"
 import type {
 	defined,
 	Dict,
@@ -36,7 +36,7 @@ export const parseObject = (def: object, ctx: ParseContext): Root => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case "Object":
-			if (def instanceof RootNode) {
+			if (def instanceof BaseRoot) {
 				return def as Root
 			}
 			return parseObjectLiteral(def as Dict, ctx)

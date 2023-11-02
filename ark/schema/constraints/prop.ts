@@ -1,19 +1,18 @@
-import { BaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import { type BasisKind } from "../bases/basis.js"
 import { type DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type RootInput } from "../nodes.js"
 import { type Root } from "../root.js"
-import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
-export type PropDeclarations = {
+export type PropDeclarationsByKind = {
 	required: RequiredDeclaration
 	optional: OptionalDeclaration
 }
 
-export type PropKind = keyof PropDeclarations
+export type PropKind = keyof PropDeclarationsByKind
 
 export type RequiredPropInner = withAttributes<{
 	readonly required: string | symbol
@@ -25,17 +24,15 @@ export type RequiredPropSchema = withAttributes<{
 	readonly value: RootInput
 }>
 
-export type RequiredDeclaration = declareConstraint<
-	"required",
-	{
-		schema: RequiredPropSchema
-		inner: RequiredPropInner
-		intersections: {
-			required: "required" | Disjoint | null
-		}
-	},
-	typeof RequiredPropNode
->
+export type RequiredDeclaration = declareNode<{
+	kind: "required"
+	schema: RequiredPropSchema
+	inner: RequiredPropInner
+	intersections: {
+		required: "required" | Disjoint | null
+	}
+	class: typeof RequiredPropNode
+}>
 
 const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 	`Props may only be applied to an object basis (was ${getBasisName(basis)})`
@@ -92,17 +89,15 @@ export type OptionalPropSchema = withAttributes<{
 	readonly value: RootInput
 }>
 
-export type OptionalDeclaration = declareConstraint<
-	"optional",
-	{
-		schema: OptionalPropSchema
-		inner: OptionalPropInner
-		intersections: {
-			optional: "optional" | Disjoint | null
-		}
-	},
-	typeof OptionalPropNode
->
+export type OptionalDeclaration = declareNode<{
+	kind: "optional"
+	schema: OptionalPropSchema
+	inner: OptionalPropInner
+	intersections: {
+		optional: "optional" | Disjoint | null
+	}
+	class: typeof OptionalPropNode
+}>
 
 export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 	static readonly kind = "optional"
@@ -145,8 +140,6 @@ export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 	})
 
 	static basis: DomainNode<object> = builtins().object
-
-	static compile = this.defineCompiler((inner) => "true")
 
 	static writeInvalidBasisMessage = writeInvalidBasisMessage
 }

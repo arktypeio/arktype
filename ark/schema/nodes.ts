@@ -123,7 +123,7 @@ export type NodeKind = keyof NodeDeclarationsByKind
 
 export type NodeClass<kind extends NodeKind = NodeKind> =
 	NodeDeclarationsByKind[kind]["class"]
-5
+
 export type Schema<kind extends NodeKind> =
 	NodeDeclarationsByKind[kind]["schema"]
 

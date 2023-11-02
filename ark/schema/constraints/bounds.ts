@@ -1,12 +1,11 @@
 import { type extend, throwParseError } from "@arktype/util"
-import { BaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { ProtoNode } from "../bases/proto.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import type { declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type BoundInner = withAttributes<{
@@ -61,17 +60,15 @@ export type ExpandedMinSchema = extend<
 
 export type MinSchema = BoundLimit | ExpandedMinSchema
 
-export type MinDeclaration = declareConstraint<
-	"min",
-	{
-		schema: MinSchema
-		inner: MinInner
-		intersections: {
-			min: "min"
-		}
-	},
-	typeof MinNode
->
+export type MinDeclaration = declareNode<{
+	kind: "min"
+	schema: MinSchema
+	inner: MinInner
+	intersections: {
+		min: "min"
+	}
+	class: typeof MinNode
+}>
 
 export class MinNode extends BaseBound<MinDeclaration> {
 	static readonly kind = "min"
@@ -129,18 +126,16 @@ export type ExpandedMaxSchema = extend<
 
 export type MaxSchema = BoundLimit | ExpandedMaxSchema
 
-export type MaxDeclaration = declareConstraint<
-	"max",
-	{
-		schema: MaxSchema
-		inner: MaxInner
-		intersections: {
-			max: "max"
-			min: Disjoint | null
-		}
-	},
-	typeof MaxNode
->
+export type MaxDeclaration = declareNode<{
+	kind: "max"
+	schema: MaxSchema
+	inner: MaxInner
+	intersections: {
+		max: "max"
+		min: Disjoint | null
+	}
+	class: typeof MaxNode
+}>
 
 export class MaxNode extends BaseBound<MaxDeclaration> {
 	static readonly kind = "max"

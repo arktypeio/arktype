@@ -1,13 +1,12 @@
 import type {
+	conform,
+	Constructor,
 	Dict,
 	evaluate,
 	extend,
-	Fn,
-	instanceOf,
 	Json,
 	JsonData,
 	requireKeys,
-	returnOf,
 	satisfy
 } from "@arktype/util"
 import {
@@ -26,15 +25,12 @@ import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
-	type Inner,
 	type IntersectionMap,
-	type LeftIntersections,
 	type Node,
 	type NodeClass,
 	type NodeKind,
 	type reifyIntersections,
-	type RuleKind,
-	type Schema
+	type RuleKind
 } from "./nodes.js"
 import { type SetKind } from "./sets/set.js"
 import { inferred } from "./utils.js"
@@ -47,48 +43,30 @@ export type BaseAttributes = {
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
 
 export type DeclaredTypes<kind extends NodeKind> = {
+	kind: kind
 	schema: unknown
 	// each node's inner definition must have a required key with the same name
 	// as its kind that can be used as a discriminator.
 	inner: BaseAttributes & { [k in kind]: unknown }
 	intersections: BaseIntersectionMap[kind]
+	class: Constructor<UnknownNode>
 }
 
 export type declareNode<
-	kind extends NodeKind,
-	types extends DeclaredTypes<kind>,
-	implementation extends StaticBaseNode<
-		declareNode<kind, types, implementation>
-	>
-> = extend<
-	types,
-	{
-		kind: kind
-		class: implementation
+	types extends {
+		[k in keyof DeclaredTypes<any>]: conform<
+			types[k],
+			DeclaredTypes<types["kind"]>[k]
+		>
 	}
->
+> = types
 
-export type NodeDeclaration<
-	implementation extends StaticBaseNode<any> = StaticBaseNode<any>
-> = declareNode<NodeKind, DeclaredTypes<any>, implementation>
+export type BaseNodeDeclaration = declareNode<DeclaredTypes<any>>
 
 export const baseAttributeKeys = {
 	alias: "meta",
 	description: "meta"
 } as const satisfies Record<keyof BaseAttributes, keyof NodeIds>
-
-export type StaticBaseNode<d extends NodeDeclaration> = {
-	// new (inner: d["inner"]): instanceOf<d["class"]>
-	// kind: d["kind"]
-	// keyKinds: Record<keyof d["inner"], keyof NodeIds>
-	// serialize(inner: d["inner"]): Json
-	// parse(input: d["schema"], ctx: ConstraintContext): d["inner"]
-	// intersections: LeftIntersections<d["kind"]>
-	// compile(inner: d["inner"]): string
-	// writeDefaultDescription(inner: d["inner"]): string
-	// reduce(input: d["inner"]): UnknownNode
-	// children?(inner: d["inner"]): readonly UnknownNode[]
-}
 
 export const setKinds = [
 	"union",
@@ -166,29 +144,13 @@ export const irreducibleConstraintKinds = {
 
 export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
 
-type kindOf<nodeClass> = instanceOf<nodeClass> extends {
-	kind: infer kind extends NodeKind
-}
-	? kind
-	: never
-
-type extensionKeyOf<nodeClass> = Exclude<
-	keyof Inner<kindOf<nodeClass>>,
-	keyof BaseAttributes
->
-
-type childrenOf<nodeClass> = nodeClass extends { children: Fn<never, infer r> }
-	? r
-	: StaticBaseNode<any> extends nodeClass
-	? // allow children to be accessed from BaseNode
-	  readonly UnknownNode[]
-	: readonly []
-
 export type UnknownNode = BaseNode<any>
 
 const $ark = registry()
 
-export type StaticNodeDefinition<d extends NodeDeclaration> = {
+export type StaticNodeDefinition<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> = {
 	kind: d["kind"]
 	keys: Record<Exclude<keyof d["inner"], keyof BaseAttributes>, keyof NodeIds>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
@@ -196,6 +158,7 @@ export type StaticNodeDefinition<d extends NodeDeclaration> = {
 	writeDefaultDescription: (inner: d["inner"]) => string
 	compileCondition: (inner: d["inner"]) => string
 	children?: (inner: d["inner"]) => readonly UnknownNode[]
+	reduce?: (inner: d["inner"]) => UnknownNode
 }
 
 type instantiateNodeClassDeclaration<declaration extends StaticNodeDefinition> =
@@ -206,35 +169,35 @@ type instantiateNodeClassDeclaration<declaration extends StaticNodeDefinition> =
 	}
 
 export abstract class BaseNode<
-	declaration extends NodeDeclaration,
+	declaration extends BaseNodeDeclaration,
 	t = unknown
 > extends DynamicBase<declaration["inner"]> {
 	declare infer: t;
 	declare [inferred]: t
 
-	declare declaration: instantiateNodeClassDeclaration<
-		StaticNodeDefinition<any>
-	>
+	readonly nodeClass = this.constructor as NodeClass
+	readonly definition = this.nodeClass
+		.definition as instantiateNodeClassDeclaration<any>
 	readonly json: Json
-	readonly children: childrenOf<declaration["class"]>
+	// TODO: type
+	readonly children: readonly UnknownNode[]
 	readonly references: readonly UnknownNode[]
 	protected readonly contributesReferences: readonly UnknownNode[]
 	readonly alias: string
 	readonly description: string
 	readonly ids: NodeIds = new NodeIds(this)
-	readonly nodeClass = this.constructor as declaration["class"]
 	readonly condition: string
-	readonly kind: declaration["kind"] = this.nodeClass.kind
+	readonly kind: declaration["kind"] = this.definition.kind
 	readonly allows: (data: unknown) => boolean
 
 	constructor(public readonly inner: declaration["inner"]) {
 		super(inner)
 		this.alias = $ark.register(this, inner.alias)
 		this.description =
-			inner.description ?? this.declaration.writeDefaultDescription(inner)
+			inner.description ?? this.definition.writeDefaultDescription(inner)
 		this.json = this.nodeClass.serialize(inner)
-		this.condition = this.declaration.compileCondition(inner)
-		this.children = this.declaration.children?.(inner) ?? ([] as any)
+		this.condition = this.definition.compileCondition(inner)
+		this.children = this.definition.children?.(inner) ?? ([] as any)
 		this.references = this.children.flatMap(
 			(child) => child.contributesReferences
 		)
@@ -245,15 +208,24 @@ export abstract class BaseNode<
 		)
 	}
 
+	static parse<
+		nodeClass extends {
+			declaration: BaseNodeDeclaration
+			definition: StaticNodeDefinition<any>
+		}
+	>(this: nodeClass, schema: nodeClass["declaration"]["schema"]) {
+		return new (this as any)(this.definition.parse(schema, { basis: {} }))
+	}
+
 	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
 
-	static serialize = this.defineSerializer((inner: object) => {
+	static serialize(inner: object) {
 		const json: Json = {}
 		for (const k in inner) {
 			json[k] = this.serializeValue((inner as Dict)[k])
 		}
 		return json
-	})
+	}
 
 	static serializeValue(v: unknown): JsonData {
 		if (
@@ -296,60 +268,7 @@ export abstract class BaseNode<
 		} as instantiateNodeClassDeclaration<definition>
 	}
 
-	protected static declareKeys<nodeClass>(
-		this: nodeClass,
-		keyKinds: {
-			[k in extensionKeyOf<nodeClass>]: keyof NodeIds
-		}
-	) {
-		return {
-			alias: "meta",
-			description: "meta",
-			...keyKinds
-		} satisfies Dict<string, keyof NodeIds> as {} as {
-			[k in keyof Inner<kindOf<nodeClass>>]-?: keyof NodeIds
-		}
-	}
-
-	protected static defineIntersections<nodeClass>(
-		this: nodeClass,
-		intersections: LeftIntersections<kindOf<nodeClass>>
-	) {
-		return intersections
-	}
-
-	protected static defineReducer<
-		nodeClass,
-		reducer extends (In: Inner<kindOf<nodeClass>>) => Node
-	>(this: nodeClass, reducer: reducer) {
-		return reducer
-	}
-
 	protected static readonly argName = In
-
-	protected static defineCompiler<nodeClass>(
-		this: nodeClass,
-		compiler: (inner: Inner<kindOf<nodeClass>>) => string
-	) {
-		return compiler
-	}
-
-	protected static defineSerializer<nodeClass>(
-		this: nodeClass,
-		serializer: (inner: Inner<kindOf<nodeClass>>) => Json
-	) {
-		return serializer
-	}
-
-	protected static defineParser<
-		nodeClass,
-		parser extends (
-			schema: Schema<kindOf<nodeClass>>,
-			ctx: ConstraintContext
-		) => Inner<kindOf<nodeClass>>
-	>(this: nodeClass, parser: parser) {
-		return parser
-	}
 
 	serialize(kind: keyof NodeIds = "meta") {
 		return JSON.stringify(this.json)
@@ -381,7 +300,9 @@ export abstract class BaseNode<
 	intersect<other extends UnknownNode>(
 		other: other
 	): intersectionOf<this["kind"], other["kind"]>
-	intersect(other: BaseNode<NodeDeclaration>): UnknownNode | Disjoint | null {
+	intersect(
+		other: BaseNode<BaseNodeDeclaration>
+	): UnknownNode | Disjoint | null {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta
 			return this
@@ -389,9 +310,9 @@ export abstract class BaseNode<
 		const l = leftOperandOf(this, other)
 		const r = l === this ? other : this
 		const intersector =
-			l.nodeClass.intersections[r.kind] ??
+			l.definition.intersections[r.kind] ??
 			(includes(ruleKinds, r.kind)
-				? l.nodeClass.intersections["rule"]
+				? l.definition.intersections["rule"]
 				: undefined)
 		const result = intersector?.(l, r)
 		if (result) {
@@ -448,7 +369,7 @@ type collectSingleResult<
 
 // TODO: add reductions
 type instantiateIntersection<result> = result extends NodeKind
-	? returnOf<NodeClass<result>["reduce"]>
+	? Node<result> //returnOf<NodeClass<result>["reduce"]>
 	: result
 
 export class NodeIds {

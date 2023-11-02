@@ -1,11 +1,10 @@
-import { BaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import { builtins } from "../builtins.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
 import { type IntersectionNode } from "../sets/intersection.js"
-import { type declareConstraint } from "./constraint.js"
 import { getBasisName } from "./shared.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
@@ -17,46 +16,41 @@ export type PredicateSchema<rule extends Predicate = Predicate> =
 	| rule
 	| PredicateInner<rule>
 
-export type PredicateDeclaration = declareConstraint<
-	"predicate",
-	{
-		schema: PredicateSchema
-		inner: PredicateInner
-		intersections: {
-			predicate: "predicate" | null
-		}
-	},
-	typeof PredicateNode
->
+export type PredicateDeclaration = declareNode<{
+	kind: "predicate"
+	schema: PredicateSchema
+	inner: PredicateInner
+	intersections: {
+		predicate: "predicate" | null
+	}
+	class: typeof PredicateNode
+}>
 
 export class PredicateNode extends BaseNode<PredicateDeclaration> {
 	static readonly kind = "predicate"
+	static readonly declaration: PredicateDeclaration
 
 	static {
 		this.classesByKind.predicate = this
 	}
 
-	static readonly keyKinds = this.declareKeys({
-		predicate: "in"
+	static readonly definition = this.define({
+		kind: "predicate",
+		keys: {
+			predicate: "in"
+		},
+		intersections: {
+			predicate: () => null
+		},
+		parse: (schema) =>
+			typeof schema === "function" ? { predicate: schema } : schema,
+		compileCondition: (inner) =>
+			`${compileSerializedValue(inner.predicate)}(${this.argName})`,
+		writeDefaultDescription: (inner) =>
+			`valid according to ${inner.predicate.name}`
 	})
 
 	static basis: IntersectionNode<unknown> = builtins().unknown
-
-	static readonly compile = this.defineCompiler(
-		(inner) => `${compileSerializedValue(inner.predicate)}(${this.argName})`
-	)
-
-	static readonly intersections = this.defineIntersections({
-		predicate: () => null
-	})
-
-	static parse(schema: PredicateSchema) {
-		return typeof schema === "function" ? { predicate: schema } : schema
-	}
-
-	static writeDefaultDescription(inner: PredicateInner) {
-		return `valid according to ${inner.predicate.name}`
-	}
 
 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `Cannot narrow ${getBasisName(basis)}`

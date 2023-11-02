@@ -1,7 +1,7 @@
-import type { Domain, inferDomain } from "@arktype/util"
+import type { Domain } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import { RootNode } from "../root.js"
+import { BaseRoot } from "../root.js"
 import type { BaseBasis } from "./basis.js"
 
 export type DomainInner<
@@ -17,20 +17,18 @@ export type DomainSchema<
 	rule extends NonEnumerableDomain = NonEnumerableDomain
 > = rule | DomainInner<rule>
 
-export type DomainDeclaration = declareNode<
-	"domain",
-	{
-		schema: DomainSchema
-		inner: DomainInner
-		intersections: {
-			domain: "domain" | Disjoint
-		}
-	},
-	typeof DomainNode
->
+export type DomainDeclaration = declareNode<{
+	kind: "domain"
+	schema: DomainSchema
+	inner: DomainInner
+	intersections: {
+		domain: "domain" | Disjoint
+	}
+	class: typeof DomainNode
+}>
 
 export class DomainNode<t = unknown>
-	extends RootNode<DomainDeclaration, t>
+	extends BaseRoot<DomainDeclaration, t>
 	implements BaseBasis
 {
 	static readonly kind = "domain"

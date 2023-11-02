@@ -1,27 +1,18 @@
-import {
-	type listable,
-	type mutable,
-	type satisfy,
-	throwParseError
-} from "@arktype/util"
-import {
-	type BaseIntersectionMap,
-	type declareNode,
-	type withAttributes
-} from "../base.js"
+import { type listable, type mutable, throwParseError } from "@arktype/util"
+import { type declareNode, type withAttributes } from "../base.js"
 import { type BasisKind } from "../bases/basis.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
-import { RootNode } from "../root.js"
-import { IntersectionNode } from "./intersection.js"
+import { BaseRoot } from "../root.js"
 import type {
 	IntersectionSchema,
 	parseIntersection,
 	validateIntersectionSchema
 } from "./intersection.js"
+import { IntersectionNode } from "./intersection.js"
 
 export type ValidatorNode = Node<"intersection" | BasisKind>
 
@@ -41,22 +32,20 @@ export type MorphSchema = withAttributes<{
 	readonly morph: listable<Morph>
 }>
 
-export type MorphDeclaration = declareNode<
-	"morph",
-	{
-		schema: MorphSchema
-		inner: MorphInner
-		// TODO: needed?
-		intersections: {
-			morph: "morph" | Disjoint
-			intersection: "morph" | Disjoint
-			rule: "morph" | Disjoint
-		}
-	},
-	typeof MorphNode
->
+export type MorphDeclaration = declareNode<{
+	kind: "morph"
+	schema: MorphSchema
+	inner: MorphInner
+	// TODO: needed?
+	intersections: {
+		morph: "morph" | Disjoint
+		intersection: "morph" | Disjoint
+		rule: "morph" | Disjoint
+	}
+	class: typeof MorphNode
+}>
 
-export class MorphNode<t = unknown> extends RootNode<MorphDeclaration, t> {
+export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 	static readonly kind = "morph"
 	static readonly declaration: MorphDeclaration
 

@@ -4,7 +4,7 @@ import { type BasisKind } from "../bases/basis.js"
 import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
-import { RootNode } from "../root.js"
+import { BaseRoot } from "../root.js"
 import {
 	type IntersectionNode,
 	type IntersectionSchema
@@ -27,22 +27,20 @@ export type UnionInner = withAttributes<{
 
 export type BranchSchema = IntersectionSchema | MorphSchema
 
-export type UnionDeclaration = declareNode<
-	"union",
-	{
-		schema: UnionSchema
-		inner: UnionInner
-		intersections: {
-			union: "union" | Disjoint
-			morph: "union" | Disjoint
-			intersection: "union" | Disjoint
-			rule: "union" | Disjoint
-		}
-	},
-	typeof UnionNode
->
+export type UnionDeclaration = declareNode<{
+	kind: "union"
+	schema: UnionSchema
+	inner: UnionInner
+	intersections: {
+		union: "union" | Disjoint
+		morph: "union" | Disjoint
+		intersection: "union" | Disjoint
+		rule: "union" | Disjoint
+	}
+	class: typeof UnionNode
+}>
 
-export class UnionNode<t = unknown> extends RootNode<UnionDeclaration, t> {
+export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 	static readonly kind = "union"
 	static readonly declaration: UnionDeclaration
 

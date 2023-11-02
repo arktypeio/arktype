@@ -2,7 +2,7 @@ import { domainOf, stringify } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { RootNode } from "../root.js"
+import { BaseRoot } from "../root.js"
 import type { BaseBasis } from "./basis.js"
 
 export type UnitInner<rule = unknown> = withAttributes<{
@@ -11,21 +11,19 @@ export type UnitInner<rule = unknown> = withAttributes<{
 
 export type UnitSchema<rule = unknown> = UnitInner<rule>
 
-export type UnitDeclaration = declareNode<
-	"unit",
-	{
-		schema: UnitSchema
-		inner: UnitInner
-		intersections: {
-			unit: "unit" | Disjoint
-			rule: "unit" | Disjoint
-		}
-	},
-	typeof UnitNode
->
+export type UnitDeclaration = declareNode<{
+	kind: "unit"
+	schema: UnitSchema
+	inner: UnitInner
+	intersections: {
+		unit: "unit" | Disjoint
+		rule: "unit" | Disjoint
+	}
+	class: typeof UnitNode
+}>
 
 export class UnitNode<t = unknown>
-	extends RootNode<UnitDeclaration, t>
+	extends BaseRoot<UnitDeclaration, t>
 	implements BaseBasis
 {
 	static readonly kind = "unit"

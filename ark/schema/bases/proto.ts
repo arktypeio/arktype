@@ -9,7 +9,7 @@ import { type declareNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { RootNode } from "../root.js"
+import { BaseRoot } from "../root.js"
 import type { BaseBasis } from "./basis.js"
 
 export type ProtoSchema<
@@ -22,21 +22,19 @@ export type ProtoInner<
 	readonly proto: proto
 }>
 
-export type ProtoDeclaration = declareNode<
-	"proto",
-	{
-		schema: ProtoSchema
-		inner: ProtoInner
-		intersections: {
-			proto: "proto" | Disjoint
-			domain: "proto" | Disjoint
-		}
-	},
-	typeof ProtoNode
->
+export type ProtoDeclaration = declareNode<{
+	kind: "proto"
+	schema: ProtoSchema
+	inner: ProtoInner
+	intersections: {
+		proto: "proto" | Disjoint
+		domain: "proto" | Disjoint
+	}
+	class: typeof ProtoNode
+}>
 
 export class ProtoNode<t extends object = object>
-	extends RootNode<ProtoDeclaration, t>
+	extends BaseRoot<ProtoDeclaration, t>
 	implements BaseBasis
 {
 	static readonly kind = "proto"

@@ -1,11 +1,11 @@
 import { throwParseError } from "@arktype/util"
-import { BaseNode, type withAttributes } from "../base.js"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
 import { type Root } from "../root.js"
-import { type declareConstraint } from "./constraint.js"
+
 import { getBasisName } from "./shared.js"
 
 export type PatternInner = withAttributes<{
@@ -18,17 +18,15 @@ export type ExpandedPatternSchema = withAttributes<{
 
 export type PatternSchema = RegexLiteral | RegExp | ExpandedPatternSchema
 
-export type PatternDeclaration = declareConstraint<
-	"pattern",
-	{
-		schema: PatternSchema
-		inner: PatternInner
-		intersections: {
-			pattern: "pattern" | null
-		}
-	},
-	typeof PatternNode
->
+export type PatternDeclaration = declareNode<{
+	kind: "pattern"
+	schema: PatternSchema
+	inner: PatternInner
+	intersections: {
+		pattern: "pattern" | null
+	}
+	class: typeof PatternNode
+}>
 
 export class PatternNode extends BaseNode<PatternDeclaration> {
 	static readonly kind = "pattern"

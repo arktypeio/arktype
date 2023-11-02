@@ -1,24 +1,16 @@
 import {
-	domainOf,
 	type inferDomain,
 	type instanceOf,
 	type isAny,
-	stringify,
 	throwParseError
 } from "@arktype/util"
-import { type Schema } from "../nodes.js"
+import { type Node, type Schema } from "../nodes.js"
 import type { DomainDeclaration, DomainSchema } from "./domain.js"
 import { DomainNode } from "./domain.js"
 import type { ProtoDeclaration, ProtoSchema } from "./proto.js"
 import { ProtoNode } from "./proto.js"
 import type { UnitDeclaration, UnitSchema } from "./unit.js"
 import { UnitNode } from "./unit.js"
-
-export const basisClassesByKind = {
-	domain: DomainNode,
-	proto: ProtoNode,
-	unit: UnitNode
-}
 
 export type BasisDeclarationsByKind = {
 	domain: DomainDeclaration
@@ -44,7 +36,9 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 		? UnitNode<unit>
 		: never
 
-export const maybeParseBasis = (schema: Schema<"intersection">) => {
+export const maybeParseBasis = (
+	schema: Schema<"intersection">
+): Node<BasisKind> | undefined => {
 	switch (typeof schema) {
 		case "string":
 			return DomainNode.parse(schema)
