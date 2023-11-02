@@ -108,7 +108,7 @@ export const irreducibleConstraintKinds = {
 
 export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
 
-export type UnknownNode = BaseNode<BaseNodeDeclaration>
+export type UnknownNode = BaseNode<any>
 
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
@@ -374,9 +374,12 @@ export type IntersectionMaps = {
 	[k in NodeKind]: NodeDeclarationsByKind[k]["intersections"]
 }
 
-export type intersectionOf<l extends NodeKind, r extends NodeKind> =
-	| asymmetricIntersectionOf<l, r>
-	| asymmetricIntersectionOf<r, l>
+export type intersectionOf<l extends NodeKind, r extends NodeKind> = [
+	l,
+	r
+] extends [r, l]
+	? instantiateIntersection<l>
+	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
 
 type asymmetricIntersectionOf<
 	l extends NodeKind,

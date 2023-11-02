@@ -75,11 +75,7 @@ export type parseNodeBranches<branches extends readonly unknown[]> =
 		? UnionNode<never>
 		: branches["length"] extends 1
 		? parseSchemaBranch<branches[0]>
-		: Root<
-				{
-					[i in keyof branches]: parseSchemaBranch<branches[i]>["infer"]
-				}[number]
-		  >
+		: Root<parseSchemaBranch<branches[number]>["infer"]>
 
 export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 	[rKind in keyof intersectionMap]: (

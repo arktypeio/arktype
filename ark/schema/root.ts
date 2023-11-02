@@ -15,19 +15,14 @@ import { type MorphNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
 import { type UnionNode } from "./sets/union.js"
 
-type typedRootsByKind<t> = {
+export type Root<t = unknown, kind extends RootKind = RootKind> = {
 	union: UnionNode<t>
 	morph: MorphNode<t>
 	intersection: IntersectionNode<t>
 	unit: UnitNode<t>
 	proto: ProtoNode<t & object>
 	domain: DomainNode<t>
-}
-
-export type Root<
-	t = unknown,
-	kind extends RootKind = RootKind
-> = typedRootsByKind<t>[kind]
+}[kind]
 
 export type RootKind = SetKind | BasisKind
 
@@ -39,7 +34,7 @@ export abstract class BaseRoot<
 		kind: kind,
 		definition: Schema<kind>
 	): Root {
-		const result: Disjoint | Root = this.intersect(
+		const result = this.intersect(
 			(BaseRoot.classesByKind[kind].parse as any)(definition)
 		)
 		return result instanceof Disjoint ? result.throw() : result
@@ -86,12 +81,11 @@ export abstract class BaseRoot<
 		return this as never
 	}
 
-	extends<other extends Node>(
-		this: Node<RootKind>,
-		other: other
-	): this is Root<other["infer"]> {
+	extends<other extends Node>(other: other): this is Root<other["infer"]> {
 		const intersection = this.intersect(other)
-		return !(intersection instanceof Disjoint) && this.equals(intersection)
+		return (
+			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+		)
 	}
 
 	subsumes(other: Root): other is Root<this["infer"]> {
