@@ -1,6 +1,6 @@
-import { type CastTo, node } from "@arktype/schema"
+import { node } from "@arktype/schema"
 import { Scope } from "../scope.js"
-import type { RootScope } from "./ark.js"
+import type { RootScope, type } from "./ark.js"
 
 export interface InferredTsKeywords {
 	any: any
@@ -20,7 +20,7 @@ export interface InferredTsKeywords {
 }
 
 export const tsKeywords: RootScope<InferredTsKeywords> = Scope.root({
-	any: "unknown" as CastTo<any>,
+	any: "unknown" as type.cast<any>,
 	bigint: node("bigint"),
 	boolean: "true|false",
 	false: node.units(false),
@@ -32,7 +32,7 @@ export const tsKeywords: RootScope<InferredTsKeywords> = Scope.root({
 	symbol: node("symbol"),
 	true: node.units(true),
 	unknown: node({}),
-	void: "undefined" as CastTo<void>,
+	void: "undefined" as type.cast<void>,
 	undefined: node.units(undefined)
 })
 

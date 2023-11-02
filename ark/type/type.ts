@@ -84,6 +84,12 @@ export type TypeParser<$> = {
 	): Generic<parseGenericParams<params>, def, $>
 }
 
+export namespace type {
+	export type cast<to> = {
+		[inferred]?: to
+	}
+}
+
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(

@@ -1,5 +1,5 @@
 export { Problem, Problems } from "@arktype/schema"
-export type { CastTo, Out } from "@arktype/schema"
+export type { Out } from "@arktype/schema"
 export type { Module, Scope } from "./scope.js"
 export {
 	ark,

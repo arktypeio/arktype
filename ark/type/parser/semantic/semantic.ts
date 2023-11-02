@@ -1,4 +1,3 @@
-import type { CastTo } from "@arktype/schema"
 import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
 import type {
 	resolve,

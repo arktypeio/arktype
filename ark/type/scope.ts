@@ -1,9 +1,4 @@
-import {
-	builtins,
-	type CastTo,
-	type ProblemCode,
-	type Root
-} from "@arktype/schema"
+import { builtins, type ProblemCode, type Root } from "@arktype/schema"
 import type { Dict, evaluate, isAny, nominal } from "@arktype/util"
 import {
 	domainOf,
@@ -31,6 +26,7 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { parseString } from "./parser/string/string.js"
+import { type type } from "./scopes/ark.js"
 import type {
 	arkKind,
 	DeclarationParser,
@@ -209,7 +205,7 @@ export type Module<r extends Resolutions = any> = {
 			: Type<r["exports"][k], $<r>>
 		: // set the nominal symbol's value to something validation won't care about
 		  // since the inferred type will be omitted anyways
-		  CastTo<"module">
+		  type.cast<"module">
 }
 
 export type Resolutions = {
@@ -507,7 +503,7 @@ type destructuredImportContext<
 	r extends Resolutions,
 	name extends exportedName<r>
 > = {
-	[k in name as `#${k & string}`]: CastTo<r["exports"][k]>
+	[k in name as `#${k & string}`]: type.cast<r["exports"][k]>
 }
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>

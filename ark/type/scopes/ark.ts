@@ -1,3 +1,4 @@
+import { type inferred } from "@arktype/schema"
 import type { Module, ScopeParser } from "../scope.js"
 import { Scope } from "../scope.js"
 import type {
@@ -7,7 +8,7 @@ import type {
 } from "../type.js"
 import type { InferredJsObjects } from "./jsObjects.js"
 import { jsObjectsModule } from "./jsObjects.js"
-import type { InferredParsing, ParsingModule } from "./parsing.js"
+import type { ParsingModule } from "./parsing.js"
 import { parsingModule } from "./parsing.js"
 import { type InferredTsGenerics, tsGenericsModule } from "./tsGenerics.js"
 import type { InferredTsKeywords } from "./tsKeywords.js"
@@ -51,6 +52,12 @@ export interface Ark
 export const scope: ScopeParser<{}, Ark> = ark.scope as never
 
 export const type: TypeParser<Ark> = ark.type
+
+export namespace type {
+	export type cast<to> = {
+		[inferred]?: to
+	}
+}
 
 export const define: DefinitionParser<Ark> = ark.define
 

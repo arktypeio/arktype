@@ -1,4 +1,4 @@
-import { type CastTo, node, type Root, RootNode } from "@arktype/schema"
+import { node, type Root, RootNode } from "@arktype/schema"
 import type {
 	defined,
 	Dict,
@@ -20,6 +20,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
+import { type type } from "../scopes/ark.js"
 import { Type } from "../type.js"
 import type {
 	inferObjectLiteral,
@@ -58,7 +59,7 @@ export const parseObject = (def: object, ctx: ParseContext): Root => {
 
 export type inferDefinition<def, $, args> = isAny<def> extends true
 	? never
-	: def extends CastTo<infer t> | ThunkCast<infer t>
+	: def extends type.cast<infer t> | ThunkCast<infer t>
 	? t
 	: def extends string
 	? inferString<def, $, args>
@@ -99,7 +100,7 @@ export type validateDeclared<declared, def, $, args> =
 
 type validateInference<def, declared, $, args> = def extends
 	| RegExp
-	| CastTo<unknown>
+	| type.cast<unknown>
 	| ThunkCast
 	| TupleExpression
 	? validateShallowInference<def, declared, $, args>
@@ -140,9 +141,9 @@ type declarationMismatch<def, declared, $, args> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = RegExp | CastTo<unknown> | ((...args: never[]) => unknown)
+type Terminal = RegExp | type.cast<unknown> | ((...args: never[]) => unknown)
 
-export type ThunkCast<t = unknown> = () => CastTo<t>
+export type ThunkCast<t = unknown> = () => type.cast<t>
 
 type BadDefinitionType = Exclude<Primitive, string>
 
