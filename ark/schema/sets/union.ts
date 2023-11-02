@@ -125,7 +125,15 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 			}
 			return new UnionNode({ ...inner, union: reducedBranches })
 		},
-		compileCondition: (inner) => "true",
+		compileCondition: (inner) => {
+			let condition = inner.union
+				.map((branch) => branch.condition)
+				.join(") || (")
+			if (inner.union.length > 1) {
+				condition = `(${condition})`
+			}
+			return condition
+		},
 		writeDefaultDescription: (inner) =>
 			inner.union.length === 0 ? "never" : inner.union.join(" or "),
 		children: (inner) => inner.union

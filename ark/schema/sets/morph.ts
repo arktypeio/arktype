@@ -129,7 +129,7 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 			}
 			return inner
 		},
-		compileCondition: (inner) => "true",
+		compileCondition: (inner) => inner.in?.condition ?? "true",
 		writeDefaultDescription: (inner) => "",
 		children: (inner): ValidatorNode[] =>
 			inner.in

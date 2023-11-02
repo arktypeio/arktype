@@ -44,7 +44,6 @@ export abstract class BaseRoot<
 	declare infer: t
 
 	constrain<kind extends ConstraintKind>(
-		// TODO: remove, simplify
 		this: Root,
 		kind: kind,
 		definition: Schema<kind>
@@ -65,7 +64,6 @@ export abstract class BaseRoot<
 
 	// TODO: inferIntersection
 	and<other extends Node>(
-		// TODO: remove, simplify
 		this: Root,
 		other: other
 	): Exclude<intersectionOf<this["kind"], other["kind"]>, Disjoint> {

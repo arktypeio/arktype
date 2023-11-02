@@ -17,7 +17,7 @@ const l = node(
 	}
 )
 
-PatternNode.parse("//")
+l.condition //?
 
 IntersectionNode.parse({ intersection: [] })
 

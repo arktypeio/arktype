@@ -34,7 +34,7 @@ import {
 	type RuleKind,
 	type Schema
 } from "../nodes.js"
-import { BaseRoot } from "../root.js"
+import { BaseRoot, type Root } from "../root.js"
 import { type ParseContext } from "../utils.js"
 
 export type IntersectionInner = withAttributes<{
@@ -62,9 +62,8 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 > {
 	static readonly kind = "intersection"
 	static readonly declaration: IntersectionDeclaration
-	readonly basis: Node<BasisKind> | undefined = this.intersection[0]?.isBasis()
-		? this.intersection[0]
-		: undefined
+	readonly basis: Root<unknown, BasisKind> | undefined =
+		this.intersection[0]?.isBasis() ? this.intersection[0] : undefined
 	readonly constraints: readonly Node<ConstraintKind>[] = this.basis
 		? this.intersection.slice(1)
 		: (this.intersection as any)
@@ -129,7 +128,15 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 			}
 			return new IntersectionNode(inner)
 		},
-		compileCondition: (inner) => "true",
+		compileCondition: (inner) => {
+			let condition = inner.intersection
+				.map((rule) => rule.condition)
+				.join(") && (")
+			if (inner.intersection.length > 1) {
+				condition = `(${condition})`
+			}
+			return condition
+		},
 		writeDefaultDescription: (inner) => {
 			return inner.intersection.length === 0
 				? "a value"
