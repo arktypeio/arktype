@@ -30,12 +30,7 @@ export const parseEnclosed = (
 	const token = `${enclosing}${enclosed}${s.scanner.shift()}`
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
-		try {
-			new RegExp(enclosed)
-		} catch (e) {
-			// rethrow as a ParseError
-			s.error(`${e instanceof Error ? e.message : e}`)
-		}
+		new RegExp(enclosed)
 		s.root = node({ basis: "string", pattern: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
 		s.root = node({ unit: enclosed })

@@ -27,16 +27,6 @@ export type validateSchemaBranch<input> = conform<
 		: validateValidatorSchema<input>
 >
 
-type Z = parseSchemaBranch<{
-	in: string
-	morph: (s: string) => Date
-}>
-
-type f = validateSchemaBranch<{
-	in: string
-	morph: (s: string) => Date
-}>
-
 export type parseSchemaBranch<input> = input extends MorphSchema
 	? parseMorphSchema<input>
 	: input extends ValidatorSchema

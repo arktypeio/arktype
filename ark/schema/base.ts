@@ -10,6 +10,7 @@ import {
 	isArray,
 	type Json,
 	type JsonData,
+	type optionalizeKeys,
 	type satisfy,
 	throwInternalError
 } from "@arktype/util"
@@ -19,9 +20,9 @@ import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
-	type IntersectionMap,
 	type Node,
 	type NodeClass,
+	type NodeDeclarationsByKind,
 	type NodeKind,
 	type reducibleParseResult,
 	type reifyIntersections,
@@ -82,26 +83,16 @@ type assertIncludesAllKinds = satisfy<OrderedNodeKinds[number], NodeKind>
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
-type allowedAsymmetricOperandOf<kind extends NodeKind> =
+type allowedIntersectionKeyOf<kind extends NodeKind> =
 	| rightOf<kind>
 	// SetKinds must intersect with rule, and unit being the
 	// highest precedence rule is the only other node that can unambiguously.
 	| (kind extends SetKind | "unit" ? "rule" : never)
 
-export type rightOf<kind extends NodeKind> = OrderedNodeKinds extends readonly [
-	...unknown[],
-	kind,
-	...infer right extends NodeKind[]
-]
-	? right[number]
-	: never
-
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: evaluate<
-		{ [rKey in lKey]: lKey | Disjoint | null } & {
-			[rKey in
-				| NodeKind
-				| "rule"]?: rKey extends allowedAsymmetricOperandOf<lKey>
+		{ [rKey in lKey]: {} } & {
+			[rKey in NodeKind | "rule"]?: rKey extends allowedIntersectionKeyOf<lKey>
 				? lKey | Disjoint | null
 				: never
 		}
@@ -117,16 +108,26 @@ export const irreducibleConstraintKinds = {
 
 export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
 
-export type UnknownNode = BaseNode<any>
+export type UnknownNode = BaseNode<BaseNodeDeclaration>
 
-export type DeclaredTypes<kind extends NodeKind = NodeKind> = {
+export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
 	schema: unknown
 	// each node's inner definition must have a required key with the same name
-	// as its kind that can be used as a discriminator.
+	// as its kind that can be used as a discriminator
 	inner: BaseAttributes & { [k in kind]: unknown }
 	intersections: BaseIntersectionMap[kind]
 	reductions?: rightOf<kind>
+}
+
+export type BaseDeclarationInput = {
+	kind: NodeKind
+	schema: unknown
+	inner: BaseAttributes
+	intersections: {
+		[k in NodeKind | "rule"]?: NodeKind | Disjoint | null
+	}
+	reductions?: NodeKind
 }
 
 export type declareNode<
@@ -135,7 +136,7 @@ export type declareNode<
 		types extends {
 			kind: infer kind extends NodeKind
 		}
-			? DeclaredTypes<kind>
+			? DeclarationInput<kind>
 			: never
 	>
 > = types &
@@ -143,10 +144,10 @@ export type declareNode<
 		? unknown
 		: { reductions: types["kind" & keyof types] })
 
-export type BaseNodeDeclaration = declareNode<DeclaredTypes<any>>
+export type BaseNodeDeclaration = BaseDeclarationInput & { reductions: {} }
 
 export type StaticNodeDefinition<
-	d extends Required<BaseNodeDeclaration> = Required<BaseNodeDeclaration>
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > = {
 	kind: d["kind"]
 	keys: Record<Exclude<keyof d["inner"], keyof BaseAttributes>, keyof NodeIds>
@@ -159,7 +160,7 @@ export type StaticNodeDefinition<
 } & (d["reductions"] extends d["kind"] ? unknown : { reduceToNode: {} })
 
 export interface StaticCompositeDefinition<
-	d extends Required<BaseNodeDeclaration> = Required<BaseNodeDeclaration>
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > {}
 
 type instantiateNodeClassDeclaration<declaration> = {
@@ -317,7 +318,7 @@ export abstract class BaseNode<
 	// TODO: add input kind, caching
 	intersect<other extends Node>(
 		other: other
-	): intersectionOf<this["kind"], other["kind"]>
+	): intersectionOf<declaration["kind"], other["kind"]>
 	intersect(other: BaseNode<BaseNodeDeclaration>) {
 		if (other.ids.morph === this.ids.morph) {
 			// TODO: meta
@@ -355,31 +356,41 @@ const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
 	)
 }
 
-export type intersectionOf<l extends NodeKind, r extends NodeKind> = [
-	l,
-	r
-] extends [r, l]
-	? instantiateIntersection<IntersectionMap<l>[l & keyof IntersectionMap<l>]>
-	: collectResults<l, r>
+export type rightOf<kind extends NodeKind> = RightsByKind[kind]
 
-type collectResults<
+export type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
+
+type accumulateRightKinds<
+	remaining extends readonly NodeKind[],
+	result
+> = remaining extends readonly [
+	infer head extends NodeKind,
+	...infer tail extends NodeKind[]
+]
+	? accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
+	: result
+
+export type IntersectionMaps = {
+	[k in NodeKind]: NodeDeclarationsByKind[k]["intersections"]
+}
+
+export type intersectionOf<l extends NodeKind, r extends NodeKind> =
+	| asymmetricIntersectionOf<l, r>
+	| asymmetricIntersectionOf<r, l>
+
+type asymmetricIntersectionOf<
 	l extends NodeKind,
 	r extends NodeKind
-> = r extends rightOf<l>
-	? collectSingleResult<l, r>
-	: l extends rightOf<r>
-	? collectSingleResult<r, l>
-	: never
-
-type collectSingleResult<
-	l extends NodeKind,
-	r extends NodeKind
-> = r extends keyof IntersectionMap<l>
-	? instantiateIntersection<IntersectionMap<l>[r]>
-	: r extends RuleKind
-	? "rule" extends keyof IntersectionMap<l>
-		? instantiateIntersection<IntersectionMap<l>["rule"]>
-		: never
+> = l extends unknown
+	? r extends unknown
+		? r extends keyof IntersectionMaps[l]
+			? instantiateIntersection<IntersectionMaps[l][r]>
+			: "rule" extends keyof IntersectionMaps[l]
+			? r extends RuleKind
+				? instantiateIntersection<IntersectionMaps[l]["rule"]>
+				: never
+			: never
+		: r
 	: never
 
 type instantiateIntersection<result> = result extends NodeKind

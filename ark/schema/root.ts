@@ -1,4 +1,3 @@
-import { type defer } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseNodeDeclaration,
@@ -15,7 +14,6 @@ import { type IntersectionNode } from "./sets/intersection.js"
 import { type MorphNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
 import { type UnionNode } from "./sets/union.js"
-import { inferred } from "./utils.js"
 
 type typedRootsByKind<t> = {
 	union: UnionNode<t>
@@ -37,11 +35,7 @@ export abstract class BaseRoot<
 	declaration extends BaseNodeDeclaration,
 	t
 > extends BaseNode<declaration, t> {
-	declare [inferred]: t
-	declare infer: t
-
 	constrain<kind extends ConstraintKind>(
-		this: Root,
 		kind: kind,
 		definition: Schema<kind>
 	): Root {
@@ -61,7 +55,6 @@ export abstract class BaseRoot<
 
 	// TODO: inferIntersection
 	and<other extends Node>(
-		this: Root,
 		other: other
 	): Exclude<intersectionOf<this["kind"], other["kind"]>, Disjoint> {
 		const result = this.intersect(other)
