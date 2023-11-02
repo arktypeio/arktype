@@ -1,5 +1,4 @@
-import type { Hkt } from "@arktype/util"
-import { scope } from "arktype"
+import { type Hkt } from "@arktype/util"
 
 // Custom user type
 interface Chunk<T> {
@@ -8,7 +7,7 @@ interface Chunk<T> {
 }
 
 // User defines the HKT signature
-interface ToChunk extends Hkt {
+interface ToChunk extends Hkt.Kind {
 	f(x: this[Hkt.key]): Chunk<typeof x>
 }
 

@@ -6,7 +6,7 @@ import type {
 } from "./generics.js"
 import type { Hkt } from "./hkt.js"
 
-export interface AndPreserveUnknown extends Hkt {
+export interface AndPreserveUnknown extends Hkt.Kind {
 	f: (
 		args: conform<this[Hkt.key], [unknown, unknown]>
 	) => andPreserveUnknown<(typeof args)[0], (typeof args)[1]>
@@ -17,20 +17,20 @@ type ArrayIntersectionMode = "values" | "parameters"
 export type intersectArrays<
 	l extends readonly unknown[],
 	r extends readonly unknown[],
-	operator extends Hkt = AndPreserveUnknown
+	operator extends Hkt.Kind = AndPreserveUnknown
 > = intersectParametersRecurse<l, r, [], operator, "values">
 
 export type intersectParameters<
 	l extends readonly unknown[],
 	r extends readonly unknown[],
-	operator extends Hkt = AndPreserveUnknown
+	operator extends Hkt.Kind = AndPreserveUnknown
 > = intersectParametersRecurse<l, r, [], operator, "parameters">
 
 type intersectParametersRecurse<
 	l extends readonly unknown[],
 	r extends readonly unknown[],
 	prefix extends readonly unknown[],
-	intersector extends Hkt,
+	intersector extends Hkt.Kind,
 	mode extends ArrayIntersectionMode
 > = [parseNextElement<l, mode>, parseNextElement<r, mode>] extends [
 	infer lState extends ElementParseResult,

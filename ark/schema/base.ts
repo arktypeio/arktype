@@ -1,17 +1,15 @@
-import type {
-	conform,
-	Dict,
-	evaluate,
-	extend,
-	Json,
-	JsonData,
-	satisfy
-} from "@arktype/util"
 import {
 	CompiledFunction,
+	type conform,
+	type Dict,
 	DynamicBase,
+	type evaluate,
+	type extend,
 	includes,
 	isArray,
+	type Json,
+	type JsonData,
+	type satisfy,
 	throwInternalError
 } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
@@ -24,6 +22,7 @@ import {
 	type Node,
 	type NodeClass,
 	type NodeKind,
+	type reducibleParseResult,
 	type reifyIntersections,
 	type RuleKind
 } from "./nodes.js"
@@ -209,16 +208,6 @@ export abstract class BaseNode<
 		)
 	}
 
-	static parse<nodeClass>(
-		this: nodeClass,
-		schema: declarationOf<nodeClass>["schema"],
-		ctx = createParseContext()
-	): Node<declarationOf<nodeClass>["reductions"]> {
-		const definition = (this as any).definition as StaticNodeDefinition
-		const inner = definition.parseSchema(schema, ctx)
-		return definition.reduceToNode?.(inner) ?? new (this as any)(inner)
-	}
-
 	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
 
 	static serialize(inner: object) {
@@ -272,6 +261,16 @@ export abstract class BaseNode<
 				...definition.keys
 			}
 		} as definition
+	}
+
+	static parse<nodeClass>(
+		this: nodeClass,
+		schema: declarationOf<nodeClass>["schema"],
+		ctx = createParseContext()
+	): reducibleParseResult<declarationOf<nodeClass>["kind"]> {
+		const definition = (this as any).definition as StaticNodeDefinition
+		const inner = definition.parseSchema(schema, ctx)
+		return definition.reduceToNode?.(inner) ?? new (this as any)(inner)
 	}
 
 	protected static readonly argName = In
@@ -371,7 +370,7 @@ type collectSingleResult<
 	: never
 
 type instantiateIntersection<result> = result extends NodeKind
-	? Node<NodeClass<result>["declaration"]["reductions"]>
+	? reducibleParseResult<result>
 	: result
 
 export class NodeIds {

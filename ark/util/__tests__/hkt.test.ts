@@ -3,7 +3,7 @@ import type { conform, Hkt } from "@arktype/util"
 import { suite, test } from "mocha"
 
 suite("hkt", () => {
-	interface AppendKind extends Hkt {
+	interface AppendKind extends Hkt.Kind {
 		f: (
 			args: conform<
 				this[Hkt.key],

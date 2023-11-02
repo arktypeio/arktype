@@ -1,4 +1,5 @@
 import type { conform, extend, instanceOf, listable } from "@arktype/util"
+import { BaseNode } from "./base.js"
 import {
 	type BasisClassesByKind,
 	type BasisDeclarationsByKind
@@ -46,12 +47,10 @@ type RootNodeParser = {
 // 	})
 // }
 
-// const parseKind = <kind extends NodeKind, schema extends Schema<kind>>(
-// 	kind: kind,
-// 	schema: schema
-// ) => new TypeNode(kind, schema) as Node<kind, unknown>
-
 const parseNode = (...schemas: BranchSchema[]) => UnionNode.parse(schemas)
+
+const parseKind = <kind extends NodeKind>(kind: kind, schema: Schema<kind>) =>
+	BaseNode.classesByKind[kind].parse(schema) as reducibleParseResult<kind>
 
 const parseUnits = <const branches extends readonly unknown[]>(
 	...values: branches
@@ -69,8 +68,8 @@ const parseUnits = <const branches extends readonly unknown[]>(
 }
 
 export const node = Object.assign(parseNode as RootNodeParser, {
-	units: parseUnits
-	// kind: parseKind
+	units: parseUnits,
+	kind: parseKind
 })
 
 export type RootInput = listable<IntersectionSchema | MorphSchema>
@@ -151,6 +150,10 @@ export type DiscriminableSchema<kind extends NodeKind = NodeKind> =
 	DiscriminableSchemasByKind[kind]
 
 export type Inner<kind extends NodeKind> = NodeDeclarationsByKind[kind]["inner"]
+
+export type reducibleParseResult<kind extends NodeKind> = Node<
+	NodeDeclarationsByKind[kind]["reductions"]
+>
 
 export type LeftIntersections<kind extends NodeKind> = reifyIntersections<
 	kind,
