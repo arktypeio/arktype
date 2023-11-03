@@ -4,8 +4,6 @@ import type { BasisKind } from "../bases/basis.js"
 import type { DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
-import { type Root } from "../root.js"
-
 import { getBasisName } from "./shared.js"
 
 export type PatternInner = withAttributes<{

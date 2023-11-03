@@ -23,7 +23,7 @@ import {
 } from "./sets/union.js"
 
 type RootNodeParser = {
-	<const branches extends readonly unknown[]>(
+	<branches extends readonly unknown[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i]>
 		}

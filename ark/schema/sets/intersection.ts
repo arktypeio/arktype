@@ -25,7 +25,12 @@ import {
 	parseConstraint
 } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node, type RuleKind, type Schema } from "../nodes.js"
+import {
+	type DiscriminableSchema,
+	type Node,
+	type RuleKind,
+	type Schema
+} from "../nodes.js"
 import { BaseRoot, type Root } from "../root.js"
 import { type ParseContext } from "../utils.js"
 
@@ -234,16 +239,22 @@ export type CollapsedIntersectionSchema<
 > =
 	| readonly [
 			basis,
-			...discriminableConstraintSchema<parseBasis<basis>["infer"]>[]
+			// currently unable to infer basis here, but we still include this
+			// conditional to avoid a union complexity error that otherwise can
+			// occur (remove in future if possible)
+			...(parseBasis<basis>["infer"] extends unknown
+				? discriminableConstraintSchema<any>[]
+				: never[])
 	  ]
-	| readonly discriminableConstraintSchema<unknown>[]
+	| readonly DiscriminableSchema<"predicate">[]
 
 export type IntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
-> =
-	| MappedIntersectionSchema<basis>
-	| ListedIntersectionSchema<basis>
-	| CollapsedIntersectionSchema<basis>
+> = ExpandedIntersectionSchema<basis> | CollapsedIntersectionSchema<basis>
+
+export type ExpandedIntersectionSchema<
+	basis extends Schema<BasisKind> = Schema<BasisKind>
+> = MappedIntersectionSchema<basis> | ListedIntersectionSchema<basis>
 
 type exactBasisMessageOnError<branch, expected> = {
 	[k in keyof branch]: k extends keyof expected
@@ -255,11 +266,11 @@ type exactBasisMessageOnError<branch, expected> = {
 }
 
 export type validateIntersectionSchema<schema> =
-	schema extends IntersectionSchema<infer basis>
+	schema extends ExpandedIntersectionSchema<infer basis>
 		? schema extends ListedIntersectionSchema
 			? exactMessageOnError<schema, ListedIntersectionSchema<basis>>
 			: exactBasisMessageOnError<schema, MappedIntersectionSchema<basis>>
-		: never
+		: IntersectionSchema
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,
