@@ -12,6 +12,7 @@ export type AttestConfig = {
 	cacheDir: string
 	assertionCacheFile: string
 	snapCacheDir: string
+	benchSnapCacheDir: string
 	filter: string | undefined
 }
 
@@ -20,6 +21,7 @@ export type AttestOptions = Partial<AttestConfig>
 const getDefaultConfig = (): AttestConfig => {
 	const cacheDir = resolve(".attest")
 	const snapCacheDir = join(cacheDir, "snaps")
+	const benchSnapCacheDir = join(cacheDir, "benchSnaps")
 	const assertionCacheFile = join(cacheDir, "assertions.json")
 	return {
 		tsconfig: existsSync(fromCwd("tsconfig.json"))
@@ -32,6 +34,7 @@ const getDefaultConfig = (): AttestConfig => {
 		benchErrorOnThresholdExceeded: false,
 		cacheDir,
 		snapCacheDir,
+		benchSnapCacheDir,
 		assertionCacheFile,
 		filter: undefined
 	}
@@ -70,13 +73,12 @@ const addEnvConfig = (config: AttestConfig) => {
 	return config
 }
 
-let cachedConfig: AttestConfig = addEnvConfig(getDefaultConfig())
+const cachedConfig: AttestConfig = addEnvConfig(getDefaultConfig())
 
-export const getConfig = (options?: Partial<AttestConfig>): AttestConfig => {
-	if (options) {
-		cachedConfig = { ...cachedConfig, ...options }
-	}
+export const getConfig = (): AttestConfig => cachedConfig
+
+export const ensureCacheDirs = () => {
 	ensureDir(cachedConfig.cacheDir)
 	ensureDir(cachedConfig.snapCacheDir)
-	return cachedConfig
+	ensureDir(cachedConfig.benchSnapCacheDir)
 }

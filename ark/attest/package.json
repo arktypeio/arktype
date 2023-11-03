@@ -23,8 +23,21 @@
 		"build": "tsup --config ../repo/tsup.config.ts"
 	},
 	"dependencies": {
-		"ts-morph": "19.0.0",
+		"@arktype/fs": "workspace:*",
 		"@arktype/util": "workspace:*",
-		"@arktype/fs": "workspace:*"
+		"@typescript/vfs": "1.5.0"
+	},
+	"mocha": {
+		"spec": [
+			"__tests__/**/*.test.*"
+		],
+		"ignore": "**/node_modules/*",
+		"//": "NOTE: These are also maintained in .vscode/settings.json",
+		"node-option": [
+			"loader=ts-node/esm",
+			"no-warnings=ExperimentalWarning",
+			"conditions=arktype-repo"
+		],
+		"require": "../repo/mocha.fixtures.ts"
 	}
 }

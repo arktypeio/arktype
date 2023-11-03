@@ -1,7 +1,7 @@
 import type { SourcePosition } from "@arktype/fs"
 import { caller } from "@arktype/fs"
 import type { AttestConfig } from "../config.js"
-import { getConfig } from "../config.js"
+import { ensureCacheDirs, getConfig } from "../config.js"
 import { chainableNoOpProxy } from "../utils.js"
 import type { TimeAssertionName } from "./call.js"
 import { BenchAssertions } from "./call.js"
@@ -74,6 +74,7 @@ export const bench = <Fn extends BenchableFunction>(
 		lastSnapCallPosition: undefined,
 		isAsync: fn.constructor.name === "AsyncFunction"
 	}
+	ensureCacheDirs()
 	if (
 		typeof ctx.cfg.filter === "string" &&
 		!qualifiedPath.includes(ctx.cfg.filter)

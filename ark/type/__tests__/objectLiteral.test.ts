@@ -56,7 +56,9 @@ $ark.object36($arkRoot.b)`)
 		// @ts-expect-error
 		attest(() => type({ "a?": ["string", "string?", ["stringx", "?"]] }))
 			.throws(writeUnresolvableMessage("stringx"))
-			.types.errors.snap()
+			.types.errors.snap(
+				"Type '\"stringx\"' is not assignable to type '\"'stringx' is unresolvable \"'."
+			)
 	})
 	test("index", () => {
 		const o = type({ "[string]": "string" })
