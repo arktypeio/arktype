@@ -1,9 +1,10 @@
 import { relative } from "node:path"
+import { type Digit } from "@arktype/util"
 import ts from "typescript"
 
 export const getFileKey = (path: string) => relative(".", path)
 
-export const getTsVersionUnderTest = (): "4.8" | "4.9" | "5.0" | "5.1" | "5.2" =>
+export const getTsVersionUnderTest = (): `${Digit}.${Digit}` =>
 	ts.versionMajorMinor
 
 /**

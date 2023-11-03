@@ -9,20 +9,20 @@ import {
 } from "./getAssertionsInFile.js"
 import { getCachedAssertionData } from "./getCachedAssertionData.js"
 import { getDiagnosticsByFile } from "./getDiagnosticsByFile.js"
-import { getFileFromVirtualEnv, getProgram, TsServer } from "./tsserver.js"
+import { getProgram, TsServer } from "./tsserver.js"
 
 export type AssertionsByFile = Record<string, AssertionData[]>
 
+interface InternalTypeChecker extends ts.TypeChecker {
+	// These APIs are not publicly exposed
+	getInstantiationCount: () => number
+	isTypeAssignableTo: (source: ts.Type, target: ts.Type) => boolean
+	getDiagnostics: () => Diagnostic[]
+}
+
 export const getInternalTypeChecker = (
 	env?: tsvfs.VirtualTypeScriptEnvironment
-) => {
-	return getProgram(env)!.getTypeChecker() as ts.TypeChecker & {
-		// This API is not publicly exposed
-		getInstantiationCount: () => number
-		isTypeAssignableTo: (source: ts.Type, target: ts.Type) => boolean
-		getDiagnostics: () => Diagnostic[]
-	}
-}
+) => getProgram(env).getTypeChecker() as InternalTypeChecker
 
 export const getTypeFromExpression = (expression: ts.Expression) => {
 	const typeChecker = getInternalTypeChecker()
@@ -51,11 +51,12 @@ export const getAssertionsByFile = ({
 	if (!isInitialCache) {
 		return getCachedAssertionData(config)
 	}
-	const filePaths = TsServer.getInstance().programFilePaths!
+	const instance = TsServer.instance
+	const filePaths = instance.programFilePaths
 	const diagnosticsByFile = getDiagnosticsByFile()
 	const assertionsByFile: AssertionsByFile = {}
 	for (const path of filePaths) {
-		const file = getFileFromVirtualEnv(path)
+		const file = instance.getSourceFileOrThrow(path)
 		const assertionsInFile = getAssertionsInFile(file, diagnosticsByFile)
 		if (assertionsInFile.length) {
 			assertionsByFile[getFileKey(file.fileName)] = assertionsInFile

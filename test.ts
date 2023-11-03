@@ -1,45 +1,64 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
+import { bench } from "@arktype/attest"
 import { type } from "arktype"
 import { IntersectionNode, node, UnionNode } from "./ark/schema/main.js"
 
-const l = node(
-	{
-		basis: "number",
-		divisor: 2
-	},
-	{
-		basis: "number",
-		divisor: 5
-	}
-)
+bench("foo", () => {})
+	.median()
+	.types()
 
-const str = type("string")
+// const l = node(
+// 	{
+// 		basis: "number",
+// 		divisor: 2
+// 	},
+// 	{
+// 		basis: "number",
+// 		divisor: 5
+// 	}
+// )
 
-const ok = str("foo") //?
-const bad = str(555) //?
+// const str = type("string")
 
-l.condition //?
+// const ok = str("foo") //?
+// const bad = str(555) //?
 
-IntersectionNode.parse({ intersection: [] })
+// l.condition //?
 
-UnionNode.parse({ union: [] })
+// IntersectionNode.parse({ intersection: [] })
 
-const z = node({}).intersect(node({})) //=>?
+// UnionNode.parse({ union: [] })
 
-const n = node("number").nodeClass.parse("string")
+// const z = node({}).intersect(node({})) //=>?
 
-n.kind //?
+// const n = node("number").nodeClass.parse("string")
 
-console.log(n.allows.toString())
+// n.kind //?
 
-const o = n.allows(5) //?
+// console.log(n.allows.toString())
 
-const f = n.allows(true) //?
+// const o = n.allows(5) //?
 
-n.json //?
+// const f = n.allows(true) //?
 
-// z.condition //?
+// n.json //?
 
-// // const result = compile(l) //?
+// // z.condition //?
 
-// l.json //?
+// // // const result = compile(l) //?
+
+// // l.json //?
+
+// const s = new RegExp(`snap\\s*\\((.*?)\\)`, "g")
+
+// const base = "const z = attest(foo).snap(blah).types.snap(blooh)"
+
+// //?
+
+// for (const match of base.matchAll(s)) {
+// 	console.log(match)
+// }
+
+// const zo = [...base.matchAll(s)!] //?
+
+// base.replace(base.match(s)![1], "zoo") //?

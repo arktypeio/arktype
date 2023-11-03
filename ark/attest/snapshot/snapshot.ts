@@ -7,8 +7,7 @@ import { getConfig } from "../config.js"
 import { getExpressionsByName } from "../tsserver/getAssertionsInFile.js"
 import {
 	getAbsolutePosition,
-	getNodeFromPosition,
-	getSourceFile,
+	nearestCallExpressionChild,
 	TsServer
 } from "../tsserver/tsserver.js"
 import { writeCachedInlineSnapshotUpdates } from "./writeSnapshot.js"
@@ -24,9 +23,10 @@ export const findCallExpressionAncestor = (
 	position: SourcePosition,
 	functionName: string
 ): ts.CallExpression => {
-	const file = getSourceFile(position.file)
+	const server = TsServer.instance
+	const file = server.getSourceFileOrThrow(position.file)
 	const absolutePosition = getAbsolutePosition(file, position)
-	const startNode = getNodeFromPosition(file, absolutePosition)
+	const startNode = nearestCallExpressionChild(file, absolutePosition)
 	const calls = getExpressionsByName(startNode, functionName, true)
 	if (calls.length) {
 		return startNode
@@ -67,16 +67,17 @@ process.addListener("exit", () => {
  * Writes the update and position to cacheDir, which will eventually be read and copied to the source
  * file by a cleanup process after all tests have completed.
  */
-export const queueSnapshotUpdate = (args: SnapshotArgs, bench = false) => {
+export const queueSnapshotUpdate = (args: SnapshotArgs) => {
+	const isBench = args.baselinePath
 	const config = getConfig()
 	writeJson(
 		join(
-			bench ? config.benchSnapCacheDir : config.snapCacheDir,
+			isBench ? config.benchSnapCacheDir : config.snapCacheDir,
 			`snap-${randomUUID()}.json`
 		),
 		args
 	)
-	if (args.baselinePath || !config.skipTypes) {
+	if (isBench || !config.skipTypes) {
 		writeCachedUpdatesOnExit = true
 	}
 }

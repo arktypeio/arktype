@@ -1,5 +1,7 @@
 import { throwParseError } from "./errors.js"
 
+export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
 export type BigintLiteral<value extends bigint = bigint> = `${value}n`
 
 export type NumberLiteral<value extends number = number> = `${value}`

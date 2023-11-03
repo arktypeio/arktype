@@ -1,19 +1,15 @@
-import {
-	existsSync,
-	readdirSync,
-	readFileSync,
-	rmSync,
-	writeFileSync
-} from "node:fs"
+import { existsSync, readdirSync, rmSync } from "node:fs"
 import { basename, join } from "node:path"
-import { filePath, readJson, shell, writeJson } from "@arktype/fs"
+import {
+	filePath,
+	readFile,
+	readJson,
+	shell,
+	writeFile,
+	writeJson
+} from "@arktype/fs"
 import type ts from "typescript"
 import { getConfig } from "../config.js"
-import {
-	getAbsolutePosition,
-	getNodeFromPosition,
-	TsServer
-} from "../tsserver/tsserver.js"
 import { getFileKey } from "../utils.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
@@ -52,6 +48,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
 	rmSync(config.snapCacheDir, { recursive: true, force: true })
 	rmSync(config.benchSnapCacheDir, { recursive: true, force: true })
 }
+
 const getQueuedUpdates = (dir: string) => {
 	const queuedUpdates: QueuedUpdate[] = []
 	for (const updateFile of readdirSync(dir)) {
@@ -77,6 +74,7 @@ const getQueuedUpdates = (dir: string) => {
 	}
 	return queuedUpdates
 }
+
 const snapshotArgsToQueuedUpdate = ({
 	position,
 	serializedValue,
@@ -102,13 +100,22 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
 	if (!queuedUpdates.length) {
 		return
 	}
+	const updatesByFile: Record<string, QueuedUpdate[]> = {}
 	for (const update of queuedUpdates) {
-		const originalArgs = update.snapCall.arguments
-		const previousValue = originalArgs.length
-			? originalArgs[0].getText()
-			: undefined
-		writeUpdateToFile(originalArgs, update)
-		summarizeSnapUpdate(originalArgs, update, previousValue)
+		updatesByFile[update.position.file] ??= []
+		updatesByFile[update.position.file].push(update)
+	}
+	for (const k in updatesByFile) {
+		writeFileUpdates(
+			k,
+			updatesByFile[k].sort((l, r) =>
+				l.position.line > r.position.line
+					? 1
+					: r.position.line > l.position.line
+					? -1
+					: l.position.char - r.position.char
+			)
+		)
 	}
 	runPrettierIfAvailable(queuedUpdates)
 }
@@ -128,10 +135,25 @@ const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 	}
 }
 
+const writeFileUpdates = (path: string, updates: QueuedUpdate[]) => {
+	let fileText = readFile(path)
+	let offSet = 0
+	for (const update of updates) {
+		const previousArgTextLength =
+			update.snapCall.arguments.end - update.snapCall.arguments.pos
+		fileText =
+			fileText.slice(0, update.snapCall.arguments.pos + offSet) +
+			update.newArgText +
+			fileText.slice(update.snapCall.arguments.end + offSet)
+		offSet += update.newArgText.length - previousArgTextLength
+		summarizeSnapUpdate(update.snapCall.arguments, update)
+	}
+	writeFile(path, fileText)
+}
+
 const summarizeSnapUpdate = (
 	originalArgs: ts.NodeArray<ts.Expression>,
-	update: QueuedUpdate,
-	previousValue: string | undefined
+	update: QueuedUpdate
 ) => {
 	let updateSummary = `${
 		originalArgs.length ? "🆙  Updated" : "📸  Established"
@@ -139,42 +161,11 @@ const summarizeSnapUpdate = (
 	updateSummary += update.baselinePath
 		? `baseline '${update.baselinePath.join("/")}' `
 		: `snap at ${getFileKey(update.position.file)}:${update.position.line} `
+	const previousValue = update.snapCall.arguments[0]?.getText()
 	updateSummary += previousValue
 		? `from ${previousValue} to `
 		: `${update.baselinePath ? "at" : "as"} `
 
 	updateSummary += update.newArgText
 	console.log(updateSummary)
-}
-
-const writeUpdateToFile = (
-	originalArgs: ts.NodeArray<ts.Expression>,
-	update: QueuedUpdate
-) => {
-	const file = update.snapCall.getSourceFile()
-	for (const originalArg of originalArgs) {
-		const node = getNodeFromPosition(
-			update.snapCall.getSourceFile(),
-			getAbsolutePosition(file, update.position)
-		)
-	}
-	const updated = insertArgInSnapCall(update)
-	writeFileSync(update.position.file, updated)
-	update.snapCall.getSourceFile()
-}
-const insertArgInSnapCall = (update: QueuedUpdate) => {
-	const fileText = readFileSync(update.position.file, "utf-8")
-	const lines = fileText.split("\n")
-	const line = lines[update.position.line - 1]
-	let updatedLine = ""
-	for (let i = update.position.char; i < line.length; i++) {
-		if (line[i] === "(") {
-			updatedLine = `${line.substring(0, i + 1)}${
-				update.newArgText
-			}${line.slice(i + 1)}`
-			break
-		}
-	}
-	lines[update.position.line - 1] = updatedLine
-	return lines.join("\n")
 }

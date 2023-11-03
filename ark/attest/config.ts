@@ -73,14 +73,12 @@ const addEnvConfig = (config: AttestConfig) => {
 	return config
 }
 
-let cachedConfig: AttestConfig = addEnvConfig(getDefaultConfig())
+const cachedConfig: AttestConfig = addEnvConfig(getDefaultConfig())
 
-export const getConfig = (options?: Partial<AttestConfig>): AttestConfig => {
-	if (options) {
-		cachedConfig = { ...cachedConfig, ...options }
-	}
+export const getConfig = (): AttestConfig => cachedConfig
+
+export const ensureCacheDirs = () => {
 	ensureDir(cachedConfig.cacheDir)
 	ensureDir(cachedConfig.snapCacheDir)
 	ensureDir(cachedConfig.benchSnapCacheDir)
-	return cachedConfig
 }

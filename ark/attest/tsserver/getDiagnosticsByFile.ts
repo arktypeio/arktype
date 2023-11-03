@@ -1,8 +1,6 @@
-import { readFileSync } from "fs"
 import type ts from "typescript"
 import { getFileKey } from "../utils.js"
 import { getInternalTypeChecker } from "./analysis.js"
-import { TsServer } from "./tsserver.js"
 
 export type DiagnosticData = {
 	start: number

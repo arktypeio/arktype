@@ -3,47 +3,35 @@ import { fromCwd, type SourcePosition } from "@arktype/fs"
 import tsvfs from "@typescript/vfs"
 import ts from "typescript"
 import { getFileKey } from "../utils.js"
-import type { LinePositionRange } from "./getAssertionsInFile.js"
 
 export class TsServer {
-	private static instance: TsServer | null = null
-	programFilePaths: string[] | undefined
-	virtualEnv: tsvfs.VirtualTypeScriptEnvironment
+	programFilePaths!: string[]
+	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
 
-	constructor(private tsConfigInfo: TsconfigInfo) {
+	static #instance: TsServer | null = null
+	static get instance() {
+		return new TsServer()
+	}
+
+	private constructor(private tsConfigInfo = getTsConfigInfoOrThrow()) {
+		if (TsServer.#instance) {
+			return TsServer.#instance
+		}
 		const tsLibPaths = getTsLibFiles(tsConfigInfo.compilerOptions)
-		this.virtualEnv = this.getVirtualEnv(tsLibPaths.resolvedPaths)
-	}
-
-	static getInstance(): TsServer {
-		if (!TsServer.instance) {
-			const tsconfigInfo = getTsconfigInfoOrThrow()
-			TsServer.instance = new TsServer(tsconfigInfo)
-		}
-		return TsServer.instance
-	}
-
-	getVirtualEnv(resolvedTsPaths: string[]) {
-		if (this.virtualEnv) {
-			return this.virtualEnv
-		}
-
-		const programFilePaths = ts.parseJsonConfigFileContent(
-			this.tsConfigInfo.compilerOptions,
+		this.programFilePaths = ts
+			.parseJsonConfigFileContent(
+				this.tsConfigInfo.compilerOptions,
+				ts.sys,
+				dirname(this.tsConfigInfo.path)
+			)
+			.fileNames.filter((path) => path.startsWith(fromCwd()))
+		this.virtualEnv = tsvfs.createVirtualTypeScriptEnvironment(
 			ts.sys,
-			dirname(this.tsConfigInfo.path)
-		).fileNames
-
-		this.programFilePaths = programFilePaths.filter((path) =>
-			path.startsWith(fromCwd())
-		)
-
-		return tsvfs.createVirtualTypeScriptEnvironment(
-			ts.sys,
-			[...resolvedTsPaths, ...this.programFilePaths],
+			[...tsLibPaths.resolvedPaths, ...this.programFilePaths],
 			ts,
 			this.tsConfigInfo.compilerOptions
 		)
+		TsServer.#instance = this
 	}
 
 	getSourceFileOrThrow(path: string) {
@@ -54,33 +42,34 @@ export class TsServer {
 		}
 		return file
 	}
-
-	getNodeFromPosition = (
-		node: ts.Node,
-		position: number
-	): ts.CallExpression | undefined => {
-		let possibleCallExpressionNode: ts.CallExpression | undefined = undefined
-
-		const iterateThroughChildren = (currentNode: ts.Node): void => {
-			if (currentNode.pos <= position && currentNode.end >= position) {
-				if (ts.isCallExpression(currentNode)) {
-					possibleCallExpressionNode = currentNode
-				}
-				ts.forEachChild(currentNode, iterateThroughChildren)
-			}
-		}
-
-		iterateThroughChildren(node)
-		if (!possibleCallExpressionNode) {
-			throw new Error(
-				`Unable to find node at given position ${position} in ${
-					node.getSourceFile().fileName
-				}`
-			)
-		}
-		return possibleCallExpressionNode
-	}
 }
+
+export const nearestCallExpressionChild = (
+	node: ts.Node,
+	position: number
+): ts.CallExpression => {
+	const result = nearestBoundingCallExpression(node, position)
+	if (!result) {
+		throw new Error(
+			`Unable to find bounding call expression at position ${position} in ${
+				node.getSourceFile().fileName
+			}`
+		)
+	}
+	return result
+}
+
+const nearestBoundingCallExpression = (
+	node: ts.Node,
+	position: number
+): ts.CallExpression | undefined =>
+	node.pos <= position && node.end >= position
+		? node
+				.getChildren()
+				.flatMap(
+					(child) => nearestBoundingCallExpression(child, position) ?? []
+				)[0] ?? (ts.isCallExpression(node) ? node : undefined)
+		: undefined
 
 export const getAbsolutePosition = (
 	file: ts.SourceFile,
@@ -105,7 +94,7 @@ export type TsconfigInfo = {
 	compilerOptions: ts.CompilerOptions
 }
 
-export const getTsconfigInfoOrThrow = () => {
+export const getTsConfigInfoOrThrow = () => {
 	const path = ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
 	if (!path) {
 		throw new Error(`Could not find tsconfig.json.`)
@@ -129,16 +118,6 @@ export const getTsLibFiles = (tsconfigOptions: ts.CompilerOptions) => {
 	}
 }
 
-export const getFileFromVirtualEnv = (path: string) => {
-	return TsServer.getInstance().virtualEnv.getSourceFile(path)!
-}
-
 export const getProgram = (env?: tsvfs.VirtualTypeScriptEnvironment) =>
 	env?.languageService.getProgram() ??
-	TsServer.getInstance().virtualEnv.languageService.getProgram()
-
-export const getSourceFile = (path: string) =>
-	TsServer.getInstance().getSourceFileOrThrow(path)
-
-export const getNodeFromPosition = (file: ts.SourceFile, position: number) =>
-	TsServer.getInstance().getNodeFromPosition(file, position)!
+	TsServer.instance.virtualEnv.languageService.getProgram()!

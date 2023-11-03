@@ -1,8 +1,7 @@
 import type { LinePosition, SourcePosition } from "@arktype/fs"
 import { getFileKey } from "../utils.js"
-import { getAssertionsByFile, getTypeFromExpression } from "./analysis.js"
+import { getAssertionsByFile } from "./analysis.js"
 import type { LinePositionRange } from "./getAssertionsInFile.js"
-import { TsServer } from "./tsserver.js"
 
 const isPositionWithinRange = (
 	{ line, char }: LinePosition,

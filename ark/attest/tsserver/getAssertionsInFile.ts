@@ -117,7 +117,15 @@ const extractAssertionTypesFromCall = (
 	return types
 }
 
-const getAncestors = (node: ts.Node) => {
+export const getDescendants = (node: ts.Node): ts.Node[] =>
+	getDescendantsRecurse(node)
+
+const getDescendantsRecurse = (node: ts.Node): ts.Node[] => [
+	node,
+	...node.getChildren().flatMap((child) => getDescendantsRecurse(child))
+]
+
+export const getAncestors = (node: ts.Node) => {
 	const ancestors: ts.Node[] = []
 	while (node.parent) {
 		ancestors.push(node)
@@ -143,11 +151,6 @@ const getReturnType = (actual: ts.Type) => {
 	}
 	return signatures[0].getReturnType()
 }
-
-const parentIsOfKind = <NodeKind extends ts.Node>(
-	node: ts.Node,
-	kind: ts.SyntaxKind
-): node is NodeKind => node.kind === kind
 
 const getPossibleExpectedType = (propName: string, ancestor: ts.Node) => {
 	if (propName === "typedValue") {

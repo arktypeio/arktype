@@ -1,5 +1,6 @@
 import { rmSync } from "node:fs"
 import process from "node:process"
+import { ensureDir } from "@arktype/fs"
 import { snapshot } from "@arktype/util"
 import { getConfig } from "../config.js"
 import { queueSnapshotUpdate } from "../snapshot/snapshot.js"
@@ -26,7 +27,9 @@ export const queueBaselineUpdateIfNeeded = (
 	}
 	if (isFirstQueuedUpdate) {
 		// remove any leftover cached snaps before the first is written
-		rmSync(getConfig().benchSnapCacheDir, { recursive: true, force: true })
+		const { benchSnapCacheDir } = getConfig()
+		rmSync(benchSnapCacheDir, { recursive: true, force: true })
+		ensureDir(benchSnapCacheDir)
 		isFirstQueuedUpdate = false
 	}
 	queueSnapshotUpdate({
@@ -34,7 +37,7 @@ export const queueBaselineUpdateIfNeeded = (
 		serializedValue,
 		snapFunctionName: ctx.kind,
 		baselinePath: ctx.qualifiedPath
-	},true)
+	})
 }
 
 /** Pretty print comparison and set the process.exitCode to 1 if delta threshold is exceeded */
