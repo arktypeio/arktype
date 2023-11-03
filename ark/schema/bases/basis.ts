@@ -65,5 +65,5 @@ export const parseBasis = (schema: Schema<BasisKind>) =>
 	maybeParseBasis(schema) ??
 	throwParseError(
 		`Basis schema must be a non-enumerable domain, a constructor, or have one of the following keys:
-is", "unit", "proto", "domain"`
+"is", "unit", "proto", "domain"`
 	)
