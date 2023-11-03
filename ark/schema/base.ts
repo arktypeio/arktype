@@ -4,13 +4,11 @@ import {
 	type Dict,
 	DynamicBase,
 	type evaluate,
-	type exactMessageOnError,
 	type extend,
 	includes,
 	isArray,
 	type Json,
 	type JsonData,
-	type optionalizeKeys,
 	type satisfy,
 	throwInternalError
 } from "@arktype/util"
@@ -84,19 +82,16 @@ type assertIncludesAllKinds = satisfy<OrderedNodeKinds[number], NodeKind>
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 type allowedIntersectionKeyOf<kind extends NodeKind> =
+	| kind
 	| rightOf<kind>
 	// SetKinds must intersect with rule, and unit being the
 	// highest precedence rule is the only other node that can unambiguously.
 	| (kind extends SetKind | "unit" ? "rule" : never)
 
 export type BaseIntersectionMap = {
-	[lKey in NodeKind]: evaluate<
-		{ [rKey in lKey]: {} } & {
-			[rKey in NodeKind | "rule"]?: rKey extends allowedIntersectionKeyOf<lKey>
-				? lKey | Disjoint | null
-				: never
-		}
-	>
+	[lKey in NodeKind]: {
+		[rKey in allowedIntersectionKeyOf<lKey>]?: lKey | Disjoint | null
+	}
 }
 
 export const irreducibleConstraintKinds = {
@@ -117,7 +112,7 @@ export type DeclarationInput<kind extends NodeKind> = {
 	// as its kind that can be used as a discriminator
 	inner: BaseAttributes & { [k in kind]: unknown }
 	intersections: BaseIntersectionMap[kind]
-	reductions?: rightOf<kind>
+	reductions?: kind | rightOf<kind>
 }
 
 export type BaseDeclarationInput = {
@@ -131,14 +126,13 @@ export type BaseDeclarationInput = {
 }
 
 export type declareNode<
-	types extends exactMessageOnError<
-		types,
-		types extends {
+	types extends {
+		[k in keyof BaseDeclarationInput]: types extends {
 			kind: infer kind extends NodeKind
 		}
-			? DeclarationInput<kind>
+			? DeclarationInput<kind>[k]
 			: never
-	>
+	} & { [k in Exclude<keyof types, keyof BaseDeclarationInput>]?: never }
 > = types &
 	("reductions" extends keyof types
 		? unknown
