@@ -1,14 +1,7 @@
 import type { LinePosition } from "@arktype/fs"
-import type {
-	CallExpression,
-	Node,
-	Project,
-	Signature,
-	SourceFile,
-	Type
-} from "ts-morph"
-import { SyntaxKind, ts } from "ts-morph"
+import ts from "typescript"
 import { getFileKey } from "../utils.js"
+import { getInternalTypeChecker, getTypeFromExpression } from "./analysis.js"
 import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
 
 export type LinePositionRange = {
@@ -26,41 +19,53 @@ export type AssertionData = {
 	errors: string
 }
 
+export const getExpressionsByName = (
+	startNode: ts.Node,
+	nodeExpressionName: string,
+	isSnapCall = false
+): ts.CallExpression[] => {
+	/*
+	 * We get might get some extraneous calls to other "attest" functions,
+	 * but they won't be referenced at runtime so shouldn't matter.
+	 */
+	const calls: ts.CallExpression[] = []
+	const visit = (node: ts.Node) => {
+		if (ts.isCallExpression(node)) {
+			if (node.expression.getText() === nodeExpressionName) {
+				calls.push(node)
+			}
+		} else if (isSnapCall) {
+			if (ts.isIdentifier(node)) {
+				if (node.getText() === nodeExpressionName) {
+					calls.push(node as any as ts.CallExpression)
+				}
+			}
+		}
+		ts.forEachChild(node, visit)
+	}
+	visit(startNode)
+	return calls
+}
+
 export const getAssertionsInFile = (
-	file: SourceFile,
+	file: ts.SourceFile,
 	diagnosticsByFile: DiagnosticsByFile
 ): AssertionData[] => {
-	const assertCalls = getAttestCalls(file)
+	const assertCalls = getExpressionsByName(file, "attest")
 	return assertCalls.map((call) => analyzeAssertCall(call, diagnosticsByFile))
 }
 
-export const getAttestCalls = (file: SourceFile): CallExpression[] => {
-	const assertCalls = file
-		.getDescendantsOfKind(SyntaxKind.CallExpression)
-		.filter(
-			(callExpression) =>
-				/*
-				 * We get might get some extraneous calls to other "attest" functions,
-				 * but they won't be referenced at runtime so shouldn't matter.
-				 */
-				callExpression.getFirstChild()?.getText() === "attest"
-		)
-	return assertCalls
-}
-
-const analyzeAssertCall = (
-	assertCall: CallExpression,
+export const analyzeAssertCall = (
+	assertCall: ts.CallExpression,
 	diagnosticsByFile: DiagnosticsByFile
-): AssertionData => {
+) => {
 	const assertionTypes = extractAssertionTypesFromCall(assertCall)
 	const location = getAssertCallLocation(assertCall)
 	const errors = checkDiagnosticMessage(assertCall, diagnosticsByFile)
 	const type = assertionTypes.expected
-		? checkTypeAssertion(
-				assertionTypes as Required<AssertionTypes>,
-				assertCall.getProject()
-		  )
-		: { actual: typeToString(assertionTypes.actual) }
+		? checkTypeAssertion(assertionTypes as Required<AssertionTypes>)
+		: { actual: assertionTypes.actual.string }
+
 	return {
 		location,
 		type,
@@ -69,32 +74,42 @@ const analyzeAssertCall = (
 }
 
 type AssertionTypes = {
-	actual: Type
-	expected?: Type
+	actual: {
+		node: ts.Type
+		string: string
+	}
+	expected?: {
+		node: ts.Type
+		string: string
+	}
 }
 
 const extractAssertionTypesFromCall = (
-	assertCall: CallExpression
+	assertCall: ts.CallExpression
 ): AssertionTypes => {
-	const assertArg = assertCall.getArguments()[0]
+	const assertArg = assertCall.arguments[0]
+
 	const types: AssertionTypes = {
-		actual: assertArg.getType()
+		actual: getTypeFromExpression(assertArg)
 	}
-	for (const ancestor of assertCall.getAncestors()) {
-		const kind = ancestor.getKind()
-		if (kind === SyntaxKind.ExpressionStatement) {
+
+	for (const ancestor of getAncestors(assertCall)) {
+		const kind = ancestor.kind
+		if (kind === ts.SyntaxKind.ExpressionStatement) {
 			return types
 		}
-		if (kind === SyntaxKind.PropertyAccessExpression) {
-			const propName = ancestor.getLastChild()?.getText()
+		if (kind === ts.SyntaxKind.PropertyAccessExpression) {
+			const propName = ancestor
+				.getChildAt(ancestor.getChildCount() - 1)
+				.getText()
 			if (propName === undefined) {
 				continue
 			} else if (propName === "returns") {
-				types.actual = getReturnType(types.actual)
+				types.actual.node = getReturnType(types.actual.node)
 			} else {
 				const possibleExpected = getPossibleExpectedType(propName, ancestor)
 				if (possibleExpected) {
-					types.expected = possibleExpected
+					types.expected = getTypeFromExpression(possibleExpected)
 				}
 			}
 		}
@@ -102,27 +117,28 @@ const extractAssertionTypesFromCall = (
 	return types
 }
 
-const getPossibleExpectedType = (propName: string, ancestor: Node<ts.Node>) => {
-	if (propName === "typedValue") {
-		const typedValueCall = ancestor.getParentIfKind(SyntaxKind.CallExpression)
-		if (typedValueCall) {
-			return typedValueCall.getArguments()[0].getType()
-		}
-	} else if (propName === "typed") {
-		const typedAsExpression = ancestor.getParentIfKind(SyntaxKind.AsExpression)
-		if (typedAsExpression) {
-			return typedAsExpression.getType()
-		}
+export const getDescendants = (node: ts.Node): ts.Node[] =>
+	getDescendantsRecurse(node)
+
+const getDescendantsRecurse = (node: ts.Node): ts.Node[] => [
+	node,
+	...node.getChildren().flatMap((child) => getDescendantsRecurse(child))
+]
+
+export const getAncestors = (node: ts.Node) => {
+	const ancestors: ts.Node[] = []
+	while (node.parent) {
+		ancestors.push(node)
+		node = node.parent
 	}
+	return ancestors
 }
 
-const getReturnType = (actual: Type) => {
-	const signatureSources = actual.isUnion()
-		? actual.getUnionTypes()
-		: actual.isIntersection()
-		? actual.getIntersectionTypes()
+const getReturnType = (actual: ts.Type) => {
+	const signatureSources = actual.isUnionOrIntersection()
+		? actual.types
 		: [actual]
-	const signatures: Signature[] = []
+	const signatures: ts.Signature[] = []
 	for (const signatureSource of signatureSources) {
 		signatures.push(...signatureSource.getCallSignatures())
 	}
@@ -136,13 +152,25 @@ const getReturnType = (actual: Type) => {
 	return signatures[0].getReturnType()
 }
 
-const getAssertCallLocation = (assertCall: CallExpression) => {
+const getPossibleExpectedType = (propName: string, ancestor: ts.Node) => {
+	if (propName === "typedValue") {
+		if (ts.isCallExpression(ancestor.parent)) {
+			return ancestor.parent.arguments[0]
+		}
+	} else if (propName === "typed") {
+		if (ts.isAsExpression(ancestor.parent)) {
+			return ancestor.parent
+		}
+	}
+}
+
+const getAssertCallLocation = (assertCall: ts.CallExpression) => {
 	const start = ts.getLineAndCharacterOfPosition(
-		assertCall.getSourceFile().compilerNode,
+		assertCall.getSourceFile(),
 		assertCall.getStart()
 	)
 	const end = ts.getLineAndCharacterOfPosition(
-		assertCall.getSourceFile().compilerNode,
+		assertCall.getSourceFile(),
 		assertCall.getEnd()
 	)
 	// Add 1 to everything, since trace positions are 1-based and TS positions are 0-based.
@@ -159,44 +187,16 @@ const getAssertCallLocation = (assertCall: CallExpression) => {
 	return location
 }
 
-const checkDiagnosticMessage = (
-	assertCall: CallExpression,
-	diagnosticsByFile: DiagnosticsByFile
-) => {
-	const assertedArg = assertCall.getArguments()[0]
-	const fileKey = getFileKey(assertedArg.getSourceFile().getFilePath())
-	const fileDiagnostics = diagnosticsByFile[fileKey]
-	if (!fileDiagnostics) {
-		return ""
-	}
-	const diagnosticMessagesInArgRange: string[] = []
-	for (const diagnostic of fileDiagnostics) {
-		if (
-			diagnostic.start >= assertedArg.getStart() &&
-			diagnostic.end <= assertedArg.getEnd()
-		) {
-			diagnosticMessagesInArgRange.push(diagnostic.message)
-		}
-	}
-	return diagnosticMessagesInArgRange.join("\n")
-}
-
-const typeToString = (type: Type) =>
-	(type.compilerType as any).intrinsicName === "error"
-		? `Unable to resolve type of '${type.getText()}'.`
-		: type.getText()
-
 const checkTypeAssertion = (
-	assertionTypes: Required<AssertionTypes>,
-	project: Project
+	assertionTypes: Required<AssertionTypes>
 ): Required<AssertionData["type"]> => {
 	const assertionData: Omit<Required<AssertionData["type"]>, "equivalent"> = {
-		actual: typeToString(assertionTypes.actual),
-		expected: typeToString(assertionTypes.expected)
+		actual: assertionTypes.actual.string,
+		expected: assertionTypes.expected.string
 	}
 	if (
-		assertionData.expected.startsWith("Unable to resolve") ||
-		assertionData.actual.startsWith("Unable to resolve")
+		assertionData.expected.startsWith("NonExistent") ||
+		assertionData.actual.startsWith("NonExistent")
 	) {
 		// If either type was unresolvable, treat the comparison as an error
 		return { ...assertionData, equivalent: false }
@@ -213,29 +213,42 @@ const checkTypeAssertion = (
 		// Otherwise, determine if the types are equivalent by checking mutual assignability
 		return {
 			...assertionData,
-			equivalent: checkMutualAssignability(assertionTypes, project)
+			equivalent: checkMutualAssignability(assertionTypes)
 		}
 	}
 }
 
-// Using any as isTypeAssignableTo is not publicly exposed
-const getInteralTypeChecker = (project: Project) =>
-	project.getTypeChecker().compilerObject as ts.TypeChecker & {
-		isTypeAssignableTo: (first: ts.Type, second: ts.Type) => boolean
-	}
-
-const checkMutualAssignability = (
-	assertionTypes: Required<AssertionTypes>,
-	project: Project
-) => {
-	const checker = getInteralTypeChecker(project)
+const checkMutualAssignability = (assertionTypes: Required<AssertionTypes>) => {
+	const checker = getInternalTypeChecker()
 	const isActualAssignableToExpected = checker.isTypeAssignableTo(
-		assertionTypes.actual.compilerType,
-		assertionTypes.expected.compilerType
+		assertionTypes.actual.node,
+		assertionTypes.expected.node
 	)
 	const isExpectedAssignableToActual = checker.isTypeAssignableTo(
-		assertionTypes.expected.compilerType,
-		assertionTypes.actual.compilerType
+		assertionTypes.expected.node,
+		assertionTypes.actual.node
 	)
 	return isActualAssignableToExpected && isExpectedAssignableToActual
+}
+
+const checkDiagnosticMessage = (
+	assertCall: ts.CallExpression,
+	diagnosticsByFile: DiagnosticsByFile
+) => {
+	const assertedArg = assertCall.arguments[0]
+	const fileKey = getFileKey(assertedArg.getSourceFile().fileName)
+	const fileDiagnostics = diagnosticsByFile[fileKey]
+	if (!fileDiagnostics) {
+		return ""
+	}
+	const diagnosticMessagesInArgRange: string[] = []
+	for (const diagnostic of fileDiagnostics) {
+		if (
+			diagnostic.start >= assertedArg.getStart() &&
+			diagnostic.end <= assertedArg.getEnd()
+		) {
+			diagnosticMessagesInArgRange.push(diagnostic.message)
+		}
+	}
+	return diagnosticMessagesInArgRange.join("\n")
 }
