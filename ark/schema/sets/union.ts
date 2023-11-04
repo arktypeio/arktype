@@ -42,14 +42,12 @@ export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
 > = withAttributes<{
 	readonly union: branches
-	readonly ordered?: boolean
 }>
 
 export type UnionSchema = readonly BranchSchema[] | ExpandedUnionSchema
 
 export type UnionInner = withAttributes<{
 	readonly union: readonly BranchNode[]
-	readonly ordered: boolean
 }>
 
 export type UnionDeclaration = declareNode<{
@@ -83,8 +81,7 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 	static readonly definition = this.define({
 		kind: "union",
 		keys: {
-			union: "in",
-			ordered: "in"
+			union: "in"
 		},
 		intersections: {
 			union: (l, r) => {
