@@ -1,10 +1,9 @@
-import { type conform, type Dict, isArray, type mutable } from "@arktype/util"
+import { type conform, isArray, type mutable } from "@arktype/util"
 import type { declareNode, withAttributes } from "../base.js"
-import { type BasisKind, maybeParseBasis } from "../bases/basis.js"
-import { UnitNode } from "../bases/unit.js"
+import { type BasisKind } from "../bases/basis.js"
 import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node, type Schema } from "../nodes.js"
+import { type Node } from "../nodes.js"
 import { BaseRoot, type RootKind } from "../root.js"
 import { type IntersectionNode } from "./intersection.js"
 import {
@@ -246,13 +245,10 @@ export const intersectBranches = (
 	l: readonly BranchNode[],
 	r: readonly BranchNode[]
 ): readonly BranchNode[] | Disjoint => {
-	// Initialize an empty array for each branch of r with one additional
-	// trailing element to track branches derived purely from l.
-
 	// If the corresponding r branch is identified as a subtype of an l branch, the
-	// value at rIndetx is set to null so we can avoid including previous/future
+	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (BranchNode[] | null)[] = [...r.map(() => []), []]
+	const batchesByR: (BranchNode[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
 		let candidatesByR: { [rIndex: number]: BranchNode } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
@@ -269,18 +265,17 @@ export const intersectBranches = (
 			}
 			const branchIntersection = l[lIndex].intersect(r[rIndex])
 			if (branchIntersection === l[lIndex]) {
-				// If l is a subtype of the current r branch, intersections
+				// If the current l branch is a subtype of r, intersections
 				// with previous and remaining branches of r won't lead to
 				// distinct intersections.
-				batchesByR[batchesByR.length - 1]![lIndex] = l[lIndex]
+				batchesByR[rIndex]!.push(l[lIndex])
 				candidatesByR = {}
 				break
 			}
 			if (branchIntersection === r[rIndex]) {
-				// If r is a subtype of the current l branch, set its
-				// intersections to null, removing any previous
-				// intersections and preventing any of its
-				// remaining intersections from being computed.
+				// If the current r branch is a subtype of l, set its batch to
+				// null, removing any previous intersections and preventing any
+				// of its remaining intersections from being computed.
 				batchesByR[rIndex] = null
 			} else if (!(branchIntersection instanceof Disjoint)) {
 				// If neither l nor r is a subtype of the other, add their
@@ -294,12 +289,13 @@ export const intersectBranches = (
 			batchesByR[rIndex]![lIndex] = candidatesByR[rIndex]
 		}
 	}
-	// All remaining candidates are distinct, so include them in the final result
-	const resultBranches = batchesByR.flatMap((batch) => batch ?? [])
-	if (resultBranches.length === 0) {
-		return Disjoint.from("union", l, r)
-	}
-	return resultBranches
+	// Compile the reduced intersection result, including:
+	// 		1. Remaining candidates resulting from distinct intersections or strict subtypes of r
+	// 		2. Original r branches corresponding to indices with a null batch (subtypes of l)
+	const resultBranches = batchesByR.flatMap((batch, i) => batch ?? r[i])
+	return resultBranches.length === 0
+		? Disjoint.from("union", l, r)
+		: resultBranches
 }
 
 export const reduceBranches = (branches: readonly BranchNode[]) => {
