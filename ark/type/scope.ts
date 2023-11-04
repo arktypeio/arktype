@@ -36,11 +36,13 @@ import type {
 	Generic,
 	GenericProps,
 	KeyCheckKind,
+	MatchParser,
 	TypeConfig,
 	TypeParser
 } from "./type.js"
 import {
 	addArkKind,
+	createMatchParser,
 	createTypeParser,
 	generic,
 	hasArkKind,
@@ -267,6 +269,8 @@ export class Scope<r extends Resolutions = any> {
 	}
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
+
+	match: MatchParser<$<r>> = createMatchParser(this as never) as never
 
 	// TODO: decide if this API will be used for non-validated types
 	declare: DeclarationParser<$<r>> = () => ({ type: this.type }) as never

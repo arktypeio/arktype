@@ -21,7 +21,8 @@ import type {
 	BuiltinObjectKind,
 	BuiltinObjects,
 	conform,
-	Primitive
+	Primitive,
+	returnOf
 } from "@arktype/util"
 import { CompiledFunction, transform } from "@arktype/util"
 import type {
@@ -84,10 +85,17 @@ export type TypeParser<$> = {
 	): Generic<parseGenericParams<params>, def, $>
 }
 
-export namespace type {
-	export type cast<to> = {
-		[inferred]?: to
-	}
+type validateCases<cases, $> = {
+	// adding keyof $ explicitly provides key completions for aliases
+	[k in keyof cases | keyof $]?: k extends validateTypeRoot<k, $>
+		? (In: inferTypeRoot<k, $>) => unknown
+		: never
+}
+
+export type MatchParser<$> = {
+	<cases>(
+		def: conform<cases, validateCases<cases, $>>
+	): (In: inferTypeRoot<keyof cases, $>) => returnOf<cases[keyof cases]>
 }
 
 export type DeclarationParser<$> = <preinferred>() => {
@@ -119,6 +127,24 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 		// non-expression tuple definitions to be parsed, but it's not a supported
 		// part of the API as specified by the associated types
 		return new Type(args, scope)
+	}
+	return parser as never
+}
+
+export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
+	// TODO: move to match node, discrimination
+	const parser = (cases: Record<string, Morph>) => {
+		const caseArray = Object.entries(cases).map(([def, morph]) => ({
+			when: new Type(def, scope).allows,
+			then: morph
+		}))
+		return (data: unknown) => {
+			for (const c of caseArray) {
+				if (c.when(data)) {
+					return c.then(data, {} as never)
+				}
+			}
+		}
 	}
 	return parser as never
 }

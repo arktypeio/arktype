@@ -4,6 +4,7 @@ import { Scope } from "../scope.js"
 import type {
 	DeclarationParser,
 	DefinitionParser,
+	MatchParser,
 	TypeParser
 } from "../type.js"
 import type { InferredJsObjects } from "./jsObjects.js"
@@ -52,6 +53,8 @@ export interface Ark
 export const scope: ScopeParser<{}, Ark> = ark.scope as never
 
 export const type: TypeParser<Ark> = ark.type
+
+export const match: MatchParser<Ark> = ark.match
 
 export namespace type {
 	export type cast<to> = {

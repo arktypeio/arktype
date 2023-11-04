@@ -8,6 +8,7 @@ export {
 	define,
 	scope,
 	type,
+	match,
 	type Ark
 } from "./scopes/ark.js"
 export { jsObjects } from "./scopes/jsObjects.js"

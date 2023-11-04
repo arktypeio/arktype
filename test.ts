@@ -1,4 +1,9 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
-import { node } from "./ark/schema/main.js"
+import { match } from "arktype"
 
-const n = node() //?
+const sizeOf = match({
+	number: (n) => n,
+	string: (s) => s.length
+})
+
+const result = sizeOf(2) //?
+const result2 = sizeOf("foobar") //?
