@@ -18,14 +18,14 @@ import { Disjoint } from "../disjoint.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
 import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
-import { BaseRoot } from "../root.js"
+import { BaseRoot, type rootRightOf } from "../root.js"
 import type {
 	IntersectionNode,
 	IntersectionSchema,
 	validateIntersectionSchema
 } from "./intersection.js"
 
-export type ValidatorNode = Node<BasisKind | "intersection">
+export type ValidatorNode = Node<rootRightOf<"morph">>
 
 export type ValidatorSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>

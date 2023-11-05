@@ -42,6 +42,7 @@ export const baseAttributeKeys = {
 } as const satisfies Record<keyof BaseAttributes, keyof NodeIds>
 
 export const setKinds = [
+	"match",
 	"union",
 	"morph",
 	"intersection"

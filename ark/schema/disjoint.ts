@@ -7,6 +7,7 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
+import { type rightOf } from "./base.js"
 import type { DomainNode } from "./bases/domain.js"
 import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
@@ -49,8 +50,8 @@ type DisjointKinds = {
 				r: unknown
 		  }
 	union?: {
-		l: readonly Node<"intersection" | "morph" | RuleKind>[]
-		r: readonly Node<"intersection" | "morph" | RuleKind>[]
+		l: readonly Node<rightOf<"union">>[]
+		r: readonly Node<rightOf<"union">>[]
 	}
 }
 

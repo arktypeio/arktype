@@ -1,7 +1,8 @@
 import {
 	BaseNode,
 	type BaseNodeDeclaration,
-	type intersectionOf
+	type intersectionOf,
+	type rightOf
 } from "./base.js"
 import { type BasisKind } from "./bases/basis.js"
 import { type DomainNode } from "./bases/domain.js"
@@ -11,11 +12,13 @@ import { type ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { type Node, type Schema } from "./nodes.js"
 import { type IntersectionNode } from "./sets/intersection.js"
+import { type MatchNode } from "./sets/match.js"
 import { type MorphNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
 import { type UnionNode } from "./sets/union.js"
 
 export type Root<t = unknown, kind extends RootKind = RootKind> = {
+	match: MatchNode<t>
 	union: UnionNode<t>
 	morph: MorphNode<t>
 	intersection: IntersectionNode<t>
@@ -25,6 +28,11 @@ export type Root<t = unknown, kind extends RootKind = RootKind> = {
 }[kind]
 
 export type RootKind = SetKind | BasisKind
+
+export type rootRightOf<kind extends RootKind> = Extract<
+	rightOf<kind>,
+	RootKind
+>
 
 export abstract class BaseRoot<
 	declaration extends BaseNodeDeclaration,

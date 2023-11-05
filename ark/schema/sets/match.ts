@@ -1,15 +1,21 @@
-import { type mutable } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.js"
 import { type Disjoint } from "../disjoint.js"
-import { BaseRoot } from "../root.js"
-import { type MorphNode, type MorphSchema } from "./morph.js"
+import { type Node, type Schema } from "../nodes.js"
+import { BaseRoot, type rootRightOf } from "../root.js"
+import { type Morph } from "./morph.js"
+
+export type MatchChildKind = rootRightOf<"match">
+
+export type MatchNodeEntry = [when: Node<MatchChildKind>, then: Morph]
+
+export type MatchSchemaEntry = [when: Schema<MatchChildKind>, then: Morph]
 
 export type MatchInner = withAttributes<{
-	readonly match: readonly MorphNode[]
+	readonly match: readonly MatchNodeEntry[]
 }>
 
 export type MatchSchema = withAttributes<{
-	readonly match: readonly MorphSchema[]
+	readonly match: readonly MatchSchemaEntry[]
 }>
 
 export type MatchDeclaration = declareNode<{
@@ -36,18 +42,9 @@ export class MatchNode<t = unknown> extends BaseRoot<MatchDeclaration, t> {
 			}
 		},
 		parseSchema: (schema) => {
-			const inner = {} as mutable<MatchInner>
-			inner.match =
-				typeof schema.match === "function" ? [schema.match] : schema.match
-			if (schema.in) {
-				inner.in = parseValidatorSchema(schema.in)
-			}
-			if (schema.out) {
-				inner.out = parseValidatorSchema(schema.out)
-			}
-			return inner
+			return schema as never
 		},
-		compileCondition: (inner) => inner.in?.condition ?? "true",
+		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) => "",
 		children: (inner) => inner.match.map((entry) => entry[0])
 	})

@@ -1,11 +1,9 @@
 import { type conform, isArray, type mutable } from "@arktype/util"
 import type { declareNode, withAttributes } from "../base.js"
-import { type BasisKind } from "../bases/basis.js"
 import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node } from "../nodes.js"
-import { BaseRoot, type RootKind } from "../root.js"
-import { type IntersectionNode } from "./intersection.js"
+import { type Node, type Schema } from "../nodes.js"
+import { BaseRoot, type rootRightOf } from "../root.js"
 import {
 	MorphNode,
 	type MorphSchema,
@@ -16,9 +14,11 @@ import {
 	type ValidatorSchema
 } from "./morph.js"
 
-export type BranchSchema = ValidatorSchema | MorphSchema
+export type UnionChildKind = rootRightOf<"union">
 
-export type BranchNode = IntersectionNode | MorphNode | Node<BasisKind>
+export type BranchSchema = Schema<UnionChildKind>
+
+export type BranchNode = Node<UnionChildKind>
 
 export type validateSchemaBranch<input> = conform<
 	input,
@@ -60,7 +60,7 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		rule: "union" | Disjoint
 	}
-	reductions: RootKind
+	reductions: "union" | UnionChildKind
 }>
 
 export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
