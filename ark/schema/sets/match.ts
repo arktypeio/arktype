@@ -14,9 +14,13 @@ export type MatchInner = withAttributes<{
 	readonly match: readonly MatchNodeEntry[]
 }>
 
-export type MatchSchema = withAttributes<{
+export type MatchSchema = ExpandedMatchSchema | CollapsedMatchSchema
+
+export type ExpandedMatchSchema = withAttributes<{
 	readonly match: readonly MatchSchemaEntry[]
 }>
+
+export type CollapsedMatchSchema = ExpandedMatchSchema["match"]
 
 export type MatchDeclaration = declareNode<{
 	kind: "match"
@@ -37,9 +41,7 @@ export class MatchNode<t = unknown> extends BaseRoot<MatchDeclaration, t> {
 			match: "morph"
 		},
 		intersections: {
-			match: (l, r) => {
-				return l
-			}
+			match: (l, r) => l
 		},
 		parseSchema: (schema) => {
 			return schema as never
