@@ -1,13 +1,26 @@
-import type { Stringifiable } from "@arktype/util"
+import type { List, Stringifiable } from "@arktype/util"
+import { type Comparator } from "../string/shift/operator/bounds.js"
+import { type InfixExpression, type PostfixExpression } from "./semantic.js"
 
-export type astToString<
-	ast,
-	result extends string = ""
-> = ast extends readonly [infer head, ...infer tail]
-	? astToString<
-			tail,
-			`${result extends "" ? "" : `${result} `}${astToString<head, "">}`
-	  >
+export type astToString<ast> = `'${astToStringRecurse<ast>}'`
+
+type astToStringRecurse<ast> = ast extends PostfixExpression<
+	infer operator,
+	infer operand
+>
+	? operator extends "[]"
+		? `${groupAst<operand>}[]`
+		: never
+	: ast extends InfixExpression<infer operator, infer l, infer r>
+	? operator extends "&" | "|" | "%" | Comparator
+		? `${groupAst<l>}${operator}${groupAst<r>}`
+		: never
 	: ast extends Stringifiable
-	? `${result}${ast extends bigint ? `${ast}n` : ast}`
-	: result
+	? `${ast extends bigint ? `${ast}n` : ast}`
+	: "..."
+
+type groupAst<ast> = ast extends List
+	? ast[1] extends "[]"
+		? astToStringRecurse<ast>
+		: `(${astToStringRecurse<ast>})`
+	: astToStringRecurse<ast>

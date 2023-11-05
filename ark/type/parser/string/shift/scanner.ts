@@ -167,9 +167,9 @@ export namespace Scanner {
 		: false
 
 	export type shift<
-		Lookahead extends string,
-		Unscanned extends string
-	> = `${Lookahead}${Unscanned}`
+		lookahead extends string,
+		unscanned extends string
+	> = `${lookahead}${unscanned}`
 
 	export type shiftUntil<
 		unscanned extends string,
