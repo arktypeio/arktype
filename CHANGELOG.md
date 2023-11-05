@@ -1,5 +1,13 @@
 # arktype
 
+## 1.0.27-alpha
+
+### Patch Changes
+
+-   Improve static parse error contextual summaries
+
+    Thanks @Hsiwe! https://github.com/arktypeio/arktype/pull/873
+
 ## 1.0.26-alpha
 
 ### Patch Changes
