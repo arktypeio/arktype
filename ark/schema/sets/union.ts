@@ -254,14 +254,19 @@ export const intersectBranches = (
 				// will not yield any distinct intersection
 				continue
 			}
-			if (l[lIndex] === r[rIndex]) {
+			if (l[lIndex].equals(r[rIndex])) {
 				// Combination of subtype and supertype cases
 				batchesByR[rIndex] = null
 				candidatesByR = {}
 				break
 			}
 			const branchIntersection = l[lIndex].intersect(r[rIndex])
-			if (branchIntersection === l[lIndex]) {
+			if (branchIntersection instanceof Disjoint) {
+				// Doesn't tell us anything useful about their relationships
+				// with other branches
+				continue
+			}
+			if (branchIntersection.equals(l[lIndex])) {
 				// If the current l branch is a subtype of r, intersections
 				// with previous and remaining branches of r won't lead to
 				// distinct intersections.
@@ -269,12 +274,12 @@ export const intersectBranches = (
 				candidatesByR = {}
 				break
 			}
-			if (branchIntersection === r[rIndex]) {
+			if (branchIntersection.equals(r[rIndex])) {
 				// If the current r branch is a subtype of l, set its batch to
 				// null, removing any previous intersections and preventing any
 				// of its remaining intersections from being computed.
 				batchesByR[rIndex] = null
-			} else if (!(branchIntersection instanceof Disjoint)) {
+			} else {
 				// If neither l nor r is a subtype of the other, add their
 				// intersection as a candidate (could still be removed if it is
 				// determined l or r is a subtype of a remaining branch).
