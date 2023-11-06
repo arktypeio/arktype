@@ -1,6 +1,6 @@
 {
 	"name": "@arktype/attest",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -24,9 +24,12 @@
 	},
 	"dependencies": {
 		"arktype": "workspace:*",
-		"@arktype/fs": "0.0.2",
-		"@arktype/util": "0.0.2",
+		"@arktype/fs": "workspace:*",
+		"@arktype/util": "workspace:*",
 		"@typescript/vfs": "1.5.0"
+	},
+	"peerDependencies": {
+		"typescript": "*"
 	},
 	"mocha": {
 		"spec": [
