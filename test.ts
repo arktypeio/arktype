@@ -2,7 +2,7 @@ import { match } from "arktype"
 
 const sizeOf = match({
 	number: (n) => n,
-	string: (s) => s.length
+	"string|unknown[]": (data) => data.length
 })
 
 const result = sizeOf(2) //?

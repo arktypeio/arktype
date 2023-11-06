@@ -72,14 +72,16 @@ export type AssertionTypes = {
 export const extractAssertionTypesFromCall = (
 	assertCall: ts.CallExpression
 ): AssertionTypes => {
-	const attestValueArg = assertCall.arguments[0]
-	const attestTypeArg = assertCall.typeArguments?.[0]
+	const actualValueArg = assertCall.arguments[0]
+	const expectedTypeArg = assertCall.typeArguments?.[0]
+	const actualTypeArg = assertCall.typeArguments?.[1]
 
 	const types: AssertionTypes = {
-		actual: getTypeFromNode(attestValueArg)
+		actual: getTypeFromNode(actualValueArg ?? actualTypeArg)
 	}
-	if (attestTypeArg) {
-		types.expected = getTypeFromNode(attestTypeArg)
+
+	if (expectedTypeArg) {
+		types.expected = getTypeFromNode(expectedTypeArg)
 	}
 
 	for (const ancestor of getAncestors(assertCall)) {

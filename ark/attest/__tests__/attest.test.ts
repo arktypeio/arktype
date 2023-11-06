@@ -18,7 +18,7 @@ describe("attest", () => {
 		attest<{ ark: string }, typeof o>()
 		assert.throws(
 			// @ts-expect-error
-			() => attest<{ ark: "type" }>(o),
+			() => attest<{ ark: "type" }, typeof o>(),
 			assert.AssertionError,
 			"type"
 		)
