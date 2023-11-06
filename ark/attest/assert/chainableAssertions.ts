@@ -61,7 +61,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return this
 	}
 
-	get snap() {
+	get snap(): snapProperty<unknown, AssertionKind> {
 		// Use variadic args to distinguish undefined being passed explicitly from no args
 		const inline = (...args: unknown[]) => {
 			const snapName = (args.at(1) ?? "snap") as string
