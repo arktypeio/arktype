@@ -4,14 +4,14 @@ import type { Diagnostic } from "typescript"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
 import {
-	type AssertionData,
-	getAssertionsInFile
+	getAssertionsInFile,
+	type SerializedAssertionData
 } from "./getAssertionsInFile.js"
 import { getCachedAssertionData } from "./getCachedAssertionData.js"
 import { getDiagnosticsByFile } from "./getDiagnosticsByFile.js"
 import { getProgram, TsServer } from "./tsserver.js"
 
-export type AssertionsByFile = Record<string, AssertionData[]>
+export type AssertionsByFile = Record<string, SerializedAssertionData[]>
 
 interface InternalTypeChecker extends ts.TypeChecker {
 	// These APIs are not publicly exposed
@@ -24,15 +24,21 @@ export const getInternalTypeChecker = (
 	env?: tsvfs.VirtualTypeScriptEnvironment
 ) => getProgram(env).getTypeChecker() as InternalTypeChecker
 
-export const getTypeFromNode = (node: ts.Node) => {
-	const typeChecker = getInternalTypeChecker()
-	const nodeType = typeChecker.getTypeAtLocation(node)
-	const typeAsString = typeChecker.typeToString(nodeType)
+export interface StringifiableType extends ts.Type {
+	toString(): string
+	isUnresolvable: boolean
+}
 
-	return {
-		node: nodeType,
-		string: typeAsString
-	}
+export const getStringifiableType = (node: ts.Node): StringifiableType => {
+	const typeChecker = getInternalTypeChecker()
+	// in a call like attest<object>({a: true}),
+	// passing arg.expression avoids inferring {a: true} as object
+	const nodeType = typeChecker.getTypeAtLocation(node)
+	const stringified = typeChecker.typeToString(nodeType)
+	return Object.assign(nodeType, {
+		toString: () => stringified,
+		isUnresolvable: (nodeType as any).intrinsicName === "error"
+	})
 }
 
 type AnalyzeTypeAssertionsOptions = {

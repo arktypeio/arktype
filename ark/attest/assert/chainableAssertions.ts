@@ -5,8 +5,8 @@ import { snapshot, stringify } from "@arktype/util"
 import type { SnapshotArgs } from "../snapshot/snapshot.js"
 import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot/snapshot.js"
 import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
-import { getTypeDataAtPos } from "../tsserver/getAssertionAtPos.js"
-import { type AssertionData } from "../tsserver/getAssertionsInFile.js"
+import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.js"
+import { type SerializedAssertionData } from "../tsserver/getAssertionsInFile.js"
 import { chainableNoOpProxy } from "../utils.js"
 import { assertEquals } from "./assertEquals.js"
 import type { AssertionContext } from "./attest.js"
@@ -17,7 +17,6 @@ import {
 } from "./utils.js"
 
 export type ChainableAssertionOptions = {
-	isReturn?: boolean
 	allowRegex?: boolean
 	defaultExpected?: unknown
 }
@@ -152,7 +151,7 @@ export class ChainableAssertions implements AssertionRecord {
 		if (!this.ctx.cfg.skipTypes) {
 			assertEqualOrMatching(
 				matchValue,
-				getTypeDataAtPos(this.ctx.position).errors,
+				getArgTypesAtPosition(this.ctx.position).errors.join("\n"),
 				this.ctx
 			)
 		}
@@ -167,31 +166,33 @@ export class ChainableAssertions implements AssertionRecord {
 		const self = this
 		return {
 			get toString() {
-				self.ctx.actual = getTypeDataAtPos(self.ctx.position).type.actual
+				self.ctx.actual = getArgTypesAtPosition(self.ctx.position).args[0].type
 				return self.immediateOrChained()
 			},
 			get errors() {
-				self.ctx.actual = getTypeDataAtPos(self.ctx.position).errors
+				self.ctx.actual = getArgTypesAtPosition(self.ctx.position).errors.join(
+					"\n"
+				)
 				self.ctx.allowRegex = true
 				return self.immediateOrChained()
 			}
 		}
 	}
 
-	get typed() {
-		if (this.ctx.cfg.skipTypes) {
-			return undefined
-		}
-		const assertionData = getTypeDataAtPos(this.ctx.position)
-		if (!assertionData.type.expected) {
-			throw new Error(
-				`Expected an 'as' expression after 'typed' prop access at position ${this.ctx.position.char} on ` +
-					`line ${this.ctx.position.line} of ${this.ctx.position.file}.`
-			)
-		}
-		assertExpectedType(assertionData)
-		return undefined
-	}
+	// get typed() {
+	// 	if (this.ctx.cfg.skipTypes) {
+	// 		return undefined
+	// 	}
+	// 	const assertionData = getTypeDataAtPos(this.ctx.position)
+	// 	if (!assertionData.type.expected) {
+	// 		throw new Error(
+	// 			`Expected an 'as' expression after 'typed' prop access at position ${this.ctx.position.char} on ` +
+	// 				`line ${this.ctx.position.line} of ${this.ctx.position.file}.`
+	// 		)
+	// 	}
+	// 	assertExpectedType(assertionData)
+	// 	return undefined
+	// }
 }
 
 export type AssertionKind = "value" | "type"
@@ -255,7 +256,7 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 
 export type TypeAssertionsRoot = {
 	type: TypeAssertionProps
-	typed: unknown
+	//typed: unknown
 }
 
 export type TypeAssertionProps = {
@@ -265,14 +266,4 @@ export type TypeAssertionProps = {
 
 export type ExternalSnapshotOptions = {
 	path?: string
-}
-
-export const assertExpectedType = (assertionData: AssertionData) => {
-	if (
-		assertionData.type.expected &&
-		!assertionData.type.equivalent &&
-		assertionData.type.actual !== assertionData.type.expected
-	) {
-		assert.equal(assertionData.type.actual, assertionData.type.expected)
-	}
 }

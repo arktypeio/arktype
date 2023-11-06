@@ -27,41 +27,87 @@ describe("attest", () => {
 		attest(o).type.toString("{ ark: string; }")
 		attest(o).type.toString.is("{ ark: string; }")
 	})
-	test("typed", () => {
-		attest(o).typed as { ark: string }
-	})
 	test("equals", () => {
 		attest(o).equals({ ark: "type" })
 	})
 	test("object", () => {
-		attest({ i: "love my wife" }).typed as { i: string }
+		attest<{ i: string }>({ i: "love my wife" })
 		assert.throws(
-			() => attest({ g: "whiz" as unknown }).typed as { g: string },
+			// @ts-expect-error
+			() => attest<{ g: string }>({ g: "whiz" as unknown }),
 			assert.AssertionError,
 			"unknown"
 		)
 	})
 	test("typed allows equivalent types", () => {
 		const actual = { a: true, b: false }
-		attest(actual).typed as {
+		attest<{
 			b: boolean
 			a: boolean
-		}
+		}>(actual)
+	})
+	test("functional asserts don't exist on pure value types", () => {
+		// @ts-expect-error
+		attest(5).throws
+	})
+	test("not equal", () => {
+		assert.throws(
+			() => attest(o).equals({ ark: "typo" }),
+			assert.AssertionError,
+			"type !== typo"
+		)
+	})
+	test("incorrect type", () => {
+		assert.throws(
+			// @ts-expect-error
+			() => attest<{ re: number }>(o),
+			assert.AssertionError,
+			"o is not of type number"
+		)
+	})
+	test("any type", () => {
+		attest<any>(o as any)
+		assert.throws(
+			() => attest<any>({} as unknown),
+			assert.AssertionError,
+			"unknown"
+		)
+	})
+	test("assert unknown ignores type", () => {
+		const myValue = { a: ["+"] } as const
+		const myExpectedValue = { a: ["+"] }
+		// @ts-expect-error
+		attest(myValue).equals(myExpectedValue)
+		attest(myValue).unknown.equals(myExpectedValue)
+		assert.throws(
+			() => attest(myValue).unknown.is(myExpectedValue),
+			assert.AssertionError,
+			"not reference-equal"
+		)
+	})
+	test("multiline", () => {
+		attest<object>({
+			several: true,
+			lines: true,
+			long: true
+		} as object)
+		assert.throws(
+			() =>
+				attest<object>({
+					several: true,
+					lines: true,
+					long: true
+				}),
+			assert.AssertionError
+		)
 	})
 	test("nonexistent types always fail", () => {
 		// @ts-expect-error
 		const nonexistent: NonExistent = {}
 		assert.throws(
-			() =>
-				attest(nonexistent).typed as {
-					something: "specific"
-				},
+			() => attest<{ something: "specific" }>(nonexistent),
 			assert.AssertionError,
 			"specific"
 		)
-	})
-	test("functional asserts don't exist on pure value types", () => {
-		// @ts-expect-error
-		attest(5).throws
 	})
 })

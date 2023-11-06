@@ -1,14 +1,20 @@
 import { rmSync } from "node:fs"
 import { writeJson } from "@arktype/fs"
-import { ensureCacheDirs, getConfig } from "../config.js"
+import {
+	type AttestConfig,
+	configure,
+	ensureCacheDirs,
+	getConfig
+} from "../config.js"
 import { writeCachedInlineSnapshotUpdates } from "../snapshot/writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 
-export const setup = () => {
+export const setup = (options: Partial<AttestConfig> = {}) => {
+	configure((baseConfig) => Object.assign(baseConfig, options))
 	const config = getConfig()
 	rmSync(config.cacheDir, { recursive: true, force: true })
 	ensureCacheDirs()
-	if (config.skipTypes) {
+	if (options.skipTypes) {
 		return
 	}
 	console.log(

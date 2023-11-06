@@ -24,8 +24,8 @@
 	},
 	"dependencies": {
 		"arktype": "workspace:*",
-		"@arktype/fs": "workspace:*",
-		"@arktype/util": "workspace:*",
+		"@arktype/fs": "0.0.2",
+		"@arktype/util": "0.0.2",
 		"@typescript/vfs": "1.5.0"
 	},
 	"mocha": {

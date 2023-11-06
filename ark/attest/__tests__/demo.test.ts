@@ -17,7 +17,11 @@ test("type snap", () => {
 })
 
 test("type assertion", () => {
-	attest(o).typed as { readonly ark: "type" }
+	attest<{ readonly ark: "type" }>(o)
+})
+
+test("type-only assertion", () => {
+	attest<{ readonly ark: "type" }, typeof o>()
 })
 
 test("chained snaps", () => {

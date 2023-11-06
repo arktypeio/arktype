@@ -6,14 +6,17 @@ import { describe, test } from "mocha"
 
 const n = 5
 const o = { re: "do" }
+
 const shouldThrow = (a: false) => {
 	if (a) {
 		throw new Error(`${a} is not assignable to false`)
 	}
 }
+
 const throwError = () => {
 	throw new Error("Test error.")
 }
+
 describe("assertion errors", () => {
 	test("valid type errors", () => {
 		// @ts-expect-error
@@ -43,7 +46,7 @@ describe("assertion errors", () => {
 		)
 	})
 	test("chainable", () => {
-		attest(o).equals({ re: "do" }).typed as { re: string }
+		attest<{ re: string }>(o).equals({ re: "do" })
 		// @ts-expect-error
 		attest(() => throwError("this is a type error"))
 			.throws("Test error.")

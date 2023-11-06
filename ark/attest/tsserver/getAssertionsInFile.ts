@@ -1,8 +1,11 @@
 import type { LinePosition } from "@arktype/fs"
 import ts from "typescript"
-import { type AttestConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
-import { getInternalTypeChecker, getTypeFromNode } from "./analysis.js"
+import {
+	getInternalTypeChecker,
+	getStringifiableType,
+	type StringifiableType
+} from "./analysis.js"
 import { analyzeAssertCall } from "./analyzeAssertCall.js"
 import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
 
@@ -11,14 +14,19 @@ export type LinePositionRange = {
 	end: LinePosition
 }
 
-export type AssertionData = {
-	location: LinePositionRange
-	type: {
-		actual: string
-		expected?: string
-		equivalent?: boolean
+export type SerializedArgAssertion = {
+	type: string
+	relationships: {
+		args: TypeRelationship[]
+		typeArgs: TypeRelationship[]
 	}
-	errors: string
+}
+
+export type SerializedAssertionData = {
+	location: LinePositionRange
+	args: SerializedArgAssertion[]
+	typeArgs: SerializedArgAssertion[]
+	errors: string[]
 }
 
 export const getExpressionsByName = (
@@ -53,54 +61,23 @@ export const getAssertionsInFile = (
 	file: ts.SourceFile,
 	diagnosticsByFile: DiagnosticsByFile,
 	attestAliases: string[]
-): AssertionData[] => {
+): SerializedAssertionData[] => {
 	const assertCalls = getExpressionsByName(file, attestAliases)
 	return assertCalls.map((call) => analyzeAssertCall(call, diagnosticsByFile))
 }
 
-export type AssertionTypes = {
-	actual: {
-		node: ts.Type
-		string: string
-	}
-	expected?: {
-		node: ts.Type
-		string: string
-	}
+export type ArgumentTypes = {
+	args: StringifiableType[]
+	typeArgs: StringifiableType[]
 }
 
-export const extractAssertionTypesFromCall = (
-	assertCall: ts.CallExpression
-): AssertionTypes => {
-	const actualValueArg = assertCall.arguments[0]
-	const expectedTypeArg = assertCall.typeArguments?.[0]
-	const actualTypeArg = assertCall.typeArguments?.[1]
-
-	const types: AssertionTypes = {
-		actual: getTypeFromNode(actualValueArg ?? actualTypeArg)
-	}
-
-	if (expectedTypeArg) {
-		types.expected = getTypeFromNode(expectedTypeArg)
-	}
-
-	for (const ancestor of getAncestors(assertCall)) {
-		const kind = ancestor.kind
-		if (kind === ts.SyntaxKind.ExpressionStatement) {
-			return types
-		}
-		if (kind === ts.SyntaxKind.PropertyAccessExpression) {
-			const propName = ancestor
-				.getChildAt(ancestor.getChildCount() - 1)
-				.getText()
-			const possibleExpected = getPossibleExpectedType(propName, ancestor)
-			if (possibleExpected) {
-				types.expected = getTypeFromNode(possibleExpected)
-			}
-		}
-	}
-	return types
-}
+export const extractArgumentTypesFromCall = (
+	call: ts.CallExpression
+): ArgumentTypes => ({
+	args: call.arguments.map((arg) => getStringifiableType(arg)),
+	typeArgs:
+		call.typeArguments?.map((typeArg) => getStringifiableType(typeArg)) ?? []
+})
 
 export const getDescendants = (node: ts.Node): ts.Node[] =>
 	getDescendantsRecurse(node)
@@ -117,14 +94,6 @@ export const getAncestors = (node: ts.Node) => {
 		node = node.parent
 	}
 	return ancestors
-}
-
-const getPossibleExpectedType = (propName: string, ancestor: ts.Node) => {
-	if (propName === "typed") {
-		if (ts.isAsExpression(ancestor.parent)) {
-			return ancestor.parent
-		}
-	}
 }
 
 export const getAssertCallLocation = (assertCall: ts.CallExpression) => {
@@ -150,58 +119,45 @@ export const getAssertCallLocation = (assertCall: ts.CallExpression) => {
 	return location
 }
 
-export const checkTypeAssertion = (
-	assertionTypes: Required<AssertionTypes>
-): Required<AssertionData["type"]> => {
-	const assertionData: Omit<Required<AssertionData["type"]>, "equivalent"> = {
-		actual: assertionTypes.actual.string,
-		expected: assertionTypes.expected.string
-	}
-	if (
-		assertionData.expected.startsWith("NonExistent") ||
-		assertionData.actual.startsWith("NonExistent")
-	) {
-		// If either type was unresolvable, treat the comparison as an error
-		return { ...assertionData, equivalent: false }
-	} else if (
-		assertionData.expected === "any" ||
-		assertionData.actual === "any"
-	) {
-		// If either type is any, just compare the type strings directly
-		return {
-			...assertionData,
-			equivalent: assertionTypes.actual === assertionTypes.expected
-		}
+export type TypeRelationship = "subtype" | "supertype" | "equality" | "none"
+
+export const compareTsTypes = (
+	l: StringifiableType,
+	r: StringifiableType
+): TypeRelationship => {
+	const lString = l.toString()
+	const rString = r.toString()
+	if (l.isUnresolvable || r.isUnresolvable) {
+		// Ensure two unresolvable types are not treated as equivalent
+		return "none"
+	} else if (lString === "any") {
+		// Treat `any` as a supertype of every other type
+		return rString === "any" ? "equality" : "supertype"
+	} else if (rString === "any") {
+		return "subtype"
 	} else {
 		// Otherwise, determine if the types are equivalent by checking mutual assignability
-		return {
-			...assertionData,
-			equivalent: checkMutualAssignability(assertionTypes)
-		}
+		const checker = getInternalTypeChecker()
+		const isSubtype = checker.isTypeAssignableTo(l, r)
+		const isSupertype = checker.isTypeAssignableTo(r, l)
+		return isSubtype
+			? isSupertype
+				? "equality"
+				: "subtype"
+			: isSupertype
+			? "supertype"
+			: "none"
 	}
 }
 
-const checkMutualAssignability = (assertionTypes: Required<AssertionTypes>) => {
-	const checker = getInternalTypeChecker()
-	const isActualAssignableToExpected = checker.isTypeAssignableTo(
-		assertionTypes.actual.node,
-		assertionTypes.expected.node
-	)
-	const isExpectedAssignableToActual = checker.isTypeAssignableTo(
-		assertionTypes.expected.node,
-		assertionTypes.actual.node
-	)
-	return isActualAssignableToExpected && isExpectedAssignableToActual
-}
-
-export const checkDiagnosticMessage = (
+export const checkDiagnosticMessages = (
 	attestCall: ts.CallExpression,
 	diagnosticsByFile: DiagnosticsByFile
-) => {
+): string[] => {
 	const fileKey = getFileKey(attestCall.getSourceFile().fileName)
 	const fileDiagnostics = diagnosticsByFile[fileKey]
 	if (!fileDiagnostics) {
-		return ""
+		return []
 	}
 	const diagnosticMessagesInArgRange: string[] = []
 	for (const diagnostic of fileDiagnostics) {
@@ -212,5 +168,5 @@ export const checkDiagnosticMessage = (
 			diagnosticMessagesInArgRange.push(diagnostic.message)
 		}
 	}
-	return diagnosticMessagesInArgRange.join("\n")
+	return diagnosticMessagesInArgRange
 }

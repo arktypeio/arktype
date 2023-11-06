@@ -94,6 +94,9 @@ export const caller = (options: CallerOfOptions = {}): SourcePosition => {
 			match = candidate
 		}
 	}
+	if (match.file.startsWith("file:///")) {
+		match.file = fileURLToPath(match.file)
+	}
 	return match
 }
 

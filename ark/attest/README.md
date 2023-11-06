@@ -21,6 +21,7 @@ import { attest } from "@arktype/attest"
 import { test } from "mocha"
 
 const o = { ark: "type" } as const
+
 const shouldThrow = (a: false) => {
 	if (a) {
 		throw new Error(`${a} is not assignable to false`)
@@ -38,8 +39,6 @@ test("type snap", () => {
 test("typed value assertions", () => {
 	// assert the type of `o` is exactly { readonly ark: "type" }
 	attest<{ readonly ark: "type" }>(o)
-	// or equivalently...
-	attest(o).typed as { readonly ark: "type" }
 })
 
 test("type-only assertions", () => {

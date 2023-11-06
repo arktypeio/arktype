@@ -1,12 +1,12 @@
 import { fileURLToPath } from "node:url"
-import type { SourcePosition } from "@arktype/fs"
+import type { CallerOfOptions, SourcePosition } from "@arktype/fs"
 import { caller, getCallStack } from "@arktype/fs"
 import { type ErrorMessage } from "@arktype/util"
 import type { AttestConfig } from "../config.js"
 import { getConfig } from "../config.js"
-import { getTypeDataAtPos } from "../tsserver/getAssertionAtPos.js"
+import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.js"
+import { assertExpectedType } from "./assertEquals.js"
 import {
-	assertExpectedType,
 	type AssertionKind,
 	ChainableAssertions,
 	type rootAssertions
@@ -31,7 +31,6 @@ export type AssertionContext = {
 	actual: unknown
 	originalAssertedValue: unknown
 	cfg: AttestConfig
-	isReturn: boolean
 	allowRegex: boolean
 	position: SourcePosition
 	defaultExpected?: unknown
@@ -49,13 +48,9 @@ export const attestInternal = (
 	{ cfg: cfgHooks, ...ctxHooks }: InternalAssertionHooks = {}
 ) => {
 	const position = caller()
-	if (position.file.startsWith("file:///")) {
-		position.file = fileURLToPath(position.file)
-	}
 	const cfg = { ...getConfig(), ...cfgHooks }
 	const ctx: AssertionContext = {
 		actual: value,
-		isReturn: false,
 		allowRegex: false,
 		originalAssertedValue: value,
 		position,
@@ -64,8 +59,11 @@ export const attestInternal = (
 		...ctxHooks
 	}
 	if (!cfg.skipTypes) {
-		const assertionData = getTypeDataAtPos(ctx.position)
-		assertExpectedType(assertionData)
+		const assertionData = getArgTypesAtPosition(position)
+		if (assertionData.typeArgs[0]) {
+			// if there is an expected type arg
+			assertExpectedType(assertionData, ctx)
+		}
 	}
 	return new ChainableAssertions(ctx)
 }

@@ -19,7 +19,7 @@ export type AttestConfig = {
 
 export type AttestOptions = Partial<AttestConfig>
 
-const getDefaultConfig = (): AttestConfig => {
+export const getDefaultAttestConfig = (): AttestConfig => {
 	const cacheDir = resolve(".attest")
 	const snapCacheDir = join(cacheDir, "snaps")
 	const benchSnapCacheDir = join(cacheDir, "benchSnaps")
@@ -29,7 +29,7 @@ const getDefaultConfig = (): AttestConfig => {
 			? fromCwd("tsconfig.json")
 			: undefined,
 		attestAliases: ["attest", "attestInternal"],
-		preserveCache: false,
+		preserveCache: true,
 		updateSnapshots: false,
 		skipTypes: false,
 		benchPercentThreshold: 20,
@@ -75,9 +75,12 @@ const addEnvConfig = (config: AttestConfig) => {
 	return config
 }
 
-const cachedConfig: AttestConfig = addEnvConfig(getDefaultConfig())
+const cachedConfig: AttestConfig = addEnvConfig(getDefaultAttestConfig())
 
 export const getConfig = (): AttestConfig => cachedConfig
+
+export const configure = (applyMutations: (config: AttestConfig) => void) =>
+	applyMutations(cachedConfig)
 
 export const ensureCacheDirs = () => {
 	ensureDir(cachedConfig.cacheDir)
