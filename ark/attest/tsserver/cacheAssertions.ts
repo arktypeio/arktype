@@ -12,7 +12,7 @@ export const setup = () => {
 		return
 	}
 	console.log(
-		"Caching assertions - time may vary based on cwd and project size..."
+		"⏳ Waiting for TypeScript to check your project (this may take a while)..."
 	)
 	writeJson(
 		config.assertionCacheFile,

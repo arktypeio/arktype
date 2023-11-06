@@ -28,14 +28,14 @@ suite("declared", () => {
 		attest(
 			// @ts-expect-error
 			declare<[string, number]>().type(["string", "boolean"])
-		).types.errors(
+		).type.errors(
 			`Type 'string' is not assignable to type '{ declared: number; inferred: boolean; }'`
 		)
 	})
 
 	test("too short", () => {
 		// @ts-expect-error
-		attest(declare<[string, number]>().type(["string"])).types.errors(
+		attest(declare<[string, number]>().type(["string"])).type.errors(
 			`Source has 1 element(s) but target requires 2`
 		)
 	})
@@ -44,7 +44,7 @@ suite("declared", () => {
 		attest(
 			// @ts-expect-error
 			declare<[string, number]>().type(["string", "number", "number"])
-		).types.errors(`Source has 3 element(s) but target requires 2`)
+		).type.errors(`Source has 3 element(s) but target requires 2`)
 	})
 
 	test("tuple expression", () => {
@@ -67,12 +67,12 @@ suite("declared", () => {
 		attest(
 			// @ts-expect-error
 			declare<"foo" | "bar">().type(["'foo'", "|", "'baz'"])
-		).types.errors(`{ declared: "foo" | "bar"; inferred: "foo" | "baz"; }`)
+		).type.errors(`{ declared: "foo" | "bar"; inferred: "foo" | "baz"; }`)
 	})
 
 	test("narrower", () => {
 		// @ts-expect-error
-		attest(() => declare<string>().type("'foo'")).types.errors(
+		attest(() => declare<string>().type("'foo'")).type.errors(
 			`Argument of type 'string' is not assignable to parameter of type '{ declared: string; inferred: "foo"; }'`
 		)
 	})
@@ -83,7 +83,7 @@ suite("declared", () => {
 				// @ts-expect-error
 				a: "unknown"
 			})
-		).types.errors(
+		).type.errors(
 			`Type 'string' is not assignable to type '{ declared: string; inferred: unknown; }'`
 		)
 	})
@@ -94,7 +94,7 @@ suite("declared", () => {
 			declare<{ a: string; b: number }>().type({
 				a: "string"
 			})
-		).types.errors(
+		).type.errors(
 			`Property 'b' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": unknown; }'.`
 		)
 	})
@@ -105,7 +105,7 @@ suite("declared", () => {
 			declare<{ a: string; b?: number }>().type({
 				a: "string"
 			})
-		).types.errors(
+		).type.errors(
 			`Property '"b?"' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": unknown; }'.`
 		)
 	})
@@ -117,7 +117,7 @@ suite("declared", () => {
 				// @ts-expect-error
 				b: "boolean"
 			})
-		).types.errors(
+		).type.errors(
 			`Object literal may only specify known properties, and 'b' does not exist in type '{ a: "string"; }'.`
 		)
 	})

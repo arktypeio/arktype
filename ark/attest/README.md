@@ -32,7 +32,7 @@ test("value snap", () => {
 })
 
 test("type snap", () => {
-	attest(o).types.toString.snap()
+	attest(o).type.toString.snap()
 })
 
 test("type assertion", () => {
@@ -40,14 +40,14 @@ test("type assertion", () => {
 })
 
 test("chained snaps", () => {
-	attest(o).snap().types.toString.snap()
+	attest(o).snap().type.toString.snap()
 })
 
 test("error and type error snap", () => {
 	// @ts-expect-error
 	attest(() => shouldThrow(true))
 		.throws.snap()
-		.types.errors.snap()
+		.type.errors.snap()
 })
 ```
 

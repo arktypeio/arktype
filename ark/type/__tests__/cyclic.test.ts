@@ -33,7 +33,7 @@ suite("cyclic", () => {
 			a: { b: "b|false" },
 			b: { a: "a|true" }
 		})
-		attest($.infer).types.toString.snap(
+		attest($.infer).type.toString.snap(
 			"{ a: { b: false | { a: true | any; }; }; b: { a: true | { b: false | any; }; }; }"
 		)
 	})
@@ -42,7 +42,7 @@ suite("cyclic", () => {
 			a: { b: "b&a" },
 			b: { a: "a&b" }
 		})
-		attest($.infer).types.toString.snap(
+		attest($.infer).type.toString.snap(
 			"{ a: { b: { a: { b: any; a: any; }; b: any; }; }; b: { a: { b: { a: any; b: any; }; a: any; }; }; }"
 		)
 	})
@@ -68,7 +68,7 @@ suite("cyclic", () => {
 			}
 		}
 		// @ts-expect-error
-		attest(types.a.infer.b.a.b.c).types.errors.snap(
+		attest(types.a.infer.b.a.b.c).type.errors.snap(
 			`Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
 		)
 	})
@@ -124,7 +124,7 @@ suite("cyclic", () => {
 				a: "a|3"
 			}
 		})
-		attest(types.infer).types.toString.snap(
+		attest(types.infer).type.toString.snap(
 			"{ a: { b: { a: 3 | any; }; }; b: { a: 3 | { b: any; }; }; }"
 		)
 	})
@@ -137,7 +137,7 @@ suite("cyclic", () => {
 				c: "a&b"
 			}
 		})
-		attest(types.infer).types.toString.snap(
+		attest(types.infer).type.toString.snap(
 			"{ a: { b: { c: { b: any; c: any; }; }; }; b: { c: { b: any; c: any; }; }; }"
 		)
 	})

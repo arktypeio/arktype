@@ -24,7 +24,7 @@ suite("string", () => {
 			type("string | boo lean[]")
 		)
 			.throws(writeUnresolvableMessage("boo"))
-			.types.errors("string | boolean")
+			.type.errors("string | boolean")
 	})
 	test("unterminated string", () => {
 		// @ts-expect-error
@@ -34,16 +34,16 @@ suite("string", () => {
 	})
 	test("shallow single autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("str")).types.errors(
+		attest(() => type("str")).type.errors(
 			`Argument of type '"str"' is not assignable to parameter of type '"string"'`
 		)
 	})
 	test("shallow multi autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("s")).types.errors(`"string" | "symbol" | "semver"`)
+		attest(() => type("s")).type.errors(`"string" | "symbol" | "semver"`)
 	})
 	test("post-operator autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("string|num")).types.errors(`"string|number"`)
+		attest(() => type("string|num")).type.errors(`"string|number"`)
 	})
 })

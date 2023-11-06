@@ -17,18 +17,18 @@ const throwError = () => {
 describe("assertion errors", () => {
 	test("valid type errors", () => {
 		// @ts-expect-error
-		attest(o.re.length.nonexistent).types.errors(
+		attest(o.re.length.nonexistent).type.errors(
 			/Property 'nonexistent' does not exist on type 'number'/
 		)
-		attest(o).types.errors("")
+		attest(o).type.errors("")
 		// @ts-expect-error
-		attest(() => shouldThrow(5, "")).types.errors.is(
+		attest(() => shouldThrow(5, "")).type.errors.is(
 			"Expected 1 arguments, but got 2."
 		)
 	})
 	test("bad type errors", () => {
 		assert.throws(
-			() => attest(o).types.errors(/This error doesn't exist/),
+			() => attest(o).type.errors(/This error doesn't exist/),
 			assert.AssertionError,
 			"doesn't exist"
 		)
@@ -37,7 +37,7 @@ describe("assertion errors", () => {
 				attest(() =>
 					// @ts-expect-error
 					shouldThrow("this is a type error")
-				).types.errors.is(""),
+				).type.errors.is(""),
 			assert.AssertionError,
 			"not assignable"
 		)
@@ -47,19 +47,19 @@ describe("assertion errors", () => {
 		// @ts-expect-error
 		attest(() => throwError("this is a type error"))
 			.throws("Test error.")
-			.types.errors("Expected 0 arguments, but got 1.")
+			.type.errors("Expected 0 arguments, but got 1.")
 	})
 	test("bad chainable", () => {
 		assert.throws(
 			() =>
 				attest(n)
 					.equals(5)
-					.types.errors.equals("Expecting an error here will throw"),
+					.type.errors.equals("Expecting an error here will throw"),
 			assert.AssertionError,
 			"Expecting an error"
 		)
 		assert.throws(
-			() => attest(n).is(7).types.toString("string"),
+			() => attest(n).is(7).type.toString("string"),
 			assert.AssertionError,
 			"7"
 		)

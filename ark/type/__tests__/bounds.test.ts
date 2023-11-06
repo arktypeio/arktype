@@ -230,7 +230,7 @@ suite("bounds", () => {
 			})
 			test("double right bound", () => {
 				// @ts-expect-error
-				attest(() => type("number>0<=200")).types.errors(
+				attest(() => type("number>0<=200")).type.errors(
 					writeDoubleRightBoundMessage("number")
 				)
 			})
@@ -286,7 +286,7 @@ suite("bounds", () => {
 						.throws(writeUnboundableMessage("object"))
 						// At compile time we don't have access to the specific branch that failed so we
 						// summarize the expression
-						.types.errors(writeUnboundableMessage("number | object"))
+						.type.errors(writeUnboundableMessage("number | object"))
 				})
 				suite("invalid literal bound type", () => {
 					test("number with right Date bound", () => {
@@ -301,7 +301,7 @@ suite("bounds", () => {
 									"right"
 								)
 							)
-							.types.errors(
+							.type.errors(
 								writeInvalidLimitMessage("<", "d'2001/01/01'", "right")
 							)
 					})
@@ -309,7 +309,7 @@ suite("bounds", () => {
 						//@ts-expect-error
 						attest(() => type("d'2001/01/01'<number<2"))
 							.throws(writeIncompatibleRangeMessage("date", "number"))
-							.types.errors(
+							.type.errors(
 								writeInvalidLimitMessage("<", "d'2001/01/01'", "left")
 							)
 					})
@@ -325,7 +325,7 @@ suite("bounds", () => {
 							type("0<Date<d'1999/9/8'")
 						)
 							.throws(writeIncompatibleRangeMessage("number", "date"))
-							.types.errors(writeInvalidLimitMessage("<", "0", "left"))
+							.type.errors(writeInvalidLimitMessage("<", "0", "left"))
 					})
 				})
 			})

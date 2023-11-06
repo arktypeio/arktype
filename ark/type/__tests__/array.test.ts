@@ -236,7 +236,7 @@ suite("array", () => {
 				{ a: "string", c: "number" },
 				{ b: "boolean", d: "Date" }
 			])
-			attest(t.condition).typedValue(expected.condition)
+			attest(t.condition).equals(expected.condition)
 		})
 		test("variadic and array", () => {
 			const b = type({ b: "boolean" }, "[]")

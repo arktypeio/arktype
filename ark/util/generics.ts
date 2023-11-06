@@ -17,6 +17,8 @@ export type Stringifiable =
  */
 export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
+export type overlaps<l, r> = [l & r] extends [never] ? false : true
+
 export type exact<t extends object, u extends object> = {
 	[k in keyof t]: k extends keyof u ? t[k] : never
 }

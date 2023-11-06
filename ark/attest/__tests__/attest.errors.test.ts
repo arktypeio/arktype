@@ -21,31 +21,11 @@ describe("attest errors", () => {
 		)
 	})
 	test("any type", () => {
-		attest(n as any).typedValue(5 as any)
 		attest(o as any).typed as any
-		assert.throws(
-			() => attest(n).typedValue(5 as any),
-			assert.AssertionError,
-			"number"
-		)
 		assert.throws(
 			() => attest({} as unknown).typed as any,
 			assert.AssertionError,
 			"unknown"
-		)
-	})
-	test("typedValue", () => {
-		const getDo = () => "do"
-		attest(o).typedValue({ re: getDo() })
-		assert.throws(
-			() => attest(o).typedValue({ re: "do" as any }),
-			assert.AssertionError,
-			"any"
-		)
-		assert.throws(
-			() => attest(o).typedValue({ re: "don't" }),
-			assert.AssertionError,
-			"don't"
 		)
 	})
 	test("assert unknown ignores type", () => {

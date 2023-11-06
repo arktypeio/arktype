@@ -116,7 +116,7 @@ suite("scope", () => {
 				// @ts-expect-error
 				baz: "fo"
 			}).export()
-		}).types.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
+		}).type.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
 	})
 	test("cross-scope reference", () => {
 		const { Apple } = scope({

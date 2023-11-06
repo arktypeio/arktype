@@ -7,6 +7,7 @@ export type AttestConfig = {
 	preserveCache: boolean
 	updateSnapshots: boolean
 	skipTypes: boolean
+	attestAliases: string[]
 	benchPercentThreshold: number
 	benchErrorOnThresholdExceeded: boolean
 	cacheDir: string
@@ -27,6 +28,7 @@ const getDefaultConfig = (): AttestConfig => {
 		tsconfig: existsSync(fromCwd("tsconfig.json"))
 			? fromCwd("tsconfig.json")
 			: undefined,
+		attestAliases: ["attest", "attestInternal"],
 		preserveCache: false,
 		updateSnapshots: false,
 		skipTypes: false,

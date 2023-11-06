@@ -2,7 +2,7 @@ import { attest, cleanup, setup } from "@arktype/attest"
 
 setup()
 
-attest({ re: "do" }).equals({ re: "do" }).types.toString.snap()
+attest({ re: "do" }).equals({ re: "do" }).type.toString.snap()
 
 attest(5).snap()
 

@@ -1,7 +1,9 @@
 import type { LinePosition } from "@arktype/fs"
 import ts from "typescript"
+import { type AttestConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
-import { getInternalTypeChecker, getTypeFromExpression } from "./analysis.js"
+import { getInternalTypeChecker, getTypeFromNode } from "./analysis.js"
+import { analyzeAssertCall } from "./analyzeAssertCall.js"
 import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
 
 export type LinePositionRange = {
@@ -21,7 +23,7 @@ export type AssertionData = {
 
 export const getExpressionsByName = (
 	startNode: ts.Node,
-	nodeExpressionName: string,
+	names: string[],
 	isSnapCall = false
 ): ts.CallExpression[] => {
 	/*
@@ -31,12 +33,12 @@ export const getExpressionsByName = (
 	const calls: ts.CallExpression[] = []
 	const visit = (node: ts.Node) => {
 		if (ts.isCallExpression(node)) {
-			if (node.expression.getText() === nodeExpressionName) {
+			if (names.includes(node.expression.getText())) {
 				calls.push(node)
 			}
 		} else if (isSnapCall) {
 			if (ts.isIdentifier(node)) {
-				if (node.getText() === nodeExpressionName) {
+				if (names.includes(node.getText())) {
 					calls.push(node as any as ts.CallExpression)
 				}
 			}
@@ -49,31 +51,14 @@ export const getExpressionsByName = (
 
 export const getAssertionsInFile = (
 	file: ts.SourceFile,
-	diagnosticsByFile: DiagnosticsByFile
+	diagnosticsByFile: DiagnosticsByFile,
+	attestAliases: string[]
 ): AssertionData[] => {
-	const assertCalls = getExpressionsByName(file, "attest")
+	const assertCalls = getExpressionsByName(file, attestAliases)
 	return assertCalls.map((call) => analyzeAssertCall(call, diagnosticsByFile))
 }
 
-export const analyzeAssertCall = (
-	assertCall: ts.CallExpression,
-	diagnosticsByFile: DiagnosticsByFile
-) => {
-	const assertionTypes = extractAssertionTypesFromCall(assertCall)
-	const location = getAssertCallLocation(assertCall)
-	const errors = checkDiagnosticMessage(assertCall, diagnosticsByFile)
-	const type = assertionTypes.expected
-		? checkTypeAssertion(assertionTypes as Required<AssertionTypes>)
-		: { actual: assertionTypes.actual.string }
-
-	return {
-		location,
-		type,
-		errors
-	}
-}
-
-type AssertionTypes = {
+export type AssertionTypes = {
 	actual: {
 		node: ts.Type
 		string: string
@@ -84,13 +69,17 @@ type AssertionTypes = {
 	}
 }
 
-const extractAssertionTypesFromCall = (
+export const extractAssertionTypesFromCall = (
 	assertCall: ts.CallExpression
 ): AssertionTypes => {
-	const assertArg = assertCall.arguments[0]
+	const attestValueArg = assertCall.arguments[0]
+	const attestTypeArg = assertCall.typeArguments?.[0]
 
 	const types: AssertionTypes = {
-		actual: getTypeFromExpression(assertArg)
+		actual: getTypeFromNode(attestValueArg)
+	}
+	if (attestTypeArg) {
+		types.expected = getTypeFromNode(attestTypeArg)
 	}
 
 	for (const ancestor of getAncestors(assertCall)) {
@@ -102,15 +91,9 @@ const extractAssertionTypesFromCall = (
 			const propName = ancestor
 				.getChildAt(ancestor.getChildCount() - 1)
 				.getText()
-			if (propName === undefined) {
-				continue
-			} else if (propName === "returns") {
-				types.actual.node = getReturnType(types.actual.node)
-			} else {
-				const possibleExpected = getPossibleExpectedType(propName, ancestor)
-				if (possibleExpected) {
-					types.expected = getTypeFromExpression(possibleExpected)
-				}
+			const possibleExpected = getPossibleExpectedType(propName, ancestor)
+			if (possibleExpected) {
+				types.expected = getTypeFromNode(possibleExpected)
 			}
 		}
 	}
@@ -134,37 +117,15 @@ export const getAncestors = (node: ts.Node) => {
 	return ancestors
 }
 
-const getReturnType = (actual: ts.Type) => {
-	const signatureSources = actual.isUnionOrIntersection()
-		? actual.types
-		: [actual]
-	const signatures: ts.Signature[] = []
-	for (const signatureSource of signatureSources) {
-		signatures.push(...signatureSource.getCallSignatures())
-	}
-	if (!signatures.length) {
-		throw new Error(`Unable to extract the return type.`)
-	} else if (signatures.length > 1) {
-		throw new Error(
-			`Unable to extract the return of a function with multiple signatures.`
-		)
-	}
-	return signatures[0].getReturnType()
-}
-
 const getPossibleExpectedType = (propName: string, ancestor: ts.Node) => {
-	if (propName === "typedValue") {
-		if (ts.isCallExpression(ancestor.parent)) {
-			return ancestor.parent.arguments[0]
-		}
-	} else if (propName === "typed") {
+	if (propName === "typed") {
 		if (ts.isAsExpression(ancestor.parent)) {
 			return ancestor.parent
 		}
 	}
 }
 
-const getAssertCallLocation = (assertCall: ts.CallExpression) => {
+export const getAssertCallLocation = (assertCall: ts.CallExpression) => {
 	const start = ts.getLineAndCharacterOfPosition(
 		assertCall.getSourceFile(),
 		assertCall.getStart()
@@ -187,7 +148,7 @@ const getAssertCallLocation = (assertCall: ts.CallExpression) => {
 	return location
 }
 
-const checkTypeAssertion = (
+export const checkTypeAssertion = (
 	assertionTypes: Required<AssertionTypes>
 ): Required<AssertionData["type"]> => {
 	const assertionData: Omit<Required<AssertionData["type"]>, "equivalent"> = {
@@ -231,12 +192,11 @@ const checkMutualAssignability = (assertionTypes: Required<AssertionTypes>) => {
 	return isActualAssignableToExpected && isExpectedAssignableToActual
 }
 
-const checkDiagnosticMessage = (
-	assertCall: ts.CallExpression,
+export const checkDiagnosticMessage = (
+	attestCall: ts.CallExpression,
 	diagnosticsByFile: DiagnosticsByFile
 ) => {
-	const assertedArg = assertCall.arguments[0]
-	const fileKey = getFileKey(assertedArg.getSourceFile().fileName)
+	const fileKey = getFileKey(attestCall.getSourceFile().fileName)
 	const fileDiagnostics = diagnosticsByFile[fileKey]
 	if (!fileDiagnostics) {
 		return ""
@@ -244,8 +204,8 @@ const checkDiagnosticMessage = (
 	const diagnosticMessagesInArgRange: string[] = []
 	for (const diagnostic of fileDiagnostics) {
 		if (
-			diagnostic.start >= assertedArg.getStart() &&
-			diagnostic.end <= assertedArg.getEnd()
+			diagnostic.start >= attestCall.getStart() &&
+			diagnostic.end <= attestCall.getEnd()
 		) {
 			diagnosticMessagesInArgRange.push(diagnostic.message)
 		}

@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { attest } from "@arktype/attest"
 import { dirName, readJson, writeJson } from "@arktype/fs"
 import { afterEach, beforeEach, describe, test } from "mocha"
+import { attestInternal } from "../../assert/attest.js"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
 const o = { re: "do" }
@@ -41,13 +42,13 @@ describe("snapToFile", () => {
 	})
 
 	test("create", () => {
-		attest(o).snapToFile({ id: "toFile" })
+		attest(o).snap.toFile("toFile")
 		assert.throws(
-			() => attest({ re: "kt" }).snapToFile({ id: "toFile" }),
+			() => attest({ re: "kt" }).snap.toFile("toFile"),
 			assert.AssertionError,
 			"kt"
 		)
-		attest(1337).snapToFile({ id: "toFileNew" })
+		attest(1337).snap.toFile("toFileNew")
 		const contents = readJson(defaultSnapPath)
 		attest(contents).equals({
 			[testFile]: {
@@ -57,10 +58,10 @@ describe("snapToFile", () => {
 		})
 	})
 	test("update existing", () => {
-		// @ts-ignore (using internal updateSnapshots hook)
-		attest({ re: "dew" }, { updateSnapshots: true }).snapToFile({
-			id: "toFileUpdate"
-		})
+		attestInternal(
+			{ re: "dew" },
+			{ cfg: { updateSnapshots: true } }
+		).snap.toFile("toFileUpdate")
 		const updatedContents = readJson(defaultSnapPath)
 		const expectedContents = {
 			[testFile]: {
@@ -72,21 +73,18 @@ describe("snapToFile", () => {
 	})
 
 	test("with path", () => {
-		attest(o).snapToFile({
-			id: "toCustomFile",
+		attest(o).snap.toFile("toCustomFile", {
 			path: customFileName
 		})
 		assert.throws(
 			() =>
-				attest({ re: "kt" }).snapToFile({
-					id: "toCustomFile",
+				attest({ re: "kt" }).snap.toFile("toCustomFile", {
 					path: customFileName
 				}),
 			assert.AssertionError,
 			"kt"
 		)
-		attest(null).snapToFile({
-			id: "toCustomFileNew",
+		attest(null).snap.toFile("toCustomFileNew", {
 			path: customFileName
 		})
 		const contents = readJson(customSnapPath)

@@ -58,7 +58,7 @@ suite("divisibility", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10"))
 				.throws("Divisibility operand string must be a number")
-				.types.errors("Divisibility operand number | string must be a number")
+				.type.errors("Divisibility operand number | string must be a number")
 		})
 	})
 	suite("intersection", () => {

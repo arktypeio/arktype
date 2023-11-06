@@ -5,9 +5,27 @@ import { describe, test } from "mocha"
 const o = { ark: "type" }
 
 describe("attest", () => {
+	test("type parameter", () => {
+		attest<{ ark: string }>(o)
+		assert.throws(
+			// @ts-expect-error
+			() => attest<{ ark: "type" }>(o),
+			assert.AssertionError,
+			"type"
+		)
+	})
+	test("type-only assertion", () => {
+		attest<{ ark: string }, typeof o>()
+		assert.throws(
+			// @ts-expect-error
+			() => attest<{ ark: "type" }>(o),
+			assert.AssertionError,
+			"type"
+		)
+	})
 	test("type toString", () => {
-		attest(o).types.toString("{ ark: string; }")
-		attest(o).types.toString.is("{ ark: string; }")
+		attest(o).type.toString("{ ark: string; }")
+		attest(o).type.toString.is("{ ark: string; }")
 	})
 	test("typed", () => {
 		attest(o).typed as { ark: string }

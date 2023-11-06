@@ -16,11 +16,11 @@ suite("tuple expressions", () => {
 	})
 	test("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type([""])).types.errors(
+		attest(() => type([""])).type.errors(
 			`IndexZeroOperator | keyof Ark | "this"`
 		)
 		// @ts-expect-error
-		attest(() => type(["string", ""])).types.errors(
+		attest(() => type(["string", ""])).type.errors(
 			`"keyof" | keyof Ark | "this" | IndexOneOperator'`
 		)
 	})
@@ -50,7 +50,7 @@ suite("tuple expressions", () => {
 		// TODO: reenable
 		test("this", () => {
 			const t = type([{ a: "string" }, "|", { b: "this" }])
-			attest(t.infer).types.toString.snap(
+			attest(t.infer).type.toString.snap(
 				"{ a: string; } | { b: { a: string; } | any; }"
 			)
 			const types = scope({
@@ -122,7 +122,7 @@ suite("root expression", () => {
 	})
 	test("this", () => {
 		const t = type({ a: "string" }, "|", { b: "this" })
-		attest(t.infer).types.toString.snap(
+		attest(t.infer).type.toString.snap(
 			"{ a: string; } | { b: { a: string; } | any; }"
 		)
 		attest(t.condition).equals(

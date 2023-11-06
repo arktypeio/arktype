@@ -33,7 +33,7 @@ suite("instanceof", () => {
 		})
 		test("non-constructor", () => {
 			// @ts-expect-error
-			attest(() => type(["instanceof", () => {}])).types.errors(
+			attest(() => type(["instanceof", () => {}])).type.errors(
 				"Type '() => void' is not assignable to type"
 			)
 		})
@@ -44,8 +44,8 @@ suite("instanceof", () => {
 			const ark = type(["instanceof", ArkClass])
 			attest(ark).typed as Type<ArkClass, Ark>
 			// not expanded since there are no morphs
-			attest(ark.infer).types.toString("ArkClass")
-			attest(ark.inferIn).types.toString("ArkClass")
+			attest(ark.infer).type.toString("ArkClass")
+			attest(ark.inferIn).type.toString("ArkClass")
 			const a = new ArkClass()
 			attest(ark(a).data).equals(a)
 			attest(ark({}).problems?.summary).snap(
@@ -66,8 +66,8 @@ suite("instanceof", () => {
 			const ark = type(["instanceof", ArkClass])
 			attest(ark).typed as Type<ArkClass, Ark>
 			// not expanded since there are no morphs
-			attest(ark.infer).types.toString("ArkClass")
-			attest(ark.inferIn).types.toString("ArkClass")
+			attest(ark.infer).type.toString("ArkClass")
+			attest(ark.inferIn).type.toString("ArkClass")
 		})
 	})
 	suite("root expression", () => {

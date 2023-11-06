@@ -73,7 +73,7 @@ suite("intersection", () => {
 			// @ts-expect-error
 			attest(() => type("boolean&tru"))
 				.throws(writeUnresolvableMessage("tru"))
-				.types.errors("boolean&true")
+				.type.errors("boolean&true")
 		})
 		test("double and", () => {
 			// @ts-expect-error

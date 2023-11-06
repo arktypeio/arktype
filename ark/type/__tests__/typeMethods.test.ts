@@ -55,7 +55,7 @@ suite("scope utilities", () => {
 		test("ark error", () => {
 			// currently is a no-op, so only has type error
 			// @ts-expect-error
-			attest(define({ a: "boolean|foo" })).types.errors(
+			attest(define({ a: "boolean|foo" })).type.errors(
 				writeUnresolvableMessage("foo")
 			)
 		})
@@ -66,7 +66,7 @@ suite("scope utilities", () => {
 			const ok = $.define(["a[]|boolean"])
 			attest(ok).typed as ["a[]|boolean"]
 			// @ts-expect-error
-			attest($.define({ not: "ok" })).types.errors(
+			attest($.define({ not: "ok" })).type.errors(
 				writeUnresolvableMessage("ok")
 			)
 		})

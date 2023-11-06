@@ -91,7 +91,7 @@ suite("submodules", () => {
 		// @ts-expect-error
 		attest(() => scope({ base, reference: "base." }).export())
 			.throws(writeUnresolvableMessage("base."))
-			.types.errors("base.foo")
+			.type.errors("base.foo")
 	})
 	// TODO: private aliases
 })

@@ -62,7 +62,7 @@ suite("traits", () => {
 		) {}
 
 		const t = {} as ConstructorParameters<typeof Labeled>
-		attest(t).types.toString.snap(
+		attest(t).type.toString.snap(
 			"[rule: { limit?: number; }, attributes: { description?: string; } | undefined]"
 		)
 	})

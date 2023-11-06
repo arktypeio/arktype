@@ -141,7 +141,7 @@ export const createBenchTypeAssertion = (
 			file,
 			getAbsolutePosition(file, ctx.benchCallPosition)
 		)
-		const benchFn = getExpressionsByName(benchNode, "bench")
+		const benchFn = getExpressionsByName(benchNode, ["bench"])
 		if (!benchFn) {
 			throw new Error("Unable to retrieve bench expression node.")
 		}

@@ -56,7 +56,7 @@ $ark.object36($arkRoot.b)`)
 		// @ts-expect-error
 		attest(() => type({ "a?": ["string", "string?", ["stringx", "?"]] }))
 			.throws(writeUnresolvableMessage("stringx"))
-			.types.errors.snap(
+			.type.errors.snap(
 				"Type '\"stringx\"' is not assignable to type '\"'stringx' is unresolvable \"'."
 			)
 	})
@@ -185,7 +185,7 @@ $ark.object36($arkRoot.b)`)
 	test("intersection", () => {
 		const t = type({ a: "number" }).and({ b: "boolean" })
 		// Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
-		attest(t.infer).types.toString.snap("{ a: number; b: boolean; }")
+		attest(t.infer).type.toString.snap("{ a: number; b: boolean; }")
 		attest(t.condition).is(type({ a: "number", b: "boolean" }).condition)
 	})
 	test("escaped optional token", () => {

@@ -68,7 +68,7 @@ suite("narrow", () => {
 		attest(() => {
 			// @ts-expect-error
 			type(["number|boolean[]", ":", (data: number | string[]) => !!data])
-		}).types.errors("Type 'boolean' is not assignable to type 'string'.")
+		}).type.errors("Type 'boolean' is not assignable to type 'string'.")
 	})
 	test("narrow problem", () => {
 		const palindrome = type([

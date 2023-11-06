@@ -47,6 +47,6 @@ suite("definitions", () => {
 	})
 	test("unknown", () => {
 		// @ts-expect-error just results in base completions, so we just check there's an error
-		attest(() => type({ bad: {} as unknown })).types.errors("")
+		attest(() => type({ bad: {} as unknown })).type.errors("")
 	})
 })

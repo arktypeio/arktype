@@ -108,7 +108,7 @@ suite("parse unenclosed", () => {
 				// @ts-expect-error
 				attest(() => type("007n"))
 					.throws(writeMalformedNumericLiteralMessage("007n", "bigint"))
-					.types.errors(writeUnresolvableMessage("007n"))
+					.type.errors(writeUnresolvableMessage("007n"))
 			})
 			test("negative zero", () => {
 				// @ts-expect-error

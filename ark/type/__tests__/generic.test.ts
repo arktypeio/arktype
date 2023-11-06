@@ -98,19 +98,19 @@ suite("generics", () => {
 			})
 			const expectedContents = type({ a: "string|this" })
 			attest(t.condition).equals(type({ box: expectedContents }).condition)
-			attest(t.infer).types.toString.snap("{ box: { a: string | any; }; }")
+			attest(t.infer).type.toString.snap("{ box: { a: string | any; }; }")
 		})
 		test("too few args", () => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
-			attest(() => pair("string")).types.errors(
+			attest(() => pair("string")).type.errors(
 				"Expected 2 arguments, but got 1"
 			)
 		})
 		test("too many args", () => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
-			attest(() => pair("string", "boolean", "number")).types.errors(
+			attest(() => pair("string", "boolean", "number")).type.errors(
 				"Expected 2 arguments, but got 3"
 			)
 		})

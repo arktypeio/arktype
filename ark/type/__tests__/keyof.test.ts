@@ -10,7 +10,7 @@ import {
 suite("keyof", () => {
 	test("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type("k")).types.errors("keyof ")
+		attest(() => type("k")).type.errors("keyof ")
 	})
 	test("root expression", () => {
 		const t = type("keyof", "Date")
@@ -95,7 +95,7 @@ suite("keyof", () => {
 		attest(() => type("keyof "))
 			.throws(writeMissingRightOperandMessage("keyof", ""))
 			// it tries to autocomplete, so this is just a possible completion that would be included
-			.types.errors("keyof bigint")
+			.type.errors("keyof bigint")
 	})
 	test("invalid operand", () => {
 		// @ts-expect-error

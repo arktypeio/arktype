@@ -24,9 +24,9 @@ export const getInternalTypeChecker = (
 	env?: tsvfs.VirtualTypeScriptEnvironment
 ) => getProgram(env).getTypeChecker() as InternalTypeChecker
 
-export const getTypeFromExpression = (expression: ts.Expression) => {
+export const getTypeFromNode = (node: ts.Node) => {
 	const typeChecker = getInternalTypeChecker()
-	const nodeType = typeChecker.getTypeAtLocation(expression)
+	const nodeType = typeChecker.getTypeAtLocation(node)
 	const typeAsString = typeChecker.typeToString(nodeType)
 
 	return {
@@ -57,7 +57,11 @@ export const getAssertionsByFile = ({
 	const assertionsByFile: AssertionsByFile = {}
 	for (const path of filePaths) {
 		const file = instance.getSourceFileOrThrow(path)
-		const assertionsInFile = getAssertionsInFile(file, diagnosticsByFile)
+		const assertionsInFile = getAssertionsInFile(
+			file,
+			diagnosticsByFile,
+			config.attestAliases
+		)
 		if (assertionsInFile.length) {
 			assertionsByFile[getFileKey(file.fileName)] = assertionsInFile
 		}

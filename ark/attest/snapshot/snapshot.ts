@@ -27,7 +27,7 @@ export const findCallExpressionAncestor = (
 	const file = server.getSourceFileOrThrow(position.file)
 	const absolutePosition = getAbsolutePosition(file, position)
 	const startNode = nearestCallExpressionChild(file, absolutePosition)
-	const calls = getExpressionsByName(startNode, functionName, true)
+	const calls = getExpressionsByName(startNode, [functionName], true)
 	if (calls.length) {
 		return startNode
 	}

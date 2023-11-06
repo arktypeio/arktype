@@ -29,7 +29,7 @@ suite("union", () => {
 	})
 	test("union of true and false reduces to boolean", () => {
 		const t = type("true|false")
-		attest(t.infer).types.toString("boolean")
+		attest(t.infer).type.toString("boolean")
 		attest(t.condition).equals(type("boolean").condition)
 	})
 	test("nested tuple union", () => {
@@ -92,11 +92,11 @@ suite("union", () => {
 		})
 		test("root autocompletions", () => {
 			// @ts-expect-error
-			attest(() => type({ a: "s" }, "|", { b: "boolean" })).types.errors(
+			attest(() => type({ a: "s" }, "|", { b: "boolean" })).type.errors(
 				`Type '"s"' is not assignable to type '"string" | "symbol" | "semver"'`
 			)
 			// @ts-expect-error
-			attest(() => type({ a: "string" }, "|", { b: "b" })).types.errors(
+			attest(() => type({ a: "string" }, "|", { b: "b" })).type.errors(
 				`Type '"b"' is not assignable to type '"bigint" | "boolean"'`
 			)
 		})
