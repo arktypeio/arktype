@@ -35,8 +35,16 @@ test("type snap", () => {
 	attest(o).type.toString.snap()
 })
 
-test("type assertion", () => {
+test("typed value assertions", () => {
+	// assert the type of `o` is exactly { readonly ark: "type" }
+	attest<{ readonly ark: "type" }>(o)
+	// or equivalently...
 	attest(o).typed as { readonly ark: "type" }
+})
+
+test("type-only assertions", () => {
+	// assert that two types are equivalent without a value
+	attest<{ readonly ark: "type" }, typeof o>()
 })
 
 test("chained snaps", () => {
@@ -69,7 +77,7 @@ bench(
 bench("bench type", () => {
 	return [] as any as MakeComplexType<"defenestration">
 	// will snapshot type instantiation count
-	// can be a bit finicky, sometimes requires the type to be assigned to a variable
+	// can be a bit finicky, sometimes requires the type to be returned or assigned to a variable
 	// if the result is 0, something is probably off :-)
 }).types()
 
