@@ -30,9 +30,8 @@
 		"lint": "eslint --max-warnings=0 .",
 		"format": "prettier --write --ignore-path ./ark/repo/.prettierignore .",
 		"checkFormat": "prettier --check --ignore-path ./ark/repo/.prettierignore .",
-		"changes": "cd ./dev && node ../node_modules/@changesets/cli/bin.js",
 		"knip": "knip",
-		"ci:publish": "pnpm changes publish",
+		"ci:publish": "pnpm changeset publish",
 		"ci:version": "ts ./ark/repo/updateVersions.ts"
 	},
 	"devDependencies": {

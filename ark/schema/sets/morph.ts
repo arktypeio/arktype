@@ -62,8 +62,8 @@ export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 export type Out<o = any> = ["=>", o]
 
 export type MorphInner = withAttributes<{
-	readonly in?: ValidatorNode
-	readonly out?: ValidatorNode
+	readonly in: ValidatorNode
+	readonly out: ValidatorNode
 	readonly morph: readonly Morph[]
 }>
 
@@ -103,7 +103,9 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 					return throwParseError(`Invalid intersection of morphs`)
 				}
 				const result: mutable<MorphInner> = {
-					morph: l.morph
+					morph: l.morph,
+					in: builtins().unknown,
+					out: builtins().unknown
 				}
 				if (l.in) {
 					if (r.in) {

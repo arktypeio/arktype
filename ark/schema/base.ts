@@ -154,10 +154,6 @@ export type StaticNodeDefinition<
 	children?: (inner: d["inner"]) => readonly UnknownNode[]
 } & (d["reductions"] extends d["kind"] ? unknown : { reduceToNode: {} })
 
-export interface StaticCompositeDefinition<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> {}
-
 type instantiateNodeClassDeclaration<declaration> = {
 	[k in keyof declaration]: k extends "keys"
 		? evaluate<declaration[k] & typeof baseAttributeKeys>
@@ -176,6 +172,7 @@ export abstract class BaseNode<
 	declaration extends BaseNodeDeclaration,
 	t = unknown
 > extends DynamicBase<declaration["inner"]> {
+	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
 
