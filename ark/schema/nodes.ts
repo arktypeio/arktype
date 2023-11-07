@@ -9,14 +9,17 @@ import {
 	type ConstraintClassesByKind,
 	type ConstraintDeclarationsByKind
 } from "./constraints/constraint.js"
-import { type MorphSchema, type ValidatorSchema } from "./sets/morph.js"
+import {
+	type MorphSchema,
+	type parseValidatorSchema,
+	type ValidatorSchema
+} from "./sets/morph.js"
 import {
 	type SetClassesByKind,
 	type SetDeclarationsByKind
 } from "./sets/set.js"
 import {
 	type BranchSchema,
-	type parseBranchSchema,
 	UnionNode,
 	type validateBranchSchema
 } from "./sets/union.js"
@@ -26,7 +29,7 @@ type RootNodeParser = {
 		...branches: {
 			[i in keyof branches]: validateBranchSchema<branches[i]>
 		}
-	): parseBranchSchema<branches>
+	): parseValidatorSchema<branches>
 }
 
 // static from<const branches extends readonly unknown[]>(

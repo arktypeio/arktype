@@ -1,19 +1,16 @@
 import {
-	hasDomain,
 	isArray,
 	type listable,
 	type mutable,
 	throwParseError
 } from "@arktype/util"
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
-import { maybeParseBasis, parseBasis } from "../bases/basis.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
 import { type Node, type Schema } from "../nodes.js"
 import { BaseRoot, type Root } from "../root.js"
-import type { IntersectionSchema } from "./intersection.js"
 import {
 	type BranchKind,
 	parseBranchSchema,
