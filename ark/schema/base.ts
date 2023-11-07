@@ -183,6 +183,7 @@ export abstract class BaseNode<
 	// TODO: type
 	readonly children: readonly UnknownNode[]
 	readonly references: readonly UnknownNode[]
+	readonly includesMorph: boolean
 	protected readonly contributesReferences: readonly UnknownNode[]
 	readonly alias: string
 	readonly description: string
@@ -199,6 +200,7 @@ export abstract class BaseNode<
 		this.json = this.nodeClass.serialize(inner)
 		this.condition = this.definition.compileCondition(inner)
 		this.children = this.definition.children?.(inner) ?? ([] as any)
+		this.includesMorph = this.children.some((child) => child.includesMorph)
 		this.references = this.children.flatMap(
 			(child) => child.contributesReferences
 		)
