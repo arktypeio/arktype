@@ -205,6 +205,7 @@ export abstract class BaseNode<
 	readonly kind: declaration["kind"] = this.definition.kind
 	readonly allows: (data: unknown) => data is t
 
+	// TODO: reduce, add param for unsafe
 	constructor(public readonly inner: declaration["inner"]) {
 		super(inner)
 		this.alias = $ark.register(this, inner.alias)

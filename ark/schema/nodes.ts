@@ -62,7 +62,8 @@ const parseUnits = <const branches extends readonly unknown[]>(
 	}
 	// TODO: bypass reduction
 	return new UnionNode<branches[number]>({
-		union: uniqueValues.map((unit) => new UnitNode({ unit }))
+		union: uniqueValues.map((unit) => new UnitNode({ unit })),
+		ordered: false
 	})
 }
 

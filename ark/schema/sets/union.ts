@@ -43,12 +43,14 @@ export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
 > = withAttributes<{
 	readonly union: branches
+	readonly ordered?: boolean
 }>
 
 export type UnionSchema = readonly BranchSchema[] | ExpandedUnionSchema
 
 export type UnionInner = withAttributes<{
 	readonly union: readonly BranchNode[]
+	readonly ordered: boolean
 }>
 
 export type UnionDeclaration = declareNode<{
@@ -72,11 +74,16 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 		l: UnionNode,
 		r: BranchNode
 	): Disjoint | UnionInner => {
-		const union = intersectBranches(l.union, [r])
+		const union = l.ordered
+			? l.union.flatMap((branch) => {
+					const branchResult = branch.intersect(r)
+					return branchResult instanceof Disjoint ? [] : branchResult
+			  })
+			: intersectBranches(l.union, [r])
 		if (union instanceof Disjoint) {
 			return union
 		}
-		return { union }
+		return { union, ordered: l.ordered }
 	}
 
 	static readonly definition = this.define({
@@ -84,7 +91,8 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 		keys: {
 			union: {
 				children: (branches) => branches
-			}
+			},
+			ordered: {}
 		},
 		intersections: {
 			union: (l, r) => {
@@ -99,11 +107,22 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 						r.union.length !== 0
 					)
 				}
-				const resultBranches = intersectBranches(l.union, r.union)
+				let resultBranches: readonly BranchNode[] | Disjoint
+				if (l.ordered) {
+					if (r.ordered) {
+						return Disjoint.from("indiscriminableMorphs", l, r)
+					}
+					resultBranches = intersectBranches(r.union, l.union)
+					if (resultBranches instanceof Disjoint) {
+						resultBranches.invert()
+					}
+				} else {
+					resultBranches = intersectBranches(l.union, r.union)
+				}
 				if (resultBranches instanceof Disjoint) {
 					return resultBranches
 				}
-				return { union: resultBranches }
+				return { union: resultBranches, ordered: l.ordered || r.ordered }
 			},
 			morph: this.intersectBranch,
 			intersection: this.intersectBranch,
@@ -118,7 +137,8 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 				return branches.length === 0
 					? Disjoint.from("union", l.union, [r])
 					: {
-							union: branches
+							union: branches,
+							ordered: l.ordered
 					  }
 			}
 		},

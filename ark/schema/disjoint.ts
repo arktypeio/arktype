@@ -12,6 +12,8 @@ import type { DomainNode } from "./bases/domain.js"
 import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
 import { type Node, type RuleKind } from "./nodes.js"
+import { type MorphNode } from "./sets/morph.js"
+import { type UnionNode } from "./sets/union.js"
 
 type DisjointKinds = {
 	domain?: {
@@ -52,6 +54,14 @@ type DisjointKinds = {
 	union?: {
 		l: readonly Node<rightOf<"union">>[]
 		r: readonly Node<rightOf<"union">>[]
+	}
+	indiscriminableMorphs?: {
+		l: UnionNode
+		r: UnionNode
+	}
+	interesectedMorphs?: {
+		l: MorphNode
+		r: MorphNode
 	}
 }
 
