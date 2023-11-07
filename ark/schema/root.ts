@@ -12,13 +12,11 @@ import { type ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { type Node, type Schema } from "./nodes.js"
 import { type IntersectionNode } from "./sets/intersection.js"
-import { type MatchNode } from "./sets/match.js"
 import { type MorphNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
 import { type UnionNode } from "./sets/union.js"
 
 export type Root<t = unknown, kind extends RootKind = RootKind> = {
-	match: MatchNode<t>
 	union: UnionNode<t>
 	morph: MorphNode<t>
 	intersection: IntersectionNode<t>

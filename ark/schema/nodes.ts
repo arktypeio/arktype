@@ -20,6 +20,7 @@ import {
 } from "./sets/set.js"
 import {
 	type BranchSchema,
+	type parseBranchSchema,
 	UnionNode,
 	type validateBranchSchema
 } from "./sets/union.js"
@@ -29,7 +30,7 @@ type RootNodeParser = {
 		...branches: {
 			[i in keyof branches]: validateBranchSchema<branches[i]>
 		}
-	): parseValidatorSchema<branches>
+	): parseBranchSchema<branches[number]>
 }
 
 // static from<const branches extends readonly unknown[]>(
