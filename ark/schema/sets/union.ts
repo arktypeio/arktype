@@ -155,15 +155,15 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 			if (isArray(schema)) {
 				schemaBranches = schema
 			} else {
-				const { union: branches, ...attributes } = schema
-				Object.assign(result, attributes)
-				schemaBranches = branches
+				const { union, ...rest } = schema
+				Object.assign(result, rest)
+				schemaBranches = union
 			}
 			result.union = schemaBranches.map(parseBranchSchema)
 			return result
 		},
 		reduceToNode: (inner) => {
-			const reducedBranches = reduceBranches(inner.union)
+			const reducedBranches = reduceBranches(inner)
 			if (reducedBranches.length === 1) {
 				// TODO: description?
 				return reducedBranches[0]
@@ -330,31 +330,37 @@ export const intersectBranches = (
 		: resultBranches
 }
 
-export const reduceBranches = (branches: readonly BranchNode[]) => {
-	if (branches.length < 2) {
-		return branches
+export const reduceBranches = ({ union, ordered }: UnionInner) => {
+	if (union.length < 2) {
+		return union
 	}
-	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
-	for (let i = 0; i < branches.length; i++) {
+	const uniquenessByIndex: Record<number, boolean> = union.map(() => true)
+	for (let i = 0; i < union.length; i++) {
 		for (
 			let j = i + 1;
-			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
+			j < union.length && uniquenessByIndex[i] && uniquenessByIndex[j];
 			j++
 		) {
-			if (branches[i] === branches[j]) {
+			if (union[i].equals(union[j])) {
 				// if the two branches are equal, only "j" is marked as
 				// redundant so at least one copy could still be included in
 				// the final set of branches.
 				uniquenessByIndex[j] = false
 				continue
 			}
-			const intersection = branches[i].intersect(branches[j])
-			if (intersection === branches[i]) {
-				uniquenessByIndex[i] = false
-			} else if (intersection === branches[j]) {
+			const intersection = union[i].intersect(union[j])
+			if (intersection instanceof Disjoint) {
+				continue
+			}
+			if (intersection.equals(union[i])) {
+				if (!ordered) {
+					// preserve ordered branches that are a subtype of a subsequent branch
+					uniquenessByIndex[i] = false
+				}
+			} else if (intersection.equals(union[j])) {
 				uniquenessByIndex[j] = false
 			}
 		}
 	}
-	return branches.filter((_, i) => uniquenessByIndex[i])
+	return union.filter((_, i) => uniquenessByIndex[i])
 }

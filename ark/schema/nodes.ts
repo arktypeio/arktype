@@ -16,7 +16,6 @@ import {
 } from "./sets/set.js"
 import {
 	type BranchSchema,
-	type parseBranchSchema,
 	type parseUnion,
 	UnionNode,
 	type validateBranchSchema
