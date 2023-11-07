@@ -76,9 +76,9 @@ export class MinNode extends BaseBound<MinDeclaration> {
 	static readonly definition = this.define({
 		kind: "min",
 		keys: {
-			min: "in",
-			exclusive: "in",
-			boundKind: "in"
+			min: {},
+			exclusive: {},
+			boundKind: {}
 		},
 		intersections: {
 			min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
@@ -138,9 +138,9 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 	static readonly definition = this.define({
 		kind: "max",
 		keys: {
-			max: "in",
-			exclusive: "in",
-			boundKind: "in"
+			max: {},
+			exclusive: {},
+			boundKind: {}
 		},
 		intersections: {
 			max: (l, r) =>

@@ -48,8 +48,8 @@ export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
 	static readonly definition = this.define({
 		kind: "required",
 		keys: {
-			required: "in",
-			value: "in"
+			required: {},
+			value: {}
 		},
 		intersections: {
 			required: (l, r) => {
@@ -105,8 +105,8 @@ export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 	static readonly definition = this.define({
 		kind: "optional",
 		keys: {
-			optional: "in",
-			value: "in"
+			optional: {},
+			value: {}
 		},
 		intersections: {
 			optional: (l, r) => {

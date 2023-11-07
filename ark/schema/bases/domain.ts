@@ -36,7 +36,7 @@ export class DomainNode<t = unknown>
 	static readonly definition = this.define({
 		kind: "domain",
 		keys: {
-			domain: "in"
+			domain: {}
 		},
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r)

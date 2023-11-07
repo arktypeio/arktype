@@ -81,7 +81,9 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 	static readonly definition = this.define({
 		kind: "union",
 		keys: {
-			union: "in"
+			union: {
+				children: (branches) => branches
+			}
 		},
 		intersections: {
 			union: (l, r) => {

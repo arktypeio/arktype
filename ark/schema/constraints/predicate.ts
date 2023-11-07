@@ -32,7 +32,7 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 	static readonly definition = this.define({
 		kind: "predicate",
 		keys: {
-			predicate: "in"
+			predicate: {}
 		},
 		intersections: {
 			predicate: () => null

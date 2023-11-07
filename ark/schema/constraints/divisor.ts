@@ -27,7 +27,7 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 	static readonly definition = this.define({
 		kind: "divisor",
 		keys: {
-			divisor: "in"
+			divisor: {}
 		},
 		intersections: {
 			divisor: (l, r) => ({

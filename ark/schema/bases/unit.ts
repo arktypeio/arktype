@@ -31,7 +31,7 @@ export class UnitNode<t = unknown>
 	static readonly definition = this.define({
 		kind: "unit",
 		keys: {
-			unit: "in"
+			unit: {}
 		},
 		intersections: {
 			unit: (l, r) => Disjoint.from("unit", l, r),

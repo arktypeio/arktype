@@ -32,7 +32,7 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 	static readonly definition = this.define({
 		kind: "pattern",
 		keys: {
-			pattern: "in"
+			pattern: {}
 		},
 		intersections: {
 			// For now, non-equal regex are naively intersected

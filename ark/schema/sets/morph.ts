@@ -91,9 +91,15 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 	static definition = this.define({
 		kind: "morph",
 		keys: {
-			in: "in",
-			out: "out",
-			morph: "morph"
+			in: {
+				children: (In) => [In],
+				io: "in"
+			},
+			out: {
+				children: (out) => [out],
+				io: "out"
+			},
+			morph: {}
 		},
 		intersections: {
 			morph: (l, r) => {

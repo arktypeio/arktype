@@ -42,7 +42,7 @@ export class ProtoNode<t extends object = object>
 	static readonly definition = this.define({
 		kind: "proto",
 		keys: {
-			proto: "in"
+			proto: {}
 		},
 		intersections: {
 			proto: (l, r) =>

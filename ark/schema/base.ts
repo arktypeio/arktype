@@ -141,11 +141,23 @@ export type declareNode<
 
 export type BaseNodeDeclaration = BaseDeclarationInput & { reductions: {} }
 
+export type IoKind = "in" | "out" | "morph"
+
+export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
+	{
+		[k in Exclude<keyof inner, keyof BaseAttributes>]: {
+			children?: (
+				innerValue: inner[k]
+			) => readonly UnknownNode[] | { [k in IoKind]?: readonly UnknownNode[] }
+			io?: IoKind
+		}
+	}
+
 export type StaticNodeDefinition<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > = {
 	kind: d["kind"]
-	keys: Record<Exclude<keyof d["inner"], keyof BaseAttributes>, keyof NodeIds>
+	keys: InnerKeyDefinitions<d["inner"]>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	parseSchema: (schema: d["schema"], ctx: ParseContext) => d["inner"]
 	writeDefaultDescription: (inner: d["inner"]) => string
@@ -161,7 +173,7 @@ type instantiateNodeClassDeclaration<declaration> = {
 }
 
 type declarationOf<nodeClass> = nodeClass extends {
-	declaration: infer declaration extends Required<BaseNodeDeclaration>
+	declaration: infer declaration extends BaseNodeDeclaration
 }
 	? declaration
 	: never

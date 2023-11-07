@@ -73,7 +73,9 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 	static readonly definition = this.define({
 		kind: "intersection",
 		keys: {
-			intersection: "in"
+			intersection: {
+				children: (constraints) => constraints
+			}
 		},
 		intersections: {
 			intersection: (l, r) => {

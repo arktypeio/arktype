@@ -6,9 +6,18 @@ import { type Morph } from "./morph.js"
 
 export type MatchChildKind = rootRightOf<"match">
 
-export type MatchNodeEntry = [when: Node<MatchChildKind>, then: Morph]
+export type MatchNodeEntry = [
+	when: Node<MatchChildKind>,
+	then: Morph,
+	out?: Node<MatchChildKind>
+]
 
-export type MatchSchemaEntry = [when: Schema<MatchChildKind>, then: Morph]
+// TODO: no morphs?
+export type MatchSchemaEntry = [
+	when: Schema<MatchChildKind>,
+	then: Morph,
+	out?: Schema<MatchChildKind>
+]
 
 export type MatchInner = withAttributes<{
 	readonly match: readonly MatchNodeEntry[]
@@ -38,7 +47,9 @@ export class MatchNode<t = unknown> extends BaseRoot<MatchDeclaration, t> {
 	static definition = this.define({
 		kind: "match",
 		keys: {
-			match: "morph"
+			match: {
+				children: (entries) => entries.map((entry) => entry[0])
+			}
 		},
 		intersections: {
 			match: (l, r) => l
