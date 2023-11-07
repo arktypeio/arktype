@@ -3,7 +3,7 @@ import type { declareNode, withAttributes } from "../base.js"
 import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type Schema } from "../nodes.js"
-import { BaseRoot } from "../root.js"
+import { BaseRoot, type Root } from "../root.js"
 import {
 	MorphNode,
 	type MorphSchema,
@@ -27,6 +27,13 @@ export type validateBranchSchema<schema> = conform<
 		? validateMorphSchema<schema>
 		: validateValidatorSchema<schema>
 >
+
+export type parseUnion<branches extends readonly unknown[]> =
+	branches["length"] extends 0
+		? UnionNode<never>
+		: branches["length"] extends 1
+		? parseBranchSchema<branches[0]>
+		: Root<parseBranchSchema<branches[number]>["infer"]>
 
 export type parseBranchSchema<schema> = schema extends MorphSchema
 	? parseMorphSchema<schema>
