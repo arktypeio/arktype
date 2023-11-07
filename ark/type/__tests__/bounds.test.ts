@@ -30,14 +30,14 @@ suite("bounds", () => {
 		suite("single", () => {
 			test(">", () => {
 				const t = type("number>0")
-				attest(t.infer).typed as number
+				attest<number>(t.infer)
 				attest(t.allows(-1)).equals(false)
 				attest(t.allows(0)).equals(false)
 				attest(t.allows(1)).equals(true)
 			})
 			// 	test("<", () => {
 			// 		const t = type("number<10")
-			// 		attest(t.infer).typed as number
+			// 		attest<number>(t.infer)
 			// 		attest(t.condition).equals(
 			// 			expectedBoundsCondition({
 			// 				limitKind: "max",
@@ -48,7 +48,7 @@ suite("bounds", () => {
 			// 	})
 			// 	test("<=", () => {
 			// 		const t = type("number<=-49")
-			// 		attest(t.infer).typed as number
+			// 		attest<number>(t.infer)
 			// 		attest(t.condition).equals(
 			// 			expectedBoundsCondition({
 			// 				limitKind: "max",
@@ -59,7 +59,7 @@ suite("bounds", () => {
 			// 	})
 			// 	test("==", () => {
 			// 		const t = type("number==3211993")
-			// 		attest(t.infer).typed as number
+			// 		attest<number>(t.infer)
 			// 		attest(t.condition).equals(
 			// 			expectedBoundsCondition(
 			// 				{
@@ -79,7 +79,7 @@ suite("bounds", () => {
 			// suite("double", () => {
 			// 	test("<,<=", () => {
 			// 		const t = type("-5<number<=5")
-			// 		attest(t.infer).typed as number
+			// 		attest<number>(t.infer)
 			// 		attest(t.allows(-6)).equals(false)
 			// 		attest(t.allows(-5)).equals(false)
 			// 		attest(t.allows(-4)).equals(true)
@@ -103,7 +103,7 @@ suite("bounds", () => {
 			// 	})
 			// 	test("<=,<", () => {
 			// 		const t = type("-3.23<=number<4.654")
-			// 		attest(t.infer).typed as number
+			// 		attest<number>(t.infer)
 			// 		attest(t.condition).equals(
 			// 			expectedBoundsCondition(
 			// 				{
@@ -122,7 +122,7 @@ suite("bounds", () => {
 			// })
 			// test("whitespace following comparator", () => {
 			// 	const t = type("number > 3")
-			// 	attest(t.infer).typed as number
+			// 	attest<number>(t.infer)
 			// 	attest(t.condition).equals(
 			// 		expectedBoundsCondition({ limitKind: "min", exclusive: true, limit: 3 })
 			// 	)
@@ -237,7 +237,8 @@ suite("bounds", () => {
 			test("non-narrowed bounds", () => {
 				const a = 5 as number
 				const b = 7 as number
-				attest(type(`${a}<number<${b}`).infer).typed as number
+				const t = type(`${a}<number<${b}`)
+				attest<number>(t.infer)
 			})
 			test("fails at runtime on malformed right", () => {
 				attest(() => type("number<07")).throws(
@@ -252,17 +253,17 @@ suite("bounds", () => {
 		})
 		suite("semantic", () => {
 			test("number", () => {
-				attest(type("number==-3.14159").infer).typed as number
+				attest<number>(type("number==-3.14159").infer)
 			})
 			test("string", () => {
-				attest(type("string<=5").infer).typed as string
+				attest<string>(type("string<=5").infer)
 			})
 			test("array", () => {
-				attest(type("87<=boolean[]<89").infer).typed as boolean[]
+				attest<boolean[]>(type("87<=boolean[]<89").infer)
 			})
 			test("multiple boundable categories", () => {
 				const t = type("(string|boolean[]|number)>0")
-				attest(t.infer).typed as string | boolean[] | number
+				attest<string | boolean[] | number>(t.infer)
 				const expected = type("string>0|boolean[]>0|number>0")
 				attest(t.condition).equals(expected.condition)
 			})
@@ -335,7 +336,7 @@ suite("bounds", () => {
 	suite("dates", () => {
 		// test("single", () => {
 		// 	const t = type("Date<d'2023/1/12'")
-		// 	attest(t.infer).typed as Date
+		// 	attest<Date>(t.infer)
 		// 	attest(t.condition).equals(
 		// 		// TODO: Dates?
 		// 		expectedDateBoundsCondition({
@@ -347,7 +348,7 @@ suite("bounds", () => {
 		// })
 		// test("equality", () => {
 		// 	const t = type("Date==d'2020-1-1'")
-		// 	attest(t.infer).typed as Date
+		// 	attest<Date>(t.infer)
 		// 	attest(t.condition).equals(
 		// 		expectedDateBoundsCondition(
 		// 			{
@@ -367,7 +368,7 @@ suite("bounds", () => {
 		// })
 		// test("double", () => {
 		// 	const t = type("d'2001/10/10'<Date<d'2005/10/10'")
-		// 	attest(t.infer).typed as Date
+		// 	attest<Date>(t.infer)
 		// 	attest(t.condition).equals(
 		// 		expectedDateBoundsCondition(
 		// 			{
@@ -389,7 +390,7 @@ suite("bounds", () => {
 		test("dynamic", () => {
 			const now = new Date()
 			const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
-			attest(t.infer).typed as Date
+			attest<Date>(t.infer)
 			attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
 			attest(t.allows(now)).equals(true)
 			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)

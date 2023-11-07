@@ -192,7 +192,7 @@ export abstract class BaseNode<
 	readonly ids: NodeIds = new NodeIds(this)
 	readonly condition: string
 	readonly kind: declaration["kind"] = this.definition.kind
-	readonly allows: (data: unknown) => boolean
+	readonly allows: (data: unknown) => data is t
 
 	constructor(public readonly inner: declaration["inner"]) {
 		super(inner)

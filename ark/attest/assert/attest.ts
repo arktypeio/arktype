@@ -13,18 +13,11 @@ import {
 } from "./chainableAssertions.js"
 
 export type AttestFn = {
-	<expected>(
-		value: expected
+	<expected, actual extends expected = never>(
+		...args: [actual] extends [never] ? [value: expected] : []
 	): [expected] extends [never]
 		? rootAssertions<unknown, AssertionKind>
 		: rootAssertions<expected, AssertionKind>
-	<expected, actual extends expected = never>(
-		...args: [actual] extends [never]
-			? [
-					ErrorMessage<`Either pass actual as a type param like attest<expected, actual>() or a value like attest<expected>(actual)`>
-			  ]
-			: []
-	): rootAssertions<expected, "type">
 }
 
 export type AssertionContext = {

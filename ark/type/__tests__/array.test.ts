@@ -12,7 +12,7 @@ suite("array", () => {
 	suite("base", () => {
 		test("base", () => {
 			const t = type("string[]")
-			attest(t.infer).typed as string[]
+			attest<string[]>(t.infer)
 			attest(t.allows([])).equals(true)
 			attest(t.allows(["foo", "bar"])).equals(true)
 			attest(t.allows(["foo", "bar", 5])).equals(false)
@@ -20,7 +20,7 @@ suite("array", () => {
 		})
 		test("nested", () => {
 			const t = type("string[][]")
-			attest(t.infer).typed as string[][]
+			attest<string[][]>(t.infer)
 			attest(t.allows([])).equals(true)
 			attest(t.allows([["foo"]])).equals(true)
 			attest(t.allows(["foo"])).equals(false)
@@ -29,28 +29,28 @@ suite("array", () => {
 
 		test("tuple expression", () => {
 			const t = type(["string", "[]"])
-			attest(t.infer).typed as string[]
+			attest<string[]>(t.infer)
 			attest(t.condition).equals(type("string[]").condition)
 		})
 		suite("optional tuple literals", () => {
 			test("string optional", () => {
 				const t = type(["string?"])
-				attest(t.infer).typed as [string?]
+				attest<[string?]>(t.infer)
 				attest(t.condition).equals(type(["string?"]).condition)
 			})
 			test("optional tuple", () => {
 				const t = type([["string", "?"]])
-				attest(t.infer).typed as [string?]
+				attest<[string?]>(t.infer)
 				attest(t.condition).equals(type(["string?"]).condition)
 			})
 			test("multi-optional tuple", () => {
 				const t = type([["string?", "?"]])
-				attest(t.infer).typed as [string?]
+				attest<[string?]>(t.infer)
 				attest(t.condition).equals(type(["string?"]).condition)
 			})
 			test("nested optional tuple", () => {
 				const t = type([["string?"], "string?"])
-				attest(t.infer).typed as [[string?], string?]
+				attest<[[string?], string?]>(t.infer)
 			})
 			test("shallow optional string", () => {
 				// @ts-expect-error
@@ -67,15 +67,14 @@ suite("array", () => {
 		})
 		test("root expression", () => {
 			const t = type("string", "[]")
-			attest(t.infer).typed as string[]
+			attest<string[]>(t.infer)
 			attest(t.condition).equals(type("string[]").condition)
 		})
 
 		test("chained", () => {
 			const t = type({ a: "string" }).array()
-			attest(t.infer).typed as {
-				a: string
-			}[]
+			attest<{ a: string }[]>(t.infer)
+
 			// @ts-expect-error
 			attest(() => type({ a: "hmm" }).array()).throwsAndHasTypeError(
 				writeUnresolvableMessage("hmm")
@@ -91,7 +90,7 @@ suite("array", () => {
 	suite("non-variadic tuple", () => {
 		test("shallow", () => {
 			const t = type(["string", "number"])
-			attest(t.infer).typed as [string, number]
+			attest<[string, number]>(t.infer)
 			attest(t.allows(["", 0])).equals(true)
 			attest(t.allows([true, 0])).equals(false)
 			attest(t.allows([0, false])).equals(false)
@@ -110,15 +109,18 @@ suite("array", () => {
 		})
 		test("nested", () => {
 			const t = type([["string", "number"], [{ a: "boolean", b: ["null"] }]])
-			attest(t.infer).typed as [
-				[string, number],
+			attest<
 				[
-					{
-						a: boolean
-						b: [null]
-					}
+					[string, number],
+					[
+						{
+							a: boolean
+							b: [null]
+						}
+					]
 				]
-			]
+			>(t.infer)
+
 			attest(t.allows([["", 0], [{ a: true, b: [null] }]])).equals(true)
 			attest(t.allows([["", 0], [{ a: true, b: [undefined] }]])).equals(false)
 		})
@@ -127,7 +129,7 @@ suite("array", () => {
 		suite("variadic", () => {
 			test("spreads simple arrays", () => {
 				const wellRested = type(["string", "...number[]"])
-				attest(wellRested.infer).typed as [string, ...number[]]
+				attest<[string, ...number[]]>(wellRested.infer)
 				attest(wellRested(["foo"]).data).equals(["foo"])
 				attest(wellRested(["foo", 1, 2]).data).equals(["foo", 1, 2])
 			})
@@ -136,23 +138,25 @@ suite("array", () => {
 					"number",
 					["...", [{ a: "string" }, "[]"]]
 				])
-				attest(wellRestedTuple.infer).typed as [number, ...{ a: string }[]]
+				attest<[number, ...{ a: string }[]]>(wellRestedTuple.infer)
 			})
 			test("spreads array expressions", () => {
 				const greatSpread = type([{ a: "boolean" }, "...(Date|RegExp)[]"])
-				attest(greatSpread.infer).typed as [
-					{
-						a: boolean
-					},
-					...(RegExp | Date)[]
-				]
+				attest<
+					[
+						{
+							a: boolean
+						},
+						...(RegExp | Date)[]
+					]
+				>(greatSpread.infer)
 			})
 			test("allows array keyword", () => {
 				const types = scope({
 					myArrayKeyword: "boolean[]",
 					myVariadicKeyword: ["string", "...myArrayKeyword"]
 				}).export()
-				attest(types.myVariadicKeyword.infer).typed as [string, ...boolean[]]
+				attest<[string, ...boolean[]]>(types.myVariadicKeyword.infer)
 			})
 			test("errors on non-array", () => {
 				attest(() =>
@@ -192,12 +196,14 @@ suite("array", () => {
 		})
 		test("tuple intersection", () => {
 			const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
-			attest(t.infer).typed as [
-				{
-					a: string
-					b: boolean
-				}
-			]
+			attest<
+				[
+					{
+						a: string
+						b: boolean
+					}
+				]
+			>(t.infer)
 		})
 		test("tuple and array", () => {
 			const tupleAndArray = type([
@@ -210,18 +216,24 @@ suite("array", () => {
 				"&",
 				[{ a: "string" }]
 			])
-			attest(tupleAndArray.infer).typed as [
-				{
-					a: string
-					b: boolean
-				}
-			]
-			attest(arrayAndTuple.infer).typed as [
-				{
-					a: string
-					b: boolean
-				}
-			]
+			attest<
+				[
+					{
+						a: string
+						b: boolean
+					}
+				]
+			>(tupleAndArray.infer)
+
+			attest<
+				[
+					{
+						a: string
+						b: boolean
+					}
+				]
+			>(arrayAndTuple.infer)
+
 			const expected = type([{ a: "string", b: "boolean" }]).condition
 			attest(tupleAndArray.condition).is(expected)
 			attest(arrayAndTuple.condition).is(expected)
@@ -240,23 +252,12 @@ suite("array", () => {
 		})
 		test("variadic and array", () => {
 			const b = type({ b: "boolean" }, "[]")
-			// TODO: possible to allow top-level tuple?
 			const t = type([{ a: "string" }, ["...", b]]).and([{ c: "number" }, "[]"])
 			const expected = type([
-				{ a: "string", b: "boolean" },
-				["...", [{ a: "string", c: "number" }, "[]"]]
+				{ a: "string", c: "number" },
+				["...", [{ b: "boolean", c: "number" }, "[]"]]
 			])
-			attest(t.infer).typed as [
-				{
-					a: string
-					b: boolean
-				},
-				...{
-					a: string
-					c: number
-				}[]
-			]
-			attest(t.infer).typed as typeof expected.infer
+			attest<typeof expected.infer>(t.infer)
 			attest(t.condition).equals(expected.condition)
 		})
 	})

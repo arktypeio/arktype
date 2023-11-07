@@ -12,7 +12,7 @@ import { scope } from "../scopes/ark.js"
 suite("tuple expressions", () => {
 	test("nested", () => {
 		const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
-		attest(t.infer).typed as string | number | bigint | boolean
+		attest<string | number | bigint | boolean>(t.infer)
 	})
 	test("autocompletion", () => {
 		// @ts-expect-error
@@ -70,47 +70,47 @@ suite("tuple expressions", () => {
 suite("root expression", () => {
 	test("=== single", () => {
 		const t = type("===", 5)
-		attest(t.infer).typed as 5
+		attest<5>(t.infer)
 		attest(t.condition).equals(type("5").condition)
 	})
 	test("=== branches", () => {
 		const t = type("===", "foo", "bar", "baz")
-		attest(t.infer).typed as "foo" | "bar" | "baz"
+		attest<"foo" | "bar" | "baz">(t.infer)
 		attest(t.condition).equals(node.units("foo", "bar", "baz").condition)
 	})
 	test("instanceof single", () => {
 		const t = type("instanceof", RegExp)
-		attest(t.infer).typed as RegExp
+		attest<RegExp>(t.infer)
 		attest(t.condition).equals(node(RegExp).condition)
 	})
 	test("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
-		attest(t.infer).typed as unknown[] | Date
+		attest<unknown[] | Date>(t.infer)
 		attest(t.condition).equals(node(Array, Date).condition)
 	})
 	test("postfix", () => {
 		const t = type({ a: "string" }, "[]")
-		attest(t.infer).typed as { a: string }[]
+		attest<{ a: string }[]>(t.infer)
 		attest(t.condition).equals(type({ a: "string" }).array().condition)
 	})
 	test("infix", () => {
 		const t = type({ a: "string" }, "|", { b: "boolean" })
-		attest(t.infer).typed as
+		attest<
 			| {
 					a: string
 			  }
 			| {
 					b: boolean
 			  }
+		>(t.infer)
+
 		attest(t.condition).equals(
 			type({ a: "string" }).or({ b: "boolean" }).condition
 		)
 	})
 	test("morph", () => {
 		const t = type({ a: "string" }, "=>", (In) => ({ b: In.a }))
-		attest(t.infer).typed as (In: { a: string }) => Out<{
-			b: string
-		}>
+		attest<(In: { a: string }) => Out<{ b: string }>>(t.inferMorph)
 	})
 	test("narrow", () => {
 		const t = type(
@@ -118,7 +118,7 @@ suite("root expression", () => {
 			":",
 			(In): In is { a: "foo" } => In.a === "foo"
 		)
-		attest(t.infer).typed as { a: "foo" }
+		attest<{ a: "foo" }>(t.infer)
 	})
 	test("this", () => {
 		const t = type({ a: "string" }, "|", { b: "this" })
@@ -138,6 +138,6 @@ suite("root expression", () => {
 			{ b: "boolean" }
 			// as const is required for TS <=5.0
 		] as const)
-		attest(t.infer).typed as "a" | "b"
+		attest<"a" | "b">(t.infer)
 	})
 })

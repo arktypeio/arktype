@@ -12,7 +12,7 @@ suite("object literal", () => {
 	})
 	test("required", () => {
 		const o = type({ a: "string", b: "boolean" })
-		attest(o.infer).typed as { a: string; b: boolean }
+		attest<{ a: string; b: boolean }>(o.infer)
 		attest(o.condition)
 			.snap(`if (!(((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function"))) {
         return false
@@ -22,21 +22,21 @@ $ark.object36($arkRoot.b)`)
 	})
 	test("optional keys", () => {
 		const o = type({ "a?": "string", b: "boolean" })
-		attest(o.infer).typed as { a?: string; b: boolean }
+		attest<{ a?: string; b: boolean }>(o.infer)
 	})
 	test("symbol key", () => {
 		const s = Symbol()
 		const t = type({
 			[s]: "boolean"
 		})
-		attest(t.infer).typed as { [s]: boolean }
+		attest<{ [s]: boolean }>(t.infer)
 	})
 	test("optional symbol", () => {
 		const s = Symbol()
 		const t = type({
 			[s]: "boolean?"
 		})
-		attest(t.infer).typed as { [s]?: boolean }
+		attest<{ [s]?: boolean }>(t.infer)
 	})
 	suite("optional keys and definition reduction", () => {
 		test("optional value", () => {
@@ -62,31 +62,22 @@ $ark.object36($arkRoot.b)`)
 	})
 	test("index", () => {
 		const o = type({ "[string]": "string" })
-		attest(o).typed as { [x: string]: string }
+		attest<{ [x: string]: string }>(o.infer)
 	})
 	test("enumerable indexed union", () => {
 		const o = type({ "['foo' | 'bar']": "string" })
-		attest(o).typed as {
-			foo: string
-			bar: string
-		}
+		attest<{ foo: string; bar: string }>(o.infer)
 	})
 	test("non-enumerable indexed union", () => {
 		const o = type({ "[string | symbol]": "string" })
-		attest(o).typed as {
-			[x: string]: string
-			[x: symbol]: string
-		}
+		attest<{ [x: string]: string; [x: symbol]: string }>(o.infer)
 	})
 	test("multiple indexed", () => {
 		const o = type({
 			"[string]": "string",
 			"[symbol]": "number"
 		})
-		attest(o).typed as {
-			[x: string]: string
-			[x: symbol]: number
-		}
+		attest<{ [x: string]: string; [x: symbol]: number }>(o.infer)
 	})
 	test("all key kinds", () => {
 		const o = type({
@@ -94,11 +85,7 @@ $ark.object36($arkRoot.b)`)
 			required: "'foo'",
 			"optional?": "'bar'"
 		})
-		attest(o.infer).typed as {
-			[x: string]: string
-			required: "foo"
-			optional?: "bar"
-		}
+		attest<{ [x: string]: string; required: "foo"; optional?: "bar" }>(o.infer)
 	})
 	test("index key from scope", () => {
 		const types = scope({
@@ -108,8 +95,8 @@ $ark.object36($arkRoot.b)`)
 			}
 		}).export()
 		type Key = symbol | "foo" | "bar" | "baz"
-		attest(types.key.infer).typed as Key
-		attest(types.obj.infer).typed as Record<Key, string>
+		attest<Key>(types.key.infer)
+		attest<Record<Key, string>>(types.obj.infer)
 	})
 	test("syntax error in index definition", () => {
 		attest(() =>
@@ -159,18 +146,14 @@ $ark.object36($arkRoot.b)`)
 
 	test("nested", () => {
 		const t = type({ "a?": { b: "boolean" } })
-		attest(t.infer).typed as { a?: { b: boolean } }
+		attest<{ a?: { b: boolean } }>(t.infer)
 	})
 	test("intersections", () => {
 		const a = { "a?": "string" } as const
 		const b = { b: "string" } as const
 		const c = { "c?": "string" } as const
 		const abc = type(a).and(b).and(c)
-		attest(abc.infer).typed as {
-			a?: string
-			b: string
-			c?: string
-		}
+		attest<{ a?: string; b: string; c?: string }>(abc.infer)
 		attest(abc.condition).equals(type({ ...a, ...b, ...c }).condition)
 		attest(abc.condition).equals(type([[a, "&", b], "&", c]).condition)
 	})
@@ -190,11 +173,11 @@ $ark.object36($arkRoot.b)`)
 	})
 	test("escaped optional token", () => {
 		const t = type({ "a\\?": "string" })
-		attest(t.infer).typed as { "a?": string }
+		attest<{ "a?": string }>(t.infer)
 	})
 	test("escaped index", () => {
 		const o = type({ "\\[string]": "string" })
-		attest(o.infer).typed as { "[string]": string }
+		attest<{ "[string]": string }>(o.infer)
 	})
 	test("multiple bad strict", () => {
 		const t = type({ a: "string", b: "boolean" }).configure({

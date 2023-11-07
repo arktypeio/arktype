@@ -11,6 +11,6 @@
 		"build": "echo No build required!"
 	},
 	"bin": {
-		"ts": "./ts.cjs"
+		"ts": "./ts.js"
 	}
 }

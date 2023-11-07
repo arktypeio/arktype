@@ -9,8 +9,8 @@ suite("basis intersections", () => {
 		const a = [0]
 		const literal = type("===", a)
 		const cls = type("instanceof", Array)
-		attest(literal.and(cls).root).equals(literal.root).typed as Root<never[]>
-		attest(cls.and(literal).root).equals(literal.root).typed as Root<never[]>
+		attest<Root<number[]>>(literal.and(cls).root).equals(literal.root)
+		attest<Root<number[]>>(cls.and(literal).root).equals(literal.root)
 	})
 	test("unsatisfiable class & literal", () => {
 		const a = [0]
@@ -22,8 +22,8 @@ suite("basis intersections", () => {
 	test("domain & literal", () => {
 		const literal = type("'foo'")
 		const domain = type("string")
-		attest(literal.and(domain).root).equals(literal.root).typed as Root<"foo">
-		attest(domain.and(literal).root).equals(literal.root).typed as Root<"foo">
+		attest<Root<"foo">>(literal.and(domain).root).equals(literal.root)
+		attest<Root<"foo">>(domain.and(literal).root).equals(literal.root)
 	})
 	test("unsatisfiable domain & literal", () => {
 		const literal = type("'foo'")
@@ -38,7 +38,7 @@ suite("basis intersections", () => {
 	test("domain & class", () => {
 		const domain = type("object")
 		const cls = type("instanceof", Date)
-		attest(domain.and(cls).root).equals(cls.root).typed as Root<Date>
-		attest(cls.and(domain).root).equals(cls.root).typed as Root<Date>
+		attest<Root<Date>>(domain.and(cls).root).equals(cls.root)
+		attest<Root<Date>>(cls.and(domain).root).equals(cls.root)
 	})
 })

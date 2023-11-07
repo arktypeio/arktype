@@ -6,7 +6,7 @@ suite("regex", () => {
 	suite("intersection", () => {
 		test("distinct strings", () => {
 			const t = type("/a/&/b/")
-			attest(t.infer).typed as string
+			attest<string>(t.infer)
 			attest(t.allows("a")).equals(false)
 			attest(t.allows("b")).equals(false)
 			attest(t.allows("ab")).equals(true)
@@ -41,7 +41,7 @@ suite("regex", () => {
 	suite("object literal", () => {
 		test("flagless", () => {
 			const t = type(/.*/)
-			attest(t.infer).typed as string
+			attest<string>(t.infer)
 			attest(t.condition).equals(type("/.*/").condition)
 		})
 		test("single flag preserved", () => {

@@ -7,11 +7,11 @@ import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclo
 suite("parse unenclosed", () => {
 	suite("identifier", () => {
 		test("keyword", () => {
-			attest(type("string").infer).typed as string
+			attest<string>(type("string").infer)
 		})
 		test("alias", () => {
 			const a = scope({ a: "string" }).type("a")
-			attest(a.infer).typed as string
+			attest<string>(a.infer)
 		})
 		suite("errors", () => {
 			test("unresolvable", () => {
@@ -26,29 +26,29 @@ suite("parse unenclosed", () => {
 		suite("positive", () => {
 			test("whole", () => {
 				const four = type("4")
-				attest(four.infer).typed as 4
+				attest<4>(four.infer)
 				// attest(four.node).snap({ number: { value: 4 } })
 			})
 			test("decimal", () => {
-				attest(type("3.14159").infer).typed as 3.14159
+				attest<3.14159>(type("3.14159").infer)
 			})
 			test("decimal with zero whole portion", () => {
-				attest(type("0.5").infer).typed as 0.5
+				attest<0.5>(type("0.5").infer)
 			})
 		})
 		suite("negative", () => {
 			test("whole", () => {
-				attest(type("-12").infer).typed as -12
+				attest<-12>(type("-12").infer)
 			})
 			test("decimal", () => {
-				attest(type("-1.618").infer).typed as -1.618
+				attest<-1.618>(type("-1.618").infer)
 			})
 			test("decimal with zero whole portion", () => {
-				attest(type("-0.001").infer).typed as -0.001
+				attest<-0.001>(type("-0.001").infer)
 			})
 		})
 		test("zero", () => {
-			attest(type("0").infer).typed as 0
+			attest<0>(type("0").infer)
 		})
 		suite("errors", () => {
 			test("multiple decimals", () => {
@@ -86,13 +86,13 @@ suite("parse unenclosed", () => {
 	suite("bigint", () => {
 		test("positive", () => {
 			// Is prime :D
-			attest(type("12345678910987654321n").infer).typed as 12345678910987654321n
+			attest<12345678910987654321n>(type("12345678910987654321n").infer)
 		})
 		test("negative", () => {
-			attest(type("-9801n").infer).typed as -9801n
+			attest<-9801n>(type("-9801n").infer)
 		})
 		test("zero", () => {
-			attest(type("0n").infer).typed as 0n
+			attest<0n>(type("0n").infer)
 		})
 		suite("errors", () => {
 			test("decimal", () => {

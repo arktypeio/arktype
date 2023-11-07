@@ -5,10 +5,10 @@ suite("tsGenerics", () => {
 	//     const types = scope({
 	//         t: "Record<string, number>"
 	//     }).export()
-	//     attest(types.t.infer).typed as Record<string, number>
+	//     attest<Record<string, number>>(types.t.infer)
 	// })
 	// test("in module", () => {
 	//     const t = arktypes.Record("string", "number")
-	//     attest(t.infer).typed as Record<string, number>
+	//     attest<Record<string, number>>(t.infer)
 	// })
 })

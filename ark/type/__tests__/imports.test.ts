@@ -21,9 +21,7 @@ suite("scope imports", () => {
 		const $ = scope({
 			...threeSixtyNoModule
 		}).scope({ threeSixtyNo: "three|sixty|no" })
-		attest($.infer).typed as {
-			threeSixtyNo: 3 | 60 | "no"
-		}
+		attest<{ threeSixtyNo: 3 | 60 | "no" }>($.infer)
 	})
 
 	test("multiple", () => {
@@ -37,9 +35,7 @@ suite("scope imports", () => {
 			a: "three|sixty|no|yes|extra"
 		})
 
-		attest(imported.infer).typed as {
-			a: 3 | 60 | "no" | "yes" | true
-		}
+		attest<{ a: 3 | 60 | "no" | "yes" | true }>(imported.infer)
 	})
 
 	// TODO: fix, tests for more duplicate scenarios
@@ -76,18 +72,20 @@ suite("scope imports", () => {
 
 		attest(types.public.condition).equals(type("3|'no'|uuid|true").condition)
 
-		attest(types).typed as Module<{
-			exports: {
-				hasCrept: true
-				public: string | true | 3
-			}
-			locals: {
-				three: 3
-				no: "no"
-				private: string
-			}
-			ambient: Ark
-		}>
+		attest<
+			Module<{
+				exports: {
+					hasCrept: true
+					public: string | true | 3
+				}
+				locals: {
+					three: 3
+					no: "no"
+					private: string
+				}
+				ambient: Ark
+			}>
+		>(types)
 	})
 })
 
@@ -99,17 +97,19 @@ suite("private aliases", () => {
 		}).export()
 		attest(Object.keys(types)).equals(["foo"])
 		attest(types.foo.condition).equals(type("boolean[]").condition)
-		attest(types).typed as Module<{
-			exports: { foo: boolean[] }
-			locals: { bar: boolean }
-			ambient: Ark
-		}>
+		attest<
+			Module<{
+				exports: { foo: boolean[] }
+				locals: { bar: boolean }
+				ambient: Ark
+			}>
+		>(types)
 	})
 	test("generic", () => {
 		const types = scope({
 			foo: "bar<string>[]",
 			"#bar<t>": ["t"]
 		}).export()
-		attest(types.foo).typed as [string][]
+		attest<[string][]>(types.foo.infer)
 	})
 })

@@ -4,7 +4,7 @@ import { suite, test } from "mocha"
 suite("snippets", () => {
 	// test("demo", async () => {
 	// 	const typeSnippet = await import("../../docs/examples/demo.js")
-	// 	attest(typeSnippet.pkg.infer).typed as {
+	// 	attest<{>(typeSnippet.pkg.infer)
 	// 		name: string
 	// 		version: string
 	// 		contributors?: string[]
@@ -15,7 +15,7 @@ suite("snippets", () => {
 	// })
 	// test("type", async () => {
 	// 	const typeSnippet = await import("./benches/type.js")
-	// 	attest(typeSnippet.user.infer).typed as {
+	// 	attest<{>(typeSnippet.user.infer)
 	// 		name: string
 	// 		device: {
 	// 			platform: "android" | "ios"
@@ -28,7 +28,7 @@ suite("snippets", () => {
 	// })
 	// // test("scope", async () => {
 	// //     const scopeSnippet = await import("../examples/scope.js")
-	// //     attest(scopeSnippet.types.package.infer).typed as {
+	// //     attest<{>(scopeSnippet.types.package.infer)
 	// //         name: string
 	// //         dependencies?: any[]
 	// //         devDependencies?: any[]
@@ -54,6 +54,6 @@ suite("snippets", () => {
 	// 					discriminated: "right"
 	// 				}
 	// 		  }
-	// 	attest(example.numericIntersection.infer).typed as number
+	// 	attest<number>(example.numericIntersection.infer)
 	// })
 })

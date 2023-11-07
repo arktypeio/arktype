@@ -14,12 +14,12 @@ suite("keyof", () => {
 	})
 	test("root expression", () => {
 		const t = type("keyof", "Date")
-		attest(t.infer).typed as keyof Date
+		attest<keyof Date>(t.infer)
 		attest(t.condition).equals(node(Date).keyof().condition)
 	})
 	test("primitive", () => {
 		const t = type("keyof bigint")
-		attest(t.infer).typed as keyof bigint
+		attest<keyof bigint>(t.infer)
 		const expected = node.units(
 			"toLocaleString",
 			"toString",
@@ -30,14 +30,14 @@ suite("keyof", () => {
 	})
 	test("object literal", () => {
 		const t = type({ a: "123", b: "123" }).keyof()
-		attest(t.infer).typed as "a" | "b"
+		attest<"a" | "b">(t.infer)
 		attest(t.condition).equals(type("'a'|'b'").condition)
 	})
 	test("overlapping union", () => {
 		const t = type({ a: "number", b: "boolean" })
 			.or({ b: "number", c: "string" })
 			.keyof()
-		attest(t.infer).typed as "b"
+		attest<"b">(t.infer)
 		attest(t.condition).equals(type("'b'").condition)
 	})
 	test("non-overlapping union", () => {
@@ -47,7 +47,7 @@ suite("keyof", () => {
 	})
 	test("tuple expression", () => {
 		const t = type(["keyof", { a: "string" }])
-		attest(t.infer).typed as "a"
+		attest<"a">(t.infer)
 		attest(t.condition).equals(node.units("a").condition)
 	})
 	test("union including non-object", () => {
@@ -62,28 +62,26 @@ suite("keyof", () => {
 	})
 	test("multiple keyofs", () => {
 		const t = type("keyof keyof string")
-		attest(t.infer).typed as "toString" | "valueOf"
+		attest<"toString" | "valueOf">(t.infer)
 		attest(t.condition).equals(node.units("toString", "valueOf").condition)
 	})
 	test("groupable", () => {
 		const t = type("(keyof symbol & string)[]")
-		attest(t.infer).typed as ("toString" | "valueOf" | "description")[]
+		attest<("toString" | "valueOf" | "description")[]>(t.infer)
 		attest(t.condition).equals(
 			node.units("toString", "valueOf", "description").array().condition
 		)
 	})
 	test("intersection precedence", () => {
 		const t = type("keyof symbol & symbol")
-		attest(t.infer).typed as
-			| typeof Symbol.toStringTag
-			| typeof Symbol.toPrimitive
+		attest<typeof Symbol.toStringTag | typeof Symbol.toPrimitive>(t.infer)
 		attest(t.condition).is(
 			node.units(Symbol.toStringTag, Symbol.toPrimitive).condition
 		)
 	})
 	test("union precedence", () => {
 		const t = type("keyof boolean | number")
-		attest(t.infer).typed as "valueOf" | number
+		attest<"valueOf" | number>(t.infer)
 		// for some reason TS doesn't include toString as a keyof boolean?
 		// given it is included in keyof string, it seems like an anomaly, but we include it
 		attest(t.condition).equals(
@@ -106,7 +104,7 @@ suite("keyof", () => {
 	// TODO: numeric
 	test("array", () => {
 		const t = type("keyof string[]")
-		attest(t.infer).typed as keyof string[]
+		attest<keyof string[]>(t.infer)
 		// the array prototype has many items and they vary based on the JS
 		// flavor we're running in, so just check that the indices from the type
 		// and one prototype key are present as a heuristic
@@ -123,7 +121,7 @@ suite("keyof", () => {
 	})
 	test("tuple", () => {
 		const t = type(["keyof", ["string", "number"]])
-		attest(t.infer).typed as keyof [string, number]
+		attest<keyof [string, number]>(t.infer)
 		t.assert("1")
 		t.assert("map")
 		attest(() => t.assert("2")).throws.snap(

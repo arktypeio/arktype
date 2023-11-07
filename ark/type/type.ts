@@ -173,7 +173,7 @@ export const hasArkKind = <kind extends ArkKind>(
 	kind: kind
 ): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
 
-export type DefinitionParser<$> = <const def>(
+export type DefinitionParser<$> = <def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
 
@@ -190,6 +190,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	(data: unknown) => CheckResult<extractOut<t>>
 > {
 	declare [inferred]: t
+	declare inferMorph: t
 	declare infer: extractOut<t>
 	declare inferIn: extractIn<t>
 
@@ -274,7 +275,12 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<extractOut<t>>>(
 		def: def
-	): Type<inferNarrow<extractOut<t>, def>, $> {
+	): Type<
+		includesMorphs<t> extends true
+			? (In: this["inferIn"]) => Out<inferNarrow<this["infer"], def>>
+			: inferNarrow<this["infer"], def>,
+		$
+	> {
 		return new Type(this.root.constrain("predicate", def), this.scope) as never
 	}
 
@@ -391,19 +397,21 @@ type bindGenericInstantiation<params extends string[], $, args> = {
 }
 
 export type extractIn<t> = includesMorphs<t> extends true
-	? t
-	: extractMorphs<t, "in">
+	? extractMorphs<t, "in">
+	: t
 
 export type extractOut<t> = includesMorphs<t> extends true
-	? t
-	: extractMorphs<t, "out">
+	? extractMorphs<t, "out">
+	: t
 
-type includesMorphs<t> = [t, extractMorphs<t, "out">] extends [
-	extractMorphs<t, "out">,
-	t
-]
-	? true
-	: false
+type includesMorphs<t> = [
+	t,
+	extractMorphs<t, "in">,
+	t,
+	extractMorphs<t, "out">
+] extends [extractMorphs<t, "in">, t, extractMorphs<t, "out">, t]
+	? false
+	: true
 
 type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
 	infer i,

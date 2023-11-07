@@ -43,7 +43,7 @@ suite("definitions", () => {
 	test("any", () => {
 		// doesn't error, so this test is just to ensure it doesn't infinitely recurse
 		const t = type({ bad: {} as any })
-		attest(t.infer).typed as {}
+		attest<{}>(t.infer)
 	})
 	test("unknown", () => {
 		// @ts-expect-error just results in base completions, so we just check there's an error

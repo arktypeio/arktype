@@ -14,7 +14,7 @@ suite("this reference", () => {
 			label: string
 			box?: ExpectedDisappointingGift
 		}
-		attest(disappointingGift.infer).typed as ExpectedDisappointingGift
+		attest<ExpectedDisappointingGift>(disappointingGift.infer)
 	})
 
 	test("doesn't change when rereferenced", () => {
@@ -32,7 +32,7 @@ suite("this reference", () => {
 			reference: Initial
 		}
 
-		attest(reference.infer).typed as Expected
+		attest<Expected>(reference.infer)
 		const types = scope({
 			initial: {
 				initial: "initial"

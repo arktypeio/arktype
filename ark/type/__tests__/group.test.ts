@@ -9,17 +9,16 @@ import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/u
 
 suite("group", () => {
 	test("entire expression", () => {
-		attest(type("(string)").infer).typed as string
+		attest<string>(type("(string)").infer)
 	})
 	test("overrides default precedence", () => {
-		attest(type("boolean|number[]").infer).typed as boolean | number[]
-		attest(type("(boolean|number)[]").infer).typed as (boolean | number)[]
+		attest<boolean | number[]>(type("boolean|number[]").infer)
+		attest<(boolean | number)[]>(type("(boolean|number)[]").infer)
 	})
 	test("nested", () => {
-		attest(type("((boolean|number)[]|(string|undefined)[])[]").infer).typed as (
-			| (number | boolean)[]
-			| (string | undefined)[]
-		)[]
+		attest<((number | boolean)[] | (string | undefined)[])[]>(
+			type("((boolean|number)[]|(string|undefined)[])[]").infer
+		)
 	})
 	suite("errors", () => {
 		test("empty", () => {

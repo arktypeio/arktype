@@ -6,7 +6,7 @@ import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclo
 suite("type references", () => {
 	test("shallow type reference", () => {
 		const t = type(type("boolean"))
-		attest(t.infer).typed as boolean
+		attest<boolean>(t.infer)
 	})
 
 	test("bad shallow type reference", () => {
@@ -18,7 +18,7 @@ suite("type references", () => {
 
 	test("deep type reference", () => {
 		const t = type({ a: type("boolean") })
-		attest(t.infer).typed as { a: boolean }
+		attest<{ a: boolean }>(t.infer)
 	})
 
 	test("type reference in scope", () => {
@@ -28,7 +28,7 @@ suite("type references", () => {
 		attest(types.a.condition).equals(type({ a: "string" }).condition)
 		attest(a.scope).is(ark)
 		attest(types.a.scope).is($)
-		attest(types.a.infer).typed as { a: string }
+		attest<{ a: string }>(types.a.infer)
 	})
 
 	test("bad deep type reference", () => {

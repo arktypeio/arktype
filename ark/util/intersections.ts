@@ -1,9 +1,4 @@
-import type {
-	andPreserveUnknown,
-	conform,
-	extend,
-	satisfy
-} from "./generics.js"
+import type { andPreserveUnknown, conform } from "./generics.js"
 import type { Hkt } from "./hkt.js"
 
 export interface AndPreserveUnknown extends Hkt.Kind {
@@ -113,10 +108,11 @@ type parseNextElement<
 				done: true
 		  }
 		: {
-				head: head
-				// the parameter is required iff its type is the same as the
-				// one we inferred from within (infer head)?, otherwise optional
-				optional: params[0] extends head ? false : true
+				// Inferring parms often results in optional adding `|undefined`,
+				// so the goal here is to counteract that. If this
+				// causes problems, it should be removed.
+				head: [] extends params ? Exclude<head, undefined> : head
+				optional: [] extends params ? true : false
 				tail: tail
 				done: false
 		  }

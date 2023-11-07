@@ -6,14 +6,14 @@ import { writeInvalidDateMessage } from "../parser/string/shift/operand/date.js"
 suite("date literal", () => {
 	test("base", () => {
 		const t = type("d'2000/05/05'")
-		attest(t.infer).typed as Date
+		attest<Date>(t.infer)
 		attest(t.allows(new Date("2000/05/05"))).equals(true)
 		attest(t.allows(new Date("2000/06/05"))).equals(false)
 		attest(t.allows(new Date("2000/05/05T09:00:00.00Z"))).equals(false)
 	})
 	test("with punctuation", () => {
 		const ISO = type("d'2000-05-05T04:00:00.000Z'")
-		attest(ISO.infer).typed as Date
+		attest<Date>(ISO.infer)
 		attest(ISO.allows(new Date("2000/05/05"))).equals(true)
 		attest(ISO.allows(new Date("2000/07/05"))).equals(false)
 	})

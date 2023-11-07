@@ -23,13 +23,13 @@ export type inferIntersection<l, r> = [l] extends [never]
 type intersectObjects<l, r> = [l, r] extends [object, object]
 	? [l, r] extends [infer lList extends List, infer rList extends List]
 		? inferArrayIntersection<lList, rList>
-		: evaluate<{
-				[k in keyof l | keyof r]: k extends keyof l
-					? k extends keyof r
+		: evaluate<
+				{
+					[k in keyof l]: k extends keyof r
 						? inferIntersection<l[k], r[k]>
 						: l[k]
-					: r[k & keyof r]
-		  }>
+				} & Omit<r, keyof l>
+		  >
 	: l & r
 
 // TODO: Test instantiations removing this in favor of HKT

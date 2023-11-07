@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { type Out } from "@arktype/schema"
 import type { equals } from "@arktype/util"
 import type { Ark, Type } from "arktype"
 import { type } from "arktype"
@@ -8,7 +9,7 @@ suite("narrow", () => {
 	test("implicit problem", () => {
 		const isOdd = (n: number) => n % 2 === 1
 		const odd = type(["number", ":", isOdd])
-		attest(odd.infer).typed as number
+		attest<number>(odd.infer)
 		// attest(odd.node).equals({ number: { narrow: isOdd as any } })
 		attest(odd(1).data).equals(1)
 		attest(odd(2).problems?.summary).snap(
@@ -51,20 +52,20 @@ suite("narrow", () => {
 	})
 	test("functional predicate", () => {
 		const one = type(["number", ":", (n): n is 1 => n === 1])
-		attest(one).typed as Type<1>
+		attest<Type<1>>(one)
 	})
 	test("functional parameter inference", () => {
 		type Expected = number | boolean[]
 		const validateNumberOrBooleanList = <t>(
 			t: equals<t, Expected> extends true ? t : Expected
 		) => true
-		attest(
+		attest<number | boolean[]>(
 			type([
 				"number|boolean[]",
 				":",
 				(data) => validateNumberOrBooleanList(data)
 			]).infer
-		).typed as number | boolean[]
+		)
 		attest(() => {
 			// @ts-expect-error
 			type(["number|boolean[]", ":", (data: number | string[]) => !!data])
@@ -79,18 +80,17 @@ suite("narrow", () => {
 					? true
 					: !problems.mustBe("a palindrome", s, [])
 		])
-		attest(palindrome).typed as Type<string>
+		attest<Type<string>>(palindrome)
 		attest(palindrome("dad").data).snap("dad")
 		attest(palindrome("david").problems?.summary).snap(
 			"Must be a palindrome (was 'david')"
 		)
 	})
 	test("narrows the output type of a morph", () => {
-		// TODO: should preserve morph
 		const t = type("string")
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
-		attest(t).typed as Type<(In: string) => 5, Ark>
+		attest<Type<(In: string) => Out<5>>>(t)
 		attest(t.condition).snap('typeof $arkRoot === "string" && false && false')
 	})
 })

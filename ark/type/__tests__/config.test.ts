@@ -11,7 +11,7 @@ suite("config traversal", () => {
 	//             a: "a"
 	//         }
 	//     }).compile()
-	//     attest(types.a.infer).typed as string
+	//     attest<string>(types.a.infer)
 	//     // attest(types.a.flat).snap([
 	//     //     [
 	//     //         "config",
@@ -24,7 +24,7 @@ suite("config traversal", () => {
 	//     attest(types.a(1).problems?.summary).snap(
 	//         "Must be a series of characters (was number)"
 	//     )
-	//     attest(types.b.infer).typed as { a: string }
+	//     attest<{ a: string }>(types.b.infer)
 	//     // attest(types.b.flat).equals([
 	//     //     ["domain", "object"],
 	//     //     [
@@ -57,7 +57,7 @@ suite("config traversal", () => {
 	//             }
 	//         ]
 	//     })
-	//     attest(t.infer).typed as { monster: 196883 }
+	//     attest<{ monster: 196883 }>(t.infer)
 	//     // attest(t.node).snap({
 	//     //     object: {
 	//     //         props: {
@@ -99,7 +99,7 @@ suite("config traversal", () => {
 	// })
 	// test("anonymous type config", () => {
 	//     const t = type(type("true", { mustBe: "unfalse" }))
-	//     attest(t.infer).typed as true
+	//     attest<true>(t.infer)
 	//     // attest(t.flat).snap([
 	//     //     [
 	//     //         "config",
@@ -139,7 +139,7 @@ suite("config traversal", () => {
 	// })
 	// test("anonymous type thunk", () => {
 	//     const t = type(() => type("false", { mustBe: "untrue" }))
-	//     attest(t.infer).typed as false
+	//     attest<false>(t.infer)
 	//     // attest(t.flat).snap([
 	//     //     [
 	//     //         "config",
@@ -149,7 +149,7 @@ suite("config traversal", () => {
 	// })
 	// test("anonymous type thunk at path", () => {
 	//     const t = type({ myKey: () => type("false", { mustBe: "untrue" }) })
-	//     attest(t.infer).typed as { myKey: false }
+	//     attest<{ myKey: false }>(t.infer)
 	//     // attest(t.flat).snap([
 	//     //     ["domain", "object"],
 	//     //     [

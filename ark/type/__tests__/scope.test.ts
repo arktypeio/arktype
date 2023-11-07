@@ -8,7 +8,7 @@ import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator
 suite("scope", () => {
 	test("base definition", () => {
 		const types = scope({ a: "string" }).export()
-		attest(types.a.infer).typed as string
+		attest<string>(types.a.infer)
 		attest(() =>
 			// @ts-expect-error
 			scope({ a: "strong" }).export()
@@ -16,7 +16,7 @@ suite("scope", () => {
 	})
 	test("type definition", () => {
 		const types = scope({ a: type("string") }).export()
-		attest(types.a.infer).typed as string
+		attest<string>(types.a.infer)
 		attest(() =>
 			// @ts-expect-error
 			scope({ a: type("strong") })
@@ -28,34 +28,36 @@ suite("scope", () => {
 			b: "email<=10",
 			c: "a&b"
 		}).export()
-		attest(types.c.infer).typed as string
+		attest<string>(types.c.infer)
 	})
 	test("object array", () => {
 		const types = scope({ a: "string", b: [{ c: "a" }] }).export()
-		attest(types.b.infer).typed as [
-			{
-				c: string
-			}
-		]
+		attest<
+			[
+				{
+					c: string
+				}
+			]
+		>(types.b.infer)
 	})
 	test("doesn't try to validate any in scope", () => {
 		// const $ = scope({ a: {} as any })
-		// attest($.infer).typed as { a: never }
-		// attest($.type(["number", "a"]).infer).typed as [number, never]
+		// attest<{ a: never }>($.infer)
+		// attest<[number, never]>($.type(["number", "a"]).infer)
 	})
 	test("infers input and output", () => {
 		const $ = scope({
 			a: ["string", "=>", (s) => s.length]
 		})
-		attest($.infer).typed as { a: number }
-		attest($.inferIn).typed as { a: string }
+		attest<{ a: number }>($.infer)
+		attest<{ a: string }>($.inferIn)
 	})
 	test("scope.scope", () => {
 		const $ = scope({
 			a: "string"
 		})
 		const importer = $.scope({ b: "a[]" })
-		attest(importer.infer).typed as { b: string[] }
+		attest<{ b: string[] }>(importer.infer)
 		const t = importer.type("b")
 		attest(t.condition).is(type("string[]").condition)
 	})
@@ -65,8 +67,8 @@ suite("scope", () => {
 			b: () => $.type("number")
 		})
 		const types = $.export()
-		attest(types.a.infer).typed as string
-		attest(types.b.infer).typed as number
+		attest<string>(types.a.infer)
+		attest<number>(types.b.infer)
 	})
 	test("allows semantically valid helpers", () => {
 		const $ = scope({
@@ -74,8 +76,8 @@ suite("scope", () => {
 			lessThan10: () => $.type("n<10")
 		})
 		const types = $.export()
-		attest(types.n.infer).typed as number
-		attest(types.lessThan10.infer).typed as number
+		attest<number>(types.n.infer)
+		attest<number>(types.lessThan10.infer)
 	})
 	test("errors on helper parse error", () => {
 		attest(() => {

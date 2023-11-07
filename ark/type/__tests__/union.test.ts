@@ -10,12 +10,12 @@ import {
 suite("union", () => {
 	test("binary", () => {
 		const binary = type("number|string")
-		attest(binary.infer).typed as number | string
+		attest<number | string>(binary.infer)
 		// attest(binary.node).snap({ number: true, string: true })
 	})
 	test("nary", () => {
 		const nary = type("false|null|undefined|0|''")
-		attest(nary.infer).typed as false | "" | 0 | null | undefined
+		attest<false | "" | 0 | null | undefined>(nary.infer)
 		const expected = node.units(false, null, undefined, 0, "")
 		attest(nary.condition).is(expected.condition)
 	})
@@ -24,7 +24,7 @@ suite("union", () => {
 	})
 	test("multiple subtypes pruned", () => {
 		const t = type("'foo'|'bar'|string|'baz'|/.*/")
-		attest(t.infer).typed as string
+		attest<string>(t.infer)
 		attest(t.condition).is(type("string").condition)
 	})
 	test("union of true and false reduces to boolean", () => {
@@ -34,7 +34,7 @@ suite("union", () => {
 	})
 	test("nested tuple union", () => {
 		const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
-		attest(t.infer).typed as string | number | bigint | boolean
+		attest<string | number | bigint | boolean>(t.infer)
 		attest(t.condition).equals(type("string|bigint|number|boolean").condition)
 	})
 	test("length stress", () => {
@@ -47,7 +47,7 @@ suite("union", () => {
 			"0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45"
 		)
 		// prettier-ignore
-		attest(t.infer).typed as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45
+		attest<0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45>(t.infer)
 	})
 	suite("expressions", () => {
 		const expected = () => node("object").condition
@@ -71,23 +71,24 @@ suite("union", () => {
 
 		test("tuple", () => {
 			const t = type([{ a: "string" }, "|", { b: "boolean" }])
-			attest(t.infer).typed as { a: string } | { b: boolean }
+			attest<{ a: string } | { b: boolean }>(t.infer)
 			attest(t.condition).equals(expected())
 		})
 		test("root", () => {
 			const t = type({ a: "string" }, "|", { b: "boolean" })
-			attest(t.infer).typed as { a: string } | { b: boolean }
+			attest<{ a: string } | { b: boolean }>(t.infer)
 			attest(t.condition).equals(expected())
 		})
 		test("chained", () => {
 			const t = type({ a: "string" }).or({ b: "boolean" })
-			attest(t.infer).typed as
+			attest<
 				| {
 						a: string
 				  }
 				| {
 						b: boolean
 				  }
+			>(t.infer)
 			attest(t.condition).equals(expected())
 		})
 		test("root autocompletions", () => {

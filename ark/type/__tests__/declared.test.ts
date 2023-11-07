@@ -5,7 +5,7 @@ import { suite, test } from "mocha"
 suite("declared", () => {
 	test("shallow", () => {
 		const shallow = declare<number>().type("number")
-		attest(shallow.infer).typed as number
+		attest<number>(shallow.infer)
 		attest(shallow.condition).equals(type("number").condition)
 	})
 
@@ -15,13 +15,13 @@ suite("declared", () => {
 			a: "string",
 			"b?": "number"
 		})
-		attest(t.infer).typed as Expected
+		attest<Expected>(t.infer)
 	})
 
 	test("tuple", () => {
 		type Expected = [string, number]
 		const t = declare<Expected>().type(["string", "number"])
-		attest(t.infer).typed as Expected
+		attest<Expected>(t.infer)
 	})
 
 	test("bad element", () => {
@@ -49,18 +49,18 @@ suite("declared", () => {
 
 	test("tuple expression", () => {
 		const t = declare<0 | 1>().type(["0", "|", "1"])
-		attest(t.infer).typed as 0 | 1
+		attest<0 | 1>(t.infer)
 	})
 
 	test("regexp", () => {
 		const t = declare<string>().type(/.*/)
-		attest(t.infer).typed as string
+		attest<string>(t.infer)
 	})
 
 	test("Inferred<t>", () => {
 		const foo = type("'foo'")
 		const t = declare<"foo">().type(foo)
-		attest(t.infer).typed as "foo"
+		attest<"foo">(t.infer)
 	})
 
 	test("bad tuple expression", () => {

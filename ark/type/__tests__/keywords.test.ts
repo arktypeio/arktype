@@ -7,7 +7,7 @@ suite("keywords", () => {
 	suite("jsObjects", () => {
 		test("Function", () => {
 			// should not be treated as a morph
-			attest(type("Function").infer).typed as Function
+			attest<Function>(type("Function").infer)
 		})
 		test("Date", () => {
 			// should not expand built-in classes
@@ -20,11 +20,11 @@ suite("keywords", () => {
 			// equivalent to unknown at runtime
 			attest(any.condition).equals(type("unknown").condition)
 			// inferred as any
-			attest(any.infer).typed as any
+			attest<any>(any.infer)
 		})
 		test("boolean", () => {
 			const boolean = type("boolean")
-			attest(boolean.infer).typed as boolean
+			attest<boolean>(boolean.infer)
 			// should be simplified to simple checks for true and false literals
 			attest(boolean.condition).equals(type("true|false").condition)
 			attest(boolean.condition)
@@ -34,7 +34,7 @@ suite("keywords", () => {
 		})
 		// test("never", () => {
 		// 	const never = type("never")
-		// 	attest(never.infer).typed as never
+		// 	attest<never>(never.infer)
 		// 	// should be equivalent to a zero-branch union
 		// 	attest(never.condition).equals(node().condition)
 		// })
@@ -44,7 +44,7 @@ suite("keywords", () => {
 		})
 		test("void", () => {
 			const t = type("void")
-			attest(t.infer).typed as void
+			attest<void>(t.infer)
 			//should be treated as undefined at runtime
 			attest(t.condition).equals(type("undefined").condition)
 		})

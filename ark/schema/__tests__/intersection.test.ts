@@ -5,7 +5,7 @@ import { describe, test } from "mocha"
 describe("intersections", () => {
 	test("root type assignment", () => {
 		const t = node({ basis: "string", pattern: "/.*/" })
-		attest(t).typed as IntersectionNode<string>
+		attest<IntersectionNode<string>>(t)
 		attest(t.json).snap({
 			intersection: [{ domain: "string" }, { pattern: "$ark.regExp11" }]
 		})

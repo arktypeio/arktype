@@ -4,19 +4,19 @@
 //             const t = node({
 //                 basis: "string"
 //             })
-//             attest(t).typed as TypeNode<string>
+//             attest<TypeNode<string>>(t)
 //         })
 //         test("class", () => {
 //             const t = node({
 //                 basis: Date
 //             })
-//             attest(t).typed as TypeNode<Date>
+//             attest<TypeNode<Date>>(t)
 //         })
 //         test("value", () => {
 //             const t = node({
 //                 basis: ["===", 3.14159]
 //             })
-//             attest(t).typed as TypeNode<3.14159>
+//             attest<TypeNode<3.14159>>(t)
 //         })
 //     })
 //     test("optional props", () => {
@@ -32,7 +32,7 @@
 //                 }
 //             }
 //         })
-//         attest(t).typed as TypeNode<{
+//         attest<TypeNode<{>(t)
 //             a: string
 //             b?: boolean
 //         }>
@@ -55,7 +55,7 @@
 //                 }
 //             ]
 //         })
-//         attest(t).typed as TypeNode<{ name: string }[]>
+//         attest<TypeNode<{ name: string }[]>>(t)
 //     })
 //     test("variadic tuple", () => {
 //         const t = node({
@@ -78,7 +78,7 @@
 //                 }
 //             ]
 //         })
-//         attest(t).typed as TypeNode<[string, number, ...symbol[]]>
+//         attest<TypeNode<[string, number, ...symbol[]]>>(t)
 //     })
 //     test("non-variadic tuple", () => {
 //         const t = node({
@@ -104,7 +104,7 @@
 //                 }
 //             }
 //         })
-//         attest(t).typed as TypeNode<
+//         attest<TypeNode<>(t)
 //             [
 //                 {
 //                     a: string
@@ -124,14 +124,14 @@
 //                 props: { a: { value: { basis: "bigint" } } }
 //             }
 //         )
-//         attest(t).typed as TypeNode<number | "foo" | "bar" | { a: bigint }>
+//         attest<TypeNode<number | "foo" | "bar" | { a: bigint }>>(t)
 //     })
 //     test("narrow", () => {
 //         const t = node({
 //             basis: "string",
 //             narrow: (s): s is "foo" => s === "foo"
 //         })
-//         attest(t).typed as TypeNode<"foo">
+//         attest<TypeNode<"foo">>(t)
 //     })
 //     test("narrow array", () => {
 //         const t = node({
@@ -141,7 +141,7 @@
 //                 (o): o is { b: boolean } => typeof o.b === "boolean"
 //             ] as const
 //         })
-//         attest(t).typed as TypeNode<{
+//         attest<TypeNode<{>(t)
 //             a: string
 //             b: boolean
 //         }>
@@ -151,18 +151,18 @@
 //             basis: "string",
 //             morph: (s: string) => s.length
 //         })
-//         attest(t).typed as TypeNode<(In: string) => Out<number>>
+//         attest<TypeNode<(In: string) => Out<number>>>(t)
 //     })
 //     test("morph list", () => {
 //         const t = node({
 //             basis: "string",
 //             morph: [(s: string) => s.length, (n: number) => ({ n })] as const
 //         })
-//         attest(t).typed as TypeNode<(In: string) => Out<{ n: number }>>
+//         attest<TypeNode<(In: string) => Out<{ n: number }>>>(t)
 //     })
 //     test("never", () => {
 //         const t = node()
-//         attest(t).typed as TypeNode<never>
+//         attest<TypeNode<never>>(t)
 //     })
 //     test("errors on rule in wrong domain", () => {
 //         attest(() =>

@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import { compose } from "@arktype/util"
 import { suite, test } from "mocha"
 
-abstract class Describable {
+export abstract class Describable {
 	description: string
 
 	abstract writeDefaultDescription(): string
@@ -12,7 +12,7 @@ abstract class Describable {
 	}
 }
 
-abstract class Boundable<data> {
+export abstract class Boundable<data> {
 	limit: number | undefined
 
 	constructor(rule: { limit?: number }) {
@@ -44,14 +44,17 @@ suite("traits", () => {
 		)
 
 		type Params = ConstructorParameters<typeof StringChecker>
-		attest({} as Params).typed as [
-			{
-				limit?: number
-			},
-			{
-				description?: string
-			}?
-		]
+		attest<
+			[
+				{
+					limit?: number
+				},
+				{
+					description?: string
+				}?
+			],
+			Params
+		>()
 		attest(shortString.check("foo")).equals(true)
 		attest(shortString.check("toolong")).equals(false)
 	})

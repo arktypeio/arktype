@@ -21,22 +21,25 @@ const $ = lazily(() =>
 suite("submodules", () => {
 	test("base", () => {
 		const types = $.export()
-		attest(types).typed as Module<{
-			exports: {
-				a: string
-				b: number
-				sub: Module<{
-					exports: {
-						alias: number
-					}
-					locals: {}
-					ambient: Ark
-				}>
-			}
-			locals: {}
-			ambient: Ark
-		}>
-		attest(types.sub.alias.infer).typed as number
+		attest<
+			Module<{
+				exports: {
+					a: string
+					b: number
+					sub: Module<{
+						exports: {
+							alias: number
+						}
+						locals: {}
+						ambient: Ark
+					}>
+				}
+				locals: {}
+				ambient: Ark
+			}>
+		>(types)
+
+		attest<number>(types.sub.alias.infer)
 		const expected = type("number").condition
 		attest(types.sub.alias.condition).is(expected)
 		attest(types.b.condition).is(expected)
@@ -57,22 +60,24 @@ suite("submodules", () => {
 					bar: "foo"
 				}).export()
 		})
-		attest($).typed as Scope<{
-			exports: {
-				a: string
-				c: string
-				sub: Module<{
-					exports: {
-						foo: string
-						bar: string
-					}
-					locals: {}
-					ambient: Ark
-				}>
-			}
-			locals: {}
-			ambient: Ark
-		}>
+		attest<
+			Scope<{
+				exports: {
+					a: string
+					c: string
+					sub: Module<{
+						exports: {
+							foo: string
+							bar: string
+						}
+						locals: {}
+						ambient: Ark
+					}>
+				}
+				locals: {}
+				ambient: Ark
+			}>
+		>($)
 	})
 	test("no alias reference", () => {
 		// @ts-expect-error

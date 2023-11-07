@@ -10,7 +10,7 @@ suite("instanceof", () => {
 	suite("tuple expression", () => {
 		test("base", () => {
 			const t = type(["instanceof", Error])
-			attest(t.infer).typed as Error
+			attest<Error>(t.infer)
 			attest(t.condition).equals(node(Error).condition)
 			const e = new Error()
 			attest(t(e).data).equals(e)
@@ -21,7 +21,7 @@ suite("instanceof", () => {
 			const e = new TypeError()
 			// for some reason the return of TypeError's constructor is actually
 			// inferred as Error? Disabling this check for now, seems like an anomaly.
-			// attest(t.infer).typed as TypeError
+			// attest<TypeError>(t.infer)
 			attest(t(e).data).equals(e)
 			attest(t(new Error()).problems?.summary).snap(
 				"Must be an instance of TypeError (was Error)"
@@ -29,7 +29,7 @@ suite("instanceof", () => {
 		})
 		test("multiple branches", () => {
 			const t = type(["instanceof", Date, Array])
-			attest(t.infer).typed as Date | unknown[]
+			attest<Date | unknown[]>(t.infer)
 		})
 		test("non-constructor", () => {
 			// @ts-expect-error
@@ -42,7 +42,7 @@ suite("instanceof", () => {
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
-			attest(ark).typed as Type<ArkClass, Ark>
+			attest<Type<ArkClass, Ark>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.inferIn).type.toString("ArkClass")
@@ -64,7 +64,7 @@ suite("instanceof", () => {
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
-			attest(ark).typed as Type<ArkClass, Ark>
+			attest<Type<ArkClass, Ark>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.inferIn).type.toString("ArkClass")
@@ -73,12 +73,12 @@ suite("instanceof", () => {
 	suite("root expression", () => {
 		test("class", () => {
 			const t = type("instanceof", Error)
-			attest(t.infer).typed as Error
+			attest<Error>(t.infer)
 			attest(t.condition).equals(type(["instanceof", Error]).condition)
 		})
 		test("instance branches", () => {
 			const t = type("instanceof", Date, Map)
-			attest(t.infer).typed as Date | Map<unknown, unknown>
+			attest<Date | Map<unknown, unknown>>(t.infer)
 			attest(t.condition).equals(type("Date|Map").condition)
 		})
 		test("non-constructor", () => {

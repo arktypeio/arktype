@@ -10,7 +10,7 @@ import {
 suite("intersection", () => {
 	test("two types", () => {
 		const t = type("boolean&true")
-		attest(t.infer).typed as true
+		attest<true>(t.infer)
 		attest(t.condition).is(type("true").condition)
 	})
 	test("intersection parsed before union", () => {
@@ -18,27 +18,24 @@ suite("intersection", () => {
 		// 1. "0" | ("1"&"string") | "2"
 		// 2. "0" | "1" | "2"
 		const t = type("'0'|'1'&string|'2'")
-		attest(t.infer).typed as "0" | "1" | "2"
+		attest<"0" | "1" | "2">(t.infer)
 		attest(t.condition).equals(type("===", "0", "1", "2").condition)
 	})
 	// test("tuple expression", () => {
 	//     const t = type([{ a: "string" }, "&", { b: "number" }])
-	//     attest(t.infer).typed as {
+	//     attest<{>(t.infer)
 	//         a: string
 	//         b: number
 	//     }
 	// })
 	test("several types", () => {
 		const t = type("unknown&boolean&false")
-		attest(t.infer).typed as false
+		attest<false>(t.infer)
 		attest(t.condition).equals(type("false").condition)
 	})
 	test("method", () => {
 		const t = type({ a: "string" }).and({ b: "boolean" })
-		attest(t.infer).typed as {
-			a: string
-			b: boolean
-		}
+		attest<{ a: string; b: boolean }>(t.infer)
 		attest(t.condition).equals(type({ a: "string", b: "boolean" }).condition)
 	})
 	test("chained deep intersections", () => {
@@ -55,18 +52,15 @@ suite("intersection", () => {
 				b: { b: "true" },
 				c: "'hello'"
 			})
-		attest(t.inferIn).typed as {
+		attest<{
 			a: string
 			b: {
 				b: true
 			}
 			c: "hello"
-		}
-		attest(t.infer).typed as {
-			a: number
-			b: boolean[]
-			c: "hello"
-		}
+		}>(t.inferIn)
+
+		attest<{ a: number; b: boolean[]; c: "hello" }>(t.infer)
 	})
 	suite("errors", () => {
 		test("bad reference", () => {

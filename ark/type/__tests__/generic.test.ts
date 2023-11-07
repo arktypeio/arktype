@@ -17,9 +17,8 @@ suite("generics", () => {
 		test("unary", () => {
 			const boxOf = type("<t>", { box: "t" })
 			const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
-			attest(schrodingersBox.infer).typed as {
-				box: { cat: { isAlive: boolean } }
-			}
+			attest<{ box: { cat: { isAlive: boolean } } }>(schrodingersBox.infer)
+
 			attest(schrodingersBox.condition).equals(
 				type({
 					box: {
@@ -34,7 +33,7 @@ suite("generics", () => {
 				{ cat: { isAlive: "true" } },
 				{ cat: { isAlive: "false" } }
 			)
-			attest(schrodingersBox.infer).typed as
+			attest<
 				| {
 						cat: {
 							isAlive: true
@@ -45,6 +44,8 @@ suite("generics", () => {
 							isAlive: false
 						}
 				  }
+			>(schrodingersBox.infer)
+
 			// ideally, this would be reduced to { cat: { isAlive: boolean } }:
 			// https://github.com/arktypeio/arktype/issues/751
 			attest(schrodingersBox.condition).equals(
@@ -70,7 +71,7 @@ suite("generics", () => {
 			})
 			const types = $.export()
 			const bit = types.orOne("0")
-			attest(bit.infer).typed as 0 | 1
+			attest<0 | 1>(bit.infer)
 			attest(bit.condition).equals(type("0|1").condition)
 		})
 		test("referenced from other scope", () => {
@@ -78,7 +79,7 @@ suite("generics", () => {
 				arrayOf: type("<t>", "t[]")
 			}).export()
 			const stringArray = types.arrayOf("string")
-			attest(stringArray.infer).typed as string[]
+			attest<string[]>(stringArray.infer)
 			attest(stringArray.condition).equals(type("string[]").condition)
 		})
 		test("this not resolvable in generic def", () => {
@@ -128,23 +129,21 @@ suite("generics", () => {
 		const types = lazily(() => $.export())
 		test("referenced in scope", () => {
 			attest(types.bitBox.condition).equals(type({ box: "0|1" }).condition)
-			attest(types.bitBox).typed as {
-				box: 0 | 1
-			}
+			attest<{ box: 0 | 1 }>(types.bitBox.infer)
 		})
 		test("nested", () => {
 			const t = $.type("box<0|1, box<'one', 'zero'>>")
 			attest(t.condition).equals(
 				type({ box: ["0|1", "|", { box: "'one'|'zero'" }] }).condition
 			)
-			attest(t.infer).typed as {
+			attest<{
 				box:
 					| 0
 					| 1
 					| {
 							box: "one" | "zero"
 					  }
-			}
+			}>(t.infer)
 		})
 		test("in expression", () => {
 			const t = $.type("string | box<0, 1> | boolean")
@@ -152,7 +151,7 @@ suite("generics", () => {
 				// as const is required for TS <=5.0
 				type("string|boolean", "|", { box: "0|1" } as const).condition
 			)
-			attest(t.infer).typed as string | { box: 0 | 1 } | boolean
+			attest<string | { box: 0 | 1 } | boolean>(t.infer)
 		})
 		test("this in args", () => {
 			const t = $.type("box<0,  this>")
@@ -164,13 +163,13 @@ suite("generics", () => {
 					box: "0|this"
 				}).condition
 			)
-			attest(t.infer).typed as Expected
+			attest<Expected>(t.infer)
 		})
 		test("right bounds", () => {
 			// should be able to differentiate between > that is part of a right
 			// bound and > that closes a generic instantiation
 			const t = $.type("box<number>5, string>=7>")
-			attest(t.infer).typed as { box: string | number }
+			attest<{ box: string | number }>(t.infer)
 			attest(t.condition).equals(
 				type({
 					box: "number>5|string>=7"
@@ -186,7 +185,7 @@ suite("generics", () => {
 				bar: "'bar'"
 			}).export()
 			const t = types.box("'baz'")
-			attest(t.infer).typed as { box: "bar" | "baz" }
+			attest<{ box: "bar" | "baz" }>(t.infer)
 			attest(t.condition).equals(type({ box: "'bar' | 'baz'" }).condition)
 		})
 		test("self-reference", () => {
@@ -199,11 +198,11 @@ suite("generics", () => {
 				},
 				reference: "alternate<0, 1>"
 			}).export()
-			attest(types.reference.infer.swap.swap.order).typed as [0, 1]
-			attest(types.reference.infer.swap.swap.swap.order).typed as [1, 0]
+			attest<[0, 1]>(types.reference.infer.swap.swap.order)
+			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
 			const fromCall = types.alternate("'off'", "'on'")
-			attest(fromCall.infer.swap.swap.order).typed as ["off", "on"]
-			attest(fromCall.infer.swap.swap.swap.order).typed as ["on", "off"]
+			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
+			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
 		})
 		test("self-reference no params", () => {
 			attest(() =>
@@ -222,7 +221,7 @@ suite("generics", () => {
 				},
 				actual: "  box  < 'foo'  ,   'bar'  > "
 			}).export()
-			attest(types.actual.infer).typed as { box: "foo" | "bar" }
+			attest<{ box: "foo" | "bar" }>(types.actual.infer)
 		})
 
 		test("allows external scope reference to be resolved", () => {
@@ -234,7 +233,7 @@ suite("generics", () => {
 				orExternal: types.orExternal,
 				internal: "orExternal<'internal'>"
 			}).export()
-			attest(b.internal.infer).typed as "internal" | "external"
+			attest<"internal" | "external">(b.internal.infer)
 		})
 
 		suite("parse errors", () => {

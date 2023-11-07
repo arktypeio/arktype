@@ -12,7 +12,7 @@ suite("type methods", () => {
 		if (problems) {
 			problems.throw()
 		} else {
-			attest(data).typed as string
+			attest<string>(data)
 		}
 	})
 	test("allows", () => {
@@ -20,7 +20,7 @@ suite("type methods", () => {
 		const data: unknown = 4
 		if (t.allows(data)) {
 			// narrows correctly
-			attest(data).typed as number
+			attest<number>(data)
 		} else {
 			throw new Error()
 		}
@@ -46,11 +46,7 @@ suite("scope utilities", () => {
 				b: ["boolean"],
 				c: "this"
 			})
-			attest(def).typed as {
-				a: "string|number"
-				b: ["boolean"]
-				c: "this"
-			}
+			attest<{ a: "string|number"; b: ["boolean"]; c: "this" }>(def)
 		})
 		test("ark error", () => {
 			// currently is a no-op, so only has type error
@@ -64,7 +60,7 @@ suite("scope utilities", () => {
 				a: "string[]"
 			})
 			const ok = $.define(["a[]|boolean"])
-			attest(ok).typed as ["a[]|boolean"]
+			attest<["a[]|boolean"]>(ok)
 			// @ts-expect-error
 			attest($.define({ not: "ok" })).type.errors(
 				writeUnresolvableMessage("ok")

@@ -13,7 +13,7 @@ suite("hkt", () => {
 	}
 	test("base", () => {
 		type result = Hkt.apply<AppendKind, [2, [0, 1]]>
-		attest({} as result).typed as [0, 1, 2]
+		attest<[0, 1, 2], result>()
 	})
 	test("reify", () => {
 		const append = ((element: unknown, to: readonly unknown[]) => [
@@ -21,6 +21,6 @@ suite("hkt", () => {
 			element
 		]) as Hkt.apply<Hkt.Reify, AppendKind>
 		const result = append([2, [0, 1]])
-		attest(result).typed as [0, 1, 2]
+		attest<[0, 1, 2]>(result)
 	})
 })

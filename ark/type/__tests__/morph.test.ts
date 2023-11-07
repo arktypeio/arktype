@@ -8,29 +8,29 @@ import { suite, test } from "mocha"
 suite("morph", () => {
 	test("base", () => {
 		const t = type("boolean").morph((data) => `${data}`)
-		attest(t).typed as Type<(In: boolean) => string>
-		attest(t.infer).typed as string
-		attest(t.inferIn).typed as boolean
+		attest<Type<(In: boolean) => Out<string>>>(t)
+		attest<string>(t.infer)
+		attest<boolean>(t.inferIn)
 		const result = t(true)
 		if (result.problems) {
 			return result.problems.throw()
 		}
-		attest(result.data).equals("true").typed as string
+		attest<string>(result.data).equals("true")
 		attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
 		attest(t.root).equals(type(["boolean", "=>", (data) => `${data}`]).root)
 	})
 	test("endomorph", () => {
 		const t = type(["boolean", "=>", (data) => !data])
-		attest(t).typed as Type<(In: boolean) => boolean>
+		attest<Type<(In: boolean) => Out<boolean>>>(t)
 		const result = t(true)
 		if (result.problems) {
 			return result.problems.throw()
 		}
-		attest(result.data).equals(false).typed as boolean
+		attest<boolean>(result.data).equals(false)
 	})
 	test("chained to type", () => {
 		const t = type(["string>5", "=>", arktypes.parse.date])
-		attest(t).typed as Type<(In: string) => Out<Date>>
+		attest<Type<(In: string) => Out<Date>>>(t)
 		attest(t("5/21/1993").data?.getDate()).equals(21)
 		attest(t("foobar").problems?.summary).snap(
 			"Must be a valid date (was 'foobar')"
@@ -41,23 +41,25 @@ suite("morph", () => {
 			name: "string",
 			age: "number"
 		})
-		attest(parsedUser).typed as Type<
-			(In: string) => Out<{
-				name: string
-				age: number
-			}>,
-			Ark
-		>
+		attest<
+			Type<
+				(In: string) => Out<{
+					name: string
+					age: number
+				}>,
+				Ark
+			>
+		>(parsedUser)
 	})
 	test("any as out", () => {
 		const t = type("string", "=>", (s) => s as any)
-		attest(t.inferIn).typed as string
-		attest(t.infer).typed as any
+		attest<string>(t.inferIn)
+		attest<any>(t.infer)
 	})
 	test("never as out", () => {
 		const t = type("string", "=>", (s) => s as never)
-		attest(t.inferIn).typed as string
-		attest(t.infer).typed as never
+		attest<string>(t.inferIn)
+		attest<never>(t.infer)
 	})
 	test("return problem", () => {
 		const divide100By = type([
@@ -65,7 +67,7 @@ suite("morph", () => {
 			"=>",
 			(n, problems) => (n === 0 ? problems.mustBe("non-zero", n, []) : 100 / n)
 		])
-		attest(divide100By).typed as Type<(In: number) => number>
+		attest<Type<(In: number) => Out<number>>>(divide100By)
 		attest(divide100By(5).data).equals(20)
 		attest(divide100By(0).problems?.summary).snap("Must be non-zero (was 0)")
 	})
@@ -87,32 +89,29 @@ suite("morph", () => {
 	})
 	test("at path", () => {
 		const t = type({ a: ["string", "=>", (data) => data.length] })
-		attest(t).typed as Type<{
-			a: (In: string) => number
-		}>
+		attest<Type<{ a: (In: string) => Out<number> }>>(t)
+
 		const result = t({ a: "four" })
 		if (result.problems) {
 			return result.problems.throw()
 		}
-		attest(result.data).equals({ a: 4 }).typed as {
-			a: number
-		}
+		attest<{ a: number }>(result.data).equals({ a: 4 })
 	})
 	test("in array", () => {
 		const types = scope({
 			lengthOfString: ["string", "=>", (data) => data.length],
 			mapToLengths: "lengthOfString[]"
 		}).export()
-		attest(types.mapToLengths).typed as Type<((In: string) => number)[]>
+		attest<Type<((In: string) => Out<number>)[]>>(types.mapToLengths)
 		const result = types.mapToLengths(["1", "22", "333"])
 		if (result.problems) {
 			return result.problems.throw()
 		}
-		attest(result.data).equals([1, 2, 3]).typed as number[]
+		attest<number[]>(result.data).equals([1, 2, 3])
 	})
 	test("object inference", () => {
 		const t = type([{ a: "string" }, "=>", (data) => `${data}`])
-		attest(t).typed as Type<(In: { a: string }) => string>
+		attest<Type<(In: { a: string }) => Out<string>>>(t)
 	})
 	test("intersection", () => {
 		const $ = scope({
@@ -122,11 +121,11 @@ suite("morph", () => {
 			bAndA: () => $.type("b&a")
 		})
 		// const types = $.compile()
-		// attest(types.aAndB).typed as Type<(In: 3.14) => string>
+		// attest<Type<(In: 3.14) => string>>(types.aAndB)
 		// attest(types.aAndB.node).snap({
 		//     number: { rules: { value: 3.14 }, morph: "(function)" }
 		// })
-		// attest(types.bAndA).typed as typeof types.aAndB
+		// attest<typeof types.aAndB>(types.bAndA)
 		// attest(types.bAndA.node).equals(types.aAndB.node)
 	})
 	test("object intersection", () => {
@@ -136,7 +135,7 @@ suite("morph", () => {
 		//     c: "a&b"
 		// })
 		// const types = $.compile()
-		// attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => string>
+		// attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
 		// attest(types.c.node).snap({
 		//     object: {
 		//         rules: {
@@ -156,17 +155,17 @@ suite("morph", () => {
 			aOrB: "a|b",
 			bOrA: "b|a"
 		}).export()
-		attest(types.aOrB).typed as Type<boolean | ((In: number) => string)>
+		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
 		// attest(types.aOrB.node).snap({
 		//     number: { rules: {}, morph: "(function)" },
 		//     boolean: true
 		// })
-		// attest(types.bOrA).typed as typeof types.aOrB
+		// attest<typeof types.aOrB>(types.bOrA)
 		// attest(types.bOrA.node).equals(types.aOrB.node)
 	})
 	test("union with output", () => {
 		const t = type("number|parse.number")
-		attest(t.infer).typed as number
+		attest<number>(t.infer)
 	})
 	test("deep intersection", () => {
 		const types = scope({
@@ -174,9 +173,8 @@ suite("morph", () => {
 			b: { a: "1" },
 			c: "a&b"
 		}).export()
-		attest(types.c).typed as Type<{
-			a: (In: 1) => number
-		}>
+		attest<Type<{ a: (In: 1) => Out<number> }>>(types.c)
+
 		// attest(types.c.node).snap({
 		//     object: {
 		//         props: {
@@ -191,14 +189,17 @@ suite("morph", () => {
 			b: { a: "Function" },
 			c: "a|b"
 		}).export()
-		attest(types.c).typed as Type<
-			| {
-					a: (In: number) => string
-			  }
-			| {
-					a: (...args: any[]) => unknown
-			  }
-		>
+		attest<
+			Type<
+				| {
+						a: (In: number) => Out<string>
+				  }
+				| {
+						a: Function
+				  }
+			>
+		>(types.c)
+
 		// attest(types.c.node).snap({
 		//     object: [
 		//         {
@@ -225,7 +226,7 @@ suite("morph", () => {
 			b: () => $.type("a").morph((n) => n === 0)
 		})
 		const types = $.export()
-		attest(types.b).typed as Type<(In: string) => boolean>
+		attest<Type<(In: string) => Out<boolean>>>(types.b)
 		// attest(types.b.node).snap({
 		//     string: { rules: {}, morph: ["(function)", "(function)"] }
 		// })
@@ -237,7 +238,7 @@ suite("morph", () => {
 		})
 
 		const types = $.export()
-		attest(types.b).typed as Type<(In: { a: string }) => boolean>
+		attest<Type<(In: { a: string }) => Out<boolean>>>(types.b)
 		// attest(types.b.node).snap({
 		//     object: { rules: { props: { a: "a" } }, morph: "(function)" }
 		// })
@@ -250,7 +251,7 @@ suite("morph", () => {
 			"=>",
 			({ a }) => a === 0
 		])
-		attest(t).typed as Type<(In: { a: string }) => boolean>
+		attest<Type<(In: { a: string }) => Out<boolean>>>(t)
 		// attest(t.node).snap({
 		//     object: {
 		//         rules: {
@@ -267,7 +268,7 @@ suite("morph", () => {
 			c: () => $.type("a|b")
 		})
 		const types = $.export()
-		attest(types.c).typed as Type<[boolean] | ((In: [string]) => string[])>
+		attest<Type<[boolean] | ((In: [string]) => Out<string[]>)>>(types.c)
 	})
 	test("double intersection", () => {
 		// attest(() => {
@@ -312,14 +313,17 @@ suite("morph", () => {
 			c: { b: "boolean" }
 		})
 		const t = $.type("a|b")
-		attest(t).typed as Type<
-			| {
-					a: (In: string) => string
-			  }
-			| {
-					a: boolean
-			  }
-		>
+		attest<
+			Type<
+				| {
+						a: (In: string) => Out<string>
+				  }
+				| {
+						a: boolean
+				  }
+			>
+		>(t)
+
 		attest(() => {
 			scope({
 				a: { a: ["string", "=>", (s) => s.trim()] },
@@ -374,7 +378,7 @@ suite("morph", () => {
 				return result
 			}
 		])
-		attest(parsedInt).typed as Type<(In: string) => number>
+		attest<Type<(In: string) => Out<number>>>(parsedInt)
 		attest(parsedInt("5").data).snap(5)
 		attest(parsedInt("five").problems?.summary).snap(
 			"Must be an integer string (was 'five')"
@@ -382,7 +386,7 @@ suite("morph", () => {
 	})
 	test("nullable return", () => {
 		const toNullableNumber = type(["string", "=>", (s) => s.length || null])
-		attest(toNullableNumber).typed as Type<(In: string) => number | null>
+		attest<Type<(In: string) => Out<number | null>>>(toNullableNumber)
 	})
 	test("undefinable return", () => {
 		const toUndefinableNumber = type([
@@ -390,9 +394,7 @@ suite("morph", () => {
 			"=>",
 			(s) => s.length || undefined
 		])
-		attest(toUndefinableNumber).typed as Type<
-			(In: string) => number | undefined
-		>
+		attest<Type<(In: string) => Out<number | undefined>>>(toUndefinableNumber)
 	})
 	test("null or undefined return", () => {
 		const toMaybeNumber = type([
@@ -400,8 +402,6 @@ suite("morph", () => {
 			"=>",
 			(s) => (s.length === 0 ? undefined : s.length === 1 ? null : s.length)
 		])
-		attest(toMaybeNumber).typed as Type<
-			(In: string) => number | null | undefined
-		>
+		attest<Type<(In: string) => Out<number | null | undefined>>>(toMaybeNumber)
 	})
 })

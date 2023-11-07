@@ -5,10 +5,10 @@ import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand
 
 suite("parse enclosed", () => {
 	test("with spaces", () => {
-		attest(type("'this has spaces'").infer).typed as "this has spaces"
+		attest<"this has spaces">(type("'this has spaces'").infer)
 	})
 	test("with neighbors", () => {
-		attest(type("'foo'|/.*/[]").infer).typed as "foo" | string[]
+		attest<"foo" | string[]>(type("'foo'|/.*/[]").infer)
 	})
 	suite("errors", () => {
 		suite("unterminated", () => {
@@ -33,13 +33,13 @@ suite("parse enclosed", () => {
 		})
 	})
 	test("single-quoted", () => {
-		attest(type("'hello'").infer).typed as "hello"
+		attest<"hello">(type("'hello'").infer)
 	})
 	test("double-quoted", () => {
-		attest(type('"goodbye"').infer).typed as "goodbye"
+		attest<"goodbye">(type('"goodbye"').infer)
 	})
 	test("regex literal", () => {
-		attest(type("/.*/").infer).typed as string
+		attest<string>(type("/.*/").infer)
 	})
 	test("invalid regex", () => {
 		attest(() => type("/[/")).throws.snap(
@@ -47,18 +47,18 @@ suite("parse enclosed", () => {
 		)
 	})
 	test("mixed quote types", () => {
-		attest(type(`"'single-quoted'"`).infer).typed as "'single-quoted'"
-		attest(type(`'"double-quoted"'`).infer).typed as '"double-quoted"'
+		attest<"'single-quoted'">(type(`"'single-quoted'"`).infer)
+		attest<'"double-quoted"'>(type(`'"double-quoted"'`).infer)
 	})
 	test("ignores enclosed operators", () => {
-		attest(type("'yes|no|maybe'").infer).typed as "yes|no|maybe"
+		attest<"yes|no|maybe">(type("'yes|no|maybe'").infer)
 	})
 	test("mix of enclosed and unenclosed operators", () => {
-		attest(type("'yes|no'|'true|false'").infer).typed as "yes|no" | "true|false"
+		attest<"yes|no" | "true|false">(type("'yes|no'|'true|false'").infer)
 	})
 	test("escaped enclosing", () => {
 		const t = type("'don\\'t'")
-		attest(t.infer).typed as "don't"
+		attest<"don't">(t.infer)
 	})
 	test("string literal stress", () => {
 		const s = `"3.
@@ -85,6 +85,6 @@ suite("parse enclosed", () => {
 		// parses exactly 1001 characters before hitting a recursion limit
 		const t = type(s)
 		type Expected = typeof s extends `"${infer enclosed}"` ? enclosed : never
-		attest(t.infer).typed as Expected
+		attest<Expected>(t.infer)
 	})
 })

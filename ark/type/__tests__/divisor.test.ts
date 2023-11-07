@@ -13,10 +13,10 @@ suite("divisibility", () => {
 			//         divisor: 2
 			//     }
 			// })
-			attest(divisibleByTwo.infer).typed as number
+			attest<number>(divisibleByTwo.infer)
 		})
 		test("whitespace after %", () => {
-			attest(type("number % 5").infer).typed as number
+			attest<number>(type("number % 5").infer)
 		})
 		test("with bound", () => {
 			const t = type("number%8<3")
@@ -25,7 +25,7 @@ suite("divisibility", () => {
 		})
 		test("allows non-narrowed divisor", () => {
 			const z = 5 as number
-			attest(type(`number%${z}`).infer).typed as number
+			attest<number>(type(`number%${z}`).infer)
 		})
 		test("fails at runtime on non-integer divisor", () => {
 			attest(() => type("number%2.3")).throws(writeInvalidDivisorMessage("2.3"))

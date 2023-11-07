@@ -38,13 +38,13 @@ export type composeRecurse<
 	instance extends {},
 	labels extends 1[]
 > = traits extends readonly [
-	infer head extends AbstractableConstructor,
+	abstract new (...args: infer nextArgs) => infer nextInstance,
 	...infer tail
 ]
 	? composeRecurse<
 			tail,
-			intersectParameters<parameters, ConstructorParameters<head>>,
-			instance & InstanceType<head>,
+			intersectParameters<parameters, nextArgs>,
+			instance & nextInstance,
 			labels
 	  >
 	: abstract new (...args: applyElementLabels<parameters, labels>) => instance

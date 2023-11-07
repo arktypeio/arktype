@@ -7,7 +7,7 @@ import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclo
 suite("thunk", () => {
 	test("thunk", () => {
 		const t = type(() => type("boolean"))
-		attest(t.infer).typed as boolean
+		attest<boolean>(t.infer)
 		attest(() => {
 			// @ts-expect-error
 			type(() => type("moolean"))
@@ -18,7 +18,7 @@ suite("thunk", () => {
 			a: () => $.type({ b: "b" }),
 			b: () => $.type({ a: "string" })
 		})
-		attest($.infer).typed as {
+		attest<{
 			a: {
 				b: {
 					a: string
@@ -27,17 +27,18 @@ suite("thunk", () => {
 			b: {
 				a: string
 			}
-		}
+		}>($.infer)
+
 		const types = $.export()
-		attest(types.a.infer).typed as {
+		attest<{
 			b: {
 				a: string
 			}
-		}
+		}>(types.a.infer)
+
 		// attest(types.a.node).snap({ object: { props: { b: "b" } } })
-		attest(types.b.infer).typed as {
-			a: string
-		}
+		attest<{ a: string }>(types.b.infer)
+
 		// attest(types.b.node).snap({
 		//     object: { props: { a: { object: { props: { a: "string" } } } } }
 		// })
@@ -49,10 +50,7 @@ suite("thunk", () => {
 			aAndB: () => $.type("a&b")
 		})
 		const types = $.export()
-		attest(types.aAndB.infer).typed as {
-			a: string
-			b: boolean
-		}
+		attest<{ a: string; b: boolean }>(types.aAndB.infer)
 		// attest(types.aAndB.node).snap({
 		//     object: { props: { a: "string", b: "boolean" } }
 		// })
@@ -60,12 +58,12 @@ suite("thunk", () => {
 	test("shallow thunk in type", () => {
 		const t = type(() => type("string"))
 		attest(t.condition).equals(type("string").condition)
-		attest(t.infer).typed as string
+		attest<string>(t.infer)
 	})
 	test("deep thunk in type", () => {
 		const t = type({ a: () => type("string") })
 		attest(t.condition).equals(type({ a: "string" }).condition)
-		attest(t.infer).typed as string
+		attest<{ a: string }>(t.infer)
 	})
 	test("non-type thunk in scope", () => {
 		const $ = scope({

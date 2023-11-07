@@ -18,18 +18,18 @@ declare function pipe<f extends Fn, args extends readonly unknown[]>(
 suite("overloads", () => {
 	test("parameters", () => {
 		const t = {} as Parameters<overloadOf<typeof f>>
-		attest(t).typed as [a: 2, b: 2] | [a?: 1 | undefined] | []
+		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)
 	})
 	test("returns", () => {
 		const t = {} as ReturnType<overloadOf<typeof f>>
-		attest(t).typed as void | 1 | 2
+		attest<void | 1 | 2>(t)
 	})
 	test("overload return", () => {
 		const limit = {} as ((s: string) => string) & ((n: number) => number)
 		const fromNumber = {} as overloadOf<typeof limit, [5]>
-		attest(fromNumber).typed as number
+		attest<number>(fromNumber)
 		const fromString = {} as overloadOf<typeof limit, ["foo"]>
-		attest(fromString).typed as string
+		attest<string>(fromString)
 	})
 	test("()=>never", () => {
 		const t = {} as Parameters<
@@ -40,14 +40,14 @@ suite("overloads", () => {
 				(): never
 			}>
 		>
-		attest(t).typed as [a: 2, b: 2] | [a?: 1 | undefined] | []
+		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)
 	})
 	test("pipe", () => {
 		const limit = {} as ((s: string) => string) & ((n: number) => number)
 		const n = pipe([5], limit)
-		attest(n).typed as number
+		attest<number>(n)
 		const s = pipe(["foo"], limit)
-		attest(s).typed as string
+		attest<string>(s)
 		// @ts-expect-error
 		const bad = pipe([], limit)
 		// @ts-expect-error

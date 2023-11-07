@@ -8,7 +8,10 @@ import type { GenericProps } from "../../type.js"
 import type { inferDefinition } from "../definition.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
-import type { Comparator } from "../string/shift/operator/bounds.js"
+import type {
+	Comparator,
+	LimitLiteral
+} from "../string/shift/operator/bounds.js"
 import type { inferIntersection } from "./intersections.js"
 
 export type inferAst<ast, $, args> = ast extends List
@@ -51,7 +54,7 @@ export type inferExpression<
 	: ast[1] extends "&"
 	? inferIntersection<inferAst<ast[0], $, args>, inferAst<ast[2], $, args>>
 	: ast[1] extends Comparator
-	? ast[0] extends NumberLiteral
+	? ast[0] extends LimitLiteral
 		? inferAst<ast[2], $, args>
 		: inferAst<ast[0], $, args>
 	: ast[1] extends "%"

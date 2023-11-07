@@ -44,11 +44,11 @@ or("foo|bar")
 const ff = type("string").or("foobar|baz")
 
 const types = scope({ notASpace: { a: type("string") } }).export()
-attest(types.notASpace).typed as Type<{ a: string }, Ark>
+attest<Type<{ a: string }, Ark>>(types.notASpace)
 
 test("type definition", () => {
 	const types = scope({ a: type("string") }).export()
-	attest(types.a.infer).typed as string
+	attest<string>(types.a.infer)
 	attest(() =>
 		// @ts-expect-error
 		scope({ a: type("strong") })

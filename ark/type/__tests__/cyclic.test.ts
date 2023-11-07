@@ -53,7 +53,7 @@ suite("cyclic", () => {
 		//     object: { props: { b: "b" } }
 		// })
 		// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
-		attest(types.a.infer).typed as {
+		attest<{
 			b: {
 				a: {
 					b: {
@@ -61,12 +61,13 @@ suite("cyclic", () => {
 					}
 				}
 			}
-		}
-		attest(types.b.infer.a.b.a.b.a.b.a).typed as {
+		}>(types.a.infer)
+		attest<{
 			b: {
 				a: any
 			}
-		}
+		}>(types.b.infer.a.b.a.b.a.b.a)
+
 		// @ts-expect-error
 		attest(types.a.infer.b.a.b.c).type.errors.snap(
 			`Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
