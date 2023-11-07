@@ -11,14 +11,13 @@ import {
 	type parseBasis
 } from "../bases/basis.js"
 import { type NonEnumerableDomain } from "../bases/domain.js"
-import { type ConstraintKind } from "../constraints/constraint.js"
 import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
 import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
 import { BaseRoot } from "../root.js"
 import {
-	type IntersectionNode,
 	type IntersectionSchema,
+	type parseIntersectionSchema,
 	type validateIntersectionSchema
 } from "./intersection.js"
 
@@ -26,9 +25,7 @@ export type BranchKind = "intersection" | BasisKind
 
 export type BranchNode = Node<BranchKind>
 
-export type BranchSchema<basis extends Schema<BasisKind> = Schema<BasisKind>> =
-	| basis
-	| IntersectionSchema<basis>
+export type BranchSchema = Schema<BranchKind>
 
 // export type validateSchemaBranch<input> = conform<
 // 	input,
@@ -60,15 +57,9 @@ export type validateBranchSchema<schema> = schema extends
 
 export type parseBranchSchema<schema> = schema extends Schema<BasisKind>
 	? parseBasis<schema>
-	: schema extends BranchSchema<infer basis>
-	? Schema<BasisKind> extends basis
-		? // basis will be un-narrowed if the the intersection has no constraints i.e. node({})
-		  IntersectionNode<unknown>
-		: keyof schema & ConstraintKind extends never
-		? // if there are no constraint keys, reduce to the basis node
-		  parseBasis<basis>
-		: IntersectionNode<parseBasis<basis>["infer"]>
-	: Node<"intersection" | BasisKind>
+	: schema extends IntersectionSchema
+	? parseIntersectionSchema<schema>
+	: Node<BranchKind>
 
 export const parseBranchSchema = (schema: BranchSchema): BranchNode =>
 	maybeParseBasis(schema) ??
