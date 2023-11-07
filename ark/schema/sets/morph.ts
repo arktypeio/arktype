@@ -13,14 +13,12 @@ import {
 } from "../bases/basis.js"
 import { type NonEnumerableDomain } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
-import { type ConstraintKind } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
 import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
 import { BaseRoot } from "../root.js"
 import type {
-	IntersectionNode,
 	IntersectionSchema,
 	parseIntersectionSchema,
 	validateIntersectionSchema
