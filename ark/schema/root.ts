@@ -29,11 +29,6 @@ export type Root<t = unknown, kind extends RootKind = RootKind> = {
 
 export type RootKind = SetKind | BasisKind
 
-export type rootRightOf<kind extends RootKind> = Extract<
-	rightOf<kind>,
-	RootKind
->
-
 export abstract class BaseRoot<
 	declaration extends BaseNodeDeclaration,
 	t

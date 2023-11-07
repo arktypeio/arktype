@@ -1,42 +1,78 @@
-import { type conform, isArray, type mutable } from "@arktype/util"
-import type { declareNode, withAttributes } from "../base.js"
+import {
+	type AbstractableConstructor,
+	type exactMessageOnError,
+	isArray,
+	type mutable
+} from "@arktype/util"
+import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import {
+	type BasisKind,
+	maybeParseBasis,
+	type parseBasis
+} from "../bases/basis.js"
+import { type NonEnumerableDomain } from "../bases/domain.js"
+import { type ConstraintKind } from "../constraints/constraint.js"
 import { type Discriminant, discriminate } from "../discriminate.js"
 import { Disjoint } from "../disjoint.js"
-import { type Node, type Schema } from "../nodes.js"
-import { BaseRoot, type rootRightOf } from "../root.js"
+import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
+import { BaseRoot } from "../root.js"
 import {
-	MorphNode,
-	type MorphSchema,
-	type parseMorphSchema,
-	parseValidatorSchema,
-	type validateMorphSchema,
-	type validateValidatorSchema,
-	type ValidatorSchema
-} from "./morph.js"
+	type IntersectionNode,
+	type IntersectionSchema,
+	type validateIntersectionSchema
+} from "./intersection.js"
 
-export type UnionChildKind = rootRightOf<"union">
+export type BranchKind = "intersection" | BasisKind
 
-export type BranchSchema = Schema<UnionChildKind>
+export type BranchNode = Node<BranchKind>
 
-export type BranchNode = Node<UnionChildKind>
+export type BranchSchema<basis extends Schema<BasisKind> = Schema<BasisKind>> =
+	| basis
+	| IntersectionSchema<basis>
 
-export type validateSchemaBranch<input> = conform<
-	input,
-	"morph" extends keyof input
-		? validateMorphSchema<input>
-		: validateValidatorSchema<input>
->
+// export type validateSchemaBranch<input> = conform<
+// 	input,
+// 	"morph" extends keyof input
+// 		? validateMorphSchema<input>
+// 		: validateValidatorSchema<input>
+// >
 
-export type parseSchemaBranch<input> = input extends MorphSchema
-	? parseMorphSchema<input>
-	: input extends ValidatorSchema
-	? parseValidatorSchema<input>
-	: BranchNode
+// export type parseSchemaBranch<input> = input extends MorphSchema
+// 	? parseMorphSchema<input>
+// 	: input extends ValidatorSchema
+// 	? parseValidatorSchema<input>
+// 	: BranchNode
 
-export const parseSchemaBranch = (schema: BranchSchema) =>
-	typeof schema === "object" && "morph" in schema
-		? MorphNode.parse(schema)
-		: parseValidatorSchema(schema)
+// export const parseSchemaBranch = (schema: BranchSchema) =>
+// 	typeof schema === "object" && "morph" in schema
+// 		? MorphNode.parse(schema)
+// 		: parseValidatorSchema(schema)
+
+export type validateBranchSchema<schema> = schema extends
+	| NonEnumerableDomain
+	| AbstractableConstructor
+	? schema
+	: schema extends DiscriminableSchema<BasisKind>
+	? exactMessageOnError<schema, DiscriminableSchema<keyof schema & BasisKind>>
+	: schema extends IntersectionSchema
+	? validateIntersectionSchema<schema>
+	: BranchSchema
+
+export type parseBranchSchema<schema> = schema extends Schema<BasisKind>
+	? parseBasis<schema>
+	: schema extends BranchSchema<infer basis>
+	? Schema<BasisKind> extends basis
+		? // basis will be un-narrowed if the the intersection has no constraints i.e. node({})
+		  IntersectionNode<unknown>
+		: keyof schema & ConstraintKind extends never
+		? // if there are no constraint keys, reduce to the basis node
+		  parseBasis<basis>
+		: IntersectionNode<parseBasis<basis>["infer"]>
+	: Node<"intersection" | BasisKind>
+
+export const parseBranchSchema = (schema: BranchSchema): BranchNode =>
+	maybeParseBasis(schema) ??
+	BaseNode.classesByKind.intersection.parse(schema as IntersectionSchema)
 
 export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
@@ -44,7 +80,9 @@ export type ExpandedUnionSchema<
 	readonly union: branches
 }>
 
-export type UnionSchema = readonly BranchSchema[] | ExpandedUnionSchema
+export type UnionSchema<
+	branches extends readonly BranchSchema[] = readonly BranchSchema[]
+> = branches | ExpandedUnionSchema<branches>
 
 export type UnionInner = withAttributes<{
 	readonly union: readonly BranchNode[]
@@ -56,27 +94,15 @@ export type UnionDeclaration = declareNode<{
 	inner: UnionInner
 	intersections: {
 		union: "union" | Disjoint
-		morph: "union" | Disjoint
 		intersection: "union" | Disjoint
 		rule: "union" | Disjoint
 	}
-	reductions: "union" | UnionChildKind
+	reductions: "union" | BranchKind
 }>
 
 export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 	static readonly kind = "union"
 	static readonly declaration: UnionDeclaration
-
-	private static intersectBranch = (
-		l: UnionNode,
-		r: BranchNode
-	): Disjoint | UnionInner => {
-		const union = intersectBranches(l.union, [r])
-		if (union instanceof Disjoint) {
-			return union
-		}
-		return { union }
-	}
 
 	static readonly definition = this.define({
 		kind: "union",
@@ -104,8 +130,13 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 				}
 				return { union: resultBranches }
 			},
-			morph: this.intersectBranch,
-			intersection: this.intersectBranch,
+			intersection: (l, r) => {
+				const union = intersectBranches(l.union, [r])
+				if (union instanceof Disjoint) {
+					return union
+				}
+				return { union }
+			},
 			rule: (l, r) => {
 				const branches: BranchNode[] = []
 				for (const branch of l.union) {
@@ -131,7 +162,7 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 				Object.assign(result, attributes)
 				schemaBranches = branches
 			}
-			result.union = schemaBranches.map(parseSchemaBranch)
+			result.union = schemaBranches.map(parseBranchSchema)
 			return result
 		},
 		reduceToNode: (inner) => {

@@ -9,7 +9,6 @@ import {
 	type ConstraintClassesByKind,
 	type ConstraintDeclarationsByKind
 } from "./constraints/constraint.js"
-import { type Root } from "./root.js"
 import { type MorphSchema, type ValidatorSchema } from "./sets/morph.js"
 import {
 	type SetClassesByKind,
@@ -17,17 +16,17 @@ import {
 } from "./sets/set.js"
 import {
 	type BranchSchema,
-	type parseSchemaBranch,
+	type parseBranchSchema,
 	UnionNode,
-	type validateSchemaBranch
+	type validateBranchSchema
 } from "./sets/union.js"
 
 type RootNodeParser = {
 	<branches extends readonly unknown[]>(
 		...branches: {
-			[i in keyof branches]: validateSchemaBranch<branches[i]>
+			[i in keyof branches]: validateBranchSchema<branches[i]>
 		}
-	): parseNodeBranches<branches>
+	): parseBranchSchema<branches>
 }
 
 // static from<const branches extends readonly unknown[]>(
@@ -69,13 +68,6 @@ export const node = Object.assign(parseNode as RootNodeParser, {
 })
 
 export type RootInput = listable<ValidatorSchema | MorphSchema>
-
-export type parseNodeBranches<branches extends readonly unknown[]> =
-	branches["length"] extends 0
-		? UnionNode<never>
-		: branches["length"] extends 1
-		? parseSchemaBranch<branches[0]>
-		: Root<parseSchemaBranch<branches[number]>["infer"]>
 
 export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 	[rKind in keyof intersectionMap]: (

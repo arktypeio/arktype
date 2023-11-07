@@ -1,10 +1,10 @@
 import { type declareNode, type withAttributes } from "../base.js"
 import { type Disjoint } from "../disjoint.js"
 import { type Node, type Schema } from "../nodes.js"
-import { BaseRoot, type rootRightOf } from "../root.js"
-import { type Morph } from "./morph.js"
+import { BaseRoot } from "../root.js"
+import { type Morph, type ValidatorKind } from "./morph.js"
 
-export type MatchChildKind = rootRightOf<"match">
+export type MatchChildKind = "morph" | ValidatorKind
 
 export type MatchNodeEntry = [
 	when: Node<MatchChildKind>,

@@ -43,8 +43,8 @@ export const baseAttributeKeys = {
 
 export const setKinds = [
 	"match",
-	"union",
 	"morph",
+	"union",
 	"intersection"
 ] as const satisfies readonly SetKind[]
 
@@ -92,6 +92,8 @@ type allowedIntersectionKeyOf<kind extends NodeKind> =
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: {
 		[rKey in allowedIntersectionKeyOf<lKey>]?: lKey | Disjoint | null
+	} & {
+		[_ in Exclude<NodeKind | "rule", allowedIntersectionKeyOf<lKey>>]?: never
 	}
 }
 

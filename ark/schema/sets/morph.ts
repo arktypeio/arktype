@@ -1,61 +1,53 @@
 import {
-	type AbstractableConstructor,
-	type exactMessageOnError,
+	hasDomain,
+	isArray,
 	type listable,
 	type mutable,
 	throwParseError
 } from "@arktype/util"
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
-import {
-	type BasisKind,
-	maybeParseBasis,
-	type parseBasis
-} from "../bases/basis.js"
-import { type NonEnumerableDomain } from "../bases/domain.js"
+import { maybeParseBasis, parseBasis } from "../bases/basis.js"
 import { builtins } from "../builtins.js"
-import { type ConstraintKind } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
-import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
-import { BaseRoot, type rootRightOf } from "../root.js"
-import type {
-	IntersectionNode,
-	IntersectionSchema,
-	validateIntersectionSchema
-} from "./intersection.js"
+import { type Node, type Schema } from "../nodes.js"
+import { BaseRoot, type Root } from "../root.js"
+import type { IntersectionSchema } from "./intersection.js"
+import {
+	type BranchKind,
+	parseBranchSchema,
+	type UnionNode,
+	type UnionSchema,
+	type validateBranchSchema
+} from "./union.js"
 
-export type ValidatorNode = Node<rootRightOf<"morph">>
+export type ValidatorKind = "union" | BranchKind
 
-export type ValidatorSchema<
-	basis extends Schema<BasisKind> = Schema<BasisKind>
-> = basis | IntersectionSchema<basis>
+export type ValidatorSchema = Schema<ValidatorKind>
 
-export type validateValidatorSchema<schema> = schema extends
-	| NonEnumerableDomain
-	| AbstractableConstructor
-	? schema
-	: schema extends DiscriminableSchema<BasisKind>
-	? exactMessageOnError<schema, DiscriminableSchema<keyof schema & BasisKind>>
-	: schema extends IntersectionSchema
-	? validateIntersectionSchema<schema>
-	: ValidatorSchema
+export type ValidatorNode = Node<ValidatorKind>
 
-export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
-	? parseBasis<schema>
-	: schema extends ValidatorSchema<infer basis>
-	? Schema<BasisKind> extends basis
-		? // basis will be un-narrowed if the the intersection has no constraints i.e. node({})
-		  IntersectionNode<unknown>
-		: keyof schema & ConstraintKind extends never
-		? // if there are no constraint keys, reduce to the basis node
-		  parseBasis<basis>
-		: IntersectionNode<parseBasis<basis>["infer"]>
-	: Node<"intersection" | BasisKind>
+export type validateValidatorSchema<schema> = "union" extends keyof schema
+	? { [i in keyof schema["union"]]: validateBranchSchema<schema["union"][i]> }
+	: schema extends readonly unknown[]
+	? { [i in keyof schema]: validateBranchSchema<schema[i]> }
+	: validateBranchSchema<schema>
+
+export type parseValidatorSchema<schema> = schema extends UnionSchema<
+	infer branches
+>
+	? branches["length"] extends 0
+		? UnionNode<never>
+		: branches["length"] extends 1
+		? parseBranchSchema<branches[0]>
+		: Root<parseBranchSchema<branches[number]>["infer"]>
+	: parseBranchSchema<schema>
 
 export const parseValidatorSchema = (schema: ValidatorSchema): ValidatorNode =>
-	maybeParseBasis(schema) ??
-	BaseNode.classesByKind.intersection.parse(schema as IntersectionSchema)
+	(typeof schema === "object" && "union" in schema) || isArray(schema)
+		? BaseNode.classesByKind.union.parse(schema)
+		: parseBranchSchema(schema)
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 

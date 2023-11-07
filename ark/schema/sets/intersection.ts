@@ -35,10 +35,10 @@ import { BaseRoot, type Root } from "../root.js"
 import { type ParseContext } from "../utils.js"
 
 export type IntersectionInner = withAttributes<{
-	readonly intersection: CollapsedIntersectionInner
+	readonly intersection: RuleSet
 }>
 
-export type CollapsedIntersectionInner =
+export type RuleSet =
 	| readonly [Node<BasisKind>, ...Node<ConstraintKind>[]]
 	| readonly Node<ConstraintKind>[]
 
@@ -138,11 +138,9 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 	})
 }
 
-const parseListedRules = (
-	schemas: CollapsedIntersectionSchema
-): CollapsedIntersectionInner => {
+const parseListedRules = (schemas: RuleSchemaSet): RuleSet => {
 	const basis = schemas[0] ? maybeParseBasis(schemas[0]) : undefined
-	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
+	const rules: mutable<RuleSet> = basis ? [basis] : []
 	const constraintContext: ParseContext = { basis }
 	for (let i = basis ? 1 : 0; i < schemas.length; i++) {
 		rules.push(parseConstraint(schemas[i] as never, constraintContext))
@@ -156,9 +154,9 @@ const parseMappedRules = ({
 }: MappedIntersectionSchema<any> & {
 	// at this point each key should be "basis" or a constraint kind
 	[k in keyof BaseAttributes]?: never
-}): CollapsedIntersectionInner => {
+}): RuleSet => {
 	const basis = basisSchema ? parseBasis(basisSchema) : undefined
-	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
+	const rules: mutable<RuleSet> = basis ? [basis] : []
 	const constraintContext: ParseContext = { basis }
 	for (const k in constraintSchemasByKind) {
 		if (!includes(constraintKinds, k)) {
@@ -233,26 +231,25 @@ export type MappedIntersectionSchema<
 export type ListedIntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
 > = {
-	intersection: CollapsedIntersectionSchema<basis>
+	intersection: RuleSchemaSet<basis>
 } & BaseAttributes
 
-export type CollapsedIntersectionSchema<
-	basis extends Schema<BasisKind> = Schema<BasisKind>
-> =
-	| readonly [
-			basis,
-			// currently unable to infer basis here, but we still include this
-			// conditional to avoid a union complexity error that otherwise can
-			// occur (remove in future if possible)
-			...(parseBasis<basis>["infer"] extends unknown
-				? discriminableConstraintSchema<any>[]
-				: never[])
-	  ]
-	| readonly DiscriminableSchema<"predicate">[]
+export type RuleSchemaSet<basis extends Schema<BasisKind> = Schema<BasisKind>> =
+
+		| readonly [
+				basis,
+				// currently unable to infer basis here, but we still include this
+				// conditional to avoid a union complexity error that otherwise can
+				// occur (remove in future if possible)
+				...(parseBasis<basis>["infer"] extends unknown
+					? discriminableConstraintSchema<any>[]
+					: never[])
+		  ]
+		| readonly DiscriminableSchema<"predicate">[]
 
 export type IntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
-> = ExpandedIntersectionSchema<basis> | CollapsedIntersectionSchema<basis>
+> = ExpandedIntersectionSchema<basis> | RuleSchemaSet<basis>
 
 export type ExpandedIntersectionSchema<
 	basis extends Schema<BasisKind> = Schema<BasisKind>
