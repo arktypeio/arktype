@@ -9,9 +9,5 @@ export type {
 	TypeRelationship
 } from "./tsserver/getAssertionsInFile.js"
 export { getArgTypesAtPosition } from "./tsserver/getArgTypesAtPosition.js"
-export {
-	configure,
-	type AttestConfig,
-	getDefaultAttestConfig
-} from "./config.js"
+export { type AttestConfig, getDefaultAttestConfig } from "./config.js"
 export { caller, type CallerOfOptions } from "@arktype/fs"

@@ -2,7 +2,7 @@ import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { ensureDir, fromCwd } from "@arktype/fs"
 
-export type AttestConfig = {
+type MutableAttestConfig = {
 	tsconfig: string | undefined
 	preserveCache: boolean
 	updateSnapshots: boolean
@@ -16,6 +16,8 @@ export type AttestConfig = {
 	benchSnapCacheDir: string
 	filter: string | undefined
 }
+
+export type AttestConfig = Readonly<MutableAttestConfig>
 
 export type AttestOptions = Partial<AttestConfig>
 
@@ -57,11 +59,11 @@ const getParamValue = (param: string) => {
 		: parseFloat(value) ?? value
 }
 
-const addEnvConfig = (config: AttestConfig) => {
+const addEnvConfig = (config: MutableAttestConfig) => {
 	if (process.env.ATTEST_CONFIG) {
 		Object.assign(config, JSON.parse(process.env.ATTEST_CONFIG))
 	}
-	let k: keyof AttestConfig
+	let k: keyof MutableAttestConfig
 	for (k in config) {
 		if (config[k] === false) {
 			config[k] = hasFlag(k) as never
@@ -75,12 +77,9 @@ const addEnvConfig = (config: AttestConfig) => {
 	return config
 }
 
-const cachedConfig: AttestConfig = addEnvConfig(getDefaultAttestConfig())
+const cachedConfig = addEnvConfig(getDefaultAttestConfig())
 
 export const getConfig = (): AttestConfig => cachedConfig
-
-export const configure = (applyMutations: (config: AttestConfig) => void) =>
-	applyMutations(cachedConfig)
 
 export const ensureCacheDirs = () => {
 	ensureDir(cachedConfig.cacheDir)
