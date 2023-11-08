@@ -142,7 +142,8 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 			}
 		},
 		compileCondition: (inner) => inner.in.condition,
-		writeDefaultDescription: (inner) => ""
+		writeDefaultDescription: (inner) =>
+			`a morph from ${inner.in} to ${inner.out}`
 	})
 }
 

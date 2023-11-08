@@ -13,10 +13,10 @@ const parseNumber = node({
 	morph: (s: string) => parseFloat(s)
 })
 
-parseNumber.in.kind //?
+parseNumber.description //?
+
 parseNumber.in.description //?
 
-parseNumber.out.kind //?
 parseNumber.out.description //?
 
 // export const intersectBranches = (
