@@ -23,7 +23,6 @@
 		"build": "tsup --config ../repo/tsup.config.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
 		"@arktype/fs": "workspace:*",
 		"@arktype/util": "workspace:*",
 		"@typescript/vfs": "1.5.0"
