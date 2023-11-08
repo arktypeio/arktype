@@ -17,7 +17,7 @@ export type UnitDeclaration = declareNode<{
 	inner: UnitInner
 	intersections: {
 		unit: "unit" | Disjoint
-		rule: "unit" | Disjoint
+		default: "unit" | Disjoint
 	}
 }>
 

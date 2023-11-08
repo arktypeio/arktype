@@ -47,7 +47,7 @@ export type IntersectionDeclaration = declareNode<{
 	inner: IntersectionInner
 	intersections: {
 		intersection: "intersection" | Disjoint
-		rule: "intersection" | Disjoint
+		default: "intersection" | Disjoint
 	}
 	reductions: "intersection" | BasisKind
 }>
@@ -64,11 +64,6 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 		? this.intersection.slice(1)
 		: (this.intersection as any)
 
-	constructor(inner: IntersectionInner) {
-		super(inner)
-		assertValidConstraints(this.basis, this.constraints)
-	}
-
 	static readonly definition = this.define({
 		kind: "intersection",
 		keys: {
@@ -78,16 +73,23 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 		},
 		intersections: {
 			intersection: (l, r) => {
-				let result: IntersectionInner | Disjoint = l
+				let result: CollapsedIntersectionInner | Disjoint = l.intersection
 				for (const constraint of r.constraints) {
 					if (result instanceof Disjoint) {
 						break
 					}
-					result = intersectRule(result.intersection, constraint)
+					result = intersectRule(result, constraint)
 				}
-				return result
+				return result instanceof Disjoint
+					? result
+					: new IntersectionNode({ intersection: result })
 			},
-			rule: (l, r) => intersectRule(l.intersection, r)
+			default: (l, r) => {
+				const result = intersectRule(l.intersection, r)
+				return result instanceof Disjoint
+					? result
+					: new IntersectionNode({ intersection: result })
+			}
 		},
 		parseSchema: (schema) => {
 			const { alias, description, ...rules } = schema
@@ -173,7 +175,7 @@ const parseMappedRules = ({
 const intersectRule = (
 	base: readonly Node<RuleKind>[],
 	rule: Node<RuleKind>
-): IntersectionInner | Disjoint => {
+): CollapsedIntersectionInner | Disjoint => {
 	const result: Node<RuleKind>[] = []
 	let includesConstraint = false
 	for (let i = 0; i < base.length; i++) {
@@ -194,24 +196,22 @@ const intersectRule = (
 	if (!includesConstraint) {
 		result.push(rule)
 	}
-	return {
-		intersection: result as never
-	}
+	return result
 }
 
-const assertValidConstraints = (
-	basis: Node<BasisKind> | undefined,
-	constraints: readonly Node<ConstraintKind>[]
-) => {
-	for (const constraint of constraints) {
-		if (
-			!constraint.nodeClass.basis.isUnknown() &&
-			(!basis || !basis.extends(constraint.nodeClass.basis))
-		) {
-			throwParseError(constraint.nodeClass.writeInvalidBasisMessage(basis))
-		}
-	}
-}
+// const assertValidConstraints = (
+// 	basis: Node<BasisKind> | undefined,
+// 	constraints: readonly Node<ConstraintKind>[]
+// ) => {
+// 	for (const constraint of constraints) {
+// 		if (
+// 			!constraint.nodeClass.basis.isUnknown() &&
+// 			(!basis || !basis.extends(constraint.nodeClass.basis))
+// 		) {
+// 			throwParseError(constraint.nodeClass.writeInvalidBasisMessage(basis))
+// 		}
+// 	}
+// }
 
 export type IntersectionBasis = {
 	basis?: Schema<BasisKind>

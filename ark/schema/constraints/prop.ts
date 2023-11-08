@@ -39,7 +39,8 @@ export type RequiredDeclaration = declareNode<{
 	schema: RequiredPropSchema
 	inner: RequiredPropInner
 	intersections: {
-		required: "required" | Disjoint | "intersection"
+		required: "required" | "intersection" | Disjoint
+		default: "intersection" | Disjoint
 	}
 }>
 
@@ -106,7 +107,8 @@ export type OptionalDeclaration = declareNode<{
 	schema: OptionalPropSchema
 	inner: OptionalPropInner
 	intersections: {
-		optional: "optional" | Disjoint | "intersection"
+		optional: "optional" | "intersection"
+		default: "intersection" | Disjoint
 	}
 }>
 

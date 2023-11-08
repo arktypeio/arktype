@@ -18,10 +18,11 @@ import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
 import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
 import { BaseRoot } from "../root.js"
-import type {
-	IntersectionSchema,
-	parseIntersectionSchema,
-	validateIntersectionSchema
+import {
+	IntersectionNode,
+	type IntersectionSchema,
+	type parseIntersectionSchema,
+	type validateIntersectionSchema
 } from "./intersection.js"
 
 export type ValidatorKind = "intersection" | BasisKind
@@ -73,7 +74,7 @@ export type MorphDeclaration = declareNode<{
 	intersections: {
 		morph: "morph" | Disjoint
 		intersection: "morph" | Disjoint
-		rule: "morph" | Disjoint
+		default: "morph" | Disjoint
 	}
 }>
 
@@ -107,29 +108,29 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 				if (outTersection instanceof Disjoint) {
 					return outTersection
 				}
-				return {
+				return new MorphNode({
 					morph: l.morph,
 					in: inTersection,
 					out: outTersection
-				}
+				})
 			},
 			intersection: (l, r) => {
 				const inTersection = l.in.intersect(r)
 				return inTersection instanceof Disjoint
 					? inTersection
-					: {
+					: new MorphNode({
 							...l.inner,
 							in: inTersection
-					  }
+					  })
 			},
-			rule: (l, r) => {
+			default: (l, r) => {
 				const constrainedInput = l.in.intersect(r)
 				return constrainedInput instanceof Disjoint
 					? constrainedInput
-					: {
+					: new MorphNode({
 							...l.inner,
 							in: constrainedInput
-					  }
+					  })
 			}
 		},
 		parseSchema: (schema) => {

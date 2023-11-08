@@ -1,6 +1,7 @@
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import { builtins } from "../builtins.js"
+import { type Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
@@ -22,6 +23,7 @@ export type PredicateDeclaration = declareNode<{
 	inner: PredicateInner
 	intersections: {
 		predicate: "predicate" | "intersection"
+		default: "intersection" | Disjoint
 	}
 }>
 

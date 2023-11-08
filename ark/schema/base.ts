@@ -83,7 +83,7 @@ type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: evaluate<
-		{ [ownKind in lKey]: NodeKind | Disjoint } & {
+		{ [requiredKey in lKey | "default"]: NodeKind | Disjoint } & {
 			[rKey in rightOf<lKey>]?: NodeKind | Disjoint
 		}
 	>

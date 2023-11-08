@@ -68,7 +68,7 @@ export type UnionDeclaration = declareNode<{
 		union: "union" | Disjoint
 		morph: "union" | Disjoint
 		intersection: "union" | Disjoint
-		rule: "union" | Disjoint
+		default: "union" | Disjoint
 	}
 	reductions: "union" | UnionChildKind
 }>
@@ -77,10 +77,7 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 	static readonly kind = "union"
 	static readonly declaration: UnionDeclaration
 
-	private static intersectBranch = (
-		l: UnionNode,
-		r: BranchNode
-	): Disjoint | UnionInner => {
+	private static intersectBranch = (l: UnionNode, r: BranchNode) => {
 		const union = l.ordered
 			? l.union.flatMap((branch) => {
 					const branchResult = branch.intersect(r)
@@ -90,7 +87,8 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 		if (union instanceof Disjoint) {
 			return union
 		}
-		return { union, ordered: l.ordered }
+		// TODO: reduce
+		return new UnionNode({ union, ordered: l.ordered })
 	}
 
 	static readonly definition = this.define({
@@ -129,11 +127,15 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 				if (resultBranches instanceof Disjoint) {
 					return resultBranches
 				}
-				return { union: resultBranches, ordered: l.ordered || r.ordered }
+				// TODO: reduce?
+				return new UnionNode({
+					union: resultBranches,
+					ordered: l.ordered || r.ordered
+				})
 			},
 			morph: this.intersectBranch,
 			intersection: this.intersectBranch,
-			rule: (l, r) => {
+			default: (l, r) => {
 				const branches: BranchNode[] = []
 				for (const branch of l.union) {
 					const branchResult = branch.intersect(r)
@@ -143,10 +145,11 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 				}
 				return branches.length === 0
 					? Disjoint.from("union", l.union, [r])
-					: {
+					: // TODO: reduce?
+					  new UnionNode({
 							union: branches,
 							ordered: l.ordered
-					  }
+					  })
 			}
 		},
 		parseSchema: (schema) => {

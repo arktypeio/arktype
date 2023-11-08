@@ -82,6 +82,7 @@ export type MinDeclaration = declareNode<{
 	inner: MinInner
 	intersections: {
 		min: "min"
+		default: "intersection" | Disjoint
 	}
 }>
 
@@ -146,6 +147,7 @@ export type MaxDeclaration = declareNode<{
 	intersections: {
 		max: "max"
 		min: Disjoint | "intersection"
+		default: "intersection" | Disjoint
 	}
 }>
 

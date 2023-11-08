@@ -30,6 +30,7 @@ export type ProtoDeclaration = declareNode<{
 	intersections: {
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
+		default: "intersection" | Disjoint
 	}
 }>
 
@@ -52,7 +53,7 @@ export class ProtoNode<t extends object = object>
 					: constructorExtends(r.proto, l.proto)
 					? r
 					: Disjoint.from("proto", l, r),
-			domain: (l, r): ProtoInner | Disjoint =>
+			domain: (l, r) =>
 				r.domain === "object"
 					? l
 					: Disjoint.from("domain", builtins().object, r),

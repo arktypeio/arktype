@@ -25,6 +25,7 @@ export type DomainDeclaration = declareNode<{
 	inner: DomainInner
 	intersections: {
 		domain: "domain" | Disjoint
+		default: "intersection" | Disjoint
 	}
 }>
 

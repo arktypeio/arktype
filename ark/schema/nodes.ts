@@ -74,15 +74,15 @@ export const node = Object.assign(parseNode as RootNodeParser, {
 export type RootInput = listable<ValidatorSchema | MorphSchema>
 
 export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
-	[rKind in keyof intersectionMap]: (
-		l: Node<lKind>,
-		r: Node<rKind & NodeKind>
-	) => reifyIntersectionResult<intersectionMap[rKind]>
-} & {
-	default: (
-		l: Node<lKind>,
-		r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
-	) => Node | Disjoint
+	[rKind in keyof intersectionMap]: rKind extends "default"
+		? (
+				l: Node<lKind>,
+				r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
+		  ) => reifyIntersectionResult<intersectionMap[rKind]>
+		: (
+				l: Node<lKind>,
+				r: Node<rKind & NodeKind>
+		  ) => reifyIntersectionResult<intersectionMap[rKind]>
 }
 
 type reifyIntersectionResult<result> = result extends NodeKind
