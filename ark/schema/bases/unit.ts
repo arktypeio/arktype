@@ -35,7 +35,7 @@ export class UnitNode<t = unknown>
 		},
 		intersections: {
 			unit: (l, r) => Disjoint.from("unit", l, r),
-			rule: (l, r) =>
+			default: (l, r) =>
 				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 		},
 		parseSchema: (schema) => schema,

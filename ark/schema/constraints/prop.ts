@@ -5,7 +5,12 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type RootInput } from "../nodes.js"
 import { type Root } from "../root.js"
-import { getBasisName } from "./shared.js"
+import { IntersectionNode } from "../sets/intersection.js"
+import {
+	type BaseConstraint,
+	getBasisName,
+	intersectOrthogonalConstraints
+} from "./shared.js"
 
 export type PropDeclarationsByKind = {
 	required: RequiredDeclaration
@@ -34,16 +39,21 @@ export type RequiredDeclaration = declareNode<{
 	schema: RequiredPropSchema
 	inner: RequiredPropInner
 	intersections: {
-		required: "required" | Disjoint | null
+		required: "required" | Disjoint | "intersection"
 	}
 }>
 
 const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 	`Props may only be applied to an object basis (was ${getBasisName(basis)})`
 
-export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
+export class RequiredPropNode
+	extends BaseNode<RequiredDeclaration>
+	implements BaseConstraint
+{
 	static readonly kind = "required"
 	static readonly declaration: RequiredDeclaration
+
+	readonly implicitBasis: DomainNode<object> = builtins().object
 
 	static readonly definition = this.define({
 		kind: "required",
@@ -56,26 +66,27 @@ export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
 		intersections: {
 			required: (l, r) => {
 				if (l.required !== r.required) {
-					return null
+					return new IntersectionNode({
+						intersection: [l.implicitBasis, l, r]
+					})
 				}
 				const required = l.required
 				const value = l.value.intersect(r.value)
 				if (value instanceof Disjoint) {
 					return value
 				}
-				return {
+				return new RequiredPropNode({
 					required,
 					value
-				}
-			}
+				})
+			},
+			default: intersectOrthogonalConstraints
 		},
 		parseSchema: (schema) => schema as never,
 		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) =>
 			`${String(inner.required)}: ${inner.value}`
 	})
-
-	static basis: DomainNode<object> = builtins().object
 
 	static writeInvalidBasisMessage = writeInvalidBasisMessage
 }
@@ -95,13 +106,18 @@ export type OptionalDeclaration = declareNode<{
 	schema: OptionalPropSchema
 	inner: OptionalPropInner
 	intersections: {
-		optional: "optional" | Disjoint | null
+		optional: "optional" | Disjoint | "intersection"
 	}
 }>
 
-export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
+export class OptionalPropNode
+	extends BaseNode<OptionalDeclaration>
+	implements BaseConstraint
+{
 	static readonly kind = "optional"
 	static readonly declaration: OptionalDeclaration
+
+	readonly implicitBasis: DomainNode<object> = builtins().object
 
 	static readonly definition = this.define({
 		kind: "optional",
@@ -114,29 +130,24 @@ export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 		intersections: {
 			optional: (l, r) => {
 				if (l.optional !== r.optional) {
-					return null
+					return new IntersectionNode({
+						intersection: [l.implicitBasis, l, r]
+					})
 				}
 				const optional = l.optional
 				const value = l.value.intersect(r.value)
-				if (value instanceof Disjoint) {
-					return {
-						optional,
-						value: builtins().never
-					}
-				}
-				return {
+				return new OptionalPropNode({
 					optional,
-					value
-				}
-			}
+					value: value instanceof Disjoint ? builtins().never : value
+				})
+			},
+			default: intersectOrthogonalConstraints
 		},
 		parseSchema: (schema) => schema as never,
 		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) =>
 			`${String(inner.optional)}?: ${inner.value}`
 	})
-
-	static basis: DomainNode<object> = builtins().object
 
 	static writeInvalidBasisMessage = writeInvalidBasisMessage
 }

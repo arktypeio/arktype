@@ -1,12 +1,17 @@
 import { type extend, throwParseError } from "@arktype/util"
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
+import { type DomainNode } from "../bases/domain.js"
 import type { ProtoNode } from "../bases/proto.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
-import { type Root } from "../root.js"
-import { getBasisName } from "./shared.js"
+import { IntersectionNode } from "../sets/intersection.js"
+import {
+	type BaseConstraint,
+	getBasisName,
+	intersectOrthogonalConstraints
+} from "./shared.js"
 
 export type BoundInner = withAttributes<{
 	readonly boundKind: BoundKind
@@ -19,16 +24,27 @@ export type BoundLimit = number | string
 
 export type BoundDeclaration = MinDeclaration | MaxDeclaration
 
-export abstract class BaseBound<
-	declaration extends BoundDeclaration
-> extends BaseNode<declaration> {
+const basesByBoundKind = {
+	number: builtins().number,
+	string: builtins().string,
+	array: builtins().array,
+	date: builtins().date
+} as const satisfies Record<BoundKind, Node<BasisKind>>
+
+export abstract class BaseBound<declaration extends BoundDeclaration>
+	extends BaseNode<declaration>
+	implements BaseConstraint
+{
 	readonly exclusive = this.inner.exclusive ?? false
 
 	readonly comparator = schemaToComparator(this.inner)
 
-	// TODO; fix
-	static basis: Root<number | string | readonly unknown[] | Date> =
-		builtins().number
+	readonly implicitBasis:
+		| DomainNode<"string" | "number">
+		| ProtoNode<typeof Array | typeof Date> = basesByBoundKind[
+		this.boundKind
+	] as never
+
 	//this.classesByKind.union.parse(["number", "string", Array, Date]) as never
 
 	// applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
@@ -81,7 +97,9 @@ export class MinNode extends BaseBound<MinDeclaration> {
 			boundKind: {}
 		},
 		intersections: {
-			min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
+			min: (l, r) =>
+				l.min > r.min || (l.min === r.min && l.exclusive) ? l : r,
+			default: intersectOrthogonalConstraints
 		},
 		parseSchema: (schema, ctx) => {
 			const boundKind = getBoundKind(ctx.basis)
@@ -127,7 +145,7 @@ export type MaxDeclaration = declareNode<{
 	inner: MaxInner
 	intersections: {
 		max: "max"
-		min: Disjoint | null
+		min: Disjoint | "intersection"
 	}
 }>
 
@@ -148,7 +166,10 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 			min: (l, r) =>
 				l.max < r.min || (l.max === r.min && (l.exclusive || r.exclusive))
 					? Disjoint.from("bound", l, r)
-					: null
+					: new IntersectionNode({
+							intersection: [l.implicitBasis, l, r]
+					  }),
+			default: intersectOrthogonalConstraints
 		},
 		parseSchema: (schema, ctx) => {
 			const boundKind = getBoundKind(ctx.basis)

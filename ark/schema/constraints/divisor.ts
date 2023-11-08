@@ -3,7 +3,11 @@ import type { BasisKind } from "../bases/basis.js"
 import { type DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
-import { getBasisName } from "./shared.js"
+import {
+	type BaseConstraint,
+	getBasisName,
+	intersectOrthogonalConstraints
+} from "./shared.js"
 
 export type DivisorSchema = number | DivisorInner
 
@@ -20,9 +24,14 @@ export type DivisorDeclaration = declareNode<{
 	}
 }>
 
-export class DivisorNode extends BaseNode<DivisorDeclaration> {
+export class DivisorNode
+	extends BaseNode<DivisorDeclaration>
+	implements BaseConstraint
+{
 	static readonly kind = "divisor"
 	static readonly declaration: DivisorDeclaration
+
+	readonly implicitBasis: DomainNode<number> = builtins().number
 
 	static readonly definition = this.define({
 		kind: "divisor",
@@ -30,11 +39,14 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 			divisor: {}
 		},
 		intersections: {
-			divisor: (l, r) => ({
-				divisor: Math.abs(
-					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-				)
-			})
+			divisor: (l, r) =>
+				new DivisorNode({
+					divisor: Math.abs(
+						(l.divisor * r.divisor) /
+							greatestCommonDivisor(l.divisor, r.divisor)
+					)
+				}),
+			default: intersectOrthogonalConstraints
 		},
 		parseSchema: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,
@@ -42,8 +54,6 @@ export class DivisorNode extends BaseNode<DivisorDeclaration> {
 		writeDefaultDescription: (inner) =>
 			inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
 	})
-
-	static basis: DomainNode<number> = builtins().number
 
 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return writeIndivisibleMessage(getBasisName(basis))

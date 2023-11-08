@@ -4,8 +4,8 @@ import { builtins } from "../builtins.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
-import { type IntersectionNode } from "../sets/intersection.js"
-import { getBasisName } from "./shared.js"
+import { IntersectionNode } from "../sets/intersection.js"
+import { getBasisName, intersectOrthogonalConstraints } from "./shared.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
 	withAttributes<{
@@ -21,7 +21,7 @@ export type PredicateDeclaration = declareNode<{
 	schema: PredicateSchema
 	inner: PredicateInner
 	intersections: {
-		predicate: "predicate" | null
+		predicate: "predicate" | "intersection"
 	}
 }>
 
@@ -29,13 +29,19 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 	static readonly kind = "predicate"
 	static readonly declaration: PredicateDeclaration
 
+	readonly implicitBasis = undefined
+
 	static readonly definition = this.define({
 		kind: "predicate",
 		keys: {
 			predicate: {}
 		},
 		intersections: {
-			predicate: () => null
+			predicate: (l, r) =>
+				new IntersectionNode({
+					intersection: [l, r]
+				}),
+			default: intersectOrthogonalConstraints
 		},
 		parseSchema: (schema) =>
 			typeof schema === "function" ? { predicate: schema } : schema,
@@ -45,8 +51,6 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 		writeDefaultDescription: (inner) =>
 			`valid according to ${inner.predicate.name}`
 	})
-
-	static basis: IntersectionNode<unknown> = builtins().unknown
 
 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `Cannot narrow ${getBasisName(basis)}`

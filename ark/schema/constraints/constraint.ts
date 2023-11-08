@@ -4,11 +4,8 @@ import {
 	constraintKinds,
 	type IrreducibleConstraintKind
 } from "../base.js"
-import {
-	type DiscriminableSchema,
-	type NodeClass,
-	type Schema
-} from "../nodes.js"
+import { type BasisKind } from "../bases/basis.js"
+import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
 import { type ParseContext } from "../utils.js"
 import {
 	type MaxDeclaration,
@@ -56,7 +53,15 @@ export type ConstraintIntersectionInput<
 > = ConstraintIntersectionInputsByKind[kind]
 
 export type constraintKindOf<t> = {
-	[k in ConstraintKind]: t extends NodeClass<k>["basis"]["infer"] ? k : never
+	[k in ConstraintKind]: Node<k> extends {
+		implicitBasis: infer basis extends Node<BasisKind>
+	}
+		? t extends basis["infer"]
+			? k
+			: never
+		: unknown extends t
+		? k
+		: never
 }[ConstraintKind]
 
 export type constraintInputsByKind<t> = {

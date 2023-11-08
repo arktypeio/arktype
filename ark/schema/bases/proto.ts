@@ -11,6 +11,7 @@ import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import { BaseRoot } from "../root.js"
 import type { BaseBasis } from "./basis.js"
+import { intersectBasisAndConstraint } from "./shared.js"
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor
@@ -54,7 +55,8 @@ export class ProtoNode<t extends object = object>
 			domain: (l, r): ProtoInner | Disjoint =>
 				r.domain === "object"
 					? l
-					: Disjoint.from("domain", builtins().object, r)
+					: Disjoint.from("domain", builtins().object, r),
+			default: intersectBasisAndConstraint
 		},
 		parseSchema: (schema) =>
 			typeof schema === "function" ? { proto: schema } : schema,

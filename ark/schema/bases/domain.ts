@@ -1,9 +1,10 @@
 import type { Domain } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import { IntersectionNode } from "../main.js"
 import { BaseRoot } from "../root.js"
+import { IntersectionNode } from "../sets/intersection.js"
 import type { BaseBasis } from "./basis.js"
+import { intersectBasisAndConstraint } from "./shared.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -24,7 +25,6 @@ export type DomainDeclaration = declareNode<{
 	inner: DomainInner
 	intersections: {
 		domain: "domain" | Disjoint
-		constraint: "intersection" | Disjoint
 	}
 }>
 
@@ -42,10 +42,7 @@ export class DomainNode<t = unknown>
 		},
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r),
-			constraint: (l, r) =>
-				IntersectionNode.definition.reduceToNode({
-					intersection: [l, r]
-				}) as IntersectionNode
+			default: intersectBasisAndConstraint
 		},
 		parseSchema: (schema) =>
 			typeof schema === "string" ? { domain: schema } : schema,

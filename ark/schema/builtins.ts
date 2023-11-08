@@ -9,5 +9,6 @@ export const builtins = cached(() => ({
 	nonVariadicArrayIndex: node("number"),
 	arrayIndexTypeNode: node("number"),
 	string: node("string"),
-	array: node(Array)
+	array: node(Array),
+	date: node(Date)
 }))

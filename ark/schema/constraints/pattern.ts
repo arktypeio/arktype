@@ -4,7 +4,12 @@ import type { BasisKind } from "../bases/basis.js"
 import type { DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Node } from "../nodes.js"
-import { getBasisName } from "./shared.js"
+import { IntersectionNode } from "../sets/intersection.js"
+import {
+	type BaseConstraint,
+	getBasisName,
+	intersectOrthogonalConstraints
+} from "./shared.js"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
@@ -18,13 +23,18 @@ export type PatternDeclaration = declareNode<{
 	schema: PatternSchema
 	inner: PatternInner
 	intersections: {
-		pattern: "pattern" | null
+		pattern: "pattern" | "intersection"
 	}
 }>
 
-export class PatternNode extends BaseNode<PatternDeclaration> {
+export class PatternNode
+	extends BaseNode<PatternDeclaration>
+	implements BaseConstraint
+{
 	static readonly kind = "pattern"
 	static readonly declaration: PatternDeclaration
+
+	readonly implicitBasis: DomainNode<string> = builtins().string
 
 	static readonly definition = this.define({
 		kind: "pattern",
@@ -34,7 +44,11 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 		},
 		intersections: {
 			// For now, non-equal regex are naively intersected
-			pattern: () => null
+			pattern: (l, r) =>
+				new IntersectionNode({
+					intersection: [l.implicitBasis, l, r]
+				}),
+			default: intersectOrthogonalConstraints
 		},
 		parseSchema: (schema) =>
 			typeof schema === "string"
@@ -46,8 +60,6 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 			`/${inner.pattern}/${inner.flags}.test(${this.argName})`,
 		writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
 	})
-
-	static basis: DomainNode<string> = builtins().string
 
 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 		return `Match operand ${getBasisName(basis)} must be a string`

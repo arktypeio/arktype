@@ -81,23 +81,13 @@ type assertIncludesAllKinds = satisfy<OrderedNodeKinds[number], NodeKind>
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
-type allowedIntersectionGroupOf<kind extends NodeKind> =
-	| kind
-	| rightOf<kind>
-	// SetKinds must intersect with rule, and unit being the
-	// highest precedence rule is the only other node that can unambiguously.
-	| (kind extends SetKind | "unit" ? "rule" : never)
-	| (kind extends ConstraintKind ? never : "constraint")
-
 export type BaseIntersectionMap = {
-	[lKey in NodeKind]: {
-		[rKey in allowedIntersectionGroupOf<lKey>]?: NodeKind | Disjoint | null
-	} & {
-		[_ in Exclude<IntersectionGroup, allowedIntersectionGroupOf<lKey>>]?: never
-	}
+	[lKey in NodeKind]: evaluate<
+		{ [ownKind in lKey]: NodeKind | Disjoint } & {
+			[rKey in rightOf<lKey>]?: NodeKind | Disjoint
+		}
+	>
 }
-
-export type IntersectionGroup = NodeKind | "rule" | "constraint"
 
 export const irreducibleConstraintKinds = {
 	pattern: 1,
@@ -125,7 +115,7 @@ export type BaseDeclarationInput = {
 	schema: unknown
 	inner: BaseAttributes
 	intersections: {
-		[k in IntersectionGroup]?: NodeKind | Disjoint | null
+		[k in NodeKind]?: NodeKind | Disjoint
 	}
 	reductions?: NodeKind
 }

@@ -1,5 +1,5 @@
 import type { extend, instanceOf, listable } from "@arktype/util"
-import { BaseNode } from "./base.js"
+import { BaseNode, type rightOf } from "./base.js"
 import {
 	type BasisClassesByKind,
 	type BasisDeclarationsByKind
@@ -7,9 +7,9 @@ import {
 import { UnitNode } from "./bases/unit.js"
 import {
 	type ConstraintClassesByKind,
-	type ConstraintDeclarationsByKind,
-	type ConstraintKind
+	type ConstraintDeclarationsByKind
 } from "./constraints/constraint.js"
+import { type Disjoint } from "./disjoint.js"
 import { type MorphSchema, type ValidatorSchema } from "./sets/morph.js"
 import {
 	type SetClassesByKind,
@@ -76,20 +76,17 @@ export type RootInput = listable<ValidatorSchema | MorphSchema>
 export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 	[rKind in keyof intersectionMap]: (
 		l: Node<lKind>,
-		r: Node<intersectionGroupOf<rKind>>
+		r: Node<rKind & NodeKind>
 	) => reifyIntersectionResult<intersectionMap[rKind]>
+} & {
+	default: (
+		l: Node<lKind>,
+		r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
+	) => Node | Disjoint
 }
 
-type intersectionGroupOf<rKind> = rKind extends NodeKind
-	? rKind
-	: rKind extends "rule"
-	? RuleKind
-	: rKind extends "constraint"
-	? ConstraintKind
-	: never
-
 type reifyIntersectionResult<result> = result extends NodeKind
-	? Inner<result>
+	? Node<result>
 	: result
 
 export type RuleDeclarationsByKind = extend<
