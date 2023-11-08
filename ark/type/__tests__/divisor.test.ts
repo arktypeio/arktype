@@ -89,3 +89,21 @@ suite("divisibility", () => {
 		})
 	})
 })
+
+suite("divisor example", () => {
+	test("even", () => {
+		const even = type("number%2")
+		// asserts even.infer is exactly number
+		attest<number>(even.infer)
+		// can also test the string representation of types
+		attest(even.infer).type.toString.snap()
+		// also includes in-line object-literal snapshotting
+		attest(even.json).snap()
+	})
+	test("zero divisor", () => {
+		// @ts-expect-error
+		attest(() => type("number%0")).throwsAndHasTypeError(
+			"% operator must be followed by a non-zero integer literal (was 0)"
+		)
+	})
+})

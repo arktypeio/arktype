@@ -21,6 +21,7 @@ import type {
 	BuiltinObjectKind,
 	BuiltinObjects,
 	conform,
+	Json,
 	Primitive,
 	returnOf
 } from "@arktype/util"
@@ -198,6 +199,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	root: Root<t>
 	condition: string
 	allows: this["root"]["allows"]
+	json: Json
 
 	constructor(
 		public definition: unknown,
@@ -215,6 +217,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		this.condition = root.condition
 		this.allows = root.allows
 		this.config = scope.config
+		this.json = this.root.json
 	}
 
 	configure(config: TypeConfig) {

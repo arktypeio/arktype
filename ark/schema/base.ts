@@ -81,20 +81,23 @@ type assertIncludesAllKinds = satisfy<OrderedNodeKinds[number], NodeKind>
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
-type allowedIntersectionKeyOf<kind extends NodeKind> =
+type allowedIntersectionGroupOf<kind extends NodeKind> =
 	| kind
 	| rightOf<kind>
 	// SetKinds must intersect with rule, and unit being the
 	// highest precedence rule is the only other node that can unambiguously.
 	| (kind extends SetKind | "unit" ? "rule" : never)
+	| (kind extends ConstraintKind ? never : "constraint")
 
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: {
-		[rKey in allowedIntersectionKeyOf<lKey>]?: lKey | Disjoint | null
+		[rKey in allowedIntersectionGroupOf<lKey>]?: NodeKind | Disjoint | null
 	} & {
-		[_ in Exclude<NodeKind | "rule", allowedIntersectionKeyOf<lKey>>]?: never
+		[_ in Exclude<IntersectionGroup, allowedIntersectionGroupOf<lKey>>]?: never
 	}
 }
+
+export type IntersectionGroup = NodeKind | "rule" | "constraint"
 
 export const irreducibleConstraintKinds = {
 	pattern: 1,
@@ -122,7 +125,7 @@ export type BaseDeclarationInput = {
 	schema: unknown
 	inner: BaseAttributes
 	intersections: {
-		[k in NodeKind | "rule"]?: NodeKind | Disjoint | null
+		[k in IntersectionGroup]?: NodeKind | Disjoint | null
 	}
 	reductions?: NodeKind
 }
@@ -401,7 +404,10 @@ export abstract class BaseNode<
 		const intersector =
 			l.definition.intersections[r.kind] ??
 			(includes(ruleKinds, r.kind)
-				? l.definition.intersections["rule"]
+				? l.definition.intersections["rule"] ??
+				  (includes(constraintKinds, r.kind)
+						? l.definition.intersections.constraint
+						: undefined)
 				: undefined)
 		const result = intersector?.(l, r as never)
 		if (result) {
@@ -463,6 +469,10 @@ type asymmetricIntersectionOf<
 			: "rule" extends keyof IntersectionMaps[l]
 			? r extends RuleKind
 				? instantiateIntersection<IntersectionMaps[l]["rule"]>
+				: never
+			: "constraint" extends keyof IntersectionMaps[l]
+			? r extends ConstraintKind
+				? instantiateIntersection<IntersectionMaps[l]["constraint"]>
 				: never
 			: never
 		: r

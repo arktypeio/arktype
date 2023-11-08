@@ -7,7 +7,8 @@ import {
 import { UnitNode } from "./bases/unit.js"
 import {
 	type ConstraintClassesByKind,
-	type ConstraintDeclarationsByKind
+	type ConstraintDeclarationsByKind,
+	type ConstraintKind
 } from "./constraints/constraint.js"
 import { type MorphSchema, type ValidatorSchema } from "./sets/morph.js"
 import {
@@ -44,8 +45,10 @@ type RootNodeParser = {
 
 const parseNode = (...schemas: BranchSchema[]) => UnionNode.parse(schemas)
 
-const parseKind = <kind extends NodeKind>(kind: kind, schema: Schema<kind>) =>
-	BaseNode.classesByKind[kind].parse(schema) as reducibleParseResult<kind>
+export const parseKind = <kind extends NodeKind>(
+	kind: kind,
+	schema: Schema<kind>
+) => BaseNode.classesByKind[kind].parse(schema) as reducibleParseResult<kind>
 
 const parseUnits = <const branches extends readonly unknown[]>(
 	...values: branches
@@ -81,6 +84,8 @@ type intersectionGroupOf<rKind> = rKind extends NodeKind
 	? rKind
 	: rKind extends "rule"
 	? RuleKind
+	: rKind extends "constraint"
+	? ConstraintKind
 	: never
 
 type reifyIntersectionResult<result> = result extends NodeKind
@@ -132,4 +137,8 @@ export type LeftIntersections<kind extends NodeKind> = reifyIntersections<
 	NodeDeclarationsByKind[kind]["intersections"]
 >
 
-export type Node<kind extends NodeKind = NodeKind> = instanceOf<NodeClass<kind>>
+export type Node<kind extends NodeKind = NodeKind> = NodeClass<kind> extends {
+	instance: infer instance
+}
+	? instance
+	: instanceOf<NodeClass<kind>>
