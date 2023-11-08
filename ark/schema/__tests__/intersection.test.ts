@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { type IntersectionNode, node, type Root } from "@arktype/schema"
+import { wellFormedNumberMatcher } from "@arktype/util"
 import { describe, test } from "mocha"
 
 describe("intersections", () => {
@@ -53,5 +54,23 @@ describe("intersections", () => {
 				{ domain: { domain: "number" }, divisor: { divisor: 15 } }
 			]
 		})
+	})
+	test("in/out", () => {
+		const parseNumber = node({
+			in: {
+				basis: "string",
+				pattern: wellFormedNumberMatcher,
+				description: "a well-formed numeric string"
+			},
+			morph: (s: string) => parseFloat(s)
+		})
+		attest(parseNumber.in.json).snap({
+			description: "a well-formed numeric string",
+			intersection: [
+				{ domain: "string" },
+				{ pattern: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$", flags: "" }
+			]
+		})
+		attest(parseNumber.out.json).snap({ intersection: [] })
 	})
 })

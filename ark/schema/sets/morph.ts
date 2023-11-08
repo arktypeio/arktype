@@ -79,20 +79,16 @@ export type MorphDeclaration = declareNode<{
 
 export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 	static readonly kind = "morph"
-	static readonly declaration: MorphDeclaration;
-	// @ts-expect-error override getter
-	declare readonly in: ValidatorNode
-	// @ts-expect-error override getter
-	declare readonly out: ValidatorNode
+	static readonly declaration: MorphDeclaration
 
 	static definition = this.define({
 		kind: "morph",
 		keys: {
 			in: {
-				children: (In) => [In]
+				children: (In) => In
 			},
 			out: {
-				children: (out) => [out]
+				children: (out) => out
 			},
 			morph: {}
 		},
@@ -103,41 +99,22 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 					// TODO: check in for union reduction
 					return throwParseError(`Invalid intersection of morphs`)
 				}
-				const result: mutable<MorphInner> = {
+				const inTersection = l.in.intersect(r.in)
+				if (inTersection instanceof Disjoint) {
+					return inTersection
+				}
+				const outTersection = l.out.intersect(r.out)
+				if (outTersection instanceof Disjoint) {
+					return outTersection
+				}
+				return {
 					morph: l.morph,
-					in: builtins().unknown,
-					out: builtins().unknown
+					in: inTersection,
+					out: outTersection
 				}
-				if (l.in) {
-					if (r.in) {
-						const inTersection = l.in.intersect(r.in)
-						if (inTersection instanceof Disjoint) {
-							return inTersection
-						}
-						result.in = inTersection
-					} else {
-						result.in = l.in
-					}
-				} else if (r.in) {
-					result.in = r.in
-				}
-				if (l.out) {
-					if (r.out) {
-						const outTersection = l.out.intersect(r.out)
-						if (outTersection instanceof Disjoint) {
-							return outTersection
-						}
-						result.out = outTersection
-					} else {
-						result.out = l.out
-					}
-				} else if (r.out) {
-					result.out = r.out
-				}
-				return result
 			},
 			intersection: (l, r) => {
-				const inTersection = l.in?.intersect(r) ?? r
+				const inTersection = l.in.intersect(r)
 				return inTersection instanceof Disjoint
 					? inTersection
 					: {
@@ -146,8 +123,7 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 					  }
 			},
 			rule: (l, r) => {
-				const input = l.in ?? builtins().unknown
-				const constrainedInput = input.intersect(r)
+				const constrainedInput = l.in.intersect(r)
 				return constrainedInput instanceof Disjoint
 					? constrainedInput
 					: {
@@ -157,18 +133,14 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 			}
 		},
 		parseSchema: (schema) => {
-			const inner = {} as mutable<MorphInner>
-			inner.morph =
-				typeof schema.morph === "function" ? [schema.morph] : schema.morph
-			if (schema.in) {
-				inner.in = parseValidatorSchema(schema.in)
+			return {
+				in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
+				out: schema.out ? parseValidatorSchema(schema.out) : builtins().unknown,
+				morph:
+					typeof schema.morph === "function" ? [schema.morph] : schema.morph
 			}
-			if (schema.out) {
-				inner.out = parseValidatorSchema(schema.out)
-			}
-			return inner
 		},
-		compileCondition: (inner) => inner.in?.condition ?? "true",
+		compileCondition: (inner) => inner.in.condition,
 		writeDefaultDescription: (inner) => ""
 	})
 }

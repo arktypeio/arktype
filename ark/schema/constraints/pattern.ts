@@ -42,7 +42,8 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 				: schema instanceof RegExp
 				? { pattern: schema.source, flags: schema.flags }
 				: schema,
-		compileCondition: (inner) => `${inner.pattern}.test(${this.argName})`,
+		compileCondition: (inner) =>
+			`/${inner.pattern}/${inner.flags}.test(${this.argName})`,
 		writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
 	})
 

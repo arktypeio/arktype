@@ -2,8 +2,20 @@
 // import { isDeepStrictEqual } from "util"
 // import { type Dict } from "./ark/util/main.js"
 import { node } from "./ark/schema/main.js"
+import { wellFormedNumberMatcher } from "./ark/util/main.js"
 
-const n = node() //?
+const parseNumber = node({
+	in: {
+		basis: "string",
+		pattern: wellFormedNumberMatcher,
+		description: "a well-formed numeric string"
+	},
+	morph: (s: string) => parseFloat(s)
+})
+
+parseNumber.in.kind //?
+
+parseNumber.out.kind //?
 
 // export const intersectBranches = (
 // 	l: readonly Dict[],

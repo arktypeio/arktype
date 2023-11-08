@@ -30,6 +30,7 @@ import {
 	type reifyIntersections,
 	type RuleKind
 } from "./nodes.js"
+import { type ValidatorNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
 import { createParseContext, inferred, type ParseContext } from "./utils.js"
 
@@ -227,7 +228,10 @@ export abstract class BaseNode<
 
 	// TODO: reduce, add param for unsafe
 	constructor(public readonly inner: declaration["inner"]) {
-		super(inner)
+		const { in: inCache, out: outCache, ...rest } = inner as any
+		super(rest)
+		this.inCache = inCache
+		this.outCache = outCache
 		this.alias = $ark.register(this, inner.alias)
 		this.description =
 			inner.description ?? this.definition.writeDefaultDescription(inner)
@@ -293,17 +297,17 @@ export abstract class BaseNode<
 			...definition,
 			keys: {
 				alias: {
+					serialize: defaultValueSerializer,
 					meta: true
 				},
 				description: {
+					serialize: defaultValueSerializer,
 					meta: true
 				},
 				...transform(definition.keys, ([k, v]) => [
 					k,
 					{
-						children: (): never[] => [],
 						serialize: defaultValueSerializer,
-						meta: false,
 						...v
 					}
 				])
@@ -323,20 +327,20 @@ export abstract class BaseNode<
 
 	protected static readonly argName = In
 
-	private inCache?: UnknownNode;
-	get in() {
+	inCache?: UnknownNode;
+	get in(): this["kind"] extends "morph" ? ValidatorNode : UnknownNode {
 		if (!this.inCache) {
 			this.inCache = this.getIo("in")
 		}
-		return this.inCache
+		return this.inCache as never
 	}
 
-	private outCache?: UnknownNode
-	get out() {
+	outCache?: UnknownNode
+	get out(): this["kind"] extends "morph" ? ValidatorNode : UnknownNode {
 		if (!this.outCache) {
 			this.outCache = this.getIo("out")
 		}
-		return this.outCache
+		return this.outCache as never
 	}
 
 	private getIo(kind: "in" | "out"): UnknownNode {

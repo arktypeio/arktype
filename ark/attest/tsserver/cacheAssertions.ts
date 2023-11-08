@@ -14,7 +14,7 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 	const config = getConfig()
 	rmSync(config.cacheDir, { recursive: true, force: true })
 	ensureCacheDirs()
-	if (options.skipTypes) {
+	if (config.skipTypes) {
 		return
 	}
 	console.log(

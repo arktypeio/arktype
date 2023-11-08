@@ -49,7 +49,9 @@ export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
 		kind: "required",
 		keys: {
 			required: {},
-			value: {}
+			value: {
+				children: (v) => v
+			}
 		},
 		intersections: {
 			required: (l, r) => {
@@ -105,7 +107,9 @@ export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 		kind: "optional",
 		keys: {
 			optional: {},
-			value: {}
+			value: {
+				children: (v) => v
+			}
 		},
 		intersections: {
 			optional: (l, r) => {
