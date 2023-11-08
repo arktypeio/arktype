@@ -30,7 +30,6 @@ import {
 	type reifyIntersections,
 	type RuleKind
 } from "./nodes.js"
-import { addRule, IntersectionNode } from "./sets/intersection.js"
 import { type ValidatorNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
 import { createParseContext, inferred, type ParseContext } from "./utils.js"
@@ -412,15 +411,12 @@ export abstract class BaseNode<
 		}
 		if (!this.isRule() || !other.isRule()) {
 			return throwInternalError(
-				`Unexpected null intersection between ${this.kind} and ${other.kind}`
+				`Unexpected null intersection between non-rules ${this.kind} and ${other.kind}`
 			)
 		}
-		const intersection = addRule([this], other)
-		return intersection instanceof Disjoint
-			? intersection
-			: new IntersectionNode({
-					intersection
-			  })
+		return new BaseNode.classesByKind.intersection({
+			intersection: [this, other]
+		})
 	}
 
 	intersectClosed<other extends Node>(

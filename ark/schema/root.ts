@@ -1,8 +1,7 @@
 import {
 	BaseNode,
 	type BaseNodeDeclaration,
-	type intersectionOf,
-	type rightOf
+	type intersectionOf
 } from "./base.js"
 import { type BasisKind } from "./bases/basis.js"
 import { type DomainNode } from "./bases/domain.js"

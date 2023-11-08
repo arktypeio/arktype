@@ -14,6 +14,7 @@ const parseNumber = node({
 })
 
 parseNumber.in.kind //?
+parseNumber.in.description //?
 
 parseNumber.out.kind //?
 parseNumber.out.description //?

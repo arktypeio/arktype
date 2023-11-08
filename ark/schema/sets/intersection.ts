@@ -37,9 +37,7 @@ export type IntersectionInner = withAttributes<{
 	readonly intersection: CollapsedIntersectionInner
 }>
 
-export type CollapsedIntersectionInner =
-	| readonly [Node<BasisKind>, ...Node<ConstraintKind>[]]
-	| readonly Node<ConstraintKind>[]
+export type CollapsedIntersectionInner = readonly Node<RuleKind>[]
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
