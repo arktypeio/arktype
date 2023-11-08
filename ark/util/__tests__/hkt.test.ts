@@ -1,8 +1,7 @@
 import { attest } from "@arktype/attest"
 import type { conform, Hkt } from "@arktype/util"
-import { suite, test } from "mocha"
 
-suite("hkt", () => {
+describe("hkt", () => {
 	interface AppendKind extends Hkt.Kind {
 		f: (
 			args: conform<
@@ -11,11 +10,11 @@ suite("hkt", () => {
 			>
 		) => [...(typeof args)[1], (typeof args)[0]]
 	}
-	test("base", () => {
+	it("base", () => {
 		type result = Hkt.apply<AppendKind, [2, [0, 1]]>
 		attest<[0, 1, 2], result>()
 	})
-	test("reify", () => {
+	it("reify", () => {
 		const append = ((element: unknown, to: readonly unknown[]) => [
 			...to,
 			element

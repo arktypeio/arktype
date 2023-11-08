@@ -1,10 +1,9 @@
 import { attest } from "@arktype/attest"
 import { type IntersectionNode, node, type Root } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
-import { describe, test } from "mocha"
 
 describe("intersections", () => {
-	test("root type assignment", () => {
+	it("root type assignment", () => {
 		const t = node({ basis: "string", pattern: "/.*/" })
 		attest<IntersectionNode<string>>(t)
 		attest(t.json).snap({
@@ -13,7 +12,7 @@ describe("intersections", () => {
 		// previously had issues with a union complexity error when assigning to Root | undefined
 		const root: Root | undefined = node({ basis: "string", pattern: "/.*/" })
 	})
-	test("multiple rules", () => {
+	it("multiple rules", () => {
 		const l = node({
 			basis: "number",
 			divisor: 3,
@@ -32,7 +31,7 @@ describe("intersections", () => {
 			]
 		})
 	})
-	test("union", () => {
+	it("union", () => {
 		const l = node(
 			{
 				basis: "number",
@@ -55,7 +54,7 @@ describe("intersections", () => {
 			]
 		})
 	})
-	test("in/out", () => {
+	it("in/out", () => {
 		const parseNumber = node({
 			in: {
 				basis: "string",

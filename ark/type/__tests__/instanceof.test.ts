@@ -1,14 +1,14 @@
 import { attest } from "@arktype/attest"
 import { node } from "@arktype/schema"
 import { type } from "arktype"
-import { suite, test } from "mocha"
+
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 import type { Ark } from "../scopes/ark.js"
 import type { Type } from "../type.js"
 
-suite("instanceof", () => {
-	suite("tuple expression", () => {
-		test("base", () => {
+describe("instanceof", () => {
+	describe("tuple expression", () => {
+		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
 			attest(t.condition).equals(node(Error).condition)
@@ -16,7 +16,7 @@ suite("instanceof", () => {
 			attest(t(e).data).equals(e)
 			attest(t({}).problems?.summary).snap("Must be an Error (was Object)")
 		})
-		test("inherited", () => {
+		it("inherited", () => {
 			const t = type(["instanceof", TypeError])
 			const e = new TypeError()
 			// for some reason the return of TypeError's constructor is actually
@@ -27,17 +27,17 @@ suite("instanceof", () => {
 				"Must be an instance of TypeError (was Error)"
 			)
 		})
-		test("multiple branches", () => {
+		it("multiple branches", () => {
 			const t = type(["instanceof", Date, Array])
 			attest<Date | unknown[]>(t.infer)
 		})
-		test("non-constructor", () => {
+		it("non-constructor", () => {
 			// @ts-expect-error
 			attest(() => type(["instanceof", () => {}])).type.errors(
 				"Type '() => void' is not assignable to type"
 			)
 		})
-		test("user-defined class", () => {
+		it("user-defined class", () => {
 			class ArkClass {
 				private isArk = true
 			}
@@ -59,7 +59,7 @@ suite("instanceof", () => {
 		// // Should be inferred as {f: unknown}
 		// type FF = typeof tt.infer
 		// If perf cost too high can use global type config to expand TerminallyInferredObjects
-		test("class with private properties", () => {
+		it("class with private properties", () => {
 			class ArkClass {
 				private isArk = true
 			}
@@ -70,18 +70,18 @@ suite("instanceof", () => {
 			attest(ark.inferIn).type.toString("ArkClass")
 		})
 	})
-	suite("root expression", () => {
-		test("class", () => {
+	describe("root expression", () => {
+		it("class", () => {
 			const t = type("instanceof", Error)
 			attest<Error>(t.infer)
 			attest(t.condition).equals(type(["instanceof", Error]).condition)
 		})
-		test("instance branches", () => {
+		it("instance branches", () => {
 			const t = type("instanceof", Date, Map)
 			attest<Date | Map<unknown, unknown>>(t.infer)
 			attest(t.condition).equals(type("Date|Map").condition)
 		})
-		test("non-constructor", () => {
+		it("non-constructor", () => {
 			// @ts-expect-error just an assignability failure so we can't validate an error message
 			attest(() => type("instanceof", new Error())).throws(
 				writeInvalidConstructorMessage("Error")

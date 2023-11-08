@@ -1,30 +1,30 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { suite, test } from "mocha"
+
 import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
 
-suite("parse enclosed", () => {
-	test("with spaces", () => {
+describe("parse enclosed", () => {
+	it("with spaces", () => {
 		attest<"this has spaces">(type("'this has spaces'").infer)
 	})
-	test("with neighbors", () => {
+	it("with neighbors", () => {
 		attest<"foo" | string[]>(type("'foo'|/.*/[]").infer)
 	})
-	suite("errors", () => {
-		suite("unterminated", () => {
-			test("regex", () => {
+	describe("errors", () => {
+		describe("unterminated", () => {
+			it("regex", () => {
 				// @ts-expect-error
 				attest(() => type("/.*")).throwsAndHasTypeError(
 					writeUnterminatedEnclosedMessage(".*", "/")
 				)
 			})
-			test("single-quote", () => {
+			it("single-quote", () => {
 				// @ts-expect-error
 				attest(() => type("'.*")).throwsAndHasTypeError(
 					writeUnterminatedEnclosedMessage(".*", "'")
 				)
 			})
-			test("double-quote", () => {
+			it("double-quote", () => {
 				// @ts-expect-error
 				attest(() => type('".*')).throwsAndHasTypeError(
 					writeUnterminatedEnclosedMessage(".*", '"')
@@ -32,35 +32,35 @@ suite("parse enclosed", () => {
 			})
 		})
 	})
-	test("single-quoted", () => {
+	it("single-quoted", () => {
 		attest<"hello">(type("'hello'").infer)
 	})
-	test("double-quoted", () => {
+	it("double-quoted", () => {
 		attest<"goodbye">(type('"goodbye"').infer)
 	})
-	test("regex literal", () => {
+	it("regex literal", () => {
 		attest<string>(type("/.*/").infer)
 	})
-	test("invalid regex", () => {
+	it("invalid regex", () => {
 		attest(() => type("/[/")).throws.snap(
 			"Error: Invalid regular expression: /[/: Unterminated character class"
 		)
 	})
-	test("mixed quote types", () => {
+	it("mixed quote types", () => {
 		attest<"'single-quoted'">(type(`"'single-quoted'"`).infer)
 		attest<'"double-quoted"'>(type(`'"double-quoted"'`).infer)
 	})
-	test("ignores enclosed operators", () => {
+	it("ignores enclosed operators", () => {
 		attest<"yes|no|maybe">(type("'yes|no|maybe'").infer)
 	})
-	test("mix of enclosed and unenclosed operators", () => {
+	it("mix of enclosed and unenclosed operators", () => {
 		attest<"yes|no" | "true|false">(type("'yes|no'|'true|false'").infer)
 	})
-	test("escaped enclosing", () => {
+	it("escaped enclosing", () => {
 		const t = type("'don\\'t'")
 		attest<"don't">(t.infer)
 	})
-	test("string literal stress", () => {
+	it("string literal stress", () => {
 		const s = `"3.
 14159265358979323846264338327950288419716939937510
 58209749445923078164062862089986280348253421170679

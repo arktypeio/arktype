@@ -1,17 +1,16 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { suite, test } from "mocha"
 
-suite("key traversal", () => {
+describe("key traversal", () => {
 	const getExtraneousB = () => ({ a: "ok", b: "why?" })
-	test("loose by default", () => {
+	it("loose by default", () => {
 		const t = type({
 			a: "string"
 		})
 		const dataWithExtraneousB = getExtraneousB()
 		attest(t(dataWithExtraneousB).data).equals(dataWithExtraneousB)
 	})
-	test("invalid union", () => {
+	it("invalid union", () => {
 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
 			keys: "strict"
 		})
@@ -19,14 +18,14 @@ suite("key traversal", () => {
 		//     'a must be a string or removed (was {"a":2})'
 		// )
 	})
-	test("distilled type", () => {
+	it("distilled type", () => {
 		const t = type({
 			a: "string"
 		}).configure({ keys: "distilled" })
 		attest(t({ a: "ok" }).data).equals({ a: "ok" })
 		attest(t(getExtraneousB()).data).snap({ a: "ok" })
 	})
-	test("distilled array", () => {
+	it("distilled array", () => {
 		const o = type({ a: "email[]" }).configure({
 			keys: "distilled"
 		})
@@ -39,7 +38,7 @@ suite("key traversal", () => {
 		// can handle missing keys
 		attest(o({ b: ["shawn"] }).problems?.summary).snap("a must be defined")
 	})
-	test("distilled union", () => {
+	it("distilled union", () => {
 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
 			keys: "distilled"
 		})
@@ -52,14 +51,14 @@ suite("key traversal", () => {
 			'a must be a string or b must be defined (was {"a":2})'
 		)
 	})
-	test("strict type", () => {
+	it("strict type", () => {
 		const t = type({
 			a: "string"
 		}).configure({ keys: "strict" })
 		attest(t({ a: "ok" }).data).equals({ a: "ok" })
 		attest(t(getExtraneousB()).problems?.summary).snap("b must be removed")
 	})
-	test("strict array", () => {
+	it("strict array", () => {
 		const o = type({ a: "string[]" }).configure({
 			keys: "strict"
 		})

@@ -1,25 +1,25 @@
-// suite("node definitions", () => {
-//     suite("basis", () => {
-//         test("domain", () => {
+// describe("node definitions", () => {
+//     describe("basis", () => {
+//         it("domain", () => {
 //             const t = node({
 //                 basis: "string"
 //             })
 //             attest<TypeNode<string>>(t)
 //         })
-//         test("class", () => {
+//         it("class", () => {
 //             const t = node({
 //                 basis: Date
 //             })
 //             attest<TypeNode<Date>>(t)
 //         })
-//         test("value", () => {
+//         it("value", () => {
 //             const t = node({
 //                 basis: ["===", 3.14159]
 //             })
 //             attest<TypeNode<3.14159>>(t)
 //         })
 //     })
-//     test("optional props", () => {
+//     it("optional props", () => {
 //         const t = node({
 //             basis: "object",
 //             props: {
@@ -37,7 +37,7 @@
 //             b?: boolean
 //         }>
 //     })
-//     test("arrays", () => {
+//     it("arrays", () => {
 //         const t = node({
 //             basis: Array,
 //             props: [
@@ -57,7 +57,7 @@
 //         })
 //         attest<TypeNode<{ name: string }[]>>(t)
 //     })
-//     test("variadic tuple", () => {
+//     it("variadic tuple", () => {
 //         const t = node({
 //             basis: Array,
 //             props: [
@@ -80,7 +80,7 @@
 //         })
 //         attest<TypeNode<[string, number, ...symbol[]]>>(t)
 //     })
-//     test("non-variadic tuple", () => {
+//     it("non-variadic tuple", () => {
 //         const t = node({
 //             basis: Array,
 //             props: {
@@ -114,7 +114,7 @@
 //             ]
 //         >
 //     })
-//     test("branches", () => {
+//     it("branches", () => {
 //         const t = node(
 //             { basis: ["===", "foo"] },
 //             { basis: ["===", "bar"] },
@@ -126,14 +126,14 @@
 //         )
 //         attest<TypeNode<number | "foo" | "bar" | { a: bigint }>>(t)
 //     })
-//     test("narrow", () => {
+//     it("narrow", () => {
 //         const t = node({
 //             basis: "string",
 //             narrow: (s): s is "foo" => s === "foo"
 //         })
 //         attest<TypeNode<"foo">>(t)
 //     })
-//     test("narrow array", () => {
+//     it("narrow array", () => {
 //         const t = node({
 //             basis: "object",
 //             narrow: [
@@ -146,25 +146,25 @@
 //             b: boolean
 //         }>
 //     })
-//     test("morph", () => {
+//     it("morph", () => {
 //         const t = node({
 //             basis: "string",
 //             morph: (s: string) => s.length
 //         })
 //         attest<TypeNode<(In: string) => Out<number>>>(t)
 //     })
-//     test("morph list", () => {
+//     it("morph list", () => {
 //         const t = node({
 //             basis: "string",
 //             morph: [(s: string) => s.length, (n: number) => ({ n })] as const
 //         })
 //         attest<TypeNode<(In: string) => Out<{ n: number }>>>(t)
 //     })
-//     test("never", () => {
+//     it("never", () => {
 //         const t = node()
 //         attest<TypeNode<never>>(t)
 //     })
-//     test("errors on rule in wrong domain", () => {
+//     it("errors on rule in wrong domain", () => {
 //         attest(() =>
 //             node({
 //                 basis: "number",
@@ -176,7 +176,7 @@
 //             "Error: regex constraint may only be applied to a string (was number)"
 //         )
 //     })
-//     test("errors on filter literal", () => {
+//     it("errors on filter literal", () => {
 //         attest(() =>
 //             node({
 //                 basis: ["===", true],

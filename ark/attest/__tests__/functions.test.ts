@@ -2,7 +2,6 @@ import * as assert from "node:assert/strict"
 import { basename } from "node:path"
 import { attest } from "@arktype/attest"
 import { fileName } from "@arktype/fs"
-import { describe, test } from "mocha"
 
 const n = 5
 const o = { re: "do" }
@@ -18,7 +17,7 @@ const throwError = () => {
 }
 
 describe("assertion errors", () => {
-	test("valid type errors", () => {
+	it("valid type errors", () => {
 		// @ts-expect-error
 		attest(o.re.length.nonexistent).type.errors(
 			/Property 'nonexistent' does not exist on type 'number'/
@@ -29,7 +28,7 @@ describe("assertion errors", () => {
 			"Expected 1 arguments, but got 2."
 		)
 	})
-	test("bad type errors", () => {
+	it("bad type errors", () => {
 		assert.throws(
 			() => attest(o).type.errors(/This error doesn't exist/),
 			assert.AssertionError,
@@ -45,14 +44,14 @@ describe("assertion errors", () => {
 			"not assignable"
 		)
 	})
-	test("chainable", () => {
+	it("chainable", () => {
 		attest<{ re: string }>(o).equals({ re: "do" })
 		// @ts-expect-error
 		attest(() => throwError("this is a type error"))
 			.throws("Test error.")
 			.type.errors("Expected 0 arguments, but got 1.")
 	})
-	test("bad chainable", () => {
+	it("bad chainable", () => {
 		assert.throws(
 			() =>
 				attest(n)
@@ -67,7 +66,7 @@ describe("assertion errors", () => {
 			"7"
 		)
 	})
-	test("throwsAndHasTypeError", () => {
+	it("throwsAndHasTypeError", () => {
 		// @ts-expect-error
 		attest(() => shouldThrow(true)).throwsAndHasTypeError(
 			/true[\S\s]*not assignable[\S\s]*false/
@@ -90,7 +89,7 @@ describe("assertion errors", () => {
 			"not assignable"
 		)
 	})
-	test("throws empty", () => {
+	it("throws empty", () => {
 		attest(throwError).throws()
 		assert.throws(
 			() => attest(() => shouldThrow(false)).throws(),
@@ -110,7 +109,7 @@ describe("assertion errors", () => {
 		throw new Error("Expected function to throw an error.")
 	}
 
-	test("stack starts from test file", () => {
+	it("stack starts from test file", () => {
 		const e = getThrownError(() => attest(1 + 1).equals(3))
 		assert.match(e.stack!.split("\n")[1], new RegExp(basename(fileName())))
 	})

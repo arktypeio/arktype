@@ -2,19 +2,19 @@ import { attest } from "@arktype/attest"
 import { node } from "@arktype/schema"
 import type { Out } from "arktype"
 import { type } from "arktype"
-import { suite, test } from "mocha"
+
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
 import { scope } from "../scopes/ark.js"
 
-suite("tuple expressions", () => {
-	test("nested", () => {
+describe("tuple expressions", () => {
+	it("nested", () => {
 		const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
 		attest<string | number | bigint | boolean>(t.infer)
 	})
-	test("autocompletion", () => {
+	it("autocompletion", () => {
 		// @ts-expect-error
 		attest(() => type([""])).type.errors(
 			`IndexZeroOperator | keyof Ark | "this"`
@@ -24,8 +24,8 @@ suite("tuple expressions", () => {
 			`"keyof" | keyof Ark | "this" | IndexOneOperator'`
 		)
 	})
-	suite("errors", () => {
-		test("missing right operand", () => {
+	describe("errors", () => {
+		it("missing right operand", () => {
 			// @ts-expect-error
 			attest(() => type(["string", "|"])).throwsAndHasTypeError(
 				writeMissingRightOperandMessage("|", "")
@@ -35,20 +35,20 @@ suite("tuple expressions", () => {
 				writeMissingRightOperandMessage("&", "")
 			)
 		})
-		test("nested parse error", () => {
+		it("nested parse error", () => {
 			attest(() => {
 				// @ts-expect-error
 				type(["string", "|", "numbr"])
 			}).throwsAndHasTypeError(writeUnresolvableMessage("numbr"))
 		})
-		test("nested object parse error", () => {
+		it("nested object parse error", () => {
 			attest(() => {
 				// @ts-expect-error
 				type([{ s: "strng" }, "|", "number"])
 			}).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
 		})
 		// TODO: reenable
-		test("this", () => {
+		it("this", () => {
 			const t = type([{ a: "string" }, "|", { b: "this" }])
 			attest(t.infer).type.toString.snap(
 				"{ a: string; } | { b: { a: string; } | any; }"
@@ -67,33 +67,33 @@ suite("tuple expressions", () => {
 	})
 })
 
-suite("root expression", () => {
-	test("=== single", () => {
+describe("root expression", () => {
+	it("=== single", () => {
 		const t = type("===", 5)
 		attest<5>(t.infer)
 		attest(t.condition).equals(type("5").condition)
 	})
-	test("=== branches", () => {
+	it("=== branches", () => {
 		const t = type("===", "foo", "bar", "baz")
 		attest<"foo" | "bar" | "baz">(t.infer)
 		attest(t.condition).equals(node.units("foo", "bar", "baz").condition)
 	})
-	test("instanceof single", () => {
+	it("instanceof single", () => {
 		const t = type("instanceof", RegExp)
 		attest<RegExp>(t.infer)
 		attest(t.condition).equals(node(RegExp).condition)
 	})
-	test("instanceof branches", () => {
+	it("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest<unknown[] | Date>(t.infer)
 		attest(t.condition).equals(node(Array, Date).condition)
 	})
-	test("postfix", () => {
+	it("postfix", () => {
 		const t = type({ a: "string" }, "[]")
 		attest<{ a: string }[]>(t.infer)
 		attest(t.condition).equals(type({ a: "string" }).array().condition)
 	})
-	test("infix", () => {
+	it("infix", () => {
 		const t = type({ a: "string" }, "|", { b: "boolean" })
 		attest<
 			| {
@@ -108,11 +108,11 @@ suite("root expression", () => {
 			type({ a: "string" }).or({ b: "boolean" }).condition
 		)
 	})
-	test("morph", () => {
+	it("morph", () => {
 		const t = type({ a: "string" }, "=>", (In) => ({ b: In.a }))
 		attest<(In: { a: string }) => Out<{ b: string }>>(t.inferMorph)
 	})
-	test("narrow", () => {
+	it("narrow", () => {
 		const t = type(
 			{ a: "string" },
 			":",
@@ -120,7 +120,7 @@ suite("root expression", () => {
 		)
 		attest<{ a: "foo" }>(t.infer)
 	})
-	test("this", () => {
+	it("this", () => {
 		const t = type({ a: "string" }, "|", { b: "this" })
 		attest(t.infer).type.toString.snap(
 			"{ a: string; } | { b: { a: string; } | any; }"
@@ -129,7 +129,7 @@ suite("root expression", () => {
 			type([{ a: "string" }, "|", { b: "this" }]).condition
 		)
 	})
-	test("tuple as second arg", () => {
+	it("tuple as second arg", () => {
 		// this case is not fundamentally unique but TS has a hard time
 		// narrowing tuples in contexts like this
 		const t = type("keyof", [

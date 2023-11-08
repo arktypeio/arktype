@@ -7,7 +7,7 @@ import {
 } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
-import { suite, test } from "mocha"
+
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -25,17 +25,17 @@ export const expectedBoundsCondition = (...bounds: BoundInner[]) => ""
 export const expectedDateBoundsCondition = (...bounds: BoundInner[]) => ""
 // node(Date, ...bounds).condition
 
-suite("bounds", () => {
-	suite("parse", () => {
-		suite("single", () => {
-			test(">", () => {
+describe("bounds", () => {
+	describe("parse", () => {
+		describe("single", () => {
+			it(">", () => {
 				const t = type("number>0")
 				attest<number>(t.infer)
 				attest(t.allows(-1)).equals(false)
 				attest(t.allows(0)).equals(false)
 				attest(t.allows(1)).equals(true)
 			})
-			// 	test("<", () => {
+			// 	it("<", () => {
 			// 		const t = type("number<10")
 			// 		attest<number>(t.infer)
 			// 		attest(t.condition).equals(
@@ -46,7 +46,7 @@ suite("bounds", () => {
 			// 			})
 			// 		)
 			// 	})
-			// 	test("<=", () => {
+			// 	it("<=", () => {
 			// 		const t = type("number<=-49")
 			// 		attest<number>(t.infer)
 			// 		attest(t.condition).equals(
@@ -57,7 +57,7 @@ suite("bounds", () => {
 			// 			})
 			// 		)
 			// 	})
-			// 	test("==", () => {
+			// 	it("==", () => {
 			// 		const t = type("number==3211993")
 			// 		attest<number>(t.infer)
 			// 		attest(t.condition).equals(
@@ -76,8 +76,8 @@ suite("bounds", () => {
 			// 		)
 			// 	})
 			// })
-			// suite("double", () => {
-			// 	test("<,<=", () => {
+			// describe("double", () => {
+			// 	it("<,<=", () => {
 			// 		const t = type("-5<number<=5")
 			// 		attest<number>(t.infer)
 			// 		attest(t.allows(-6)).equals(false)
@@ -101,7 +101,7 @@ suite("bounds", () => {
 			// 			)
 			// 		)
 			// 	})
-			// 	test("<=,<", () => {
+			// 	it("<=,<", () => {
 			// 		const t = type("-3.23<=number<4.654")
 			// 		attest<number>(t.infer)
 			// 		attest(t.condition).equals(
@@ -120,42 +120,42 @@ suite("bounds", () => {
 			// 		)
 			// 	})
 			// })
-			// test("whitespace following comparator", () => {
+			// it("whitespace following comparator", () => {
 			// 	const t = type("number > 3")
 			// 	attest<number>(t.infer)
 			// 	attest(t.condition).equals(
 			// 		expectedBoundsCondition({ limitKind: "min", exclusive: true, limit: 3 })
 			// 	)
 		})
-		suite("intersection", () => {
-			suite("equality range", () => {
-				test("equal", () => {
+		describe("intersection", () => {
+			describe("equality range", () => {
+				it("equal", () => {
 					attest(type("number==2&number==2").condition).equals(
 						type("number==2").condition
 					)
 				})
-				test("disjoint", () => {
+				it("disjoint", () => {
 					attest(() => type("number==2&number==3")).throws(
 						"Intersection of exactly 2 and exactly 3 results in an unsatisfiable type"
 					)
 				})
-				test("right equality range", () => {
+				it("right equality range", () => {
 					attest(type("number<4&number==2").condition).equals(
 						type("number==2").condition
 					)
 				})
-				test("left equality range", () => {
+				it("left equality range", () => {
 					attest(type("number==3&number>=3").condition).equals(
 						type("number==3").condition
 					)
 				})
 			})
-			test("overlapping", () => {
+			it("overlapping", () => {
 				const expected = type("2<=number<3").condition
 				attest(type("number>=2&number<3").condition).equals(expected)
 				attest(type("2<=number<4&1<=number<3").condition).equals(expected)
 			})
-			test("single value overlap", () => {
+			it("single value overlap", () => {
 				attest(type("0<=number<=0").condition).equals(
 					type("number==0").condition
 				)
@@ -163,7 +163,7 @@ suite("bounds", () => {
 					type("number==1").condition
 				)
 			})
-			test("non-overlapping", () => {
+			it("non-overlapping", () => {
 				attest(() => type("number>3&number<=3")).throws(
 					"Intersection of more than 3 and at most 3 results in an unsatisfiable type"
 				)
@@ -171,117 +171,117 @@ suite("bounds", () => {
 					"Intersection of the range bounded by more than -2 and less than -1 and the range bounded by more than 1 and less than 2 results in an unsatisfiable type"
 				)
 			})
-			test("greater min is stricter", () => {
+			it("greater min is stricter", () => {
 				const expected = type("number>=3").condition
 				attest(type("number>=3&number>2").condition).equals(expected)
 				attest(type("number>2&number>=3").condition).equals(expected)
 			})
-			test("lesser max is stricter", () => {
+			it("lesser max is stricter", () => {
 				const expected = type("number<=3").condition
 				attest(type("number<=3&number<4").condition).equals(expected)
 				attest(type("number<4&number<=3").condition).equals(expected)
 			})
-			test("exclusive wins if limits equal", () => {
+			it("exclusive wins if limits equal", () => {
 				const expected = type("number<3").condition
 				attest(type("number<3&number<=3").condition).equals(expected)
 				attest(type("number<=3&number<3").condition).equals(expected)
 			})
 		})
 
-		suite("parse errors", () => {
-			test("single equals", () => {
+		describe("parse errors", () => {
+			it("single equals", () => {
 				// @ts-expect-error
 				attest(() => type("string=5")).throwsAndHasTypeError(
 					singleEqualsMessage
 				)
 			})
-			test("invalid left comparator", () => {
+			it("invalid left comparator", () => {
 				// @ts-expect-error
 				attest(() => type("3>number<5")).throwsAndHasTypeError(
 					writeUnpairableComparatorMessage(">")
 				)
 			})
-			test("invalid right double-bound comparator", () => {
+			it("invalid right double-bound comparator", () => {
 				// @ts-expect-error
 				attest(() => type("3<number==5")).throwsAndHasTypeError(
 					writeUnpairableComparatorMessage("==")
 				)
 			})
-			test("unpaired left", () => {
+			it("unpaired left", () => {
 				// @ts-expect-error temporarily disabled type snapshot as it is returning ''
 				attest(() => type("3<number")).throws(writeOpenRangeMessage(3, ">"))
 			})
-			test("unpaired left group", () => {
+			it("unpaired left group", () => {
 				// @ts-expect-error
 				attest(() => type("(-1<=number)")).throws(
 					writeOpenRangeMessage(-1, ">=")
 				)
 			})
-			test("double left", () => {
+			it("double left", () => {
 				// @ts-expect-error
 				attest(() => type("3<5<8")).throwsAndHasTypeError(
 					writeMultipleLeftBoundsMessage(3, ">", 5, ">")
 				)
 			})
-			test("empty range", () => {
+			it("empty range", () => {
 				attest(() => type("3<=number<2")).throws(
 					"Intersection of at least 3 and less than 2 results in an unsatisfiable type"
 				)
 			})
-			test("double right bound", () => {
+			it("double right bound", () => {
 				// @ts-expect-error
 				attest(() => type("number>0<=200")).type.errors(
 					writeDoubleRightBoundMessage("number")
 				)
 			})
-			test("non-narrowed bounds", () => {
+			it("non-narrowed bounds", () => {
 				const a = 5 as number
 				const b = 7 as number
 				const t = type(`${a}<number<${b}`)
 				attest<number>(t.infer)
 			})
-			test("fails at runtime on malformed right", () => {
+			it("fails at runtime on malformed right", () => {
 				attest(() => type("number<07")).throws(
 					writeMalformedNumericLiteralMessage("07", "number")
 				)
 			})
-			test("fails at runtime on malformed lower", () => {
+			it("fails at runtime on malformed lower", () => {
 				attest(() => type("3.0<number<5")).throws(
 					writeMalformedNumericLiteralMessage("3.0", "number")
 				)
 			})
 		})
-		suite("semantic", () => {
-			test("number", () => {
+		describe("semantic", () => {
+			it("number", () => {
 				attest<number>(type("number==-3.14159").infer)
 			})
-			test("string", () => {
+			it("string", () => {
 				attest<string>(type("string<=5").infer)
 			})
-			test("array", () => {
+			it("array", () => {
 				attest<boolean[]>(type("87<=boolean[]<89").infer)
 			})
-			test("multiple boundable categories", () => {
+			it("multiple boundable categories", () => {
 				const t = type("(string|boolean[]|number)>0")
 				attest<string | boolean[] | number>(t.infer)
 				const expected = type("string>0|boolean[]>0|number>0")
 				attest(t.condition).equals(expected.condition)
 			})
 
-			suite("errors", () => {
-				test("unknown", () => {
+			describe("errors", () => {
+				it("unknown", () => {
 					// @ts-expect-error
 					attest(() => type("unknown<10")).throwsAndHasTypeError(
 						writeUnboundableMessage("unknown")
 					)
 				})
-				test("unboundable", () => {
+				it("unboundable", () => {
 					// @ts-expect-error
 					attest(() => type("object>10")).throwsAndHasTypeError(
 						writeUnboundableMessage("object")
 					)
 				})
-				test("overlapping", () => {
+				it("overlapping", () => {
 					// @ts-expect-error
 					attest(() => type("1<(number|object)<10"))
 						.throws(writeUnboundableMessage("object"))
@@ -289,8 +289,8 @@ suite("bounds", () => {
 						// summarize the expression
 						.type.errors(writeUnboundableMessage("number | object"))
 				})
-				suite("invalid literal bound type", () => {
-					test("number with right Date bound", () => {
+				describe("invalid literal bound type", () => {
+					it("number with right Date bound", () => {
 						attest(() =>
 							//@ts-expect-error
 							type("number<d'2001/01/01'")
@@ -306,7 +306,7 @@ suite("bounds", () => {
 								writeInvalidLimitMessage("<", "d'2001/01/01'", "right")
 							)
 					})
-					test("number with left Date bound", () => {
+					it("number with left Date bound", () => {
 						//@ts-expect-error
 						attest(() => type("d'2001/01/01'<number<2"))
 							.throws(writeIncompatibleRangeMessage("date", "number"))
@@ -314,13 +314,13 @@ suite("bounds", () => {
 								writeInvalidLimitMessage("<", "d'2001/01/01'", "left")
 							)
 					})
-					test("Date with right number bound", () => {
+					it("Date with right number bound", () => {
 						// @ts-expect-error
 						attest(() => type("Date<2")).throwsAndHasTypeError(
 							writeInvalidLimitMessage("<", "2", "right")
 						)
 					})
-					test("Date with left number bound", () => {
+					it("Date with left number bound", () => {
 						attest(() =>
 							// @ts-expect-error
 							type("0<Date<d'1999/9/8'")
@@ -333,8 +333,8 @@ suite("bounds", () => {
 		})
 	})
 
-	suite("dates", () => {
-		// test("single", () => {
+	describe("dates", () => {
+		// it("single", () => {
 		// 	const t = type("Date<d'2023/1/12'")
 		// 	attest<Date>(t.infer)
 		// 	attest(t.condition).equals(
@@ -346,7 +346,7 @@ suite("bounds", () => {
 		// 		})
 		// 	)
 		// })
-		// test("equality", () => {
+		// it("equality", () => {
 		// 	const t = type("Date==d'2020-1-1'")
 		// 	attest<Date>(t.infer)
 		// 	attest(t.condition).equals(
@@ -366,7 +366,7 @@ suite("bounds", () => {
 		// 	attest(t.allows(new Date("2020/01/01"))).equals(true)
 		// 	attest(t.allows(new Date("2020/01/02"))).equals(false)
 		// })
-		// test("double", () => {
+		// it("double", () => {
 		// 	const t = type("d'2001/10/10'<Date<d'2005/10/10'")
 		// 	attest<Date>(t.infer)
 		// 	attest(t.condition).equals(
@@ -387,7 +387,7 @@ suite("bounds", () => {
 		// 	attest(t.allows(new Date("2001/10/10"))).equals(false)
 		// 	attest(t.allows(new Date("2005/10/10"))).equals(false)
 		// })
-		test("dynamic", () => {
+		it("dynamic", () => {
 			const now = new Date()
 			const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
 			attest<Date>(t.infer)
@@ -395,7 +395,7 @@ suite("bounds", () => {
 			attest(t.allows(now)).equals(true)
 			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
 		})
-		test("non-overlapping intersection", () => {
+		it("non-overlapping intersection", () => {
 			attest(
 				() => type("Date>d'2000/01/01'&Date<=d'2000/01/01'").condition
 			).throws(

@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { scope } from "arktype"
-import { suite, test } from "mocha"
 
 const getCyclicScope = () =>
 	scope({
@@ -27,8 +26,8 @@ const getCyclicData = () => {
 	return packageData
 }
 
-suite("cyclic", () => {
-	test("cyclic union", () => {
+describe("cyclic", () => {
+	it("cyclic union", () => {
 		const $ = scope({
 			a: { b: "b|false" },
 			b: { a: "a|true" }
@@ -37,7 +36,7 @@ suite("cyclic", () => {
 			"{ a: { b: false | { a: true | any; }; }; b: { a: true | { b: false | any; }; }; }"
 		)
 	})
-	test("cyclic intersection", () => {
+	it("cyclic intersection", () => {
 		const $ = scope({
 			a: { b: "b&a" },
 			b: { a: "a&b" }
@@ -47,7 +46,7 @@ suite("cyclic", () => {
 		)
 	})
 	// TODO: reenable
-	test("cyclic", () => {
+	it("cyclic", () => {
 		const types = scope({ a: { b: "b" }, b: { a: "a" } }).export()
 		// attest(types.a.node).snap({
 		//     object: { props: { b: "b" } }
@@ -73,7 +72,7 @@ suite("cyclic", () => {
 			`Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
 		)
 	})
-	test("allows valid", () => {
+	it("allows valid", () => {
 		const types = getCyclicScope().export()
 		const data = getCyclicData()
 		attest(types.package(data).data).snap({
@@ -82,7 +81,7 @@ suite("cyclic", () => {
 			contributors: [{ email: "david@arktype.io" }]
 		})
 	})
-	test("adds problems on invalid", () => {
+	it("adds problems on invalid", () => {
 		const types = getCyclicScope().export()
 		const data = getCyclicData()
 		data.contributors[0].email = "ssalbdivad"
@@ -90,7 +89,7 @@ suite("cyclic", () => {
 			"dependencies/1/contributors/0/email must be a valid email (was 'ssalbdivad')\ncontributors/0/email must be a valid email (was 'ssalbdivad')"
 		)
 	})
-	test("can include cyclic data in message", () => {
+	it("can include cyclic data in message", () => {
 		const data = getCyclicData()
 		const nonSelfDependent = getCyclicScope().type([
 			"package",
@@ -102,7 +101,7 @@ suite("cyclic", () => {
 		)
 	})
 
-	test("equivalent cycles reduce", () => {
+	it("equivalent cycles reduce", () => {
 		// // TODO: reduce this case or create an issue
 		// const $ = scope({
 		//     user: {
@@ -116,7 +115,7 @@ suite("cyclic", () => {
 		// })
 	})
 
-	test("union cyclic reference", () => {
+	it("union cyclic reference", () => {
 		const types = scope({
 			a: {
 				b: "b"
@@ -129,7 +128,7 @@ suite("cyclic", () => {
 			"{ a: { b: { a: 3 | any; }; }; b: { a: 3 | { b: any; }; }; }"
 		)
 	})
-	test("intersect cyclic reference", () => {
+	it("intersect cyclic reference", () => {
 		const types = scope({
 			a: {
 				b: "b"

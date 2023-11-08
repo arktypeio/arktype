@@ -1,10 +1,9 @@
 import { attest, getTsVersionUnderTest } from "@arktype/attest"
 import { type } from "arktype"
-import { suite, test } from "mocha"
 
 // @arktype/attest assertions can be made from any unit test framework with a global setup/teardown
-suite("attest features", () => {
-	test("type and value assertions", () => {
+describe("attest features", () => {
+	it("type and value assertions", () => {
 		const even = type("number%2")
 		// asserts even.infer is exactly number
 		attest<number>(even.infer)
@@ -16,7 +15,7 @@ suite("attest features", () => {
 		})
 	})
 
-	test("error assertions", () => {
+	it("error assertions", () => {
 		// Make assertions about type errors, runtime errors, or both at the same time!
 		// @ts-expect-error
 		attest(() => type("number%0")).throwsAndHasTypeError(
@@ -24,7 +23,7 @@ suite("attest features", () => {
 		)
 	})
 
-	test("integrate runtime logic with type assertions", () => {
+	it("integrate runtime logic with type assertions", () => {
 		const arrayOf = type("<t>", "t[]")
 		const numericArray = arrayOf("number | bigint") //=>?
 		// flexibly combine runtime logic with type assertions to customize your

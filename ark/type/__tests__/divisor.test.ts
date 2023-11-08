@@ -1,12 +1,12 @@
 import { attest, getTsVersionUnderTest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
-import { suite, test } from "mocha"
+
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 
-suite("divisibility", () => {
-	suite("parse", () => {
-		test("integerLiteralDefinition", () => {
+describe("divisibility", () => {
+	describe("parse", () => {
+		it("integerLiteralDefinition", () => {
 			const divisibleByTwo = type("number%2")
 			// attest(divisibleByTwo.node).equals({
 			//     number: {
@@ -15,74 +15,74 @@ suite("divisibility", () => {
 			// })
 			attest<number>(divisibleByTwo.infer)
 		})
-		test("whitespace after %", () => {
+		it("whitespace after %", () => {
 			attest<number>(type("number % 5").infer)
 		})
-		test("with bound", () => {
+		it("with bound", () => {
 			const t = type("number%8<3")
 			attest(t.condition).equals(type("number%8").and("number<3").condition)
 			attest(t.root.description).snap("(a multiple of 8 and less than 3)")
 		})
-		test("allows non-narrowed divisor", () => {
+		it("allows non-narrowed divisor", () => {
 			const z = 5 as number
 			attest<number>(type(`number%${z}`).infer)
 		})
-		test("fails at runtime on non-integer divisor", () => {
+		it("fails at runtime on non-integer divisor", () => {
 			attest(() => type("number%2.3")).throws(writeInvalidDivisorMessage("2.3"))
 		})
-		test("non-numeric divisor", () => {
+		it("non-numeric divisor", () => {
 			// @ts-expect-error
 			attest(() => type("number%foobar")).throwsAndHasTypeError(
 				writeInvalidDivisorMessage("foobar")
 			)
 		})
-		test("zero divisor", () => {
+		it("zero divisor", () => {
 			// @ts-expect-error
 			attest(() => type("number%0")).throwsAndHasTypeError(
 				writeInvalidDivisorMessage(0)
 			)
 		})
-		test("unknown", () => {
+		it("unknown", () => {
 			// @ts-expect-error
 			attest(() => type("unknown%2")).throwsAndHasTypeError(
 				writeIndivisibleMessage("unknown")
 			)
 		})
-		test("indivisible", () => {
+		it("indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string%1")).throwsAndHasTypeError(
 				writeIndivisibleMessage("string")
 			)
 		})
-		test("overlapping", () => {
+		it("overlapping", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10"))
 				.throws("Divisibility operand string must be a number")
 				.type.errors("Divisibility operand number | string must be a number")
 		})
 	})
-	suite("intersection", () => {
-		test("identical", () => {
+	describe("intersection", () => {
+		it("identical", () => {
 			const t = type("number%2&number%2")
 			attest(t.condition).equals(type("number%2").condition)
 		})
-		test("purely divisible", () => {
+		it("purely divisible", () => {
 			const t = type("number%4&number%2")
 			attest(t.condition).equals(type("number%4").condition)
 		})
-		test("common divisor", () => {
+		it("common divisor", () => {
 			const t = type("number%6&number%4")
 			attest(t.condition).equals(type("number%12").condition)
 		})
-		test("relatively prime", () => {
+		it("relatively prime", () => {
 			const t = type("number%2&number%3")
 			attest(t.condition).equals(type("number%6").condition)
 		})
-		test("valid literal", () => {
+		it("valid literal", () => {
 			const t = type("number%5&0")
 			attest(t.condition).equals(type("0").condition)
 		})
-		test("invalid literal", () => {
+		it("invalid literal", () => {
 			attest(() => type("number%3&8")).throws(
 				"Intersection of (a multiple of 3) and 8 results in an unsatisfiable type"
 			)

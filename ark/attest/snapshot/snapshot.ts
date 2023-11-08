@@ -57,7 +57,8 @@ export const getSnapshotByName = (
 }
 
 let writeCachedUpdatesOnExit = false
-process.addListener("exit", () => {
+
+process.on("exit", () => {
 	if (writeCachedUpdatesOnExit) {
 		writeCachedInlineSnapshotUpdates()
 	}

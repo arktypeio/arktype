@@ -1,5 +1,4 @@
 import { scope, type } from "arktype"
-import { describe, it } from "mocha"
 
 const ab = { a: "1", b: 1 }
 

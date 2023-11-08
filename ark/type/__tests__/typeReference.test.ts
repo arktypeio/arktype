@@ -1,27 +1,27 @@
 import { attest } from "@arktype/attest"
 import { ark, scope, type } from "arktype"
-import { suite, test } from "mocha"
+
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
-suite("type references", () => {
-	test("shallow type reference", () => {
+describe("type references", () => {
+	it("shallow type reference", () => {
 		const t = type(type("boolean"))
 		attest<boolean>(t.infer)
 	})
 
-	test("bad shallow type reference", () => {
+	it("bad shallow type reference", () => {
 		attest(() => {
 			// @ts-expect-error
 			type(type("foolean"))
 		}).throwsAndHasTypeError(writeUnresolvableMessage("foolean"))
 	})
 
-	test("deep type reference", () => {
+	it("deep type reference", () => {
 		const t = type({ a: type("boolean") })
 		attest<{ a: boolean }>(t.infer)
 	})
 
-	test("type reference in scope", () => {
+	it("type reference in scope", () => {
 		const a = type({ a: "string" })
 		const $ = scope({ a })
 		const types = $.export()
@@ -31,7 +31,7 @@ suite("type references", () => {
 		attest<{ a: string }>(types.a.infer)
 	})
 
-	test("bad deep type reference", () => {
+	it("bad deep type reference", () => {
 		attest(() => {
 			// @ts-expect-error
 			type({ a: type("goolean") })

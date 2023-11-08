@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-import { suite, test } from "mocha"
+
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
-suite("this reference", () => {
-	test("resolves from type", () => {
+describe("this reference", () => {
+	it("resolves from type", () => {
 		const disappointingGift = type({
 			label: "string",
 			"box?": "this"
@@ -17,7 +17,7 @@ suite("this reference", () => {
 		attest<ExpectedDisappointingGift>(disappointingGift.infer)
 	})
 
-	test("doesn't change when rereferenced", () => {
+	it("doesn't change when rereferenced", () => {
 		const initial = type({
 			initial: "this"
 		})
@@ -44,7 +44,7 @@ suite("this reference", () => {
 		attest(reference.condition).equals(types.reference.condition)
 	})
 
-	test("unresolvable in scope", () => {
+	it("unresolvable in scope", () => {
 		attest(() =>
 			scope({
 				disappointingGift: {

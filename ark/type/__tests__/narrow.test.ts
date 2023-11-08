@@ -3,10 +3,9 @@ import { type Out } from "@arktype/schema"
 import type { equals } from "@arktype/util"
 import type { Ark, Type } from "arktype"
 import { type } from "arktype"
-import { suite, test } from "mocha"
 
-suite("narrow", () => {
-	test("implicit problem", () => {
+describe("narrow", () => {
+	it("implicit problem", () => {
 		const isOdd = (n: number) => n % 2 === 1
 		const odd = type(["number", ":", isOdd])
 		attest<number>(odd.infer)
@@ -16,11 +15,11 @@ suite("narrow", () => {
 			"Must be valid according to isOdd (was 2)"
 		)
 	})
-	test("implicit problem anonymous", () => {
+	it("implicit problem anonymous", () => {
 		const even = type(["number", ":", (n) => n % 2 === 0])
 		attest(even(1).problems?.summary).snap("Must be valid (was 1)")
 	})
-	test("explicit problem", () => {
+	it("explicit problem", () => {
 		const even = type([
 			"number",
 			":",
@@ -28,7 +27,7 @@ suite("narrow", () => {
 		])
 		attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
 	})
-	test("problem at path", () => {
+	it("problem at path", () => {
 		type([{ s: "string" }])
 		const abEqual = type([
 			{
@@ -50,11 +49,11 @@ suite("narrow", () => {
 			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
 		)
 	})
-	test("functional predicate", () => {
+	it("functional predicate", () => {
 		const one = type(["number", ":", (n): n is 1 => n === 1])
 		attest<Type<1>>(one)
 	})
-	test("functional parameter inference", () => {
+	it("functional parameter inference", () => {
 		type Expected = number | boolean[]
 		const validateNumberOrBooleanList = <t>(
 			t: equals<t, Expected> extends true ? t : Expected
@@ -71,7 +70,7 @@ suite("narrow", () => {
 			type(["number|boolean[]", ":", (data: number | string[]) => !!data])
 		}).type.errors("Type 'boolean' is not assignable to type 'string'.")
 	})
-	test("narrow problem", () => {
+	it("narrow problem", () => {
 		const palindrome = type([
 			"string",
 			":",
@@ -86,7 +85,7 @@ suite("narrow", () => {
 			"Must be a palindrome (was 'david')"
 		)
 	})
-	test("narrows the output type of a morph", () => {
+	it("narrows the output type of a morph", () => {
 		const t = type("string")
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)

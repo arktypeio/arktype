@@ -2,9 +2,8 @@ import { attest } from "@arktype/attest"
 import { lazily } from "@arktype/util"
 import type { Ark, Module } from "arktype"
 import { scope, type } from "arktype"
-import { suite, test } from "mocha"
 
-suite("scope imports", () => {
+describe("scope imports", () => {
 	const threeSixtyNoScope = lazily(() =>
 		scope({
 			three: "3",
@@ -17,14 +16,14 @@ suite("scope imports", () => {
 	const threeSixtyNoModule = lazily(() => threeSixtyNoScope.export())
 	const yesModule = lazily(() => yesScope.export())
 
-	test("single", () => {
+	it("single", () => {
 		const $ = scope({
 			...threeSixtyNoModule
 		}).scope({ threeSixtyNo: "three|sixty|no" })
 		attest<{ threeSixtyNo: 3 | 60 | "no" }>($.infer)
 	})
 
-	test("multiple", () => {
+	it("multiple", () => {
 		const base = scope({
 			...threeSixtyNoModule,
 			...yesModule,
@@ -39,7 +38,7 @@ suite("scope imports", () => {
 	})
 
 	// TODO: fix, tests for more duplicate scenarios
-	// test("duplicate alias", () => {
+	// it("duplicate alias", () => {
 	//     attest(() =>
 	//         scope({ a: "boolean" })
 	//             .scope(
@@ -50,7 +49,7 @@ suite("scope imports", () => {
 	//     ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
 	// })
 
-	test("import & export", () => {
+	it("import & export", () => {
 		const threeSixtyNoScope = scope({
 			three: "3",
 			sixty: "60",
@@ -89,8 +88,8 @@ suite("scope imports", () => {
 	})
 })
 
-suite("private aliases", () => {
-	test("non-generic", () => {
+describe("private aliases", () => {
+	it("non-generic", () => {
 		const types = scope({
 			foo: "bar[]",
 			"#bar": "boolean"
@@ -105,7 +104,7 @@ suite("private aliases", () => {
 			}>
 		>(types)
 	})
-	test("generic", () => {
+	it("generic", () => {
 		const types = scope({
 			foo: "bar<string>[]",
 			"#bar<t>": ["t"]

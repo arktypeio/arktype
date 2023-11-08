@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { compose } from "@arktype/util"
-import { suite, test } from "mocha"
 
 export abstract class Describable {
 	description: string
@@ -26,8 +25,8 @@ export abstract class Boundable<data> {
 	}
 }
 
-suite("traits", () => {
-	test("compose", () => {
+describe("traits", () => {
+	it("compose", () => {
 		class StringChecker extends compose(Describable, Boundable) {
 			sizeOf(data: unknown) {
 				return Number(data)
@@ -58,7 +57,7 @@ suite("traits", () => {
 		attest(shortString.check("foo")).equals(true)
 		attest(shortString.check("toolong")).equals(false)
 	})
-	test("compose with labels", () => {
+	it("compose with labels", () => {
 		abstract class Labeled extends compose<[rule: 1, attributes: 1]>()(
 			Describable,
 			Boundable

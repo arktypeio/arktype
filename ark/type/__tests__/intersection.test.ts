@@ -1,19 +1,19 @@
 import { attest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
-import { suite, test } from "mocha"
+
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
 
-suite("intersection", () => {
-	test("two types", () => {
+describe("intersection", () => {
+	it("two types", () => {
 		const t = type("boolean&true")
 		attest<true>(t.infer)
 		attest(t.condition).is(type("true").condition)
 	})
-	test("intersection parsed before union", () => {
+	it("intersection parsed before union", () => {
 		// Should be parsed as:
 		// 1. "0" | ("1"&"string") | "2"
 		// 2. "0" | "1" | "2"
@@ -21,24 +21,24 @@ suite("intersection", () => {
 		attest<"0" | "1" | "2">(t.infer)
 		attest(t.condition).equals(type("===", "0", "1", "2").condition)
 	})
-	// test("tuple expression", () => {
+	// it("tuple expression", () => {
 	//     const t = type([{ a: "string" }, "&", { b: "number" }])
 	//     attest<{>(t.infer)
 	//         a: string
 	//         b: number
 	//     }
 	// })
-	test("several types", () => {
+	it("several types", () => {
 		const t = type("unknown&boolean&false")
 		attest<false>(t.infer)
 		attest(t.condition).equals(type("false").condition)
 	})
-	test("method", () => {
+	it("method", () => {
 		const t = type({ a: "string" }).and({ b: "boolean" })
 		attest<{ a: string; b: boolean }>(t.infer)
 		attest(t.condition).equals(type({ a: "string", b: "boolean" }).condition)
 	})
-	test("chained deep intersections", () => {
+	it("chained deep intersections", () => {
 		const b = type({ b: "boolean" }, "=>", (o) => [o.b])
 		const t = type({
 			a: ["string", "=>", (s) => s.length]
@@ -62,43 +62,43 @@ suite("intersection", () => {
 
 		attest<{ a: number; b: boolean[]; c: "hello" }>(t.infer)
 	})
-	suite("errors", () => {
-		test("bad reference", () => {
+	describe("errors", () => {
+		it("bad reference", () => {
 			// @ts-expect-error
 			attest(() => type("boolean&tru"))
 				.throws(writeUnresolvableMessage("tru"))
 				.type.errors("boolean&true")
 		})
-		test("double and", () => {
+		it("double and", () => {
 			// @ts-expect-error
 			attest(() => type("boolean&&true")).throws(
 				writeMissingRightOperandMessage("&", "&true")
 			)
 		})
-		test("implicit never", () => {
+		it("implicit never", () => {
 			attest(() => type("string&number")).throws(
 				"Intersection of string and number results in an unsatisfiable type"
 			)
 		})
-		test("left semantic error", () => {
+		it("left semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("string%2&'foo'")).throwsAndHasTypeError(
 				writeIndivisibleMessage("string")
 			)
 		})
-		test("right semantic error", () => {
+		it("right semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("'foo'&string%2")).throwsAndHasTypeError(
 				writeIndivisibleMessage("string")
 			)
 		})
-		test("chained validation", () => {
+		it("chained validation", () => {
 			attest(() =>
 				// @ts-expect-error
 				type({ a: "string" }).and({ b: "what" })
 			).throwsAndHasTypeError(writeUnresolvableMessage("what"))
 		})
-		test("at path", () => {
+		it("at path", () => {
 			attest(() => type({ a: "string" }).and({ a: "number" })).throws(
 				"Intersection at a of string and number results in an unsatisfiable type"
 			)

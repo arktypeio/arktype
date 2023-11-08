@@ -3,7 +3,7 @@ import { node } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import type { Ark, Module, Scope } from "arktype"
 import { scope, type } from "arktype"
-import { suite, test } from "mocha"
+
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
@@ -18,8 +18,8 @@ const $ = lazily(() =>
 	})
 )
 
-suite("submodules", () => {
-	test("base", () => {
+describe("submodules", () => {
+	it("base", () => {
 		const types = $.export()
 		attest<
 			Module<{
@@ -44,13 +44,13 @@ suite("submodules", () => {
 		attest(types.sub.alias.condition).is(expected)
 		attest(types.b.condition).is(expected)
 	})
-	test("non-submodule dot access", () => {
+	it("non-submodule dot access", () => {
 		// @ts-expect-error
 		attest(() => $.type("b.foo")).throwsAndHasTypeError(
 			writeNonSubmoduleDotMessage("b")
 		)
 	})
-	test("thunk submodule", () => {
+	it("thunk submodule", () => {
 		const $ = scope({
 			a: "string",
 			c: "a",
@@ -79,19 +79,19 @@ suite("submodules", () => {
 			}>
 		>($)
 	})
-	test("no alias reference", () => {
+	it("no alias reference", () => {
 		// @ts-expect-error
 		attest(() => $.type("sub")).throwsAndHasTypeError(
 			writeMissingSubmoduleAccessMessage("sub")
 		)
 	})
-	test("bad alias reference", () => {
+	it("bad alias reference", () => {
 		// @ts-expect-error
 		attest(() => $.type("sub.marine")).throwsAndHasTypeError(
 			writeUnresolvableMessage("sub.marine")
 		)
 	})
-	test("autocompletion", () => {
+	it("autocompletion", () => {
 		const base = scope({ foo: "true" })
 		// @ts-expect-error
 		attest(() => scope({ base, reference: "base." }).export())

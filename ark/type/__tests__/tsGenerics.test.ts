@@ -1,13 +1,11 @@
-import { suite } from "mocha"
-
-suite("tsGenerics", () => {
-	// test("in scope", () => {
+describe("tsGenerics", () => {
+	// it("in scope", () => {
 	//     const types = scope({
 	//         t: "Record<string, number>"
 	//     }).export()
 	//     attest<Record<string, number>>(types.t.infer)
 	// })
-	// test("in module", () => {
+	// it("in module", () => {
 	//     const t = arktypes.Record("string", "number")
 	//     attest<Record<string, number>>(t.infer)
 	// })

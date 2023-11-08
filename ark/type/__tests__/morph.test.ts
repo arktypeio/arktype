@@ -3,10 +3,9 @@ import type { Out, Problem } from "@arktype/schema"
 import { writeUndiscriminableMorphUnionMessage } from "@arktype/schema"
 import type { Ark, Type } from "arktype"
 import { arktypes, scope, type } from "arktype"
-import { suite, test } from "mocha"
 
-suite("morph", () => {
-	test("base", () => {
+describe("morph", () => {
+	it("base", () => {
 		const t = type("boolean").morph((data) => `${data}`)
 		attest<Type<(In: boolean) => Out<string>>>(t)
 		attest<string>(t.infer)
@@ -19,7 +18,7 @@ suite("morph", () => {
 		attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
 		attest(t.root).equals(type(["boolean", "=>", (data) => `${data}`]).root)
 	})
-	test("endomorph", () => {
+	it("endomorph", () => {
 		const t = type(["boolean", "=>", (data) => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
 		const result = t(true)
@@ -28,7 +27,7 @@ suite("morph", () => {
 		}
 		attest<boolean>(result.data).equals(false)
 	})
-	test("chained to type", () => {
+	it("chained to type", () => {
 		const t = type(["string>5", "=>", arktypes.parse.date])
 		attest<Type<(In: string) => Out<Date>>>(t)
 		attest(t("5/21/1993").data?.getDate()).equals(21)
@@ -36,7 +35,7 @@ suite("morph", () => {
 			"Must be a valid date (was 'foobar')"
 		)
 	})
-	test("validated output", () => {
+	it("validated output", () => {
 		const parsedUser = type("string").morph((s) => JSON.parse(s), {
 			name: "string",
 			age: "number"
@@ -51,17 +50,17 @@ suite("morph", () => {
 			>
 		>(parsedUser)
 	})
-	test("any as out", () => {
+	it("any as out", () => {
 		const t = type("string", "=>", (s) => s as any)
 		attest<string>(t.inferIn)
 		attest<any>(t.infer)
 	})
-	test("never as out", () => {
+	it("never as out", () => {
 		const t = type("string", "=>", (s) => s as never)
 		attest<string>(t.inferIn)
 		attest<never>(t.infer)
 	})
-	test("return problem", () => {
+	it("return problem", () => {
 		const divide100By = type([
 			"number",
 			"=>",
@@ -71,7 +70,7 @@ suite("morph", () => {
 		attest(divide100By(5).data).equals(20)
 		attest(divide100By(0).problems?.summary).snap("Must be non-zero (was 0)")
 	})
-	test("adds a problem if one is returned without being added", () => {
+	it("adds a problem if one is returned without being added", () => {
 		const divide100By = type([
 			"number",
 			"=>",
@@ -87,7 +86,7 @@ suite("morph", () => {
 		])
 		attest(divide100By(0).problems?.summary).snap("Must be non-zero (was 0)")
 	})
-	test("at path", () => {
+	it("at path", () => {
 		const t = type({ a: ["string", "=>", (data) => data.length] })
 		attest<Type<{ a: (In: string) => Out<number> }>>(t)
 
@@ -97,7 +96,7 @@ suite("morph", () => {
 		}
 		attest<{ a: number }>(result.data).equals({ a: 4 })
 	})
-	test("in array", () => {
+	it("in array", () => {
 		const types = scope({
 			lengthOfString: ["string", "=>", (data) => data.length],
 			mapToLengths: "lengthOfString[]"
@@ -109,11 +108,11 @@ suite("morph", () => {
 		}
 		attest<number[]>(result.data).equals([1, 2, 3])
 	})
-	test("object inference", () => {
+	it("object inference", () => {
 		const t = type([{ a: "string" }, "=>", (data) => `${data}`])
 		attest<Type<(In: { a: string }) => Out<string>>>(t)
 	})
-	test("intersection", () => {
+	it("intersection", () => {
 		const $ = scope({
 			b: "3.14",
 			a: () => $.type("number"), //.morph((data) => `${data}`),
@@ -128,7 +127,7 @@ suite("morph", () => {
 		// attest<typeof types.aAndB>(types.bAndA)
 		// attest(types.bAndA.node).equals(types.aAndB.node)
 	})
-	test("object intersection", () => {
+	it("object intersection", () => {
 		// const $ = scope({
 		//     a: () => $.type({ a: "1" }).morph((data) => `${data}`),
 		//     b: { b: "2" },
@@ -148,7 +147,7 @@ suite("morph", () => {
 		//     }
 		// })
 	})
-	test("union", () => {
+	it("union", () => {
 		const types = scope({
 			a: ["number", "=>", (data) => `${data}`],
 			b: "boolean",
@@ -163,11 +162,11 @@ suite("morph", () => {
 		// attest<typeof types.aOrB>(types.bOrA)
 		// attest(types.bOrA.node).equals(types.aOrB.node)
 	})
-	test("union with output", () => {
+	it("union with output", () => {
 		const t = type("number|parse.number")
 		attest<number>(t.infer)
 	})
-	test("deep intersection", () => {
+	it("deep intersection", () => {
 		const types = scope({
 			a: { a: ["number>0", "=>", (data) => data + 1] },
 			b: { a: "1" },
@@ -183,7 +182,7 @@ suite("morph", () => {
 		//     }
 		// })
 	})
-	test("deep union", () => {
+	it("deep union", () => {
 		const types = scope({
 			a: { a: ["number>0", "=>", (data) => `${data}`] },
 			b: { a: "Function" },
@@ -220,7 +219,7 @@ suite("morph", () => {
 		//     ]
 		// })
 	})
-	test("chained reference", () => {
+	it("chained reference", () => {
 		const $ = scope({
 			a: type("string").morph((s) => s.length),
 			b: () => $.type("a").morph((n) => n === 0)
@@ -231,7 +230,7 @@ suite("morph", () => {
 		//     string: { rules: {}, morph: ["(function)", "(function)"] }
 		// })
 	})
-	test("chained nested", () => {
+	it("chained nested", () => {
 		const $ = scope({
 			a: type("string").morph((s) => s.length),
 			b: () => $.type({ a: "a" }).morph(({ a }) => a === 0)
@@ -243,7 +242,7 @@ suite("morph", () => {
 		//     object: { rules: { props: { a: "a" } }, morph: "(function)" }
 		// })
 	})
-	test("directly nested", () => {
+	it("directly nested", () => {
 		const t = type([
 			{
 				a: ["string", "=>", (s: string) => s.length]
@@ -261,7 +260,7 @@ suite("morph", () => {
 		//     }
 		// })
 	})
-	test("discriminable tuple union", () => {
+	it("discriminable tuple union", () => {
 		const $ = scope({
 			a: () => $.type(["string"]).morph((s) => [...s, "!"]),
 			b: ["boolean"],
@@ -270,7 +269,7 @@ suite("morph", () => {
 		const types = $.export()
 		attest<Type<[boolean] | ((In: [string]) => Out<string[]>)>>(types.c)
 	})
-	test("double intersection", () => {
+	it("double intersection", () => {
 		// attest(() => {
 		//     const z = scope({
 		//         a: ["boolean", "=>", (data) => `${data}`],
@@ -279,7 +278,7 @@ suite("morph", () => {
 		//     }).compile()
 		// }).throws("Intersection of morphs results in an unsatisfiable type")
 	})
-	test("undiscriminated union", () => {
+	it("undiscriminated union", () => {
 		attest(() => {
 			scope({
 				a: ["/.*/", "=>", (s) => s.trim()],
@@ -288,7 +287,7 @@ suite("morph", () => {
 			}).export()
 		}).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
-	test("deep double intersection", () => {
+	it("deep double intersection", () => {
 		attest(() => {
 			// const s = scope({
 			//     a: { a: ["boolean", "=>", (data) => `${data}`] },
@@ -297,7 +296,7 @@ suite("morph", () => {
 			// }).compile()
 		}).throws("At a: Intersection of morphs results in an unsatisfiable type")
 	})
-	test("deep undiscriminated union", () => {
+	it("deep undiscriminated union", () => {
 		attest(() => {
 			scope({
 				a: { a: ["string", "=>", (s) => s.trim()] },
@@ -306,7 +305,7 @@ suite("morph", () => {
 			}).export()
 		}).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
-	test("deep undiscriminated reference", () => {
+	it("deep undiscriminated reference", () => {
 		const $ = scope({
 			a: { a: ["string", "=>", (s) => s.trim()] },
 			b: { a: "boolean" },
@@ -332,7 +331,7 @@ suite("morph", () => {
 			}).export()
 		}).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
-	test("array double intersection", () => {
+	it("array double intersection", () => {
 		attest(() => {
 			scope({
 				a: { a: ["number>0", "=>", (data) => data + 1] },
@@ -343,7 +342,7 @@ suite("morph", () => {
 			"At [index]/a: Intersection of morphs results in an unsatisfiable type"
 		)
 	})
-	test("undiscriminated morph at path", () => {
+	it("undiscriminated morph at path", () => {
 		attest(() => {
 			scope({
 				a: { a: ["string", "=>", (s) => s.trim()] },
@@ -352,21 +351,21 @@ suite("morph", () => {
 			}).export()
 		}).throws(writeUndiscriminableMorphUnionMessage("key"))
 	})
-	test("helper morph intersection", () => {
+	it("helper morph intersection", () => {
 		attest(() =>
 			type("string")
 				.morph((s) => s.length)
 				.and(type("string").morph((s) => s.length))
 		).throws("Intersection of morphs results in an unsatisfiable type")
 	})
-	test("union helper undiscriminated", () => {
+	it("union helper undiscriminated", () => {
 		attest(() =>
 			type("string")
 				.morph((s) => s.length)
 				.or("'foo'")
 		).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
-	test("problem not included in return", () => {
+	it("problem not included in return", () => {
 		const parsedInt = type([
 			"string",
 			"=>",
@@ -384,11 +383,11 @@ suite("morph", () => {
 			"Must be an integer string (was 'five')"
 		)
 	})
-	test("nullable return", () => {
+	it("nullable return", () => {
 		const toNullableNumber = type(["string", "=>", (s) => s.length || null])
 		attest<Type<(In: string) => Out<number | null>>>(toNullableNumber)
 	})
-	test("undefinable return", () => {
+	it("undefinable return", () => {
 		const toUndefinableNumber = type([
 			"string",
 			"=>",
@@ -396,7 +395,7 @@ suite("morph", () => {
 		])
 		attest<Type<(In: string) => Out<number | undefined>>>(toUndefinableNumber)
 	})
-	test("null or undefined return", () => {
+	it("null or undefined return", () => {
 		const toMaybeNumber = type([
 			"string",
 			"=>",

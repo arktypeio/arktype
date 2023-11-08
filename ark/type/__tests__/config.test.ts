@@ -1,9 +1,8 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-import { suite, test } from "mocha"
 
-suite("config traversal", () => {
-	// test("tuple expression", () => {
+describe("config traversal", () => {
+	// it("tuple expression", () => {
 	//     const mustBe = "a series of characters"
 	//     const types = scope({
 	//         a: ["string", ":", { mustBe }],
@@ -47,7 +46,7 @@ suite("config traversal", () => {
 	//         "a must be a series of characters (was boolean)"
 	//     )
 	// })
-	// test("tuple expression at path", () => {
+	// it("tuple expression at path", () => {
 	//     const t = type({
 	//         monster: [
 	//             "196883",
@@ -97,7 +96,7 @@ suite("config traversal", () => {
 	//         "monster must be the number of dimensions in the monster group (was 196882)"
 	//     )
 	// })
-	// test("anonymous type config", () => {
+	// it("anonymous type config", () => {
 	//     const t = type(type("true", { mustBe: "unfalse" }))
 	//     attest<true>(t.infer)
 	//     // attest(t.flat).snap([
@@ -108,7 +107,7 @@ suite("config traversal", () => {
 	//     // ])
 	//     attest(t(false).problems?.summary).snap("Must be unfalse (was false)")
 	// })
-	// test("anonymous type config at path", () => {
+	// it("anonymous type config at path", () => {
 	//     const unfalse = type("true", { mustBe: "unfalse" })
 	//     const t = type({ myKey: unfalse })
 	//     // attest(t.flat).snap([
@@ -137,7 +136,7 @@ suite("config traversal", () => {
 	//         "myKey must be defined"
 	//     )
 	// })
-	// test("anonymous type thunk", () => {
+	// it("anonymous type thunk", () => {
 	//     const t = type(() => type("false", { mustBe: "untrue" }))
 	//     attest<false>(t.infer)
 	//     // attest(t.flat).snap([
@@ -147,7 +146,7 @@ suite("config traversal", () => {
 	//     //     ]
 	//     // ])
 	// })
-	// test("anonymous type thunk at path", () => {
+	// it("anonymous type thunk at path", () => {
 	//     const t = type({ myKey: () => type("false", { mustBe: "untrue" }) })
 	//     attest<{ myKey: false }>(t.infer)
 	//     // attest(t.flat).snap([

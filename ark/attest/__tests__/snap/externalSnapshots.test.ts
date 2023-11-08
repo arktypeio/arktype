@@ -3,7 +3,7 @@ import { rmSync } from "node:fs"
 import { join } from "node:path"
 import { attest } from "@arktype/attest"
 import { dirName, readJson, writeJson } from "@arktype/fs"
-import { afterEach, beforeEach, describe, test } from "mocha"
+
 import { attestInternal } from "../../assert/attest.js"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
@@ -41,7 +41,7 @@ describe("snapToFile", () => {
 		rmSync(customSnapPath, { force: true })
 	})
 
-	test("create", () => {
+	it("create", () => {
 		attest(o).snap.toFile("toFile")
 		assert.throws(
 			() => attest({ re: "kt" }).snap.toFile("toFile"),
@@ -57,7 +57,7 @@ describe("snapToFile", () => {
 			}
 		})
 	})
-	test("update existing", () => {
+	it("update existing", () => {
 		attestInternal(
 			{ re: "dew" },
 			{ cfg: { updateSnapshots: true } }
@@ -72,7 +72,7 @@ describe("snapToFile", () => {
 		assert.deepEqual(updatedContents, expectedContents)
 	})
 
-	test("with path", () => {
+	it("with path", () => {
 		attest(o).snap.toFile("toCustomFile", {
 			path: customFileName
 		})

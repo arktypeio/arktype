@@ -1,47 +1,46 @@
 import { attest } from "@arktype/attest"
 import type { intersectArrays, intersectParameters } from "@arktype/util"
-import { suite, test } from "mocha"
 
-suite("intersectParameters", () => {
-	test("both empty", () => {
+describe("intersectParameters", () => {
+	it("both empty", () => {
 		type t = intersectParameters<[], []>
 		attest<[], t>()
 	})
-	test("one empty", () => {
+	it("one empty", () => {
 		type t = intersectParameters<[], [string, number, ...boolean[]]>
 		attest<[string, number, ...boolean[]], t>()
 	})
-	test("longer parameters preserved", () => {
+	it("longer parameters preserved", () => {
 		type t = intersectParameters<["a"], [string, number]>
 		attest<["a", number], t>()
 	})
-	test("objects evaluated", () => {
+	it("objects evaluated", () => {
 		type t = intersectParameters<[{ a: string }], [{ b: boolean }]>
 		// Snapshotted so that { a: string } & { b: boolean } fails
 		attest({} as t).type.toString.snap("[{ a: string; b: boolean; }]")
 	})
-	test("unknown preserved", () => {
+	it("unknown preserved", () => {
 		type t = intersectParameters<[unknown], []>
 		// Avoids evaluating unknown to {}
 		attest<[unknown], t>()
 	})
-	test("one optional", () => {
+	it("one optional", () => {
 		type t = intersectParameters<[("a" | "b" | "c")?], [string, 1 | 2 | 3]>
 		attest<["a" | "b" | "c", 1 | 2 | 3], t>()
 	})
-	test("both optional", () => {
+	it("both optional", () => {
 		type t = intersectParameters<[{ a: 0 }?], [{ b: 1 }?]>
 		attest<[{ a: 0; b: 1 }?], t>()
 	})
-	test("optional+not-present", () => {
+	it("optional+not-present", () => {
 		type t = intersectParameters<[{ a: 0 }?], []>
 		attest<[{ a: 0 }?], t>()
 	})
-	test("two non-fixed arrays", () => {
+	it("two non-fixed arrays", () => {
 		type t = intersectParameters<{ a: 0 }[], { b: 1 }[]>
 		attest<{ a: 0; b: 1 }[], t>()
 	})
-	test("one non-fixed array", () => {
+	it("one non-fixed array", () => {
 		type t = intersectParameters<[{ a: 0 }, { b: 1 }], { c: 2 }[]>
 		attest<
 			[
@@ -60,7 +59,7 @@ suite("intersectParameters", () => {
 			t
 		>()
 	})
-	test("one trailing rest", () => {
+	it("one trailing rest", () => {
 		type t = intersectParameters<
 			[{ a: 0 }, ...{ b: 1 }[]],
 			[{ c: 2 }, { d: 3 }]
@@ -82,7 +81,7 @@ suite("intersectParameters", () => {
 			t
 		>()
 	})
-	test("two trailing rest", () => {
+	it("two trailing rest", () => {
 		type t = intersectParameters<
 			[{ a: 0 }, ...{ b: 1 }[]],
 			[{ c: 2 }, { d: 3 }, ...{ e: 4 }[]]
@@ -105,7 +104,7 @@ suite("intersectParameters", () => {
 			t
 		>()
 	})
-	test("kitchen sink", () => {
+	it("kitchen sink", () => {
 		type t = intersectParameters<
 			[{ a: 0 }, { b: 1 }?, { c: 2 }?, ...{ d: 3 }[]],
 			[{ e: 4 }?, { f: 5 }?, ...{ g: 6 }[]]
@@ -132,19 +131,19 @@ suite("intersectParameters", () => {
 			t
 		>()
 	})
-	test("extra variadic args preserved", () => {
+	it("extra variadic args preserved", () => {
 		type t = intersectParameters<["a", "b"], [string, ...string[]]>
 		attest<["a", "b", ...string[]], t>()
 	})
 })
 
-suite("intersectArrays", () => {
+describe("intersectArrays", () => {
 	// Ideally this might be reduced to a top-level never
-	test("incompatible lengths", () => {
+	it("incompatible lengths", () => {
 		type t = intersectArrays<[], [string]>
 		attest<[never], t>()
 	})
-	test("extra variadic args truncated", () => {
+	it("extra variadic args truncated", () => {
 		type t = intersectArrays<["a", "b"], [string, ...string[]]>
 		attest<["a", "b"], t>()
 	})

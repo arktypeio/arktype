@@ -1,11 +1,10 @@
 import * as assert from "node:assert/strict"
 import { attest } from "@arktype/attest"
-import { describe, test } from "mocha"
 
 const o = { ark: "type" }
 
 describe("attest", () => {
-	test("type parameter", () => {
+	it("type parameter", () => {
 		attest<{ ark: string }>(o)
 		assert.throws(
 			// @ts-expect-error
@@ -14,7 +13,7 @@ describe("attest", () => {
 			"type"
 		)
 	})
-	test("type-only assertion", () => {
+	it("type-only assertion", () => {
 		attest<{ ark: string }, typeof o>()
 		assert.throws(
 			// @ts-expect-error
@@ -23,14 +22,14 @@ describe("attest", () => {
 			"type"
 		)
 	})
-	test("type toString", () => {
+	it("type toString", () => {
 		attest(o).type.toString("{ ark: string; }")
 		attest(o).type.toString.is("{ ark: string; }")
 	})
-	test("equals", () => {
+	it("equals", () => {
 		attest(o).equals({ ark: "type" })
 	})
-	test("object", () => {
+	it("object", () => {
 		attest<{ i: string }>({ i: "love my wife" })
 		assert.throws(
 			// @ts-expect-error
@@ -39,25 +38,25 @@ describe("attest", () => {
 			"unknown"
 		)
 	})
-	test("typed allows equivalent types", () => {
+	it("typed allows equivalent types", () => {
 		const actual = { a: true, b: false }
 		attest<{
 			b: boolean
 			a: boolean
 		}>(actual)
 	})
-	test("functional asserts don't exist on pure value types", () => {
+	it("functional asserts don't exist on pure value types", () => {
 		// @ts-expect-error
 		attest(5).throws
 	})
-	test("not equal", () => {
+	it("not equal", () => {
 		assert.throws(
 			() => attest(o).equals({ ark: "typo" }),
 			assert.AssertionError,
 			"type !== typo"
 		)
 	})
-	test("incorrect type", () => {
+	it("incorrect type", () => {
 		assert.throws(
 			// @ts-expect-error
 			() => attest<{ re: number }>(o),
@@ -65,7 +64,7 @@ describe("attest", () => {
 			"o is not of type number"
 		)
 	})
-	test("any type", () => {
+	it("any type", () => {
 		attest<any>(o as any)
 		assert.throws(
 			() => attest<any>({} as unknown),
@@ -73,7 +72,7 @@ describe("attest", () => {
 			"unknown"
 		)
 	})
-	test("assert unknown ignores type", () => {
+	it("assert unknown ignores type", () => {
 		const myValue = { a: ["+"] } as const
 		const myExpectedValue = { a: ["+"] }
 		// @ts-expect-error
@@ -85,7 +84,7 @@ describe("attest", () => {
 			"not reference-equal"
 		)
 	})
-	test("multiline", () => {
+	it("multiline", () => {
 		attest<object>({
 			several: true,
 			lines: true,
@@ -101,7 +100,7 @@ describe("attest", () => {
 			assert.AssertionError
 		)
 	})
-	test("nonexistent types always fail", () => {
+	it("nonexistent types always fail", () => {
 		// @ts-expect-error
 		const nonexistent: NonExistent = {}
 		assert.throws(

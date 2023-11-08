@@ -1,5 +1,4 @@
 import { attest } from "@arktype/attest"
-import { test } from "mocha"
 
 const o = { ark: "type" } as const
 const shouldThrow = (a: false) => {
@@ -8,29 +7,29 @@ const shouldThrow = (a: false) => {
 	}
 }
 
-test("value snap", () => {
+it("value snap", () => {
 	attest(o).snap({ ark: "type" })
 })
 
-test("type snap", () => {
+it("type snap", () => {
 	attest(o).type.toString.snap('{ readonly ark: "type"; }')
 })
 
-test("type assertion", () => {
+it("type assertion", () => {
 	attest<{ readonly ark: "type" }>(o)
 })
 
-test("type-only assertion", () => {
+it("type-only assertion", () => {
 	attest<{ readonly ark: "type" }, typeof o>()
 })
 
-test("chained snaps", () => {
+it("chained snaps", () => {
 	attest(o)
 		.snap({ ark: "type" })
 		.type.toString.snap('{ readonly ark: "type"; }')
 })
 
-test("error and type error snap", () => {
+it("error and type error snap", () => {
 	// @ts-expect-error
 	attest(() => shouldThrow(true))
 		.throws.snap("Error: true is not assignable to false")

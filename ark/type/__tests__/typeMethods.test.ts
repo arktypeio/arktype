@@ -2,11 +2,11 @@ import { AssertionError } from "node:assert"
 import { attest } from "@arktype/attest"
 import { ArkTypeError } from "@arktype/schema"
 import { define, scope, type } from "arktype"
-import { suite, test } from "mocha"
+
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
-suite("type methods", () => {
-	test("root discriminates", () => {
+describe("type methods", () => {
+	it("root discriminates", () => {
 		const t = type("string")
 		const { data, problems } = t("")
 		if (problems) {
@@ -15,7 +15,7 @@ suite("type methods", () => {
 			attest<string>(data)
 		}
 	})
-	test("allows", () => {
+	it("allows", () => {
 		const t = type("number%2")
 		const data: unknown = 4
 		if (t.allows(data)) {
@@ -26,7 +26,7 @@ suite("type methods", () => {
 		}
 		attest(t.allows(5)).equals(false)
 	})
-	test("problems can be thrown", () => {
+	it("problems can be thrown", () => {
 		const t = type("number")
 		try {
 			attest(t("invalid").problems?.throw())
@@ -38,9 +38,9 @@ suite("type methods", () => {
 	})
 })
 
-suite("scope utilities", () => {
-	suite("define", () => {
-		test("ark", () => {
+describe("scope utilities", () => {
+	describe("define", () => {
+		it("ark", () => {
 			const def = define({
 				a: "string|number",
 				b: ["boolean"],
@@ -48,14 +48,14 @@ suite("scope utilities", () => {
 			})
 			attest<{ a: "string|number"; b: ["boolean"]; c: "this" }>(def)
 		})
-		test("ark error", () => {
+		it("ark error", () => {
 			// currently is a no-op, so only has type error
 			// @ts-expect-error
 			attest(define({ a: "boolean|foo" })).type.errors(
 				writeUnresolvableMessage("foo")
 			)
 		})
-		test("custom scope", () => {
+		it("custom scope", () => {
 			const $ = scope({
 				a: "string[]"
 			})

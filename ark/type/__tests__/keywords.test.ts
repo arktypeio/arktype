@@ -1,28 +1,27 @@
 import { attest } from "@arktype/attest"
 import { node } from "@arktype/schema"
 import { type } from "arktype"
-import { suite, test } from "mocha"
 
-suite("keywords", () => {
-	suite("jsObjects", () => {
-		test("Function", () => {
+describe("keywords", () => {
+	describe("jsObjects", () => {
+		it("Function", () => {
 			// should not be treated as a morph
 			attest<Function>(type("Function").infer)
 		})
-		test("Date", () => {
+		it("Date", () => {
 			// should not expand built-in classes
 			attest(type("Date").infer).type.toString.snap("Date")
 		})
 	})
-	suite("tsKeywords", () => {
-		test("any", () => {
+	describe("tsKeywords", () => {
+		it("any", () => {
 			const any = type("any")
 			// equivalent to unknown at runtime
 			attest(any.condition).equals(type("unknown").condition)
 			// inferred as any
 			attest<any>(any.infer)
 		})
-		test("boolean", () => {
+		it("boolean", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
 			// should be simplified to simple checks for true and false literals
@@ -32,25 +31,25 @@ suite("keywords", () => {
     return false
 }`)
 		})
-		// test("never", () => {
+		// it("never", () => {
 		// 	const never = type("never")
 		// 	attest<never>(never.infer)
 		// 	// should be equivalent to a zero-branch union
 		// 	attest(never.condition).equals(node().condition)
 		// })
-		test("unknown", () => {
+		it("unknown", () => {
 			// should be equivalent to an unconstrained predicate
 			attest(type("unknown").condition).equals(node().condition)
 		})
-		test("void", () => {
+		it("void", () => {
 			const t = type("void")
 			attest<void>(t.infer)
 			//should be treated as undefined at runtime
 			attest(t.condition).equals(type("undefined").condition)
 		})
 	})
-	// suite("validation", () => {
-	// test("integer", () => {
+	// describe("validation", () => {
+	// it("integer", () => {
 	//     const integer = type("integer")
 	//     attest(integer(123).data).equals(123)
 	//     attest(integer("123").problems?.summary).equals(
@@ -60,14 +59,14 @@ suite("keywords", () => {
 	//         "Must be an integer (was 12.12)"
 	//     )
 	// })
-	// test("alpha", () => {
+	// it("alpha", () => {
 	//     const alpha = type("alpha")
 	//     attest(alpha("user").data).equals("user")
 	//     attest(alpha("user123").problems?.summary).equals(
 	//         "Must be only letters (was 'user123')"
 	//     )
 	// })
-	// test("alphanumeric", () => {
+	// it("alphanumeric", () => {
 	//     const alphanumeric = type("alphanumeric")
 	//     attest(alphanumeric("user123").data).equals("user123")
 	//     attest(alphanumeric("user").data).equals("user")
@@ -76,14 +75,14 @@ suite("keywords", () => {
 	//         "Must be only letters and digits (was 'abc@123')"
 	//     )
 	// })
-	// test("lowercase", () => {
+	// it("lowercase", () => {
 	//     const lowercase = type("lowercase")
 	//     attest(lowercase("var").data).equals("var")
 	//     attest(lowercase("newVar").problems?.summary).equals(
 	//         "Must be only lowercase letters (was 'newVar')"
 	//     )
 	// })
-	// test("uppercase", () => {
+	// it("uppercase", () => {
 	//     const uppercase = type("uppercase")
 	//     attest(uppercase("VAR").data).equals("VAR")
 	//     attest(uppercase("CONST_VAR").problems?.summary).equals(
@@ -93,14 +92,14 @@ suite("keywords", () => {
 	//         "Must be only uppercase letters (was 'myVar')"
 	//     )
 	// })
-	// test("email", () => {
+	// it("email", () => {
 	//     const email = type("email")
 	//     attest(email("shawn@mail.com").data).equals("shawn@mail.com")
 	//     attest(email("shawn@email").problems?.summary).equals(
 	//         "Must be a valid email (was 'shawn@email')"
 	//     )
 	// })
-	// test("uuid", () => {
+	// it("uuid", () => {
 	//     const uuid = type("uuid")
 	//     attest(uuid("f70b8242-dd57-4e6b-b0b7-649d997140a0").data).equals(
 	//         "f70b8242-dd57-4e6b-b0b7-649d997140a0"
@@ -109,7 +108,7 @@ suite("keywords", () => {
 	//         "Must be a valid UUID (was '1234')"
 	//     )
 	// })
-	// test("parsedNumber", () => {
+	// it("parsedNumber", () => {
 	//     const parsedNumber = type("parsedNumber")
 	//     attest(parsedNumber("5").data).equals(5)
 	//     attest(parsedNumber("5.5").data).equals(5.5)
@@ -117,7 +116,7 @@ suite("keywords", () => {
 	//         "Must be a well-formed numeric string (was 'five')"
 	//     )
 	// })
-	// test("parsedInteger", () => {
+	// it("parsedInteger", () => {
 	//     const parsedInteger = type("parsedInteger")
 	//     attest(parsedInteger("5").data).equals(5)
 	//     attest(parsedInteger("5.5").problems?.summary).equals(
@@ -133,7 +132,7 @@ suite("keywords", () => {
 	//         "Must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was '9007199254740992')"
 	//     )
 	// })
-	// test("parsedDate", () => {
+	// it("parsedDate", () => {
 	//     const parsedDate = type("parsedDate")
 	//     attest(parsedDate("5/21/1993").data?.toDateString()).equals(
 	//         "Fri May 21 1993"
@@ -145,14 +144,14 @@ suite("keywords", () => {
 	//         "Must be a string (was number)"
 	//     )
 	// })
-	// test("json", () => {
+	// it("json", () => {
 	//     const json = type("json")
 	//     attest(json('{"a": "hello"}').data).equals({ a: "hello" })
 	//     attest(json(123).problems?.summary).equals(
 	//         "Must be a JSON-parsable string (was number)"
 	//     )
 	// })
-	// test("credit card", () => {
+	// it("credit card", () => {
 	//     const validCC = "5489582921773376"
 	//     attest(ark.creditCard(validCC).data).equals(validCC)
 	//     // Regex validation
@@ -166,7 +165,7 @@ suite("keywords", () => {
 	//         "Must be a valid credit card number (was '5489582921773370')"
 	//     )
 	// })
-	// test("semver", () => {
+	// it("semver", () => {
 	//     attest(ark.semver("1.0.0").data).equals("1.0.0")
 	//     attest(ark.semver("-1.0.0").problems?.summary).equals(
 	//         "Must be a valid semantic version (see https://semver.org/) (was '-1.0.0')"

@@ -1,9 +1,8 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-import { suite, test } from "mocha"
 
-suite("discrimination", () => {
-	test("2 literal branches", () => {
+describe("discrimination", () => {
+	it("2 literal branches", () => {
 		// should not use a switch with <=2 branches to avoid visual clutter
 		const t = type("'a'|'b'")
 		attest(t.condition).snap(`if( $arkRoot !== "a" && $arkRoot !== "b") {
@@ -13,7 +12,7 @@ suite("discrimination", () => {
 		attest(t.allows("b")).equals(true)
 		attest(t.allows("c")).equals(false)
 	})
-	test(">2 literal branches", () => {
+	it(">2 literal branches", () => {
 		const t = type("'a'|'b'|'c'")
 		attest(t.condition).snap(`switch($arkRoot) {
         case "a":
@@ -38,7 +37,7 @@ suite("discrimination", () => {
 			sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
 			ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
 		})
-	test("nested", () => {
+	it("nested", () => {
 		const t = getPlaces().type("ocean|sky|rainForest|desert")
 		attest(t.condition).snap(`switch($arkRoot?.color) {
     case "blue": {
@@ -86,7 +85,7 @@ if (!($arkRoot.isRainForest === true)) {
 }`)
 	})
 
-	test("undiscriminable", () => {
+	it("undiscriminable", () => {
 		const t = getPlaces().type([
 			"ocean",
 			"|",
@@ -97,7 +96,7 @@ if (!($arkRoot.isRainForest === true)) {
 			}
 		])
 	})
-	test("doesn't discriminate optional key", () => {
+	it("doesn't discriminate optional key", () => {
 		const t = type({
 			direction: "'forward' | 'backward'",
 			"operator?": "'by'"
@@ -107,21 +106,21 @@ if (!($arkRoot.isRainForest === true)) {
 		})
 		attest(t.root.hasKind("union") && t.root.discriminant).equals(null)
 	})
-	test("default case", () => {
+	it("default case", () => {
 		const t = getPlaces().type([
 			"ocean|rainForest",
 			"|",
 			{ temperature: "'hot'" }
 		])
 	})
-	test("discriminable default", () => {
+	it("discriminable default", () => {
 		const t = getPlaces().type([
 			{ temperature: "'cold'" },
 			"|",
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
 	})
-	test("won't discriminate between possibly empty arrays", () => {
+	it("won't discriminate between possibly empty arrays", () => {
 		const t = type("string[]|boolean[]")
 	})
 })
