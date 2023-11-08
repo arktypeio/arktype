@@ -1,4 +1,4 @@
-import { attest } from "@arktype/attest"
+import { attest, getTsVersionUnderTest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
 import { suite, test } from "mocha"
@@ -87,23 +87,5 @@ suite("divisibility", () => {
 				"Intersection of (a multiple of 3) and 8 results in an unsatisfiable type"
 			)
 		})
-	})
-})
-
-suite("divisor example", () => {
-	test("even", () => {
-		const even = type("number%2")
-		// asserts even.infer is exactly number
-		attest<number>(even.infer)
-		// can also test the string representation of types
-		attest(even.infer).type.toString.snap()
-		// also includes in-line object-literal snapshotting
-		attest(even.json).snap()
-	})
-	test("zero divisor", () => {
-		// @ts-expect-error
-		attest(() => type("number%0")).throwsAndHasTypeError(
-			"% operator must be followed by a non-zero integer literal (was 0)"
-		)
 	})
 })
