@@ -9,6 +9,7 @@ import {
 	isKeyOf,
 	type Json,
 	type JsonData,
+	type listable,
 	type merge,
 	ParseError,
 	type satisfy,
@@ -146,7 +147,7 @@ export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
 	}
 
 export type KeyDefinition<innerValue = unknown> = {
-	children?: (innerValue: innerValue) => readonly UnknownNode[]
+	children?: (innerValue: innerValue) => listable<UnknownNode>
 	serialize?: (innerValue: innerValue) => JsonData
 	meta?: boolean
 }
@@ -168,7 +169,7 @@ type instantiateNodeClassDefinition<definition> = {
 		? evaluate<
 				{
 					[k2 in keyof definition[k]]: merge<
-						Required<KeyDefinition>,
+						{ serialize: typeof defaultValueSerializer },
 						definition[k]
 					>
 				} & {
@@ -194,19 +195,6 @@ const defaultValueSerializer = (v: unknown): JsonData => {
 		v === null
 	) {
 		return v
-	}
-	if (typeof v === "object") {
-		if (v instanceof BaseNode) {
-			return v.json
-		}
-		if (
-			isArray(v) &&
-			v.every((element): element is UnknownNode => element instanceof BaseNode)
-		) {
-			return v.map((element) => {
-				return element.json
-			})
-		}
 	}
 	return compileSerializedValue(v)
 }
@@ -251,10 +239,23 @@ export abstract class BaseNode<
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
 			}
 			const keyDefinition = this.definition.keys[k]
-			children.push(...keyDefinition.children(inner[k]))
-			this.json[k] = keyDefinition.serialize(inner[k])
-			if (!keyDefinition.meta) {
-				this.typeJson[k] = this.json[k]
+			const childrenAtKey = keyDefinition.children?.(inner[k])
+
+			if (childrenAtKey) {
+				if (isArray(childrenAtKey)) {
+					children.push(...childrenAtKey)
+					this.json[k] = childrenAtKey.map((child) => child.json)
+					this.typeJson[k] = childrenAtKey.map((child) => child.typeJson)
+				} else {
+					children.push(childrenAtKey)
+					this.json[k] = childrenAtKey.json
+					this.typeJson[k] = childrenAtKey.typeJson
+				}
+			} else {
+				this.json[k] = keyDefinition.serialize(inner[k])
+				if (!keyDefinition.meta) {
+					this.typeJson[k] = keyDefinition.serialize(inner[k])
+				}
 			}
 		}
 		this.id = JSON.stringify(this.json)
@@ -272,7 +273,8 @@ export abstract class BaseNode<
 		)
 	}
 
-	/** Each node class is attached when it is imported.
+	/**
+	 * Each node class is attached when it is imported.
 	 * This helps avoid circular import issues that can otherwise occur.
 	 */
 	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
@@ -320,6 +322,44 @@ export abstract class BaseNode<
 	}
 
 	protected static readonly argName = In
+
+	private inCache?: UnknownNode;
+	get in() {
+		if (!this.inCache) {
+			this.inCache = this.getIo("in")
+		}
+		return this.inCache
+	}
+
+	private outCache?: UnknownNode
+	get out() {
+		if (!this.outCache) {
+			this.outCache = this.getIo("out")
+		}
+		return this.outCache
+	}
+
+	private getIo(kind: "in" | "out"): UnknownNode {
+		if (!this.includesMorph) {
+			return this
+		}
+		const ioInner: Record<string, unknown> = {}
+		for (const k in this.inner) {
+			const keyDefinition = this.definition.keys[k as keyof BaseAttributes]!
+			const childrenAtKey = keyDefinition.children?.(this.inner[k])
+			if (childrenAtKey) {
+				ioInner[k] = isArray(childrenAtKey)
+					? childrenAtKey.map((child) => child[kind])
+					: childrenAtKey[kind]
+			} else {
+				ioInner[k] = this.inner[k]
+			}
+		}
+		return (
+			this.definition.reduceToNode?.(ioInner) ??
+			new (this.nodeClass as any)(ioInner)
+		)
+	}
 
 	toJSON() {
 		return this.json

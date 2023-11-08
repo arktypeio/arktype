@@ -79,7 +79,11 @@ export type MorphDeclaration = declareNode<{
 
 export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 	static readonly kind = "morph"
-	static readonly declaration: MorphDeclaration
+	static readonly declaration: MorphDeclaration;
+	// @ts-expect-error override getter
+	declare readonly in: ValidatorNode
+	// @ts-expect-error override getter
+	declare readonly out: ValidatorNode
 
 	static definition = this.define({
 		kind: "morph",

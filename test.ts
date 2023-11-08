@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { isDeepStrictEqual } from "util"
-import { type Dict } from "./ark/util/main.js"
+// import { isDeepStrictEqual } from "util"
+// import { type Dict } from "./ark/util/main.js"
+import { node } from "./ark/schema/main.js"
+
+const n = node() //?
 
 // export const intersectBranches = (
 // 	l: readonly Dict[],
