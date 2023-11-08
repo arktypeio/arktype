@@ -64,11 +64,11 @@
 		"typescript": "5.2.2"
 	},
 	"mocha": {
+		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
 		"spec": [
 			"**/__tests__/*.test.*"
 		],
 		"ignore": "**/node_modules/*",
-		"//": "NOTE: These are also maintained in .vscode/settings.json",
 		"node-option": [
 			"loader=ts-node/esm",
 			"no-warnings=ExperimentalWarning",

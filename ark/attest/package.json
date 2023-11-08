@@ -20,7 +20,8 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "tsup --config ../repo/tsup.config.ts"
+		"build": "tsup --config ../repo/tsup.config.ts",
+		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
 		"arktype": "workspace:*",
@@ -30,18 +31,5 @@
 	},
 	"peerDependencies": {
 		"typescript": "*"
-	},
-	"mocha": {
-		"spec": [
-			"__tests__/**/*.test.*"
-		],
-		"ignore": "**/node_modules/*",
-		"//": "NOTE: These are also maintained in .vscode/settings.json",
-		"node-option": [
-			"loader=ts-node/esm",
-			"no-warnings=ExperimentalWarning",
-			"conditions=arktype-repo"
-		],
-		"require": "../repo/mocha.fixtures.ts"
 	}
 }

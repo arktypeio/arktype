@@ -31,7 +31,8 @@
 	],
 	"scripts": {
 		"build": "tsup --config ../repo/tsup.config.ts",
-		"bench": "ts ./__tests__/parse.bench.ts"
+		"bench": "ts ./__tests__/parse.bench.ts",
+		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
 		"@arktype/util": "workspace:*"
