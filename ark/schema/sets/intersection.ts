@@ -78,17 +78,13 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 					if (result instanceof Disjoint) {
 						break
 					}
-					result = intersectRule(result, constraint)
+					result = addRule(result, constraint)
 				}
-				return result instanceof Disjoint
-					? result
-					: new IntersectionNode({ intersection: result })
+				return result instanceof Disjoint ? result : { intersection: result }
 			},
 			default: (l, r) => {
-				const result = intersectRule(l.intersection, r)
-				return result instanceof Disjoint
-					? result
-					: new IntersectionNode({ intersection: result })
+				const result = addRule(l.intersection, r)
+				return result instanceof Disjoint ? result : { intersection: result }
 			}
 		},
 		parseSchema: (schema) => {
@@ -172,14 +168,14 @@ const parseMappedRules = ({
 	return rules
 }
 
-const intersectRule = (
+export const addRule = (
 	base: readonly Node<RuleKind>[],
 	rule: Node<RuleKind>
 ): CollapsedIntersectionInner | Disjoint => {
 	const result: Node<RuleKind>[] = []
 	let includesConstraint = false
 	for (let i = 0; i < base.length; i++) {
-		const elementResult = rule.intersect(base[i])
+		const elementResult = rule.intersectClosed(base[i])
 		if (elementResult === null) {
 			result.push(base[i])
 		} else if (elementResult instanceof Disjoint) {
@@ -196,7 +192,7 @@ const intersectRule = (
 	if (!includesConstraint) {
 		result.push(rule)
 	}
-	return result
+	return result as CollapsedIntersectionInner
 }
 
 // const assertValidConstraints = (

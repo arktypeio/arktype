@@ -4,11 +4,7 @@ import { type DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
 import { type Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
-import {
-	type BaseConstraint,
-	getBasisName,
-	intersectOrthogonalConstraints
-} from "./shared.js"
+import { type BaseConstraint, getBasisName } from "./shared.js"
 
 export type DivisorSchema = number | DivisorInner
 
@@ -22,7 +18,6 @@ export type DivisorDeclaration = declareNode<{
 	inner: DivisorInner
 	intersections: {
 		divisor: "divisor"
-		default: "intersection" | Disjoint
 	}
 }>
 
@@ -41,14 +36,11 @@ export class DivisorNode
 			divisor: {}
 		},
 		intersections: {
-			divisor: (l, r) =>
-				new DivisorNode({
-					divisor: Math.abs(
-						(l.divisor * r.divisor) /
-							greatestCommonDivisor(l.divisor, r.divisor)
-					)
-				}),
-			default: intersectOrthogonalConstraints
+			divisor: (l, r) => ({
+				divisor: Math.abs(
+					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+				)
+			})
 		},
 		parseSchema: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,

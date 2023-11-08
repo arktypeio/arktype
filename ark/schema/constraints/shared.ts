@@ -10,19 +10,3 @@ export interface BaseConstraint {
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
-
-export const intersectOrthogonalConstraints = (
-	l: Node<ConstraintKind>,
-	r: Node<ConstraintKind>
-) => {
-	const basisIntersection = l.implicitBasis
-		? r.implicitBasis
-			? l.intersect(r.implicitBasis)
-			: l.implicitBasis
-		: r.implicitBasis
-	return basisIntersection instanceof Disjoint
-		? basisIntersection
-		: new IntersectionNode({
-				intersection: basisIntersection ? [basisIntersection, l, r] : [l, r]
-		  })
-}

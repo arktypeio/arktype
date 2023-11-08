@@ -1,12 +1,9 @@
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import { builtins } from "../builtins.js"
-import { type Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { type Node } from "../nodes.js"
-import { IntersectionNode } from "../sets/intersection.js"
-import { getBasisName, intersectOrthogonalConstraints } from "./shared.js"
+import { getBasisName } from "./shared.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
 	withAttributes<{
@@ -22,8 +19,7 @@ export type PredicateDeclaration = declareNode<{
 	schema: PredicateSchema
 	inner: PredicateInner
 	intersections: {
-		predicate: "predicate" | "intersection"
-		default: "intersection" | Disjoint
+		predicate: "predicate" | null
 	}
 }>
 
@@ -39,15 +35,10 @@ export class PredicateNode extends BaseNode<PredicateDeclaration> {
 			predicate: {}
 		},
 		intersections: {
-			predicate: (l, r) =>
-				new IntersectionNode({
-					intersection: [l, r]
-				}),
-			default: intersectOrthogonalConstraints
+			predicate: () => null
 		},
 		parseSchema: (schema) =>
 			typeof schema === "function" ? { predicate: schema } : schema,
-		reduceToNode: (inner) => new PredicateNode(inner),
 		compileCondition: (inner) =>
 			`${compileSerializedValue(inner.predicate)}(${this.argName})`,
 		writeDefaultDescription: (inner) =>

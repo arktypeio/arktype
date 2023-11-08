@@ -28,6 +28,7 @@ export type BasisKind = keyof BasisDeclarationsByKind
 
 export type BaseBasis = {
 	readonly basisName: string
+	readonly implicitBasis: Node<BasisKind>
 }
 
 export type parseBasis<schema extends Schema<BasisKind>> =

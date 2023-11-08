@@ -108,29 +108,29 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 				if (outTersection instanceof Disjoint) {
 					return outTersection
 				}
-				return new MorphNode({
+				return {
 					morph: l.morph,
 					in: inTersection,
 					out: outTersection
-				})
+				}
 			},
 			intersection: (l, r) => {
 				const inTersection = l.in.intersect(r)
 				return inTersection instanceof Disjoint
 					? inTersection
-					: new MorphNode({
+					: {
 							...l.inner,
 							in: inTersection
-					  })
+					  }
 			},
 			default: (l, r) => {
 				const constrainedInput = l.in.intersect(r)
 				return constrainedInput instanceof Disjoint
 					? constrainedInput
-					: new MorphNode({
+					: {
 							...l.inner,
 							in: constrainedInput
-					  })
+					  }
 			}
 		},
 		parseSchema: (schema) => {

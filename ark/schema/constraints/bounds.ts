@@ -6,12 +6,7 @@ import type { ProtoNode } from "../bases/proto.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
-import { IntersectionNode } from "../sets/intersection.js"
-import {
-	type BaseConstraint,
-	getBasisName,
-	intersectOrthogonalConstraints
-} from "./shared.js"
+import { type BaseConstraint, getBasisName } from "./shared.js"
 
 export type BoundInner = withAttributes<{
 	readonly boundKind: BoundKind
@@ -82,7 +77,6 @@ export type MinDeclaration = declareNode<{
 	inner: MinInner
 	intersections: {
 		min: "min"
-		default: "intersection" | Disjoint
 	}
 }>
 
@@ -98,9 +92,7 @@ export class MinNode extends BaseBound<MinDeclaration> {
 			boundKind: {}
 		},
 		intersections: {
-			min: (l, r) =>
-				l.min > r.min || (l.min === r.min && l.exclusive) ? l : r,
-			default: intersectOrthogonalConstraints
+			min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
 		},
 		parseSchema: (schema, ctx) => {
 			const boundKind = getBoundKind(ctx.basis)
@@ -146,8 +138,7 @@ export type MaxDeclaration = declareNode<{
 	inner: MaxInner
 	intersections: {
 		max: "max"
-		min: Disjoint | "intersection"
-		default: "intersection" | Disjoint
+		min: Disjoint | null
 	}
 }>
 
@@ -168,10 +159,7 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 			min: (l, r) =>
 				l.max < r.min || (l.max === r.min && (l.exclusive || r.exclusive))
 					? Disjoint.from("bound", l, r)
-					: new IntersectionNode({
-							intersection: [l.implicitBasis, l, r]
-					  }),
-			default: intersectOrthogonalConstraints
+					: null
 		},
 		parseSchema: (schema, ctx) => {
 			const boundKind = getBoundKind(ctx.basis)

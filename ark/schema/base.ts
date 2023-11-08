@@ -30,6 +30,7 @@ import {
 	type reifyIntersections,
 	type RuleKind
 } from "./nodes.js"
+import { addRule, IntersectionNode } from "./sets/intersection.js"
 import { type ValidatorNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
 import { createParseContext, inferred, type ParseContext } from "./utils.js"
@@ -83,8 +84,16 @@ type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: evaluate<
-		{ [requiredKey in lKey | "default"]: NodeKind | Disjoint } & {
-			[rKey in rightOf<lKey>]?: NodeKind | Disjoint
+		{
+			[requiredKey in lKey]:
+				| lKey
+				| Disjoint
+				| (lKey extends ConstraintKind ? null : never)
+		} & {
+			[rKey in rightOf<lKey> | "default"]?:
+				| lKey
+				| Disjoint
+				| (lKey extends RuleKind ? null : never)
 		}
 	>
 }
@@ -115,7 +124,7 @@ export type BaseDeclarationInput = {
 	schema: unknown
 	inner: BaseAttributes
 	intersections: {
-		[k in NodeKind]?: NodeKind | Disjoint
+		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}
 	reductions?: NodeKind
 }
@@ -216,7 +225,9 @@ export abstract class BaseNode<
 	readonly alias: string
 	readonly description: string
 	readonly condition: string
-	readonly kind: declaration["kind"] = this.definition.kind
+	readonly kind: BaseNodeDeclaration extends declaration
+		? NodeKind
+		: declaration["kind"] = this.definition.kind
 	readonly allows: (data: unknown) => data is t
 
 	// TODO: reduce, add param for unsafe
@@ -371,9 +382,19 @@ export abstract class BaseNode<
 	}
 
 	isBasis(): this is Node<BasisKind> {
-		return (
-			this.kind === "domain" || this.kind === "proto" || this.kind === "unit"
-		)
+		return includes(basisKinds, this.kind)
+	}
+
+	isConstraint(): this is Node<ConstraintKind> {
+		return includes(constraintKinds, this.kind)
+	}
+
+	isRule(): this is Node<RuleKind> {
+		return includes(ruleKinds, this.kind)
+	}
+
+	isSet(): this is Node<SetKind> {
+		return includes(setKinds, this.kind)
 	}
 
 	toString() {
@@ -384,25 +405,40 @@ export abstract class BaseNode<
 	intersect<other extends Node>(
 		other: other
 	): intersectionOf<declaration["kind"], other["kind"]>
-	intersect(other: BaseNode<BaseNodeDeclaration>) {
+	intersect(other: UnknownNode): UnknownNode | Disjoint {
+		const closedResult = this.intersectClosed(other as never)
+		if (closedResult !== null) {
+			return closedResult as UnknownNode | Disjoint
+		}
+		if (!this.isRule() || !other.isRule()) {
+			return throwInternalError(
+				`Unexpected null intersection between ${this.kind} and ${other.kind}`
+			)
+		}
+		const intersection = addRule([this], other)
+		return intersection instanceof Disjoint
+			? intersection
+			: new IntersectionNode({
+					intersection
+			  })
+	}
+
+	intersectClosed<other extends Node>(
+		other: other
+	): Node<this["kind"]> | Node<other["kind"]> | Disjoint | null {
 		if (this.equals(other)) {
 			// TODO: meta
-			return this
+			return this as never
 		}
 		const l = leftOperandOf(this, other)
-		const r = l === this ? other : this
-		const intersector =
-			l.definition.intersections[r.kind] ??
-			(includes(ruleKinds, r.kind)
-				? l.definition.intersections["rule"] ??
-				  (includes(constraintKinds, r.kind)
-						? l.definition.intersections.constraint
-						: undefined)
-				: undefined)
-		const result = intersector?.(l, r as never)
+		const thisIsLeft = l === this
+		const r: UnknownNode = thisIsLeft ? other : this
+		const intersections = l.definition.intersections
+		const intersector = intersections[r.kind] ?? intersections.default
+		const result = intersector?.(l as never, r as never)
 		if (result) {
 			if (result instanceof Disjoint) {
-				return l === this ? result : result.invert()
+				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: meta, use kind entry?
 			return new (l.nodeClass as any)(result)

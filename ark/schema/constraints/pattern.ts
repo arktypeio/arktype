@@ -3,14 +3,8 @@ import { BaseNode, type declareNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
-import { type Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
-import { IntersectionNode } from "../sets/intersection.js"
-import {
-	type BaseConstraint,
-	getBasisName,
-	intersectOrthogonalConstraints
-} from "./shared.js"
+import { type BaseConstraint, getBasisName } from "./shared.js"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
@@ -24,8 +18,7 @@ export type PatternDeclaration = declareNode<{
 	schema: PatternSchema
 	inner: PatternInner
 	intersections: {
-		pattern: "pattern" | "intersection"
-		default: "intersection" | Disjoint
+		pattern: "pattern" | null
 	}
 }>
 
@@ -46,11 +39,7 @@ export class PatternNode
 		},
 		intersections: {
 			// For now, non-equal regex are naively intersected
-			pattern: (l, r) =>
-				new IntersectionNode({
-					intersection: [l.implicitBasis, l, r]
-				}),
-			default: intersectOrthogonalConstraints
+			pattern: () => null
 		},
 		parseSchema: (schema) =>
 			typeof schema === "string"

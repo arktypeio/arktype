@@ -11,9 +11,5 @@ export const intersectBasisAndConstraint = (
 	const basisIntersection = constraint.implicitBasis
 		? basis.intersect(constraint.implicitBasis)
 		: basis
-	return basisIntersection instanceof Disjoint
-		? basisIntersection
-		: new IntersectionNode({
-				intersection: [basisIntersection, constraint]
-		  })
+	return basisIntersection instanceof Disjoint ? basisIntersection : null
 }

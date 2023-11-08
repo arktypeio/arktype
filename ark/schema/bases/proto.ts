@@ -30,7 +30,7 @@ export type ProtoDeclaration = declareNode<{
 	intersections: {
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
-		default: "intersection" | Disjoint
+		default: Disjoint | null
 	}
 }>
 
@@ -76,6 +76,7 @@ export class ProtoNode<t extends object = object>
 	readonly knownObjectKind = objectKindOf(this.proto)
 	readonly basisName = `${this.proto.name}`
 	readonly domain = "object"
+	readonly implicitBasis = this
 
 	// readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 

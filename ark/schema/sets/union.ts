@@ -87,8 +87,7 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 		if (union instanceof Disjoint) {
 			return union
 		}
-		// TODO: reduce
-		return new UnionNode({ union, ordered: l.ordered })
+		return { union, ordered: l.ordered }
 	}
 
 	static readonly definition = this.define({
@@ -127,11 +126,10 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 				if (resultBranches instanceof Disjoint) {
 					return resultBranches
 				}
-				// TODO: reduce?
-				return new UnionNode({
+				return {
 					union: resultBranches,
 					ordered: l.ordered || r.ordered
-				})
+				}
 			},
 			morph: this.intersectBranch,
 			intersection: this.intersectBranch,
@@ -145,11 +143,10 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 				}
 				return branches.length === 0
 					? Disjoint.from("union", l.union, [r])
-					: // TODO: reduce?
-					  new UnionNode({
+					: {
 							union: branches,
 							ordered: l.ordered
-					  })
+					  }
 			}
 		},
 		parseSchema: (schema) => {

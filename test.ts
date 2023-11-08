@@ -16,6 +16,7 @@ const parseNumber = node({
 parseNumber.in.kind //?
 
 parseNumber.out.kind //?
+parseNumber.out.description //?
 
 // export const intersectBranches = (
 // 	l: readonly Dict[],

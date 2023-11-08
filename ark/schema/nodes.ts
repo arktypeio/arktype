@@ -86,7 +86,7 @@ export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 }
 
 type reifyIntersectionResult<result> = result extends NodeKind
-	? Node<result>
+	? Inner<result>
 	: result
 
 export type RuleDeclarationsByKind = extend<

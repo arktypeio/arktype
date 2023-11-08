@@ -25,7 +25,7 @@ export type DomainDeclaration = declareNode<{
 	inner: DomainInner
 	intersections: {
 		domain: "domain" | Disjoint
-		default: "intersection" | Disjoint
+		default: Disjoint | null
 	}
 }>
 
@@ -55,6 +55,7 @@ export class DomainNode<t = unknown>
 	})
 
 	readonly basisName = this.domain
+	readonly implicitBasis = this
 }
 
 const enumerableDomainDescriptions = {

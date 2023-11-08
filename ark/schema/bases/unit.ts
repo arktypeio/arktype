@@ -48,4 +48,6 @@ export class UnitNode<t = unknown>
 
 	// TODO: add reference to for objects
 	readonly basisName = stringify(this.unit)
+
+	readonly implicitBasis = this
 }

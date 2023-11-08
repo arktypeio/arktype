@@ -5,12 +5,7 @@ import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type RootInput } from "../nodes.js"
 import { type Root } from "../root.js"
-import { IntersectionNode } from "../sets/intersection.js"
-import {
-	type BaseConstraint,
-	getBasisName,
-	intersectOrthogonalConstraints
-} from "./shared.js"
+import { type BaseConstraint, getBasisName } from "./shared.js"
 
 export type PropDeclarationsByKind = {
 	required: RequiredDeclaration
@@ -39,8 +34,7 @@ export type RequiredDeclaration = declareNode<{
 	schema: RequiredPropSchema
 	inner: RequiredPropInner
 	intersections: {
-		required: "required" | "intersection" | Disjoint
-		default: "intersection" | Disjoint
+		required: "required" | Disjoint | null
 	}
 }>
 
@@ -67,21 +61,18 @@ export class RequiredPropNode
 		intersections: {
 			required: (l, r) => {
 				if (l.required !== r.required) {
-					return new IntersectionNode({
-						intersection: [l.implicitBasis, l, r]
-					})
+					return null
 				}
 				const required = l.required
 				const value = l.value.intersect(r.value)
 				if (value instanceof Disjoint) {
 					return value
 				}
-				return new RequiredPropNode({
+				return {
 					required,
 					value
-				})
-			},
-			default: intersectOrthogonalConstraints
+				}
+			}
 		},
 		parseSchema: (schema) => schema as never,
 		compileCondition: (inner) => "true",
@@ -107,8 +98,7 @@ export type OptionalDeclaration = declareNode<{
 	schema: OptionalPropSchema
 	inner: OptionalPropInner
 	intersections: {
-		optional: "optional" | "intersection"
-		default: "intersection" | Disjoint
+		optional: "optional" | null
 	}
 }>
 
@@ -132,18 +122,15 @@ export class OptionalPropNode
 		intersections: {
 			optional: (l, r) => {
 				if (l.optional !== r.optional) {
-					return new IntersectionNode({
-						intersection: [l.implicitBasis, l, r]
-					})
+					return null
 				}
 				const optional = l.optional
 				const value = l.value.intersect(r.value)
-				return new OptionalPropNode({
+				return {
 					optional,
 					value: value instanceof Disjoint ? builtins().never : value
-				})
-			},
-			default: intersectOrthogonalConstraints
+				}
+			}
 		},
 		parseSchema: (schema) => schema as never,
 		compileCondition: (inner) => "true",
