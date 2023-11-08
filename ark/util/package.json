@@ -21,5 +21,18 @@
 	],
 	"scripts": {
 		"build": "tsup --config ../repo/tsup.config.ts"
+	},
+	"mocha": {
+		"spec": [
+			"__tests__/**/*.test.*"
+		],
+		"ignore": "**/node_modules/*",
+		"//": "NOTE: These are also maintained in .vscode/settings.json",
+		"node-option": [
+			"loader=ts-node/esm",
+			"no-warnings=ExperimentalWarning",
+			"conditions=arktype-repo"
+		],
+		"require": "../repo/mocha.fixtures.ts"
 	}
 }

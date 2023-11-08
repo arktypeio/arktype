@@ -29,7 +29,7 @@ export const getDefaultAttestConfig = (): AttestConfig => {
 			? fromCwd("tsconfig.json")
 			: undefined,
 		attestAliases: ["attest", "attestInternal"],
-		preserveCache: true,
+		preserveCache: false,
 		updateSnapshots: false,
 		skipTypes: false,
 		benchPercentThreshold: 20,
