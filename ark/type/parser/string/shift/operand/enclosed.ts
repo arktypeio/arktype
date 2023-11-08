@@ -31,7 +31,6 @@ export const parseEnclosed = (
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
 		new RegExp(enclosed)
-		const z = node({ intersection: ["string", { pattern: "/.*/" }] })
 		s.root = node({ basis: "string", pattern: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
 		s.root = node({ unit: enclosed })

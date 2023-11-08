@@ -7,14 +7,11 @@ import { type Node } from "../nodes.js"
 import { getBasisName } from "./shared.js"
 
 export type PatternInner = withAttributes<{
-	readonly pattern: RegExp
+	readonly pattern: string
+	readonly flags: string
 }>
 
-export type ExpandedPatternSchema = withAttributes<{
-	readonly pattern: RegexLiteral | RegExp
-}>
-
-export type PatternSchema = RegexLiteral | RegExp | ExpandedPatternSchema
+export type PatternSchema = RegexLiteral | RegExp | PatternInner
 
 export type PatternDeclaration = declareNode<{
 	kind: "pattern"
@@ -32,17 +29,19 @@ export class PatternNode extends BaseNode<PatternDeclaration> {
 	static readonly definition = this.define({
 		kind: "pattern",
 		keys: {
-			pattern: {}
+			pattern: {},
+			flags: {}
 		},
 		intersections: {
 			// For now, non-equal regex are naively intersected
 			pattern: () => null
 		},
 		parseSchema: (schema) =>
-			typeof schema === "string" || schema instanceof RegExp
-				? { pattern: parseRegexInput(schema) }
-				: { ...schema, pattern: parseRegexInput(schema.pattern) },
-		reduceToNode: (inner) => new PatternNode(inner),
+			typeof schema === "string"
+				? parseRegexLiteral(schema)
+				: schema instanceof RegExp
+				? { pattern: schema.source, flags: schema.flags }
+				: schema,
 		compileCondition: (inner) => `${inner.pattern}.test(${this.argName})`,
 		writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
 	})
@@ -61,15 +60,15 @@ export type RegexLiteral = `/${string}/${string}`
 
 const regexLiteralMatcher = /^\/(.+)\/([a-z]*)$/
 
-const parseRegexInput = (input: string | RegExp) =>
-	input instanceof RegExp ? input : parseRegexLiteral(input)
-
-export const parseRegexLiteral = (literal: string) => {
+export const parseRegexLiteral = (literal: string): PatternInner => {
 	const match = regexLiteralMatcher.exec(literal)
 	if (!match || !match[1]) {
 		return throwParseError(
 			`'${literal}' is not a valid RegexLiteral (should be /source/flags)`
 		)
 	}
-	return new RegExp(match[1], match[2])
+	return {
+		pattern: match[1],
+		flags: match[2]
+	}
 }

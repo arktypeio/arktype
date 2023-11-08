@@ -1,16 +1,19 @@
 import {
 	CompiledFunction,
 	type conform,
-	type Dict,
 	DynamicBase,
 	type evaluate,
 	type extend,
 	includes,
 	isArray,
+	isKeyOf,
 	type Json,
 	type JsonData,
+	type merge,
+	ParseError,
 	type satisfy,
-	throwInternalError
+	throwInternalError,
+	transform
 } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
 import { type ConstraintKind } from "./constraints/constraint.js"
@@ -35,11 +38,6 @@ export type BaseAttributes = {
 }
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
-
-export const baseAttributeKeys = {
-	alias: "meta",
-	description: "meta"
-} as const satisfies Record<keyof BaseAttributes, keyof NodeIds>
 
 export const setKinds = [
 	"union",
@@ -142,17 +140,16 @@ export type declareNode<
 
 export type BaseNodeDeclaration = BaseDeclarationInput & { reductions: {} }
 
-export type IoKind = "in" | "out" | "morph"
-
 export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
 	{
-		[k in Exclude<keyof inner, keyof BaseAttributes>]: {
-			children?: (
-				innerValue: inner[k]
-			) => readonly UnknownNode[] | { [k in IoKind]?: readonly UnknownNode[] }
-			io?: IoKind
-		}
+		[k in Exclude<keyof inner, keyof BaseAttributes>]: KeyDefinition<inner[k]>
 	}
+
+export type KeyDefinition<innerValue = unknown> = {
+	children?: (innerValue: innerValue) => readonly UnknownNode[]
+	serialize?: (innerValue: innerValue) => JsonData
+	meta?: boolean
+}
 
 export type StaticNodeDefinition<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
@@ -164,13 +161,21 @@ export type StaticNodeDefinition<
 	writeDefaultDescription: (inner: d["inner"]) => string
 	compileCondition: (inner: d["inner"]) => string
 	reduceToNode?: (inner: d["inner"]) => Node<d["reductions"]>
-	children?: (inner: d["inner"]) => readonly UnknownNode[]
 } & (d["reductions"] extends d["kind"] ? unknown : { reduceToNode: {} })
 
-type instantiateNodeClassDeclaration<declaration> = {
-	[k in keyof declaration]: k extends "keys"
-		? evaluate<declaration[k] & typeof baseAttributeKeys>
-		: declaration[k]
+type instantiateNodeClassDefinition<definition> = {
+	[k in keyof definition]: k extends "keys"
+		? evaluate<
+				{
+					[k2 in keyof definition[k]]: merge<
+						Required<KeyDefinition>,
+						definition[k]
+					>
+				} & {
+					[k in keyof BaseAttributes]: KeyDefinition
+				}
+		  >
+		: definition[k]
 }
 
 type declarationOf<nodeClass> = nodeClass extends {
@@ -180,6 +185,31 @@ type declarationOf<nodeClass> = nodeClass extends {
 	: never
 
 const $ark = registry()
+
+const defaultValueSerializer = (v: unknown): JsonData => {
+	if (
+		typeof v === "string" ||
+		typeof v === "boolean" ||
+		typeof v === "number" ||
+		v === null
+	) {
+		return v
+	}
+	if (typeof v === "object") {
+		if (v instanceof BaseNode) {
+			return v.json
+		}
+		if (
+			isArray(v) &&
+			v.every((element): element is UnknownNode => element instanceof BaseNode)
+		) {
+			return v.map((element) => {
+				return element.json
+			})
+		}
+	}
+	return compileSerializedValue(v)
+}
 
 export abstract class BaseNode<
 	declaration extends BaseNodeDeclaration,
@@ -191,8 +221,11 @@ export abstract class BaseNode<
 
 	readonly nodeClass = this.constructor as NodeClass<declaration["kind"]>
 	readonly definition = this.nodeClass
-		.definition as instantiateNodeClassDeclaration<any>
+		.definition as {} as instantiateNodeClassDefinition<StaticNodeDefinition>
 	readonly json: Json
+	readonly typeJson: Json
+	readonly id: string
+	readonly typeId: string
 	// TODO: type
 	readonly children: readonly UnknownNode[]
 	readonly references: readonly UnknownNode[]
@@ -200,7 +233,6 @@ export abstract class BaseNode<
 	protected readonly contributesReferences: readonly UnknownNode[]
 	readonly alias: string
 	readonly description: string
-	readonly ids: NodeIds = new NodeIds(this)
 	readonly condition: string
 	readonly kind: declaration["kind"] = this.definition.kind
 	readonly allows: (data: unknown) => data is t
@@ -211,53 +243,33 @@ export abstract class BaseNode<
 		this.alias = $ark.register(this, inner.alias)
 		this.description =
 			inner.description ?? this.definition.writeDefaultDescription(inner)
-		this.json = this.nodeClass.serialize(inner)
-		this.condition = this.definition.compileCondition(inner)
-		this.children = this.definition.children?.(inner) ?? ([] as any)
+		this.json = {}
+		this.typeJson = {}
+		const children: UnknownNode[] = []
+		for (const k in inner) {
+			if (!isKeyOf(k, this.definition.keys)) {
+				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
+			}
+			const keyDefinition = this.definition.keys[k]
+			children.push(...keyDefinition.children(inner[k]))
+			this.json[k] = keyDefinition.serialize(inner[k])
+			if (!keyDefinition.meta) {
+				this.typeJson[k] = this.json[k]
+			}
+		}
+		this.id = JSON.stringify(this.json)
+		this.typeId = JSON.stringify(this.typeJson)
+		this.children = children
 		this.includesMorph = this.children.some((child) => child.includesMorph)
 		this.references = this.children.flatMap(
 			(child) => child.contributesReferences
 		)
+		this.condition = this.definition.compileCondition(inner)
 		this.contributesReferences = [this, ...this.references]
 		this.allows = new CompiledFunction(
 			BaseNode.argName,
 			`return ${this.condition}`
 		)
-	}
-
-	static serialize(inner: object) {
-		const json: Json = {}
-		for (const k in inner) {
-			json[k] = this.serializeValue((inner as Dict)[k])
-		}
-		return json
-	}
-
-	static serializeValue(v: unknown): JsonData {
-		if (
-			typeof v === "string" ||
-			typeof v === "boolean" ||
-			typeof v === "number" ||
-			v === null
-		) {
-			return v
-		}
-		if (typeof v === "object") {
-			if (v instanceof BaseNode) {
-				return v.json
-			}
-			if (
-				isArray(v) &&
-				v.every(
-					(element): element is UnknownNode => element instanceof BaseNode
-				)
-			) {
-				return v.map((element) => {
-					return element.json
-				})
-			}
-		}
-		return compileSerializedValue(v)
 	}
 
 	/** Each node class is attached when it is imported.
@@ -278,11 +290,23 @@ export abstract class BaseNode<
 		return {
 			...definition,
 			keys: {
-				alias: "meta",
-				description: "meta",
-				...definition.keys
+				alias: {
+					meta: true
+				},
+				description: {
+					meta: true
+				},
+				...transform(definition.keys, ([k, v]) => [
+					k,
+					{
+						children: (): never[] => [],
+						serialize: defaultValueSerializer,
+						meta: false,
+						...v
+					}
+				])
 			}
-		} as definition
+		} as instantiateNodeClassDefinition<definition>
 	}
 
 	static parse<nodeClass>(
@@ -297,16 +321,12 @@ export abstract class BaseNode<
 
 	protected static readonly argName = In
 
-	serialize(kind: keyof NodeIds = "meta") {
-		return JSON.stringify(this.json)
-	}
-
 	toJSON() {
 		return this.json
 	}
 
 	equals(other: UnknownNode) {
-		return this.ids.morph === other.ids.morph
+		return this.typeId === other.typeId
 	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
@@ -328,7 +348,7 @@ export abstract class BaseNode<
 		other: other
 	): intersectionOf<declaration["kind"], other["kind"]>
 	intersect(other: BaseNode<BaseNodeDeclaration>) {
-		if (other.ids.morph === this.ids.morph) {
+		if (this.equals(other)) {
 			// TODO: meta
 			return this
 		}
@@ -339,7 +359,7 @@ export abstract class BaseNode<
 			(includes(ruleKinds, r.kind)
 				? l.definition.intersections["rule"]
 				: undefined)
-		const result = intersector?.(l, r)
+		const result = intersector?.(l, r as never)
 		if (result) {
 			if (result instanceof Disjoint) {
 				return l === this ? result : result.invert()
@@ -407,29 +427,3 @@ type asymmetricIntersectionOf<
 type instantiateIntersection<result> = result extends NodeKind
 	? reducibleParseResult<result>
 	: result
-
-export class NodeIds {
-	private cache: { -readonly [k in keyof NodeIds]?: string } = {}
-
-	constructor(private node: UnknownNode) {}
-
-	get in() {
-		this.cache.in ??= this.node.serialize("in")
-		return this.cache.in
-	}
-
-	get out() {
-		this.cache.out ??= this.node.serialize("out")
-		return this.cache.out
-	}
-
-	get morph() {
-		this.cache.morph ??= this.node.serialize("morph")
-		return this.cache.morph
-	}
-
-	get meta() {
-		this.cache.meta ??= this.node.serialize("meta")
-		return this.cache.meta
-	}
-}

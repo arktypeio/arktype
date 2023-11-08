@@ -124,11 +124,7 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 			return inner.intersection.length === 0
 				? "a value"
 				: inner.intersection.join(" and ")
-		},
-		children: (inner) =>
-			Object.values(inner)
-				.flat()
-				.filter((value): value is Node<RuleKind> => value instanceof BaseNode)
+		}
 	})
 }
 

@@ -70,8 +70,7 @@ export class RequiredPropNode extends BaseNode<RequiredDeclaration> {
 		parseSchema: (schema) => schema as never,
 		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) =>
-			`${String(inner.required)}: ${inner.value}`,
-		children: (inner) => [inner.value]
+			`${String(inner.required)}: ${inner.value}`
 	})
 
 	static basis: DomainNode<object> = builtins().object
@@ -130,8 +129,7 @@ export class OptionalPropNode extends BaseNode<OptionalDeclaration> {
 		parseSchema: (schema) => schema as never,
 		compileCondition: (inner) => "true",
 		writeDefaultDescription: (inner) =>
-			`${String(inner.optional)}?: ${inner.value}`,
-		children: (inner) => [inner.value]
+			`${String(inner.optional)}?: ${inner.value}`
 	})
 
 	static basis: DomainNode<object> = builtins().object

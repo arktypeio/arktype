@@ -212,7 +212,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		// 	}
 		// 	return state.finalize(${In});
 		this.root = root
-		this.condition = root.ids.meta
+		this.condition = root.condition
 		this.allows = root.allows
 		this.config = scope.config
 	}

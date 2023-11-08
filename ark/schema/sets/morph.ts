@@ -85,12 +85,10 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 		kind: "morph",
 		keys: {
 			in: {
-				children: (In) => [In],
-				io: "in"
+				children: (In) => [In]
 			},
 			out: {
-				children: (out) => [out],
-				io: "out"
+				children: (out) => [out]
 			},
 			morph: {}
 		},
@@ -167,15 +165,7 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 			return inner
 		},
 		compileCondition: (inner) => inner.in?.condition ?? "true",
-		writeDefaultDescription: (inner) => "",
-		children: (inner): ValidatorNode[] =>
-			inner.in
-				? inner.out
-					? [inner.in, inner.out]
-					: [inner.in]
-				: inner.out
-				? [inner.out]
-				: []
+		writeDefaultDescription: (inner) => ""
 	})
 }
 

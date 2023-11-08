@@ -53,7 +53,7 @@ export type ExpandedUnionSchema<
 	readonly ordered?: boolean
 }>
 
-export type UnionSchema = readonly BranchSchema[] | ExpandedUnionSchema
+export type UnionSchema = ExpandedUnionSchema | ExpandedUnionSchema["union"]
 
 export type UnionInner = withAttributes<{
 	readonly union: readonly BranchNode[]
@@ -180,8 +180,7 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 			return condition || "false"
 		},
 		writeDefaultDescription: (inner) =>
-			inner.union.length === 0 ? "never" : inner.union.join(" or "),
-		children: (inner) => inner.union
+			inner.union.length === 0 ? "never" : inner.union.join(" or ")
 	})
 
 	// discriminate is cached so we don't have to worry about this running multiple times
