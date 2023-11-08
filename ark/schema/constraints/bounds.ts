@@ -34,11 +34,8 @@ export abstract class BaseBound<declaration extends BoundDeclaration>
 
 	readonly comparator = schemaToComparator(this.inner)
 
-	readonly implicitBasis:
-		| DomainNode<"string" | "number">
-		| ProtoNode<typeof Array | typeof Date> = basesByBoundKind[
-		this.boundKind
-	] as never
+	readonly implicitBasis: Node<BasisKind> & { infer: Boundable } =
+		basesByBoundKind[this.boundKind] as never
 
 	//this.classesByKind.union.parse(["number", "string", Array, Date]) as never
 

@@ -54,13 +54,15 @@ export type ConstraintIntersectionInput<
 
 export type constraintKindOf<t> = {
 	[k in ConstraintKind]: Node<k> extends {
-		implicitBasis: infer basis extends Node<BasisKind>
+		implicitBasis: infer basis
 	}
-		? t extends basis["infer"]
+		? basis extends Node<BasisKind>
+			? t extends basis["infer"]
+				? k
+				: never
+			: basis extends undefined
 			? k
 			: never
-		: unknown extends t
-		? k
 		: never
 }[ConstraintKind]
 
