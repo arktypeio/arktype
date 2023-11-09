@@ -1,8 +1,16 @@
 # Attest
 
-This package is under active development.
+## Installation
 
-If you want to try it, you'll need to call our setup/cleanup methods before and after your tests run.
+```bash
+npm install @arktype/attest
+```
+
+*Note: This package is still in alpha! Your feedback will help us iterate toward a stable 1.0.*
+
+## Setup
+
+To use attest's type assertions, you'll need to call our setup/cleanup methods before your first test and after your last test, respectively. This usually involves some kind of globalSetup/globalTeardown config.
 
 For example, in mocha:
 
