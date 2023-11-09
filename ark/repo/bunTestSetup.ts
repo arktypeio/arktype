@@ -1,5 +1,5 @@
 import { cleanup, setup } from "@arktype/attest"
 import { afterAll, beforeAll } from "bun:test"
 
-beforeAll(setup)
+beforeAll(() => setup({ preserveCache: true }))
 afterAll(cleanup)

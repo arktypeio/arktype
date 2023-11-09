@@ -150,7 +150,9 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 			}
 		},
 		parseSchema: (schema) => {
-			const result = {} as mutable<UnionInner>
+			const result = {
+				ordered: false
+			} as mutable<UnionInner>
 			let schemaBranches: readonly BranchSchema[]
 			if (isArray(schema)) {
 				schemaBranches = schema

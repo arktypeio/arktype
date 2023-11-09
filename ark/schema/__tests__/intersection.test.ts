@@ -7,7 +7,7 @@ describe("intersections", () => {
 		const t = node({ basis: "string", pattern: "/.*/" })
 		attest<IntersectionNode<string>>(t)
 		attest(t.json).snap({
-			intersection: [{ domain: "string" }, { pattern: "$ark.regExp11" }]
+			intersection: [{ domain: "string" }, { pattern: ".*", flags: "" }]
 		})
 		// previously had issues with a union complexity error when assigning to Root | undefined
 		const root: Root | undefined = node({ basis: "string", pattern: "/.*/" })
@@ -48,10 +48,11 @@ describe("intersections", () => {
 		})
 		const result = l.and(r)
 		attest(result.json).snap({
-			branches: [
-				{ domain: { domain: "number" }, divisor: { divisor: 10 } },
-				{ domain: { domain: "number" }, divisor: { divisor: 15 } }
-			]
+			union: [
+				{ intersection: [{ domain: "number" }, { divisor: 10 }] },
+				{ intersection: [{ domain: "number" }, { divisor: 15 }] }
+			],
+			ordered: false
 		})
 	})
 	it("in/out", () => {
