@@ -166,6 +166,12 @@ export type StaticNodeDefinition<
 	reduceToNode?: (inner: d["inner"]) => Node<d["reductions"]>
 } & (d["reductions"] extends d["kind"] ? unknown : { reduceToNode: {} })
 
+type UnknownNodeClass = {
+	new (inner: any): UnknownNode
+	definition: StaticNodeDefinition
+	// evaluate to map and omit the constructor
+} & evaluate<typeof BaseNode>
+
 type instantiateNodeClassDefinition<definition> = {
 	[k in keyof definition]: k extends "keys"
 		? evaluate<
@@ -268,7 +274,9 @@ export abstract class BaseNode<
 		this.id = JSON.stringify(this.json)
 		this.typeId = JSON.stringify(this.typeJson)
 		this.children = children
-		this.includesMorph = this.children.some((child) => child.includesMorph)
+		this.includesMorph =
+			this.kind === "morph" ||
+			this.children.some((child) => child.includesMorph)
 		this.references = this.children.flatMap(
 			(child) => child.contributesReferences
 		)
@@ -323,9 +331,25 @@ export abstract class BaseNode<
 		schema: declarationOf<nodeClass>["schema"],
 		ctx = createParseContext()
 	): reducibleParseResult<declarationOf<nodeClass>["kind"]> {
-		const definition = (this as any).definition as StaticNodeDefinition
-		const inner = definition.parseSchema(schema, ctx)
-		return definition.reduceToNode?.(inner) ?? new (this as any)(inner)
+		return (this as UnknownNodeClass).instantiateInner(
+			(this as UnknownNodeClass).parseInner(schema as never, ctx)
+		) as never
+	}
+
+	static parseInner<nodeClass>(
+		this: nodeClass,
+		schema: declarationOf<nodeClass>["schema"],
+		ctx: ParseContext
+	): declarationOf<nodeClass>["schema"] {
+		return (this as UnknownNodeClass).definition.parseSchema(schema, ctx)
+	}
+
+	static instantiateInner<nodeClass>(
+		this: nodeClass,
+		inner: declarationOf<nodeClass>["inner"]
+	): reducibleParseResult<declarationOf<nodeClass>["kind"]> {
+		return ((this as UnknownNodeClass).definition.reduceToNode?.(inner) ??
+			new (this as UnknownNodeClass)(inner)) as never
 	}
 
 	protected static readonly argName = In
@@ -362,10 +386,7 @@ export abstract class BaseNode<
 				ioInner[k] = this.inner[k]
 			}
 		}
-		return (
-			this.definition.reduceToNode?.(ioInner) ??
-			new (this.nodeClass as any)(ioInner)
-		)
+		return this.nodeClass.instantiateInner(ioInner as never)
 	}
 
 	toJSON() {
@@ -436,8 +457,8 @@ export abstract class BaseNode<
 			if (result instanceof Disjoint) {
 				return thisIsLeft ? result : result.invert()
 			}
-			// TODO: meta, use kind entry?
-			return new (l.nodeClass as any)(result)
+			// TODO: meta
+			return l.nodeClass.instantiateInner(result as never) as never
 		}
 		return null
 	}

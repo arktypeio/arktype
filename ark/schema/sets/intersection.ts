@@ -118,7 +118,7 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 		},
 		writeDefaultDescription: (inner) => {
 			return inner.intersection.length === 0
-				? "a value"
+				? "an unknown value"
 				: inner.intersection.join(" and ")
 		}
 	})

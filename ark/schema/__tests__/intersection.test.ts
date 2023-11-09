@@ -72,4 +72,21 @@ describe("intersections", () => {
 		})
 		attest(parseNumber.out.json).snap({ intersection: [] })
 	})
+	it("reduces union", () => {
+		const n = node("number", {}, { unit: 5 })
+		attest(n.json).snap({ intersection: [] })
+	})
+	it("in/out union", () => {
+		const n = node(
+			{
+				in: "string",
+				morph: (s: string) => parseFloat(s)
+			},
+			"number"
+		)
+		attest(n.in.json).snap({
+			union: [{ domain: "string" }, { domain: "number" }]
+		})
+		attest(n.out.json).snap({ intersection: [] })
+	})
 })

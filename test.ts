@@ -4,14 +4,17 @@
 import { node } from "./ark/schema/main.js"
 import { wellFormedNumberMatcher } from "./ark/util/main.js"
 
-const parseNumber = node({
-	in: {
-		basis: "string",
-		pattern: wellFormedNumberMatcher,
-		description: "a well-formed numeric string"
+const parseNumber = node(
+	{
+		in: {
+			basis: "string",
+			pattern: wellFormedNumberMatcher,
+			description: "a well-formed numeric string"
+		},
+		morph: (s: string) => parseFloat(s)
 	},
-	morph: (s: string) => parseFloat(s)
-})
+	"number"
+)
 
 parseNumber.description //?
 

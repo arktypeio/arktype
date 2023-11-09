@@ -70,7 +70,7 @@ describe("Assertions for Inline Snapshots", () => {
 			`Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.`
 		)
 	})
-	test("multiple inline snaps", () => {
+	it("multiple inline snaps", () => {
 		attest("firstLine\nsecondLine").snap(`firstLine
 secondLine`)
 		attest("firstLine\nsecondLine").snap(`firstLine
