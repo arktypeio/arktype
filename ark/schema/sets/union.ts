@@ -43,7 +43,7 @@ export type parseBranchSchema<schema> = schema extends MorphSchema
 
 export const parseBranchSchema = (schema: BranchSchema) =>
 	typeof schema === "object" && "morph" in schema
-		? MorphNode.parse(schema)
+		? new MorphNode(schema)
 		: parseValidatorSchema(schema)
 
 export type ExpandedUnionSchema<
@@ -70,8 +70,16 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		default: "union" | Disjoint
 	}
-	reductions: "union" | UnionChildKind
 }>
+
+// reduceToNode: (inner) => {
+// 	const reducedBranches = reduceBranches(inner)
+// 	if (reducedBranches.length === 1) {
+// 		// TODO: description?
+// 		return reducedBranches[0]
+// 	}
+// 	return new UnionNode({ ...inner, union: reducedBranches })
+// },
 
 export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 	static readonly kind = "union"
@@ -93,9 +101,7 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 	static readonly definition = this.define({
 		kind: "union",
 		keys: {
-			union: {
-				children: (branches) => branches
-			},
+			union: {},
 			ordered: {}
 		},
 		intersections: {
@@ -163,14 +169,6 @@ export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
 			}
 			result.union = schemaBranches.map(parseBranchSchema)
 			return result
-		},
-		reduceToNode: (inner) => {
-			const reducedBranches = reduceBranches(inner)
-			if (reducedBranches.length === 1) {
-				// TODO: description?
-				return reducedBranches[0]
-			}
-			return new UnionNode({ ...inner, union: reducedBranches })
 		},
 		compileCondition: (inner) => {
 			let condition = inner.union

@@ -35,7 +35,7 @@ export abstract class BaseRoot<
 		definition: Schema<kind>
 	): Root {
 		const result = this.intersect(
-			(BaseRoot.classesByKind[kind].parse as any)(definition)
+			new (BaseRoot.classesByKind[kind] as any)(definition)
 		)
 		return result instanceof Disjoint ? result.throw() : result
 	}

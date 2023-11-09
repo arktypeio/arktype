@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 // import { isDeepStrictEqual } from "util"
 // import { type Dict } from "./ark/util/main.js"
-import { node } from "./ark/schema/main.js"
+import { IntersectionNode, node, UnionNode } from "./ark/schema/main.js"
 import { wellFormedNumberMatcher } from "./ark/util/main.js"
 
 const parseNumber = node(
@@ -15,6 +15,41 @@ const parseNumber = node(
 	},
 	"number"
 )
+
+const or = new UnionNode({
+	union: [{ unit: 5 }]
+})
+
+or.kind //?
+
+or.json //?
+
+const and = new IntersectionNode({
+	intersection: [{ unit: 5 }]
+})
+
+and.kind //?
+
+and.json //?
+
+const andNode = new IntersectionNode({
+	intersection: [node("number")]
+})
+
+andNode.kind //?
+
+andNode.json //?
+
+const orNode = new UnionNode({
+	union: [node("number")],
+	ordered: false
+})
+
+orNode.kind //?
+
+orNode.json //?
+
+orNode.equals(andNode) //?
 
 parseNumber.description //?
 

@@ -1,20 +1,19 @@
 import {
+	CastableBase,
 	CompiledFunction,
 	type conform,
-	DynamicBase,
 	type evaluate,
 	type extend,
+	hasDomain,
 	includes,
 	isArray,
 	isKeyOf,
 	type Json,
 	type JsonData,
-	type listable,
-	type merge,
 	ParseError,
 	type satisfy,
 	throwInternalError,
-	transform
+	throwParseError
 } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
 import { type ConstraintKind } from "./constraints/constraint.js"
@@ -26,7 +25,6 @@ import {
 	type NodeClass,
 	type NodeDeclarationsByKind,
 	type NodeKind,
-	type reducibleParseResult,
 	type reifyIntersections,
 	type RuleKind
 } from "./nodes.js"
@@ -37,6 +35,7 @@ import { createParseContext, inferred, type ParseContext } from "./utils.js"
 export type BaseAttributes = {
 	readonly alias?: string
 	readonly description?: string
+	readonly prereduced?: true
 }
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
@@ -115,33 +114,26 @@ export type DeclarationInput<kind extends NodeKind> = {
 	// as its kind that can be used as a discriminator
 	inner: BaseAttributes & { [k in kind]: unknown }
 	intersections: BaseIntersectionMap[kind]
-	reductions?: kind | rightOf<kind>
 }
 
-export type BaseDeclarationInput = {
+export type declareNode<
+	types extends {
+		[k in keyof BaseNodeDeclaration]: types extends {
+			kind: infer kind extends NodeKind
+		}
+			? DeclarationInput<kind>[k]
+			: never
+	} & { [k in Exclude<keyof types, keyof BaseNodeDeclaration>]?: never }
+> = types
+
+export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
 	inner: BaseAttributes
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}
-	reductions?: NodeKind
 }
-
-export type declareNode<
-	types extends {
-		[k in keyof BaseDeclarationInput]: types extends {
-			kind: infer kind extends NodeKind
-		}
-			? DeclarationInput<kind>[k]
-			: never
-	} & { [k in Exclude<keyof types, keyof BaseDeclarationInput>]?: never }
-> = types &
-	("reductions" extends keyof types
-		? unknown
-		: { reductions: types["kind" & keyof types] })
-
-export type BaseNodeDeclaration = BaseDeclarationInput & { reductions: {} }
 
 export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
 	{
@@ -149,8 +141,7 @@ export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
 	}
 
 export type KeyDefinition<innerValue = unknown> = {
-	children?: (innerValue: innerValue) => listable<UnknownNode>
-	serialize?: (innerValue: innerValue) => JsonData
+	attachAs?: string
 	meta?: boolean
 }
 
@@ -163,29 +154,18 @@ export type StaticNodeDefinition<
 	parseSchema: (schema: d["schema"], ctx: ParseContext) => d["inner"]
 	writeDefaultDescription: (inner: d["inner"]) => string
 	compileCondition: (inner: d["inner"]) => string
-	reduceToNode?: (inner: d["inner"]) => Node<d["reductions"]>
-} & (d["reductions"] extends d["kind"] ? unknown : { reduceToNode: {} })
-
-type UnknownNodeClass = {
-	new (inner: any): UnknownNode
-	definition: StaticNodeDefinition
-	// evaluate to map and omit the constructor
-} & evaluate<typeof BaseNode>
-
-type instantiateNodeClassDefinition<definition> = {
-	[k in keyof definition]: k extends "keys"
-		? evaluate<
-				{
-					[k2 in keyof definition[k]]: merge<
-						{ serialize: typeof defaultValueSerializer },
-						definition[k]
-					>
-				} & {
-					[k in keyof BaseAttributes]: KeyDefinition
-				}
-		  >
-		: definition[k]
 }
+
+export type UnknownNodeClass = {
+	new (inner: any, ctx?: ParseContext): UnknownNode
+	definition: StaticNodeDefinition
+}
+
+type instantiateNodeClassDefinition<definition> = evaluate<
+	definition & {
+		keys: { [k in keyof BaseAttributes]: KeyDefinition }
+	}
+>
 
 type declarationOf<nodeClass> = nodeClass extends {
 	declaration: infer declaration extends BaseNodeDeclaration
@@ -210,82 +190,96 @@ const defaultValueSerializer = (v: unknown): JsonData => {
 export abstract class BaseNode<
 	declaration extends BaseNodeDeclaration,
 	t = unknown
-> extends DynamicBase<declaration["inner"]> {
+> extends CastableBase<declaration["inner"]> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
 
-	readonly nodeClass = this.constructor as NodeClass<declaration["kind"]>
+	// TODO: reduce, add param for unsafe
+	constructor(
+		public schema: declaration["schema"],
+		ctx = createParseContext()
+	) {
+		super()
+		if (schema instanceof BaseNode) {
+			// return schema.kind === this.kind
+			// 	? schema
+			// 	: throwParseError(
+			// 			`Node of kind ${schema.kind} is not valid as input for node of kind ${this.kind}`
+			// 	  )
+		}
+		this.initialize()
+	}
+
+	readonly nodeClass = this.constructor as UnknownNodeClass
 	readonly definition = this.nodeClass
 		.definition as {} as instantiateNodeClassDefinition<StaticNodeDefinition>
-	readonly json: Json
-	readonly typeJson: Json
-	readonly id: string
-	readonly typeId: string
-	// TODO: type
-	readonly children: readonly UnknownNode[]
-	readonly references: readonly UnknownNode[]
-	readonly includesMorph: boolean
-	protected readonly contributesReferences: readonly UnknownNode[]
-	readonly alias: string
-	readonly description: string
-	readonly condition: string
-	readonly kind: BaseNodeDeclaration extends declaration
-		? NodeKind
-		: declaration["kind"] = this.definition.kind
-	readonly allows: (data: unknown) => data is t
+	readonly inner: declaration["inner"] =
+		hasDomain(this.schema, "object") && "prevalidated" in this.schema
+			? this.schema
+			: this.definition.parseSchema(this.schema, ctx)
+	readonly kind: declaration["kind"] = this.definition.kind
+	readonly alias = $ark.register(this, this.inner.alias)
+	readonly description =
+		this.inner.description ??
+		this.definition.writeDefaultDescription(this.inner)
+	readonly json: Json = {}
+	readonly typeJson: Json = {}
+	readonly children: UnknownNode[] = []
+	readonly id = JSON.stringify(this.json)
+	readonly typeId = JSON.stringify(this.typeJson)
+	readonly includesMorph: boolean =
+		this.kind === "morph" || this.children.some((child) => child.includesMorph)
+	readonly references: readonly UnknownNode[] = this.children.flatMap(
+		(child) => child.contributesReferences
+	)
+	readonly contributesReferences: readonly UnknownNode[] = [
+		this,
+		...this.references
+	]
+	readonly condition = this.definition.compileCondition(this.inner)
+	readonly allows = new CompiledFunction<(data: unknown) => data is t>(
+		BaseNode.argName,
+		`return ${this.condition}`
+	)
 
-	// TODO: reduce, add param for unsafe
-	constructor(public readonly inner: declaration["inner"]) {
-		const { in: inCache, out: outCache, ...rest } = inner as any
-		super(rest)
-		this.inCache = inCache
-		this.outCache = outCache
-		this.alias = $ark.register(this, inner.alias)
-		this.description =
-			inner.description ?? this.definition.writeDefaultDescription(inner)
-		this.json = {}
-		this.typeJson = {}
-		const children: UnknownNode[] = []
-		for (const k in inner) {
+	private initialize() {
+		for (const [k, v] of Object.entries<unknown>(this.inner)) {
 			if (!isKeyOf(k, this.definition.keys)) {
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
 			}
-			const keyDefinition = this.definition.keys[k]
-			const childrenAtKey = keyDefinition.children?.(inner[k])
-
-			if (childrenAtKey) {
-				if (isArray(childrenAtKey)) {
-					children.push(...childrenAtKey)
-					this.json[k] = childrenAtKey.map((child) => child.json)
-					this.typeJson[k] = childrenAtKey.map((child) => child.typeJson)
-				} else {
-					children.push(childrenAtKey)
-					this.json[k] = childrenAtKey.json
-					this.typeJson[k] = childrenAtKey.typeJson
+			const keyDefinition = this.definition.keys[k]!
+			if (v instanceof BaseNode) {
+				this.json[k] = v.json
+				this.typeJson[k] = v.typeJson
+				this.children.push(v)
+			} else if (isArray(v)) {
+				// avoid assuming all elements are nodes until we've been over them
+				const jsonElements: JsonData[] = []
+				const typeJsonElements: JsonData[] = []
+				for (const element of v) {
+					if (element instanceof BaseNode) {
+						jsonElements.push(element.json)
+						typeJsonElements.push(element.typeJson)
+					} else {
+						break
+					}
 				}
-			} else {
-				this.json[k] = keyDefinition.serialize(inner[k])
-				if (!keyDefinition.meta) {
-					this.typeJson[k] = keyDefinition.serialize(inner[k])
+				if (jsonElements.length === v.length) {
+					// all elements were nodes, add them to children and json
+					this.children.push(...(v as UnknownNode[]))
+					this.json[k] = jsonElements
+					this.typeJson[k] = typeJsonElements
 				}
 			}
+			if (this.json[k] === undefined) {
+				this.json[k] = defaultValueSerializer(this.inner[k])
+				if (!keyDefinition.meta) {
+					this.typeJson[k] = this.json[k]
+				}
+			}
+			;(this as any)[keyDefinition.attachAs ?? k] = this.inner[k]
 		}
-		this.id = JSON.stringify(this.json)
-		this.typeId = JSON.stringify(this.typeJson)
-		this.children = children
-		this.includesMorph =
-			this.kind === "morph" ||
-			this.children.some((child) => child.includesMorph)
-		this.references = this.children.flatMap(
-			(child) => child.contributesReferences
-		)
-		this.condition = this.definition.compileCondition(inner)
-		this.contributesReferences = [this, ...this.references]
-		this.allows = new CompiledFunction(
-			BaseNode.argName,
-			`return ${this.condition}`
-		)
 	}
 
 	/**
@@ -298,58 +292,23 @@ export abstract class BaseNode<
 		this: nodeClass,
 		definition: conform<
 			definition,
-			/** @ts-expect-error (trying to constrain further breaks types or causes circularities) */
-			StaticNodeDefinition<nodeClass["declaration"]>
+			StaticNodeDefinition<declarationOf<nodeClass>>
 		>
-	) {
+	): definition {
 		// register the newly defined node class
 		;(this as any).classesByKind[definition.kind] = this
 		return {
 			...definition,
 			keys: {
 				alias: {
-					serialize: defaultValueSerializer,
 					meta: true
 				},
 				description: {
-					serialize: defaultValueSerializer,
 					meta: true
 				},
-				...transform(definition.keys, ([k, v]) => [
-					k,
-					{
-						serialize: defaultValueSerializer,
-						...v
-					}
-				])
+				...definition.keys
 			}
-		} as instantiateNodeClassDefinition<definition>
-	}
-
-	static parse<nodeClass>(
-		this: nodeClass,
-		schema: declarationOf<nodeClass>["schema"],
-		ctx = createParseContext()
-	): reducibleParseResult<declarationOf<nodeClass>["kind"]> {
-		return (this as UnknownNodeClass).instantiateInner(
-			(this as UnknownNodeClass).parseInner(schema as never, ctx)
-		) as never
-	}
-
-	static parseInner<nodeClass>(
-		this: nodeClass,
-		schema: declarationOf<nodeClass>["schema"],
-		ctx: ParseContext
-	): declarationOf<nodeClass>["schema"] {
-		return (this as UnknownNodeClass).definition.parseSchema(schema, ctx)
-	}
-
-	static instantiateInner<nodeClass>(
-		this: nodeClass,
-		inner: declarationOf<nodeClass>["inner"]
-	): reducibleParseResult<declarationOf<nodeClass>["kind"]> {
-		return ((this as UnknownNodeClass).definition.reduceToNode?.(inner) ??
-			new (this as UnknownNodeClass)(inner)) as never
+		} as never
 	}
 
 	protected static readonly argName = In
@@ -386,7 +345,8 @@ export abstract class BaseNode<
 				ioInner[k] = this.inner[k]
 			}
 		}
-		return this.nodeClass.instantiateInner(ioInner as never)
+		// TODO; reduce?
+		return new this.nodeClass(ioInner as never)
 	}
 
 	toJSON() {
@@ -435,7 +395,7 @@ export abstract class BaseNode<
 				`Unexpected null intersection between non-rules ${this.kind} and ${other.kind}`
 			)
 		}
-		return BaseNode.classesByKind.intersection.instantiateInner({
+		return new BaseNode.classesByKind.intersection({
 			intersection: [this, other]
 		})
 	}
@@ -457,8 +417,9 @@ export abstract class BaseNode<
 			if (result instanceof Disjoint) {
 				return thisIsLeft ? result : result.invert()
 			}
+			// TODO: reduce
 			// TODO: meta
-			return l.nodeClass.instantiateInner(result as never) as never
+			return new l.nodeClass(result as never) as never
 		}
 		return null
 	}
@@ -509,18 +470,14 @@ type asymmetricIntersectionOf<
 	? r extends unknown
 		? r extends keyof IntersectionMaps[l]
 			? instantiateIntersection<IntersectionMaps[l][r]>
-			: "rule" extends keyof IntersectionMaps[l]
-			? r extends RuleKind
-				? instantiateIntersection<IntersectionMaps[l]["rule"]>
-				: never
-			: "constraint" extends keyof IntersectionMaps[l]
-			? r extends ConstraintKind
-				? instantiateIntersection<IntersectionMaps[l]["constraint"]>
+			: "default" extends keyof IntersectionMaps[l]
+			? r extends rightOf<l>
+				? instantiateIntersection<IntersectionMaps[l]["default"]>
 				: never
 			: never
 		: r
 	: never
 
 type instantiateIntersection<result> = result extends NodeKind
-	? reducibleParseResult<result>
+	? Node<result>
 	: result

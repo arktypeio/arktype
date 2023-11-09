@@ -47,8 +47,15 @@ export type IntersectionDeclaration = declareNode<{
 		intersection: "intersection" | Disjoint
 		default: "intersection" | Disjoint
 	}
-	reductions: "intersection" | BasisKind
 }>
+
+// reduceToNode: (inner) => {
+// 	if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
+// 		// TODO: collapse description?
+// 		return inner.intersection[0]
+// 	}
+// 	return new IntersectionNode(inner)
+// },
 
 export class IntersectionNode<t = unknown> extends BaseRoot<
 	IntersectionDeclaration,
@@ -65,9 +72,7 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 	static readonly definition = this.define({
 		kind: "intersection",
 		keys: {
-			intersection: {
-				children: (constraints) => constraints
-			}
+			intersection: {}
 		},
 		intersections: {
 			intersection: (l, r) => {
@@ -99,13 +104,6 @@ export class IntersectionNode<t = unknown> extends BaseRoot<
 					? parseListedRules(rules.intersection)
 					: parseMappedRules(rules)
 			return intersectionInner
-		},
-		reduceToNode: (inner) => {
-			if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
-				// TODO: collapse description?
-				return inner.intersection[0]
-			}
-			return new IntersectionNode(inner)
 		},
 		compileCondition: (inner) => {
 			let condition = inner.intersection
@@ -139,10 +137,7 @@ const parseListedRules = (
 const parseMappedRules = ({
 	basis: basisSchema,
 	...constraintSchemasByKind
-}: MappedIntersectionSchema<any> & {
-	// at this point each key should be "basis" or a constraint kind
-	[k in keyof BaseAttributes]?: never
-}): CollapsedIntersectionInner => {
+}: MappedIntersectionSchema<any>): CollapsedIntersectionInner => {
 	const basis = basisSchema ? parseBasis(basisSchema) : undefined
 	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
 	const constraintContext: ParseContext = { basis }
@@ -153,13 +148,14 @@ const parseMappedRules = ({
 		const schemas = constraintSchemasByKind[k]
 		if (isArray(schemas)) {
 			rules.push(
-				...schemas.map((schema) =>
-					BaseNode.classesByKind[k].parse(schema as never, constraintContext)
+				...schemas.map(
+					(schema) =>
+						new BaseNode.classesByKind[k](schema as never, constraintContext)
 				)
 			)
 		} else {
 			rules.push(
-				BaseNode.classesByKind[k].parse(schemas as never, constraintContext)
+				new BaseNode.classesByKind[k](schemas as never, constraintContext)
 			)
 		}
 	}

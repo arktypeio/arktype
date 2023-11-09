@@ -1,5 +1,5 @@
 import type { extend, instanceOf, listable } from "@arktype/util"
-import { BaseNode, type rightOf } from "./base.js"
+import { BaseNode, type rightOf, type UnknownNodeClass } from "./base.js"
 import {
 	type BasisClassesByKind,
 	type BasisDeclarationsByKind
@@ -9,7 +9,6 @@ import {
 	type ConstraintClassesByKind,
 	type ConstraintDeclarationsByKind
 } from "./constraints/constraint.js"
-import { type Disjoint } from "./disjoint.js"
 import { type MorphSchema, type ValidatorSchema } from "./sets/morph.js"
 import {
 	type SetClassesByKind,
@@ -43,12 +42,12 @@ type RootNodeParser = {
 // 	})
 // }
 
-const parseNode = (...schemas: BranchSchema[]) => UnionNode.parse(schemas)
+const parseNode = (...schemas: BranchSchema[]) => new UnionNode(schemas)
 
 export const parseKind = <kind extends NodeKind>(
 	kind: kind,
 	schema: Schema<kind>
-) => BaseNode.classesByKind[kind].parse(schema) as reducibleParseResult<kind>
+): Node<kind> => new (BaseNode.classesByKind[kind] as any)(schema)
 
 const parseUnits = <const branches extends readonly unknown[]>(
 	...values: branches
@@ -124,10 +123,6 @@ export type DiscriminableSchema<kind extends NodeKind = NodeKind> =
 	DiscriminableSchemasByKind[kind]
 
 export type Inner<kind extends NodeKind> = NodeDeclarationsByKind[kind]["inner"]
-
-export type reducibleParseResult<kind extends NodeKind> = Node<
-	NodeDeclarationsByKind[kind]["reductions"]
->
 
 export type LeftIntersections<kind extends NodeKind> = reifyIntersections<
 	kind,

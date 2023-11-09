@@ -110,6 +110,11 @@ const ShallowClone = class {
 // @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation)
 export class DynamicBase<t extends object> extends ShallowClone<t> {}
 
+const NoopBase = class {} as new <t extends object>() => t
+
+// @ts-expect-error
+export class CastableBase<t extends object> extends NoopBase<t> {}
+
 export const shallowClone = <input extends object>(input: input): input =>
 	Object.create(
 		Object.getPrototypeOf(input),

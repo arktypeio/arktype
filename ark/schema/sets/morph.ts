@@ -2,7 +2,6 @@ import {
 	type AbstractableConstructor,
 	type exactMessageOnError,
 	type listable,
-	type mutable,
 	throwParseError
 } from "@arktype/util"
 import { BaseNode, type declareNode, type withAttributes } from "../base.js"
@@ -19,7 +18,6 @@ import type { CheckResult, TraversalState } from "../io/traverse.js"
 import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
 import { BaseRoot } from "../root.js"
 import {
-	IntersectionNode,
 	type IntersectionSchema,
 	type parseIntersectionSchema,
 	type validateIntersectionSchema
@@ -49,7 +47,7 @@ export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
 
 export const parseValidatorSchema = (schema: ValidatorSchema): ValidatorNode =>
 	maybeParseBasis(schema) ??
-	BaseNode.classesByKind.intersection.parse(schema as IntersectionSchema)
+	new BaseNode.classesByKind.intersection(schema as IntersectionSchema)
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
@@ -78,6 +76,7 @@ export type MorphDeclaration = declareNode<{
 	}
 }>
 
+// TODO: recursively extract in
 export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 	static readonly kind = "morph"
 	static readonly declaration: MorphDeclaration
@@ -85,11 +84,13 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 	static definition = this.define({
 		kind: "morph",
 		keys: {
+			// assign in/out to their respective caches to avoid an error on an
+			// attempt to overwrite the getter
 			in: {
-				children: (In) => In
+				attachAs: "inCache"
 			},
 			out: {
-				children: (out) => out
+				attachAs: "outCache"
 			},
 			morph: {}
 		},
@@ -133,7 +134,7 @@ export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
 					  }
 			}
 		},
-		parseSchema: (schema) => {
+		parseSchema: (schema): MorphInner => {
 			return {
 				in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
 				out: schema.out ? parseValidatorSchema(schema.out) : builtins().unknown,

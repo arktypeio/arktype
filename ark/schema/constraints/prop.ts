@@ -54,9 +54,7 @@ export class RequiredPropNode
 		kind: "required",
 		keys: {
 			required: {},
-			value: {
-				children: (v) => v
-			}
+			value: {}
 		},
 		intersections: {
 			required: (l, r) => {
@@ -115,9 +113,7 @@ export class OptionalPropNode
 		kind: "optional",
 		keys: {
 			optional: {},
-			value: {
-				children: (v) => v
-			}
+			value: {}
 		},
 		intersections: {
 			optional: (l, r) => {

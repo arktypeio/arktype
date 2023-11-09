@@ -48,16 +48,16 @@ export const maybeParseBasis = (
 ): Node<BasisKind> | undefined => {
 	switch (typeof schema) {
 		case "string":
-			return DomainNode.parse(schema)
+			return new DomainNode(schema)
 		case "function":
-			return ProtoNode.parse(schema)
+			return new ProtoNode(schema)
 		case "object":
 			return "unit" in schema
-				? UnitNode.parse(schema)
+				? new UnitNode(schema)
 				: "proto" in schema
-				? ProtoNode.parse(schema)
+				? new ProtoNode(schema)
 				: "domain" in schema
-				? DomainNode.parse(schema)
+				? new DomainNode(schema)
 				: undefined
 	}
 }
