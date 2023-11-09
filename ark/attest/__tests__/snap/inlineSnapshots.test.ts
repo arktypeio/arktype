@@ -10,7 +10,7 @@ const shouldThrow = (a: false) => {
 const throwError = () => {
 	throw new Error("Test error.")
 }
-describe("Assertions for Inline Snapshots", () => {
+describe("inline snaps", () => {
 	it("default serializer doesn't care about prop order", () => {
 		const actual = { a: true, b: false }
 		attest(actual).snap({ b: false, a: true })

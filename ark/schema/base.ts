@@ -435,7 +435,7 @@ export abstract class BaseNode<
 				`Unexpected null intersection between non-rules ${this.kind} and ${other.kind}`
 			)
 		}
-		return new BaseNode.classesByKind.intersection({
+		return BaseNode.classesByKind.intersection.instantiateInner({
 			intersection: [this, other]
 		})
 	}

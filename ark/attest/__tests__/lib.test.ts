@@ -6,7 +6,7 @@ describe("lib", () => {
 	it("getArgTypesAtPosition", () => {
 		// Any changes above here could break assertion positions
 		attest(attestInternal()).snap({
-			location: { start: { line: 9, char: 3 }, end: { line: 9, char: 27 } },
+			location: { start: { line: 8, char: 3 }, end: { line: 8, char: 27 } },
 			args: [
 				{
 					type: "SerializedAssertionData",
