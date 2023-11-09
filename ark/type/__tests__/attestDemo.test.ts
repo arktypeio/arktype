@@ -7,19 +7,23 @@ describe("attest features", () => {
 		const even = type("number%2")
 		// asserts even.infer is exactly number
 		attest<number>(even.infer)
-		// can also test the string representation of types
-		attest(even.infer).type.toString.snap("string")
-		// also includes inline object-literal snapshotting
+		// make assertions about types and values seamlessly
+		attest(even.infer).type.toString.snap("number")
+		// including object literals- no more long inline strings!
 		attest(even.json).snap({
 			intersection: [{ domain: "number" }, { divisor: 2 }]
 		})
 	})
 
 	it("error assertions", () => {
-		// Make assertions about type errors, runtime errors, or both at the same time!
+		// Check type errors, runtime errors, or both at the same time!
 		// @ts-expect-error
 		attest(() => type("number%0")).throwsAndHasTypeError(
 			"% operator must be followed by a non-zero integer literal (was 0)"
+		)
+		// @ts-expect-error
+		attest(() => type({ "[object]": "string" })).type.errors.snap(
+			"Type 'string' is not assignable to type 'indexParseError<\"Indexed key definition 'object' must be a string, number or symbol\">'."
 		)
 	})
 
