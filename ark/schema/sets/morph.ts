@@ -50,8 +50,7 @@ export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
 	: Node<"intersection" | BasisKind>
 
 export const parseValidatorSchema = (schema: ValidatorSchema): ValidatorNode =>
-	maybeParseBasis(schema) ??
-	new BaseNode.classesByKind.intersection(schema as IntersectionSchema)
+	maybeParseBasis(schema) ?? new BaseNode(schema as IntersectionSchema)
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
@@ -161,7 +160,8 @@ export type validateMorphSchema<schema> = {
 }
 
 export type parseMorphSchema<schema> = schema extends MorphSchema
-	? MorphNode<
+	? BaseNode<
+			"morph",
 			(
 				In: schema["in"] extends {}
 					? parseValidatorSchema<schema["in"]>["infer"]

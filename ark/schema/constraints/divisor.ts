@@ -1,14 +1,5 @@
-import {
-	BaseNode,
-	type declareNode,
-	defineNode,
-	type withAttributes
-} from "../base.js"
-import type { BasisKind } from "../bases/basis.js"
-import { type DomainNode } from "../bases/domain.js"
-import { builtins } from "../builtins.js"
-import { type Node } from "../nodes.js"
-import { type BaseConstraint, getBasisName } from "./shared.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.js"
+import { In } from "../io/compile.js"
 
 export type DivisorSchema = number | DivisorInner
 
@@ -39,7 +30,7 @@ export const DivisorImplementation = defineNode({
 	},
 	parseSchema: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema,
-	compileCondition: (inner) => `${this.argName} % ${inner.divisor} === 0`,
+	compileCondition: (inner) => `${In} % ${inner.divisor} === 0`,
 	writeDefaultDescription: (inner) =>
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
 })

@@ -1,5 +1,6 @@
 import { throwParseError } from "@arktype/util"
 import { type declareNode, defineNode, type withAttributes } from "../base.js"
+import { In } from "../io/compile.js"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
@@ -33,8 +34,7 @@ export const PatternImplementation = defineNode({
 			: schema instanceof RegExp
 			? { pattern: schema.source, flags: schema.flags }
 			: schema,
-	compileCondition: (inner) =>
-		`/${inner.pattern}/${inner.flags}.test(${this.argName})`,
+	compileCondition: (inner) => `/${inner.pattern}/${inner.flags}.test(${In})`,
 	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
 })
 

@@ -1,6 +1,7 @@
 import type { Domain } from "@arktype/util"
 import { type declareNode, defineNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
+import { In } from "../io/compile.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -27,7 +28,7 @@ export type DomainDeclaration = declareNode<{
 // readonly basisName = this.domain
 // readonly implicitBasis = this
 
-export const DivisorImplementation = defineNode({
+export const DomainImplementation = defineNode({
 	kind: "domain",
 	keys: {
 		domain: {}
@@ -39,8 +40,8 @@ export const DivisorImplementation = defineNode({
 		typeof schema === "string" ? { domain: schema } : schema,
 	compileCondition: (inner) =>
 		inner.domain === "object"
-			? `((typeof ${this.argName} === "object" && ${this.argName} !== null) || typeof ${this.argName} === "function")`
-			: `typeof ${this.argName} === "${inner.domain}"`,
+			? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
+			: `typeof ${In} === "${inner.domain}"`,
 	writeDefaultDescription: (inner) => domainDescriptions[inner.domain]
 })
 

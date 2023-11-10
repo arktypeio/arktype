@@ -127,4 +127,7 @@ export type LeftIntersections<kind extends NodeKind> = reifyIntersections<
 	NodeDeclarationsByKind[kind]["intersections"]
 >
 
-export type Node<kind extends NodeKind = NodeKind> = BaseNode<kind>
+export type Node<
+	kind extends NodeKind = NodeKind,
+	t = unknown
+> = kind extends NodeKind ? BaseNode<kind, t> : never

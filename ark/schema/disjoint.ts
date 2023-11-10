@@ -7,21 +7,21 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import { type BaseNode, type rightOf } from "./base.js"
+import { type rightOf } from "./base.js"
 import { type Node, type RuleKind } from "./nodes.js"
 
 type DisjointKinds = {
 	domain?: {
-		l: BaseNode<"domain">
-		r: BaseNode<"domain">
+		l: Node<"domain">
+		r: Node<"domain">
 	}
 	unit?: {
-		l: BaseNode<"unit">
-		r: BaseNode<"unit">
+		l: Node<"unit">
+		r: Node<"unit">
 	}
 	proto?: {
-		l: BaseNode<"proto">
-		r: BaseNode<"proto">
+		l: Node<"proto">
+		r: Node<"proto">
 	}
 	// TODO: test
 	presence?:
@@ -34,29 +34,29 @@ type DisjointKinds = {
 				r: true
 		  }
 	bound?: {
-		l: BaseNode<"min" | "max">
-		r: BaseNode<"min" | "max">
+		l: Node<"min" | "max">
+		r: Node<"min" | "max">
 	}
 	assignability?:
 		| {
 				l: unknown
-				r: BaseNode<RuleKind>
+				r: Node<RuleKind>
 		  }
 		| {
-				l: BaseNode<RuleKind>
+				l: Node<RuleKind>
 				r: unknown
 		  }
 	union?: {
-		l: readonly BaseNode<rightOf<"union">>[]
-		r: readonly BaseNode<rightOf<"union">>[]
+		l: readonly Node<rightOf<"union">>[]
+		r: readonly Node<rightOf<"union">>[]
 	}
 	indiscriminableMorphs?: {
-		l: BaseNode<"union">
-		r: BaseNode<"union">
+		l: Node<"union">
+		r: Node<"union">
 	}
 	interesectedMorphs?: {
-		l: BaseNode<"morph">
-		r: BaseNode<"morph">
+		l: Node<"morph">
+		r: Node<"morph">
 	}
 }
 

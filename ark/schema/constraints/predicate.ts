@@ -1,5 +1,5 @@
 import { type declareNode, defineNode, type withAttributes } from "../base.js"
-import { compileSerializedValue } from "../io/compile.js"
+import { compileSerializedValue, In } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
@@ -31,7 +31,7 @@ export const PredicateImplementation = defineNode({
 	parseSchema: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
 	compileCondition: (inner) =>
-		`${compileSerializedValue(inner.predicate)}(${this.argName})`,
+		`${compileSerializedValue(inner.predicate)}(${In})`,
 	writeDefaultDescription: (inner) =>
 		`valid according to ${inner.predicate.name}`
 })

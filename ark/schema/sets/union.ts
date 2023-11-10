@@ -1,6 +1,6 @@
 import { type conform, isArray, type mutable } from "@arktype/util"
 import {
-	type BaseNode,
+	BaseNode,
 	type declareNode,
 	defineNode,
 	type withAttributes
@@ -46,7 +46,7 @@ export type parseBranchSchema<schema> = schema extends MorphSchema
 
 export const parseBranchSchema = (schema: BranchSchema) =>
 	typeof schema === "object" && "morph" in schema
-		? new MorphNode(schema)
+		? new BaseNode(schema)
 		: parseValidatorSchema(schema)
 
 export type ExpandedUnionSchema<
@@ -123,8 +123,8 @@ export const UnionImplementation = defineNode({
 				ordered: l.ordered || r.ordered
 			}
 		},
-		morph: this.intersectBranch,
-		intersection: this.intersectBranch,
+		morph: intersectBranch,
+		intersection: intersectBranch,
 		default: (l, r) => {
 			const branches: BranchNode[] = []
 			for (const branch of l.union) {
@@ -167,18 +167,18 @@ export const UnionImplementation = defineNode({
 		inner.union.length === 0 ? "never" : inner.union.join(" or ")
 })
 
-// private static intersectBranch = (l: UnionNode, r: BranchNode) => {
-// 	const union = l.ordered
-// 		? l.union.flatMap((branch) => {
-// 				const branchResult = branch.intersect(r)
-// 				return branchResult instanceof Disjoint ? [] : branchResult
-// 		  })
-// 		: intersectBranches(l.union, [r])
-// 	if (union instanceof Disjoint) {
-// 		return union
-// 	}
-// 	return { union, ordered: l.ordered }
-// }
+const intersectBranch = (l: Node<"union">, r: BranchNode) => {
+	const union = l.ordered
+		? l.union.flatMap((branch) => {
+				const branchResult = branch.intersect(r)
+				return branchResult instanceof Disjoint ? [] : branchResult
+		  })
+		: intersectBranches(l.union, [r])
+	if (union instanceof Disjoint) {
+		return union
+	}
+	return { union, ordered: l.ordered }
+}
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant(): Discriminant | null {

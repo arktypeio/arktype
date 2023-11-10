@@ -4,13 +4,19 @@ import {
 	type isAny,
 	throwParseError
 } from "@arktype/util"
+import { type BaseNode } from "../base.js"
 import { type Node, type Schema } from "../nodes.js"
-import type { DomainDeclaration, DomainSchema } from "./domain.js"
-import { DomainNode } from "./domain.js"
-import type { ProtoDeclaration, ProtoSchema } from "./proto.js"
-import { ProtoNode } from "./proto.js"
-import type { UnitDeclaration, UnitSchema } from "./unit.js"
-import { UnitNode } from "./unit.js"
+import type {
+	DomainDeclaration,
+	DomainImplementation,
+	DomainSchema
+} from "./domain.js"
+import type {
+	ProtoDeclaration,
+	ProtoImplementation,
+	ProtoSchema
+} from "./proto.js"
+import type { UnitDeclaration, UnitImplementation, UnitSchema } from "./unit.js"
 
 export type BasisDeclarationsByKind = {
 	domain: DomainDeclaration
@@ -19,9 +25,9 @@ export type BasisDeclarationsByKind = {
 }
 
 export type BasisClassesByKind = {
-	domain: typeof DomainNode
-	proto: typeof ProtoNode
-	unit: typeof UnitNode
+	domain: typeof DomainImplementation
+	proto: typeof ProtoImplementation
+	unit: typeof UnitImplementation
 }
 
 export type BasisKind = keyof BasisDeclarationsByKind
@@ -36,30 +42,31 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 	isAny<schema> extends true
 		? any
 		: schema extends DomainSchema<infer domain>
-		? DomainNode<inferDomain<domain>>
+		? Node<"domain", inferDomain<domain>>
 		: schema extends ProtoSchema<infer proto>
-		? ProtoNode<instanceOf<proto>>
+		? Node<"proto", instanceOf<proto>>
 		: schema extends UnitSchema<infer unit>
-		? UnitNode<unit>
+		? Node<"unit", unit>
 		: never
 
 export const maybeParseBasis = (
 	schema: Schema<"intersection" | BasisKind>
 ): Node<BasisKind> | undefined => {
-	switch (typeof schema) {
-		case "string":
-			return new DomainNode(schema)
-		case "function":
-			return new ProtoNode(schema)
-		case "object":
-			return "unit" in schema
-				? new UnitNode(schema)
-				: "proto" in schema
-				? new ProtoNode(schema)
-				: "domain" in schema
-				? new DomainNode(schema)
-				: undefined
-	}
+	return undefined
+	// switch (typeof schema) {
+	// 	case "string":
+	// 		return new DomainNode(schema)
+	// 	case "function":
+	// 		return new ProtoNode(schema)
+	// 	case "object":
+	// 		return "unit" in schema
+	// 			? new UnitNode(schema)
+	// 			: "proto" in schema
+	// 			? new ProtoNode(schema)
+	// 			: "domain" in schema
+	// 			? new DomainNode(schema)
+	// 			: undefined
+	// }
 }
 
 export const parseBasis = (schema: Schema<BasisKind>) =>

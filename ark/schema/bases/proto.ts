@@ -8,7 +8,7 @@ import {
 import { type declareNode, defineNode, type withAttributes } from "../base.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
-import { compileSerializedValue } from "../io/compile.js"
+import { compileSerializedValue, In } from "../io/compile.js"
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor
@@ -63,7 +63,7 @@ export const ProtoImplementation = defineNode({
 	parseSchema: (schema) =>
 		typeof schema === "function" ? { proto: schema } : schema,
 	compileCondition: (inner) =>
-		`${this.argName} instanceof ${
+		`${In} instanceof ${
 			objectKindOf(inner.proto) ?? compileSerializedValue(inner.proto)
 		}`,
 	writeDefaultDescription: (inner) => {

@@ -145,10 +145,10 @@ export type BaseNodeDeclaration = {
 
 export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
 	{
-		[k in Exclude<keyof inner, keyof BaseAttributes>]: KeyDefinition<inner[k]>
+		[k in Exclude<keyof inner, keyof BaseAttributes>]: KeyDefinition
 	}
 
-export type KeyDefinition<innerValue = unknown> = {
+export type KeyDefinition = {
 	attachAs?: string
 	meta?: boolean
 }
@@ -219,9 +219,6 @@ export class BaseNode<
 		this.initialize()
 	}
 
-	readonly nodeClass = this.constructor as UnknownNodeClass
-	readonly definition = this.nodeClass
-		.definition as {} as instantiateNodeClassDefinition<StaticNodeDefinition>
 	readonly kind: kind = "divisor"
 	readonly inner: Inner<kind> =
 		hasDomain(this.schema, "object") && "prevalidated" in this.schema
@@ -402,7 +399,7 @@ export class BaseNode<
 			)
 		}
 		return new BaseNode({
-			intersection: [this, other]
+			intersection: [this as never, other]
 		})
 	}
 
@@ -428,6 +425,65 @@ export class BaseNode<
 			return new l.nodeClass(result as never) as never
 		}
 		return null
+	}
+
+	// constrain<kind extends ConstraintKind>(kind: kind, definition: Schema<kind>) {
+	// 	const result = this.intersect(new BaseNode(definition as never))
+	// 	return result instanceof Disjoint ? result.throw() : result
+	// }
+
+	keyof() {
+		return this
+		// return this.rule.reduce(
+		// 	(result, branch) => result.and(branch.keyof()),
+		// 	builtins.unknown()
+		// )
+	}
+
+	// TODO: inferIntersection
+	and<other extends Node>(
+		other: other
+	): Exclude<intersectionOf<kind, other["kind"]>, Disjoint> {
+		const result = this.intersect(other)
+		return result instanceof Disjoint ? result.throw() : (result as never)
+	}
+
+	or<other extends Node>(
+		other: other
+	): Root<
+		t | other["infer"],
+		"union" | Extract<this["kind"] | other["kind"], RootKind>
+	> {
+		return this as never
+	}
+
+	isUnknown(): this is Root<unknown> {
+		return this.hasKind("intersection") && this.children.length === 0
+	}
+
+	isNever(): this is Root<never> {
+		return this.hasKind("union") && this.children.length === 0
+	}
+
+	getPath() {
+		return this
+	}
+
+	array(): BaseNode<"intersection", t[]> {
+		return this as never
+	}
+
+	extends<other extends Node>(
+		other: other
+	): this is BaseNode<kind, other["infer"]> {
+		const intersection = this.intersect(other)
+		return (
+			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+		)
+	}
+
+	subsumes(other: BaseNode): other is BaseNode<kind, this["infer"]> {
+		return other.extends(this as never)
 	}
 }
 

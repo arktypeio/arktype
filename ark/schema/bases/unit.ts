@@ -1,7 +1,7 @@
 import { stringify } from "@arktype/util"
 import { type declareNode, defineNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import { compileSerializedValue } from "../io/compile.js"
+import { compileSerializedValue, In } from "../io/compile.js"
 
 export type UnitInner<rule = unknown> = withAttributes<{
 	readonly unit: rule
@@ -38,6 +38,6 @@ export const UnitImplementation = defineNode({
 	},
 	parseSchema: (schema) => schema,
 	compileCondition: (inner) =>
-		`${this.argName} === ${compileSerializedValue(inner.unit)}`,
+		`${In} === ${compileSerializedValue(inner.unit)}`,
 	writeDefaultDescription: (inner) => stringify(inner.unit)
 })

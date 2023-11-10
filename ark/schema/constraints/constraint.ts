@@ -98,5 +98,5 @@ export const parseConstraint = (
 			)}`
 		)
 	}
-	return new BaseNode.classesByKind[kind](schema as never, ctx)
+	return new BaseNode(schema as never, ctx)
 }

@@ -142,14 +142,11 @@ const parseMappedRules = ({
 		if (isArray(schemas)) {
 			rules.push(
 				...schemas.map(
-					(schema) =>
-						new BaseNode.classesByKind[k](schema as never, constraintContext)
+					(schema) => new BaseNode(schema as never, constraintContext)
 				)
 			)
 		} else {
-			rules.push(
-				new BaseNode.classesByKind[k](schemas as never, constraintContext)
-			)
+			rules.push(new BaseNode(schemas as never, constraintContext))
 		}
 	}
 	return rules
