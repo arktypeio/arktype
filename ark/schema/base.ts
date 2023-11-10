@@ -1,7 +1,6 @@
 import {
 	CastableBase,
 	CompiledFunction,
-	type conform,
 	type evaluate,
 	type extend,
 	hasDomain,
@@ -19,6 +18,7 @@ import { type ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
+import { type parseUnion, type validateBranchSchema } from "./main.js"
 import {
 	type Inner,
 	type Node,
@@ -26,13 +26,12 @@ import {
 	type NodeDeclarationsByKind,
 	type NodeKind,
 	type reifyIntersections,
-	type RuleKind,
-	type Schema
+	type RuleKind
 } from "./nodes.js"
 import { type RootKind } from "./root.js"
 import { type ValidatorNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
-import { createParseContext, inferred, type ParseContext } from "./utils.js"
+import { inferred, type ParseContext } from "./utils.js"
 
 export type BaseAttributes = {
 	readonly alias?: string
@@ -133,7 +132,23 @@ export const defineNode = <
 	definition extends StaticNodeDefinition<NodeDeclarationsByKind[kind]>
 >(
 	definition: { kind: kind } & definition
-) => definition
+): instantiateNodeClassDefinition<definition> => {
+	Object.assign(definition.keys, {
+		alias: {
+			meta: true
+		},
+		description: {
+			meta: true
+		}
+	})
+	return definition
+}
+
+type instantiateNodeClassDefinition<definition> = evaluate<
+	definition & {
+		keys: { [k in keyof BaseAttributes]: KeyDefinition }
+	}
+>
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind
@@ -170,18 +185,6 @@ export type UnknownNodeClass = {
 	definition: StaticNodeDefinition
 }
 
-type instantiateNodeClassDefinition<definition> = evaluate<
-	definition & {
-		keys: { [k in keyof BaseAttributes]: KeyDefinition }
-	}
->
-
-type declarationOf<nodeClass> = nodeClass extends {
-	declaration: infer declaration extends BaseNodeDeclaration
-}
-	? declaration
-	: never
-
 const $ark = registry()
 
 const defaultValueSerializer = (v: unknown): JsonData => {
@@ -204,52 +207,73 @@ export class BaseNode<
 	declare infer: t;
 	declare [inferred]: t
 
-	// TODO: reduce, add param for unsafe
-	constructor(
-		public schema: Schema<kind>,
-		ctx = createParseContext()
-	) {
-		super()
-		if (schema instanceof BaseNode) {
-			// return schema.kind === this.kind
-			// 	? schema
-			// 	: throwParseError(
-			// 			`Node of kind ${schema.kind} is not valid as input for node of kind ${this.kind}`
-			// 	  )
-		}
-		this.initialize()
-	}
+	// static from<const branches extends readonly unknown[]>(
+	// 	schema: {
+	// 		branches: {
+	// 			[i in keyof branches]: validateBranchInput<branches[i]>
+	// 		}
+	// 	} & ExpandedUnionSchema
+	// ) {
+	// 	return new UnionNode<inferNodeBranches<branches>>({
+	// 		...schema,
+	// 		branches: schema.branches.map((branch) => branch as never)
+	// 	})
+	// }
 
-	readonly kind: kind = "divisor"
-	readonly inner: Inner<kind> =
+	static from<branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: validateBranchSchema<branches[i]>
+		}
+	): parseUnion<branches>
+	static from(...branches: unknown[]) {
 		hasDomain(this.schema, "object") && "prevalidated" in this.schema
 			? this.schema
 			: this.definition.parseSchema(this.schema, ctx)
-	readonly alias = $ark.register(this, this.inner.alias)
-	readonly description =
-		this.inner.description ??
-		this.definition.writeDefaultDescription(this.inner)
-	readonly json: Json = {}
-	readonly typeJson: Json = {}
-	readonly children: UnknownNode[] = []
-	readonly id = JSON.stringify(this.json)
-	readonly typeId = JSON.stringify(this.typeJson)
-	readonly includesMorph: boolean =
-		this.kind === "morph" || this.children.some((child) => child.includesMorph)
-	readonly references: readonly UnknownNode[] = this.children.flatMap(
-		(child) => child.contributesReferences
-	)
-	readonly contributesReferences: readonly UnknownNode[] = [
-		this,
-		...this.references
-	]
-	readonly condition = this.definition.compileCondition(this.inner)
-	readonly allows = new CompiledFunction<(data: unknown) => data is t>(
-		In,
-		`return ${this.condition}`
-	)
+	}
 
-	private initialize() {
+	static fromUnits<const branches extends readonly unknown[]>(
+		...values: branches
+	) {
+		const uniqueValues: unknown[] = []
+		for (const value of values) {
+			if (!uniqueValues.includes(value)) {
+				uniqueValues.push(value)
+			}
+		}
+		return new BaseNode<"union", branches[number]>("union", {
+			union: uniqueValues.map((unit) => new BaseNode("unit", { unit })),
+			ordered: false
+		})
+	}
+
+	readonly alias: string
+	readonly definition: NodeClass<kind> = {}
+	readonly description: string
+	readonly json: Json
+	readonly typeJson: Json
+	readonly children: UnknownNode[]
+	readonly id: string
+	readonly typeId: string
+	readonly includesMorph: boolean
+	readonly references: readonly UnknownNode[]
+	readonly contributesReferences: readonly UnknownNode[]
+	readonly condition: string
+	readonly allows: (data: unknown) => data is t
+
+	// TODO: reduce, add param for unsafe
+	private constructor(
+		public kind: kind,
+		public inner: Inner<kind>
+	) {
+		super()
+		this.alias = $ark.register(this, this.inner.alias)
+		this.definition = {}
+		this.description =
+			this.inner.description ??
+			this.definition.writeDefaultDescription(this.inner)
+		this.json = {}
+		this.typeJson = {}
+		this.children = []
 		for (const [k, v] of Object.entries<unknown>(this.inner)) {
 			if (!isKeyOf(k, this.definition.keys)) {
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
@@ -286,35 +310,17 @@ export class BaseNode<
 			}
 			;(this as any)[keyDefinition.attachAs ?? k] = this.inner[k]
 		}
-	}
-
-	/**
-	 * Each node class is attached when it is imported.
-	 * This helps avoid circular import issues that can otherwise occur.
-	 */
-	static classesByKind = {} as { [k in NodeKind]: NodeClass<k> }
-
-	protected static define<nodeClass, definition>(
-		this: nodeClass,
-		definition: conform<
-			definition,
-			StaticNodeDefinition<declarationOf<nodeClass>>
-		>
-	): definition {
-		// register the newly defined node class
-		;(this as any).classesByKind[definition.kind] = this
-		return {
-			...definition,
-			keys: {
-				alias: {
-					meta: true
-				},
-				description: {
-					meta: true
-				},
-				...definition.keys
-			}
-		} as never
+		this.id = JSON.stringify(this.json)
+		this.typeId = JSON.stringify(this.typeJson)
+		this.includesMorph =
+			this.kind === "morph" ||
+			this.children.some((child) => child.includesMorph)
+		this.references = this.children.flatMap(
+			(child) => child.contributesReferences
+		)
+		this.contributesReferences = [this, ...this.references]
+		this.condition = this.definition.compileCondition(this.inner)
+		this.allows = new CompiledFunction(In, `return ${this.condition}`)
 	}
 
 	inCache?: UnknownNode;

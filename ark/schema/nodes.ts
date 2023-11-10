@@ -27,19 +27,6 @@ type RootNodeParser = {
 	): parseUnion<branches>
 }
 
-// static from<const branches extends readonly unknown[]>(
-// 	schema: {
-// 		branches: {
-// 			[i in keyof branches]: validateBranchInput<branches[i]>
-// 		}
-// 	} & ExpandedUnionSchema
-// ) {
-// 	return new UnionNode<inferNodeBranches<branches>>({
-// 		...schema,
-// 		branches: schema.branches.map((branch) => branch as never)
-// 	})
-// }
-
 const parseNode = (...schemas: BranchSchema[]) => new UnionNode(schemas)
 
 export const parseKind = <kind extends NodeKind>(

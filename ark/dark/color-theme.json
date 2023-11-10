@@ -38,6 +38,21 @@
 			}
 		},
 		{
+			"name": "italics",
+			// italicize keywords that are not punctuation/symbols
+			"scope": ["keyword", "storage", "keyword.operator.expression"],
+			"settings": {
+				"fontStyle": "italic"
+			}
+		},
+		{
+			"name": "unitalicized",
+			"scope": ["keyword.operator", "storage.type.function.arrow.ts"],
+			"settings": {
+				"fontStyle": ""
+			}
+		},
+		{
 			"name": "properties and strings",
 			"scope": [
 				"variable.other.property",
