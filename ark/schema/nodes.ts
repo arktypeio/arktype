@@ -2,7 +2,8 @@ import type { extend, listable } from "@arktype/util"
 import { type BaseNode, type rightOf } from "./base.ts"
 import {
 	type BasisClassesByKind,
-	type BasisDeclarationsByKind
+	type BasisDeclarationsByKind,
+	type BasisKind
 } from "./bases/basis.ts"
 import {
 	type ConstraintDeclarationsByKind,
@@ -11,7 +12,8 @@ import {
 import { type MorphSchema, type ValidatorSchema } from "./sets/morph.ts"
 import {
 	type SetClassesByKind,
-	type SetDeclarationsByKind
+	type SetDeclarationsByKind,
+	type SetKind
 } from "./sets/set.ts"
 
 export type RootInput = listable<ValidatorSchema | MorphSchema>
@@ -49,6 +51,8 @@ export type NodeDeclarationsByKind = extend<
 	SetDeclarationsByKind
 >
 
+export type RootKind = SetKind | BasisKind
+
 export type NodeKind = keyof NodeDeclarationsByKind
 
 export type NodeClassesByKind = extend<RuleClassesByKind, SetClassesByKind>
@@ -77,3 +81,5 @@ export type Node<
 	kind extends NodeKind = NodeKind,
 	t = unknown
 > = kind extends NodeKind ? BaseNode<kind, t> : never
+
+export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind, t>

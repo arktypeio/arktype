@@ -2,7 +2,6 @@ import {
 	CastableBase,
 	CompiledFunction,
 	type Dict,
-	type ErrorMessage,
 	type evaluate,
 	type extend,
 	includes,
@@ -28,9 +27,9 @@ import {
 	type NodeKind,
 	type reifyIntersections,
 	type RootInput,
+	type RootKind,
 	type RuleKind
 } from "./nodes.ts"
-import { type RootKind } from "./root.ts"
 import { type ValidatorNode } from "./sets/morph.ts"
 import { type SetKind } from "./sets/set.ts"
 import { type parseUnion, type validateBranchSchema } from "./sets/union.ts"
@@ -312,8 +311,8 @@ export class BaseNode<
 		})
 	}
 
-	readonly alias: string
 	protected readonly implementation: NodeImplementation
+	readonly alias: string
 	readonly description: string
 	readonly json: Json
 	readonly typeJson: Json
@@ -323,7 +322,6 @@ export class BaseNode<
 	readonly includesMorph: boolean
 	readonly references: readonly UnknownNode[]
 	readonly contributesReferences: readonly UnknownNode[]
-	readonly condition: string
 	readonly allows: (data: unknown) => data is t
 
 	private constructor(
@@ -343,7 +341,7 @@ export class BaseNode<
 			if (!isKeyOf(k, this.implementation.keys)) {
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
 			}
-			const keyDefinition = this.implementation.keys[k]!
+			const keyDefinition: KeyDefinition = this.implementation.keys[k]!
 			if (v instanceof BaseNode) {
 				this.json[k] = v.json
 				this.typeJson[k] = v.typeJson
@@ -384,7 +382,7 @@ export class BaseNode<
 			(child) => child.contributesReferences
 		)
 		this.contributesReferences = [this, ...this.references]
-		this.condition = this.implementation.compileCondition(this.inner)
+		Object.assign(this, this.implementation.attach(this.inner))
 		this.allows = new CompiledFunction(In, `return ${this.condition}`)
 	}
 

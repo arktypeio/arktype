@@ -5,6 +5,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import {
+	type BaseAttachments,
 	type BaseNode,
 	type declareNode,
 	defineNode,

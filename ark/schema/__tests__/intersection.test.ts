@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { type BaseNode, node, type Root } from "@arktype/schema"
+import { type BaseNode, type Node, node, type RootKind } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 
 describe("intersections", () => {
@@ -10,7 +10,10 @@ describe("intersections", () => {
 			intersection: [{ domain: "string" }, { pattern: ".*", flags: "" }]
 		})
 		// previously had issues with a union complexity error when assigning to Root | undefined
-		const root: Root | undefined = node({ basis: "string", pattern: "/.*/" })
+		const root: Node<RootKind> | undefined = node({
+			basis: "string",
+			pattern: "/.*/"
+		})
 	})
 	it("multiple rules", () => {
 		const l = node({

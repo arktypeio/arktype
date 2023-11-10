@@ -2,8 +2,7 @@ import { type declareNode, defineNode, type withAttributes } from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"
 import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
-import { type Node, type RootInput } from "../nodes.ts"
-import { type Root } from "../root.ts"
+import { type Node, type RootInput, type RootKind } from "../nodes.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 import { getBasisName } from "./shared.ts"
 
@@ -21,12 +20,12 @@ export type PropKind = keyof PropDeclarationsByKind
 
 export type RequiredPropInner = withAttributes<{
 	readonly required: string | symbol
-	readonly value: Root
+	readonly value: Node<RootKind>
 }>
 
 export type RequiredPropSchema = withAttributes<{
 	readonly required: string | symbol
-	readonly value?: RootInput
+	readonly value: RootInput
 }>
 
 export type RequiredDeclaration = declareNode<{
@@ -79,12 +78,12 @@ export const RequiredImplementation = defineNode({
 
 export type OptionalPropInner = withAttributes<{
 	readonly optional: string | symbol
-	readonly value: Root
+	readonly value: Node<RootKind>
 }>
 
 export type OptionalPropSchema = withAttributes<{
 	readonly optional: string | symbol
-	readonly value?: RootInput
+	readonly value: RootInput
 }>
 
 export type OptionalDeclaration = declareNode<{

@@ -2,6 +2,7 @@ import type {
 	conform,
 	ErrorMessage,
 	exactMessageOnError,
+	extend,
 	mutable
 } from "@arktype/util"
 import {
@@ -18,7 +19,7 @@ import {
 	defineNode,
 	type withAttributes
 } from "../base.ts"
-import { type BasisKind } from "../bases/basis.ts"
+import { type BasisKind, parseBasis } from "../bases/basis.ts"
 import {
 	type constraintInputsByKind,
 	type ConstraintKind
@@ -38,6 +39,11 @@ export type IntersectionInner = withAttributes<{
 
 export type CollapsedIntersectionInner = readonly Node<RuleKind>[]
 
+export type IntersectionAttachments = {
+	basis: Node<BasisKind> | undefined
+	constraints: readonly Node<ConstraintKind>[]
+}
+
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
@@ -46,10 +52,7 @@ export type IntersectionDeclaration = declareNode<{
 		intersection: "intersection" | Disjoint
 		default: "intersection" | Disjoint
 	}
-	attach: {
-		basis: Node<BasisKind> | undefined
-		constraints: readonly Node<ConstraintKind>[]
-	}
+	attach: IntersectionAttachments
 }>
 
 // reduceToNode: (inner) => {

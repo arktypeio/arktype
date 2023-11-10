@@ -6,8 +6,7 @@ import {
 	type withAttributes
 } from "../base.ts"
 import { Disjoint } from "../disjoint.ts"
-import { type Node, type Schema } from "../nodes.ts"
-import { type Root } from "../root.ts"
+import { type Node, type RootKind, type Schema } from "../nodes.ts"
 import {
 	type MorphSchema,
 	type parseMorphSchema,
@@ -36,7 +35,7 @@ export type parseUnion<branches extends readonly unknown[]> =
 		? BaseNode<"union", never>
 		: branches["length"] extends 1
 		? parseBranchSchema<branches[0]>
-		: Root<parseBranchSchema<branches[number]>["infer"]>
+		: Node<RootKind, parseBranchSchema<branches[number]>["infer"]>
 
 export type parseBranchSchema<schema> = schema extends MorphSchema
 	? parseMorphSchema<schema>
