@@ -30,7 +30,6 @@
 				"keyword",
 				"storage",
 				"punctuation",
-				"variable.language",
 				"constant.character.escape"
 			],
 			"settings": {
@@ -64,8 +63,10 @@
 			}
 		},
 		{
-			"name": "primitives, built-in types, quotes",
+			"name": "this, primitives, built-in types, quotes",
 			"scope": [
+				// this
+				"variable.language",
 				"constant",
 				// also includes JSON keys
 				"support.type",

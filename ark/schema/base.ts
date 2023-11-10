@@ -18,7 +18,6 @@ import { type ConstraintKind } from "./constraints/constraint.js"
 import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
-import { type parseUnion, type validateBranchSchema } from "./main.js"
 import {
 	type Inner,
 	type Node,
@@ -31,6 +30,7 @@ import {
 import { type RootKind } from "./root.js"
 import { type ValidatorNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
+import { type parseUnion, type validateBranchSchema } from "./sets/union.js"
 import { inferred, type ParseContext } from "./utils.js"
 
 export type BaseAttributes = {
