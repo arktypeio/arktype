@@ -1,8 +1,6 @@
 import type { Domain } from "@arktype/util"
-import { type declareNode, type withAttributes } from "../base.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
-import { BaseRoot } from "../root.js"
-import type { BaseBasis } from "./basis.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -26,33 +24,25 @@ export type DomainDeclaration = declareNode<{
 	}
 }>
 
-export class DomainNode<t = unknown>
-	extends BaseRoot<DomainDeclaration, t>
-	implements BaseBasis
-{
-	static readonly kind = "domain"
-	static readonly declaration: DomainDeclaration
+// readonly basisName = this.domain
+// readonly implicitBasis = this
 
-	static readonly definition = this.define({
-		kind: "domain",
-		keys: {
-			domain: {}
-		},
-		intersections: {
-			domain: (l, r) => Disjoint.from("domain", l, r)
-		},
-		parseSchema: (schema) =>
-			typeof schema === "string" ? { domain: schema } : schema,
-		compileCondition: (inner) =>
-			inner.domain === "object"
-				? `((typeof ${this.argName} === "object" && ${this.argName} !== null) || typeof ${this.argName} === "function")`
-				: `typeof ${this.argName} === "${inner.domain}"`,
-		writeDefaultDescription: (inner) => domainDescriptions[inner.domain]
-	})
-
-	readonly basisName = this.domain
-	readonly implicitBasis = this
-}
+export const DivisorImplementation = defineNode({
+	kind: "domain",
+	keys: {
+		domain: {}
+	},
+	intersections: {
+		domain: (l, r) => Disjoint.from("domain", l, r)
+	},
+	parseSchema: (schema) =>
+		typeof schema === "string" ? { domain: schema } : schema,
+	compileCondition: (inner) =>
+		inner.domain === "object"
+			? `((typeof ${this.argName} === "object" && ${this.argName} !== null) || typeof ${this.argName} === "function")`
+			: `typeof ${this.argName} === "${inner.domain}"`,
+	writeDefaultDescription: (inner) => domainDescriptions[inner.domain]
+})
 
 const enumerableDomainDescriptions = {
 	boolean: "boolean",

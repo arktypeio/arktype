@@ -9,14 +9,26 @@ import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
 import { type ParseContext } from "../utils.js"
 import {
 	type MaxDeclaration,
-	type MaxNode,
+	type MaxImplementation,
 	type MinDeclaration,
-	type MinNode
+	type MinImplementation
 } from "./bounds.js"
-import { type DivisorDeclaration, type DivisorNode } from "./divisor.js"
-import { type PatternDeclaration, type PatternNode } from "./pattern.js"
-import { type PredicateDeclaration, type PredicateNode } from "./predicate.js"
-import { type PropClassesByKind, type PropDeclarationsByKind } from "./prop.js"
+import {
+	type DivisorDeclaration,
+	type DivisorImplementation
+} from "./divisor.js"
+import {
+	type PatternDeclaration,
+	type PatternImplementation
+} from "./pattern.js"
+import {
+	type PredicateDeclaration,
+	type PredicateImplementation
+} from "./predicate.js"
+import {
+	type PropDeclarationsByKind,
+	type PropImplementationByKind
+} from "./prop.js"
 
 export type ConstraintDeclarationsByKind = extend<
 	PropDeclarationsByKind,
@@ -29,14 +41,14 @@ export type ConstraintDeclarationsByKind = extend<
 	}
 >
 
-export type ConstraintClassesByKind = extend<
-	PropClassesByKind,
+export type ConstraintImplementationByKind = extend<
+	PropImplementationByKind,
 	{
-		divisor: typeof DivisorNode
-		min: typeof MinNode
-		max: typeof MaxNode
-		pattern: typeof PatternNode
-		predicate: typeof PredicateNode
+		divisor: typeof DivisorImplementation
+		min: typeof MinImplementation
+		max: typeof MaxImplementation
+		pattern: typeof PatternImplementation
+		predicate: typeof PredicateImplementation
 	}
 >
 

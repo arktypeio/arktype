@@ -4,7 +4,12 @@ import {
 	type listable,
 	throwParseError
 } from "@arktype/util"
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import {
+	BaseNode,
+	type declareNode,
+	defineNode,
+	type withAttributes
+} from "../base.js"
 import {
 	type BasisKind,
 	maybeParseBasis,
@@ -16,7 +21,6 @@ import { Disjoint } from "../disjoint.js"
 import type { Problem } from "../io/problems.js"
 import type { CheckResult, TraversalState } from "../io/traverse.js"
 import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
-import { BaseRoot } from "../root.js"
 import {
 	type IntersectionSchema,
 	type parseIntersectionSchema,
@@ -77,76 +81,69 @@ export type MorphDeclaration = declareNode<{
 }>
 
 // TODO: recursively extract in
-export class MorphNode<t = unknown> extends BaseRoot<MorphDeclaration, t> {
-	static readonly kind = "morph"
-	static readonly declaration: MorphDeclaration
-
-	static definition = this.define({
-		kind: "morph",
-		keys: {
-			// assign in/out to their respective caches to avoid an error on an
-			// attempt to overwrite the getter
-			in: {
-				attachAs: "inCache"
-			},
-			out: {
-				attachAs: "outCache"
-			},
-			morph: {}
+export const MorphImplementation = defineNode({
+	kind: "morph",
+	keys: {
+		// assign in/out to their respective caches to avoid an error on an
+		// attempt to overwrite the getter
+		in: {
+			attachAs: "inCache"
 		},
-		intersections: {
-			morph: (l, r) => {
-				if (l.morph.some((morph, i) => morph !== r.morph[i])) {
-					// TODO: is this always a parse error? what about for union reduction etc.
-					// TODO: check in for union reduction
-					return throwParseError(`Invalid intersection of morphs`)
-				}
-				const inTersection = l.in.intersect(r.in)
-				if (inTersection instanceof Disjoint) {
-					return inTersection
-				}
-				const outTersection = l.out.intersect(r.out)
-				if (outTersection instanceof Disjoint) {
-					return outTersection
-				}
-				return {
-					morph: l.morph,
-					in: inTersection,
-					out: outTersection
-				}
-			},
-			intersection: (l, r) => {
-				const inTersection = l.in.intersect(r)
-				return inTersection instanceof Disjoint
-					? inTersection
-					: {
-							...l.inner,
-							in: inTersection
-					  }
-			},
-			default: (l, r) => {
-				const constrainedInput = l.in.intersect(r)
-				return constrainedInput instanceof Disjoint
-					? constrainedInput
-					: {
-							...l.inner,
-							in: constrainedInput
-					  }
+		out: {
+			attachAs: "outCache"
+		},
+		morph: {}
+	},
+	intersections: {
+		morph: (l, r) => {
+			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
+				// TODO: is this always a parse error? what about for union reduction etc.
+				// TODO: check in for union reduction
+				return throwParseError(`Invalid intersection of morphs`)
 			}
-		},
-		parseSchema: (schema): MorphInner => {
+			const inTersection = l.in.intersect(r.in)
+			if (inTersection instanceof Disjoint) {
+				return inTersection
+			}
+			const outTersection = l.out.intersect(r.out)
+			if (outTersection instanceof Disjoint) {
+				return outTersection
+			}
 			return {
-				in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
-				out: schema.out ? parseValidatorSchema(schema.out) : builtins().unknown,
-				morph:
-					typeof schema.morph === "function" ? [schema.morph] : schema.morph
+				morph: l.morph,
+				in: inTersection,
+				out: outTersection
 			}
 		},
-		compileCondition: (inner) => inner.in.condition,
-		writeDefaultDescription: (inner) =>
-			`a morph from ${inner.in} to ${inner.out}`
-	})
-}
+		intersection: (l, r) => {
+			const inTersection = l.in.intersect(r)
+			return inTersection instanceof Disjoint
+				? inTersection
+				: {
+						...l.inner,
+						in: inTersection
+				  }
+		},
+		default: (l, r) => {
+			const constrainedInput = l.in.intersect(r)
+			return constrainedInput instanceof Disjoint
+				? constrainedInput
+				: {
+						...l.inner,
+						in: constrainedInput
+				  }
+		}
+	},
+	parseSchema: (schema): MorphInner => {
+		return {
+			in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
+			out: schema.out ? parseValidatorSchema(schema.out) : builtins().unknown,
+			morph: typeof schema.morph === "function" ? [schema.morph] : schema.morph
+		}
+	},
+	compileCondition: (inner) => inner.in.condition,
+	writeDefaultDescription: (inner) => `a morph from ${inner.in} to ${inner.out}`
+})
 
 export type inferMorphOut<out> = out extends CheckResult<infer t>
 	? out extends null

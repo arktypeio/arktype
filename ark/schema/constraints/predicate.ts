@@ -1,9 +1,6 @@
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
-import type { BasisKind } from "../bases/basis.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.js"
 import { compileSerializedValue } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import { type Node } from "../nodes.js"
-import { getBasisName } from "./shared.js"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
 	withAttributes<{
@@ -23,32 +20,27 @@ export type PredicateDeclaration = declareNode<{
 	}
 }>
 
-export class PredicateNode extends BaseNode<PredicateDeclaration> {
-	static readonly kind = "predicate"
-	static readonly declaration: PredicateDeclaration
+export const PredicateImplementation = defineNode({
+	kind: "predicate",
+	keys: {
+		predicate: {}
+	},
+	intersections: {
+		predicate: () => null
+	},
+	parseSchema: (schema) =>
+		typeof schema === "function" ? { predicate: schema } : schema,
+	compileCondition: (inner) =>
+		`${compileSerializedValue(inner.predicate)}(${this.argName})`,
+	writeDefaultDescription: (inner) =>
+		`valid according to ${inner.predicate.name}`
+})
 
-	readonly implicitBasis = undefined
+// readonly implicitBasis = undefined
 
-	static readonly definition = this.define({
-		kind: "predicate",
-		keys: {
-			predicate: {}
-		},
-		intersections: {
-			predicate: () => null
-		},
-		parseSchema: (schema) =>
-			typeof schema === "function" ? { predicate: schema } : schema,
-		compileCondition: (inner) =>
-			`${compileSerializedValue(inner.predicate)}(${this.argName})`,
-		writeDefaultDescription: (inner) =>
-			`valid according to ${inner.predicate.name}`
-	})
-
-	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return `Cannot narrow ${getBasisName(basis)}`
-	}
-}
+// static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+// 	return `Cannot narrow ${getBasisName(basis)}`
+// }
 
 // TODO: allow changed order to be the same type
 

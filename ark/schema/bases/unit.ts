@@ -1,9 +1,7 @@
-import { domainOf, stringify } from "@arktype/util"
-import { type declareNode, type withAttributes } from "../base.js"
+import { stringify } from "@arktype/util"
+import { type declareNode, defineNode, type withAttributes } from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { compileSerializedValue } from "../io/compile.js"
-import { BaseRoot } from "../root.js"
-import type { BaseBasis } from "./basis.js"
 
 export type UnitInner<rule = unknown> = withAttributes<{
 	readonly unit: rule
@@ -21,33 +19,25 @@ export type UnitDeclaration = declareNode<{
 	}
 }>
 
-export class UnitNode<t = unknown>
-	extends BaseRoot<UnitDeclaration, t>
-	implements BaseBasis
-{
-	static readonly kind = "unit"
-	static readonly declaration: UnitDeclaration
+// readonly domain = domainOf(this.unit)
 
-	static readonly definition = this.define({
-		kind: "unit",
-		keys: {
-			unit: {}
-		},
-		intersections: {
-			unit: (l, r) => Disjoint.from("unit", l, r),
-			default: (l, r) =>
-				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
-		},
-		parseSchema: (schema) => schema,
-		compileCondition: (inner) =>
-			`${this.argName} === ${compileSerializedValue(inner.unit)}`,
-		writeDefaultDescription: (inner) => stringify(inner.unit)
-	})
+// // TODO: add reference to for objects
+// readonly basisName = stringify(this.unit)
 
-	readonly domain = domainOf(this.unit)
+// readonly implicitBasis = this
 
-	// TODO: add reference to for objects
-	readonly basisName = stringify(this.unit)
-
-	readonly implicitBasis = this
-}
+export const UnitImplementation = defineNode({
+	kind: "unit",
+	keys: {
+		unit: {}
+	},
+	intersections: {
+		unit: (l, r) => Disjoint.from("unit", l, r),
+		default: (l, r) =>
+			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+	},
+	parseSchema: (schema) => schema,
+	compileCondition: (inner) =>
+		`${this.argName} === ${compileSerializedValue(inner.unit)}`,
+	writeDefaultDescription: (inner) => stringify(inner.unit)
+})

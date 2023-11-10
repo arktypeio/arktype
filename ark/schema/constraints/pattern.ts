@@ -1,10 +1,5 @@
 import { throwParseError } from "@arktype/util"
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
-import type { BasisKind } from "../bases/basis.js"
-import type { DomainNode } from "../bases/domain.js"
-import { builtins } from "../builtins.js"
-import { type Node } from "../nodes.js"
-import { type BaseConstraint, getBasisName } from "./shared.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.js"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
@@ -22,40 +17,32 @@ export type PatternDeclaration = declareNode<{
 	}
 }>
 
-export class PatternNode
-	extends BaseNode<PatternDeclaration>
-	implements BaseConstraint
-{
-	static readonly kind = "pattern"
-	static readonly declaration: PatternDeclaration
+export const PatternImplementation = defineNode({
+	kind: "pattern",
+	keys: {
+		pattern: {},
+		flags: {}
+	},
+	intersections: {
+		// For now, non-equal regex are naively intersected
+		pattern: () => null
+	},
+	parseSchema: (schema) =>
+		typeof schema === "string"
+			? parseRegexLiteral(schema)
+			: schema instanceof RegExp
+			? { pattern: schema.source, flags: schema.flags }
+			: schema,
+	compileCondition: (inner) =>
+		`/${inner.pattern}/${inner.flags}.test(${this.argName})`,
+	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
+})
 
-	readonly implicitBasis: DomainNode<string> = builtins().string
+// readonly implicitBasis: DomainNode<string> = builtins().string
 
-	static readonly definition = this.define({
-		kind: "pattern",
-		keys: {
-			pattern: {},
-			flags: {}
-		},
-		intersections: {
-			// For now, non-equal regex are naively intersected
-			pattern: () => null
-		},
-		parseSchema: (schema) =>
-			typeof schema === "string"
-				? parseRegexLiteral(schema)
-				: schema instanceof RegExp
-				? { pattern: schema.source, flags: schema.flags }
-				: schema,
-		compileCondition: (inner) =>
-			`/${inner.pattern}/${inner.flags}.test(${this.argName})`,
-		writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
-	})
-
-	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return `Match operand ${getBasisName(basis)} must be a string`
-	}
-}
+// static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+// 	return `Match operand ${getBasisName(basis)} must be a string`
+// }
 
 // converting a regex to a string alphabetizes the flags for us
 export const serializeRegex = (regex: RegExp) => `${regex}` as RegexLiteral

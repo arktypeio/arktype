@@ -1,11 +1,14 @@
 import { type conform, isArray, type mutable } from "@arktype/util"
-import type { declareNode, withAttributes } from "../base.js"
-import { type Discriminant, discriminate } from "../discriminate.js"
+import {
+	type BaseNode,
+	type declareNode,
+	defineNode,
+	type withAttributes
+} from "../base.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node, type Schema } from "../nodes.js"
-import { BaseRoot, type Root } from "../root.js"
+import { type Root } from "../root.js"
 import {
-	MorphNode,
 	type MorphSchema,
 	type parseMorphSchema,
 	parseValidatorSchema,
@@ -30,7 +33,7 @@ export type validateBranchSchema<schema> = conform<
 
 export type parseUnion<branches extends readonly unknown[]> =
 	branches["length"] extends 0
-		? UnionNode<never>
+		? BaseNode<"union", never>
 		: branches["length"] extends 1
 		? parseBranchSchema<branches[0]>
 		: Root<parseBranchSchema<branches[number]>["infer"]>
@@ -81,191 +84,184 @@ export type UnionDeclaration = declareNode<{
 // 	return new UnionNode({ ...inner, union: reducedBranches })
 // },
 
-export class UnionNode<t = unknown> extends BaseRoot<UnionDeclaration, t> {
-	static readonly kind = "union"
-	static readonly declaration: UnionDeclaration
-
-	private static intersectBranch = (l: UnionNode, r: BranchNode) => {
-		const union = l.ordered
-			? l.union.flatMap((branch) => {
-					const branchResult = branch.intersect(r)
-					return branchResult instanceof Disjoint ? [] : branchResult
-			  })
-			: intersectBranches(l.union, [r])
-		if (union instanceof Disjoint) {
-			return union
-		}
-		return { union, ordered: l.ordered }
-	}
-
-	static readonly definition = this.define({
-		kind: "union",
-		keys: {
-			union: {},
-			ordered: {}
-		},
-		intersections: {
-			union: (l, r) => {
-				if (
-					(l.union.length === 0 || r.union.length === 0) &&
-					l.union.length !== r.union.length
-				) {
-					// if exactly one operand is never, we can use it to discriminate based on presence
-					return Disjoint.from(
-						"presence",
-						l.union.length !== 0,
-						r.union.length !== 0
-					)
+export const UnionImplementation = defineNode({
+	kind: "union",
+	keys: {
+		union: {},
+		ordered: {}
+	},
+	intersections: {
+		union: (l, r) => {
+			if (
+				(l.union.length === 0 || r.union.length === 0) &&
+				l.union.length !== r.union.length
+			) {
+				// if exactly one operand is never, we can use it to discriminate based on presence
+				return Disjoint.from(
+					"presence",
+					l.union.length !== 0,
+					r.union.length !== 0
+				)
+			}
+			let resultBranches: readonly BranchNode[] | Disjoint
+			if (l.ordered) {
+				if (r.ordered) {
+					return Disjoint.from("indiscriminableMorphs", l, r)
 				}
-				let resultBranches: readonly BranchNode[] | Disjoint
-				if (l.ordered) {
-					if (r.ordered) {
-						return Disjoint.from("indiscriminableMorphs", l, r)
-					}
-					resultBranches = intersectBranches(r.union, l.union)
-					if (resultBranches instanceof Disjoint) {
-						resultBranches.invert()
-					}
-				} else {
-					resultBranches = intersectBranches(l.union, r.union)
-				}
+				resultBranches = intersectBranches(r.union, l.union)
 				if (resultBranches instanceof Disjoint) {
-					return resultBranches
+					resultBranches.invert()
 				}
-				return {
-					union: resultBranches,
-					ordered: l.ordered || r.ordered
-				}
-			},
-			morph: this.intersectBranch,
-			intersection: this.intersectBranch,
-			default: (l, r) => {
-				const branches: BranchNode[] = []
-				for (const branch of l.union) {
-					const branchResult = branch.intersect(r)
-					if (!(branchResult instanceof Disjoint)) {
-						branches.push(branchResult)
-					}
-				}
-				return branches.length === 0
-					? Disjoint.from("union", l.union, [r])
-					: {
-							union: branches,
-							ordered: l.ordered
-					  }
-			}
-		},
-		parseSchema: (schema) => {
-			const result = {
-				ordered: false
-			} as mutable<UnionInner>
-			let schemaBranches: readonly BranchSchema[]
-			if (isArray(schema)) {
-				schemaBranches = schema
 			} else {
-				const { union, ...rest } = schema
-				Object.assign(result, rest)
-				schemaBranches = union
+				resultBranches = intersectBranches(l.union, r.union)
 			}
-			result.union = schemaBranches.map(parseBranchSchema)
-			return result
-		},
-		compileCondition: (inner) => {
-			let condition = inner.union
-				.map((branch) => branch.condition)
-				.join(") || (")
-			if (inner.union.length > 1) {
-				condition = `(${condition})`
+			if (resultBranches instanceof Disjoint) {
+				return resultBranches
 			}
-			return condition || "false"
+			return {
+				union: resultBranches,
+				ordered: l.ordered || r.ordered
+			}
 		},
-		writeDefaultDescription: (inner) =>
-			inner.union.length === 0 ? "never" : inner.union.join(" or ")
-	})
+		morph: this.intersectBranch,
+		intersection: this.intersectBranch,
+		default: (l, r) => {
+			const branches: BranchNode[] = []
+			for (const branch of l.union) {
+				const branchResult = branch.intersect(r)
+				if (!(branchResult instanceof Disjoint)) {
+					branches.push(branchResult)
+				}
+			}
+			return branches.length === 0
+				? Disjoint.from("union", l.union, [r])
+				: {
+						union: branches,
+						ordered: l.ordered
+				  }
+		}
+	},
+	parseSchema: (schema) => {
+		const result = {
+			ordered: false
+		} as mutable<UnionInner>
+		let schemaBranches: readonly BranchSchema[]
+		if (isArray(schema)) {
+			schemaBranches = schema
+		} else {
+			const { union, ...rest } = schema
+			Object.assign(result, rest)
+			schemaBranches = union
+		}
+		result.union = schemaBranches.map(parseBranchSchema)
+		return result
+	},
+	compileCondition: (inner) => {
+		let condition = inner.union.map((branch) => branch.condition).join(") || (")
+		if (inner.union.length > 1) {
+			condition = `(${condition})`
+		}
+		return condition || "false"
+	},
+	writeDefaultDescription: (inner) =>
+		inner.union.length === 0 ? "never" : inner.union.join(" or ")
+})
 
-	// discriminate is cached so we don't have to worry about this running multiple times
-	get discriminant(): Discriminant | null {
-		return discriminate(this.union)
-	}
+// private static intersectBranch = (l: UnionNode, r: BranchNode) => {
+// 	const union = l.ordered
+// 		? l.union.flatMap((branch) => {
+// 				const branchResult = branch.intersect(r)
+// 				return branchResult instanceof Disjoint ? [] : branchResult
+// 		  })
+// 		: intersectBranches(l.union, [r])
+// 	if (union instanceof Disjoint) {
+// 		return union
+// 	}
+// 	return { union, ordered: l.ordered }
+// }
 
-	// 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
-	// 		// TODO: error messages for traversal
-	// 		const caseKeys = Object.keys(cases)
-	// 		if (caseKeys.length === 2) {
-	// 			return `if( ${this.argName} !== ${caseKeys[0]} && ${this.argName} !== ${caseKeys[1]}) {
-	//     return false
-	// }`
-	// 		}
-	// 		// for >2 literals, we fall through all cases, breaking on the last
-	// 		const compiledCases =
-	// 			caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
-	// 		// if none of the cases are met, the check fails (this is optimal for perf)
-	// 		return `switch(${this.argName}) {
-	//     ${compiledCases}
-	//     default:
-	//         return false
-	// }`
-	// 	}
+// // discriminate is cached so we don't have to worry about this running multiple times
+// get discriminant(): Discriminant | null {
+// 	return discriminate(this.union)
+// }
 
-	// 	private static compileIndiscriminable(
-	// 		branches: readonly BranchNode[],
-	// 		ctx: CompilationContext
-	// 	) {
-	// 		if (branches.length === 0) {
-	// 			return compileFailureResult("custom", "nothing", ctx)
-	// 		}
-	// 		if (branches.length === 1) {
-	// 			return branches[0].compile(ctx)
-	// 		}
-	// 		return branches
-	// 			.map(
-	// 				(branch) => `(() => {
-	// 	${branch.compile(ctx)}
-	// 	return true
-	// 	})()`
-	// 			)
-	// 			.join(" || ")
-	// 	}
+// 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
+// 		// TODO: error messages for traversal
+// 		const caseKeys = Object.keys(cases)
+// 		if (caseKeys.length === 2) {
+// 			return `if( ${this.argName} !== ${caseKeys[0]} && ${this.argName} !== ${caseKeys[1]}) {
+//     return false
+// }`
+// 		}
+// 		// for >2 literals, we fall through all cases, breaking on the last
+// 		const compiledCases =
+// 			caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
+// 		// if none of the cases are met, the check fails (this is optimal for perf)
+// 		return `switch(${this.argName}) {
+//     ${compiledCases}
+//     default:
+//         return false
+// }`
+// 	}
 
-	// 	private static compileDiscriminant(
-	// 		discriminant: Discriminant,
-	// 		ctx: CompilationContext
-	// 	) {
-	// 		if (discriminant.isPureRootLiteral) {
-	// 			// TODO: ctx?
-	// 			return this.compileDiscriminatedLiteral(discriminant.cases)
-	// 		}
-	// 		let compiledPath = this.argName
-	// 		for (const segment of discriminant.path) {
-	// 			// we need to access the path as optional so we don't throw if it isn't present
-	// 			compiledPath += compilePropAccess(segment, true)
-	// 		}
-	// 		const condition =
-	// 			discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
-	// 		let compiledCases = ""
-	// 		for (const k in discriminant.cases) {
-	// 			const caseCondition = k === "default" ? "default" : `case ${k}`
-	// 			const caseBranches = discriminant.cases[k]
-	// 			ctx.discriminants.push(discriminant)
-	// 			const caseChecks = isArray(caseBranches)
-	// 				? this.compileIndiscriminable(caseBranches, ctx)
-	// 				: this.compileDiscriminant(caseBranches, ctx)
-	// 			ctx.discriminants.pop()
-	// 			compiledCases += `${caseCondition}: {
-	// 		${caseChecks ? `${caseChecks}\n     break` : "break"}
-	// 	}`
-	// 		}
-	// 		if (!discriminant.cases.default) {
-	// 			// TODO: error message for traversal
-	// 			compiledCases += `default: {
-	// 		return false
-	// 	}`
-	// 		}
-	// 		return `switch(${condition}) {
-	// 		${compiledCases}
-	// 	}`
-	// 	}
-}
+// 	private static compileIndiscriminable(
+// 		branches: readonly BranchNode[],
+// 		ctx: CompilationContext
+// 	) {
+// 		if (branches.length === 0) {
+// 			return compileFailureResult("custom", "nothing", ctx)
+// 		}
+// 		if (branches.length === 1) {
+// 			return branches[0].compile(ctx)
+// 		}
+// 		return branches
+// 			.map(
+// 				(branch) => `(() => {
+// 	${branch.compile(ctx)}
+// 	return true
+// 	})()`
+// 			)
+// 			.join(" || ")
+// 	}
+
+// 	private static compileDiscriminant(
+// 		discriminant: Discriminant,
+// 		ctx: CompilationContext
+// 	) {
+// 		if (discriminant.isPureRootLiteral) {
+// 			// TODO: ctx?
+// 			return this.compileDiscriminatedLiteral(discriminant.cases)
+// 		}
+// 		let compiledPath = this.argName
+// 		for (const segment of discriminant.path) {
+// 			// we need to access the path as optional so we don't throw if it isn't present
+// 			compiledPath += compilePropAccess(segment, true)
+// 		}
+// 		const condition =
+// 			discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
+// 		let compiledCases = ""
+// 		for (const k in discriminant.cases) {
+// 			const caseCondition = k === "default" ? "default" : `case ${k}`
+// 			const caseBranches = discriminant.cases[k]
+// 			ctx.discriminants.push(discriminant)
+// 			const caseChecks = isArray(caseBranches)
+// 				? this.compileIndiscriminable(caseBranches, ctx)
+// 				: this.compileDiscriminant(caseBranches, ctx)
+// 			ctx.discriminants.pop()
+// 			compiledCases += `${caseCondition}: {
+// 		${caseChecks ? `${caseChecks}\n     break` : "break"}
+// 	}`
+// 		}
+// 		if (!discriminant.cases.default) {
+// 			// TODO: error message for traversal
+// 			compiledCases += `default: {
+// 		return false
+// 	}`
+// 		}
+// 		return `switch(${condition}) {
+// 		${compiledCases}
+// 	}`
+// 	}
 
 export const intersectBranches = (
 	l: readonly BranchNode[],

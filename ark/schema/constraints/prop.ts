@@ -1,4 +1,9 @@
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import {
+	BaseNode,
+	type declareNode,
+	defineNode,
+	type withAttributes
+} from "../base.js"
 import { type BasisKind } from "../bases/basis.js"
 import { type DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
@@ -12,9 +17,9 @@ export type PropDeclarationsByKind = {
 	optional: OptionalDeclaration
 }
 
-export type PropClassesByKind = {
-	required: typeof RequiredPropNode
-	optional: typeof OptionalPropNode
+export type PropImplementationByKind = {
+	required: typeof RequiredImplementation
+	optional: typeof OptionalImplementation
 }
 
 export type PropKind = keyof PropDeclarationsByKind
@@ -41,45 +46,37 @@ export type RequiredDeclaration = declareNode<{
 const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 	`Props may only be applied to an object basis (was ${getBasisName(basis)})`
 
-export class RequiredPropNode
-	extends BaseNode<RequiredDeclaration>
-	implements BaseConstraint
-{
-	static readonly kind = "required"
-	static readonly declaration: RequiredDeclaration
+// readonly implicitBasis: DomainNode<object> = builtins().object
 
-	readonly implicitBasis: DomainNode<object> = builtins().object
-
-	static readonly definition = this.define({
-		kind: "required",
-		keys: {
-			required: {},
-			value: {}
-		},
-		intersections: {
-			required: (l, r) => {
-				if (l.required !== r.required) {
-					return null
-				}
-				const required = l.required
-				const value = l.value.intersect(r.value)
-				if (value instanceof Disjoint) {
-					return value
-				}
-				return {
-					required,
-					value
-				}
+export const RequiredImplementation = defineNode({
+	kind: "required",
+	keys: {
+		required: {},
+		value: {}
+	},
+	intersections: {
+		required: (l, r) => {
+			if (l.required !== r.required) {
+				return null
 			}
-		},
-		parseSchema: (schema) => schema as never,
-		compileCondition: (inner) => "true",
-		writeDefaultDescription: (inner) =>
-			`${String(inner.required)}: ${inner.value}`
-	})
+			const required = l.required
+			const value = l.value.intersect(r.value)
+			if (value instanceof Disjoint) {
+				return value
+			}
+			return {
+				required,
+				value
+			}
+		}
+	},
+	parseSchema: (schema) => schema as never,
+	compileCondition: (inner) => "true",
+	writeDefaultDescription: (inner) =>
+		`${String(inner.required)}: ${inner.value}`
+})
 
-	static writeInvalidBasisMessage = writeInvalidBasisMessage
-}
+// static writeInvalidBasisMessage = writeInvalidBasisMessage
 
 export type OptionalPropInner = withAttributes<{
 	readonly optional: string | symbol
@@ -100,42 +97,34 @@ export type OptionalDeclaration = declareNode<{
 	}
 }>
 
-export class OptionalPropNode
-	extends BaseNode<OptionalDeclaration>
-	implements BaseConstraint
-{
-	static readonly kind = "optional"
-	static readonly declaration: OptionalDeclaration
+// static writeInvalidBasisMessage = writeInvalidBasisMessage
 
-	readonly implicitBasis: DomainNode<object> = builtins().object
+// readonly implicitBasis: DomainNode<object> = builtins().object
 
-	static readonly definition = this.define({
-		kind: "optional",
-		keys: {
-			optional: {},
-			value: {}
-		},
-		intersections: {
-			optional: (l, r) => {
-				if (l.optional !== r.optional) {
-					return null
-				}
-				const optional = l.optional
-				const value = l.value.intersect(r.value)
-				return {
-					optional,
-					value: value instanceof Disjoint ? builtins().never : value
-				}
+export const OptionalImplementation = defineNode({
+	kind: "optional",
+	keys: {
+		optional: {},
+		value: {}
+	},
+	intersections: {
+		optional: (l, r) => {
+			if (l.optional !== r.optional) {
+				return null
 			}
-		},
-		parseSchema: (schema) => schema as never,
-		compileCondition: (inner) => "true",
-		writeDefaultDescription: (inner) =>
-			`${String(inner.optional)}?: ${inner.value}`
-	})
-
-	static writeInvalidBasisMessage = writeInvalidBasisMessage
-}
+			const optional = l.optional
+			const value = l.value.intersect(r.value)
+			return {
+				optional,
+				value: value instanceof Disjoint ? builtins().never : value
+			}
+		}
+	},
+	parseSchema: (schema) => schema as never,
+	compileCondition: (inner) => "true",
+	writeDefaultDescription: (inner) =>
+		`${String(inner.optional)}?: ${inner.value}`
+})
 
 /**** NAMED *****/
 

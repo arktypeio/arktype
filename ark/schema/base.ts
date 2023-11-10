@@ -12,8 +12,7 @@ import {
 	type JsonData,
 	ParseError,
 	type satisfy,
-	throwInternalError,
-	throwParseError
+	throwInternalError
 } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
 import { type ConstraintKind } from "./constraints/constraint.js"
@@ -21,12 +20,14 @@ import { Disjoint } from "./disjoint.js"
 import { compileSerializedValue, In } from "./io/compile.js"
 import { registry } from "./io/registry.js"
 import {
+	type Inner,
 	type Node,
 	type NodeClass,
 	type NodeDeclarationsByKind,
 	type NodeKind,
 	type reifyIntersections,
-	type RuleKind
+	type RuleKind,
+	type Schema
 } from "./nodes.js"
 import { type ValidatorNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
@@ -126,6 +127,13 @@ export type declareNode<
 	} & { [k in Exclude<keyof types, keyof BaseNodeDeclaration>]?: never }
 > = types
 
+export const defineNode = <
+	kind extends NodeKind,
+	definition extends StaticNodeDefinition<NodeDeclarationsByKind[kind]>
+>(
+	definition: { kind: kind } & definition
+) => definition
+
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
@@ -187,17 +195,17 @@ const defaultValueSerializer = (v: unknown): JsonData => {
 	return compileSerializedValue(v)
 }
 
-export abstract class BaseNode<
-	declaration extends BaseNodeDeclaration,
+export class BaseNode<
+	kind extends NodeKind = NodeKind,
 	t = unknown
-> extends CastableBase<declaration["inner"]> {
+> extends CastableBase<Inner<kind>> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
 
 	// TODO: reduce, add param for unsafe
 	constructor(
-		public schema: declaration["schema"],
+		public schema: Schema<kind>,
 		ctx = createParseContext()
 	) {
 		super()
@@ -214,11 +222,11 @@ export abstract class BaseNode<
 	readonly nodeClass = this.constructor as UnknownNodeClass
 	readonly definition = this.nodeClass
 		.definition as {} as instantiateNodeClassDefinition<StaticNodeDefinition>
-	readonly inner: declaration["inner"] =
+	readonly kind: kind = "divisor"
+	readonly inner: Inner<kind> =
 		hasDomain(this.schema, "object") && "prevalidated" in this.schema
 			? this.schema
 			: this.definition.parseSchema(this.schema, ctx)
-	readonly kind: declaration["kind"] = this.definition.kind
 	readonly alias = $ark.register(this, this.inner.alias)
 	readonly description =
 		this.inner.description ??
@@ -239,7 +247,7 @@ export abstract class BaseNode<
 	]
 	readonly condition = this.definition.compileCondition(this.inner)
 	readonly allows = new CompiledFunction<(data: unknown) => data is t>(
-		BaseNode.argName,
+		In,
 		`return ${this.condition}`
 	)
 
@@ -311,8 +319,6 @@ export abstract class BaseNode<
 		} as never
 	}
 
-	protected static readonly argName = In
-
 	inCache?: UnknownNode;
 	get in(): this["kind"] extends "morph" ? ValidatorNode : UnknownNode {
 		if (!this.inCache) {
@@ -382,9 +388,9 @@ export abstract class BaseNode<
 	}
 
 	// TODO: add input kind, caching
-	intersect<other extends Node>(
+	intersect<other extends BaseNode>(
 		other: other
-	): intersectionOf<declaration["kind"], other["kind"]>
+	): intersectionOf<kind, other["kind"]>
 	intersect(other: UnknownNode): UnknownNode | Disjoint {
 		const closedResult = this.intersectClosed(other as never)
 		if (closedResult !== null) {
@@ -395,14 +401,14 @@ export abstract class BaseNode<
 				`Unexpected null intersection between non-rules ${this.kind} and ${other.kind}`
 			)
 		}
-		return new BaseNode.classesByKind.intersection({
+		return new BaseNode({
 			intersection: [this, other]
 		})
 	}
 
-	intersectClosed<other extends Node>(
+	intersectClosed<other extends BaseNode>(
 		other: other
-	): Node<this["kind"]> | Node<other["kind"]> | Disjoint | null {
+	): BaseNode<kind> | Node<other["kind"]> | Disjoint | null {
 		if (this.equals(other)) {
 			// TODO: meta
 			return this as never

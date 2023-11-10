@@ -1,8 +1,11 @@
 import { type extend, throwParseError } from "@arktype/util"
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import {
+	BaseNode,
+	type declareNode,
+	defineNode,
+	type withAttributes
+} from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import { type DomainNode } from "../bases/domain.js"
-import type { ProtoNode } from "../bases/proto.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
 import { type Node } from "../nodes.js"
@@ -26,31 +29,26 @@ const basesByBoundKind = {
 	date: builtins().date
 } as const satisfies Record<BoundKind, Node<BasisKind>>
 
-export abstract class BaseBound<declaration extends BoundDeclaration>
-	extends BaseNode<declaration>
-	implements BaseConstraint
-{
-	readonly exclusive = this.inner.exclusive ?? false
+// readonly exclusive = this.inner.exclusive ?? false
 
-	readonly comparator = schemaToComparator(this.inner)
+// readonly comparator = schemaToComparator(this.inner)
 
-	readonly implicitBasis: Node<BasisKind> & { infer: Boundable } =
-		basesByBoundKind[this.boundKind] as never
+// readonly implicitBasis: Node<BasisKind> & { infer: Boundable } =
+// 	basesByBoundKind[this.boundKind] as never
 
-	//this.classesByKind.union.parse(["number", "string", Array, Date]) as never
+// 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+// 		return writeUnboundableMessage(getBasisName(basis))
+// 	}
 
-	// applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
-	// 	return this.boundKind === getBoundKind(basis)
-	// }
+//this.classesByKind.union.parse(["number", "string", Array, Date]) as never
 
-	// return `BoundKind ${this.boundKind} is not applicable to ${getBasisName(
-	// 	basis
-	// )}`
+// applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
+// 	return this.boundKind === getBoundKind(basis)
+// }
 
-	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return writeUnboundableMessage(getBasisName(basis))
-	}
-}
+// return `BoundKind ${this.boundKind} is not applicable to ${getBasisName(
+// 	basis
+// )}`
 
 export type MinInner = extend<
 	BoundInner,
@@ -77,41 +75,36 @@ export type MinDeclaration = declareNode<{
 	}
 }>
 
-export class MinNode extends BaseBound<MinDeclaration> {
-	static readonly kind = "min"
-	static readonly declaration: MinDeclaration
-
-	static readonly definition = this.define({
-		kind: "min",
-		keys: {
-			min: {},
-			exclusive: {},
-			boundKind: {}
-		},
-		intersections: {
-			min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
-		},
-		parseSchema: (schema, ctx) => {
-			const boundKind = getBoundKind(ctx.basis)
-			return typeof schema === "object"
-				? { ...schema, min: parseLimit(schema.min), boundKind }
-				: { min: parseLimit(schema), boundKind }
-		},
-		compileCondition: (inner) =>
-			`${this.argName} ${schemaToComparator(inner)} ${inner.min}`,
-		writeDefaultDescription: (inner) => {
-			const comparisonDescription =
-				inner.boundKind === "date"
-					? inner.exclusive
-						? "after"
-						: "at or after"
-					: inner.exclusive
-					? "more than"
-					: "at least"
-			return `${comparisonDescription} ${inner.min}`
-		}
-	})
-}
+export const MinImplementation = defineNode({
+	kind: "min",
+	keys: {
+		min: {},
+		exclusive: {},
+		boundKind: {}
+	},
+	intersections: {
+		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
+	},
+	parseSchema: (schema, ctx) => {
+		const boundKind = getBoundKind(ctx.basis)
+		return typeof schema === "object"
+			? { ...schema, min: parseLimit(schema.min), boundKind }
+			: { min: parseLimit(schema), boundKind }
+	},
+	compileCondition: (inner) =>
+		`${this.argName} ${schemaToComparator(inner)} ${inner.min}`,
+	writeDefaultDescription: (inner) => {
+		const comparisonDescription =
+			inner.boundKind === "date"
+				? inner.exclusive
+					? "after"
+					: "at or after"
+				: inner.exclusive
+				? "more than"
+				: "at least"
+		return `${comparisonDescription} ${inner.min}`
+	}
+})
 
 export type MaxInner = extend<
 	BoundInner,
@@ -139,46 +132,40 @@ export type MaxDeclaration = declareNode<{
 	}
 }>
 
-export class MaxNode extends BaseBound<MaxDeclaration> {
-	static readonly kind = "max"
-	static readonly declaration: MaxDeclaration
-
-	static readonly definition = this.define({
-		kind: "max",
-		keys: {
-			max: {},
-			exclusive: {},
-			boundKind: {}
-		},
-		intersections: {
-			max: (l, r) =>
-				l.max > r.max || (l.max === r.max && l.exclusive) ? l : r,
-			min: (l, r) =>
-				l.max < r.min || (l.max === r.min && (l.exclusive || r.exclusive))
-					? Disjoint.from("bound", l, r)
-					: null
-		},
-		parseSchema: (schema, ctx) => {
-			const boundKind = getBoundKind(ctx.basis)
-			return typeof schema === "object"
-				? { ...schema, max: parseLimit(schema.max), boundKind }
-				: { max: parseLimit(schema), boundKind }
-		},
-		compileCondition: (inner) =>
-			`${this.argName} ${schemaToComparator(inner)} ${inner.max}`,
-		writeDefaultDescription: (inner) => {
-			const comparisonDescription =
-				inner.boundKind === "date"
-					? inner.exclusive
-						? "before"
-						: "at or before"
-					: inner.exclusive
-					? "less than"
-					: "at most"
-			return `${comparisonDescription} ${inner.max}`
-		}
-	})
-}
+export const MaxImplementation = defineNode({
+	kind: "max",
+	keys: {
+		max: {},
+		exclusive: {},
+		boundKind: {}
+	},
+	intersections: {
+		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r),
+		min: (l, r) =>
+			l.max < r.min || (l.max === r.min && (l.exclusive || r.exclusive))
+				? Disjoint.from("bound", l, r)
+				: null
+	},
+	parseSchema: (schema, ctx) => {
+		const boundKind = getBoundKind(ctx.basis)
+		return typeof schema === "object"
+			? { ...schema, max: parseLimit(schema.max), boundKind }
+			: { max: parseLimit(schema), boundKind }
+	},
+	compileCondition: (inner) =>
+		`${this.argName} ${schemaToComparator(inner)} ${inner.max}`,
+	writeDefaultDescription: (inner) => {
+		const comparisonDescription =
+			inner.boundKind === "date"
+				? inner.exclusive
+					? "before"
+					: "at or before"
+				: inner.exclusive
+				? "less than"
+				: "at most"
+		return `${comparisonDescription} ${inner.max}`
+	}
+})
 
 const parseLimit = (limitLiteral: BoundLimit): number =>
 	typeof limitLiteral === "string"

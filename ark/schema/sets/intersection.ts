@@ -15,6 +15,7 @@ import {
 	BaseNode,
 	constraintKinds,
 	type declareNode,
+	defineNode,
 	type withAttributes
 } from "../base.js"
 import { type BasisKind, maybeParseBasis, parseBasis } from "../bases/basis.js"
@@ -30,7 +31,6 @@ import {
 	type RuleKind,
 	type Schema
 } from "../nodes.js"
-import { BaseRoot, type Root } from "../root.js"
 import { type ParseContext } from "../utils.js"
 
 export type IntersectionInner = withAttributes<{
@@ -57,70 +57,63 @@ export type IntersectionDeclaration = declareNode<{
 // 	return new IntersectionNode(inner)
 // },
 
-export class IntersectionNode<t = unknown> extends BaseRoot<
-	IntersectionDeclaration,
-	t
-> {
-	static readonly kind = "intersection"
-	static readonly declaration: IntersectionDeclaration
-	readonly basis: Root<unknown, BasisKind> | undefined =
-		this.intersection[0]?.isBasis() ? this.intersection[0] : undefined
-	readonly constraints: readonly Node<ConstraintKind>[] = this.basis
-		? this.intersection.slice(1)
-		: (this.intersection as any)
+// readonly basis: Root<unknown, BasisKind> | undefined =
+// this.intersection[0]?.isBasis() ? this.intersection[0] : undefined
+// readonly constraints: readonly Node<ConstraintKind>[] = this.basis
+// ? this.intersection.slice(1)
+// : (this.intersection as any)
 
-	static readonly definition = this.define({
-		kind: "intersection",
-		keys: {
-			intersection: {}
-		},
-		intersections: {
-			intersection: (l, r) => {
-				let result: CollapsedIntersectionInner | Disjoint = l.intersection
-				for (const constraint of r.constraints) {
-					if (result instanceof Disjoint) {
-						break
-					}
-					result = addRule(result, constraint)
+export const IntersectionImplementation = defineNode({
+	kind: "intersection",
+	keys: {
+		intersection: {}
+	},
+	intersections: {
+		intersection: (l, r) => {
+			let result: CollapsedIntersectionInner | Disjoint = l.intersection
+			for (const constraint of r.constraints) {
+				if (result instanceof Disjoint) {
+					break
 				}
-				return result instanceof Disjoint ? result : { intersection: result }
-			},
-			default: (l, r) => {
-				const result = addRule(l.intersection, r)
-				return result instanceof Disjoint ? result : { intersection: result }
+				result = addRule(result, constraint)
 			}
+			return result instanceof Disjoint ? result : { intersection: result }
 		},
-		parseSchema: (schema) => {
-			const { alias, description, ...rules } = schema
-			const intersectionInner = {} as mutable<IntersectionInner>
-			if (alias) {
-				intersectionInner.alias = alias
-			}
-			if (description) {
-				intersectionInner.description = description
-			}
-			intersectionInner.intersection =
-				"intersection" in rules
-					? parseListedRules(rules.intersection)
-					: parseMappedRules(rules)
-			return intersectionInner
-		},
-		compileCondition: (inner) => {
-			let condition = inner.intersection
-				.map((rule) => rule.condition)
-				.join(") && (")
-			if (inner.intersection.length > 1) {
-				condition = `(${condition})`
-			}
-			return condition || "true"
-		},
-		writeDefaultDescription: (inner) => {
-			return inner.intersection.length === 0
-				? "an unknown value"
-				: inner.intersection.join(" and ")
+		default: (l, r) => {
+			const result = addRule(l.intersection, r)
+			return result instanceof Disjoint ? result : { intersection: result }
 		}
-	})
-}
+	},
+	parseSchema: (schema) => {
+		const { alias, description, ...rules } = schema
+		const intersectionInner = {} as mutable<IntersectionInner>
+		if (alias) {
+			intersectionInner.alias = alias
+		}
+		if (description) {
+			intersectionInner.description = description
+		}
+		intersectionInner.intersection =
+			"intersection" in rules
+				? parseListedRules(rules.intersection)
+				: parseMappedRules(rules)
+		return intersectionInner
+	},
+	compileCondition: (inner) => {
+		let condition = inner.intersection
+			.map((rule) => rule.condition)
+			.join(") && (")
+		if (inner.intersection.length > 1) {
+			condition = `(${condition})`
+		}
+		return condition || "true"
+	},
+	writeDefaultDescription: (inner) => {
+		return inner.intersection.length === 0
+			? "an unknown value"
+			: inner.intersection.join(" and ")
+	}
+})
 
 const parseListedRules = (
 	schemas: RuleSchemaSet

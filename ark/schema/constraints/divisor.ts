@@ -1,4 +1,9 @@
-import { BaseNode, type declareNode, type withAttributes } from "../base.js"
+import {
+	BaseNode,
+	type declareNode,
+	defineNode,
+	type withAttributes
+} from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import { type DomainNode } from "../bases/domain.js"
 import { builtins } from "../builtins.js"
@@ -20,38 +25,30 @@ export type DivisorDeclaration = declareNode<{
 	}
 }>
 
-export class DivisorNode
-	extends BaseNode<DivisorDeclaration>
-	implements BaseConstraint
-{
-	static readonly kind = "divisor"
-	static readonly declaration: DivisorDeclaration
+export const DivisorImplementation = defineNode({
+	kind: "divisor",
+	keys: {
+		divisor: {}
+	},
+	intersections: {
+		divisor: (l, r) => ({
+			divisor: Math.abs(
+				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+			)
+		})
+	},
+	parseSchema: (schema) =>
+		typeof schema === "number" ? { divisor: schema } : schema,
+	compileCondition: (inner) => `${this.argName} % ${inner.divisor} === 0`,
+	writeDefaultDescription: (inner) =>
+		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
+})
 
-	readonly implicitBasis: DomainNode<number> = builtins().number
+// readonly implicitBasis: DomainNode<number> = builtins().number
 
-	static readonly definition = this.define({
-		kind: "divisor",
-		keys: {
-			divisor: {}
-		},
-		intersections: {
-			divisor: (l, r) => ({
-				divisor: Math.abs(
-					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-				)
-			})
-		},
-		parseSchema: (schema) =>
-			typeof schema === "number" ? { divisor: schema } : schema,
-		compileCondition: (inner) => `${this.argName} % ${inner.divisor} === 0`,
-		writeDefaultDescription: (inner) =>
-			inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`
-	})
-
-	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-		return writeIndivisibleMessage(getBasisName(basis))
-	}
-}
+// static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
+// 	return writeIndivisibleMessage(getBasisName(basis))
+// }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

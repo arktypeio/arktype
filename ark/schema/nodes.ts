@@ -1,13 +1,12 @@
-import type { extend, instanceOf, listable } from "@arktype/util"
-import { BaseNode, type rightOf, type UnknownNodeClass } from "./base.js"
+import type { extend, listable } from "@arktype/util"
+import { BaseNode, type rightOf } from "./base.js"
 import {
 	type BasisClassesByKind,
 	type BasisDeclarationsByKind
 } from "./bases/basis.js"
-import { UnitNode } from "./bases/unit.js"
 import {
-	type ConstraintClassesByKind,
-	type ConstraintDeclarationsByKind
+	type ConstraintDeclarationsByKind,
+	type ConstraintImplementationByKind
 } from "./constraints/constraint.js"
 import { type MorphSchema, type ValidatorSchema } from "./sets/morph.js"
 import {
@@ -17,7 +16,6 @@ import {
 import {
 	type BranchSchema,
 	type parseUnion,
-	UnionNode,
 	type validateBranchSchema
 } from "./sets/union.js"
 
@@ -95,7 +93,7 @@ export type RuleDeclarationsByKind = extend<
 
 export type RuleClassesByKind = extend<
 	BasisClassesByKind,
-	ConstraintClassesByKind
+	ConstraintImplementationByKind
 >
 
 export type RuleKind = keyof RuleDeclarationsByKind
@@ -129,4 +127,4 @@ export type LeftIntersections<kind extends NodeKind> = reifyIntersections<
 	NodeDeclarationsByKind[kind]["intersections"]
 >
 
-export type Node<kind extends NodeKind = NodeKind> = instanceOf<NodeClass<kind>>
+export type Node<kind extends NodeKind = NodeKind> = BaseNode<kind>
