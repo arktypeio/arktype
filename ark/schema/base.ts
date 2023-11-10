@@ -29,6 +29,7 @@ import {
 	type RuleKind,
 	type Schema
 } from "./nodes.js"
+import { type RootKind } from "./root.js"
 import { type ValidatorNode } from "./sets/morph.js"
 import { type SetKind } from "./sets/set.js"
 import { createParseContext, inferred, type ParseContext } from "./utils.js"
@@ -349,7 +350,7 @@ export class BaseNode<
 			}
 		}
 		// TODO; reduce?
-		return new this.nodeClass(ioInner as never)
+		return new BaseNode(ioInner as never)
 	}
 
 	toJSON() {
@@ -385,7 +386,7 @@ export class BaseNode<
 	}
 
 	// TODO: add input kind, caching
-	intersect<other extends BaseNode>(
+	intersect<other extends Node>(
 		other: other
 	): intersectionOf<kind, other["kind"]>
 	intersect(other: UnknownNode): UnknownNode | Disjoint {
@@ -403,7 +404,7 @@ export class BaseNode<
 		})
 	}
 
-	intersectClosed<other extends BaseNode>(
+	intersectClosed<other extends Node>(
 		other: other
 	): BaseNode<kind> | Node<other["kind"]> | Disjoint | null {
 		if (this.equals(other)) {
@@ -450,18 +451,18 @@ export class BaseNode<
 
 	or<other extends Node>(
 		other: other
-	): Root<
-		t | other["infer"],
-		"union" | Extract<this["kind"] | other["kind"], RootKind>
+	): Node<
+		"union" | Extract<kind | other["kind"], RootKind>,
+		t | other["infer"]
 	> {
 		return this as never
 	}
 
-	isUnknown(): this is Root<unknown> {
+	isUnknown(): this is BaseNode<"intersection", unknown> {
 		return this.hasKind("intersection") && this.children.length === 0
 	}
 
-	isNever(): this is Root<never> {
+	isNever(): this is BaseNode<"union", never> {
 		return this.hasKind("union") && this.children.length === 0
 	}
 
@@ -475,14 +476,16 @@ export class BaseNode<
 
 	extends<other extends Node>(
 		other: other
-	): this is BaseNode<kind, other["infer"]> {
+	): this is Node<kind, other["infer"]> {
 		const intersection = this.intersect(other)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
 	}
 
-	subsumes(other: BaseNode): other is BaseNode<kind, this["infer"]> {
+	subsumes<other extends Node>(
+		other: other
+	): other is Node<other["kind"], this["infer"]> {
 		return other.extends(this as never)
 	}
 }

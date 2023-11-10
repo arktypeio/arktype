@@ -3,6 +3,7 @@ import { type declareNode, defineNode, type withAttributes } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import { builtins } from "../builtins.js"
 import { Disjoint } from "../disjoint.js"
+import { In } from "../io/compile.js"
 import { type Node } from "../nodes.js"
 
 export type BoundInner = withAttributes<{
@@ -86,7 +87,7 @@ export const MinImplementation = defineNode({
 			: { min: parseLimit(schema), boundKind }
 	},
 	compileCondition: (inner) =>
-		`${this.argName} ${schemaToComparator(inner)} ${inner.min}`,
+		`${In} ${schemaToComparator(inner)} ${inner.min}`,
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
 			inner.boundKind === "date"
@@ -147,7 +148,7 @@ export const MaxImplementation = defineNode({
 			: { max: parseLimit(schema), boundKind }
 	},
 	compileCondition: (inner) =>
-		`${this.argName} ${schemaToComparator(inner)} ${inner.max}`,
+		`${In} ${schemaToComparator(inner)} ${inner.max}`,
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
 			inner.boundKind === "date"
@@ -182,7 +183,7 @@ const getBoundKind = (basis: Node<BasisKind> | undefined): BoundKind => {
 	if (
 		(basis.kind === "unit" && basis.unit instanceof Date) ||
 		(basis.kind === ("proto" as never) &&
-			(basis as {} as ProtoNode).extendsOneOf(Date))
+			(basis as {} as Node<"proto">).extendsOneOf(Date))
 	) {
 		return "date"
 	}

@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
-import { type IntersectionNode, node, type Root } from "@arktype/schema"
+import { type BaseNode, node, type Root } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 
 describe("intersections", () => {
 	it("root type assignment", () => {
 		const t = node({ basis: "string", pattern: "/.*/" })
-		attest<IntersectionNode<string>>(t)
+		attest<BaseNode<"intersection", string>>(t)
 		attest(t.json).snap({
 			intersection: [{ domain: "string" }, { pattern: ".*", flags: "" }]
 		})
