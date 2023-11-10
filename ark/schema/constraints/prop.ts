@@ -1,10 +1,10 @@
-import { type declareNode, defineNode, type withAttributes } from "../base.js"
-import { type BasisKind } from "../bases/basis.js"
-import { builtins } from "../builtins.js"
-import { Disjoint } from "../disjoint.js"
-import { type Node, type RootInput } from "../nodes.js"
-import { type Root } from "../root.js"
-import { getBasisName } from "./shared.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { type BasisKind } from "../bases/basis.ts"
+import { builtins } from "../builtins.ts"
+import { Disjoint } from "../disjoint.ts"
+import { type Node, type RootInput } from "../nodes.ts"
+import { type Root } from "../root.ts"
+import { getBasisName } from "./shared.ts"
 
 export type PropDeclarationsByKind = {
 	required: RequiredDeclaration

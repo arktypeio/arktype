@@ -1,7 +1,7 @@
-import { hasDomain } from "./domain.js"
-import type { defined, evaluate } from "./generics.js"
-import { isArray } from "./objectKinds.js"
-import type { intersectUnion } from "./unionToTuple.js"
+import { hasDomain } from "./domain.ts"
+import type { defined, evaluate } from "./generics.ts"
+import { isArray } from "./objectKinds.ts"
+import type { intersectUnion } from "./unionToTuple.ts"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v

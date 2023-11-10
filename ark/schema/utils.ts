@@ -1,5 +1,5 @@
-import { type BasisKind } from "./bases/basis.js"
-import { type Node } from "./nodes.js"
+import { type BasisKind } from "./bases/basis.ts"
+import { type Node } from "./nodes.ts"
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608

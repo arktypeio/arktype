@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { scope, type } from "arktype"
 
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
 
 describe("parse unenclosed", () => {
 	describe("identifier", () => {

@@ -1,6 +1,6 @@
 import type ts from "typescript"
-import { getFileKey } from "../utils.js"
-import { getInternalTypeChecker } from "./analysis.js"
+import { getFileKey } from "../utils.ts"
+import { getInternalTypeChecker } from "./analysis.ts"
 
 export type DiagnosticData = {
 	start: number

@@ -1,6 +1,6 @@
-import { type declareNode, defineNode, type withAttributes } from "../base.js"
-import { compileSerializedValue, In } from "../io/compile.js"
-import type { TraversalState } from "../io/traverse.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { compileSerializedValue, In } from "../io/compile.ts"
+import type { TraversalState } from "../io/traverse.ts"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
 	withAttributes<{

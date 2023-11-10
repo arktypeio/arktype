@@ -1,7 +1,7 @@
 import { node } from "@arktype/schema"
-import { Scope } from "../scope.js"
-import type { RootScope } from "./ark.js"
-import { creditCard } from "./utils/creditCard.js"
+import { Scope } from "../scope.ts"
+import type { RootScope } from "./ark.ts"
+import { creditCard } from "./utils/creditCard.ts"
 
 // Non-trivial expressions should have an explanation or attribution
 

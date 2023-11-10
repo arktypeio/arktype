@@ -1,4 +1,4 @@
-import type { StatName } from "./call.js"
+import type { StatName } from "./call.ts"
 
 type MeasureUnit = TimeUnit | TypeUnit
 

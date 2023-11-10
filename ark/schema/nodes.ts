@@ -1,18 +1,18 @@
 import type { extend, listable } from "@arktype/util"
-import { type BaseNode, type rightOf } from "./base.js"
+import { type BaseNode, type rightOf } from "./base.ts"
 import {
 	type BasisClassesByKind,
 	type BasisDeclarationsByKind
-} from "./bases/basis.js"
+} from "./bases/basis.ts"
 import {
 	type ConstraintDeclarationsByKind,
 	type ConstraintImplementationByKind
-} from "./constraints/constraint.js"
-import { type MorphSchema, type ValidatorSchema } from "./sets/morph.js"
+} from "./constraints/constraint.ts"
+import { type MorphSchema, type ValidatorSchema } from "./sets/morph.ts"
 import {
 	type SetClassesByKind,
 	type SetDeclarationsByKind
-} from "./sets/set.js"
+} from "./sets/set.ts"
 
 export type RootInput = listable<ValidatorSchema | MorphSchema>
 

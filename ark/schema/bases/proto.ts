@@ -5,10 +5,10 @@ import {
 	objectKindDescriptions,
 	objectKindOf
 } from "@arktype/util"
-import { type declareNode, defineNode, type withAttributes } from "../base.js"
-import { builtins } from "../builtins.js"
-import { Disjoint } from "../disjoint.js"
-import { compileSerializedValue, In } from "../io/compile.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { builtins } from "../builtins.ts"
+import { Disjoint } from "../disjoint.ts"
+import { compileSerializedValue, In } from "../io/compile.ts"
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor

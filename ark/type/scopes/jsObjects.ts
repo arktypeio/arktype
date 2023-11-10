@@ -1,6 +1,6 @@
 import { node } from "@arktype/schema"
-import { Scope } from "../scope.js"
-import type { RootScope } from "./ark.js"
+import { Scope } from "../scope.ts"
+import type { RootScope } from "./ark.ts"
 
 export interface InferredJsObjects {
 	Function: Function

@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
 
-import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
+import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.ts"
 import {
 	writeExpressionExpectedMessage,
 	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.js"
+} from "../parser/string/shift/operand/unenclosed.ts"
 
 describe("string", () => {
 	it("errors on empty string", () => {

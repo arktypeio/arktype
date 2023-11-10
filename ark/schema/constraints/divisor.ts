@@ -1,5 +1,5 @@
-import { type declareNode, defineNode, type withAttributes } from "../base.js"
-import { In } from "../io/compile.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { In } from "../io/compile.ts"
 
 export type DivisorSchema = number | DivisorInner
 

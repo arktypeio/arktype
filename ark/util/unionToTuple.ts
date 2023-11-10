@@ -1,6 +1,6 @@
-import type { Fn } from "./functions.js"
-import type { conform } from "./generics.js"
-import type { join } from "./lists.js"
+import type { Fn } from "./functions.ts"
+import type { conform } from "./generics.ts"
+import type { join } from "./lists.ts"
 
 export type stringifyUnion<t extends string> = join<unionToTuple<t>, ", ">
 

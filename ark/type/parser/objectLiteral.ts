@@ -5,16 +5,16 @@ import {
 } from "@arktype/schema"
 import { type Dict, type ErrorMessage, type evaluate } from "@arktype/util"
 import { stringify } from "@arktype/util"
-import type { ParseContext } from "../scope.js"
-import type { inferDefinition, validateDefinition } from "./definition.js"
-import type { validateString } from "./semantic/validate.js"
-import { parseEntry } from "./shared.js"
+import type { ParseContext } from "../scope.ts"
+import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { validateString } from "./semantic/validate.ts"
+import { parseEntry } from "./shared.ts"
 import type {
 	EntryParseResult,
 	IndexedKey,
 	OptionalValue,
 	validateObjectValue
-} from "./shared.js"
+} from "./shared.ts"
 
 const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 	...Object.entries(o),

@@ -1,21 +1,21 @@
 import { type inferred } from "@arktype/schema"
-import type { Module, ScopeParser } from "../scope.js"
-import { Scope } from "../scope.js"
+import type { Module, ScopeParser } from "../scope.ts"
+import { Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
 	MatchParser,
 	TypeParser
-} from "../type.js"
-import type { InferredJsObjects } from "./jsObjects.js"
-import { jsObjectsModule } from "./jsObjects.js"
-import type { ParsingModule } from "./parsing.js"
-import { parsingModule } from "./parsing.js"
-import { type InferredTsGenerics, tsGenericsModule } from "./tsGenerics.js"
-import type { InferredTsKeywords } from "./tsKeywords.js"
-import { tsKeywordsModule } from "./tsKeywords.js"
-import type { InferredValidation } from "./validation.js"
-import { validationModule } from "./validation.js"
+} from "../type.ts"
+import type { InferredJsObjects } from "./jsObjects.ts"
+import { jsObjectsModule } from "./jsObjects.ts"
+import type { ParsingModule } from "./parsing.ts"
+import { parsingModule } from "./parsing.ts"
+import { type InferredTsGenerics, tsGenericsModule } from "./tsGenerics.ts"
+import type { InferredTsKeywords } from "./tsKeywords.ts"
+import { tsKeywordsModule } from "./tsKeywords.ts"
+import type { InferredValidation } from "./validation.ts"
+import { validationModule } from "./validation.ts"
 
 /** Root scopes can be inferred automatically from node definitions, but
  * explicitly typing them can improve responsiveness */

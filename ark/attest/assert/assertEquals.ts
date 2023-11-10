@@ -3,8 +3,8 @@ import { stringify, throwInternalError } from "@arktype/util"
 import {
 	SerializedArgAssertion,
 	type SerializedAssertionData
-} from "../tsserver/getAssertionsInFile.js"
-import type { AssertionContext } from "./attest.js"
+} from "../tsserver/getAssertionsInFile.ts"
+import type { AssertionContext } from "./attest.ts"
 
 export type ThrowAsertionErrorContext = {
 	message: string

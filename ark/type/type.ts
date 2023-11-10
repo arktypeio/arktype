@@ -30,18 +30,18 @@ import type {
 	inferDefinition,
 	validateDeclared,
 	validateDefinition
-} from "./parser/definition.js"
-import type { GenericParamsParseError } from "./parser/generic.js"
-import { parseGenericParams } from "./parser/generic.js"
-import type { inferIntersection } from "./parser/semantic/intersections.js"
+} from "./parser/definition.ts"
+import type { GenericParamsParseError } from "./parser/generic.ts"
+import { parseGenericParams } from "./parser/generic.ts"
+import type { inferIntersection } from "./parser/semantic/intersections.ts"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
 	MorphAst,
 	TupleInfixOperator
-} from "./parser/tuple.js"
-import type { Module, Scope } from "./scope.js"
-import { bindThis } from "./scope.js"
+} from "./parser/tuple.ts"
+import type { Module, Scope } from "./scope.ts"
+import { bindThis } from "./scope.ts"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a

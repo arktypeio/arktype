@@ -3,9 +3,9 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import { Scope } from "../scope.js"
-import { type RootScope } from "./ark.js"
-import { parsedDate } from "./utils/date.js"
+import { Scope } from "../scope.ts"
+import { type RootScope } from "./ark.ts"
+import { parsedDate } from "./utils/date.ts"
 
 const number = node({
 	in: {

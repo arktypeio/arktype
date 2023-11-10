@@ -2,8 +2,8 @@ import {
 	constructHeader,
 	constructRow,
 	convertToHTML
-} from "./buildTable/table.js"
-import type { ExportData, TsDocData } from "./extractApi.js"
+} from "./buildTable/table.ts"
+import type { ExportData, TsDocData } from "./extractApi.ts"
 
 type LinkDetails = [name: string, alias?: string]
 

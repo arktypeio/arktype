@@ -9,10 +9,10 @@ import {
 	writeJson
 } from "@arktype/fs"
 import type ts from "typescript"
-import { getConfig } from "../config.js"
-import { getFileKey } from "../utils.js"
-import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
-import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
+import { getConfig } from "../config.ts"
+import { getFileKey } from "../utils.ts"
+import type { QueuedUpdate, SnapshotArgs } from "./snapshot.ts"
+import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.ts"
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
 	name: string

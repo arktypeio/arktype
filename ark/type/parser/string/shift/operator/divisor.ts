@@ -1,8 +1,8 @@
 import { tryParseInteger } from "@arktype/util"
 import type { NumberLiteral } from "@arktype/util"
-import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
-import type { Scanner } from "../scanner.js"
+import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
+import type { state, StaticState } from "../../reduce/static.ts"
+import type { Scanner } from "../scanner.ts"
 
 export const parseDivisor = (s: DynamicStateWithRoot) => {
 	const divisorToken = s.scanner.shiftUntilNextTerminator()

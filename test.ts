@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 // import { isDeepStrictEqual } from "util"
-// import { type Dict } from "./ark/util/main.js"
-import { node } from "./ark/schema/main.js"
-import { wellFormedNumberMatcher } from "./ark/util/main.js"
+// import { type Dict } from "./ark/util/main.ts"
+import { node } from "./ark/schema/main.ts"
+import { wellFormedNumberMatcher } from "./ark/util/main.ts"
 
 const parseNumber = node(
 	{

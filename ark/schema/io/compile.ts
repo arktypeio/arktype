@@ -1,8 +1,8 @@
 import type { SerializablePrimitive } from "@arktype/util"
 import { hasDomain, isArray, serializePrimitive } from "@arktype/util"
-import type { Discriminant } from "../discriminate.js"
-import type { ProblemCode, ProblemRules } from "./problems.js"
-import { registry } from "./registry.js"
+import type { Discriminant } from "../discriminate.ts"
+import type { ProblemCode, ProblemRules } from "./problems.ts"
+import { registry } from "./registry.ts"
 
 export const In = "$arkRoot"
 

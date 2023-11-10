@@ -1,13 +1,13 @@
 import { type Root } from "@arktype/schema"
 import { throwParseError } from "@arktype/util"
 import type { ErrorMessage, join, nominal } from "@arktype/util"
-import type { ParseContext } from "../scope.js"
-import { DynamicState } from "./string/reduce/dynamic.js"
-import { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
-import type { state, StaticState } from "./string/reduce/static.js"
-import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
-import { Scanner } from "./string/shift/scanner.js"
-import { parseUntilFinalizer } from "./string/string.js"
+import type { ParseContext } from "../scope.ts"
+import { DynamicState } from "./string/reduce/dynamic.ts"
+import { writeUnclosedGroupMessage } from "./string/reduce/shared.ts"
+import type { state, StaticState } from "./string/reduce/static.ts"
+import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.ts"
+import { Scanner } from "./string/shift/scanner.ts"
+import { parseUntilFinalizer } from "./string/string.ts"
 
 export type GenericDeclaration<
 	name extends string = string,

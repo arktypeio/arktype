@@ -19,18 +19,18 @@ import {
 	stringify,
 	throwParseError
 } from "@arktype/util"
-import type { ParseContext } from "../scope.js"
-import { type type } from "../scopes/ark.js"
-import { Type } from "../type.js"
+import type { ParseContext } from "../scope.ts"
+import { type type } from "../scopes/ark.ts"
+import { Type } from "../type.ts"
 import type {
 	inferObjectLiteral,
 	validateObjectLiteral
-} from "./objectLiteral.js"
-import { parseObjectLiteral } from "./objectLiteral.js"
-import type { validateString } from "./semantic/validate.js"
-import type { BaseCompletions, inferString } from "./string/string.js"
-import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
-import { parseTuple } from "./tuple.js"
+} from "./objectLiteral.ts"
+import { parseObjectLiteral } from "./objectLiteral.ts"
+import type { validateString } from "./semantic/validate.ts"
+import type { BaseCompletions, inferString } from "./string/string.ts"
+import type { inferTuple, TupleExpression, validateTuple } from "./tuple.ts"
+import { parseTuple } from "./tuple.ts"
 
 export const parseObject = (def: object, ctx: ParseContext): Root => {
 	const objectKind = objectKindOf(def)

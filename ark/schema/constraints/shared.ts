@@ -1,5 +1,5 @@
-import type { BasisKind } from "../bases/basis.js"
-import { type Node } from "../nodes.js"
+import type { BasisKind } from "../bases/basis.ts"
+import { type Node } from "../nodes.ts"
 
 export interface BaseConstraint {
 	implicitBasis: Node<BasisKind>

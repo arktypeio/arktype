@@ -1,7 +1,7 @@
-import type { intersectParameters } from "./intersections.js"
-import type { applyElementLabels } from "./labels.js"
-import type { NonEmptyList } from "./lists.js"
-import { type AbstractableConstructor } from "./objectKinds.js"
+import type { intersectParameters } from "./intersections.ts"
+import type { applyElementLabels } from "./labels.ts"
+import type { NonEmptyList } from "./lists.ts"
+import { type AbstractableConstructor } from "./objectKinds.ts"
 
 export type ComposeSignatures = {
 	<traits extends NonEmptyList<AbstractableConstructor>>(

@@ -10,23 +10,23 @@ import {
 import type {
 	inferDefinition,
 	validateDefinition
-} from "./parser/definition.js"
+} from "./parser/definition.ts"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage
-} from "./parser/definition.js"
+} from "./parser/definition.ts"
 import type {
 	GenericDeclaration,
 	GenericParamsParseError
-} from "./parser/generic.js"
-import { parseGenericParams } from "./parser/generic.js"
+} from "./parser/generic.ts"
+import { parseGenericParams } from "./parser/generic.ts"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
-} from "./parser/string/shift/operand/unenclosed.js"
-import { parseString } from "./parser/string/string.js"
-import { type type } from "./scopes/ark.js"
+} from "./parser/string/shift/operand/unenclosed.ts"
+import { parseString } from "./parser/string/string.ts"
+import { type type } from "./scopes/ark.ts"
 import type {
 	arkKind,
 	DeclarationParser,
@@ -39,7 +39,7 @@ import type {
 	MatchParser,
 	TypeConfig,
 	TypeParser
-} from "./type.js"
+} from "./type.ts"
 import {
 	addArkKind,
 	createMatchParser,
@@ -48,7 +48,7 @@ import {
 	hasArkKind,
 	Type,
 	validateUninstantiatedGeneric
-} from "./type.js"
+} from "./type.ts"
 
 export type ScopeParser<parent, ambient> = {
 	<const def>(def: validateScope<def, parent & ambient>): Scope<{

@@ -7,8 +7,8 @@ import {
 	throwParseError,
 	transform
 } from "@arktype/util"
-import { type rightOf } from "./base.js"
-import { type Node, type RuleKind } from "./nodes.js"
+import { type rightOf } from "./base.ts"
+import { type Node, type RuleKind } from "./nodes.ts"
 
 type DisjointKinds = {
 	domain?: {

@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { ark, scope, type } from "arktype"
 
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
 
 describe("type references", () => {
 	it("shallow type reference", () => {

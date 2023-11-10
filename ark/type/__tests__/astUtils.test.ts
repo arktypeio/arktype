@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { type astToString } from "../parser/semantic/utils.js"
+import { type astToString } from "../parser/semantic/utils.ts"
 
 describe("astToString", () => {
 	it("no parentheses if nested ast is an array", () => {

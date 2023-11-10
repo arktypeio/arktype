@@ -1,4 +1,4 @@
-import { possibleFormats } from "../extractApi.js"
+import { possibleFormats } from "../extractApi.ts"
 
 export const defaultOperatorHeader = ["operator", ...possibleFormats]
 export const defaultKeywordsHeader = ["Name", "Type", "Description"]

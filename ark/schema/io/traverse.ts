@@ -1,5 +1,5 @@
-import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
-import { Problems, problemsByCode } from "./problems.js"
+import type { Problem, ProblemCode, ProblemParameters } from "./problems.ts"
+import { Problems, problemsByCode } from "./problems.ts"
 
 export class CheckResult<out = unknown, valid extends boolean = boolean> {
 	declare data: valid extends true ? out : never

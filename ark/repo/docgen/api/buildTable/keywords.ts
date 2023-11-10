@@ -1,9 +1,9 @@
-import type { TsTagData } from "../tsDocTransforms.js"
+import type { TsTagData } from "../tsDocTransforms.ts"
 import {
 	constructHeader,
 	constructRow,
 	defaultKeywordsHeader
-} from "./table.js"
+} from "./table.ts"
 
 export const keywordTable = (text: string, tags: TsTagData) => {
 	const keywords = tags.keywords

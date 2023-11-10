@@ -1,6 +1,6 @@
 import type { Out } from "@arktype/schema"
 import type { evaluate, isAny, List } from "@arktype/util"
-import type { MorphAst } from "../tuple.js"
+import type { MorphAst } from "../tuple.ts"
 
 export type inferIntersection<l, r> = [l] extends [never]
 	? never

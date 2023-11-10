@@ -4,19 +4,19 @@ import {
 	type isAny,
 	throwParseError
 } from "@arktype/util"
-import { type BaseNode } from "../base.js"
-import { type Node, type Schema } from "../nodes.js"
+import { type BaseNode } from "../base.ts"
+import { type Node, type Schema } from "../nodes.ts"
 import type {
 	DomainDeclaration,
 	DomainImplementation,
 	DomainSchema
-} from "./domain.js"
+} from "./domain.ts"
 import type {
 	ProtoDeclaration,
 	ProtoImplementation,
 	ProtoSchema
-} from "./proto.js"
-import type { UnitDeclaration, UnitImplementation, UnitSchema } from "./unit.js"
+} from "./proto.ts"
+import type { UnitDeclaration, UnitImplementation, UnitSchema } from "./unit.ts"
 
 export type BasisDeclarationsByKind = {
 	domain: DomainDeclaration

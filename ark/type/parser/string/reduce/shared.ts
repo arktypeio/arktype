@@ -3,8 +3,8 @@ import type {
 	InvertedComparators,
 	LimitLiteral,
 	MinComparator
-} from "../shift/operator/bounds.js"
-import { invertedComparators } from "../shift/operator/bounds.js"
+} from "../shift/operator/bounds.ts"
+import { invertedComparators } from "../shift/operator/bounds.ts"
 
 export type StringifiablePrefixOperator = "keyof"
 

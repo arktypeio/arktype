@@ -3,16 +3,16 @@ import type {
 	resolve,
 	tryInferSubmoduleReference,
 	UnparsedScope
-} from "../../scope.js"
-import type { GenericProps } from "../../type.js"
-import type { inferDefinition } from "../definition.js"
-import type { DateLiteral } from "../string/shift/operand/date.js"
-import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+} from "../../scope.ts"
+import type { GenericProps } from "../../type.ts"
+import type { inferDefinition } from "../definition.ts"
+import type { DateLiteral } from "../string/shift/operand/date.ts"
+import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
 import type {
 	Comparator,
 	LimitLiteral
-} from "../string/shift/operator/bounds.js"
-import type { inferIntersection } from "./intersections.js"
+} from "../string/shift/operator/bounds.ts"
+import type { inferIntersection } from "./intersections.ts"
 
 export type inferAst<ast, $, args> = ast extends List
 	? inferExpression<ast, $, args>

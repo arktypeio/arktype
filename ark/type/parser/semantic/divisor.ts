@@ -1,8 +1,8 @@
 import type { writeIndivisibleMessage } from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
-import type { inferAst } from "./semantic.js"
-import type { astToString } from "./utils.js"
-import type { validateAst } from "./validate.js"
+import type { inferAst } from "./semantic.ts"
+import type { astToString } from "./utils.ts"
+import type { validateAst } from "./validate.ts"
 
 export type validateDivisor<l, $, args> = isDivisible<
 	inferAst<l, $, args>

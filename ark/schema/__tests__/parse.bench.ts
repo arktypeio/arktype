@@ -1,6 +1,6 @@
 import { bench } from "@arktype/attest"
-import { node } from "../nodes.js"
-import { type Root } from "../root.js"
+import { node } from "../nodes.ts"
+import { type Root } from "../root.ts"
 
 bench("domain", () => {
 	return node("string").infer

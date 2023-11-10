@@ -1,5 +1,5 @@
-import type { andPreserveUnknown, conform } from "./generics.js"
-import type { Hkt } from "./hkt.js"
+import type { andPreserveUnknown, conform } from "./generics.ts"
+import type { Hkt } from "./hkt.ts"
 
 export interface AndPreserveUnknown extends Hkt.Kind {
 	f: (

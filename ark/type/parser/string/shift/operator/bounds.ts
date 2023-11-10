@@ -1,20 +1,20 @@
 import { type MinSchema } from "@arktype/schema"
 import type { keySet } from "@arktype/util"
 import { isKeyOf, tryParseNumber } from "@arktype/util"
-import type { astToString } from "../../../semantic/utils.js"
+import type { astToString } from "../../../semantic/utils.ts"
 import type {
 	DynamicState,
 	DynamicStateWithRoot
-} from "../../reduce/dynamic.js"
+} from "../../reduce/dynamic.ts"
 import {
 	type OpenLeftBound,
 	writeUnpairableComparatorMessage
-} from "../../reduce/shared.js"
-import type { state, StaticState } from "../../reduce/static.js"
-import type { DateLiteral } from "../operand/date.js"
-import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
-import { parseOperand } from "../operand/operand.js"
-import type { Scanner } from "../scanner.js"
+} from "../../reduce/shared.ts"
+import type { state, StaticState } from "../../reduce/static.ts"
+import type { DateLiteral } from "../operand/date.ts"
+import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
+import { parseOperand } from "../operand/operand.ts"
+import type { Scanner } from "../scanner.ts"
 
 export const parseBound = (
 	s: DynamicStateWithRoot,

@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 
-import type { applyElementLabels } from "../labels.js"
+import type { applyElementLabels } from "../labels.ts"
 
 describe("labels", () => {
 	it("same length", () => {

@@ -4,10 +4,10 @@ import {
 	type declareNode,
 	defineNode,
 	type withAttributes
-} from "../base.js"
-import { Disjoint } from "../disjoint.js"
-import { type Node, type Schema } from "../nodes.js"
-import { type Root } from "../root.js"
+} from "../base.ts"
+import { Disjoint } from "../disjoint.ts"
+import { type Node, type Schema } from "../nodes.ts"
+import { type Root } from "../root.ts"
 import {
 	type MorphSchema,
 	type parseMorphSchema,
@@ -16,7 +16,7 @@ import {
 	type validateValidatorSchema,
 	type ValidatorKind,
 	type ValidatorSchema
-} from "./morph.js"
+} from "./morph.ts"
 
 export type UnionChildKind = "morph" | ValidatorKind
 

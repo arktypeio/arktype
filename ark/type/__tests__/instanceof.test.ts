@@ -2,9 +2,9 @@ import { attest } from "@arktype/attest"
 import { node } from "@arktype/schema"
 import { type } from "arktype"
 
-import { writeInvalidConstructorMessage } from "../parser/tuple.js"
-import type { Ark } from "../scopes/ark.js"
-import type { Type } from "../type.js"
+import { writeInvalidConstructorMessage } from "../parser/tuple.ts"
+import type { Ark } from "../scopes/ark.ts"
+import type { Type } from "../type.ts"
 
 describe("instanceof", () => {
 	describe("tuple expression", () => {

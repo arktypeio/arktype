@@ -1,5 +1,5 @@
 import type ts from "typescript"
-import { type StringifiableType } from "./analysis.js"
+import { type StringifiableType } from "./analysis.ts"
 import {
 	type ArgumentTypes,
 	checkDiagnosticMessages,
@@ -8,8 +8,8 @@ import {
 	getAssertCallLocation,
 	type SerializedArgAssertion,
 	type SerializedAssertionData
-} from "./getAssertionsInFile.js"
-import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
+} from "./getAssertionsInFile.ts"
+import type { DiagnosticsByFile } from "./getDiagnosticsByFile.ts"
 
 export const analyzeAssertCall = (
 	assertCall: ts.CallExpression,

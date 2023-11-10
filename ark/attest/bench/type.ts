@@ -2,23 +2,23 @@ import { caller, filePath } from "@arktype/fs"
 import { throwInternalError } from "@arktype/util"
 import tsvfs from "@typescript/vfs"
 import ts from "typescript"
-import { getInternalTypeChecker } from "../tsserver/analysis.js"
+import { getInternalTypeChecker } from "../tsserver/analysis.ts"
 import {
 	getAncestors,
 	getDescendants,
 	getExpressionsByName
-} from "../tsserver/getAssertionsInFile.js"
+} from "../tsserver/getAssertionsInFile.ts"
 import {
 	getAbsolutePosition,
 	getTsConfigInfoOrThrow,
 	getTsLibFiles,
 	nearestCallExpressionChild,
 	TsServer
-} from "../tsserver/tsserver.js"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import type { BenchContext } from "./bench.js"
-import type { Measure, MeasureComparison, TypeUnit } from "./measure.js"
-import { createTypeComparison } from "./measure.js"
+} from "../tsserver/tsserver.ts"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
+import type { BenchContext } from "./bench.ts"
+import type { Measure, MeasureComparison, TypeUnit } from "./measure.ts"
+import { createTypeComparison } from "./measure.ts"
 
 export type BenchTypeAssertions = {
 	types: (instantiations?: Measure<TypeUnit>) => void

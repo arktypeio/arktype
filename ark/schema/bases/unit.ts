@@ -1,7 +1,7 @@
 import { stringify } from "@arktype/util"
-import { type declareNode, defineNode, type withAttributes } from "../base.js"
-import { Disjoint } from "../disjoint.js"
-import { compileSerializedValue, In } from "../io/compile.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { Disjoint } from "../disjoint.ts"
+import { compileSerializedValue, In } from "../io/compile.ts"
 
 export type UnitInner<rule = unknown> = withAttributes<{
 	readonly unit: rule

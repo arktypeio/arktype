@@ -1,8 +1,8 @@
 import { rmSync } from "node:fs"
 import { writeJson } from "@arktype/fs"
-import { type AttestConfig, ensureCacheDirs, getConfig } from "../config.js"
-import { writeCachedInlineSnapshotUpdates } from "../snapshot/writeSnapshot.js"
-import { getAssertionsByFile } from "./analysis.js"
+import { type AttestConfig, ensureCacheDirs, getConfig } from "../config.ts"
+import { writeCachedInlineSnapshotUpdates } from "../snapshot/writeSnapshot.ts"
+import { getAssertionsByFile } from "./analysis.ts"
 
 export const setup = (options: Partial<AttestConfig> = {}) => {
 	const config = getConfig()

@@ -17,20 +17,20 @@ import {
 	type declareNode,
 	defineNode,
 	type withAttributes
-} from "../base.js"
-import { type BasisKind } from "../bases/basis.js"
+} from "../base.ts"
+import { type BasisKind } from "../bases/basis.ts"
 import {
 	type constraintInputsByKind,
 	type ConstraintKind
-} from "../constraints/constraint.js"
-import { Disjoint } from "../disjoint.js"
+} from "../constraints/constraint.ts"
+import { Disjoint } from "../disjoint.ts"
 import {
 	type DiscriminableSchema,
 	type Node,
 	type RuleKind,
 	type Schema
-} from "../nodes.js"
-import { type ParseContext } from "../utils.js"
+} from "../nodes.ts"
+import { type ParseContext } from "../utils.ts"
 
 export type IntersectionInner = withAttributes<{
 	readonly intersection: CollapsedIntersectionInner

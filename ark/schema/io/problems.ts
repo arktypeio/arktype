@@ -12,11 +12,11 @@ import {
 	objectKindDescriptions,
 	stringify
 } from "@arktype/util"
-import { domainDescriptions } from "../bases/domain.js"
+import { domainDescriptions } from "../bases/domain.ts"
 import {
 	type BoundInner,
 	type NumericallyBoundable
-} from "../constraints/bounds.js"
+} from "../constraints/bounds.ts"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems

@@ -23,7 +23,6 @@
 		// https://github.com/microsoft/TypeScript/issues/51418
 		"./ark/type/main.ts"
 	],
-	"typescript.preferences.importModuleSpecifierEnding": "js",
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"prettier.ignorePath": "ark/repo/.prettierignore",
 	"prettier.prettierPath": "./node_modules/prettier/index.cjs",

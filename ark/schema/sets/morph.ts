@@ -9,23 +9,23 @@ import {
 	type declareNode,
 	defineNode,
 	type withAttributes
-} from "../base.js"
+} from "../base.ts"
 import {
 	type BasisKind,
 	maybeParseBasis,
 	type parseBasis
-} from "../bases/basis.js"
-import { type NonEnumerableDomain } from "../bases/domain.js"
-import { builtins } from "../builtins.js"
-import { Disjoint } from "../disjoint.js"
-import type { Problem } from "../io/problems.js"
-import type { CheckResult, TraversalState } from "../io/traverse.js"
-import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
+} from "../bases/basis.ts"
+import { type NonEnumerableDomain } from "../bases/domain.ts"
+import { builtins } from "../builtins.ts"
+import { Disjoint } from "../disjoint.ts"
+import type { Problem } from "../io/problems.ts"
+import type { CheckResult, TraversalState } from "../io/traverse.ts"
+import { type DiscriminableSchema, type Node, type Schema } from "../nodes.ts"
 import {
 	type IntersectionSchema,
 	type parseIntersectionSchema,
 	type validateIntersectionSchema
-} from "./intersection.js"
+} from "./intersection.ts"
 
 export type ValidatorKind = "intersection" | BasisKind
 

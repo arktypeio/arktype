@@ -2,7 +2,7 @@ import { attest, getTsVersionUnderTest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
 
-import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
+import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.ts"
 
 describe("divisibility", () => {
 	describe("parse", () => {

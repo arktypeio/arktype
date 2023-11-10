@@ -5,20 +5,20 @@ import type {
 	NumberLiteral,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
-import type { Module } from "../../scope.js"
-import type { GenericProps } from "../../type.js"
-import type { writeInvalidGenericArgsMessage } from "../generic.js"
-import type { writeMissingSubmoduleAccessMessage } from "../string/shift/operand/unenclosed.js"
-import type { Comparator } from "../string/shift/operator/bounds.js"
-import type { parseString } from "../string/string.js"
-import type { validateRange } from "./bounds.js"
-import type { validateDivisor } from "./divisor.js"
+import type { Module } from "../../scope.ts"
+import type { GenericProps } from "../../type.ts"
+import type { writeInvalidGenericArgsMessage } from "../generic.ts"
+import type { writeMissingSubmoduleAccessMessage } from "../string/shift/operand/unenclosed.ts"
+import type { Comparator } from "../string/shift/operator/bounds.ts"
+import type { parseString } from "../string/string.ts"
+import type { validateRange } from "./bounds.ts"
+import type { validateDivisor } from "./divisor.ts"
 import type {
 	GenericInstantiationAst,
 	InfixExpression,
 	PostfixExpression
-} from "./semantic.js"
-import type { astToString } from "./utils.js"
+} from "./semantic.ts"
+import type { astToString } from "./utils.ts"
 
 export type validateAst<ast, $, args> = ast extends string
 	? validateStringAst<ast, $>

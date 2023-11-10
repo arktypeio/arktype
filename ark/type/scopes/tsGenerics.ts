@@ -1,6 +1,6 @@
-import { Scope } from "../scope.js"
-import type { Generic } from "../type.js"
-import type { RootScope } from "./ark.js"
+import { Scope } from "../scope.ts"
+import type { Generic } from "../type.ts"
+import type { RootScope } from "./ark.ts"
 
 export interface InferredTsGenerics {
 	Record: Generic<

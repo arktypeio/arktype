@@ -2,19 +2,19 @@ import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import { caller } from "@arktype/fs"
 import { snapshot, stringify } from "@arktype/util"
-import type { SnapshotArgs } from "../snapshot/snapshot.js"
-import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot/snapshot.js"
-import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
-import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.js"
-import { type SerializedAssertionData } from "../tsserver/getAssertionsInFile.js"
-import { chainableNoOpProxy } from "../utils.js"
-import { assertEquals } from "./assertEquals.js"
-import type { AssertionContext } from "./attest.js"
+import type { SnapshotArgs } from "../snapshot/snapshot.ts"
+import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot/snapshot.ts"
+import { updateExternalSnapshot } from "../snapshot/writeSnapshot.ts"
+import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.ts"
+import { type SerializedAssertionData } from "../tsserver/getAssertionsInFile.ts"
+import { chainableNoOpProxy } from "../utils.ts"
+import { assertEquals } from "./assertEquals.ts"
+import type { AssertionContext } from "./attest.ts"
 import {
 	assertEqualOrMatching,
 	callAssertedFunction,
 	getThrownMessage
-} from "./utils.js"
+} from "./utils.ts"
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean

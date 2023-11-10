@@ -1,9 +1,9 @@
 import {
 	type IntersectionDeclaration,
 	type IntersectionImplementation
-} from "./intersection.js"
-import { type MorphDeclaration, type MorphImplementation } from "./morph.js"
-import { type UnionDeclaration, type UnionImplementation } from "./union.js"
+} from "./intersection.ts"
+import { type MorphDeclaration, type MorphImplementation } from "./morph.ts"
+import { type UnionDeclaration, type UnionImplementation } from "./union.ts"
 
 export type SetDeclarationsByKind = {
 	union: UnionDeclaration

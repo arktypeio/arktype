@@ -5,8 +5,8 @@ import type {
 	LimitLiteral,
 	MaxComparator,
 	MinComparator
-} from "../shift/operator/bounds.js"
-import type { Scanner } from "../shift/scanner.js"
+} from "../shift/operator/bounds.ts"
+import type { Scanner } from "../shift/scanner.ts"
 import type {
 	OpenLeftBound,
 	StringifiablePrefixOperator,
@@ -15,7 +15,7 @@ import type {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
-} from "./shared.js"
+} from "./shared.ts"
 
 export type StaticState = {
 	root: unknown

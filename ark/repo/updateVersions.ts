@@ -8,8 +8,8 @@ import {
 	shell,
 	writeJson
 } from "@arktype/fs"
-import { docgen } from "./docgen/docgen.js"
-import { repoDirs } from "./shared.js"
+import { docgen } from "./docgen/docgen.ts"
+import { repoDirs } from "./shared.ts"
 
 const currentSuffix = "beta"
 

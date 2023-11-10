@@ -1,6 +1,6 @@
 import demoCssText from "../generated/demo.css"
 import indexHtmlText from "../generated/index.html"
-import populateDemoTsText from "../generated/populateDemo.js"
+import populateDemoTsText from "../generated/populateDemo.ts"
 
 const tsConfig = {
 	compilerOptions: {

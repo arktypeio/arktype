@@ -3,7 +3,6 @@ import {
 	CompiledFunction,
 	type evaluate,
 	type extend,
-	hasDomain,
 	includes,
 	isArray,
 	isKeyOf,
@@ -14,11 +13,11 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import { type BasisKind } from "./bases/basis.js"
-import { type ConstraintKind } from "./constraints/constraint.js"
-import { Disjoint } from "./disjoint.js"
-import { compileSerializedValue, In } from "./io/compile.js"
-import { registry } from "./io/registry.js"
+import { type BasisKind } from "./bases/basis.ts"
+import { type ConstraintKind } from "./constraints/constraint.ts"
+import { Disjoint } from "./disjoint.ts"
+import { compileSerializedValue, In } from "./io/compile.ts"
+import { registry } from "./io/registry.ts"
 import {
 	type Inner,
 	type Node,
@@ -27,12 +26,12 @@ import {
 	type NodeKind,
 	type reifyIntersections,
 	type RuleKind
-} from "./nodes.js"
-import { type RootKind } from "./root.js"
-import { type ValidatorNode } from "./sets/morph.js"
-import { type SetKind } from "./sets/set.js"
-import { type parseUnion, type validateBranchSchema } from "./sets/union.js"
-import { inferred, type ParseContext } from "./utils.js"
+} from "./nodes.ts"
+import { type RootKind } from "./root.ts"
+import { type ValidatorNode } from "./sets/morph.ts"
+import { type SetKind } from "./sets/set.ts"
+import { type parseUnion, type validateBranchSchema } from "./sets/union.ts"
+import { inferred, type ParseContext } from "./utils.ts"
 
 export type BaseAttributes = {
 	readonly alias?: string

@@ -1,4 +1,4 @@
-import { throwInternalError } from "./errors.js"
+import { throwInternalError } from "./errors.ts"
 
 export type Fn<
 	args extends readonly unknown[] = readonly never[],

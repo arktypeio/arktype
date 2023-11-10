@@ -12,22 +12,22 @@ import {
 	tryParseNumber,
 	tryParseWellFormedBigint
 } from "@arktype/util"
-import type { Module } from "../../../../scope.js"
+import type { Module } from "../../../../scope.ts"
 import {
 	type Generic,
 	type GenericProps,
 	hasArkKind
-} from "../../../../type.js"
-import type { ParsedArgs } from "../../../generic.js"
+} from "../../../../type.ts"
+import type { ParsedArgs } from "../../../generic.ts"
 import {
 	parseGenericArgs,
 	writeInvalidGenericArgsMessage
-} from "../../../generic.js"
-import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
-import type { BaseCompletions } from "../../string.js"
-import type { Scanner } from "../scanner.js"
+} from "../../../generic.ts"
+import type { GenericInstantiationAst } from "../../../semantic/semantic.ts"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { state, StaticState } from "../../reduce/static.ts"
+import type { BaseCompletions } from "../../string.ts"
+import type { Scanner } from "../scanner.ts"
 
 export const parseUnenclosed = (s: DynamicState) => {
 	const token = s.scanner.shiftUntilNextTerminator()

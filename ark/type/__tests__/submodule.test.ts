@@ -8,7 +8,7 @@ import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.js"
+} from "../parser/string/shift/operand/unenclosed.ts"
 
 const $ = lazily(() =>
 	scope({

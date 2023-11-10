@@ -6,9 +6,9 @@ import type {
 	SerializedPrimitive
 } from "@arktype/util"
 import { entriesOf, isKeyOf, throwInternalError } from "@arktype/util"
-import { Disjoint, type SerializedPath } from "./disjoint.js"
-import { compileSerializedValue } from "./io/compile.js"
-import type { BranchNode } from "./sets/union.js"
+import { Disjoint, type SerializedPath } from "./disjoint.ts"
+import { compileSerializedValue } from "./io/compile.ts"
+import type { BranchNode } from "./sets/union.ts"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"

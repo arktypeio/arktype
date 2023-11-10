@@ -24,19 +24,19 @@ import {
 	stringify,
 	throwParseError
 } from "@arktype/util"
-import type { ParseContext } from "../scope.js"
-import type { extractIn, extractOut } from "../type.js"
-import type { inferDefinition, validateDefinition } from "./definition.js"
-import type { inferIntersection } from "./semantic/intersections.js"
+import type { ParseContext } from "../scope.ts"
+import type { extractIn, extractOut } from "../type.ts"
+import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { inferIntersection } from "./semantic/intersections.ts"
 import {
 	type InfixOperator,
 	type PostfixExpression
-} from "./semantic/semantic.js"
-import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
-import type { EntryParseResult, validateObjectValue } from "./shared.js"
-import { parseEntry } from "./shared.js"
-import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
-import type { BaseCompletions } from "./string/string.js"
+} from "./semantic/semantic.ts"
+import { writeUnsatisfiableExpressionError } from "./semantic/validate.ts"
+import type { EntryParseResult, validateObjectValue } from "./shared.ts"
+import { parseEntry } from "./shared.ts"
+import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
+import type { BaseCompletions } from "./string/string.ts"
 
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)

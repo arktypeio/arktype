@@ -5,7 +5,7 @@ import { type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.js"
+} from "../parser/string/shift/operand/unenclosed.ts"
 
 describe("intersection", () => {
 	it("two types", () => {

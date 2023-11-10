@@ -1,21 +1,21 @@
 import { type Root } from "@arktype/schema"
 import type { requireKeys } from "@arktype/util"
 import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
-import type { ParseContext } from "../../../scope.js"
-import type { Comparator, LimitLiteral } from "../shift/operator/bounds.js"
+import type { ParseContext } from "../../../scope.ts"
+import type { Comparator, LimitLiteral } from "../shift/operator/bounds.ts"
 import {
 	invertedComparators,
 	minComparators
-} from "../shift/operator/bounds.js"
-import { Scanner } from "../shift/scanner.js"
-import type { OpenLeftBound, StringifiablePrefixOperator } from "./shared.js"
+} from "../shift/operator/bounds.ts"
+import { Scanner } from "../shift/scanner.ts"
+import type { OpenLeftBound, StringifiablePrefixOperator } from "./shared.ts"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
-} from "./shared.js"
+} from "./shared.ts"
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]

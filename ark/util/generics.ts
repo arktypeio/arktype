@@ -1,6 +1,6 @@
-import type { ErrorMessage } from "./errors.js"
-import { type AbstractableConstructor } from "./objectKinds.js"
-import type { unionToTuple } from "./unionToTuple.js"
+import type { ErrorMessage } from "./errors.ts"
+import { type AbstractableConstructor } from "./objectKinds.ts"
+import type { unionToTuple } from "./unionToTuple.ts"
 
 export type Stringifiable =
 	| string

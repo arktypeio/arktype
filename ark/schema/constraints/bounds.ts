@@ -1,10 +1,10 @@
 import { type extend, throwParseError } from "@arktype/util"
-import { type declareNode, defineNode, type withAttributes } from "../base.js"
-import type { BasisKind } from "../bases/basis.js"
-import { builtins } from "../builtins.js"
-import { Disjoint } from "../disjoint.js"
-import { In } from "../io/compile.js"
-import { type Node } from "../nodes.js"
+import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import type { BasisKind } from "../bases/basis.ts"
+import { builtins } from "../builtins.ts"
+import { Disjoint } from "../disjoint.ts"
+import { In } from "../io/compile.ts"
+import { type Node } from "../nodes.ts"
 
 export type BoundInner = withAttributes<{
 	readonly boundKind: BoundKind

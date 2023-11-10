@@ -1,29 +1,29 @@
 import { type extend, type listable } from "@arktype/util"
-import { type IrreducibleConstraintKind } from "../base.js"
-import { type BasisKind } from "../bases/basis.js"
-import { type Node, type Schema } from "../nodes.js"
+import { type IrreducibleConstraintKind } from "../base.ts"
+import { type BasisKind } from "../bases/basis.ts"
+import { type Node, type Schema } from "../nodes.ts"
 import {
 	type MaxDeclaration,
 	type MaxImplementation,
 	type MinDeclaration,
 	type MinImplementation
-} from "./bounds.js"
+} from "./bounds.ts"
 import {
 	type DivisorDeclaration,
 	type DivisorImplementation
-} from "./divisor.js"
+} from "./divisor.ts"
 import {
 	type PatternDeclaration,
 	type PatternImplementation
-} from "./pattern.js"
+} from "./pattern.ts"
 import {
 	type PredicateDeclaration,
 	type PredicateImplementation
-} from "./predicate.js"
+} from "./predicate.ts"
 import {
 	type PropDeclarationsByKind,
 	type PropImplementationByKind
-} from "./prop.js"
+} from "./prop.ts"
 
 export type ConstraintDeclarationsByKind = extend<
 	PropDeclarationsByKind,

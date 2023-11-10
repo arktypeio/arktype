@@ -1,13 +1,13 @@
-export { setup, cleanup } from "./tsserver/cacheAssertions.js"
-export { attest } from "./assert/attest.js"
-export { bench } from "./bench/bench.js"
-export { getTsVersionUnderTest } from "./utils.js"
+export { setup, cleanup } from "./tsserver/cacheAssertions.ts"
+export { attest } from "./assert/attest.ts"
+export { bench } from "./bench/bench.ts"
+export { getTsVersionUnderTest } from "./utils.ts"
 export type {
 	SerializedArgAssertion,
 	SerializedAssertionData,
 	LinePositionRange,
 	TypeRelationship
-} from "./tsserver/getAssertionsInFile.js"
-export { getArgTypesAtPosition } from "./tsserver/getArgTypesAtPosition.js"
-export { type AttestConfig, getDefaultAttestConfig } from "./config.js"
+} from "./tsserver/getAssertionsInFile.ts"
+export { getArgTypesAtPosition } from "./tsserver/getArgTypesAtPosition.ts"
+export { type AttestConfig, getDefaultAttestConfig } from "./config.ts"
 export { caller, type CallerOfOptions } from "@arktype/fs"

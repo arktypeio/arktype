@@ -1,5 +1,5 @@
 import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
-import { isDotAccessible } from "./compile.js"
+import { isDotAccessible } from "./compile.ts"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 

@@ -1,6 +1,6 @@
 import type { evaluate } from "@arktype/util"
-import type { validateDefinition } from "./definition.js"
-import { Scanner } from "./string/shift/scanner.js"
+import type { validateDefinition } from "./definition.ts"
+import { Scanner } from "./string/shift/scanner.ts"
 
 type parsedKey<result extends KeyParseResult> = result
 
