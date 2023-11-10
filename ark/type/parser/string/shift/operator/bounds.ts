@@ -1,4 +1,4 @@
-import { type ExpandedMinSchema } from "@arktype/schema"
+import { type MinSchema } from "@arktype/schema"
 import type { keySet } from "@arktype/util"
 import { isKeyOf, tryParseNumber } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
@@ -117,9 +117,7 @@ type shiftComparator<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const openLeftBoundToSchema = (
-	leftBound: OpenLeftBound
-): ExpandedMinSchema => ({
+const openLeftBoundToSchema = (leftBound: OpenLeftBound): MinSchema => ({
 	min: isDateLiteral(leftBound.limit)
 		? extractDateLiteralSource(leftBound.limit)
 		: leftBound.limit,

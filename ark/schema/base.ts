@@ -11,7 +11,8 @@ import {
 	type JsonData,
 	ParseError,
 	type satisfy,
-	throwInternalError
+	throwInternalError,
+	throwParseError
 } from "@arktype/util"
 import { type BasisKind } from "./bases/basis.js"
 import { type ConstraintKind } from "./constraints/constraint.js"
@@ -21,8 +22,8 @@ import { registry } from "./io/registry.js"
 import {
 	type Inner,
 	type Node,
-	type NodeClass,
 	type NodeDeclarationsByKind,
+	type NodeImplementation,
 	type NodeKind,
 	type reifyIntersections,
 	type RuleKind
@@ -225,10 +226,57 @@ export class BaseNode<
 			[i in keyof branches]: validateBranchSchema<branches[i]>
 		}
 	): parseUnion<branches>
-	static from(...branches: unknown[]) {
-		hasDomain(this.schema, "object") && "prevalidated" in this.schema
-			? this.schema
-			: this.definition.parseSchema(this.schema, ctx)
+	static from(...branches: {}[]) {
+		const nodes = branches.map((schema) => {
+			switch (typeof schema) {
+				case "string":
+					return new BaseNode("domain", { domain: schema })
+				case "function":
+					return new BaseNode("proto", { proto: schema })
+				case "object":
+					const kind = orderedNodeKinds.find((kind) => kind in schema)
+					if (!kind) {
+						return throwParseError(
+							`Constraint schema must contain one of the following keys: ${constraintKinds.join(
+								", "
+							)}`
+						)
+					}
+					return new BaseNode(schema as never, ctx)
+				default:
+					return throwParseError(`${typeof schema} is not a valid schema type`)
+			}
+		})
+
+		// export const maybeParseBasis = (
+		// 	schema: Schema<"intersection" | BasisKind>
+		// ): Node<BasisKind> | undefined => {
+		// 	switch (typeof schema) {
+		// 		case "string":
+		// 			return new DomainNode(schema)
+		// 		case "function":
+		// 			return new ProtoNode(schema)
+		// 		case "object":
+		// 			return "unit" in schema
+		// 				? new UnitNode(schema)
+		// 				: "proto" in schema
+		// 				? new ProtoNode(schema)
+		// 				: "domain" in schema
+		// 				? new DomainNode(schema)
+		// 				: undefined
+		// 	}
+		// }
+
+		// export const parseBasis = (schema: Schema<BasisKind>) =>
+		// 	maybeParseBasis(schema) ??
+		// 	throwParseError(
+		// 		`Basis schema must be a non-enumerable domain, a constructor, or have one of the following keys:
+		// "unit", "proto", "domain"`
+		// 	)
+
+		// hasDomain(this.schema, "object") && "prevalidated" in this.schema
+		// 	? this.schema
+		// 	: this.definition.parseSchema(this.schema, ctx)
 	}
 
 	static fromUnits<const branches extends readonly unknown[]>(
@@ -247,7 +295,7 @@ export class BaseNode<
 	}
 
 	readonly alias: string
-	readonly definition: NodeClass<kind> = {}
+	readonly definition: NodeImplementation<kind> = {}
 	readonly description: string
 	readonly json: Json
 	readonly typeJson: Json
@@ -495,6 +543,10 @@ export class BaseNode<
 		return other.extends(this as never)
 	}
 }
+
+export const node = Object.assign(BaseNode.from, {
+	units: BaseNode.fromUnits
+})
 
 const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
 	for (const kind of orderedNodeKinds) {

@@ -1,5 +1,5 @@
 import { cached } from "@arktype/util"
-import { node } from "./nodes.js"
+import { node } from "./base.js"
 
 export const builtins = cached(() => ({
 	never: node(),

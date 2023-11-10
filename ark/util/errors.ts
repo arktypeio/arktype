@@ -1,12 +1,12 @@
 export class InternalArktypeError extends Error {}
 
-export const throwInternalError = (message: string) => {
+export const throwInternalError: (message: string) => never = (message) => {
 	throw new InternalArktypeError(message)
 }
 
 export class ParseError extends Error {}
 
-export const throwParseError = (message: string) => {
+export const throwParseError: (message: string) => never = (message) => {
 	throw new ParseError(message)
 }
 

@@ -18,11 +18,10 @@ import {
 	defineNode,
 	type withAttributes
 } from "../base.js"
-import { type BasisKind, maybeParseBasis, parseBasis } from "../bases/basis.js"
+import { type BasisKind } from "../bases/basis.js"
 import {
 	type constraintInputsByKind,
-	type ConstraintKind,
-	parseConstraint
+	type ConstraintKind
 } from "../constraints/constraint.js"
 import { Disjoint } from "../disjoint.js"
 import {

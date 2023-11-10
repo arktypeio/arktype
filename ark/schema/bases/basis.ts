@@ -48,30 +48,3 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 		: schema extends UnitSchema<infer unit>
 		? Node<"unit", unit>
 		: never
-
-export const maybeParseBasis = (
-	schema: Schema<"intersection" | BasisKind>
-): Node<BasisKind> | undefined => {
-	return undefined
-	// switch (typeof schema) {
-	// 	case "string":
-	// 		return new DomainNode(schema)
-	// 	case "function":
-	// 		return new ProtoNode(schema)
-	// 	case "object":
-	// 		return "unit" in schema
-	// 			? new UnitNode(schema)
-	// 			: "proto" in schema
-	// 			? new ProtoNode(schema)
-	// 			: "domain" in schema
-	// 			? new DomainNode(schema)
-	// 			: undefined
-	// }
-}
-
-export const parseBasis = (schema: Schema<BasisKind>) =>
-	maybeParseBasis(schema) ??
-	throwParseError(
-		`Basis schema must be a non-enumerable domain, a constructor, or have one of the following keys:
-"is", "unit", "proto", "domain"`
-	)

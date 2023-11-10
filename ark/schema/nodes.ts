@@ -1,5 +1,5 @@
 import type { extend, listable } from "@arktype/util"
-import { BaseNode, type rightOf } from "./base.js"
+import { type BaseNode, type rightOf } from "./base.js"
 import {
 	type BasisClassesByKind,
 	type BasisDeclarationsByKind
@@ -13,47 +13,6 @@ import {
 	type SetClassesByKind,
 	type SetDeclarationsByKind
 } from "./sets/set.js"
-import {
-	type BranchSchema,
-	type parseUnion,
-	type validateBranchSchema
-} from "./sets/union.js"
-
-type RootNodeParser = {
-	<branches extends readonly unknown[]>(
-		...branches: {
-			[i in keyof branches]: validateBranchSchema<branches[i]>
-		}
-	): parseUnion<branches>
-}
-
-const parseNode = (...schemas: BranchSchema[]) => new UnionNode(schemas)
-
-export const parseKind = <kind extends NodeKind>(
-	kind: kind,
-	schema: Schema<kind>
-): Node<kind> => new (BaseNode.classesByKind[kind] as any)(schema)
-
-const parseUnits = <const branches extends readonly unknown[]>(
-	...values: branches
-) => {
-	const uniqueValues: unknown[] = []
-	for (const value of values) {
-		if (!uniqueValues.includes(value)) {
-			uniqueValues.push(value)
-		}
-	}
-	// TODO: bypass reduction
-	return new UnionNode<branches[number]>({
-		union: uniqueValues.map((unit) => new UnitNode({ unit })),
-		ordered: false
-	})
-}
-
-export const node = Object.assign(parseNode as RootNodeParser, {
-	units: parseUnits,
-	kind: parseKind
-})
 
 export type RootInput = listable<ValidatorSchema | MorphSchema>
 
@@ -94,7 +53,7 @@ export type NodeKind = keyof NodeDeclarationsByKind
 
 export type NodeClassesByKind = extend<RuleClassesByKind, SetClassesByKind>
 
-export type NodeClass<kind extends NodeKind = NodeKind> =
+export type NodeImplementation<kind extends NodeKind = NodeKind> =
 	NodeClassesByKind[kind]
 
 export type Schema<kind extends NodeKind> =

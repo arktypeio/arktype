@@ -1,12 +1,7 @@
-import { type extend, type listable, throwParseError } from "@arktype/util"
-import {
-	BaseNode,
-	constraintKinds,
-	type IrreducibleConstraintKind
-} from "../base.js"
+import { type extend, type listable } from "@arktype/util"
+import { type IrreducibleConstraintKind } from "../base.js"
 import { type BasisKind } from "../bases/basis.js"
-import { type DiscriminableSchema, type Node, type Schema } from "../nodes.js"
-import { type ParseContext } from "../utils.js"
+import { type Node, type Schema } from "../nodes.js"
 import {
 	type MaxDeclaration,
 	type MaxImplementation,
@@ -80,23 +75,4 @@ export type constraintKindOf<t> = {
 
 export type constraintInputsByKind<t> = {
 	[k in constraintKindOf<t>]?: ConstraintIntersectionInput<k>
-}
-
-export type discriminableConstraintSchema<t> = DiscriminableSchema<
-	constraintKindOf<t>
->
-
-export const parseConstraint = (
-	schema: DiscriminableSchema<ConstraintKind>,
-	ctx: ParseContext
-) => {
-	const kind = constraintKinds.find((kind) => kind in schema)
-	if (!kind) {
-		return throwParseError(
-			`Constraint schema must contain one of the following keys: ${constraintKinds.join(
-				", "
-			)}`
-		)
-	}
-	return new BaseNode(schema as never, ctx)
 }

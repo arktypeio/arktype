@@ -1,6 +1,6 @@
 import { type conform, isArray, type mutable } from "@arktype/util"
 import {
-	BaseNode,
+	type BaseNode,
 	type declareNode,
 	defineNode,
 	type withAttributes
@@ -11,7 +11,7 @@ import { type Root } from "../root.js"
 import {
 	type MorphSchema,
 	type parseMorphSchema,
-	parseValidatorSchema,
+	type parseValidatorSchema,
 	type validateMorphSchema,
 	type validateValidatorSchema,
 	type ValidatorKind,
@@ -43,11 +43,6 @@ export type parseBranchSchema<schema> = schema extends MorphSchema
 	: schema extends ValidatorSchema
 	? parseValidatorSchema<schema>
 	: BranchNode
-
-export const parseBranchSchema = (schema: BranchSchema) =>
-	typeof schema === "object" && "morph" in schema
-		? new BaseNode(schema)
-		: parseValidatorSchema(schema)
 
 export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]

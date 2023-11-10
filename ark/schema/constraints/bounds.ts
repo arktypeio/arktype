@@ -52,14 +52,12 @@ export type MinInner = extend<
 	}
 >
 
-export type ExpandedMinSchema = extend<
+export type MinSchema = extend<
 	BoundSchema,
 	{
 		readonly min: BoundLimit
 	}
 >
-
-export type MinSchema = BoundLimit | ExpandedMinSchema
 
 export type MinDeclaration = declareNode<{
 	kind: "min"
@@ -108,14 +106,12 @@ export type MaxInner = extend<
 	}
 >
 
-export type ExpandedMaxSchema = extend<
+export type MaxSchema = extend<
 	BoundSchema,
 	{
 		readonly max: BoundLimit
 	}
 >
-
-export type MaxSchema = BoundLimit | ExpandedMaxSchema
 
 export type MaxDeclaration = declareNode<{
 	kind: "max"
@@ -202,15 +198,13 @@ export type BoundKind = keyof typeof unitsByBoundKind
 export type LimitKind = "min" | "max"
 
 export const schemaToComparator = <
-	schema extends ExpandedMinSchema | ExpandedMaxSchema
+	schema extends MinSchema | ExpandedMaxSchema
 >(
 	schema: schema
 ) =>
-	`${
-		("min" in schema ? ">" : "<") as schema extends ExpandedMinSchema
-			? ">"
-			: "<"
-	}${schema.exclusive ? "" : "="}`
+	`${("min" in schema ? ">" : "<") as schema extends MinSchema ? ">" : "<"}${
+		schema.exclusive ? "" : "="
+	}`
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 	`Bound kinds ${l} and ${r} are incompatible`

@@ -25,7 +25,7 @@ export type RequiredPropInner = withAttributes<{
 
 export type RequiredPropSchema = withAttributes<{
 	readonly required: string | symbol
-	readonly value: RootInput
+	readonly value?: RootInput
 }>
 
 export type RequiredDeclaration = declareNode<{
@@ -79,7 +79,7 @@ export type OptionalPropInner = withAttributes<{
 
 export type OptionalPropSchema = withAttributes<{
 	readonly optional: string | symbol
-	readonly value: RootInput
+	readonly value?: RootInput
 }>
 
 export type OptionalDeclaration = declareNode<{
