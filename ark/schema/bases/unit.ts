@@ -1,7 +1,8 @@
-import { stringify } from "@arktype/util"
+import { domainOf, stringify } from "@arktype/util"
 import { type declareNode, defineNode, type withAttributes } from "../base.ts"
 import { Disjoint } from "../disjoint.ts"
 import { compileSerializedValue, In } from "../io/compile.ts"
+import { type BasisAttachments } from "./basis.ts"
 
 export type UnitInner<rule = unknown> = withAttributes<{
 	readonly unit: rule
@@ -17,14 +18,10 @@ export type UnitDeclaration = declareNode<{
 		unit: "unit" | Disjoint
 		default: "unit" | Disjoint
 	}
+	attach: BasisAttachments
 }>
 
 // readonly domain = domainOf(this.unit)
-
-// // TODO: add reference to for objects
-// readonly basisName = stringify(this.unit)
-
-// readonly implicitBasis = this
 
 export const UnitImplementation = defineNode({
 	kind: "unit",
@@ -37,7 +34,10 @@ export const UnitImplementation = defineNode({
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	},
 	parseSchema: (schema) => schema,
-	compileCondition: (inner) =>
-		`${In} === ${compileSerializedValue(inner.unit)}`,
-	writeDefaultDescription: (inner) => stringify(inner.unit)
+	writeDefaultDescription: (inner) => stringify(inner.unit),
+	attach: (inner) => ({
+		basisName: stringify(inner),
+		domain: domainOf(inner.unit),
+		condition: `${In} === ${compileSerializedValue(inner.unit)}`
+	})
 })

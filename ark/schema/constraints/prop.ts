@@ -4,6 +4,7 @@ import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import { type Node, type RootInput } from "../nodes.ts"
 import { type Root } from "../root.ts"
+import { type ConstraintAttachments } from "./constraint.ts"
 import { getBasisName } from "./shared.ts"
 
 export type PropDeclarationsByKind = {
@@ -35,6 +36,7 @@ export type RequiredDeclaration = declareNode<{
 	intersections: {
 		required: "required" | Disjoint | null
 	}
+	attach: ConstraintAttachments<object>
 }>
 
 const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
@@ -65,9 +67,12 @@ export const RequiredImplementation = defineNode({
 		}
 	},
 	parseSchema: (schema) => schema as never,
-	compileCondition: (inner) => "true",
 	writeDefaultDescription: (inner) =>
-		`${String(inner.required)}: ${inner.value}`
+		`${String(inner.required)}: ${inner.value}`,
+	attach: (inner) => ({
+		implicitBasis: builtins().object,
+		condition: "true"
+	})
 })
 
 // static writeInvalidBasisMessage = writeInvalidBasisMessage
@@ -89,6 +94,7 @@ export type OptionalDeclaration = declareNode<{
 	intersections: {
 		optional: "optional" | null
 	}
+	attach: ConstraintAttachments<object>
 }>
 
 // static writeInvalidBasisMessage = writeInvalidBasisMessage
@@ -115,9 +121,12 @@ export const OptionalImplementation = defineNode({
 		}
 	},
 	parseSchema: (schema) => schema as never,
-	compileCondition: (inner) => "true",
 	writeDefaultDescription: (inner) =>
-		`${String(inner.optional)}?: ${inner.value}`
+		`${String(inner.optional)}?: ${inner.value}`,
+	attach: (inner) => ({
+		implicitBasis: builtins().object,
+		condition: "true"
+	})
 })
 
 /**** NAMED *****/

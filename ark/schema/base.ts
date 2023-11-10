@@ -1,6 +1,8 @@
 import {
 	CastableBase,
 	CompiledFunction,
+	type Dict,
+	type ErrorMessage,
 	type evaluate,
 	type extend,
 	includes,
@@ -19,12 +21,13 @@ import { Disjoint } from "./disjoint.ts"
 import { compileSerializedValue, In } from "./io/compile.ts"
 import { registry } from "./io/registry.ts"
 import {
+	type Attachments,
 	type Inner,
 	type Node,
 	type NodeDeclarationsByKind,
-	type NodeImplementation,
 	type NodeKind,
 	type reifyIntersections,
+	type RootInput,
 	type RuleKind
 } from "./nodes.ts"
 import { type RootKind } from "./root.ts"
@@ -115,6 +118,17 @@ export type DeclarationInput<kind extends NodeKind> = {
 	// as its kind that can be used as a discriminator
 	inner: BaseAttributes & { [k in kind]: unknown }
 	intersections: BaseIntersectionMap[kind]
+	attach: Dict
+}
+
+export type BaseNodeDeclaration = {
+	kind: NodeKind
+	schema: unknown
+	inner: BaseAttributes
+	intersections: {
+		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
+	}
+	attach: Dict
 }
 
 export type declareNode<
@@ -129,7 +143,7 @@ export type declareNode<
 
 export const defineNode = <
 	kind extends NodeKind,
-	definition extends StaticNodeDefinition<NodeDeclarationsByKind[kind]>
+	definition extends NodeImplementation<NodeDeclarationsByKind[kind]>
 >(
 	definition: { kind: kind } & definition
 ): instantiateNodeClassDefinition<definition> => {
@@ -150,26 +164,21 @@ type instantiateNodeClassDefinition<definition> = evaluate<
 	}
 >
 
-export type BaseNodeDeclaration = {
-	kind: NodeKind
-	schema: unknown
-	inner: BaseAttributes
-	intersections: {
-		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
-	}
-}
-
 export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
 	{
 		[k in Exclude<keyof inner, keyof BaseAttributes>]: KeyDefinition
 	}
+
+export type RuleAttachments = {
+	readonly condition: string
+}
 
 export type KeyDefinition = {
 	attachAs?: string
 	meta?: boolean
 }
 
-export type StaticNodeDefinition<
+export type NodeImplementation<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > = {
 	kind: d["kind"]
@@ -177,12 +186,22 @@ export type StaticNodeDefinition<
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	parseSchema: (schema: d["schema"], ctx: ParseContext) => d["inner"]
 	writeDefaultDescription: (inner: d["inner"]) => string
-	compileCondition: (inner: d["inner"]) => string
+	attach: (inner: d["inner"]) => {
+		[k in unsatisfiedAttachKey<d["inner"], d["attach"]>]: d["attach"][k]
+	}
 }
+
+type unsatisfiedAttachKey<inner, attach> = {
+	[k in keyof attach]: k extends keyof inner
+		? inner[k] extends attach[k]
+			? never
+			: k
+		: k
+}[keyof attach]
 
 export type UnknownNodeClass = {
 	new (inner: any, ctx?: ParseContext): UnknownNode
-	definition: StaticNodeDefinition
+	definition: NodeImplementation
 }
 
 const $ark = registry()
@@ -202,7 +221,7 @@ const defaultValueSerializer = (v: unknown): JsonData => {
 export class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
-> extends CastableBase<Inner<kind>> {
+> extends CastableBase<Inner<kind> & Attachments<kind>> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -225,7 +244,7 @@ export class BaseNode<
 			[i in keyof branches]: validateBranchSchema<branches[i]>
 		}
 	): parseUnion<branches>
-	static from(...branches: {}[]) {
+	static from(...branches: RootInput[]) {
 		const nodes = branches.map((schema) => {
 			switch (typeof schema) {
 				case "string":
@@ -294,7 +313,7 @@ export class BaseNode<
 	}
 
 	readonly alias: string
-	readonly definition: NodeImplementation<kind> = {}
+	protected readonly implementation: NodeImplementation
 	readonly description: string
 	readonly json: Json
 	readonly typeJson: Json
@@ -307,25 +326,24 @@ export class BaseNode<
 	readonly condition: string
 	readonly allows: (data: unknown) => data is t
 
-	// TODO: reduce, add param for unsafe
 	private constructor(
 		public kind: kind,
 		public inner: Inner<kind>
 	) {
 		super()
 		this.alias = $ark.register(this, this.inner.alias)
-		this.definition = {}
+		this.implementation = {}
 		this.description =
 			this.inner.description ??
-			this.definition.writeDefaultDescription(this.inner)
+			this.implementation.writeDefaultDescription(this.inner)
 		this.json = {}
 		this.typeJson = {}
 		this.children = []
 		for (const [k, v] of Object.entries<unknown>(this.inner)) {
-			if (!isKeyOf(k, this.definition.keys)) {
+			if (!isKeyOf(k, this.implementation.keys)) {
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
 			}
-			const keyDefinition = this.definition.keys[k]!
+			const keyDefinition = this.implementation.keys[k]!
 			if (v instanceof BaseNode) {
 				this.json[k] = v.json
 				this.typeJson[k] = v.typeJson
@@ -366,7 +384,7 @@ export class BaseNode<
 			(child) => child.contributesReferences
 		)
 		this.contributesReferences = [this, ...this.references]
-		this.condition = this.definition.compileCondition(this.inner)
+		this.condition = this.implementation.compileCondition(this.inner)
 		this.allows = new CompiledFunction(In, `return ${this.condition}`)
 	}
 
@@ -392,7 +410,7 @@ export class BaseNode<
 		}
 		const ioInner: Record<string, unknown> = {}
 		for (const k in this.inner) {
-			const keyDefinition = this.definition.keys[k as keyof BaseAttributes]!
+			const keyDefinition = this.implementation.keys[k as keyof BaseAttributes]!
 			const childrenAtKey = keyDefinition.children?.(this.inner[k])
 			if (childrenAtKey) {
 				ioInner[k] = isArray(childrenAtKey)
@@ -403,7 +421,7 @@ export class BaseNode<
 			}
 		}
 		// TODO; reduce?
-		return new BaseNode(ioInner as never)
+		return BaseNode.from(ioInner as never)
 	}
 
 	toJSON() {
@@ -415,7 +433,7 @@ export class BaseNode<
 	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
-		return this.kind === kind
+		return this.kind === (kind as never)
 	}
 
 	isBasis(): this is Node<BasisKind> {
@@ -452,7 +470,7 @@ export class BaseNode<
 				`Unexpected null intersection between non-rules ${this.kind} and ${other.kind}`
 			)
 		}
-		return new BaseNode({
+		return new BaseNode("intersection", {
 			intersection: [this as never, other]
 		})
 	}
@@ -467,7 +485,7 @@ export class BaseNode<
 		const l = leftOperandOf(this, other)
 		const thisIsLeft = l === this
 		const r: UnknownNode = thisIsLeft ? other : this
-		const intersections = l.definition.intersections
+		const intersections = l.implementation.intersections
 		const intersector = intersections[r.kind] ?? intersections.default
 		const result = intersector?.(l as never, r as never)
 		if (result) {

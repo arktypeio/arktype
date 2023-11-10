@@ -1,10 +1,11 @@
-import { type extend, throwParseError } from "@arktype/util"
+import { constructorExtends, type extend, throwParseError } from "@arktype/util"
 import { type declareNode, defineNode, type withAttributes } from "../base.ts"
 import type { BasisKind } from "../bases/basis.ts"
 import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import { In } from "../io/compile.ts"
 import { type Node } from "../nodes.ts"
+import { type ConstraintAttachments } from "./constraint.ts"
 
 export type BoundInner = withAttributes<{
 	readonly boundKind: BoundKind
@@ -16,6 +17,13 @@ export type BoundSchema = Omit<BoundInner, "boundKind">
 export type BoundLimit = number | string
 
 export type BoundDeclaration = MinDeclaration | MaxDeclaration
+
+export type BoundAttachments<limitKind extends LimitKind> = extend<
+	ConstraintAttachments<Boundable>,
+	{
+		comparator: RelativeComparator<limitKind>
+	}
+>
 
 const basesByBoundKind = {
 	number: builtins().number,
@@ -66,6 +74,7 @@ export type MinDeclaration = declareNode<{
 	intersections: {
 		min: "min"
 	}
+	attach: BoundAttachments<"min">
 }>
 
 export const MinImplementation = defineNode({
@@ -84,8 +93,6 @@ export const MinImplementation = defineNode({
 			? { ...schema, min: parseLimit(schema.min), boundKind }
 			: { min: parseLimit(schema), boundKind }
 	},
-	compileCondition: (inner) =>
-		`${In} ${schemaToComparator(inner)} ${inner.min}`,
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
 			inner.boundKind === "date"
@@ -96,6 +103,14 @@ export const MinImplementation = defineNode({
 				? "more than"
 				: "at least"
 		return `${comparisonDescription} ${inner.min}`
+	},
+	attach: (inner) => {
+		const comparator = `>${inner.exclusive ? "" : "="}` as const
+		return {
+			comparator,
+			condition: `${In} ${comparator} ${inner.min}`,
+			implicitBasis: basesByBoundKind[inner.boundKind]
+		}
 	}
 })
 
@@ -121,6 +136,7 @@ export type MaxDeclaration = declareNode<{
 		max: "max"
 		min: Disjoint | null
 	}
+	attach: BoundAttachments<"max">
 }>
 
 export const MaxImplementation = defineNode({
@@ -143,8 +159,6 @@ export const MaxImplementation = defineNode({
 			? { ...schema, max: parseLimit(schema.max), boundKind }
 			: { max: parseLimit(schema), boundKind }
 	},
-	compileCondition: (inner) =>
-		`${In} ${schemaToComparator(inner)} ${inner.max}`,
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
 			inner.boundKind === "date"
@@ -155,6 +169,14 @@ export const MaxImplementation = defineNode({
 				? "less than"
 				: "at most"
 		return `${comparisonDescription} ${inner.max}`
+	},
+	attach: (inner) => {
+		const comparator = `<${inner.exclusive ? "" : "="}` as const
+		return {
+			comparator,
+			condition: `${In} ${comparator} ${inner.max}`,
+			implicitBasis: basesByBoundKind[inner.boundKind]
+		}
 	}
 })
 
@@ -172,14 +194,13 @@ const getBoundKind = (basis: Node<BasisKind> | undefined): BoundKind => {
 	}
 	if (
 		(basis.kind === "unit" && basis.unit instanceof Array) ||
-		(basis.kind === "proto" && basis.extendsOneOf(Array))
+		(basis.kind === "proto" && constructorExtends(basis.proto, Array))
 	) {
 		return "array"
 	}
 	if (
 		(basis.kind === "unit" && basis.unit instanceof Date) ||
-		(basis.kind === ("proto" as never) &&
-			(basis as {} as Node<"proto">).extendsOneOf(Date))
+		(basis.kind === "proto" && constructorExtends(basis.proto, Date))
 	) {
 		return "date"
 	}
@@ -197,14 +218,10 @@ export type BoundKind = keyof typeof unitsByBoundKind
 
 export type LimitKind = "min" | "max"
 
-export const schemaToComparator = <
-	schema extends MinSchema | ExpandedMaxSchema
->(
-	schema: schema
-) =>
-	`${("min" in schema ? ">" : "<") as schema extends MinSchema ? ">" : "<"}${
-		schema.exclusive ? "" : "="
-	}`
+export type RelativeComparator<kind extends LimitKind = LimitKind> = {
+	min: ">" | ">="
+	max: "<" | "<="
+}[kind]
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 	`Bound kinds ${l} and ${r} are incompatible`

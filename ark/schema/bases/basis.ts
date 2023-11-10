@@ -1,11 +1,24 @@
 import {
+	type AbstractableConstructor,
+	type Domain,
+	type extend,
 	type inferDomain,
 	type instanceOf,
 	type isAny,
 	throwParseError
 } from "@arktype/util"
-import { type BaseNode } from "../base.ts"
-import { type Node, type Schema } from "../nodes.ts"
+import {
+	type BaseNode,
+	type BaseNodeDeclaration,
+	defineNode,
+	type NodeImplementation,
+	type RuleAttachments
+} from "../base.ts"
+import {
+	type Node,
+	type NodeDeclarationsByKind,
+	type Schema
+} from "../nodes.ts"
 import type {
 	DomainDeclaration,
 	DomainImplementation,
@@ -32,10 +45,13 @@ export type BasisClassesByKind = {
 
 export type BasisKind = keyof BasisDeclarationsByKind
 
-export type BaseBasis = {
-	readonly basisName: string
-	readonly implicitBasis: Node<BasisKind>
-}
+export type BasisAttachments = extend<
+	RuleAttachments,
+	{
+		readonly domain: Domain
+		readonly basisName: string
+	}
+>
 
 export type parseBasis<schema extends Schema<BasisKind>> =
 	//allow any to be used to access all constraints

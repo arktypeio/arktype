@@ -2,6 +2,7 @@ import type { Domain } from "@arktype/util"
 import { type declareNode, defineNode, type withAttributes } from "../base.ts"
 import { Disjoint } from "../disjoint.ts"
 import { In } from "../io/compile.ts"
+import { type BasisAttachments } from "./basis.ts"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -23,10 +24,8 @@ export type DomainDeclaration = declareNode<{
 	intersections: {
 		domain: "domain" | Disjoint
 	}
+	attach: BasisAttachments
 }>
-
-// readonly basisName = this.domain
-// readonly implicitBasis = this
 
 export const DomainImplementation = defineNode({
 	kind: "domain",
@@ -38,11 +37,14 @@ export const DomainImplementation = defineNode({
 	},
 	parseSchema: (schema) =>
 		typeof schema === "string" ? { domain: schema } : schema,
-	compileCondition: (inner) =>
-		inner.domain === "object"
-			? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-			: `typeof ${In} === "${inner.domain}"`,
-	writeDefaultDescription: (inner) => domainDescriptions[inner.domain]
+	writeDefaultDescription: (inner) => domainDescriptions[inner.domain],
+	attach: (inner) => ({
+		basisName: inner.domain,
+		condition:
+			inner.domain === "object"
+				? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
+				: `typeof ${In} === "${inner.domain}"`
+	})
 })
 
 const enumerableDomainDescriptions = {

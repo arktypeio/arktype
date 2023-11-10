@@ -9,6 +9,7 @@ import { type declareNode, defineNode, type withAttributes } from "../base.ts"
 import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import { compileSerializedValue, In } from "../io/compile.ts"
+import { type BasisAttachments } from "./basis.ts"
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor
@@ -28,22 +29,14 @@ export type ProtoDeclaration = declareNode<{
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
+	attach: BasisAttachments
 }>
 
 // readonly knownObjectKind = objectKindOf(this.proto)
-// readonly basisName = `${this.proto.name}`
 // readonly domain = "object"
 // readonly implicitBasis = this
 
 // // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
-
-// extendsOneOf<constructors extends readonly AbstractableConstructor[]>(
-// 	...constructors: constructors
-// ) {
-// 	return constructors.some((constructor) =>
-// 		constructorExtends(this.proto, constructor)
-// 	)
-// }
 
 export const ProtoImplementation = defineNode({
 	kind: "proto",
@@ -62,14 +55,17 @@ export const ProtoImplementation = defineNode({
 	},
 	parseSchema: (schema) =>
 		typeof schema === "function" ? { proto: schema } : schema,
-	compileCondition: (inner) =>
-		`${In} instanceof ${
-			objectKindOf(inner.proto) ?? compileSerializedValue(inner.proto)
-		}`,
 	writeDefaultDescription: (inner) => {
 		const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
 		return knownObjectKind
 			? objectKindDescriptions[knownObjectKind]
 			: `an instance of ${inner.proto.name}`
-	}
+	},
+	attach: (inner) => ({
+		basisName: `${inner.proto.name}`,
+		domain: "object",
+		condition: `${In} instanceof ${
+			objectKindOf(inner.proto) ?? compileSerializedValue(inner.proto)
+		}`
+	})
 })

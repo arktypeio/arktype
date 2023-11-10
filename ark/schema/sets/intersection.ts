@@ -46,6 +46,10 @@ export type IntersectionDeclaration = declareNode<{
 		intersection: "intersection" | Disjoint
 		default: "intersection" | Disjoint
 	}
+	attach: {
+		basis: Node<BasisKind> | undefined
+		constraints: readonly Node<ConstraintKind>[]
+	}
 }>
 
 // reduceToNode: (inner) => {
@@ -55,12 +59,6 @@ export type IntersectionDeclaration = declareNode<{
 // 	}
 // 	return new IntersectionNode(inner)
 // },
-
-// readonly basis: Root<unknown, BasisKind> | undefined =
-// this.intersection[0]?.isBasis() ? this.intersection[0] : undefined
-// readonly constraints: readonly Node<ConstraintKind>[] = this.basis
-// ? this.intersection.slice(1)
-// : (this.intersection as any)
 
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
@@ -98,14 +96,24 @@ export const IntersectionImplementation = defineNode({
 				: parseMappedRules(rules)
 		return intersectionInner
 	},
-	compileCondition: (inner) => {
+	attach: (inner) => {
 		let condition = inner.intersection
 			.map((rule) => rule.condition)
 			.join(") && (")
 		if (inner.intersection.length > 1) {
 			condition = `(${condition})`
 		}
-		return condition || "true"
+		const basis: Node<BasisKind> | undefined = inner.intersection[0]?.isBasis()
+			? inner.intersection[0]
+			: undefined
+		const constraints: readonly Node<ConstraintKind>[] = basis
+			? inner.intersection.slice(1)
+			: (inner.intersection as any)
+		return {
+			basis,
+			constraints,
+			condition: condition || "true"
+		}
 	},
 	writeDefaultDescription: (inner) => {
 		return inner.intersection.length === 0

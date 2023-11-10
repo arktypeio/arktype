@@ -1,6 +1,7 @@
 import { type declareNode, defineNode, type withAttributes } from "../base.ts"
 import { compileSerializedValue, In } from "../io/compile.ts"
 import type { TraversalState } from "../io/traverse.ts"
+import { type ConstraintAttachments } from "./constraint.ts"
 
 export type PredicateInner<rule extends Predicate = Predicate> =
 	withAttributes<{
@@ -18,6 +19,7 @@ export type PredicateDeclaration = declareNode<{
 	intersections: {
 		predicate: "predicate" | null
 	}
+	attach: ConstraintAttachments<unknown>
 }>
 
 export const PredicateImplementation = defineNode({
@@ -30,10 +32,13 @@ export const PredicateImplementation = defineNode({
 	},
 	parseSchema: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
-	compileCondition: (inner) =>
-		`${compileSerializedValue(inner.predicate)}(${In})`,
+
 	writeDefaultDescription: (inner) =>
-		`valid according to ${inner.predicate.name}`
+		`valid according to ${inner.predicate.name}`,
+	attach: (inner) => ({
+		implicitBasis: undefined,
+		condition: `${compileSerializedValue(inner.predicate)}(${In})`
+	})
 })
 
 // readonly implicitBasis = undefined

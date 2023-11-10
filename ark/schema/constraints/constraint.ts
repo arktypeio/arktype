@@ -1,5 +1,8 @@
 import { type extend, type listable } from "@arktype/util"
-import { type IrreducibleConstraintKind } from "../base.ts"
+import {
+	type IrreducibleConstraintKind,
+	type RuleAttachments
+} from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"
 import { type Node, type Schema } from "../nodes.ts"
 import {
@@ -44,6 +47,13 @@ export type ConstraintImplementationByKind = extend<
 		max: typeof MaxImplementation
 		pattern: typeof PatternImplementation
 		predicate: typeof PredicateImplementation
+	}
+>
+
+export type ConstraintAttachments<implicitBasisType> = extend<
+	RuleAttachments,
+	{
+		readonly implicitBasis: Node<BasisKind, implicitBasisType> | undefined
 	}
 >
 

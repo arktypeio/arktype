@@ -1,6 +1,6 @@
 import { caller, filePath } from "@arktype/fs"
 import { throwInternalError } from "@arktype/util"
-import tsvfs from "@typescript/vfs"
+import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
 import { getInternalTypeChecker } from "../tsserver/analysis.ts"
 import {

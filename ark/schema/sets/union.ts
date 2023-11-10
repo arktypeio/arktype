@@ -68,6 +68,7 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		default: "union" | Disjoint
 	}
+	attach: {}
 }>
 
 // reduceToNode: (inner) => {
@@ -151,7 +152,7 @@ export const UnionImplementation = defineNode({
 		result.union = schemaBranches.map(parseBranchSchema)
 		return result
 	},
-	compileCondition: (inner) => {
+	attach: (inner) => {
 		let condition = inner.union.map((branch) => branch.condition).join(") || (")
 		if (inner.union.length > 1) {
 			condition = `(${condition})`

@@ -26,7 +26,7 @@
 			"@arktype/schema": ["./ark/schema/main.ts"],
 			"@arktype/attest": ["./ark/attest/main.ts"]
 		},
-		"types": ["bun-types", "node", "mocha"]
+		"types": ["node", "mocha"]
 	},
 	"ts-node": {
 		"esm": true,

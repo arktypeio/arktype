@@ -1,6 +1,8 @@
 import { throwParseError } from "@arktype/util"
 import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { builtins } from "../builtins.ts"
 import { In } from "../io/compile.ts"
+import { type ConstraintAttachments } from "./constraint.ts"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
@@ -16,6 +18,7 @@ export type PatternDeclaration = declareNode<{
 	intersections: {
 		pattern: "pattern" | null
 	}
+	attach: ConstraintAttachments<string>
 }>
 
 export const PatternImplementation = defineNode({
@@ -34,8 +37,11 @@ export const PatternImplementation = defineNode({
 			: schema instanceof RegExp
 			? { pattern: schema.source, flags: schema.flags }
 			: schema,
-	compileCondition: (inner) => `/${inner.pattern}/${inner.flags}.test(${In})`,
-	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`
+	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`,
+	attach: (inner) => ({
+		implicitBasis: builtins().string,
+		condition: `/${inner.pattern}/${inner.flags}.test(${In})`
+	})
 })
 
 // readonly implicitBasis: DomainNode<string> = builtins().string

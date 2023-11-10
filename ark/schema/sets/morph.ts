@@ -5,16 +5,12 @@ import {
 	throwParseError
 } from "@arktype/util"
 import {
-	BaseNode,
+	type BaseNode,
 	type declareNode,
 	defineNode,
 	type withAttributes
 } from "../base.ts"
-import {
-	type BasisKind,
-	maybeParseBasis,
-	type parseBasis
-} from "../bases/basis.ts"
+import { type BasisKind, type parseBasis } from "../bases/basis.ts"
 import { type NonEnumerableDomain } from "../bases/domain.ts"
 import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
@@ -49,9 +45,6 @@ export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
 	? parseIntersectionSchema<schema>
 	: Node<"intersection" | BasisKind>
 
-export const parseValidatorSchema = (schema: ValidatorSchema): ValidatorNode =>
-	maybeParseBasis(schema) ?? new BaseNode(schema as IntersectionSchema)
-
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type Out<o = any> = ["=>", o]
@@ -77,6 +70,7 @@ export type MorphDeclaration = declareNode<{
 		intersection: "morph" | Disjoint
 		default: "morph" | Disjoint
 	}
+	attach: {}
 }>
 
 // TODO: recursively extract in
@@ -140,8 +134,11 @@ export const MorphImplementation = defineNode({
 			morph: typeof schema.morph === "function" ? [schema.morph] : schema.morph
 		}
 	},
-	compileCondition: (inner) => inner.in.condition,
-	writeDefaultDescription: (inner) => `a morph from ${inner.in} to ${inner.out}`
+	writeDefaultDescription: (inner) =>
+		`a morph from ${inner.in} to ${inner.out}`,
+	attach: (inner) => ({
+		condition: inner.in.condition
+	})
 })
 
 export type inferMorphOut<out> = out extends CheckResult<infer t>

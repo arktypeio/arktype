@@ -53,9 +53,6 @@ export type NodeKind = keyof NodeDeclarationsByKind
 
 export type NodeClassesByKind = extend<RuleClassesByKind, SetClassesByKind>
 
-export type NodeImplementation<kind extends NodeKind = NodeKind> =
-	NodeClassesByKind[kind]
-
 export type Schema<kind extends NodeKind> =
 	NodeDeclarationsByKind[kind]["schema"]
 
@@ -67,6 +64,9 @@ export type DiscriminableSchema<kind extends NodeKind = NodeKind> =
 	DiscriminableSchemasByKind[kind]
 
 export type Inner<kind extends NodeKind> = NodeDeclarationsByKind[kind]["inner"]
+
+export type Attachments<kind extends NodeKind> =
+	NodeDeclarationsByKind[kind]["attach"]
 
 export type LeftIntersections<kind extends NodeKind> = reifyIntersections<
 	kind,
