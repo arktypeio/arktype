@@ -1,6 +1,6 @@
 {
 	"name": "@arktype/attest",
-	"version": "0.0.5",
+	"version": "0.1.0",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -21,6 +21,7 @@
 		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
+		"arktype": "workspace:*",
 		"@arktype/fs": "workspace:*",
 		"@arktype/util": "workspace:*",
 		"@typescript/vfs": "1.5.0"
