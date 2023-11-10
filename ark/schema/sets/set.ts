@@ -1,3 +1,4 @@
+import { type CompilationConfig } from "../io/compile.ts"
 import {
 	type IntersectionDeclaration,
 	type IntersectionImplementation
@@ -18,3 +19,7 @@ export type SetClassesByKind = {
 }
 
 export type SetKind = keyof SetDeclarationsByKind
+
+export type SetAttachments = {
+	compile: (ctx: CompilationConfig) => string
+}

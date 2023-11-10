@@ -32,6 +32,7 @@ import {
 	type Schema
 } from "../nodes.ts"
 import { type ParseContext } from "../utils.ts"
+import { type SetAttachments } from "./set.ts"
 
 export type IntersectionInner = withAttributes<{
 	readonly intersection: CollapsedIntersectionInner
@@ -39,10 +40,13 @@ export type IntersectionInner = withAttributes<{
 
 export type CollapsedIntersectionInner = readonly Node<RuleKind>[]
 
-export type IntersectionAttachments = {
-	basis: Node<BasisKind> | undefined
-	constraints: readonly Node<ConstraintKind>[]
-}
+export type IntersectionAttachments = extend<
+	SetAttachments,
+	{
+		basis: Node<BasisKind> | undefined
+		constraints: readonly Node<ConstraintKind>[]
+	}
+>
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
@@ -115,7 +119,14 @@ export const IntersectionImplementation = defineNode({
 		return {
 			basis,
 			constraints,
-			condition: condition || "true"
+			compile: (cfg) =>
+				inner.intersection
+					.map(
+						(rule) => `if(!(${rule.condition})) {
+	return false
+}`
+					)
+					.join("\n") + "\nreturn true"
 		}
 	},
 	writeDefaultDescription: (inner) => {
@@ -256,14 +267,14 @@ export type parseIntersectionSchema<schema> =
 			? // if there are no constraint elements, reduce to the basis node
 			  constraints extends []
 				? parseBasis<basis>
-				: IntersectionNode<parseBasis<basis>["infer"]>
-			: IntersectionNode<unknown>
+				: Node<"intersection", parseBasis<basis>["infer"]>
+			: Node<"intersection">
 		: schema extends Required<IntersectionBasis>
 		? keyof schema & ConstraintKind extends never
 			? // if there are no constraint keys, reduce to the basis node
 			  parseBasis<schema["basis"]>
-			: IntersectionNode<parseBasis<schema["basis"]>["infer"]>
-		: IntersectionNode<unknown>
+			: Node<"intersection", parseBasis<schema["basis"]>["infer"]>
+		: Node<"intersection">
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

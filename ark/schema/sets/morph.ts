@@ -5,7 +5,6 @@ import {
 	throwParseError
 } from "@arktype/util"
 import {
-	type BaseAttachments,
 	type BaseNode,
 	type declareNode,
 	defineNode,
@@ -138,7 +137,7 @@ export const MorphImplementation = defineNode({
 	writeDefaultDescription: (inner) =>
 		`a morph from ${inner.in} to ${inner.out}`,
 	attach: (inner) => ({
-		condition: inner.in.condition
+		compile: () => `return true`
 	})
 })
 

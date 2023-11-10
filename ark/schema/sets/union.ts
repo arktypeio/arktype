@@ -6,6 +6,7 @@ import {
 	type withAttributes
 } from "../base.ts"
 import { Disjoint } from "../disjoint.ts"
+import { In } from "../io/compile.ts"
 import { type Node, type RootKind, type Schema } from "../nodes.ts"
 import {
 	type MorphSchema,
@@ -16,6 +17,7 @@ import {
 	type ValidatorKind,
 	type ValidatorSchema
 } from "./morph.ts"
+import { type SetAttachments } from "./set.ts"
 
 export type UnionChildKind = "morph" | ValidatorKind
 
@@ -67,7 +69,7 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		default: "union" | Disjoint
 	}
-	attach: {}
+	attach: SetAttachments
 }>
 
 // reduceToNode: (inner) => {
@@ -152,11 +154,16 @@ export const UnionImplementation = defineNode({
 		return result
 	},
 	attach: (inner) => {
-		let condition = inner.union.map((branch) => branch.condition).join(") || (")
-		if (inner.union.length > 1) {
-			condition = `(${condition})`
+		return {
+			compile: (cfg) =>
+				inner.union
+					.map(
+						(rule) => `if(${rule.alias}(${In})) {
+return true
+}`
+					)
+					.join("\n") + "\nreturn false"
 		}
-		return condition || "false"
 	},
 	writeDefaultDescription: (inner) =>
 		inner.union.length === 0 ? "never" : inner.union.join(" or ")
