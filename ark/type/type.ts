@@ -21,9 +21,14 @@ import type {
 	BuiltinObjectKind,
 	BuiltinObjects,
 	conform,
+	entryOf,
+	evaluate,
+	fromEntries,
+	join,
 	Json,
 	Primitive,
-	returnOf
+	returnOf,
+	unionToTuple
 } from "@arktype/util"
 import { CompiledFunction, transform } from "@arktype/util"
 import type {
@@ -34,6 +39,7 @@ import type {
 import type { GenericParamsParseError } from "./parser/generic.ts"
 import { parseGenericParams } from "./parser/generic.ts"
 import type { inferIntersection } from "./parser/semantic/intersections.ts"
+import { type Scanner } from "./parser/string/shift/scanner.ts"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
@@ -42,6 +48,7 @@ import type {
 } from "./parser/tuple.ts"
 import type { Module, Scope } from "./scope.ts"
 import { bindThis } from "./scope.ts"
+import { type Ark } from "./scopes/ark.ts"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -93,12 +100,6 @@ type validateCases<cases, $> = {
 		: never
 }
 
-export type MatchParser<$> = {
-	<cases>(
-		def: conform<cases, validateCases<cases, $>>
-	): (In: inferTypeRoot<keyof cases, $>) => returnOf<cases[keyof cases]>
-}
-
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(
@@ -128,24 +129,6 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 		// non-expression tuple definitions to be parsed, but it's not a supported
 		// part of the API as specified by the associated types
 		return new Type(args, scope)
-	}
-	return parser as never
-}
-
-export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
-	// TODO: move to match node, discrimination
-	const parser = (cases: Record<string, Morph>) => {
-		const caseArray = Object.entries(cases).map(([def, morph]) => ({
-			when: new Type(def, scope).allows,
-			then: morph
-		}))
-		return (data: unknown) => {
-			for (const c of caseArray) {
-				if (c.when(data)) {
-					return c.then(data, {} as never)
-				}
-			}
-		}
 	}
 	return parser as never
 }
@@ -197,7 +180,8 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
 	config: TypeConfig
 	root: Root<t>
-	condition: string
+	condition = ""
+	alias: string
 	allows: this["root"]["allows"]
 	json: Json
 
@@ -206,7 +190,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		public scope: Scope
 	) {
 		const root = parseTypeRoot(definition, scope) as Root<t>
-		super(In, `return ${root.condition} ? { data: ${In} } : { problems: [] } `)
+		super(In, `return true ? { data: ${In} } : { problems: [] } `)
 		// const state = new ${registry().reference("state")}();
 		// const morphs = [];
 		// 	for(let i = 0; i < morphs.length; i++) {
@@ -214,10 +198,10 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		// 	}
 		// 	return state.finalize(${In});
 		this.root = root
-		this.condition = root.condition
 		this.allows = root.allows
 		this.config = scope.config
 		this.json = this.root.json
+		this.alias = this.root.alias
 	}
 
 	configure(config: TypeConfig) {
@@ -284,7 +268,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 			: inferNarrow<this["infer"], def>,
 		$
 	> {
-		return new Type(this.root.constrain("predicate", def), this.scope) as never
+		return this as never //new Type(this.root.constrain("predicate", def), this.scope) as never
 	}
 
 	array(): Type<t[], $> {

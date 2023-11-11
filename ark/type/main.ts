@@ -9,6 +9,7 @@ export {
 	scope,
 	type,
 	match,
+	when,
 	type Ark
 } from "./scopes/ark.ts"
 export { jsObjects } from "./scopes/jsObjects.ts"

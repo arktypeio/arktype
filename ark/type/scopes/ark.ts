@@ -1,10 +1,10 @@
 import { type inferred } from "@arktype/schema"
+import { type MatchParser, type WhenParser } from "../match.ts"
 import type { Module, ScopeParser } from "../scope.ts"
 import { Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
-	MatchParser,
 	TypeParser
 } from "../type.ts"
 import type { InferredJsObjects } from "./jsObjects.ts"
@@ -55,6 +55,8 @@ export const scope: ScopeParser<{}, Ark> = ark.scope as never
 export const type: TypeParser<Ark> = ark.type
 
 export const match: MatchParser<Ark> = ark.match
+
+export const when: WhenParser<Ark> = ark.when
 
 export namespace type {
 	export type cast<to> = {
