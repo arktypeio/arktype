@@ -145,7 +145,7 @@ export const defineNode = <
 	definition extends NodeImplementation<NodeDeclarationsByKind[kind]>
 >(
 	definition: { kind: kind } & definition
-): instantiateNodeClassDefinition<definition> => {
+): instantiateNodeImplementation<definition> => {
 	Object.assign(definition.keys, {
 		alias: {
 			meta: true
@@ -157,25 +157,29 @@ export const defineNode = <
 	return definition
 }
 
-type instantiateNodeClassDefinition<definition> = evaluate<
+type instantiateNodeImplementation<definition> = evaluate<
 	definition & {
-		keys: { [k in keyof BaseAttributes]: KeyDefinition }
+		keys: { [k in keyof BaseAttributes]: NodeKeyKind }
 	}
 >
 
 export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
 	{
-		[k in Exclude<keyof inner, keyof BaseAttributes>]: KeyDefinition
+		[k in Exclude<keyof inner, keyof BaseAttributes>]: NodeKeyKind
 	}
 
 export type RuleAttachments = {
 	readonly condition: string
 }
 
-export type KeyDefinition = {
-	attachAs?: string
-	meta?: boolean
-}
+export type NodeKeyKind =
+	| "child"
+	| "children"
+	| "in"
+	| "out"
+	| "meta"
+	| "leaf"
+	| "morph"
 
 export type NodeImplementation<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
@@ -189,6 +193,8 @@ export type NodeImplementation<
 		[k in unsatisfiedAttachKey<d["inner"], d["attach"]>]: d["attach"][k]
 	}
 }
+
+type BaseNodeImplementation = instantiateNodeImplementation<NodeImplementation>
 
 type unsatisfiedAttachKey<inner, attach> = {
 	[k in keyof attach]: k extends keyof inner
@@ -348,7 +354,7 @@ export class BaseNode<
 		})
 	}
 
-	protected readonly implementation: NodeImplementation
+	protected readonly implementation: BaseNodeImplementation
 	readonly alias: string
 	readonly description: string
 	readonly json: Json
@@ -375,10 +381,12 @@ export class BaseNode<
 		this.typeJson = {}
 		this.children = []
 		for (const [k, v] of Object.entries<unknown>(this.inner)) {
-			if (!isKeyOf(k, this.implementation.keys)) {
+			if (!(k in this.implementation.keys)) {
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
 			}
-			const keyDefinition: KeyDefinition = this.implementation.keys[k]!
+			const keyDefinition = (
+				this.implementation.keys as Dict<string, NodeKeyKind>
+			)[k]
 			if (v instanceof BaseNode) {
 				this.json[k] = v.json
 				this.typeJson[k] = v.typeJson
@@ -403,12 +411,18 @@ export class BaseNode<
 				}
 			}
 			if (this.json[k] === undefined) {
-				this.json[k] = defaultValueSerializer(this.inner[k])
-				if (!keyDefinition.meta) {
+				this.json[k] = defaultValueSerializer(v)
+				if (keyDefinition !== "meta") {
 					this.typeJson[k] = this.json[k]
 				}
 			}
-			;(this as any)[keyDefinition.attachAs ?? k] = this.inner[k]
+			if (k === "in") {
+				this.inCache = v as UnknownNode
+			} else if (k === "out") {
+				this.outCache = v as UnknownNode
+			} else {
+				;(this as any)[k] = v
+			}
 		}
 		this.id = JSON.stringify(this.json)
 		this.typeId = JSON.stringify(this.typeJson)
@@ -420,7 +434,7 @@ export class BaseNode<
 		)
 		this.contributesReferences = [this, ...this.references]
 		Object.assign(this, this.implementation.attach(this.inner))
-		this.allows = new CompiledFunction(In, `return ${this.condition}`)
+		this.allows = new CompiledFunction(In, `return true`)
 	}
 
 	inCache?: UnknownNode;
@@ -446,12 +460,13 @@ export class BaseNode<
 		const ioInner: Record<string, unknown> = {}
 		for (const k in this.inner) {
 			const keyDefinition = this.implementation.keys[k as keyof BaseAttributes]!
-			const childrenAtKey = keyDefinition.children?.(this.inner[k])
-			if (childrenAtKey) {
-				ioInner[k] = isArray(childrenAtKey)
-					? childrenAtKey.map((child) => child[kind])
-					: childrenAtKey[kind]
-			} else {
+			if (keyDefinition === "child") {
+				ioInner[k] = (this.inner[k] as UnknownNode)[kind]
+			} else if (keyDefinition === "children") {
+				ioInner[k] = (this.inner[k] as UnknownNode[]).map(
+					(child) => child[kind]
+				)
+			} else if (keyDefinition !== "meta") {
 				ioInner[k] = this.inner[k]
 			}
 		}
@@ -587,12 +602,6 @@ export class BaseNode<
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
-	}
-
-	subsumes<other extends Node>(
-		other: other
-	): other is Node<other["kind"], this["infer"]> {
-		return other.extends(this as never)
 	}
 }
 

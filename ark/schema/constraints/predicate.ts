@@ -25,7 +25,7 @@ export type PredicateDeclaration = declareNode<{
 export const PredicateImplementation = defineNode({
 	kind: "predicate",
 	keys: {
-		predicate: {}
+		predicate: "leaf"
 	},
 	intersections: {
 		predicate: () => null

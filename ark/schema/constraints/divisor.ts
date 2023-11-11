@@ -22,7 +22,7 @@ export type DivisorDeclaration = declareNode<{
 export const DivisorImplementation = defineNode({
 	kind: "divisor",
 	keys: {
-		divisor: {}
+		divisor: "leaf"
 	},
 	intersections: {
 		divisor: (l, r) => ({

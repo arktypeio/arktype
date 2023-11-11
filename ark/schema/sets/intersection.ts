@@ -62,7 +62,7 @@ export type IntersectionDeclaration = declareNode<{
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	keys: {
-		intersection: {}
+		intersection: "children"
 	},
 	intersections: {
 		intersection: (l, r) => {

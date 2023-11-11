@@ -80,9 +80,9 @@ export type MinDeclaration = declareNode<{
 export const MinImplementation = defineNode({
 	kind: "min",
 	keys: {
-		min: {},
-		exclusive: {},
-		boundKind: {}
+		min: "leaf",
+		exclusive: "leaf",
+		boundKind: "leaf"
 	},
 	intersections: {
 		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
@@ -142,9 +142,9 @@ export type MaxDeclaration = declareNode<{
 export const MaxImplementation = defineNode({
 	kind: "max",
 	keys: {
-		max: {},
-		exclusive: {},
-		boundKind: {}
+		max: "leaf",
+		exclusive: "leaf",
+		boundKind: "leaf"
 	},
 	intersections: {
 		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r),

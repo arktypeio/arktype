@@ -46,8 +46,8 @@ const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 export const RequiredImplementation = defineNode({
 	kind: "required",
 	keys: {
-		required: {},
-		value: {}
+		required: "leaf",
+		value: "child"
 	},
 	intersections: {
 		required: (l, r) => {
@@ -103,8 +103,8 @@ export type OptionalDeclaration = declareNode<{
 export const OptionalImplementation = defineNode({
 	kind: "optional",
 	keys: {
-		optional: {},
-		value: {}
+		optional: "leaf",
+		value: "child"
 	},
 	intersections: {
 		optional: (l, r) => {

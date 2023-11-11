@@ -81,11 +81,24 @@ export type UnionDeclaration = declareNode<{
 // 	return new UnionNode({ ...inner, union: reducedBranches })
 // }
 
+const intersectBranch = (l: Node<"union">, r: BranchNode) => {
+	const union = l.ordered
+		? l.union.flatMap((branch) => {
+				const branchResult = branch.intersect(r)
+				return branchResult instanceof Disjoint ? [] : branchResult
+		  })
+		: intersectBranches(l.union, [r])
+	if (union instanceof Disjoint) {
+		return union
+	}
+	return { union, ordered: l.ordered }
+}
+
 export const UnionImplementation = defineNode({
 	kind: "union",
 	keys: {
-		union: {},
-		ordered: {}
+		union: "children",
+		ordered: "leaf"
 	},
 	intersections: {
 		union: (l, r) => {
@@ -168,19 +181,6 @@ return true
 	writeDefaultDescription: (inner) =>
 		inner.union.length === 0 ? "never" : inner.union.join(" or ")
 })
-
-const intersectBranch = (l: Node<"union">, r: BranchNode) => {
-	const union = l.ordered
-		? l.union.flatMap((branch) => {
-				const branchResult = branch.intersect(r)
-				return branchResult instanceof Disjoint ? [] : branchResult
-		  })
-		: intersectBranches(l.union, [r])
-	if (union instanceof Disjoint) {
-		return union
-	}
-	return { union, ordered: l.ordered }
-}
 
 // // discriminate is cached so we don't have to worry about this running multiple times
 // get discriminant(): Discriminant | null {

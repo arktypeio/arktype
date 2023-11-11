@@ -79,13 +79,9 @@ export const MorphImplementation = defineNode({
 	keys: {
 		// assign in/out to their respective caches to avoid an error on an
 		// attempt to overwrite the getter
-		in: {
-			attachAs: "inCache"
-		},
-		out: {
-			attachAs: "outCache"
-		},
-		morph: {}
+		in: "in",
+		out: "out",
+		morph: "morph"
 	},
 	intersections: {
 		morph: (l, r) => {

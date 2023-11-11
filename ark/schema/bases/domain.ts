@@ -30,7 +30,7 @@ export type DomainDeclaration = declareNode<{
 export const DomainImplementation = defineNode({
 	kind: "domain",
 	keys: {
-		domain: {}
+		domain: "leaf"
 	},
 	intersections: {
 		domain: (l, r) => Disjoint.from("domain", l, r)

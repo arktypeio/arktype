@@ -24,8 +24,8 @@ export type PatternDeclaration = declareNode<{
 export const PatternImplementation = defineNode({
 	kind: "pattern",
 	keys: {
-		pattern: {},
-		flags: {}
+		pattern: "leaf",
+		flags: "leaf"
 	},
 	intersections: {
 		// For now, non-equal regex are naively intersected

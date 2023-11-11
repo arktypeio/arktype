@@ -26,7 +26,7 @@ export type UnitDeclaration = declareNode<{
 export const UnitImplementation = defineNode({
 	kind: "unit",
 	keys: {
-		unit: {}
+		unit: "leaf"
 	},
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),

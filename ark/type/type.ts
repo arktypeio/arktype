@@ -21,14 +21,8 @@ import type {
 	BuiltinObjectKind,
 	BuiltinObjects,
 	conform,
-	entryOf,
-	evaluate,
-	fromEntries,
-	join,
 	Json,
-	Primitive,
-	returnOf,
-	unionToTuple
+	Primitive
 } from "@arktype/util"
 import { CompiledFunction, transform } from "@arktype/util"
 import type {
@@ -39,7 +33,6 @@ import type {
 import type { GenericParamsParseError } from "./parser/generic.ts"
 import { parseGenericParams } from "./parser/generic.ts"
 import type { inferIntersection } from "./parser/semantic/intersections.ts"
-import { type Scanner } from "./parser/string/shift/scanner.ts"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
@@ -48,7 +41,6 @@ import type {
 } from "./parser/tuple.ts"
 import type { Module, Scope } from "./scope.ts"
 import { bindThis } from "./scope.ts"
-import { type Ark } from "./scopes/ark.ts"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -91,13 +83,6 @@ export type TypeParser<$> = {
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
-}
-
-type validateCases<cases, $> = {
-	// adding keyof $ explicitly provides key completions for aliases
-	[k in keyof cases | keyof $]?: k extends validateTypeRoot<k, $>
-		? (In: inferTypeRoot<k, $>) => unknown
-		: never
 }
 
 export type DeclarationParser<$> = <preinferred>() => {
