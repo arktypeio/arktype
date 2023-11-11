@@ -1,6 +1,7 @@
 import {
 	type AbstractableConstructor,
 	type exactMessageOnError,
+	hasDomain,
 	type listable,
 	throwParseError
 } from "@arktype/util"
@@ -121,13 +122,17 @@ export const MorphImplementation = defineNode({
 				  }
 		}
 	},
-	parse: (schema, ctx): MorphInner => {
-		return {
-			in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
-			out: schema.out ? parseValidatorSchema(schema.out) : builtins().unknown,
-			morph: typeof schema.morph === "function" ? [schema.morph] : schema.morph
-		}
-	},
+	parse: (schema) =>
+		hasDomain(schema, "object") && "morph" in schema
+			? {
+					in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
+					out: schema.out
+						? parseValidatorSchema(schema.out)
+						: builtins().unknown,
+					morph:
+						typeof schema.morph === "function" ? [schema.morph] : schema.morph
+			  }
+			: undefined,
 	writeDefaultDescription: (inner) =>
 		`a morph from ${inner.in} to ${inner.out}`,
 	attach: (inner) => ({

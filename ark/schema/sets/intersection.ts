@@ -5,7 +5,7 @@ import type {
 	extend,
 	mutable
 } from "@arktype/util"
-import { throwInternalError } from "@arktype/util"
+import { hasDomain, throwInternalError } from "@arktype/util"
 import {
 	type BaseAttributes,
 	type declareNode,
@@ -80,8 +80,15 @@ export const IntersectionImplementation = defineNode({
 			return result instanceof Disjoint ? result : { intersection: result }
 		}
 	},
-	matches: (schema) => {},
 	parse: (schema) => {
+		if (
+			typeof schema !== "object" ||
+			"unit" in schema ||
+			"proto" in schema ||
+			"domain" in schema
+		) {
+			return
+		}
 		const { alias, description, ...rules } = schema
 		const intersectionInner = {} as mutable<IntersectionInner>
 		if (alias) {

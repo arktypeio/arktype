@@ -1,4 +1,4 @@
-import { type conform, isArray, type mutable } from "@arktype/util"
+import { type conform, hasDomain, isArray, type mutable } from "@arktype/util"
 import {
 	type BaseNode,
 	type declareNode,
@@ -142,23 +142,14 @@ export const UnionImplementation = defineNode({
 				  }
 		}
 	},
-	matches: (schema): schema is UnionSchema =>
-		isArray(schema) || "union" in schema,
-	parse: (schema) => {
-		const result = {
-			ordered: false
-		} as mutable<UnionInner>
-		let schemaBranches: readonly BranchSchema[]
-		if (isArray(schema)) {
-			schemaBranches = schema
-		} else {
-			const { union, ...rest } = schema
-			Object.assign(result, rest)
-			schemaBranches = union
-		}
-		result.union = schemaBranches.map(parseBranchSchema)
-		return result
-	},
+	parse: (schema) =>
+		hasDomain(schema, "object")
+			? isArray(schema)
+				? { union: schema, ordered: false }
+				: "union" in schema
+				? schema
+				: undefined
+			: undefined,
 	reduce: (inner) => {
 		const reducedBranches = reduceBranches(inner)
 		if (reducedBranches.length === 1) {

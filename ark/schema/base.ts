@@ -183,9 +183,30 @@ export type NodeImplementation<
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d["inner"]>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	matches: (schema: unknown) => schema is d["schema"]
-	parse: (schema: d["schema"], ctx: ParseContext) => d["inner"]
-	reduce: (
+	// parse: (
+	// 	schema: Schema<d["kind"] | rightOf<d["kind"]>>,
+	// 	ctx: ParseContext
+	// ) => Extract<d["schema"], { [k in d["kind"]]: unknown }> | undefined
+	reduce?: (
+		inner: d["inner"]
+	) => UnknownNode | { [k in NodeKind]: [k, Inner<k>] }[NodeKind]
+	writeDefaultDescription: (inner: d["inner"]) => string
+	attach: (inner: d["inner"]) => {
+		[k in unsatisfiedAttachKey<d["inner"], d["attach"]>]: d["attach"][k]
+	}
+}
+
+export type RootImplementation<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> = {
+	kind: d["kind"]
+	keys: InnerKeyDefinitions<d["inner"]>
+	intersections: reifyIntersections<d["kind"], d["intersections"]>
+	parse: (
+		schema: Schema<d["kind"] | rightOf<d["kind"]>>,
+		ctx: ParseContext
+	) => Extract<d["schema"], { [k in d["kind"]]: unknown }> | undefined
+	reduce?: (
 		inner: d["inner"]
 	) => UnknownNode | { [k in NodeKind]: [k, Inner<k>] }[NodeKind]
 	writeDefaultDescription: (inner: d["inner"]) => string
