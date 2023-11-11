@@ -116,9 +116,7 @@ export type UnknownNode = BaseNode<any>
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
 	schema: unknown
-	// each node's inner definition must have a required key with the same name
-	// as its kind that can be used as a discriminator
-	inner: BaseAttributes & { [k in kind]: unknown }
+	inner: BaseAttributes
 	intersections: BaseIntersectionMap[kind]
 	attach: Dict
 }
@@ -177,45 +175,47 @@ export type RuleAttachments = {
 
 export type NodeKeyKind = "child" | "children" | "meta" | "leaf"
 
-export type NodeImplementation<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> = {
+export type BaseNodeImplementation<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d["inner"]>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	// parse: (
-	// 	schema: Schema<d["kind"] | rightOf<d["kind"]>>,
-	// 	ctx: ParseContext
-	// ) => Extract<d["schema"], { [k in d["kind"]]: unknown }> | undefined
-	reduce?: (
-		inner: d["inner"]
-	) => UnknownNode | { [k in NodeKind]: [k, Inner<k>] }[NodeKind]
 	writeDefaultDescription: (inner: d["inner"]) => string
 	attach: (inner: d["inner"]) => {
 		[k in unsatisfiedAttachKey<d["inner"], d["attach"]>]: d["attach"][k]
 	}
 }
 
-export type RootImplementation<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> = {
-	kind: d["kind"]
-	keys: InnerKeyDefinitions<d["inner"]>
-	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	parse: (
-		schema: Schema<d["kind"] | rightOf<d["kind"]>>,
-		ctx: ParseContext
-	) => Extract<d["schema"], { [k in d["kind"]]: unknown }> | undefined
-	reduce?: (
-		inner: d["inner"]
-	) => UnknownNode | { [k in NodeKind]: [k, Inner<k>] }[NodeKind]
-	writeDefaultDescription: (inner: d["inner"]) => string
-	attach: (inner: d["inner"]) => {
-		[k in unsatisfiedAttachKey<d["inner"], d["attach"]>]: d["attach"][k]
+export type RootImplementation<d extends BaseNodeDeclaration> = extend<
+	BaseNodeImplementation<d>,
+	{
+		parse: (
+			schema: d["schema"],
+			ctx: ParseContext
+		) => Extract<d["schema"], { [k in d["kind"]]: unknown }>
+		reduce?: (
+			inner: d["inner"]
+		) => Node<Extract<RootKind, rightOf<d["kind"]>>> | d["inner"] //{ [k in NodeKind]: [k, Inner<k>] }[NodeKind]
 	}
-}
+>
 
-type BaseNodeImplementation = instantiateNodeImplementation<NodeImplementation>
+export type ConstraintImplementation<d extends BaseNodeDeclaration> = extend<
+	BaseNodeImplementation<d>,
+	{
+		parse: (
+			schema: d["schema"],
+			ctx: ParseContext
+		) => Extract<d["schema"], { [k in d["kind"]]: unknown }>
+	}
+>
+
+export type NodeImplementation<d extends BaseNodeDeclaration> =
+	d["kind"] extends RootKind
+		? RootImplementation<d>
+		: ConstraintImplementation<d>
+
+type UnknownNodeImplementation = instantiateNodeImplementation<
+	BaseNodeImplementation<BaseNodeDeclaration>
+>
 
 type unsatisfiedAttachKey<inner, attach> = {
 	[k in keyof attach]: k extends keyof inner
@@ -224,11 +224,6 @@ type unsatisfiedAttachKey<inner, attach> = {
 			: k
 		: k
 }[keyof attach]
-
-export type UnknownNodeClass = {
-	new (inner: any, ctx?: ParseContext): UnknownNode
-	definition: NodeImplementation
-}
 
 const $ark = registry()
 
@@ -401,7 +396,7 @@ export class BaseNode<
 		})
 	}
 
-	protected readonly implementation: BaseNodeImplementation
+	protected readonly implementation: UnknownNodeImplementation
 	readonly alias: string
 	readonly description: string
 	readonly json: Json

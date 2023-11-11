@@ -10,8 +10,8 @@ import {
 import {
 	type BaseNode,
 	type BaseNodeDeclaration,
+	type BaseNodeImplementation,
 	defineNode,
-	type NodeImplementation,
 	type RuleAttachments
 } from "../base.ts"
 import {

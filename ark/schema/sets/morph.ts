@@ -122,17 +122,11 @@ export const MorphImplementation = defineNode({
 				  }
 		}
 	},
-	parse: (schema) =>
-		hasDomain(schema, "object") && "morph" in schema
-			? {
-					in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
-					out: schema.out
-						? parseValidatorSchema(schema.out)
-						: builtins().unknown,
-					morph:
-						typeof schema.morph === "function" ? [schema.morph] : schema.morph
-			  }
-			: undefined,
+	parse: (schema) => ({
+		in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
+		out: schema.out ? parseValidatorSchema(schema.out) : builtins().unknown,
+		morph: typeof schema.morph === "function" ? [schema.morph] : schema.morph
+	}),
 	writeDefaultDescription: (inner) =>
 		`a morph from ${inner.in} to ${inner.out}`,
 	attach: (inner) => ({

@@ -143,20 +143,14 @@ export const UnionImplementation = defineNode({
 		}
 	},
 	parse: (schema) =>
-		hasDomain(schema, "object")
-			? isArray(schema)
-				? { union: schema, ordered: false }
-				: "union" in schema
-				? schema
-				: undefined
-			: undefined,
+		isArray(schema) ? { union: schema, ordered: false } : schema,
 	reduce: (inner) => {
 		const reducedBranches = reduceBranches(inner)
 		if (reducedBranches.length === 1) {
 			// TODO: description?
 			return reducedBranches[0]
 		}
-		return ["union", { ...inner, union: reducedBranches }]
+		return { ...inner, union: reducedBranches }
 	},
 	attach: (inner) => {
 		return {

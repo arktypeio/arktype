@@ -51,14 +51,6 @@ export type IntersectionDeclaration = declareNode<{
 	attach: IntersectionAttachments
 }>
 
-// reduceToNode: (inner) => {
-// 	if (inner.intersection.length === 1 && inner.intersection[0].isBasis()) {
-// 		// TODO: collapse description?
-// 		return inner.intersection[0]
-// 	}
-// 	return new IntersectionNode(inner)
-// },
-
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	keys: {
@@ -81,14 +73,6 @@ export const IntersectionImplementation = defineNode({
 		}
 	},
 	parse: (schema) => {
-		if (
-			typeof schema !== "object" ||
-			"unit" in schema ||
-			"proto" in schema ||
-			"domain" in schema
-		) {
-			return
-		}
 		const { alias, description, ...rules } = schema
 		const intersectionInner = {} as mutable<IntersectionInner>
 		if (alias) {
@@ -102,6 +86,17 @@ export const IntersectionImplementation = defineNode({
 				? parseListedRules(rules.intersection)
 				: parseMappedRules(rules)
 		return intersectionInner
+	},
+	reduce: (inner) => {
+		const rules = reduceRules([], inner.intersection)
+		if (rules instanceof Disjoint) {
+			return rules.throw()
+		}
+		if (rules.length === 1 && rules[0].isBasis()) {
+			// TODO: description?
+			return rules[0]
+		}
+		return { ...inner, union: rules }
 	},
 	attach: (inner) => {
 		let condition = inner.intersection
@@ -136,10 +131,24 @@ export const IntersectionImplementation = defineNode({
 	}
 })
 
+const reduceRules = (
+	l: readonly Node<RuleKind>[],
+	r: readonly Node<RuleKind>[]
+) => {
+	let result: readonly Node<RuleKind>[] | Disjoint = l
+	for (const constraint of r) {
+		if (result instanceof Disjoint) {
+			break
+		}
+		result = addRule(result, constraint)
+	}
+	return result instanceof Disjoint ? result : result
+}
+
 export const addRule = (
 	base: readonly Node<RuleKind>[],
 	rule: Node<RuleKind>
-): CollapsedIntersectionInner | Disjoint => {
+): Node<RuleKind>[] | Disjoint => {
 	const result: Node<RuleKind>[] = []
 	let includesConstraint = false
 	for (let i = 0; i < base.length; i++) {
@@ -160,7 +169,7 @@ export const addRule = (
 	if (!includesConstraint) {
 		result.push(rule)
 	}
-	return result as CollapsedIntersectionInner
+	return result
 }
 
 // const assertValidConstraints = (
