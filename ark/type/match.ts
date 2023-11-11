@@ -2,6 +2,7 @@ import { type Morph } from "@arktype/schema"
 import {
 	type conform,
 	type entryOf,
+	type ErrorMessage,
 	type evaluate,
 	type join,
 	type paramsOf,
@@ -23,10 +24,16 @@ type parseWhentryKey<
 	$,
 	result = {}
 > = s extends `${serializedWhentry<infer k, infer v>}${cedille}${infer tail}`
-	? parseWhentryKey<tail, $, result & { [_ in k]: inferTypeRoot<v, $> }>
+	? validateTypeRoot<v, $> extends ErrorMessage<infer message>
+		? ErrorMessage<message>
+		: parseWhentryKey<tail, $, result & { [_ in k]: inferTypeRoot<v, $> }>
 	: s extends serializedWhentry<infer k, infer v>
-	? evaluate<result & { [_ in k]: inferTypeRoot<v, $> }>
-	: result
+	? validateTypeRoot<v, $> extends ErrorMessage<infer message>
+		? ErrorMessage<message>
+		: evaluate<result & { [_ in k]: inferTypeRoot<v, $> }>
+	: validateTypeRoot<s, $> extends ErrorMessage<infer message>
+	? ErrorMessage<message>
+	: never
 
 export type WhenParser<$> = <const def>(
 	def: validateTypeRoot<def, $>
@@ -41,18 +48,16 @@ export const createWhenParser = <$>(scope: Scope): WhenParser<$> => {
 }
 
 type validateCases<cases, $> = {
-	[k in keyof cases]?: k extends validateTypeRoot<k, $>
+	[k in keyof cases | keyof $]?: k extends validateTypeRoot<k, $>
 		? (In: inferTypeRoot<k & string, $>) => unknown
+		: parseWhentryKey<k & string, $> extends ErrorMessage<infer message>
+		? ErrorMessage<message>
 		: (In: parseWhentryKey<k & string, $>) => unknown
 }
 
 export type MatchParser<$> = {
-	<
-		cases extends {
-			// adding keyof $ explicitly provides key completions for aliases
-			[k in keyof cases | keyof $]?: unknown
-		}
-	>(
+	<cases>(
+		// adding keyof $ explicitly provides key completions for aliases
 		def: conform<cases, validateCases<cases, $>>
 	): (In: paramsOf<cases[keyof cases]>[0]) => returnOf<cases[keyof cases]>
 }

@@ -10,7 +10,7 @@
 	"repository": {
 		"definition": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "(([^\\)\\(\\s]*)?((\\.)?(type|scope|define|when|arrayOf|intersection|keyOf|morph|narrow|union|Scope\\.root)|(\\.)(morph|and|or)))\\(",
+			"begin": "(([^\\)\\(\\s]*)?((\\.)?(type|scope|define|match|when|arrayOf|intersection|keyOf|morph|narrow|union|Scope\\.root)|(\\.)(morph|and|or)))\\(",
 			"beginCaptures": {
 				"1": {
 					"name": "entity.name.function.ts"

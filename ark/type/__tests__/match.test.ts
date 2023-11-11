@@ -10,4 +10,14 @@ const matcher = match({
 	semver: (s) => s.length
 })
 
-matcher //=>?
+// const validMatcher = match({
+// 	//    ^?
+// 	number: (data) => data,
+// 	"string|unknown[]": (data) => data.length
+// })
+
+// const invalidMatcher = match({
+// 	//    ^?
+// 	"string|numbr": (data) => data,
+// 	"1<boolean<5": (data) => data
+// })

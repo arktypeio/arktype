@@ -175,11 +175,9 @@ export type RuleAttachments = {
 export type NodeKeyKind =
 	| "child"
 	| "children"
-	| "in"
-	| "out"
 	| "meta"
 	| "leaf"
-	| "morph"
+
 
 export type NodeImplementation<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
@@ -384,35 +382,20 @@ export class BaseNode<
 			if (!(k in this.implementation.keys)) {
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
 			}
-			const keyDefinition = (
-				this.implementation.keys as Dict<string, NodeKeyKind>
-			)[k]
-			if (v instanceof BaseNode) {
-				this.json[k] = v.json
-				this.typeJson[k] = v.typeJson
-				this.children.push(v)
-			} else if (isArray(v)) {
-				// avoid assuming all elements are nodes until we've been over them
-				const jsonElements: JsonData[] = []
-				const typeJsonElements: JsonData[] = []
-				for (const element of v) {
-					if (element instanceof BaseNode) {
-						jsonElements.push(element.json)
-						typeJsonElements.push(element.typeJson)
-					} else {
-						break
-					}
-				}
-				if (jsonElements.length === v.length) {
-					// all elements were nodes, add them to children and json
-					this.children.push(...(v as UnknownNode[]))
-					this.json[k] = jsonElements
-					this.typeJson[k] = typeJsonElements
-				}
-			}
-			if (this.json[k] === undefined) {
+			const keyKind = (this.implementation.keys as Dict<string, NodeKeyKind>)[k]
+			if (keyKind === "child") {
+				const child = v as UnknownNode
+				this.json[k] = child.json
+				this.typeJson[k] = child.typeJson
+				this.children.push(child)
+			} else if (keyKind === "children") {
+				const children = v as UnknownNode[]
+				this.json[k] = children.map((child) => child.json)
+				this.typeJson[k] = children.map((child) => child.typeJson)
+				this.children.push(...(v as UnknownNode[]))
+			} else (this.json[k] === undefined) {
 				this.json[k] = defaultValueSerializer(v)
-				if (keyDefinition !== "meta") {
+				if (keyKind !== "meta") {
 					this.typeJson[k] = this.json[k]
 				}
 			}
