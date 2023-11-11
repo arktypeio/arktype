@@ -1,5 +1,11 @@
 import { attest } from "@arktype/attest"
-import { type BaseNode, type Node, node, type RootKind } from "@arktype/schema"
+import {
+	type BaseNode,
+	builtins,
+	node,
+	type Node,
+	type RootKind
+} from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 
 describe("intersections", () => {
@@ -92,5 +98,19 @@ describe("intersections", () => {
 			union: [{ domain: "string" }, { domain: "number" }]
 		})
 		attest(n.out.json).snap({ intersection: [] })
+	})
+	it("union of all types reduced to unknown", () => {
+		const n = node(
+			"string",
+			"number",
+			"object",
+			"bigint",
+			"symbol",
+			{ unit: true },
+			{ unit: false },
+			{ unit: null },
+			{ unit: undefined }
+		)
+		attest(n.json).equals(builtins().unknown.json)
 	})
 })

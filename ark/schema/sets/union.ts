@@ -72,14 +72,14 @@ export type UnionDeclaration = declareNode<{
 	attach: SetAttachments
 }>
 
-// reduceToNode: (inner) => {
+// const reduce = (inner: UnionInner) => {
 // 	const reducedBranches = reduceBranches(inner)
 // 	if (reducedBranches.length === 1) {
 // 		// TODO: description?
 // 		return reducedBranches[0]
 // 	}
 // 	return new UnionNode({ ...inner, union: reducedBranches })
-// },
+// }
 
 export const UnionImplementation = defineNode({
 	kind: "union",

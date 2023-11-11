@@ -5,21 +5,14 @@ import type {
 	extend,
 	mutable
 } from "@arktype/util"
-import {
-	includes,
-	isArray,
-	throwInternalError,
-	throwParseError
-} from "@arktype/util"
+import { throwInternalError } from "@arktype/util"
 import {
 	type BaseAttributes,
-	BaseNode,
-	constraintKinds,
 	type declareNode,
 	defineNode,
 	type withAttributes
 } from "../base.ts"
-import { type BasisKind, parseBasis } from "../bases/basis.ts"
+import { type BasisKind, type parseBasis } from "../bases/basis.ts"
 import {
 	type constraintInputsByKind,
 	type ConstraintKind
@@ -31,7 +24,6 @@ import {
 	type RuleKind,
 	type Schema
 } from "../nodes.ts"
-import { type ParseContext } from "../utils.ts"
 import { type SetAttachments } from "./set.ts"
 
 export type IntersectionInner = withAttributes<{
@@ -135,43 +127,6 @@ export const IntersectionImplementation = defineNode({
 			: inner.intersection.join(" and ")
 	}
 })
-
-const parseListedRules = (
-	schemas: RuleSchemaSet
-): CollapsedIntersectionInner => {
-	const basis = schemas[0] ? maybeParseBasis(schemas[0]) : undefined
-	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
-	const constraintContext: ParseContext = { basis }
-	for (let i = basis ? 1 : 0; i < schemas.length; i++) {
-		rules.push(parseConstraint(schemas[i] as never, constraintContext))
-	}
-	return rules
-}
-
-const parseMappedRules = ({
-	basis: basisSchema,
-	...constraintSchemasByKind
-}: MappedIntersectionSchema<any>): CollapsedIntersectionInner => {
-	const basis = basisSchema ? parseBasis(basisSchema) : undefined
-	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
-	const constraintContext: ParseContext = { basis }
-	for (const k in constraintSchemasByKind) {
-		if (!includes(constraintKinds, k)) {
-			return throwParseError(`'${k}' is not a valid constraint kind`)
-		}
-		const schemas = constraintSchemasByKind[k]
-		if (isArray(schemas)) {
-			rules.push(
-				...schemas.map(
-					(schema) => new BaseNode(schema as never, constraintContext)
-				)
-			)
-		} else {
-			rules.push(new BaseNode(schemas as never, constraintContext))
-		}
-	}
-	return rules
-}
 
 export const addRule = (
 	base: readonly Node<RuleKind>[],

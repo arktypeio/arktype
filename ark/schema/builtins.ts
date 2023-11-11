@@ -10,5 +10,16 @@ export const builtins = cached(() => ({
 	arrayIndexTypeNode: node("number"),
 	string: node("string"),
 	array: node(Array),
-	date: node(Date)
+	date: node(Date),
+	unknownUnion: node(
+		"string",
+		"number",
+		"object",
+		"bigint",
+		"symbol",
+		{ unit: true },
+		{ unit: false },
+		{ unit: null },
+		{ unit: undefined }
+	)
 }))

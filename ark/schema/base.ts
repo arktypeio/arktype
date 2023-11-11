@@ -217,6 +217,43 @@ const defaultValueSerializer = (v: unknown): JsonData => {
 	return compileSerializedValue(v)
 }
 
+// const parseListedRules = (
+// 	schemas: RuleSchemaSet
+// ): CollapsedIntersectionInner => {
+// 	const basis = schemas[0] ? maybeParseBasis(schemas[0]) : undefined
+// 	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
+// 	const constraintContext: ParseContext = { basis }
+// 	for (let i = basis ? 1 : 0; i < schemas.length; i++) {
+// 		rules.push(parseConstraint(schemas[i] as never, constraintContext))
+// 	}
+// 	return rules
+// }
+
+// const parseMappedRules = ({
+// 	basis: basisSchema,
+// 	...constraintSchemasByKind
+// }: MappedIntersectionSchema<any>): CollapsedIntersectionInner => {
+// 	const basis = basisSchema ? parseBasis(basisSchema) : undefined
+// 	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
+// 	const constraintContext: ParseContext = { basis }
+// 	for (const k in constraintSchemasByKind) {
+// 		if (!includes(constraintKinds, k)) {
+// 			return throwParseError(`'${k}' is not a valid constraint kind`)
+// 		}
+// 		const schemas = constraintSchemasByKind[k]
+// 		if (isArray(schemas)) {
+// 			rules.push(
+// 				...schemas.map(
+// 					(schema) => new BaseNode(schema as never, constraintContext)
+// 				)
+// 			)
+// 		} else {
+// 			rules.push(new BaseNode(schemas as never, constraintContext))
+// 		}
+// 	}
+// 	return rules
+// }
+
 export class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
@@ -259,7 +296,7 @@ export class BaseNode<
 							)}`
 						)
 					}
-					return new BaseNode(schema as never, ctx)
+					return new BaseNode(schema as never)
 				default:
 					return throwParseError(`${typeof schema} is not a valid schema type`)
 			}

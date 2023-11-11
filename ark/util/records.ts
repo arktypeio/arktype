@@ -45,9 +45,9 @@ type Entry<key extends PropertyKey = PropertyKey, value = unknown> = readonly [
 	value: value
 ]
 
-export type fromEntries<entries extends readonly Entry[]> = {
+export type fromEntries<entries extends readonly Entry[]> = evaluate<{
 	[entry in entries[number] as entry[0]]: entry[1]
-}
+}>
 
 export const fromEntries = <const entries extends readonly Entry[]>(
 	entries: entries
