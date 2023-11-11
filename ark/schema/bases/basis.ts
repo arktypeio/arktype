@@ -4,25 +4,15 @@ import {
 	type extend,
 	type inferDomain,
 	type instanceOf,
-	type isAny,
-	throwParseError
+	type isAny
 } from "@arktype/util"
-import {
-	type BaseNode,
-	type BaseNodeDeclaration,
-	type BaseNodeImplementation,
-	defineNode,
-	type RuleAttachments
-} from "../base.ts"
-import {
-	type Node,
-	type NodeDeclarationsByKind,
-	type Schema
-} from "../nodes.ts"
+import { type RuleAttachments } from "../base.ts"
+import { type Node, type Schema } from "../nodes.ts"
 import type {
 	DomainDeclaration,
 	DomainImplementation,
-	DomainSchema
+	DomainSchema,
+	NonEnumerableDomain
 } from "./domain.ts"
 import type {
 	ProtoDeclaration,
@@ -57,10 +47,14 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 	//allow any to be used to access all constraints
 	isAny<schema> extends true
 		? any
+		: schema extends NonEnumerableDomain
+		? Node<"domain", inferDomain<schema>>
+		: schema extends AbstractableConstructor<infer instance>
+		? Node<"proto", instance>
 		: schema extends DomainSchema<infer domain>
 		? Node<"domain", inferDomain<domain>>
 		: schema extends ProtoSchema<infer proto>
 		? Node<"proto", instanceOf<proto>>
-		: schema extends UnitSchema<infer unit>
-		? Node<"unit", unit>
+		: schema extends UnitSchema<infer is>
+		? Node<"unit", is>
 		: never

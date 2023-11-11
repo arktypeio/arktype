@@ -21,8 +21,6 @@ export type UnitDeclaration = declareNode<{
 	attach: BasisAttachments
 }>
 
-// readonly domain = domainOf(this.unit)
-
 export const UnitImplementation = defineNode({
 	kind: "unit",
 	keys: {
@@ -33,7 +31,7 @@ export const UnitImplementation = defineNode({
 		default: (l, r) =>
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	},
-	parse: (schema) => schema,
+	parse: (input) => input,
 	writeDefaultDescription: (inner) => stringify(inner.unit),
 	attach: (inner) => ({
 		basisName: stringify(inner),

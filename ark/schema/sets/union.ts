@@ -1,4 +1,4 @@
-import { type conform, hasDomain, isArray, type mutable } from "@arktype/util"
+import { type conform, isArray } from "@arktype/util"
 import {
 	type BaseNode,
 	type declareNode,
@@ -13,7 +13,7 @@ import {
 	type parseMorphSchema,
 	type parseValidatorSchema,
 	type validateMorphSchema,
-	type validateValidatorSchema,
+	type validateValidator,
 	type ValidatorKind,
 	type ValidatorSchema
 } from "./morph.ts"
@@ -25,34 +25,34 @@ export type BranchSchema = Schema<UnionChildKind>
 
 export type BranchNode = Node<UnionChildKind>
 
-export type validateBranchSchema<schema> = conform<
+export type validateSchemaBranch<schema> = conform<
 	schema,
-	"morph" extends keyof schema
+	"in" extends keyof schema
 		? validateMorphSchema<schema>
-		: validateValidatorSchema<schema>
+		: validateValidator<schema>
 >
 
-export type parseUnion<branches extends readonly unknown[]> =
+export type parseSchemaBranches<branches extends readonly unknown[]> =
 	branches["length"] extends 0
 		? BaseNode<"union", never>
 		: branches["length"] extends 1
-		? parseBranchSchema<branches[0]>
-		: Node<RootKind, parseBranchSchema<branches[number]>["infer"]>
+		? parseSchemaBranch<branches[0]>
+		: Node<RootKind, parseSchemaBranch<branches[number]>["infer"]>
 
-export type parseBranchSchema<schema> = schema extends MorphSchema
+export type parseSchemaBranch<schema> = schema extends MorphSchema
 	? parseMorphSchema<schema>
 	: schema extends ValidatorSchema
 	? parseValidatorSchema<schema>
 	: BranchNode
 
-export type ExpandedUnionSchema<
+export type UnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
-> = withAttributes<{
-	readonly union: branches
-	readonly ordered?: boolean
-}>
-
-export type UnionSchema = ExpandedUnionSchema | ExpandedUnionSchema["union"]
+> =
+	| branches
+	| withAttributes<{
+			readonly union: branches
+			readonly ordered?: boolean
+	  }>
 
 export type UnionInner = withAttributes<{
 	readonly union: readonly BranchNode[]

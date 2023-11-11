@@ -13,7 +13,7 @@ import { type BasisAttachments } from "./basis.ts"
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor
-> = proto | ProtoInner
+> = proto | ProtoInner<proto>
 
 export type ProtoInner<
 	proto extends AbstractableConstructor = AbstractableConstructor
@@ -53,8 +53,7 @@ export const ProtoImplementation = defineNode({
 		domain: (l, r) =>
 			r.domain === "object" ? l : Disjoint.from("domain", builtins().object, r)
 	},
-	parse: (schema) =>
-		typeof schema === "function" ? { proto: schema } : schema,
+	parse: (input) => (typeof input === "function" ? { proto: input } : input),
 	writeDefaultDescription: (inner) => {
 		const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
 		return knownObjectKind

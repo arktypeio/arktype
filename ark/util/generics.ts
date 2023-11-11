@@ -1,5 +1,4 @@
 import type { ErrorMessage } from "./errors.ts"
-import { type AbstractableConstructor } from "./objectKinds.ts"
 import type { unionToTuple } from "./unionToTuple.ts"
 
 export type Stringifiable =
@@ -16,8 +15,6 @@ export type Stringifiable =
  * Also works for some non-intersections, e.g. `keyof SomeObj` => `"a" | "b" | ...`
  */
 export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
-
-export type overlaps<l, r> = [l & r] extends [never] ? false : true
 
 export type exact<t extends object, u extends object> = {
 	[k in keyof t]: k extends keyof u ? t[k] : never

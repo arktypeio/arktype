@@ -1,4 +1,4 @@
-import type { extend, listable } from "@arktype/util"
+import type { extend, listable, requiredKeyOf } from "@arktype/util"
 import { type BaseNode, type rightOf } from "./base.ts"
 import {
 	type BasisDeclarationsByKind,
@@ -66,12 +66,10 @@ export type Implementation<kind extends NodeKind> =
 export type Schema<kind extends NodeKind> =
 	NodeDeclarationsByKind[kind]["schema"]
 
-export type DiscriminableSchemasByKind = {
-	[k in NodeKind]: Extract<Schema<k>, { [_ in k]: unknown }>
-}
-
-export type DiscriminableSchema<kind extends NodeKind = NodeKind> =
-	DiscriminableSchemasByKind[kind]
+export type ObjectSchema<kind extends NodeKind> = Extract<
+	NodeDeclarationsByKind[kind]["schema"],
+	object
+>
 
 export type Inner<kind extends NodeKind> = NodeDeclarationsByKind[kind]["inner"]
 

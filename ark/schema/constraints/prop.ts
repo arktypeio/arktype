@@ -19,12 +19,12 @@ export type PropImplementationByKind = {
 export type PropKind = keyof PropDeclarationsByKind
 
 export type RequiredPropInner = withAttributes<{
-	readonly required: string | symbol
+	readonly key: string | symbol
 	readonly value: Node<RootKind>
 }>
 
 export type RequiredPropSchema = withAttributes<{
-	readonly required: string | symbol
+	readonly key: string | symbol
 	readonly value: RootInput
 }>
 
@@ -46,28 +46,27 @@ const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 export const RequiredImplementation = defineNode({
 	kind: "required",
 	keys: {
-		required: "leaf",
+		key: "leaf",
 		value: "child"
 	},
 	intersections: {
 		required: (l, r) => {
-			if (l.required !== r.required) {
+			if (l.key !== r.key) {
 				return null
 			}
-			const required = l.required
+			const required = l.key
 			const value = l.value.intersect(r.value)
 			if (value instanceof Disjoint) {
 				return value
 			}
 			return {
-				required,
+				key: required,
 				value
 			}
 		}
 	},
 	parse: (schema) => schema as never,
-	writeDefaultDescription: (inner) =>
-		`${String(inner.required)}: ${inner.value}`,
+	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
 	attach: (inner) => ({
 		implicitBasis: builtins().object,
 		condition: "true"
@@ -77,12 +76,12 @@ export const RequiredImplementation = defineNode({
 // static writeInvalidBasisMessage = writeInvalidBasisMessage
 
 export type OptionalPropInner = withAttributes<{
-	readonly optional: string | symbol
+	readonly key: string | symbol
 	readonly value: Node<RootKind>
 }>
 
 export type OptionalPropSchema = withAttributes<{
-	readonly optional: string | symbol
+	readonly key: string | symbol
 	readonly value: RootInput
 }>
 
@@ -103,25 +102,24 @@ export type OptionalDeclaration = declareNode<{
 export const OptionalImplementation = defineNode({
 	kind: "optional",
 	keys: {
-		optional: "leaf",
+		key: "leaf",
 		value: "child"
 	},
 	intersections: {
 		optional: (l, r) => {
-			if (l.optional !== r.optional) {
+			if (l.key !== r.key) {
 				return null
 			}
-			const optional = l.optional
+			const optional = l.key
 			const value = l.value.intersect(r.value)
 			return {
-				optional,
+				key: optional,
 				value: value instanceof Disjoint ? builtins().never : value
 			}
 		}
 	},
 	parse: (schema) => schema as never,
-	writeDefaultDescription: (inner) =>
-		`${String(inner.optional)}?: ${inner.value}`,
+	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
 	attach: (inner) => ({
 		implicitBasis: builtins().object,
 		condition: "true"
@@ -434,15 +432,6 @@ export const OptionalImplementation = defineNode({
 // 		readonly value: { readonly basis: readonly ["===", length] }
 // 	}
 // }
-
-// type requiredKeyOf<input extends NamedPropsInput> = Exclude<
-// 	keyof input,
-// 	optionalKeyOf<input>
-// >
-
-// type optionalKeyOf<input extends NamedPropsInput> = {
-// 	[k in keyof input]: input[k]["optional"] extends true ? k : never
-// }[keyof input]
 
 //**** INDEXED */
 

@@ -19,7 +19,6 @@ import { compileSerializedValue, In } from "./io/compile.ts"
 import { registry } from "./io/registry.ts"
 import {
 	type Attachments,
-	type DiscriminableSchema,
 	type Inner,
 	type Node,
 	type NodeDeclarationsByKind,
@@ -33,8 +32,8 @@ import { type ValidatorNode } from "./sets/morph.ts"
 import { type SetKind } from "./sets/set.ts"
 import {
 	type BranchSchema,
-	type parseUnion,
-	type validateBranchSchema
+	type parseSchemaBranches,
+	type validateSchemaBranch
 } from "./sets/union.ts"
 import { inferred, type ParseContext } from "./utils.ts"
 
@@ -188,10 +187,7 @@ export type BaseNodeImplementation<d extends BaseNodeDeclaration> = {
 export type RootImplementation<d extends BaseNodeDeclaration> = extend<
 	BaseNodeImplementation<d>,
 	{
-		parse: (
-			schema: d["schema"],
-			ctx: ParseContext
-		) => Extract<d["schema"], { [k in d["kind"]]: unknown }>
+		parse: (schema: Schema<d["kind"]>, ctx: ParseContext) => d["schema"]
 		reduce?: (
 			inner: d["inner"]
 		) => Node<Extract<RootKind, rightOf<d["kind"]>>> | d["inner"] //{ [k in NodeKind]: [k, Inner<k>] }[NodeKind]
@@ -201,10 +197,7 @@ export type RootImplementation<d extends BaseNodeDeclaration> = extend<
 export type ConstraintImplementation<d extends BaseNodeDeclaration> = extend<
 	BaseNodeImplementation<d>,
 	{
-		parse: (
-			schema: d["schema"],
-			ctx: ParseContext
-		) => Extract<d["schema"], { [k in d["kind"]]: unknown }>
+		parse: (schema: Schema<d["kind"]>, ctx: ParseContext) => d["schema"]
 	}
 >
 
@@ -299,9 +292,9 @@ export class BaseNode<
 
 	static parseRoot<branches extends readonly unknown[]>(
 		...branches: {
-			[i in keyof branches]: validateBranchSchema<branches[i]>
+			[i in keyof branches]: validateSchemaBranch<branches[i]>
 		}
-	): parseUnion<branches>
+	): parseSchemaBranches<branches>
 	static parseRoot(...branches: BranchSchema[]) {
 		return branches.map((schema) => this.parseBranch(schema))
 	}
@@ -329,26 +322,8 @@ export class BaseNode<
 	static parseConstraint<kind extends ConstraintKind>(
 		kind: kind,
 		schema: Schema<kind>
-	): Node<kind>
-	static parseConstraint<schema extends DiscriminableSchema<ConstraintKind>>(
-		schema: schema
-	): Node<Extract<ConstraintKind, keyof schema>>
-	static parseConstraint(
-		kindOrSchema: ConstraintKind | DiscriminableSchema<ConstraintKind>,
-		prediscriminatedSchema?: Schema<ConstraintKind>
-	): UnknownNode {
-		if (typeof kindOrSchema === "string") {
-			return new BaseNode(kindOrSchema, prediscriminatedSchema as never)
-		}
-		const kind = constraintKinds.find((kind) => kind in kindOrSchema)
-		if (!kind) {
-			return throwParseError(
-				`Constraint schema must contain one of the following keys: ${constraintKinds.join(
-					", "
-				)}`
-			)
-		}
-		return new BaseNode(kind, kindOrSchema as never)
+	): Node<kind> {
+		return new BaseNode(kind, schema as never) as never
 	}
 
 	// export const maybeParseBasis = (

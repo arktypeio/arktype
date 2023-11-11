@@ -1,10 +1,4 @@
-import type {
-	conform,
-	ErrorMessage,
-	exactMessageOnError,
-	extend,
-	mutable
-} from "@arktype/util"
+import type { conform, ErrorMessage, extend, mutable } from "@arktype/util"
 import { throwInternalError, transform } from "@arktype/util"
 import {
 	type BaseAttributes,
@@ -20,12 +14,7 @@ import {
 	type ConstraintKind
 } from "../constraints/constraint.ts"
 import { Disjoint } from "../disjoint.ts"
-import {
-	type DiscriminableSchema,
-	type Node,
-	type RuleKind,
-	type Schema
-} from "../nodes.ts"
+import { type Node, type RuleKind, type Schema } from "../nodes.ts"
 import { type SetAttachments } from "./set.ts"
 
 export type IntersectionInner = withAttributes<
@@ -35,8 +24,6 @@ export type IntersectionInner = withAttributes<
 			: Node<k>
 	}
 >
-
-export type CollapsedIntersectionInner = readonly Node<RuleKind>[]
 
 export type IntersectionAttachments = extend<
 	SetAttachments,
@@ -65,7 +52,7 @@ export const IntersectionImplementation = defineNode({
 	),
 	intersections: {
 		intersection: (l, r) => {
-			let result: CollapsedIntersectionInner | Disjoint = l.intersection
+			let result: Node<RuleKind>[] | Disjoint = l.intersection
 			for (const constraint of r.constraints) {
 				if (result instanceof Disjoint) {
 					break
@@ -79,8 +66,8 @@ export const IntersectionImplementation = defineNode({
 			return result instanceof Disjoint ? result : { intersection: result }
 		}
 	},
-	parse: (schema) => {
-		const { alias, description, ...rules } = schema
+	parse: (input) => {
+		const { alias, description, ...rules } = input
 		const intersectionInner = {} as mutable<IntersectionInner>
 		if (alias) {
 			intersectionInner.alias = alias
@@ -197,7 +184,7 @@ export type IntersectionBasis = {
 	basis?: Schema<BasisKind>
 }
 
-export type MappedIntersectionSchema<
+export type IntersectionSchema<
 	basis extends Schema<BasisKind> | undefined = Schema<BasisKind> | undefined
 > = {
 	basis?: basis
@@ -205,18 +192,6 @@ export type MappedIntersectionSchema<
 	basis extends Schema<BasisKind> ? parseBasis<basis>["infer"] : unknown
 > &
 	BaseAttributes
-
-export type ListedIntersectionSchema = {
-	intersection: RuleSchemaSet
-} & BaseAttributes
-
-export type RuleSchemaSet =
-	| readonly [Schema<BasisKind>, ...DiscriminableSchema<RuleKind>[]]
-	| readonly DiscriminableSchema<"predicate">[]
-
-export type IntersectionSchema =
-	| MappedIntersectionSchema
-	| ListedIntersectionSchema
 
 type exactBasisMessageOnError<branch, expected> = {
 	[k in keyof branch]: k extends keyof expected
@@ -228,27 +203,12 @@ type exactBasisMessageOnError<branch, expected> = {
 }
 
 export type validateIntersectionSchema<schema> =
-	schema extends ListedIntersectionSchema
-		? exactMessageOnError<schema, ListedIntersectionSchema>
-		: schema extends IntersectionBasis
-		? exactBasisMessageOnError<
-				schema,
-				MappedIntersectionSchema<schema["basis"]>
-		  >
-		: IntersectionSchema
+	schema extends IntersectionBasis
+		? exactBasisMessageOnError<schema, IntersectionSchema<schema["basis"]>>
+		: IntersectionSchema<undefined>
 
 export type parseIntersectionSchema<schema> =
-	schema extends ListedIntersectionSchema
-		? schema["intersection"] extends readonly [
-				infer basis extends Schema<BasisKind>,
-				...infer constraints
-		  ]
-			? // if there are no constraint elements, reduce to the basis node
-			  constraints extends []
-				? parseBasis<basis>
-				: Node<"intersection", parseBasis<basis>["infer"]>
-			: Node<"intersection">
-		: schema extends Required<IntersectionBasis>
+	schema extends Required<IntersectionBasis>
 		? keyof schema & ConstraintKind extends never
 			? // if there are no constraint keys, reduce to the basis node
 			  parseBasis<schema["basis"]>

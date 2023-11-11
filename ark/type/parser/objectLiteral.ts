@@ -36,12 +36,12 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 		const valueNode = ctx.scope.parse(result.innerValue, ctx)
 		if (result.kind === "optional") {
 			optional.push({
-				optional: result.innerKey,
+				key: result.innerKey,
 				value: valueNode
 			})
 		} else {
 			required.push({
-				required: result.innerKey,
+				key: result.innerKey,
 				value: valueNode
 			})
 		}

@@ -3,11 +3,11 @@ import { builtins } from "../builtins.ts"
 import { In } from "../io/compile.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 
-export type DivisorSchema = number | DivisorInner
-
 export type DivisorInner = withAttributes<{
 	readonly divisor: number
 }>
+
+export type DivisorSchema = DivisorInner | number
 
 export type DivisorDeclaration = declareNode<{
 	kind: "divisor"

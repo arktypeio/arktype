@@ -1,41 +1,36 @@
 import {
 	type AbstractableConstructor,
+	type evaluate,
 	type exactMessageOnError,
-	hasDomain,
 	type listable,
 	throwParseError
 } from "@arktype/util"
-import {
-	type BaseNode,
-	type declareNode,
-	defineNode,
-	type withAttributes
-} from "../base.ts"
+import { type declareNode, defineNode, type withAttributes } from "../base.ts"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
 import { type NonEnumerableDomain } from "../bases/domain.ts"
 import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import type { Problem } from "../io/problems.ts"
 import type { CheckResult, TraversalState } from "../io/traverse.ts"
-import { type DiscriminableSchema, type Node, type Schema } from "../nodes.ts"
+import { type Node, type ObjectSchema, type Schema } from "../nodes.ts"
 import {
 	type IntersectionSchema,
 	type parseIntersectionSchema,
 	type validateIntersectionSchema
 } from "./intersection.ts"
 
-export type ValidatorKind = "intersection" | BasisKind
+export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
 export type ValidatorNode = Node<ValidatorKind>
 
 export type ValidatorSchema = Schema<ValidatorKind>
 
-export type validateValidatorSchema<schema> = schema extends
-	| NonEnumerableDomain
-	| AbstractableConstructor
+export type validateValidator<schema> = [schema] extends [
+	NonEnumerableDomain | AbstractableConstructor
+]
 	? schema
-	: schema extends DiscriminableSchema<BasisKind>
-	? exactMessageOnError<schema, DiscriminableSchema<keyof schema & BasisKind>>
+	: schema extends ObjectSchema<BasisKind>
+	? exactMessageOnError<schema, ObjectSchema<keyof schema & BasisKind>>
 	: schema extends IntersectionSchema
 	? validateIntersectionSchema<schema>
 	: ValidatorSchema
@@ -57,7 +52,7 @@ export type MorphInner = withAttributes<{
 }>
 
 export type MorphSchema = withAttributes<{
-	readonly in?: ValidatorSchema
+	readonly in: ValidatorSchema
 	readonly out?: ValidatorSchema
 	readonly morph: listable<Morph>
 }>
@@ -143,14 +138,14 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 
 export type validateMorphSchema<schema> = {
 	[k in keyof schema]: k extends "in" | "out"
-		? validateValidatorSchema<schema[k]>
+		? validateValidator<schema[k]>
 		: k extends keyof MorphSchema
 		? MorphSchema[k]
 		: `'${k & string}' is not a valid morph schema key`
 }
 
 export type parseMorphSchema<schema> = schema extends MorphSchema
-	? BaseNode<
+	? Node<
 			"morph",
 			(
 				In: schema["in"] extends {}

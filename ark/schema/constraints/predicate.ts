@@ -3,14 +3,14 @@ import { compileSerializedValue, In } from "../io/compile.ts"
 import type { TraversalState } from "../io/traverse.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 
-export type PredicateInner<rule extends Predicate = Predicate> =
+export type PredicateInner<predicate extends Predicate = Predicate> =
 	withAttributes<{
-		readonly predicate: rule
+		readonly predicate: predicate
 	}>
 
-export type PredicateSchema<rule extends Predicate = Predicate> =
-	| rule
-	| PredicateInner<rule>
+export type PredicateSchema<predicate extends Predicate = Predicate> =
+	| predicate
+	| PredicateInner<predicate>
 
 export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
@@ -32,7 +32,6 @@ export const PredicateImplementation = defineNode({
 	},
 	parse: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
-
 	writeDefaultDescription: (inner) =>
 		`valid according to ${inner.predicate.name}`,
 	attach: (inner) => ({
