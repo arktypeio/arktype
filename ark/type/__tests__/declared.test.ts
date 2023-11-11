@@ -5,7 +5,7 @@ describe("declared", () => {
 	it("shallow", () => {
 		const shallow = declare<number>().type("number")
 		attest<number>(shallow.infer)
-		attest(shallow.condition).equals(type("number").condition)
+		attest(shallow.json).equals(type("number").json)
 	})
 
 	it("obj", () => {

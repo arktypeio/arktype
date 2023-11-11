@@ -1,6 +1,7 @@
 import { type Morph } from "@arktype/schema"
 import {
 	type conform,
+	type domainOf,
 	type entryOf,
 	type ErrorMessage,
 	type evaluate,
@@ -59,7 +60,13 @@ export type MatchParser<$> = {
 	<cases>(
 		// adding keyof $ explicitly provides key completions for aliases
 		def: conform<cases, validateCases<cases, $>>
-	): (In: paramsOf<cases[keyof cases]>[0]) => returnOf<cases[keyof cases]>
+	): <data>(In: data) => {
+		[k in keyof cases]: data & paramsOf<cases[k]>[0] extends never
+			? never
+			: domainOf<data> & domainOf<paramsOf<cases[k]>[0]> extends never
+			? never
+			: returnOf<cases[k]>
+	}[keyof cases]
 }
 
 export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {

@@ -20,10 +20,10 @@ import {
 } from "../parser/string/shift/operator/bounds.ts"
 
 export const expectedBoundsCondition = (...bounds: BoundInner[]) => ""
-// node("number", ...bounds).condition
+// node("number", ...bounds).json
 
 export const expectedDateBoundsCondition = (...bounds: BoundInner[]) => ""
-// node(Date, ...bounds).condition
+// node(Date, ...bounds).json
 
 describe("bounds", () => {
 	describe("parse", () => {
@@ -38,7 +38,7 @@ describe("bounds", () => {
 			// 	it("<", () => {
 			// 		const t = type("number<10")
 			// 		attest<number>(t.infer)
-			// 		attest(t.condition).equals(
+			// 		attest(t.json).equals(
 			// 			expectedBoundsCondition({
 			// 				limitKind: "max",
 			// 				exclusive: true,
@@ -49,7 +49,7 @@ describe("bounds", () => {
 			// 	it("<=", () => {
 			// 		const t = type("number<=-49")
 			// 		attest<number>(t.infer)
-			// 		attest(t.condition).equals(
+			// 		attest(t.json).equals(
 			// 			expectedBoundsCondition({
 			// 				limitKind: "max",
 			// 				exclusive: false,
@@ -60,7 +60,7 @@ describe("bounds", () => {
 			// 	it("==", () => {
 			// 		const t = type("number==3211993")
 			// 		attest<number>(t.infer)
-			// 		attest(t.condition).equals(
+			// 		attest(t.json).equals(
 			// 			expectedBoundsCondition(
 			// 				{
 			// 					limitKind: "min",
@@ -86,7 +86,7 @@ describe("bounds", () => {
 			// 		attest(t.allows(4)).equals(true)
 			// 		attest(t.allows(5)).equals(true)
 			// 		attest(t.allows(5.01)).equals(false)
-			// 		attest(t.condition).equals(
+			// 		attest(t.json).equals(
 			// 			expectedBoundsCondition(
 			// 				{
 			// 					limitKind: "min",
@@ -104,7 +104,7 @@ describe("bounds", () => {
 			// 	it("<=,<", () => {
 			// 		const t = type("-3.23<=number<4.654")
 			// 		attest<number>(t.infer)
-			// 		attest(t.condition).equals(
+			// 		attest(t.json).equals(
 			// 			expectedBoundsCondition(
 			// 				{
 			// 					limitKind: "min",
@@ -123,15 +123,15 @@ describe("bounds", () => {
 			// it("whitespace following comparator", () => {
 			// 	const t = type("number > 3")
 			// 	attest<number>(t.infer)
-			// 	attest(t.condition).equals(
+			// 	attest(t.json).equals(
 			// 		expectedBoundsCondition({ limitKind: "min", exclusive: true, limit: 3 })
 			// 	)
 		})
 		describe("intersection", () => {
 			describe("equality range", () => {
 				it("equal", () => {
-					attest(type("number==2&number==2").condition).equals(
-						type("number==2").condition
+					attest(type("number==2&number==2").json).equals(
+						type("number==2").json
 					)
 				})
 				it("disjoint", () => {
@@ -140,27 +140,23 @@ describe("bounds", () => {
 					)
 				})
 				it("right equality range", () => {
-					attest(type("number<4&number==2").condition).equals(
-						type("number==2").condition
-					)
+					attest(type("number<4&number==2").json).equals(type("number==2").json)
 				})
 				it("left equality range", () => {
-					attest(type("number==3&number>=3").condition).equals(
-						type("number==3").condition
+					attest(type("number==3&number>=3").json).equals(
+						type("number==3").json
 					)
 				})
 			})
 			it("overlapping", () => {
-				const expected = type("2<=number<3").condition
-				attest(type("number>=2&number<3").condition).equals(expected)
-				attest(type("2<=number<4&1<=number<3").condition).equals(expected)
+				const expected = type("2<=number<3").json
+				attest(type("number>=2&number<3").json).equals(expected)
+				attest(type("2<=number<4&1<=number<3").json).equals(expected)
 			})
 			it("single value overlap", () => {
-				attest(type("0<=number<=0").condition).equals(
-					type("number==0").condition
-				)
-				attest(type("0<number<=1&1<=number<2").condition).equals(
-					type("number==1").condition
+				attest(type("0<=number<=0").json).equals(type("number==0").json)
+				attest(type("0<number<=1&1<=number<2").json).equals(
+					type("number==1").json
 				)
 			})
 			it("non-overlapping", () => {
@@ -172,19 +168,19 @@ describe("bounds", () => {
 				)
 			})
 			it("greater min is stricter", () => {
-				const expected = type("number>=3").condition
-				attest(type("number>=3&number>2").condition).equals(expected)
-				attest(type("number>2&number>=3").condition).equals(expected)
+				const expected = type("number>=3").json
+				attest(type("number>=3&number>2").json).equals(expected)
+				attest(type("number>2&number>=3").json).equals(expected)
 			})
 			it("lesser max is stricter", () => {
-				const expected = type("number<=3").condition
-				attest(type("number<=3&number<4").condition).equals(expected)
-				attest(type("number<4&number<=3").condition).equals(expected)
+				const expected = type("number<=3").json
+				attest(type("number<=3&number<4").json).equals(expected)
+				attest(type("number<4&number<=3").json).equals(expected)
 			})
 			it("exclusive wins if limits equal", () => {
-				const expected = type("number<3").condition
-				attest(type("number<3&number<=3").condition).equals(expected)
-				attest(type("number<=3&number<3").condition).equals(expected)
+				const expected = type("number<3").json
+				attest(type("number<3&number<=3").json).equals(expected)
+				attest(type("number<=3&number<3").json).equals(expected)
 			})
 		})
 
@@ -265,7 +261,7 @@ describe("bounds", () => {
 				const t = type("(string|boolean[]|number)>0")
 				attest<string | boolean[] | number>(t.infer)
 				const expected = type("string>0|boolean[]>0|number>0")
-				attest(t.condition).equals(expected.condition)
+				attest(t.json).equals(expected.json)
 			})
 
 			describe("errors", () => {
@@ -337,7 +333,7 @@ describe("bounds", () => {
 		// it("single", () => {
 		// 	const t = type("Date<d'2023/1/12'")
 		// 	attest<Date>(t.infer)
-		// 	attest(t.condition).equals(
+		// 	attest(t.json).equals(
 		// 		// TODO: Dates?
 		// 		expectedDateBoundsCondition({
 		// 			limitKind: "max",
@@ -349,7 +345,7 @@ describe("bounds", () => {
 		// it("equality", () => {
 		// 	const t = type("Date==d'2020-1-1'")
 		// 	attest<Date>(t.infer)
-		// 	attest(t.condition).equals(
+		// 	attest(t.json).equals(
 		// 		expectedDateBoundsCondition(
 		// 			{
 		// 				limitKind: "min",
@@ -369,7 +365,7 @@ describe("bounds", () => {
 		// it("double", () => {
 		// 	const t = type("d'2001/10/10'<Date<d'2005/10/10'")
 		// 	attest<Date>(t.infer)
-		// 	attest(t.condition).equals(
+		// 	attest(t.json).equals(
 		// 		expectedDateBoundsCondition(
 		// 			{
 		// 				limitKind: "min",
@@ -396,9 +392,7 @@ describe("bounds", () => {
 			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
 		})
 		it("non-overlapping intersection", () => {
-			attest(
-				() => type("Date>d'2000/01/01'&Date<=d'2000/01/01'").condition
-			).throws(
+			attest(() => type("Date>d'2000/01/01'&Date<=d'2000/01/01'").json).throws(
 				"Intersection of after 2000-01-01T05:00:00.000Z and at or before 2000-01-01T05:00:00.000Z results in an unsatisfiable type"
 			)
 			attest(() =>

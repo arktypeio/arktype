@@ -19,12 +19,12 @@ describe("generics", () => {
 			const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
 			attest<{ box: { cat: { isAlive: boolean } } }>(schrodingersBox.infer)
 
-			attest(schrodingersBox.condition).equals(
+			attest(schrodingersBox.json).equals(
 				type({
 					box: {
 						cat: { isAlive: "boolean" }
 					}
-				}).condition
+				}).json
 			)
 		})
 		it("binary", () => {
@@ -48,7 +48,7 @@ describe("generics", () => {
 
 			// ideally, this would be reduced to { cat: { isAlive: boolean } }:
 			// https://github.com/arktypeio/arktype/issues/751
-			attest(schrodingersBox.condition).equals(
+			attest(schrodingersBox.json).equals(
 				type(
 					{
 						cat: {
@@ -61,7 +61,7 @@ describe("generics", () => {
 							isAlive: "false"
 						}
 					}
-				).condition
+				).json
 			)
 		})
 		it("referenced in scope inline", () => {
@@ -72,7 +72,7 @@ describe("generics", () => {
 			const types = $.export()
 			const bit = types.orOne("0")
 			attest<0 | 1>(bit.infer)
-			attest(bit.condition).equals(type("0|1").condition)
+			attest(bit.json).equals(type("0|1").json)
 		})
 		it("referenced from other scope", () => {
 			const types = scope({
@@ -80,7 +80,7 @@ describe("generics", () => {
 			}).export()
 			const stringArray = types.arrayOf("string")
 			attest<string[]>(stringArray.infer)
-			attest(stringArray.condition).equals(type("string[]").condition)
+			attest(stringArray.json).equals(type("string[]").json)
 		})
 		it("this not resolvable in generic def", () => {
 			attest(() =>
@@ -98,7 +98,7 @@ describe("generics", () => {
 				a: "string|this"
 			})
 			const expectedContents = type({ a: "string|this" })
-			attest(t.condition).equals(type({ box: expectedContents }).condition)
+			attest(t.json).equals(type({ box: expectedContents }).json)
 			attest(t.infer).type.toString.snap("{ box: { a: string | any; }; }")
 		})
 		it("too few args", () => {
@@ -128,13 +128,13 @@ describe("generics", () => {
 		)
 		const types = lazily(() => $.export())
 		it("referenced in scope", () => {
-			attest(types.bitBox.condition).equals(type({ box: "0|1" }).condition)
+			attest(types.bitBox.json).equals(type({ box: "0|1" }).json)
 			attest<{ box: 0 | 1 }>(types.bitBox.infer)
 		})
 		it("nested", () => {
 			const t = $.type("box<0|1, box<'one', 'zero'>>")
-			attest(t.condition).equals(
-				type({ box: ["0|1", "|", { box: "'one'|'zero'" }] }).condition
+			attest(t.json).equals(
+				type({ box: ["0|1", "|", { box: "'one'|'zero'" }] }).json
 			)
 			attest<{
 				box:
@@ -147,9 +147,9 @@ describe("generics", () => {
 		})
 		it("in expression", () => {
 			const t = $.type("string | box<0, 1> | boolean")
-			attest(t.condition).equals(
+			attest(t.json).equals(
 				// as const is required for TS <=5.0
-				type("string|boolean", "|", { box: "0|1" } as const).condition
+				type("string|boolean", "|", { box: "0|1" } as const).json
 			)
 			attest<string | { box: 0 | 1 } | boolean>(t.infer)
 		})
@@ -158,10 +158,10 @@ describe("generics", () => {
 			type Expected = {
 				box: 0 | Expected
 			}
-			attest(t.condition).equals(
+			attest(t.json).equals(
 				type({
 					box: "0|this"
-				}).condition
+				}).json
 			)
 			attest<Expected>(t.infer)
 		})
@@ -170,10 +170,10 @@ describe("generics", () => {
 			// bound and > that closes a generic instantiation
 			const t = $.type("box<number>5, string>=7>")
 			attest<{ box: string | number }>(t.infer)
-			attest(t.condition).equals(
+			attest(t.json).equals(
 				type({
 					box: "number>5|string>=7"
-				}).condition
+				}).json
 			)
 		})
 		it("parameter supercedes alias with same name", () => {
@@ -186,7 +186,7 @@ describe("generics", () => {
 			}).export()
 			const t = types.box("'baz'")
 			attest<{ box: "bar" | "baz" }>(t.infer)
-			attest(t.condition).equals(type({ box: "'bar' | 'baz'" }).condition)
+			attest(t.json).equals(type({ box: "'bar' | 'baz'" }).json)
 		})
 		it("self-reference", () => {
 			const types = scope({

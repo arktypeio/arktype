@@ -90,7 +90,7 @@ describe("narrow", () => {
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
 		attest<Type<(In: string) => Out<5>>>(t)
-		attest(t.condition).snap('typeof $arkRoot === "string" && false && false')
+		attest(t.json).snap()
 	})
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")

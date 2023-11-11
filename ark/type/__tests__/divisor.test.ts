@@ -20,7 +20,7 @@ describe("divisibility", () => {
 		})
 		it("with bound", () => {
 			const t = type("number%8<3")
-			attest(t.condition).equals(type("number%8").and("number<3").condition)
+			attest(t.json).equals(type("number%8").and("number<3").json)
 			attest(t.root.description).snap("(a multiple of 8 and less than 3)")
 		})
 		it("allows non-narrowed divisor", () => {
@@ -64,23 +64,23 @@ describe("divisibility", () => {
 	describe("intersection", () => {
 		it("identical", () => {
 			const t = type("number%2&number%2")
-			attest(t.condition).equals(type("number%2").condition)
+			attest(t.json).equals(type("number%2").json)
 		})
 		it("purely divisible", () => {
 			const t = type("number%4&number%2")
-			attest(t.condition).equals(type("number%4").condition)
+			attest(t.json).equals(type("number%4").json)
 		})
 		it("common divisor", () => {
 			const t = type("number%6&number%4")
-			attest(t.condition).equals(type("number%12").condition)
+			attest(t.json).equals(type("number%12").json)
 		})
 		it("relatively prime", () => {
 			const t = type("number%2&number%3")
-			attest(t.condition).equals(type("number%6").condition)
+			attest(t.json).equals(type("number%6").json)
 		})
 		it("valid literal", () => {
 			const t = type("number%5&0")
-			attest(t.condition).equals(type("0").condition)
+			attest(t.json).equals(type("0").json)
 		})
 		it("invalid literal", () => {
 			attest(() => type("number%3&8")).throws(

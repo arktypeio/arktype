@@ -57,12 +57,12 @@ describe("thunk", () => {
 	})
 	it("shallow thunk in type", () => {
 		const t = type(() => type("string"))
-		attest(t.condition).equals(type("string").condition)
+		attest(t.json).equals(type("string").json)
 		attest<string>(t.infer)
 	})
 	it("deep thunk in type", () => {
 		const t = type({ a: () => type("string") })
-		attest(t.condition).equals(type({ a: "string" }).condition)
+		attest(t.json).equals(type({ a: "string" }).json)
 		attest<{ a: string }>(t.infer)
 	})
 	it("non-type thunk in scope", () => {

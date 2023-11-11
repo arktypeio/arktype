@@ -16,7 +16,7 @@ describe("string", () => {
 		const t = type(`  \n   string  |
         boolean    []   `)
 		attest<string | boolean[]>(t.infer)
-		attest(t.condition).equals(type("string|boolean[]").condition)
+		attest(t.json).equals(type("string|boolean[]").json)
 	})
 	it("errors on bad whitespace", () => {
 		attest(() =>

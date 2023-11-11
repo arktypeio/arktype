@@ -59,7 +59,7 @@ describe("scope", () => {
 		const importer = $.scope({ b: "a[]" })
 		attest<{ b: string[] }>(importer.infer)
 		const t = importer.type("b")
-		attest(t.condition).is(type("string[]").condition)
+		attest(t.json).is(type("string[]").json)
 	})
 	it("infers its own helpers", () => {
 		const $ = scope({

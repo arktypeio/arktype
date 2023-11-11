@@ -17,7 +17,7 @@ describe("keywords", () => {
 		it("any", () => {
 			const any = type("any")
 			// equivalent to unknown at runtime
-			attest(any.condition).equals(type("unknown").condition)
+			attest(any.json).equals(type("unknown").json)
 			// inferred as any
 			attest<any>(any.infer)
 		})
@@ -25,27 +25,27 @@ describe("keywords", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
 			// should be simplified to simple checks for true and false literals
-			attest(boolean.condition).equals(type("true|false").condition)
-			attest(boolean.condition)
-				.snap(`if( $arkRoot !== false && $arkRoot !== true) {
-    return false
-}`)
+			attest(boolean.json).equals(type("true|false").json)
+			// TODO:
+			// 			attest(boolean.json).snap(`if( $arkRoot !== false && $arkRoot !== true) {
+			//     return false
+			// }`)
 		})
 		// it("never", () => {
 		// 	const never = type("never")
 		// 	attest<never>(never.infer)
 		// 	// should be equivalent to a zero-branch union
-		// 	attest(never.condition).equals(node().condition)
+		// 	attest(never.json).equals(node().json)
 		// })
 		it("unknown", () => {
 			// should be equivalent to an unconstrained predicate
-			attest(type("unknown").condition).equals(node().condition)
+			attest(type("unknown").json).equals(node().json)
 		})
 		it("void", () => {
 			const t = type("void")
 			attest<void>(t.infer)
 			//should be treated as undefined at runtime
-			attest(t.condition).equals(type("undefined").condition)
+			attest(t.json).equals(type("undefined").json)
 		})
 	})
 	// describe("validation", () => {

@@ -40,9 +40,9 @@ describe("submodules", () => {
 		>(types)
 
 		attest<number>(types.sub.alias.infer)
-		const expected = type("number").condition
-		attest(types.sub.alias.condition).is(expected)
-		attest(types.b.condition).is(expected)
+		const expected = type("number").json
+		attest(types.sub.alias.json).is(expected)
+		attest(types.b.json).is(expected)
 	})
 	it("non-submodule dot access", () => {
 		// @ts-expect-error

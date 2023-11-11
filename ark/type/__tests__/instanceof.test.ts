@@ -11,7 +11,7 @@ describe("instanceof", () => {
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
-			attest(t.condition).equals(node(Error).condition)
+			attest(t.json).equals(node(Error).json)
 			const e = new Error()
 			attest(t(e).data).equals(e)
 			attest(t({}).problems?.summary).snap("Must be an Error (was Object)")
@@ -74,12 +74,12 @@ describe("instanceof", () => {
 		it("class", () => {
 			const t = type("instanceof", Error)
 			attest<Error>(t.infer)
-			attest(t.condition).equals(type(["instanceof", Error]).condition)
+			attest(t.json).equals(type(["instanceof", Error]).json)
 		})
 		it("instance branches", () => {
 			const t = type("instanceof", Date, Map)
 			attest<Date | Map<unknown, unknown>>(t.infer)
-			attest(t.condition).equals(type("Date|Map").condition)
+			attest(t.json).equals(type("Date|Map").json)
 		})
 		it("non-constructor", () => {
 			// @ts-expect-error just an assignability failure so we can't validate an error message

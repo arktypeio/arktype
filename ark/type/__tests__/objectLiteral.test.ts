@@ -8,17 +8,12 @@ import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclo
 describe("object literal", () => {
 	it("empty", () => {
 		const o = type({})
-		attest(o.condition).equals(type("object").condition)
+		attest(o.json).equals(type("object").json)
 	})
 	it("required", () => {
 		const o = type({ a: "string", b: "boolean" })
 		attest<{ a: string; b: boolean }>(o.infer)
-		attest(o.condition)
-			.snap(`if (!(((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function"))) {
-        return false
-}
-$ark.object26($arkRoot.a)
-$ark.object36($arkRoot.b)`)
+		attest(o.json).snap()
 	})
 	it("optional keys", () => {
 		const o = type({ "a?": "string", b: "boolean" })
@@ -41,15 +36,15 @@ $ark.object36($arkRoot.b)`)
 	describe("optional keys and definition reduction", () => {
 		it("optional value", () => {
 			const t = type({ a: "string?" })
-			attest(t.condition).equals(type({ "a?": "string" }).condition)
+			attest(t.json).equals(type({ "a?": "string" }).json)
 		})
 		it("optional key and value", () => {
 			const t = type({ "a?": "string?" })
-			attest(t.condition).equals(type({ "a?": "string" }).condition)
+			attest(t.json).equals(type({ "a?": "string" }).json)
 		})
 		it("optional value as tuple", () => {
 			const t = type({ a: ["string", "?"] })
-			attest(t.condition).equals(type({ "a?": "string" }).condition)
+			attest(t.json).equals(type({ "a?": "string" }).json)
 		})
 	})
 	it("error in obj that has tuple that writes error at proper path", () => {
@@ -154,8 +149,8 @@ $ark.object36($arkRoot.b)`)
 		const c = { "c?": "string" } as const
 		const abc = type(a).and(b).and(c)
 		attest<{ a?: string; b: string; c?: string }>(abc.infer)
-		attest(abc.condition).equals(type({ ...a, ...b, ...c }).condition)
-		attest(abc.condition).equals(type([[a, "&", b], "&", c]).condition)
+		attest(abc.json).equals(type({ ...a, ...b, ...c }).json)
+		attest(abc.json).equals(type([[a, "&", b], "&", c]).json)
 	})
 	it("traverse optional", () => {
 		const o = type({ "a?": "string" }).configure({ keys: "strict" })
@@ -169,7 +164,7 @@ $ark.object36($arkRoot.b)`)
 		const t = type({ a: "number" }).and({ b: "boolean" })
 		// Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
 		attest(t.infer).type.toString.snap("{ a: number; b: boolean; }")
-		attest(t.condition).is(type({ a: "number", b: "boolean" }).condition)
+		attest(t.json).is(type({ a: "number", b: "boolean" }).json)
 	})
 	it("escaped optional token", () => {
 		const t = type({ "a\\?": "string" })

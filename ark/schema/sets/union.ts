@@ -1,10 +1,11 @@
-import { type conform, isArray } from "@arktype/util"
+import { type conform, type extend, isArray } from "@arktype/util"
 import {
 	type BaseNode,
 	type declareNode,
 	defineNode,
 	type withAttributes
 } from "../base.ts"
+import { type Discriminant, discriminate } from "../discriminate.ts"
 import { Disjoint } from "../disjoint.ts"
 import { In } from "../io/compile.ts"
 import { type Node, type RootKind, type Schema } from "../nodes.ts"
@@ -59,6 +60,13 @@ export type UnionInner = withAttributes<{
 	readonly ordered: boolean
 }>
 
+export type UnionAttachments = extend<
+	SetAttachments,
+	{
+		discriminant: Discriminant | null
+	}
+>
+
 export type UnionDeclaration = declareNode<{
 	kind: "union"
 	schema: UnionSchema
@@ -69,7 +77,7 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		default: "union" | Disjoint
 	}
-	attach: SetAttachments
+	attach: UnionAttachments
 }>
 
 const intersectBranch = (l: Node<"union">, r: BranchNode) => {
@@ -161,17 +169,13 @@ export const UnionImplementation = defineNode({
 return true
 }`
 					)
-					.join("\n") + "\nreturn false"
+					.join("\n") + "\nreturn false",
+			discriminant: discriminate(inner.union)
 		}
 	},
 	writeDefaultDescription: (inner) =>
 		inner.union.length === 0 ? "never" : inner.union.join(" or ")
 })
-
-// // discriminate is cached so we don't have to worry about this running multiple times
-// get discriminant(): Discriminant | null {
-// 	return discriminate(this.union)
-// }
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
 // 		// TODO: error messages for traversal

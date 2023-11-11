@@ -41,7 +41,7 @@ describe("this reference", () => {
 				reference: "initial"
 			}
 		}).export()
-		attest(reference.condition).equals(types.reference.condition)
+		attest(reference.json).equals(types.reference.json)
 	})
 
 	it("unresolvable in scope", () => {

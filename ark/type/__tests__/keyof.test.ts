@@ -15,7 +15,7 @@ describe("keyof", () => {
 	it("root expression", () => {
 		const t = type("keyof", "Date")
 		attest<keyof Date>(t.infer)
-		attest(t.condition).equals(node(Date).keyof().condition)
+		attest(t.json).equals(node(Date).keyof().json)
 	})
 	it("primitive", () => {
 		const t = type("keyof bigint")
@@ -26,19 +26,19 @@ describe("keyof", () => {
 			"valueOf",
 			Symbol.toStringTag
 		)
-		attest(t.condition).is(expected.condition)
+		attest(t.json).equals(expected.json)
 	})
 	it("object literal", () => {
 		const t = type({ a: "123", b: "123" }).keyof()
 		attest<"a" | "b">(t.infer)
-		attest(t.condition).equals(type("'a'|'b'").condition)
+		attest(t.json).equals(type("'a'|'b'").json)
 	})
 	it("overlapping union", () => {
 		const t = type({ a: "number", b: "boolean" })
 			.or({ b: "number", c: "string" })
 			.keyof()
 		attest<"b">(t.infer)
-		attest(t.condition).equals(type("'b'").condition)
+		attest(t.json).equals(type("'b'").json)
 	})
 	it("non-overlapping union", () => {
 		attest(() => type({ a: "number" }).or({ b: "number" }).keyof()).throws(
@@ -48,7 +48,7 @@ describe("keyof", () => {
 	it("tuple expression", () => {
 		const t = type(["keyof", { a: "string" }])
 		attest<"a">(t.infer)
-		attest(t.condition).equals(node.units("a").condition)
+		attest(t.json).equals(node.units("a").json)
 	})
 	it("union including non-object", () => {
 		attest(() => type({ a: "number" }).or("boolean").keyof()).throws(
@@ -63,30 +63,26 @@ describe("keyof", () => {
 	it("multiple keyofs", () => {
 		const t = type("keyof keyof string")
 		attest<"toString" | "valueOf">(t.infer)
-		attest(t.condition).equals(node.units("toString", "valueOf").condition)
+		attest(t.json).equals(node.units("toString", "valueOf").json)
 	})
 	it("groupable", () => {
 		const t = type("(keyof symbol & string)[]")
 		attest<("toString" | "valueOf" | "description")[]>(t.infer)
-		attest(t.condition).equals(
-			node.units("toString", "valueOf", "description").array().condition
+		attest(t.json).equals(
+			node.units("toString", "valueOf", "description").array().json
 		)
 	})
 	it("intersection precedence", () => {
 		const t = type("keyof symbol & symbol")
 		attest<typeof Symbol.toStringTag | typeof Symbol.toPrimitive>(t.infer)
-		attest(t.condition).is(
-			node.units(Symbol.toStringTag, Symbol.toPrimitive).condition
-		)
+		attest(t.json).is(node.units(Symbol.toStringTag, Symbol.toPrimitive).json)
 	})
 	it("union precedence", () => {
 		const t = type("keyof boolean | number")
 		attest<"valueOf" | number>(t.infer)
 		// for some reason TS doesn't include toString as a keyof boolean?
 		// given it is included in keyof string, it seems like an anomaly, but we include it
-		attest(t.condition).equals(
-			type("number | 'valueOf' | 'toString'").condition
-		)
+		attest(t.json).equals(type("number | 'valueOf' | 'toString'").json)
 	})
 	it("missing operand", () => {
 		// @ts-expect-error

@@ -5,22 +5,14 @@ describe("discrimination", () => {
 	it("2 literal branches", () => {
 		// should not use a switch with <=2 branches to avoid visual clutter
 		const t = type("'a'|'b'")
-		attest(t.condition).snap(`if( $arkRoot !== "a" && $arkRoot !== "b") {
-    return false
-}`)
+		attest(t.json).snap()
 		attest(t.allows("a")).equals(true)
 		attest(t.allows("b")).equals(true)
 		attest(t.allows("c")).equals(false)
 	})
 	it(">2 literal branches", () => {
 		const t = type("'a'|'b'|'c'")
-		attest(t.condition).snap(`switch($arkRoot) {
-        case "a":
-    case "b":
-    case "c":        break
-    default:
-        return false
-}`)
+		attest(t.json).snap()
 		attest(t.allows("a")).equals(true)
 		attest(t.allows("b")).equals(true)
 		attest(t.allows("c")).equals(true)
@@ -39,50 +31,7 @@ describe("discrimination", () => {
 		})
 	it("nested", () => {
 		const t = getPlaces().type("ocean|sky|rainForest|desert")
-		attest(t.condition).snap(`switch($arkRoot?.color) {
-    case "blue": {
-    switch($arkRoot?.climate) {
-    case "dry": {
-    
-
-if (!($arkRoot.isSky === true)) {
-            return false
-}
-     break
-}case "wet": {
-    
-
-if (!($arkRoot.isOcean === true)) {
-            return false
-}
-     break
-}default: {
-    return false
-}
-}
-     break
-}case "brown": {
-    if (!($arkRoot.climate === "dry")) {
-            return false
-}
-
-if (!($arkRoot.isDesert === true)) {
-            return false
-}
-     break
-}case "green": {
-    if (!($arkRoot.climate === "wet")) {
-            return false
-}
-
-if (!($arkRoot.isRainForest === true)) {
-            return false
-}
-     break
-}default: {
-    return false
-}
-}`)
+		attest(t.json).snap()
 	})
 
 	it("undiscriminable", () => {

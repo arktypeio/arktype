@@ -11,7 +11,7 @@ describe("intersection", () => {
 	it("two types", () => {
 		const t = type("boolean&true")
 		attest<true>(t.infer)
-		attest(t.condition).is(type("true").condition)
+		attest(t.json).is(type("true").json)
 	})
 	it("intersection parsed before union", () => {
 		// Should be parsed as:
@@ -19,7 +19,7 @@ describe("intersection", () => {
 		// 2. "0" | "1" | "2"
 		const t = type("'0'|'1'&string|'2'")
 		attest<"0" | "1" | "2">(t.infer)
-		attest(t.condition).equals(type("===", "0", "1", "2").condition)
+		attest(t.json).equals(type("===", "0", "1", "2").json)
 	})
 	// it("tuple expression", () => {
 	//     const t = type([{ a: "string" }, "&", { b: "number" }])
@@ -31,12 +31,12 @@ describe("intersection", () => {
 	it("several types", () => {
 		const t = type("unknown&boolean&false")
 		attest<false>(t.infer)
-		attest(t.condition).equals(type("false").condition)
+		attest(t.json).equals(type("false").json)
 	})
 	it("method", () => {
 		const t = type({ a: "string" }).and({ b: "boolean" })
 		attest<{ a: string; b: boolean }>(t.infer)
-		attest(t.condition).equals(type({ a: "string", b: "boolean" }).condition)
+		attest(t.json).equals(type({ a: "string", b: "boolean" }).json)
 	})
 	it("chained deep intersections", () => {
 		const b = type({ b: "boolean" }, "=>", (o) => [o.b])

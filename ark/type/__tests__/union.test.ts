@@ -17,7 +17,7 @@ describe("union", () => {
 		const nary = type("false|null|undefined|0|''")
 		attest<false | "" | 0 | null | undefined>(nary.infer)
 		const expected = node.units(false, null, undefined, 0, "")
-		attest(nary.condition).is(expected.condition)
+		attest(nary.json).equals(expected.json)
 	})
 	it("subtype pruning", () => {
 		type([{ a: "string" }, "|", { a: "'foo'" }])
@@ -25,17 +25,17 @@ describe("union", () => {
 	it("multiple subtypes pruned", () => {
 		const t = type("'foo'|'bar'|string|'baz'|/.*/")
 		attest<string>(t.infer)
-		attest(t.condition).is(type("string").condition)
+		attest(t.json).is(type("string").json)
 	})
 	it("union of true and false reduces to boolean", () => {
 		const t = type("true|false")
 		attest(t.infer).type.toString("boolean")
-		attest(t.condition).equals(type("boolean").condition)
+		attest(t.json).equals(type("boolean").json)
 	})
 	it("nested tuple union", () => {
 		const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
 		attest<string | number | bigint | boolean>(t.infer)
-		attest(t.condition).equals(type("string|bigint|number|boolean").condition)
+		attest(t.json).equals(type("string|bigint|number|boolean").json)
 	})
 	it("length stress", () => {
 		// as of TS 5.1, can handle a max of 46 branches before an inifinitely
@@ -50,7 +50,7 @@ describe("union", () => {
 		attest<0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45>(t.infer)
 	})
 	describe("expressions", () => {
-		const expected = () => node("object").condition
+		const expected = () => node("object").json
 		// node(
 		// 	{
 		// 		basis: "object",
@@ -72,12 +72,12 @@ describe("union", () => {
 		it("tuple", () => {
 			const t = type([{ a: "string" }, "|", { b: "boolean" }])
 			attest<{ a: string } | { b: boolean }>(t.infer)
-			attest(t.condition).equals(expected())
+			attest(t.json).equals(expected())
 		})
 		it("root", () => {
 			const t = type({ a: "string" }, "|", { b: "boolean" })
 			attest<{ a: string } | { b: boolean }>(t.infer)
-			attest(t.condition).equals(expected())
+			attest(t.json).equals(expected())
 		})
 		it("chained", () => {
 			const t = type({ a: "string" }).or({ b: "boolean" })
@@ -89,7 +89,7 @@ describe("union", () => {
 						b: boolean
 				  }
 			>(t.infer)
-			attest(t.condition).equals(expected())
+			attest(t.json).equals(expected())
 		})
 		it("root autocompletions", () => {
 			// @ts-expect-error

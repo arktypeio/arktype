@@ -10,6 +10,12 @@ const matcher = match({
 	semver: (s) => s.length
 })
 
+const base = matcher({}) //=>?
+
+const oneResult = matcher({} as object) //=>?
+
+const twoResults = matcher({} as boolean | string) //=>?
+
 const keyValue = when({
 	a: "string",
 	b: "(number|bigint)[]"

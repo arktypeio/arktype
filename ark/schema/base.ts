@@ -180,7 +180,7 @@ export type BaseNodeImplementation<d extends BaseNodeDeclaration> = {
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (inner: d["inner"]) => string
 	attach: (inner: d["inner"]) => {
-		[k in unsatisfiedAttachKey<d["inner"], d["attach"]>]: d["attach"][k]
+		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
 }
 
@@ -210,13 +210,13 @@ type UnknownNodeImplementation = instantiateNodeImplementation<
 	BaseNodeImplementation<BaseNodeDeclaration>
 >
 
-type unsatisfiedAttachKey<inner, attach> = {
-	[k in keyof attach]: k extends keyof inner
-		? inner[k] extends attach[k]
+type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
+	[k in keyof d["attach"]]: k extends keyof d["inner"]
+		? d["inner"][k] extends d["attach"][k]
 			? never
 			: k
 		: k
-}[keyof attach]
+}[keyof d["attach"]]
 
 const $ark = registry()
 
@@ -551,10 +551,16 @@ export class BaseNode<
 		return null
 	}
 
-	// constrain<kind extends ConstraintKind>(kind: kind, definition: Schema<kind>) {
-	// 	const result = this.intersect(new BaseNode(definition as never))
-	// 	return result instanceof Disjoint ? result.throw() : result
-	// }
+	constrain<constraintKind extends ConstraintKind>(
+		this: Node<RootKind>,
+		kind: constraintKind,
+		definition: Schema<constraintKind>
+	): Exclude<intersectionOf<this["kind"], constraintKind>, Disjoint> {
+		const result = this.intersect(
+			new BaseNode(kind, definition as never) as {} as Node
+		)
+		return result instanceof Disjoint ? result.throw() : (result as never)
+	}
 
 	keyof() {
 		return this

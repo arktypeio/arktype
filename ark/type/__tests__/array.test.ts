@@ -30,23 +30,23 @@ describe("array", () => {
 		it("tuple expression", () => {
 			const t = type(["string", "[]"])
 			attest<string[]>(t.infer)
-			attest(t.condition).equals(type("string[]").condition)
+			attest(t.json).equals(type("string[]").json)
 		})
 		describe("optional tuple literals", () => {
 			it("string optional", () => {
 				const t = type(["string?"])
 				attest<[string?]>(t.infer)
-				attest(t.condition).equals(type(["string?"]).condition)
+				attest(t.json).equals(type(["string?"]).json)
 			})
 			it("optional tuple", () => {
 				const t = type([["string", "?"]])
 				attest<[string?]>(t.infer)
-				attest(t.condition).equals(type(["string?"]).condition)
+				attest(t.json).equals(type(["string?"]).json)
 			})
 			it("multi-optional tuple", () => {
 				const t = type([["string?", "?"]])
 				attest<[string?]>(t.infer)
-				attest(t.condition).equals(type(["string?"]).condition)
+				attest(t.json).equals(type(["string?"]).json)
 			})
 			it("nested optional tuple", () => {
 				const t = type([["string?"], "string?"])
@@ -68,7 +68,7 @@ describe("array", () => {
 		it("root expression", () => {
 			const t = type("string", "[]")
 			attest<string[]>(t.infer)
-			attest(t.condition).equals(type("string[]").condition)
+			attest(t.json).equals(type("string[]").json)
 		})
 
 		it("chained", () => {
@@ -182,16 +182,16 @@ describe("array", () => {
 	})
 	describe("intersection", () => {
 		it("shallow array intersection", () => {
-			const actual = type("string[]&'foo'[]").condition
-			const expected = type("'foo'[]").condition
+			const actual = type("string[]&'foo'[]").json
+			const expected = type("'foo'[]").json
 			attest(actual).is(expected)
 		})
 		it("deep array intersection", () => {
 			const actual = type([{ a: "string" }, "[]"]).and([
 				{ b: "number" },
 				"[]"
-			]).condition
-			const expected = type([{ a: "string", b: "number" }, "[]"]).condition
+			]).json
+			const expected = type([{ a: "string", b: "number" }, "[]"]).json
 			attest(actual).is(expected)
 		})
 		it("tuple intersection", () => {
@@ -234,9 +234,9 @@ describe("array", () => {
 				]
 			>(arrayAndTuple.infer)
 
-			const expected = type([{ a: "string", b: "boolean" }]).condition
-			attest(tupleAndArray.condition).is(expected)
-			attest(arrayAndTuple.condition).is(expected)
+			const expected = type([{ a: "string", b: "boolean" }]).json
+			attest(tupleAndArray.json).is(expected)
+			attest(arrayAndTuple.json).is(expected)
 		})
 		it("variadic and tuple", () => {
 			const b = type([{ b: "boolean" }, "[]"])
@@ -248,7 +248,7 @@ describe("array", () => {
 				{ a: "string", c: "number" },
 				{ b: "boolean", d: "Date" }
 			])
-			attest(t.condition).equals(expected.condition)
+			attest(t.json).equals(expected.json)
 		})
 		it("variadic and array", () => {
 			const b = type({ b: "boolean" }, "[]")
@@ -258,7 +258,7 @@ describe("array", () => {
 				["...", [{ b: "boolean", c: "number" }, "[]"]]
 			])
 			attest<typeof expected.infer>(t.infer)
-			attest(t.condition).equals(expected.condition)
+			attest(t.json).equals(expected.json)
 		})
 	})
 	// TODO: reenable

@@ -62,7 +62,7 @@ describe("tuple expressions", () => {
 				},
 				expected: "a|b"
 			}).export()
-			attest(t.condition).equals(types.expected.condition)
+			attest(t.json).equals(types.expected.json)
 		})
 	})
 })
@@ -71,27 +71,27 @@ describe("root expression", () => {
 	it("=== single", () => {
 		const t = type("===", 5)
 		attest<5>(t.infer)
-		attest(t.condition).equals(type("5").condition)
+		attest(t.json).equals(type("5").json)
 	})
 	it("=== branches", () => {
 		const t = type("===", "foo", "bar", "baz")
 		attest<"foo" | "bar" | "baz">(t.infer)
-		attest(t.condition).equals(node.units("foo", "bar", "baz").condition)
+		attest(t.json).equals(node.units("foo", "bar", "baz").json)
 	})
 	it("instanceof single", () => {
 		const t = type("instanceof", RegExp)
 		attest<RegExp>(t.infer)
-		attest(t.condition).equals(node(RegExp).condition)
+		attest(t.json).equals(node(RegExp).json)
 	})
 	it("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest<unknown[] | Date>(t.infer)
-		attest(t.condition).equals(node(Array, Date).condition)
+		attest(t.json).equals(node(Array, Date).json)
 	})
 	it("postfix", () => {
 		const t = type({ a: "string" }, "[]")
 		attest<{ a: string }[]>(t.infer)
-		attest(t.condition).equals(type({ a: "string" }).array().condition)
+		attest(t.json).equals(type({ a: "string" }).array().json)
 	})
 	it("infix", () => {
 		const t = type({ a: "string" }, "|", { b: "boolean" })
@@ -104,9 +104,7 @@ describe("root expression", () => {
 			  }
 		>(t.infer)
 
-		attest(t.condition).equals(
-			type({ a: "string" }).or({ b: "boolean" }).condition
-		)
+		attest(t.json).equals(type({ a: "string" }).or({ b: "boolean" }).json)
 	})
 	it("morph", () => {
 		const t = type({ a: "string" }, "=>", (In) => ({ b: In.a }))
@@ -125,9 +123,7 @@ describe("root expression", () => {
 		attest(t.infer).type.toString.snap(
 			"{ a: string; } | { b: { a: string; } | any; }"
 		)
-		attest(t.condition).equals(
-			type([{ a: "string" }, "|", { b: "this" }]).condition
-		)
+		attest(t.json).equals(type([{ a: "string" }, "|", { b: "this" }]).json)
 	})
 	it("tuple as second arg", () => {
 		// this case is not fundamentally unique but TS has a hard time

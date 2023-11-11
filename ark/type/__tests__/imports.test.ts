@@ -69,7 +69,7 @@ describe("scope imports", () => {
 
 		attest(Object.keys(types)).equals(["hasCrept", "public"])
 
-		attest(types.public.condition).equals(type("3|'no'|uuid|true").condition)
+		attest(types.public.json).equals(type("3|'no'|uuid|true").json)
 
 		attest<
 			Module<{
@@ -95,7 +95,7 @@ describe("private aliases", () => {
 			"#bar": "boolean"
 		}).export()
 		attest(Object.keys(types)).equals(["foo"])
-		attest(types.foo.condition).equals(type("boolean[]").condition)
+		attest(types.foo.json).equals(type("boolean[]").json)
 		attest<
 			Module<{
 				exports: { foo: boolean[] }
