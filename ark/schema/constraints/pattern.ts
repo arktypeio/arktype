@@ -31,7 +31,7 @@ export const PatternImplementation = defineNode({
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
 	},
-	parseSchema: (schema) =>
+	parse: (schema) =>
 		typeof schema === "string"
 			? parseRegexLiteral(schema)
 			: schema instanceof RegExp

@@ -77,11 +77,9 @@ export type MorphDeclaration = declareNode<{
 export const MorphImplementation = defineNode({
 	kind: "morph",
 	keys: {
-		// assign in/out to their respective caches to avoid an error on an
-		// attempt to overwrite the getter
 		in: "child",
 		out: "child",
-		morph: "morph"
+		morph: "leaf"
 	},
 	intersections: {
 		morph: (l, r) => {
@@ -123,7 +121,7 @@ export const MorphImplementation = defineNode({
 				  }
 		}
 	},
-	parseSchema: (schema): MorphInner => {
+	parse: (schema, ctx): MorphInner => {
 		return {
 			in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
 			out: schema.out ? parseValidatorSchema(schema.out) : builtins().unknown,

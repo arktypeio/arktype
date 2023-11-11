@@ -12,7 +12,7 @@ export type SetDeclarationsByKind = {
 	intersection: IntersectionDeclaration
 }
 
-export type SetClassesByKind = {
+export type SetImplementationByKind = {
 	union: typeof UnionImplementation
 	morph: typeof MorphImplementation
 	intersection: typeof IntersectionImplementation

@@ -87,7 +87,7 @@ export const MinImplementation = defineNode({
 	intersections: {
 		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
 	},
-	parseSchema: (schema, ctx) => {
+	parse: (schema, ctx) => {
 		const boundKind = getBoundKind(ctx.basis)
 		return typeof schema === "object"
 			? { ...schema, min: parseLimit(schema.min), boundKind }
@@ -153,7 +153,7 @@ export const MaxImplementation = defineNode({
 				? Disjoint.from("bound", l, r)
 				: null
 	},
-	parseSchema: (schema, ctx) => {
+	parse: (schema, ctx) => {
 		const boundKind = getBoundKind(ctx.basis)
 		return typeof schema === "object"
 			? { ...schema, max: parseLimit(schema.max), boundKind }

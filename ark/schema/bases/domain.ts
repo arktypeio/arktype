@@ -35,8 +35,7 @@ export const DomainImplementation = defineNode({
 	intersections: {
 		domain: (l, r) => Disjoint.from("domain", l, r)
 	},
-	parseSchema: (schema) =>
-		typeof schema === "string" ? { domain: schema } : schema,
+	parse: (schema) => (typeof schema === "string" ? { domain: schema } : schema),
 	writeDefaultDescription: (inner) => domainDescriptions[inner.domain],
 	attach: (inner) => ({
 		basisName: inner.domain,

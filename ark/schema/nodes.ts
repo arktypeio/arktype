@@ -1,8 +1,8 @@
 import type { extend, listable } from "@arktype/util"
 import { type BaseNode, type rightOf } from "./base.ts"
 import {
-	type BasisClassesByKind,
 	type BasisDeclarationsByKind,
+	type BasisImplementationByKind,
 	type BasisKind
 } from "./bases/basis.ts"
 import {
@@ -11,8 +11,8 @@ import {
 } from "./constraints/constraint.ts"
 import { type MorphSchema, type ValidatorSchema } from "./sets/morph.ts"
 import {
-	type SetClassesByKind,
 	type SetDeclarationsByKind,
+	type SetImplementationByKind,
 	type SetKind
 } from "./sets/set.ts"
 
@@ -39,8 +39,8 @@ export type RuleDeclarationsByKind = extend<
 	ConstraintDeclarationsByKind
 >
 
-export type RuleClassesByKind = extend<
-	BasisClassesByKind,
+export type RuleImplementationByKind = extend<
+	BasisImplementationByKind,
 	ConstraintImplementationByKind
 >
 
@@ -55,7 +55,13 @@ export type RootKind = SetKind | BasisKind
 
 export type NodeKind = keyof NodeDeclarationsByKind
 
-export type NodeClassesByKind = extend<RuleClassesByKind, SetClassesByKind>
+export type NodeImplementationByKind = extend<
+	SetImplementationByKind,
+	RuleImplementationByKind
+>
+
+export type Implementation<kind extends NodeKind> =
+	NodeImplementationByKind[kind]
 
 export type Schema<kind extends NodeKind> =
 	NodeDeclarationsByKind[kind]["schema"]

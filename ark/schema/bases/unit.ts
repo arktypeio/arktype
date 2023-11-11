@@ -33,7 +33,7 @@ export const UnitImplementation = defineNode({
 		default: (l, r) =>
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	},
-	parseSchema: (schema) => schema,
+	parse: (schema) => schema,
 	writeDefaultDescription: (inner) => stringify(inner.unit),
 	attach: (inner) => ({
 		basisName: stringify(inner),

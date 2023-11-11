@@ -10,6 +10,11 @@ const matcher = match({
 	semver: (s) => s.length
 })
 
+const keyValue = when({
+	a: "string",
+	b: "(number|bigint)[]"
+})
+
 // const validMatcher = match({
 // 	//    ^?
 // 	number: (data) => data,

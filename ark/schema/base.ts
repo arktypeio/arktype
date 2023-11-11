@@ -5,8 +5,6 @@ import {
 	type evaluate,
 	type extend,
 	includes,
-	isArray,
-	isKeyOf,
 	type Json,
 	type JsonData,
 	ParseError,
@@ -21,18 +19,23 @@ import { compileSerializedValue, In } from "./io/compile.ts"
 import { registry } from "./io/registry.ts"
 import {
 	type Attachments,
+	type DiscriminableSchema,
 	type Inner,
 	type Node,
 	type NodeDeclarationsByKind,
 	type NodeKind,
 	type reifyIntersections,
-	type RootInput,
 	type RootKind,
-	type RuleKind
+	type RuleKind,
+	type Schema
 } from "./nodes.ts"
 import { type ValidatorNode } from "./sets/morph.ts"
 import { type SetKind } from "./sets/set.ts"
-import { type parseUnion, type validateBranchSchema } from "./sets/union.ts"
+import {
+	type BranchSchema,
+	type parseUnion,
+	type validateBranchSchema
+} from "./sets/union.ts"
 import { inferred, type ParseContext } from "./utils.ts"
 
 export type BaseAttributes = {
@@ -172,12 +175,7 @@ export type RuleAttachments = {
 	readonly condition: string
 }
 
-export type NodeKeyKind =
-	| "child"
-	| "children"
-	| "meta"
-	| "leaf"
-
+export type NodeKeyKind = "child" | "children" | "meta" | "leaf"
 
 export type NodeImplementation<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
@@ -185,7 +183,11 @@ export type NodeImplementation<
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d["inner"]>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	parseSchema: (schema: d["schema"], ctx: ParseContext) => d["inner"]
+	matches: (schema: unknown) => schema is d["schema"]
+	parse: (schema: d["schema"], ctx: ParseContext) => d["inner"]
+	reduce: (
+		inner: d["inner"]
+	) => UnknownNode | { [k in NodeKind]: [k, Inner<k>] }[NodeKind]
 	writeDefaultDescription: (inner: d["inner"]) => string
 	attach: (inner: d["inner"]) => {
 		[k in unsatisfiedAttachKey<d["inner"], d["attach"]>]: d["attach"][k]
@@ -279,63 +281,89 @@ export class BaseNode<
 	// 	})
 	// }
 
-	static from<branches extends readonly unknown[]>(
+	static parseRoot<branches extends readonly unknown[]>(
 		...branches: {
 			[i in keyof branches]: validateBranchSchema<branches[i]>
 		}
 	): parseUnion<branches>
-	static from(...branches: RootInput[]) {
-		const nodes = branches.map((schema) => {
-			switch (typeof schema) {
-				case "string":
-					return new BaseNode("domain", { domain: schema })
-				case "function":
-					return new BaseNode("proto", { proto: schema })
-				case "object":
-					const kind = orderedNodeKinds.find((kind) => kind in schema)
-					if (!kind) {
-						return throwParseError(
-							`Constraint schema must contain one of the following keys: ${constraintKinds.join(
-								", "
-							)}`
-						)
-					}
-					return new BaseNode(schema as never)
-				default:
-					return throwParseError(`${typeof schema} is not a valid schema type`)
-			}
-		})
-
-		// export const maybeParseBasis = (
-		// 	schema: Schema<"intersection" | BasisKind>
-		// ): Node<BasisKind> | undefined => {
-		// 	switch (typeof schema) {
-		// 		case "string":
-		// 			return new DomainNode(schema)
-		// 		case "function":
-		// 			return new ProtoNode(schema)
-		// 		case "object":
-		// 			return "unit" in schema
-		// 				? new UnitNode(schema)
-		// 				: "proto" in schema
-		// 				? new ProtoNode(schema)
-		// 				: "domain" in schema
-		// 				? new DomainNode(schema)
-		// 				: undefined
-		// 	}
-		// }
-
-		// export const parseBasis = (schema: Schema<BasisKind>) =>
-		// 	maybeParseBasis(schema) ??
-		// 	throwParseError(
-		// 		`Basis schema must be a non-enumerable domain, a constructor, or have one of the following keys:
-		// "unit", "proto", "domain"`
-		// 	)
-
-		// hasDomain(this.schema, "object") && "prevalidated" in this.schema
-		// 	? this.schema
-		// 	: this.definition.parseSchema(this.schema, ctx)
+	static parseRoot(...branches: BranchSchema[]) {
+		return branches.map((schema) => this.parseBranch(schema))
 	}
+
+	private static parseBranch(schema: BranchSchema) {
+		switch (typeof schema) {
+			case "string":
+				return new BaseNode("domain", { domain: schema })
+			case "function":
+				return new BaseNode("proto", { proto: schema })
+			case "object":
+				const basisKind = basisKinds.find((kind) => kind in schema)
+				if (basisKind) {
+					return new BaseNode(basisKind, schema as never)
+				}
+				if ("morph" in schema) {
+					return new BaseNode("morph", schema as never)
+				}
+				return new BaseNode("intersection", schema as never)
+			default:
+				return throwParseError(`${typeof schema} is not a valid schema type`)
+		}
+	}
+
+	static parseConstraint<kind extends ConstraintKind>(
+		kind: kind,
+		schema: Schema<kind>
+	): Node<kind>
+	static parseConstraint<schema extends DiscriminableSchema<ConstraintKind>>(
+		schema: schema
+	): Node<Extract<ConstraintKind, keyof schema>>
+	static parseConstraint(
+		kindOrSchema: ConstraintKind | DiscriminableSchema<ConstraintKind>,
+		prediscriminatedSchema?: Schema<ConstraintKind>
+	): UnknownNode {
+		if (typeof kindOrSchema === "string") {
+			return new BaseNode(kindOrSchema, prediscriminatedSchema as never)
+		}
+		const kind = constraintKinds.find((kind) => kind in kindOrSchema)
+		if (!kind) {
+			return throwParseError(
+				`Constraint schema must contain one of the following keys: ${constraintKinds.join(
+					", "
+				)}`
+			)
+		}
+		return new BaseNode(kind, kindOrSchema as never)
+	}
+
+	// export const maybeParseBasis = (
+	// 	schema: Schema<"intersection" | BasisKind>
+	// ): Node<BasisKind> | undefined => {
+	// 	switch (typeof schema) {
+	// 		case "string":
+	// 			return new DomainNode(schema)
+	// 		case "function":
+	// 			return new ProtoNode(schema)
+	// 		case "object":
+	// 			return "unit" in schema
+	// 				? new UnitNode(schema)
+	// 				: "proto" in schema
+	// 				? new ProtoNode(schema)
+	// 				: "domain" in schema
+	// 				? new DomainNode(schema)
+	// 				: undefined
+	// 	}
+	// }
+
+	// export const parseBasis = (schema: Schema<BasisKind>) =>
+	// 	maybeParseBasis(schema) ??
+	// 	throwParseError(
+	// 		`Basis schema must be a non-enumerable domain, a constructor, or have one of the following keys:
+	// "unit", "proto", "domain"`
+	// 	)
+
+	// hasDomain(this.schema, "object") && "prevalidated" in this.schema
+	// 	? this.schema
+	// 	: this.definition.parseSchema(this.schema, ctx)
 
 	static fromUnits<const branches extends readonly unknown[]>(
 		...values: branches
@@ -393,7 +421,7 @@ export class BaseNode<
 				this.json[k] = children.map((child) => child.json)
 				this.typeJson[k] = children.map((child) => child.typeJson)
 				this.children.push(...(v as UnknownNode[]))
-			} else (this.json[k] === undefined) {
+			} else {
 				this.json[k] = defaultValueSerializer(v)
 				if (keyKind !== "meta") {
 					this.typeJson[k] = this.json[k]
@@ -454,7 +482,7 @@ export class BaseNode<
 			}
 		}
 		// TODO; reduce?
-		return BaseNode.from(ioInner as never)
+		return BaseNode.parseRoot(ioInner as never)
 	}
 
 	toJSON() {
@@ -588,7 +616,7 @@ export class BaseNode<
 	}
 }
 
-export const node = Object.assign(BaseNode.from, {
+export const node = Object.assign(BaseNode.parseRoot, {
 	units: BaseNode.fromUnits
 })
 

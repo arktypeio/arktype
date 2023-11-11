@@ -53,7 +53,7 @@ export const ProtoImplementation = defineNode({
 		domain: (l, r) =>
 			r.domain === "object" ? l : Disjoint.from("domain", builtins().object, r)
 	},
-	parseSchema: (schema) =>
+	parse: (schema) =>
 		typeof schema === "function" ? { proto: schema } : schema,
 	writeDefaultDescription: (inner) => {
 		const knownObjectKind = getExactBuiltinConstructorName(inner.proto)

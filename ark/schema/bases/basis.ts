@@ -37,7 +37,7 @@ export type BasisDeclarationsByKind = {
 	unit: UnitDeclaration
 }
 
-export type BasisClassesByKind = {
+export type BasisImplementationByKind = {
 	domain: typeof DomainImplementation
 	proto: typeof ProtoImplementation
 	unit: typeof UnitImplementation

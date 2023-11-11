@@ -65,7 +65,7 @@ export const RequiredImplementation = defineNode({
 			}
 		}
 	},
-	parseSchema: (schema) => schema as never,
+	parse: (schema) => schema as never,
 	writeDefaultDescription: (inner) =>
 		`${String(inner.required)}: ${inner.value}`,
 	attach: (inner) => ({
@@ -119,7 +119,7 @@ export const OptionalImplementation = defineNode({
 			}
 		}
 	},
-	parseSchema: (schema) => schema as never,
+	parse: (schema) => schema as never,
 	writeDefaultDescription: (inner) =>
 		`${String(inner.optional)}?: ${inner.value}`,
 	attach: (inner) => ({

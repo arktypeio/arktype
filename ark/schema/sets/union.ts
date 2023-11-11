@@ -72,15 +72,6 @@ export type UnionDeclaration = declareNode<{
 	attach: SetAttachments
 }>
 
-// const reduce = (inner: UnionInner) => {
-// 	const reducedBranches = reduceBranches(inner)
-// 	if (reducedBranches.length === 1) {
-// 		// TODO: description?
-// 		return reducedBranches[0]
-// 	}
-// 	return new UnionNode({ ...inner, union: reducedBranches })
-// }
-
 const intersectBranch = (l: Node<"union">, r: BranchNode) => {
 	const union = l.ordered
 		? l.union.flatMap((branch) => {
@@ -151,7 +142,9 @@ export const UnionImplementation = defineNode({
 				  }
 		}
 	},
-	parseSchema: (schema) => {
+	matches: (schema): schema is UnionSchema =>
+		isArray(schema) || "union" in schema,
+	parse: (schema) => {
 		const result = {
 			ordered: false
 		} as mutable<UnionInner>
@@ -165,6 +158,14 @@ export const UnionImplementation = defineNode({
 		}
 		result.union = schemaBranches.map(parseBranchSchema)
 		return result
+	},
+	reduce: (inner) => {
+		const reducedBranches = reduceBranches(inner)
+		if (reducedBranches.length === 1) {
+			// TODO: description?
+			return reducedBranches[0]
+		}
+		return ["union", { ...inner, union: reducedBranches }]
 	},
 	attach: (inner) => {
 		return {

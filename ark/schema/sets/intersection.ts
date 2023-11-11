@@ -80,7 +80,8 @@ export const IntersectionImplementation = defineNode({
 			return result instanceof Disjoint ? result : { intersection: result }
 		}
 	},
-	parseSchema: (schema) => {
+	matches: (schema) => {},
+	parse: (schema) => {
 		const { alias, description, ...rules } = schema
 		const intersectionInner = {} as mutable<IntersectionInner>
 		if (alias) {
