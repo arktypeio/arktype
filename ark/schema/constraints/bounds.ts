@@ -69,7 +69,8 @@ export type MinSchema = extend<
 
 export type MinDeclaration = declareNode<{
 	kind: "min"
-	schema: MinSchema
+	collapsedSchema: BoundLimit
+	expandedSchema: MinSchema
 	inner: MinInner
 	intersections: {
 		min: "min"
@@ -130,7 +131,8 @@ export type MaxSchema = extend<
 
 export type MaxDeclaration = declareNode<{
 	kind: "max"
-	schema: MaxSchema
+	collapsedSchema: BoundLimit
+	expandedSchema: MaxSchema
 	inner: MaxInner
 	intersections: {
 		max: "max"

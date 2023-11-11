@@ -114,7 +114,8 @@ export type UnknownNode = BaseNode<any>
 
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
-	schema: unknown
+	collapsedSchema?: unknown
+	expandedSchema: BaseAttributes
 	inner: BaseAttributes
 	intersections: BaseIntersectionMap[kind]
 	attach: Dict
@@ -122,7 +123,8 @@ export type DeclarationInput<kind extends NodeKind> = {
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind
-	schema: unknown
+	collapsedSchema?: unknown
+	expandedSchema: BaseAttributes
 	inner: BaseAttributes
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
@@ -159,14 +161,18 @@ export const defineNode = <
 
 type instantiateNodeImplementation<definition> = evaluate<
 	definition & {
-		keys: { [k in keyof BaseAttributes]: NodeKeyKind }
+		keys: {
+			[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
+		}
 	}
 >
 
-export type InnerKeyDefinitions<inner extends BaseAttributes = BaseAttributes> =
-	{
-		[k in Exclude<keyof inner, keyof BaseAttributes>]: NodeKeyKind
-	}
+export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
+	[k in Exclude<keyof d["inner"], keyof BaseAttributes>]: NodeKeyDefinition<
+		d,
+		k
+	>
+}
 
 export type RuleAttachments = {
 	readonly condition: string
@@ -174,9 +180,20 @@ export type RuleAttachments = {
 
 export type NodeKeyKind = "child" | "children" | "meta" | "leaf"
 
+export type NodeKeyDefinition<
+	d extends BaseNodeDeclaration,
+	k extends keyof d["inner"]
+> = {
+	kind: NodeKeyKind
+	parse?: (
+		schema: k extends keyof d["schema"] ? d["schema"][k] : undefined
+	) => d["inner"][k]
+	// require parse if we can't guarantee the schema value will be valid on inner
+} & (d["schema"] extends d["inner"] ? {} : { parse: {} })
+
 export type BaseNodeImplementation<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
-	keys: InnerKeyDefinitions<d["inner"]>
+	keys: InnerKeyDefinitions<d>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (inner: d["inner"]) => string
 	attach: (inner: d["inner"]) => {

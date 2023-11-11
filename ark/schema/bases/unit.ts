@@ -12,7 +12,7 @@ export type UnitSchema<rule = unknown> = UnitInner<rule>
 
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
-	schema: UnitSchema
+	expandedSchema: UnitSchema
 	inner: UnitInner
 	intersections: {
 		unit: "unit" | Disjoint

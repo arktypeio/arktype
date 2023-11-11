@@ -46,14 +46,12 @@ export type parseSchemaBranch<schema> = schema extends MorphSchema
 	? parseValidatorSchema<schema>
 	: BranchNode
 
-export type UnionSchema<
+export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
-> =
-	| branches
-	| withAttributes<{
-			readonly union: branches
-			readonly ordered?: boolean
-	  }>
+> = withAttributes<{
+	readonly union: branches
+	readonly ordered?: boolean
+}>
 
 export type UnionInner = withAttributes<{
 	readonly union: readonly BranchNode[]
@@ -69,7 +67,8 @@ export type UnionAttachments = extend<
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
-	schema: UnionSchema
+	collapsedSchema: readonly BranchNode[]
+	expandedSchema: ExpandedUnionSchema
 	inner: UnionInner
 	intersections: {
 		union: "union" | Disjoint

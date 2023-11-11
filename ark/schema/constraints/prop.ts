@@ -30,7 +30,7 @@ export type RequiredPropSchema = withAttributes<{
 
 export type RequiredDeclaration = declareNode<{
 	kind: "required"
-	schema: RequiredPropSchema
+	expandedSchema: RequiredPropSchema
 	inner: RequiredPropInner
 	intersections: {
 		required: "required" | Disjoint | null
@@ -87,7 +87,7 @@ export type OptionalPropSchema = withAttributes<{
 
 export type OptionalDeclaration = declareNode<{
 	kind: "optional"
-	schema: OptionalPropSchema
+	expandedSchema: OptionalPropSchema
 	inner: OptionalPropInner
 	intersections: {
 		optional: "optional" | null

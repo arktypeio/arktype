@@ -25,6 +25,15 @@ export type IntersectionInner = withAttributes<
 	}
 >
 
+export type IntersectionSchema<
+	basis extends Schema<BasisKind> | undefined = Schema<BasisKind> | undefined
+> = {
+	basis?: basis
+} & constraintInputsByKind<
+	basis extends Schema<BasisKind> ? parseBasis<basis>["infer"] : unknown
+> &
+	BaseAttributes
+
 export type IntersectionAttachments = extend<
 	SetAttachments,
 	{
@@ -35,7 +44,7 @@ export type IntersectionAttachments = extend<
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
-	schema: IntersectionSchema
+	expandedSchema: IntersectionSchema
 	inner: IntersectionInner
 	intersections: {
 		intersection: "intersection" | Disjoint
@@ -66,8 +75,8 @@ export const IntersectionImplementation = defineNode({
 			return result instanceof Disjoint ? result : { intersection: result }
 		}
 	},
-	parse: (input) => {
-		const { alias, description, ...rules } = input
+	parse: (schema) => {
+		const { alias, description, ...rules } = schema
 		const intersectionInner = {} as mutable<IntersectionInner>
 		if (alias) {
 			intersectionInner.alias = alias
@@ -183,15 +192,6 @@ export const addRule = (
 export type IntersectionBasis = {
 	basis?: Schema<BasisKind>
 }
-
-export type IntersectionSchema<
-	basis extends Schema<BasisKind> | undefined = Schema<BasisKind> | undefined
-> = {
-	basis?: basis
-} & constraintInputsByKind<
-	basis extends Schema<BasisKind> ? parseBasis<basis>["infer"] : unknown
-> &
-	BaseAttributes
 
 type exactBasisMessageOnError<branch, expected> = {
 	[k in keyof branch]: k extends keyof expected

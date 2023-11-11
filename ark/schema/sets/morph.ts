@@ -59,7 +59,7 @@ export type MorphSchema = withAttributes<{
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
-	schema: MorphSchema
+	expandedSchema: MorphSchema
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint

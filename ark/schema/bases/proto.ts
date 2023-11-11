@@ -13,7 +13,7 @@ import { type BasisAttachments } from "./basis.ts"
 
 export type ProtoSchema<
 	proto extends AbstractableConstructor = AbstractableConstructor
-> = proto | ProtoInner<proto>
+> = ProtoInner<proto>
 
 export type ProtoInner<
 	proto extends AbstractableConstructor = AbstractableConstructor
@@ -23,7 +23,8 @@ export type ProtoInner<
 
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
-	schema: ProtoSchema
+	collapsedSchema: AbstractableConstructor
+	expandedSchema: ProtoSchema
 	inner: ProtoInner
 	intersections: {
 		proto: "proto" | Disjoint

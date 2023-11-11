@@ -8,13 +8,14 @@ export type PredicateInner<predicate extends Predicate = Predicate> =
 		readonly predicate: predicate
 	}>
 
-export type PredicateSchema<predicate extends Predicate = Predicate> =
-	| predicate
-	| PredicateInner<predicate>
+export type CollapsedPredicateSchema = Predicate
+
+export type ExpandedPredicateSchema = PredicateInner
 
 export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
-	schema: PredicateSchema
+	collapsedSchema: CollapsedPredicateSchema
+	expandedSchema: ExpandedPredicateSchema
 	inner: PredicateInner
 	intersections: {
 		predicate: "predicate" | null

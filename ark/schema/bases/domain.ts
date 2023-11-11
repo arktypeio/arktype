@@ -15,11 +15,12 @@ export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
 
 export type DomainSchema<
 	rule extends NonEnumerableDomain = NonEnumerableDomain
-> = rule | DomainInner<rule>
+> = DomainInner<rule>
 
 export type DomainDeclaration = declareNode<{
 	kind: "domain"
-	schema: DomainSchema
+	collapsedSchema: NonEnumerableDomain
+	expandedSchema: DomainSchema
 	inner: DomainInner
 	intersections: {
 		domain: "domain" | Disjoint

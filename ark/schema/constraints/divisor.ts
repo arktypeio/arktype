@@ -7,11 +7,12 @@ export type DivisorInner = withAttributes<{
 	readonly divisor: number
 }>
 
-export type DivisorSchema = DivisorInner | number
+export type ExpandedDivisorSchema = DivisorInner
 
 export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
-	schema: DivisorSchema
+	collapsedSchema: number
+	expandedSchema: ExpandedDivisorSchema
 	inner: DivisorInner
 	intersections: {
 		divisor: "divisor"
@@ -22,7 +23,9 @@ export type DivisorDeclaration = declareNode<{
 export const DivisorImplementation = defineNode({
 	kind: "divisor",
 	keys: {
-		divisor: "leaf"
+		divisor: {
+			kind: "leaf"
+		}
 	},
 	intersections: {
 		divisor: (l, r) => ({
