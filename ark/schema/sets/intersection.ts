@@ -5,11 +5,13 @@ import type {
 	extend,
 	mutable
 } from "@arktype/util"
-import { hasDomain, throwInternalError } from "@arktype/util"
+import { throwInternalError, transform } from "@arktype/util"
 import {
 	type BaseAttributes,
+	constraintKinds,
 	type declareNode,
 	defineNode,
+	type IrreducibleConstraintKind,
 	type withAttributes
 } from "../base.ts"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
@@ -26,9 +28,13 @@ import {
 } from "../nodes.ts"
 import { type SetAttachments } from "./set.ts"
 
-export type IntersectionInner = withAttributes<{
-	readonly intersection: CollapsedIntersectionInner
-}>
+export type IntersectionInner = withAttributes<
+	{ basis?: Node<BasisKind> } & {
+		[k in ConstraintKind]?: k extends IrreducibleConstraintKind
+			? readonly Node<k>[]
+			: Node<k>
+	}
+>
 
 export type CollapsedIntersectionInner = readonly Node<RuleKind>[]
 
@@ -53,9 +59,10 @@ export type IntersectionDeclaration = declareNode<{
 
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
-	keys: {
-		intersection: "children"
-	},
+	keys: Object.assign(
+		{ basis: "leaf" as const },
+		transform(constraintKinds, ([i, kind]) => [kind, "leaf"] as const)
+	),
 	intersections: {
 		intersection: (l, r) => {
 			let result: CollapsedIntersectionInner | Disjoint = l.intersection
