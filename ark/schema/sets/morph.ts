@@ -6,7 +6,12 @@ import {
 	listFrom,
 	throwParseError
 } from "@arktype/util"
-import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import {
+	basisKinds,
+	type declareNode,
+	defineNode,
+	type withAttributes
+} from "../base.ts"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
 import { type NonEnumerableDomain } from "../bases/domain.ts"
 import { builtins } from "../builtins.ts"
@@ -74,8 +79,12 @@ export type MorphDeclaration = declareNode<{
 export const MorphImplementation = defineNode({
 	kind: "morph",
 	keys: {
-		in: {},
-		out: {},
+		in: {
+			children: ["intersection", ...basisKinds]
+		},
+		out: {
+			children: ["intersection", ...basisKinds]
+		},
 		morph: {
 			parse: listFrom
 		}
@@ -120,11 +129,6 @@ export const MorphImplementation = defineNode({
 				  }
 		}
 	},
-	parse: (schema) => ({
-		in: schema.in ? parseValidatorSchema(schema.in) : builtins().unknown,
-		out: schema.out ? parseValidatorSchema(schema.out) : builtins().unknown,
-		morph: typeof schema.morph === "function" ? [schema.morph] : schema.morph
-	}),
 	writeDefaultDescription: (inner) =>
 		`a morph from ${inner.in} to ${inner.out}`,
 	attach: (inner) => ({

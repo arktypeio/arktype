@@ -1,4 +1,10 @@
-import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import {
+	type declareNode,
+	defineNode,
+	rootKinds,
+	setKinds,
+	type withAttributes
+} from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"
 import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
@@ -48,8 +54,7 @@ export const RequiredImplementation = defineNode({
 	keys: {
 		key: {},
 		value: {
-			kind: "child",
-			parse: (schema) => schema
+			children: rootKinds
 		}
 	},
 	intersections: {
@@ -105,12 +110,9 @@ export type OptionalDeclaration = declareNode<{
 export const OptionalImplementation = defineNode({
 	kind: "optional",
 	keys: {
-		key: {
-			kind: "leaf"
-		},
+		key: {},
 		value: {
-			kind: "child",
-			parse: (schema) => schema
+			children: rootKinds
 		}
 	},
 	intersections: {

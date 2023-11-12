@@ -42,7 +42,7 @@ export type ProtoDeclaration = declareNode<{
 export const ProtoImplementation = defineNode({
 	kind: "proto",
 	keys: {
-		proto: { kind: "leaf" }
+		proto: {}
 	},
 	intersections: {
 		proto: (l, r) =>

@@ -1,6 +1,7 @@
 import { type conform, type extend, isArray } from "@arktype/util"
 import {
 	type BaseNode,
+	basisKinds,
 	type declareNode,
 	defineNode,
 	type withAttributes
@@ -95,7 +96,9 @@ const intersectBranch = (l: Node<"union">, r: BranchNode) => {
 export const UnionImplementation = defineNode({
 	kind: "union",
 	keys: {
-		union: {},
+		union: {
+			children: ["morph", "intersection", ...basisKinds]
+		},
 		ordered: { parse: (_) => _ ?? false }
 	},
 	intersections: {

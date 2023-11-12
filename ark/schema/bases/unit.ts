@@ -24,14 +24,13 @@ export type UnitDeclaration = declareNode<{
 export const UnitImplementation = defineNode({
 	kind: "unit",
 	keys: {
-		unit: "leaf"
+		unit: {}
 	},
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	},
-	parse: (input) => input,
 	writeDefaultDescription: (inner) => stringify(inner.unit),
 	attach: (inner) => ({
 		basisName: stringify(inner),

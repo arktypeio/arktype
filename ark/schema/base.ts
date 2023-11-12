@@ -58,6 +58,8 @@ export const basisKinds = [
 	"domain"
 ] as const satisfies readonly BasisKind[]
 
+export const rootKinds = [...setKinds, ...basisKinds] as const
+
 export const constraintKinds = [
 	"divisor",
 	"max",
@@ -183,15 +185,17 @@ export type NodeKeyDefinition<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"]
 > = {
-	// child: NodeKind[]
 	meta?: true
+	children?: readonly NodeKind[]
 	parse?: (
 		schema: k extends keyof ExpandedSchema<d["kind"]>
 			? ExpandedSchema<d["kind"]>[k]
 			: undefined
 	) => d["inner"][k]
-	// require parse if we can't guarantee the schema value will be valid on inner
-} & (ExpandedSchema<d["kind"]>[k] extends d["inner"][k] ? {} : { parse: {} })
+	// require parse or children if we can't guarantee the schema value will be valid on inner
+} & (ExpandedSchema<d["kind"]>[k] extends d["inner"][k]
+	? {}
+	: { parse: {} } | { children: {} })
 
 export type NodeImplementation<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
@@ -208,7 +212,7 @@ export type NodeImplementation<d extends BaseNodeDeclaration> = {
 		schema: d["collapsedSchema"] | d["expandedSchema"]
 	) => d["expandedSchema"]
 	// require expand if collapsedSchema is defined
-} & (d["collapsedSchema"] extends undefined ? {} : { expand: {} })
+} & ("collapsedSchema" extends keyof d ? { expand: {} } : {})
 
 type UnknownNodeImplementation = instantiateNodeImplementation<
 	NodeImplementation<BaseNodeDeclaration>
@@ -405,20 +409,22 @@ export class BaseNode<
 			if (!(k in this.implementation.keys)) {
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
 			}
-			const keyKind = (this.implementation.keys as Dict<string, NodeKeyKind>)[k]
-			if (keyKind === "child") {
+			const keyDefinition = (
+				this.implementation.keys as InnerKeyDefinitions<any>
+			)[k]
+			if (keyDefinition === "child") {
 				const child = v as UnknownNode
 				this.json[k] = child.json
 				this.typeJson[k] = child.typeJson
 				this.children.push(child)
-			} else if (keyKind === "children") {
+			} else if (keyDefinition === "children") {
 				const children = v as UnknownNode[]
 				this.json[k] = children.map((child) => child.json)
 				this.typeJson[k] = children.map((child) => child.typeJson)
 				this.children.push(...(v as UnknownNode[]))
 			} else {
 				this.json[k] = defaultValueSerializer(v)
-				if (keyKind !== "meta") {
+				if (keyDefinition !== "meta") {
 					this.typeJson[k] = this.json[k]
 				}
 			}

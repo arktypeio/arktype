@@ -56,8 +56,8 @@ export type IntersectionDeclaration = declareNode<{
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	keys: Object.assign(
-		{ basis: "leaf" as const },
-		transform(constraintKinds, ([i, kind]) => [kind, "leaf"] as const)
+		{ basis: {} },
+		transform(constraintKinds, ([i, kind]) => [kind, {}] as const)
 	),
 	intersections: {
 		intersection: (l, r) => {

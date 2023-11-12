@@ -161,7 +161,7 @@ export const MaxImplementation = defineNode({
 				? Disjoint.from("bound", l, r)
 				: null
 	},
-	parse: (schema, ctx) => {
+	expand: (schema) => {
 		const boundKind = getBoundKind(ctx.basis)
 		return typeof schema === "object"
 			? { ...schema, max: parseLimit(schema.max), boundKind }
