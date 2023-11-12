@@ -2,11 +2,7 @@
 // import { isDeepStrictEqual } from "util"
 // import { type Dict } from "./ark/util/main.ts"
 import { node } from "./ark/schema/main.ts"
-import {
-	type equals,
-	type isAny,
-	wellFormedNumberMatcher
-} from "./ark/util/main.ts"
+import { wellFormedNumberMatcher } from "./ark/util/main.ts"
 
 const parseNumber = node(
 	{

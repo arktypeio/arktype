@@ -25,13 +25,6 @@ export type BoundAttachments<limitKind extends LimitKind> = extend<
 	}
 >
 
-const basesByBoundKind = {
-	number: builtins().number,
-	string: builtins().string,
-	array: builtins().array,
-	date: builtins().date
-} as const satisfies Record<BoundKind, Node<BasisKind>>
-
 // readonly exclusive = this.inner.exclusive ?? false
 
 // readonly comparator = schemaToComparator(this.inner)
@@ -109,7 +102,7 @@ export const MinImplementation = defineNode({
 		return {
 			comparator,
 			condition: `${In} ${comparator} ${inner.min}`,
-			implicitBasis: basesByBoundKind[inner.boundKind]
+			implicitBasis: builtins()[inner.boundKind]
 		}
 	}
 })
@@ -175,7 +168,7 @@ export const MaxImplementation = defineNode({
 		return {
 			comparator,
 			condition: `${In} ${comparator} ${inner.max}`,
-			implicitBasis: basesByBoundKind[inner.boundKind]
+			implicitBasis: builtins()[inner.boundKind]
 		}
 	}
 })

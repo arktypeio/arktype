@@ -320,11 +320,14 @@ export class BaseNode<
 			[i in keyof branches]: validateSchemaBranch<branches[i]>
 		}
 	): parseSchemaBranches<branches>
-	static parseRoot(...branches: BranchSchema[]) {
-		return branches.map((schema) => this.parseBranch(schema))
+	static parseRoot(branches: BranchSchema[]) {
+		const nodes = branches.map((schema) => this.parseBranch(schema))
+		return nodeImplementations.union.reduce({ union: nodes, ordered: false })
 	}
 
-	private static parseBranch(schema: BranchSchema) {
+	private static parseBranch(
+		schema: BranchSchema
+	): Node<"intersection" | "morph" | BasisKind> {
 		switch (typeof schema) {
 			case "string":
 				return new BaseNode("domain", { domain: schema })
@@ -333,7 +336,7 @@ export class BaseNode<
 			case "object":
 				const basisKind = basisKinds.find((kind) => kind in schema)
 				if (basisKind) {
-					return new BaseNode(basisKind, schema as never)
+					return new BaseNode(basisKind, schema as never) as never
 				}
 				if ("morph" in schema) {
 					return new BaseNode("morph", schema as never)
@@ -351,8 +354,8 @@ export class BaseNode<
 		return new BaseNode(kind, schema as never) as never
 	}
 
-	static fromUnits<const branches extends readonly unknown[]>(
-		...values: branches
+	static parseUnits<const branches extends readonly unknown[]>(
+		values: branches
 	) {
 		const uniqueValues: unknown[] = []
 		for (const value of values) {
@@ -470,7 +473,7 @@ export class BaseNode<
 			}
 		}
 		// TODO; reduce?
-		return BaseNode.parseRoot(ioInner as never)
+		return node(ioInner as never)
 	}
 
 	toJSON() {
@@ -608,8 +611,23 @@ export class BaseNode<
 	}
 }
 
-export const node = Object.assign(BaseNode.parseRoot, {
-	units: BaseNode.fromUnits
+export type NodeParser = {
+	<branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: validateSchemaBranch<branches[i]>
+		}
+	): parseSchemaBranches<branches>
+}
+
+const parseRoot: NodeParser = (...branches) =>
+	BaseNode.parseRoot(branches as never)
+
+const parseUnits = <const branches extends readonly unknown[]>(
+	...values: branches
+) => BaseNode.parseUnits(values)
+
+export const node = Object.assign(parseRoot, {
+	units: parseUnits
 })
 
 const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
