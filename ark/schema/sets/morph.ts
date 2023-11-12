@@ -3,6 +3,7 @@ import {
 	type evaluate,
 	type exactMessageOnError,
 	type listable,
+	listFrom,
 	throwParseError
 } from "@arktype/util"
 import { type declareNode, defineNode, type withAttributes } from "../base.ts"
@@ -12,7 +13,7 @@ import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import type { Problem } from "../io/problems.ts"
 import type { CheckResult, TraversalState } from "../io/traverse.ts"
-import { type Node, type ObjectSchema, type Schema } from "../nodes.ts"
+import { type ExpandedSchema, type Node, type Schema } from "../nodes.ts"
 import {
 	type IntersectionSchema,
 	type parseIntersectionSchema,
@@ -29,8 +30,8 @@ export type validateValidator<schema> = [schema] extends [
 	NonEnumerableDomain | AbstractableConstructor
 ]
 	? schema
-	: schema extends ObjectSchema<BasisKind>
-	? exactMessageOnError<schema, ObjectSchema<keyof schema & BasisKind>>
+	: schema extends ExpandedSchema<BasisKind>
+	? exactMessageOnError<schema, ExpandedSchema<keyof schema & BasisKind>>
 	: schema extends IntersectionSchema
 	? validateIntersectionSchema<schema>
 	: ValidatorSchema
@@ -73,9 +74,11 @@ export type MorphDeclaration = declareNode<{
 export const MorphImplementation = defineNode({
 	kind: "morph",
 	keys: {
-		in: "child",
-		out: "child",
-		morph: "leaf"
+		in: {},
+		out: {},
+		morph: {
+			parse: listFrom
+		}
 	},
 	intersections: {
 		morph: (l, r) => {

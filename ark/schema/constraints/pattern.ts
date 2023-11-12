@@ -27,14 +27,14 @@ export type PatternDeclaration = declareNode<{
 export const PatternImplementation = defineNode({
 	kind: "pattern",
 	keys: {
-		pattern: "leaf",
-		flags: "leaf"
+		pattern: {},
+		flags: {}
 	},
 	intersections: {
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
 	},
-	parse: (schema) =>
+	expand: (schema) =>
 		typeof schema === "string"
 			? parseRegexLiteral(schema)
 			: schema instanceof RegExp

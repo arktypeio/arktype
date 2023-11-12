@@ -67,7 +67,7 @@ export type UnionAttachments = extend<
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
-	collapsedSchema: readonly BranchNode[]
+	collapsedSchema: readonly BranchSchema[]
 	expandedSchema: ExpandedUnionSchema
 	inner: UnionInner
 	intersections: {
@@ -95,8 +95,8 @@ const intersectBranch = (l: Node<"union">, r: BranchNode) => {
 export const UnionImplementation = defineNode({
 	kind: "union",
 	keys: {
-		union: "children",
-		ordered: "leaf"
+		union: {},
+		ordered: { parse: (_) => _ ?? false }
 	},
 	intersections: {
 		union: (l, r) => {
@@ -149,7 +149,7 @@ export const UnionImplementation = defineNode({
 				  }
 		}
 	},
-	parse: (schema) =>
+	expand: (schema) =>
 		isArray(schema) ? { union: schema, ordered: false } : schema,
 	reduce: (inner) => {
 		const reducedBranches = reduceBranches(inner)

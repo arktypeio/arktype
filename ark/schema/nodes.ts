@@ -63,13 +63,15 @@ export type NodeImplementationByKind = extend<
 export type Implementation<kind extends NodeKind> =
 	NodeImplementationByKind[kind]
 
-export type Schema<kind extends NodeKind> =
-	NodeDeclarationsByKind[kind]["schema"]
+export type ExpandedSchema<kind extends NodeKind> =
+	NodeDeclarationsByKind[kind]["expandedSchema"]
 
-export type ObjectSchema<kind extends NodeKind> = Extract<
-	NodeDeclarationsByKind[kind]["schema"],
-	object
->
+export type CollapsedSchema<kind extends NodeKind> =
+	NodeDeclarationsByKind[kind] extends { collapsedSchema: infer s } ? s : never
+
+export type Schema<kind extends NodeKind> =
+	| ExpandedSchema<kind>
+	| CollapsedSchema<kind>
 
 export type Inner<kind extends NodeKind> = NodeDeclarationsByKind[kind]["inner"]
 

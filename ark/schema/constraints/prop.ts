@@ -46,8 +46,11 @@ const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 export const RequiredImplementation = defineNode({
 	kind: "required",
 	keys: {
-		key: "leaf",
-		value: "child"
+		key: {},
+		value: {
+			kind: "child",
+			parse: (schema) => schema
+		}
 	},
 	intersections: {
 		required: (l, r) => {
@@ -65,7 +68,7 @@ export const RequiredImplementation = defineNode({
 			}
 		}
 	},
-	parse: (schema) => schema as never,
+	expand: (schema) => schema as never,
 	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
 	attach: (inner) => ({
 		implicitBasis: builtins().object,
@@ -102,8 +105,13 @@ export type OptionalDeclaration = declareNode<{
 export const OptionalImplementation = defineNode({
 	kind: "optional",
 	keys: {
-		key: "leaf",
-		value: "child"
+		key: {
+			kind: "leaf"
+		},
+		value: {
+			kind: "child",
+			parse: (schema) => schema
+		}
 	},
 	intersections: {
 		optional: (l, r) => {
@@ -118,7 +126,7 @@ export const OptionalImplementation = defineNode({
 			}
 		}
 	},
-	parse: (schema) => schema as never,
+	expand: (schema) => schema as never,
 	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
 	attach: (inner) => ({
 		implicitBasis: builtins().object,

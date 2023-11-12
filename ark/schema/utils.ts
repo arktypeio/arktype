@@ -1,5 +1,4 @@
 import { cached } from "@arktype/util"
-import { type BaseNodeImplementation } from "./base.ts"
 import { type BasisKind } from "./bases/basis.ts"
 import { DomainImplementation } from "./bases/domain.ts"
 import { ProtoImplementation } from "./bases/proto.ts"

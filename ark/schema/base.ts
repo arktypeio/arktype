@@ -19,6 +19,7 @@ import { compileSerializedValue, In } from "./io/compile.ts"
 import { registry } from "./io/registry.ts"
 import {
 	type Attachments,
+	type ExpandedSchema,
 	type Inner,
 	type Node,
 	type NodeDeclarationsByKind,
@@ -178,20 +179,21 @@ export type RuleAttachments = {
 	readonly condition: string
 }
 
-export type NodeKeyKind = "child" | "children" | "meta" | "leaf"
-
 export type NodeKeyDefinition<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"]
 > = {
-	kind: NodeKeyKind
+	// child: NodeKind[]
+	meta?: true
 	parse?: (
-		schema: k extends keyof d["schema"] ? d["schema"][k] : undefined
+		schema: k extends keyof ExpandedSchema<d["kind"]>
+			? ExpandedSchema<d["kind"]>[k]
+			: undefined
 	) => d["inner"][k]
 	// require parse if we can't guarantee the schema value will be valid on inner
-} & (d["schema"] extends d["inner"] ? {} : { parse: {} })
+} & (ExpandedSchema<d["kind"]>[k] extends d["inner"][k] ? {} : { parse: {} })
 
-export type BaseNodeImplementation<d extends BaseNodeDeclaration> = {
+export type NodeImplementation<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
@@ -199,32 +201,17 @@ export type BaseNodeImplementation<d extends BaseNodeDeclaration> = {
 	attach: (inner: d["inner"]) => {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
-}
-
-export type RootImplementation<d extends BaseNodeDeclaration> = extend<
-	BaseNodeImplementation<d>,
-	{
-		parse: (schema: Schema<d["kind"]>, ctx: ParseContext) => d["schema"]
-		reduce?: (
-			inner: d["inner"]
-		) => Node<Extract<RootKind, rightOf<d["kind"]>>> | d["inner"] //{ [k in NodeKind]: [k, Inner<k>] }[NodeKind]
-	}
->
-
-export type ConstraintImplementation<d extends BaseNodeDeclaration> = extend<
-	BaseNodeImplementation<d>,
-	{
-		parse: (schema: Schema<d["kind"]>, ctx: ParseContext) => d["schema"]
-	}
->
-
-export type NodeImplementation<d extends BaseNodeDeclaration> =
-	d["kind"] extends RootKind
-		? RootImplementation<d>
-		: ConstraintImplementation<d>
+	reduce?: (
+		inner: d["inner"]
+	) => Node<Extract<RootKind, rightOf<d["kind"]>>> | d["inner"]
+	expand?: (
+		schema: d["collapsedSchema"] | d["expandedSchema"]
+	) => d["expandedSchema"]
+	// require expand if collapsedSchema is defined
+} & (d["collapsedSchema"] extends undefined ? {} : { expand: {} })
 
 type UnknownNodeImplementation = instantiateNodeImplementation<
-	BaseNodeImplementation<BaseNodeDeclaration>
+	NodeImplementation<BaseNodeDeclaration>
 >
 
 type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {

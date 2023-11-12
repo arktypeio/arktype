@@ -23,9 +23,7 @@ export type DivisorDeclaration = declareNode<{
 export const DivisorImplementation = defineNode({
 	kind: "divisor",
 	keys: {
-		divisor: {
-			kind: "leaf"
-		}
+		divisor: {}
 	},
 	intersections: {
 		divisor: (l, r) => ({
@@ -34,7 +32,7 @@ export const DivisorImplementation = defineNode({
 			)
 		})
 	},
-	parse: (schema) =>
+	expand: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema,
 	writeDefaultDescription: (inner) =>
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,

@@ -26,12 +26,12 @@ export type PredicateDeclaration = declareNode<{
 export const PredicateImplementation = defineNode({
 	kind: "predicate",
 	keys: {
-		predicate: "leaf"
+		predicate: {}
 	},
 	intersections: {
 		predicate: () => null
 	},
-	parse: (schema) =>
+	expand: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
 	writeDefaultDescription: (inner) =>
 		`valid according to ${inner.predicate.name}`,

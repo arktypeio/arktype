@@ -81,14 +81,18 @@ export type MinDeclaration = declareNode<{
 export const MinImplementation = defineNode({
 	kind: "min",
 	keys: {
-		min: "leaf",
-		exclusive: "leaf",
-		boundKind: "leaf"
+		min: {
+			parse: (_) => +_
+		},
+		exclusive: {},
+		boundKind: {
+			parse: (_, ctx) => ctx
+		}
 	},
 	intersections: {
 		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
 	},
-	parse: (schema, ctx) => {
+	expand: (schema) => {
 		const boundKind = getBoundKind(ctx.basis)
 		return typeof schema === "object"
 			? { ...schema, min: parseLimit(schema.min), boundKind }
@@ -144,9 +148,11 @@ export type MaxDeclaration = declareNode<{
 export const MaxImplementation = defineNode({
 	kind: "max",
 	keys: {
-		max: "leaf",
-		exclusive: "leaf",
-		boundKind: "leaf"
+		max: {
+			parse: (_) => +_
+		},
+		exclusive: {},
+		boundKind: {}
 	},
 	intersections: {
 		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r),

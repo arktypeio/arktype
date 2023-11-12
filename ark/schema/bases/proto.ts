@@ -42,7 +42,7 @@ export type ProtoDeclaration = declareNode<{
 export const ProtoImplementation = defineNode({
 	kind: "proto",
 	keys: {
-		proto: "leaf"
+		proto: { kind: "leaf" }
 	},
 	intersections: {
 		proto: (l, r) =>
@@ -54,7 +54,7 @@ export const ProtoImplementation = defineNode({
 		domain: (l, r) =>
 			r.domain === "object" ? l : Disjoint.from("domain", builtins().object, r)
 	},
-	parse: (input) => (typeof input === "function" ? { proto: input } : input),
+	expand: (input) => (typeof input === "function" ? { proto: input } : input),
 	writeDefaultDescription: (inner) => {
 		const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
 		return knownObjectKind

@@ -5,7 +5,6 @@ const matcher = match({
 		a: "string",
 		b: "(number|bigint)[]"
 	})]: (data) => data.b,
-	//     ^?
 	boolean: (b) => !b,
 	semver: (s) => s.length
 })

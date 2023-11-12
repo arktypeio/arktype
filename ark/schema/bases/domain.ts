@@ -31,12 +31,12 @@ export type DomainDeclaration = declareNode<{
 export const DomainImplementation = defineNode({
 	kind: "domain",
 	keys: {
-		domain: "leaf"
+		domain: { kind: "leaf" }
 	},
 	intersections: {
 		domain: (l, r) => Disjoint.from("domain", l, r)
 	},
-	parse: (input) => (typeof input === "string" ? { domain: input } : input),
+	expand: (input) => (typeof input === "string" ? { domain: input } : input),
 	writeDefaultDescription: (inner) => domainDescriptions[inner.domain],
 	attach: (inner) => ({
 		basisName: inner.domain,
