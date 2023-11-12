@@ -2,16 +2,20 @@ import type { conform, ErrorMessage, extend, mutable } from "@arktype/util"
 import {
 	entriesOf,
 	includes,
+	isArray,
 	throwInternalError,
 	transform
 } from "@arktype/util"
 import {
 	type BaseAttributes,
+	BaseNode,
 	basisKinds,
 	constraintKinds,
 	type declareNode,
 	defineNode,
 	type IrreducibleConstraintKind,
+	irreducibleConstraintKinds,
+	reducibleConstraintKinds,
 	type withAttributes
 } from "../base.ts"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
@@ -40,10 +44,12 @@ export type IntersectionSchema<
 > &
 	BaseAttributes
 
+export type RuleSet = readonly Node<RuleKind>[]
+
 export type IntersectionAttachments = extend<
 	SetAttachments,
 	{
-		rules: readonly Node<RuleKind>[]
+		rules: RuleSet
 		constraints: readonly Node<ConstraintKind>[]
 	}
 >
@@ -80,30 +86,44 @@ export const IntersectionImplementation = defineNode({
 	),
 	intersections: {
 		intersection: (l, r) => {
-			let result: Node<RuleKind>[] | Disjoint = l.intersection
+			let result: readonly Node<RuleKind>[] | Disjoint = l.rules
 			for (const constraint of r.constraints) {
 				if (result instanceof Disjoint) {
 					break
 				}
 				result = addRule(result, constraint)
 			}
-			return result instanceof Disjoint ? result : { intersection: result }
+			return result instanceof Disjoint ? result : unflattenRules(result)
 		},
 		default: (l, r) => {
-			const result = addRule(l.intersection, r)
-			return result instanceof Disjoint ? result : { intersection: result }
+			const result = addRule(l.rules, r)
+			return result instanceof Disjoint ? result : unflattenRules(result)
 		}
 	},
 	reduce: (inner) => {
-		const rules = reduceRules([], inner.intersection)
-		if (rules instanceof Disjoint) {
-			return rules.throw()
+		const { description, alias, ...rulesByKind } = inner
+		const inputRules = Object.values(rulesByKind).flat() as RuleSet
+		const reducedRules = reduceRules([], inputRules)
+		if (reducedRules instanceof Disjoint) {
+			return reducedRules.throw()
 		}
-		if (rules.length === 1 && rules[0].isBasis()) {
+		if (reducedRules.length === 1 && reducedRules[0].isBasis()) {
 			// TODO: description?
-			return rules[0]
+			return reducedRules[0]
 		}
-		return { ...inner, union: rules }
+		if (reducedRules.length === inputRules.length) {
+			return inner
+		}
+		const reducedRulesByKind = unflattenRules(
+			reducedRules
+		) as mutable<IntersectionInner>
+		if (description) {
+			reducedRulesByKind.description = description
+		}
+		if (alias) {
+			reducedRulesByKind.alias = alias
+		}
+		return reducedRulesByKind
 	},
 	attach: (inner) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
@@ -147,6 +167,29 @@ const reduceRules = (
 		result = addRule(result, constraint)
 	}
 	return result instanceof Disjoint ? result : result
+}
+
+export const flattenRules = (inner: IntersectionInner): RuleSet =>
+	Object.values(inner).flatMap((v) => (v instanceof BaseNode ? v : []))
+
+export const unflattenRules = (rules: RuleSet): IntersectionInner => {
+	const inner: mutable<IntersectionInner> = {}
+	for (const rule of rules) {
+		if (includes(basisKinds, rule.kind)) {
+			inner.basis = rule as Node<BasisKind>
+		} else if (includes(irreducibleConstraintKinds, rule.kind)) {
+			inner[rule.kind] ??= [] as any
+			;(inner as any)[rule.kind].push(rule)
+		} else if (includes(reducibleConstraintKinds, rule.kind)) {
+			if (inner[rule.kind]) {
+				return throwInternalError(
+					`Unexpected intersection of reducible constraints of kind ${rule.kind}`
+				)
+			}
+			inner[rule.kind] = rule as never
+		}
+	}
+	return inner
 }
 
 export const addRule = (

@@ -2,11 +2,14 @@ import {
 	CastableBase,
 	CompiledFunction,
 	type Dict,
+	entriesOf,
 	type evaluate,
 	type extend,
 	includes,
+	isArray,
 	type Json,
 	type JsonData,
+	type listable,
 	ParseError,
 	type satisfy,
 	throwInternalError,
@@ -17,6 +20,7 @@ import { type ConstraintKind } from "./constraints/constraint.ts"
 import { Disjoint } from "./disjoint.ts"
 import { compileSerializedValue, In } from "./io/compile.ts"
 import { registry } from "./io/registry.ts"
+import { unflattenRules } from "./main.ts"
 import {
 	type Attachments,
 	type ExpandedSchema,
@@ -42,7 +46,6 @@ import { inferred, type ParseContext } from "./utils.ts"
 export type BaseAttributes = {
 	readonly alias?: string
 	readonly description?: string
-	readonly prereduced?: true
 }
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
@@ -105,14 +108,23 @@ export type BaseIntersectionMap = {
 	>
 }
 
-export const irreducibleConstraintKinds = {
-	pattern: 1,
-	predicate: 1,
-	required: 1,
-	optional: 1
-} as const
+export const irreducibleConstraintKinds = [
+	"pattern",
+	"predicate",
+	"required",
+	"optional"
+] as const satisfies readonly ConstraintKind[]
 
 export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
+
+export type ReducibleConstraintKind = Exclude<
+	ConstraintKind,
+	IrreducibleConstraintKind
+>
+
+export const reducibleConstraintKinds = constraintKinds.filter(
+	(k): k is ReducibleConstraintKind => !includes(irreducibleConstraintKinds, k)
+)
 
 export type UnknownNode = BaseNode<any>
 
@@ -384,19 +396,20 @@ export class BaseNode<
 			const keyDefinition = (
 				this.implementation.keys as InnerKeyDefinitions<any>
 			)[k]
-			if (keyDefinition === "child") {
-				const child = v as UnknownNode
-				this.json[k] = child.json
-				this.typeJson[k] = child.typeJson
-				this.children.push(child)
-			} else if (keyDefinition === "children") {
-				const children = v as UnknownNode[]
-				this.json[k] = children.map((child) => child.json)
-				this.typeJson[k] = children.map((child) => child.typeJson)
-				this.children.push(...(v as UnknownNode[]))
+			if (keyDefinition.children) {
+				const children = v as listable<UnknownNode>
+				if (isArray(children)) {
+					this.json[k] = children.map((child) => child.json)
+					this.typeJson[k] = children.map((child) => child.json)
+					this.children.push(...children)
+				} else {
+					this.json[k] = children.json
+					this.typeJson[k] = children.json
+					this.children.push(children)
+				}
 			} else {
 				this.json[k] = defaultValueSerializer(v)
-				if (keyDefinition !== "meta") {
+				if (!keyDefinition.meta) {
 					this.typeJson[k] = this.json[k]
 				}
 			}
@@ -446,15 +459,13 @@ export class BaseNode<
 			return this
 		}
 		const ioInner: Record<string, unknown> = {}
-		for (const k in this.inner) {
+		for (const [k, v] of entriesOf(this.inner)) {
 			const keyDefinition = this.implementation.keys[k as keyof BaseAttributes]!
-			if (keyDefinition === "child") {
-				ioInner[k] = (this.inner[k] as UnknownNode)[kind]
-			} else if (keyDefinition === "children") {
-				ioInner[k] = (this.inner[k] as UnknownNode[]).map(
-					(child) => child[kind]
-				)
-			} else if (keyDefinition !== "meta") {
+			if (keyDefinition.children) {
+				ioInner[k] = Array.isArray(v)
+					? v.map((child) => child[kind])
+					: (v as UnknownNode)[kind]
+			} else if (!keyDefinition.meta) {
 				ioInner[k] = this.inner[k]
 			}
 		}
@@ -508,9 +519,7 @@ export class BaseNode<
 				`Unexpected null intersection between non-rules ${this.kind} and ${other.kind}`
 			)
 		}
-		return new BaseNode("intersection", {
-			intersection: [this as never, other]
-		})
+		return new BaseNode("intersection", unflattenRules([this as never, other]))
 	}
 
 	intersectClosed<other extends Node>(
@@ -524,15 +533,15 @@ export class BaseNode<
 		const thisIsLeft = l === this
 		const r: UnknownNode = thisIsLeft ? other : this
 		const intersections = l.implementation.intersections
-		const intersector = intersections[r.kind] ?? intersections.default
-		const result = intersector?.(l as never, r as never)
+		const intersector = (intersections as any)[r.kind] ?? intersections.default
+		const result = intersector?.(l, r)
 		if (result) {
 			if (result instanceof Disjoint) {
 				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: reduce
 			// TODO: meta
-			return new l.nodeClass(result as never) as never
+			return new BaseNode(l.kind, result)
 		}
 		return null
 	}
