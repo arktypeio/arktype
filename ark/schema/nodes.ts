@@ -9,7 +9,11 @@ import {
 	type ConstraintDeclarationsByKind,
 	type ConstraintImplementationByKind
 } from "./constraints/constraint.ts"
-import { type MorphSchema, type ValidatorSchema } from "./sets/morph.ts"
+import {
+	type MorphSchema,
+	type ValidatorKind,
+	type ValidatorSchema
+} from "./sets/morph.ts"
 import {
 	type SetDeclarationsByKind,
 	type SetImplementationByKind,
@@ -66,8 +70,10 @@ export type Implementation<kind extends NodeKind> =
 export type ExpandedSchema<kind extends NodeKind> =
 	NodeDeclarationsByKind[kind]["expandedSchema"]
 
-export type CollapsedSchema<kind extends NodeKind> =
-	NodeDeclarationsByKind[kind] extends { collapsedSchema: infer s } ? s : never
+export type CollapsedSchema<kind extends NodeKind> = kind extends unknown
+	? NodeDeclarationsByKind[kind]["collapsedSchema" &
+			keyof NodeDeclarationsByKind[kind]]
+	: never
 
 export type Schema<kind extends NodeKind> =
 	| ExpandedSchema<kind>

@@ -20,6 +20,7 @@ import { registry } from "./io/registry.ts"
 import {
 	type Attachments,
 	type ExpandedSchema,
+	type Implementation,
 	type Inner,
 	type Node,
 	type NodeDeclarationsByKind,
@@ -145,13 +146,15 @@ export type declareNode<
 	} & { [k in Exclude<keyof types, keyof BaseNodeDeclaration>]?: never }
 > = types
 
+export const nodeImplementations = {} as { [k in NodeKind]: Implementation<k> }
+
 export const defineNode = <
 	kind extends NodeKind,
-	definition extends NodeImplementation<NodeDeclarationsByKind[kind]>
+	implementation extends NodeImplementation<NodeDeclarationsByKind[kind]>
 >(
-	definition: { kind: kind } & definition
-): instantiateNodeImplementation<definition> => {
-	Object.assign(definition.keys, {
+	implementation: { kind: kind } & implementation
+): instantiateNodeImplementation<implementation> => {
+	Object.assign(implementation.keys, {
 		alias: {
 			meta: true
 		},
@@ -159,7 +162,8 @@ export const defineNode = <
 			meta: true
 		}
 	})
-	return definition
+	nodeImplementations[implementation.kind] = implementation as never
+	return implementation
 }
 
 type instantiateNodeImplementation<definition> = evaluate<
@@ -190,7 +194,8 @@ export type NodeKeyDefinition<
 	parse?: (
 		schema: k extends keyof ExpandedSchema<d["kind"]>
 			? ExpandedSchema<d["kind"]>[k]
-			: undefined
+			: undefined,
+		ctx: ParseContext
 	) => d["inner"][k]
 	// require parse or children if we can't guarantee the schema value will be valid on inner
 } & (ExpandedSchema<d["kind"]>[k] extends d["inner"][k]
@@ -201,7 +206,7 @@ export type NodeImplementation<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	writeDefaultDescription: (inner: d["inner"]) => string
+	writeDefaultDescription: (inner: Node<d["kind"]>) => string
 	attach: (inner: d["inner"]) => {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
@@ -334,36 +339,6 @@ export class BaseNode<
 		return new BaseNode(kind, schema as never) as never
 	}
 
-	// export const maybeParseBasis = (
-	// 	schema: Schema<"intersection" | BasisKind>
-	// ): Node<BasisKind> | undefined => {
-	// 	switch (typeof schema) {
-	// 		case "string":
-	// 			return new DomainNode(schema)
-	// 		case "function":
-	// 			return new ProtoNode(schema)
-	// 		case "object":
-	// 			return "unit" in schema
-	// 				? new UnitNode(schema)
-	// 				: "proto" in schema
-	// 				? new ProtoNode(schema)
-	// 				: "domain" in schema
-	// 				? new DomainNode(schema)
-	// 				: undefined
-	// 	}
-	// }
-
-	// export const parseBasis = (schema: Schema<BasisKind>) =>
-	// 	maybeParseBasis(schema) ??
-	// 	throwParseError(
-	// 		`Basis schema must be a non-enumerable domain, a constructor, or have one of the following keys:
-	// "unit", "proto", "domain"`
-	// 	)
-
-	// hasDomain(this.schema, "object") && "prevalidated" in this.schema
-	// 	? this.schema
-	// 	: this.definition.parseSchema(this.schema, ctx)
-
 	static fromUnits<const branches extends readonly unknown[]>(
 		...values: branches
 	) {
@@ -398,10 +373,7 @@ export class BaseNode<
 	) {
 		super()
 		this.alias = $ark.register(this, this.inner.alias)
-		this.implementation = {}
-		this.description =
-			this.inner.description ??
-			this.implementation.writeDefaultDescription(this.inner)
+		this.implementation = nodeImplementations[kind] as never
 		this.json = {}
 		this.typeJson = {}
 		this.children = []
@@ -447,6 +419,10 @@ export class BaseNode<
 		this.contributesReferences = [this, ...this.references]
 		Object.assign(this, this.implementation.attach(this.inner))
 		this.allows = new CompiledFunction(In, `return true`)
+		// important this is last as writeDefaultDescription cdould rely on attached
+		this.description =
+			this.inner.description ??
+			this.implementation.writeDefaultDescription(this as never)
 	}
 
 	inCache?: UnknownNode;

@@ -1,4 +1,5 @@
 import { hasDomain } from "./domain.ts"
+import { type Fn } from "./functions.ts"
 import type { defined, evaluate } from "./generics.ts"
 import { isArray } from "./objectKinds.ts"
 import type { intersectUnion } from "./unionToTuple.ts"
@@ -26,9 +27,25 @@ export type PartialRecord<k extends string = string, v = unknown> = {
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
 
-export type mutable<o> = {
-	-readonly [k in keyof o]: o[k]
-}
+export type mutable<o, maxDepth extends number = 1> = mutableRecurse<
+	o,
+	[],
+	maxDepth
+>
+
+type mutableRecurse<
+	o,
+	depth extends 1[],
+	maxDepth extends number
+> = depth["length"] extends maxDepth
+	? o
+	: o extends object
+	? o extends Fn
+		? o
+		: {
+				-readonly [k in keyof o]: mutableRecurse<o[k], [...depth, 1], maxDepth>
+		  }
+	: o
 
 export type entryOf<o> = {
 	[k in keyof o]-?: [k, o[k] & ({} | null)]

@@ -15,12 +15,7 @@ import {
 	RequiredImplementation,
 	UnionImplementation
 } from "./main.ts"
-import {
-	type Implementation,
-	type Node,
-	type NodeImplementationByKind,
-	type NodeKind
-} from "./nodes.ts"
+import { type Node, type NodeImplementationByKind } from "./nodes.ts"
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
@@ -29,7 +24,6 @@ export const inferred = Symbol("inferred")
 
 export type ParseContext = {
 	basis: Node<BasisKind> | undefined
-	nodeDefinitions: { [k in NodeKind]: Implementation<k> }
 }
 
 const getNodeImplementations = cached(
@@ -52,6 +46,5 @@ const getNodeImplementations = cached(
 )
 
 export const createParseContext = (): ParseContext => ({
-	basis: undefined,
-	nodeDefinitions: getNodeImplementations()
+	basis: undefined
 })

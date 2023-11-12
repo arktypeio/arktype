@@ -1,7 +1,13 @@
 import type { conform, ErrorMessage, extend, mutable } from "@arktype/util"
-import { throwInternalError, transform } from "@arktype/util"
+import {
+	entriesOf,
+	includes,
+	throwInternalError,
+	transform
+} from "@arktype/util"
 import {
 	type BaseAttributes,
+	basisKinds,
 	constraintKinds,
 	type declareNode,
 	defineNode,
@@ -37,7 +43,7 @@ export type IntersectionSchema<
 export type IntersectionAttachments = extend<
 	SetAttachments,
 	{
-		basis: Node<BasisKind> | undefined
+		rules: readonly Node<RuleKind>[]
 		constraints: readonly Node<ConstraintKind>[]
 	}
 >
@@ -56,8 +62,21 @@ export type IntersectionDeclaration = declareNode<{
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	keys: Object.assign(
-		{ basis: {} },
-		transform(constraintKinds, ([i, kind]) => [kind, {}] as const)
+		{
+			basis: {
+				children: basisKinds
+			}
+		},
+		transform(
+			constraintKinds,
+			([i, kind]) =>
+				[
+					kind,
+					{
+						children: [kind]
+					}
+				] as const
+		)
 	),
 	intersections: {
 		intersection: (l, r) => {
@@ -75,21 +94,6 @@ export const IntersectionImplementation = defineNode({
 			return result instanceof Disjoint ? result : { intersection: result }
 		}
 	},
-	parse: (schema) => {
-		const { alias, description, ...rules } = schema
-		const intersectionInner = {} as mutable<IntersectionInner>
-		if (alias) {
-			intersectionInner.alias = alias
-		}
-		if (description) {
-			intersectionInner.description = description
-		}
-		intersectionInner.intersection =
-			"intersection" in rules
-				? parseListedRules(rules.intersection)
-				: parseMappedRules(rules)
-		return intersectionInner
-	},
 	reduce: (inner) => {
 		const rules = reduceRules([], inner.intersection)
 		if (rules instanceof Disjoint) {
@@ -102,23 +106,11 @@ export const IntersectionImplementation = defineNode({
 		return { ...inner, union: rules }
 	},
 	attach: (inner) => {
-		let condition = inner.intersection
-			.map((rule) => rule.condition)
-			.join(") && (")
-		if (inner.intersection.length > 1) {
-			condition = `(${condition})`
-		}
-		const basis: Node<BasisKind> | undefined = inner.intersection[0]?.isBasis()
-			? inner.intersection[0]
-			: undefined
-		const constraints: readonly Node<ConstraintKind>[] = basis
-			? inner.intersection.slice(1)
-			: (inner.intersection as any)
-		return {
-			basis,
-			constraints,
+		const attachments: mutable<IntersectionAttachments, 2> = {
+			rules: [],
+			constraints: [],
 			compile: (cfg) =>
-				inner.intersection
+				attachments.rules
 					.map(
 						(rule) => `if(!(${rule.condition})) {
 	return false
@@ -126,11 +118,20 @@ export const IntersectionImplementation = defineNode({
 					)
 					.join("\n") + "\nreturn true"
 		}
+		for (const [k, v] of entriesOf(inner)) {
+			if (k === "basis") {
+				attachments.rules.push(v)
+			} else if (includes(constraintKinds, k)) {
+				attachments.rules.push(v as never)
+				attachments.constraints.push(v as never)
+			}
+		}
+		return attachments
 	},
 	writeDefaultDescription: (inner) => {
-		return inner.intersection.length === 0
+		return inner.rules.length === 0
 			? "an unknown value"
-			: inner.intersection.join(" and ")
+			: inner.rules.join(" and ")
 	}
 })
 
