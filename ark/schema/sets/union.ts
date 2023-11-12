@@ -21,11 +21,11 @@ import {
 } from "./morph.ts"
 import { type SetAttachments } from "./set.ts"
 
-export type UnionChildKind = "morph" | ValidatorKind
+export type BranchKind = "morph" | ValidatorKind
 
-export type BranchSchema = Schema<UnionChildKind>
+export type BranchSchema = Schema<BranchKind>
 
-export type BranchNode = Node<UnionChildKind>
+export type BranchNode = Node<BranchKind>
 
 export type validateSchemaBranch<schema> = conform<
 	schema,
