@@ -1,5 +1,4 @@
 import type {
-	AbstractableConstructor,
 	arraySubclassToReadonly,
 	BuiltinObjectKind,
 	conform,
@@ -240,7 +239,7 @@ export class RegexProblem extends Problem<string> {
 	}
 }
 
-export class ClassProblem extends Problem<AbstractableConstructor, object> {
+export class ClassProblem extends Problem<Constructor, object> {
 	readonly code = "class"
 
 	get mustBe() {

@@ -31,6 +31,10 @@ class Registry {
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {
+		case "object":
+			const prefix = objectKindOf(value) ?? "object"
+			// convert to camelCase
+			return prefix[0].toLowerCase() + prefix.slice(1)
 		case "function":
 			return isDotAccessible(value.name) ? value.name : "anonymousFunction"
 		case "symbol":
@@ -38,15 +42,10 @@ const baseNameFor = (value: object | symbol) => {
 				? value.description
 				: "anonymousSymbol"
 		default:
-			const objectKind = objectKindOf(value)
-			if (!objectKind) {
-				return throwInternalError(
-					`Unexpected attempt to register serializable value of type ${domainOf(
-						value
-					)}`
-				)
-			}
-			// convert to camelCase
-			return objectKind[0].toLowerCase() + objectKind.slice(1)
+			return throwInternalError(
+				`Unexpected attempt to register serializable value of type ${domainOf(
+					value
+				)}`
+			)
 	}
 }

@@ -1,5 +1,6 @@
 import type { Domain } from "./domain.ts"
 import { domainOf } from "./domain.ts"
+import { type Fn } from "./functions.ts"
 import type { evaluate } from "./generics.ts"
 import { isKeyOf } from "./records.ts"
 
@@ -13,7 +14,6 @@ export const builtinObjectKinds = {
 	Map,
 	RegExp,
 	Set,
-	Object,
 	String,
 	Number,
 	Boolean,
@@ -33,32 +33,30 @@ export type BuiltinObjects = {
 }
 
 export type objectKindOf<
-	data,
+	data extends object,
 	kinds extends ObjectKindSet = BuiltinObjectConstructors
-> = unknown extends data
-	? undefined | keyof kinds
-	: data extends object
-	? object extends data
-		? keyof kinds
-		: {
-				[kind in keyof kinds]: kinds[kind] extends Constructor<data>
-					? kind
-					: data extends (...args: never[]) => unknown
-					? "Function"
-					: "Object"
-		  }[keyof kinds]
-	: undefined
+> = object extends data
+	? keyof kinds | undefined
+	: data extends Fn
+	? "Function"
+	: instantiableObjectKind<data, kinds> extends never
+	? keyof kinds | undefined
+	: instantiableObjectKind<data, kinds>
+
+type instantiableObjectKind<
+	data extends object,
+	kinds extends ObjectKindSet
+> = {
+	[kind in keyof kinds]: kinds[kind] extends Constructor<data> ? kind : never
+}[keyof kinds]
 
 export const objectKindOf = <
-	data,
+	data extends object,
 	kinds extends ObjectKindSet = BuiltinObjectConstructors
 >(
 	data: data,
 	kinds?: kinds
-) => {
-	if (domainOf(data) !== "object") {
-		return undefined
-	}
+): objectKindOf<data, kinds> | undefined => {
 	const kindSet: ObjectKindSet = kinds ?? builtinObjectKinds
 	let prototype: Partial<Object> = Object.getPrototypeOf(data)
 	while (
@@ -68,24 +66,50 @@ export const objectKindOf = <
 	) {
 		prototype = Object.getPrototypeOf(prototype)
 	}
-	return prototype?.constructor?.name as objectKindOf<data, kinds>
+	const name = prototype.constructor?.name
+	if (name === undefined || name === "Object") {
+		return undefined
+	}
+	return name as never
 }
+
+export const objectKindOrDomainOf = <
+	data,
+	kinds extends ObjectKindSet = BuiltinObjectConstructors
+>(
+	data: data,
+	kinds?: kinds
+) =>
+	(typeof data === "object" && data !== null
+		? objectKindOf(data, kinds) ?? "object"
+		: domainOf(data)) as
+		| (objectKindOf<data & object, kinds> & {})
+		| domainOf<data>
+
+export type objectKindOrDomainOf<
+	data,
+	kinds extends ObjectKindSet = BuiltinObjectConstructors
+> = data extends object
+	? objectKindOf<data, kinds> extends undefined
+		? "object"
+		: objectKindOf<data, kinds>
+	: domainOf<data>
 
 export const hasObjectKind = <
 	kind extends keyof kinds,
 	kinds extends ObjectKindSet = BuiltinObjectConstructors
 >(
-	data: unknown,
+	data: object,
 	kind: kind,
 	kinds?: kinds
-): data is InstanceType<kinds[kind]> => objectKindOf(data, kinds) === kind
+): data is InstanceType<kinds[kind]> =>
+	objectKindOf(data, kinds) === (kind as never)
 
 export const isArray = (data: unknown): data is readonly unknown[] =>
 	Array.isArray(data)
 
 /** Each defaultObjectKind's completion for the phrase "Must be _____" */
 export const objectKindDescriptions = {
-	Object: "an object",
 	Array: "an array",
 	Function: "a function",
 	Date: "a Date",
@@ -114,14 +138,15 @@ export const getExactBuiltinConstructorName = (
 		: undefined
 }
 
-export type Constructor<instance = {}> = new (...args: never[]) => instance
-
-export type AbstractableConstructor<instance = {}> = abstract new (
+export type Constructor<instance = {}> = abstract new (
 	...args: never[]
 ) => instance
 
-export type instanceOf<constructor> =
-	constructor extends AbstractableConstructor<infer instance> ? instance : never
+export type instanceOf<constructor> = constructor extends Constructor<
+	infer instance
+>
+	? instance
+	: never
 
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
@@ -159,8 +184,8 @@ export const getBaseDomainKeys = <domain extends Domain>(domain: domain) => [
 ]
 
 export const constructorExtends = (
-	constructor: AbstractableConstructor,
-	base: AbstractableConstructor
+	constructor: Constructor,
+	base: Constructor
 ) => {
 	let current = constructor.prototype
 

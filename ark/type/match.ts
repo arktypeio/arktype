@@ -5,6 +5,7 @@ import {
 	type entryOf,
 	type ErrorMessage,
 	type evaluate,
+	type isDisjoint,
 	type join,
 	type paramsOf,
 	type returnOf,
@@ -61,9 +62,7 @@ export type MatchParser<$> = {
 		// adding keyof $ explicitly provides key completions for aliases
 		def: conform<cases, validateCases<cases, $>>
 	): <data>(In: data) => {
-		[k in keyof cases]: data & paramsOf<cases[k]>[0] extends never
-			? never
-			: domainOf<data> & domainOf<paramsOf<cases[k]>[0]> extends never
+		[k in keyof cases]: isDisjoint<data, paramsOf<cases[k]>[0]> extends true
 			? never
 			: returnOf<cases[k]>
 	}[keyof cases]

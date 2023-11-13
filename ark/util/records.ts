@@ -118,6 +118,8 @@ export type optionalizeKeys<o, keys extends keyof o> = evaluate<
 	}
 >
 
+export type valueOf<o> = o[keyof o]
+
 const ShallowClone = class {
 	constructor(properties: object) {
 		Object.assign(this, properties)

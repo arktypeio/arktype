@@ -9,6 +9,7 @@ import type {
 	isAny,
 	isUnknown,
 	List,
+	objectKindOrDomainOf,
 	optionalKeyOf,
 	Primitive,
 	requiredKeyOf
@@ -35,7 +36,7 @@ import { parseTuple } from "./tuple.ts"
 export const parseObject = (def: object, ctx: ParseContext): Root => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
-		case "Object":
+		case undefined:
 			if (def instanceof BaseNode) {
 				return def as Root
 			}
@@ -84,9 +85,7 @@ export type validateDefinition<def, $, args> = null extends undefined
 	: def extends readonly unknown[]
 	? validateTuple<def, $, args>
 	: def extends BadDefinitionType
-	? writeBadDefinitionTypeMessage<
-			objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
-	  >
+	? writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>
 	: isUnknown<def> extends true
 	? // this allows the initial list of autocompletions to be populated when a user writes "type()",
 	  // before having specified a definition

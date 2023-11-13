@@ -1,5 +1,5 @@
 import {
-	type AbstractableConstructor,
+	type Constructor,
 	type Domain,
 	type extend,
 	type inferDomain,
@@ -49,7 +49,7 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 		? any
 		: schema extends NonEnumerableDomain
 		? Node<"domain", inferDomain<schema>>
-		: schema extends AbstractableConstructor<infer instance>
+		: schema extends Constructor<infer instance>
 		? Node<"proto", instance>
 		: schema extends DomainSchema<infer domain>
 		? Node<"domain", inferDomain<domain>>

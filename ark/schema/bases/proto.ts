@@ -1,4 +1,4 @@
-import type { AbstractableConstructor } from "@arktype/util"
+import type { Constructor } from "@arktype/util"
 import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -11,19 +11,17 @@ import { Disjoint } from "../disjoint.ts"
 import { compileSerializedValue, In } from "../io/compile.ts"
 import { type BasisAttachments } from "./basis.ts"
 
-export type ProtoSchema<
-	proto extends AbstractableConstructor = AbstractableConstructor
-> = ProtoInner<proto>
+export type ProtoSchema<proto extends Constructor = Constructor> =
+	ProtoInner<proto>
 
-export type ProtoInner<
-	proto extends AbstractableConstructor = AbstractableConstructor
-> = withAttributes<{
-	readonly proto: proto
-}>
+export type ProtoInner<proto extends Constructor = Constructor> =
+	withAttributes<{
+		readonly proto: proto
+	}>
 
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
-	collapsedSchema: AbstractableConstructor
+	collapsedSchema: Constructor
 	expandedSchema: ProtoSchema
 	inner: ProtoInner
 	intersections: {

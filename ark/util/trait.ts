@@ -1,25 +1,21 @@
 import type { intersectParameters } from "./intersections.ts"
 import type { applyElementLabels } from "./labels.ts"
 import type { NonEmptyList } from "./lists.ts"
-import { type AbstractableConstructor } from "./objectKinds.ts"
+import { type Constructor } from "./objectKinds.ts"
 
 export type ComposeSignatures = {
-	<traits extends NonEmptyList<AbstractableConstructor>>(
-		...traits: traits
-	): compose<traits>
+	<traits extends NonEmptyList<Constructor>>(...traits: traits): compose<traits>
 
-	<labels extends 1[]>(): <
-		traits extends NonEmptyList<AbstractableConstructor>
-	>(
+	<labels extends 1[]>(): <traits extends NonEmptyList<Constructor>>(
 		...traits: traits
 	) => compose<traits, labels>
 }
 
-export const compose = ((...args: readonly AbstractableConstructor[]) => {
+export const compose = ((...args: readonly Constructor[]) => {
 	if (args.length === 0) {
 		return compose
 	}
-	const traits = args as readonly AbstractableConstructor[]
+	const traits = args as readonly Constructor[]
 	let result = Object
 	for (let i = 0; i < traits.length; i++) {
 		result = Object.setPrototypeOf(result, traits[i].prototype)
@@ -28,7 +24,7 @@ export const compose = ((...args: readonly AbstractableConstructor[]) => {
 }) as ComposeSignatures
 
 export type compose<
-	traits extends readonly AbstractableConstructor[],
+	traits extends readonly Constructor[],
 	labels extends 1[] = []
 > = composeRecurse<traits, [], {}, labels>
 

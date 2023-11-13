@@ -60,10 +60,7 @@ export class TraversalState {
 		code: code,
 		...args: ProblemParameters<code>
 	) {
-		// TODO: fix
-		const problem = new problemsByCode[code](
-			...(args as never[])
-		) as any as Problem
+		const problem = new (problemsByCode[code] as any)(...args) as Problem
 		return this.problems.add(problem)
 	}
 }

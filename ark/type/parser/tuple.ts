@@ -9,18 +9,17 @@ import type {
 } from "@arktype/schema"
 import { builtins, node } from "@arktype/schema"
 import type {
-	AbstractableConstructor,
 	BuiltinObjectKind,
 	conform,
+	Constructor,
 	Domain,
 	evaluate,
 	isAny,
 	List
 } from "@arktype/util"
 import {
-	domainOf,
 	isArray,
-	objectKindOf,
+	objectKindOrDomainOf,
 	stringify,
 	throwParseError
 } from "@arktype/util"
@@ -274,7 +273,7 @@ export type inferTupleExpression<
 	? values[number]
 	: def extends readonly [
 			"instanceof",
-			...infer constructors extends AbstractableConstructor[]
+			...infer constructors extends Constructor[]
 	  ]
 	? InstanceType<constructors[number]>
 	: def[0] extends "keyof"
@@ -292,7 +291,7 @@ export type validatePrefixExpression<
 	: def[0] extends "==="
 	? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof"
-	? readonly [def[0], ...AbstractableConstructor[]]
+	? readonly [def[0], ...Constructor[]]
 	: never
 
 export type validatePostfixExpression<
@@ -326,7 +325,7 @@ export type validateInfixExpression<
 	  ]
 
 export type UnparsedTupleExpressionInput = {
-	instanceof: AbstractableConstructor
+	instanceof: Constructor
 	"===": unknown
 }
 
@@ -444,23 +443,18 @@ const prefixParsers: {
 } = {
 	keyof: parseKeyOfTuple,
 	instanceof: (def, ctx) => {
-		const objectKind = objectKindOf(def[1])
-		if (objectKind !== "Function") {
+		if (typeof def[1] !== "function") {
 			return throwParseError(
-				writeInvalidConstructorMessage(
-					objectKind ? objectKind : domainOf(def[1])
-				)
+				writeInvalidConstructorMessage(objectKindOrDomainOf(def[1]))
 			)
 		}
 		const branches = def
 			.slice(1)
 			.map((ctor) =>
-				objectKindOf(ctor) === "Function"
-					? { basis: ctor as AbstractableConstructor }
+				typeof ctor === "function"
+					? { basis: ctor as Constructor }
 					: throwParseError(
-							writeInvalidConstructorMessage(
-								objectKindOf(ctor) ?? domainOf(def[1])
-							)
+							writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
 					  )
 			)
 		return node(...branches)

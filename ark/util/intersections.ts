@@ -1,5 +1,7 @@
+import { type domainOf } from "./domain.ts"
 import type { andPreserveUnknown, conform } from "./generics.ts"
-import type { Hkt } from "./hkt.ts"
+import { type Hkt } from "./hkt.ts"
+import { type requiredKeyOf, type valueOf } from "./records.ts"
 
 export interface AndPreserveUnknown extends Hkt.Kind {
 	f: (
@@ -117,3 +119,18 @@ type parseNextElement<
 				done: false
 		  }
 	: never
+
+export type isDisjoint<l, r> = l & r extends never
+	? true
+	: domainOf<l> & domainOf<r> extends never
+	? true
+	: [l, r] extends [object, object]
+	? true extends valueOf<{
+			[k in Extract<
+				keyof l & keyof r,
+				requiredKeyOf<l> | requiredKeyOf<r>
+			>]: isDisjoint<l[k], r[k]>
+	  }>
+		? true
+		: false
+	: false

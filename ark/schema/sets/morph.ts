@@ -1,5 +1,5 @@
 import {
-	type AbstractableConstructor,
+	type Constructor,
 	type evaluate,
 	type exactMessageOnError,
 	type listable,
@@ -32,7 +32,7 @@ export type ValidatorNode = Node<ValidatorKind>
 export type ValidatorSchema = Schema<ValidatorKind>
 
 export type validateValidator<schema> = [schema] extends [
-	NonEnumerableDomain | AbstractableConstructor
+	NonEnumerableDomain | Constructor
 ]
 	? schema
 	: schema extends ExpandedSchema<BasisKind>

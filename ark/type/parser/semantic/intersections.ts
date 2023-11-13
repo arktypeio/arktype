@@ -1,5 +1,12 @@
 import type { Out } from "@arktype/schema"
-import type { evaluate, isAny, List } from "@arktype/util"
+import { Hkt } from "@arktype/util"
+import type {
+	conform,
+	evaluate,
+	intersectArrays,
+	isAny,
+	List
+} from "@arktype/util"
 import type { MorphAst } from "../tuple.ts"
 
 export type inferIntersection<l, r> = [l] extends [never]
@@ -16,54 +23,25 @@ export type inferIntersection<l, r> = [l] extends [never]
 		: (In: evaluate<lIn & r>) => Out<lOut>
 	: r extends MorphAst<infer rIn, infer rOut>
 	? (In: evaluate<rIn & l>) => Out<rOut>
-	: intersectObjects<l, r> extends infer result
-	? result
-	: never
-
-type intersectObjects<l, r> = [l, r] extends [object, object]
-	? [l, r] extends [infer lList extends List, infer rList extends List]
-		? inferArrayIntersection<lList, rList>
-		: evaluate<
-				{
-					[k in keyof l]: k extends keyof r
-						? inferIntersection<l[k], r[k]>
-						: l[k]
-				} & Omit<r, keyof l>
-		  >
+	: [l, r] extends [object, object]
+	? intersectObjects<l, r> extends infer result
+		? result
+		: never
 	: l & r
 
-// TODO: Test instantiations removing this in favor of HKT
-type inferArrayIntersection<
-	l extends List,
-	r extends List,
-	result extends List = []
-> = [l, r] extends [
-	[infer lHead, ...infer lTail],
-	[infer rHead, ...infer rTail]
+declare class MorphableIntersection extends Hkt.Kind {
+	f: (
+		In: conform<this[Hkt.key], [l: unknown, r: unknown]>
+	) => inferIntersection<(typeof In)[0], (typeof In)[1]>
+}
+
+type intersectObjects<l, r> = [l, r] extends [
+	infer lList extends List,
+	infer rList extends List
 ]
-	? inferArrayIntersection<
-			lTail,
-			rTail,
-			[...result, inferIntersection<lHead, rHead>]
+	? intersectArrays<lList, rList, MorphableIntersection>
+	: evaluate<
+			{
+				[k in keyof l]: k extends keyof r ? inferIntersection<l[k], r[k]> : l[k]
+			} & Omit<r, keyof l>
 	  >
-	: l extends [infer lHead, ...infer lTail]
-	? r extends []
-		? // l is longer tuple than r, unsatisfiable
-		  never
-		: inferArrayIntersection<
-				lTail,
-				r,
-				[...result, inferIntersection<lHead, r[number]>]
-		  >
-	: r extends [infer rHead, ...infer rTail]
-	? l extends []
-		? // r is longer tuple than l, unsatisfiable
-		  never
-		: inferArrayIntersection<
-				l,
-				rTail,
-				[...result, inferIntersection<l[number], rHead>]
-		  >
-	: [number, number] extends [l["length"], r["length"]]
-	? [...result, ...inferIntersection<l[number], r[number]>[]]
-	: result
