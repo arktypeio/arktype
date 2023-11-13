@@ -3,7 +3,7 @@ import { disjointDescriptionWriters } from "../../nodes/compose.js"
 import type { asConst, evaluate, isAny, List } from "../../utils/generics.js"
 import { objectKeysOf } from "../../utils/generics.js"
 import type { Path, pathToString } from "../../utils/paths.js"
-import type { ParsedMorph } from "./morph.js"
+import type { Out, ParsedMorph } from "./morph.js"
 
 export type inferIntersection<l, r> = [l] extends [never]
     ? never
@@ -16,9 +16,9 @@ export type inferIntersection<l, r> = [l] extends [never]
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
         ? never
-        : (In: evaluate<lIn & r>) => lOut
+        : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
-    ? (In: evaluate<rIn & l>) => rOut
+    ? (In: evaluate<rIn & l>) => Out<rOut>
     : intersectObjects<l, r> extends infer result
     ? result
     : never
