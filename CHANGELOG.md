@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.28-alpha
+
+### Patch Changes
+
+-   Allow instanceof abstract classes, avoid treating some function props as morphs
+
 ## 1.0.27-alpha
 
 ### Patch Changes
