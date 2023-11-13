@@ -27,6 +27,18 @@ describe("instanceof", () => {
 				"Must be an instance of TypeError (was Error)"
 			)
 		})
+		it("abstract", () => {
+			abstract class Base {
+				abstract foo: string
+			}
+			class Sub extends Base {
+				foo = ""
+			}
+			const t = type(["instanceof", Base])
+			attest<Base>(t.infer)
+			const sub = new Sub()
+			attest(t(sub).data).equals(sub)
+		})
 		it("multiple branches", () => {
 			const t = type(["instanceof", Date, Array])
 			attest<Date | unknown[]>(t.infer)
