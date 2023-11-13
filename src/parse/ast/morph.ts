@@ -65,10 +65,14 @@ export type validateMorphTuple<def extends TupleExpression, $> = readonly [
 
 export type Morph<i = any, o = unknown> = (In: i, problems: Problems) => o
 
-export type ParsedMorph<i = any, o = unknown> = (In: i) => o
+export type Out<o = unknown> = readonly ["|>", o]
+
+export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
 
 export type inferMorph<inDef, morph, $> = morph extends Morph
-    ? (In: asIn<inferDefinition<inDef, $>>) => inferMorphOut<ReturnType<morph>>
+    ? (
+          In: asIn<inferDefinition<inDef, $>>
+      ) => Out<inferMorphOut<ReturnType<morph>>>
     : never
 
 type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
