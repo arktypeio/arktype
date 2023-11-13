@@ -1,3 +1,4 @@
+import type { Out } from "../parse/ast/morph.js"
 import { jsObjects, jsObjectsScope } from "./jsObjects.js"
 import type { Space } from "./scope.js"
 import { rootScope, scope } from "./scope.js"
@@ -60,10 +61,10 @@ export type PrecompiledDefaults = {
     email: string
     uuid: string
     semver: string
-    json: (In: string) => unknown
-    parsedNumber: (In: string) => number
-    parsedInteger: (In: string) => number
-    parsedDate: (In: string) => Date
+    json: (In: string) => Out<unknown>
+    parsedNumber: (In: string) => Out<number>
+    parsedInteger: (In: string) => Out<number>
+    parsedDate: (In: string) => Out<Date>
     // jsObjects
     Function: (...args: any[]) => unknown
     Date: Date

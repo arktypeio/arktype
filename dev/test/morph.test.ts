@@ -1,13 +1,14 @@
 import { describe, it } from "mocha"
-import { ark, intersection, morph, scope, type, union } from "../../src/main.js"
 import type { Problem, Type } from "../../src/main.js"
+import { ark, intersection, morph, scope, type, union } from "../../src/main.js"
+import type { Out } from "../../src/parse/ast/morph.js"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/parse/ast/union.js"
 import { attest } from "../attest/main.js"
 
 describe("morph", () => {
     it("base", () => {
         const t = type(["boolean", "|>", (data) => `${data}`])
-        attest(t).typed as Type<(In: boolean) => string>
+        attest(t).typed as Type<(In: boolean) => Out<string>>
         attest(t.infer).typed as string
         attest(t.node).snap({ boolean: { rules: {}, morph: "(function)" } })
         const result = t(true)
@@ -19,7 +20,7 @@ describe("morph", () => {
     })
     it("endomorph", () => {
         const t = type(["boolean", "|>", (data) => !data])
-        attest(t).typed as Type<(In: boolean) => boolean>
+        attest(t).typed as Type<(In: boolean) => Out<boolean>>
         const result = t(true)
         if (result.problems) {
             return result.problems.throw()
@@ -28,7 +29,7 @@ describe("morph", () => {
     })
     it("from type", () => {
         const t = type(["string>5", "|>", ark.parsedDate])
-        attest(t).typed as Type<(In: string) => Date>
+        attest(t).typed as Type<(In: string) => Out<Date>>
         attest(t("5/21/1993").data?.getDate()).equals(21)
         attest(t("foobar").problems?.summary).snap(
             "Must be a valid date (was 'foobar')"
@@ -40,7 +41,7 @@ describe("morph", () => {
             "|>",
             (n, problems) => (n === 0 ? problems.mustBe("non-zero") : 100 / n)
         ])
-        attest(divide100By).typed as Type<(In: number) => number>
+        attest(divide100By).typed as Type<(In: number) => Out<number>>
         attest(divide100By(5).data).equals(20)
         attest(divide100By(0).problems?.summary).snap(
             "Must be non-zero (was 0)"
@@ -67,7 +68,7 @@ describe("morph", () => {
     it("at path", () => {
         const t = type({ a: ["string", "|>", (data) => data.length] })
         attest(t).typed as Type<{
-            a: (In: string) => number
+            a: (In: string) => Out<number>
         }>
         const result = t({ a: "four" })
         if (result.problems) {
@@ -82,7 +83,9 @@ describe("morph", () => {
             lengthOfString: ["string", "|>", (data) => data.length],
             mapToLengths: "lengthOfString[]"
         }).compile()
-        attest(types.mapToLengths).typed as Type<((In: string) => number)[]>
+        attest(types.mapToLengths).typed as Type<
+            ((In: string) => Out<number>)[]
+        >
         const result = types.mapToLengths(["1", "22", "333"])
         if (result.problems) {
             return result.problems.throw()
@@ -91,7 +94,7 @@ describe("morph", () => {
     })
     it("object inference", () => {
         const t = type([{ a: "string" }, "|>", (data) => `${data}`])
-        attest(t).typed as Type<(In: { a: string }) => string>
+        attest(t).typed as Type<(In: { a: string }) => Out<string>>
     })
     it("intersection", () => {
         const $ = scope({
@@ -101,7 +104,7 @@ describe("morph", () => {
             bAndA: () => $.type("b&a")
         })
         const types = $.compile()
-        attest(types.aAndB).typed as Type<(In: 3.14) => string>
+        attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
         attest(types.aAndB.node).snap({
             number: { rules: { value: 3.14 }, morph: "(function)" }
         })
@@ -115,7 +118,7 @@ describe("morph", () => {
             c: "a&b"
         })
         const types = $.compile()
-        attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => string>
+        attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
         attest(types.c.node).snap({
             object: {
                 rules: {
@@ -135,7 +138,9 @@ describe("morph", () => {
             aOrB: "a|b",
             bOrA: "b|a"
         }).compile()
-        attest(types.aOrB).typed as Type<boolean | ((In: number) => string)>
+        attest(types.aOrB).typed as Type<
+            boolean | ((In: number) => Out<string>)
+        >
         attest(types.aOrB.node).snap({
             number: { rules: {}, morph: "(function)" },
             boolean: true
@@ -150,7 +155,7 @@ describe("morph", () => {
             c: "a&b"
         }).compile()
         attest(types.c).typed as Type<{
-            a: (In: 1) => number
+            a: (In: 1) => Out<number>
         }>
         attest(types.c.node).snap({
             object: {
@@ -168,7 +173,7 @@ describe("morph", () => {
         }).compile()
         attest(types.c).typed as Type<
             | {
-                  a: (In: number) => string
+                  a: (In: number) => Out<string>
               }
             | {
                   a: (...args: any[]) => unknown
@@ -200,7 +205,7 @@ describe("morph", () => {
             b: () => $.morph("a", (n) => n === 0)
         })
         const types = $.compile()
-        attest(types.b).typed as Type<(In: string) => boolean>
+        attest(types.b).typed as Type<(In: string) => Out<boolean>>
         attest(types.b.node).snap({
             string: { rules: {}, morph: ["(function)", "(function)"] }
         })
@@ -211,7 +216,7 @@ describe("morph", () => {
             b: () => $.morph({ a: "a" }, ({ a }) => a === 0)
         })
         const types = $.compile()
-        attest(types.b).typed as Type<(In: { a: string }) => boolean>
+        attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(types.b.node).snap({
             object: { rules: { props: { a: "a" } }, morph: "(function)" }
         })
@@ -224,7 +229,7 @@ describe("morph", () => {
             "|>",
             ({ a }) => a === 0
         ])
-        attest(t).typed as Type<(In: { a: string }) => boolean>
+        attest(t).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(t.node).snap({
             object: {
                 rules: {
@@ -241,7 +246,9 @@ describe("morph", () => {
             c: () => $.type("a|b")
         })
         const types = $.compile()
-        attest(types.c).typed as Type<[boolean] | ((In: [string]) => string[])>
+        attest(types.c).typed as Type<
+            [boolean] | ((In: [string]) => Out<string[]>)
+        >
         attest(types.c.node).snap({
             object: [
                 {
@@ -336,7 +343,7 @@ describe("morph", () => {
         const t = $.type("a|b")
         attest(t).typed as Type<
             | {
-                  a: (In: string) => string
+                  a: (In: string) => Out<string>
               }
             | {
                   a: boolean
@@ -391,7 +398,7 @@ describe("morph", () => {
                 return result
             }
         ])
-        attest(parsedInt).typed as Type<(In: string) => number>
+        attest(parsedInt).typed as Type<(In: string) => Out<number>>
         attest(parsedInt("5").data).snap(5)
         attest(parsedInt("five").problems?.summary).snap(
             "Must be an integer string (was 'five')"
@@ -399,7 +406,9 @@ describe("morph", () => {
     })
     it("nullable return", () => {
         const toNullableNumber = type(["string", "|>", (s) => s.length || null])
-        attest(toNullableNumber).typed as Type<(In: string) => number | null>
+        attest(toNullableNumber).typed as Type<
+            (In: string) => Out<number | null>
+        >
     })
     it("undefinable return", () => {
         const toUndefinableNumber = type([
@@ -408,7 +417,7 @@ describe("morph", () => {
             (s) => s.length || undefined
         ])
         attest(toUndefinableNumber).typed as Type<
-            (In: string) => number | undefined
+            (In: string) => Out<number | undefined>
         >
     })
     it("null or undefined return", () => {
@@ -419,7 +428,7 @@ describe("morph", () => {
                 s.length === 0 ? undefined : s.length === 1 ? null : s.length
         ])
         attest(toMaybeNumber).typed as Type<
-            (In: string) => number | null | undefined
+            (In: string) => Out<number | null | undefined>
         >
     })
 })

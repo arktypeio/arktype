@@ -24,6 +24,18 @@ describe("instanceof", () => {
             "Must be an instance of TypeError (was Error)"
         )
     })
+    it("abstract", () => {
+        abstract class Base {
+            abstract foo: string
+        }
+        class Sub extends Base {
+            foo = ""
+        }
+        const t = type(["instanceof", Base])
+        attest(t.infer).typed as Base
+        const sub = new Sub()
+        attest(t(sub).data).equals(sub)
+    })
     it("builtins not evaluated", () => {
         const t = type(["instanceof", Date])
         attest(t.infer).types.toString("Date")
