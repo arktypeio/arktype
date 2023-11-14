@@ -8,18 +8,22 @@ import {
 } from "@arktype/util"
 import { type RuleAttachments } from "../base.ts"
 import { type Node, type Schema } from "../nodes.ts"
-import type {
-	DomainDeclaration,
+import {
+	type DomainDeclaration,
 	DomainImplementation,
-	DomainSchema,
-	NonEnumerableDomain
+	type DomainSchema,
+	type NonEnumerableDomain
 } from "./domain.ts"
-import type {
-	ProtoDeclaration,
+import {
+	type ProtoDeclaration,
 	ProtoImplementation,
-	ProtoSchema
+	type ProtoSchema
 } from "./proto.ts"
-import type { UnitDeclaration, UnitImplementation, UnitSchema } from "./unit.ts"
+import {
+	type UnitDeclaration,
+	UnitImplementation,
+	type UnitSchema
+} from "./unit.ts"
 
 export type BasisDeclarationsByKind = {
 	domain: DomainDeclaration
@@ -27,10 +31,10 @@ export type BasisDeclarationsByKind = {
 	unit: UnitDeclaration
 }
 
-export type BasisImplementationByKind = {
-	domain: typeof DomainImplementation
-	proto: typeof ProtoImplementation
-	unit: typeof UnitImplementation
+export const BasisImplementationByKind = {
+	domain: DomainImplementation,
+	proto: ProtoImplementation,
+	unit: UnitImplementation
 }
 
 export type BasisKind = keyof BasisDeclarationsByKind

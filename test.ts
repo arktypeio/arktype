@@ -4,23 +4,32 @@
 import { node } from "./ark/schema/main.ts"
 import { wellFormedNumberMatcher } from "./ark/util/main.ts"
 
-const parseNumber = node(
-	{
-		in: {
-			basis: "string",
-			pattern: wellFormedNumberMatcher,
-			description: "a well-formed numeric string"
-		},
-		morph: (s: string) => parseFloat(s)
-	},
-	"number"
-)
+const parseNumber2 = node({
+	basis: "string",
+	pattern: wellFormedNumberMatcher,
+	description: "a well-formed numeric string"
+})
 
-parseNumber.description //?
+console.log(parseNumber2)
 
-parseNumber.in.description //?
+// parseNumber2
+// const parseNumber = node(
+// 	{
+// 		in: {
+// 			basis: "string",
+// 			pattern: wellFormedNumberMatcher,
+// 			description: "a well-formed numeric string"
+// 		},
+// 		morph: (s: string) => parseFloat(s)
+// 	},
+// 	"number"
+// )
 
-parseNumber.out.description //?
+// parseNumber.description //?
+
+// parseNumber.in.description //?
+
+// parseNumber.out.description //?
 
 // export const intersectBranches = (
 // 	l: readonly Dict[],

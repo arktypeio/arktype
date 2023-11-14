@@ -1,6 +1,7 @@
-import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { type declareNode, type withAttributes } from "../base.ts"
 import { builtins } from "../builtins.ts"
 import { In } from "../io/compile.ts"
+import { defineNode } from "../utils.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 
 export type DivisorInner = withAttributes<{

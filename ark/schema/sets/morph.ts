@@ -6,19 +6,14 @@ import {
 	listFrom,
 	throwParseError
 } from "@arktype/util"
-import {
-	basisKinds,
-	type declareNode,
-	defineNode,
-	type withAttributes
-} from "../base.ts"
+import { type declareNode, type withAttributes } from "../base.ts"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
 import { type NonEnumerableDomain } from "../bases/domain.ts"
-import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import type { Problem } from "../io/problems.ts"
 import type { CheckResult, TraversalState } from "../io/traverse.ts"
 import { type ExpandedSchema, type Node, type Schema } from "../nodes.ts"
+import { basisKinds, defineNode } from "../utils.ts"
 import {
 	type IntersectionSchema,
 	type parseIntersectionSchema,
@@ -129,8 +124,8 @@ export const MorphImplementation = defineNode({
 				  }
 		}
 	},
-	writeDefaultDescription: (inner) =>
-		`a morph from ${inner.in} to ${inner.out}`,
+	writeDefaultDescription: (node) =>
+		`a morph from ${node.inner.in} to ${node.inner.out}`,
 	attach: (inner) => ({
 		compile: () => `return true`
 	})

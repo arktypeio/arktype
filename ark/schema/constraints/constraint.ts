@@ -1,31 +1,24 @@
 import { type extend, type listable } from "@arktype/util"
-import {
-	type IrreducibleConstraintKind,
-	type RuleAttachments
-} from "../base.ts"
+import { type RuleAttachments } from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"
 import { type Node, type Schema } from "../nodes.ts"
+import { type IrreducibleConstraintKind } from "../utils.ts"
 import {
 	type MaxDeclaration,
-	type MaxImplementation,
+	MaxImplementation,
 	type MinDeclaration,
-	type MinImplementation
+	MinImplementation
 } from "./bounds.ts"
-import {
-	type DivisorDeclaration,
-	type DivisorImplementation
-} from "./divisor.ts"
-import {
-	type PatternDeclaration,
-	type PatternImplementation
-} from "./pattern.ts"
+import { type DivisorDeclaration, DivisorImplementation } from "./divisor.ts"
+import { type PatternDeclaration, PatternImplementation } from "./pattern.ts"
 import {
 	type PredicateDeclaration,
-	type PredicateImplementation
+	PredicateImplementation
 } from "./predicate.ts"
 import {
+	OptionalImplementation,
 	type PropDeclarationsByKind,
-	type PropImplementationByKind
+	RequiredImplementation
 } from "./prop.ts"
 
 export type ConstraintDeclarationsByKind = extend<
@@ -39,16 +32,15 @@ export type ConstraintDeclarationsByKind = extend<
 	}
 >
 
-export type ConstraintImplementationByKind = extend<
-	PropImplementationByKind,
-	{
-		divisor: typeof DivisorImplementation
-		min: typeof MinImplementation
-		max: typeof MaxImplementation
-		pattern: typeof PatternImplementation
-		predicate: typeof PredicateImplementation
-	}
->
+export const ConstraintImplementationByKind = {
+	divisor: DivisorImplementation,
+	min: MinImplementation,
+	max: MaxImplementation,
+	pattern: PatternImplementation,
+	predicate: PredicateImplementation,
+	required: RequiredImplementation,
+	optional: OptionalImplementation
+}
 
 export type ConstraintAttachments<implicitBasisType> = extend<
 	RuleAttachments,

@@ -1,7 +1,8 @@
 import { domainOf, stringify } from "@arktype/util"
-import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { type declareNode, type withAttributes } from "../base.ts"
 import { Disjoint } from "../disjoint.ts"
 import { compileSerializedValue, In } from "../io/compile.ts"
+import { defineNode } from "../utils.ts"
 import { type BasisAttachments } from "./basis.ts"
 
 export type UnitInner<rule = unknown> = withAttributes<{

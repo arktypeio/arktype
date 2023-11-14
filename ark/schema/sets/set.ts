@@ -1,10 +1,10 @@
 import { type CompilationConfig } from "../io/compile.ts"
 import {
 	type IntersectionDeclaration,
-	type IntersectionImplementation
+	IntersectionImplementation
 } from "./intersection.ts"
-import { type MorphDeclaration, type MorphImplementation } from "./morph.ts"
-import { type UnionDeclaration, type UnionImplementation } from "./union.ts"
+import { type MorphDeclaration, MorphImplementation } from "./morph.ts"
+import { type UnionDeclaration, UnionImplementation } from "./union.ts"
 
 export type SetDeclarationsByKind = {
 	union: UnionDeclaration
@@ -12,10 +12,10 @@ export type SetDeclarationsByKind = {
 	intersection: IntersectionDeclaration
 }
 
-export type SetImplementationByKind = {
-	union: typeof UnionImplementation
-	morph: typeof MorphImplementation
-	intersection: typeof IntersectionImplementation
+export const SetImplementationByKind = {
+	union: UnionImplementation,
+	morph: MorphImplementation,
+	intersection: IntersectionImplementation
 }
 
 export type SetKind = keyof SetDeclarationsByKind

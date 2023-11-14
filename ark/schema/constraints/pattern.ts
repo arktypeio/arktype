@@ -1,7 +1,8 @@
 import { throwParseError } from "@arktype/util"
-import { type declareNode, defineNode, type withAttributes } from "../base.ts"
+import { type declareNode, type withAttributes } from "../base.ts"
 import { builtins } from "../builtins.ts"
 import { In } from "../io/compile.ts"
+import { defineNode } from "../utils.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 
 export type PatternInner = withAttributes<{
@@ -41,13 +42,13 @@ export const PatternImplementation = defineNode({
 			? { pattern: schema.source, flags: schema.flags }
 			: schema,
 	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`,
-	attach: (inner) => ({
-		implicitBasis: builtins().string,
-		condition: `/${inner.pattern}/${inner.flags}.test(${In})`
-	})
+	attach: (inner) => {
+		return {
+			implicitBasis: builtins().string,
+			condition: `/${inner.pattern}/${inner.flags}.test(${In})`
+		}
+	}
 })
-
-// readonly implicitBasis: DomainNode<string> = builtins().string
 
 // static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 // 	return `Match operand ${getBasisName(basis)} must be a string`

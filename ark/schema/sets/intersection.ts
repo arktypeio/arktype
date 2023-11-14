@@ -2,20 +2,12 @@ import type { conform, ErrorMessage, extend, mutable } from "@arktype/util"
 import {
 	entriesOf,
 	includes,
-	isArray,
 	throwInternalError,
 	transform
 } from "@arktype/util"
 import {
 	type BaseAttributes,
-	BaseNode,
-	basisKinds,
-	constraintKinds,
 	type declareNode,
-	defineNode,
-	type IrreducibleConstraintKind,
-	irreducibleConstraintKinds,
-	reducibleConstraintKinds,
 	type withAttributes
 } from "../base.ts"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
@@ -25,6 +17,14 @@ import {
 } from "../constraints/constraint.ts"
 import { Disjoint } from "../disjoint.ts"
 import { type Node, type RuleKind, type Schema } from "../nodes.ts"
+import {
+	basisKinds,
+	constraintKinds,
+	defineNode,
+	type IrreducibleConstraintKind,
+	irreducibleConstraintKinds,
+	reducibleConstraintKinds
+} from "../utils.ts"
 import { type SetAttachments } from "./set.ts"
 
 export type IntersectionInner = withAttributes<
@@ -148,10 +148,10 @@ export const IntersectionImplementation = defineNode({
 		}
 		return attachments
 	},
-	writeDefaultDescription: (inner) => {
-		return inner.rules.length === 0
+	writeDefaultDescription: (node) => {
+		return node.rules.length === 0
 			? "an unknown value"
-			: inner.rules.join(" and ")
+			: node.rules.join(" and ")
 	}
 })
 
@@ -170,7 +170,7 @@ const reduceRules = (
 }
 
 export const flattenRules = (inner: IntersectionInner): RuleSet =>
-	Object.values(inner).flatMap((v) => (v instanceof BaseNode ? v : []))
+	Object.values(inner).flatMap((v) => (typeof v === "object" ? v : []))
 
 export const unflattenRules = (rules: RuleSet): IntersectionInner => {
 	const inner: mutable<IntersectionInner> = {}

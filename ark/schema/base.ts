@@ -11,7 +11,6 @@ import {
 	type JsonData,
 	type listable,
 	ParseError,
-	type satisfy,
 	stringify,
 	throwInternalError,
 	throwParseError
@@ -25,10 +24,10 @@ import { unflattenRules } from "./main.ts"
 import {
 	type Attachments,
 	type ExpandedSchema,
-	type Implementation,
 	type Inner,
 	type Node,
 	type NodeDeclarationsByKind,
+	NodeImplementationByKind,
 	type NodeKind,
 	type reifyIntersections,
 	type RootKind,
@@ -40,9 +39,21 @@ import { type SetKind } from "./sets/set.ts"
 import {
 	type BranchSchema,
 	type parseSchemaBranches,
+	UnionImplementation,
 	type validateSchemaBranch
 } from "./sets/union.ts"
-import { createParseContext, inferred, type ParseContext } from "./utils.ts"
+import {
+	basisKinds,
+	constraintKinds,
+	createParseContext,
+	inferred,
+	type OrderedNodeKinds,
+	orderedNodeKinds,
+	type ParseContext,
+	rootKinds,
+	ruleKinds,
+	setKinds
+} from "./utils.ts"
 
 export type BaseAttributes = {
 	readonly alias?: string
@@ -50,48 +61,6 @@ export type BaseAttributes = {
 }
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
-
-export const setKinds = [
-	"union",
-	"morph",
-	"intersection"
-] as const satisfies readonly SetKind[]
-
-export const basisKinds = [
-	"unit",
-	"proto",
-	"domain"
-] as const satisfies readonly BasisKind[]
-
-export const rootKinds = [...setKinds, ...basisKinds] as const
-
-export const constraintKinds = [
-	"divisor",
-	"max",
-	"min",
-	"pattern",
-	"predicate",
-	"required",
-	"optional"
-] as const satisfies readonly ConstraintKind[]
-
-export const ruleKinds = [
-	...basisKinds,
-	...constraintKinds
-] as const satisfies readonly RuleKind[]
-
-export const orderedNodeKinds = [
-	...setKinds,
-	...ruleKinds
-] as const satisfies readonly NodeKind[]
-
-type OrderedNodeKinds = typeof orderedNodeKinds
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type assertIncludesAllKinds = satisfy<OrderedNodeKinds[number], NodeKind>
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: evaluate<
@@ -108,24 +77,6 @@ export type BaseIntersectionMap = {
 		}
 	>
 }
-
-export const irreducibleConstraintKinds = [
-	"pattern",
-	"predicate",
-	"required",
-	"optional"
-] as const satisfies readonly ConstraintKind[]
-
-export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
-
-export type ReducibleConstraintKind = Exclude<
-	ConstraintKind,
-	IrreducibleConstraintKind
->
-
-export const reducibleConstraintKinds = constraintKinds.filter(
-	(k): k is ReducibleConstraintKind => !includes(irreducibleConstraintKinds, k)
-)
 
 export type UnknownNode = BaseNode<any>
 
@@ -159,27 +110,7 @@ export type declareNode<
 	} & { [k in Exclude<keyof types, keyof BaseNodeDeclaration>]?: never }
 > = types
 
-export const nodeImplementations = {} as { [k in NodeKind]: Implementation<k> }
-
-export const defineNode = <
-	kind extends NodeKind,
-	implementation extends NodeImplementation<NodeDeclarationsByKind[kind]>
->(
-	implementation: { kind: kind } & implementation
-): instantiateNodeImplementation<implementation> => {
-	Object.assign(implementation.keys, {
-		alias: {
-			meta: true
-		},
-		description: {
-			meta: true
-		}
-	})
-	nodeImplementations[implementation.kind] = implementation as never
-	return implementation
-}
-
-type instantiateNodeImplementation<definition> = evaluate<
+export type instantiateNodeImplementation<definition> = evaluate<
 	definition & {
 		keys: {
 			[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
@@ -281,8 +212,12 @@ export class BaseNode<
 	// 	})
 	// }
 
-	static parse(branches: BranchSchema[]) {
-		return branches.map((schema) => this.parseNode(rootKinds, schema))
+	static parse(...branches: BranchSchema[]): Node<RootKind> {
+		const union = branches.map((schema) => this.parseNode(rootKinds, schema))
+		const reduced = UnionImplementation.reduce({ union, ordered: false })
+		return reduced instanceof BaseNode
+			? reduced
+			: new BaseNode("union", reduced)
 	}
 
 	static parseConstraint<kind extends ConstraintKind>(
@@ -307,7 +242,7 @@ export class BaseNode<
 		if (allowed.length === 1) {
 			return this.parseNodeKind(allowed[0], schema)
 		}
-		const kind = rootKindOfSchema(schema as never)
+		const kind = this.rootKindOfSchema(schema as never)
 		if (!includes(allowed, kind)) {
 			return throwParseError(
 				`Schema ${stringify(
@@ -323,7 +258,10 @@ export class BaseNode<
 		schema: unknown
 		// TODO: reducible
 	): UnknownNode {
-		const implementation: UnknownNodeImplementation = nodeImplementations[
+		if (schema instanceof BaseNode && schema.kind === kind) {
+			return schema
+		}
+		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
 		] as never
 		const expandedSchema = implementation.expand?.(schema) ?? schema
@@ -343,12 +281,14 @@ export class BaseNode<
 					: this.parseNode(keyDefinition.children, v)
 			} else if (keyDefinition.parse) {
 				inner[k] = keyDefinition.parse(v, ctx)
+			} else {
+				inner[k] = v
 			}
 		}
 		const reducedInner = implementation.reduce?.(inner) ?? inner
 		return reducedInner instanceof BaseNode
 			? reducedInner
-			: (new BaseNode(kind, reducedInner) as any)
+			: new BaseNode(kind, reducedInner)
 	}
 
 	static parseUnits<const branches extends readonly unknown[]>(
@@ -385,7 +325,7 @@ export class BaseNode<
 	) {
 		super()
 		this.alias = $ark.register(this, this.inner.alias)
-		this.implementation = nodeImplementations[kind] as never
+		this.implementation = NodeImplementationByKind[kind] as never
 		this.json = {}
 		this.typeJson = {}
 		this.children = []
@@ -430,9 +370,10 @@ export class BaseNode<
 			(child) => child.contributesReferences
 		)
 		this.contributesReferences = [this, ...this.references]
-		Object.assign(this, this.implementation.attach(this.inner))
+		const attachments = this.implementation.attach(inner)
+		Object.assign(this, attachments)
 		this.allows = new CompiledFunction(In, `return true`)
-		// important this is last as writeDefaultDescription cdould rely on attached
+		// important this is last as writeDefaultDescription could rely on attached
 		this.description =
 			this.inner.description ??
 			this.implementation.writeDefaultDescription(this as never)
@@ -470,7 +411,7 @@ export class BaseNode<
 			}
 		}
 		// TODO; reduce?
-		return node(ioInner as never)
+		return BaseNode.parse(ioInner as never) as never
 	}
 
 	toJSON() {
@@ -606,34 +547,57 @@ export class BaseNode<
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
 	}
-}
 
-const rootKindOfSchema = (schema: Schema<RootKind>): RootKind => {
-	switch (typeof schema) {
-		case "string":
-			return "domain"
-		case "function":
-			return "proto"
-		case "object":
-			if (schema instanceof BaseNode) {
-				if (!includes(rootKinds, schema.kind)) {
-					break
-				}
-				return schema.kind
-			} else if ("domain" in schema) {
+	static rootKindOfSchema(schema: Schema<RootKind>): RootKind {
+		switch (typeof schema) {
+			case "string":
 				return "domain"
-			} else if ("proto" in schema) {
+			case "function":
 				return "proto"
-			} else if ("unit" in schema) {
-				return "unit"
-			} else if ("morph" in schema) {
-				return "morph"
-			} else if ("union" in schema || isArray(schema)) {
-				return "union"
-			}
-			return "intersection"
+			case "object":
+				if (schema instanceof BaseNode) {
+					if (!includes(rootKinds, schema.kind)) {
+						break
+					}
+					return schema.kind
+				} else if ("domain" in schema) {
+					return "domain"
+				} else if ("proto" in schema) {
+					return "proto"
+				} else if ("unit" in schema) {
+					return "unit"
+				} else if ("morph" in schema) {
+					return "morph"
+				} else if ("union" in schema || isArray(schema)) {
+					return "union"
+				}
+				return "intersection"
+		}
+		return throwParseError(`${typeof schema} is not a valid schema type`)
 	}
-	return throwParseError(`${typeof schema} is not a valid schema type`)
+
+	static get builtins() {
+		return {
+			never: this.parse(),
+			unknown: this.parse({}),
+			object: this.parse("object"),
+			number: this.parse("number"),
+			string: this.parse("string"),
+			array: this.parse(Array),
+			date: this.parse(Date),
+			unknownUnion: this.parse(
+				"string",
+				"number",
+				"object",
+				"bigint",
+				"symbol",
+				{ unit: true },
+				{ unit: false },
+				{ unit: null },
+				{ unit: undefined }
+			)
+		}
+	}
 }
 
 export type NodeParser = {
@@ -645,7 +609,7 @@ export type NodeParser = {
 }
 
 const parseRoot: NodeParser = (...branches) =>
-	BaseNode.parse(branches as never) as never
+	BaseNode.parse(...branches) as never
 
 const parseUnits = <const branches extends readonly unknown[]>(
 	...values: branches

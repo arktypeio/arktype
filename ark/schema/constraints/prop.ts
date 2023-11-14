@@ -1,24 +1,15 @@
-import {
-	type declareNode,
-	defineNode,
-	rootKinds,
-	type withAttributes
-} from "../base.ts"
+import { type declareNode, type withAttributes } from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"
 import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import { type Node, type RootInput, type RootKind } from "../nodes.ts"
+import { defineNode, rootKinds } from "../utils.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 import { getBasisName } from "./shared.ts"
 
 export type PropDeclarationsByKind = {
 	required: RequiredDeclaration
 	optional: OptionalDeclaration
-}
-
-export type PropImplementationByKind = {
-	required: typeof RequiredImplementation
-	optional: typeof OptionalImplementation
 }
 
 export type PropKind = keyof PropDeclarationsByKind

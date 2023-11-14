@@ -1,22 +1,18 @@
-import type { extend, listable, requiredKeyOf } from "@arktype/util"
+import type { extend, listable } from "@arktype/util"
 import { type BaseNode, type rightOf } from "./base.ts"
 import {
 	type BasisDeclarationsByKind,
-	type BasisImplementationByKind,
+	BasisImplementationByKind,
 	type BasisKind
 } from "./bases/basis.ts"
 import {
 	type ConstraintDeclarationsByKind,
-	type ConstraintImplementationByKind
+	ConstraintImplementationByKind
 } from "./constraints/constraint.ts"
-import {
-	type MorphSchema,
-	type ValidatorKind,
-	type ValidatorSchema
-} from "./sets/morph.ts"
+import { type MorphSchema, type ValidatorSchema } from "./sets/morph.ts"
 import {
 	type SetDeclarationsByKind,
-	type SetImplementationByKind,
+	SetImplementationByKind,
 	type SetKind
 } from "./sets/set.ts"
 
@@ -43,10 +39,10 @@ export type RuleDeclarationsByKind = extend<
 	ConstraintDeclarationsByKind
 >
 
-export type RuleImplementationByKind = extend<
-	BasisImplementationByKind,
-	ConstraintImplementationByKind
->
+export const RuleImplementationByKind = {
+	...BasisImplementationByKind,
+	...ConstraintImplementationByKind
+}
 
 export type RuleKind = keyof RuleDeclarationsByKind
 
@@ -59,10 +55,12 @@ export type RootKind = SetKind | BasisKind
 
 export type NodeKind = keyof NodeDeclarationsByKind
 
-export type NodeImplementationByKind = extend<
-	SetImplementationByKind,
-	RuleImplementationByKind
->
+export const NodeImplementationByKind = {
+	...SetImplementationByKind,
+	...RuleImplementationByKind
+}
+
+export type NodeImplementationByKind = typeof NodeImplementationByKind
 
 export type Implementation<kind extends NodeKind> =
 	NodeImplementationByKind[kind]
