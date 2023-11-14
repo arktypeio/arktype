@@ -18,7 +18,8 @@
 	],
 	"scripts": {
 		"build": "tsup --config ../repo/tsup.config.ts",
-		"test": "ts ../repo/testPackage.ts"
+		"test": "ts ../repo/testPackage.ts",
+		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
 		"arktype": "workspace:*",

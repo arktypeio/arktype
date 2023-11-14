@@ -1,26 +1,26 @@
 import { match, when } from "arktype"
 
-const matcher = match({
-	[when({
-		a: "string",
-		b: "(number|bigint)[]"
-	})]: (data) => data.b,
-	boolean: (b) => !b,
-	semver: (s) => s.length
-}).when({ condition: "true" }, (data) => {
-	return data.condition
-})
+// const matcher = match({
+// 	[when({
+// 		a: "string",
+// 		b: "(number|bigint)[]"
+// 	})]: (data) => data.b,
+// 	boolean: (b) => !b,
+// 	semver: (s) => s.length
+// }).when({ condition: "true" }, (data) => {
+// 	return data.condition
+// })
 
-const base = matcher({} as unknown) //({}) //=>?
+// const base = matcher({} as unknown) //({}) //=>?
 
-const oneResult = matcher({} as object) //=>?
+// const oneResult = matcher({} as object) //=>?
 
-const twoResults = matcher({} as boolean | string) //=>?
+// const twoResults = matcher({} as boolean | string) //=>?
 
-const keyValue = when({
-	a: "string",
-	b: "(number|bigint)[]"
-})
+// const keyValue = when({
+// 	a: "string",
+// 	b: "(number|bigint)[]"
+// })
 
 // const validMatcher = match({
 // 	//    ^?

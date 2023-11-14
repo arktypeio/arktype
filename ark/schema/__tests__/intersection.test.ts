@@ -7,7 +7,8 @@ describe("intersections", () => {
 		const t = node({ basis: "string", pattern: "/.*/" })
 		attest<BaseNode<"intersection", string>>(t)
 		attest(t.json).snap({
-			intersection: [{ domain: "string" }, { pattern: ".*", flags: "" }]
+			basis: { domain: "string" },
+			pattern: { pattern: ".*", flags: "" }
 		})
 		// previously had issues with a union complexity error when assigning to Root | undefined
 		const root: Node<RootKind> | undefined = node({

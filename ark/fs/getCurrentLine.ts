@@ -61,7 +61,7 @@ export const getFramesFromError = (error: Error): string[] => {
 		stack = error.stack
 	} catch (error1) {
 		try {
-			// @ts-ignore
+			// @ts-expect-error
 			const previous = err.__previous__ || err.__previous
 			stack = previous && previous.stack
 		} catch (error2) {
