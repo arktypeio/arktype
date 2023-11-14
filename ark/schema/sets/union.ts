@@ -50,12 +50,12 @@ export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
 > = withAttributes<{
 	readonly union: branches
-	readonly ordered?: boolean
+	readonly ordered?: true
 }>
 
 export type UnionInner = withAttributes<{
 	readonly union: readonly BranchNode[]
-	readonly ordered: boolean
+	readonly ordered?: true
 }>
 
 export type UnionAttachments = extend<
@@ -79,7 +79,10 @@ export type UnionDeclaration = declareNode<{
 	attach: UnionAttachments
 }>
 
-const intersectBranch = (l: Node<"union">, r: BranchNode) => {
+const intersectBranch = (
+	l: Node<"union">,
+	r: BranchNode
+): Disjoint | UnionInner => {
 	const union = l.ordered
 		? l.union.flatMap((branch) => {
 				const branchResult = branch.intersect(r)
@@ -89,7 +92,7 @@ const intersectBranch = (l: Node<"union">, r: BranchNode) => {
 	if (union instanceof Disjoint) {
 		return union
 	}
-	return { union, ordered: l.ordered }
+	return l.ordered ? { union, ordered: true } : { union }
 }
 
 export const UnionImplementation = defineNode({
@@ -98,7 +101,7 @@ export const UnionImplementation = defineNode({
 		union: {
 			children: ["morph", "intersection", ...basisKinds]
 		},
-		ordered: { parse: (_) => _ ?? false }
+		ordered: {}
 	},
 	intersections: {
 		union: (l, r) => {
@@ -128,31 +131,34 @@ export const UnionImplementation = defineNode({
 			if (resultBranches instanceof Disjoint) {
 				return resultBranches
 			}
-			return {
-				union: resultBranches,
-				ordered: l.ordered || r.ordered
-			}
+			return l.ordered || r.ordered
+				? {
+						union: resultBranches,
+						ordered: true
+				  }
+				: { union: resultBranches }
 		},
 		morph: intersectBranch,
 		intersection: intersectBranch,
 		default: (l, r) => {
-			const branches: BranchNode[] = []
+			const union: BranchNode[] = []
 			for (const branch of l.union) {
 				const branchResult = branch.intersect(r)
 				if (!(branchResult instanceof Disjoint)) {
-					branches.push(branchResult)
+					union.push(branchResult)
 				}
 			}
-			return branches.length === 0
+			return union.length === 0
 				? Disjoint.from("union", l.union, [r])
-				: {
-						union: branches,
-						ordered: l.ordered
+				: l.ordered
+				? {
+						union,
+						ordered: true
 				  }
+				: { union }
 		}
 	},
-	expand: (schema) =>
-		isArray(schema) ? { union: schema, ordered: false } : schema,
+	expand: (schema) => (isArray(schema) ? { union: schema } : schema),
 	reduce: (inner) => {
 		const reducedBranches = reduceBranches(inner)
 		if (reducedBranches.length === 1) {

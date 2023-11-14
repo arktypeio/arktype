@@ -1,6 +1,5 @@
 import { type declareNode, type withAttributes } from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"
-import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import { type Node, type RootInput, type RootKind } from "../nodes.ts"
 import { defineNode, rootKinds } from "../utils.ts"

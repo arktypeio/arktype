@@ -1,9 +1,4 @@
-import {
-	BaseNode,
-	builtins,
-	type ProblemCode,
-	type Root
-} from "@arktype/schema"
+import { BaseNode, type ProblemCode, type Root } from "@arktype/schema"
 import type { Dict, evaluate, isAny, nominal } from "@arktype/util"
 import {
 	domainOf,

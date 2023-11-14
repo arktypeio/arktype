@@ -48,7 +48,7 @@ export type Out<o = any> = ["=>", o]
 
 export type MorphInner = withAttributes<{
 	readonly in: ValidatorNode
-	readonly out: ValidatorNode
+	readonly out?: ValidatorNode
 	readonly morph: readonly Morph[]
 }>
 
@@ -67,7 +67,10 @@ export type MorphDeclaration = declareNode<{
 		intersection: "morph" | Disjoint
 		default: "morph" | Disjoint
 	}
-	attach: {}
+	attach: {
+		inCache: ValidatorNode
+		outCache: ValidatorNode
+	}
 }>
 
 // TODO: recursively extract in
@@ -126,8 +129,10 @@ export const MorphImplementation = defineNode({
 	},
 	writeDefaultDescription: (node) =>
 		`a morph from ${node.inner.in} to ${node.inner.out}`,
-	attach: (inner) => ({
-		compile: () => `return true`
+	attach: (node) => ({
+		compile: () => `return true`,
+		inCache: node.inner.in,
+		outCache: node.inner.out ?? node.ctor.builtins.unknown
 	})
 })
 

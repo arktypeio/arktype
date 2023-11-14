@@ -7,7 +7,7 @@ import type {
 	Predicate,
 	Root
 } from "@arktype/schema"
-import { BaseNode, builtins, node } from "@arktype/schema"
+import { BaseNode, node } from "@arktype/schema"
 import type {
 	BuiltinObjectKind,
 	conform,

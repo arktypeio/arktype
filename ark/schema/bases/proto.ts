@@ -6,7 +6,6 @@ import {
 	objectKindOf
 } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.ts"
-import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import { compileSerializedValue, In } from "../io/compile.ts"
 import { defineNode } from "../utils.ts"

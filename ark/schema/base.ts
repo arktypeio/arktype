@@ -5,6 +5,7 @@ import {
 	entriesOf,
 	type evaluate,
 	type extend,
+	hasDomain,
 	includes,
 	isArray,
 	type Json,
@@ -37,9 +38,7 @@ import {
 import { type ValidatorNode } from "./sets/morph.ts"
 import { type SetKind } from "./sets/set.ts"
 import {
-	type BranchSchema,
 	type parseSchemaBranches,
-	UnionImplementation,
 	type validateSchemaBranch
 } from "./sets/union.ts"
 import {
@@ -212,14 +211,6 @@ export class BaseNode<
 	// 	})
 	// }
 
-	static parse(...branches: BranchSchema[]): Node<RootKind> {
-		const union = branches.map((schema) => this.parseNode(rootKinds, schema))
-		const reduced = UnionImplementation.reduce({ union, ordered: false })
-		return reduced instanceof BaseNode
-			? reduced
-			: new BaseNode("union", reduced)
-	}
-
 	static parseConstraint<kind extends ConstraintKind>(
 		kind: kind,
 		schema: Schema<kind>
@@ -228,8 +219,8 @@ export class BaseNode<
 	}
 
 	static parseRoot<kind extends RootKind>(
-		allowed: readonly kind[],
-		schema: Schema<kind>
+		schema: Schema<kind>,
+		allowed: readonly kind[] = rootKinds as never
 	): Node<RootKind & (kind | rightOf<kind>)> {
 		return this.parseNode(allowed, schema) as never
 	}
@@ -301,8 +292,7 @@ export class BaseNode<
 			}
 		}
 		return new BaseNode<"union", branches[number]>("union", {
-			union: uniqueValues.map((unit) => new BaseNode("unit", { unit })),
-			ordered: false
+			union: uniqueValues.map((unit) => new BaseNode("unit", { unit }))
 		})
 	}
 
@@ -312,7 +302,9 @@ export class BaseNode<
 	readonly description: string
 	readonly json: Json
 	readonly typeJson: Json
+	protected collapsibleJson: Json
 	readonly children: UnknownNode[]
+	readonly entries: entriesOf<Inner<kind>>
 	readonly id: string
 	readonly typeId: string
 	readonly includesMorph: boolean
@@ -327,10 +319,11 @@ export class BaseNode<
 		super()
 		this.alias = $ark.register(this, this.inner.alias)
 		this.implementation = NodeImplementationByKind[kind] as never
+		this.entries = entriesOf(this.inner)
 		this.json = {}
 		this.typeJson = {}
 		this.children = []
-		for (const [k, v] of Object.entries<unknown>(this.inner)) {
+		for (const [k, v] of this.entries) {
 			if (!(k in this.implementation.keys)) {
 				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
 			}
@@ -340,12 +333,12 @@ export class BaseNode<
 			if (keyDefinition.children) {
 				const children = v as listable<UnknownNode>
 				if (isArray(children)) {
-					this.json[k] = children.map((child) => child.json)
-					this.typeJson[k] = children.map((child) => child.json)
+					this.json[k] = children.map((child) => child.collapsibleJson)
+					this.typeJson[k] = children.map((child) => child.collapsibleJson)
 					this.children.push(...children)
 				} else {
-					this.json[k] = children.json
-					this.typeJson[k] = children.json
+					this.json[k] = children.collapsibleJson
+					this.typeJson[k] = children.collapsibleJson
 					this.children.push(children)
 				}
 			} else {
@@ -354,13 +347,26 @@ export class BaseNode<
 					this.typeJson[k] = this.json[k]
 				}
 			}
-			if (k === "in") {
-				this.inCache = v as UnknownNode
-			} else if (k === "out") {
-				this.outCache = v as UnknownNode
+			if (this[k] !== undefined) {
+				// if we attempt to overwrite an existing node key, throw unless
+				// it is expected and can be safely ignored.
+				if (k !== "in" && k !== "out") {
+					throwInternalError(
+						`Unexpected attempt to overwrite existing node key ${k} from ${kind} inner`
+					)
+				}
 			} else {
-				;(this as any)[k] = v
+				this[k] = v as never
 			}
+		}
+		if (this.entries.length === 1 && this.entries[0][0] === (kind as never)) {
+			this.collapsibleJson = this.json[kind] as never
+			if (hasDomain(this.collapsibleJson, "object")) {
+				this.json = this.collapsibleJson
+				this.typeJson = this.collapsibleJson
+			}
+		} else {
+			this.collapsibleJson = this.json
 		}
 		this.id = JSON.stringify(this.json)
 		this.typeId = JSON.stringify(this.typeJson)
@@ -401,7 +407,7 @@ export class BaseNode<
 			return this
 		}
 		const ioInner: Record<string, unknown> = {}
-		for (const [k, v] of entriesOf(this.inner)) {
+		for (const [k, v] of this.entries) {
 			const keyDefinition = this.implementation.keys[k as keyof BaseAttributes]!
 			if (keyDefinition.children) {
 				ioInner[k] = Array.isArray(v)
@@ -411,8 +417,7 @@ export class BaseNode<
 				ioInner[k] = this.inner[k]
 			}
 		}
-		// TODO; reduce?
-		return BaseNode.parse(ioInner as never) as never
+		return BaseNode.parseRoot(ioInner) as never
 	}
 
 	toJSON() {
@@ -481,9 +486,8 @@ export class BaseNode<
 			if (result instanceof Disjoint) {
 				return thisIsLeft ? result : result.invert()
 			}
-			// TODO: reduce
 			// TODO: meta
-			return new BaseNode(l.kind, result)
+			return BaseNode.parseNodeKind(l.kind, result)
 		}
 		return null
 	}
@@ -578,7 +582,7 @@ export class BaseNode<
 	}
 
 	static builtins = {
-		never: new BaseNode<"union", never>("union", { union: [], ordered: false }),
+		never: new BaseNode<"union", never>("union", { union: [] }),
 		unknown: new BaseNode<"intersection", unknown>("intersection", {}),
 		object: new BaseNode<"domain", object>("domain", {
 			domain: "object"
@@ -619,7 +623,7 @@ export type NodeParser = {
 }
 
 const parseRoot: NodeParser = (...branches) =>
-	BaseNode.parse(...branches) as never
+	BaseNode.parseRoot(branches) as never
 
 const parseUnits = <const branches extends readonly unknown[]>(
 	...values: branches

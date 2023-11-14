@@ -15,23 +15,25 @@ console.log(parseNumber2.description)
 parseNumber2.constraints[0].implicitBasis //?
 
 // parseNumber2
-// const parseNumber = node(
-// 	{
-// 		in: {
-// 			basis: "string",
-// 			pattern: wellFormedNumberMatcher,
-// 			description: "a well-formed numeric string"
-// 		},
-// 		morph: (s: string) => parseFloat(s)
-// 	},
-// 	"number"
-// )
+const parseNumber = node(
+	{
+		in: {
+			basis: "string",
+			pattern: wellFormedNumberMatcher,
+			description: "a well-formed numeric string"
+		},
+		morph: (s: string) => parseFloat(s)
+	},
+	"number"
+)
 
-// parseNumber.description //?
+parseNumber.description //?
 
-// parseNumber.in.description //?
+parseNumber.in.description //?
 
-// parseNumber.out.description //?
+parseNumber.out.description //?
+
+parseNumber.out.json //?
 
 // export const intersectBranches = (
 // 	l: readonly Dict[],

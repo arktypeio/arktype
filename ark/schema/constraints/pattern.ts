@@ -1,13 +1,12 @@
 import { throwParseError } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.ts"
-import { builtins } from "../builtins.ts"
 import { In } from "../io/compile.ts"
 import { defineNode } from "../utils.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
-	readonly flags: string
+	readonly flags?: string
 }>
 
 export type CollapsedPatternSchema = RegexLiteral | RegExp
@@ -39,7 +38,9 @@ export const PatternImplementation = defineNode({
 		typeof schema === "string"
 			? parseRegexLiteral(schema)
 			: schema instanceof RegExp
-			? { pattern: schema.source, flags: schema.flags }
+			? schema.flags
+				? { pattern: schema.source, flags: schema.flags }
+				: { pattern: schema.source }
 			: schema,
 	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`,
 	attach: (node) => {
@@ -68,8 +69,12 @@ export const parseRegexLiteral = (literal: string): PatternInner => {
 			`'${literal}' is not a valid RegexLiteral (should be /source/flags)`
 		)
 	}
-	return {
-		pattern: match[1],
-		flags: match[2]
-	}
+	return match[2]
+		? {
+				pattern: match[1],
+				flags: match[2]
+		  }
+		: {
+				pattern: match[1]
+		  }
 }

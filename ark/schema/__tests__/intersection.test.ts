@@ -6,10 +6,7 @@ describe("intersections", () => {
 	it("root type assignment", () => {
 		const t = node({ basis: "string", pattern: "/.*/" })
 		attest<BaseNode<"intersection", string>>(t)
-		attest(t.json).snap({
-			basis: { domain: "string" },
-			pattern: { pattern: ".*", flags: "" }
-		})
+		attest(t.json).snap({ basis: "string", pattern: ".*" })
 		// previously had issues with a union complexity error when assigning to Root | undefined
 		const root: Node<RootKind> | undefined = node({
 			basis: "string",
@@ -27,13 +24,7 @@ describe("intersections", () => {
 			divisor: 5
 		})
 		const result = l.and(r)
-		attest(result.json).snap({
-			intersection: [
-				{ domain: "number" },
-				{ divisor: 15 },
-				{ min: 5, boundKind: "number" }
-			]
-		})
+		attest(result.json).snap({ basis: "number", divisor: 15, min: 5 })
 	})
 	it("union", () => {
 		const l = node(
@@ -51,13 +42,10 @@ describe("intersections", () => {
 			divisor: 5
 		})
 		const result = l.and(r)
-		attest(result.json).snap({
-			union: [
-				{ intersection: [{ domain: "number" }, { divisor: 10 }] },
-				{ intersection: [{ domain: "number" }, { divisor: 15 }] }
-			],
-			ordered: false
-		})
+		attest(result.json).snap([
+			{ basis: "number", divisor: 10 },
+			{ basis: "number", divisor: 15 }
+		])
 	})
 	it("in/out", () => {
 		const parseNumber = node({
@@ -69,17 +57,15 @@ describe("intersections", () => {
 			morph: (s: string) => parseFloat(s)
 		})
 		attest(parseNumber.in.json).snap({
-			description: "a well-formed numeric string",
-			intersection: [
-				{ domain: "string" },
-				{ pattern: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$", flags: "" }
-			]
+			basis: "string",
+			pattern: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$",
+			description: "a well-formed numeric string"
 		})
-		attest(parseNumber.out.json).snap({ intersection: [] })
+		attest(parseNumber.out.json).snap({})
 	})
 	it("reduces union", () => {
 		const n = node("number", {}, { unit: 5 })
-		attest(n.json).snap({ intersection: [] })
+		attest(n.json).snap({})
 	})
 	it("in/out union", () => {
 		const n = node(
@@ -89,10 +75,8 @@ describe("intersections", () => {
 			},
 			"number"
 		)
-		attest(n.in.json).snap({
-			union: [{ domain: "string" }, { domain: "number" }]
-		})
-		attest(n.out.json).snap({ intersection: [] })
+		attest(n.in.json).snap(["string", "number"])
+		attest(n.out.json).snap({})
 	})
 	it("union of all types reduced to unknown", () => {
 		const n = node(
