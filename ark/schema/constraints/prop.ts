@@ -2,7 +2,6 @@ import {
 	type declareNode,
 	defineNode,
 	rootKinds,
-	setKinds,
 	type withAttributes
 } from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"

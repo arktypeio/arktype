@@ -58,7 +58,7 @@ export const objectKindOf = <
 	kinds?: kinds
 ): objectKindOf<data, kinds> | undefined => {
 	const kindSet: ObjectKindSet = kinds ?? builtinObjectKinds
-	let prototype: Partial<Object> = Object.getPrototypeOf(data)
+	let prototype: Partial<Object> | null = Object.getPrototypeOf(data)
 	while (
 		prototype?.constructor &&
 		(!kindSet[prototype.constructor.name] ||
@@ -66,7 +66,7 @@ export const objectKindOf = <
 	) {
 		prototype = Object.getPrototypeOf(prototype)
 	}
-	const name = prototype.constructor?.name
+	const name = prototype?.constructor?.name
 	if (name === undefined || name === "Object") {
 		return undefined
 	}

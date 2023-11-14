@@ -10,7 +10,6 @@ import {
 	type Json,
 	type JsonData,
 	type listable,
-	listFrom,
 	ParseError,
 	type satisfy,
 	stringify,
@@ -39,7 +38,6 @@ import {
 import { type ValidatorNode } from "./sets/morph.ts"
 import { type SetKind } from "./sets/set.ts"
 import {
-	type BranchKind,
 	type BranchSchema,
 	type parseSchemaBranches,
 	type validateSchemaBranch
@@ -262,43 +260,6 @@ const defaultValueSerializer = (v: unknown): JsonData => {
 	return compileSerializedValue(v)
 }
 
-// const parseListedRules = (
-// 	schemas: RuleSchemaSet
-// ): CollapsedIntersectionInner => {
-// 	const basis = schemas[0] ? maybeParseBasis(schemas[0]) : undefined
-// 	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
-// 	const constraintContext: ParseContext = { basis }
-// 	for (let i = basis ? 1 : 0; i < schemas.length; i++) {
-// 		rules.push(parseConstraint(schemas[i] as never, constraintContext))
-// 	}
-// 	return rules
-// }
-
-// const parseMappedRules = ({
-// 	basis: basisSchema,
-// 	...constraintSchemasByKind
-// }: MappedIntersectionSchema<any>): CollapsedIntersectionInner => {
-// 	const basis = basisSchema ? parseBasis(basisSchema) : undefined
-// 	const rules: mutable<CollapsedIntersectionInner> = basis ? [basis] : []
-// 	const constraintContext: ParseContext = { basis }
-// 	for (const k in constraintSchemasByKind) {
-// 		if (!includes(constraintKinds, k)) {
-// 			return throwParseError(`'${k}' is not a valid constraint kind`)
-// 		}
-// 		const schemas = constraintSchemasByKind[k]
-// 		if (isArray(schemas)) {
-// 			rules.push(
-// 				...schemas.map(
-// 					(schema) => new BaseNode(schema as never, constraintContext)
-// 				)
-// 			)
-// 		} else {
-// 			rules.push(new BaseNode(schemas as never, constraintContext))
-// 		}
-// 	}
-// 	return rules
-// }
-
 export class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
@@ -321,36 +282,47 @@ export class BaseNode<
 	// }
 
 	static parse(branches: BranchSchema[]) {
-		return branches.map((schema) => this.parseRoot(rootKinds, schema))
+		return branches.map((schema) => this.parseNode(rootKinds, schema))
+	}
+
+	static parseConstraint<kind extends ConstraintKind>(
+		kind: kind,
+		schema: Schema<kind>
+	): Node<kind> {
+		return this.parseNodeKind(kind, schema) as never
 	}
 
 	static parseRoot<kind extends RootKind>(
-		allowed: listable<kind>,
+		allowed: readonly kind[],
 		schema: Schema<kind>
-	): Node<kind> {
-		const allowedKinds: readonly NodeKind[] = listFrom(allowed)
-		if (schema instanceof BaseNode && allowedKinds.includes(schema.kind)) {
-			return schema as never
+	): Node<RootKind & (kind | rightOf<kind>)> {
+		return this.parseNode(allowed, schema) as never
+	}
+
+	protected static parseNode(
+		allowed: readonly NodeKind[],
+		schema: unknown
+	): UnknownNode {
+		// constraints should only ever have one kind
+		if (allowed.length === 1) {
+			return this.parseNodeKind(allowed[0], schema)
 		}
-		const kind = rootKindOfSchema(schema)
-		if (
-			(typeof allowed === "string" && allowed !== kind) ||
-			!(allowed as readonly NodeKind[]).includes(kind)
-		) {
+		const kind = rootKindOfSchema(schema as never)
+		if (!includes(allowed, kind)) {
 			return throwParseError(
 				`Schema ${stringify(
 					schema
 				)} of kind ${kind} is not allowed here. Valid kinds are: ${allowed}`
 			)
 		}
-		return this.parseNode(kind, schema) as never
+		return this.parseNodeKind(kind, schema) as never
 	}
 
-	static parseNode<kind extends NodeKind>(
-		kind: kind,
-		schema: Schema<kind>
+	protected static parseNodeKind(
+		kind: NodeKind,
+		schema: unknown
 		// TODO: reducible
-	): Node<kind> {
+	): UnknownNode {
 		const implementation: UnknownNodeImplementation = nodeImplementations[
 			kind
 		] as never
@@ -366,12 +338,9 @@ export class BaseNode<
 			if (keyDefinition.children) {
 				inner[k] = isArray(v)
 					? v.map((childSchema) =>
-							this.parseRoot(
-								keyDefinition.children as never,
-								childSchema as never
-							)
+							this.parseNode(keyDefinition.children!, childSchema)
 					  )
-					: this.parseRoot(keyDefinition.children as never, v as never)
+					: this.parseNode(keyDefinition.children, v)
 			} else if (keyDefinition.parse) {
 				inner[k] = keyDefinition.parse(v, ctx)
 			}
@@ -646,7 +615,12 @@ const rootKindOfSchema = (schema: Schema<RootKind>): RootKind => {
 		case "function":
 			return "proto"
 		case "object":
-			if ("domain" in schema) {
+			if (schema instanceof BaseNode) {
+				if (!includes(rootKinds, schema.kind)) {
+					break
+				}
+				return schema.kind
+			} else if ("domain" in schema) {
 				return "domain"
 			} else if ("proto" in schema) {
 				return "proto"
@@ -658,9 +632,8 @@ const rootKindOfSchema = (schema: Schema<RootKind>): RootKind => {
 				return "union"
 			}
 			return "intersection"
-		default:
-			return throwParseError(`${typeof schema} is not a valid schema type`)
 	}
+	return throwParseError(`${typeof schema} is not a valid schema type`)
 }
 
 export type NodeParser = {
