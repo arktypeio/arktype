@@ -1,4 +1,9 @@
-import { builtins, type ProblemCode, type Root } from "@arktype/schema"
+import {
+	BaseNode,
+	builtins,
+	type ProblemCode,
+	type Root
+} from "@arktype/schema"
 import type { Dict, evaluate, isAny, nominal } from "@arktype/util"
 import {
 	domainOf,
@@ -101,7 +106,7 @@ export type bindThis<def> = { this: Def<def> }
 
 export const bindThis = () => ({
 	// TODO: fix
-	this: builtins().unknown
+	this: BaseNode.builtins.unknown
 })
 
 /** nominal type for an unparsed definition used during scope bootstrapping */

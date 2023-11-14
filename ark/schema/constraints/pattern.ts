@@ -42,10 +42,10 @@ export const PatternImplementation = defineNode({
 			? { pattern: schema.source, flags: schema.flags }
 			: schema,
 	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`,
-	attach: (inner) => {
+	attach: (node) => {
 		return {
-			implicitBasis: builtins().string,
-			condition: `/${inner.pattern}/${inner.flags}.test(${In})`
+			implicitBasis: node.ctor.builtins.string,
+			condition: `/${node.pattern}/${node.flags}.test(${In})`
 		}
 	}
 })

@@ -1,5 +1,5 @@
 import { type extend, type listable } from "@arktype/util"
-import { type RuleAttachments } from "../base.ts"
+import { type BaseNode, type Builtins, type RuleAttachments } from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"
 import { type Node, type Schema } from "../nodes.ts"
 import { type IrreducibleConstraintKind } from "../utils.ts"

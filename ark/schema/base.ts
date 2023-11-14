@@ -151,7 +151,7 @@ export type NodeImplementation<d extends BaseNodeDeclaration> = {
 	keys: InnerKeyDefinitions<d>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (inner: Node<d["kind"]>) => string
-	attach: (inner: d["inner"]) => {
+	attach: (inner: Node<d["kind"]>) => {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
 	reduce?: (
@@ -307,6 +307,7 @@ export class BaseNode<
 	}
 
 	protected readonly implementation: UnknownNodeImplementation
+	readonly ctor = BaseNode
 	readonly alias: string
 	readonly description: string
 	readonly json: Json
@@ -370,10 +371,10 @@ export class BaseNode<
 			(child) => child.contributesReferences
 		)
 		this.contributesReferences = [this, ...this.references]
-		const attachments = this.implementation.attach(inner)
+		const attachments = this.implementation.attach(this as never)
+		// important this is last as writeDefaultDescription could rely on attached
 		Object.assign(this, attachments)
 		this.allows = new CompiledFunction(In, `return true`)
-		// important this is last as writeDefaultDescription could rely on attached
 		this.description =
 			this.inner.description ??
 			this.implementation.writeDefaultDescription(this as never)
@@ -576,29 +577,38 @@ export class BaseNode<
 		return throwParseError(`${typeof schema} is not a valid schema type`)
 	}
 
-	static get builtins() {
-		return {
-			never: this.parse(),
-			unknown: this.parse({}),
-			object: this.parse("object"),
-			number: this.parse("number"),
-			string: this.parse("string"),
-			array: this.parse(Array),
-			date: this.parse(Date),
-			unknownUnion: this.parse(
-				"string",
-				"number",
-				"object",
-				"bigint",
-				"symbol",
-				{ unit: true },
-				{ unit: false },
-				{ unit: null },
-				{ unit: undefined }
-			)
-		}
+	static builtins = {
+		never: new BaseNode<"union", never>("union", { union: [], ordered: false }),
+		unknown: new BaseNode<"intersection", unknown>("intersection", {}),
+		object: new BaseNode<"domain", object>("domain", {
+			domain: "object"
+		}),
+		number: new BaseNode<"domain", number>("domain", {
+			domain: "number"
+		}),
+		string: new BaseNode<"domain", string>("domain", {
+			domain: "string"
+		}),
+		array: new BaseNode<"proto", readonly unknown[]>("proto", {
+			proto: Array
+		}),
+		date: new BaseNode<"proto", Date>("proto", { proto: Date })
+		// // TODO: reduce
+		// unknownUnion: this.parse(
+		// 	"string",
+		// 	"number",
+		// 	"object",
+		// 	"bigint",
+		// 	"symbol",
+		// 	{ unit: true },
+		// 	{ unit: false },
+		// 	{ unit: null },
+		// 	{ unit: undefined }
+		// )
 	}
 }
+
+export type Builtins = typeof BaseNode.builtins
 
 export type NodeParser = {
 	<branches extends readonly unknown[]>(

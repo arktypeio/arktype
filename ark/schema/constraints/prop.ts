@@ -37,8 +37,6 @@ export type RequiredDeclaration = declareNode<{
 const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 	`Props may only be applied to an object basis (was ${getBasisName(basis)})`
 
-// readonly implicitBasis: DomainNode<object> = builtins().object
-
 export const RequiredImplementation = defineNode({
 	kind: "required",
 	keys: {
@@ -65,8 +63,8 @@ export const RequiredImplementation = defineNode({
 	},
 	expand: (schema) => schema as never,
 	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
-	attach: (inner) => ({
-		implicitBasis: builtins().object,
+	attach: (node) => ({
+		implicitBasis: node.ctor.builtins.object,
 		condition: "true"
 	})
 })
@@ -93,10 +91,6 @@ export type OptionalDeclaration = declareNode<{
 	attach: ConstraintAttachments<object>
 }>
 
-// static writeInvalidBasisMessage = writeInvalidBasisMessage
-
-// readonly implicitBasis: DomainNode<object> = builtins().object
-
 export const OptionalImplementation = defineNode({
 	kind: "optional",
 	keys: {
@@ -114,14 +108,14 @@ export const OptionalImplementation = defineNode({
 			const value = l.value.intersect(r.value)
 			return {
 				key: optional,
-				value: value instanceof Disjoint ? builtins().never : value
+				value: value instanceof Disjoint ? l.ctor.builtins.never : value
 			}
 		}
 	},
 	expand: (schema) => schema as never,
 	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
-	attach: (inner) => ({
-		implicitBasis: builtins().object,
+	attach: (node) => ({
+		implicitBasis: node.ctor.builtins.object,
 		condition: "true"
 	})
 })

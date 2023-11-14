@@ -1,5 +1,4 @@
 import { type declareNode, type withAttributes } from "../base.ts"
-import { builtins } from "../builtins.ts"
 import { In } from "../io/compile.ts"
 import { defineNode } from "../utils.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
@@ -37,9 +36,9 @@ export const DivisorImplementation = defineNode({
 		typeof schema === "number" ? { divisor: schema } : schema,
 	writeDefaultDescription: (inner) =>
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
-	attach: (inner) => ({
-		implicitBasis: builtins().number,
-		condition: `${In} % ${inner.divisor} === 0`
+	attach: (node) => ({
+		implicitBasis: node.ctor.builtins.number,
+		condition: `${In} % ${node.divisor} === 0`
 	})
 })
 

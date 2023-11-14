@@ -42,8 +42,6 @@ export const PredicateImplementation = defineNode({
 	})
 })
 
-// readonly implicitBasis = undefined
-
 // static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 // 	return `Cannot narrow ${getBasisName(basis)}`
 // }

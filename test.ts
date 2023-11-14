@@ -10,7 +10,9 @@ const parseNumber2 = node({
 	description: "a well-formed numeric string"
 })
 
-console.log(parseNumber2)
+console.log(parseNumber2.description)
+
+parseNumber2.constraints[0].implicitBasis //?
 
 // parseNumber2
 // const parseNumber = node(

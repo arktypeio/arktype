@@ -1,4 +1,3 @@
-import { type evaluate } from "@arktype/util"
 import { match, when } from "arktype"
 
 const matcher = match({
@@ -8,9 +7,11 @@ const matcher = match({
 	})]: (data) => data.b,
 	boolean: (b) => !b,
 	semver: (s) => s.length
+}).when({ condition: "true" }, (data) => {
+	return data.condition
 })
 
-const base = matcher({}) //({}) //=>?
+const base = matcher({} as unknown) //({}) //=>?
 
 const oneResult = matcher({} as object) //=>?
 

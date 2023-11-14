@@ -34,8 +34,6 @@ export type ProtoDeclaration = declareNode<{
 
 // readonly knownObjectKind = objectKindOf(this.proto)
 // readonly domain = "object"
-// readonly implicitBasis = this
-
 // // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
 export const ProtoImplementation = defineNode({
@@ -51,7 +49,9 @@ export const ProtoImplementation = defineNode({
 				? r
 				: Disjoint.from("proto", l, r),
 		domain: (l, r) =>
-			r.domain === "object" ? l : Disjoint.from("domain", builtins().object, r)
+			r.domain === "object"
+				? l
+				: Disjoint.from("domain", l.ctor.builtins.object, r)
 	},
 	expand: (input) => (typeof input === "function" ? { proto: input } : input),
 	writeDefaultDescription: (inner) => {

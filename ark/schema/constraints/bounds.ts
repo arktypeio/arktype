@@ -1,7 +1,6 @@
 import { constructorExtends, type extend, throwParseError } from "@arktype/util"
 import { type declareNode, type withAttributes } from "../base.ts"
 import type { BasisKind } from "../bases/basis.ts"
-import { builtins } from "../builtins.ts"
 import { Disjoint } from "../disjoint.ts"
 import { In } from "../io/compile.ts"
 import { type Node } from "../nodes.ts"
@@ -29,9 +28,6 @@ export type BoundAttachments<limitKind extends LimitKind> = extend<
 // readonly exclusive = this.inner.exclusive ?? false
 
 // readonly comparator = schemaToComparator(this.inner)
-
-// readonly implicitBasis: Node<BasisKind> & { infer: Boundable } =
-// 	basesByBoundKind[this.boundKind] as never
 
 // 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
 // 		return writeUnboundableMessage(getBasisName(basis))
@@ -98,12 +94,12 @@ export const MinImplementation = defineNode({
 				: "at least"
 		return `${comparisonDescription} ${inner.min}`
 	},
-	attach: (inner) => {
-		const comparator = `>${inner.exclusive ? "" : "="}` as const
+	attach: (node) => {
+		const comparator = `>${node.exclusive ? "" : "="}` as const
 		return {
 			comparator,
-			condition: `${In} ${comparator} ${inner.min}`,
-			implicitBasis: builtins()[inner.boundKind]
+			condition: `${In} ${comparator} ${node.min}`,
+			implicitBasis: node.ctor.builtins[node.boundKind]
 		}
 	}
 })
@@ -164,12 +160,12 @@ export const MaxImplementation = defineNode({
 				: "at most"
 		return `${comparisonDescription} ${inner.max}`
 	},
-	attach: (inner) => {
-		const comparator = `<${inner.exclusive ? "" : "="}` as const
+	attach: (node) => {
+		const comparator = `<${node.exclusive ? "" : "="}` as const
 		return {
 			comparator,
-			condition: `${In} ${comparator} ${inner.max}`,
-			implicitBasis: builtins()[inner.boundKind]
+			condition: `${In} ${comparator} ${node.max}`,
+			implicitBasis: node.ctor.builtins[node.boundKind]
 		}
 	}
 })

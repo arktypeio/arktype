@@ -10,6 +10,7 @@ import type {
 } from "@arktype/schema"
 import {
 	arkKind,
+	BaseNode,
 	builtins,
 	In,
 	inferred,
@@ -300,7 +301,10 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: transform(g.parameters, ([, name]) => [name, builtins().unknown])
+			args: transform(g.parameters, ([, name]) => [
+				name,
+				BaseNode.builtins.unknown
+			])
 		}
 	)
 	return g
