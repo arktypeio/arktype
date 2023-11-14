@@ -118,6 +118,10 @@ export type optionalizeKeys<o, keys extends keyof o> = evaluate<
 	}
 >
 
+export type replaceKey<o, k extends keyof o, v> = evaluate<
+	Omit<o, k> & { [_ in k]: v }
+>
+
 export type valueOf<o> = o[keyof o]
 
 const ShallowClone = class {

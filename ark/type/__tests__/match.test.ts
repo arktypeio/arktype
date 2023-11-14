@@ -1,3 +1,4 @@
+import { type evaluate } from "@arktype/util"
 import { match, when } from "arktype"
 
 const matcher = match({
@@ -9,7 +10,7 @@ const matcher = match({
 	semver: (s) => s.length
 })
 
-const base = matcher({}) //=>?
+const base = matcher({}) //({}) //=>?
 
 const oneResult = matcher({} as object) //=>?
 
