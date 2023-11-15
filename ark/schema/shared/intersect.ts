@@ -1,15 +1,10 @@
 import { throwInternalError } from "@arktype/util"
 import type { UnknownNode } from "../node.ts"
-import {
-	type Node,
-	type NodeDeclarationsByKind,
-	type NodeKind,
-	type OrderedNodeKinds,
-	orderedNodeKinds
-} from "./node.ts"
+import { nodeKinds, type NodeKind, type OrderedNodeKinds } from "./define.ts"
+import type { Node, NodeDeclarationsByKind } from "./node.ts"
 
 export const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
-	for (const kind of orderedNodeKinds) {
+	for (const kind of nodeKinds) {
 		if (l.kind === kind) {
 			return l
 		} else if (r.kind === kind) {

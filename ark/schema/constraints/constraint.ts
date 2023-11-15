@@ -1,4 +1,4 @@
-import { includes, type extend, type listable } from "@arktype/util"
+import type { extend, listable } from "@arktype/util"
 import type { BasisKind } from "../bases/basis.ts"
 import type { Node, Schema } from "../shared/node.ts"
 import type { RuleAttachments } from "../shared/rule.ts"
@@ -17,21 +17,35 @@ import {
 import {
 	OptionalImplementation,
 	RequiredImplementation,
-	type PropDeclarationsByKind
+	type OptionalDeclaration,
+	type RequiredDeclaration
 } from "./prop.ts"
 
-export type ConstraintDeclarationsByKind = extend<
-	PropDeclarationsByKind,
-	{
-		divisor: DivisorDeclaration
-		min: MinDeclaration
-		max: MaxDeclaration
-		pattern: PatternDeclaration
-		predicate: PredicateDeclaration
-	}
+export type ClosedConstraintDeclarations = {
+	divisor: DivisorDeclaration
+	min: MinDeclaration
+	max: MaxDeclaration
+}
+
+export type ClosedConstraintKind = keyof ClosedConstraintDeclarations
+
+export type OpenConstraintDeclarations = {
+	pattern: PatternDeclaration
+	predicate: PredicateDeclaration
+	required: RequiredDeclaration
+	optional: OptionalDeclaration
+}
+
+export type OpenConstraintKind = keyof OpenConstraintDeclarations
+
+export type ConstraintDeclarations = extend<
+	ClosedConstraintDeclarations,
+	OpenConstraintDeclarations
 >
 
-export const ConstraintImplementationByKind = {
+export type ConstraintKind = keyof ConstraintDeclarations
+
+export const ConstraintImplementations = {
 	divisor: DivisorImplementation,
 	min: MinImplementation,
 	max: MaxImplementation,
@@ -39,38 +53,7 @@ export const ConstraintImplementationByKind = {
 	predicate: PredicateImplementation,
 	required: RequiredImplementation,
 	optional: OptionalImplementation
-}
-
-export type ConstraintKind = keyof ConstraintDeclarationsByKind
-
-export const constraintKinds = [
-	"divisor",
-	"max",
-	"min",
-	"pattern",
-	"predicate",
-	"required",
-	"optional"
-] as const satisfies readonly ConstraintKind[]
-
-export const irreducibleConstraintKinds = [
-	"pattern",
-	"predicate",
-	"required",
-	"optional"
-] as const satisfies readonly ConstraintKind[]
-
-export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
-
-export type ReducibleConstraintKind = Exclude<
-	ConstraintKind,
-	IrreducibleConstraintKind
->
-
-// TODO: needed? specify this way?
-export const reducibleConstraintKinds = constraintKinds.filter(
-	(k): k is ReducibleConstraintKind => !includes(irreducibleConstraintKinds, k)
-)
+} as const satisfies Record<ConstraintKind, unknown>
 
 export type ConstraintAttachments<implicitBasisType> = extend<
 	RuleAttachments,
@@ -80,7 +63,7 @@ export type ConstraintAttachments<implicitBasisType> = extend<
 >
 
 export type ConstraintIntersectionInputsByKind = {
-	[k in ConstraintKind]: k extends IrreducibleConstraintKind
+	[k in ConstraintKind]: k extends OpenConstraintKind
 		? Schema<k>
 		: listable<Schema<k>>
 }

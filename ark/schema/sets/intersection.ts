@@ -10,7 +10,7 @@ import {
 import type { BasisKind, parseBasis } from "../bases/basis.ts"
 import type {
 	ConstraintKind,
-	IrreducibleConstraintKind,
+	OpenConstraintKind,
 	constraintInputsByKind
 } from "../constraints/constraint.ts"
 import type {
@@ -18,15 +18,19 @@ import type {
 	declareNode,
 	withAttributes
 } from "../shared/declare.ts"
-import { defineNode } from "../shared/define.ts"
+import {
+	basisKinds,
+	constraintKinds,
+	defineNode,
+	type RuleKind
+} from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import type { Node, Schema } from "../shared/node.ts"
-import type { RuleKind } from "../shared/rule.ts"
 import type { SetAttachments } from "./set.ts"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {
-		[k in ConstraintKind]?: k extends IrreducibleConstraintKind
+		[k in ConstraintKind]?: k extends OpenConstraintKind
 			? readonly Node<k>[]
 			: Node<k>
 	}
@@ -172,15 +176,15 @@ export const flattenRules = (inner: IntersectionInner): RuleSet =>
 export const unflattenRules = (rules: RuleSet): IntersectionInner => {
 	const inner: mutable<IntersectionInner> = {}
 	for (const rule of rules) {
-		if (includes(basisKinds, rule.kind)) {
-			inner.basis = rule as Node<BasisKind>
-		} else if (includes(irreducibleConstraintKinds, rule.kind)) {
+		if (rule.isBasis()) {
+			inner.basis = rule
+		} else if (rule.isOpenConstraint()) {
 			inner[rule.kind] ??= [] as any
 			;(inner as any)[rule.kind].push(rule)
-		} else if (includes(reducibleConstraintKinds, rule.kind)) {
+		} else if (rule.isClosedConstraint()) {
 			if (inner[rule.kind]) {
 				return throwInternalError(
-					`Unexpected intersection of reducible constraints of kind ${rule.kind}`
+					`Unexpected intersection of closed constraints of kind ${rule.kind}`
 				)
 			}
 			inner[rule.kind] = rule as never

@@ -8,14 +8,13 @@ import {
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.ts"
 import { compileSerializedValue } from "./io/compile.ts"
-import type { UnknownNodeImplementation } from "./main.ts"
+import type { NodeKind, UnknownNodeImplementation } from "./main.ts"
 import { BaseNode, type UnknownNode } from "./node.ts"
 import type { parseSchemaBranches, validateSchemaBranch } from "./sets/union.ts"
 import {
 	NodeImplementationByKind,
 	type Inner,
-	type Node,
-	type NodeKind
+	type Node
 } from "./shared/node.ts"
 
 export type ParseContext = {
@@ -85,14 +84,14 @@ export function parseNodeKind(
 			const schemaKeyChildren = expandedSchema[k]
 			if (Array.isArray(schemaKeyChildren)) {
 				const innerKeyChildren = schemaKeyChildren.map((child) =>
-					this.parseNode(keyDefinition.children!, child)
+					BaseNode.parseNode(keyDefinition.children!, child)
 				)
 				inner[k] = innerKeyChildren
 				json[k] = innerKeyChildren.map((child) => child.collapsibleJson)
 				typeJson[k] = innerKeyChildren.map((child) => child.collapsibleJson)
 				children.push(...innerKeyChildren)
 			} else {
-				const innerKeyChild = this.parseNode(
+				const innerKeyChild = BaseNode.parseNode(
 					keyDefinition.children!,
 					schemaKeyChildren
 				)

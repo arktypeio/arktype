@@ -7,17 +7,31 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import { basisKinds, type BasisKind } from "./bases/basis.ts"
-import {
-	constraintKinds,
-	type ConstraintKind
+import type { BasisKind } from "./bases/basis.ts"
+import type {
+	ConstraintKind,
+	OpenConstraintKind
 } from "./constraints/constraint.ts"
 import { In } from "./io/compile.ts"
 import { registry } from "./io/registry.ts"
-import { unflattenRules } from "./main.ts"
+import {
+	NodeImplementationByKind,
+	basisKinds,
+	closedConstraintKinds,
+	constraintKinds,
+	openConstraintKinds,
+	rootKinds,
+	ruleKinds,
+	setKinds,
+	unflattenRules,
+	type NodeKind,
+	type RootKind,
+	type RuleKind,
+	type UnknownNodeImplementation
+} from "./main.ts"
 import { parseNodeKind, type BaseAttachments } from "./parse.ts"
 import type { ValidatorNode } from "./sets/morph.ts"
-import { setKinds, type SetKind } from "./sets/set.ts"
+import type { SetKind } from "./sets/set.ts"
 import type { BaseAttributes } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
@@ -25,15 +39,7 @@ import {
 	type intersectionOf,
 	type rightOf
 } from "./shared/intersect.ts"
-import type {
-	Attachments,
-	Inner,
-	Node,
-	NodeKind,
-	Schema
-} from "./shared/node.ts"
-import { rootKinds, type RootKind } from "./shared/root.ts"
-import { ruleKinds, type RuleKind } from "./shared/rule.ts"
+import type { Attachments, Inner, Node, Schema } from "./shared/node.ts"
 import { inferred } from "./shared/symbols.ts"
 
 export type UnknownNode = BaseNode<any>
@@ -75,10 +81,7 @@ export class BaseNode<
 		return this.parseNode(allowed, schema) as never
 	}
 
-	protected static parseNode(
-		allowed: readonly NodeKind[],
-		schema: unknown
-	): UnknownNode {
+	static parseNode(allowed: readonly NodeKind[], schema: unknown): UnknownNode {
 		// constraints should only ever have one kind
 		if (allowed.length === 1) {
 			return parseNodeKind(allowed[0], schema)
@@ -109,6 +112,7 @@ export class BaseNode<
 	}
 
 	readonly ctor = BaseNode
+	readonly implementation: UnknownNodeImplementation
 	readonly alias: string
 	readonly description: string
 	readonly includesMorph: boolean
@@ -137,6 +141,7 @@ export class BaseNode<
 						failureKind: "false"
 				  })
 		)
+		this.implementation = NodeImplementationByKind[this.kind] as never
 		this.alias = $ark.register(this, this.inner.alias)
 		this.description =
 			this.inner.description ??
@@ -193,8 +198,20 @@ export class BaseNode<
 		return includes(basisKinds, this.kind)
 	}
 
+	isClosedConstraint(): this is Node<ConstraintKind> {
+		return includes(closedConstraintKinds, this.kind)
+	}
+
+	isOpenConstraint(): this is Node<OpenConstraintKind> {
+		return includes(openConstraintKinds, this.kind)
+	}
+
 	isConstraint(): this is Node<ConstraintKind> {
 		return includes(constraintKinds, this.kind)
+	}
+
+	isRoot(): this is Node<RootKind> {
+		return includes(ruleKinds, this.kind)
 	}
 
 	isRule(): this is Node<RuleKind> {

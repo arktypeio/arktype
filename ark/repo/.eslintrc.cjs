@@ -31,6 +31,31 @@ module.exports = defineConfig({
 				ignoreRestSiblings: true
 			}
 		],
+		"@typescript-eslint/default-param-last": "warn",
+		"@typescript-eslint/no-empty-interface": "off",
+		/**
+		 * Imports
+		 */
+		"@typescript-eslint/consistent-type-imports": [
+			"warn",
+			{ fixStyle: "inline-type-imports" }
+		],
+		"@typescript-eslint/no-import-type-side-effects": "warn",
+		"import/no-duplicates": ["warn", { "prefer-inline": true }],
+		// Sort import statements. We don't autofix this in VSCode as we rely on
+		// TS to handle it, otherwise there are conflicts with import type settings
+		"import/order": [
+			"warn",
+			{
+				// Avoid conflicts with TypeScript's organizeImports builtin
+				groups: [["builtin", "external"], "parent", "sibling", "index"],
+				alphabetize: {
+					order: "asc",
+					orderImportKind: "asc"
+				},
+				"newlines-between": "never"
+			}
+		],
 		// Per the typescript-eslint docs: "you must disable the base rule as it can report incorrect errors"
 		"no-restricted-imports": "off",
 		"@typescript-eslint/no-restricted-imports": [
@@ -52,30 +77,6 @@ module.exports = defineConfig({
 						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
 					}
 				]
-			}
-		],
-		"@typescript-eslint/default-param-last": "warn",
-		"@typescript-eslint/consistent-type-imports": [
-			"warn",
-			{ fixStyle: "inline-type-imports" }
-		],
-		"@typescript-eslint/no-import-type-side-effects": "warn",
-		"@typescript-eslint/no-empty-interface": "off",
-		/**
-		 * Imports
-		 */
-		"import/no-duplicates": ["warn", { "prefer-inline": true }],
-		// Sort import statements
-		"import/order": [
-			"warn",
-			{
-				// Avoid conflicts with TypeScript's organizeImports builtin
-				groups: [["builtin", "external"], "parent", "sibling", "index"],
-				alphabetize: {
-					order: "asc",
-					orderImportKind: "asc"
-				},
-				"newlines-between": "never"
 			}
 		],
 		/**

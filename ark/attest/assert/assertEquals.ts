@@ -1,9 +1,6 @@
-import * as assert from "node:assert/strict"
 import { stringify, throwInternalError } from "@arktype/util"
-import {
-	SerializedArgAssertion,
-	type SerializedAssertionData
-} from "../tsserver/getAssertionsInFile.ts"
+import * as assert from "node:assert/strict"
+import type { SerializedAssertionData } from "../tsserver/getAssertionsInFile.ts"
 import type { AssertionContext } from "./attest.ts"
 
 export type ThrowAsertionErrorContext = {

@@ -1,15 +1,25 @@
-import type { extend, satisfy } from "@arktype/util"
+import type { Dict, extend } from "@arktype/util"
+import { BasisImplementations, type BasisDeclarations } from "../bases/basis.ts"
+import {
+	ConstraintImplementations,
+	type ConstraintDeclarations
+} from "../constraints/constraint.ts"
 import type { BaseNode } from "../node.ts"
 import {
 	SetImplementationByKind,
-	setKinds,
 	type SetDeclarationsByKind
 } from "../sets/set.ts"
-import {
-	RuleImplementationByKind,
-	ruleKinds,
-	type RuleDeclarationsByKind
-} from "./rule.ts"
+import type { NodeKind } from "./define.ts"
+
+export type RuleDeclarationsByKind = extend<
+	BasisDeclarations,
+	ConstraintDeclarations
+>
+
+export const RuleImplementationByKind = {
+	...BasisImplementations,
+	...ConstraintImplementations
+}
 
 export type NodeDeclarationsByKind = extend<
 	RuleDeclarationsByKind,
@@ -19,22 +29,7 @@ export type NodeDeclarationsByKind = extend<
 export const NodeImplementationByKind = {
 	...SetImplementationByKind,
 	...RuleImplementationByKind
-}
-
-export type NodeKind = keyof NodeDeclarationsByKind
-
-export const orderedNodeKinds = [
-	...setKinds,
-	...ruleKinds
-] as const satisfies readonly NodeKind[]
-
-export type OrderedNodeKinds = typeof orderedNodeKinds
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type assertIncludesAllKinds = satisfy<OrderedNodeKinds[number], NodeKind>
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
+} as const satisfies Dict<NodeKind>
 
 export type NodeImplementationByKind = typeof NodeImplementationByKind
 

@@ -1,14 +1,10 @@
-import { fileURLToPath } from "node:url"
-import type { CallerOfOptions, SourcePosition } from "@arktype/fs"
-import { caller, getCallStack } from "@arktype/fs"
-import { type ErrorMessage } from "@arktype/util"
-import type { AttestConfig } from "../config.ts"
-import { getConfig } from "../config.ts"
+import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
+import { getConfig, type AttestConfig } from "../config.ts"
 import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.ts"
 import { assertExpectedType } from "./assertEquals.ts"
 import {
-	type AssertionKind,
 	ChainableAssertions,
+	type AssertionKind,
 	type rootAssertions
 } from "./chainableAssertions.ts"
 

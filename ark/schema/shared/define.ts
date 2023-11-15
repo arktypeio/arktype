@@ -1,20 +1,14 @@
 import {
-	type Dict,
 	entriesOf,
+	type Dict,
 	type evaluate,
-	type optionalizeKeys
+	type optionalizeKeys,
+	type satisfy
 } from "@arktype/util"
 import type { ParseContext } from "../parse.ts"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
 import type { rightOf } from "./intersect.ts"
-import type {
-	Declaration,
-	ExpandedSchema,
-	Inner,
-	Node,
-	NodeKind
-} from "./node.ts"
-import type { RootKind } from "./root.ts"
+import type { Declaration, ExpandedSchema, Inner, Node } from "./node.ts"
 
 type BaseAttributeKeyDefinitions = {
 	[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
@@ -77,7 +71,7 @@ export type UnknownNodeImplementation = optionalizeKeys<
 			keys: Dict<string, NodeKeyDefinition<any, any>>
 		}
 	>,
-	"expand"
+	"expand" | "reduce"
 >
 
 type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
@@ -103,6 +97,53 @@ export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
 type reifyIntersectionResult<result> = result extends NodeKind
 	? Inner<result>
 	: result
+
+export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind, t>
+
+export const basisKinds = ["unit", "proto", "domain"] as const
+
+export type BasisKind = (typeof basisKinds)[number]
+
+export const closedConstraintKinds = ["divisor", "max", "min"] as const
+
+export type ClosedConstraintKind = (typeof closedConstraintKinds)[number]
+
+export const openConstraintKinds = [
+	"pattern",
+	"predicate",
+	"required",
+	"optional"
+] as const
+
+export type OpenConstraintKind = (typeof openConstraintKinds)[number]
+
+export const constraintKinds = [
+	...closedConstraintKinds,
+	...openConstraintKinds
+] as const
+
+export type ConstraintKind = (typeof constraintKinds)[number]
+
+export const setKinds = ["union", "morph", "intersection"] as const
+
+export type SetKind = (typeof setKinds)[number]
+
+export const rootKinds = [...setKinds, ...basisKinds] as const
+
+export type RootKind = (typeof rootKinds)[number]
+
+export const ruleKinds = [...basisKinds, ...constraintKinds] as const
+
+export type RuleKind = (typeof ruleKinds)[number]
+
+export const nodeKinds = [...setKinds, ...ruleKinds] as const
+
+export type NodeKind = (typeof nodeKinds)[number]
+
+export type OrderedNodeKinds = typeof nodeKinds
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export const defineNode = <
 	kind extends NodeKind,

@@ -2,10 +2,9 @@ import { isArray, type conform, type extend } from "@arktype/util"
 import { In } from "../io/compile.ts"
 import type { BaseNode } from "../node.ts"
 import type { declareNode, withAttributes } from "../shared/declare.ts"
-import { defineNode } from "../shared/define.ts"
+import { basisKinds, defineNode, type RootKind } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import type { Node, Schema } from "../shared/node.ts"
-import type { RootKind } from "../shared/root.ts"
 import { discriminate, type Discriminant } from "./discriminate.ts"
 import type {
 	MorphSchema,

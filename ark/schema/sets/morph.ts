@@ -12,7 +12,7 @@ import type { NonEnumerableDomain } from "../bases/domain.ts"
 import type { Problem } from "../io/problems.ts"
 import type { CheckResult, TraversalState } from "../io/traverse.ts"
 import type { declareNode, withAttributes } from "../shared/declare.ts"
-import { defineNode } from "../shared/define.ts"
+import { basisKinds, defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import type { ExpandedSchema, Node, Schema } from "../shared/node.ts"
 import type {

@@ -8,9 +8,8 @@
 	"eslint.codeActionsOnSave.rules": [
 		"object-shorthand",
 		"@typescript-eslint/consistent-type-imports",
-		"@typescript-eslint/no-import-type-side-effects",
 		"import/no-duplicates",
-		"import/order"
+		"@typescript-eslint/no-import-type-side-effects"
 	],
 	"eslint.rules.customizations": [
 		// This will still be caught when run from the CLI, but it's too often

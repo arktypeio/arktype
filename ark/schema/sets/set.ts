@@ -1,10 +1,10 @@
-import { type CompilationConfig } from "../io/compile.ts"
+import type { CompilationConfig } from "../io/compile.ts"
 import {
-	type IntersectionDeclaration,
-	IntersectionImplementation
+	IntersectionImplementation,
+	type IntersectionDeclaration
 } from "./intersection.ts"
-import { type MorphDeclaration, MorphImplementation } from "./morph.ts"
-import { type UnionDeclaration, UnionImplementation } from "./union.ts"
+import { MorphImplementation, type MorphDeclaration } from "./morph.ts"
+import { UnionImplementation, type UnionDeclaration } from "./union.ts"
 
 export type SetDeclarationsByKind = {
 	union: UnionDeclaration
@@ -19,12 +19,6 @@ export const SetImplementationByKind = {
 }
 
 export type SetKind = keyof SetDeclarationsByKind
-
-export const setKinds = [
-	"union",
-	"morph",
-	"intersection"
-] as const satisfies readonly SetKind[]
 
 export type SetAttachments = {
 	compile: (ctx: CompilationConfig) => string

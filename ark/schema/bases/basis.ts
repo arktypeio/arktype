@@ -25,25 +25,19 @@ import {
 	type UnitSchema
 } from "./unit.ts"
 
-export type BasisDeclarationsByKind = {
+export type BasisDeclarations = {
 	domain: DomainDeclaration
 	proto: ProtoDeclaration
 	unit: UnitDeclaration
 }
 
-export const BasisImplementationByKind = {
+export const BasisImplementations = {
 	domain: DomainImplementation,
 	proto: ProtoImplementation,
 	unit: UnitImplementation
 }
 
-export type BasisKind = keyof BasisDeclarationsByKind
-
-export const basisKinds = [
-	"unit",
-	"proto",
-	"domain"
-] as const satisfies readonly BasisKind[]
+export type BasisKind = keyof BasisDeclarations
 
 export type BasisAttachments = extend<
 	RuleAttachments,

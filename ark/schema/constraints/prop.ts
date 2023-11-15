@@ -1,18 +1,10 @@
 import type { BasisKind } from "../bases/basis.ts"
 import type { declareNode, withAttributes } from "../shared/declare.ts"
-import { defineNode } from "../shared/define.ts"
+import { defineNode, rootKinds, type RootKind } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
-import type { Node } from "../shared/node.ts"
-import { rootKinds, type RootInput, type RootKind } from "../shared/root.ts"
+import type { Node, Schema } from "../shared/node.ts"
 import type { ConstraintAttachments } from "./constraint.ts"
 import { getBasisName } from "./shared.ts"
-
-export type PropDeclarationsByKind = {
-	required: RequiredDeclaration
-	optional: OptionalDeclaration
-}
-
-export type PropKind = keyof PropDeclarationsByKind
 
 export type RequiredPropInner = withAttributes<{
 	readonly key: string | symbol
@@ -21,7 +13,7 @@ export type RequiredPropInner = withAttributes<{
 
 export type RequiredPropSchema = withAttributes<{
 	readonly key: string | symbol
-	readonly value: RootInput
+	readonly value: Schema<RootKind>
 }>
 
 export type RequiredDeclaration = declareNode<{
@@ -78,7 +70,7 @@ export type OptionalPropInner = withAttributes<{
 
 export type OptionalPropSchema = withAttributes<{
 	readonly key: string | symbol
-	readonly value: RootInput
+	readonly value: Schema<RootKind>
 }>
 
 export type OptionalDeclaration = declareNode<{
