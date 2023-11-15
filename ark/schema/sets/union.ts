@@ -1,24 +1,26 @@
 import { type conform, type extend, isArray } from "@arktype/util"
-import {
-	type BaseNode,
-	type declareNode,
-	type withAttributes
-} from "../base.ts"
-import { type Discriminant, discriminate } from "../discriminate.ts"
-import { Disjoint } from "../disjoint.ts"
 import { In } from "../io/compile.ts"
-import { type Node, type RootKind, type Schema } from "../nodes.ts"
-import { basisKinds, defineNode } from "../utils.ts"
-import {
-	type MorphSchema,
-	type parseMorphSchema,
-	type parseValidatorSchema,
-	type validateMorphSchema,
-	type validateValidator,
-	type ValidatorKind,
-	type ValidatorSchema
+import type {
+	BaseNode,
+	declareNode,
+	Node,
+	RootKind,
+	Schema,
+	withAttributes
+} from "../node.ts"
+import { basisKinds, defineNode } from "../shared/define.ts"
+import { Disjoint } from "../shared/disjoint.ts"
+import { type Discriminant, discriminate } from "./discriminate.ts"
+import type {
+	MorphSchema,
+	parseMorphSchema,
+	parseValidatorSchema,
+	validateMorphSchema,
+	validateValidator,
+	ValidatorKind,
+	ValidatorSchema
 } from "./morph.ts"
-import { type SetAttachments } from "./set.ts"
+import type { SetAttachments } from "./set.ts"
 
 export type BranchKind = "morph" | ValidatorKind
 

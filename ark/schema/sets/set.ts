@@ -20,6 +20,12 @@ export const SetImplementationByKind = {
 
 export type SetKind = keyof SetDeclarationsByKind
 
+export const setKinds = [
+	"union",
+	"morph",
+	"intersection"
+] as const satisfies readonly SetKind[]
+
 export type SetAttachments = {
 	compile: (ctx: CompilationConfig) => string
 }

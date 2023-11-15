@@ -1,14 +1,15 @@
-import type { entryOf } from "@arktype/util"
 import {
 	entriesOf,
+	type entryOf,
 	fromEntries,
 	stringify,
 	throwInternalError,
 	throwParseError,
 	transform
 } from "@arktype/util"
-import { type rightOf } from "./base.ts"
-import { type Node, type RuleKind } from "./nodes.ts"
+import type { rightOf } from "./intersect.ts"
+import type { Node } from "./node.ts"
+import type { RuleKind } from "./rule.ts"
 
 type DisjointKinds = {
 	domain?: {

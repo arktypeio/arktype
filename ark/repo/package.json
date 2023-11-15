@@ -5,7 +5,7 @@
 	"dependencies": {
 		"@arktype/attest": "workspace:*",
 		"@arktype/fs": "workspace:*",
-		"ts-morph": "19.0.0"
+		"ts-morph": "20.0.0"
 	},
 	"scripts": {
 		"build": "echo No build required!"

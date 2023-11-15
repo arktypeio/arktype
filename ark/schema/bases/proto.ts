@@ -1,14 +1,14 @@
-import type { Constructor } from "@arktype/util"
 import {
+	type Constructor,
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
 	objectKindOf
 } from "@arktype/util"
-import { type declareNode, type withAttributes } from "../base.ts"
-import { Disjoint } from "../disjoint.ts"
 import { compileSerializedValue, In } from "../io/compile.ts"
-import { defineNode } from "../utils.ts"
+import { type declareNode, type withAttributes } from "../node.ts"
+import { defineNode } from "../shared/define.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import { type BasisAttachments } from "./basis.ts"
 
 export type ProtoSchema<proto extends Constructor = Constructor> =

@@ -6,8 +6,7 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import { type RuleAttachments } from "../base.ts"
-import { type Node, type Schema } from "../nodes.ts"
+import type { Node, type RuleAttachments, Schema } from "../node.ts"
 import {
 	type DomainDeclaration,
 	DomainImplementation,
@@ -38,6 +37,12 @@ export const BasisImplementationByKind = {
 }
 
 export type BasisKind = keyof BasisDeclarationsByKind
+
+export const basisKinds = [
+	"unit",
+	"proto",
+	"domain"
+] as const satisfies readonly BasisKind[]
 
 export type BasisAttachments = extend<
 	RuleAttachments,

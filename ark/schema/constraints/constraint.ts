@@ -1,8 +1,6 @@
 import { type extend, type listable } from "@arktype/util"
-import { type BaseNode, type Builtins, type RuleAttachments } from "../base.ts"
 import { type BasisKind } from "../bases/basis.ts"
 import { type Node, type Schema } from "../nodes.ts"
-import { type IrreducibleConstraintKind } from "../utils.ts"
 import {
 	type MaxDeclaration,
 	MaxImplementation,
@@ -42,14 +40,42 @@ export const ConstraintImplementationByKind = {
 	optional: OptionalImplementation
 }
 
+export type ConstraintKind = keyof ConstraintDeclarationsByKind
+
+export const constraintKinds = [
+	"divisor",
+	"max",
+	"min",
+	"pattern",
+	"predicate",
+	"required",
+	"optional"
+] as const satisfies readonly ConstraintKind[]
+
+export const irreducibleConstraintKinds = [
+	"pattern",
+	"predicate",
+	"required",
+	"optional"
+] as const satisfies readonly ConstraintKind[]
+
+export type IrreducibleConstraintKind = keyof typeof irreducibleConstraintKinds
+
+export type ReducibleConstraintKind = Exclude<
+	ConstraintKind,
+	IrreducibleConstraintKind
+>
+
+export const reducibleConstraintKinds = constraintKinds.filter(
+	(k): k is ReducibleConstraintKind => !includes(irreducibleConstraintKinds, k)
+)
+
 export type ConstraintAttachments<implicitBasisType> = extend<
 	RuleAttachments,
 	{
 		readonly implicitBasis: Node<BasisKind, implicitBasisType> | undefined
 	}
 >
-
-export type ConstraintKind = keyof ConstraintDeclarationsByKind
 
 export type ConstraintIntersectionInputsByKind = {
 	[k in ConstraintKind]: k extends IrreducibleConstraintKind

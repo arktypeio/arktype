@@ -1,39 +1,39 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 // import { isDeepStrictEqual } from "util"
 // import { type Dict } from "./ark/util/main.ts"
-import { node } from "./ark/schema/main.ts"
-import { wellFormedNumberMatcher } from "./ark/util/main.ts"
+// import { node } from "./ark/schema/main.ts"
+// import { wellFormedNumberMatcher } from "./ark/util/main.ts"
 
-const parseNumber2 = node({
-	basis: "string",
-	pattern: wellFormedNumberMatcher,
-	description: "a well-formed numeric string"
-})
+// const parseNumber2 = node({
+// 	basis: "string",
+// 	pattern: wellFormedNumberMatcher,
+// 	description: "a well-formed numeric string"
+// })
 
-console.log(parseNumber2.description)
+// console.log(parseNumber2.description)
 
-parseNumber2.constraints[0].implicitBasis //?
+// parseNumber2.constraints[0].implicitBasis //?
 
-// parseNumber2
-const parseNumber = node(
-	{
-		in: {
-			basis: "string",
-			pattern: wellFormedNumberMatcher,
-			description: "a well-formed numeric string"
-		},
-		morph: (s: string) => parseFloat(s)
-	},
-	"number"
-)
+// // parseNumber2
+// const parseNumber = node(
+// 	{
+// 		in: {
+// 			basis: "string",
+// 			pattern: wellFormedNumberMatcher,
+// 			description: "a well-formed numeric string"
+// 		},
+// 		morph: (s: string) => parseFloat(s)
+// 	},
+// 	"number"
+// )
 
-parseNumber.description //?
+// parseNumber.description //?
 
-parseNumber.in.description //?
+// parseNumber.in.description //?
 
-parseNumber.out.description //?
+// parseNumber.out.description //?
 
-parseNumber.out.json //?
+// parseNumber.out.json //?
 
 // export const intersectBranches = (
 // 	l: readonly Dict[],

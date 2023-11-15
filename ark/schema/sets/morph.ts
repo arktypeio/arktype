@@ -7,14 +7,19 @@ import {
 	listFrom,
 	throwParseError
 } from "@arktype/util"
-import { type declareNode, type withAttributes } from "../base.ts"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
 import { type NonEnumerableDomain } from "../bases/domain.ts"
-import { Disjoint } from "../disjoint.ts"
 import type { Problem } from "../io/problems.ts"
 import type { CheckResult, TraversalState } from "../io/traverse.ts"
-import { type ExpandedSchema, type Node, type Schema } from "../nodes.ts"
-import { basisKinds, defineNode } from "../utils.ts"
+import type {
+	declareNode,
+	ExpandedSchema,
+	Node,
+	Schema,
+	withAttributes
+} from "../node.ts"
+import { basisKinds, defineNode } from "../shared/define.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	type IntersectionSchema,
 	type parseIntersectionSchema,

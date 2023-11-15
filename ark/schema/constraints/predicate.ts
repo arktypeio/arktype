@@ -1,7 +1,7 @@
-import { type declareNode, type withAttributes } from "../base.ts"
 import { compileSerializedValue, In } from "../io/compile.ts"
 import type { TraversalState } from "../io/traverse.ts"
-import { defineNode } from "../utils.ts"
+import { type declareNode, type withAttributes } from "../node.ts"
+import { defineNode } from "../shared/define.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 
 export type PredicateInner<predicate extends Predicate = Predicate> =

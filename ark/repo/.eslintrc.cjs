@@ -60,26 +60,12 @@ module.exports = defineConfig({
 			}
 		],
 		"@typescript-eslint/default-param-last": "warn",
-		"@typescript-eslint/consistent-type-imports": [
-			"warn",
-			{
-				fixStyle: "inline-type-imports"
-			}
-		],
+		"@typescript-eslint/consistent-type-imports": "warn",
 		"@typescript-eslint/no-empty-interface": "off",
-		/**
-		 * Require the use of arrow functions where possible
-		 */
-		"prefer-arrow-functions/prefer-arrow-functions": [
-			"warn",
-			{
-				disallowPrototype: true
-			}
-		],
 		/**
 		 * Imports
 		 */
-		"import/no-duplicates": "warn",
+		"import/no-duplicates": ["warn", { "prefer-inline": true }],
 		// Sort import statements
 		"import/order": [
 			"warn",
