@@ -1,10 +1,10 @@
-import { constructorExtends, type extend, throwParseError } from "@arktype/util"
+import { constructorExtends, throwParseError, type extend } from "@arktype/util"
 import type { BasisKind } from "../bases/basis.ts"
 import { In } from "../io/compile.ts"
-import { type declareNode, type withAttributes } from "../node.ts"
-import { type Node } from "../nodes.ts"
+import { declareNode, withAttributes } from "../shared/declare.ts"
 import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
+import { Node } from "../shared/node.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 
 export type BoundInner = withAttributes<{

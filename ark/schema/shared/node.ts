@@ -1,14 +1,14 @@
 import type { extend, satisfy } from "@arktype/util"
 import type { BaseNode } from "../node.ts"
 import {
-	type SetDeclarationsByKind,
 	SetImplementationByKind,
-	setKinds
+	setKinds,
+	type SetDeclarationsByKind
 } from "../sets/set.ts"
 import {
-	type RuleDeclarationsByKind,
 	RuleImplementationByKind,
-	ruleKinds
+	ruleKinds,
+	type RuleDeclarationsByKind
 } from "./rule.ts"
 
 export type NodeDeclarationsByKind = extend<

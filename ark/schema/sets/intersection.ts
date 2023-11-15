@@ -1,34 +1,27 @@
 import {
-	type conform,
-	type ErrorMessage,
-	type extend,
 	includes,
-	type mutable,
 	throwInternalError,
-	transform
+	transform,
+	type ErrorMessage,
+	type conform,
+	type extend,
+	type mutable
 } from "@arktype/util"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
-import {
-	type constraintInputsByKind,
-	type ConstraintKind
+import type {
+	IrreducibleConstraintKind,
+	type ConstraintKind,
+	type constraintInputsByKind
 } from "../constraints/constraint.ts"
 import type {
 	BaseAttributes,
 	declareNode,
-	Node,
-	RuleKind,
-	Schema,
 	withAttributes
-} from "../node.ts"
-import {
-	basisKinds,
-	constraintKinds,
-	defineNode,
-	type IrreducibleConstraintKind,
-	irreducibleConstraintKinds,
-	reducibleConstraintKinds
-} from "../shared/define.ts"
+} from "../shared/declare.ts"
+import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
+import type { Node, Schema } from "../shared/node.ts"
+import type { RuleKind } from "../shared/rule.ts"
 import { type SetAttachments } from "./set.ts"
 
 export type IntersectionInner = withAttributes<

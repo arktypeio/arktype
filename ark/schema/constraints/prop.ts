@@ -1,8 +1,9 @@
 import { type BasisKind } from "../bases/basis.ts"
-import { type declareNode, type withAttributes } from "../node.ts"
-import { type Node, type RootInput, type RootKind } from "../nodes.ts"
-import { defineNode, rootKinds } from "../shared/define.ts"
+import { declareNode, withAttributes } from "../shared/declare.ts"
+import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
+import { Node } from "../shared/node.ts"
+import { RootInput, RootKind, rootKinds } from "../shared/root.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 import { getBasisName } from "./shared.ts"
 

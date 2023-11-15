@@ -6,21 +6,22 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import type { Node, type RuleAttachments, Schema } from "../node.ts"
+import { Node, Schema } from "../shared/node.ts"
+import { RuleAttachments } from "../shared/rule.ts"
 import {
-	type DomainDeclaration,
 	DomainImplementation,
+	type DomainDeclaration,
 	type DomainSchema,
 	type NonEnumerableDomain
 } from "./domain.ts"
 import {
-	type ProtoDeclaration,
 	ProtoImplementation,
+	type ProtoDeclaration,
 	type ProtoSchema
 } from "./proto.ts"
 import {
-	type UnitDeclaration,
 	UnitImplementation,
+	type UnitDeclaration,
 	type UnitSchema
 } from "./unit.ts"
 

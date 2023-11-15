@@ -1,24 +1,20 @@
-import { type conform, type extend, isArray } from "@arktype/util"
+import { isArray, type conform, type extend } from "@arktype/util"
 import { In } from "../io/compile.ts"
-import type {
-	BaseNode,
-	declareNode,
-	Node,
-	RootKind,
-	Schema,
-	withAttributes
-} from "../node.ts"
-import { basisKinds, defineNode } from "../shared/define.ts"
+import { BaseNode } from "../node.ts"
+import { declareNode, withAttributes } from "../shared/declare.ts"
+import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
-import { type Discriminant, discriminate } from "./discriminate.ts"
+import { Node, Schema } from "../shared/node.ts"
+import { RootKind } from "../shared/root.ts"
+import { discriminate, type Discriminant } from "./discriminate.ts"
 import type {
 	MorphSchema,
+	ValidatorKind,
+	ValidatorSchema,
 	parseMorphSchema,
 	parseValidatorSchema,
 	validateMorphSchema,
-	validateValidator,
-	ValidatorKind,
-	ValidatorSchema
+	validateValidator
 } from "./morph.ts"
 import type { SetAttachments } from "./set.ts"
 

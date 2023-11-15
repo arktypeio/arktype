@@ -1,5 +1,5 @@
 import { In } from "../io/compile.ts"
-import { type declareNode, type withAttributes } from "../node.ts"
+import { declareNode, withAttributes } from "../shared/declare.ts"
 import { defineNode } from "../shared/define.ts"
 import { type ConstraintAttachments } from "./constraint.ts"
 

@@ -1,37 +1,38 @@
-import type {
-	BaseAttributes,
-	CheckResult,
-	inferMorphOut,
-	inferNarrow,
-	Morph,
-	Out,
-	Predicate,
-	Root
-} from "@arktype/schema"
 import {
-	arkKind,
+	BaseAttributes,
 	BaseNode,
 	In,
+	TraversalState,
+	arkKind,
 	inferred,
 	registry,
-	TraversalState
+	type CheckResult,
+	type Morph,
+	type Out,
+	type Predicate,
+	type Root,
+	type inferMorphOut,
+	type inferNarrow
 } from "@arktype/schema"
-import type {
-	BuiltinObjectKind,
-	BuiltinObjects,
-	conform,
-	Constructor,
-	Json,
-	Primitive
+import {
+	CompiledFunction,
+	transform,
+	type BuiltinObjectKind,
+	type BuiltinObjects,
+	type Constructor,
+	type Json,
+	type Primitive,
+	type conform
 } from "@arktype/util"
-import { CompiledFunction, transform } from "@arktype/util"
 import type {
 	inferDefinition,
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.ts"
-import type { GenericParamsParseError } from "./parser/generic.ts"
-import { parseGenericParams } from "./parser/generic.ts"
+import {
+	parseGenericParams,
+	type GenericParamsParseError
+} from "./parser/generic.ts"
 import type { inferIntersection } from "./parser/semantic/intersections.ts"
 import type {
 	IndexOneOperator,
@@ -39,8 +40,7 @@ import type {
 	MorphAst,
 	TupleInfixOperator
 } from "./parser/tuple.ts"
-import type { Module, Scope } from "./scope.ts"
-import { bindThis } from "./scope.ts"
+import { bindThis, type Module, type Scope } from "./scope.ts"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a

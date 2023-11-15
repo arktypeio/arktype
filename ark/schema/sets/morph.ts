@@ -1,25 +1,21 @@
 import {
+	listFrom,
+	throwParseError,
 	type Constructor,
 	type evaluate,
 	type exactMessageOnError,
 	type extend,
-	type listable,
-	listFrom,
-	throwParseError
+	type listable
 } from "@arktype/util"
 import { type BasisKind, type parseBasis } from "../bases/basis.ts"
 import { type NonEnumerableDomain } from "../bases/domain.ts"
 import type { Problem } from "../io/problems.ts"
 import type { CheckResult, TraversalState } from "../io/traverse.ts"
-import type {
-	declareNode,
-	ExpandedSchema,
-	Node,
-	Schema,
-	withAttributes
-} from "../node.ts"
-import { basisKinds, defineNode } from "../shared/define.ts"
+
+import { declareNode, withAttributes } from "../shared/declare.ts"
+import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
+import { ExpandedSchema, Node, Schema } from "../shared/node.ts"
 import {
 	type IntersectionSchema,
 	type parseIntersectionSchema,

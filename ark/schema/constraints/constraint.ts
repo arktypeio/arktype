@@ -1,22 +1,23 @@
-import { type extend, type listable } from "@arktype/util"
+import { includes, type extend, type listable } from "@arktype/util"
 import { type BasisKind } from "../bases/basis.ts"
-import { type Node, type Schema } from "../nodes.ts"
+import { Node, Schema } from "../shared/node.ts"
+import { RuleAttachments } from "../shared/rule.ts"
 import {
-	type MaxDeclaration,
 	MaxImplementation,
-	type MinDeclaration,
-	MinImplementation
+	MinImplementation,
+	type MaxDeclaration,
+	type MinDeclaration
 } from "./bounds.ts"
-import { type DivisorDeclaration, DivisorImplementation } from "./divisor.ts"
-import { type PatternDeclaration, PatternImplementation } from "./pattern.ts"
+import { DivisorImplementation, type DivisorDeclaration } from "./divisor.ts"
+import { PatternImplementation, type PatternDeclaration } from "./pattern.ts"
 import {
-	type PredicateDeclaration,
-	PredicateImplementation
+	PredicateImplementation,
+	type PredicateDeclaration
 } from "./predicate.ts"
 import {
 	OptionalImplementation,
-	type PropDeclarationsByKind,
-	RequiredImplementation
+	RequiredImplementation,
+	type PropDeclarationsByKind
 } from "./prop.ts"
 
 export type ConstraintDeclarationsByKind = extend<
@@ -66,6 +67,7 @@ export type ReducibleConstraintKind = Exclude<
 	IrreducibleConstraintKind
 >
 
+// TODO: needed? specify this way?
 export const reducibleConstraintKinds = constraintKinds.filter(
 	(k): k is ReducibleConstraintKind => !includes(irreducibleConstraintKinds, k)
 )

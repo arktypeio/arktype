@@ -20,7 +20,11 @@ import type { ValidatorNode } from "./sets/morph.ts"
 import { type SetKind, setKinds } from "./sets/set.ts"
 import type { BaseAttributes } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
-import { leftOperandOf ,type  rightOf ,type  type intersectionOf } from "./shared/intersect.ts";
+import {
+	leftOperandOf,
+	type rightOf,
+	type intersectionOf
+} from "./shared/intersect.ts"
 import type {
 	Attachments,
 	Inner,

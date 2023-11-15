@@ -4,12 +4,7 @@ const { defineConfig } = require("eslint-define-config")
 module.exports = defineConfig({
 	root: true,
 	parser: "@typescript-eslint/parser",
-	plugins: [
-		"@typescript-eslint",
-		"prefer-arrow-functions",
-		"import",
-		"only-warn"
-	],
+	plugins: ["@typescript-eslint", "import", "only-warn"],
 	extends: [
 		"eslint:recommended",
 		"plugin:@typescript-eslint/recommended",
@@ -67,22 +62,9 @@ module.exports = defineConfig({
 		 */
 		"import/no-duplicates": ["warn", { "prefer-inline": true }],
 		// Sort import statements
-		"import/order": [
-			"warn",
-			{
-				alphabetize: {
-					order: "asc"
-				}
-			}
-		],
+		"import/order": "warn",
 		// Sort destructured variables within a single import statement
-		"sort-imports": [
-			"warn",
-			{
-				ignoreCase: true,
-				ignoreDeclarationSort: true
-			}
-		],
+		"sort-imports": "warn",
 		/**
 		 * Allow more flexible typing
 		 */
