@@ -100,4 +100,23 @@ describe("intersections", () => {
 			'["string","number","object","bigint","symbol",{"is":true},{"is":false},{"is":null},{"is":"undefined"}]'
 		)
 	})
+	// TODO:
+	// it("strict intersection", () => {
+	// 	const T = type(
+	// 		{
+	// 			a: "number",
+	// 			b: "number"
+	// 		},
+	// 		{ keys: "strict" }
+	// 	)
+	// 	const U = type(
+	// 		{
+	// 			a: "number"
+	// 		},
+	// 		{ keys: "strict" }
+	// 	)
+
+	// 	const i = intersection(T, U)
+	// 	//  const i: Type<{ a: number; b: number;}>
+	// })
 })

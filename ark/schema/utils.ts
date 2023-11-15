@@ -1,4 +1,4 @@
-import { includes, type satisfy } from "@arktype/util"
+import { entriesOf, includes, type satisfy } from "@arktype/util"
 import {
 	type instantiateNodeImplementation,
 	type NodeImplementation
@@ -100,5 +100,7 @@ export const defineNode = <
 			meta: true
 		}
 	})
-	return implementation
+	return Object.assign(implementation, {
+		keyEntries: entriesOf(implementation.keys)
+	}) as never
 }

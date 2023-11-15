@@ -3,7 +3,7 @@ import {
 	CompiledFunction,
 	type Dict,
 	DynamicBase,
-	entriesOf,
+	type entriesOf,
 	type evaluate,
 	type extend,
 	hasDomain,
@@ -111,11 +111,17 @@ export type declareNode<
 	} & { [k in Exclude<keyof types, keyof BaseNodeDeclaration>]?: never }
 > = types
 
+type BaseAttributeKeyDefinitions = {
+	[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
+}
+
 export type instantiateNodeImplementation<definition> = evaluate<
 	definition & {
-		keys: {
-			[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
-		}
+		keys: BaseAttributeKeyDefinitions
+	} & {
+		keyEntries: definition extends { keys: infer keys }
+			? entriesOf<keys & BaseAttributeKeyDefinitions>
+			: never
 	}
 >
 
@@ -271,33 +277,49 @@ export class BaseNode<
 		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
 		] as never
-		const expandedSchema: Dict =
-			implementation.expand?.(schema) ?? (schema as Dict)
-		const keyDefinitions: InnerKeyDefinitions<any> = implementation.keys
+		const expandedSchema: Record<string, any> = implementation.expand?.(
+			schema
+		) ?? {
+			...(schema as any)
+		}
 		const inner: Record<string, any> = {}
 		const ctx = createParseContext()
-		const schemaEntries = entriesOf(expandedSchema)
 		let json: Json = {}
 		let typeJson: Json = {}
 		const children: UnknownNode[] = []
-		for (const [k, v] of schemaEntries) {
-			if (!(k in implementation.keys)) {
-				throw new ParseError(`'${k}' is not a valid ${kind} key`)
+		for (const [k, keyDefinition] of implementation.keyEntries) {
+			if (keyDefinition.parse) {
+				// even if expandedSchema[k] is undefined, parse might provide a default value
+				expandedSchema[k] = keyDefinition.parse(expandedSchema[k], ctx)
 			}
-			const keyDefinition = implementation.keys[k]
+			if (!(k in expandedSchema)) {
+				// if there is no parse function and k is undefined, it is an
+				// optional key on both the schema and inner types
+				continue
+			}
 			if (keyDefinition.children) {
-				const childrenAtKey = v as listable<UnknownNode>
-				if (isArray(childrenAtKey)) {
-					json[k] = childrenAtKey.map((child) => child.collapsibleJson)
-					typeJson[k] = childrenAtKey.map((child) => child.collapsibleJson)
-					children.push(...childrenAtKey)
+				const schemaKeyChildren = expandedSchema[k]
+				if (Array.isArray(schemaKeyChildren)) {
+					const innerKeyChildren = schemaKeyChildren.map((child) =>
+						this.parseNode(keyDefinition.children!, child)
+					)
+					inner[k] = innerKeyChildren
+					json[k] = innerKeyChildren.map((child) => child.collapsibleJson)
+					typeJson[k] = innerKeyChildren.map((child) => child.collapsibleJson)
+					children.push(...innerKeyChildren)
 				} else {
-					json[k] = childrenAtKey.collapsibleJson
-					typeJson[k] = childrenAtKey.collapsibleJson
-					children.push(childrenAtKey)
+					const innerKeyChild = this.parseNode(
+						keyDefinition.children!,
+						schemaKeyChildren
+					)
+					inner[k] = innerKeyChild
+					json[k] = innerKeyChild.collapsibleJson
+					typeJson[k] = innerKeyChild.collapsibleJson
+					children.push(innerKeyChild)
 				}
 			} else {
-				json[k] = defaultValueSerializer(v)
+				inner[k] = expandedSchema[k]
+				json[k] = defaultValueSerializer(keyDefinition)
 				if (!keyDefinition.meta) {
 					typeJson[k] = json[k]
 				}
@@ -313,12 +335,26 @@ export class BaseNode<
 					)
 				}
 			} else {
-				this[k] = v as never
+				this[k] = keyDefinition as never
 			}
+			// remove the schema key so we know we've parsed it
+			delete expandedSchema[k]
+		}
+		// any schema keys remaining at this point have no matching key
+		// definition and are invalid
+		const unknownKeys = Object.keys(expandedSchema)
+		if (unknownKeys.length > 0) {
+			throw new ParseError(
+				`Key${
+					unknownKeys.length === 1
+						? ` ${unknownKeys[0]} is`
+						: `s ${unknownKeys.join(", ")} are`
+				} not valid on ${kind} schema`
+			)
 		}
 		let collapsibleJson = json
 		if (
-			schemaEntries.length === 1 &&
+			Object.keys(expandedSchema).length === 1 &&
 			// the presence expand function indicates a single default key that is collapsible
 			// this helps avoid nodes like `unit` which would otherwise be indiscriminable
 			implementation.expand
@@ -331,23 +367,6 @@ export class BaseNode<
 		}
 		const id = JSON.stringify(json)
 		const typeId = JSON.stringify(typeJson)
-		for (const [k, v] of Object.entries(expandedSchema as Dict)) {
-			if (!keyDefinitions[k]) {
-				return throwParseError(`Key ${k} is not valid on ${kind} schema`)
-			}
-			const keyDefinition = keyDefinitions[k]
-			if (keyDefinition.children) {
-				inner[k] = isArray(v)
-					? v.map((childSchema) =>
-							this.parseNode(keyDefinition.children!, childSchema)
-					  )
-					: this.parseNode(keyDefinition.children, v)
-			} else if (keyDefinition.parse) {
-				inner[k] = keyDefinition.parse(v, ctx)
-			} else {
-				inner[k] = v
-			}
-		}
 		const reducedInner = implementation.reduce?.(inner) ?? inner
 		return reducedInner instanceof BaseNode
 			? reducedInner
@@ -368,7 +387,6 @@ export class BaseNode<
 		})
 	}
 
-	protected readonly implementation: UnknownNodeImplementation
 	readonly ctor = BaseNode
 	readonly alias: string
 	readonly description: string
