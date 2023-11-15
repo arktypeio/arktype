@@ -53,10 +53,7 @@ export function parseNodeKind(
 	kind: NodeKind,
 	schema: unknown
 	// TODO: reducible
-): UnknownNode {
-	if (schema instanceof BaseNode && schema.kind === kind) {
-		return schema
-	}
+): BaseAttachments {
 	const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 		kind
 	] as never
@@ -151,9 +148,13 @@ export function parseNodeKind(
 	const id = JSON.stringify(json)
 	const typeId = JSON.stringify(typeJson)
 	const reducedInner = implementation.reduce?.(inner) ?? inner
-	return reducedInner instanceof BaseNode
-		? reducedInner
-		: new BaseNode(kind, reducedInner)
+	if (reducedInner instanceof BaseNode) {
+		return reducedInner
+	}
+	return new BaseNode({
+		kind,
+		inner: reducedInner
+	})
 }
 
 export type NodeParser = {

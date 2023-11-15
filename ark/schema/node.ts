@@ -70,23 +70,24 @@ export class BaseNode<
 	static parseConstraint<kind extends ConstraintKind>(
 		kind: kind,
 		schema: Schema<kind>
-	): Node<kind> {
-		return parseNodeKind(kind, schema) as never
+	): Node<kind>
+	static parseConstraint(kind: ConstraintKind, schema: unknown): UnknownNode {
+		if (schema instanceof BaseNode && schema.kind === kind) {
+			return schema
+		}
+		const attached = parseNodeKind(kind, schema)
+		return attached instanceof BaseNode ? attached : new BaseNode(attached)
 	}
 
 	static parseRoot<kind extends RootKind>(
 		schema: Schema<kind>,
-		allowed: readonly kind[] = rootKinds as never
-	): Node<RootKind & (kind | rightOf<kind>)> {
-		return this.parseNode(allowed, schema) as never
-	}
-
-	static parseNode(allowed: readonly NodeKind[], schema: unknown): UnknownNode {
-		// constraints should only ever have one kind
-		if (allowed.length === 1) {
-			return parseNodeKind(allowed[0], schema)
+		allowed?: readonly kind[]
+	): Node<RootKind & (kind | rightOf<kind>)>
+	static parseRoot(schema: unknown, allowed = rootKinds): UnknownNode {
+		if (schema instanceof BaseNode && allowed.includes(schema.kind)) {
+			return schema
 		}
-		const kind = this.rootKindOfSchema(schema as never)
+		const kind = this.rootKindOfSchema(schema)
 		if (!includes(allowed, kind)) {
 			return throwParseError(
 				`Schema ${stringify(
@@ -94,7 +95,8 @@ export class BaseNode<
 				)} of kind ${kind} is not allowed here. Valid kinds are: ${allowed}`
 			)
 		}
-		return parseNodeKind(kind, schema) as never
+		const attached = parseNodeKind(kind, schema)
+		return attached instanceof BaseNode ? attached : new BaseNode(attached)
 	}
 
 	static parseUnits<const branches extends readonly unknown[]>(
@@ -327,15 +329,18 @@ export class BaseNode<
 		)
 	}
 
-	static rootKindOfSchema(schema: Schema<RootKind>): RootKind {
+	static rootKindOfSchema(schema: unknown): RootKind {
 		switch (typeof schema) {
 			case "string":
 				return "domain"
 			case "function":
 				return "proto"
 			case "object":
+				if (schema === null) {
+					break
+				}
 				if (schema instanceof BaseNode) {
-					if (!includes(rootKinds, schema.kind)) {
+					if (!schema.isRoot()) {
 						break
 					}
 					return schema.kind
@@ -352,7 +357,7 @@ export class BaseNode<
 				}
 				return "intersection"
 		}
-		return throwParseError(`${typeof schema} is not a valid schema type`)
+		return throwParseError(`${typeof schema} is not a valid root schema type`)
 	}
 
 	static builtins = {
