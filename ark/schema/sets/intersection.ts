@@ -125,7 +125,7 @@ export const IntersectionImplementation = defineNode({
 		}
 		return reducedRulesByKind
 	},
-	attach: (inner) => {
+	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
 			rules: [],
 			constraints: [],
@@ -138,7 +138,7 @@ export const IntersectionImplementation = defineNode({
 					)
 					.join("\n") + "\nreturn true"
 		}
-		for (const [k, v] of entriesOf(inner)) {
+		for (const [k, v] of node.entries) {
 			if (k === "basis") {
 				attachments.rules.push(v)
 			} else if (includes(constraintKinds, k)) {
@@ -249,7 +249,7 @@ type exactBasisMessageOnError<branch, expected> = {
 export type validateIntersectionSchema<schema> =
 	schema extends IntersectionBasis
 		? exactBasisMessageOnError<schema, IntersectionSchema<schema["basis"]>>
-		: IntersectionSchema<undefined>
+		: exactBasisMessageOnError<schema, IntersectionSchema<undefined>>
 
 export type parseIntersectionSchema<schema> =
 	schema extends Required<IntersectionBasis>

@@ -11,6 +11,7 @@ import {
 	type Json,
 	type JsonData,
 	type listable,
+	type optionalizeKeys,
 	ParseError,
 	stringify,
 	throwInternalError,
@@ -162,10 +163,13 @@ export type NodeImplementation<d extends BaseNodeDeclaration> = {
 	// require expand if collapsedSchema is defined
 } & ("collapsedSchema" extends keyof d ? { expand: {} } : {})
 
-type UnknownNodeImplementation = instantiateNodeImplementation<
-	NodeImplementation<BaseNodeDeclaration> & {
-		keys: Dict<string, NodeKeyDefinition<any, any>>
-	}
+type UnknownNodeImplementation = optionalizeKeys<
+	instantiateNodeImplementation<
+		NodeImplementation<BaseNodeDeclaration> & {
+			keys: Dict<string, NodeKeyDefinition<any, any>>
+		}
+	>,
+	"expand"
 >
 
 type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
@@ -292,7 +296,7 @@ export class BaseNode<
 			}
 		}
 		return new BaseNode<"union", branches[number]>("union", {
-			union: uniqueValues.map((unit) => new BaseNode("unit", { unit }))
+			union: uniqueValues.map((unit) => new BaseNode("unit", { is: unit }))
 		})
 	}
 
@@ -359,7 +363,12 @@ export class BaseNode<
 				this[k] = v as never
 			}
 		}
-		if (this.entries.length === 1 && this.entries[0][0] === (kind as never)) {
+		if (
+			this.entries.length === 1 &&
+			// the presence expand function indicates a single default key that is collapsible
+			// this helps avoid nodes like `unit` which would otherwise be indiscriminable
+			this.implementation.expand
+		) {
 			this.collapsibleJson = this.json[kind] as never
 			if (hasDomain(this.collapsibleJson, "object")) {
 				this.json = this.collapsibleJson
@@ -380,7 +389,15 @@ export class BaseNode<
 		const attachments = this.implementation.attach(this as never)
 		// important this is last as writeDefaultDescription could rely on attached
 		Object.assign(this, attachments)
-		this.allows = new CompiledFunction(In, `return true`)
+		this.allows = new CompiledFunction(
+			In,
+			this.isRule()
+				? `return ${this.condition}`
+				: (this as {} as Node<SetKind>).compile({
+						successKind: "true",
+						failureKind: "false"
+				  })
+		)
 		this.description =
 			this.inner.description ??
 			this.implementation.writeDefaultDescription(this as never)
@@ -569,7 +586,7 @@ export class BaseNode<
 					return "domain"
 				} else if ("proto" in schema) {
 					return "proto"
-				} else if ("unit" in schema) {
+				} else if ("is" in schema) {
 					return "unit"
 				} else if ("morph" in schema) {
 					return "morph"
@@ -597,18 +614,6 @@ export class BaseNode<
 			proto: Array
 		}),
 		date: new BaseNode<"proto", Date>("proto", { proto: Date })
-		// // TODO: reduce
-		// unknownUnion: this.parse(
-		// 	"string",
-		// 	"number",
-		// 	"object",
-		// 	"bigint",
-		// 	"symbol",
-		// 	{ unit: true },
-		// 	{ unit: false },
-		// 	{ unit: null },
-		// 	{ unit: undefined }
-		// )
 	}
 }
 

@@ -183,13 +183,13 @@ const getBoundKind = (basis: Node<BasisKind> | undefined): BoundKind => {
 		return basis.domain
 	}
 	if (
-		(basis.kind === "unit" && basis.unit instanceof Array) ||
+		(basis.kind === "unit" && basis.is instanceof Array) ||
 		(basis.kind === "proto" && constructorExtends(basis.proto, Array))
 	) {
 		return "array"
 	}
 	if (
-		(basis.kind === "unit" && basis.unit instanceof Date) ||
+		(basis.kind === "unit" && basis.is instanceof Date) ||
 		(basis.kind === "proto" && constructorExtends(basis.proto, Date))
 	) {
 		return "date"

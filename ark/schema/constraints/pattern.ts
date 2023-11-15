@@ -46,7 +46,7 @@ export const PatternImplementation = defineNode({
 	attach: (node) => {
 		return {
 			implicitBasis: node.ctor.builtins.string,
-			condition: `/${node.pattern}/${node.flags}.test(${In})`
+			condition: `/${node.pattern}/${node.flags ?? ""}.test(${In})`
 		}
 	}
 })

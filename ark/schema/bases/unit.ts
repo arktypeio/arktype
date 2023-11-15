@@ -6,7 +6,7 @@ import { defineNode } from "../utils.ts"
 import { type BasisAttachments } from "./basis.ts"
 
 export type UnitInner<rule = unknown> = withAttributes<{
-	readonly unit: rule
+	readonly is: rule
 }>
 
 export type UnitSchema<rule = unknown> = UnitInner<rule>
@@ -25,17 +25,17 @@ export type UnitDeclaration = declareNode<{
 export const UnitImplementation = defineNode({
 	kind: "unit",
 	keys: {
-		unit: {}
+		is: {}
 	},
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
-			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
 	},
-	writeDefaultDescription: (inner) => stringify(inner.unit),
+	writeDefaultDescription: (inner) => stringify(inner.is),
 	attach: (inner) => ({
 		basisName: stringify(inner),
-		domain: domainOf(inner.unit),
-		condition: `${In} === ${compileSerializedValue(inner.unit)}`
+		domain: domainOf(inner.is),
+		condition: `${In} === ${compileSerializedValue(inner.is)}`
 	})
 })

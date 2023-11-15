@@ -64,7 +64,7 @@ describe("intersections", () => {
 		attest(parseNumber.out.json).snap({})
 	})
 	it("reduces union", () => {
-		const n = node("number", {}, { unit: 5 })
+		const n = node("number", {}, { is: 5 })
 		attest(n.json).snap({})
 	})
 	it("in/out union", () => {
@@ -78,6 +78,12 @@ describe("intersections", () => {
 		attest(n.in.json).snap(["string", "number"])
 		attest(n.out.json).snap({})
 	})
+	it("errors on unknown key", () => {
+		// @ts-expect-error
+		attest(() => node({ foo: "bar", description: "baz" }))
+			.throws.snap("Error: Key foo is not valid on intersection schema")
+			.type.errors.snap()
+	})
 	it("union of all types reduced to unknown", () => {
 		const n = node(
 			"string",
@@ -85,10 +91,10 @@ describe("intersections", () => {
 			"object",
 			"bigint",
 			"symbol",
-			{ unit: true },
-			{ unit: false },
-			{ unit: null },
-			{ unit: undefined }
+			{ is: true },
+			{ is: false },
+			{ is: null },
+			{ is: undefined }
 		)
 		attest(n.json).equals(BaseNode.builtins.unknown.json)
 	})

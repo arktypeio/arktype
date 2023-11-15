@@ -2,6 +2,7 @@ import {
 	type Constructor,
 	type evaluate,
 	type exactMessageOnError,
+	type extend,
 	type listable,
 	listFrom,
 	throwParseError
@@ -19,6 +20,7 @@ import {
 	type parseIntersectionSchema,
 	type validateIntersectionSchema
 } from "./intersection.ts"
+import { type SetAttachments } from "./set.ts"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
@@ -58,6 +60,14 @@ export type MorphSchema = withAttributes<{
 	readonly morph: listable<Morph>
 }>
 
+export type MorphAttachments = extend<
+	SetAttachments,
+	{
+		inCache: ValidatorNode
+		outCache: ValidatorNode
+	}
+>
+
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
 	expandedSchema: MorphSchema
@@ -67,10 +77,7 @@ export type MorphDeclaration = declareNode<{
 		intersection: "morph" | Disjoint
 		default: "morph" | Disjoint
 	}
-	attach: {
-		inCache: ValidatorNode
-		outCache: ValidatorNode
-	}
+	attach: MorphAttachments
 }>
 
 // TODO: recursively extract in

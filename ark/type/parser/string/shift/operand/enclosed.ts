@@ -33,10 +33,10 @@ export const parseEnclosed = (
 		new RegExp(enclosed)
 		s.root = node({ basis: "string", pattern: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
-		s.root = node({ unit: enclosed })
+		s.root = node({ is: enclosed })
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = node({ unit: date, description: token })
+		s.root = node({ is: date, description: token })
 	}
 }
 

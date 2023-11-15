@@ -10,8 +10,8 @@ export type CompiledSuccessKind = "true" | "in" | "out"
 export type CompiledFailureKind = "false" | "problems"
 
 export type CompilationConfig = {
-	successKind?: CompiledSuccessKind
-	failureKind?: CompiledFailureKind
+	successKind: CompiledSuccessKind
+	failureKind: CompiledFailureKind
 }
 
 // TODO: Compilation cache, map config/state to a string
