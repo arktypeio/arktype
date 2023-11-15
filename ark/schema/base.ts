@@ -202,6 +202,7 @@ const defaultValueSerializer = (v: unknown): JsonData => {
 }
 
 type BaseAttachments<kind extends NodeKind = NodeKind> = {
+	readonly kind: kind
 	readonly inner: Inner<kind>
 	readonly json: Json
 	readonly typeJson: Json
@@ -342,13 +343,13 @@ export class BaseNode<
 		}
 		// any schema keys remaining at this point have no matching key
 		// definition and are invalid
-		const unknownKeys = Object.keys(expandedSchema)
-		if (unknownKeys.length > 0) {
+		const invalidKeys = Object.keys(expandedSchema)
+		if (invalidKeys.length > 0) {
 			throw new ParseError(
 				`Key${
-					unknownKeys.length === 1
-						? ` ${unknownKeys[0]} is`
-						: `s ${unknownKeys.join(", ")} are`
+					invalidKeys.length === 1
+						? ` ${invalidKeys[0]} is`
+						: `s ${invalidKeys.join(", ")} are`
 				} not valid on ${kind} schema`
 			)
 		}
@@ -395,11 +396,8 @@ export class BaseNode<
 	readonly contributesReferences: readonly UnknownNode[]
 	readonly allows: (data: unknown) => data is t
 
-	private constructor(
-		public kind: kind,
-		public inner: Inner<kind>
-	) {
-		super()
+	private constructor(baseAttachments: BaseAttachments<kind>) {
+		super(baseAttachments)
 
 		this.includesMorph =
 			this.kind === "morph" ||
@@ -408,7 +406,7 @@ export class BaseNode<
 			(child) => child.contributesReferences
 		)
 		this.contributesReferences = [this, ...this.references]
-		const attachments = this.implementation.attach(this as never)
+		// const attachments = this.implementation.attach(this as never)
 		// important this is last as writeDefaultDescription could rely on attached
 		Object.assign(this, attachments)
 		this.allows = new CompiledFunction(
