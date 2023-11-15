@@ -1,13 +1,13 @@
-import {
-	type Constructor,
-	type Domain,
-	type extend,
-	type inferDomain,
-	type instanceOf,
-	type isAny
+import type {
+	Constructor,
+	Domain,
+	extend,
+	inferDomain,
+	instanceOf,
+	isAny
 } from "@arktype/util"
-import { Node, Schema } from "../shared/node.ts"
-import { RuleAttachments } from "../shared/rule.ts"
+import type { Node, Schema } from "../shared/node.ts"
+import type { RuleAttachments } from "../shared/rule.ts"
 import {
 	DomainImplementation,
 	type DomainDeclaration,

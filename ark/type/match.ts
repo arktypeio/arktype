@@ -1,24 +1,21 @@
-import { type Morph } from "@arktype/schema"
-import {
-	type conform,
-	type entryOf,
-	type ErrorMessage,
-	type evaluate,
-	type extend,
-	type Fn,
-	type intersectUnion,
-	type isDisjoint,
-	type join,
-	overloadOf,
-	type paramsOf,
-	type replaceKey,
-	type returnOf,
-	type unionToTuple,
-	type valueOf
+import type { Morph } from "@arktype/schema"
+import type {
+	conform,
+	entryOf,
+	ErrorMessage,
+	evaluate,
+	Fn,
+	isDisjoint,
+	join,
+	paramsOf,
+	replaceKey,
+	returnOf,
+	unionToTuple,
+	valueOf
 } from "@arktype/util"
-import { type Scope } from "./scope.ts"
-import { type Ark } from "./scopes/ark.ts"
-import { type inferTypeRoot, Type, type validateTypeRoot } from "./type.ts"
+import type { Scope } from "./scope.ts"
+import type { Ark } from "./scopes/ark.ts"
+import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.ts"
 
 type cedille = "¸"
 

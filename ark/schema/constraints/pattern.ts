@@ -1,8 +1,8 @@
 import { throwParseError } from "@arktype/util"
 import { In } from "../io/compile.ts"
-import { declareNode, withAttributes } from "../shared/declare.ts"
+import type { declareNode, withAttributes } from "../shared/declare.ts"
 import { defineNode } from "../shared/define.ts"
-import { type ConstraintAttachments } from "./constraint.ts"
+import type { ConstraintAttachments } from "./constraint.ts"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string

@@ -6,10 +6,10 @@ import {
 	type Constructor
 } from "@arktype/util"
 import { In, compileSerializedValue } from "../io/compile.ts"
-import { declareNode, withAttributes } from "../shared/declare.ts"
+import type { declareNode, withAttributes } from "../shared/declare.ts"
 import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
-import { type BasisAttachments } from "./basis.ts"
+import type { BasisAttachments } from "./basis.ts"
 
 export type ProtoInner<proto extends Constructor = Constructor> =
 	withAttributes<{

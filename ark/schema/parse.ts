@@ -1,23 +1,20 @@
 import {
-	type entriesOf,
+	ParseError,
 	hasDomain,
+	throwInternalError,
 	type Json,
 	type JsonData,
-	ParseError,
-	throwInternalError
+	type entriesOf
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.ts"
 import { compileSerializedValue } from "./io/compile.ts"
 import type { UnknownNodeImplementation } from "./main.ts"
 import { BaseNode, type UnknownNode } from "./node.ts"
+import type { parseSchemaBranches, validateSchemaBranch } from "./sets/union.ts"
 import {
-	type parseSchemaBranches,
-	type validateSchemaBranch
-} from "./sets/union.ts"
-import {
+	NodeImplementationByKind,
 	type Inner,
 	type Node,
-	NodeImplementationByKind,
 	type NodeKind
 } from "./shared/node.ts"
 

@@ -1,15 +1,16 @@
 {
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"editor.formatOnSave": true,
-	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": "always"
-	},
+	"editor.codeActionsOnSave": [
+		"editor.formatOnSave",
+		"source.fixAll",
+		"source.organizeImports"
+	],
 	"eslint.codeActionsOnSave.rules": [
-		"import/order",
-		"sort-imports",
-		"import/no-duplicates",
+		"object-shorthand",
 		"@typescript-eslint/consistent-type-imports",
-		"object-shorthand"
+		"@typescript-eslint/no-import-type-side-effects",
+		"import/no-duplicates",
+		"import/order"
 	],
 	"eslint.rules.customizations": [
 		// This will still be caught when run from the CLI, but it's too often

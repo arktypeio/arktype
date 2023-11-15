@@ -1,11 +1,14 @@
 import { BaseNode, type ProblemCode, type Root } from "@arktype/schema"
-import type { Dict, evaluate, isAny, nominal } from "@arktype/util"
 import {
 	domainOf,
 	hasDomain,
 	isThunk,
 	throwParseError,
-	transform
+	transform,
+	type Dict,
+	type evaluate,
+	type isAny,
+	type nominal
 } from "@arktype/util"
 import {
 	createMatchParser,
@@ -13,45 +16,41 @@ import {
 	type MatchParser,
 	type WhenParser
 } from "./match.ts"
-import type {
-	inferDefinition,
-	validateDefinition
-} from "./parser/definition.ts"
 import {
 	parseObject,
-	writeBadDefinitionTypeMessage
+	writeBadDefinitionTypeMessage,
+	type inferDefinition,
+	type validateDefinition
 } from "./parser/definition.ts"
-import type {
-	GenericDeclaration,
-	GenericParamsParseError
+import {
+	parseGenericParams,
+	type GenericDeclaration,
+	type GenericParamsParseError
 } from "./parser/generic.ts"
-import { parseGenericParams } from "./parser/generic.ts"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.ts"
 import { parseString } from "./parser/string/string.ts"
-import { type type } from "./scopes/ark.ts"
-import type {
-	arkKind,
-	DeclarationParser,
-	DefinitionParser,
-	extractIn,
-	extractOut,
-	Generic,
-	GenericProps,
-	KeyCheckKind,
-	TypeConfig,
-	TypeParser
-} from "./type.ts"
+import type { type } from "./scopes/ark.ts"
 import {
+	Type,
 	addArkKind,
 	createTypeParser,
 	generic,
 	hasArkKind,
-	Type,
-	validateUninstantiatedGeneric
+	validateUninstantiatedGeneric,
+	type DeclarationParser,
+	type DefinitionParser,
+	type Generic,
+	type GenericProps,
+	type KeyCheckKind,
+	type TypeConfig,
+	type TypeParser,
+	type arkKind,
+	type extractIn,
+	type extractOut
 } from "./type.ts"
 
 export type ScopeParser<parent, ambient> = {

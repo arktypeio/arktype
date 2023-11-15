@@ -7,23 +7,23 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import { type BasisKind, basisKinds } from "./bases/basis.ts"
+import { basisKinds, type BasisKind } from "./bases/basis.ts"
 import {
-	type ConstraintKind,
-	constraintKinds
+	constraintKinds,
+	type ConstraintKind
 } from "./constraints/constraint.ts"
 import { In } from "./io/compile.ts"
 import { registry } from "./io/registry.ts"
 import { unflattenRules } from "./main.ts"
-import { type BaseAttachments, parseNodeKind } from "./parse.ts"
+import { parseNodeKind, type BaseAttachments } from "./parse.ts"
 import type { ValidatorNode } from "./sets/morph.ts"
-import { type SetKind, setKinds } from "./sets/set.ts"
+import { setKinds, type SetKind } from "./sets/set.ts"
 import type { BaseAttributes } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
 	leftOperandOf,
-	type rightOf,
-	type intersectionOf
+	type intersectionOf,
+	type rightOf
 } from "./shared/intersect.ts"
 import type {
 	Attachments,
@@ -32,8 +32,8 @@ import type {
 	NodeKind,
 	Schema
 } from "./shared/node.ts"
-import { type RootKind, rootKinds } from "./shared/root.ts"
-import { type RuleKind, ruleKinds } from "./shared/rule.ts"
+import { rootKinds, type RootKind } from "./shared/root.ts"
+import { ruleKinds, type RuleKind } from "./shared/rule.ts"
 import { inferred } from "./shared/symbols.ts"
 
 export type UnknownNode = BaseNode<any>

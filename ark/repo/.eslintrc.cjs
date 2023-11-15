@@ -55,16 +55,27 @@ module.exports = defineConfig({
 			}
 		],
 		"@typescript-eslint/default-param-last": "warn",
-		"@typescript-eslint/consistent-type-imports": "warn",
+		"@typescript-eslint/consistent-type-imports": [
+			"warn",
+			{ fixStyle: "inline-type-imports" }
+		],
+		"@typescript-eslint/no-import-type-side-effects": "warn",
 		"@typescript-eslint/no-empty-interface": "off",
 		/**
 		 * Imports
 		 */
 		"import/no-duplicates": ["warn", { "prefer-inline": true }],
 		// Sort import statements
-		"import/order": "warn",
-		// Sort destructured variables within a single import statement
-		"sort-imports": "warn",
+		"import/order": [
+			"warn",
+			{
+				alphabetize: {
+					order: "asc",
+					orderImportKind: "asc"
+				},
+				"newlines-between": "never"
+			}
+		],
 		/**
 		 * Allow more flexible typing
 		 */

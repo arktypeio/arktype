@@ -7,11 +7,11 @@ import {
 	type extend,
 	type mutable
 } from "@arktype/util"
-import { type BasisKind, type parseBasis } from "../bases/basis.ts"
+import type { BasisKind, parseBasis } from "../bases/basis.ts"
 import type {
+	ConstraintKind,
 	IrreducibleConstraintKind,
-	type ConstraintKind,
-	type constraintInputsByKind
+	constraintInputsByKind
 } from "../constraints/constraint.ts"
 import type {
 	BaseAttributes,
@@ -22,7 +22,7 @@ import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import type { Node, Schema } from "../shared/node.ts"
 import type { RuleKind } from "../shared/rule.ts"
-import { type SetAttachments } from "./set.ts"
+import type { SetAttachments } from "./set.ts"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {

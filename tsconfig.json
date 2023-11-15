@@ -9,6 +9,7 @@
 		// https://github.com/egoist/tsup/issues/647
 		// "composite": true,
 		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true,
 		"isolatedModules": true,
 		"esModuleInterop": true,
 		"resolveJsonModule": true,

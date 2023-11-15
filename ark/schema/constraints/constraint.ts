@@ -1,7 +1,7 @@
 import { includes, type extend, type listable } from "@arktype/util"
-import { type BasisKind } from "../bases/basis.ts"
-import { Node, Schema } from "../shared/node.ts"
-import { RuleAttachments } from "../shared/rule.ts"
+import type { BasisKind } from "../bases/basis.ts"
+import type { Node, Schema } from "../shared/node.ts"
+import type { RuleAttachments } from "../shared/rule.ts"
 import {
 	MaxImplementation,
 	MinImplementation,

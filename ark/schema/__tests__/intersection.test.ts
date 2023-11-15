@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { type BaseNode, node, type Node, type RootKind } from "@arktype/schema"
+import { node, type BaseNode, type Node, type RootKind } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 
 describe("intersections", () => {

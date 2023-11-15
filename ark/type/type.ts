@@ -1,11 +1,11 @@
 import {
-	BaseAttributes,
 	BaseNode,
 	In,
 	TraversalState,
 	arkKind,
 	inferred,
 	registry,
+	type BaseAttributes,
 	type CheckResult,
 	type Morph,
 	type Out,

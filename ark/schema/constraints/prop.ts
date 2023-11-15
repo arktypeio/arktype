@@ -1,10 +1,10 @@
-import { type BasisKind } from "../bases/basis.ts"
-import { declareNode, withAttributes } from "../shared/declare.ts"
+import type { BasisKind } from "../bases/basis.ts"
+import type { declareNode, withAttributes } from "../shared/declare.ts"
 import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
-import { Node } from "../shared/node.ts"
-import { RootInput, RootKind, rootKinds } from "../shared/root.ts"
-import { type ConstraintAttachments } from "./constraint.ts"
+import type { Node } from "../shared/node.ts"
+import { rootKinds, type RootInput, type RootKind } from "../shared/root.ts"
+import type { ConstraintAttachments } from "./constraint.ts"
 import { getBasisName } from "./shared.ts"
 
 export type PropDeclarationsByKind = {
