@@ -321,7 +321,6 @@ export class BaseNode<
 		public inner: Inner<kind>
 	) {
 		super()
-		this.alias = $ark.register(this, this.inner.alias)
 		this.implementation = NodeImplementationByKind[kind] as never
 		this.entries = entriesOf(this.inner)
 		this.json = {}
@@ -354,6 +353,8 @@ export class BaseNode<
 			if (this[k] !== undefined) {
 				// if we attempt to overwrite an existing node key, throw unless
 				// it is expected and can be safely ignored.
+				// in and out cannot overwrite their respective getters, so instead
+				// morph assigns them to `inCache` and `outCache`
 				if (k !== "in" && k !== "out") {
 					throwInternalError(
 						`Unexpected attempt to overwrite existing node key ${k} from ${kind} inner`
@@ -398,6 +399,7 @@ export class BaseNode<
 						failureKind: "false"
 				  })
 		)
+		this.alias = $ark.register(this, this.inner.alias)
 		this.description =
 			this.inner.description ??
 			this.implementation.writeDefaultDescription(this as never)
@@ -546,11 +548,11 @@ export class BaseNode<
 	}
 
 	isUnknown(): this is BaseNode<"intersection", unknown> {
-		return this.hasKind("intersection") && this.children.length === 0
+		return this.equals(BaseNode.builtins.unknown)
 	}
 
 	isNever(): this is BaseNode<"union", never> {
-		return this.hasKind("union") && this.children.length === 0
+		return this.equals(BaseNode.builtins.never)
 	}
 
 	getPath() {
@@ -599,21 +601,39 @@ export class BaseNode<
 	}
 
 	static builtins = {
-		never: new BaseNode<"union", never>("union", { union: [] }),
 		unknown: new BaseNode<"intersection", unknown>("intersection", {}),
-		object: new BaseNode<"domain", object>("domain", {
-			domain: "object"
+		bigint: new BaseNode<"domain", bigint>("domain", {
+			domain: "bigint"
 		}),
 		number: new BaseNode<"domain", number>("domain", {
 			domain: "number"
 		}),
+		object: new BaseNode<"domain", object>("domain", {
+			domain: "object"
+		}),
 		string: new BaseNode<"domain", string>("domain", {
 			domain: "string"
+		}),
+		symbol: new BaseNode<"domain", symbol>("domain", {
+			domain: "symbol"
 		}),
 		array: new BaseNode<"proto", readonly unknown[]>("proto", {
 			proto: Array
 		}),
-		date: new BaseNode<"proto", Date>("proto", { proto: Date })
+		date: new BaseNode<"proto", Date>("proto", { proto: Date }),
+		false: new BaseNode<"unit", false>("unit", {
+			is: false
+		}),
+		null: new BaseNode<"unit", null>("unit", {
+			is: null
+		}),
+		undefined: new BaseNode<"unit", undefined>("unit", {
+			is: undefined
+		}),
+		true: new BaseNode<"unit", true>("unit", {
+			is: true
+		}),
+		never: new BaseNode<"union", never>("union", { union: [] })
 	}
 }
 

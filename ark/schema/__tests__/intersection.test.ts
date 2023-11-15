@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { BaseNode, node, type Node, type RootKind } from "@arktype/schema"
+import { type BaseNode, node, type Node, type RootKind } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 
 describe("intersections", () => {
@@ -96,6 +96,8 @@ describe("intersections", () => {
 			{ is: null },
 			{ is: undefined }
 		)
-		attest(n.json).equals(BaseNode.builtins.unknown.json)
+		attest(n.typeId).snap(
+			'["string","number","object","bigint","symbol",{"is":true},{"is":false},{"is":null},{"is":"undefined"}]'
+		)
 	})
 })
