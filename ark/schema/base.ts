@@ -2,6 +2,7 @@ import {
 	CastableBase,
 	CompiledFunction,
 	type Dict,
+	DynamicBase,
 	entriesOf,
 	type evaluate,
 	type extend,
@@ -194,10 +195,21 @@ const defaultValueSerializer = (v: unknown): JsonData => {
 	return compileSerializedValue(v)
 }
 
+type BaseAttachments<kind extends NodeKind = NodeKind> = {
+	readonly inner: Inner<kind>
+	readonly json: Json
+	readonly typeJson: Json
+	readonly collapsibleJson: Json
+	readonly children: UnknownNode[]
+	readonly entries: entriesOf<Inner<kind>>
+	readonly id: string
+	readonly typeId: string
+}
+
 export class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
-> extends CastableBase<Inner<kind> & Attachments<kind>> {
+> extends DynamicBase<Inner<kind> & Attachments<kind> & BaseAttachments<kind>> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -259,10 +271,66 @@ export class BaseNode<
 		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
 		] as never
-		const expandedSchema = implementation.expand?.(schema) ?? schema
-		const keyDefinitions = implementation.keys
+		const expandedSchema: Dict =
+			implementation.expand?.(schema) ?? (schema as Dict)
+		const keyDefinitions: InnerKeyDefinitions<any> = implementation.keys
 		const inner: Record<string, any> = {}
 		const ctx = createParseContext()
+		const schemaEntries = entriesOf(expandedSchema)
+		let json: Json = {}
+		let typeJson: Json = {}
+		const children: UnknownNode[] = []
+		for (const [k, v] of schemaEntries) {
+			if (!(k in implementation.keys)) {
+				throw new ParseError(`'${k}' is not a valid ${kind} key`)
+			}
+			const keyDefinition = implementation.keys[k]
+			if (keyDefinition.children) {
+				const childrenAtKey = v as listable<UnknownNode>
+				if (isArray(childrenAtKey)) {
+					json[k] = childrenAtKey.map((child) => child.collapsibleJson)
+					typeJson[k] = childrenAtKey.map((child) => child.collapsibleJson)
+					children.push(...childrenAtKey)
+				} else {
+					json[k] = childrenAtKey.collapsibleJson
+					typeJson[k] = childrenAtKey.collapsibleJson
+					children.push(childrenAtKey)
+				}
+			} else {
+				json[k] = defaultValueSerializer(v)
+				if (!keyDefinition.meta) {
+					typeJson[k] = json[k]
+				}
+			}
+			if (this[k] !== undefined) {
+				// if we attempt to overwrite an existing node key, throw unless
+				// it is expected and can be safely ignored.
+				// in and out cannot overwrite their respective getters, so instead
+				// morph assigns them to `inCache` and `outCache`
+				if (k !== "in" && k !== "out") {
+					throwInternalError(
+						`Unexpected attempt to overwrite existing node key ${k} from ${kind} inner`
+					)
+				}
+			} else {
+				this[k] = v as never
+			}
+		}
+		let collapsibleJson = json
+		if (
+			schemaEntries.length === 1 &&
+			// the presence expand function indicates a single default key that is collapsible
+			// this helps avoid nodes like `unit` which would otherwise be indiscriminable
+			implementation.expand
+		) {
+			collapsibleJson = json[kind] as never
+			if (hasDomain(collapsibleJson, "object")) {
+				json = collapsibleJson
+				typeJson = collapsibleJson
+			}
+		}
+		const id = JSON.stringify(json)
+		const typeId = JSON.stringify(typeJson)
 		for (const [k, v] of Object.entries(expandedSchema as Dict)) {
 			if (!keyDefinitions[k]) {
 				return throwParseError(`Key ${k} is not valid on ${kind} schema`)
@@ -304,13 +372,6 @@ export class BaseNode<
 	readonly ctor = BaseNode
 	readonly alias: string
 	readonly description: string
-	readonly json: Json
-	readonly typeJson: Json
-	protected collapsibleJson: Json
-	readonly children: UnknownNode[]
-	readonly entries: entriesOf<Inner<kind>>
-	readonly id: string
-	readonly typeId: string
 	readonly includesMorph: boolean
 	readonly references: readonly UnknownNode[]
 	readonly contributesReferences: readonly UnknownNode[]
@@ -321,65 +382,7 @@ export class BaseNode<
 		public inner: Inner<kind>
 	) {
 		super()
-		this.implementation = NodeImplementationByKind[kind] as never
-		this.entries = entriesOf(this.inner)
-		this.json = {}
-		this.typeJson = {}
-		this.children = []
-		for (const [k, v] of this.entries) {
-			if (!(k in this.implementation.keys)) {
-				throw new ParseError(`'${k}' is not a valid ${this.kind} key`)
-			}
-			const keyDefinition = (
-				this.implementation.keys as InnerKeyDefinitions<any>
-			)[k]
-			if (keyDefinition.children) {
-				const children = v as listable<UnknownNode>
-				if (isArray(children)) {
-					this.json[k] = children.map((child) => child.collapsibleJson)
-					this.typeJson[k] = children.map((child) => child.collapsibleJson)
-					this.children.push(...children)
-				} else {
-					this.json[k] = children.collapsibleJson
-					this.typeJson[k] = children.collapsibleJson
-					this.children.push(children)
-				}
-			} else {
-				this.json[k] = defaultValueSerializer(v)
-				if (!keyDefinition.meta) {
-					this.typeJson[k] = this.json[k]
-				}
-			}
-			if (this[k] !== undefined) {
-				// if we attempt to overwrite an existing node key, throw unless
-				// it is expected and can be safely ignored.
-				// in and out cannot overwrite their respective getters, so instead
-				// morph assigns them to `inCache` and `outCache`
-				if (k !== "in" && k !== "out") {
-					throwInternalError(
-						`Unexpected attempt to overwrite existing node key ${k} from ${kind} inner`
-					)
-				}
-			} else {
-				this[k] = v as never
-			}
-		}
-		if (
-			this.entries.length === 1 &&
-			// the presence expand function indicates a single default key that is collapsible
-			// this helps avoid nodes like `unit` which would otherwise be indiscriminable
-			this.implementation.expand
-		) {
-			this.collapsibleJson = this.json[kind] as never
-			if (hasDomain(this.collapsibleJson, "object")) {
-				this.json = this.collapsibleJson
-				this.typeJson = this.collapsibleJson
-			}
-		} else {
-			this.collapsibleJson = this.json
-		}
-		this.id = JSON.stringify(this.json)
-		this.typeId = JSON.stringify(this.typeJson)
+
 		this.includesMorph =
 			this.kind === "morph" ||
 			this.children.some((child) => child.includesMorph)

@@ -12,7 +12,7 @@ export type SerializationOptions = {
 
 export type Json =
 	| {
-			[k: string]: JsonData
+			[k: string | number]: JsonData
 	  }
 	| readonly JsonData[]
 
