@@ -14,12 +14,7 @@ import {
 	PredicateImplementation,
 	type PredicateDeclaration
 } from "./predicate.ts"
-import {
-	OptionalImplementation,
-	RequiredImplementation,
-	type OptionalDeclaration,
-	type RequiredDeclaration
-} from "./prop.ts"
+import { PropImplementations, type PropDeclarations } from "./props/prop.ts"
 
 export type ClosedConstraintDeclarations = {
 	divisor: DivisorDeclaration
@@ -29,12 +24,13 @@ export type ClosedConstraintDeclarations = {
 
 export type ClosedConstraintKind = keyof ClosedConstraintDeclarations
 
-export type OpenConstraintDeclarations = {
-	pattern: PatternDeclaration
-	predicate: PredicateDeclaration
-	required: RequiredDeclaration
-	optional: OptionalDeclaration
-}
+export type OpenConstraintDeclarations = extend<
+	PropDeclarations,
+	{
+		pattern: PatternDeclaration
+		predicate: PredicateDeclaration
+	}
+>
 
 export type OpenConstraintKind = keyof OpenConstraintDeclarations
 
@@ -51,8 +47,7 @@ export const ConstraintImplementations = {
 	max: MaxImplementation,
 	pattern: PatternImplementation,
 	predicate: PredicateImplementation,
-	required: RequiredImplementation,
-	optional: OptionalImplementation
+	...PropImplementations
 } as const satisfies Record<ConstraintKind, unknown>
 
 export type ConstraintAttachments<implicitBasisType> = extend<
@@ -81,8 +76,8 @@ export type constraintKindOf<t> = {
 				? k
 				: never
 			: basis extends undefined
-			? k
-			: never
+			  ? k
+			  : never
 		: never
 }[ConstraintKind]
 

@@ -18,8 +18,6 @@ export const SetImplementationByKind = {
 	intersection: IntersectionImplementation
 }
 
-export type SetKind = keyof SetDeclarationsByKind
-
 export type SetAttachments = {
 	compile: (ctx: CompilationConfig) => string
 }

@@ -4,7 +4,7 @@ import {
 	wellFormedNumberMatcher
 } from "@arktype/util"
 import { Scope } from "../scope.ts"
-import { type RootScope } from "./ark.ts"
+import type { RootScope } from "./ark.ts"
 import { parsedDate } from "./utils/date.ts"
 
 const number = node({

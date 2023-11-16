@@ -13,6 +13,7 @@ import type {
 	OpenConstraintKind,
 	constraintInputsByKind
 } from "../constraints/constraint.ts"
+import type { UnknownNode } from "../node.ts"
 import type {
 	BaseAttributes,
 	declareNode,
@@ -171,7 +172,9 @@ const reduceRules = (
 }
 
 export const flattenRules = (inner: IntersectionInner): RuleSet =>
-	Object.values(inner).flatMap((v) => (typeof v === "object" ? v : []))
+	Object.values(inner).flatMap((v) =>
+		typeof v === "object" ? (v as UnknownNode) : []
+	)
 
 export const unflattenRules = (rules: RuleSet): IntersectionInner => {
 	const inner: mutable<IntersectionInner> = {}

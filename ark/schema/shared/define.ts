@@ -2,10 +2,10 @@ import {
 	entriesOf,
 	type Dict,
 	type evaluate,
+	type listable,
 	type optionalizeKeys,
 	type satisfy
 } from "@arktype/util"
-import type { ParseContext } from "../node.ts"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
 import type { rightOf } from "./intersect.ts"
 import type { Declaration, ExpandedSchema, Inner, Node } from "./node.ts"
@@ -31,12 +31,20 @@ export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
 	>
 }
 
+export type ParseContext = {
+	basis: Node<BasisKind> | undefined
+}
+
+export const createParseContext = (): ParseContext => ({
+	basis: undefined
+})
+
 export type NodeKeyDefinition<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"]
 > = {
 	meta?: true
-	children?: readonly NodeKind[]
+	children?: listable<NodeKind>
 	parse?: (
 		schema: k extends keyof ExpandedSchema<d["kind"]>
 			? ExpandedSchema<d["kind"]>[k]
@@ -69,6 +77,7 @@ export type UnknownNodeImplementation = optionalizeKeys<
 	instantiateNodeImplementation<
 		NodeImplementation<BaseNodeDeclaration> & {
 			keys: Dict<string, NodeKeyDefinition<any, any>>
+			keyEntries: readonly [never, NodeKeyDefinition<any, any>][]
 		}
 	>,
 	"expand" | "reduce"

@@ -21,7 +21,8 @@
 		"dist",
 		// Ideally we could just exclude main.ts in general, but for now that prevents suggestions from e.g. @arktype/util:
 		// https://github.com/microsoft/TypeScript/issues/51418
-		"./ark/type/main.ts"
+		"./ark/type/main.ts",
+		"./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"prettier.ignorePath": "ark/repo/.prettierignore",
