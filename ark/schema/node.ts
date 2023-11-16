@@ -23,6 +23,7 @@ import { registry } from "./io/registry.ts"
 import { unflattenRules } from "./sets/intersection.ts"
 import type { ValidatorNode } from "./sets/morph.ts"
 import type { parseSchemaBranches, validateSchemaBranch } from "./sets/union.ts"
+import { createBuiltins } from "./shared/builtins.ts"
 import type { BaseAttributes } from "./shared/declare.ts"
 import {
 	basisKinds,
@@ -390,44 +391,8 @@ export class BaseNode<
 		)
 	}
 
-	static builtins = {
-		unknown: new BaseNode<"intersection", unknown>("intersection", {}),
-		bigint: new BaseNode<"domain", bigint>("domain", {
-			domain: "bigint"
-		}),
-		number: new BaseNode<"domain", number>("domain", {
-			domain: "number"
-		}),
-		object: new BaseNode<"domain", object>("domain", {
-			domain: "object"
-		}),
-		string: new BaseNode<"domain", string>("domain", {
-			domain: "string"
-		}),
-		symbol: new BaseNode<"domain", symbol>("domain", {
-			domain: "symbol"
-		}),
-		array: new BaseNode<"proto", readonly unknown[]>("proto", {
-			proto: Array
-		}),
-		date: new BaseNode<"proto", Date>("proto", { proto: Date }),
-		false: new BaseNode<"unit", false>("unit", {
-			is: false
-		}),
-		null: new BaseNode<"unit", null>("unit", {
-			is: null
-		}),
-		undefined: new BaseNode<"unit", undefined>("unit", {
-			is: undefined
-		}),
-		true: new BaseNode<"unit", true>("unit", {
-			is: true
-		}),
-		never: new BaseNode<"union", never>("union", { union: [] })
-	}
+	static builtins = createBuiltins()
 }
-
-export type Builtins = typeof BaseNode.builtins
 
 const defaultValueSerializer = (v: unknown) => {
 	if (
@@ -472,14 +437,6 @@ export const rootKindOfSchema = (schema: unknown): RootKind => {
 	return throwParseError(`${typeof schema} is not a valid root schema type`)
 }
 
-export type NodeParser = {
-	<branches extends readonly unknown[]>(
-		...branches: {
-			[i in keyof branches]: validateSchemaBranch<branches[i]>
-		}
-	): parseSchemaBranches<branches>
-}
-
 // static from<const branches extends readonly unknown[]>(
 // 	schema: {
 // 		branches: {
@@ -493,26 +450,36 @@ export type NodeParser = {
 // 	})
 // }
 
-// const parseRoot: NodeParser = (...branches) =>
-// 	BaseNode.parseRoot(branches) as never
+export type NodeParser = {
+	<branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: validateSchemaBranch<branches[i]>
+		}
+	): parseSchemaBranches<branches>
+}
 
-// const parseUnits = <const branches extends readonly unknown[]>(
-// 	...values: branches
-// ) => BaseNode.parseUnits(values)
+const parseRoot: NodeParser = (...branches) =>
+	BaseNode.parseSchemaKind("union", branches) as never
 
-// static parseUnits<const branches extends readonly unknown[]>(
-// 	values: branches
-// ) {
-// 	const uniqueValues: unknown[] = []
-// 	for (const value of values) {
-// 		if (!uniqueValues.includes(value)) {
-// 			uniqueValues.push(value)
-// 		}
-// 	}
-// 	return new BaseNode<"union", branches[number]>("union", {
-// 		union: uniqueValues.map((unit) => new BaseNode("unit", { is: unit }))
-// 	})
-// }
+type UnitsParser = <const branches extends readonly unknown[]>(
+	...values: branches
+) => branches["length"] extends 1
+	? Node<"unit", branches[0]>
+	: Node<"union" | "unit", branches[number]>
+
+const parseUnits: UnitsParser = (...values) => {
+	const uniqueValues: unknown[] = []
+	for (const value of values) {
+		if (!uniqueValues.includes(value)) {
+			uniqueValues.push(value)
+		}
+	}
+	return BaseNode.parseSchemaKind("union", {
+		union: uniqueValues.map((unit) =>
+			BaseNode.parseSchemaKind("unit", { is: unit })
+		)
+	})
+}
 
 export const node = Object.assign(parseRoot, {
 	units: parseUnits
