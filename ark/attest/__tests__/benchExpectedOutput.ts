@@ -30,22 +30,20 @@ bench(
 	fakeCallOptions
 ).mark({ mean: [2, "ms"], median: [2, "ms"] })
 
-type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
-	? head | tail | MakeComplexType<tail>
+type makeComplexType<S extends string> = S extends `${infer head}${infer tail}`
+	? head | tail | makeComplexType<tail>
 	: S
 
 bench("bench type", () => {
-	return [] as any as MakeComplexType<"defenestration">
+	return {} as makeComplexType<"defenestration">
 }).types([169, "instantiations"])
 
 bench(
 	"bench call and type",
 	() => {
-		return /.*foo.*/.test(
-			"boofoozoo"
-		) as any as MakeComplexType<"antidisestablishmenttarianism">
+		return {} as makeComplexType<"antidisestablishmentarianism">
 	},
 	fakeCallOptions
 )
 	.mean([2, "ms"])
-	.types([349, "instantiations"])
+	.types([337, "instantiations"])

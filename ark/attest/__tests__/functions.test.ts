@@ -1,7 +1,7 @@
-import * as assert from "node:assert/strict"
-import { basename } from "node:path"
 import { attest } from "@arktype/attest"
 import { fileName } from "@arktype/fs"
+import * as assert from "node:assert/strict"
+import { basename } from "node:path"
 
 const n = 5
 const o = { re: "do" }

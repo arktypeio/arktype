@@ -1,12 +1,20 @@
 # Attest
 
+Attest is a testing library that makes your TypeScript types available at runtime, giving you access to precise type-level assertions and performance benchmarks.
+
+Assertions are framework agnostic and can be seamlessly integrated with your existing Vitest, Jest, or Mocha tests.
+
+Benchmarks can run from anywhere and will deterministically report the number of type instantiations contributed by the contents of the `bench` call.
+
+If you've ever wondered how [ArkType](https://github.com/arktypeio/arktype) can guarantee identical behavior between its runtime and static parser implementations and highly optimized editor performance, Attest is your answer⚡
+
 ## Installation
 
 ```bash
 npm install @arktype/attest
 ```
 
-*Note: This package is still in alpha! Your feedback will help us iterate toward a stable 1.0.*
+_Note: This package is still in alpha! Your feedback will help us iterate toward a stable 1.0._
 
 ## Setup
 
@@ -22,29 +30,16 @@ export const mochaGlobalSetup = setup
 export const mochaGlobalTeardown = cleanup
 ```
 
+Bun support is currently pending a [bug in the way their source maps translate to stack traces](https://github.com/oven-sh/bun/issues/7120).
+
 ## Assertions
 
 Here are some simple examples of type assertions and snapshotting:
 
 ```ts
 import { attest } from "@arktype/attest"
-import { test } from "mocha"
 
 const o = { ark: "type" } as const
-
-const shouldThrow = (a: false) => {
-	if (a) {
-		throw new Error(`${a} is not assignable to false`)
-	}
-}
-
-test("value snap", () => {
-	attest(o).snap()
-})
-
-test("type snap", () => {
-	attest(o).type.toString.snap()
-})
 
 test("typed value assertions", () => {
 	// assert the type of `o` is exactly { readonly ark: "type" }
@@ -56,9 +51,23 @@ test("type-only assertions", () => {
 	attest<{ readonly ark: "type" }, typeof o>()
 })
 
+test("value snap", () => {
+	attest(o).snap()
+})
+
+test("type snap", () => {
+	attest(o).type.toString.snap()
+})
+
 test("chained snaps", () => {
 	attest(o).snap().type.toString.snap()
 })
+
+const shouldThrow = (a: false) => {
+	if (a) {
+		throw new Error(`${a} is not assignable to false`)
+	}
+}
 
 test("error and type error snap", () => {
 	// @ts-expect-error
@@ -73,35 +82,27 @@ test("error and type error snap", () => {
 Benches are run separately from tests and don't require any special setup. If the below file was `benches.ts`, you could run it using something like `tsx benches.ts` or `ts-node benches.ts`:
 
 ```ts
-import { bench } from "@arktype/attest"
-
-type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
-	? head | tail | MakeComplexType<tail>
-	: S
-
-bench(
-	"bench call single stat median",
-	() => "boofoozoo".includes("foo")
-	// will snapshot execution time
-).median()
+// Combinatorial template literals often result in expensive types- let's benchmark this one!
+type makeComplexType<s extends string> = s extends `${infer head}${infer tail}`
+	? head | tail | makeComplexType<tail>
+	: s
 
 bench("bench type", () => {
-	return [] as any as MakeComplexType<"defenestration">
-	// will snapshot type instantiation count
-	// can be a bit finicky, sometimes requires the type to be returned or assigned to a variable
-	// if the result is 0, something is probably off :-)
-}).types()
+	return {} as makeComplexType<"defenestration">
+	// This is an inline snapshot that will be populated or compared when you run the file
+}).types([169, "instantiations"])
 
 bench(
-	"bench call and type",
-	() =>
-		/.*foo.*/.test(
-			"boofoozoo"
-		) as any as MakeComplexType<"antidisestablishmenttarianism">
+	"bench runtime and type",
+	() => {
+		return {} as makeComplexType<"antidisestablishmentarianism">
+	},
+	fakeCallOptions
 )
-	// runtime and type benchmarks can be chained for an expression
-	.mean()
-	.types()
+	// Average time it takes the function execute
+	.mean([2, "ms"])
+	// Seems like our type is O(n) with respect to the length of the input- not bad!
+	.types([337, "instantiations"])
 ```
 
 ## Integration

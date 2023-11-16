@@ -30,20 +30,18 @@ bench(
 	fakeCallOptions
 ).mark()
 
-type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
-	? head | tail | MakeComplexType<tail>
+type makeComplexType<S extends string> = S extends `${infer head}${infer tail}`
+	? head | tail | makeComplexType<tail>
 	: S
 
 bench("bench type", () => {
-	return [] as any as MakeComplexType<"defenestration">
+	return {} as makeComplexType<"defenestration">
 }).types()
 
 bench(
 	"bench call and type",
 	() => {
-		return /.*foo.*/.test(
-			"boofoozoo"
-		) as any as MakeComplexType<"antidisestablishmenttarianism">
+		return {} as makeComplexType<"antidisestablishmentarianism">
 	},
 	fakeCallOptions
 )
