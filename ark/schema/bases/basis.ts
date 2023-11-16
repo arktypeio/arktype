@@ -52,13 +52,13 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 	isAny<schema> extends true
 		? any
 		: schema extends NonEnumerableDomain
-		? Node<"domain", inferDomain<schema>>
-		: schema extends Constructor<infer instance>
-		? Node<"proto", instance>
-		: schema extends DomainSchema<infer domain>
-		? Node<"domain", inferDomain<domain>>
-		: schema extends ProtoSchema<infer proto>
-		? Node<"proto", instanceOf<proto>>
-		: schema extends UnitSchema<infer is>
-		? Node<"unit", is>
-		: never
+		  ? Node<"domain", inferDomain<schema>>
+		  : schema extends Constructor<infer instance>
+		    ? Node<"proto", instance>
+		    : schema extends DomainSchema<infer domain>
+		      ? Node<"domain", inferDomain<domain>>
+		      : schema extends ProtoSchema<infer proto>
+		        ? Node<"proto", instanceOf<proto>>
+		        : schema extends UnitSchema<infer is>
+		          ? Node<"unit", is>
+		          : never

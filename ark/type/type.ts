@@ -53,24 +53,24 @@ export type TypeParser<$> = {
 		_1: zero extends "keyof"
 			? validateTypeRoot<one, $>
 			: zero extends "instanceof"
-			? conform<one, Constructor>
-			: zero extends "==="
-			? conform<one, unknown>
-			: conform<one, IndexOneOperator>,
+			  ? conform<one, Constructor>
+			  : zero extends "==="
+			    ? conform<one, unknown>
+			    : conform<one, IndexOneOperator>,
 		..._2: zero extends "==="
 			? rest
 			: zero extends "instanceof"
-			? conform<rest, readonly Constructor[]>
-			: one extends TupleInfixOperator
-			? one extends ":"
-				? [Predicate<extractIn<inferTypeRoot<zero, $>>>]
-				: one extends "=>"
-				? // TODO: centralize
-				  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
-				: one extends "@"
-				? [string | BaseAttributes]
-				: [validateTypeRoot<rest[0], $>]
-			: []
+			  ? conform<rest, readonly Constructor[]>
+			  : one extends TupleInfixOperator
+			    ? one extends ":"
+						? [Predicate<extractIn<inferTypeRoot<zero, $>>>]
+						: one extends "=>"
+						  ? // TODO: centralize
+						    [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
+						  : one extends "@"
+						    ? [string | BaseAttributes]
+						    : [validateTypeRoot<rest[0], $>]
+			    : []
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>
 
 	<params extends string, const def>(
@@ -396,8 +396,8 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
 		? i
 		: o
 	: t extends TerminallyInferredObjectKind | Primitive
-	? t
-	: { [k in keyof t]: extractMorphs<t[k], io> }
+	  ? t
+	  : { [k in keyof t]: extractMorphs<t[k], io> }
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

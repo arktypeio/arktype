@@ -86,6 +86,16 @@ export const IntersectionImplementation = defineNode({
 				] as const
 		)
 	),
+	updateContext: (schema, ctx) => {
+		if (schema.basis === undefined) {
+			return ctx
+		}
+		const basisKind = ctx.ctor.getBasisKindOrThrow(schema.basis)
+		return {
+			...ctx,
+			basis: ctx.ctor.parseSchemaKind(basisKind, schema.basis)
+		}
+	},
 	intersections: {
 		intersection: (l, r) => {
 			let result: readonly Node<RuleKind>[] | Disjoint = l.rules

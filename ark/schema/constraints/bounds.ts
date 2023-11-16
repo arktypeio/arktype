@@ -76,7 +76,8 @@ export const MinImplementation = defineNode({
 		},
 		exclusive: {},
 		boundKind: {
-			parse: (_, ctx) => getBoundKind(ctx.basis)
+			parse: (_, ctx) => getBoundKind(ctx.basis),
+			defaultable: true
 		}
 	},
 	intersections: {
@@ -90,8 +91,8 @@ export const MinImplementation = defineNode({
 					? "after"
 					: "at or after"
 				: inner.exclusive
-				? "more than"
-				: "at least"
+				  ? "more than"
+				  : "at least"
 		return `${comparisonDescription} ${inner.min}`
 	},
 	attach: (node) => {
@@ -138,7 +139,8 @@ export const MaxImplementation = defineNode({
 		},
 		exclusive: {},
 		boundKind: {
-			parse: (_, ctx) => getBoundKind(ctx.basis)
+			parse: (_, ctx) => getBoundKind(ctx.basis),
+			defaultable: true
 		}
 	},
 	intersections: {
@@ -156,8 +158,8 @@ export const MaxImplementation = defineNode({
 					? "before"
 					: "at or before"
 				: inner.exclusive
-				? "less than"
-				: "at most"
+				  ? "less than"
+				  : "at most"
 		return `${comparisonDescription} ${inner.max}`
 	},
 	attach: (node) => {

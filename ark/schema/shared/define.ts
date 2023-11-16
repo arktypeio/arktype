@@ -1,11 +1,12 @@
-import {
-	entriesOf,
-	type Dict,
-	type evaluate,
-	type listable,
-	type optionalizeKeys,
-	type satisfy
+import type {
+	Dict,
+	evaluate,
+	listable,
+	optionalizeKeys,
+	requiredKeyOf,
+	satisfy
 } from "@arktype/util"
+import type { ParseContext, UnknownNode } from "../node.ts"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
 import type { rightOf } from "./intersect.ts"
 import type { Declaration, ExpandedSchema, Inner, Node } from "./node.ts"
@@ -17,9 +18,8 @@ type BaseAttributeKeyDefinitions = {
 export type instantiateNodeImplementation<definition> = evaluate<
 	definition & {
 		keys: BaseAttributeKeyDefinitions
-	} & {
-		keyEntries: definition extends { keys: infer keys }
-			? entriesOf<keys & BaseAttributeKeyDefinitions>
+		defaultableKeys: definition extends { keys: infer keys }
+			? (keyof keys | keyof BaseAttributeKeyDefinitions)[]
 			: never
 	}
 >
@@ -31,20 +31,13 @@ export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
 	>
 }
 
-export type ParseContext = {
-	basis: Node<BasisKind> | undefined
-}
-
-export const createParseContext = (): ParseContext => ({
-	basis: undefined
-})
-
 export type NodeKeyDefinition<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"]
 > = {
 	meta?: true
 	children?: listable<NodeKind>
+	defaultable?: true
 	parse?: (
 		schema: k extends keyof ExpandedSchema<d["kind"]>
 			? ExpandedSchema<d["kind"]>[k]
@@ -54,11 +47,24 @@ export type NodeKeyDefinition<
 	// require parse or children if we can't guarantee the schema value will be valid on inner
 } & (ExpandedSchema<d["kind"]>[k] extends d["inner"][k]
 	? {}
-	: { parse: {} } | { children: {} })
+	: d["inner"][k] extends listable<UnknownNode> | undefined
+	  ? { children: {}; parse?: never }
+	  : // ensure we can provide a default if the key is required on inner but
+	    // optional or not present on schema
+	    k extends Exclude<
+					requiredKeyOf<d["inner"]>,
+					requiredKeyOf<d["expandedSchema"]>
+	      >
+	    ? { parse: {}; children?: never; defaultable: {} }
+	    : { parse: {}; children?: never })
 
-export type NodeImplementation<d extends BaseNodeDeclaration> = {
+export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
+	updateContext?: (
+		schema: d["expandedSchema"],
+		ctx: Readonly<ParseContext>
+	) => ParseContext
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (inner: Node<d["kind"]>) => string
 	attach: (inner: Node<d["kind"]>) => {
@@ -75,12 +81,12 @@ export type NodeImplementation<d extends BaseNodeDeclaration> = {
 
 export type UnknownNodeImplementation = optionalizeKeys<
 	instantiateNodeImplementation<
-		NodeImplementation<BaseNodeDeclaration> & {
+		NodeImplementationInput<BaseNodeDeclaration> & {
 			keys: Dict<string, NodeKeyDefinition<any, any>>
-			keyEntries: readonly [never, NodeKeyDefinition<any, any>][]
+			defaultableKeys: string[]
 		}
 	>,
-	"expand" | "reduce"
+	"expand" | "reduce" | "updateContext"
 >
 
 type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
@@ -154,13 +160,14 @@ export type OrderedNodeKinds = typeof nodeKinds
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
-export const defineNode = <
+export function defineNode<
 	kind extends NodeKind,
-	implementation extends NodeImplementation<Declaration<kind>>
->(
-	implementation: { kind: kind } & implementation
-): instantiateNodeImplementation<implementation> => {
-	Object.assign(implementation.keys, {
+	input extends NodeImplementationInput<Declaration<kind>>
+>(input: { kind: kind } & input): instantiateNodeImplementation<input>
+export function defineNode(
+	input: NodeImplementationInput<any>
+): UnknownNodeImplementation {
+	Object.assign(input.keys, {
 		alias: {
 			meta: true
 		},
@@ -168,7 +175,9 @@ export const defineNode = <
 			meta: true
 		}
 	})
-	return Object.assign(implementation, {
-		keyEntries: entriesOf(implementation.keys)
-	}) as never
+	return Object.assign(input, {
+		defaultableKeys: Object.keys(input.keys).filter(
+			(k) => input.keys[k].defaultable
+		)
+	})
 }

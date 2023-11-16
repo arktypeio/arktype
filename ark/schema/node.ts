@@ -1,7 +1,6 @@
 import {
 	CompiledFunction,
 	DynamicBase,
-	ParseError,
 	entriesOf,
 	hasDomain,
 	includes,
@@ -29,8 +28,8 @@ import {
 	basisKinds,
 	closedConstraintKinds,
 	constraintKinds,
-	createParseContext,
 	openConstraintKinds,
+	rootKinds,
 	ruleKinds,
 	setKinds,
 	type NodeKind,
@@ -127,7 +126,8 @@ export class BaseNode<
 
 	static parseSchemaKind<kind extends NodeKind>(
 		kind: kind,
-		schema: Schema<kind>
+		schema: Schema<kind>,
+		ctx = createParseContext()
 		// TODO: or reduction of kind
 	): UnknownNode {
 		if (schema instanceof BaseNode) {
@@ -144,26 +144,26 @@ export class BaseNode<
 		const expandedSchema = implementation.expand?.(schema) ?? {
 			...(schema as any)
 		}
-		const ctx = createParseContext()
+		const childContext =
+			implementation.updateContext?.(expandedSchema, ctx) ?? ctx
+		const schemaEntries = entriesOf(expandedSchema)
 		const inner: Record<string, unknown> = {}
 		let json: Record<string, unknown> = {}
 		let typeJson: Record<string, unknown> = {}
 		const children: UnknownNode[] = []
-		for (const [k, keyDefinition] of implementation.keyEntries) {
-			if (keyDefinition.parse) {
-				// even if expandedSchema[k] is undefined, parse might provide a default value
-				expandedSchema[k] = keyDefinition.parse(expandedSchema[k], ctx)
-			}
-			if (!(k in expandedSchema)) {
-				// if there is no parse function and k is undefined, it is an
-				// optional key on both the schema and inner types
-				continue
+		for (const [k, v] of schemaEntries) {
+			const keyDefinition = implementation.keys[k]
+			if (!(k in implementation.keys)) {
+				return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 			}
 			if (keyDefinition.children) {
-				const schemaKeyChildren = expandedSchema[k]
-				const innerKeyChildren = listFrom(schemaKeyChildren).map((child) => {
+				const innerKeyChildren = listFrom(v).map((child) => {
 					if (typeof keyDefinition.children === "string") {
-						return this.parseSchemaKind(keyDefinition.children, child)
+						return this.parseSchemaKind(
+							keyDefinition.children,
+							child,
+							childContext
+						)
 					}
 					const rootKind = rootKindOfSchema(child)
 					if (!keyDefinition.children!.includes(rootKind)) {
@@ -175,9 +175,9 @@ export class BaseNode<
 							}`
 						)
 					}
-					return this.parseSchemaKind(rootKind, child)
+					return this.parseSchemaKind(rootKind, child, childContext)
 				})
-				if (isArray(schemaKeyChildren)) {
+				if (isArray(v)) {
 					inner[k] = innerKeyChildren
 					json[k] = innerKeyChildren.map((child) => child.collapsibleJson)
 					typeJson[k] = innerKeyChildren.map((child) => child.collapsibleJson)
@@ -189,26 +189,24 @@ export class BaseNode<
 					children.push(innerKeyChildren[0])
 				}
 			} else {
-				inner[k] = expandedSchema[k]
-				json[k] = defaultValueSerializer(keyDefinition)
+				inner[k] = keyDefinition.parse
+					? keyDefinition.parse(v, childContext)
+					: v
+				json[k] = defaultValueSerializer(v)
 				if (!keyDefinition.meta) {
 					typeJson[k] = json[k]
 				}
 			}
-			// remove the schema key so we know we've parsed it
-			delete expandedSchema[k]
 		}
-		const invalidKeys = Object.keys(expandedSchema)
-		// any schema keys remaining at this point have no matching key
-		// definition and are invalid
-		if (invalidKeys.length > 0) {
-			throw new ParseError(
-				`Key${
-					invalidKeys.length === 1
-						? ` ${invalidKeys[0]} is`
-						: `s ${invalidKeys.join(", ")} are`
-				} not valid on ${kind} schema`
-			)
+		for (const k of implementation.defaultableKeys) {
+			if (inner[k] === undefined) {
+				const defaultableDefinition = implementation.keys[k]
+				inner[k] = defaultableDefinition.parse!(undefined, childContext)
+				json[k] = defaultValueSerializer(inner[k])
+				if (!defaultableDefinition.meta) {
+					typeJson[k] = json[k]
+				}
+			}
 		}
 		const id = JSON.stringify(json)
 		const typeId = JSON.stringify(typeJson)
@@ -338,7 +336,7 @@ export class BaseNode<
 	}
 
 	isRoot(): this is Node<RootKind> {
-		return includes(ruleKinds, this.kind)
+		return includes(rootKinds, this.kind)
 	}
 
 	isRule(): this is Node<RuleKind> {
@@ -464,6 +462,25 @@ export class BaseNode<
 		}
 		return this.#builtins
 	}
+
+	// TODO: this shouldn't be attached here. Use ArkKind to allow checking for BaseNode?
+	static getBasisKindOrThrow(schema: unknown) {
+		const basisKind = maybeGetBasisKind(schema)
+		if (basisKind === undefined) {
+			return throwParseError(
+				`${stringify(
+					schema
+				)} is not a valid basis schema. Please provide one of the following:
+					- A string representing a non-enumerable domain ("string", "number", "object", "bigint", or "symbol")
+					- A constructor like Array
+					- A schema object with one of the following keys:
+					- "domain"
+					- "proto"
+					- "is"`
+			)
+		}
+		return basisKind
+	}
 }
 
 const defaultValueSerializer = (v: unknown) => {
@@ -478,7 +495,41 @@ const defaultValueSerializer = (v: unknown) => {
 	return compileSerializedValue(v)
 }
 
+export type ParseContext = {
+	ctor: typeof BaseNode
+	basis: Node<BasisKind> | undefined
+}
+
+export function createParseContext(): ParseContext {
+	return {
+		ctor: BaseNode,
+		basis: undefined
+	}
+}
+
 export const rootKindOfSchema = (schema: unknown): RootKind => {
+	const basisKind = maybeGetBasisKind(schema)
+	if (basisKind) {
+		return basisKind
+	}
+	if (typeof schema === "object" && schema !== null) {
+		if (schema instanceof BaseNode) {
+			if (schema.isRoot()) {
+				return schema.kind
+			}
+			// otherwise, error at end of function
+		} else if ("morph" in schema) {
+			return "morph"
+		} else if ("union" in schema || isArray(schema)) {
+			return "union"
+		} else {
+			return "intersection"
+		}
+	}
+	return throwParseError(`${schema} is not a valid root schema type`)
+}
+
+export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	switch (typeof schema) {
 		case "string":
 			return "domain"
@@ -486,27 +537,21 @@ export const rootKindOfSchema = (schema: unknown): RootKind => {
 			return "proto"
 		case "object":
 			if (schema === null) {
-				break
+				return
 			}
 			if (schema instanceof BaseNode) {
-				if (!schema.isRoot()) {
-					break
+				if (schema.isBasis()) {
+					return schema.kind
 				}
-				return schema.kind
-			} else if ("domain" in schema) {
+			}
+			if ("domain" in schema) {
 				return "domain"
 			} else if ("proto" in schema) {
 				return "proto"
 			} else if ("is" in schema) {
 				return "unit"
-			} else if ("morph" in schema) {
-				return "morph"
-			} else if ("union" in schema || isArray(schema)) {
-				return "union"
 			}
-			return "intersection"
 	}
-	return throwParseError(`${typeof schema} is not a valid root schema type`)
 }
 
 // static from<const branches extends readonly unknown[]>(
