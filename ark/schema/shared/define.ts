@@ -5,7 +5,7 @@ import {
 	type optionalizeKeys,
 	type satisfy
 } from "@arktype/util"
-import type { ParseContext } from "../parse.ts"
+import type { ParseContext } from "../node.ts"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
 import type { rightOf } from "./intersect.ts"
 import type { Declaration, ExpandedSchema, Inner, Node } from "./node.ts"

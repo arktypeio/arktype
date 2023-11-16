@@ -29,7 +29,9 @@ import {
 	type RootKind,
 	type RuleKind,
 	type UnknownNodeImplementation,
-	type ValidatorNode
+	type ValidatorNode,
+	type parseSchemaBranches,
+	type validateSchemaBranch
 } from "./main.ts"
 import type { SetKind } from "./sets/set.ts"
 import type { BaseAttributes } from "./shared/declare.ts"
@@ -268,7 +270,7 @@ export class BaseNode<
 				ioInner[k] = this.inner[k]
 			}
 		}
-		return BaseNode.parseRoot(ioInner) as never
+		return new BaseNode(ioInner) as never
 	}
 
 	toJSON() {
