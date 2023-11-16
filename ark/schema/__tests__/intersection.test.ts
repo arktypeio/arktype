@@ -82,7 +82,7 @@ describe("intersections", () => {
 		// @ts-expect-error
 		attest(() => node({ foo: "bar", description: "baz" }))
 			.throws.snap("Error: Key foo is not valid on intersection schema")
-			.type.errors.snap()
+			.type.errors.snap("Type 'string' is not assignable to type 'never'.")
 	})
 	it("union of all types reduced to unknown", () => {
 		const n = node(

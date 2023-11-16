@@ -1,6 +1,5 @@
-import type { Domain } from "./domain.ts"
-import { domainOf } from "./domain.ts"
-import { type Fn } from "./functions.ts"
+import { domainOf, type Domain } from "./domain.ts"
+import type { Fn } from "./functions.ts"
 import type { evaluate } from "./generics.ts"
 import { isKeyOf } from "./records.ts"
 
@@ -38,10 +37,10 @@ export type objectKindOf<
 > = object extends data
 	? keyof kinds | undefined
 	: data extends Fn
-	? "Function"
-	: instantiableObjectKind<data, kinds> extends never
-	? keyof kinds | undefined
-	: instantiableObjectKind<data, kinds>
+	  ? "Function"
+	  : instantiableObjectKind<data, kinds> extends never
+	    ? keyof kinds | undefined
+	    : instantiableObjectKind<data, kinds>
 
 type instantiableObjectKind<
 	data extends object,

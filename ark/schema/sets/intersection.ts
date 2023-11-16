@@ -81,7 +81,7 @@ export const IntersectionImplementation = defineNode({
 				[
 					kind,
 					{
-						children: [kind]
+						children: kind
 					}
 				] as const
 		)

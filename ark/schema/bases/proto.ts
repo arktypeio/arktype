@@ -45,25 +45,25 @@ export const ProtoImplementation = defineNode({
 			constructorExtends(l.proto, r.proto)
 				? l
 				: constructorExtends(r.proto, l.proto)
-				? r
-				: Disjoint.from("proto", l, r),
+				  ? r
+				  : Disjoint.from("proto", l, r),
 		domain: (l, r) =>
 			r.domain === "object"
 				? l
 				: Disjoint.from("domain", l.ctor.builtins.object, r)
 	},
 	expand: (input) => (typeof input === "function" ? { proto: input } : input),
-	writeDefaultDescription: (inner) => {
-		const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
+	writeDefaultDescription: (node) => {
+		const knownObjectKind = getExactBuiltinConstructorName(node.proto)
 		return knownObjectKind
 			? objectKindDescriptions[knownObjectKind]
-			: `an instance of ${inner.proto.name}`
+			: `an instance of ${node.proto.name}`
 	},
-	attach: (inner) => ({
-		basisName: `${inner.proto.name}`,
+	attach: (node) => ({
+		basisName: `${node.proto.name}`,
 		domain: "object",
 		condition: `${In} instanceof ${
-			objectKindOf(inner.proto) ?? compileSerializedValue(inner.proto)
+			objectKindOf(node.proto) ?? compileSerializedValue(node.proto)
 		}`
 	})
 })
