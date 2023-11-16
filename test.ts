@@ -5,7 +5,15 @@
 // import { wellFormedNumberMatcher } from "./ark/util/main.ts"
 
 import { isDeepStrictEqual } from "util"
+import type { NodeKind } from "./ark/schema/shared/define.ts"
+import type { Schema } from "./ark/schema/shared/node.ts"
 import type { Dict } from "./ark/util/records.ts"
+
+class Foo<schema extends Schema<kind>, kind extends NodeKind> {
+	constructor(schema: schema) {}
+}
+
+const z = new Foo({ domain: "string" }) //?
 
 // const parseNumber2 = node({
 // 	basis: "string",

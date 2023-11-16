@@ -18,9 +18,12 @@ export type join<
 export type split<
 	s extends string,
 	delimiter extends string,
+	current extends string = "",
 	result extends string[] = []
-> = s extends `${infer head}${delimiter}${infer tail}`
-	? split<tail, delimiter, [...result, head]>
+> = s extends `${infer head}${infer tail}`
+	? head extends delimiter
+		? split<tail, delimiter, "", [...result, current]>
+		: split<tail, delimiter, `${current}${head}`, result>
 	: [...result, s]
 
 export const getPath = (root: unknown, path: string[]): unknown => {
