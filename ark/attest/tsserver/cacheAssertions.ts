@@ -1,6 +1,6 @@
-import { rmSync } from "node:fs"
 import { writeJson } from "@arktype/fs"
-import { type AttestConfig, ensureCacheDirs, getConfig } from "../config.ts"
+import { rmSync } from "node:fs"
+import { ensureCacheDirs, getConfig, type AttestConfig } from "../config.ts"
 import { writeCachedInlineSnapshotUpdates } from "../snapshot/writeSnapshot.ts"
 import { getAssertionsByFile } from "./analysis.ts"
 

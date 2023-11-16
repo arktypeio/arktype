@@ -1,12 +1,13 @@
-import { dirname, join } from "node:path"
 import { fromCwd, type SourcePosition } from "@arktype/fs"
 import * as tsvfs from "@typescript/vfs"
+import { dirname, join } from "node:path"
 import ts from "typescript"
 import { getFileKey } from "../utils.ts"
 
 export class TsServer {
 	programFilePaths!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
+	program = getProgram(this.virtualEnv)
 
 	static #instance: TsServer | null = null
 	static get instance() {

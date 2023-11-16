@@ -1,6 +1,6 @@
+import { ensureDir, fromCwd } from "@arktype/fs"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { ensureDir, fromCwd } from "@arktype/fs"
 
 type MutableAttestConfig = {
 	tsconfig: string | undefined
@@ -55,8 +55,8 @@ const getParamValue = (param: string) => {
 	return value === "true"
 		? true
 		: value === "false"
-		? false
-		: parseFloat(value) ?? value
+		  ? false
+		  : parseFloat(value) ?? value
 }
 
 const addEnvConfig = (config: MutableAttestConfig) => {

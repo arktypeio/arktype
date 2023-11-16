@@ -1,11 +1,11 @@
 import type ts from "typescript"
-import { type StringifiableType } from "./analysis.ts"
+import type { StringifiableType } from "./analysis.ts"
 import {
-	type ArgumentTypes,
 	checkDiagnosticMessages,
 	compareTsTypes,
 	extractArgumentTypesFromCall,
 	getAssertCallLocation,
+	type ArgumentTypes,
 	type SerializedArgAssertion,
 	type SerializedAssertionData
 } from "./getAssertionsInFile.ts"

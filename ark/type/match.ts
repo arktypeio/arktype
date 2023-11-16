@@ -14,7 +14,6 @@ import type {
 	valueOf
 } from "@arktype/util"
 import type { Scope } from "./scope.ts"
-import type { Ark } from "./scopes/ark.ts"
 import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.ts"
 
 type cedille = "¸"
@@ -100,16 +99,6 @@ export type WhenMatchParser<ctx extends MatchContext> = <
 	then: then
 ) => ChainableMatchParser<replaceKey<ctx, "thens", [...ctx["thens"], then]>>
 
-type Z = MatchInvokation<{
-	$: Ark
-	inConstraint: unknown
-	outConstraint: unknown
-	thens: [
-		(data: { a: string; b: (number | bigint)[] }) => (number | bigint)[],
-		(b: boolean) => boolean,
-		(s: string) => number
-	]
-}>
 
 export type MatchInvokation<ctx extends MatchContext> = <
 	data extends ctx["inConstraint"]
