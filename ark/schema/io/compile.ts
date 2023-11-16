@@ -1,5 +1,9 @@
-import type { SerializablePrimitive } from "@arktype/util"
-import { hasDomain, isArray, serializePrimitive } from "@arktype/util"
+import {
+	hasDomain,
+	isArray,
+	serializePrimitive,
+	type SerializablePrimitive
+} from "@arktype/util"
 import type { Discriminant } from "../sets/discriminate.ts"
 import type { ProblemCode, ProblemRules } from "./problems.ts"
 import { registry } from "./registry.ts"

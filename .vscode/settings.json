@@ -19,7 +19,7 @@
 	],
 	"typescript.preferences.autoImportFileExcludePatterns": [
 		"dist",
-		// Ideally we could just exclude main.ts in general, but for now that prevents suggestions from e.g. @arktype/util:
+		// Unfortunately this also prevents suggestions from @arktype/schema:
 		// https://github.com/microsoft/TypeScript/issues/51418
 		"./ark/type/main.ts",
 		"./ark/schema/main.ts"

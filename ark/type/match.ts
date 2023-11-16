@@ -32,12 +32,12 @@ type parseWhentryKey<
 		? ErrorMessage<message>
 		: parseWhentryKey<tail, $, result & { [_ in k]: inferTypeRoot<v, $> }>
 	: s extends serializedWhentry<infer k, infer v>
-	? validateTypeRoot<v, $> extends ErrorMessage<infer message>
-		? ErrorMessage<message>
-		: evaluate<result & { [_ in k]: inferTypeRoot<v, $> }>
-	: validateTypeRoot<s, $> extends ErrorMessage<infer message>
-	? ErrorMessage<message>
-	: never
+	  ? validateTypeRoot<v, $> extends ErrorMessage<infer message>
+			? ErrorMessage<message>
+			: evaluate<result & { [_ in k]: inferTypeRoot<v, $> }>
+	  : validateTypeRoot<s, $> extends ErrorMessage<infer message>
+	    ? ErrorMessage<message>
+	    : never
 
 export type WhenParser<$> = <const def>(
 	def: validateTypeRoot<def, $>
@@ -65,8 +65,8 @@ type validateCases<cases, ctx extends MatchContext> = {
 				In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
 		  ) => ctx["outConstraint"]
 		: parseWhentryKey<k & string, ctx["$"]> extends ErrorMessage<infer message>
-		? ErrorMessage<message>
-		: (In: parseWhentryKey<k & string, ctx["$"]>) => ctx["outConstraint"]
+		  ? ErrorMessage<message>
+		  : (In: parseWhentryKey<k & string, ctx["$"]>) => ctx["outConstraint"]
 }
 
 export type MatchParser<$> = {
@@ -98,7 +98,6 @@ export type WhenMatchParser<ctx extends MatchContext> = <
 	when: validateTypeRoot<def, ctx["$"]>,
 	then: then
 ) => ChainableMatchParser<replaceKey<ctx, "thens", [...ctx["thens"], then]>>
-
 
 export type MatchInvokation<ctx extends MatchContext> = <
 	data extends ctx["inConstraint"]

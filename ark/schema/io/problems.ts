@@ -1,21 +1,16 @@
-import type {
-	arraySubclassToReadonly,
-	BuiltinObjectKind,
-	conform,
-	Constructor,
-	Domain
-} from "@arktype/util"
 import {
 	domainOf,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
-	stringify
+	stringify,
+	type BuiltinObjectKind,
+	type Constructor,
+	type Domain,
+	type arraySubclassToReadonly,
+	type conform
 } from "@arktype/util"
 import { domainDescriptions } from "../bases/domain.ts"
-import {
-	type BoundInner,
-	type NumericallyBoundable
-} from "../constraints/bounds.ts"
+import type { BoundInner, NumericallyBoundable } from "../constraints/bounds.ts"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems
@@ -48,8 +43,8 @@ export abstract class Problem<requirement = unknown, data = unknown> {
 		return this.path.length === 0
 			? capitalize(this.reason)
 			: this.path.length === 1 && typeof this.path[0] === "number"
-			? `Item at index ${this.path[0]} ${this.reason}`
-			: `${this.path.join(".")} ${this.reason}`
+			  ? `Item at index ${this.path[0]} ${this.reason}`
+			  : `${this.path.join(".")} ${this.reason}`
 	}
 
 	get reason() {
@@ -311,17 +306,17 @@ export const sizeOf = (data: unknown) =>
 	typeof data === "string" || Array.isArray(data)
 		? data.length
 		: typeof data === "number"
-		? data
-		: data instanceof Date
-		? data.valueOf()
-		: 0
+		  ? data
+		  : data instanceof Date
+		    ? data.valueOf()
+		    : 0
 
 export const unitsOf = (data: unknown) =>
 	typeof data === "string"
 		? "characters"
 		: Array.isArray(data)
-		? "items long"
-		: ""
+		  ? "items long"
+		  : ""
 
 export class DataWrapper<value = unknown> {
 	constructor(public value: value) {}

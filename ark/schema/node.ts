@@ -237,13 +237,27 @@ export class BaseNode<
 			collapsibleJson: collapsibleJson as Json,
 			children,
 			id,
-			typeId,
-			...inner
+			typeId
 		})
 	}
 
 	private constructor(baseAttachments: BaseAttachments<kind>) {
 		super(baseAttachments as never)
+		for (const k in baseAttachments.inner) {
+			if (k in this) {
+				// if we attempt to overwrite an existing node key, throw unless
+				// it is expected and can be safely ignored.
+				// in and out cannot overwrite their respective getters, so instead
+				// morph assigns them to `inCache` and `outCache`
+				if (k !== "in" && k !== "out" && k !== "description") {
+					throwInternalError(
+						`Unexpected attempt to overwrite existing node key ${k} from ${this.kind} inner`
+					)
+				}
+			} else {
+				this[k] = this.inner[k] as never
+			}
+		}
 		const attachments = this.implementation.attach(this as never)
 		// important this is last as writeDefaultDescription could rely on attached
 		Object.assign(this, attachments)
