@@ -1,5 +1,5 @@
-import { join } from "path"
 import { fromHere } from "@arktype/fs"
+import { join } from "path"
 
 const root = fromHere("..", "..")
 const packages = join(root, "ark")

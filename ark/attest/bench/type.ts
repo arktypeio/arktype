@@ -9,16 +9,20 @@ import {
 	getExpressionsByName
 } from "../tsserver/getAssertionsInFile.ts"
 import {
+	TsServer,
 	getAbsolutePosition,
 	getTsConfigInfoOrThrow,
 	getTsLibFiles,
-	nearestCallExpressionChild,
-	TsServer
+	nearestCallExpressionChild
 } from "../tsserver/tsserver.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
 import type { BenchContext } from "./bench.ts"
-import type { Measure, MeasureComparison, TypeUnit } from "./measure.ts"
-import { createTypeComparison } from "./measure.ts"
+import {
+	createTypeComparison,
+	type Measure,
+	type MeasureComparison,
+	type TypeUnit
+} from "./measure.ts"
 
 export type BenchTypeAssertions = {
 	types: (instantiations?: Measure<TypeUnit>) => void

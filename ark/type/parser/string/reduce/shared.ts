@@ -1,10 +1,10 @@
-import type {
-	Comparator,
-	InvertedComparators,
-	LimitLiteral,
-	MinComparator
+import {
+	invertedComparators,
+	type Comparator,
+	type InvertedComparators,
+	type LimitLiteral,
+	type MinComparator
 } from "../shift/operator/bounds.ts"
-import { invertedComparators } from "../shift/operator/bounds.ts"
 
 export type StringifiablePrefixOperator = "keyof"
 

@@ -1,6 +1,4 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
-import { readFileSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
 import {
 	fromHere,
 	readJson,
@@ -8,6 +6,8 @@ import {
 	shell,
 	writeJson
 } from "@arktype/fs"
+import { readFileSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { docgen } from "./docgen/docgen.ts"
 import { repoDirs } from "./shared.ts"
 

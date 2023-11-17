@@ -1,17 +1,16 @@
+import { dirName, getSourceControlPaths, type WalkOptions } from "@arktype/fs"
 import { basename, join, normalize, relative } from "node:path"
 import * as process from "node:process"
-import type { WalkOptions } from "@arktype/fs"
-import { dirName, getSourceControlPaths } from "@arktype/fs"
 import { Project } from "ts-morph"
 import { repoDirs } from "../shared.ts"
 import { extractApi } from "./api/extractApi.ts"
 import { writeApi } from "./api/writeApi.ts"
 import { mapDir } from "./mapDir.ts"
-import type {
-	SnippetsByPath,
-	SnippetTransformToggles
+import {
+	extractSnippets,
+	type SnippetsByPath,
+	type SnippetTransformToggles
 } from "./snippets/extractSnippets.ts"
-import { extractSnippets } from "./snippets/extractSnippets.ts"
 import { updateSnippetReferences } from "./snippets/writeSnippets.ts"
 
 export type DocGenConfig = {

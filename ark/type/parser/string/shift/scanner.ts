@@ -1,5 +1,4 @@
-import type { Dict } from "@arktype/util"
-import { isKeyOf } from "@arktype/util"
+import { isKeyOf, type Dict } from "@arktype/util"
 import type { Comparator } from "./operator/bounds.ts"
 
 export class Scanner<Lookahead extends string = string> {
@@ -158,13 +157,13 @@ export namespace Scanner {
 				? true
 				: false
 			: Scanner.skipWhitespace<unscanned> extends
-					| ""
-					| `${TerminatingChar}${string}`
-			? true
-			: false
+						| ""
+						| `${TerminatingChar}${string}`
+			  ? true
+			  : false
 		: lookahead extends ","
-		? true
-		: false
+		  ? true
+		  : false
 
 	export type shift<
 		lookahead extends string,

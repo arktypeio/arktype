@@ -1,5 +1,5 @@
-import { type } from "arktype"
-import type { Type } from "arktype"
+import type { Type    } from "arktype"
+import { type } from "arktype";
 
 const createBox = <T extends string>(of: Type<T>) =>
 	type({

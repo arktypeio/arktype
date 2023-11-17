@@ -1,6 +1,6 @@
-import { type Root } from "@arktype/schema"
-import { throwParseError } from "@arktype/util"
-import type { ErrorMessage, join, nominal } from "@arktype/util"
+import type { Root } from "@arktype/schema"
+import type { ErrorMessage, join, nominal    } from "@arktype/util"
+import { throwParseError } from "@arktype/util";
 import type { ParseContext } from "../scope.ts"
 import { DynamicState } from "./string/reduce/dynamic.ts"
 import { writeUnclosedGroupMessage } from "./string/reduce/shared.ts"

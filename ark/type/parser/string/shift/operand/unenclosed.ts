@@ -1,27 +1,25 @@
 import { BaseNode, node, type Root } from "@arktype/schema"
-import type {
-	BigintLiteral,
-	Completion,
-	ErrorMessage,
-	join,
-	NumberLiteral
-} from "@arktype/util"
 import {
 	stringify,
 	throwParseError,
 	tryParseNumber,
-	tryParseWellFormedBigint
+	tryParseWellFormedBigint,
+	type BigintLiteral,
+	type Completion,
+	type ErrorMessage,
+	type join,
+	type NumberLiteral
 } from "@arktype/util"
 import type { Module } from "../../../../scope.ts"
 import {
+	hasArkKind,
 	type Generic,
-	type GenericProps,
-	hasArkKind
+	type GenericProps
 } from "../../../../type.ts"
-import type { ParsedArgs } from "../../../generic.ts"
 import {
 	parseGenericArgs,
-	writeInvalidGenericArgsMessage
+	writeInvalidGenericArgsMessage,
+	type ParsedArgs
 } from "../../../generic.ts"
 import type { GenericInstantiationAst } from "../../../semantic/semantic.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
@@ -48,20 +46,20 @@ export type parseUnenclosed<
 	? token extends "keyof"
 		? state.addPrefix<s, "keyof", unscanned>
 		: tryResolve<s, token, $, args> extends infer result
-		? result extends ErrorMessage<infer message>
-			? state.error<message>
-			: result extends keyof $
-			? $[result] extends GenericProps
-				? parseGenericInstantiation<
-						token,
-						$[result],
-						state.scanTo<s, unscanned>,
-						$,
-						args
-				  >
-				: state.setRoot<s, result, unscanned>
-			: state.setRoot<s, result, unscanned>
-		: never
+		  ? result extends ErrorMessage<infer message>
+				? state.error<message>
+				: result extends keyof $
+				  ? $[result] extends GenericProps
+						? parseGenericInstantiation<
+								token,
+								$[result],
+								state.scanTo<s, unscanned>,
+								$,
+								args
+						  >
+						: state.setRoot<s, result, unscanned>
+				  : state.setRoot<s, result, unscanned>
+		  : never
 	: never
 
 export const parseGenericInstantiation = (
@@ -161,25 +159,31 @@ type tryResolve<
 > = token extends keyof $
 	? token
 	: token extends keyof args
-	? token
-	: token extends NumberLiteral
-	? token
-	: token extends BigintLiteral
-	? token
-	: token extends `${infer submodule extends keyof $ &
-			string}.${infer reference}`
-	? $[submodule] extends Module<infer r>
-		? reference extends keyof r["exports"]
-			? token
-			: unknown extends r["exports"]
-			? // not sure why I need the additional check here, but for now TS seems to
-			  // hit this branch for a non-scope dot access rather than failing
-			  // initially when we try to infer r. if this can be removed without breaking
-			  // any submodule test cases, do it!
-			  ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
-			: unresolvableError<s, reference, $[submodule], args, [submodule]>
-		: ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
-	: unresolvableError<s, token, $, args, []>
+	  ? token
+	  : token extends NumberLiteral
+	    ? token
+	    : token extends BigintLiteral
+	      ? token
+	      : token extends `${infer submodule extends keyof $ &
+							string}.${infer reference}`
+	        ? $[submodule] extends Module<infer r>
+						? reference extends keyof r["exports"]
+							? token
+							: unknown extends r["exports"]
+							  ? // not sure why I need the additional check here, but for now TS seems to
+							    // hit this branch for a non-scope dot access rather than failing
+							    // initially when we try to infer r. if this can be removed without breaking
+							    // any submodule test cases, do it!
+							    ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
+							  : unresolvableError<
+										s,
+										reference,
+										$[submodule],
+										args,
+										[submodule]
+							    >
+						: ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
+	        : unresolvableError<s, token, $, args, []>
 
 export const writeNonSubmoduleDotMessage = <name extends string>(
 	name: name

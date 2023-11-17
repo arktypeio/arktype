@@ -2,7 +2,6 @@ import { attest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import { scope, type } from "arktype"
-
 import {
 	emptyGenericParameterMessage,
 	writeInvalidGenericArgsMessage

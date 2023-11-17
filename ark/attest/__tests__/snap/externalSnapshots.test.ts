@@ -1,9 +1,8 @@
+import { attest } from "@arktype/attest"
+import { dirName, readJson, writeJson } from "@arktype/fs"
 import * as assert from "node:assert/strict"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { attest } from "@arktype/attest"
-import { dirName, readJson, writeJson } from "@arktype/fs"
-
 import { attestInternal } from "../../assert/attest.ts"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"

@@ -1,12 +1,11 @@
 import { readFile, tsFileMatcher } from "@arktype/fs"
 import type { Project } from "ts-morph"
-import type { DocGenSnippetsConfig } from "../docgen.ts"
-import { defaultConfig } from "../docgen.ts"
-import type { ExtractionToken } from "./snipTokens.ts"
+import { defaultConfig, type DocGenSnippetsConfig } from "../docgen.ts"
 import {
 	extractionTokens,
 	includesTokenFrom,
-	snipTokens
+	snipTokens,
+	type ExtractionToken
 } from "./snipTokens.ts"
 import { transformTsFileContents } from "./transformTsFileText.ts"
 

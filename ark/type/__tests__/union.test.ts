@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { node, writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
-
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage

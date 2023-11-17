@@ -1,5 +1,5 @@
 import { hasDomain } from "./domain.ts"
-import { type Fn } from "./functions.ts"
+import type { Fn } from "./functions.ts"
 import type { defined, evaluate } from "./generics.ts"
 import { isArray } from "./objectKinds.ts"
 import type { intersectUnion } from "./unionToTuple.ts"

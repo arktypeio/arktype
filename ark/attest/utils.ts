@@ -1,5 +1,5 @@
+import type { Digit } from "@arktype/util"
 import { relative } from "node:path"
-import { type Digit } from "@arktype/util"
 import ts from "typescript"
 
 export const getFileKey = (path: string) => relative(".", path)

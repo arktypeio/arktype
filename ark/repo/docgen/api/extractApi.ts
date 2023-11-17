@@ -1,5 +1,5 @@
-import { join } from "node:path"
 import { readPackageJson } from "@arktype/fs"
+import { join } from "node:path"
 import type {
 	ExportedDeclarations,
 	JSDoc,

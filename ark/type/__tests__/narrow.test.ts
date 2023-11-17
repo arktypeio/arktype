@@ -1,8 +1,7 @@
 import { attest } from "@arktype/attest"
-import { type Out } from "@arktype/schema"
+import type { Out } from "@arktype/schema"
 import type { equals } from "@arktype/util"
-import type { Ark, Type } from "arktype"
-import { type } from "arktype"
+import { type, type Type } from "arktype"
 
 describe("narrow", () => {
 	it("implicit problem", () => {

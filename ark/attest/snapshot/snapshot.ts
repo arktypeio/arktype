@@ -1,7 +1,7 @@
+import type { SourcePosition    } from "@arktype/fs"
+import { positionToString, readJson, writeJson } from "@arktype/fs";
 import { randomUUID } from "node:crypto"
 import { basename, dirname, isAbsolute, join } from "node:path"
-import type { SourcePosition } from "@arktype/fs"
-import { positionToString, readJson, writeJson } from "@arktype/fs"
 import type ts from "typescript"
 import { getConfig } from "../config.ts"
 import { getExpressionsByName } from "../tsserver/getAssertionsInFile.ts"

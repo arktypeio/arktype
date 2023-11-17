@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-
 import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage

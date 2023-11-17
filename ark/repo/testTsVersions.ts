@@ -1,5 +1,5 @@
-import { rmSync, writeFileSync } from "node:fs"
 import { fromHere, readJson, shell } from "@arktype/fs"
+import { rmSync, writeFileSync } from "node:fs"
 
 const versions: { [k: string]: string } = {
 	"4.8": "16",

@@ -1,8 +1,10 @@
 import { attest } from "@arktype/attest"
-import type { Out, Problem } from "@arktype/schema"
-import { writeUndiscriminableMorphUnionMessage } from "@arktype/schema"
-import type { Ark, Type } from "arktype"
-import { arktypes, scope, type } from "arktype"
+import {
+	writeUndiscriminableMorphUnionMessage,
+	type Out,
+	type Problem
+} from "@arktype/schema"
+import { arktypes, scope, type, type Ark, type Type } from "arktype"
 
 describe("morph", () => {
 	it("base", () => {

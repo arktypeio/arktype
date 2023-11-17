@@ -1,19 +1,14 @@
-import { attest, getTsVersionUnderTest } from "@arktype/attest"
+import { attest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
-
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.ts"
 
 describe("divisibility", () => {
 	describe("parse", () => {
 		it("integerLiteralDefinition", () => {
 			const divisibleByTwo = type("number%2")
-			// attest(divisibleByTwo.node).equals({
-			//     number: {
-			//         divisor: 2
-			//     }
-			// })
 			attest<number>(divisibleByTwo.infer)
+			attest(divisibleByTwo.json).snap({ basis: "number", divisor: 2 })
 		})
 		it("whitespace after %", () => {
 			attest<number>(type("number % 5").infer)

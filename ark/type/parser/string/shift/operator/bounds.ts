@@ -1,18 +1,20 @@
-import { type MinSchema } from "@arktype/schema"
-import type { keySet } from "@arktype/util"
-import { isKeyOf, tryParseNumber } from "@arktype/util"
+import type { MinSchema } from "@arktype/schema"
+import { isKeyOf, tryParseNumber, type keySet } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.ts"
 import type {
 	DynamicState,
 	DynamicStateWithRoot
 } from "../../reduce/dynamic.ts"
 import {
-	type OpenLeftBound,
-	writeUnpairableComparatorMessage
+	writeUnpairableComparatorMessage,
+	type OpenLeftBound
 } from "../../reduce/shared.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { DateLiteral } from "../operand/date.ts"
-import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import {
+	extractDateLiteralSource,
+	isDateLiteral,
+	type DateLiteral
+} from "../operand/date.ts"
 import { parseOperand } from "../operand/operand.ts"
 import type { Scanner } from "../scanner.ts"
 
@@ -102,8 +104,8 @@ const shiftComparator = (
 	s.scanner.lookaheadIs("=")
 		? `${start}${s.scanner.shift()}`
 		: isKeyOf(start, oneCharComparators)
-		? start
-		: s.error(singleEqualsMessage)
+		  ? start
+		  : s.error(singleEqualsMessage)
 
 type shiftComparator<
 	start extends ComparatorStartChar,
@@ -111,8 +113,8 @@ type shiftComparator<
 > = unscanned extends `=${infer nextUnscanned}`
 	? [`${start}=`, nextUnscanned]
 	: start extends OneCharComparator
-	? [start, unscanned]
-	: state.error<singleEqualsMessage>
+	  ? [start, unscanned]
+	  : state.error<singleEqualsMessage>
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage

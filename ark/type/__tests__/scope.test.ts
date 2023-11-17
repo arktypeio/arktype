@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { writeUnboundableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
-
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.ts"
 

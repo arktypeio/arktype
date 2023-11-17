@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import type { Constructor } from "@arktype/util"
-import { type } from "arktype"
-import type { Type } from "arktype"
+import type { Type    } from "arktype"
+import { type } from "arktype";
 
 describe("cast", () => {
 	it("primitive", () => {

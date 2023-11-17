@@ -254,7 +254,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 			: inferNarrow<this["infer"], def>,
 		$
 	> {
-		return this as never //new Type(this.root.constrain("predicate", def), this.scope) as never
+		return new Type(this.root.constrain("predicate", def), this.scope) as never
 	}
 
 	array(): Type<t[], $> {

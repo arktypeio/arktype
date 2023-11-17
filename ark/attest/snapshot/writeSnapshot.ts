@@ -1,5 +1,3 @@
-import { existsSync, readdirSync, rmSync } from "node:fs"
-import { basename, join } from "node:path"
 import {
 	filePath,
 	readFile,
@@ -8,11 +6,17 @@ import {
 	writeFile,
 	writeJson
 } from "@arktype/fs"
+import { existsSync, readdirSync, rmSync } from "node:fs"
+import { basename, join } from "node:path"
 import type ts from "typescript"
 import { getConfig } from "../config.ts"
 import { getFileKey } from "../utils.ts"
-import type { QueuedUpdate, SnapshotArgs } from "./snapshot.ts"
-import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.ts"
+import {
+	findCallExpressionAncestor,
+	resolveSnapshotPath,
+	type QueuedUpdate,
+	type SnapshotArgs
+} from "./snapshot.ts"
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
 	name: string
@@ -112,8 +116,8 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
 				l.position.line > r.position.line
 					? 1
 					: r.position.line > l.position.line
-					? -1
-					: l.position.char - r.position.char
+					  ? -1
+					  : l.position.char - r.position.char
 			)
 		)
 	}

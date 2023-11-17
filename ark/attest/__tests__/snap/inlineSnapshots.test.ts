@@ -1,5 +1,5 @@
-import * as assert from "node:assert/strict"
 import { attest } from "@arktype/attest"
+import * as assert from "node:assert/strict"
 
 const o = { re: "do" }
 const shouldThrow = (a: false) => {

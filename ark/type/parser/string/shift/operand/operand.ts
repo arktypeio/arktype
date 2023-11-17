@@ -2,28 +2,29 @@ import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import type { BaseCompletions } from "../../string.ts"
 import { Scanner } from "../scanner.ts"
-import type {
-	EnclosingEndToken,
-	EnclosingQuote,
-	EnclosingStartToken
+import {
+	enclosingChar,
+	parseEnclosed,
+	type EnclosingEndToken,
+	type EnclosingQuote,
+	type EnclosingStartToken
 } from "./enclosed.ts"
-import { enclosingChar, parseEnclosed } from "./enclosed.ts"
 import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.ts"
 
 export const parseOperand = (s: DynamicState): void =>
 	s.scanner.lookahead === ""
 		? s.error(writeMissingOperandMessage(s))
 		: s.scanner.lookahead === "("
-		? s.shiftedByOne().reduceGroupOpen()
-		: s.scanner.lookaheadIsIn(enclosingChar)
-		? parseEnclosed(s, s.scanner.shift())
-		: s.scanner.lookaheadIsIn(Scanner.whiteSpaceTokens)
-		? parseOperand(s.shiftedByOne())
-		: s.scanner.lookahead === "d"
-		? s.shiftedByOne().scanner.lookaheadIsIn(enclosingChar)
-			? parseEnclosed(s, `d${s.scanner.shift()}` as EnclosingStartToken)
-			: parseUnenclosed(s)
-		: parseUnenclosed(s)
+		  ? s.shiftedByOne().reduceGroupOpen()
+		  : s.scanner.lookaheadIsIn(enclosingChar)
+		    ? parseEnclosed(s, s.scanner.shift())
+		    : s.scanner.lookaheadIsIn(Scanner.whiteSpaceTokens)
+		      ? parseOperand(s.shiftedByOne())
+		      : s.scanner.lookahead === "d"
+		        ? s.shiftedByOne().scanner.lookaheadIsIn(enclosingChar)
+							? parseEnclosed(s, `d${s.scanner.shift()}` as EnclosingStartToken)
+							: parseUnenclosed(s)
+		        : parseUnenclosed(s)
 
 export type parseOperand<
 	s extends StaticState,
@@ -33,15 +34,15 @@ export type parseOperand<
 	? lookahead extends "("
 		? state.reduceGroupOpen<s, unscanned>
 		: lookahead extends EnclosingEndToken
-		? parseEnclosed<s, lookahead, unscanned>
-		: lookahead extends Scanner.WhiteSpaceToken
-		? parseOperand<state.scanTo<s, unscanned>, $, args>
-		: lookahead extends "d"
-		? unscanned extends Scanner.shift<
-				infer enclosing extends EnclosingQuote,
-				infer nextUnscanned
-		  >
-			? parseEnclosed<s, `d${enclosing}`, nextUnscanned>
-			: parseUnenclosed<s, $, args>
-		: parseUnenclosed<s, $, args>
+		  ? parseEnclosed<s, lookahead, unscanned>
+		  : lookahead extends Scanner.WhiteSpaceToken
+		    ? parseOperand<state.scanTo<s, unscanned>, $, args>
+		    : lookahead extends "d"
+		      ? unscanned extends Scanner.shift<
+							infer enclosing extends EnclosingQuote,
+							infer nextUnscanned
+		        >
+						? parseEnclosed<s, `d${enclosing}`, nextUnscanned>
+						: parseUnenclosed<s, $, args>
+		      : parseUnenclosed<s, $, args>
 	: state.completion<`${s["scanned"]}${BaseCompletions<$, args>}`>

@@ -1,12 +1,12 @@
 import type { Out } from "@arktype/schema"
-import { Hkt } from "@arktype/util"
 import type {
 	conform,
 	evaluate,
 	intersectArrays,
 	isAny,
 	List
-} from "@arktype/util"
+   } from "@arktype/util"
+import { Hkt } from "@arktype/util";
 import type { MorphAst } from "../tuple.ts"
 
 export type inferIntersection<l, r> = [l] extends [never]

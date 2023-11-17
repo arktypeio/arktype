@@ -1,5 +1,5 @@
-import { join } from "node:path"
 import { readFile, readJson, shell, writeFile } from "@arktype/fs"
+import { join } from "node:path"
 import { repoDirs } from "../../shared.ts"
 import type { SnippetsByPath } from "./extractSnippets.ts"
 import { referenceTokens } from "./snipTokens.ts"

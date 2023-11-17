@@ -1,15 +1,23 @@
-import { performance } from "node:perf_hooks"
 import { caller } from "@arktype/fs"
+import { performance } from "node:perf_hooks"
 import { chainableNoOpProxy } from "../utils.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
-import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.ts"
-import { unhandledExceptionMessages } from "./bench.ts"
+import {
+	unhandledExceptionMessages,
+	type BenchContext,
+	type BenchableFunction,
+	type UntilOptions
+} from "./bench.ts"
 import { await1K } from "./generated/await1k.ts"
 import { call1K } from "./generated/call1k.ts"
-import type { MarkMeasure, Measure, TimeUnit } from "./measure.ts"
-import { createTimeComparison, createTimeMeasure } from "./measure.ts"
-import type { BenchTypeAssertions } from "./type.ts"
-import { createBenchTypeAssertion } from "./type.ts"
+import {
+	createTimeComparison,
+	createTimeMeasure,
+	type MarkMeasure,
+	type Measure,
+	type TimeUnit
+} from "./measure.ts"
+import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.ts"
 
 export type StatName = keyof typeof stats
 

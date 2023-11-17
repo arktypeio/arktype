@@ -1,4 +1,4 @@
-import { type Hkt } from "@arktype/util"
+import type { Hkt } from "@arktype/util"
 
 // Custom user type
 interface Chunk<T> {

@@ -1,8 +1,6 @@
 import { attest } from "@arktype/attest"
 import { node } from "@arktype/schema"
-import type { Out } from "arktype"
-import { type } from "arktype"
-
+import { type, type Out } from "arktype"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage

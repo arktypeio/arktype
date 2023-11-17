@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { writeUnboundableMessage } from "@arktype/schema"
+import { registry, writeUnboundableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
 import { writeInvalidPropertyKeyMessage } from "../parser/objectLiteral.ts"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
@@ -31,17 +31,27 @@ describe("object literal", () => {
 	})
 	it("symbol key", () => {
 		const s = Symbol()
+		const name = registry().register(s)
 		const t = type({
 			[s]: "boolean"
 		})
 		attest<{ [s]: boolean }>(t.infer)
+		attest(t.json).equals({
+			basis: "object",
+			required: [{ key: name, value: [{ is: true }, { is: false }] }]
+		})
 	})
 	it("optional symbol", () => {
 		const s = Symbol()
+		const name = registry().register(s)
 		const t = type({
 			[s]: "boolean?"
 		})
 		attest<{ [s]?: boolean }>(t.infer)
+		attest(t.json).equals({
+			basis: "object",
+			optional: [{ key: name, value: [{ is: true }, { is: false }] }]
+		})
 	})
 	describe("optional keys and definition reduction", () => {
 		it("optional value", () => {
