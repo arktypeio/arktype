@@ -131,6 +131,8 @@ export class BaseNode<
 	]
 	readonly allows: (data: unknown) => data is t
 	readonly alias: string = $ark.register(this, this.inner.alias)
+	readonly branches: readonly Node<BranchKind>[] =
+		this.kind === "union" ? (this as any).union : [this]
 	readonly description: string
 
 	static parsePrereduced<kind extends NodeKind>(
@@ -439,15 +441,9 @@ export class BaseNode<
 		"union" | Extract<kind | other["kind"], RootKind>,
 		t | other["infer"]
 	> {
-		const lBranches = (
-			this.hasKind("union") ? this.union : [this]
-		) as Node<BranchKind>[]
-		const rBranches = (
-			other.hasKind("union") ? other.union : [other]
-		) as Node<BranchKind>[]
 		return BaseNode.parseSchema(
 			"union",
-			[...lBranches, ...rBranches],
+			[...this.branches, ...other.branches],
 			createParseContext()
 		) as never
 	}

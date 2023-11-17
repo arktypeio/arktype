@@ -174,11 +174,6 @@ export const MaxImplementation = defineNode({
 	}
 })
 
-const parseLimit = (limitLiteral: BoundLimit): number =>
-	typeof limitLiteral === "string"
-		? new Date(limitLiteral).valueOf()
-		: limitLiteral
-
 const getBoundKind = (basis: Node<BasisKind> | undefined): BoundKind => {
 	if (basis === undefined) {
 		return throwParseError(writeUnboundableMessage("unknown"))

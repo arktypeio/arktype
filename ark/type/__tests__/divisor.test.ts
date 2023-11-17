@@ -5,7 +5,7 @@ import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divi
 
 describe("divisibility", () => {
 	describe("parse", () => {
-		it("integerLiteralDefinition", () => {
+		it("integer literal", () => {
 			const divisibleByTwo = type("number%2")
 			attest<number>(divisibleByTwo.infer)
 			attest(divisibleByTwo.json).snap({ basis: "number", divisor: 2 })
@@ -19,8 +19,8 @@ describe("divisibility", () => {
 			attest(t.root.description).snap("(a multiple of 8 and less than 3)")
 		})
 		it("allows non-narrowed divisor", () => {
-			const z = 5 as number
-			attest<number>(type(`number%${z}`).infer)
+			const d = 5 as number
+			attest<number>(type(`number%${d}`).infer)
 		})
 		it("fails at runtime on non-integer divisor", () => {
 			attest(() => type("number%2.3")).throws(writeInvalidDivisorMessage("2.3"))
