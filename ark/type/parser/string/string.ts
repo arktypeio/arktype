@@ -1,12 +1,11 @@
-import { type Root } from "@arktype/schema"
-import { type ErrorMessage, throwParseError } from "@arktype/util"
+import type { Root } from "@arktype/schema"
+import { throwParseError, type ErrorMessage } from "@arktype/util"
 import type { ParseContext } from "../../scope.ts"
-import { type inferAst } from "../semantic/semantic.ts"
+import type { inferAst } from "../semantic/semantic.ts"
 import { writeUnsatisfiableExpressionError } from "../semantic/validate.ts"
-import type { DynamicStateWithRoot } from "./reduce/dynamic.ts"
-import { DynamicState } from "./reduce/dynamic.ts"
+import { DynamicState, type DynamicStateWithRoot } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
-import type { state, StaticState } from "./reduce/static.ts"
+import type { StaticState, state } from "./reduce/static.ts"
 import { parseOperand } from "./shift/operand/operand.ts"
 import {
 	parseOperator,
@@ -28,10 +27,10 @@ export type parseString<def extends string, $, args> = def extends keyof $
 	  // fail semantic validation because it has no args
 	  def
 	: def extends `${infer child}[]`
-	? child extends keyof $
-		? [child, "[]"]
-		: fullStringParse<def, $, args>
-	: fullStringParse<def, $, args>
+	  ? child extends keyof $
+			? [child, "[]"]
+			: fullStringParse<def, $, args>
+	  : fullStringParse<def, $, args>
 
 export type inferString<def extends string, $, args> = inferAst<
 	parseString<def, $, args>,
@@ -54,6 +53,7 @@ export const fullStringParse = (def: string, ctx: ParseContext) => {
 		// throw a parse error if non-whitespace characters made it here without being parsed
 		throwParseError(writeUnexpectedCharacterMessage(s.scanner.lookahead))
 	}
+	// TODO: would this ever happen?
 	return result.isNever()
 		? throwParseError(writeUnsatisfiableExpressionError(def))
 		: result
@@ -89,5 +89,5 @@ export type extractFinalizedResult<s extends StaticState> =
 	s["finalizer"] extends ErrorMessage
 		? s["finalizer"]
 		: s["finalizer"] extends ""
-		? s["root"]
-		: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
+		  ? s["root"]
+		  : state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>

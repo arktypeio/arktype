@@ -1,7 +1,7 @@
 import type { intersectParameters } from "./intersections.ts"
 import type { applyElementLabels } from "./labels.ts"
 import type { NonEmptyList } from "./lists.ts"
-import { type Constructor } from "./objectKinds.ts"
+import type { Constructor } from "./objectKinds.ts"
 
 export type ComposeSignatures = {
 	<traits extends NonEmptyList<Constructor>>(...traits: traits): compose<traits>

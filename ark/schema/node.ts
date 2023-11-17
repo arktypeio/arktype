@@ -20,7 +20,11 @@ import { In, compileSerializedValue } from "./io/compile.ts"
 import { arkKind, registry } from "./io/registry.ts"
 import { unflattenRules } from "./sets/intersection.ts"
 import type { ValidatorKind, ValidatorNode } from "./sets/morph.ts"
-import type { parseSchemaBranches, validateSchemaBranch } from "./sets/union.ts"
+import type {
+	BranchKind,
+	parseSchemaBranches,
+	validateSchemaBranch
+} from "./sets/union.ts"
 import { createBuiltins, type Builtins } from "./shared/builtins.ts"
 import type { BaseAttributes } from "./shared/declare.ts"
 import {
@@ -32,6 +36,7 @@ import {
 	ruleKinds,
 	setKinds,
 	type NodeKind,
+	type Root,
 	type RootKind,
 	type RuleKind,
 	type SetKind,
@@ -74,16 +79,15 @@ const parseUnits: UnitsParser = (...values) => {
 			uniqueValues.push(value)
 		}
 	}
-	// TODO: don't reduce
-	return BaseNode.parseSchema(
-		"union",
-		{
-			union: uniqueValues.map((unit) =>
-				BaseNode.parseSchema("unit", { is: unit }, createParseContext())
-			)
-		},
-		createParseContext()
-	) as never
+	const union = uniqueValues.map((unit) =>
+		BaseNode.parsePrereduced("unit", { is: unit })
+	)
+	if (union.length === 1) {
+		return union[0]
+	}
+	return BaseNode.parsePrereduced("union", {
+		union
+	}) as never
 }
 
 export const node = Object.assign(parseRoot, {
@@ -428,13 +432,24 @@ export class BaseNode<
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<other extends Node>(
+	// TODO: limit input types
+	or<other extends Root>(
 		other: other
 	): Node<
 		"union" | Extract<kind | other["kind"], RootKind>,
 		t | other["infer"]
 	> {
-		return this as never
+		const lBranches = (
+			this.hasKind("union") ? this.union : [this]
+		) as Node<BranchKind>[]
+		const rBranches = (
+			other.hasKind("union") ? other.union : [other]
+		) as Node<BranchKind>[]
+		return BaseNode.parseSchema(
+			"union",
+			[...lBranches, ...rBranches],
+			createParseContext()
+		) as never
 	}
 
 	isUnknown(): this is BaseNode<"intersection", unknown> {

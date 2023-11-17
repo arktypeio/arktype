@@ -1,20 +1,26 @@
-import { type Root } from "@arktype/schema"
-import type { requireKeys } from "@arktype/util"
-import { isKeyOf, throwInternalError, throwParseError } from "@arktype/util"
+import type { Root } from "@arktype/schema"
+import {
+	isKeyOf,
+	throwInternalError,
+	throwParseError,
+	type requireKeys
+} from "@arktype/util"
 import type { ParseContext } from "../../../scope.ts"
-import type { Comparator, LimitLiteral } from "../shift/operator/bounds.ts"
 import {
 	invertedComparators,
-	minComparators
+	minComparators,
+	type Comparator,
+	type LimitLiteral
 } from "../shift/operator/bounds.ts"
 import { Scanner } from "../shift/scanner.ts"
-import type { OpenLeftBound, StringifiablePrefixOperator } from "./shared.ts"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
-	writeUnpairableComparatorMessage
+	writeUnpairableComparatorMessage,
+	type OpenLeftBound,
+	type StringifiablePrefixOperator
 } from "./shared.ts"
 
 type BranchState = {

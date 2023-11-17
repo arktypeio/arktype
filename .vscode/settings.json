@@ -9,8 +9,7 @@
 		"object-shorthand",
 		"@typescript-eslint/consistent-type-imports",
 		"import/no-duplicates",
-		"@typescript-eslint/no-import-type-side-effects",
-		"import/order"
+		"@typescript-eslint/no-import-type-side-effects"
 	],
 	"eslint.rules.customizations": [
 		// This will still be caught when run from the CLI, but it's too often
@@ -41,5 +40,11 @@
 	"mochaExplorer.env": {
 		"ATTEST_CONFIG": "{ \"skipTypes\": true }"
 	},
-	"testExplorer.useNativeTesting": true
+	"testExplorer.useNativeTesting": true,
+	"editor.unicodeHighlight.allowedCharacters": {
+		// Cedille: used as a sentinel for match expressions
+		"¸": true,
+		// Hair Space: used as a sentinel for error messages
+		" ": true
+	}
 }

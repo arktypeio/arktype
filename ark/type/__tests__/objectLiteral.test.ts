@@ -16,13 +16,18 @@ describe("object literal", () => {
 			basis: "object",
 			required: [
 				{ key: "a", value: "string" },
-				{ key: "b", value: { is: true } }
+				{ key: "b", value: [{ is: true }, { is: false }] }
 			]
 		})
 	})
 	it("optional keys", () => {
 		const o = type({ "a?": "string", b: "boolean" })
 		attest<{ a?: string; b: boolean }>(o.infer)
+		attest(o.json).snap({
+			basis: "object",
+			required: [{ key: "b", value: [{ is: true }, { is: false }] }],
+			optional: [{ key: "a", value: "string" }]
+		})
 	})
 	it("symbol key", () => {
 		const s = Symbol()
