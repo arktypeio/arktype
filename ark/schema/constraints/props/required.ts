@@ -61,7 +61,7 @@ export const RequiredImplementation = defineNode({
 		required: intersectNamed,
 		optional: intersectNamed
 	},
-	expand: (schema) => schema as never,
+	normalize: (schema) => schema,
 	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
 	attach: (node) => ({
 		implicitBasis: node.ctor.builtins.object,

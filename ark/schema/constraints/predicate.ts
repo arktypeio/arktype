@@ -32,7 +32,7 @@ export const PredicateImplementation = defineNode({
 	intersections: {
 		predicate: () => null
 	},
-	expand: (schema) =>
+	normalize: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
 	writeDefaultDescription: (inner) =>
 		`valid according to ${inner.predicate.name}`,

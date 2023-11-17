@@ -1,10 +1,11 @@
 import {
 	includes,
-	listFrom,
+	isArray,
 	throwInternalError,
 	type ErrorMessage,
 	type conform,
 	type extend,
+	type listable,
 	type mutable
 } from "@arktype/util"
 import {
@@ -17,7 +18,7 @@ import type {
 	OpenConstraintKind,
 	constraintInputsByKind
 } from "../constraints/constraint.ts"
-import type { UnknownNode } from "../node.ts"
+import type { ParseContext, UnknownNode } from "../node.ts"
 import type {
 	BaseAttributes,
 	declareNode,
@@ -83,28 +84,16 @@ export const IntersectionImplementation = defineNode({
 			parse: (schema, ctx) => ctx.ctor.parseSchema("min", schema, ctx)
 		},
 		pattern: {
-			parse: (schema, ctx) =>
-				listFrom(schema).map((schema) =>
-					ctx.ctor.parseSchema("pattern", schema, ctx)
-				)
+			parse: (schema, ctx) => parseOpenConstraints("pattern", schema, ctx)
 		},
 		predicate: {
-			parse: (schema, ctx) =>
-				listFrom(schema).map((schema) =>
-					ctx.ctor.parseSchema("predicate", schema, ctx)
-				)
+			parse: (schema, ctx) => parseOpenConstraints("predicate", schema, ctx)
 		},
 		optional: {
-			parse: (schema, ctx) =>
-				listFrom(schema).map((schema) =>
-					ctx.ctor.parseSchema("optional", schema, ctx)
-				)
+			parse: (schema, ctx) => parseOpenConstraints("optional", schema, ctx)
 		},
 		required: {
-			parse: (schema, ctx) =>
-				listFrom(schema).map((schema) =>
-					ctx.ctor.parseSchema("required", schema, ctx)
-				)
+			parse: (schema, ctx) => parseOpenConstraints("required", schema, ctx)
 		}
 	},
 	updateContext: (schema, ctx) => {
@@ -187,6 +176,23 @@ export const IntersectionImplementation = defineNode({
 			: node.rules.join(" and ")
 	}
 })
+
+export const parseOpenConstraints = <kind extends OpenConstraintKind>(
+	kind: kind,
+	input: listable<Schema<kind>>,
+	ctx: ParseContext
+) => {
+	if (isArray(input)) {
+		if (input.length === 0) {
+			// Omit empty lists as input
+			return
+		}
+		return input.map((constraint) =>
+			ctx.ctor.parseSchema(kind, constraint, ctx)
+		)
+	}
+	return [ctx.ctor.parseSchema(kind, input, ctx)]
+}
 
 const reduceRules = (
 	l: readonly Node<RuleKind>[],

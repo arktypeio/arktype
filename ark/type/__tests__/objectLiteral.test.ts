@@ -12,7 +12,13 @@ describe("object literal", () => {
 	it("required", () => {
 		const o = type({ a: "string", b: "boolean" })
 		attest<{ a: string; b: boolean }>(o.infer)
-		attest(o.json).snap({ domain: "object" })
+		attest(o.json).snap({
+			basis: "object",
+			required: [
+				{ key: "a", value: "string" },
+				{ key: "b", value: { is: true } }
+			]
+		})
 	})
 	it("optional keys", () => {
 		const o = type({ "a?": "string", b: "boolean" })

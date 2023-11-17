@@ -34,14 +34,14 @@ export const PatternImplementation = defineNode({
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
 	},
-	expand: (schema) =>
+	normalize: (schema) =>
 		typeof schema === "string"
 			? parseRegexLiteral(schema)
 			: schema instanceof RegExp
-			? schema.flags
-				? { pattern: schema.source, flags: schema.flags }
-				: { pattern: schema.source }
-			: schema,
+			  ? schema.flags
+					? { pattern: schema.source, flags: schema.flags }
+					: { pattern: schema.source }
+			  : schema,
 	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`,
 	attach: (node) => {
 		return {

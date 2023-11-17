@@ -83,7 +83,8 @@ export const MinImplementation = defineNode({
 	intersections: {
 		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
 	},
-	expand: (schema) => (typeof schema === "object" ? schema : { min: schema }),
+	normalize: (schema) =>
+		typeof schema === "object" ? schema : { min: schema },
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
 			inner.boundKind === "date"
@@ -150,7 +151,8 @@ export const MaxImplementation = defineNode({
 				? Disjoint.from("bound", l, r)
 				: null
 	},
-	expand: (schema) => (typeof schema === "object" ? schema : { max: schema }),
+	normalize: (schema) =>
+		typeof schema === "object" ? schema : { max: schema },
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
 			inner.boundKind === "date"

@@ -47,7 +47,11 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 		}
 		ctx.path.pop()
 	}
-	return node("object")
+	return node({
+		basis: "object",
+		required,
+		optional
+	})
 }
 
 export type inferObjectLiteral<def extends object, $, args> = evaluate<

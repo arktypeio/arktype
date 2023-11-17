@@ -52,7 +52,8 @@ export const ProtoImplementation = defineNode({
 				? l
 				: Disjoint.from("domain", l.ctor.builtins.object, r)
 	},
-	expand: (input) => (typeof input === "function" ? { proto: input } : input),
+	normalize: (input) =>
+		typeof input === "function" ? { proto: input } : input,
 	writeDefaultDescription: (node) => {
 		const knownObjectKind = getExactBuiltinConstructorName(node.proto)
 		return knownObjectKind

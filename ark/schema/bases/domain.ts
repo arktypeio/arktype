@@ -37,7 +37,7 @@ export const DomainImplementation = defineNode({
 	intersections: {
 		domain: (l, r) => Disjoint.from("domain", l, r)
 	},
-	expand: (input) => (typeof input === "string" ? { domain: input } : input),
+	normalize: (input) => (typeof input === "string" ? { domain: input } : input),
 	writeDefaultDescription: (inner) => domainDescriptions[inner.domain],
 	attach: (inner) => ({
 		basisName: inner.domain,

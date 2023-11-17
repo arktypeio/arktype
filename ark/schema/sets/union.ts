@@ -162,7 +162,7 @@ export const UnionImplementation = defineNode({
 				  : { union }
 		}
 	},
-	expand: (schema) => (isArray(schema) ? { union: schema } : schema),
+	normalize: (schema) => (isArray(schema) ? { union: schema } : schema),
 	reduce: (inner, ctx) => {
 		const reducedBranches = reduceBranches(inner)
 		if (reducedBranches.length === 1) {

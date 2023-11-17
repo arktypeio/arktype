@@ -45,7 +45,7 @@ export const OptionalImplementation = defineNode({
 			}
 		}
 	},
-	expand: (schema) => schema as never,
+	normalize: (schema) => schema,
 	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
 	attach: (node) => ({
 		implicitBasis: node.ctor.builtins.object,

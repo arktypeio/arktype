@@ -1,4 +1,4 @@
-import type { evaluate } from "@arktype/util"
+import type { extend } from "@arktype/util"
 import type { validateDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
@@ -8,8 +8,24 @@ type OptionalTuple<value> = readonly [value, "?"]
 
 type KeyParseResult<kind extends ParsedKeyKind = ParsedKeyKind> = {
 	kind: kind
-	innerKey: PropertyKey
+	innerKey: string | symbol
 }
+
+type ValueParseResult<kind extends ParsedValueKind = ParsedValueKind> = {
+	kind: kind
+	innerValue: unknown
+}
+
+export type EntryParseResult<kind extends ParsedKeyKind = ParsedKeyKind> =
+	extend<
+		KeyParseResult<kind>,
+		{
+			innerValue: unknown
+		}
+	>
+
+type ParsedValueKind = "required" | "optional"
+
 type ParsedKeyKind = "required" | "optional" | "indexed"
 
 type parsedEntry<result extends EntryParseResult> = result
@@ -17,9 +33,6 @@ type parsedEntry<result extends EntryParseResult> = result
 export type OptionalValue<value> =
 	| OptionalStringDefinition<value & string>
 	| OptionalTuple<value>
-
-export type EntryParseResult<kind extends ParsedKeyKind = ParsedKeyKind> =
-	evaluate<{ innerValue: unknown } & KeyParseResult<kind>>
 
 export type OptionalStringDefinition<name extends string = string> = `${name}?`
 
@@ -38,31 +51,45 @@ type validateObjectValueString<def, $, args> =
 
 type DefinitionEntry = readonly [string | symbol, unknown]
 
-const getInnerValue = (value: unknown): unknown => {
+const getInnerValue = (value: unknown): ValueParseResult => {
 	if (typeof value === "string") {
 		if (value[value.length - 1] === "?") {
-			return value.slice(0, -1)
+			return {
+				kind: "optional",
+				innerValue: value.slice(0, -1)
+			}
 		}
 	} else if (Array.isArray(value)) {
 		if (value.length === 2 && value[1] === "?") {
-			return getInnerValue(value[0])
+			return {
+				kind: "optional",
+				innerValue: getInnerValue(value[0]).innerValue
+			}
 		}
 	}
-	return value
+	return {
+		kind: "required",
+		innerValue: value
+	}
 }
 
-export const parseEntry = ([key, value]: DefinitionEntry) => {
-	const keyParseResult =
-		typeof key === "string"
-			? key[key.length - 1] === "?" &&
-			  key[key.length - 2] === Scanner.escapeToken
+export const parseEntry = ([key, value]: DefinitionEntry): EntryParseResult => {
+	const keyParseResult: KeyParseResult =
+		typeof key === "string" && key.at(-1) === "?"
+			? key.at(-2) === Scanner.escapeToken
 				? { innerKey: `${key.slice(0, -2)}?`, kind: "required" }
 				: { innerKey: key.slice(0, -1), kind: "optional" }
 			: { innerKey: key, kind: "required" }
+	const valueParseResult = getInnerValue(value)
 	return {
 		innerKey: keyParseResult.innerKey,
-		innerValue: getInnerValue(value),
-		kind: keyParseResult.kind
+		innerValue: valueParseResult.innerValue,
+		kind:
+			keyParseResult.kind === "indexed"
+				? "indexed"
+				: valueParseResult.kind === "optional"
+				  ? "optional"
+				  : keyParseResult.kind
 	}
 }
 
@@ -98,17 +125,17 @@ type parseKey<k> = k extends OptionalStringDefinition<infer inner>
 				innerKey: inner
 		  }>
 	: k extends IndexedKey<infer def>
-	? parsedKey<{
-			kind: "indexed"
-			innerKey: def
-	  }>
-	: k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
-			IndexedKey}`
-	? parsedKey<{
-			kind: "required"
-			innerKey: escapedIndexKey
-	  }>
-	: parsedKey<{
-			kind: "required"
-			innerKey: k & (string | symbol)
-	  }>
+	  ? parsedKey<{
+				kind: "indexed"
+				innerKey: def
+	    }>
+	  : k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
+					IndexedKey}`
+	    ? parsedKey<{
+					kind: "required"
+					innerKey: escapedIndexKey
+	      }>
+	    : parsedKey<{
+					kind: "required"
+					innerKey: k & (string | symbol)
+	      }>

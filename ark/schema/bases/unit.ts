@@ -25,7 +25,9 @@ export type UnitDeclaration = declareNode<{
 export const UnitImplementation = defineNode({
 	kind: "unit",
 	keys: {
-		is: {}
+		is: {
+			preserveUndefined: true
+		}
 	},
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),
@@ -33,9 +35,9 @@ export const UnitImplementation = defineNode({
 			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
 	},
 	writeDefaultDescription: (inner) => stringify(inner.is),
-	attach: (inner) => ({
-		basisName: stringify(inner),
-		domain: domainOf(inner.is),
-		condition: `${In} === ${compileSerializedValue(inner.is)}`
+	attach: (node) => ({
+		basisName: stringify(node.is),
+		domain: domainOf(node.is),
+		condition: `${In} === ${compileSerializedValue(node.is)}`
 	})
 })

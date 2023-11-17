@@ -32,7 +32,7 @@ export const DivisorImplementation = defineNode({
 			)
 		})
 	},
-	expand: (schema) =>
+	normalize: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema,
 	writeDefaultDescription: (inner) =>
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,

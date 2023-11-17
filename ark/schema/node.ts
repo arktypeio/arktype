@@ -95,6 +95,7 @@ const $ark = registry()
 export type BaseAttachments<kind extends NodeKind> = {
 	readonly kind: kind
 	readonly inner: Inner<kind>
+	readonly entries: entriesOf<Inner<kind>>
 	readonly json: Json
 	readonly typeJson: Json
 	readonly collapsibleJson: Json
@@ -115,7 +116,6 @@ export class BaseNode<
 	readonly ctor = BaseNode
 	protected readonly implementation: UnknownNodeImplementation =
 		NodeImplementationByKind[this.kind] as never
-	readonly entries: entriesOf<Inner<kind>> = entriesOf(this.inner)
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly references = this.children.flatMap(
@@ -154,12 +154,10 @@ export class BaseNode<
 		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
 		] as never
-		const expandedSchema = implementation.expand?.(schema) ?? {
-			...(schema as any)
-		}
+		const normalizedSchema: any = implementation.normalize?.(schema) ?? schema
 		const childContext =
-			implementation.updateContext?.(expandedSchema, ctx) ?? ctx
-		const schemaEntries = entriesOf(expandedSchema)
+			implementation.updateContext?.(normalizedSchema, ctx) ?? ctx
+		const schemaEntries = entriesOf(normalizedSchema)
 		const inner: Record<string, unknown> = {}
 		let json: Record<string, unknown> = {}
 		let typeJson: Record<string, unknown> = {}
@@ -172,6 +170,9 @@ export class BaseNode<
 			const innerValue = keyDefinition.parse
 				? keyDefinition.parse(v, childContext)
 				: v
+			if (innerValue === undefined && !keyDefinition.preserveUndefined) {
+				continue
+			}
 			inner[k] = innerValue
 			if (innerValue instanceof BaseNode) {
 				json[k] = innerValue.collapsibleJson
@@ -212,13 +213,9 @@ export class BaseNode<
 		if (this.#builtins?.unknownUnion.typeId === typeId) {
 			return this.#builtins.unknown as never
 		}
+		const innerEntries = entriesOf(inner)
 		let collapsibleJson = json
-		if (
-			schemaEntries.length === 1 &&
-			// the presence expand function indicates a single default key that is collapsible
-			// this helps avoid nodes like `unit` which would otherwise be indiscriminable
-			implementation.expand
-		) {
+		if (innerEntries.length === 1 && innerEntries[0][0] === kind) {
 			collapsibleJson = json[kind] as never
 			if (hasDomain(collapsibleJson, "object")) {
 				json = collapsibleJson
@@ -228,6 +225,7 @@ export class BaseNode<
 		return new BaseNode({
 			kind,
 			inner: inner as never,
+			entries: innerEntries as never,
 			json: json as Json,
 			typeJson: typeJson as Json,
 			collapsibleJson: collapsibleJson as Json,
