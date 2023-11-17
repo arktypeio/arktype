@@ -5,11 +5,11 @@ import {
 	hasDomain,
 	includes,
 	isArray,
-	listFrom,
 	stringify,
 	throwInternalError,
 	throwParseError,
-	type Json
+	type Json,
+	type conform
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.ts"
 import type {
@@ -20,7 +20,7 @@ import type {
 import { In, compileSerializedValue } from "./io/compile.ts"
 import { registry } from "./io/registry.ts"
 import { unflattenRules } from "./sets/intersection.ts"
-import type { ValidatorNode } from "./sets/morph.ts"
+import type { ValidatorKind, ValidatorNode } from "./sets/morph.ts"
 import type { parseSchemaBranches, validateSchemaBranch } from "./sets/union.ts"
 import { createBuiltins, type Builtins } from "./shared/builtins.ts"
 import type { BaseAttributes } from "./shared/declare.ts"
@@ -60,7 +60,7 @@ export type NodeParser = {
 }
 
 const parseRoot: NodeParser = (...branches) =>
-	BaseNode.parseSchemaKind("union", branches) as never
+	BaseNode.parseSchema("union", branches, createParseContext()) as never
 
 type UnitsParser = <const branches extends readonly unknown[]>(
 	...values: branches
@@ -75,11 +75,16 @@ const parseUnits: UnitsParser = (...values) => {
 			uniqueValues.push(value)
 		}
 	}
-	return BaseNode.parseSchemaKind("union", {
-		union: uniqueValues.map((unit) =>
-			BaseNode.parseSchemaKind("unit", { is: unit })
-		)
-	})
+	// TODO: don't reduce
+	return BaseNode.parseSchema(
+		"union",
+		{
+			union: uniqueValues.map((unit) =>
+				BaseNode.parseSchema("unit", { is: unit }, createParseContext())
+			)
+		},
+		createParseContext()
+	) as never
 }
 
 export const node = Object.assign(parseRoot, {
@@ -124,19 +129,15 @@ export class BaseNode<
 	readonly alias: string = $ark.register(this, this.inner.alias)
 	readonly description: string
 
-	static parseSchemaKind<kind extends NodeKind>(
-		kind: kind,
-		schema: Schema<kind>,
-		ctx = createParseContext()
-		// TODO: or reduction of kind
-	): UnknownNode {
-		if (schema instanceof BaseNode) {
-			if (schema.hasKind(kind)) {
-				return schema
-			}
-			return throwParseError(
-				`${schema.kind} node is not valid as a ${kind} schema`
-			)
+	static parseSchema<schemaKind extends NodeKind>(
+		allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
+		schema: Schema<schemaKind>,
+		ctx: ParseContext
+	): Node<reducibleKindOf<schemaKind>> {
+		const kind =
+			typeof allowedKinds === "string" ? allowedKinds : rootKindOfSchema(schema)
+		if (isArray(allowedKinds) && !allowedKinds.includes(kind as never)) {
+			return throwParseError(`Schema of kind ${kind} should be ${allowedKinds}`)
 		}
 		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
@@ -156,46 +157,24 @@ export class BaseNode<
 			if (!(k in implementation.keys)) {
 				return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 			}
-			if (keyDefinition.children) {
-				const innerKeyChildren = listFrom(v).map((child) => {
-					if (typeof keyDefinition.children === "string") {
-						return this.parseSchemaKind(
-							keyDefinition.children,
-							child,
-							childContext
-						)
-					}
-					const rootKind = rootKindOfSchema(child)
-					if (!keyDefinition.children!.includes(rootKind)) {
-						return throwParseError(
-							`Schema ${stringify(
-								child
-							)} of kind ${rootKind} is not allowed here. Valid kinds are: ${
-								keyDefinition.children
-							}`
-						)
-					}
-					return this.parseSchemaKind(rootKind, child, childContext)
-				})
-				if (isArray(v)) {
-					inner[k] = innerKeyChildren
-					json[k] = innerKeyChildren.map((child) => child.collapsibleJson)
-					typeJson[k] = innerKeyChildren.map((child) => child.collapsibleJson)
-					children.push(...innerKeyChildren)
-				} else {
-					inner[k] = innerKeyChildren[0]
-					json[k] = innerKeyChildren[0].collapsibleJson
-					typeJson[k] = innerKeyChildren[0].collapsibleJson
-					children.push(innerKeyChildren[0])
-				}
+			const innerValue = keyDefinition.parse
+				? keyDefinition.parse(v, childContext)
+				: v
+			inner[k] = innerValue
+			if (innerValue instanceof BaseNode) {
+				json[k] = innerValue.collapsibleJson
+				children.push(innerValue)
+			} else if (
+				isArray(innerValue) &&
+				innerValue.every((_): _ is UnknownNode => _ instanceof BaseNode)
+			) {
+				json[k] = innerValue.map((node) => node.collapsibleJson)
+				children.push(...innerValue)
 			} else {
-				inner[k] = keyDefinition.parse
-					? keyDefinition.parse(v, childContext)
-					: v
 				json[k] = defaultValueSerializer(v)
-				if (!keyDefinition.meta) {
-					typeJson[k] = json[k]
-				}
+			}
+			if (!keyDefinition.meta) {
+				typeJson[k] = json[k]
 			}
 		}
 		for (const k of implementation.defaultableKeys) {
@@ -212,7 +191,7 @@ export class BaseNode<
 		const typeId = JSON.stringify(typeJson)
 		const reducedInner = implementation.reduce?.(inner) ?? inner
 		if (reducedInner instanceof BaseNode) {
-			return reducedInner
+			return reducedInner as never
 		}
 		let collapsibleJson = json
 		if (
@@ -229,14 +208,14 @@ export class BaseNode<
 		}
 		return new BaseNode({
 			kind,
-			inner,
+			inner: inner as never,
 			json: json as Json,
 			typeJson: typeJson as Json,
 			collapsibleJson: collapsibleJson as Json,
 			children,
 			id,
 			typeId
-		})
+		}) as never
 	}
 
 	private constructor(baseAttachments: BaseAttachments<kind>) {
@@ -296,15 +275,21 @@ export class BaseNode<
 		const ioInner: Record<string, unknown> = {}
 		for (const [k, v] of this.entries) {
 			const keyDefinition = this.implementation.keys[k as keyof BaseAttributes]!
-			if (keyDefinition.children) {
-				ioInner[k] = Array.isArray(v)
-					? v.map((child) => child[kind])
-					: (v as UnknownNode)[kind]
-			} else if (!keyDefinition.meta) {
-				ioInner[k] = this.inner[k]
+			if (keyDefinition.meta) {
+				continue
+			}
+			if (v instanceof BaseNode) {
+				ioInner[k] = v[kind]
+			} else if (
+				Array.isArray(v) &&
+				v.every((_): _ is UnknownNode => _ instanceof BaseNode)
+			) {
+				ioInner[k] = v.map((child) => child[kind])
+			} else {
+				ioInner[k] = v
 			}
 		}
-		return BaseNode.parseSchemaKind(this.kind, ioInner)
+		return BaseNode.parseSchema(this.kind, ioInner, createParseContext())
 	}
 
 	toJSON() {
@@ -365,9 +350,10 @@ export class BaseNode<
 				`Unexpected null intersection between non-rules ${this.kind} and ${other.kind}`
 			)
 		}
-		return BaseNode.parseSchemaKind(
+		return BaseNode.parseSchema(
 			"intersection",
-			unflattenRules([this as never, other]) as never
+			unflattenRules([this as never, other]) as never,
+			createParseContext()
 		)
 	}
 
@@ -389,7 +375,7 @@ export class BaseNode<
 				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: meta
-			return BaseNode.parseSchemaKind(l.kind, result) as never
+			return BaseNode.parseSchema(l.kind, result, createParseContext()) as never
 		}
 		return null
 	}
@@ -399,8 +385,8 @@ export class BaseNode<
 		kind: constraintKind,
 		definition: Schema<constraintKind>
 	): Exclude<intersectionOf<this["kind"], constraintKind>, Disjoint> {
-		const result = this.intersect(
-			BaseNode.parseSchemaKind(kind, definition as never)
+		const result: Disjoint | UnknownNode = this.intersect(
+			BaseNode.parseSchema(kind, definition as never, createParseContext())
 		)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
@@ -482,6 +468,12 @@ export class BaseNode<
 		return basisKind
 	}
 }
+
+export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
+	? RootKind
+	: kind extends "intersection"
+	  ? ValidatorKind
+	  : kind
 
 const defaultValueSerializer = (v: unknown) => {
 	if (

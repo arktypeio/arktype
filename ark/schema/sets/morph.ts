@@ -33,16 +33,16 @@ export type validateValidator<schema> = [schema] extends [
 ]
 	? schema
 	: schema extends ExpandedSchema<BasisKind>
-	? exactMessageOnError<schema, ExpandedSchema<keyof schema & BasisKind>>
-	: schema extends IntersectionSchema
-	? validateIntersectionSchema<schema>
-	: ValidatorSchema
+	  ? exactMessageOnError<schema, ExpandedSchema<keyof schema & BasisKind>>
+	  : schema extends IntersectionSchema
+	    ? validateIntersectionSchema<schema>
+	    : ValidatorSchema
 
 export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
 	? parseBasis<schema>
 	: schema extends IntersectionSchema
-	? parseIntersectionSchema<schema>
-	: Node<"intersection" | BasisKind>
+	  ? parseIntersectionSchema<schema>
+	  : Node<"intersection" | BasisKind>
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
@@ -85,10 +85,12 @@ export const MorphImplementation = defineNode({
 	kind: "morph",
 	keys: {
 		in: {
-			children: ["intersection", ...basisKinds]
+			parse: (schema, ctx) =>
+				ctx.ctor.parseSchema(["intersection", ...basisKinds], schema, ctx)
 		},
 		out: {
-			children: ["intersection", ...basisKinds]
+			parse: (schema, ctx) =>
+				ctx.ctor.parseSchema(["intersection", ...basisKinds], schema, ctx)
 		},
 		morph: {
 			parse: listFrom
@@ -154,8 +156,8 @@ export type validateMorphSchema<schema> = {
 	[k in keyof schema]: k extends "in" | "out"
 		? validateValidator<schema[k]>
 		: k extends keyof MorphSchema
-		? MorphSchema[k]
-		: `'${k & string}' is not a valid morph schema key`
+		  ? MorphSchema[k]
+		  : `'${k & string}' is not a valid morph schema key`
 }
 
 export type parseMorphSchema<schema> = schema extends MorphSchema
@@ -168,9 +170,9 @@ export type parseMorphSchema<schema> = schema extends MorphSchema
 			) => schema["out"] extends {}
 				? Out<parseValidatorSchema<schema["out"]>["infer"]>
 				: schema["morph"] extends
-						| Morph<any, infer o>
-						| readonly [...unknown[], Morph<any, infer o>]
-				? Out<inferMorphOut<o>>
-				: never
+							| Morph<any, infer o>
+							| readonly [...unknown[], Morph<any, infer o>]
+				  ? Out<inferMorphOut<o>>
+				  : never
 	  >
 	: never

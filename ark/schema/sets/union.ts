@@ -34,14 +34,14 @@ export type parseSchemaBranches<branches extends readonly unknown[]> =
 	branches["length"] extends 0
 		? BaseNode<"union", never>
 		: branches["length"] extends 1
-		? parseSchemaBranch<branches[0]>
-		: Node<RootKind, parseSchemaBranch<branches[number]>["infer"]>
+		  ? parseSchemaBranch<branches[0]>
+		  : Node<RootKind, parseSchemaBranch<branches[number]>["infer"]>
 
 export type parseSchemaBranch<schema> = schema extends MorphSchema
 	? parseMorphSchema<schema>
 	: schema extends ValidatorSchema
-	? parseValidatorSchema<schema>
-	: BranchNode
+	  ? parseValidatorSchema<schema>
+	  : BranchNode
 
 export type ExpandedUnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
@@ -96,7 +96,14 @@ export const UnionImplementation = defineNode({
 	kind: "union",
 	keys: {
 		union: {
-			children: ["morph", "intersection", ...basisKinds]
+			parse: (schema, ctx) =>
+				schema.map((branch) =>
+					ctx.ctor.parseSchema(
+						["morph", "intersection", ...basisKinds],
+						branch,
+						ctx
+					)
+				)
 		},
 		ordered: {}
 	},
@@ -148,11 +155,11 @@ export const UnionImplementation = defineNode({
 			return union.length === 0
 				? Disjoint.from("union", l.union, [r])
 				: l.ordered
-				? {
-						union,
-						ordered: true
-				  }
-				: { union }
+				  ? {
+							union,
+							ordered: true
+				    }
+				  : { union }
 		}
 	},
 	expand: (schema) => (isArray(schema) ? { union: schema } : schema),

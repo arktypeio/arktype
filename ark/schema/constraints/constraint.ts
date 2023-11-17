@@ -59,8 +59,8 @@ export type ConstraintAttachments<implicitBasisType> = extend<
 
 export type ConstraintIntersectionInputsByKind = {
 	[k in ConstraintKind]: k extends OpenConstraintKind
-		? Schema<k>
-		: listable<Schema<k>>
+		? listable<Schema<k>>
+		: Schema<k>
 }
 
 export type ConstraintIntersectionInput<

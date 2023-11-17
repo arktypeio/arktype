@@ -1,12 +1,12 @@
 import type {
 	Dict,
 	evaluate,
-	listable,
 	optionalizeKeys,
+	requireKeys,
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { ParseContext, UnknownNode } from "../node.ts"
+import type { ParseContext } from "../node.ts"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
 import type { rightOf } from "./intersect.ts"
 import type { Declaration, ExpandedSchema, Inner, Node } from "./node.ts"
@@ -34,29 +34,29 @@ export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
 export type NodeKeyDefinition<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"]
-> = {
-	meta?: true
-	children?: listable<NodeKind>
-	defaultable?: true
-	parse?: (
-		schema: k extends keyof ExpandedSchema<d["kind"]>
-			? ExpandedSchema<d["kind"]>[k]
-			: undefined,
-		ctx: ParseContext
-	) => d["inner"][k]
-	// require parse or children if we can't guarantee the schema value will be valid on inner
-} & (ExpandedSchema<d["kind"]>[k] extends d["inner"][k]
-	? {}
-	: d["inner"][k] extends listable<UnknownNode> | undefined
-	  ? { children: {}; parse?: never }
-	  : // ensure we can provide a default if the key is required on inner but
-	    // optional or not present on schema
-	    k extends Exclude<
+> = requireKeys<
+	{
+		meta?: true
+		defaultable?: true
+		parse?: (
+			schema: k extends keyof ExpandedSchema<d["kind"]>
+				? Exclude<ExpandedSchema<d["kind"]>[k], undefined>
+				: undefined,
+			ctx: ParseContext
+		) => d["inner"][k]
+		// require parse or children if we can't guarantee the schema value will be valid on inner
+	},
+	ExpandedSchema<d["kind"]>[k] extends d["inner"][k]
+		? never
+		: // ensure we can provide a default if the key is required on inner but
+		  // optional or not present on schema
+		  k extends Exclude<
 					requiredKeyOf<d["inner"]>,
 					requiredKeyOf<d["expandedSchema"]>
-	      >
-	    ? { parse: {}; children?: never; defaultable: {} }
-	    : { parse: {}; children?: never })
+		    >
+		  ? "parse" | "defaultable"
+		  : "parse"
+>
 
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]

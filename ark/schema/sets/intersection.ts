@@ -1,7 +1,7 @@
 import {
 	includes,
+	listFrom,
 	throwInternalError,
-	transform,
 	type ErrorMessage,
 	type conform,
 	type extend,
@@ -19,12 +19,7 @@ import type {
 	declareNode,
 	withAttributes
 } from "../shared/declare.ts"
-import {
-	basisKinds,
-	constraintKinds,
-	defineNode,
-	type RuleKind
-} from "../shared/define.ts"
+import { constraintKinds, defineNode, type RuleKind } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import type { Node, Schema } from "../shared/node.ts"
 import type { SetAttachments } from "./set.ts"
@@ -69,23 +64,45 @@ export type IntersectionDeclaration = declareNode<{
 
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
-	keys: Object.assign(
-		{
-			basis: {
-				children: basisKinds
-			}
+	keys: {
+		basis: {
+			// this gets parsed ahead of time in updateContext, so we just reuse that
+			parse: (schema, ctx) => ctx.basis
 		},
-		transform(
-			constraintKinds,
-			([i, kind]) =>
-				[
-					kind,
-					{
-						children: kind
-					}
-				] as const
-		)
-	),
+		divisor: {
+			parse: (schema, ctx) => ctx.ctor.parseSchema("divisor", schema, ctx)
+		},
+		max: {
+			parse: (schema, ctx) => ctx.ctor.parseSchema("max", schema, ctx)
+		},
+		min: {
+			parse: (schema, ctx) => ctx.ctor.parseSchema("min", schema, ctx)
+		},
+		pattern: {
+			parse: (schema, ctx) =>
+				listFrom(schema).map((schema) =>
+					ctx.ctor.parseSchema("pattern", schema, ctx)
+				)
+		},
+		predicate: {
+			parse: (schema, ctx) =>
+				listFrom(schema).map((schema) =>
+					ctx.ctor.parseSchema("predicate", schema, ctx)
+				)
+		},
+		optional: {
+			parse: (schema, ctx) =>
+				listFrom(schema).map((schema) =>
+					ctx.ctor.parseSchema("optional", schema, ctx)
+				)
+		},
+		required: {
+			parse: (schema, ctx) =>
+				listFrom(schema).map((schema) =>
+					ctx.ctor.parseSchema("required", schema, ctx)
+				)
+		}
+	},
 	updateContext: (schema, ctx) => {
 		if (schema.basis === undefined) {
 			return ctx
@@ -93,7 +110,7 @@ export const IntersectionImplementation = defineNode({
 		const basisKind = ctx.ctor.getBasisKindOrThrow(schema.basis)
 		return {
 			...ctx,
-			basis: ctx.ctor.parseSchemaKind(basisKind, schema.basis)
+			basis: ctx.ctor.parseSchema(basisKind, schema.basis, ctx)
 		}
 	},
 	intersections: {

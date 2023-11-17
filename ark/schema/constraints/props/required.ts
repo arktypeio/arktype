@@ -34,7 +34,7 @@ export const RequiredImplementation = defineNode({
 	keys: {
 		key: {},
 		value: {
-			children: rootKinds
+			parse: (schema, ctx) => ctx.ctor.parseSchema(rootKinds, schema, ctx)
 		}
 	},
 	intersections: {
