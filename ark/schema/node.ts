@@ -144,6 +144,14 @@ export class BaseNode<
 		return this.parseSchema(kind, schema, ctx) as never
 	}
 
+	static parseConstraint<kind extends ConstraintKind>(
+		kind: kind,
+		schema: Schema<kind>,
+		basis: Node<BasisKind> | undefined
+	): Node<kind> {
+		return this.parseSchema(kind, schema, { ctor: BaseNode, basis }) as never
+	}
+
 	static parseSchema<schemaKind extends NodeKind>(
 		allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
 		schema: Schema<schemaKind>,
@@ -406,16 +414,21 @@ export class BaseNode<
 	constrain<constraintKind extends ConstraintKind>(
 		this: Node<RootKind>,
 		kind: constraintKind,
-		definition: Schema<constraintKind>
+		schema: Schema<constraintKind>
 	): Exclude<intersectionOf<this["kind"], constraintKind>, Disjoint> {
-		const result: Disjoint | UnknownNode = this.intersect(
-			BaseNode.parseSchema(
+		const constrainedBranches = this.branches.map((branch) => {
+			const constraint = BaseNode.parseConstraint(
 				kind,
-				definition as never,
-				createParseContext()
+				schema as never,
+				extractBasis(branch)
 			) as any
-		)
-		return result instanceof Disjoint ? result.throw() : (result as never)
+			return branch.and(constraint)
+		})
+		return BaseNode.parseSchema(
+			"union",
+			{ union: constrainedBranches },
+			createParseContext()
+		) as never
 	}
 
 	keyof() {
@@ -512,6 +525,13 @@ export function createParseContext(): ParseContext {
 		basis: undefined
 	}
 }
+const extractBasis = (branch: Node<BranchKind>) =>
+	branch.kind === "morph"
+		? extractValidatorBasis(branch.in)
+		: extractValidatorBasis(branch)
+
+const extractValidatorBasis = (validator: Node<ValidatorKind>) =>
+	validator.kind === "intersection" ? validator.basis : validator
 
 export const rootKindOfSchema = (schema: unknown): RootKind => {
 	const basisKind = maybeGetBasisKind(schema)
