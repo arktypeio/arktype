@@ -133,7 +133,7 @@ export const IntersectionImplementation = defineNode({
 			return result instanceof Disjoint ? result : unflattenRules(result)
 		}
 	},
-	reduce: (inner) => {
+	reduce: (inner, ctx) => {
 		const { description, alias, ...rulesByKind } = inner
 		const inputRules = Object.values(rulesByKind).flat() as RuleSet
 		const reducedRules = reduceRules([], inputRules)
@@ -145,7 +145,7 @@ export const IntersectionImplementation = defineNode({
 			return reducedRules[0]
 		}
 		if (reducedRules.length === inputRules.length) {
-			return inner
+			return
 		}
 		const reducedRulesByKind = unflattenRules(
 			reducedRules
@@ -156,7 +156,7 @@ export const IntersectionImplementation = defineNode({
 		if (alias) {
 			reducedRulesByKind.alias = alias
 		}
-		return reducedRulesByKind
+		return ctx.ctor.parsePrereduced("intersection", reducedRulesByKind)
 	},
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {

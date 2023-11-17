@@ -163,13 +163,19 @@ export const UnionImplementation = defineNode({
 		}
 	},
 	expand: (schema) => (isArray(schema) ? { union: schema } : schema),
-	reduce: (inner) => {
+	reduce: (inner, ctx) => {
 		const reducedBranches = reduceBranches(inner)
 		if (reducedBranches.length === 1) {
 			// TODO: description?
 			return reducedBranches[0]
 		}
-		return { ...inner, union: reducedBranches }
+		if (reducedBranches.length !== inner.union.length) {
+			return
+		}
+		return ctx.ctor.parsePrereduced("union", {
+			...inner,
+			union: reducedBranches
+		})
 	},
 	attach: (inner) => {
 		return {

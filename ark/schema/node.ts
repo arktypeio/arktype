@@ -129,6 +129,15 @@ export class BaseNode<
 	readonly alias: string = $ark.register(this, this.inner.alias)
 	readonly description: string
 
+	static parsePrereduced<kind extends NodeKind>(
+		kind: kind,
+		schema: Schema<kind>
+	): Node<kind> {
+		const ctx = createParseContext()
+		ctx.prereduced = true
+		return this.parseSchema(kind, schema, ctx) as never
+	}
+
 	static parseSchema<schemaKind extends NodeKind>(
 		allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
 		schema: Schema<schemaKind>,
@@ -190,17 +199,18 @@ export class BaseNode<
 				}
 			}
 		}
-		const reducedInner =
-			implementation.reduce && !ctx.prereduced
-				? implementation.reduce(inner)
-				: inner
+		if (!ctx.prereduced) {
+			if (implementation.reduce) {
+				const reduced = implementation.reduce(inner, ctx)
+				if (reduced) {
+					return reduced as never
+				}
+			}
+		}
 		const id = JSON.stringify(json)
 		const typeId = JSON.stringify(typeJson)
-		if (!ctx.prereduced && this.#builtins?.unknownUnion.typeId === typeId) {
+		if (this.#builtins?.unknownUnion.typeId === typeId) {
 			return this.#builtins.unknown as never
-		}
-		if (reducedInner instanceof BaseNode) {
-			return reducedInner as never
 		}
 		let collapsibleJson = json
 		if (
@@ -217,7 +227,7 @@ export class BaseNode<
 		}
 		return new BaseNode({
 			kind,
-			inner: reducedInner as never,
+			inner: inner as never,
 			json: json as Json,
 			typeJson: typeJson as Json,
 			collapsibleJson: collapsibleJson as Json,

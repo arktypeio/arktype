@@ -15,21 +15,19 @@ export function createBuiltins() {
 		undefined: node({ is: undefined }),
 		true: node({ is: true }),
 		never: node(),
-		unknownUnion: BaseNode.parseSchema(
-			"union",
-			[
-				"string",
-				"number",
-				"object",
-				"bigint",
-				"symbol",
-				{ is: true },
-				{ is: false },
-				{ is: null },
-				{ is: undefined }
-			],
-			{ ctor: BaseNode, basis: undefined, prereduced: true }
-		)
+		// this is parsed as prereduced so we can compare future
+		// unions to it to determine if they should be reduced to unknown
+		unknownUnion: BaseNode.parsePrereduced("union", [
+			"string",
+			"number",
+			"object",
+			"bigint",
+			"symbol",
+			{ is: true },
+			{ is: false },
+			{ is: null },
+			{ is: undefined }
+		])
 	} as const
 }
 

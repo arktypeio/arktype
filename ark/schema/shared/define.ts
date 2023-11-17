@@ -6,7 +6,7 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { ParseContext } from "../node.ts"
+import type { ParseContext, reducibleKindOf } from "../node.ts"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
 import type { rightOf } from "./intersect.ts"
 import type { Declaration, ExpandedSchema, Inner, Node } from "./node.ts"
@@ -71,8 +71,9 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
 	reduce?: (
-		inner: d["inner"]
-	) => Node<Extract<RootKind, rightOf<d["kind"]>>> | d["inner"]
+		inner: d["inner"],
+		ctx: ParseContext
+	) => Node<reducibleKindOf<d["kind"]>> | undefined
 	expand?: (
 		schema: d["collapsedSchema"] | d["expandedSchema"]
 	) => d["expandedSchema"]

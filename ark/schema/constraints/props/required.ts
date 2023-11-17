@@ -2,9 +2,10 @@ import type { BasisKind } from "../../bases/basis.ts"
 import type { declareNode, withAttributes } from "../../shared/declare.ts"
 import { defineNode, rootKinds, type RootKind } from "../../shared/define.ts"
 import { Disjoint } from "../../shared/disjoint.ts"
-import type { Node, Schema } from "../../shared/node.ts"
+import type { Inner, Node, Schema } from "../../shared/node.ts"
 import type { ConstraintAttachments } from "../constraint.ts"
 import { getBasisName } from "../shared.ts"
+import type { PropKind } from "./prop.ts"
 
 export type RequiredPropSchema = withAttributes<{
 	readonly key: string | symbol
@@ -22,9 +23,28 @@ export type RequiredDeclaration = declareNode<{
 	inner: RequiredPropInner
 	intersections: {
 		required: "required" | Disjoint | null
+		optional: "required" | Disjoint | null
 	}
 	attach: ConstraintAttachments<object>
 }>
+
+const intersectNamed = (
+	l: Node<PropKind>,
+	r: Node<PropKind>
+): Inner<PropKind> | Disjoint | null => {
+	if (l.key !== r.key) {
+		return null
+	}
+	const required = l.key
+	const value = l.value.intersect(r.value)
+	if (value instanceof Disjoint) {
+		return value
+	}
+	return {
+		key: required,
+		value
+	}
+}
 
 const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
 	`Props may only be applied to an object basis (was ${getBasisName(basis)})`
@@ -38,20 +58,8 @@ export const RequiredImplementation = defineNode({
 		}
 	},
 	intersections: {
-		required: (l, r) => {
-			if (l.key !== r.key) {
-				return null
-			}
-			const required = l.key
-			const value = l.value.intersect(r.value)
-			if (value instanceof Disjoint) {
-				return value
-			}
-			return {
-				key: required,
-				value
-			}
-		}
+		required: intersectNamed,
+		optional: intersectNamed
 	},
 	expand: (schema) => schema as never,
 	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
