@@ -9,7 +9,8 @@
 		"object-shorthand",
 		"@typescript-eslint/consistent-type-imports",
 		"import/no-duplicates",
-		"@typescript-eslint/no-import-type-side-effects"
+		"@typescript-eslint/no-import-type-side-effects",
+		"import/order"
 	],
 	"eslint.rules.customizations": [
 		// This will still be caught when run from the CLI, but it's too often
@@ -33,6 +34,8 @@
 		"--no-warnings=ExperimentalWarning",
 		"--conditions=arktype-repo"
 	],
+	// ignore attest it requires type information
+	"mochaExplorer.ignore": ["ark/attest/**/*"],
 	"mochaExplorer.require": "ark/repo/mocha.fixtures.ts",
 	"mochaExplorer.timeout": 0,
 	"mochaExplorer.env": {

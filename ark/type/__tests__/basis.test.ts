@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import type { Root } from "@arktype/schema"
 import { type } from "arktype"
-
 import { writeUnsatisfiableExpressionError } from "../parser/semantic/validate.ts"
 
 describe("basis intersections", () => {

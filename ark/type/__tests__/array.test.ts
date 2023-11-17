@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
 import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.ts"
 import {

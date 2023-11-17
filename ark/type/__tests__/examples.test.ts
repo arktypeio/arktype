@@ -1,5 +1,3 @@
-import { attest } from "@arktype/attest"
-
 describe("snippets", () => {
 	// it("demo", async () => {
 	// 	const typeSnippet = await import("../../docs/examples/demo.js")

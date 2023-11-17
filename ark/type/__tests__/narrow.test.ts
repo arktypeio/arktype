@@ -90,11 +90,14 @@ describe("narrow", () => {
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
 		attest<Type<(In: string) => Out<5>>>(t)
-		attest(t.json).snap()
+		attest(t.json).snap({ domain: "string" })
 	})
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")
 		attest<`f${string}`>(t.infer)
-		attest(t.json).snap()
+		attest(t.json).snap({
+			basis: "string",
+			predicate: ["$ark.anonymousFunction8"]
+		})
 	})
 })

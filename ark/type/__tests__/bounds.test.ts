@@ -1,13 +1,11 @@
 import { attest } from "@arktype/attest"
-import type { BoundInner } from "@arktype/schema"
 import {
-	node,
 	writeIncompatibleRangeMessage,
-	writeUnboundableMessage
+	writeUnboundableMessage,
+	type BoundInner
 } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
-
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.ts"
 import {
 	writeMultipleLeftBoundsMessage,

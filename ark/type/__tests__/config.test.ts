@@ -1,6 +1,3 @@
-import { attest } from "@arktype/attest"
-import { scope, type } from "arktype"
-
 describe("config traversal", () => {
 	// it("tuple expression", () => {
 	//     const mustBe = "a series of characters"

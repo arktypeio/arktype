@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { writeUnboundableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
-
 import { writeInvalidPropertyKeyMessage } from "../parser/objectLiteral.ts"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
 
@@ -13,7 +12,7 @@ describe("object literal", () => {
 	it("required", () => {
 		const o = type({ a: "string", b: "boolean" })
 		attest<{ a: string; b: boolean }>(o.infer)
-		attest(o.json).snap()
+		attest(o.json).snap({ domain: "object" })
 	})
 	it("optional keys", () => {
 		const o = type({ "a?": "string", b: "boolean" })
