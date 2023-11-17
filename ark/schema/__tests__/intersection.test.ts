@@ -96,9 +96,7 @@ describe("intersections", () => {
 			{ is: null },
 			{ is: undefined }
 		)
-		attest(n.typeId).snap(
-			'["string","number","object","bigint","symbol",{"is":true},{"is":false},{"is":null},{"is":"undefined"}]'
-		)
+		attest(n.json).snap({})
 	})
 	// TODO:
 	// it("strict intersection", () => {

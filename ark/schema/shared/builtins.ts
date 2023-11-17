@@ -1,4 +1,4 @@
-import { node } from "../node.ts"
+import { BaseNode, node } from "../node.ts"
 
 export function createBuiltins() {
 	return {
@@ -14,7 +14,22 @@ export function createBuiltins() {
 		null: node({ is: null }),
 		undefined: node({ is: undefined }),
 		true: node({ is: true }),
-		never: node()
+		never: node(),
+		unknownUnion: BaseNode.parseSchema(
+			"union",
+			[
+				"string",
+				"number",
+				"object",
+				"bigint",
+				"symbol",
+				{ is: true },
+				{ is: false },
+				{ is: null },
+				{ is: undefined }
+			],
+			{ ctor: BaseNode, basis: undefined, prereduced: true }
+		)
 	} as const
 }
 

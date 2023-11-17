@@ -190,15 +190,21 @@ export class BaseNode<
 				}
 			}
 		}
+		const reducedInner =
+			implementation.reduce && !ctx.prereduced
+				? implementation.reduce(inner)
+				: inner
 		const id = JSON.stringify(json)
 		const typeId = JSON.stringify(typeJson)
-		const reducedInner = implementation.reduce?.(inner) ?? inner
+		if (!ctx.prereduced && this.#builtins?.unknownUnion.typeId === typeId) {
+			return this.#builtins.unknown as never
+		}
 		if (reducedInner instanceof BaseNode) {
 			return reducedInner as never
 		}
 		let collapsibleJson = json
 		if (
-			Object.keys(expandedSchema).length === 1 &&
+			schemaEntries.length === 1 &&
 			// the presence expand function indicates a single default key that is collapsible
 			// this helps avoid nodes like `unit` which would otherwise be indiscriminable
 			implementation.expand
@@ -211,7 +217,7 @@ export class BaseNode<
 		}
 		return new BaseNode({
 			kind,
-			inner: inner as never,
+			inner: reducedInner as never,
 			json: json as Json,
 			typeJson: typeJson as Json,
 			collapsibleJson: collapsibleJson as Json,
@@ -478,6 +484,7 @@ const defaultValueSerializer = (v: unknown) => {
 export type ParseContext = {
 	ctor: typeof BaseNode
 	basis: Node<BasisKind> | undefined
+	prereduced?: true
 }
 
 export function createParseContext(): ParseContext {
