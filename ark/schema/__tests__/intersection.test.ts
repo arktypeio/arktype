@@ -6,7 +6,7 @@ describe("intersections", () => {
 	it("root type assignment", () => {
 		const t = node({ basis: "string", pattern: "/.*/" })
 		attest<BaseNode<"intersection", string>>(t)
-		attest(t.json).snap({ basis: "string", pattern: ".*" })
+		attest(t.json).snap({ basis: "string", pattern: [".*"] })
 		// previously had issues with a union complexity error when assigning to Root | undefined
 		const root: Node<RootKind> | undefined = node({
 			basis: "string",
@@ -58,7 +58,7 @@ describe("intersections", () => {
 		})
 		attest(parseNumber.in.json).snap({
 			basis: "string",
-			pattern: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$",
+			pattern: ["^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"],
 			description: "a well-formed numeric string"
 		})
 		attest(parseNumber.out.json).snap({})

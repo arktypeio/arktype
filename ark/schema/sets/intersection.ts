@@ -7,7 +7,11 @@ import {
 	type extend,
 	type mutable
 } from "@arktype/util"
-import type { BasisKind, parseBasis } from "../bases/basis.ts"
+import {
+	getBasisKindOrThrow,
+	type BasisKind,
+	type parseBasis
+} from "../bases/basis.ts"
 import type {
 	ConstraintKind,
 	OpenConstraintKind,
@@ -107,7 +111,7 @@ export const IntersectionImplementation = defineNode({
 		if (schema.basis === undefined) {
 			return ctx
 		}
-		const basisKind = ctx.ctor.getBasisKindOrThrow(schema.basis)
+		const basisKind = getBasisKindOrThrow(schema.basis)
 		return {
 			...ctx,
 			basis: ctx.ctor.parseSchema(basisKind, schema.basis, ctx)

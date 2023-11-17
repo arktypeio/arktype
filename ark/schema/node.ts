@@ -5,20 +5,19 @@ import {
 	hasDomain,
 	includes,
 	isArray,
-	stringify,
 	throwInternalError,
 	throwParseError,
 	type Json,
 	type conform
 } from "@arktype/util"
-import type { BasisKind } from "./bases/basis.ts"
+import { maybeGetBasisKind, type BasisKind } from "./bases/basis.ts"
 import type {
 	ClosedConstraintKind,
 	ConstraintKind,
 	OpenConstraintKind
 } from "./constraints/constraint.ts"
 import { In, compileSerializedValue } from "./io/compile.ts"
-import { registry } from "./io/registry.ts"
+import { arkKind, registry } from "./io/registry.ts"
 import { unflattenRules } from "./sets/intersection.ts"
 import type { ValidatorKind, ValidatorNode } from "./sets/morph.ts"
 import type { parseSchemaBranches, validateSchemaBranch } from "./sets/union.ts"
@@ -110,7 +109,8 @@ export class BaseNode<
 > extends DynamicBase<Inner<kind> & Attachments<kind> & BaseAttachments<kind>> {
 	// TODO: standardize name with type
 	declare infer: t;
-	declare [inferred]: t
+	declare [inferred]: t;
+	readonly [arkKind] = "node"
 
 	readonly ctor = BaseNode
 	protected readonly implementation: UnknownNodeImplementation =
@@ -138,6 +138,9 @@ export class BaseNode<
 			typeof allowedKinds === "string" ? allowedKinds : rootKindOfSchema(schema)
 		if (isArray(allowedKinds) && !allowedKinds.includes(kind as never)) {
 			return throwParseError(`Schema of kind ${kind} should be ${allowedKinds}`)
+		}
+		if (schema instanceof BaseNode) {
+			return schema as never
 		}
 		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
@@ -386,7 +389,11 @@ export class BaseNode<
 		definition: Schema<constraintKind>
 	): Exclude<intersectionOf<this["kind"], constraintKind>, Disjoint> {
 		const result: Disjoint | UnknownNode = this.intersect(
-			BaseNode.parseSchema(kind, definition as never, createParseContext())
+			BaseNode.parseSchema(
+				kind,
+				definition as never,
+				createParseContext()
+			) as any
 		)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
@@ -448,25 +455,6 @@ export class BaseNode<
 		}
 		return this.#builtins
 	}
-
-	// TODO: this shouldn't be attached here. Use ArkKind to allow checking for BaseNode?
-	static getBasisKindOrThrow(schema: unknown) {
-		const basisKind = maybeGetBasisKind(schema)
-		if (basisKind === undefined) {
-			return throwParseError(
-				`${stringify(
-					schema
-				)} is not a valid basis schema. Please provide one of the following:
-					- A string representing a non-enumerable domain ("string", "number", "object", "bigint", or "symbol")
-					- A constructor like Array
-					- A schema object with one of the following keys:
-					- "domain"
-					- "proto"
-					- "is"`
-			)
-		}
-		return basisKind
-	}
 }
 
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
@@ -519,31 +507,6 @@ export const rootKindOfSchema = (schema: unknown): RootKind => {
 		}
 	}
 	return throwParseError(`${schema} is not a valid root schema type`)
-}
-
-export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
-	switch (typeof schema) {
-		case "string":
-			return "domain"
-		case "function":
-			return "proto"
-		case "object":
-			if (schema === null) {
-				return
-			}
-			if (schema instanceof BaseNode) {
-				if (schema.isBasis()) {
-					return schema.kind
-				}
-			}
-			if ("domain" in schema) {
-				return "domain"
-			} else if ("proto" in schema) {
-				return "proto"
-			} else if ("is" in schema) {
-				return "unit"
-			}
-	}
 }
 
 // static from<const branches extends readonly unknown[]>(

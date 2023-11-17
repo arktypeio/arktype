@@ -11,6 +11,7 @@ import {
 	type Out,
 	type Predicate,
 	type Root,
+	type UnknownNode,
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
@@ -119,7 +120,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 }
 
 export type ArkKinds = {
-	node: Root
+	node: UnknownNode
 	generic: Generic
 	module: Module
 }

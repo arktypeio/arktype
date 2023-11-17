@@ -1,7 +1,11 @@
 import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
+import type { UnknownNode } from "../node.ts"
 import { isDotAccessible } from "./compile.ts"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
+
+export const isNode = (o: unknown): o is UnknownNode =>
+	(o as any)?.[arkKind] === "node"
 
 export const registry = () => new Registry()
 
