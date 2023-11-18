@@ -6,7 +6,8 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { ParseContext, reducibleKindOf } from "../node.ts"
+import type { SchemaParseContext } from "../parse.ts"
+import type { RootNode, reducibleKindOf } from "../root.ts"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
 import type { rightOf } from "./intersect.ts"
 import type {
@@ -62,7 +63,10 @@ export type OrderedNodeKinds = typeof nodeKinds
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
-export type Root<t = unknown, kind extends RootKind = RootKind> = Node<kind, t>
+export type Root<
+	t = unknown,
+	kind extends RootKind = RootKind
+> = kind extends RootKind ? RootNode<kind, t> : never
 
 type BaseAttributeKeyDefinitions = {
 	[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
@@ -96,7 +100,7 @@ export type NodeKeyDefinition<
 			schema: k extends keyof ExpandedSchema<d["kind"]>
 				? Exclude<ExpandedSchema<d["kind"]>[k], undefined>
 				: undefined,
-			ctx: ParseContext
+			ctx: SchemaParseContext
 		) => d["inner"][k]
 		// require parse or children if we can't guarantee the schema value will be valid on inner
 	},
@@ -117,8 +121,8 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	keys: InnerKeyDefinitions<d>
 	updateContext?: (
 		schema: d["expandedSchema"],
-		ctx: Readonly<ParseContext>
-	) => ParseContext
+		ctx: Readonly<SchemaParseContext>
+	) => SchemaParseContext
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (inner: Node<d["kind"]>) => string
 	attach: (inner: Node<d["kind"]>) => {
@@ -126,7 +130,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	}
 	reduce?: (
 		inner: d["inner"],
-		ctx: ParseContext
+		ctx: SchemaParseContext
 	) => Node<reducibleKindOf<d["kind"]>> | undefined
 	normalize?: (schema: Schema<d["kind"]>) => d["expandedSchema"]
 	// require expand if collapsedSchema is defined

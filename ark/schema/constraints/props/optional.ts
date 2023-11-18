@@ -1,3 +1,5 @@
+import { parseSchema } from "../../parse.ts"
+import { builtins } from "../../shared/builtins.ts"
 import type { declareNode, withAttributes } from "../../shared/declare.ts"
 import { defineNode, rootKinds, type RootKind } from "../../shared/define.ts"
 import { Disjoint } from "../../shared/disjoint.ts"
@@ -29,7 +31,7 @@ export const OptionalImplementation = defineNode({
 	keys: {
 		key: {},
 		value: {
-			parse: (schema, ctx) => ctx.ctor.parseSchema(rootKinds, schema, ctx)
+			parse: (schema, ctx) => parseSchema(rootKinds, schema, ctx)
 		}
 	},
 	intersections: {
@@ -41,14 +43,14 @@ export const OptionalImplementation = defineNode({
 			const value = l.value.intersect(r.value)
 			return {
 				key: optional,
-				value: value instanceof Disjoint ? l.ctor.builtins.never : value
+				value: value instanceof Disjoint ? builtins().never : value
 			}
 		}
 	},
 	normalize: (schema) => schema,
 	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
 	attach: (node) => ({
-		implicitBasis: node.ctor.builtins.object,
+		implicitBasis: builtins().object,
 		condition: "true"
 	})
 })

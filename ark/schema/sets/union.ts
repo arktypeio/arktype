@@ -1,6 +1,7 @@
 import { isArray, type conform, type extend } from "@arktype/util"
 import { In } from "../io/compile.ts"
-import type { BaseNode } from "../node.ts"
+import { parseSchema } from "../parse.ts"
+import { parsePrereduced } from "../root.ts"
 import type { declareNode, withAttributes } from "../shared/declare.ts"
 import { basisKinds, defineNode, type RootKind } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -32,7 +33,7 @@ export type validateSchemaBranch<schema> = conform<
 
 export type parseSchemaBranches<branches extends readonly unknown[]> =
 	branches["length"] extends 0
-		? BaseNode<"union", never>
+		? Node<"union", never>
 		: branches["length"] extends 1
 		  ? parseSchemaBranch<branches[0]>
 		  : Node<RootKind, parseSchemaBranch<branches[number]>["infer"]>
@@ -98,11 +99,7 @@ export const UnionImplementation = defineNode({
 		union: {
 			parse: (schema, ctx) =>
 				schema.map((branch) =>
-					ctx.ctor.parseSchema(
-						["morph", "intersection", ...basisKinds],
-						branch,
-						ctx
-					)
+					parseSchema(["morph", "intersection", ...basisKinds], branch, ctx)
 				)
 		},
 		ordered: {}
@@ -172,7 +169,7 @@ export const UnionImplementation = defineNode({
 		if (reducedBranches.length !== inner.union.length) {
 			return
 		}
-		return ctx.ctor.parsePrereduced("union", {
+		return parsePrereduced("union", {
 			...inner,
 			union: reducedBranches
 		})

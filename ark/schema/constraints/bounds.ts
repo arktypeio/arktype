@@ -1,6 +1,7 @@
 import { constructorExtends, throwParseError, type extend } from "@arktype/util"
 import type { BasisKind } from "../bases/basis.ts"
 import { In } from "../io/compile.ts"
+import { builtins } from "../shared/builtins.ts"
 import type { declareNode, withAttributes } from "../shared/declare.ts"
 import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -101,7 +102,7 @@ export const MinImplementation = defineNode({
 		return {
 			comparator,
 			condition: `${In} ${comparator} ${node.min}`,
-			implicitBasis: node.ctor.builtins[node.boundKind]
+			implicitBasis: builtins()[node.boundKind]
 		}
 	}
 })
@@ -169,7 +170,7 @@ export const MaxImplementation = defineNode({
 		return {
 			comparator,
 			condition: `${In} ${comparator} ${node.max}`,
-			implicitBasis: node.ctor.builtins[node.boundKind]
+			implicitBasis: builtins()[node.boundKind]
 		}
 	}
 })

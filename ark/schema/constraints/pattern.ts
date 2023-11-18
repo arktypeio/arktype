@@ -1,5 +1,6 @@
 import { throwParseError } from "@arktype/util"
 import { In } from "../io/compile.ts"
+import { builtins } from "../shared/builtins.ts"
 import type { declareNode, withAttributes } from "../shared/declare.ts"
 import { defineNode } from "../shared/define.ts"
 import type { ConstraintAttachments } from "./constraint.ts"
@@ -45,7 +46,7 @@ export const PatternImplementation = defineNode({
 	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`,
 	attach: (node) => {
 		return {
-			implicitBasis: node.ctor.builtins.string,
+			implicitBasis: builtins().string,
 			condition: `/${node.pattern}/${node.flags ?? ""}.test(${In})`
 		}
 	}

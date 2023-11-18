@@ -1,6 +1,6 @@
-import { BaseNode, node } from "../node.ts"
+import { node, parsePrereduced } from "../root.ts"
 
-export function createBuiltins() {
+function createBuiltins() {
 	return {
 		unknown: node({}),
 		bigint: node("bigint"),
@@ -17,7 +17,7 @@ export function createBuiltins() {
 		never: node(),
 		// this is parsed as prereduced so we can compare future
 		// unions to it to determine if they should be reduced to unknown
-		unknownUnion: BaseNode.parsePrereduced("union", [
+		unknownUnion: parsePrereduced("union", [
 			"string",
 			"number",
 			"object",
@@ -29,6 +29,19 @@ export function createBuiltins() {
 			{ is: undefined }
 		])
 	} as const
+}
+
+let builtinCache: Builtins | undefined
+
+export function builtinsInitialized() {
+	return builtinCache !== undefined
+}
+
+export function builtins() {
+	if (!builtinCache) {
+		builtinCache = createBuiltins()
+	}
+	return builtinCache
 }
 
 export type Builtins = ReturnType<typeof createBuiltins>

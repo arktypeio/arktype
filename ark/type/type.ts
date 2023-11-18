@@ -1,8 +1,8 @@
 import {
-	BaseNode,
 	In,
 	TraversalState,
 	arkKind,
+	builtins,
 	inferred,
 	registry,
 	type BaseAttributes,
@@ -301,10 +301,7 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: transform(g.parameters, ([, name]) => [
-				name,
-				BaseNode.builtins.unknown
-			])
+			args: transform(g.parameters, ([, name]) => [name, builtins().unknown])
 		}
 	)
 	return g

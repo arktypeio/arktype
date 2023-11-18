@@ -5,11 +5,12 @@ import {
 	type ConstraintDeclarations
 } from "../constraints/constraint.ts"
 import type { BaseNode } from "../node.ts"
+import type { RootNode } from "../root.ts"
 import {
 	SetImplementationByKind,
 	type SetDeclarationsByKind
 } from "../sets/set.ts"
-import type { NodeKind } from "./define.ts"
+import type { NodeKind, RootKind } from "./define.ts"
 
 export type RuleDeclarationsByKind = extend<
 	BasisDeclarations,
@@ -56,4 +57,4 @@ export type Attachments<kind extends NodeKind> = Declaration<kind>["attach"]
 export type Node<
 	kind extends NodeKind = NodeKind,
 	t = unknown
-> = kind extends NodeKind ? BaseNode<kind, t> : never
+> = kind extends RootKind ? RootNode<kind, t> : BaseNode<kind, t>

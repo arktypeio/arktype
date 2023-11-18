@@ -1,4 +1,4 @@
-import { BaseNode, type ProblemCode, type Root } from "@arktype/schema"
+import { builtins, type ProblemCode, type Root } from "@arktype/schema"
 import {
 	domainOf,
 	hasDomain,
@@ -35,22 +35,22 @@ import {
 import { parseString } from "./parser/string/string.ts"
 import type { type } from "./scopes/ark.ts"
 import {
-	Type,
 	addArkKind,
 	createTypeParser,
 	generic,
 	hasArkKind,
+	Type,
 	validateUninstantiatedGeneric,
+	type arkKind,
 	type DeclarationParser,
 	type DefinitionParser,
+	type extractIn,
+	type extractOut,
 	type Generic,
 	type GenericProps,
 	type KeyCheckKind,
 	type TypeConfig,
-	type TypeParser,
-	type arkKind,
-	type extractIn,
-	type extractOut
+	type TypeParser
 } from "./type.ts"
 
 export type ScopeParser<parent, ambient> = {
@@ -82,25 +82,25 @@ type validateScope<def, $> = {
 			? def[k]
 			: validateDefinition<def[k], $ & bootstrap<def>, {}>
 		: parseScopeKey<k>["params"] extends GenericParamsParseError
-		? // use the full nominal type here to avoid an overlap between the
-		  // error message and a possible value for the property
-		  parseScopeKey<k>["params"][0]
-		: validateDefinition<
-				def[k],
-				$ & bootstrap<def>,
-				{
-					// once we support constraints on generic parameters, we'd use
-					// the base type here: https://github.com/arktypeio/arktype/issues/796
-					[param in parseScopeKey<k>["params"][number]]: unknown
-				}
-		  >
+		  ? // use the full nominal type here to avoid an overlap between the
+		    // error message and a possible value for the property
+		    parseScopeKey<k>["params"][0]
+		  : validateDefinition<
+					def[k],
+					$ & bootstrap<def>,
+					{
+						// once we support constraints on generic parameters, we'd use
+						// the base type here: https://github.com/arktypeio/arktype/issues/796
+						[param in parseScopeKey<k>["params"][number]]: unknown
+					}
+		    >
 }
 
 export type bindThis<def> = { this: Def<def> }
 
 export const bindThis = () => ({
 	// TODO: fix
-	this: BaseNode.builtins.unknown
+	this: builtins().unknown
 })
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
@@ -132,8 +132,8 @@ type bootstrapAliases<def> = {
 	>]: def[k] extends PreparsedResolution
 		? def[k]
 		: def[k] extends (() => infer thunkReturn extends PreparsedResolution)
-		? thunkReturn
-		: Def<def[k]>
+		  ? thunkReturn
+		  : Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: Generic<
 		parseGenericParams<extractGenericParameters<k>>,
@@ -146,10 +146,10 @@ type inferBootstrapped<r extends Resolutions> = evaluate<{
 	[name in keyof r["exports"]]: r["exports"][name] extends Def<infer def>
 		? inferDefinition<def, $<r>, {}>
 		: r["exports"][name] extends GenericProps<infer params, infer def>
-		? // add the scope in which the generic was defined here
-		  Generic<params, def, $<r>>
-		: // otherwise should be a submodule
-		  r["exports"][name]
+		  ? // add the scope in which the generic was defined here
+		    Generic<params, def, $<r>>
+		  : // otherwise should be a submodule
+		    r["exports"][name]
 }>
 
 type extractGenericName<k> = k extends GenericDeclaration<infer name>
@@ -175,10 +175,10 @@ export type resolve<reference extends keyof $ | keyof args, $, args> = (
 	? [resolution] extends [never]
 		? never
 		: isAny<resolution> extends true
-		? any
-		: resolution extends Def<infer def>
-		? inferDefinition<def, $, args>
-		: resolution
+		  ? any
+		  : resolution extends Def<infer def>
+		    ? inferDefinition<def, $, args>
+		    : resolution
 	: never
 
 export type moduleKeyOf<$> = {
@@ -204,10 +204,10 @@ export type Module<r extends Resolutions = any> = {
 		? [r["exports"][k]] extends [never]
 			? Type<never, $<r>>
 			: isAny<r["exports"][k]> extends true
-			? Type<any, $<r>>
-			: r["exports"][k] extends PreparsedResolution
-			? r["exports"][k]
-			: Type<r["exports"][k], $<r>>
+			  ? Type<any, $<r>>
+			  : r["exports"][k] extends PreparsedResolution
+			    ? r["exports"][k]
+			    : Type<r["exports"][k], $<r>>
 		: // set the nominal symbol's value to something validation won't care about
 		  // since the inferred type will be omitted anyways
 		  type.cast<"module">
@@ -357,11 +357,11 @@ export class Scope<r extends Resolutions = any> {
 		const resolution = hasArkKind(def, "generic")
 			? validateUninstantiatedGeneric(def)
 			: hasArkKind(def, "module")
-			? throwParseError(writeMissingSubmoduleAccessMessage(name))
-			: this.parseDefinition(
-					def,
-					this.createRootContext({ baseName: name, args: {} })
-			  )
+			  ? throwParseError(writeMissingSubmoduleAccessMessage(name))
+			  : this.parseDefinition(
+						def,
+						this.createRootContext({ baseName: name, args: {} })
+			    )
 		this.resolutions[name] = resolution
 		return resolution
 	}
@@ -393,7 +393,7 @@ export class Scope<r extends Resolutions = any> {
 
 	maybeResolveNode(name: string): Root | undefined {
 		const result = this.maybeResolve(name)
-		return hasArkKind(result, "node") ? result : undefined
+		return hasArkKind(result, "node") ? (result as never) : undefined
 	}
 
 	import<names extends exportedName<r>[]>(
