@@ -25,7 +25,12 @@ describe("intersections", () => {
 			divisor: 5
 		})
 		const result = l.and(r)
-		attest(result.json).snap({ basis: "number", divisor: 15, min: 5 })
+		// TODO: should boundKind be here? How to instantiate constraints?
+		attest(result.json).snap({
+			basis: "number",
+			divisor: 15,
+			min: { min: 5, boundKind: "number" }
+		})
 	})
 	it("union", () => {
 		const l = node(
