@@ -1,5 +1,11 @@
 # arktype
 
+## 1.1.1-alpha
+
+### Patch Changes
+
+-   Bump minor version to overwrite dev build (republish of 1.0.28-alpha)
+
 ## 1.0.28-alpha
 
 ### Patch Changes
