@@ -8,7 +8,8 @@ import {
 	throwInternalError,
 	throwParseError,
 	type Json,
-	type conform
+	type conform,
+	type extend
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.ts"
 import type {
@@ -301,7 +302,6 @@ export function parsePrereduced<kind extends NodeKind>(
 	schema: Schema<kind>
 ): Node<kind> {
 	return parseSchema(kind, schema, {
-		base: BaseNode,
 		prereduced: true
 	}) as never
 }
@@ -401,20 +401,27 @@ export function parseConstraint<kind extends ConstraintKind>(
 	schema: Schema<kind>,
 	basis: Node<BasisKind> | undefined
 ): Node<kind> {
-	return parseSchema(kind, schema) as never
+	return parseSchema(kind, schema, { basis }) as never
 }
 
-export type SchemaParseContext = {
-	base: typeof BaseNode
-	basis?: Node<BasisKind>
+export type SchemaParseContextInput = {
+	basis?: Node<BasisKind> | undefined
 	prereduced?: true
 }
+
+export type SchemaParseContext = extend<
+	SchemaParseContextInput,
+	{
+		base: typeof BaseNode
+	}
+>
 
 export function parseSchema<schemaKind extends NodeKind>(
 	allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
 	schema: Schema<schemaKind>,
-	ctx: SchemaParseContext = { base: BaseNode }
+	ctxInput?: SchemaParseContextInput
 ): Node<reducibleKindOf<schemaKind>> {
+	const ctx: SchemaParseContext = { ...ctxInput, base: BaseNode }
 	const kind =
 		typeof allowedKinds === "string" ? allowedKinds : rootKindOfSchema(schema)
 	if (isArray(allowedKinds) && !allowedKinds.includes(kind as never)) {

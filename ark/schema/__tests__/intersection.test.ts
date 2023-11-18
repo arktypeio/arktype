@@ -1,11 +1,12 @@
 import { attest } from "@arktype/attest"
-import { node, type BaseNode, type Node, type RootKind } from "@arktype/schema"
+import { node, type Node, type RootKind } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
+import type { RootNode } from "../node.ts"
 
 describe("intersections", () => {
 	it("root type assignment", () => {
 		const t = node({ basis: "string", pattern: "/.*/" })
-		attest<BaseNode<"intersection", string>>(t)
+		attest<RootNode<"intersection", string>>(t)
 		attest(t.json).snap({ basis: "string", pattern: [".*"] })
 		// previously had issues with a union complexity error when assigning to Root | undefined
 		const root: Node<RootKind> | undefined = node({
