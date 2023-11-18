@@ -18,9 +18,7 @@ import type {
 	OpenConstraintKind,
 	constraintInputsByKind
 } from "../constraints/constraint.ts"
-import type { UnknownNode } from "../node.ts"
-import { parseSchema, type SchemaParseContext } from "../parse.ts"
-import { parsePrereduced } from "../root.ts"
+import type { SchemaParseContext, UnknownNode } from "../node.ts"
 import type {
 	BaseAttributes,
 	declareNode,
@@ -77,13 +75,13 @@ export const IntersectionImplementation = defineNode({
 			parse: (schema, ctx) => ctx.basis
 		},
 		divisor: {
-			parse: (schema, ctx) => parseSchema("divisor", schema, ctx)
+			parse: (schema, ctx) => ctx.base.parseSchema("divisor", schema, ctx)
 		},
 		max: {
-			parse: (schema, ctx) => parseSchema("max", schema, ctx)
+			parse: (schema, ctx) => ctx.base.parseSchema("max", schema, ctx)
 		},
 		min: {
-			parse: (schema, ctx) => parseSchema("min", schema, ctx)
+			parse: (schema, ctx) => ctx.base.parseSchema("min", schema, ctx)
 		},
 		pattern: {
 			parse: (schema, ctx) => parseOpenConstraints("pattern", schema, ctx)
@@ -105,7 +103,7 @@ export const IntersectionImplementation = defineNode({
 		const basisKind = getBasisKindOrThrow(schema.basis)
 		return {
 			...ctx,
-			basis: parseSchema(basisKind, schema.basis, ctx)
+			basis: ctx.base.parseSchema(basisKind, schema.basis, ctx)
 		}
 	},
 	intersections: {
@@ -147,7 +145,7 @@ export const IntersectionImplementation = defineNode({
 		if (alias) {
 			reducedRulesByKind.alias = alias
 		}
-		return parsePrereduced("intersection", reducedRulesByKind)
+		return ctx.base.parsePrereduced("intersection", reducedRulesByKind)
 	},
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
@@ -189,9 +187,11 @@ export const parseOpenConstraints = <kind extends OpenConstraintKind>(
 			// Omit empty lists as input
 			return
 		}
-		return input.map((constraint) => parseSchema(kind, constraint, ctx))
+		return input.map((constraint) =>
+			ctx.base.parseSchema(kind, constraint, ctx)
+		)
 	}
-	return [parseSchema(kind, input, ctx)]
+	return [ctx.base.parseSchema(kind, input, ctx)]
 }
 
 const reduceRules = (

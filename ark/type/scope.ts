@@ -100,7 +100,7 @@ export type bindThis<def> = { this: Def<def> }
 
 export const bindThis = () => ({
 	// TODO: fix
-	this: builtins().unknown
+	this: builtins.unknown
 })
 
 /** nominal type for an unparsed definition used during scope bootstrapping */

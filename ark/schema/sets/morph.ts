@@ -11,8 +11,6 @@ import type { BasisKind, parseBasis } from "../bases/basis.ts"
 import type { NonEnumerableDomain } from "../bases/domain.ts"
 import type { Problem } from "../io/problems.ts"
 import type { CheckResult, TraversalState } from "../io/traverse.ts"
-import { parseSchema } from "../parse.ts"
-import { builtins } from "../shared/builtins.ts"
 import type { declareNode, withAttributes } from "../shared/declare.ts"
 import { basisKinds, defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -88,11 +86,11 @@ export const MorphImplementation = defineNode({
 	keys: {
 		in: {
 			parse: (schema, ctx) =>
-				parseSchema(["intersection", ...basisKinds], schema, ctx)
+				ctx.base.parseSchema(["intersection", ...basisKinds], schema, ctx)
 		},
 		out: {
 			parse: (schema, ctx) =>
-				parseSchema(["intersection", ...basisKinds], schema, ctx)
+				ctx.base.parseSchema(["intersection", ...basisKinds], schema, ctx)
 		},
 		morph: {
 			parse: listFrom
@@ -143,7 +141,7 @@ export const MorphImplementation = defineNode({
 	attach: (node) => ({
 		compile: () => `return true`,
 		inCache: node.inner.in,
-		outCache: node.inner.out ?? builtins().unknown
+		outCache: node.inner.out ?? node.cls.builtins.unknown
 	})
 })
 

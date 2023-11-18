@@ -1,6 +1,6 @@
-import { node, parsePrereduced } from "../root.ts"
+import { node, parsePrereduced } from "../node.ts"
 
-function createBuiltins() {
+export function createBuiltins() {
 	return {
 		unknown: node({}),
 		bigint: node("bigint"),
@@ -30,18 +30,3 @@ function createBuiltins() {
 		])
 	} as const
 }
-
-let builtinCache: Builtins | undefined
-
-export function builtinsInitialized() {
-	return builtinCache !== undefined
-}
-
-export function builtins() {
-	if (!builtinCache) {
-		builtinCache = createBuiltins()
-	}
-	return builtinCache
-}
-
-export type Builtins = ReturnType<typeof createBuiltins>

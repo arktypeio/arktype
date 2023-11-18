@@ -1,3 +1,7 @@
+import { BaseNode } from "./node.ts"
+
+export const builtins = BaseNode.builtins
+
 export * from "./config.ts"
 export * from "./constraints/bounds.ts"
 export * from "./constraints/divisor.ts"
@@ -9,7 +13,6 @@ export * from "./io/problems.ts"
 export * from "./io/registry.ts"
 export * from "./io/traverse.ts"
 export * from "./node.ts"
-export * from "./root.ts"
 export * from "./sets/discriminate.ts"
 export * from "./sets/intersection.ts"
 export * from "./sets/morph.ts"

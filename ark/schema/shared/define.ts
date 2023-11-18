@@ -6,8 +6,7 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { SchemaParseContext } from "../parse.ts"
-import type { RootNode, reducibleKindOf } from "../root.ts"
+import type { RootNode, SchemaParseContext, reducibleKindOf } from "../node.ts"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
 import type { rightOf } from "./intersect.ts"
 import type {

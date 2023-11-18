@@ -6,7 +6,6 @@ import {
 	type Constructor
 } from "@arktype/util"
 import { In, compileSerializedValue } from "../io/compile.ts"
-import { builtins } from "../shared/builtins.ts"
 import type { declareNode, withAttributes } from "../shared/declare.ts"
 import { defineNode } from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -49,7 +48,9 @@ export const ProtoImplementation = defineNode({
 				  ? r
 				  : Disjoint.from("proto", l, r),
 		domain: (l, r) =>
-			r.domain === "object" ? l : Disjoint.from("domain", builtins().object, r)
+			r.domain === "object"
+				? l
+				: Disjoint.from("domain", l.cls.builtins.object, r)
 	},
 	normalize: (input) =>
 		typeof input === "function" ? { proto: input } : input,

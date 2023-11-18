@@ -1,22 +1,31 @@
 import {
 	CompiledFunction,
 	DynamicBase,
+	entriesOf,
+	hasDomain,
 	includes,
+	isArray,
 	throwInternalError,
+	throwParseError,
 	type Json,
-	type entriesOf
+	type conform
 } from "@arktype/util"
-import type { BasisKind } from "./bases/basis.ts"
+import { maybeGetBasisKind, type BasisKind } from "./bases/basis.ts"
 import type {
 	ClosedConstraintKind,
 	ConstraintKind,
 	OpenConstraintKind
 } from "./constraints/constraint.ts"
-import { In } from "./io/compile.ts"
-import { arkKind, registry } from "./io/registry.ts"
-import { parseSchema } from "./parse.ts"
+import { In, compileSerializedValue } from "./io/compile.ts"
+import { arkKind, isNode, registry } from "./io/registry.ts"
 import { unflattenRules } from "./sets/intersection.ts"
-import type { ValidatorNode } from "./sets/morph.ts"
+import type { ValidatorKind, ValidatorNode } from "./sets/morph.ts"
+import type {
+	BranchKind,
+	parseSchemaBranches,
+	validateSchemaBranch
+} from "./sets/union.ts"
+import { createBuiltins } from "./shared/builtins.ts"
 import type { BaseAttributes } from "./shared/declare.ts"
 import {
 	basisKinds,
@@ -25,7 +34,9 @@ import {
 	openConstraintKinds,
 	rootKinds,
 	ruleKinds,
+	setKinds,
 	type NodeKind,
+	type Root,
 	type RootKind,
 	type RuleKind,
 	type SetKind,
@@ -37,31 +48,21 @@ import {
 	NodeImplementationByKind,
 	type Attachments,
 	type Inner,
-	type Node
+	type Node,
+	type Schema
 } from "./shared/node.ts"
+import { inferred } from "./shared/symbols.ts"
 
 export type UnknownNode = BaseNode<any>
 
 const $ark = registry()
-
-export type BaseAttachments<kind extends NodeKind> = {
-	readonly kind: kind
-	readonly inner: Inner<kind>
-	readonly entries: entriesOf<Inner<kind>>
-	readonly json: Json
-	readonly typeJson: Json
-	readonly collapsibleJson: Json
-	readonly children: UnknownNode[]
-	readonly id: string
-	readonly typeId: string
-}
 
 export abstract class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
 > extends DynamicBase<Inner<kind> & Attachments<kind> & BaseAttachments<kind>> {
 	readonly [arkKind] = "node"
-	readonly ctor = BaseNode
+	readonly cls = BaseNode
 
 	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[
 		this.kind
@@ -96,6 +97,9 @@ export abstract class BaseNode<
 				this[k] = this.inner[k] as never
 			}
 		}
+		const attachments = this.implementation.attach(this as never)
+		// important this is last as writeDefaultDescription could rely on attached
+		Object.assign(this, attachments)
 		this.allows = new CompiledFunction(
 			In,
 			this.isRule()
@@ -182,6 +186,10 @@ export abstract class BaseNode<
 		return includes(rootKinds, this.kind)
 	}
 
+	isSet(): this is Node<SetKind> {
+		return includes(setKinds, this.kind)
+	}
+
 	isRule(): this is Node<RuleKind> {
 		return includes(ruleKinds, this.kind)
 	}
@@ -232,4 +240,336 @@ export abstract class BaseNode<
 		}
 		return null
 	}
+
+	static parseSchema = parseSchema
+	static parsePrereduced = parsePrereduced
+
+	static isInitialized = false
+	static #builtins: Builtins | undefined
+	static get builtins() {
+		if (!this.#builtins) {
+			this.#builtins = createBuiltins()
+			this.isInitialized = true
+		}
+		return this.#builtins
+	}
 }
+
+export type Builtins = ReturnType<typeof createBuiltins>
+
+export type NodeParser = {
+	<branches extends readonly unknown[]>(
+		...branches: {
+			[i in keyof branches]: validateSchemaBranch<branches[i]>
+		}
+	): parseSchemaBranches<branches>
+}
+
+const parseRoot: NodeParser = (...branches) =>
+	parseSchema("union", branches) as never
+
+type UnitsParser = <const branches extends readonly unknown[]>(
+	...values: branches
+) => branches["length"] extends 1
+	? Node<"unit", branches[0]>
+	: Node<"union" | "unit", branches[number]>
+
+const parseUnits: UnitsParser = (...values) => {
+	const uniqueValues: unknown[] = []
+	for (const value of values) {
+		if (!uniqueValues.includes(value)) {
+			uniqueValues.push(value)
+		}
+	}
+	const union = uniqueValues.map((unit) =>
+		parsePrereduced("unit", { is: unit })
+	)
+	if (union.length === 1) {
+		return union[0]
+	}
+	return parsePrereduced("union", {
+		union
+	}) as never
+}
+
+export const node = Object.assign(parseRoot, {
+	units: parseUnits
+})
+
+export function parsePrereduced<kind extends NodeKind>(
+	kind: kind,
+	schema: Schema<kind>
+): Node<kind> {
+	return parseSchema(kind, schema, {
+		base: BaseNode,
+		prereduced: true
+	}) as never
+}
+
+export class RootNode<
+	kind extends RootKind = RootKind,
+	t = unknown
+> extends BaseNode<kind, t> {
+	// TODO: standardize name with type
+	declare infer: t;
+	declare [inferred]: t
+
+	readonly branches: readonly Node<BranchKind>[] =
+		this.kind === "union" ? (this as any).union : [this]
+
+	constrain<constraintKind extends ConstraintKind>(
+		kind: constraintKind,
+		schema: Schema<constraintKind>
+	): Exclude<intersectionOf<this["kind"], constraintKind>, Disjoint> {
+		const constrainedBranches = this.branches.map((branch) => {
+			const constraint = parseConstraint(
+				kind,
+				schema as never,
+				extractBasis(branch)
+			) as any
+			return branch.and(constraint)
+		})
+		return parseSchema("union", { union: constrainedBranches }) as never
+	}
+
+	keyof() {
+		return this
+		// return this.rule.reduce(
+		// 	(result, branch) => result.and(branch.keyof()),
+		// 	builtins.unknown()
+		// )
+	}
+
+	// TODO: inferIntersection
+	and<other extends Node>(
+		other: other
+	): Exclude<intersectionOf<kind, other["kind"]>, Disjoint> {
+		const result = this.intersect(other)
+		return result instanceof Disjoint ? result.throw() : (result as never)
+	}
+
+	// TODO: limit input types
+	or<other extends Root>(
+		other: other
+	): Node<
+		"union" | Extract<kind | other["kind"], RootKind>,
+		t | other["infer"]
+	> {
+		return parseSchema("union", [...this.branches, ...other.branches]) as never
+	}
+
+	isUnknown(): this is BaseNode<"intersection", unknown> {
+		return this.equals(BaseNode.builtins.unknown)
+	}
+
+	isNever(): this is BaseNode<"union", never> {
+		return this.equals(BaseNode.builtins.never)
+	}
+
+	getPath() {
+		return this
+	}
+
+	array(): Node<"intersection", t[]> {
+		return this as never
+	}
+
+	extends<other extends Root>(
+		other: other
+	): this is Node<kind, other["infer"]> {
+		const intersection = this.intersect(other)
+		return (
+			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+		)
+	}
+}
+
+export type BaseAttachments<kind extends NodeKind> = {
+	readonly kind: kind
+	readonly inner: Inner<kind>
+	readonly entries: entriesOf<Inner<kind>>
+	readonly json: Json
+	readonly typeJson: Json
+	readonly collapsibleJson: Json
+	readonly children: UnknownNode[]
+	readonly id: string
+	readonly typeId: string
+}
+
+export function parseConstraint<kind extends ConstraintKind>(
+	kind: kind,
+	schema: Schema<kind>,
+	basis: Node<BasisKind> | undefined
+): Node<kind> {
+	return parseSchema(kind, schema) as never
+}
+
+export type SchemaParseContext = {
+	base: typeof BaseNode
+	basis?: Node<BasisKind>
+	prereduced?: true
+}
+
+export function parseSchema<schemaKind extends NodeKind>(
+	allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
+	schema: Schema<schemaKind>,
+	ctx: SchemaParseContext = { base: BaseNode }
+): Node<reducibleKindOf<schemaKind>> {
+	const kind =
+		typeof allowedKinds === "string" ? allowedKinds : rootKindOfSchema(schema)
+	if (isArray(allowedKinds) && !allowedKinds.includes(kind as never)) {
+		return throwParseError(`Schema of kind ${kind} should be ${allowedKinds}`)
+	}
+	if (isNode(schema)) {
+		return schema as never
+	}
+	const implementation: UnknownNodeImplementation = NodeImplementationByKind[
+		kind
+	] as never
+	const normalizedSchema: any = implementation.normalize?.(schema) ?? schema
+	const childContext =
+		implementation.updateContext?.(normalizedSchema, ctx) ?? ctx
+	const schemaEntries = entriesOf(normalizedSchema)
+	const inner: Record<string, unknown> = {}
+	let json: Record<string, unknown> = {}
+	let typeJson: Record<string, unknown> = {}
+	const children: UnknownNode[] = []
+	for (const [k, v] of schemaEntries) {
+		const keyDefinition = implementation.keys[k]
+		if (!(k in implementation.keys)) {
+			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
+		}
+		const innerValue = keyDefinition.parse
+			? keyDefinition.parse(v, childContext)
+			: v
+		if (innerValue === undefined && !keyDefinition.preserveUndefined) {
+			continue
+		}
+		inner[k] = innerValue
+		if (isNode(innerValue)) {
+			json[k] = innerValue.collapsibleJson
+			children.push(innerValue)
+		} else if (
+			isArray(innerValue) &&
+			innerValue.every((_): _ is UnknownNode => isNode(_))
+		) {
+			json[k] = innerValue.map((node) => node.collapsibleJson)
+			children.push(...innerValue)
+		} else {
+			json[k] = defaultValueSerializer(v)
+		}
+		if (!keyDefinition.meta) {
+			typeJson[k] = json[k]
+		}
+	}
+	for (const k of implementation.defaultableKeys) {
+		if (inner[k] === undefined) {
+			const defaultableDefinition = implementation.keys[k]
+			inner[k] = defaultableDefinition.parse!(undefined, childContext)
+			json[k] = defaultValueSerializer(inner[k])
+			if (!defaultableDefinition.meta) {
+				typeJson[k] = json[k]
+			}
+		}
+	}
+	if (!ctx.prereduced) {
+		if (implementation.reduce) {
+			const reduced = implementation.reduce(inner, ctx)
+			if (reduced) {
+				return reduced as never
+			}
+		}
+	}
+	const id = JSON.stringify(json)
+	const typeId = JSON.stringify(typeJson)
+	if (
+		BaseNode.isInitialized &&
+		BaseNode.builtins.unknownUnion.typeId === typeId
+	) {
+		return BaseNode.builtins.unknown as never
+	}
+	const innerEntries = entriesOf(inner)
+	let collapsibleJson = json
+	if (innerEntries.length === 1 && innerEntries[0][0] === kind) {
+		collapsibleJson = json[kind] as never
+		if (hasDomain(collapsibleJson, "object")) {
+			json = collapsibleJson
+			typeJson = collapsibleJson
+		}
+	}
+	const attachments = {
+		kind,
+		inner,
+		entries: innerEntries,
+		json,
+		typeJson,
+		collapsibleJson,
+		children,
+		id,
+		typeId
+	} satisfies Record<keyof BaseAttachments<any>, unknown>
+	return includes(constraintKinds, kind)
+		? new (BaseNode as any)(attachments)
+		: new (RootNode as any)(attachments)
+}
+
+const defaultValueSerializer = (v: unknown) => {
+	if (
+		typeof v === "string" ||
+		typeof v === "boolean" ||
+		typeof v === "number" ||
+		v === null
+	) {
+		return v
+	}
+	return compileSerializedValue(v)
+}
+
+function rootKindOfSchema(schema: unknown): RootKind {
+	const basisKind = maybeGetBasisKind(schema)
+	if (basisKind) {
+		return basisKind
+	}
+	if (typeof schema === "object" && schema !== null) {
+		if (schema instanceof BaseNode) {
+			if (schema.isRoot()) {
+				return schema.kind
+			}
+			// otherwise, error at end of function
+		} else if ("morph" in schema) {
+			return "morph"
+		} else if ("union" in schema || isArray(schema)) {
+			return "union"
+		} else {
+			return "intersection"
+		}
+	}
+	return throwParseError(`${schema} is not a valid root schema type`)
+}
+
+export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
+	? RootKind
+	: kind extends "intersection"
+	  ? ValidatorKind
+	  : kind
+
+const extractBasis = (branch: Node<BranchKind>) =>
+	branch.kind === "morph"
+		? extractValidatorBasis(branch.in)
+		: extractValidatorBasis(branch)
+
+const extractValidatorBasis = (validator: Node<ValidatorKind>) =>
+	validator.kind === "intersection" ? validator.basis : validator
+
+// static from<const branches extends readonly unknown[]>(
+// 	schema: {
+// 		branches: {
+// 			[i in keyof branches]: validateBranchInput<branches[i]>
+// 		}
+// 	} & ExpandedUnionSchema
+// ) {
+// 	return new UnionNode<inferNodeBranches<branches>>({
+// 		...schema,
+// 		branches: schema.branches.map((branch) => branch as never)
+// 	})
+// }

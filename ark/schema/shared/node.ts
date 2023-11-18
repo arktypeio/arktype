@@ -4,8 +4,7 @@ import {
 	ConstraintImplementations,
 	type ConstraintDeclarations
 } from "../constraints/constraint.ts"
-import type { BaseNode } from "../node.ts"
-import type { RootNode } from "../root.ts"
+import type { BaseNode, RootNode } from "../node.ts"
 import {
 	SetImplementationByKind,
 	type SetDeclarationsByKind
