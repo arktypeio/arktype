@@ -12,7 +12,6 @@ import {
 	type extend
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.ts"
-import type {} from "./constraints/constraint.ts"
 import { In, compileSerializedValue } from "./io/compile.ts"
 import { arkKind, isNode, registry } from "./io/registry.ts"
 import { unflattenRules } from "./sets/intersection.ts"
