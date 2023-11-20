@@ -81,7 +81,7 @@ describe("intersections", () => {
 			},
 			"number"
 		)
-		attest(n.in.json).snap(["string", "number"])
+		attest(n.in.json).snap(["number", "string"])
 		attest(n.out.json).snap({})
 	})
 	it("errors on unknown key", () => {
@@ -103,6 +103,41 @@ describe("intersections", () => {
 			{ is: undefined }
 		)
 		attest(n.json).snap({})
+	})
+	it("normalizes constraint order", () => {
+		const l = node({
+			basis: "number",
+			divisor: 3,
+			min: 5
+		})
+		const r = node({
+			basis: "number",
+			min: 5,
+			divisor: 3
+		})
+		attest(l.id).equals(r.id)
+	})
+	it("normalizes prop order", () => {
+		const a = node({
+			basis: "object",
+			required: [
+				{ key: "a", value: "string" },
+				{ key: "b", value: "number" }
+			]
+		})
+		const b = node({
+			basis: "object",
+			required: [
+				{ key: "b", value: "number" },
+				{ key: "a", value: "string" }
+			]
+		})
+		attest(a.id).equals(b.id)
+	})
+	it("normalizes union order", () => {
+		const a = node("number", "string")
+		const b = node("string", "number")
+		attest(a.id).equals(b.id)
 	})
 	// TODO:
 	// it("strict intersection", () => {

@@ -12,11 +12,7 @@ import {
 	type extend
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.ts"
-import type {
-	ClosedConstraintKind,
-	ConstraintKind,
-	OpenConstraintKind
-} from "./constraints/constraint.ts"
+import type {} from "./constraints/constraint.ts"
 import { In, compileSerializedValue } from "./io/compile.ts"
 import { arkKind, isNode, registry } from "./io/registry.ts"
 import { unflattenRules } from "./sets/intersection.ts"
@@ -36,7 +32,10 @@ import {
 	rootKinds,
 	ruleKinds,
 	setKinds,
+	type ClosedConstraintKind,
+	type ConstraintKind,
 	type NodeKind,
+	type OpenConstraintKind,
 	type Root,
 	type RootKind,
 	type RuleKind,
@@ -401,27 +400,29 @@ export function parseConstraint<kind extends ConstraintKind>(
 	schema: Schema<kind>,
 	basis: Node<BasisKind> | undefined
 ): Node<kind> {
-	return parseSchema(kind, schema, { basis }) as never
+	return parseSchema(kind, schema, {
+		basis
+	}) as never
 }
 
 export type SchemaParseContextInput = {
-	basis?: Node<BasisKind> | undefined
 	prereduced?: true
+	basis?: Node<BasisKind> | undefined
 }
 
-export type SchemaParseContext = extend<
+export type SchemaParseContext<kind extends NodeKind> = extend<
 	SchemaParseContextInput,
 	{
-		base: typeof BaseNode
+		inner?: Partial<Inner<kind>>
+		cls: typeof BaseNode
 	}
 >
 
 export function parseSchema<schemaKind extends NodeKind>(
 	allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
 	schema: Schema<schemaKind>,
-	ctxInput?: SchemaParseContextInput
+	ctxInput: SchemaParseContextInput = {}
 ): Node<reducibleKindOf<schemaKind>> {
-	const ctx: SchemaParseContext = { ...ctxInput, base: BaseNode }
 	const kind =
 		typeof allowedKinds === "string" ? allowedKinds : rootKindOfSchema(schema)
 	if (isArray(allowedKinds) && !allowedKinds.includes(kind as never)) {
@@ -434,10 +435,17 @@ export function parseSchema<schemaKind extends NodeKind>(
 		kind
 	] as never
 	const normalizedSchema: any = implementation.normalize?.(schema) ?? schema
-	const childContext =
-		implementation.updateContext?.(normalizedSchema, ctx) ?? ctx
-	const schemaEntries = entriesOf(normalizedSchema)
+	const schemaEntries = entriesOf(normalizedSchema).sort(
+		(l, r) =>
+			implementation.keys[l[0]]?.precedence ??
+			(implementation.keys[r[0]]?.precedence !== undefined
+				? -implementation.keys[r[0]].precedence!
+				: l[0] < r[0]
+				  ? -1
+				  : 1)
+	)
 	const inner: Record<string, unknown> = {}
+	const ctx = { ...ctxInput, inner, cls: BaseNode }
 	let json: Record<string, unknown> = {}
 	let typeJson: Record<string, unknown> = {}
 	const children: UnknownNode[] = []
@@ -446,9 +454,7 @@ export function parseSchema<schemaKind extends NodeKind>(
 		if (!(k in implementation.keys)) {
 			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 		}
-		const innerValue = keyDefinition.parse
-			? keyDefinition.parse(v, childContext)
-			: v
+		const innerValue = keyDefinition.parse ? keyDefinition.parse(v, ctx) : v
 		if (innerValue === undefined && !keyDefinition.preserveUndefined) {
 			continue
 		}
@@ -472,7 +478,7 @@ export function parseSchema<schemaKind extends NodeKind>(
 	for (const k of implementation.defaultableKeys) {
 		if (inner[k] === undefined) {
 			const defaultableDefinition = implementation.keys[k]
-			inner[k] = defaultableDefinition.parse!(undefined, childContext)
+			inner[k] = defaultableDefinition.parse!(undefined, ctx)
 			json[k] = defaultValueSerializer(inner[k])
 			if (!defaultableDefinition.meta) {
 				typeJson[k] = json[k]

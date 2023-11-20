@@ -94,17 +94,24 @@ const intersectBranch = (
 export const UnionImplementation = defineNode({
 	kind: "union",
 	keys: {
+		ordered: {
+			precedence: -1
+		},
 		union: {
-			parse: (schema, ctx) =>
-				schema.map((branch) =>
-					ctx.base.parseSchema(
+			parse: (schema, ctx) => {
+				const branches = schema.map((branch) =>
+					ctx.cls.parseSchema(
 						["morph", "intersection", ...basisKinds],
 						branch,
 						ctx
 					)
 				)
-		},
-		ordered: {}
+				if (ctx.inner?.ordered !== true) {
+					branches.sort((l, r) => (l.id < r.id ? -1 : 1))
+				}
+				return branches
+			}
+		}
 	},
 	intersections: {
 		union: (l, r) => {
@@ -171,7 +178,7 @@ export const UnionImplementation = defineNode({
 		if (reducedBranches.length !== inner.union.length) {
 			return
 		}
-		return ctx.base.parsePrereduced("union", {
+		return ctx.cls.parsePrereduced("union", {
 			...inner,
 			union: reducedBranches
 		})

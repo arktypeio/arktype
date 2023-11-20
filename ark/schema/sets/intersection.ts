@@ -13,18 +13,21 @@ import {
 	type BasisKind,
 	type parseBasis
 } from "../bases/basis.ts"
-import type {
-	ConstraintKind,
-	OpenConstraintKind,
-	constraintInputsByKind
-} from "../constraints/constraint.ts"
+import type { constraintInputsByKind } from "../constraints/constraint.ts"
 import type { SchemaParseContext, UnknownNode } from "../node.ts"
 import type {
 	BaseAttributes,
 	declareNode,
 	withAttributes
 } from "../shared/declare.ts"
-import { constraintKinds, defineNode, type RuleKind } from "../shared/define.ts"
+import {
+	constraintKinds,
+	defineNode,
+	type ClosedConstraintKind,
+	type ConstraintKind,
+	type OpenConstraintKind,
+	type RuleKind
+} from "../shared/define.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import type { Node, Schema } from "../shared/node.ts"
 import type { SetAttachments } from "./set.ts"
@@ -71,39 +74,35 @@ export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	keys: {
 		basis: {
-			// this gets parsed ahead of time in updateContext, so we just reuse that
-			parse: (schema, ctx) => ctx.basis
+			precedence: -1,
+			parse: (schema, ctx) => {
+				if (schema === undefined) {
+					return undefined
+				}
+				const basisKind = getBasisKindOrThrow(schema)
+				return ctx.cls.parseSchema(basisKind, schema, {})
+			}
 		},
 		divisor: {
-			parse: (schema, ctx) => ctx.base.parseSchema("divisor", schema, ctx)
+			parse: (schema, ctx) => parseClosedConstraint("divisor", schema, ctx)
 		},
 		max: {
-			parse: (schema, ctx) => ctx.base.parseSchema("max", schema, ctx)
+			parse: (schema, ctx) => parseClosedConstraint("max", schema, ctx)
 		},
 		min: {
-			parse: (schema, ctx) => ctx.base.parseSchema("min", schema, ctx)
+			parse: (schema, ctx) => parseClosedConstraint("min", schema, ctx)
 		},
 		pattern: {
-			parse: (schema, ctx) => parseOpenConstraints("pattern", schema, ctx)
+			parse: (schema, ctx) => parseOpenConstraint("pattern", schema, ctx)
 		},
 		predicate: {
-			parse: (schema, ctx) => parseOpenConstraints("predicate", schema, ctx)
+			parse: (schema, ctx) => parseOpenConstraint("predicate", schema, ctx)
 		},
 		optional: {
-			parse: (schema, ctx) => parseOpenConstraints("optional", schema, ctx)
+			parse: (schema, ctx) => parseOpenConstraint("optional", schema, ctx)
 		},
 		required: {
-			parse: (schema, ctx) => parseOpenConstraints("required", schema, ctx)
-		}
-	},
-	updateContext: (schema, ctx) => {
-		if (schema.basis === undefined) {
-			return ctx
-		}
-		const basisKind = getBasisKindOrThrow(schema.basis)
-		return {
-			...ctx,
-			basis: ctx.base.parseSchema(basisKind, schema.basis, ctx)
+			parse: (schema, ctx) => parseOpenConstraint("required", schema, ctx)
 		}
 	},
 	intersections: {
@@ -145,7 +144,7 @@ export const IntersectionImplementation = defineNode({
 		if (alias) {
 			reducedRulesByKind.alias = alias
 		}
-		return ctx.base.parsePrereduced("intersection", reducedRulesByKind)
+		return ctx.cls.parsePrereduced("intersection", reducedRulesByKind)
 	},
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
@@ -177,21 +176,33 @@ export const IntersectionImplementation = defineNode({
 	}
 })
 
-export const parseOpenConstraints = <kind extends OpenConstraintKind>(
+export const parseClosedConstraint = <kind extends ClosedConstraintKind>(
+	kind: kind,
+	input: Schema<kind>,
+	intersectionContext: SchemaParseContext<"intersection">
+) => {
+	const childContext = { basis: intersectionContext.inner?.basis }
+	return intersectionContext.cls.parseSchema(kind, input, childContext)
+}
+
+export const parseOpenConstraint = <kind extends OpenConstraintKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
-	ctx: SchemaParseContext
+	intersectionContext: SchemaParseContext<"intersection">
 ) => {
+	const childContext = { basis: intersectionContext.inner?.basis }
 	if (isArray(input)) {
 		if (input.length === 0) {
 			// Omit empty lists as input
 			return
 		}
-		return input.map((constraint) =>
-			ctx.base.parseSchema(kind, constraint, ctx)
-		)
+		return input
+			.map((constraint) =>
+				intersectionContext.cls.parseSchema(kind, constraint, childContext)
+			)
+			.sort((l, r) => (l.id < r.id ? -1 : 1))
 	}
-	return [ctx.base.parseSchema(kind, input, ctx)]
+	return [intersectionContext.cls.parseSchema(kind, input, childContext)]
 }
 
 const reduceRules = (

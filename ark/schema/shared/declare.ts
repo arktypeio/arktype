@@ -1,6 +1,5 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
-import type { ConstraintKind } from "../constraints/constraint.ts"
-import type { NodeKind, RuleKind } from "./define.ts"
+import type { ConstraintKind, NodeKind, RuleKind } from "./define.ts"
 import type { Disjoint } from "./disjoint.ts"
 import type { rightOf } from "./intersect.ts"
 

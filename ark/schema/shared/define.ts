@@ -93,13 +93,14 @@ export type NodeKeyDefinition<
 > = requireKeys<
 	{
 		meta?: true
+		precedence?: number
 		defaultable?: true
 		preserveUndefined?: true
 		parse?: (
 			schema: k extends keyof ExpandedSchema<d["kind"]>
 				? Exclude<ExpandedSchema<d["kind"]>[k], undefined>
 				: undefined,
-			ctx: SchemaParseContext
+			ctx: SchemaParseContext<d["kind"]>
 		) => d["inner"][k]
 		// require parse or children if we can't guarantee the schema value will be valid on inner
 	},
@@ -118,10 +119,6 @@ export type NodeKeyDefinition<
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
-	updateContext?: (
-		schema: d["expandedSchema"],
-		ctx: Readonly<SchemaParseContext>
-	) => SchemaParseContext
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (inner: Node<d["kind"]>) => string
 	attach: (inner: Node<d["kind"]>) => {
@@ -129,7 +126,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	}
 	reduce?: (
 		inner: d["inner"],
-		ctx: SchemaParseContext
+		ctx: SchemaParseContext<d["kind"]>
 	) => Node<reducibleKindOf<d["kind"]>> | undefined
 	normalize?: (schema: Schema<d["kind"]>) => d["expandedSchema"]
 	// require expand if collapsedSchema is defined
@@ -142,7 +139,7 @@ export type UnknownNodeImplementation = optionalizeKeys<
 			defaultableKeys: string[]
 		}
 	>,
-	"normalize" | "reduce" | "updateContext"
+	"normalize" | "reduce"
 >
 
 type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {

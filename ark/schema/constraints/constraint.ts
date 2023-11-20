@@ -1,5 +1,6 @@
 import type { extend, listable } from "@arktype/util"
 import type { BasisKind } from "../bases/basis.ts"
+import type { ConstraintKind, OpenConstraintKind } from "../shared/define.ts"
 import type { Node, Schema } from "../shared/node.ts"
 import type { RuleAttachments } from "../shared/rule.ts"
 import {
@@ -22,8 +23,6 @@ export type ClosedConstraintDeclarations = {
 	max: MaxDeclaration
 }
 
-export type ClosedConstraintKind = keyof ClosedConstraintDeclarations
-
 export type OpenConstraintDeclarations = extend<
 	PropDeclarations,
 	{
@@ -32,14 +31,10 @@ export type OpenConstraintDeclarations = extend<
 	}
 >
 
-export type OpenConstraintKind = keyof OpenConstraintDeclarations
-
 export type ConstraintDeclarations = extend<
 	ClosedConstraintDeclarations,
 	OpenConstraintDeclarations
 >
-
-export type ConstraintKind = keyof ConstraintDeclarations
 
 export const ConstraintImplementations = {
 	divisor: DivisorImplementation,
