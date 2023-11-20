@@ -10,15 +10,23 @@
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",
-			"import": "./dist/main.js",
-			"types": "./dist/main.d.ts"
+			"types": "./dist/main.d.ts",
+			"default": "./dist/main.js"
+		},
+		"./internal/*": {
+			"arktype-repo": "./*",
+			"types": "./dist/*",
+			"default": "./dist/*"
 		}
 	},
 	"files": [
-		"dist"
+		"dist",
+		"**/*.ts",
+		"!**/*.tsBuildInfo",
+		"!__tests__"
 	],
 	"scripts": {
-		"build": "tsup --config ../repo/tsup.config.ts",
+		"build": "tsc --build",
 		"test": "ts ../repo/testPackage.ts",
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
