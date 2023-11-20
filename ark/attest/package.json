@@ -10,7 +10,8 @@
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",
-			"import": "./dist/main.js"
+			"import": "./dist/main.js",
+			"types": "./dist/main.d.ts"
 		}
 	},
 	"files": [
