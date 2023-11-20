@@ -4,7 +4,7 @@ import {
 	type InvertedComparators,
 	type LimitLiteral,
 	type MinComparator
-} from "../shift/operator/bounds.ts"
+} from "../shift/operator/bounds.js"
 
 export type StringifiablePrefixOperator = "keyof"
 

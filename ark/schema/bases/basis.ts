@@ -8,25 +8,25 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import { isNode } from "../io/registry.ts"
-import type { Node, Schema } from "../shared/node.ts"
-import type { RuleAttachments } from "../shared/rule.ts"
+import { isNode } from "../io/registry.js"
+import type { Node, Schema } from "../shared/node.js"
+import type { RuleAttachments } from "../shared/rule.js"
 import {
 	DomainImplementation,
 	type DomainDeclaration,
 	type DomainSchema,
 	type NonEnumerableDomain
-} from "./domain.ts"
+} from "./domain.js"
 import {
 	ProtoImplementation,
 	type ProtoDeclaration,
 	type ProtoSchema
-} from "./proto.ts"
+} from "./proto.js"
 import {
 	UnitImplementation,
 	type UnitDeclaration,
 	type UnitSchema
-} from "./unit.ts"
+} from "./unit.js"
 
 export type BasisDeclarations = {
 	domain: DomainDeclaration

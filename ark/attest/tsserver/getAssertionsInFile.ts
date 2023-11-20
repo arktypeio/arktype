@@ -1,13 +1,13 @@
 import type { LinePosition } from "@arktype/fs"
 import ts from "typescript"
-import { getFileKey } from "../utils.ts"
+import { getFileKey } from "../utils.js"
 import {
 	getInternalTypeChecker,
 	getStringifiableType,
 	type StringifiableType
-} from "./analysis.ts"
-import { analyzeAssertCall } from "./analyzeAssertCall.ts"
-import type { DiagnosticsByFile } from "./getDiagnosticsByFile.ts"
+} from "./analysis.js"
+import { analyzeAssertCall } from "./analyzeAssertCall.js"
+import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
 
 export type LinePositionRange = {
 	start: LinePosition
@@ -145,8 +145,8 @@ export const compareTsTypes = (
 				? "equality"
 				: "subtype"
 			: isSupertype
-			? "supertype"
-			: "none"
+			  ? "supertype"
+			  : "none"
 	}
 }
 

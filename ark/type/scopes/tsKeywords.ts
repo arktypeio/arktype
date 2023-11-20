@@ -1,6 +1,6 @@
 import { node } from "@arktype/schema"
-import { Scope } from "../scope.ts"
-import type { RootScope, type } from "./ark.ts"
+import { Scope } from "../scope.js"
+import type { RootScope, type } from "./ark.js"
 
 export interface InferredTsKeywords {
 	any: any

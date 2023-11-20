@@ -1,5 +1,5 @@
-import { OptionalImplementation, type OptionalDeclaration } from "./optional.ts"
-import { RequiredImplementation, type RequiredDeclaration } from "./required.ts"
+import { OptionalImplementation, type OptionalDeclaration } from "./optional.js"
+import { RequiredImplementation, type RequiredDeclaration } from "./required.js"
 
 export type PropDeclarations = {
 	required: RequiredDeclaration

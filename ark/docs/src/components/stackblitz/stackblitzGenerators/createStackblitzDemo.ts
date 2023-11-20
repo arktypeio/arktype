@@ -1,9 +1,9 @@
 import sdk from "@stackblitz/sdk"
-import demoContents from "../generated/demo.ts"
-import scopeContents from "../generated/scope.ts"
-import typeContents from "../generated/type.ts"
-import { buildStackblitzIndexText } from "./buildStackblitzIndexText.ts"
-import { defaultStaticFiles } from "./defaultFiles.ts"
+import demoContents from "../generated/demo.js"
+import scopeContents from "../generated/scope.js"
+import typeContents from "../generated/type.js"
+import { buildStackblitzIndexText } from "./buildStackblitzIndexText.js"
+import { defaultStaticFiles } from "./defaultFiles.js"
 
 export const embedIds = { type: 1, scope: 1, demo: 1 }
 export type EmbedId = keyof typeof embedIds

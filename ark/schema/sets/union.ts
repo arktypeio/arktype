@@ -1,10 +1,10 @@
 import { isArray, type conform, type extend } from "@arktype/util"
-import { In } from "../io/compile.ts"
-import type { declareNode, withAttributes } from "../shared/declare.ts"
-import { basisKinds, defineNode, type RootKind } from "../shared/define.ts"
-import { Disjoint } from "../shared/disjoint.ts"
-import type { Node, Schema } from "../shared/node.ts"
-import { discriminate, type Discriminant } from "./discriminate.ts"
+import { In } from "../io/compile.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import { basisKinds, defineNode, type RootKind } from "../shared/define.js"
+import { Disjoint } from "../shared/disjoint.js"
+import type { Node, Schema } from "../shared/node.js"
+import { discriminate, type Discriminant } from "./discriminate.js"
 import type {
 	MorphSchema,
 	ValidatorKind,
@@ -13,8 +13,8 @@ import type {
 	parseValidatorSchema,
 	validateMorphSchema,
 	validateValidator
-} from "./morph.ts"
-import type { SetAttachments } from "./set.ts"
+} from "./morph.js"
+import type { SetAttachments } from "./set.js"
 
 export type BranchKind = "morph" | ValidatorKind
 

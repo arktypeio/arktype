@@ -1,12 +1,12 @@
 import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
-import { getConfig, type AttestConfig } from "../config.ts"
-import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.ts"
-import { assertExpectedType } from "./assertEquals.ts"
+import { getConfig, type AttestConfig } from "../config.js"
+import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.js"
+import { assertExpectedType } from "./assertEquals.js"
 import {
 	ChainableAssertions,
 	type AssertionKind,
 	type rootAssertions
-} from "./chainableAssertions.ts"
+} from "./chainableAssertions.js"
 
 export type AttestFn = {
 	<expected, actual extends expected = never>(

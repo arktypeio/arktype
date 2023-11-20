@@ -1,21 +1,21 @@
 import type { extend, listable } from "@arktype/util"
-import type { BasisKind } from "../bases/basis.ts"
-import type { ConstraintKind, OpenConstraintKind } from "../shared/define.ts"
-import type { Node, Schema } from "../shared/node.ts"
-import type { RuleAttachments } from "../shared/rule.ts"
+import type { BasisKind } from "../bases/basis.js"
+import type { ConstraintKind, OpenConstraintKind } from "../shared/define.js"
+import type { Node, Schema } from "../shared/node.js"
+import type { RuleAttachments } from "../shared/rule.js"
 import {
 	MaxImplementation,
 	MinImplementation,
 	type MaxDeclaration,
 	type MinDeclaration
-} from "./bounds.ts"
-import { DivisorImplementation, type DivisorDeclaration } from "./divisor.ts"
-import { PatternImplementation, type PatternDeclaration } from "./pattern.ts"
+} from "./bounds.js"
+import { DivisorImplementation, type DivisorDeclaration } from "./divisor.js"
+import { PatternImplementation, type PatternDeclaration } from "./pattern.js"
 import {
 	PredicateImplementation,
 	type PredicateDeclaration
-} from "./predicate.ts"
-import { PropImplementations, type PropDeclarations } from "./props/prop.ts"
+} from "./predicate.js"
+import { PropImplementations, type PropDeclarations } from "./props/prop.js"
 
 export type ClosedConstraintDeclarations = {
 	divisor: DivisorDeclaration

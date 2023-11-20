@@ -3,17 +3,17 @@ import type {
 	writeUnboundableMessage
 } from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
-import type { DateLiteral } from "../string/shift/operand/date.ts"
+import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {
 	BoundKind,
 	Comparator,
 	InvertedComparators,
 	LimitLiteral,
 	writeInvalidLimitMessage
-} from "../string/shift/operator/bounds.ts"
-import type { inferAst } from "./semantic.ts"
-import type { astToString } from "./utils.ts"
-import type { validateAst } from "./validate.ts"
+} from "../string/shift/operator/bounds.js"
+import type { inferAst } from "./semantic.js"
+import type { astToString } from "./utils.js"
+import type { validateAst } from "./validate.js"
 
 export type validateRange<
 	l,
@@ -24,8 +24,8 @@ export type validateRange<
 > = l extends LimitLiteral
 	? validateBound<r, InvertedComparators[comparator], l, "left", $, args>
 	: l extends [infer leftAst, Comparator, unknown]
-	? ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
-	: validateBound<l, comparator, r & LimitLiteral, "right", $, args>
+	  ? ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
+	  : validateBound<l, comparator, r & LimitLiteral, "right", $, args>
 
 export type validateBound<
 	boundedAst,
@@ -40,18 +40,18 @@ export type validateBound<
 			? validateAst<boundedAst, $, args>
 			: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
 		: bounded extends Date
-		? limit extends DateLiteral
-			? validateAst<boundedAst, $, args>
-			: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
-		: ErrorMessage<
-				writeUnboundableMessage<
-					astToString<
-						boundKind extends "left"
-							? boundedAst[0 & keyof boundedAst]
-							: boundedAst
+		  ? limit extends DateLiteral
+				? validateAst<boundedAst, $, args>
+				: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
+		  : ErrorMessage<
+					writeUnboundableMessage<
+						astToString<
+							boundKind extends "left"
+								? boundedAst[0 & keyof boundedAst]
+								: boundedAst
+						>
 					>
-				>
-		  >
+		    >
 	: never
 
 export const writeDoubleRightBoundMessage = <root extends string>(

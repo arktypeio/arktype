@@ -1,10 +1,10 @@
 import { node } from "@arktype/schema"
 import { isKeyOf } from "@arktype/util"
-import type { RegexLiteral } from "../../../semantic/semantic.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { Scanner } from "../scanner.ts"
-import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
+import type { RegexLiteral } from "../../../semantic/semantic.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { Scanner } from "../scanner.js"
+import { tryParseDate, writeInvalidDateMessage } from "./date.js"
 
 export type StringLiteral<Text extends string = string> =
 	| DoubleQuotedStringLiteral<Text>

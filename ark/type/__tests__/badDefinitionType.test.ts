@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { writeBadDefinitionTypeMessage } from "../parser/definition.ts"
+import { writeBadDefinitionTypeMessage } from "../parser/definition.js"
 
 describe("definitions", () => {
 	it("undefined", () => {

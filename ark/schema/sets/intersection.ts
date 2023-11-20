@@ -12,14 +12,14 @@ import {
 	getBasisKindOrThrow,
 	type BasisKind,
 	type parseBasis
-} from "../bases/basis.ts"
-import type { constraintInputsByKind } from "../constraints/constraint.ts"
-import type { SchemaParseContext, UnknownNode } from "../node.ts"
+} from "../bases/basis.js"
+import type { constraintInputsByKind } from "../constraints/constraint.js"
+import type { SchemaParseContext, UnknownNode } from "../node.js"
 import type {
 	BaseAttributes,
 	declareNode,
 	withAttributes
-} from "../shared/declare.ts"
+} from "../shared/declare.js"
 import {
 	constraintKinds,
 	defineNode,
@@ -27,10 +27,10 @@ import {
 	type ConstraintKind,
 	type OpenConstraintKind,
 	type RuleKind
-} from "../shared/define.ts"
-import { Disjoint } from "../shared/disjoint.ts"
-import type { Node, Schema } from "../shared/node.ts"
-import type { SetAttachments } from "./set.ts"
+} from "../shared/define.js"
+import { Disjoint } from "../shared/disjoint.js"
+import type { Node, Schema } from "../shared/node.js"
+import type { SetAttachments } from "./set.js"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {

@@ -1,10 +1,10 @@
-import type { CompilationConfig } from "../io/compile.ts"
+import type { CompilationConfig } from "../io/compile.js"
 import {
 	IntersectionImplementation,
 	type IntersectionDeclaration
-} from "./intersection.ts"
-import { MorphImplementation, type MorphDeclaration } from "./morph.ts"
-import { UnionImplementation, type UnionDeclaration } from "./union.ts"
+} from "./intersection.js"
+import { MorphImplementation, type MorphDeclaration } from "./morph.js"
+import { UnionImplementation, type UnionDeclaration } from "./union.js"
 
 export type SetDeclarationsByKind = {
 	union: UnionDeclaration

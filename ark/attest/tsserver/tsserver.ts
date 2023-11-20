@@ -2,7 +2,7 @@ import { fromCwd, type SourcePosition } from "@arktype/fs"
 import * as tsvfs from "@typescript/vfs"
 import { dirname, join } from "node:path"
 import ts from "typescript"
-import { getFileKey } from "../utils.ts"
+import { getFileKey } from "../utils.js"
 
 export class TsServer {
 	programFilePaths!: string[]

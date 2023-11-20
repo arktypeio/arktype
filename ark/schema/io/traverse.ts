@@ -4,7 +4,7 @@ import {
 	type Problem,
 	type ProblemCode,
 	type ProblemParameters
-} from "./problems.ts"
+} from "./problems.js"
 
 export class CheckResult<out = unknown, valid extends boolean = boolean> {
 	declare data: valid extends true ? out : never

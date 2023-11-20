@@ -6,17 +6,17 @@ import {
 	getSnapshotByName,
 	queueSnapshotUpdate,
 	type SnapshotArgs
-} from "../snapshot/snapshot.ts"
-import { updateExternalSnapshot } from "../snapshot/writeSnapshot.ts"
-import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.ts"
-import { chainableNoOpProxy } from "../utils.ts"
-import { assertEquals } from "./assertEquals.ts"
-import type { AssertionContext } from "./attest.ts"
+} from "../snapshot/snapshot.js"
+import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
+import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.js"
+import { chainableNoOpProxy } from "../utils.js"
+import { assertEquals } from "./assertEquals.js"
+import type { AssertionContext } from "./attest.js"
 import {
 	assertEqualOrMatching,
 	callAssertedFunction,
 	getThrownMessage
-} from "./utils.ts"
+} from "./utils.js"
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean

@@ -1,8 +1,8 @@
 import { findPackageRoot, readPackageJson } from "@arktype/fs"
 import { SyntaxKind, type Project, type SourceFile } from "ts-morph"
-import type { PackageMetadata } from "../api/extractApi.ts"
-import type { DocGenSnippetsConfig } from "../docgen.ts"
-import type { SnippetTransformToggles } from "./extractSnippets.ts"
+import type { PackageMetadata } from "../api/extractApi.js"
+import type { DocGenSnippetsConfig } from "../docgen.js"
+import type { SnippetTransformToggles } from "./extractSnippets.js"
 
 export type ExtractFileSnippetContext = {
 	packageMetadata: PackageMetadata

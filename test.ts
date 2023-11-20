@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 // import { isDeepStrictEqual } from "util"
-// import { type Dict } from "./ark/util/main.ts"
-// import { node } from "./ark/schema/main.ts"
-// import { wellFormedNumberMatcher } from "./ark/util/main.ts"
+// import { type Dict } from "./ark/util/main.js"
+// import { node } from "./ark/schema/main.js"
+// import { wellFormedNumberMatcher } from "./ark/util/main.js"
 
 import { isDeepStrictEqual } from "util"
-import type { NodeKind } from "./ark/schema/shared/define.ts"
-import type { Schema } from "./ark/schema/shared/node.ts"
-import type { Dict } from "./ark/util/records.ts"
+import type { NodeKind } from "./ark/schema/shared/define.js"
+import type { Schema } from "./ark/schema/shared/node.js"
+import type { Dict } from "./ark/util/records.js"
 
 class Foo<schema extends Schema<kind>, kind extends NodeKind> {
 	constructor(schema: schema) {}

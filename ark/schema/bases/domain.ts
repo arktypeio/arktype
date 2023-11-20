@@ -1,9 +1,9 @@
 import type { Domain } from "@arktype/util"
-import { In } from "../io/compile.ts"
-import type { declareNode, withAttributes } from "../shared/declare.ts"
-import { defineNode } from "../shared/define.ts"
-import { Disjoint } from "../shared/disjoint.ts"
-import type { BasisAttachments } from "./basis.ts"
+import { In } from "../io/compile.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import { defineNode } from "../shared/define.js"
+import { Disjoint } from "../shared/disjoint.js"
+import type { BasisAttachments } from "./basis.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain

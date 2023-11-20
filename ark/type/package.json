@@ -16,8 +16,8 @@
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",
-			"import": "./dist/main.js",
-			"types": "./dist/main.d.ts"
+			"types": "./dist/main.d.ts",
+			"default": "./dist/main.js"
 		},
 		"./internal/*": {
 			"arktype-repo": "./*",
@@ -25,10 +25,12 @@
 		}
 	},
 	"files": [
-		"dist"
+		"dist",
+		"!__tests__",
+		"**/*.ts"
 	],
 	"scripts": {
-		"build": "tsup --config ../repo/tsup.config.ts",
+		"build": "tsc",
 		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {

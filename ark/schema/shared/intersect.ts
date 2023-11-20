@@ -1,7 +1,7 @@
 import { throwInternalError } from "@arktype/util"
-import type { UnknownNode } from "../node.ts"
-import { nodeKinds, type NodeKind, type OrderedNodeKinds } from "./define.ts"
-import type { Node, NodeDeclarationsByKind } from "./node.ts"
+import type { UnknownNode } from "../node.js"
+import { nodeKinds, type NodeKind, type OrderedNodeKinds } from "./define.js"
+import type { Node, NodeDeclarationsByKind } from "./node.js"
 
 export const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
 	for (const kind of nodeKinds) {
@@ -49,10 +49,10 @@ type asymmetricIntersectionOf<
 		? r extends keyof IntersectionMaps[l]
 			? instantiateIntersection<IntersectionMaps[l][r]>
 			: "default" extends keyof IntersectionMaps[l]
-			? r extends rightOf<l>
-				? instantiateIntersection<IntersectionMaps[l]["default"]>
-				: never
-			: never
+			  ? r extends rightOf<l>
+					? instantiateIntersection<IntersectionMaps[l]["default"]>
+					: never
+			  : never
 		: r
 	: never
 

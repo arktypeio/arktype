@@ -1,22 +1,22 @@
 import { ensureDir, shell } from "@arktype/fs"
 import { appendFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import type { DocGenApiConfig } from "../docgen.ts"
-import { keywordTable } from "./buildTable/keywords.ts"
-import { getFormats } from "./buildTable/operators.ts"
-import { constructRow } from "./buildTable/table.ts"
+import type { DocGenApiConfig } from "../docgen.js"
+import { keywordTable } from "./buildTable/keywords.js"
+import { getFormats } from "./buildTable/operators.js"
+import { constructRow } from "./buildTable/table.js"
 import type {
 	ApiEntryPoint,
 	ExportData,
 	PackageExtractionData
-} from "./extractApi.ts"
-import { generateKeywordMasterList, operatorsTable } from "./postProcess.ts"
+} from "./extractApi.js"
+import { generateKeywordMasterList, operatorsTable } from "./postProcess.js"
 import {
 	formatTagData,
 	packTsDocTags,
 	transformLinkTagToURL,
 	type TsTagData
-} from "./tsDocTransforms.ts"
+} from "./tsDocTransforms.js"
 
 export const writeApi = (
 	apiConfig: DocGenApiConfig,

@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs"
-import { operatorTable } from "./buildTable/operators.ts"
-import { MarkdownSection, type ScopeData } from "./writeApi.ts"
+import { operatorTable } from "./buildTable/operators.js"
+import { MarkdownSection, type ScopeData } from "./writeApi.js"
 
 export const generateKeywordMasterList = (
 	path: string,

@@ -1,13 +1,17 @@
 import type { Root } from "@arktype/schema"
-import type { ErrorMessage, join, nominal    } from "@arktype/util"
-import { throwParseError } from "@arktype/util";
-import type { ParseContext } from "../scope.ts"
-import { DynamicState } from "./string/reduce/dynamic.ts"
-import { writeUnclosedGroupMessage } from "./string/reduce/shared.ts"
-import type { state, StaticState } from "./string/reduce/static.ts"
-import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.ts"
-import { Scanner } from "./string/shift/scanner.ts"
-import { parseUntilFinalizer } from "./string/string.ts"
+import {
+	throwParseError,
+	type ErrorMessage,
+	type join,
+	type nominal
+} from "@arktype/util"
+import type { ParseContext } from "../scope.js"
+import { DynamicState } from "./string/reduce/dynamic.js"
+import { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
+import type { StaticState, state } from "./string/reduce/static.js"
+import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
+import { Scanner } from "./string/shift/scanner.js"
+import { parseUntilFinalizer } from "./string/string.js"
 
 export type GenericDeclaration<
 	name extends string = string,
@@ -46,8 +50,8 @@ const parseGenericParamsRecurse = (scanner: Scanner): string[] => {
 	return nextNonWhitespace === ""
 		? [param]
 		: nextNonWhitespace === ","
-		? [param, ...parseGenericParamsRecurse(scanner)]
-		: throwParseError(writeUnexpectedCharacterMessage(nextNonWhitespace, ","))
+		  ? [param, ...parseGenericParamsRecurse(scanner)]
+		  : throwParseError(writeUnexpectedCharacterMessage(nextNonWhitespace, ","))
 }
 
 type parseParamsRecurse<
@@ -58,21 +62,21 @@ type parseParamsRecurse<
 	? lookahead extends ","
 		? parseParamsRecurse<nextUnscanned, "", [...result, param]>
 		: lookahead extends Scanner.WhiteSpaceToken
-		? param extends ""
-			? // if the next char is whitespace and we aren't in the middle of a param, skip to the next one
-			  parseParamsRecurse<Scanner.skipWhitespace<nextUnscanned>, "", result>
-			: Scanner.skipWhitespace<nextUnscanned> extends `${infer nextNonWhitespace}${infer rest}`
-			? nextNonWhitespace extends ","
-				? parseParamsRecurse<rest, "", [...result, param]>
-				: GenericParamsParseError<
-						writeUnexpectedCharacterMessage<nextNonWhitespace, ",">
-				  >
-			: // params end with a single whitespace character, add the current token
-			  [...result, param]
-		: parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
+		  ? param extends ""
+				? // if the next char is whitespace and we aren't in the middle of a param, skip to the next one
+				  parseParamsRecurse<Scanner.skipWhitespace<nextUnscanned>, "", result>
+				: Scanner.skipWhitespace<nextUnscanned> extends `${infer nextNonWhitespace}${infer rest}`
+				  ? nextNonWhitespace extends ","
+						? parseParamsRecurse<rest, "", [...result, param]>
+						: GenericParamsParseError<
+								writeUnexpectedCharacterMessage<nextNonWhitespace, ",">
+						  >
+				  : // params end with a single whitespace character, add the current token
+				    [...result, param]
+		  : parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
 	: param extends ""
-	? result
-	: [...result, param]
+	  ? result
+	  : [...result, param]
 
 export type ParsedArgs<
 	result extends unknown[] = unknown[],
@@ -164,18 +168,18 @@ type parseGenericArgsRecurse<
 				? ParsedArgs<nextAsts, nextUnscanned>
 				: state.error<writeInvalidGenericArgsMessage<name, params, nextDefs>>
 			: finalArgState["finalizer"] extends ","
-			? parseGenericArgsRecurse<
-					name,
-					params,
-					nextUnscanned,
-					$,
-					args,
-					nextDefs,
-					nextAsts
-			  >
-			: finalArgState["finalizer"] extends ErrorMessage
-			? finalArgState
-			: state.error<writeUnclosedGroupMessage<">">>
+			  ? parseGenericArgsRecurse<
+						name,
+						params,
+						nextUnscanned,
+						$,
+						args,
+						nextDefs,
+						nextAsts
+			    >
+			  : finalArgState["finalizer"] extends ErrorMessage
+			    ? finalArgState
+			    : state.error<writeUnclosedGroupMessage<">">>
 		: never
 	: never
 

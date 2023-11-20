@@ -9,8 +9,8 @@ import {
 	type arraySubclassToReadonly,
 	type conform
 } from "@arktype/util"
-import { domainDescriptions } from "../bases/domain.ts"
-import type { BoundInner, NumericallyBoundable } from "../constraints/bounds.ts"
+import { domainDescriptions } from "../bases/domain.js"
+import type { BoundInner, NumericallyBoundable } from "../constraints/bounds.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems

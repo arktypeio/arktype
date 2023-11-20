@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
-import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.ts"
+import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
 import {
 	prematureRestMessage,
 	writeNonArrayRestMessage
-} from "../parser/tuple.ts"
+} from "../parser/tuple.js"
 
 describe("array", () => {
 	describe("base", () => {

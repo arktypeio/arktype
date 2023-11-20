@@ -22,19 +22,19 @@ import {
 	type evaluate,
 	type isAny
 } from "@arktype/util"
-import type { ParseContext } from "../scope.ts"
-import type { extractIn, extractOut } from "../type.ts"
-import type { inferDefinition, validateDefinition } from "./definition.ts"
-import type { inferIntersection } from "./semantic/intersections.ts"
-import type { InfixOperator, PostfixExpression } from "./semantic/semantic.ts"
-import { writeUnsatisfiableExpressionError } from "./semantic/validate.ts"
+import type { ParseContext } from "../scope.js"
+import type { extractIn, extractOut } from "../type.js"
+import type { inferDefinition, validateDefinition } from "./definition.js"
+import type { inferIntersection } from "./semantic/intersections.js"
+import type { InfixOperator, PostfixExpression } from "./semantic/semantic.js"
+import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import {
 	parseEntry,
 	type EntryParseResult,
 	type validateObjectValue
-} from "./shared.ts"
-import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
-import type { BaseCompletions } from "./string/string.ts"
+} from "./shared.js"
+import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
+import type { BaseCompletions } from "./string/string.js"
 
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)

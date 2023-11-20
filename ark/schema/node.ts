@@ -11,19 +11,19 @@ import {
 	type conform,
 	type extend
 } from "@arktype/util"
-import { maybeGetBasisKind, type BasisKind } from "./bases/basis.ts"
-import { In, compileSerializedValue } from "./io/compile.ts"
-import { arkKind, isNode, registry } from "./io/registry.ts"
-import { unflattenRules } from "./sets/intersection.ts"
-import type { ValidatorKind, ValidatorNode } from "./sets/morph.ts"
+import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
+import { In, compileSerializedValue } from "./io/compile.js"
+import { arkKind, isNode, registry } from "./io/registry.js"
+import { unflattenRules } from "./sets/intersection.js"
+import type { ValidatorKind, ValidatorNode } from "./sets/morph.js"
 import type {
 	BranchKind,
 	ExpandedUnionSchema,
 	parseSchemaBranches,
 	validateSchemaBranch
-} from "./sets/union.ts"
-import { createBuiltins } from "./shared/builtins.ts"
-import type { BaseAttributes } from "./shared/declare.ts"
+} from "./sets/union.js"
+import { createBuiltins } from "./shared/builtins.js"
+import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
 	closedConstraintKinds,
@@ -41,17 +41,17 @@ import {
 	type RuleKind,
 	type SetKind,
 	type UnknownNodeImplementation
-} from "./shared/define.ts"
-import { Disjoint } from "./shared/disjoint.ts"
-import { leftOperandOf, type intersectionOf } from "./shared/intersect.ts"
+} from "./shared/define.js"
+import { Disjoint } from "./shared/disjoint.js"
+import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
 import {
 	NodeImplementationByKind,
 	type Attachments,
 	type Inner,
 	type Node,
 	type Schema
-} from "./shared/node.ts"
-import { inferred } from "./shared/symbols.ts"
+} from "./shared/node.js"
+import { inferred } from "./shared/symbols.js"
 
 export type UnknownNode = BaseNode<any>
 

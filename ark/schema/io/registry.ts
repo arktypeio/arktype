@@ -1,6 +1,6 @@
 import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
-import type { UnknownNode } from "../node.ts"
-import { isDotAccessible } from "./compile.ts"
+import type { UnknownNode } from "../node.js"
+import { isDotAccessible } from "./compile.js"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 

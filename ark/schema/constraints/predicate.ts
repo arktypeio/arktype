@@ -1,8 +1,8 @@
-import { compileSerializedValue, In } from "../io/compile.ts"
-import type { TraversalState } from "../io/traverse.ts"
-import type { declareNode, withAttributes } from "../shared/declare.ts"
-import { defineNode } from "../shared/define.ts"
-import type { ConstraintAttachments } from "./constraint.ts"
+import { compileSerializedValue, In } from "../io/compile.js"
+import type { TraversalState } from "../io/traverse.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import { defineNode } from "../shared/define.js"
+import type { ConstraintAttachments } from "./constraint.js"
 
 export type PredicateInner<predicate extends Predicate = Predicate> =
 	withAttributes<{

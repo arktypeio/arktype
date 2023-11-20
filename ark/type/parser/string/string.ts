@@ -1,16 +1,16 @@
 import type { Root } from "@arktype/schema"
 import { throwParseError, type ErrorMessage } from "@arktype/util"
-import type { ParseContext } from "../../scope.ts"
-import type { inferAst } from "../semantic/semantic.ts"
-import { writeUnsatisfiableExpressionError } from "../semantic/validate.ts"
-import { DynamicState, type DynamicStateWithRoot } from "./reduce/dynamic.ts"
-import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
-import type { StaticState, state } from "./reduce/static.ts"
-import { parseOperand } from "./shift/operand/operand.ts"
+import type { ParseContext } from "../../scope.js"
+import type { inferAst } from "../semantic/semantic.js"
+import { writeUnsatisfiableExpressionError } from "../semantic/validate.js"
+import { DynamicState, type DynamicStateWithRoot } from "./reduce/dynamic.js"
+import type { StringifiablePrefixOperator } from "./reduce/shared.js"
+import type { StaticState, state } from "./reduce/static.js"
+import { parseOperand } from "./shift/operand/operand.js"
 import {
 	parseOperator,
 	writeUnexpectedCharacterMessage
-} from "./shift/operator/operator.ts"
+} from "./shift/operator/operator.js"
 
 export const parseString = (def: string, ctx: ParseContext): Root =>
 	ctx.scope.maybeResolveNode(def) ??

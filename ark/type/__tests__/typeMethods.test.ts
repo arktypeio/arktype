@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import { ArkTypeError } from "@arktype/schema"
 import { define, scope, type } from "arktype"
 import { AssertionError } from "node:assert"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
+import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("type methods", () => {
 	it("root discriminates", () => {

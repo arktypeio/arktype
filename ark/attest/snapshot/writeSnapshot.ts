@@ -9,14 +9,14 @@ import {
 import { existsSync, readdirSync, rmSync } from "node:fs"
 import { basename, join } from "node:path"
 import type ts from "typescript"
-import { getConfig } from "../config.ts"
-import { getFileKey } from "../utils.ts"
+import { getConfig } from "../config.js"
+import { getFileKey } from "../utils.js"
 import {
 	findCallExpressionAncestor,
 	resolveSnapshotPath,
 	type QueuedUpdate,
 	type SnapshotArgs
-} from "./snapshot.ts"
+} from "./snapshot.js"
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
 	name: string

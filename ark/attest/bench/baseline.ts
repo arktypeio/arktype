@@ -2,15 +2,15 @@ import { ensureDir } from "@arktype/fs"
 import { snapshot } from "@arktype/util"
 import { rmSync } from "node:fs"
 import process from "node:process"
-import { getConfig } from "../config.ts"
-import { queueSnapshotUpdate } from "../snapshot/snapshot.ts"
-import type { BenchAssertionContext, BenchContext } from "./bench.ts"
+import { getConfig } from "../config.js"
+import { queueSnapshotUpdate } from "../snapshot/snapshot.js"
+import type { BenchAssertionContext, BenchContext } from "./bench.js"
 import {
 	stringifyMeasure,
 	type MarkMeasure,
 	type Measure,
 	type MeasureComparison
-} from "./measure.ts"
+} from "./measure.js"
 
 let isFirstQueuedUpdate = true
 

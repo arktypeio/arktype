@@ -1,7 +1,7 @@
-import { In } from "../io/compile.ts"
-import type { declareNode, withAttributes } from "../shared/declare.ts"
-import { defineNode } from "../shared/define.ts"
-import type { ConstraintAttachments } from "./constraint.ts"
+import { In } from "../io/compile.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import { defineNode } from "../shared/define.js"
+import type { ConstraintAttachments } from "./constraint.js"
 
 export type DivisorInner = withAttributes<{
 	readonly divisor: number

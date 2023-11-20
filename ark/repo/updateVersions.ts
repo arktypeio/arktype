@@ -8,8 +8,8 @@ import {
 } from "@arktype/fs"
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { docgen } from "./docgen/docgen.ts"
-import { repoDirs } from "./shared.ts"
+import { docgen } from "./docgen/docgen.js"
+import { repoDirs } from "./shared.js"
 
 const currentSuffix = "beta"
 

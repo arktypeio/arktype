@@ -6,16 +6,16 @@ import {
 } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
-import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.ts"
+import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnpairableComparatorMessage
-} from "../parser/string/reduce/shared.ts"
+} from "../parser/string/reduce/shared.js"
 import {
 	singleEqualsMessage,
 	writeInvalidLimitMessage
-} from "../parser/string/shift/operator/bounds.ts"
+} from "../parser/string/shift/operator/bounds.js"
 
 export const expectedBoundsCondition = (...bounds: BoundInner[]) => ""
 // node("number", ...bounds).json

@@ -17,22 +17,22 @@ import {
 	type Primitive,
 	type requiredKeyOf
 } from "@arktype/util"
-import type { ParseContext } from "../scope.ts"
-import type { type } from "../scopes/ark.ts"
-import { Type } from "../type.ts"
+import type { ParseContext } from "../scope.js"
+import type { type } from "../scopes/ark.js"
+import { Type } from "../type.js"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
 	type validateObjectLiteral
-} from "./objectLiteral.ts"
-import type { validateString } from "./semantic/validate.ts"
-import type { BaseCompletions, inferString } from "./string/string.ts"
+} from "./objectLiteral.js"
+import type { validateString } from "./semantic/validate.js"
+import type { BaseCompletions, inferString } from "./string/string.js"
 import {
 	parseTuple,
 	type inferTuple,
 	type TupleExpression,
 	type validateTuple
-} from "./tuple.ts"
+} from "./tuple.js"
 
 export const parseObject = (def: object, ctx: ParseContext): Root => {
 	const objectKind = objectKindOf(def)

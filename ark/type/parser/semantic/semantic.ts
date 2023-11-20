@@ -1,18 +1,18 @@
 import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
 import type {
+	UnparsedScope,
 	resolve,
-	tryInferSubmoduleReference,
-	UnparsedScope
-} from "../../scope.ts"
-import type { GenericProps } from "../../type.ts"
-import type { inferDefinition } from "../definition.ts"
-import type { DateLiteral } from "../string/shift/operand/date.ts"
-import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
+	tryInferSubmoduleReference
+} from "../../scope.js"
+import type { GenericProps } from "../../type.js"
+import type { inferDefinition } from "../definition.js"
+import type { DateLiteral } from "../string/shift/operand/date.js"
+import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type {
 	Comparator,
 	LimitLiteral
-} from "../string/shift/operator/bounds.ts"
-import type { inferIntersection } from "./intersections.ts"
+} from "../string/shift/operator/bounds.js"
+import type { inferIntersection } from "./intersections.js"
 
 export type inferAst<ast, $, args> = ast extends List
 	? inferExpression<ast, $, args>
@@ -48,20 +48,23 @@ export type inferExpression<
 			}
 	  >
 	: ast[1] extends "[]"
-	? inferAst<ast[0], $, args>[]
-	: ast[1] extends "|"
-	? inferAst<ast[0], $, args> | inferAst<ast[2], $, args>
-	: ast[1] extends "&"
-	? inferIntersection<inferAst<ast[0], $, args>, inferAst<ast[2], $, args>>
-	: ast[1] extends Comparator
-	? ast[0] extends LimitLiteral
-		? inferAst<ast[2], $, args>
-		: inferAst<ast[0], $, args>
-	: ast[1] extends "%"
-	? inferAst<ast[0], $, args>
-	: ast[0] extends "keyof"
-	? keyof inferAst<ast[1], $, args>
-	: never
+	  ? inferAst<ast[0], $, args>[]
+	  : ast[1] extends "|"
+	    ? inferAst<ast[0], $, args> | inferAst<ast[2], $, args>
+	    : ast[1] extends "&"
+	      ? inferIntersection<
+						inferAst<ast[0], $, args>,
+						inferAst<ast[2], $, args>
+	        >
+	      : ast[1] extends Comparator
+	        ? ast[0] extends LimitLiteral
+						? inferAst<ast[2], $, args>
+						: inferAst<ast[0], $, args>
+	        : ast[1] extends "%"
+	          ? inferAst<ast[0], $, args>
+	          : ast[0] extends "keyof"
+	            ? keyof inferAst<ast[1], $, args>
+	            : never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
 
@@ -90,15 +93,15 @@ export type RegexLiteral<source extends string = string> = `/${source}/`
 export type inferTerminal<token, $, args> = token extends keyof args | keyof $
 	? resolve<token, $, args>
 	: token extends StringLiteral<infer Text>
-	? Text
-	: token extends RegexLiteral
-	? string
-	: token extends DateLiteral
-	? Date
-	: token extends NumberLiteral<infer value>
-	? value
-	: token extends BigintLiteral<infer value>
-	? value
-	: // doing this last allows us to infer never if it isn't valid rather than check
-	  // if it's a valid submodule reference ahead of time
-	  tryInferSubmoduleReference<$, token>
+	  ? Text
+	  : token extends RegexLiteral
+	    ? string
+	    : token extends DateLiteral
+	      ? Date
+	      : token extends NumberLiteral<infer value>
+	        ? value
+	        : token extends BigintLiteral<infer value>
+	          ? value
+	          : // doing this last allows us to infer never if it isn't valid rather than check
+	            // if it's a valid submodule reference ahead of time
+	            tryInferSubmoduleReference<$, token>

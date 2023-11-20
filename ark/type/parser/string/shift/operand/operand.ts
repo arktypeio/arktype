@@ -1,15 +1,15 @@
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { BaseCompletions } from "../../string.ts"
-import { Scanner } from "../scanner.ts"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { BaseCompletions } from "../../string.js"
+import { Scanner } from "../scanner.js"
 import {
 	enclosingChar,
 	parseEnclosed,
 	type EnclosingEndToken,
 	type EnclosingQuote,
 	type EnclosingStartToken
-} from "./enclosed.ts"
-import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.ts"
+} from "./enclosed.js"
+import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
 
 export const parseOperand = (s: DynamicState): void =>
 	s.scanner.lookahead === ""

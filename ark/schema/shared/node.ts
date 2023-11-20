@@ -1,15 +1,15 @@
 import type { Dict, extend } from "@arktype/util"
-import { BasisImplementations, type BasisDeclarations } from "../bases/basis.ts"
+import { BasisImplementations, type BasisDeclarations } from "../bases/basis.js"
 import {
 	ConstraintImplementations,
 	type ConstraintDeclarations
-} from "../constraints/constraint.ts"
-import type { BaseNode, RootNode } from "../node.ts"
+} from "../constraints/constraint.js"
+import type { BaseNode, RootNode } from "../node.js"
 import {
 	SetImplementationByKind,
 	type SetDeclarationsByKind
-} from "../sets/set.ts"
-import type { NodeKind, RootKind } from "./define.ts"
+} from "../sets/set.js"
+import type { NodeKind, RootKind } from "./define.js"
 
 export type RuleDeclarationsByKind = extend<
 	BasisDeclarations,

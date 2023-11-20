@@ -1,7 +1,7 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
-import type { ConstraintKind, NodeKind, RuleKind } from "./define.ts"
-import type { Disjoint } from "./disjoint.ts"
-import type { rightOf } from "./intersect.ts"
+import type { ConstraintKind, NodeKind, RuleKind } from "./define.js"
+import type { Disjoint } from "./disjoint.js"
+import type { rightOf } from "./intersect.js"
 
 export type BaseAttributes = {
 	readonly alias?: string

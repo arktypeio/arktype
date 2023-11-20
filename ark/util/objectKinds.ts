@@ -1,7 +1,7 @@
-import { domainOf, type Domain } from "./domain.ts"
-import type { Fn } from "./functions.ts"
-import type { evaluate } from "./generics.ts"
-import { isKeyOf } from "./records.ts"
+import { domainOf, type Domain } from "./domain.js"
+import type { Fn } from "./functions.js"
+import type { evaluate } from "./generics.js"
+import { isKeyOf } from "./records.js"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects

@@ -13,8 +13,8 @@ import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
 import * as process from "node:process"
 import { fileURLToPath, URL } from "node:url"
-import { caller } from "./caller.ts"
-import { shell } from "./shell.ts"
+import { caller } from "./caller.js"
+import { shell } from "./shell.js"
 export { rmSync } from "node:fs"
 
 export const ensureDir = (path: string) => {

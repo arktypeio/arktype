@@ -7,7 +7,7 @@ import {
 	type intersectArrays,
 	type isAny
 } from "@arktype/util"
-import type { MorphAst } from "../tuple.ts"
+import type { MorphAst } from "../tuple.js"
 
 export type inferIntersection<l, r> = [l] extends [never]
 	? never

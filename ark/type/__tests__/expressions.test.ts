@@ -4,8 +4,8 @@ import { type, type Out } from "arktype"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.ts"
-import { scope } from "../scopes/ark.ts"
+} from "../parser/string/shift/operand/unenclosed.js"
+import { scope } from "../scopes/ark.js"
 
 describe("tuple expressions", () => {
 	it("nested", () => {

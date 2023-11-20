@@ -10,22 +10,22 @@ import {
 	type join,
 	type NumberLiteral
 } from "@arktype/util"
-import type { Module } from "../../../../scope.ts"
+import type { Module } from "../../../../scope.js"
 import {
 	hasArkKind,
 	type Generic,
 	type GenericProps
-} from "../../../../type.ts"
+} from "../../../../type.js"
 import {
 	parseGenericArgs,
 	writeInvalidGenericArgsMessage,
 	type ParsedArgs
-} from "../../../generic.ts"
-import type { GenericInstantiationAst } from "../../../semantic/semantic.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { BaseCompletions } from "../../string.ts"
-import type { Scanner } from "../scanner.ts"
+} from "../../../generic.js"
+import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { BaseCompletions } from "../../string.js"
+import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
 	const token = s.scanner.shiftUntilNextTerminator()

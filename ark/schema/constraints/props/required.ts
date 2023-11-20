@@ -1,11 +1,11 @@
-import type { BasisKind } from "../../bases/basis.ts"
-import type { declareNode, withAttributes } from "../../shared/declare.ts"
-import { defineNode, rootKinds, type RootKind } from "../../shared/define.ts"
-import { Disjoint } from "../../shared/disjoint.ts"
-import type { Inner, Node, Schema } from "../../shared/node.ts"
-import type { ConstraintAttachments } from "../constraint.ts"
-import { getBasisName } from "../shared.ts"
-import type { PropKind } from "./prop.ts"
+import type { BasisKind } from "../../bases/basis.js"
+import type { declareNode, withAttributes } from "../../shared/declare.js"
+import { defineNode, rootKinds, type RootKind } from "../../shared/define.js"
+import { Disjoint } from "../../shared/disjoint.js"
+import type { Inner, Node, Schema } from "../../shared/node.js"
+import type { ConstraintAttachments } from "../constraint.js"
+import { getBasisName } from "../shared.js"
+import type { PropKind } from "./prop.js"
 
 export type RequiredPropSchema = withAttributes<{
 	readonly key: string | symbol

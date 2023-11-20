@@ -3,8 +3,8 @@ import { type } from "arktype"
 import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage
-} from "../parser/string/reduce/shared.ts"
-import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/unenclosed.ts"
+} from "../parser/string/reduce/shared.js"
+import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("group", () => {
 	it("entire expression", () => {

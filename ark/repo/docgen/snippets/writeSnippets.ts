@@ -1,8 +1,8 @@
 import { readFile, readJson, shell, writeFile } from "@arktype/fs"
 import { join } from "node:path"
-import { repoDirs } from "../../shared.ts"
-import type { SnippetsByPath } from "./extractSnippets.ts"
-import { referenceTokens } from "./snipTokens.ts"
+import { repoDirs } from "../../shared.js"
+import type { SnippetsByPath } from "./extractSnippets.js"
+import { referenceTokens } from "./snipTokens.js"
 
 export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
 	const updatedPaths = Object.keys(snippetsByPath).filter((path) =>

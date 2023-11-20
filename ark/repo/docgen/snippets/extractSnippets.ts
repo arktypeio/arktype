@@ -1,13 +1,13 @@
 import { readFile, tsFileMatcher } from "@arktype/fs"
 import type { Project } from "ts-morph"
-import { defaultConfig, type DocGenSnippetsConfig } from "../docgen.ts"
+import { defaultConfig, type DocGenSnippetsConfig } from "../docgen.js"
 import {
 	extractionTokens,
 	includesTokenFrom,
 	snipTokens,
 	type ExtractionToken
-} from "./snipTokens.ts"
-import { transformTsFileContents } from "./transformTsFileText.ts"
+} from "./snipTokens.js"
+import { transformTsFileContents } from "./transformTsFileText.js"
 
 /** Represents paths mapped to snippet data for a file */
 export type SnippetsByPath = Record<string, SnippetsByLabel>

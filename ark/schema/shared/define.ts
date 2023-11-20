@@ -6,16 +6,16 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { RootNode, SchemaParseContext, reducibleKindOf } from "../node.ts"
-import type { BaseAttributes, BaseNodeDeclaration } from "./declare.ts"
-import type { rightOf } from "./intersect.ts"
+import type { RootNode, SchemaParseContext, reducibleKindOf } from "../node.js"
+import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
+import type { rightOf } from "./intersect.js"
 import type {
 	Declaration,
 	ExpandedSchema,
 	Inner,
 	Node,
 	Schema
-} from "./node.ts"
+} from "./node.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 

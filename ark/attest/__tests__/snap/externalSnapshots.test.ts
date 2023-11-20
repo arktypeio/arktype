@@ -3,7 +3,7 @@ import { dirName, readJson, writeJson } from "@arktype/fs"
 import * as assert from "node:assert/strict"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { attestInternal } from "../../assert/attest.ts"
+import { attestInternal } from "../../assert/attest.js"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
 const o = { re: "do" }

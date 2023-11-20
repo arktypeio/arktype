@@ -1,6 +1,6 @@
 import { readJson } from "@arktype/fs"
 import { existsSync } from "node:fs"
-import type { AttestConfig } from "../config.ts"
+import type { AttestConfig } from "../config.js"
 
 export const getCachedAssertionData = (config: AttestConfig) => {
 	if (!existsSync(config.assertionCacheFile)) {

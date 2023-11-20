@@ -7,9 +7,9 @@ import {
 	transform,
 	type entryOf
 } from "@arktype/util"
-import type { RuleKind } from "./define.ts"
-import type { rightOf } from "./intersect.ts"
-import type { Node } from "./node.ts"
+import type { RuleKind } from "./define.js"
+import type { rightOf } from "./intersect.js"
+import type { Node } from "./node.js"
 
 type DisjointKinds = {
 	domain?: {

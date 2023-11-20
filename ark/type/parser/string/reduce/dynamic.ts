@@ -5,14 +5,14 @@ import {
 	throwParseError,
 	type requireKeys
 } from "@arktype/util"
-import type { ParseContext } from "../../../scope.ts"
+import type { ParseContext } from "../../../scope.js"
 import {
 	invertedComparators,
 	minComparators,
 	type Comparator,
 	type LimitLiteral
-} from "../shift/operator/bounds.ts"
-import { Scanner } from "../shift/scanner.ts"
+} from "../shift/operator/bounds.js"
+import { Scanner } from "../shift/scanner.js"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
@@ -21,7 +21,7 @@ import {
 	writeUnpairableComparatorMessage,
 	type OpenLeftBound,
 	type StringifiablePrefixOperator
-} from "./shared.ts"
+} from "./shared.js"
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]

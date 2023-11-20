@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { node, type Node, type RootKind } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
-import type { RootNode } from "../node.ts"
+import type { RootNode } from "../node.js"
 
 describe("intersections", () => {
 	it("root type assignment", () => {

@@ -1,16 +1,16 @@
 import {
-	type Domain,
 	entriesOf,
-	type evaluate,
 	isKeyOf,
-	type keySet,
-	type mutable,
+	throwInternalError,
+	type Domain,
 	type SerializedPrimitive,
-	throwInternalError
+	type evaluate,
+	type keySet,
+	type mutable
 } from "@arktype/util"
-import { compileSerializedValue } from "../io/compile.ts"
-import { Disjoint, type SerializedPath } from "../shared/disjoint.ts"
-import type { BranchNode } from "./union.ts"
+import { compileSerializedValue } from "../io/compile.js"
+import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
+import type { BranchNode } from "./union.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"

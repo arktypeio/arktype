@@ -2,7 +2,7 @@ import path from "node:path"
 import * as process from "node:process"
 import { fileURLToPath } from "node:url"
 import { isDeepStrictEqual } from "node:util"
-import { getCurrentLine, getFramesFromError } from "./getCurrentLine.ts"
+import { getCurrentLine, getFramesFromError } from "./getCurrentLine.js"
 
 export type GetCallStackOptions = {
 	offset?: number

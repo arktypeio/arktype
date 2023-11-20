@@ -1,14 +1,14 @@
 import type tsvfs from "@typescript/vfs"
 import type ts from "typescript"
-import { getConfig } from "../config.ts"
-import { getFileKey } from "../utils.ts"
+import { getConfig } from "../config.js"
+import { getFileKey } from "../utils.js"
 import {
 	getAssertionsInFile,
 	type SerializedAssertionData
-} from "./getAssertionsInFile.ts"
-import { getCachedAssertionData } from "./getCachedAssertionData.ts"
-import { getDiagnosticsByFile } from "./getDiagnosticsByFile.ts"
-import { getProgram, TsServer } from "./tsserver.ts"
+} from "./getAssertionsInFile.js"
+import { getCachedAssertionData } from "./getCachedAssertionData.js"
+import { getDiagnosticsByFile } from "./getDiagnosticsByFile.js"
+import { getProgram, TsServer } from "./tsserver.js"
 
 export type AssertionsByFile = Record<string, SerializedAssertionData[]>
 

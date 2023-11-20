@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
-import type { Fn } from "../functions.ts"
-import type { conform } from "../generics.ts"
-import type { overloadOf } from "../unionToTuple.ts"
+import type { Fn } from "../functions.js"
+import type { conform } from "../generics.js"
+import type { overloadOf } from "../unionToTuple.js"
 
 declare const f: {
 	(): void

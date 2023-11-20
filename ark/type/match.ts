@@ -13,8 +13,8 @@ import type {
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
-import type { Scope } from "./scope.ts"
-import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.ts"
+import type { Scope } from "./scope.js"
+import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.js"
 
 type cedille = "¸"
 

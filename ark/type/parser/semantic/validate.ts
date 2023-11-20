@@ -5,40 +5,40 @@ import type {
 	NumberLiteral,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
-import type { Module } from "../../scope.ts"
-import type { GenericProps } from "../../type.ts"
-import type { writeInvalidGenericArgsMessage } from "../generic.ts"
-import type { writeMissingSubmoduleAccessMessage } from "../string/shift/operand/unenclosed.ts"
-import type { Comparator } from "../string/shift/operator/bounds.ts"
-import type { parseString } from "../string/string.ts"
-import type { validateRange } from "./bounds.ts"
-import type { validateDivisor } from "./divisor.ts"
+import type { Module } from "../../scope.js"
+import type { GenericProps } from "../../type.js"
+import type { writeInvalidGenericArgsMessage } from "../generic.js"
+import type { writeMissingSubmoduleAccessMessage } from "../string/shift/operand/unenclosed.js"
+import type { Comparator } from "../string/shift/operator/bounds.js"
+import type { parseString } from "../string/string.js"
+import type { validateRange } from "./bounds.js"
+import type { validateDivisor } from "./divisor.js"
 import type {
 	GenericInstantiationAst,
 	InfixExpression,
 	PostfixExpression
-} from "./semantic.ts"
-import type { astToString } from "./utils.ts"
+} from "./semantic.js"
+import type { astToString } from "./utils.js"
 
 export type validateAst<ast, $, args> = ast extends string
 	? validateStringAst<ast, $>
 	: ast extends PostfixExpression<infer operator, infer operand>
-	? operator extends "[]"
-		? validateAst<operand, $, args>
-		: never
-	: ast extends InfixExpression<infer operator, infer l, infer r>
-	? operator extends "&" | "|"
-		? validateInfix<ast, $, args>
-		: operator extends Comparator
-		? validateRange<l, operator, r, $, args>
-		: operator extends "%"
-		? validateDivisor<l, $, args>
-		: undefined
-	: ast extends readonly ["keyof", infer operand]
-	? validateAst<operand, $, args>
-	: ast extends GenericInstantiationAst
-	? validateGenericArgs<ast["2"], $, args>
-	: ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>>
+	  ? operator extends "[]"
+			? validateAst<operand, $, args>
+			: never
+	  : ast extends InfixExpression<infer operator, infer l, infer r>
+	    ? operator extends "&" | "|"
+				? validateInfix<ast, $, args>
+				: operator extends Comparator
+				  ? validateRange<l, operator, r, $, args>
+				  : operator extends "%"
+				    ? validateDivisor<l, $, args>
+				    : undefined
+	    : ast extends readonly ["keyof", infer operand]
+	      ? validateAst<operand, $, args>
+	      : ast extends GenericInstantiationAst
+	        ? validateGenericArgs<ast["2"], $, args>
+	        : ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>>
 
 type writeUnexpectedExpressionMessage<expression extends string> =
 	`Unexpectedly failed to parse the expression resulting from ${expression}`
@@ -67,22 +67,22 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
 		? ErrorMessage<writeMalformedNumericLiteralMessage<def, "number">>
 		: undefined
 	: def extends BigintLiteral<infer value>
-	? bigint extends value
-		? ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
-		: undefined
-	: def extends keyof $
-	? // these problems would've been caught during a fullStringParse, but it's most
-	  // efficient to check for them here in case the string was naively parsed
-	  $[def] extends GenericProps
-		? ErrorMessage<
-				writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>
-		  >
-		: $[def] extends Module
-		? ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
-		: undefined
-	: def extends ErrorMessage
-	? def
-	: undefined
+	  ? bigint extends value
+			? ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
+			: undefined
+	  : def extends keyof $
+	    ? // these problems would've been caught during a fullStringParse, but it's most
+	      // efficient to check for them here in case the string was naively parsed
+	      $[def] extends GenericProps
+				? ErrorMessage<
+						writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>
+				  >
+				: $[def] extends Module
+				  ? ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
+				  : undefined
+	    : def extends ErrorMessage
+	      ? def
+	      : undefined
 
 export type validateString<def extends string, $, args> = validateAst<
 	parseString<def, $, args>,
@@ -101,5 +101,5 @@ type validateInfix<ast extends InfixExpression, $, args> = validateAst<
 > extends ErrorMessage<infer message>
 	? ErrorMessage<message>
 	: validateAst<ast[2], $, args> extends ErrorMessage<infer message>
-	? ErrorMessage<message>
-	: undefined
+	  ? ErrorMessage<message>
+	  : undefined

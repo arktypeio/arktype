@@ -1,5 +1,5 @@
-import type { ErrorMessage } from "./errors.ts"
-import type { unionToTuple } from "./unionToTuple.ts"
+import type { ErrorMessage } from "./errors.js"
+import type { unionToTuple } from "./unionToTuple.js"
 
 export type Stringifiable =
 	| string

@@ -1,7 +1,7 @@
-import { domainOf, type inferDomain, type Primitive } from "./domain.ts"
-import type { List } from "./lists.ts"
-import type { BigintLiteral, NumberLiteral } from "./numericLiterals.ts"
-import type { Dict } from "./records.ts"
+import { domainOf, type inferDomain, type Primitive } from "./domain.js"
+import type { List } from "./lists.js"
+import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
+import type { Dict } from "./records.js"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string

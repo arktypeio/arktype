@@ -2,16 +2,16 @@ import { dirName, getSourceControlPaths, type WalkOptions } from "@arktype/fs"
 import { basename, join, normalize, relative } from "node:path"
 import * as process from "node:process"
 import { Project } from "ts-morph"
-import { repoDirs } from "../shared.ts"
-import { extractApi } from "./api/extractApi.ts"
-import { writeApi } from "./api/writeApi.ts"
-import { mapDir } from "./mapDir.ts"
+import { repoDirs } from "../shared.js"
+import { extractApi } from "./api/extractApi.js"
+import { writeApi } from "./api/writeApi.js"
+import { mapDir } from "./mapDir.js"
 import {
 	extractSnippets,
 	type SnippetsByPath,
 	type SnippetTransformToggles
-} from "./snippets/extractSnippets.ts"
-import { updateSnippetReferences } from "./snippets/writeSnippets.ts"
+} from "./snippets/extractSnippets.js"
+import { updateSnippetReferences } from "./snippets/writeSnippets.js"
 
 export type DocGenConfig = {
 	apis: DocGenApiConfig[]

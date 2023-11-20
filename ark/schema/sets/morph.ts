@@ -7,20 +7,20 @@ import {
 	type extend,
 	type listable
 } from "@arktype/util"
-import type { BasisKind, parseBasis } from "../bases/basis.ts"
-import type { NonEnumerableDomain } from "../bases/domain.ts"
-import type { Problem } from "../io/problems.ts"
-import type { CheckResult, TraversalState } from "../io/traverse.ts"
-import type { declareNode, withAttributes } from "../shared/declare.ts"
-import { basisKinds, defineNode } from "../shared/define.ts"
-import { Disjoint } from "../shared/disjoint.ts"
-import type { ExpandedSchema, Node, Schema } from "../shared/node.ts"
+import type { BasisKind, parseBasis } from "../bases/basis.js"
+import type { NonEnumerableDomain } from "../bases/domain.js"
+import type { Problem } from "../io/problems.js"
+import type { CheckResult, TraversalState } from "../io/traverse.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import { basisKinds, defineNode } from "../shared/define.js"
+import { Disjoint } from "../shared/disjoint.js"
+import type { ExpandedSchema, Node, Schema } from "../shared/node.js"
 import type {
 	IntersectionSchema,
 	parseIntersectionSchema,
 	validateIntersectionSchema
-} from "./intersection.ts"
-import type { SetAttachments } from "./set.ts"
+} from "./intersection.js"
+import type { SetAttachments } from "./set.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
 

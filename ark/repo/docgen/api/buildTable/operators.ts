@@ -1,6 +1,6 @@
-import { possibleFormats } from "../extractApi.ts"
-import type { TsTagData } from "../tsDocTransforms.ts"
-import { constructHeader, defaultOperatorHeader } from "./table.ts"
+import { possibleFormats } from "../extractApi.js"
+import type { TsTagData } from "../tsDocTransforms.js"
+import { constructHeader, defaultOperatorHeader } from "./table.js"
 
 export const operatorTable = (tableData: string[]) => {
 	const operatingTable: string[] = []

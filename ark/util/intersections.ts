@@ -1,7 +1,7 @@
-import type { domainOf } from "./domain.ts"
-import type { andPreserveUnknown, conform } from "./generics.ts"
-import type { Hkt } from "./hkt.ts"
-import type { requiredKeyOf, valueOf } from "./records.ts"
+import type { domainOf } from "./domain.js"
+import type { andPreserveUnknown, conform } from "./generics.js"
+import type { Hkt } from "./hkt.js"
+import type { requiredKeyOf, valueOf } from "./records.js"
 
 export interface AndPreserveUnknown extends Hkt.Kind {
 	f: (

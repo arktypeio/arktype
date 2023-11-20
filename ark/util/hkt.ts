@@ -1,5 +1,5 @@
-import type { Fn } from "./functions.ts"
-import type { conform } from "./generics.ts"
+import type { Fn } from "./functions.js"
+import type { conform } from "./generics.js"
 
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */
 export namespace Hkt {

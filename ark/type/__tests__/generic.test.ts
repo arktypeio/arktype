@@ -5,11 +5,11 @@ import { scope, type } from "arktype"
 import {
 	emptyGenericParameterMessage,
 	writeInvalidGenericArgsMessage
-} from "../parser/generic.ts"
-import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.ts"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.ts"
-import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.ts"
-import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.ts"
+} from "../parser/generic.js"
+import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
+import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
+import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
 describe("generics", () => {
 	describe("standalone generic", () => {

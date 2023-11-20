@@ -1,16 +1,20 @@
-import type { SourcePosition    } from "@arktype/fs"
-import { positionToString, readJson, writeJson } from "@arktype/fs";
+import {
+	positionToString,
+	readJson,
+	writeJson,
+	type SourcePosition
+} from "@arktype/fs"
 import { randomUUID } from "node:crypto"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type ts from "typescript"
-import { getConfig } from "../config.ts"
-import { getExpressionsByName } from "../tsserver/getAssertionsInFile.ts"
+import { getConfig } from "../config.js"
+import { getExpressionsByName } from "../tsserver/getAssertionsInFile.js"
 import {
+	TsServer,
 	getAbsolutePosition,
-	nearestCallExpressionChild,
-	TsServer
-} from "../tsserver/tsserver.ts"
-import { writeCachedInlineSnapshotUpdates } from "./writeSnapshot.ts"
+	nearestCallExpressionChild
+} from "../tsserver/tsserver.js"
+import { writeCachedInlineSnapshotUpdates } from "./writeSnapshot.js"
 
 export type SnapshotArgs = {
 	position: SourcePosition
