@@ -31,7 +31,7 @@
 		"!__tests__"
 	],
 	"scripts": {
-		"build": "tsc --build",
+		"build": "tsc --build ./tsconfig.build.json",
 		"bench": "ts ./__tests__/parse.bench.ts",
 		"test": "ts ../repo/testPackage.ts"
 	},

@@ -32,7 +32,7 @@
 		"!__tests__"
 	],
 	"scripts": {
-		"build": "tsc --build",
+		"build": "tsc --build ./tsconfig.build.json",
 		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {

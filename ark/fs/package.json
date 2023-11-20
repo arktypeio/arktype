@@ -26,6 +26,6 @@
 		"!__tests__"
 	],
 	"scripts": {
-		"build": "tsc --build"
+		"build": "tsc --build ./tsconfig.build.json"
 	}
 }
