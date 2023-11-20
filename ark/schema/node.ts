@@ -19,6 +19,7 @@ import { unflattenRules } from "./sets/intersection.ts"
 import type { ValidatorKind, ValidatorNode } from "./sets/morph.ts"
 import type {
 	BranchKind,
+	ExpandedUnionSchema,
 	parseSchemaBranches,
 	validateSchemaBranch
 } from "./sets/union.ts"
@@ -258,6 +259,13 @@ export abstract class BaseNode<
 export type Builtins = ReturnType<typeof createBuiltins>
 
 export type NodeParser = {
+	<const branches extends readonly unknown[]>(
+		schema: {
+			union: {
+				[i in keyof branches]: validateSchemaBranch<branches[i]>
+			}
+		} & ExpandedUnionSchema
+	): parseSchemaBranches<branches>
 	<branches extends readonly unknown[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i]>
@@ -266,7 +274,14 @@ export type NodeParser = {
 }
 
 const parseRoot: NodeParser = (...branches) =>
-	parseSchema("union", branches) as never
+	parseSchema(
+		"union",
+		branches.length === 1 &&
+			hasDomain(branches[0], "object") &&
+			"union" in branches[0]
+			? branches[0]
+			: branches
+	) as never
 
 type UnitsParser = <const branches extends readonly unknown[]>(
 	...values: branches
@@ -573,16 +588,3 @@ const extractBasis = (branch: Node<BranchKind>) =>
 
 const extractValidatorBasis = (validator: Node<ValidatorKind>) =>
 	validator.kind === "intersection" ? validator.basis : validator
-
-// static from<const branches extends readonly unknown[]>(
-// 	schema: {
-// 		branches: {
-// 			[i in keyof branches]: validateBranchInput<branches[i]>
-// 		}
-// 	} & ExpandedUnionSchema
-// ) {
-// 	return new UnionNode<inferNodeBranches<branches>>({
-// 		...schema,
-// 		branches: schema.branches.map((branch) => branch as never)
-// 	})
-// }

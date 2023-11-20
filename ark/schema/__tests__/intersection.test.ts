@@ -139,6 +139,17 @@ describe("intersections", () => {
 		const b = node("string", "number")
 		attest(a.id).equals(b.id)
 	})
+	it("doesn't normalize ordered unions", () => {
+		const a = node({
+			union: ["string", "number"],
+			ordered: true
+		})
+		const b = node({
+			union: ["number", "string"],
+			ordered: true
+		})
+		attest(a.equals(b)).equals(false)
+	})
 	// TODO:
 	// it("strict intersection", () => {
 	// 	const T = type(
