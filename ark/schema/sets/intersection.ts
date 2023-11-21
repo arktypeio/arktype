@@ -184,7 +184,7 @@ const assertValidBasis = (
 ) => {
 	if (
 		constraintNode.implicitBasis &&
-		(basis === undefined || basis.extends(constraintNode.implicitBasis))
+		(basis === undefined || !basis.extends(constraintNode.implicitBasis))
 	) {
 		const message = (
 			constraintNode.implementation as Implementation<ClosedConstraintKind>

@@ -184,7 +184,7 @@ describe("object literal", () => {
 		const t = type({ a: "number" }).and({ b: "boolean" })
 		// Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
 		attest(t.infer).type.toString.snap("{ a: number; b: boolean; }")
-		attest(t.json).is(type({ a: "number", b: "boolean" }).json)
+		attest(t.json).equals(type({ a: "number", b: "boolean" }).json)
 	})
 	it("escaped optional token", () => {
 		const t = type({ "a\\?": "string" })
