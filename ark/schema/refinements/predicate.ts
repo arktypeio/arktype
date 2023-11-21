@@ -1,8 +1,8 @@
 import { compileSerializedValue, In } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { ConstraintAttachments } from "./constraint.js"
-import { defineConstraint } from "./shared.js"
+import type { RefinementAttachments } from "./refinement.js"
+import { defineRefinement } from "./shared.js"
 
 export type PredicateInner<predicate extends Predicate = Predicate> =
 	withAttributes<{
@@ -21,10 +21,10 @@ export type PredicateDeclaration = declareNode<{
 	intersections: {
 		predicate: "predicate" | null
 	}
-	attach: ConstraintAttachments<unknown>
+	attach: RefinementAttachments<unknown>
 }>
 
-export const PredicateImplementation = defineConstraint({
+export const PredicateImplementation = defineRefinement({
 	kind: "predicate",
 	keys: {
 		predicate: {}

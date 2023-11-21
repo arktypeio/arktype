@@ -1,8 +1,11 @@
 import type { extend, listable } from "@arktype/util"
 import type { BasisKind } from "../bases/basis.js"
-import type { ConstraintKind, OpenConstraintKind } from "../shared/define.js"
+import type {
+	ConstraintAttachments,
+	OpenRefinementKind,
+	RefinementKind
+} from "../shared/define.js"
 import type { Node, Schema } from "../shared/node.js"
-import type { RuleAttachments } from "../shared/rule.js"
 import {
 	MaxImplementation,
 	MinImplementation,
@@ -17,13 +20,13 @@ import {
 } from "./predicate.js"
 import { PropImplementations, type PropDeclarations } from "./props/prop.js"
 
-export type ClosedConstraintDeclarations = {
+export type ClosedRefinementDeclarations = {
 	divisor: DivisorDeclaration
 	min: MinDeclaration
 	max: MaxDeclaration
 }
 
-export type OpenConstraintDeclarations = extend<
+export type OpenRefinementDeclarations = extend<
 	PropDeclarations,
 	{
 		pattern: PatternDeclaration
@@ -31,39 +34,39 @@ export type OpenConstraintDeclarations = extend<
 	}
 >
 
-export type ConstraintDeclarations = extend<
-	ClosedConstraintDeclarations,
-	OpenConstraintDeclarations
+export type RefinementDeclarations = extend<
+	ClosedRefinementDeclarations,
+	OpenRefinementDeclarations
 >
 
-export const ConstraintImplementations = {
+export const RefinementImplementations = {
 	divisor: DivisorImplementation,
 	min: MinImplementation,
 	max: MaxImplementation,
 	pattern: PatternImplementation,
 	predicate: PredicateImplementation,
 	...PropImplementations
-} as const satisfies Record<ConstraintKind, unknown>
+} as const satisfies Record<RefinementKind, unknown>
 
-export type ConstraintAttachments<implicitBasisType> = extend<
-	RuleAttachments,
+export type RefinementAttachments<implicitBasisType> = extend<
+	ConstraintAttachments,
 	{
 		readonly implicitBasis: Node<BasisKind, implicitBasisType> | undefined
 	}
 >
 
-export type ConstraintIntersectionInputsByKind = {
-	[k in ConstraintKind]: k extends OpenConstraintKind
+export type RefinementIntersectionInputsByKind = {
+	[k in RefinementKind]: k extends OpenRefinementKind
 		? listable<Schema<k>>
 		: Schema<k>
 }
 
-export type ConstraintIntersectionInput<
-	kind extends ConstraintKind = ConstraintKind
-> = ConstraintIntersectionInputsByKind[kind]
+export type RefinementIntersectionInput<
+	kind extends RefinementKind = RefinementKind
+> = RefinementIntersectionInputsByKind[kind]
 
-export type constraintKindOf<t> = {
-	[k in ConstraintKind]: Node<k> extends {
+export type refinementKindOf<t> = {
+	[k in RefinementKind]: Node<k> extends {
 		implicitBasis: infer basis
 	}
 		? basis extends Node<BasisKind>
@@ -74,8 +77,8 @@ export type constraintKindOf<t> = {
 			  ? k
 			  : never
 		: never
-}[ConstraintKind]
+}[RefinementKind]
 
-export type constraintInputsByKind<t> = {
-	[k in constraintKindOf<t>]?: ConstraintIntersectionInput<k>
+export type refinementInputsByKind<t> = {
+	[k in refinementKindOf<t>]?: RefinementIntersectionInput<k>
 }

@@ -14,7 +14,7 @@ import {
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
 import { In, compileSerializedValue } from "./io/compile.js"
 import { arkKind, isNode, registry } from "./io/registry.js"
-import { unflattenRules } from "./sets/intersection.js"
+import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import type {
 	BranchKind,
@@ -26,19 +26,19 @@ import { createBuiltins } from "./shared/builtins.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
-	closedConstraintKinds,
+	closedRefinementKinds,
 	constraintKinds,
-	openConstraintKinds,
+	openRefinementKinds,
+	refinementKinds,
 	rootKinds,
-	ruleKinds,
 	setKinds,
-	type ClosedConstraintKind,
+	type ClosedRefinementKind,
 	type ConstraintKind,
 	type NodeKind,
-	type OpenConstraintKind,
+	type OpenRefinementKind,
+	type RefinementKind,
 	type Root,
 	type RootKind,
-	type RuleKind,
 	type SetKind,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
@@ -102,7 +102,7 @@ export abstract class BaseNode<
 		Object.assign(this, attachments)
 		this.allows = new CompiledFunction(
 			In,
-			this.isRule()
+			this.isConstraint()
 				? `return ${this.condition}`
 				: (this as {} as Node<SetKind>).compile({
 						successKind: "true",
@@ -172,16 +172,16 @@ export abstract class BaseNode<
 		return includes(basisKinds, this.kind)
 	}
 
-	isClosedConstraint(): this is Node<ClosedConstraintKind> {
-		return includes(closedConstraintKinds, this.kind)
+	isClosedRefinement(): this is Node<ClosedRefinementKind> {
+		return includes(closedRefinementKinds, this.kind)
 	}
 
-	isOpenConstraint(): this is Node<OpenConstraintKind> {
-		return includes(openConstraintKinds, this.kind)
+	isOpenRefinement(): this is Node<OpenRefinementKind> {
+		return includes(openRefinementKinds, this.kind)
 	}
 
-	isConstraint(): this is Node<ConstraintKind> {
-		return includes(constraintKinds, this.kind)
+	isRefinement(): this is Node<RefinementKind> {
+		return includes(refinementKinds, this.kind)
 	}
 
 	isRoot(): this is Node<RootKind> {
@@ -192,8 +192,8 @@ export abstract class BaseNode<
 		return includes(setKinds, this.kind)
 	}
 
-	isRule(): this is Node<RuleKind> {
-		return includes(ruleKinds, this.kind)
+	isConstraint(): this is Node<ConstraintKind> {
+		return includes(constraintKinds, this.kind)
 	}
 
 	toString() {
@@ -209,14 +209,14 @@ export abstract class BaseNode<
 		if (closedResult !== null) {
 			return closedResult as UnknownNode | Disjoint
 		}
-		if (!this.isRule() || !other.isRule()) {
+		if (!this.isConstraint() || !other.isConstraint()) {
 			return throwInternalError(
-				`Unexpected null intersection between non-rules ${this.kind} and ${other.kind}`
+				`Unexpected null intersection between non-constraints ${this.kind} and ${other.kind}`
 			)
 		}
 		return parseSchema(
 			"intersection",
-			unflattenRules([this as never, other]) as never
+			unflattenConstraints([this as never, other]) as never
 		)
 	}
 
@@ -332,17 +332,17 @@ export class RootNode<
 	readonly branches: readonly Node<BranchKind>[] =
 		this.kind === "union" ? (this as any).union : [this]
 
-	constrain<constraintKind extends ConstraintKind>(
-		kind: constraintKind,
-		schema: Schema<constraintKind>
-	): Exclude<intersectionOf<this["kind"], constraintKind>, Disjoint> {
+	constrain<refinementKind extends RefinementKind>(
+		kind: refinementKind,
+		schema: Schema<refinementKind>
+	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
 		const constrainedBranches = this.branches.map((branch) => {
-			const constraint = parseConstraint(
+			const refinement = parseRefinement(
 				kind,
 				schema as never,
 				extractBasis(branch)
 			) as any
-			return branch.and(constraint)
+			return branch.and(refinement)
 		})
 		return parseSchema("union", { union: constrainedBranches }) as never
 	}
@@ -411,7 +411,7 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly typeId: string
 }
 
-export function parseConstraint<kind extends ConstraintKind>(
+export function parseRefinement<kind extends RefinementKind>(
 	kind: kind,
 	schema: Schema<kind>,
 	basis: Node<BasisKind> | undefined
@@ -537,7 +537,7 @@ export function parseSchema<schemaKind extends NodeKind>(
 		id,
 		typeId
 	} satisfies Record<keyof BaseAttachments<any>, unknown>
-	return includes(constraintKinds, kind)
+	return includes(refinementKinds, kind)
 		? new (BaseNode as any)(attachments)
 		: new (RootNode as any)(attachments)
 }

@@ -3,20 +3,20 @@ import type { BasisKind } from "../bases/basis.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import {
 	defineNode,
-	type ConstraintKind,
 	type NodeImplementationInput,
+	type RefinementKind,
 	type instantiateNodeImplementation
 } from "../shared/define.js"
 import type { Declaration, Node } from "../shared/node.js"
 
-export interface BaseConstraint {
+export interface BaseRefinement {
 	implicitBasis: Node<BasisKind>
 }
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
 
-export type ConstraintImplementationInput<d extends BaseNodeDeclaration> =
+export type RefinementImplementationInput<d extends BaseNodeDeclaration> =
 	extend<
 		NodeImplementationInput<d>,
 		{
@@ -27,10 +27,10 @@ export type ConstraintImplementationInput<d extends BaseNodeDeclaration> =
 		}
 	>
 
-export function defineConstraint<
-	kind extends ConstraintKind,
-	input extends ConstraintImplementationInput<Declaration<kind>>
+export function defineRefinement<
+	kind extends RefinementKind,
+	input extends RefinementImplementationInput<Declaration<kind>>
 >(input: { kind: kind } & input): instantiateNodeImplementation<input>
-export function defineConstraint(input: NodeImplementationInput<any>) {
+export function defineRefinement(input: NodeImplementationInput<any>) {
 	return defineNode(input)
 }

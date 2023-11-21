@@ -188,7 +188,7 @@ export const UnionImplementation = defineNode({
 			compile: (cfg) =>
 				inner.union
 					.map(
-						(rule) => `if(${rule.alias}(${In})) {
+						(constraint) => `if(${constraint.alias}(${In})) {
 return true
 }`
 					)

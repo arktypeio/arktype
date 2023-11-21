@@ -9,8 +9,8 @@ import {
 	type isAny
 } from "@arktype/util"
 import { isNode } from "../io/registry.js"
+import type { ConstraintAttachments } from "../shared/define.js"
 import type { Node, Schema } from "../shared/node.js"
-import type { RuleAttachments } from "../shared/rule.js"
 import {
 	DomainImplementation,
 	type DomainDeclaration,
@@ -43,7 +43,7 @@ export const BasisImplementations = {
 export type BasisKind = keyof BasisDeclarations
 
 export type BasisAttachments = extend<
-	RuleAttachments,
+	ConstraintAttachments,
 	{
 		readonly domain: Domain
 		readonly basisName: string
@@ -76,7 +76,7 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 }
 
 export type parseBasis<schema extends Schema<BasisKind>> =
-	//allow any to be used to access all constraints
+	//allow any to be used to access all refinements
 	isAny<schema> extends true
 		? any
 		: schema extends NonEnumerableDomain

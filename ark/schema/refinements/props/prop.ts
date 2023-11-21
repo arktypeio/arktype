@@ -373,11 +373,11 @@ export const PropImplementations = {
 // 	if (keyNode.branches.length !== 1) {
 // 		return
 // 	}
-// 	const regexConstraints = keyNode.branches[0].regex
-// 	if (!regexConstraints || regexConstraints.length !== 1) {
+// 	const regexRefinements = keyNode.branches[0].regex
+// 	if (!regexRefinements || regexRefinements.length !== 1) {
 // 		return
 // 	}
-// 	const regexLiteral = regexConstraints[0].rule
+// 	const regexLiteral = regexRefinements[0].rule
 // 	if (!regexLiteral.endsWith(arrayIndexLiteralSuffix)) {
 // 		return
 // 	}

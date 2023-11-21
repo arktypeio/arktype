@@ -7,7 +7,7 @@ import {
 	transform,
 	type entryOf
 } from "@arktype/util"
-import type { RuleKind } from "./define.js"
+import type { ConstraintKind } from "./define.js"
 import type { rightOf } from "./intersect.js"
 import type { Node } from "./node.js"
 
@@ -41,10 +41,10 @@ type DisjointKinds = {
 	assignability?:
 		| {
 				l: unknown
-				r: Node<RuleKind>
+				r: Node<ConstraintKind>
 		  }
 		| {
-				l: Node<RuleKind>
+				l: Node<ConstraintKind>
 				r: unknown
 		  }
 	union?: {

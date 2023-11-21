@@ -10,7 +10,7 @@ import {
 	type conform
 } from "@arktype/util"
 import { domainDescriptions } from "../bases/domain.js"
-import type { BoundInner, NumericallyBoundable } from "../constraints/bounds.js"
+import type { BoundInner, NumericallyBoundable } from "../refinements/bounds.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems

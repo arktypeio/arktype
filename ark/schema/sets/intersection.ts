@@ -14,22 +14,22 @@ import {
 	type BasisKind,
 	type parseBasis
 } from "../bases/basis.js"
-import type { constraintInputsByKind } from "../constraints/constraint.js"
-import { getBasisName } from "../constraints/shared.js"
 import type { SchemaParseContext, UnknownNode } from "../node.js"
+import type { refinementInputsByKind } from "../refinements/refinement.js"
+import { getBasisName } from "../refinements/shared.js"
 import type {
 	BaseAttributes,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
 import {
-	closedConstraintKinds,
+	closedRefinementKinds,
 	defineNode,
-	openConstraintKinds,
-	type ClosedConstraintKind,
+	openRefinementKinds,
+	type ClosedRefinementKind,
 	type ConstraintKind,
-	type OpenConstraintKind,
-	type RuleKind
+	type OpenRefinementKind,
+	type RefinementKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Implementation, Node, Schema } from "../shared/node.js"
@@ -37,7 +37,7 @@ import type { SetAttachments } from "./set.js"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {
-		[k in ConstraintKind]?: k extends OpenConstraintKind
+		[k in RefinementKind]?: k extends OpenRefinementKind
 			? readonly Node<k>[]
 			: Node<k>
 	}
@@ -47,18 +47,18 @@ export type IntersectionSchema<
 	basis extends Schema<BasisKind> | undefined = Schema<BasisKind> | undefined
 > = {
 	basis?: basis
-} & constraintInputsByKind<
+} & refinementInputsByKind<
 	basis extends Schema<BasisKind> ? parseBasis<basis>["infer"] : unknown
 > &
 	BaseAttributes
 
-export type RuleSet = readonly Node<RuleKind>[]
+export type ConstraintSet = readonly Node<ConstraintKind>[]
 
 export type IntersectionAttachments = extend<
 	SetAttachments,
 	{
-		rules: RuleSet
-		constraints: readonly Node<ConstraintKind>[]
+		constraints: ConstraintSet
+		refinements: readonly Node<RefinementKind>[]
 	}
 >
 
@@ -87,76 +87,78 @@ export const IntersectionImplementation = defineNode({
 			}
 		},
 		divisor: {
-			parse: (schema, ctx) => parseClosedConstraint("divisor", schema, ctx)
+			parse: (schema, ctx) => parseClosedRefinement("divisor", schema, ctx)
 		},
 		max: {
-			parse: (schema, ctx) => parseClosedConstraint("max", schema, ctx)
+			parse: (schema, ctx) => parseClosedRefinement("max", schema, ctx)
 		},
 		min: {
-			parse: (schema, ctx) => parseClosedConstraint("min", schema, ctx)
+			parse: (schema, ctx) => parseClosedRefinement("min", schema, ctx)
 		},
 		pattern: {
-			parse: (schema, ctx) => parseOpenConstraint("pattern", schema, ctx)
+			parse: (schema, ctx) => parseOpenRefinement("pattern", schema, ctx)
 		},
 		predicate: {
-			parse: (schema, ctx) => parseOpenConstraint("predicate", schema, ctx)
+			parse: (schema, ctx) => parseOpenRefinement("predicate", schema, ctx)
 		},
 		optional: {
-			parse: (schema, ctx) => parseOpenConstraint("optional", schema, ctx)
+			parse: (schema, ctx) => parseOpenRefinement("optional", schema, ctx)
 		},
 		required: {
-			parse: (schema, ctx) => parseOpenConstraint("required", schema, ctx)
+			parse: (schema, ctx) => parseOpenRefinement("required", schema, ctx)
 		}
 	},
 	intersections: {
 		intersection: (l, r) => {
-			let result: readonly Node<RuleKind>[] | Disjoint = l.rules
-			for (const constraint of r.constraints) {
+			let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
+			for (const refinement of r.refinements) {
 				if (result instanceof Disjoint) {
 					break
 				}
-				result = addRule(result, constraint)
+				result = addConstraint(result, refinement)
 			}
-			return result instanceof Disjoint ? result : unflattenRules(result)
+			return result instanceof Disjoint ? result : unflattenConstraints(result)
 		},
 		default: (l, r) => {
-			const result = addRule(l.rules, r)
-			return result instanceof Disjoint ? result : unflattenRules(result)
+			const result = addConstraint(l.constraints, r)
+			return result instanceof Disjoint ? result : unflattenConstraints(result)
 		}
 	},
 	reduce: (inner, ctx) => {
-		const { description, alias, ...rulesByKind } = inner
-		const inputRules = Object.values(rulesByKind).flat() as RuleSet
-		const reducedRules = reduceRules([], inputRules)
-		if (reducedRules instanceof Disjoint) {
-			return reducedRules.throw()
+		const { description, alias, ...constraintsByKind } = inner
+		const inputConstraints = Object.values(
+			constraintsByKind
+		).flat() as ConstraintSet
+		const reducedConstraints = reduceConstraints([], inputConstraints)
+		if (reducedConstraints instanceof Disjoint) {
+			return reducedConstraints.throw()
 		}
-		if (reducedRules.length === 1 && reducedRules[0].isBasis()) {
+		if (reducedConstraints.length === 1 && reducedConstraints[0].isBasis()) {
 			// TODO: description?
-			return reducedRules[0]
+			return reducedConstraints[0]
 		}
-		if (reducedRules.length === inputRules.length) {
+		if (reducedConstraints.length === inputConstraints.length) {
 			return
 		}
-		const reducedRulesByKind = unflattenRules(
-			reducedRules
+		const reducedConstraintsByKind = unflattenConstraints(
+			reducedConstraints
 		) as mutable<IntersectionInner>
 		if (description) {
-			reducedRulesByKind.description = description
+			reducedConstraintsByKind.description = description
 		}
 		if (alias) {
-			reducedRulesByKind.alias = alias
+			reducedConstraintsByKind.alias = alias
 		}
-		return ctx.cls.parsePrereduced("intersection", reducedRulesByKind)
+		return ctx.cls.parsePrereduced("intersection", reducedConstraintsByKind)
 	},
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
-			rules: [],
 			constraints: [],
+			refinements: [],
 			compile: (cfg) =>
-				attachments.rules
+				attachments.constraints
 					.map(
-						(rule) => `if(!(${rule.condition})) {
+						(constraint) => `if(!(${constraint.condition})) {
 	return false
 }`
 					)
@@ -164,161 +166,151 @@ export const IntersectionImplementation = defineNode({
 		}
 		for (const [k, v] of node.entries) {
 			if (k === "basis") {
-				attachments.rules.push(v)
-			} else if (includes(openConstraintKinds, k)) {
-				attachments.rules.push(...(v as any))
+				attachments.constraints.push(v)
+			} else if (includes(openRefinementKinds, k)) {
 				attachments.constraints.push(...(v as any))
-			} else if (includes(closedConstraintKinds, k)) {
-				attachments.rules.push(v as never)
+				attachments.refinements.push(...(v as any))
+			} else if (includes(closedRefinementKinds, k)) {
 				attachments.constraints.push(v as never)
+				attachments.refinements.push(v as never)
 			}
 		}
 		return attachments
 	},
 	writeDefaultDescription: (node) => {
-		return node.rules.length === 0
+		return node.constraints.length === 0
 			? "an unknown value"
-			: node.rules.join(" and ")
+			: node.constraints.join(" and ")
 	}
 })
 
 const assertValidBasis = (
-	constraintNode: Node<ConstraintKind>,
+	refinementNode: Node<RefinementKind>,
 	basis: Node<BasisKind> | undefined
 ) => {
 	if (
-		constraintNode.implicitBasis &&
-		(basis === undefined || !basis.extends(constraintNode.implicitBasis))
+		refinementNode.implicitBasis &&
+		(basis === undefined || !basis.extends(refinementNode.implicitBasis))
 	) {
 		const message = (
-			constraintNode.implementation as Implementation<ClosedConstraintKind>
+			refinementNode.implementation as Implementation<RefinementKind>
 		).writeInvalidBasisMessage(getBasisName(basis))
 		throwParseError(message)
 	}
 }
 
-export const parseClosedConstraint = <kind extends ClosedConstraintKind>(
+export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
 	input: Schema<kind>,
 	intersectionContext: SchemaParseContext<"intersection">
 ): Node<kind> => {
-	const childContext = { basis: intersectionContext.inner?.basis }
-	const constraintNode = intersectionContext.cls.parseSchema(
+	const basis = intersectionContext.inner?.basis
+	const childContext = { basis }
+	const refinement = intersectionContext.cls.parseSchema(
 		kind,
 		input,
 		childContext
-	) as Node<ConstraintKind>
-	assertValidBasis(constraintNode, childContext.basis)
-	return constraintNode as never
+	) as Node<RefinementKind>
+	assertValidBasis(refinement, basis)
+	return refinement as never
 }
 
-export const parseOpenConstraint = <kind extends OpenConstraintKind>(
+export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
 	intersectionContext: SchemaParseContext<"intersection">
 ) => {
-	const childContext = { basis: intersectionContext.inner?.basis }
+	const basis = intersectionContext.inner?.basis
+	const childContext = { basis }
 	if (isArray(input)) {
 		if (input.length === 0) {
 			// Omit empty lists as input
 			return
 		}
-		const constraintNodes = input
-			.map((constraint) =>
-				intersectionContext.cls.parseSchema(kind, constraint, childContext)
+		const refinements = input
+			.map((refinement) =>
+				intersectionContext.cls.parseSchema(kind, refinement, childContext)
 			)
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
-		assertValidBasis(constraintNodes[0], childContext.basis)
-		return constraintNodes
+		assertValidBasis(refinements[0], basis)
+		return refinements
 	}
-	const constraintNode = intersectionContext.cls.parseSchema(
+	const refinement = intersectionContext.cls.parseSchema(
 		kind,
 		input,
 		childContext
 	)
-	assertValidBasis(constraintNode, childContext.basis)
-	return [constraintNode]
+	assertValidBasis(refinement, basis)
+	return [refinement]
 }
 
-const reduceRules = (
-	l: readonly Node<RuleKind>[],
-	r: readonly Node<RuleKind>[]
+const reduceConstraints = (
+	l: readonly Node<ConstraintKind>[],
+	r: readonly Node<ConstraintKind>[]
 ) => {
-	let result: readonly Node<RuleKind>[] | Disjoint = l
-	for (const constraint of r) {
+	let result: readonly Node<ConstraintKind>[] | Disjoint = l
+	for (const refinement of r) {
 		if (result instanceof Disjoint) {
 			break
 		}
-		result = addRule(result, constraint)
+		result = addConstraint(result, refinement)
 	}
 	return result instanceof Disjoint ? result : result
 }
 
-export const flattenRules = (inner: IntersectionInner): RuleSet =>
+export const flattenConstraints = (inner: IntersectionInner): ConstraintSet =>
 	Object.values(inner).flatMap((v) =>
 		typeof v === "object" ? (v as UnknownNode) : []
 	)
 
-export const unflattenRules = (rules: RuleSet): IntersectionInner => {
+export const unflattenConstraints = (
+	constraints: ConstraintSet
+): IntersectionInner => {
 	const inner: mutable<IntersectionInner> = {}
-	for (const rule of rules) {
-		if (rule.isBasis()) {
-			inner.basis = rule
-		} else if (rule.isOpenConstraint()) {
-			inner[rule.kind] ??= [] as any
-			;(inner as any)[rule.kind].push(rule)
-		} else if (rule.isClosedConstraint()) {
-			if (inner[rule.kind]) {
+	for (const constraint of constraints) {
+		if (constraint.isBasis()) {
+			inner.basis = constraint
+		} else if (constraint.isOpenRefinement()) {
+			inner[constraint.kind] ??= [] as any
+			;(inner as any)[constraint.kind].push(constraint)
+		} else if (constraint.isClosedRefinement()) {
+			if (inner[constraint.kind]) {
 				return throwInternalError(
-					`Unexpected intersection of closed constraints of kind ${rule.kind}`
+					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
 				)
 			}
-			inner[rule.kind] = rule as never
+			inner[constraint.kind] = constraint as never
 		}
 	}
 	return inner
 }
 
-export const addRule = (
-	base: readonly Node<RuleKind>[],
-	rule: Node<RuleKind>
-): Node<RuleKind>[] | Disjoint => {
-	const result: Node<RuleKind>[] = []
-	let includesConstraint = false
+export const addConstraint = (
+	base: readonly Node<ConstraintKind>[],
+	constraint: Node<ConstraintKind>
+): Node<ConstraintKind>[] | Disjoint => {
+	const result: Node<ConstraintKind>[] = []
+	let includesRefinement = false
 	for (let i = 0; i < base.length; i++) {
-		const elementResult = rule.intersectClosed(base[i])
+		const elementResult = constraint.intersectClosed(base[i])
 		if (elementResult === null) {
 			result.push(base[i])
 		} else if (elementResult instanceof Disjoint) {
 			return elementResult
-		} else if (!includesConstraint) {
+		} else if (!includesRefinement) {
 			result.push(elementResult)
-			includesConstraint = true
+			includesRefinement = true
 		} else if (!base.includes(elementResult)) {
 			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for constraint ${elementResult}`
+				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
 			)
 		}
 	}
-	if (!includesConstraint) {
-		result.push(rule)
+	if (!includesRefinement) {
+		result.push(constraint)
 	}
 	return result
 }
-
-// const assertValidConstraints = (
-// 	basis: Node<BasisKind> | undefined,
-// 	constraints: readonly Node<ConstraintKind>[]
-// ) => {
-// 	for (const constraint of constraints) {
-// 		if (
-// 			!constraint.nodeClass.basis.isUnknown() &&
-// 			(!basis || !basis.extends(constraint.nodeClass.basis))
-// 		) {
-// 			throwParseError(constraint.nodeClass.writeInvalidBasisMessage(basis))
-// 		}
-// 	}
-// }
 
 export type IntersectionBasis = {
 	basis?: Schema<BasisKind>
@@ -340,8 +332,8 @@ export type validateIntersectionSchema<schema> =
 
 export type parseIntersectionSchema<schema> =
 	schema extends Required<IntersectionBasis>
-		? keyof schema & ConstraintKind extends never
-			? // if there are no constraint keys, reduce to the basis node
+		? keyof schema & RefinementKind extends never
+			? // if there are no refinement keys, reduce to the basis node
 			  parseBasis<schema["basis"]>
 			: Node<"intersection", parseBasis<schema["basis"]>["infer"]>
 		: Node<"intersection">

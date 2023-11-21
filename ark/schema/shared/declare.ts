@@ -1,5 +1,5 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
-import type { ConstraintKind, NodeKind, RuleKind } from "./define.js"
+import type { ConstraintKind, NodeKind, RefinementKind } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
 
@@ -16,12 +16,12 @@ export type BaseIntersectionMap = {
 			[requiredKey in lKey]:
 				| lKey
 				| Disjoint
-				| (lKey extends ConstraintKind ? null : never)
+				| (lKey extends RefinementKind ? null : never)
 		} & {
 			[rKey in rightOf<lKey> | "default"]?:
 				| lKey
 				| Disjoint
-				| (lKey extends RuleKind ? null : never)
+				| (lKey extends ConstraintKind ? null : never)
 		}
 	>
 }

@@ -1,34 +1,34 @@
 import type { Dict, extend } from "@arktype/util"
 import { BasisImplementations, type BasisDeclarations } from "../bases/basis.js"
-import {
-	ConstraintImplementations,
-	type ConstraintDeclarations
-} from "../constraints/constraint.js"
 import type { BaseNode, RootNode } from "../node.js"
+import {
+	RefinementImplementations,
+	type RefinementDeclarations
+} from "../refinements/refinement.js"
 import {
 	SetImplementationByKind,
 	type SetDeclarationsByKind
 } from "../sets/set.js"
 import type { NodeKind, RootKind } from "./define.js"
 
-export type RuleDeclarationsByKind = extend<
+export type ConstraintDeclarationsByKind = extend<
 	BasisDeclarations,
-	ConstraintDeclarations
+	RefinementDeclarations
 >
 
-export const RuleImplementationByKind = {
+export const ConstraintImplementationByKind = {
 	...BasisImplementations,
-	...ConstraintImplementations
+	...RefinementImplementations
 }
 
 export type NodeDeclarationsByKind = extend<
-	RuleDeclarationsByKind,
+	ConstraintDeclarationsByKind,
 	SetDeclarationsByKind
 >
 
 export const NodeImplementationByKind = {
 	...SetImplementationByKind,
-	...RuleImplementationByKind
+	...ConstraintImplementationByKind
 } as const satisfies Dict<NodeKind>
 
 export type NodeImplementationByKind = typeof NodeImplementationByKind

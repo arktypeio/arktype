@@ -2,8 +2,8 @@ import type { declareNode, withAttributes } from "../../shared/declare.js"
 import { rootKinds, type RootKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Node, Schema } from "../../shared/node.js"
-import type { ConstraintAttachments } from "../constraint.js"
-import { defineConstraint } from "../shared.js"
+import type { RefinementAttachments } from "../refinement.js"
+import { defineRefinement } from "../shared.js"
 import { writeInvalidPropsBasisMessage } from "./shared.js"
 
 export type OptionalPropInner = withAttributes<{
@@ -23,10 +23,10 @@ export type OptionalDeclaration = declareNode<{
 	intersections: {
 		optional: "optional" | null
 	}
-	attach: ConstraintAttachments<object>
+	attach: RefinementAttachments<object>
 }>
 
-export const OptionalImplementation = defineConstraint({
+export const OptionalImplementation = defineRefinement({
 	kind: "optional",
 	keys: {
 		key: {},

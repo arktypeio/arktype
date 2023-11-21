@@ -1,7 +1,7 @@
 import { In } from "../io/compile.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { ConstraintAttachments } from "./constraint.js"
-import { defineConstraint } from "./shared.js"
+import type { RefinementAttachments } from "./refinement.js"
+import { defineRefinement } from "./shared.js"
 
 export type DivisorInner = withAttributes<{
 	readonly divisor: number
@@ -17,7 +17,7 @@ export type DivisorDeclaration = declareNode<{
 	intersections: {
 		divisor: "divisor"
 	}
-	attach: ConstraintAttachments<number>
+	attach: RefinementAttachments<number>
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -28,7 +28,7 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export const DivisorImplementation = defineConstraint({
+export const DivisorImplementation = defineRefinement({
 	kind: "divisor",
 	keys: {
 		divisor: {}

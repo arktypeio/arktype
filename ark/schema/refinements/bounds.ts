@@ -5,8 +5,8 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Node } from "../shared/node.js"
-import type { ConstraintAttachments } from "./constraint.js"
-import { defineConstraint } from "./shared.js"
+import type { RefinementAttachments } from "./refinement.js"
+import { defineRefinement } from "./shared.js"
 
 export type BoundInner = withAttributes<{
 	readonly boundKind: BoundKind
@@ -20,7 +20,7 @@ export type BoundLimit = number | string
 export type BoundDeclaration = MinDeclaration | MaxDeclaration
 
 export type BoundAttachments<limitKind extends LimitKind> = extend<
-	ConstraintAttachments<Boundable>,
+	RefinementAttachments<Boundable>,
 	{
 		comparator: RelativeComparator<limitKind>
 	}
@@ -142,7 +142,7 @@ export type MaxDeclaration = declareNode<{
 	attach: BoundAttachments<"max">
 }>
 
-export const MaxImplementation = defineConstraint({
+export const MaxImplementation = defineRefinement({
 	kind: "max",
 	keys: {
 		max: {

@@ -1,8 +1,8 @@
 import { throwParseError } from "@arktype/util"
 import { In } from "../io/compile.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { ConstraintAttachments } from "./constraint.js"
-import { defineConstraint } from "./shared.js"
+import type { RefinementAttachments } from "./refinement.js"
+import { defineRefinement } from "./shared.js"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
@@ -21,10 +21,10 @@ export type PatternDeclaration = declareNode<{
 	intersections: {
 		pattern: "pattern" | null
 	}
-	attach: ConstraintAttachments<string>
+	attach: RefinementAttachments<string>
 }>
 
-export const PatternImplementation = defineConstraint({
+export const PatternImplementation = defineRefinement({
 	kind: "pattern",
 	keys: {
 		pattern: {},

@@ -21,25 +21,25 @@ export const basisKinds = ["unit", "proto", "domain"] as const
 
 export type BasisKind = (typeof basisKinds)[number]
 
-export const closedConstraintKinds = ["divisor", "max", "min"] as const
+export const closedRefinementKinds = ["divisor", "max", "min"] as const
 
-export type ClosedConstraintKind = (typeof closedConstraintKinds)[number]
+export type ClosedRefinementKind = (typeof closedRefinementKinds)[number]
 
-export const openConstraintKinds = [
+export const openRefinementKinds = [
 	"pattern",
 	"predicate",
 	"required",
 	"optional"
 ] as const
 
-export type OpenConstraintKind = (typeof openConstraintKinds)[number]
+export type OpenRefinementKind = (typeof openRefinementKinds)[number]
 
-export const constraintKinds = [
-	...closedConstraintKinds,
-	...openConstraintKinds
+export const refinementKinds = [
+	...closedRefinementKinds,
+	...openRefinementKinds
 ] as const
 
-export type ConstraintKind = (typeof constraintKinds)[number]
+export type RefinementKind = (typeof refinementKinds)[number]
 
 export const setKinds = ["union", "morph", "intersection"] as const
 
@@ -49,11 +49,11 @@ export const rootKinds = [...setKinds, ...basisKinds] as const
 
 export type RootKind = (typeof rootKinds)[number]
 
-export const ruleKinds = [...basisKinds, ...constraintKinds] as const
+export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
-export type RuleKind = (typeof ruleKinds)[number]
+export type ConstraintKind = (typeof constraintKinds)[number]
 
-export const nodeKinds = [...setKinds, ...ruleKinds] as const
+export const nodeKinds = [...setKinds, ...constraintKinds] as const
 
 export type NodeKind = (typeof nodeKinds)[number]
 
@@ -85,6 +85,10 @@ export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
 		d,
 		k
 	>
+}
+
+export type ConstraintAttachments = {
+	readonly condition: string
 }
 
 export type NodeKeyDefinition<

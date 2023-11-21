@@ -15,8 +15,8 @@ export type DomainInner<
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
 
 export type DomainSchema<
-	rule extends NonEnumerableDomain = NonEnumerableDomain
-> = DomainInner<rule>
+	domain extends NonEnumerableDomain = NonEnumerableDomain
+> = DomainInner<domain>
 
 export type DomainDeclaration = declareNode<{
 	kind: "domain"

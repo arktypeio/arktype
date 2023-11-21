@@ -14,7 +14,7 @@ describe("intersections", () => {
 			pattern: "/.*/"
 		})
 	})
-	it("multiple rules", () => {
+	it("multiple constraints", () => {
 		const l = node({
 			basis: "number",
 			divisor: 3,
@@ -25,7 +25,7 @@ describe("intersections", () => {
 			divisor: 5
 		})
 		const result = l.and(r)
-		// TODO: should boundKind be here? How to instantiate constraints?
+		// TODO: should boundKind be here? How to instantiate refinements?
 		attest(result.json).snap({
 			basis: "number",
 			divisor: 15,
@@ -104,7 +104,7 @@ describe("intersections", () => {
 		)
 		attest(n.json).snap({})
 	})
-	it("normalizes constraint order", () => {
+	it("normalizes refinement order", () => {
 		const l = node({
 			basis: "number",
 			divisor: 3,
