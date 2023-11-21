@@ -8,26 +8,29 @@ import {
 	throwInternalError,
 	throwParseError,
 	type Json,
-	type conform,
-	type extend
+	type conform
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
-import { In, compileSerializedValue } from "./io/compile.js"
+import { In } from "./io/compile.js"
 import { arkKind, isNode, registry } from "./io/registry.js"
-import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import type {
 	BranchKind,
-	ExpandedUnionSchema,
+	UnionSchema,
 	parseSchemaBranches,
 	validateSchemaBranch
 } from "./sets/union.js"
 import { createBuiltins } from "./shared/builtins.js"
-import type { BaseAttributes } from "./shared/declare.js"
+import type {
+	BaseAttributes,
+	BaseSchemaParseContext,
+	BaseSchemaParseContextInput
+} from "./shared/declare.js"
 import {
 	basisKinds,
 	closedRefinementKinds,
 	constraintKinds,
+	defaultInnerKeySerializer,
 	openRefinementKinds,
 	refinementKinds,
 	rootKinds,
@@ -205,23 +208,31 @@ export abstract class BaseNode<
 	}
 
 	// TODO: add input kind, caching
+	private static intersectionCache: Record<string, UnknownNode | Disjoint> = {}
 	intersect<other extends Node>(
 		other: other
 	): intersectionOf<kind, other["kind"]>
-	intersect(other: UnknownNode): UnknownNode | Disjoint {
+	intersect(other: UnknownNode): UnknownNode | Disjoint | null {
+		const cacheKey = `${this.typeId}&${other.typeId}`
+		if (BaseNode.intersectionCache[cacheKey]) {
+			return BaseNode.intersectionCache[cacheKey]
+		}
 		const closedResult = this.intersectClosed(other as never)
 		if (closedResult !== null) {
-			return closedResult as UnknownNode | Disjoint
+			BaseNode.intersectionCache[cacheKey] = closedResult
+			BaseNode.intersectionCache[`${other.typeId}&${this.typeId}`] =
+				// also cache the result with other's condition as the key.
+				// if it was a Disjoint, it has to be inverted so that l,r
+				// still line up correctly
+				closedResult instanceof Disjoint ? closedResult.invert() : closedResult
+			return closedResult
 		}
 		if (!this.isConstraint() || !other.isConstraint()) {
 			return throwInternalError(
 				`Unexpected null intersection between non-constraints ${this.kind} and ${other.kind}`
 			)
 		}
-		return parseSchema(
-			"intersection",
-			unflattenConstraints([this as never, other]) as never
-		)
+		return null
 	}
 
 	intersectClosed<other extends Node>(
@@ -269,7 +280,7 @@ export type NodeParser = {
 			union: {
 				[i in keyof branches]: validateSchemaBranch<branches[i]>
 			}
-		} & ExpandedUnionSchema
+		} & UnionSchema
 	): parseSchemaBranches<branches>
 	<branches extends readonly unknown[]>(
 		...branches: {
@@ -425,25 +436,12 @@ export function parseRefinement<kind extends RefinementKind>(
 	}) as never
 }
 
-export type SchemaParseContextInput = {
-	prereduced?: true
-	basis?: Node<BasisKind> | undefined
-}
-
-export type SchemaParseContext<kind extends NodeKind> = extend<
-	SchemaParseContextInput,
-	{
-		inner?: Partial<Inner<kind>>
-		cls: typeof BaseNode
-	}
->
-
 const nodeCache: Record<string, UnknownNode> = {}
 
 export function parseSchema<schemaKind extends NodeKind>(
 	allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
 	schema: Schema<schemaKind>,
-	ctxInput: SchemaParseContextInput = {}
+	ctxInput: BaseSchemaParseContextInput = {}
 ): Node<reducibleKindOf<schemaKind>> {
 	const kind =
 		typeof allowedKinds === "string" ? allowedKinds : rootKindOfSchema(schema)
@@ -456,18 +454,17 @@ export function parseSchema<schemaKind extends NodeKind>(
 	const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 		kind
 	] as never
-	const normalizedSchema: any = implementation.normalize?.(schema) ?? schema
-	const schemaEntries = entriesOf(normalizedSchema).sort(
-		(l, r) =>
-			implementation.keys[l[0]]?.precedence ??
-			(implementation.keys[r[0]]?.precedence !== undefined
-				? -implementation.keys[r[0]].precedence!
-				: l[0] < r[0]
-				  ? -1
-				  : 1)
-	)
 	const inner: Record<string, unknown> = {}
-	const ctx = { ...ctxInput, inner, cls: BaseNode }
+	const ctx: BaseSchemaParseContext<any> = {
+		...ctxInput,
+		parentSchema: normalizedSchema,
+		cls: BaseNode
+	}
+	const normalizedSchema: any =
+		implementation.normalize?.(schema, ctx) ?? schema
+	const schemaEntries = entriesOf(normalizedSchema).sort((l, r) =>
+		l[0] < r[0] ? -1 : 1
+	)
 	let json: Record<string, unknown> = {}
 	let typeJson: Record<string, unknown> = {}
 	const children: UnknownNode[] = []
@@ -491,20 +488,12 @@ export function parseSchema<schemaKind extends NodeKind>(
 			json[k] = innerValue.map((node) => node.collapsibleJson)
 			children.push(...innerValue)
 		} else {
-			json[k] = defaultValueSerializer(v)
+			json[k] = keyDefinition.serialize
+				? keyDefinition.serialize(v)
+				: defaultInnerKeySerializer(v)
 		}
 		if (!keyDefinition.meta) {
 			typeJson[k] = json[k]
-		}
-	}
-	for (const k of implementation.defaultableKeys) {
-		if (inner[k] === undefined) {
-			const defaultableDefinition = implementation.keys[k]
-			inner[k] = defaultableDefinition.parse!(undefined, ctx)
-			json[k] = defaultValueSerializer(inner[k])
-			if (!defaultableDefinition.meta) {
-				typeJson[k] = json[k]
-			}
 		}
 	}
 	if (!ctx.prereduced) {
@@ -549,18 +538,6 @@ export function parseSchema<schemaKind extends NodeKind>(
 	return includes(refinementKinds, kind)
 		? new (BaseNode as any)(attachments)
 		: new (RootNode as any)(attachments)
-}
-
-const defaultValueSerializer = (v: unknown) => {
-	if (
-		typeof v === "string" ||
-		typeof v === "boolean" ||
-		typeof v === "number" ||
-		v === null
-	) {
-		return v
-	}
-	return compileSerializedValue(v)
 }
 
 function rootKindOfSchema(schema: unknown): RootKind {

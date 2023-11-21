@@ -13,7 +13,7 @@ export type UnitInner<is = unknown> = withAttributes<{
 
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
-	expandedSchema: UnitSchema
+	schema: UnitSchema
 	inner: UnitInner
 	intersections: {
 		unit: "unit" | Disjoint
@@ -35,6 +35,7 @@ export const UnitImplementation = defineNode({
 			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
 	},
 	writeDefaultDescription: (inner) => stringify(inner.is),
+	normalize: (schema) => schema,
 	attach: (node) => ({
 		basisName: stringify(node.is),
 		domain: domainOf(node.is),

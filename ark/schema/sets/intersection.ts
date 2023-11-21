@@ -14,7 +14,7 @@ import {
 	type BasisKind,
 	type parseBasis
 } from "../bases/basis.js"
-import type { SchemaParseContext, UnknownNode } from "../node.js"
+import type { BaseSchemaParseContext, UnknownNode } from "../node.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import { getBasisName } from "../refinements/shared.js"
 import type {
@@ -64,7 +64,10 @@ export type IntersectionAttachments = extend<
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
-	expandedSchema: IntersectionSchema
+	schema: IntersectionSchema
+	context: {
+		basis: Node<BasisKind> | undefined
+	}
 	inner: IntersectionInner
 	intersections: {
 		intersection: "intersection" | Disjoint
@@ -75,16 +78,19 @@ export type IntersectionDeclaration = declareNode<{
 
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
+	normalize: (schema) => schema,
+	addContext: (ctx) => {
+		const basisSchema = ctx.schema.basis
+		if (basisSchema === undefined) {
+			return { basis: undefined }
+		}
+		const basisKind = getBasisKindOrThrow(basisSchema)
+		return { basis: ctx.cls.parseSchema(basisKind, basisSchema, {}) }
+	},
 	keys: {
 		basis: {
-			precedence: -1,
-			parse: (schema, ctx) => {
-				if (schema === undefined) {
-					return undefined
-				}
-				const basisKind = getBasisKindOrThrow(schema)
-				return ctx.cls.parseSchema(basisKind, schema, {})
-			}
+			// the basis has already been preparsed and added to context
+			parse: (_, ctx) => ctx.basis
 		},
 		divisor: {
 			parse: (schema, ctx) => parseClosedRefinement("divisor", schema, ctx)
@@ -202,7 +208,7 @@ const assertValidBasis = (
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
 	input: Schema<kind>,
-	intersectionContext: SchemaParseContext<"intersection">
+	intersectionContext: BaseSchemaParseContext<"intersection">
 ): Node<kind> => {
 	const basis = intersectionContext.inner?.basis
 	const childContext = { basis }
@@ -218,7 +224,7 @@ export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
-	intersectionContext: SchemaParseContext<"intersection">
+	intersectionContext: BaseSchemaParseContext<"intersection">
 ) => {
 	const basis = intersectionContext.inner?.basis
 	const childContext = { basis }

@@ -1,15 +1,24 @@
 import type {
 	Dict,
+	ErrorMessage,
+	JsonData,
+	PartialRecord,
 	evaluate,
+	listable,
 	optionalizeKeys,
 	requireKeys,
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { RootNode, SchemaParseContext, reducibleKindOf } from "../node.js"
-import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
+import { compileSerializedValue } from "../io/compile.js"
+import type { RootNode, UnknownNode, reducibleKindOf } from "../node.js"
+import type {
+	BaseAttributes,
+	BaseNodeDeclaration,
+	BaseSchemaParseContext
+} from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
-import type { Declaration, ExpandedSchema, Node, Schema } from "./node.js"
+import type { Declaration, Node, NormalizedSchema } from "./node.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -85,59 +94,80 @@ export type ConstraintAttachments = {
 	readonly condition: string
 }
 
+export const defaultInnerKeySerializer = (v: unknown) => {
+	if (
+		typeof v === "string" ||
+		typeof v === "boolean" ||
+		typeof v === "number" ||
+		v === null
+	) {
+		return v
+	}
+	return compileSerializedValue(v)
+}
+
+export type normalizeSchema<schema, inner extends BaseAttributes> = requireKeys<
+	Extract<schema, PartialRecord<requiredKeyOf<inner>>>,
+	requiredKeyOf<inner>
+>
+
 export type NodeKeyDefinition<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"]
 > = requireKeys<
 	{
 		meta?: true
-		precedence?: number
-		defaultable?: true
 		preserveUndefined?: true
+		serialize?: (
+			schema: d["inner"][k] extends listable<UnknownNode> | undefined
+				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
+				: d["inner"][k]
+		) => JsonData
 		parse?: (
-			schema: k extends keyof ExpandedSchema<d["kind"]>
-				? Exclude<ExpandedSchema<d["kind"]>[k], undefined>
+			schema: k extends keyof NormalizedSchema<d["kind"]>
+				? Exclude<NormalizedSchema<d["kind"]>[k], undefined>
 				: undefined,
-			ctx: SchemaParseContext<d["kind"]>
+			ctx: d["context"]
 		) => d["inner"][k]
-		// require parse or children if we can't guarantee the schema value will be valid on inner
 	},
-	ExpandedSchema<d["kind"]>[k] extends d["inner"][k]
-		? never
-		: // ensure we can provide a default if the key is required on inner but
-		  // optional or not present on schema
-		  k extends Exclude<
-					requiredKeyOf<d["inner"]>,
-					requiredKeyOf<d["expandedSchema"]>
-		    >
-		  ? "parse" | "defaultable"
-		  : "parse"
+	// require parse if we can't guarantee the schema value will be valid on inner
+	NormalizedSchema<d["kind"]> extends Pick<d["inner"], k> ? never : "parse"
 >
 
-export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
-	kind: d["kind"]
-	keys: InnerKeyDefinitions<d>
-	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	writeDefaultDescription: (inner: Node<d["kind"]>) => string
-	attach: (inner: Node<d["kind"]>) => {
-		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
-	}
-	reduce?: (
-		inner: d["inner"],
-		ctx: SchemaParseContext<d["kind"]>
-	) => Node<reducibleKindOf<d["kind"]>> | undefined
-	normalize?: (schema: Schema<d["kind"]>) => d["expandedSchema"]
-	// require expand if collapsedSchema is defined
-} & ("collapsedSchema" extends keyof d ? { normalize: {} } : {})
+export type NodeImplementationInput<d extends BaseNodeDeclaration> =
+	requireKeys<
+		{
+			kind: d["kind"]
+			keys: InnerKeyDefinitions<d>
+			intersections: reifyIntersections<d["kind"], d["intersections"]>
+			writeDefaultDescription: (inner: Node<d["kind"]>) => string
+			attach: (inner: Node<d["kind"]>) => {
+				[k in unsatisfiedAttachKey<d>]: d["attach"][k]
+			}
+			normalize: (
+				schema: d["schema"],
+				ctx: d["context"]
+			) => normalizeSchema<d["schema"], d["inner"]>
+			addContext?: (
+				ctx: BaseSchemaParseContext<d["kind"]>
+			) => Omit<d["context"], keyof BaseSchemaParseContext<d["kind"]>>
+			reduce?: (
+				inner: d["inner"],
+				ctx: d["context"]
+			) => Node<reducibleKindOf<d["kind"]>> | undefined
+		}, // require addContext if we need additional context specific to the node
+		keyof d["context"] extends keyof BaseSchemaParseContext<d["kind"]>
+			? never
+			: "addContext"
+	>
 
 export type UnknownNodeImplementation = optionalizeKeys<
 	instantiateNodeImplementation<
 		NodeImplementationInput<BaseNodeDeclaration> & {
 			keys: Dict<string, NodeKeyDefinition<any, any>>
-			defaultableKeys: string[]
 		}
 	>,
-	"normalize" | "reduce"
+	"reduce" | "addContext"
 >
 
 type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
@@ -155,17 +185,12 @@ export function defineNode<
 export function defineNode(
 	input: NodeImplementationInput<any>
 ): UnknownNodeImplementation {
-	Object.assign(input.keys, {
+	return Object.assign(input.keys, {
 		alias: {
 			meta: true
 		},
 		description: {
 			meta: true
 		}
-	})
-	return Object.assign(input, {
-		defaultableKeys: Object.keys(input.keys).filter(
-			(k) => input.keys[k].defaultable
-		)
-	})
+	}) as never
 }

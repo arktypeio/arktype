@@ -7,12 +7,11 @@ export type DivisorInner = withAttributes<{
 	readonly divisor: number
 }>
 
-export type ExpandedDivisorSchema = DivisorInner
+export type DivisorSchema = DivisorInner | number
 
 export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
-	collapsedSchema: number
-	expandedSchema: ExpandedDivisorSchema
+	schema: DivisorSchema
 	inner: DivisorInner
 	intersections: {
 		divisor: "divisor"

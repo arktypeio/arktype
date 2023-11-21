@@ -14,7 +14,7 @@ import type { CheckResult, TraversalState } from "../io/traverse.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ExpandedSchema, Node, Schema } from "../shared/node.js"
+import type { Node, NormalizedSchema, Schema } from "../shared/node.js"
 import type {
 	IntersectionSchema,
 	parseIntersectionSchema,
@@ -32,8 +32,8 @@ export type validateValidator<schema> = [schema] extends [
 	NonEnumerableDomain | Constructor
 ]
 	? schema
-	: schema extends ExpandedSchema<BasisKind>
-	  ? exactMessageOnError<schema, ExpandedSchema<keyof schema & BasisKind>>
+	: schema extends NormalizedSchema<BasisKind>
+	  ? exactMessageOnError<schema, NormalizedSchema<keyof schema & BasisKind>>
 	  : schema extends IntersectionSchema
 	    ? validateIntersectionSchema<schema>
 	    : ValidatorSchema
@@ -70,7 +70,7 @@ export type MorphAttachments = extend<
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
-	expandedSchema: MorphSchema
+	schema: MorphSchema
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint

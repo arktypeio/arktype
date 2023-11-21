@@ -7,7 +7,7 @@ import {
 } from "@arktype/util"
 import { In, compileSerializedValue } from "../io/compile.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { defineNode } from "../shared/define.js"
+import { defaultInnerKeySerializer, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
@@ -17,12 +17,12 @@ export type ProtoInner<proto extends Constructor = Constructor> =
 	}>
 
 export type ProtoSchema<proto extends Constructor = Constructor> =
-	ProtoInner<proto>
+	| proto
+	| ProtoInner<proto>
 
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
-	collapsedSchema: Constructor
-	expandedSchema: ProtoSchema
+	schema: ProtoSchema
 	inner: ProtoInner
 	intersections: {
 		proto: "proto" | Disjoint
@@ -31,14 +31,16 @@ export type ProtoDeclaration = declareNode<{
 	attach: BasisAttachments
 }>
 
-// readonly knownObjectKind = objectKindOf(this.proto)
-// readonly domain = "object"
 // // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
 export const ProtoImplementation = defineNode({
 	kind: "proto",
 	keys: {
-		proto: {}
+		proto: {
+			serialize: (constructor) =>
+				getExactBuiltinConstructorName(constructor) ??
+				defaultInnerKeySerializer(constructor)
+		}
 	},
 	intersections: {
 		proto: (l, r) =>

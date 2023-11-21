@@ -1,15 +1,23 @@
 import type { Dict, extend } from "@arktype/util"
 import { BasisImplementations, type BasisDeclarations } from "../bases/basis.js"
 import type { BaseNode, RootNode } from "../node.js"
+import type { PropKind } from "../refinements/props/prop.js"
 import {
 	RefinementImplementations,
 	type RefinementDeclarations
 } from "../refinements/refinement.js"
+import type { ValidatorKind } from "../sets/morph.js"
 import {
 	SetImplementationByKind,
 	type SetDeclarationsByKind
 } from "../sets/set.js"
-import type { NodeKind, RootKind } from "./define.js"
+import type { BranchKind } from "../sets/union.js"
+import type {
+	ConstraintKind,
+	NodeKind,
+	RootKind,
+	normalizeSchema
+} from "./define.js"
 
 export type ConstraintDeclarationsByKind = extend<
 	BasisDeclarations,
@@ -38,16 +46,37 @@ export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 export type Implementation<kind extends NodeKind> =
 	NodeImplementationByKind[kind]
 
-export type ExpandedSchema<kind extends NodeKind> =
-	Declaration<kind>["expandedSchema"]
+export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
 
-export type CollapsedSchema<kind extends NodeKind> = kind extends unknown
-	? Declaration<kind>["collapsedSchema" & keyof Declaration<kind>]
-	: never
+export type NormalizedSchema<kind extends NodeKind> = normalizeSchema<
+	Schema<kind>,
+	Inner<kind>
+>
 
-export type Schema<kind extends NodeKind> =
-	| ExpandedSchema<kind>
-	| CollapsedSchema<kind>
+export type ChildrenByKind = {
+	[k in NodeKind]: k extends "union"
+		? BranchKind
+		: k extends "morph"
+		  ? ValidatorKind
+		  : k extends "intersection"
+		    ? ConstraintKind
+		    : k extends PropKind
+		      ? RootKind
+		      : never
+}
+
+export type childKindOf<kind extends NodeKind> = ChildrenByKind[kind]
+
+export type ParentsByKind = {
+	[k in NodeKind]: {
+		[pKind in NodeKind]: k extends childKindOf<pKind> ? pKind : never
+	}[NodeKind]
+}
+
+export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
+
+export type SchemaParseContext<kind extends NodeKind> =
+	Declaration<kind>["context"]
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 

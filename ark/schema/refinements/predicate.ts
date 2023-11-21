@@ -1,3 +1,4 @@
+import { throwInternalError } from "@arktype/util"
 import { compileSerializedValue, In } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
@@ -9,14 +10,11 @@ export type PredicateInner<predicate extends Predicate = Predicate> =
 		readonly predicate: predicate
 	}>
 
-export type CollapsedPredicateSchema = Predicate
-
-export type ExpandedPredicateSchema = PredicateInner
+export type PredicateSchema = PredicateInner | Predicate
 
 export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
-	collapsedSchema: CollapsedPredicateSchema
-	expandedSchema: ExpandedPredicateSchema
+	schema: PredicateSchema
 	inner: PredicateInner
 	intersections: {
 		predicate: "predicate" | null
@@ -30,11 +28,16 @@ export const PredicateImplementation = defineRefinement({
 		predicate: {}
 	},
 	intersections: {
+		// TODO: allow changed order to be the same type
+		// as long as the narrows in l and r are individually safe to check
+		// in the order they're specified, checking them in the order
+		// resulting from this intersection should also be safe.
 		predicate: () => null
 	},
 	normalize: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
-	writeInvalidBasisMessage: writeUnnarrowableBasisMessage,
+	writeInvalidBasisMessage: (basis) =>
+		throwInternalError(`Unexpectedly failed to narrow basis ${basis}`),
 	writeDefaultDescription: (inner) =>
 		`valid according to ${inner.predicate.name}`,
 	attach: (inner) => ({
@@ -42,16 +45,6 @@ export const PredicateImplementation = defineRefinement({
 		condition: `${compileSerializedValue(inner.predicate)}(${In})`
 	})
 })
-
-export function writeUnnarrowableBasisMessage(basis: string) {
-	return `Cannot narrow ${basis}`
-}
-
-// TODO: allow changed order to be the same type
-
-// as long as the narrows in l and r are individually safe to check
-// in the order they're specified, checking them in the order
-// resulting from this intersection should also be safe.
 
 export type Predicate<data = any> = (
 	data: data,

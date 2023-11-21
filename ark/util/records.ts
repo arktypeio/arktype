@@ -20,7 +20,7 @@ export type requireKeys<o, key extends keyof o> = o & {
 	[requiredKey in key]-?: defined<o[requiredKey]>
 }
 
-export type PartialRecord<k extends string = string, v = unknown> = {
+export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 	[_ in k]?: v
 }
 
@@ -116,8 +116,8 @@ export type requiredKeyOf<o> = {
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
 export type optionalizeKeys<o, keys extends keyof o> = evaluate<
-	{ [k in Exclude<keyof o, keys>]: o[k] } & {
-		[k in keys]?: o[k]
+	{ [k in Exclude<requiredKeyOf<o>, keys>]: o[k] } & {
+		[k in optionalKeyOf<o> | keys]?: o[k]
 	}
 >
 

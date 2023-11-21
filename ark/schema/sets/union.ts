@@ -42,12 +42,14 @@ export type parseSchemaBranch<schema> = schema extends MorphSchema
 	  ? parseValidatorSchema<schema>
 	  : BranchNode
 
-export type ExpandedUnionSchema<
+export type UnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
-> = withAttributes<{
-	readonly union: branches
-	readonly ordered?: true
-}>
+> =
+	| withAttributes<{
+			readonly union: branches
+			readonly ordered?: true
+	  }>
+	| branches
 
 export type UnionInner = withAttributes<{
 	readonly union: readonly BranchNode[]
@@ -63,8 +65,7 @@ export type UnionAttachments = extend<
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
-	collapsedSchema: readonly BranchSchema[]
-	expandedSchema: ExpandedUnionSchema
+	schema: UnionSchema
 	inner: UnionInner
 	intersections: {
 		union: "union" | Disjoint
@@ -94,9 +95,7 @@ const intersectBranch = (
 export const UnionImplementation = defineNode({
 	kind: "union",
 	keys: {
-		ordered: {
-			precedence: -1
-		},
+		ordered: {},
 		union: {
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
@@ -106,7 +105,7 @@ export const UnionImplementation = defineNode({
 						ctx
 					)
 				)
-				if (ctx.inner?.ordered !== true) {
+				if (isArray(ctx.schema) || ctx.schema.ordered !== true) {
 					branches.sort((l, r) => (l.id < r.id ? -1 : 1))
 				}
 				return branches

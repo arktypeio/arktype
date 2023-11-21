@@ -1,7 +1,14 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
-import type { ConstraintKind, NodeKind, RefinementKind } from "./define.js"
+import type { BaseNode } from "../node.js"
+import type {
+	ConstraintKind,
+	NodeKind,
+	RefinementKind,
+	RootKind
+} from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
+import type { Schema, SchemaParseContext, parentKindOf } from "./node.js"
 
 export type BaseAttributes = {
 	readonly alias?: string
@@ -28,8 +35,8 @@ export type BaseIntersectionMap = {
 
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
-	collapsedSchema?: unknown
-	expandedSchema: BaseAttributes
+	schema: unknown
+	context?: Dict
 	inner: BaseAttributes
 	intersections: BaseIntersectionMap[kind]
 	attach: Dict
@@ -37,8 +44,8 @@ export type DeclarationInput<kind extends NodeKind> = {
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind
-	collapsedSchema?: unknown
-	expandedSchema: BaseAttributes
+	schema: unknown
+	context: BaseSchemaParseContext<any>
 	inner: BaseAttributes
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
@@ -46,12 +53,28 @@ export type BaseNodeDeclaration = {
 	attach: Dict
 }
 
+export type BaseSchemaParseContextInput = {
+	prereduced?: true
+}
+
+export type BaseSchemaParseContext<kind extends NodeKind> = extend<
+	BaseSchemaParseContextInput,
+	{
+		schema: Schema<kind>
+		parentContext:
+			| SchemaParseContext<parentKindOf<kind>>
+			// roots don't necessarily have parents, but refinements always will
+			| (kind extends RootKind ? undefined : never)
+		cls: typeof BaseNode
+	}
+>
+
 export type declareNode<
 	types extends {
-		[k in keyof BaseNodeDeclaration]: types extends {
+		[k in keyof DeclarationInput<any>]: types extends {
 			kind: infer kind extends NodeKind
 		}
 			? DeclarationInput<kind>[k]
 			: never
 	} & { [k in Exclude<keyof types, keyof BaseNodeDeclaration>]?: never }
-> = types
+> = types & { context: BaseSchemaParseContext<types["kind"]> }

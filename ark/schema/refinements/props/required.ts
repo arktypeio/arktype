@@ -19,7 +19,7 @@ export type RequiredPropInner = withAttributes<{
 
 export type RequiredDeclaration = declareNode<{
 	kind: "required"
-	expandedSchema: RequiredPropSchema
+	schema: RequiredPropSchema
 	inner: RequiredPropInner
 	intersections: {
 		required: "required" | Disjoint | null

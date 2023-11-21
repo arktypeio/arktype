@@ -1,4 +1,9 @@
-import { constructorExtends, throwParseError, type extend } from "@arktype/util"
+import {
+	constructorExtends,
+	throwParseError,
+	type extend,
+	type optionalizeKeys
+} from "@arktype/util"
 import type { BasisKind } from "../bases/basis.js"
 import { In } from "../io/compile.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
@@ -13,7 +18,7 @@ export type BoundInner = withAttributes<{
 	readonly exclusive?: boolean
 }>
 
-export type BoundSchema = Omit<BoundInner, "boundKind">
+export type NormalizedBoundSchema = optionalizeKeys<BoundInner, "boundKind">
 
 export type BoundLimit = number | string
 
@@ -44,14 +49,6 @@ export type writeUnboundableMessage<root extends string> =
 
 //this.classesByKind.union.parse(["number", "string", Array, Date]) as never
 
-// applicableTo(basis: Node<BasisKind> | undefined): basis is BoundableBasis {
-// 	return this.boundKind === getBoundKind(basis)
-// }
-
-// return `BoundKind ${this.boundKind} is not applicable to ${getBasisName(
-// 	basis
-// )}`
-
 export type MinInner = extend<
 	BoundInner,
 	{
@@ -59,17 +56,18 @@ export type MinInner = extend<
 	}
 >
 
-export type MinSchema = extend<
-	BoundSchema,
-	{
-		readonly min: BoundLimit
-	}
->
+export type MinSchema =
+	| BoundLimit
+	| extend<
+			NormalizedBoundSchema,
+			{
+				readonly min: BoundLimit
+			}
+	  >
 
 export type MinDeclaration = declareNode<{
 	kind: "min"
-	collapsedSchema: BoundLimit
-	expandedSchema: MinSchema
+	schema: MinSchema
 	inner: MinInner
 	intersections: {
 		min: "min"
@@ -84,16 +82,17 @@ export const MinImplementation = defineNode({
 			parse: (_) => +_
 		},
 		exclusive: {},
-		boundKind: {
-			parse: (_, ctx) => getBoundKind(ctx.basis),
-			defaultable: true
-		}
+		boundKind: {}
 	},
 	intersections: {
 		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
 	},
-	normalize: (schema) =>
-		typeof schema === "object" ? schema : { min: schema },
+	normalize: (schema, ctx) => {
+		const boundKind = getBoundKind(ctx.parentContext.basis)
+		return typeof schema === "object"
+			? { ...schema, boundKind }
+			: { min: schema, boundKind }
+	},
 	writeInvalidBasisMessage: writeUnboundableMessage,
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
@@ -123,17 +122,18 @@ export type MaxInner = extend<
 	}
 >
 
-export type MaxSchema = extend<
-	BoundSchema,
-	{
-		readonly max: BoundLimit
-	}
->
+export type MaxSchema =
+	| BoundLimit
+	| extend<
+			NormalizedBoundSchema,
+			{
+				readonly max: BoundLimit
+			}
+	  >
 
 export type MaxDeclaration = declareNode<{
 	kind: "max"
-	collapsedSchema: BoundLimit
-	expandedSchema: MaxSchema
+	schema: MaxSchema
 	inner: MaxInner
 	intersections: {
 		max: "max"
@@ -149,10 +149,7 @@ export const MaxImplementation = defineRefinement({
 			parse: (_) => +_
 		},
 		exclusive: {},
-		boundKind: {
-			parse: (_, ctx) => getBoundKind(ctx.basis),
-			defaultable: true
-		}
+		boundKind: {}
 	},
 	intersections: {
 		max: (l, r) => (l.max > r.max || (l.max === r.max && l.exclusive) ? l : r),
@@ -161,8 +158,12 @@ export const MaxImplementation = defineRefinement({
 				? Disjoint.from("bound", l, r)
 				: null
 	},
-	normalize: (schema) =>
-		typeof schema === "object" ? schema : { max: schema },
+	normalize: (schema, ctx) => {
+		const boundKind = getBoundKind(ctx.parentContext.basis)
+		return typeof schema === "object"
+			? { ...schema, boundKind }
+			: { max: schema, boundKind }
+	},
 	writeInvalidBasisMessage: writeUnboundableMessage,
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =

@@ -2,6 +2,7 @@ import { attest } from "@arktype/attest"
 import { node, type Node, type RootKind } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 import { BaseNode, type RootNode } from "../node.js"
+import type { Disjoint } from "../shared/disjoint.js"
 
 describe("intersections", () => {
 	it("root type assignment", () => {
@@ -118,42 +119,55 @@ describe("intersections", () => {
 		attest(l.id).equals(r.id)
 	})
 	it("normalizes prop order", () => {
-		const a = node({
+		const l = node({
 			basis: "object",
 			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
-		const b = node({
+		const r = node({
 			basis: "object",
 			required: [
 				{ key: "b", value: "number" },
 				{ key: "a", value: "string" }
 			]
 		})
-		attest(a.id).equals(b.id)
+		attest(l.id).equals(r.id)
 	})
 	it("normalizes union order", () => {
-		const a = node("number", "string")
-		const b = node("string", "number")
-		attest(a.id).equals(b.id)
+		const l = node("number", "string")
+		const r = node("string", "number")
+		attest(l.id).equals(r.id)
 	})
 	it("doesn't normalize ordered unions", () => {
-		const a = node({
+		const l = node({
 			union: ["string", "number"],
 			ordered: true
 		})
-		const b = node({
+		const r = node({
 			union: ["number", "string"],
 			ordered: true
 		})
-		attest(a.equals(b)).equals(false)
+		attest(l.equals(r)).equals(false)
+	})
+	it("orthogonal refinements intersect as null", () => {
+		const l = BaseNode.parseSchema("divisor", 5)
+		const r = BaseNode.parseSchema("max", 100)
+		const result = l.intersect(r)
+	})
+	it("possibly disjoint refinements", () => {
+		const l = BaseNode.parseSchema("min", 2)
+		const r = BaseNode.parseSchema("max", 1)
+		const lrResult = l.intersect(r)
+		attest<Disjoint | null>(lrResult).snap()
+		const rlResult = r.intersect(l)
+		attest<Disjoint | null>(rlResult).snap()
 	})
 	it("doesn't equate optional and required props", () => {
-		const a = BaseNode.parseSchema("required", { key: "a", value: "number" })
-		const b = BaseNode.parseSchema("optional", { key: "a", value: "number" })
-		attest(a.equals(b)).equals(false)
+		const l = BaseNode.parseSchema("required", { key: "a", value: "number" })
+		const r = BaseNode.parseSchema("optional", { key: "a", value: "number" })
+		attest(l.equals(r)).equals(false)
 	})
 	// TODO:
 	// it("strict intersection", () => {

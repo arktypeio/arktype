@@ -18,7 +18,7 @@ export type OptionalPropSchema = withAttributes<{
 
 export type OptionalDeclaration = declareNode<{
 	kind: "optional"
-	expandedSchema: OptionalPropSchema
+	schema: OptionalPropSchema
 	inner: OptionalPropInner
 	intersections: {
 		optional: "optional" | null

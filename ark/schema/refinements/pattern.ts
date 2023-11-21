@@ -9,14 +9,11 @@ export type PatternInner = withAttributes<{
 	readonly flags?: string
 }>
 
-export type CollapsedPatternSchema = RegexLiteral | RegExp
-
-export type ExpandedPatternSchema = PatternInner
+export type PatternSchema = PatternInner | RegexLiteral | RegExp
 
 export type PatternDeclaration = declareNode<{
 	kind: "pattern"
-	collapsedSchema: CollapsedPatternSchema
-	expandedSchema: PatternInner
+	schema: PatternSchema
 	inner: PatternInner
 	intersections: {
 		pattern: "pattern" | null

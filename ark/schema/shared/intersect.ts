@@ -61,15 +61,13 @@ type asymmetricIntersectionOf<
 	l extends NodeKind,
 	r extends NodeKind
 > = l extends unknown
-	? r extends unknown
+	? r extends rightOf<l>
 		? r extends keyof IntersectionMaps[l]
 			? instantiateIntersection<IntersectionMaps[l][r]>
 			: "default" extends keyof IntersectionMaps[l]
-			  ? r extends rightOf<l>
-					? instantiateIntersection<IntersectionMaps[l]["default"]>
-					: never
-			  : never
-		: r
+			  ? instantiateIntersection<IntersectionMaps[l]["default"]>
+			  : null
+		: never
 	: never
 
 type instantiateIntersection<result> = result extends NodeKind
