@@ -15,7 +15,7 @@ import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
 import { In, compileSerializedValue } from "./io/compile.js"
 import { arkKind, isNode, registry } from "./io/registry.js"
 import { unflattenRules } from "./sets/intersection.js"
-import type { ValidatorKind, ValidatorNode } from "./sets/morph.js"
+import type { ValidatorKind } from "./sets/morph.js"
 import type {
 	BranchKind,
 	ExpandedUnionSchema,
@@ -115,7 +115,7 @@ export abstract class BaseNode<
 	}
 
 	inCache?: UnknownNode;
-	get in(): this["kind"] extends "morph" ? ValidatorNode : UnknownNode {
+	get in(): Node<kind extends "morph" ? ValidatorKind : reducibleKindOf<kind>> {
 		if (!this.inCache) {
 			this.inCache = this.getIo("in")
 		}
@@ -123,7 +123,9 @@ export abstract class BaseNode<
 	}
 
 	outCache?: UnknownNode
-	get out(): this["kind"] extends "morph" ? ValidatorNode : UnknownNode {
+	get out(): Node<
+		kind extends "morph" ? ValidatorKind : reducibleKindOf<kind>
+	> {
 		if (!this.outCache) {
 			this.outCache = this.getIo("out")
 		}
