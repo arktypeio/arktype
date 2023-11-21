@@ -69,13 +69,17 @@ export abstract class BaseNode<
 	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
-	readonly references = this.children.flatMap(
-		(child) => child.contributesReferences
+	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
+		(result, child) => Object.assign(result, child.contributesReferencesById),
+		{}
 	)
-	readonly contributesReferences: readonly UnknownNode[] = [
-		this,
-		...this.references
-	]
+	readonly references: readonly UnknownNode[] = Object.values(
+		this.referencesById
+	)
+	readonly contributesReferencesById: Record<string, UnknownNode> =
+		this.id in this.referencesById
+			? this.referencesById
+			: { ...this.referencesById, [this.id]: this }
 	readonly allows: (data: unknown) => data is t
 	readonly alias: string = $ark.register(this, this.inner.alias)
 	readonly description: string
