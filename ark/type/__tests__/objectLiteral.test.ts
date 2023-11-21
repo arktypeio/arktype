@@ -10,47 +10,47 @@ describe("object literal", () => {
 		attest(o.json).equals(type("object").json)
 	})
 	it("required", () => {
-		const o = type({ a: "string", b: "boolean" })
-		attest<{ a: string; b: boolean }>(o.infer)
+		const o = type({ a: "string", b: "number" })
+		attest<{ a: string; b: number }>(o.infer)
 		attest(o.json).snap({
 			basis: "object",
 			required: [
 				{ key: "a", value: "string" },
-				{ key: "b", value: [{ is: true }, { is: false }] }
+				{ key: "b", value: "number" }
 			]
 		})
 	})
 	it("optional keys", () => {
-		const o = type({ "a?": "string", b: "boolean" })
-		attest<{ a?: string; b: boolean }>(o.infer)
+		const o = type({ "a?": "string", b: "number" })
+		attest<{ a?: string; b: number }>(o.infer)
 		attest(o.json).snap({
 			basis: "object",
-			required: [{ key: "b", value: [{ is: true }, { is: false }] }],
-			optional: [{ key: "a", value: "string" }]
+			optional: [{ key: "a", value: "string" }],
+			required: [{ key: "b", value: "number" }]
 		})
 	})
 	it("symbol key", () => {
 		const s = Symbol()
 		const name = registry().register(s)
 		const t = type({
-			[s]: "boolean"
+			[s]: "string"
 		})
-		attest<{ [s]: boolean }>(t.infer)
+		attest<{ [s]: string }>(t.infer)
 		attest(t.json).equals({
 			basis: "object",
-			required: [{ key: name, value: [{ is: true }, { is: false }] }]
+			required: [{ key: name, value: "string" }]
 		})
 	})
 	it("optional symbol", () => {
 		const s = Symbol()
 		const name = registry().register(s)
 		const t = type({
-			[s]: "boolean?"
+			[s]: "number?"
 		})
-		attest<{ [s]?: boolean }>(t.infer)
+		attest<{ [s]?: number }>(t.infer)
 		attest(t.json).equals({
 			basis: "object",
-			optional: [{ key: name, value: [{ is: true }, { is: false }] }]
+			optional: [{ key: name, value: "number" }]
 		})
 	})
 	describe("optional keys and definition reduction", () => {

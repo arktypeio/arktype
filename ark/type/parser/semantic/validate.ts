@@ -71,15 +71,18 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
 			? ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 			: undefined
 	  : def extends keyof $
-	    ? // these problems would've been caught during a fullStringParse, but it's most
-	      // efficient to check for them here in case the string was naively parsed
-	      $[def] extends GenericProps
-				? ErrorMessage<
-						writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>
-				  >
-				: $[def] extends Module
-				  ? ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
-				  : undefined
+	    ? $[def] extends null
+				? // handle any/never
+				  def
+				: // these problems would've been caught during a fullStringParse, but it's most
+				  // efficient to check for them here in case the string was naively parsed
+				  $[def] extends GenericProps
+				  ? ErrorMessage<
+							writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>
+				    >
+				  : $[def] extends Module
+				    ? ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
+				    : undefined
 	    : def extends ErrorMessage
 	      ? def
 	      : undefined

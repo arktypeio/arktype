@@ -25,21 +25,21 @@ describe("keywords", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
 			// should be simplified to simple checks for true and false literals
-			attest(boolean.json).equals(type("true|false").json)
+			attest(boolean.json).equals(node({ is: false }, { is: true }).json)
 			// TODO:
 			// 			attest(boolean.json).snap(`if( $arkRoot !== false && $arkRoot !== true) {
 			//     return false
 			// }`)
 		})
-		// it("never", () => {
-		// 	const never = type("never")
-		// 	attest<never>(never.infer)
-		// 	// should be equivalent to a zero-branch union
-		// 	attest(never.json).equals(node().json)
-		// })
+		it("never", () => {
+			const never = type("never")
+			attest<never>(never.infer)
+			// should be equivalent to a zero-branch union
+			attest(never.json).equals(node().json)
+		})
 		it("unknown", () => {
 			// should be equivalent to an unconstrained predicate
-			attest(type("unknown").json).equals(node().json)
+			attest(type("unknown").json).equals(node({}).json)
 		})
 		it("void", () => {
 			const t = type("void")
