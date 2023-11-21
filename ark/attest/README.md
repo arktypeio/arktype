@@ -37,43 +37,42 @@ Bun support is currently pending a [bug in the way their source maps translate t
 Here are some simple examples of type assertions and snapshotting:
 
 ```ts
-import { attest } from "@arktype/attest"
+// @arktype/attest assertions can be made from any unit test framework with a global setup/teardown
+describe("attest features", () => {
+	it("type and value assertions", () => {
+		const even = type("number%2")
+		// asserts even.infer is exactly number
+		attest<number>(even.infer)
+		// make assertions about types and values seamlessly
+		attest(even.infer).type.toString.snap("number")
+		// including object literals- no more long inline strings!
+		attest(even.json).snap({
+			intersection: [{ domain: "number" }, { divisor: 2 }]
+		})
+	})
 
-const o = { ark: "type" } as const
+	it("error assertions", () => {
+		// Check type errors, runtime errors, or both at the same time!
+		// @ts-expect-error
+		attest(() => type("number%0")).throwsAndHasTypeError(
+			"% operator must be followed by a non-zero integer literal (was 0)"
+		)
+		// @ts-expect-error
+		attest(() => type({ "[object]": "string" })).type.errors(
+			"Indexed key definition 'object' must be a string, number or symbol"
+		)
+	})
 
-test("typed value assertions", () => {
-	// assert the type of `o` is exactly { readonly ark: "type" }
-	attest<{ readonly ark: "type" }>(o)
-})
-
-test("type-only assertions", () => {
-	// assert that two types are equivalent without a value
-	attest<{ readonly ark: "type" }, typeof o>()
-})
-
-test("value snap", () => {
-	attest(o).snap()
-})
-
-test("type snap", () => {
-	attest(o).type.toString.snap()
-})
-
-test("chained snaps", () => {
-	attest(o).snap().type.toString.snap()
-})
-
-const shouldThrow = (a: false) => {
-	if (a) {
-		throw new Error(`${a} is not assignable to false`)
-	}
-}
-
-test("error and type error snap", () => {
-	// @ts-expect-error
-	attest(() => shouldThrow(true))
-		.throws.snap()
-		.type.errors.snap()
+	it("integrate runtime logic with type assertions", () => {
+		const arrayOf = type("<t>", "t[]")
+		const numericArray = arrayOf("number | bigint")
+		// flexibly combine runtime logic with type assertions to customize your
+		// tests beyond what is possible from pure static-analysis based type testing tools
+		if (getTsVersionUnderTest().startsWith("5")) {
+			// this assertion will only occur when testing TypeScript 5+!
+			attest<(number | bigint)[]>(numericArray.infer)
+		}
+	})
 })
 ```
 

@@ -22,14 +22,14 @@ describe("attest features", () => {
 			"% operator must be followed by a non-zero integer literal (was 0)"
 		)
 		// @ts-expect-error
-		attest(() => type({ "[object]": "string" })).type.errors.snap(
-			"Type 'string' is not assignable to type 'indexParseError<\"Indexed key definition 'object' must be a string, number or symbol\">'."
+		attest(() => type({ "[object]": "string" })).type.errors(
+			"Indexed key definition 'object' must be a string, number or symbol"
 		)
 	})
 
 	it("integrate runtime logic with type assertions", () => {
 		const arrayOf = type("<t>", "t[]")
-		const numericArray = arrayOf("number | bigint") //=>?
+		const numericArray = arrayOf("number | bigint")
 		// flexibly combine runtime logic with type assertions to customize your
 		// tests beyond what is possible from pure static-analysis based type testing tools
 		if (getTsVersionUnderTest().startsWith("5")) {
