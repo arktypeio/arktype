@@ -23,8 +23,9 @@ import type {
 	withAttributes
 } from "../shared/declare.js"
 import {
-	constraintKinds,
+	closedConstraintKinds,
 	defineNode,
+	openConstraintKinds,
 	type ClosedConstraintKind,
 	type ConstraintKind,
 	type OpenConstraintKind,
@@ -164,7 +165,10 @@ export const IntersectionImplementation = defineNode({
 		for (const [k, v] of node.entries) {
 			if (k === "basis") {
 				attachments.rules.push(v)
-			} else if (includes(constraintKinds, k)) {
+			} else if (includes(openConstraintKinds, k)) {
+				attachments.rules.push(...(v as any))
+				attachments.constraints.push(...(v as any))
+			} else if (includes(closedConstraintKinds, k)) {
 				attachments.rules.push(v as never)
 				attachments.constraints.push(v as never)
 			}
