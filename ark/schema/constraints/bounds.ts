@@ -6,6 +6,7 @@ import { defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Node } from "../shared/node.js"
 import type { ConstraintAttachments } from "./constraint.js"
+import { defineConstraint } from "./shared.js"
 
 export type BoundInner = withAttributes<{
 	readonly boundKind: BoundKind
@@ -24,6 +25,14 @@ export type BoundAttachments<limitKind extends LimitKind> = extend<
 		comparator: RelativeComparator<limitKind>
 	}
 >
+
+export const writeUnboundableMessage = <root extends string>(
+	root: root
+): writeUnboundableMessage<root> =>
+	`Bounded expression ${root} must be a number, string, Array, or Date`
+
+export type writeUnboundableMessage<root extends string> =
+	`Bounded expression ${root} must be a number, string, Array, or Date`
 
 // readonly exclusive = this.inner.exclusive ?? false
 
@@ -85,6 +94,7 @@ export const MinImplementation = defineNode({
 	},
 	normalize: (schema) =>
 		typeof schema === "object" ? schema : { min: schema },
+	writeInvalidBasisMessage: writeUnboundableMessage,
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
 			inner.boundKind === "date"
@@ -132,7 +142,7 @@ export type MaxDeclaration = declareNode<{
 	attach: BoundAttachments<"max">
 }>
 
-export const MaxImplementation = defineNode({
+export const MaxImplementation = defineConstraint({
 	kind: "max",
 	keys: {
 		max: {
@@ -153,6 +163,7 @@ export const MaxImplementation = defineNode({
 	},
 	normalize: (schema) =>
 		typeof schema === "object" ? schema : { max: schema },
+	writeInvalidBasisMessage: writeUnboundableMessage,
 	writeDefaultDescription: (inner) => {
 		const comparisonDescription =
 			inner.boundKind === "date"
@@ -218,11 +229,3 @@ export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 export type NumericallyBoundable = string | number | readonly unknown[]
 
 export type Boundable = NumericallyBoundable | Date
-
-export const writeUnboundableMessage = <root extends string>(
-	root: root
-): writeUnboundableMessage<root> =>
-	`Bounded expression ${root} must be a number, string, Array, or Date`
-
-export type writeUnboundableMessage<root extends string> =
-	`Bounded expression ${root} must be a number, string, Array, or Date`

@@ -1,8 +1,8 @@
 import { compileSerializedValue, In } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { defineNode } from "../shared/define.js"
 import type { ConstraintAttachments } from "./constraint.js"
+import { defineConstraint } from "./shared.js"
 
 export type PredicateInner<predicate extends Predicate = Predicate> =
 	withAttributes<{
@@ -24,7 +24,7 @@ export type PredicateDeclaration = declareNode<{
 	attach: ConstraintAttachments<unknown>
 }>
 
-export const PredicateImplementation = defineNode({
+export const PredicateImplementation = defineConstraint({
 	kind: "predicate",
 	keys: {
 		predicate: {}
@@ -34,6 +34,7 @@ export const PredicateImplementation = defineNode({
 	},
 	normalize: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
+	writeInvalidBasisMessage: writeUnnarrowableBasisMessage,
 	writeDefaultDescription: (inner) =>
 		`valid according to ${inner.predicate.name}`,
 	attach: (inner) => ({
@@ -42,9 +43,9 @@ export const PredicateImplementation = defineNode({
 	})
 })
 
-// static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-// 	return `Cannot narrow ${getBasisName(basis)}`
-// }
+export function writeUnnarrowableBasisMessage(basis: string) {
+	return `Cannot narrow ${basis}`
+}
 
 // TODO: allow changed order to be the same type
 

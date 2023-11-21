@@ -1,8 +1,8 @@
 import { throwParseError } from "@arktype/util"
 import { In } from "../io/compile.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { defineNode } from "../shared/define.js"
 import type { ConstraintAttachments } from "./constraint.js"
+import { defineConstraint } from "./shared.js"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
@@ -24,7 +24,7 @@ export type PatternDeclaration = declareNode<{
 	attach: ConstraintAttachments<string>
 }>
 
-export const PatternImplementation = defineNode({
+export const PatternImplementation = defineConstraint({
 	kind: "pattern",
 	keys: {
 		pattern: {},
@@ -42,6 +42,7 @@ export const PatternImplementation = defineNode({
 					? { pattern: schema.source, flags: schema.flags }
 					: { pattern: schema.source }
 			  : schema,
+	writeInvalidBasisMessage: writeUnmatchableBasisMessage,
 	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`,
 	attach: (node) => {
 		return {
@@ -51,8 +52,12 @@ export const PatternImplementation = defineNode({
 	}
 })
 
+export function writeUnmatchableBasisMessage(basis: string) {
+	return `Match operand ${basis} must be a string`
+}
+
 // static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-// 	return `Match operand ${getBasisName(basis)} must be a string`
+// 	return
 // }
 
 // converting a regex to a string alphabetizes the flags for us

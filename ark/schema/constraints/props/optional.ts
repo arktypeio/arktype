@@ -1,8 +1,10 @@
 import type { declareNode, withAttributes } from "../../shared/declare.js"
-import { defineNode, rootKinds, type RootKind } from "../../shared/define.js"
+import { rootKinds, type RootKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Node, Schema } from "../../shared/node.js"
 import type { ConstraintAttachments } from "../constraint.js"
+import { defineConstraint } from "../shared.js"
+import { writeInvalidPropsBasisMessage } from "./shared.js"
 
 export type OptionalPropInner = withAttributes<{
 	readonly key: string | symbol
@@ -24,7 +26,7 @@ export type OptionalDeclaration = declareNode<{
 	attach: ConstraintAttachments<object>
 }>
 
-export const OptionalImplementation = defineNode({
+export const OptionalImplementation = defineConstraint({
 	kind: "optional",
 	keys: {
 		key: {},
@@ -46,6 +48,7 @@ export const OptionalImplementation = defineNode({
 		}
 	},
 	normalize: (schema) => schema,
+	writeInvalidBasisMessage: writeInvalidPropsBasisMessage,
 	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
 	attach: (node) => ({
 		implicitBasis: node.cls.builtins.object,

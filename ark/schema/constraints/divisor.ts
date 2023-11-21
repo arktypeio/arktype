@@ -1,7 +1,7 @@
 import { In } from "../io/compile.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { defineNode } from "../shared/define.js"
 import type { ConstraintAttachments } from "./constraint.js"
+import { defineConstraint } from "./shared.js"
 
 export type DivisorInner = withAttributes<{
 	readonly divisor: number
@@ -20,7 +20,15 @@ export type DivisorDeclaration = declareNode<{
 	attach: ConstraintAttachments<number>
 }>
 
-export const DivisorImplementation = defineNode({
+export const writeIndivisibleMessage = <root extends string>(
+	root: root
+): writeIndivisibleMessage<root> =>
+	`Divisibility operand ${root} must be a number`
+
+export type writeIndivisibleMessage<root extends string> =
+	`Divisibility operand ${root} must be a number`
+
+export const DivisorImplementation = defineConstraint({
 	kind: "divisor",
 	keys: {
 		divisor: {}
@@ -34,6 +42,7 @@ export const DivisorImplementation = defineNode({
 	},
 	normalize: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema,
+	writeInvalidBasisMessage: writeIndivisibleMessage,
 	writeDefaultDescription: (inner) =>
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
 	attach: (node) => ({
@@ -41,12 +50,6 @@ export const DivisorImplementation = defineNode({
 		condition: `${In} % ${node.divisor} === 0`
 	})
 })
-
-// readonly implicitBasis: DomainNode<number> = builtins().number
-
-// static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-// 	return writeIndivisibleMessage(getBasisName(basis))
-// }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
@@ -60,11 +63,3 @@ const greatestCommonDivisor = (l: number, r: number) => {
 	}
 	return greatestCommonDivisor
 }
-
-export const writeIndivisibleMessage = <root extends string>(
-	root: root
-): writeIndivisibleMessage<root> =>
-	`Divisibility operand ${root} must be a number`
-
-export type writeIndivisibleMessage<root extends string> =
-	`Divisibility operand ${root} must be a number`

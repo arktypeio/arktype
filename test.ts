@@ -4,6 +4,7 @@
 // import { node } from "./ark/schema/main.js"
 // import { wellFormedNumberMatcher } from "./ark/util/main.js"
 
+import { type } from "arktype"
 import { isDeepStrictEqual } from "util"
 import type { NodeKind } from "./ark/schema/shared/define.js"
 import type { Schema } from "./ark/schema/shared/node.js"
@@ -12,6 +13,22 @@ import type { Dict } from "./ark/util/records.js"
 class Foo<schema extends Schema<kind>, kind extends NodeKind> {
 	constructor(schema: schema) {}
 }
+
+const type1 = type({
+	floperation: "'add'|'change'|'unlink'",
+	filePath: "string"
+})
+
+const type2 = type({
+	operation: "'add'|'change'|'unlink'",
+	filePath: "string"
+})
+
+type1.json //?
+
+type2.json //?
+
+type1.extends(type2) //?
 
 const z = new Foo({ domain: "string" }) //?
 

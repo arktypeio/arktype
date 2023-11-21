@@ -2,6 +2,7 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
+	throwParseError,
 	type ErrorMessage,
 	type conform,
 	type extend,
@@ -14,6 +15,7 @@ import {
 	type parseBasis
 } from "../bases/basis.js"
 import type { constraintInputsByKind } from "../constraints/constraint.js"
+import { getBasisName } from "../constraints/shared.js"
 import type { SchemaParseContext, UnknownNode } from "../node.js"
 import type {
 	BaseAttributes,
@@ -29,7 +31,7 @@ import {
 	type RuleKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Node, Schema } from "../shared/node.js"
+import type { Implementation, Node, Schema } from "../shared/node.js"
 import type { SetAttachments } from "./set.js"
 
 export type IntersectionInner = withAttributes<
@@ -176,13 +178,34 @@ export const IntersectionImplementation = defineNode({
 	}
 })
 
+const assertValidBasis = (
+	constraintNode: Node<ConstraintKind>,
+	basis: Node<BasisKind> | undefined
+) => {
+	if (
+		constraintNode.implicitBasis &&
+		(basis === undefined || basis.extends(constraintNode.implicitBasis))
+	) {
+		const message = (
+			constraintNode.implementation as Implementation<ClosedConstraintKind>
+		).writeInvalidBasisMessage(getBasisName(basis))
+		throwParseError(message)
+	}
+}
+
 export const parseClosedConstraint = <kind extends ClosedConstraintKind>(
 	kind: kind,
 	input: Schema<kind>,
 	intersectionContext: SchemaParseContext<"intersection">
-) => {
+): Node<kind> => {
 	const childContext = { basis: intersectionContext.inner?.basis }
-	return intersectionContext.cls.parseSchema(kind, input, childContext)
+	const constraintNode = intersectionContext.cls.parseSchema(
+		kind,
+		input,
+		childContext
+	) as Node<ConstraintKind>
+	assertValidBasis(constraintNode, childContext.basis)
+	return constraintNode as never
 }
 
 export const parseOpenConstraint = <kind extends OpenConstraintKind>(
@@ -196,13 +219,21 @@ export const parseOpenConstraint = <kind extends OpenConstraintKind>(
 			// Omit empty lists as input
 			return
 		}
-		return input
+		const constraintNodes = input
 			.map((constraint) =>
 				intersectionContext.cls.parseSchema(kind, constraint, childContext)
 			)
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
+		assertValidBasis(constraintNodes[0], childContext.basis)
+		return constraintNodes
 	}
-	return [intersectionContext.cls.parseSchema(kind, input, childContext)]
+	const constraintNode = intersectionContext.cls.parseSchema(
+		kind,
+		input,
+		childContext
+	)
+	assertValidBasis(constraintNode, childContext.basis)
+	return [constraintNode]
 }
 
 const reduceRules = (

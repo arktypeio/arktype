@@ -1,11 +1,11 @@
-import type { BasisKind } from "../../bases/basis.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
-import { defineNode, rootKinds, type RootKind } from "../../shared/define.js"
+import { rootKinds, type RootKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Inner, Node, Schema } from "../../shared/node.js"
 import type { ConstraintAttachments } from "../constraint.js"
-import { getBasisName } from "../shared.js"
+import { defineConstraint } from "../shared.js"
 import type { PropKind } from "./prop.js"
+import { writeInvalidPropsBasisMessage } from "./shared.js"
 
 export type RequiredPropSchema = withAttributes<{
 	readonly key: string | symbol
@@ -46,10 +46,7 @@ const intersectNamed = (
 	}
 }
 
-const writeInvalidBasisMessage = (basis: Node<BasisKind> | undefined) =>
-	`Props may only be applied to an object basis (was ${getBasisName(basis)})`
-
-export const RequiredImplementation = defineNode({
+export const RequiredImplementation = defineConstraint({
 	kind: "required",
 	keys: {
 		key: {},
@@ -62,6 +59,7 @@ export const RequiredImplementation = defineNode({
 		optional: intersectNamed
 	},
 	normalize: (schema) => schema,
+	writeInvalidBasisMessage: writeInvalidPropsBasisMessage,
 	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
 	attach: (node) => ({
 		implicitBasis: node.cls.builtins.object,
