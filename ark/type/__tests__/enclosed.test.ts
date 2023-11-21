@@ -4,10 +4,15 @@ import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand
 
 describe("parse enclosed", () => {
 	it("with spaces", () => {
-		attest<"this has spaces">(type("'this has spaces'").infer)
+		const t = type("'this has spaces'")
+		attest<"this has spaces">(t.infer)
+		attest(t.json).snap({ is: "this has spaces" })
 	})
 	it("with neighbors", () => {
-		attest<"foo" | string[]>(type("'foo'|/.*/[]").infer)
+		const t = type("'foo'|/.*/[]")
+		attest<"foo" | string[]>(t.infer)
+		// TODO: arrays
+		attest(t.json).snap([{ is: "foo" }, { basis: "Array" }])
 	})
 	describe("errors", () => {
 		describe("unterminated", () => {
@@ -41,8 +46,8 @@ describe("parse enclosed", () => {
 		attest<string>(type("/.*/").infer)
 	})
 	it("invalid regex", () => {
-		attest(() => type("/[/")).throws.snap(
-			"Error: Invalid regular expression: /[/: Unterminated character class"
+		attest(() => type("/[/")).throws(
+			"Invalid regular expression: /[/: Unterminated character class"
 		)
 	})
 	it("mixed quote types", () => {

@@ -15,7 +15,7 @@ describe("hkt", () => {
 		attest<[0, 1, 2], result>()
 	})
 	it("reify", () => {
-		const append = ((element: unknown, to: readonly unknown[]) => [
+		const append = (([element, to]: [unknown, readonly unknown[]]) => [
 			...to,
 			element
 		]) as Hkt.apply<Hkt.Reify, AppendKind>

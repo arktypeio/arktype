@@ -8,14 +8,8 @@ import type {
 } from "@arktype/util"
 import type { RootNode, SchemaParseContext, reducibleKindOf } from "../node.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
-import type { rightOf } from "./intersect.js"
-import type {
-	Declaration,
-	ExpandedSchema,
-	Inner,
-	Node,
-	Schema
-} from "./node.js"
+import type { reifyIntersections } from "./intersect.js"
+import type { Declaration, ExpandedSchema, Node, Schema } from "./node.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -153,22 +147,6 @@ type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
 			: k
 		: k
 }[keyof d["attach"]]
-
-export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
-	[rKind in keyof intersectionMap]: rKind extends "default"
-		? (
-				l: Node<lKind>,
-				r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
-		  ) => reifyIntersectionResult<intersectionMap[rKind]>
-		: (
-				l: Node<lKind>,
-				r: Node<rKind & NodeKind>
-		  ) => reifyIntersectionResult<intersectionMap[rKind]>
-}
-
-type reifyIntersectionResult<result> = result extends NodeKind
-	? Inner<result>
-	: result
 
 export function defineNode<
 	kind extends NodeKind,

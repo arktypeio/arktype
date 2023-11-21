@@ -42,7 +42,7 @@ export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
 	? parseBasis<schema>
 	: schema extends IntersectionSchema
 	  ? parseIntersectionSchema<schema>
-	  : Node<"intersection" | BasisKind>
+	  : Node<ValidatorKind>
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 

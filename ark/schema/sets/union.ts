@@ -24,7 +24,7 @@ export type BranchNode = Node<BranchKind>
 
 export type validateSchemaBranch<schema> = conform<
 	schema,
-	"in" extends keyof schema
+	"morph" extends keyof schema
 		? validateMorphSchema<schema>
 		: validateValidator<schema>
 >

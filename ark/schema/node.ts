@@ -438,6 +438,8 @@ export type SchemaParseContext<kind extends NodeKind> = extend<
 	}
 >
 
+const nodeCache: Record<string, UnknownNode> = {}
+
 export function parseSchema<schemaKind extends NodeKind>(
 	allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
 	schema: Schema<schemaKind>,
@@ -513,14 +515,6 @@ export function parseSchema<schemaKind extends NodeKind>(
 			}
 		}
 	}
-	const id = JSON.stringify(json)
-	const typeId = JSON.stringify(typeJson)
-	if (
-		BaseNode.isInitialized &&
-		BaseNode.builtins.unknownUnion.typeId === typeId
-	) {
-		return BaseNode.builtins.unknown as never
-	}
 	const innerEntries = entriesOf(inner)
 	let collapsibleJson = json
 	if (innerEntries.length === 1 && innerEntries[0][0] === kind) {
@@ -529,6 +523,17 @@ export function parseSchema<schemaKind extends NodeKind>(
 			json = collapsibleJson
 			typeJson = collapsibleJson
 		}
+	}
+	const id = JSON.stringify(json)
+	if (id in nodeCache) {
+		return nodeCache[id] as never
+	}
+	const typeId = JSON.stringify(typeJson)
+	if (
+		BaseNode.isInitialized &&
+		BaseNode.builtins.unknownUnion.typeId === typeId
+	) {
+		return BaseNode.builtins.unknown as never
 	}
 	const attachments = {
 		kind,

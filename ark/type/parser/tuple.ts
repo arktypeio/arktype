@@ -6,6 +6,8 @@ import {
 	type Out,
 	type Predicate,
 	type Root,
+	type Schema,
+	type ValidatorKind,
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
@@ -386,18 +388,12 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage("=>", def[2])
 		)
 	}
-	// TODO: fix
-	return ctx.scope.parse(def[0], ctx) //.constrain("morph", def[2] as Morph)
+	// TODO: nested morphs?
+	return node({
+		in: ctx.scope.parse(def[0], ctx) as Schema<ValidatorKind>,
+		morph: def[2] as Morph
+	})
 }
-
-export type parseMorph<inDef, morph, $, args> = morph extends Morph
-	? (
-			// TODO: should this be extractOut
-			In: extractIn<inferDefinition<inDef, $, args>>
-	  ) => Out<inferMorphOut<ReturnType<morph>>>
-	: never
-
-export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export const writeMalformedFunctionalExpressionMessage = (
 	operator: FunctionalTupleOperator,
@@ -406,6 +402,14 @@ export const writeMalformedFunctionalExpressionMessage = (
 	`${
 		operator === ":" ? "Narrow" : "Morph"
 	} expression requires a function following '${operator}' (was ${typeof value})`
+
+export type parseMorph<inDef, morph, $, args> = morph extends Morph
+	? (
+			In: extractIn<inferDefinition<inDef, $, args>>
+	  ) => Out<inferMorphOut<ReturnType<morph>>>
+	: never
+
+export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 	if (typeof def[2] !== "function") {
@@ -455,14 +459,14 @@ const prefixParsers: {
 			.slice(1)
 			.map((ctor) =>
 				typeof ctor === "function"
-					? { basis: ctor as Constructor }
+					? { proto: ctor as Constructor }
 					: throwParseError(
 							writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
 					  )
 			)
 		return node(...branches)
 	},
-	"===": (def) => node({ is: def.slice(1) })
+	"===": (def) => node.units(...def.slice(1))
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
@@ -472,4 +476,4 @@ export const writeInvalidConstructorMessage = <
 	actual extends Domain | BuiltinObjectKind
 >(
 	actual: actual
-) => `Expected a constructor following 'instanceof' operator (was ${actual}).`
+) => `Expected a constructor following 'instanceof' operator (was ${actual})`

@@ -1,7 +1,7 @@
 import { throwInternalError } from "@arktype/util"
 import type { UnknownNode } from "../node.js"
 import { nodeKinds, type NodeKind, type OrderedNodeKinds } from "./define.js"
-import type { Node, NodeDeclarationsByKind } from "./node.js"
+import type { Inner, Node, NodeDeclarationsByKind } from "./node.js"
 
 export const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
 	for (const kind of nodeKinds) {
@@ -33,6 +33,22 @@ type accumulateRightKinds<
 export type IntersectionMaps = {
 	[k in NodeKind]: NodeDeclarationsByKind[k]["intersections"]
 }
+
+export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
+	[rKind in keyof intersectionMap]: rKind extends "default"
+		? (
+				l: Node<lKind>,
+				r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
+		  ) => reifyIntersectionResult<intersectionMap[rKind]>
+		: (
+				l: Node<lKind>,
+				r: Node<rKind & NodeKind>
+		  ) => reifyIntersectionResult<intersectionMap[rKind]>
+}
+
+type reifyIntersectionResult<result> = result extends NodeKind
+	? Inner<result>
+	: result
 
 export type intersectionOf<l extends NodeKind, r extends NodeKind> = [
 	l,

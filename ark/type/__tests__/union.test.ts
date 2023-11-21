@@ -49,43 +49,42 @@ describe("union", () => {
 		attest<0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45>(t.infer)
 	})
 	describe("expressions", () => {
-		const expected = () => node("object").json
-		// node(
-		// 	{
-		// 		basis: "object",
-		// 		props: {
-		// 			a: {
-		// 				value: { basis: "string" }
-		// 			}
-		// 		}
-		// 	},
-		// 	{
-		// 		basis: "object",
-		// 		props: {
-		// 			b: {
-		// 				value: [{ basis: ["===", true] }, { basis: ["===", false] }]
-		// 			}
-		// 		}
-		// 	}
+		const expected = () =>
+			node(
+				{
+					basis: "object",
+					required: {
+						key: "a",
+						value: { basis: "string" }
+					}
+				},
+				{
+					basis: "object",
+					required: {
+						key: "b",
+						value: { basis: "number" }
+					}
+				}
+			).json
 
 		it("tuple", () => {
-			const t = type([{ a: "string" }, "|", { b: "boolean" }])
-			attest<{ a: string } | { b: boolean }>(t.infer)
+			const t = type([{ a: "string" }, "|", { b: "number" }])
+			attest<{ a: string } | { b: number }>(t.infer)
 			attest(t.json).equals(expected())
 		})
 		it("root", () => {
-			const t = type({ a: "string" }, "|", { b: "boolean" })
-			attest<{ a: string } | { b: boolean }>(t.infer)
+			const t = type({ a: "string" }, "|", { b: "number" })
+			attest<{ a: string } | { b: number }>(t.infer)
 			attest(t.json).equals(expected())
 		})
 		it("chained", () => {
-			const t = type({ a: "string" }).or({ b: "boolean" })
+			const t = type({ a: "string" }).or({ b: "number" })
 			attest<
 				| {
 						a: string
 				  }
 				| {
-						b: boolean
+						b: number
 				  }
 			>(t.infer)
 			attest(t.json).equals(expected())

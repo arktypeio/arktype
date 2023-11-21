@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { node, type Node, type RootKind } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
-import type { RootNode } from "../node.js"
+import { BaseNode, type RootNode } from "../node.js"
 
 describe("intersections", () => {
 	it("root type assignment", () => {
@@ -148,6 +148,11 @@ describe("intersections", () => {
 			union: ["number", "string"],
 			ordered: true
 		})
+		attest(a.equals(b)).equals(false)
+	})
+	it("doesn't equate optional and required props", () => {
+		const a = BaseNode.parseSchema("required", { key: "a", value: "number" })
+		const b = BaseNode.parseSchema("optional", { key: "a", value: "number" })
 		attest(a.equals(b)).equals(false)
 	})
 	// TODO:

@@ -20,13 +20,11 @@ describe("intersection", () => {
 		attest<"0" | "1" | "2">(t.infer)
 		attest(t.json).equals(type("===", "0", "1", "2").json)
 	})
-	// it("tuple expression", () => {
-	//     const t = type([{ a: "string" }, "&", { b: "number" }])
-	//     attest<{>(t.infer)
-	//         a: string
-	//         b: number
-	//     }
-	// })
+	it("tuple expression", () => {
+		const t = type([{ a: "string" }, "&", { b: "number" }])
+		attest<{ a: string; b: number }>(t.infer)
+		attest(t.json).equals(type({ a: "string", b: "number" }).json)
+	})
 	it("several types", () => {
 		const t = type("unknown&boolean&false")
 		attest<false>(t.infer)
@@ -76,7 +74,7 @@ describe("intersection", () => {
 		})
 		it("implicit never", () => {
 			attest(() => type("string&number")).throws(
-				"Intersection of string and number results in an unsatisfiable type"
+				"Intersection of a string and a number results in an unsatisfiable type"
 			)
 		})
 		it("left semantic error", () => {
@@ -99,7 +97,7 @@ describe("intersection", () => {
 		})
 		it("at path", () => {
 			attest(() => type({ a: "string" }).and({ a: "number" })).throws(
-				"Intersection at a of string and number results in an unsatisfiable type"
+				"Intersection at a of a string and a number results in an unsatisfiable type"
 			)
 		})
 	})

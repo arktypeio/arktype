@@ -9,10 +9,12 @@ declare const f: {
 	(a: 2, b: 2): 2
 }
 
-declare function pipe<f extends Fn, args extends readonly unknown[]>(
+function pipe<f extends Fn<any[]>, args extends readonly unknown[]>(
 	args: conform<args, Parameters<overloadOf<f>>>,
 	f: f
-): ReturnType<overloadOf<f, args>>
+): ReturnType<overloadOf<f, args>> {
+	return f(...args) as never
+}
 
 describe("overloads", () => {
 	it("parameters", () => {
@@ -42,16 +44,17 @@ describe("overloads", () => {
 		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)
 	})
 	it("pipe", () => {
-		const limit = {} as ((s: string) => string) & ((n: number) => number)
+		const limit = ((_) => _) as ((s: string) => string) &
+			((n: number) => number)
 		const n = pipe([5], limit)
 		attest<number>(n)
 		const s = pipe(["foo"], limit)
 		attest<string>(s)
 		// @ts-expect-error
-		const bad = pipe([], limit)
+		attest(() => pipe([], limit))
 		// @ts-expect-error
-		const bad2 = pipe(["foo", "bar"], limit)
+		attest(() => pipe(["foo", "bar"], limit))
 		// @ts-expect-error
-		const bad3 = pipe([true], limit)
+		attest(() => pipe([true], limit))
 	})
 })

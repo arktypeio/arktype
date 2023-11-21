@@ -300,7 +300,7 @@ export const addConstraint = (
 		} else if (!includesRefinement) {
 			result.push(elementResult)
 			includesRefinement = true
-		} else if (!base.includes(elementResult)) {
+		} else if (!result.includes(elementResult)) {
 			return throwInternalError(
 				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
 			)
