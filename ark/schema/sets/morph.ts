@@ -86,16 +86,17 @@ export const MorphImplementation = defineNode({
 	keys: {
 		in: {
 			parse: (schema, ctx) =>
-				ctx.cls.parseSchema(["intersection", ...basisKinds], schema, ctx)
+				ctx.cls.parseRootFromKinds(["intersection", ...basisKinds], schema)
 		},
 		out: {
 			parse: (schema, ctx) =>
-				ctx.cls.parseSchema(["intersection", ...basisKinds], schema, ctx)
+				ctx.cls.parseRootFromKinds(["intersection", ...basisKinds], schema)
 		},
 		morph: {
 			parse: listFrom
 		}
 	},
+	normalize: (schema) => schema,
 	intersections: {
 		morph: (l, r) => {
 			if (l.morph.some((morph, i) => morph !== r.morph[i])) {

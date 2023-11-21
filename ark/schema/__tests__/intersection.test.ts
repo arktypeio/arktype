@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { node, type Node, type RootKind } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
-import { BaseNode, type RootNode } from "../node.js"
+import { parseRefinement, type RootNode } from "../node.js"
 import type { Disjoint } from "../shared/disjoint.js"
 
 describe("intersections", () => {
@@ -152,21 +152,21 @@ describe("intersections", () => {
 		attest(l.equals(r)).equals(false)
 	})
 	it("orthogonal refinements intersect as null", () => {
-		const l = BaseNode.parseSchema("divisor", 5)
-		const r = BaseNode.parseSchema("max", 100)
+		const l = parseRefinement("divisor", 5)
+		const r = parseRefinement("max", 100)
 		const result = l.intersect(r)
 	})
 	it("possibly disjoint refinements", () => {
-		const l = BaseNode.parseSchema("min", 2)
-		const r = BaseNode.parseSchema("max", 1)
+		const l = parseRefinement("min", 2)
+		const r = parseRefinement("max", 1)
 		const lrResult = l.intersect(r)
 		attest<Disjoint | null>(lrResult).snap()
 		const rlResult = r.intersect(l)
 		attest<Disjoint | null>(rlResult).snap()
 	})
 	it("doesn't equate optional and required props", () => {
-		const l = BaseNode.parseSchema("required", { key: "a", value: "number" })
-		const r = BaseNode.parseSchema("optional", { key: "a", value: "number" })
+		const l = parseRefinement("required", { key: "a", value: "number" })
+		const r = parseRefinement("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
 	// TODO:

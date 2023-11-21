@@ -14,7 +14,7 @@ import {
 	type BasisKind,
 	type parseBasis
 } from "../bases/basis.js"
-import type { BaseSchemaParseContext, UnknownNode } from "../node.js"
+import type { UnknownNode } from "../node.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import { getBasisName } from "../refinements/shared.js"
 import type {
@@ -32,7 +32,12 @@ import {
 	type RefinementKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Implementation, Node, Schema } from "../shared/node.js"
+import type {
+	Implementation,
+	Node,
+	Schema,
+	SchemaParseContext
+} from "../shared/node.js"
 import type { SetAttachments } from "./set.js"
 
 export type IntersectionInner = withAttributes<
@@ -85,7 +90,7 @@ export const IntersectionImplementation = defineNode({
 			return { basis: undefined }
 		}
 		const basisKind = getBasisKindOrThrow(basisSchema)
-		return { basis: ctx.cls.parseSchema(basisKind, basisSchema, {}) }
+		return { basis: ctx.cls.parseRoot(basisKind, basisSchema) }
 	},
 	keys: {
 		basis: {
@@ -208,45 +213,35 @@ const assertValidBasis = (
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
 	input: Schema<kind>,
-	intersectionContext: BaseSchemaParseContext<"intersection">
+	intersectionContext: SchemaParseContext<"intersection">
 ): Node<kind> => {
-	const basis = intersectionContext.inner?.basis
-	const childContext = { basis }
-	const refinement = intersectionContext.cls.parseSchema(
+	const refinement = intersectionContext.cls.parseRefinement(
 		kind,
 		input,
-		childContext
+		intersectionContext.basis
 	) as Node<RefinementKind>
-	assertValidBasis(refinement, basis)
+	assertValidBasis(refinement, intersectionContext.basis)
 	return refinement as never
 }
 
 export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
-	intersectionContext: BaseSchemaParseContext<"intersection">
+	ctx: SchemaParseContext<"intersection">
 ) => {
-	const basis = intersectionContext.inner?.basis
-	const childContext = { basis }
 	if (isArray(input)) {
 		if (input.length === 0) {
 			// Omit empty lists as input
 			return
 		}
 		const refinements = input
-			.map((refinement) =>
-				intersectionContext.cls.parseSchema(kind, refinement, childContext)
-			)
+			.map((refinement) => ctx.cls.parseRefinement(kind, refinement, ctx.basis))
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
-		assertValidBasis(refinements[0], basis)
+		assertValidBasis(refinements[0], ctx.basis)
 		return refinements
 	}
-	const refinement = intersectionContext.cls.parseSchema(
-		kind,
-		input,
-		childContext
-	)
-	assertValidBasis(refinement, basis)
+	const refinement = ctx.cls.parseRefinement(kind, input, ctx.basis)
+	assertValidBasis(refinement, ctx.basis)
 	return [refinement]
 }
 

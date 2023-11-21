@@ -51,7 +51,7 @@ export const RequiredImplementation = defineRefinement({
 	keys: {
 		key: {},
 		value: {
-			parse: (schema, ctx) => ctx.cls.parseSchema(rootKinds, schema, ctx)
+			parse: (schema, ctx) => ctx.cls.parseRootFromKinds(rootKinds, schema)
 		}
 	},
 	intersections: {

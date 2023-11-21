@@ -39,16 +39,6 @@ export const writeUnboundableMessage = <root extends string>(
 export type writeUnboundableMessage<root extends string> =
 	`Bounded expression ${root} must be a number, string, Array, or Date`
 
-// readonly exclusive = this.inner.exclusive ?? false
-
-// readonly comparator = schemaToComparator(this.inner)
-
-// 	static writeInvalidBasisMessage(basis: Node<BasisKind> | undefined) {
-// 		return writeUnboundableMessage(getBasisName(basis))
-// 	}
-
-//this.classesByKind.union.parse(["number", "string", Array, Date]) as never
-
 export type MinInner = extend<
 	BoundInner,
 	{
@@ -88,7 +78,7 @@ export const MinImplementation = defineNode({
 		min: (l, r) => (l.min > r.min || (l.min === r.min && l.exclusive) ? l : r)
 	},
 	normalize: (schema, ctx) => {
-		const boundKind = getBoundKind(ctx.parentContext.basis)
+		const boundKind = getBoundKind(ctx.basis)
 		return typeof schema === "object"
 			? { ...schema, boundKind }
 			: { min: schema, boundKind }
@@ -159,7 +149,7 @@ export const MaxImplementation = defineRefinement({
 				: null
 	},
 	normalize: (schema, ctx) => {
-		const boundKind = getBoundKind(ctx.parentContext.basis)
+		const boundKind = getBoundKind(ctx.basis)
 		return typeof schema === "object"
 			? { ...schema, boundKind }
 			: { max: schema, boundKind }

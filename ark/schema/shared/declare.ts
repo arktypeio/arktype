@@ -1,14 +1,14 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { BaseNode } from "../node.js"
 import type {
+	BasisKind,
 	ConstraintKind,
 	NodeKind,
-	RefinementKind,
-	RootKind
+	RefinementKind
 } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
-import type { Schema, SchemaParseContext, parentKindOf } from "./node.js"
+import type { Node, Schema } from "./node.js"
 
 export type BaseAttributes = {
 	readonly alias?: string
@@ -55,16 +55,13 @@ export type BaseNodeDeclaration = {
 
 export type BaseSchemaParseContextInput = {
 	prereduced?: true
+	basis?: Node<BasisKind> | undefined
 }
 
 export type BaseSchemaParseContext<kind extends NodeKind> = extend<
 	BaseSchemaParseContextInput,
 	{
 		schema: Schema<kind>
-		parentContext:
-			| SchemaParseContext<parentKindOf<kind>>
-			// roots don't necessarily have parents, but refinements always will
-			| (kind extends RootKind ? undefined : never)
 		cls: typeof BaseNode
 	}
 >

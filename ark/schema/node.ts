@@ -7,8 +7,7 @@ import {
 	isArray,
 	throwInternalError,
 	throwParseError,
-	type Json,
-	type conform
+	type Json
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
 import { In } from "./io/compile.js"
@@ -258,7 +257,9 @@ export abstract class BaseNode<
 		return null
 	}
 
-	static parseSchema = parseSchema
+	static parseRoot = parseRoot
+	static parseRefinement = parseRefinement
+	static parseRootFromKinds = parseRootFromKinds
 	static parsePrereduced = parsePrereduced
 
 	static isInitialized = false
@@ -289,14 +290,14 @@ export type NodeParser = {
 	): parseSchemaBranches<branches>
 }
 
-const parseRoot: NodeParser = (...branches) =>
-	parseSchema(
+const parseBranches: NodeParser = (...branches) =>
+	parseRoot(
 		"union",
-		branches.length === 1 &&
-			hasDomain(branches[0], "object") &&
-			"union" in branches[0]
+		(branches.length === 1 &&
+		hasDomain(branches[0], "object") &&
+		"union" in branches[0]
 			? branches[0]
-			: branches
+			: branches) as never
 	) as never
 
 type UnitsParser = <const branches extends readonly unknown[]>(
@@ -323,11 +324,11 @@ const parseUnits: UnitsParser = (...values) => {
 	}) as never
 }
 
-export const node = Object.assign(parseRoot, {
+export const node = Object.assign(parseBranches, {
 	units: parseUnits
 })
 
-export function parsePrereduced<kind extends NodeKind>(
+export function parsePrereduced<kind extends RootKind>(
 	kind: kind,
 	schema: Schema<kind>
 ): Node<kind> {
@@ -359,7 +360,7 @@ export class RootNode<
 			) as any
 			return branch.and(refinement)
 		})
-		return parseSchema("union", { union: constrainedBranches }) as never
+		return parseRoot("union", { union: constrainedBranches }) as never
 	}
 
 	keyof() {
@@ -385,7 +386,7 @@ export class RootNode<
 		"union" | Extract<kind | other["kind"], RootKind>,
 		t | other["infer"]
 	> {
-		return parseSchema("union", [...this.branches, ...other.branches]) as never
+		return parseRoot("union", [...this.branches, ...other.branches]) as never
 	}
 
 	isUnknown(): this is BaseNode<"intersection", unknown> {
@@ -436,18 +437,33 @@ export function parseRefinement<kind extends RefinementKind>(
 	}) as never
 }
 
-const nodeCache: Record<string, UnknownNode> = {}
-
-export function parseSchema<schemaKind extends NodeKind>(
-	allowedKinds: schemaKind | readonly conform<schemaKind, RootKind>[],
-	schema: Schema<schemaKind>,
-	ctxInput: BaseSchemaParseContextInput = {}
+export function parseRoot<schemaKind extends RootKind>(
+	kind: schemaKind,
+	schema: Schema<schemaKind>
 ): Node<reducibleKindOf<schemaKind>> {
-	const kind =
-		typeof allowedKinds === "string" ? allowedKinds : rootKindOfSchema(schema)
-	if (isArray(allowedKinds) && !allowedKinds.includes(kind as never)) {
-		return throwParseError(`Schema of kind ${kind} should be ${allowedKinds}`)
+	return parseSchema(kind, schema, {}) as never
+}
+
+export function parseRootFromKinds<schemaKind extends RootKind>(
+	allowedKinds: readonly schemaKind[],
+	schema: unknown
+): Node<reducibleKindOf<schemaKind>> {
+	const kind = rootKindOfSchema(schema)
+	if (!allowedKinds.includes(kind as never)) {
+		return throwParseError(
+			`Schema of kind ${kind} should be one of ${allowedKinds}`
+		)
 	}
+	return parseSchema(kind, schema as never, {}) as never
+}
+
+const nodeCache: Record<string, unknown> = {}
+
+function parseSchema<schemaKind extends NodeKind>(
+	kind: schemaKind,
+	schema: Schema<schemaKind>,
+	ctxInput: BaseSchemaParseContextInput
+): Node<reducibleKindOf<schemaKind>> {
 	if (isNode(schema)) {
 		return schema as never
 	}
@@ -457,7 +473,7 @@ export function parseSchema<schemaKind extends NodeKind>(
 	const inner: Record<string, unknown> = {}
 	const ctx: BaseSchemaParseContext<any> = {
 		...ctxInput,
-		parentSchema: normalizedSchema,
+		schema,
 		cls: BaseNode
 	}
 	const normalizedSchema: any =

@@ -7,7 +7,6 @@ import type {
 	Fn,
 	isDisjoint,
 	join,
-	paramsOf,
 	replaceKey,
 	returnOf,
 	unionToTuple,
@@ -60,13 +59,17 @@ type MatchContext = {
 
 type validateCases<cases, ctx extends MatchContext> = {
 	// adding keyof $ explicitly provides key completions for aliases
-	[k in keyof cases | keyof ctx["$"]]?: k extends validateTypeRoot<k, ctx["$"]>
-		? (
-				In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
-		  ) => ctx["outConstraint"]
-		: parseWhentryKey<k & string, ctx["$"]> extends ErrorMessage<infer message>
-		  ? ErrorMessage<message>
-		  : (In: parseWhentryKey<k & string, ctx["$"]>) => ctx["outConstraint"]
+	[k in keyof cases | keyof ctx["$"] | "default"]?: k extends "default"
+		? (In: ctx["inConstraint"]) => ctx["outConstraint"]
+		: k extends validateTypeRoot<k, ctx["$"]>
+		  ? (
+					In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
+		    ) => ctx["outConstraint"]
+		  : parseWhentryKey<k & string, ctx["$"]> extends ErrorMessage<
+						infer message
+		      >
+		    ? ErrorMessage<message>
+		    : (In: parseWhentryKey<k & string, ctx["$"]>) => ctx["outConstraint"]
 }
 
 export type MatchParser<$> = {
@@ -104,11 +107,13 @@ export type MatchInvokation<ctx extends MatchContext> = <
 >(
 	In: data
 ) => {
-	[i in Extract<keyof ctx["thens"], `${number}`>]: isDisjoint<
-		data,
-		paramsOf<ctx["thens"][i]>[0]
-	> extends true
-		? never
+	[i in Extract<keyof ctx["thens"], `${number}`>]: ctx["thens"][i] extends Fn<
+		[infer In],
+		infer Out
+	>
+		? isDisjoint<data, In> extends true
+			? never
+			: Out
 		: returnOf<ctx["thens"][i]>
 }[Extract<keyof ctx["thens"], `${number}`>]
 

@@ -1,4 +1,4 @@
-import { match, when } from "arktype"
+// import { match, when } from "arktype"
 
 // const matcher = match({
 // 	[when({
@@ -10,6 +10,14 @@ import { match, when } from "arktype"
 // }).when({ condition: "true" }, (data) => {
 // 	return data.condition
 // })
+
+// const greeting = match({
+// 	"integer<12": () => "Good morning",
+// 	"integer<18": () => "Good afternoon",
+// 	default: () => "Good evening"
+// })
+
+// const result = greeting(5)
 
 // const base = matcher({} as unknown) //({}) //=>?
 

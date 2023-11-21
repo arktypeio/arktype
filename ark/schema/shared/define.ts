@@ -106,9 +106,9 @@ export const defaultInnerKeySerializer = (v: unknown) => {
 	return compileSerializedValue(v)
 }
 
-export type normalizeSchema<schema, inner extends BaseAttributes> = requireKeys<
-	Extract<schema, PartialRecord<requiredKeyOf<inner>>>,
-	requiredKeyOf<inner>
+export type normalizeSchema<schema, inner extends BaseAttributes> = Extract<
+	schema,
+	PartialRecord<requiredKeyOf<inner>>
 >
 
 export type NodeKeyDefinition<
