@@ -75,9 +75,6 @@ export type ParentsByKind = {
 
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
-export type SchemaParseContext<kind extends NodeKind> =
-	Declaration<kind>["context"]
-
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
 export type Attachments<kind extends NodeKind> = Declaration<kind>["attach"]

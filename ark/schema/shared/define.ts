@@ -4,6 +4,7 @@ import type {
 	JsonData,
 	PartialRecord,
 	evaluate,
+	extend,
 	listable,
 	optionalizeKeys,
 	requireKeys,
@@ -11,14 +12,15 @@ import type {
 	satisfy
 } from "@arktype/util"
 import { compileSerializedValue } from "../io/compile.js"
-import type { RootNode, UnknownNode, reducibleKindOf } from "../node.js"
 import type {
-	BaseAttributes,
-	BaseNodeDeclaration,
-	BaseSchemaParseContext
-} from "./declare.js"
+	BaseNode,
+	RootNode,
+	UnknownNode,
+	reducibleKindOf
+} from "../node.js"
+import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
-import type { Declaration, Node, NormalizedSchema } from "./node.js"
+import type { Declaration, Node, NormalizedSchema, Schema } from "./node.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -111,6 +113,18 @@ export type normalizeSchema<schema, inner extends BaseAttributes> = Extract<
 	PartialRecord<requiredKeyOf<inner>>
 >
 
+export type SchemaParseContextInput = {
+	prereduced?: true
+}
+
+export type SchemaParseContext<kind extends NodeKind> = extend<
+	SchemaParseContextInput,
+	{
+		schema: Schema<kind>
+		cls: typeof BaseNode
+	}
+>
+
 export type NodeKeyDefinition<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"]
@@ -127,39 +141,27 @@ export type NodeKeyDefinition<
 			schema: k extends keyof NormalizedSchema<d["kind"]>
 				? Exclude<NormalizedSchema<d["kind"]>[k], undefined>
 				: undefined,
-			ctx: d["context"]
+			ctx: SchemaParseContext<d["kind"]>
 		) => d["inner"][k]
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
 	NormalizedSchema<d["kind"]> extends Pick<d["inner"], k> ? never : "parse"
 >
 
-export type NodeImplementationInput<d extends BaseNodeDeclaration> =
-	requireKeys<
-		{
-			kind: d["kind"]
-			keys: InnerKeyDefinitions<d>
-			intersections: reifyIntersections<d["kind"], d["intersections"]>
-			writeDefaultDescription: (inner: Node<d["kind"]>) => string
-			attach: (inner: Node<d["kind"]>) => {
-				[k in unsatisfiedAttachKey<d>]: d["attach"][k]
-			}
-			normalize: (
-				schema: d["schema"],
-				ctx: d["context"]
-			) => normalizeSchema<d["schema"], d["inner"]>
-			addContext?: (
-				ctx: BaseSchemaParseContext<d["kind"]>
-			) => Omit<d["context"], keyof BaseSchemaParseContext<d["kind"]>>
-			reduce?: (
-				inner: d["inner"],
-				ctx: d["context"]
-			) => Node<reducibleKindOf<d["kind"]>> | undefined
-		}, // require addContext if we need additional context specific to the node
-		keyof d["context"] extends keyof BaseSchemaParseContext<d["kind"]>
-			? never
-			: "addContext"
-	>
+export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
+	kind: d["kind"]
+	keys: InnerKeyDefinitions<d>
+	intersections: reifyIntersections<d["kind"], d["intersections"]>
+	writeDefaultDescription: (inner: Node<d["kind"]>) => string
+	attach: (inner: Node<d["kind"]>) => {
+		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
+	}
+	normalize: (schema: d["schema"]) => normalizeSchema<d["schema"], d["inner"]>
+	reduce?: (
+		inner: d["inner"],
+		ctx: SchemaParseContext<d["kind"]>
+	) => Node<reducibleKindOf<d["kind"]>> | undefined
+}
 
 export type UnknownNodeImplementation = optionalizeKeys<
 	instantiateNodeImplementation<
@@ -167,7 +169,7 @@ export type UnknownNodeImplementation = optionalizeKeys<
 			keys: Dict<string, NodeKeyDefinition<any, any>>
 		}
 	>,
-	"reduce" | "addContext"
+	"reduce"
 >
 
 type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {

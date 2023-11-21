@@ -20,11 +20,7 @@ import type {
 	validateSchemaBranch
 } from "./sets/union.js"
 import { createBuiltins } from "./shared/builtins.js"
-import type {
-	BaseAttributes,
-	BaseSchemaParseContext,
-	BaseSchemaParseContextInput
-} from "./shared/declare.js"
+import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
 	closedRefinementKinds,
@@ -41,6 +37,8 @@ import {
 	type RefinementKind,
 	type Root,
 	type RootKind,
+	type SchemaParseContext,
+	type SchemaParseContextInput,
 	type SetKind,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
@@ -462,7 +460,7 @@ const nodeCache: Record<string, unknown> = {}
 function parseSchema<schemaKind extends NodeKind>(
 	kind: schemaKind,
 	schema: Schema<schemaKind>,
-	ctxInput: BaseSchemaParseContextInput
+	ctxInput: SchemaParseContextInput
 ): Node<reducibleKindOf<schemaKind>> {
 	if (isNode(schema)) {
 		return schema as never
@@ -471,13 +469,12 @@ function parseSchema<schemaKind extends NodeKind>(
 		kind
 	] as never
 	const inner: Record<string, unknown> = {}
-	const ctx: BaseSchemaParseContext<any> = {
+	const ctx: SchemaParseContext<any> = {
 		...ctxInput,
 		schema,
 		cls: BaseNode
 	}
-	const normalizedSchema: any =
-		implementation.normalize?.(schema, ctx) ?? schema
+	const normalizedSchema: any = implementation.normalize?.(schema) ?? schema
 	const schemaEntries = entriesOf(normalizedSchema).sort((l, r) =>
 		l[0] < r[0] ? -1 : 1
 	)

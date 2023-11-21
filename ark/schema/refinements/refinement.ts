@@ -11,7 +11,7 @@ import {
 	MinImplementation,
 	type MaxDeclaration,
 	type MinDeclaration
-} from "./bounds.js"
+} from "./bounds/bounds.js"
 import { DivisorImplementation, type DivisorDeclaration } from "./divisor.js"
 import { PatternImplementation, type PatternDeclaration } from "./pattern.js"
 import {
