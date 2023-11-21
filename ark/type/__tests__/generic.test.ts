@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { lazily } from "@arktype/util"
-import { scope, type } from "arktype"
+import { arktypes, scope, type } from "arktype"
 import {
 	emptyGenericParameterMessage,
 	writeInvalidGenericArgsMessage
@@ -284,6 +284,12 @@ describe("generics", () => {
 					$.type("box<1,string%2>")
 				).throwsAndHasTypeError(writeIndivisibleMessage("string"))
 			})
+		})
+	})
+	describe("builtins", () => {
+		it("record", () => {
+			const t = arktypes.Record("string", "number")
+			attest(t.json).equals(type("Record<string, number>").json)
 		})
 	})
 })

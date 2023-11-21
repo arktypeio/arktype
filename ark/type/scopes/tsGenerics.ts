@@ -1,8 +1,8 @@
 import { Scope } from "../scope.js"
 import type { Generic } from "../type.js"
-import type { RootScope } from "./ark.js"
+import type { Ark, RootScope } from "./ark.js"
 
-export interface InferredTsGenerics {
+export interface InferredTsGenerics<$ = Ark> {
 	Record: Generic<
 		["K", "V"],
 		{
@@ -10,7 +10,7 @@ export interface InferredTsGenerics {
 		},
 		// as long as the generics in the root scope don't reference one
 		// another, they shouldn't need a bound local scope
-		{}
+		$
 	>
 }
 
@@ -23,6 +23,6 @@ export const tsGenerics: RootScope<InferredTsGenerics> = Scope.root({
 	// }
 	// unfortunately TS won't let us assign this directly, so we need to be
 	// careful to keep the inferred types in sync
-}) as never // satisfies RootScope<{ [k in keyof InferredTsGenerics]: any }> as never
+}) as never
 
 export const tsGenericsModule = tsGenerics.export()
