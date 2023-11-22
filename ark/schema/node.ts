@@ -255,8 +255,7 @@ export abstract class BaseNode<
 		return null
 	}
 
-	static parseRoot = parseRoot
-	static parseRefinement = parseRefinement
+	static parseSchema = parseSchema
 	static parseRootFromKinds = parseRootFromKinds
 	static parsePrereduced = parsePrereduced
 
@@ -289,7 +288,7 @@ export type NodeParser = {
 }
 
 const parseBranches: NodeParser = (...branches) =>
-	parseRoot(
+	parseSchema(
 		"union",
 		(branches.length === 1 &&
 		hasDomain(branches[0], "object") &&
@@ -351,14 +350,10 @@ export class RootNode<
 		schema: Schema<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
 		const constrainedBranches = this.branches.map((branch) => {
-			const refinement = parseRefinement(
-				kind,
-				schema as never,
-				extractBasis(branch)
-			) as any
+			const refinement = parseSchema(kind, schema as never) as any
 			return branch.and(refinement)
 		})
-		return parseRoot("union", { union: constrainedBranches }) as never
+		return parseSchema("union", { union: constrainedBranches }) as never
 	}
 
 	keyof() {
@@ -384,7 +379,7 @@ export class RootNode<
 		"union" | Extract<kind | other["kind"], RootKind>,
 		t | other["infer"]
 	> {
-		return parseRoot("union", [...this.branches, ...other.branches]) as never
+		return parseSchema("union", [...this.branches, ...other.branches]) as never
 	}
 
 	isUnknown(): this is BaseNode<"intersection", unknown> {
@@ -425,23 +420,6 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly typeId: string
 }
 
-export function parseRefinement<kind extends RefinementKind>(
-	kind: kind,
-	schema: Schema<kind>,
-	basis: Node<BasisKind> | undefined
-): Node<kind> {
-	return parseSchema(kind, schema, {
-		basis
-	}) as never
-}
-
-export function parseRoot<schemaKind extends RootKind>(
-	kind: schemaKind,
-	schema: Schema<schemaKind>
-): Node<reducibleKindOf<schemaKind>> {
-	return parseSchema(kind, schema, {}) as never
-}
-
 export function parseRootFromKinds<schemaKind extends RootKind>(
 	allowedKinds: readonly schemaKind[],
 	schema: unknown
@@ -457,10 +435,10 @@ export function parseRootFromKinds<schemaKind extends RootKind>(
 
 const nodeCache: Record<string, unknown> = {}
 
-function parseSchema<schemaKind extends NodeKind>(
+export function parseSchema<schemaKind extends NodeKind>(
 	kind: schemaKind,
 	schema: Schema<schemaKind>,
-	ctxInput: SchemaParseContextInput
+	ctxInput?: SchemaParseContextInput
 ): Node<reducibleKindOf<schemaKind>> {
 	if (isNode(schema)) {
 		return schema as never

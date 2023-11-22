@@ -9,11 +9,7 @@ import {
 	type listable,
 	type mutable
 } from "@arktype/util"
-import {
-	getBasisKindOrThrow,
-	type BasisKind,
-	type parseBasis
-} from "../bases/basis.js"
+import type { BasisKind, parseBasis } from "../bases/basis.js"
 import type { UnknownNode } from "../node.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import { getBasisName } from "../refinements/shared.js"
@@ -23,21 +19,18 @@ import type {
 	withAttributes
 } from "../shared/declare.js"
 import {
+	basisKinds,
 	closedRefinementKinds,
 	defineNode,
 	openRefinementKinds,
 	type ClosedRefinementKind,
 	type ConstraintKind,
 	type OpenRefinementKind,
-	type RefinementKind
+	type RefinementKind,
+	type SchemaParseContext
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type {
-	Implementation,
-	Node,
-	Schema,
-	SchemaParseContext
-} from "../shared/node.js"
+import type { Implementation, Node, Schema } from "../shared/node.js"
 import type { SetAttachments } from "./set.js"
 
 export type IntersectionInner = withAttributes<
@@ -70,9 +63,6 @@ export type IntersectionAttachments = extend<
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
-	context: {
-		basis: Node<BasisKind> | undefined
-	}
 	inner: IntersectionInner
 	intersections: {
 		intersection: "intersection" | Disjoint
@@ -84,18 +74,10 @@ export type IntersectionDeclaration = declareNode<{
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	normalize: (schema) => schema,
-	addContext: (ctx) => {
-		const basisSchema = ctx.schema.basis
-		if (basisSchema === undefined) {
-			return { basis: undefined }
-		}
-		const basisKind = getBasisKindOrThrow(basisSchema)
-		return { basis: ctx.cls.parseRoot(basisKind, basisSchema) }
-	},
 	keys: {
 		basis: {
 			// the basis has already been preparsed and added to context
-			parse: (_, ctx) => ctx.basis
+			parse: (schema, ctx) => ctx.cls.parseRootFromKinds(basisKinds, schema)
 		},
 		divisor: {
 			parse: (schema, ctx) => parseClosedRefinement("divisor", schema, ctx)
@@ -204,7 +186,7 @@ const assertValidBasis = (
 		(basis === undefined || !basis.extends(refinementNode.implicitBasis))
 	) {
 		const message = (
-			refinementNode.implementation as Implementation<RefinementKind>
+			refinementNode.implementation as never as Implementation<RefinementKind>
 		).writeInvalidBasisMessage(getBasisName(basis))
 		throwParseError(message)
 	}
@@ -213,14 +195,10 @@ const assertValidBasis = (
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
 	input: Schema<kind>,
-	intersectionContext: SchemaParseContext<"intersection">
+	ctx: SchemaParseContext<"intersection">
 ): Node<kind> => {
-	const refinement = intersectionContext.cls.parseRefinement(
-		kind,
-		input,
-		intersectionContext.basis
-	) as Node<RefinementKind>
-	assertValidBasis(refinement, intersectionContext.basis)
+	const refinement = ctx.cls.parseSchema(kind, input) as Node<RefinementKind>
+	assertValidBasis(refinement, ctx.basis)
 	return refinement as never
 }
 
@@ -235,12 +213,12 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 			return
 		}
 		const refinements = input
-			.map((refinement) => ctx.cls.parseRefinement(kind, refinement, ctx.basis))
+			.map((refinement) => ctx.cls.parseSchema(kind, refinement))
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
 		assertValidBasis(refinements[0], ctx.basis)
 		return refinements
 	}
-	const refinement = ctx.cls.parseRefinement(kind, input, ctx.basis)
+	const refinement = ctx.cls.parseSchema(kind, input)
 	assertValidBasis(refinement, ctx.basis)
 	return [refinement]
 }

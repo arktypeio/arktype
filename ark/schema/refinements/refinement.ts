@@ -6,10 +6,7 @@ import type {
 	RefinementKind
 } from "../shared/define.js"
 import type { Node, Schema } from "../shared/node.js"
-import {
-	BoundImplementations,
-	type BoundDeclarations
-} from "./bounds/bounds.js"
+import { BoundImplementations, type BoundDeclarations } from "./bounds.js"
 import { DivisorImplementation, type DivisorDeclaration } from "./divisor.js"
 import { PatternImplementation, type PatternDeclaration } from "./pattern.js"
 import {

@@ -51,7 +51,8 @@ export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
 export type NormalizedSchema<kind extends NodeKind> = normalizeSchema<
 	Schema<kind>,
 	Inner<kind>
->
+> &
+	object
 
 export type ChildrenByKind = {
 	[k in NodeKind]: k extends "union"

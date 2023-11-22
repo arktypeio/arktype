@@ -126,6 +126,7 @@ export type normalizeSchema<schema, inner extends BaseAttributes> = Extract<
 
 export type SchemaParseContextInput = {
 	prereduced?: true
+	basis?: Node<BasisKind> | undefined
 }
 
 export type SchemaParseContext<kind extends NodeKind> = extend<
@@ -163,8 +164,8 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	writeDefaultDescription: (inner: Node<d["kind"]>) => string
-	attach: (inner: Node<d["kind"]>) => {
+	writeDefaultDescription: (node: Node<d["kind"]>) => string
+	attach: (node: Node<d["kind"]>) => {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
 	normalize: (schema: d["schema"]) => normalizeSchema<d["schema"], d["inner"]>
