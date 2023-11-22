@@ -7,7 +7,7 @@ import {
 	transform,
 	type entryOf
 } from "@arktype/util"
-import type { ConstraintKind } from "./define.js"
+import type { BoundKind, ConstraintKind } from "./define.js"
 import type { rightOf } from "./intersect.js"
 import type { Node } from "./node.js"
 
@@ -35,8 +35,8 @@ type DisjointKinds = {
 				r: true
 		  }
 	bound?: {
-		l: Node<"min" | "max">
-		r: Node<"min" | "max">
+		l: Node<BoundKind>
+		r: Node<BoundKind>
 	}
 	assignability?:
 		| {

@@ -1,23 +1,11 @@
 import { constructorExtends, throwParseError, type extend } from "@arktype/util"
-import type {
-	BaseNodeDeclaration,
-	declareNode,
-	withAttributes
-} from "../../shared/declare.js"
-import {
-	defineNode,
-	type BasisKind,
-	type NodeImplementationInput,
-	type RefinementKind,
-	type instantiateNodeImplementation
-} from "../../shared/define.js"
-import type { Declaration, Node } from "../../shared/node.js"
+import type { withAttributes } from "../../shared/declare.js"
+import type { BasisKind, BoundKind } from "../../shared/define.js"
+import type { Node } from "../../shared/node.js"
 import type { RefinementAttachments } from "../refinement.js"
-import type { RefinementImplementationInput } from "../shared.js"
 
-// TODO: NodeKind
 export type BoundInner<
-	kind extends string,
+	kind extends BoundKind,
 	limit extends LimitLiteral
 > = withAttributes<
 	{ [_ in kind]: limit } & {
@@ -27,41 +15,9 @@ export type BoundInner<
 
 export type LimitLiteral = number | string
 
-// TODO: NodeKind
-export type BoundSchema<kind extends string, limit extends LimitLiteral> =
+export type BoundSchema<kind extends BoundKind, limit extends LimitLiteral> =
 	| limit
 	| BoundInner<kind, limit>
-
-// kind, implicitBasis, limitKind
-
-export type BoundDeclarationInput = {
-	kind: string
-	limitKind: LimitKind
-	limitValue: LimitLiteral
-	implicitBasis: Boundable
-}
-
-// TODO: update to NodeKind
-export type declareBound<input extends BoundDeclarationInput> = declareNode<{
-	kind: input["kind"]
-	schema: BoundSchema<input["kind"], input["limitValue"]>
-	inner: BoundInner<input["kind"], input["limitValue"]>
-	attach: BoundAttachments<input["limitKind"]>
-	intersections: {}
-}>
-
-export type BoundImplementationInput<d extends BaseNodeDeclaration> = extend<
-	RefinementImplementationInput<d>,
-	{}
->
-
-export function defineBound<
-	kind extends RefinementKind,
-	input extends BoundImplementationInput<Declaration<kind>>
->(input: { kind: kind } & input): instantiateNodeImplementation<input>
-export function defineBound(input: NodeImplementationInput<any>) {
-	return defineNode(input)
-}
 
 export type BoundLimit = number | string
 
@@ -72,24 +28,24 @@ export type BoundAttachments<limitKind extends LimitKind> = extend<
 	}
 >
 
-const unitsByBoundKind = {
-	date: "",
-	number: "",
-	string: "characters",
-	array: "elements"
-} as const
+// const unitsByBoundKind = {
+// 	date: "",
+// 	number: "",
+// 	string: "characters",
+// 	array: "elements"
+// } as const
 
-export type BoundKind = keyof typeof unitsByBoundKind
+// export type BoundKind = keyof typeof unitsByBoundKind
 
-export type LimitKind = "min" | "max"
+export type LimitKind = "lower" | "upper"
 
 export type RelativeComparator<kind extends LimitKind = LimitKind> = {
-	min: ">" | ">="
-	max: "<" | "<="
+	lower: ">" | ">="
+	upper: "<" | "<="
 }[kind]
 
-export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
-	`Bound kinds ${l} and ${r} are incompatible`
+// export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
+// 	`Bound kinds ${l} and ${r} are incompatible`
 
 export const writeUnboundableMessage = <root extends string>(
 	root: root
@@ -103,7 +59,7 @@ export type NumericallyBoundable = string | number | readonly unknown[]
 
 export type Boundable = NumericallyBoundable | Date
 
-export const getBoundKind = (basis: Node<BasisKind> | undefined): BoundKind => {
+export const getBoundKind = (basis: Node<BasisKind> | undefined) => {
 	if (basis === undefined) {
 		return throwParseError(writeUnboundableMessage("unknown"))
 	}

@@ -7,10 +7,8 @@ import type {
 } from "../shared/define.js"
 import type { Node, Schema } from "../shared/node.js"
 import {
-	MaxImplementation,
-	MinImplementation,
-	type MaxDeclaration,
-	type MinDeclaration
+	BoundImplementations,
+	type BoundDeclarations
 } from "./bounds/bounds.js"
 import { DivisorImplementation, type DivisorDeclaration } from "./divisor.js"
 import { PatternImplementation, type PatternDeclaration } from "./pattern.js"
@@ -20,11 +18,12 @@ import {
 } from "./predicate.js"
 import { PropImplementations, type PropDeclarations } from "./props/prop.js"
 
-export type ClosedRefinementDeclarations = {
-	divisor: DivisorDeclaration
-	min: MinDeclaration
-	max: MaxDeclaration
-}
+export type ClosedRefinementDeclarations = extend<
+	BoundDeclarations,
+	{
+		divisor: DivisorDeclaration
+	}
+>
 
 export type OpenRefinementDeclarations = extend<
 	PropDeclarations,
@@ -41,10 +40,9 @@ export type RefinementDeclarations = extend<
 
 export const RefinementImplementations = {
 	divisor: DivisorImplementation,
-	min: MinImplementation,
-	max: MaxImplementation,
 	pattern: PatternImplementation,
 	predicate: PredicateImplementation,
+	...BoundImplementations,
 	...PropImplementations
 } as const satisfies Record<RefinementKind, unknown>
 

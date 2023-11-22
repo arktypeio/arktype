@@ -26,7 +26,18 @@ export const basisKinds = ["unit", "proto", "domain"] as const
 
 export type BasisKind = (typeof basisKinds)[number]
 
-export const closedRefinementKinds = ["divisor", "max", "min"] as const
+export const boundKinds = [
+	"min",
+	"max",
+	"minLength",
+	"maxLength",
+	"after",
+	"before"
+] as const
+
+export type BoundKind = (typeof boundKinds)[number]
+
+export const closedRefinementKinds = ["divisor", ...boundKinds] as const
 
 export type ClosedRefinementKind = (typeof closedRefinementKinds)[number]
 
