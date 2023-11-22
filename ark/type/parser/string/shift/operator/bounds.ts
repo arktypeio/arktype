@@ -1,4 +1,16 @@
-import { isKeyOf, tryParseNumber, type keySet } from "@arktype/util"
+import {
+	BaseNode,
+	type BoundKind,
+	type LimitValue,
+	type Root,
+	type Schema
+} from "@arktype/schema"
+import {
+	isKeyOf,
+	throwParseError,
+	tryParseNumber,
+	type keySet
+} from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
@@ -115,11 +127,68 @@ type shiftComparator<
 	  ? [start, unscanned]
 	  : state.error<singleEqualsMessage>
 
+export const writeUnboundableMessage = <root extends string>(
+	root: root
+): writeUnboundableMessage<root> =>
+	`Bounded expression ${root} must be a number, string, Array, or Date`
+
+export type writeUnboundableMessage<root extends string> =
+	`Bounded expression ${root} must be a number, string, Array, or Date`
+
+export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
+	`Bound kinds ${l} and ${r} are incompatible`
+
+export const writeLimitMismatchMessage = (
+	root: string,
+	limitValue: LimitValue
+) => `Limit '${limitValue}' cannot bound ${root}`
+
+export const getBoundKinds = (
+	comparator: Comparator,
+	limit: LimitValue,
+	root: Root
+): BoundKind[] => {
+	if (root.extends(BaseNode.builtins.number)) {
+		if (typeof limit !== "number") {
+			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
+		}
+		return comparator === "=="
+			? ["min", "max"]
+			: comparator[0] === ">"
+			  ? ["min"]
+			  : ["max"]
+	}
+	if (
+		root.extends(BaseNode.builtins.string) ||
+		root.extends(BaseNode.builtins.array)
+	) {
+		if (typeof limit !== "number") {
+			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
+		}
+		return comparator === "=="
+			? ["minLength", "maxLength"]
+			: comparator[0] === ">"
+			  ? ["minLength"]
+			  : ["maxLength"]
+	}
+	if (root.extends(BaseNode.builtins.date)) {
+		// allow either numeric or date limits
+		return comparator === "=="
+			? ["after", "before"]
+			: comparator[0] === ">"
+			  ? ["after"]
+			  : ["before"]
+	}
+	return throwParseError(writeUnboundableMessage(root.toString()))
+}
+
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const openLeftBoundToSchema = (leftBound: OpenLeftBound): MinSchema => ({
-	min: isDateLiteral(leftBound.limit)
+const openLeftBoundToSchema = (
+	leftBound: OpenLeftBound
+): Schema<BoundKind> => ({
+	limit: isDateLiteral(leftBound.limit)
 		? extractDateLiteralSource(leftBound.limit)
 		: leftBound.limit,
 	exclusive: leftBound.comparator.length === 1
@@ -147,12 +216,9 @@ export const parseRightBound = (
 			: s.error(writeInvalidLimitMessage(comparator, limitToken, "right")))
 	// apply the newly-parsed right bound
 	const exclusive = comparator.length === 1
-	// if the comparator is ==, both max and min will be applied
-	if (comparator[0] !== ">") {
-		s.constrainRoot("max", { limit, exclusive })
-	}
-	if (comparator[0] !== "<") {
-		s.constrainRoot("min", { limit, exclusive })
+	// if the comparator is ==, both the min and max of that pair will be applied
+	for (const kind of getBoundKinds(comparator, limit, previousRoot)) {
+		s.constrainRoot(kind, { limit, exclusive })
 	}
 	if (!s.branches.leftBound) {
 		return
@@ -196,7 +262,7 @@ export type parseRightBound<
 export const writeInvalidLimitMessage = <
 	comparator extends Comparator,
 	limit extends string | number,
-	boundKind extends BoundKind
+	boundKind extends BoundExpressionKind
 >(
 	comparator: comparator,
 	limit: limit,
@@ -209,12 +275,12 @@ export const writeInvalidLimitMessage = <
 export type writeInvalidLimitMessage<
 	comparator extends Comparator,
 	limit extends string | number,
-	boundKind extends BoundKind
+	boundKind extends BoundExpressionKind
 > = `Comparator ${comparator} must be ${boundKind extends "left"
 	? "preceded"
 	: "followed"} by a corresponding literal (was '${limit}')`
 
-export type BoundKind = "left" | "right"
+export type BoundExpressionKind = "left" | "right"
 
 export const invertedComparators = {
 	"<": ">",

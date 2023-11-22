@@ -1,8 +1,9 @@
 import { attest } from "@arktype/attest"
-import { registry, writeUnboundableMessage } from "@arktype/schema"
+import { registry } from "@arktype/schema"
 import { scope, type } from "arktype"
 import { writeInvalidPropertyKeyMessage } from "../parser/objectLiteral.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeUnboundableMessage } from "../parser/string/shift/operator/bounds.js"
 
 describe("object literal", () => {
 	it("empty", () => {

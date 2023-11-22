@@ -1,9 +1,5 @@
 import { attest } from "@arktype/attest"
-import {
-	writeIncompatibleRangeMessage,
-	writeUnboundableMessage,
-	type BoundInner
-} from "@arktype/schema"
+import type { BoundInner } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
@@ -14,7 +10,9 @@ import {
 } from "../parser/string/reduce/shared.js"
 import {
 	singleEqualsMessage,
-	writeInvalidLimitMessage
+	writeInvalidLimitMessage,
+	writeLimitMismatchMessage,
+	writeUnboundableMessage
 } from "../parser/string/shift/operator/bounds.js"
 
 export const expectedBoundsCondition = (...bounds: BoundInner[]) => ""
@@ -303,24 +301,10 @@ describe("bounds", () => {
 					it("number with left Date bound", () => {
 						//@ts-expect-error
 						attest(() => type("d'2001/01/01'<number<2"))
-							.throws(writeIncompatibleRangeMessage("date", "number"))
+							.throws(writeLimitMismatchMessage("a number", "2001/01/01"))
 							.type.errors(
 								writeInvalidLimitMessage("<", "d'2001/01/01'", "left")
 							)
-					})
-					it("Date with right number bound", () => {
-						// @ts-expect-error
-						attest(() => type("Date<2")).throwsAndHasTypeError(
-							writeInvalidLimitMessage("<", "2", "right")
-						)
-					})
-					it("Date with left number bound", () => {
-						attest(() =>
-							// @ts-expect-error
-							type("0<Date<d'1999/9/8'")
-						)
-							.throws(writeIncompatibleRangeMessage("number", "date"))
-							.type.errors(writeInvalidLimitMessage("<", "0", "left"))
 					})
 				})
 			})

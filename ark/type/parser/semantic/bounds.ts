@@ -1,15 +1,12 @@
-import type {
-	NumericallyBoundable,
-	writeUnboundableMessage
-} from "@arktype/schema"
+import type { NumericallyBoundable } from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
-import type { DateLiteral } from "../string/shift/operand/date.js"
 import type {
-	BoundKind,
+	BoundExpressionKind,
 	Comparator,
 	InvertedComparators,
 	LimitLiteral,
-	writeInvalidLimitMessage
+	writeInvalidLimitMessage,
+	writeUnboundableMessage
 } from "../string/shift/operator/bounds.js"
 import type { inferAst } from "./semantic.js"
 import type { astToString } from "./utils.js"
@@ -31,7 +28,7 @@ export type validateBound<
 	boundedAst,
 	comparator extends Comparator,
 	limit extends LimitLiteral,
-	boundKind extends BoundKind,
+	boundKind extends BoundExpressionKind,
 	$,
 	args
 > = inferAst<boundedAst, $, args> extends infer bounded
@@ -40,9 +37,8 @@ export type validateBound<
 			? validateAst<boundedAst, $, args>
 			: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
 		: bounded extends Date
-		  ? limit extends DateLiteral
-				? validateAst<boundedAst, $, args>
-				: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
+		  ? // allow numeric or date literal as a Date limit
+		    validateAst<boundedAst, $, args>
 		  : ErrorMessage<
 					writeUnboundableMessage<
 						astToString<
