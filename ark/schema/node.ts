@@ -447,12 +447,13 @@ export function parseSchema<schemaKind extends NodeKind>(
 		kind
 	] as never
 	const inner: Record<string, unknown> = {}
+	const normalizedSchema: any = implementation.normalize?.(schema) ?? schema
 	const ctx: SchemaParseContext<any> = {
 		...ctxInput,
-		schema,
+		schema: normalizedSchema,
 		cls: BaseNode
 	}
-	const normalizedSchema: any = implementation.normalize?.(schema) ?? schema
+	implementation.addContext?.(ctx)
 	const schemaEntries = entriesOf(normalizedSchema).sort((l, r) =>
 		l[0] < r[0] ? -1 : 1
 	)

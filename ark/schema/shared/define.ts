@@ -20,7 +20,7 @@ import type {
 } from "../node.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
-import type { Declaration, Node, NormalizedSchema, Schema } from "./node.js"
+import type { Declaration, Node, NormalizedSchema } from "./node.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -129,7 +129,7 @@ export type SchemaParseContextInput = {
 export type SchemaParseContext<kind extends NodeKind> = extend<
 	SchemaParseContextInput,
 	{
-		schema: Schema<kind>
+		schema: NormalizedSchema<kind>
 		cls: typeof BaseNode
 	}
 >
@@ -160,6 +160,7 @@ export type NodeKeyDefinition<
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
+	addContext?: (ctx: SchemaParseContext<d["kind"]>) => void
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (node: Node<d["kind"]>) => string
 	attach: (node: Node<d["kind"]>) => {
@@ -196,12 +197,13 @@ export function defineNode<
 export function defineNode(
 	input: NodeImplementationInput<any>
 ): UnknownNodeImplementation {
-	return Object.assign(input.keys, {
+	Object.assign(input.keys, {
 		alias: {
 			meta: true
 		},
 		description: {
 			meta: true
 		}
-	}) as never
+	})
+	return input as never
 }

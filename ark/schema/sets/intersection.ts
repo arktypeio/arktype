@@ -77,10 +77,15 @@ export type IntersectionDeclaration = declareNode<{
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	normalize: (schema) => schema,
+	addContext: (ctx) => {
+		ctx.basis =
+			ctx.schema.basis &&
+			ctx.cls.parseRootFromKinds(basisKinds, ctx.schema.basis)
+	},
 	keys: {
 		basis: {
 			// the basis has already been preparsed and added to context
-			parse: (schema, ctx) => ctx.cls.parseRootFromKinds(basisKinds, schema)
+			parse: (_, ctx) => ctx.basis
 		},
 		divisor: {
 			parse: (schema, ctx) => parseClosedRefinement("divisor", schema, ctx)
