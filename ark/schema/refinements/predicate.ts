@@ -1,9 +1,12 @@
-import { throwInternalError } from "@arktype/util"
 import { compileSerializedValue, In } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { RefinementAttachments } from "./refinement.js"
-import { defineRefinement } from "./shared.js"
+import type { withAttributes } from "../shared/declare.js"
+import type { ConstraintAttachments } from "../shared/define.js"
+import {
+	createValidBasisAssertion,
+	defineRefinement,
+	type declareRefinement
+} from "./shared.js"
 
 export type PredicateInner<predicate extends Predicate = Predicate> =
 	withAttributes<{
@@ -12,14 +15,15 @@ export type PredicateInner<predicate extends Predicate = Predicate> =
 
 export type PredicateSchema = PredicateInner | Predicate
 
-export type PredicateDeclaration = declareNode<{
+export type PredicateDeclaration = declareRefinement<{
 	kind: "predicate"
 	schema: PredicateSchema
 	inner: PredicateInner
 	intersections: {
 		predicate: "predicate" | null
 	}
-	attach: RefinementAttachments<unknown>
+	operands: unknown
+	attach: ConstraintAttachments
 }>
 
 export const PredicateImplementation = defineRefinement({
@@ -34,15 +38,14 @@ export const PredicateImplementation = defineRefinement({
 		// resulting from this intersection should also be safe.
 		predicate: () => null
 	},
+	operands: ["unknown"],
 	normalize: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
-	writeInvalidBasisMessage: (basis) =>
-		throwInternalError(`Unexpectedly failed to narrow basis ${basis}`),
 	writeDefaultDescription: (inner) =>
 		`valid according to ${inner.predicate.name}`,
-	attach: (inner) => ({
-		implicitBasis: undefined,
-		condition: `${compileSerializedValue(inner.predicate)}(${In})`
+	attach: (node) => ({
+		assertValidBasis: createValidBasisAssertion(node),
+		condition: `${compileSerializedValue(node.predicate)}(${In})`
 	})
 })
 

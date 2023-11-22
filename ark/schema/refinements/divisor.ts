@@ -1,7 +1,11 @@
 import { In } from "../io/compile.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { RefinementAttachments } from "./refinement.js"
-import { defineRefinement } from "./shared.js"
+import type { withAttributes } from "../shared/declare.js"
+import type { ConstraintAttachments } from "../shared/define.js"
+import {
+	createValidBasisAssertion,
+	defineRefinement,
+	type declareRefinement
+} from "./shared.js"
 
 export type DivisorInner = withAttributes<{
 	readonly divisor: number
@@ -9,14 +13,15 @@ export type DivisorInner = withAttributes<{
 
 export type DivisorSchema = DivisorInner | number
 
-export type DivisorDeclaration = declareNode<{
+export type DivisorDeclaration = declareRefinement<{
 	kind: "divisor"
 	schema: DivisorSchema
 	inner: DivisorInner
 	intersections: {
 		divisor: "divisor"
 	}
-	attach: RefinementAttachments<number>
+	operands: number
+	attach: ConstraintAttachments
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -39,13 +44,13 @@ export const DivisorImplementation = defineRefinement({
 			)
 		})
 	},
+	operands: ["number"],
 	normalize: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema,
-	writeInvalidBasisMessage: writeIndivisibleMessage,
 	writeDefaultDescription: (inner) =>
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
 	attach: (node) => ({
-		implicitBasis: node.cls.builtins.number,
+		assertValidBasis: createValidBasisAssertion(node),
 		condition: `${In} % ${node.divisor} === 0`
 	})
 })

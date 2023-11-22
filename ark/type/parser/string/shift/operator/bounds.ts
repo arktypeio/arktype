@@ -1,4 +1,3 @@
-import type { MinSchema } from "@arktype/schema"
 import { isKeyOf, tryParseNumber, type keySet } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
@@ -126,7 +125,6 @@ const openLeftBoundToSchema = (leftBound: OpenLeftBound): MinSchema => ({
 	exclusive: leftBound.comparator.length === 1
 })
 
-// TODO: allow numeric limits for Dates?
 export const parseRightBound = (
 	s: DynamicStateWithRoot,
 	comparator: Comparator
@@ -151,10 +149,10 @@ export const parseRightBound = (
 	const exclusive = comparator.length === 1
 	// if the comparator is ==, both max and min will be applied
 	if (comparator[0] !== ">") {
-		s.constrainRoot("max", { max: limit, exclusive })
+		s.constrainRoot("max", { limit, exclusive })
 	}
 	if (comparator[0] !== "<") {
-		s.constrainRoot("min", { min: limit, exclusive })
+		s.constrainRoot("min", { limit, exclusive })
 	}
 	if (!s.branches.leftBound) {
 		return

@@ -90,9 +90,6 @@ type BaseAttributeKeyDefinitions = {
 export type instantiateNodeImplementation<definition> = evaluate<
 	definition & {
 		keys: BaseAttributeKeyDefinitions
-		defaultableKeys: definition extends { keys: infer keys }
-			? (keyof keys | keyof BaseAttributeKeyDefinitions)[]
-			: never
 	}
 >
 

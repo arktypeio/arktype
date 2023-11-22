@@ -1,8 +1,12 @@
 import { throwParseError } from "@arktype/util"
 import { In } from "../io/compile.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { RefinementAttachments } from "./refinement.js"
-import { defineRefinement } from "./shared.js"
+import type { withAttributes } from "../shared/declare.js"
+import type { ConstraintAttachments } from "../shared/define.js"
+import {
+	createValidBasisAssertion,
+	defineRefinement,
+	type declareRefinement
+} from "./shared.js"
 
 export type PatternInner = withAttributes<{
 	readonly pattern: string
@@ -11,14 +15,15 @@ export type PatternInner = withAttributes<{
 
 export type PatternSchema = PatternInner | RegexLiteral | RegExp
 
-export type PatternDeclaration = declareNode<{
+export type PatternDeclaration = declareRefinement<{
 	kind: "pattern"
 	schema: PatternSchema
 	inner: PatternInner
 	intersections: {
 		pattern: "pattern" | null
 	}
-	attach: RefinementAttachments<string>
+	operands: string
+	attach: ConstraintAttachments
 }>
 
 export const PatternImplementation = defineRefinement({
@@ -31,6 +36,7 @@ export const PatternImplementation = defineRefinement({
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
 	},
+	operands: ["string"],
 	normalize: (schema) =>
 		typeof schema === "string"
 			? parseRegexLiteral(schema)
@@ -39,11 +45,10 @@ export const PatternImplementation = defineRefinement({
 					? { pattern: schema.source, flags: schema.flags }
 					: { pattern: schema.source }
 			  : schema,
-	writeInvalidBasisMessage: writeUnmatchableBasisMessage,
 	writeDefaultDescription: (inner) => `matched by ${inner.pattern}`,
 	attach: (node) => {
 		return {
-			implicitBasis: node.cls.builtins.string,
+			assertValidBasis: createValidBasisAssertion(node),
 			condition: `/${node.pattern}/${node.flags ?? ""}.test(${In})`
 		}
 	}

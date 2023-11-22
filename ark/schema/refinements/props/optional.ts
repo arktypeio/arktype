@@ -1,10 +1,16 @@
-import type { declareNode, withAttributes } from "../../shared/declare.js"
-import { rootKinds, type RootKind } from "../../shared/define.js"
+import type { withAttributes } from "../../shared/declare.js"
+import {
+	rootKinds,
+	type ConstraintAttachments,
+	type RootKind
+} from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Node, Schema } from "../../shared/node.js"
-import type { RefinementAttachments } from "../refinement.js"
-import { defineRefinement } from "../shared.js"
-import { writeInvalidPropsBasisMessage } from "./shared.js"
+import {
+	createValidBasisAssertion,
+	defineRefinement,
+	type declareRefinement
+} from "../shared.js"
 
 export type OptionalPropInner = withAttributes<{
 	readonly key: string | symbol
@@ -16,14 +22,15 @@ export type OptionalPropSchema = withAttributes<{
 	readonly value: Schema<RootKind>
 }>
 
-export type OptionalDeclaration = declareNode<{
+export type OptionalDeclaration = declareRefinement<{
 	kind: "optional"
 	schema: OptionalPropSchema
 	inner: OptionalPropInner
 	intersections: {
 		optional: "optional" | null
 	}
-	attach: RefinementAttachments<object>
+	operands: object
+	attach: ConstraintAttachments
 }>
 
 export const OptionalImplementation = defineRefinement({
@@ -34,6 +41,7 @@ export const OptionalImplementation = defineRefinement({
 			parse: (schema, ctx) => ctx.cls.parseRootFromKinds(rootKinds, schema)
 		}
 	},
+	operands: ["object"],
 	intersections: {
 		optional: (l, r) => {
 			if (l.key !== r.key) {
@@ -48,10 +56,9 @@ export const OptionalImplementation = defineRefinement({
 		}
 	},
 	normalize: (schema) => schema,
-	writeInvalidBasisMessage: writeInvalidPropsBasisMessage,
 	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
 	attach: (node) => ({
-		implicitBasis: node.cls.builtins.object,
+		assertValidBasis: createValidBasisAssertion(node),
 		condition: "true"
 	})
 })

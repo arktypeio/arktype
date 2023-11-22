@@ -2,7 +2,6 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
-	throwParseError,
 	type ErrorMessage,
 	type conform,
 	type extend,
@@ -12,7 +11,6 @@ import {
 import type { BasisKind, parseBasis } from "../bases/basis.js"
 import type { UnknownNode } from "../node.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
-import { getBasisName } from "../refinements/shared.js"
 import type {
 	BaseAttributes,
 	declareNode,
@@ -30,7 +28,7 @@ import {
 	type SchemaParseContext
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Implementation, Node, Schema } from "../shared/node.js"
+import type { Node, Schema } from "../shared/node.js"
 import type { SetAttachments } from "./set.js"
 
 export type IntersectionInner = withAttributes<
@@ -46,7 +44,12 @@ export type IntersectionSchema<
 > = {
 	basis?: basis
 } & refinementInputsByKind<
-	basis extends Schema<BasisKind> ? parseBasis<basis>["infer"] : unknown
+	basis extends Schema<BasisKind>
+		? basis extends Schema<BasisKind> | undefined
+			? // allow all refinement kinds for base schema
+			  any
+			: parseBasis<basis>["infer"]
+		: unknown
 > &
 	BaseAttributes
 
@@ -87,6 +90,18 @@ export const IntersectionImplementation = defineNode({
 		},
 		min: {
 			parse: (schema, ctx) => parseClosedRefinement("min", schema, ctx)
+		},
+		maxLength: {
+			parse: (schema, ctx) => parseClosedRefinement("maxLength", schema, ctx)
+		},
+		minLength: {
+			parse: (schema, ctx) => parseClosedRefinement("minLength", schema, ctx)
+		},
+		before: {
+			parse: (schema, ctx) => parseClosedRefinement("before", schema, ctx)
+		},
+		after: {
+			parse: (schema, ctx) => parseClosedRefinement("after", schema, ctx)
 		},
 		pattern: {
 			parse: (schema, ctx) => parseOpenRefinement("pattern", schema, ctx)
@@ -177,28 +192,13 @@ export const IntersectionImplementation = defineNode({
 	}
 })
 
-const assertValidBasis = (
-	refinementNode: Node<RefinementKind>,
-	basis: Node<BasisKind> | undefined
-) => {
-	if (
-		refinementNode.implicitBasis &&
-		(basis === undefined || !basis.extends(refinementNode.implicitBasis))
-	) {
-		const message = (
-			refinementNode.implementation as never as Implementation<RefinementKind>
-		).writeInvalidBasisMessage(getBasisName(basis))
-		throwParseError(message)
-	}
-}
-
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
 	input: Schema<kind>,
 	ctx: SchemaParseContext<"intersection">
 ): Node<kind> => {
 	const refinement = ctx.cls.parseSchema(kind, input) as Node<RefinementKind>
-	assertValidBasis(refinement, ctx.basis)
+	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }
 
@@ -215,11 +215,14 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 		const refinements = input
 			.map((refinement) => ctx.cls.parseSchema(kind, refinement))
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
-		assertValidBasis(refinements[0], ctx.basis)
+		// we should only need to assert validity for one, as all listed
+		// refinements should be of the same kind and therefore have the same
+		// operand requirements
+		refinements[0].assertValidBasis(ctx.basis)
 		return refinements
 	}
 	const refinement = ctx.cls.parseSchema(kind, input)
-	assertValidBasis(refinement, ctx.basis)
+	refinement.assertValidBasis(ctx.basis)
 	return [refinement]
 }
 

@@ -1,17 +1,16 @@
-import type { extend } from "@arktype/util"
+import { throwParseError, type extend } from "@arktype/util"
 import type { BasisKind } from "../bases/basis.js"
-import type { BaseNodeDeclaration } from "../shared/declare.js"
+import type { Builtins } from "../node.js"
+import type {
+	BaseNodeDeclaration,
+	validateNodeDeclaration
+} from "../shared/declare.js"
 import {
 	defineNode,
 	type NodeImplementationInput,
-	type RefinementKind,
-	type instantiateNodeImplementation
+	type RefinementKind
 } from "../shared/define.js"
 import type { Declaration, Node } from "../shared/node.js"
-
-export interface BaseRefinement {
-	implicitBasis: Node<BasisKind>
-}
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
@@ -20,17 +19,39 @@ export type RefinementImplementationInput<d extends BaseNodeDeclaration> =
 	extend<
 		NodeImplementationInput<d>,
 		{
-			writeInvalidBasisMessage: (basis: string) => string
-			attach: (node: Node<d["kind"]>) => {
-				implicitBasis: Node<BasisKind> | undefined
-			}
+			operands: (keyof Builtins)[]
 		}
 	>
 
-export function defineRefinement<
+export type RefinementOperandAssertion = (
+	basis: Node<BasisKind> | undefined
+) => void
+
+export type declareRefinement<
+	types extends validateNodeDeclaration<types, "operands"> & {
+		operands: unknown
+	}
+> = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
+
+export const createValidBasisAssertion =
+	(node: Node<RefinementKind>) => (basis: Node<BasisKind> | undefined) => {
+		const operands = (node.implementation as any).operands as (keyof Builtins)[]
+		if (
+			!operands.some((operand) => basis?.extends(node.cls.builtins[operand]))
+		) {
+			throwParseError(
+				`${node.kind} bound operand must be of type ${operands.join(
+					" or "
+				)} (was ${getBasisName(basis)})`
+			)
+		}
+	}
+
+export const defineRefinement = <
 	kind extends RefinementKind,
 	input extends RefinementImplementationInput<Declaration<kind>>
->(input: { kind: kind } & input): instantiateNodeImplementation<input>
-export function defineRefinement(input: NodeImplementationInput<any>) {
-	return defineNode(input)
+>(
+	refinementDef: { kind: kind } & input
+) => {
+	return defineNode(refinementDef as never)
 }

@@ -44,12 +44,17 @@ export type BaseNodeDeclaration = {
 	attach: Dict
 }
 
-export type declareNode<
-	types extends {
-		[k in keyof DeclarationInput<any>]: types extends {
-			kind: infer kind extends NodeKind
-		}
-			? DeclarationInput<kind>[k]
-			: never
-	} & { [k in Exclude<keyof types, keyof BaseNodeDeclaration>]?: never }
-> = types
+export type validateNodeDeclaration<types, additionalKeys = never> = {
+	[k in keyof DeclarationInput<any>]: types extends {
+		kind: infer kind extends NodeKind
+	}
+		? DeclarationInput<kind>[k]
+		: never
+} & {
+	[k in Exclude<
+		keyof types,
+		keyof BaseNodeDeclaration | additionalKeys
+	>]?: never
+}
+
+export type declareNode<types extends validateNodeDeclaration<types>> = types

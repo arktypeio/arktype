@@ -40,8 +40,6 @@ const z = new Foo({ domain: "string" }) //?
 
 // console.log(parseNumber2.description)
 
-// parseNumber2.constraints[0].implicitBasis //?
-
 // // parseNumber2
 // const parseNumber = node(
 // 	{

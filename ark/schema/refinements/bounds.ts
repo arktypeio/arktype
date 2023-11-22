@@ -1,13 +1,19 @@
 import { constructorExtends, throwParseError, type extend } from "@arktype/util"
 import { In } from "../io/compile.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { BasisKind, BoundKind } from "../shared/define.js"
+import type { Builtins } from "../node.js"
+import type { withAttributes } from "../shared/declare.js"
+import type {
+	BasisKind,
+	BoundKind,
+	ConstraintAttachments
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Attachments, Declaration, Node } from "../shared/node.js"
-import type { RefinementAttachments } from "./refinement.js"
+import type { Declaration, Node } from "../shared/node.js"
 import {
+	createValidBasisAssertion,
 	defineRefinement,
-	type RefinementImplementationInput
+	type RefinementImplementationInput,
+	type declareRefinement
 } from "./shared.js"
 
 export type BoundInner<limit extends LimitLiteral = LimitLiteral> =
@@ -25,7 +31,7 @@ export type BoundSchema<limit extends LimitLiteral = LimitLiteral> =
 export type BoundLimit = number | string
 
 export type BoundAttachments<limitKind extends LimitKind> = extend<
-	RefinementAttachments<Boundable>,
+	ConstraintAttachments,
 	{
 		comparator: RelativeComparator<limitKind>
 	}
@@ -65,14 +71,15 @@ export const getBoundKind = (basis: Node<BasisKind> | undefined) => {
 	if (basis === undefined) {
 		return throwParseError(writeUnboundableMessage("unknown"))
 	}
-	if (basis.domain === "number" || basis.domain === "string") {
-		return basis.domain
+	if (basis.domain === "number") {
+		return "numeric"
 	}
 	if (
+		basis.domain === "string" ||
 		(basis.kind === "unit" && basis.is instanceof Array) ||
 		(basis.kind === "proto" && constructorExtends(basis.proto, Array))
 	) {
-		return "array"
+		return "length"
 	}
 	if (
 		(basis.kind === "unit" && basis.is instanceof Date) ||
@@ -87,7 +94,7 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 	kind: kind
 	limitKind: LimitKind
 	writeDefaultDescription: (node: BoundNode) => string
-	createImplicitBasis: (node: BoundNode) => Attachments<kind>["implicitBasis"]
+	operands: (keyof Builtins)[]
 }) =>
 	defineRefinement({
 		// check this generic bound implementation against a concrete case
@@ -97,9 +104,9 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 			limit: {},
 			exclusive: {}
 		},
+		operands: boundDefinition.operands,
 		normalize: (schema) =>
 			typeof schema === "object" ? schema : { limit: schema },
-		writeInvalidBasisMessage: writeUnboundableMessage,
 		writeDefaultDescription: boundDefinition.writeDefaultDescription,
 		attach: (node) => {
 			const comparator = `${boundDefinition.limitKind === "lower" ? ">" : "<"}${
@@ -108,8 +115,8 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 			}` as RelativeComparator<"lower">
 			return {
 				comparator,
-				condition: `${In} ${comparator} ${node.limit}`,
-				implicitBasis: boundDefinition.createImplicitBasis(node)
+				assertValidBasis: createValidBasisAssertion(node),
+				condition: `${In} ${comparator} ${node.limit}`
 			}
 		},
 		intersections:
@@ -134,11 +141,12 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 				  } as any)
 	} satisfies RefinementImplementationInput<Declaration<"min">> as never)
 
-export type MinDeclaration = declareNode<{
+export type MinDeclaration = declareRefinement<{
 	kind: "min"
 	schema: BoundSchema<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
+	operands: number
 	intersections: {
 		min: "min"
 		max: Disjoint | null
@@ -148,16 +156,17 @@ export type MinDeclaration = declareNode<{
 export const MinImplementation = defineBound({
 	kind: "min",
 	limitKind: "lower",
+	operands: ["number"],
 	writeDefaultDescription: (node) =>
-		`${node.exclusive ? "more than" : "at least"} ${node.limit}`,
-	createImplicitBasis: (node) => node.cls.builtins.number
+		`${node.exclusive ? "more than" : "at least"} ${node.limit}`
 })
 
-export type MaxDeclaration = declareNode<{
+export type MaxDeclaration = declareRefinement<{
 	kind: "max"
 	schema: BoundSchema<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
+	operands: number
 	intersections: {
 		// TODO: Fix rightOf
 		max: "max"
@@ -167,16 +176,17 @@ export type MaxDeclaration = declareNode<{
 export const MaxImplementation = defineBound({
 	kind: "max",
 	limitKind: "upper",
+	operands: ["number"],
 	writeDefaultDescription: (node) =>
-		`${node.exclusive ? "less than" : "at most"} ${node.limit}`,
-	createImplicitBasis: (node) => node.cls.builtins.number
+		`${node.exclusive ? "less than" : "at most"} ${node.limit}`
 })
 
-export type MinLengthDeclaration = declareNode<{
+export type MinLengthDeclaration = declareRefinement<{
 	kind: "minLength"
 	schema: BoundSchema<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
+	operands: string | readonly unknown[]
 	intersections: {
 		minLength: "minLength"
 		maxLength: Disjoint | null
@@ -186,6 +196,7 @@ export type MinLengthDeclaration = declareNode<{
 export const MinLengthImplementation = defineBound({
 	kind: "minLength",
 	limitKind: "lower",
+	operands: ["string", "array"],
 	writeDefaultDescription: (node) =>
 		node.exclusive
 			? node.limit === 0
@@ -193,16 +204,15 @@ export const MinLengthImplementation = defineBound({
 				: `more than ${node.limit} in length`
 			: node.limit === 1
 			  ? "non-empty"
-			  : `at least ${node.limit} in length`,
-	// TODO: array
-	createImplicitBasis: (node) => node.cls.builtins.string
+			  : `at least ${node.limit} in length`
 })
 
-export type MaxLengthDeclaration = declareNode<{
+export type MaxLengthDeclaration = declareRefinement<{
 	kind: "maxLength"
 	schema: BoundSchema<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
+	operands: string | readonly unknown[]
 	intersections: {
 		maxLength: "maxLength"
 	}
@@ -211,19 +221,19 @@ export type MaxLengthDeclaration = declareNode<{
 export const MaxLengthImplementation = defineBound({
 	kind: "maxLength",
 	limitKind: "upper",
+	operands: ["string", "array"],
 	writeDefaultDescription: (node) =>
 		node.exclusive
 			? `less than ${node.limit} in length`
-			: `at most ${node.limit} in length`,
-	// TODO: array
-	createImplicitBasis: (node) => node.cls.builtins.string
+			: `at most ${node.limit} in length`
 })
 
-export type AfterDeclaration = declareNode<{
+export type AfterDeclaration = declareRefinement<{
 	kind: "after"
 	schema: BoundSchema<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
+	operands: Date
 	intersections: {
 		after: "after"
 	}
@@ -232,16 +242,17 @@ export type AfterDeclaration = declareNode<{
 export const AfterImplementation = defineBound({
 	kind: "before",
 	limitKind: "upper",
+	operands: ["date"],
 	writeDefaultDescription: (node) =>
-		node.exclusive ? `after ${node.limit}` : `${node.limit} or later`,
-	createImplicitBasis: (node) => node.cls.builtins.date
+		node.exclusive ? `after ${node.limit}` : `${node.limit} or later`
 })
 
-export type BeforeDeclaration = declareNode<{
+export type BeforeDeclaration = declareRefinement<{
 	kind: "before"
 	schema: BoundSchema<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
+	operands: Date
 	intersections: {
 		before: "before"
 		after: Disjoint | null
@@ -251,9 +262,9 @@ export type BeforeDeclaration = declareNode<{
 export const BeforeImplementation = defineBound({
 	kind: "before",
 	limitKind: "upper",
+	operands: ["date"],
 	writeDefaultDescription: (node) =>
-		node.exclusive ? `before ${node.limit}` : `${node.limit} or earlier`,
-	createImplicitBasis: (node) => node.cls.builtins.date
+		node.exclusive ? `before ${node.limit}` : `${node.limit} or earlier`
 })
 
 export type BoundDeclarations = {
