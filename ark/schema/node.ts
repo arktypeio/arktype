@@ -21,6 +21,7 @@ import type {
 	validateSchemaBranch
 } from "./sets/union.js"
 import { createBuiltins } from "./shared/builtins.js"
+import type { CompilationContext } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -106,17 +107,21 @@ export abstract class BaseNode<
 		Object.assign(this, attachments)
 		this.allows = new CompiledFunction(
 			In,
-			this.isConstraint()
-				? `return ${this.condition}`
-				: (this as {} as Node<SetKind>).compile({
-						successKind: "true",
-						failureKind: "false"
-				  })
+			this.compile({
+				path: [],
+				discriminants: [],
+				successKind: "true",
+				failureKind: "false"
+			})
 		)
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
+	}
+
+	compile(ctx: CompilationContext) {
+		return this.implementation.compile(this, ctx)
 	}
 
 	inCache?: UnknownNode;
@@ -205,7 +210,6 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	// TODO: add input kind, caching
 	private static intersectionCache: Record<string, UnknownNode | Disjoint> = {}
 	intersect<other extends Node>(
 		other: other

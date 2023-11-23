@@ -1,4 +1,4 @@
-import { isArray, type conform, type extend } from "@arktype/util"
+import { isArray, type conform } from "@arktype/util"
 import { In } from "../io/compile.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode, type RootKind } from "../shared/define.js"
@@ -14,7 +14,6 @@ import type {
 	validateMorphSchema,
 	validateValidator
 } from "./morph.js"
-import type { SetAttachments } from "./set.js"
 
 export type BranchKind = "morph" | ValidatorKind
 
@@ -56,12 +55,9 @@ export type UnionInner = withAttributes<{
 	readonly ordered?: true
 }>
 
-export type UnionAttachments = extend<
-	SetAttachments,
-	{
-		discriminant: Discriminant | null
-	}
->
+export type UnionAttachments = {
+	discriminant: Discriminant | null
+}
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
@@ -179,19 +175,19 @@ export const UnionImplementation = defineNode({
 	},
 	attach: (inner) => {
 		return {
-			compile: (cfg) =>
-				inner.branches
-					.map(
-						(constraint) => `if(${constraint.alias}(${In})) {
-return true
-}`
-					)
-					.join("\n") + "\nreturn false",
 			discriminant: discriminate(inner.branches)
 		}
 	},
 	writeDefaultDescription: (inner) =>
-		inner.branches.length === 0 ? "never" : inner.branches.join(" or ")
+		inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
+	compile: (node) =>
+		node.branches
+			.map(
+				(constraint) => `if(${constraint.alias}(${In})) {
+return true
+}`
+			)
+			.join("\n") + "\nreturn false"
 })
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {

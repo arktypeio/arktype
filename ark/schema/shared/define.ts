@@ -18,6 +18,7 @@ import type {
 	UnknownNode,
 	reducibleKindOf
 } from "../node.js"
+import type { CompilationContext } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
 import type { Declaration, Node, NormalizedSchema } from "./node.js"
@@ -168,6 +169,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
 	normalize: (schema: d["schema"]) => normalizeSchema<d["schema"], d["inner"]>
+	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 	reduce?: (
 		inner: d["inner"],
 		ctx: SchemaParseContext<d["kind"]>

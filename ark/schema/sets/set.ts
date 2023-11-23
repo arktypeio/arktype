@@ -1,4 +1,3 @@
-import type { CompilationConfig } from "../io/compile.js"
 import {
 	IntersectionImplementation,
 	type IntersectionDeclaration
@@ -16,8 +15,4 @@ export const SetImplementationByKind = {
 	union: UnionImplementation,
 	morph: MorphImplementation,
 	intersection: IntersectionImplementation
-}
-
-export type SetAttachments = {
-	compile: (ctx: CompilationConfig) => string
 }

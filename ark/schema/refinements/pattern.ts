@@ -1,4 +1,5 @@
 import { In } from "../io/compile.js"
+import { compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { ConstraintAttachments } from "../shared/define.js"
 import {
@@ -51,5 +52,6 @@ export const PatternImplementation = defineRefinement({
 			assertValidBasis: createValidBasisAssertion(node),
 			condition: `/${node.source}/${node.flags ?? ""}.test(${In})`
 		}
-	}
+	},
+	compile: compilePrimitive
 })

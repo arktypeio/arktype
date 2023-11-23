@@ -1,5 +1,6 @@
 import { domainOf, stringify } from "@arktype/util"
 import { In, compileSerializedValue } from "../io/compile.js"
+import { compilePrimitive } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -40,5 +41,6 @@ export const UnitImplementation = defineNode({
 		basisName: stringify(node.is),
 		domain: domainOf(node.is),
 		condition: `${In} === ${compileSerializedValue(node.is)}`
-	})
+	}),
+	compile: compilePrimitive
 })

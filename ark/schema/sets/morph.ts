@@ -4,7 +4,6 @@ import {
 	type Constructor,
 	type evaluate,
 	type exactMessageOnError,
-	type extend,
 	type listable
 } from "@arktype/util"
 import type { BasisKind, parseBasis } from "../bases/basis.js"
@@ -20,7 +19,6 @@ import type {
 	parseIntersectionSchema,
 	validateIntersectionSchema
 } from "./intersection.js"
-import type { SetAttachments } from "./set.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
@@ -60,13 +58,10 @@ export type MorphSchema = withAttributes<{
 	readonly morph: listable<Morph>
 }>
 
-export type MorphAttachments = extend<
-	SetAttachments,
-	{
-		inCache: ValidatorNode
-		outCache: ValidatorNode
-	}
->
+export type MorphAttachments = {
+	inCache: ValidatorNode
+	outCache: ValidatorNode
+}
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
@@ -140,10 +135,10 @@ export const MorphImplementation = defineNode({
 	writeDefaultDescription: (node) =>
 		`a morph from ${node.inner.in} to ${node.inner.out}`,
 	attach: (node) => ({
-		compile: () => `return true`,
 		inCache: node.inner.in,
 		outCache: node.inner.out ?? node.cls.builtins.unknown
-	})
+	}),
+	compile: () => `return true`
 })
 
 export type inferMorphOut<out> = out extends CheckResult<infer t>

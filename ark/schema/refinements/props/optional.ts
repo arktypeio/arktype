@@ -60,5 +60,6 @@ export const OptionalImplementation = defineRefinement({
 	attach: (node) => ({
 		assertValidBasis: createValidBasisAssertion(node),
 		condition: "true"
-	})
+	}),
+	compile: () => "return true"
 })

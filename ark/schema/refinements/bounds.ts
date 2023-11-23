@@ -6,6 +6,7 @@ import {
 } from "@arktype/util"
 import { In } from "../io/compile.js"
 import type { Builtins } from "../node.js"
+import { compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { BoundKind, ConstraintAttachments } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -123,7 +124,8 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 					// symmetric upper bound intersection
 					[boundDefinition.kind]: (l: BoundNode, r: BoundNode): BoundNode =>
 						l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
-			  } as any)
+			  } as any),
+		compile: compilePrimitive
 	} satisfies RefinementImplementationInput<Declaration<"min">> as never)
 
 export type MinDeclaration = declareRefinement<{

@@ -1,5 +1,6 @@
 import type { Domain } from "@arktype/util"
 import { In } from "../io/compile.js"
+import { compilePrimitive } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -49,7 +50,8 @@ export const DomainImplementation = defineNode({
 			inner.domain === "object"
 				? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
 				: `typeof ${In} === "${inner.domain}"`
-	})
+	}),
+	compile: compilePrimitive
 })
 
 const enumerableDomainDescriptions = {

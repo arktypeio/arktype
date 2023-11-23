@@ -71,5 +71,6 @@ export const RequiredImplementation = defineRefinement({
 	attach: (node) => ({
 		assertValidBasis: createValidBasisAssertion(node),
 		condition: "true"
-	})
+	}),
+	compile: (node, ctx) => `return true`
 })

@@ -4,7 +4,6 @@ import {
 	throwInternalError,
 	type ErrorMessage,
 	type conform,
-	type extend,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -29,7 +28,6 @@ import {
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Node, Schema } from "../shared/node.js"
-import type { SetAttachments } from "./set.js"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {
@@ -55,13 +53,10 @@ export type IntersectionSchema<
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
 
-export type IntersectionAttachments = extend<
-	SetAttachments,
-	{
-		constraints: ConstraintSet
-		refinements: readonly Node<RefinementKind>[]
-	}
->
+export type IntersectionAttachments = {
+	constraints: ConstraintSet
+	refinements: readonly Node<RefinementKind>[]
+}
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
@@ -167,15 +162,7 @@ export const IntersectionImplementation = defineNode({
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
 			constraints: [],
-			refinements: [],
-			compile: (cfg) =>
-				attachments.constraints
-					.map(
-						(constraint) => `if(!(${constraint.condition})) {
-	return false
-}`
-					)
-					.join("\n") + "\nreturn true"
+			refinements: []
 		}
 		for (const [k, v] of node.entries) {
 			if (k === "basis") {
@@ -190,6 +177,14 @@ export const IntersectionImplementation = defineNode({
 		}
 		return attachments
 	},
+	compile: (node, state) =>
+		node.constraints
+			.map(
+				(constraint) => `if(!(${constraint.condition})) {
+return false
+}`
+			)
+			.join("\n") + "\nreturn true",
 	writeDefaultDescription: (node) => {
 		return node.constraints.length === 0
 			? "an unknown value"

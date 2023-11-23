@@ -6,6 +6,7 @@ import {
 	type Constructor
 } from "@arktype/util"
 import { In, compileSerializedValue } from "../io/compile.js"
+import { compilePrimitive } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defaultInnerKeySerializer, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -69,5 +70,6 @@ export const ProtoImplementation = defineNode({
 		condition: `${In} instanceof ${
 			objectKindOf(node.proto) ?? compileSerializedValue(node.proto)
 		}`
-	})
+	}),
+	compile: compilePrimitive
 })
