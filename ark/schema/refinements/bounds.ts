@@ -80,6 +80,7 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 		// check this generic bound implementation against a concrete case
 		// ("min"), then cast it to the expected parameterized definition
 		kind: boundDefinition.kind as "min",
+		collapseKey: "limit",
 		keys: {
 			limit: {},
 			exclusive: {}

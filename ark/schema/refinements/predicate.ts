@@ -28,6 +28,7 @@ export type PredicateDeclaration = declareRefinement<{
 
 export const PredicateImplementation = defineRefinement({
 	kind: "predicate",
+	collapseKey: "predicate",
 	keys: {
 		predicate: {}
 	},

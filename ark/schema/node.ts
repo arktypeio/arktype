@@ -102,7 +102,6 @@ export abstract class BaseNode<
 			}
 		}
 		const attachments = this.implementation.attach(this as never)
-		// important this is last as writeDefaultDescription could rely on attached
 		Object.assign(this, attachments)
 		this.allows = new CompiledFunction(
 			In,
@@ -113,6 +112,7 @@ export abstract class BaseNode<
 						failureKind: "false"
 				  })
 		)
+		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
@@ -275,7 +275,7 @@ export type Builtins = ReturnType<typeof createBuiltins>
 export type NodeParser = {
 	<const branches extends readonly unknown[]>(
 		schema: {
-			union: {
+			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i]>
 			}
 		} & UnionSchema
@@ -292,7 +292,7 @@ const parseBranches: NodeParser = (...branches) =>
 		"union",
 		(branches.length === 1 &&
 		hasDomain(branches[0], "object") &&
-		"union" in branches[0]
+		"branches" in branches[0]
 			? branches[0]
 			: branches) as never
 	) as never
@@ -310,14 +310,14 @@ const parseUnits: UnitsParser = (...values) => {
 			uniqueValues.push(value)
 		}
 	}
-	const union = uniqueValues.map((unit) =>
+	const branches = uniqueValues.map((unit) =>
 		parsePrereduced("unit", { is: unit })
 	)
-	if (union.length === 1) {
-		return union[0]
+	if (branches.length === 1) {
+		return branches[0]
 	}
 	return parsePrereduced("union", {
-		union
+		branches
 	}) as never
 }
 
@@ -342,8 +342,15 @@ export class RootNode<
 	declare infer: t;
 	declare [inferred]: t
 
-	readonly branches: readonly Node<BranchKind>[] =
-		this.kind === "union" ? (this as any).union : [this]
+	// import we only declare this, otherwise it would reinitialize a union's branches to undefined
+	declare readonly branches: readonly Node<BranchKind>[]
+
+	protected constructor(attachments: BaseAttachments<kind>) {
+		super(attachments)
+		// in a union, branches will have already been assigned from inner
+		// otherwise, initialize it to a singleton array containing the current branch node
+		this.branches ??= [this as never]
+	}
 
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,
@@ -353,7 +360,7 @@ export class RootNode<
 			const refinement = parseSchema(kind, schema as never) as any
 			return branch.and(refinement)
 		})
-		return parseSchema("union", { union: constrainedBranches }) as never
+		return parseSchema("union", { branches: constrainedBranches }) as never
 	}
 
 	keyof() {
@@ -498,18 +505,21 @@ export function parseSchema<schemaKind extends NodeKind>(
 	}
 	const innerEntries = entriesOf(inner)
 	let collapsibleJson = json
-	if (innerEntries.length === 1 && innerEntries[0][0] === kind) {
-		collapsibleJson = json[kind] as never
+	if (
+		innerEntries.length === 1 &&
+		innerEntries[0][0] === implementation.collapseKey
+	) {
+		collapsibleJson = json[implementation.collapseKey] as never
 		if (hasDomain(collapsibleJson, "object")) {
 			json = collapsibleJson
 			typeJson = collapsibleJson
 		}
 	}
-	const id = JSON.stringify(json)
+	const id = kind + JSON.stringify(json)
 	if (id in nodeCache) {
 		return nodeCache[id] as never
 	}
-	const typeId = JSON.stringify(typeJson)
+	const typeId = kind + JSON.stringify(typeJson)
 	if (
 		BaseNode.isInitialized &&
 		BaseNode.builtins.unknownUnion.typeId === typeId
@@ -545,7 +555,7 @@ function rootKindOfSchema(schema: unknown): RootKind {
 			// otherwise, error at end of function
 		} else if ("morph" in schema) {
 			return "morph"
-		} else if ("union" in schema || isArray(schema)) {
+		} else if ("branches" in schema || isArray(schema)) {
 			return "union"
 		} else {
 			return "intersection"

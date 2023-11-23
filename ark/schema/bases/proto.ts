@@ -35,6 +35,7 @@ export type ProtoDeclaration = declareNode<{
 
 export const ProtoImplementation = defineNode({
 	kind: "proto",
+	collapseKey: "proto",
 	keys: {
 		proto: {
 			serialize: (constructor) =>

@@ -46,13 +46,13 @@ export type UnionSchema<
 	branches extends readonly BranchSchema[] = readonly BranchSchema[]
 > =
 	| withAttributes<{
-			readonly union: branches
+			readonly branches: branches
 			readonly ordered?: true
 	  }>
 	| branches
 
 export type UnionInner = withAttributes<{
-	readonly union: readonly BranchNode[]
+	readonly branches: readonly BranchNode[]
 	readonly ordered?: true
 }>
 
@@ -80,23 +80,19 @@ const intersectBranch = (
 	l: Node<"union">,
 	r: BranchNode
 ): Disjoint | UnionInner => {
-	const union = l.ordered
-		? l.union.flatMap((branch) => {
-				const branchResult = branch.intersect(r)
-				return branchResult instanceof Disjoint ? [] : branchResult
-		  })
-		: intersectBranches(l.union, [r])
-	if (union instanceof Disjoint) {
-		return union
+	const branches = intersectBranches(l.branches, [r])
+	if (branches instanceof Disjoint) {
+		return branches
 	}
-	return l.ordered ? { union, ordered: true } : { union }
+	return l.ordered ? { branches, ordered: true } : { branches }
 }
 
 export const UnionImplementation = defineNode({
 	kind: "union",
+	collapseKey: "branches",
 	keys: {
 		ordered: {},
-		union: {
+		branches: {
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
 					ctx.cls.parseRootFromKinds(
@@ -114,14 +110,14 @@ export const UnionImplementation = defineNode({
 	intersections: {
 		union: (l, r) => {
 			if (
-				(l.union.length === 0 || r.union.length === 0) &&
-				l.union.length !== r.union.length
+				(l.branches.length === 0 || r.branches.length === 0) &&
+				l.branches.length !== r.branches.length
 			) {
 				// if exactly one operand is never, we can use it to discriminate based on presence
 				return Disjoint.from(
 					"presence",
-					l.union.length !== 0,
-					r.union.length !== 0
+					l.branches.length !== 0,
+					r.branches.length !== 0
 				)
 			}
 			let resultBranches: readonly BranchNode[] | Disjoint
@@ -129,73 +125,73 @@ export const UnionImplementation = defineNode({
 				if (r.ordered) {
 					return Disjoint.from("indiscriminableMorphs", l, r)
 				}
-				resultBranches = intersectBranches(r.union, l.union)
+				resultBranches = intersectBranches(r.branches, l.branches)
 				if (resultBranches instanceof Disjoint) {
 					resultBranches.invert()
 				}
 			} else {
-				resultBranches = intersectBranches(l.union, r.union)
+				resultBranches = intersectBranches(l.branches, r.branches)
 			}
 			if (resultBranches instanceof Disjoint) {
 				return resultBranches
 			}
 			return l.ordered || r.ordered
 				? {
-						union: resultBranches,
+						branches: resultBranches,
 						ordered: true
 				  }
-				: { union: resultBranches }
+				: { branches: resultBranches }
 		},
 		morph: intersectBranch,
 		intersection: intersectBranch,
 		default: (l, r) => {
-			const union: BranchNode[] = []
-			for (const branch of l.union) {
+			const branches: BranchNode[] = []
+			for (const branch of l.branches) {
 				const branchResult = branch.intersect(r)
 				if (!(branchResult instanceof Disjoint)) {
-					union.push(branchResult)
+					branches.push(branchResult)
 				}
 			}
-			return union.length === 0
-				? Disjoint.from("union", l.union, [r])
+			return branches.length === 0
+				? Disjoint.from("union", l.branches, [r])
 				: l.ordered
 				  ? {
-							union,
+							branches,
 							ordered: true
 				    }
-				  : { union }
+				  : { branches }
 		}
 	},
-	normalize: (schema) => (isArray(schema) ? { union: schema } : schema),
+	normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
 	reduce: (inner, ctx) => {
 		const reducedBranches = reduceBranches(inner)
 		if (reducedBranches.length === 1) {
 			// TODO: description?
 			return reducedBranches[0]
 		}
-		if (reducedBranches.length !== inner.union.length) {
+		if (reducedBranches.length !== inner.branches.length) {
 			return
 		}
 		return ctx.cls.parsePrereduced("union", {
 			...inner,
-			union: reducedBranches
+			branches: reducedBranches
 		})
 	},
 	attach: (inner) => {
 		return {
 			compile: (cfg) =>
-				inner.union
+				inner.branches
 					.map(
 						(constraint) => `if(${constraint.alias}(${In})) {
 return true
 }`
 					)
 					.join("\n") + "\nreturn false",
-			discriminant: discriminate(inner.union)
+			discriminant: discriminate(inner.branches)
 		}
 	},
 	writeDefaultDescription: (inner) =>
-		inner.union.length === 0 ? "never" : inner.union.join(" or ")
+		inner.branches.length === 0 ? "never" : inner.branches.join(" or ")
 })
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
@@ -338,7 +334,7 @@ export const intersectBranches = (
 		: resultBranches
 }
 
-export const reduceBranches = ({ union, ordered }: UnionInner) => {
+export const reduceBranches = ({ branches: union, ordered }: UnionInner) => {
 	if (union.length < 2) {
 		return union
 	}

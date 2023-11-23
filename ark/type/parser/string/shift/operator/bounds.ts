@@ -1,5 +1,5 @@
 import {
-	BaseNode,
+	builtins,
 	type BoundKind,
 	type LimitValue,
 	type Root,
@@ -148,7 +148,7 @@ export const getBoundKinds = (
 	limit: LimitValue,
 	root: Root
 ): BoundKind[] => {
-	if (root.extends(BaseNode.builtins.number)) {
+	if (root.extends(builtins.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
 		}
@@ -158,10 +158,7 @@ export const getBoundKinds = (
 			  ? ["min"]
 			  : ["max"]
 	}
-	if (
-		root.extends(BaseNode.builtins.string) ||
-		root.extends(BaseNode.builtins.array)
-	) {
+	if (root.extends(builtins.string) || root.extends(builtins.array)) {
 		if (typeof limit !== "number") {
 			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
 		}
@@ -171,7 +168,7 @@ export const getBoundKinds = (
 			  ? ["minLength"]
 			  : ["maxLength"]
 	}
-	if (root.extends(BaseNode.builtins.date)) {
+	if (root.extends(builtins.date)) {
 		// allow either numeric or date limits
 		return comparator === "=="
 			? ["after", "before"]

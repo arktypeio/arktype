@@ -160,6 +160,7 @@ export type NodeKeyDefinition<
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
+	collapseKey?: keyof d["inner"]
 	addContext?: (ctx: SchemaParseContext<d["kind"]>) => void
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (node: Node<d["kind"]>) => string

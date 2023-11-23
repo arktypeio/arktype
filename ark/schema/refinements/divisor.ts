@@ -34,6 +34,7 @@ export type writeIndivisibleMessage<root extends string> =
 
 export const DivisorImplementation = defineRefinement({
 	kind: "divisor",
+	collapseKey: "divisor",
 	keys: {
 		divisor: {}
 	},

@@ -6,13 +6,13 @@ import type { Disjoint } from "../shared/disjoint.js"
 
 describe("intersections", () => {
 	it("root type assignment", () => {
-		const t = node({ basis: "string", pattern: "/.*/" })
+		const t = node({ basis: "string", pattern: ".*" })
 		attest<RootNode<"intersection", string>>(t)
 		attest(t.json).snap({ basis: "string", pattern: [".*"] })
 		// previously had issues with a union complexity error when assigning to Root | undefined
 		const root: Node<RootKind> | undefined = node({
 			basis: "string",
-			pattern: "/.*/"
+			pattern: ".*"
 		})
 	})
 	it("multiple constraints", () => {
@@ -30,7 +30,7 @@ describe("intersections", () => {
 		attest(result.json).snap({
 			basis: "number",
 			divisor: 15,
-			min: { min: 5, boundKind: "number" }
+			min: 5
 		})
 	})
 	it("union", () => {
@@ -142,11 +142,11 @@ describe("intersections", () => {
 	})
 	it("doesn't normalize ordered unions", () => {
 		const l = node({
-			union: ["string", "number"],
+			branches: ["string", "number"],
 			ordered: true
 		})
 		const r = node({
-			union: ["number", "string"],
+			branches: ["number", "string"],
 			ordered: true
 		})
 		attest(l.equals(r)).equals(false)
@@ -155,14 +155,15 @@ describe("intersections", () => {
 		const l = parseSchema("divisor", 5)
 		const r = parseSchema("max", 100)
 		const result = l.intersect(r)
+		attest<null>(result).equals(null)
 	})
 	it("possibly disjoint refinements", () => {
 		const l = parseSchema("min", 2)
 		const r = parseSchema("max", 1)
 		const lrResult = l.intersect(r)
-		attest<Disjoint | null>(lrResult).snap()
+		attest<Disjoint | null>(lrResult)
 		const rlResult = r.intersect(l)
-		attest<Disjoint | null>(rlResult).snap()
+		attest<Disjoint | null>(rlResult)
 	})
 	it("doesn't equate optional and required props", () => {
 		const l = parseSchema("required", { key: "a", value: "number" })
