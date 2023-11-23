@@ -27,7 +27,7 @@ class Registry {
 			variableName = `${baseName}${suffix++}`
 		}
 		this[variableName] = value
-		return this.reference(variableName)
+		return variableName
 	}
 
 	reference = (key: string) => `$ark.${key}` as const

@@ -10,6 +10,7 @@ import {
 import type { BasisKind, parseBasis } from "../bases/basis.js"
 import type { UnknownNode } from "../node.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
+import { In } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	declareNode,
@@ -177,14 +178,12 @@ export const IntersectionImplementation = defineNode({
 		}
 		return attachments
 	},
-	compile: (node, state) =>
+	compile: (node, ctx) =>
 		node.constraints
-			.map(
-				(constraint) => `if(!(${constraint.condition})) {
-return false
-}`
-			)
-			.join("\n") + "\nreturn true",
+			.map((constraint) => `$ark.${constraint.compile(ctx).alias}(${In})`)
+			.join(" && "),
+	// node.constraints.map((constraint) => constraint.compile(ctx)).join("\n") +
+	// "\nreturn true",
 	writeDefaultDescription: (node) => {
 		return node.constraints.length === 0
 			? "an unknown value"

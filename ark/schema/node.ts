@@ -82,8 +82,9 @@ export abstract class BaseNode<
 		this.id in this.referencesById
 			? this.referencesById
 			: { ...this.referencesById, [this.id]: this }
+	readonly alias: string = $ark.register(this)
+	readonly reference: string = `$ark.${this.alias}`
 	readonly allows: (data: unknown) => data is t
-	readonly alias: string = $ark.register(this, this.inner.alias)
 	readonly description: string
 
 	protected constructor(baseAttachments: BaseAttachments<kind>) {
@@ -105,23 +106,29 @@ export abstract class BaseNode<
 		}
 		const attachments = this.implementation.attach(this as never)
 		Object.assign(this, attachments)
-		this.allows = new CompiledFunction(
-			In,
-			this.compile({
-				path: [],
-				discriminants: [],
-				successKind: "true",
-				failureKind: "false"
-			})
-		)
+		this.allows = this.compile().fn as never
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
 	}
 
-	compile(ctx: CompilationContext) {
-		return this.implementation.compile(this, ctx)
+	// TODO: Cache
+	compile(ctx: Partial<CompilationContext> = {}) {
+		const body = this.implementation.compile(this as never, {
+			path: [],
+			discriminants: [],
+			successKind: "true",
+			failureKind: "false",
+			...ctx
+		})
+		const fn = new CompiledFunction(In, body)
+		const alias = $ark.register(fn)
+		return {
+			alias,
+			fn,
+			body
+		}
 	}
 
 	inCache?: UnknownNode;

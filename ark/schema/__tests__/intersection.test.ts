@@ -164,6 +164,25 @@ describe("intersections", () => {
 		const r = parseSchema("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
+	it("compiles true/false", () => {
+		const n = node({
+			basis: "number",
+			divisor: 3,
+			min: 5
+		})
+		attest(n.compile().fn).snap("(function anonymous)")
+	})
+	it("compiles problems", () => {
+		const n = node({
+			basis: "number",
+			divisor: 3,
+			min: 5
+		})
+		const result = n.compile({ failureKind: "problems" })
+		attest(result.body).snap(
+			"$ark.anonymous263($arkRoot) && $ark.anonymous264($arkRoot) && $ark.anonymous265($arkRoot)"
+		)
+	})
 	// TODO:
 	// it("strict intersection", () => {
 	// 	const T = type(

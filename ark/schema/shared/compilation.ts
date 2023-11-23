@@ -1,3 +1,5 @@
+import type { arraySubclassToReadonly } from "@arktype/util"
+import { registry } from "../io/registry.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { NodeKind, SetKind } from "./define.js"
@@ -56,6 +58,78 @@ export const compilePrimitive = (
 }`
 }
 
+export class ArkTypeError extends TypeError {
+	override cause: Problems
+
+	constructor(problems: Problems) {
+		super(`${problems}`)
+		this.cause = problems
+	}
+}
+
+class ProblemsArray extends Array<Problem> {
+	byPath: Record<string, Problem> = {}
+	count = 0
+
+	add(problem: Problem) {
+		const pathKey = `${problem.path}`
+		const existing = this.byPath[pathKey]
+		if (existing) {
+			// if (existing.hasCode("intersection")) {
+			// 	existing.rule.push(problem)
+			// } else {
+			// 	const problemIntersection = new ProblemIntersection(
+			// 		[existing, problem],
+			// 		problem.data,
+			// 		problem.path
+			// 	)
+			// 	const existingIndex = this.indexOf(existing)
+			// 	// If existing is found (which it always should be unless this was externally mutated),
+			// 	// replace it with the new problem intersection. In case it isn't for whatever reason,
+			// 	// just append the intersection.
+			// 	this[existingIndex === -1 ? this.length : existingIndex] =
+			// 		problemIntersection
+			// 	this.byPath[pathKey] = problemIntersection
+			// }
+		} else {
+			this.byPath[pathKey] = problem
+			this.push(problem)
+		}
+		this.count++
+		return problem
+	}
+
+	get summary() {
+		return this.toString()
+	}
+
+	override toString() {
+		return this.join("\n")
+	}
+
+	throw(): never {
+		throw new ArkTypeError(this)
+	}
+}
+
+export const Problems: new () => Problems = ProblemsArray
+
+export type Problems = arraySubclassToReadonly<ProblemsArray>
+
+const problemsReference = registry().register(Problems, "problems")
+
 const compileProblem = (node: Node<PrimitiveKind>, ctx: CompilationContext) => {
-	return "return false"
+	return `problems ??= new ${problemsReference}()
+problems.add({
+    path: ${JSON.stringify(ctx.path)},
+    node: ${node.reference},
+    was: ${In}
+})
+`
+}
+
+export type Problem = {
+	path: string[]
+	was: unknown
+	node: Node<PrimitiveKind>
 }

@@ -10,7 +10,6 @@
 		"composite": true,
 		"declarationMap": true,
 		"verbatimModuleSyntax": true,
-		"isolatedModules": true,
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
 		"exactOptionalPropertyTypes": true,
