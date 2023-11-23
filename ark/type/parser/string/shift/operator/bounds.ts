@@ -224,7 +224,15 @@ export const parseRightBound = (
 	if (!isKeyOf(comparator, maxComparators)) {
 		return s.error(writeUnpairableComparatorMessage(comparator))
 	}
-	s.constrainRoot("min", openLeftBoundToSchema(s.branches.leftBound))
+	const lowerBoundKind = getBoundKinds(
+		s.branches.leftBound.comparator,
+		s.branches.leftBound.limit,
+		previousRoot
+	)
+	s.constrainRoot(
+		lowerBoundKind[0],
+		openLeftBoundToSchema(s.branches.leftBound)
+	)
 	delete s.branches.leftBound
 }
 

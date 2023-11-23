@@ -12,6 +12,7 @@ import {
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
 import { In } from "./io/compile.js"
 import { arkKind, isNode, registry } from "./io/registry.js"
+import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import type {
 	BranchKind,
@@ -211,7 +212,7 @@ export abstract class BaseNode<
 	): intersectionOf<kind, other["kind"]>
 	intersect(other: UnknownNode): UnknownNode | Disjoint | null {
 		const cacheKey = `${this.typeId}&${other.typeId}`
-		if (BaseNode.intersectionCache[cacheKey]) {
+		if (BaseNode.intersectionCache[cacheKey] !== undefined) {
 			return BaseNode.intersectionCache[cacheKey]
 		}
 		const closedResult = this.intersectClosed(other as never)
@@ -224,12 +225,21 @@ export abstract class BaseNode<
 				closedResult instanceof Disjoint ? closedResult.invert() : closedResult
 			return closedResult
 		}
-		if (!this.isConstraint() || !other.isConstraint()) {
+		if (this.isSet() || other.isSet()) {
 			return throwInternalError(
 				`Unexpected null intersection between non-constraints ${this.kind} and ${other.kind}`
 			)
 		}
-		return null
+		// if either constraint is a basis or both don't require a basis (i.e.
+		// are predicates), it can form an intersection
+		return this.isBasis() ||
+			other.isBasis() ||
+			(this.kind === "predicate" && other.kind === "predicate")
+			? parseSchema(
+					"intersection",
+					unflattenConstraints([this as never, other])
+			  )
+			: null
 	}
 
 	intersectClosed<other extends Node>(
@@ -356,11 +366,8 @@ export class RootNode<
 		kind: refinementKind,
 		schema: Schema<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
-		const constrainedBranches = this.branches.map((branch) => {
-			const refinement = parseSchema(kind, schema as never) as any
-			return branch.and(refinement)
-		})
-		return parseSchema("union", { branches: constrainedBranches }) as never
+		const refinement = parseSchema(kind, schema)
+		return this.and(refinement) as never
 	}
 
 	keyof() {

@@ -1,19 +1,14 @@
 import { attest } from "@arktype/attest"
-import { node, type Node, type RootKind } from "@arktype/schema"
+import { node } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 import { parseSchema, type RootNode } from "../node.js"
 import type { Disjoint } from "../shared/disjoint.js"
 
 describe("intersections", () => {
-	it("root type assignment", () => {
+	it("parse pattern", () => {
 		const t = node({ basis: "string", pattern: ".*" })
 		attest<RootNode<"intersection", string>>(t)
 		attest(t.json).snap({ basis: "string", pattern: [".*"] })
-		// previously had issues with a union complexity error when assigning to Root | undefined
-		const root: Node<RootKind> | undefined = node({
-			basis: "string",
-			pattern: ".*"
-		})
 	})
 	it("multiple constraints", () => {
 		const l = node({
@@ -26,7 +21,6 @@ describe("intersections", () => {
 			divisor: 5
 		})
 		const result = l.and(r)
-		// TODO: should boundKind be here? How to instantiate refinements?
 		attest(result.json).snap({
 			basis: "number",
 			divisor: 15,

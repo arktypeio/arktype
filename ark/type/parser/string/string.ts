@@ -1,8 +1,11 @@
 import type { Root } from "@arktype/schema"
-import { throwParseError, type ErrorMessage } from "@arktype/util"
+import {
+	throwInternalError,
+	throwParseError,
+	type ErrorMessage
+} from "@arktype/util"
 import type { ParseContext } from "../../scope.js"
 import type { inferAst } from "../semantic/semantic.js"
-import { writeUnsatisfiableExpressionError } from "../semantic/validate.js"
 import { DynamicState, type DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
 import type { StaticState, state } from "./reduce/static.js"
@@ -48,15 +51,17 @@ export const fullStringParse = (def: string, ctx: ParseContext) => {
 	const s = new DynamicState(def, ctx)
 	parseOperand(s)
 	const result = parseUntilFinalizer(s).root
+	if (!result) {
+		return throwInternalError(
+			`Root was unexpectedly unset after parsing string '${def}'`
+		)
+	}
 	s.scanner.shiftUntilNonWhitespace()
 	if (s.scanner.lookahead) {
 		// throw a parse error if non-whitespace characters made it here without being parsed
 		throwParseError(writeUnexpectedCharacterMessage(s.scanner.lookahead))
 	}
-	// TODO: would this ever happen?
-	return result.isNever()
-		? throwParseError(writeUnsatisfiableExpressionError(def))
-		: result
+	return result
 }
 
 type fullStringParse<def extends string, $, args> = extractFinalizedResult<
