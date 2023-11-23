@@ -2,7 +2,7 @@
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
-		"source.fixAll",
+		"source.fixAll.eslint",
 		"source.organizeImports"
 	],
 	"eslint.codeActionsOnSave.rules": [

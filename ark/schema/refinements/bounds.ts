@@ -8,7 +8,10 @@ import { In } from "../io/compile.js"
 import type { Builtins } from "../node.js"
 import { compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
-import type { BoundKind, ConstraintAttachments } from "../shared/define.js"
+import type {
+	BoundKind,
+	PrimitiveConstraintAttachments
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Declaration, Node } from "../shared/node.js"
 import {
@@ -30,7 +33,7 @@ export type BoundSchema<limit extends LimitValue = LimitValue> =
 	| BoundInner<limit>
 
 export type BoundAttachments<limitKind extends LimitKind> = extend<
-	ConstraintAttachments,
+	PrimitiveConstraintAttachments,
 	{
 		comparator: RelativeComparator<limitKind>
 	}
@@ -57,6 +60,13 @@ export type RelativeComparator<kind extends LimitKind = LimitKind> = {
 	lower: ">" | ">="
 	upper: "<" | "<="
 }[kind]
+
+export const negatedComparators = {
+	"<": ">=",
+	"<=": ">",
+	">": "<=",
+	">=": "<"
+} as const satisfies Record<RelativeComparator, RelativeComparator>
 
 export const boundKindPairsByLower = {
 	min: "max",
@@ -100,7 +110,8 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 			return {
 				comparator,
 				assertValidBasis: createValidBasisAssertion(node),
-				condition: `${In} ${comparator} ${node.limit}`
+				condition: `${In} ${comparator} ${node.limit}`,
+				negatedCondition: `${In} ${negatedComparators[comparator]} ${node.limit}`
 			}
 		},
 		intersections: isKeyOf(boundDefinition.kind, boundKindPairsByLower)

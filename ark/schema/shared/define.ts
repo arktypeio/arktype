@@ -101,8 +101,9 @@ export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
 	>
 }
 
-export type ConstraintAttachments = {
+export type PrimitiveConstraintAttachments = {
 	readonly condition: string
+	readonly negatedCondition: string
 }
 
 export const defaultInnerKeySerializer = (v: unknown) => {

@@ -2,7 +2,7 @@ import { compileSerializedValue, In } from "../io/compile.js"
 import type { TraversalState } from "../io/traverse.js"
 import { compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
-import type { ConstraintAttachments } from "../shared/define.js"
+import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -24,7 +24,7 @@ export type PredicateDeclaration = declareRefinement<{
 		predicate: "predicate" | null
 	}
 	operands: unknown
-	attach: ConstraintAttachments
+	attach: PrimitiveConstraintAttachments
 }>
 
 export const PredicateImplementation = defineRefinement({
@@ -47,7 +47,10 @@ export const PredicateImplementation = defineRefinement({
 		`valid according to ${inner.predicate.name}`,
 	attach: (node) => ({
 		assertValidBasis: createValidBasisAssertion(node),
-		condition: `${compileSerializedValue(node.predicate)}(${In})`
+		condition: `${compileSerializedValue(node.predicate)}(${In})`,
+		negatedCondition: `${compileSerializedValue(
+			node.predicate
+		)}(${In}) === false`
 	}),
 	compile: compilePrimitive
 })

@@ -7,14 +7,12 @@ import type { Node } from "./node.js"
 
 export const In = "$arkRoot"
 
-export type CompiledSuccessKind = "true" | "in" | "out"
-export type CompiledFailureKind = "false" | "problems"
+export type OnFail = "true" | "error"
 
 export type CompilationContext = {
 	path: string[]
 	discriminants: Discriminant[]
-	successKind: CompiledSuccessKind
-	failureKind: CompiledFailureKind
+	onFail: OnFail
 }
 
 export type CompositeKind = SetKind | PropKind
@@ -49,12 +47,10 @@ export const compilePrimitive = (
 		// (or an exact value, implying a domain), we don't need to recheck it
 		return ""
 	}
-	return `if (!(${node.condition})) {
-        ${
-					ctx.failureKind === "false"
-						? "return false"
-						: compileProblem(node, ctx)
-				}
+	return ctx.onFail === "true"
+		? node.negatedCondition
+		: `if (${node.negatedCondition}) {
+	return ${compilePrimitiveProblem(node, ctx)}
 }`
 }
 
@@ -118,18 +114,19 @@ export type Problems = arraySubclassToReadonly<ProblemsArray>
 
 const problemsReference = registry().register(Problems, "problems")
 
-const compileProblem = (node: Node<PrimitiveKind>, ctx: CompilationContext) => {
-	return `problems ??= new ${problemsReference}()
-problems.add({
-    path: ${JSON.stringify(ctx.path)},
-    node: ${node.reference},
-    was: ${In}
-})
-`
+const compilePrimitiveProblem = (
+	node: Node<PrimitiveKind>,
+	ctx: CompilationContext
+) => {
+	return `[
+		{
+			path: ${JSON.stringify(ctx.path)},
+			message: \`Must be ${node.description} (was \${${In}})\`
+		}
+	]`
 }
 
 export type Problem = {
 	path: string[]
-	was: unknown
-	node: Node<PrimitiveKind>
+	message: string
 }

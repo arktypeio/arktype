@@ -64,12 +64,16 @@ export const ProtoImplementation = defineNode({
 			? objectKindDescriptions[knownObjectKind]
 			: `an instance of ${node.proto.name}`
 	},
-	attach: (node) => ({
-		basisName: `${node.proto.name}`,
-		domain: "object",
-		condition: `${In} instanceof ${
+	attach: (node) => {
+		const condition = `${In} instanceof ${
 			objectKindOf(node.proto) ?? compileSerializedValue(node.proto)
 		}`
-	}),
+		return {
+			basisName: `${node.proto.name}`,
+			domain: "object",
+			condition,
+			negatedCondition: `${condition} === false`
+		}
+	},
 	compile: compilePrimitive
 })

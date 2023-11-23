@@ -37,10 +37,14 @@ export const UnitImplementation = defineNode({
 	},
 	writeDefaultDescription: (inner) => stringify(inner.is),
 	normalize: (schema) => schema,
-	attach: (node) => ({
-		basisName: stringify(node.is),
-		domain: domainOf(node.is),
-		condition: `${In} === ${compileSerializedValue(node.is)}`
-	}),
+	attach: (node) => {
+		const serializedValue = compileSerializedValue(node.is)
+		return {
+			basisName: stringify(node.is),
+			domain: domainOf(node.is),
+			condition: `${In} === ${serializedValue}`,
+			negatedCondition: `${In} !== ${serializedValue}`
+		}
+	},
 	compile: compilePrimitive
 })

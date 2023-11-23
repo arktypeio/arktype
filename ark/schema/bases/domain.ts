@@ -49,7 +49,11 @@ export const DomainImplementation = defineNode({
 		condition:
 			inner.domain === "object"
 				? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-				: `typeof ${In} === "${inner.domain}"`
+				: `typeof ${In} === "${inner.domain}"`,
+		negatedCondition:
+			inner.domain === "object"
+				? `((typeof ${In} !== "object" || ${In} === null) && typeof ${In} !== "function")`
+				: `typeof ${In} !== "${inner.domain}"`
 	}),
 	compile: compilePrimitive
 })

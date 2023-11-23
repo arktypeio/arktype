@@ -164,24 +164,36 @@ describe("intersections", () => {
 		const r = parseSchema("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
-	it("compiles true/false", () => {
-		const n = node({
-			basis: "number",
-			divisor: 3,
-			min: 5
-		})
-		attest(n.compile().fn).snap("(function anonymous)")
-	})
 	it("compiles problems", () => {
 		const n = node({
 			basis: "number",
 			divisor: 3,
 			min: 5
 		})
-		const result = n.compile({ failureKind: "problems" })
-		attest(result.body).snap(
-			"$ark.anonymous263($arkRoot) && $ark.anonymous264($arkRoot) && $ark.anonymous265($arkRoot)"
-		)
+		attest(n.traverse(6)).snap("(undefined)")
+		attest(n.traverse(7)).snap([
+			{ path: [], message: "Must be a multiple of 3 (was 7)" }
+		])
+	})
+	it("compiles path problems", () => {
+		const n = node({
+			basis: "object",
+			required: {
+				key: "a",
+				value: {
+					basis: "number",
+					divisor: 3,
+					min: 5
+				}
+			}
+		})
+		attest(n.traverse({ a: 6 })).snap("(undefined)")
+		attest(n.traverse({ b: 6 })).snap([
+			{ path: ['"a"'], message: "Must be provided" }
+		])
+		attest(n.traverse({ a: 7 })).snap([
+			{ path: ['"a"'], message: "Must be a multiple of 3 (was 7)" }
+		])
 	})
 	// TODO:
 	// it("strict intersection", () => {

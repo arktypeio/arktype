@@ -1,7 +1,7 @@
 import { In } from "../io/compile.js"
 import { compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
-import type { ConstraintAttachments } from "../shared/define.js"
+import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -23,7 +23,7 @@ export type PatternDeclaration = declareRefinement<{
 		pattern: "pattern" | null
 	}
 	operands: string
-	attach: ConstraintAttachments
+	attach: PrimitiveConstraintAttachments
 }>
 
 export const PatternImplementation = defineRefinement({
@@ -50,7 +50,10 @@ export const PatternImplementation = defineRefinement({
 	attach: (node) => {
 		return {
 			assertValidBasis: createValidBasisAssertion(node),
-			condition: `/${node.source}/${node.flags ?? ""}.test(${In})`
+			condition: `/${node.source}/${node.flags ?? ""}.test(${In})`,
+			negatedCondition: `/${node.source}/${
+				node.flags ?? ""
+			}.test(${In}) === false`
 		}
 	},
 	compile: compilePrimitive

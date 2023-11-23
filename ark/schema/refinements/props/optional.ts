@@ -1,9 +1,7 @@
+import { compilePropAccess, compileSerializedValue } from "../../io/compile.js"
+import { In } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
-import {
-	rootKinds,
-	type ConstraintAttachments,
-	type RootKind
-} from "../../shared/define.js"
+import { rootKinds, type RootKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Node, Schema } from "../../shared/node.js"
 import {
@@ -11,6 +9,7 @@ import {
 	defineRefinement,
 	type declareRefinement
 } from "../shared.js"
+import type { NamedPropAttachments } from "./shared.js"
 
 export type OptionalPropInner = withAttributes<{
 	readonly key: string | symbol
@@ -30,7 +29,7 @@ export type OptionalDeclaration = declareRefinement<{
 		optional: "optional" | null
 	}
 	operands: object
-	attach: ConstraintAttachments
+	attach: NamedPropAttachments
 }>
 
 export const OptionalImplementation = defineRefinement({
@@ -59,7 +58,16 @@ export const OptionalImplementation = defineRefinement({
 	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
 	attach: (node) => ({
 		assertValidBasis: createValidBasisAssertion(node),
-		condition: "true"
+		serializedKey: compileSerializedValue(node.key)
 	}),
-	compile: () => "return true"
+	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
+		return ${
+			node.value.compile({
+				...ctx,
+				path: [...ctx.path, node.serializedKey]
+			}).reference
+		}(${In}${compilePropAccess(
+			typeof node.key === "string" ? node.key : node.serializedKey
+		)})
+	}`
 })

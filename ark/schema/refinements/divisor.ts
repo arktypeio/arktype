@@ -1,7 +1,7 @@
 import { In } from "../io/compile.js"
 import { compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
-import type { ConstraintAttachments } from "../shared/define.js"
+import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -22,7 +22,7 @@ export type DivisorDeclaration = declareRefinement<{
 		divisor: "divisor"
 	}
 	operands: number
-	attach: ConstraintAttachments
+	attach: PrimitiveConstraintAttachments
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -53,7 +53,8 @@ export const DivisorImplementation = defineRefinement({
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
 	attach: (node) => ({
 		assertValidBasis: createValidBasisAssertion(node),
-		condition: `${In} % ${node.divisor} === 0`
+		condition: `${In} % ${node.divisor} === 0`,
+		negatedCondition: `${In} % ${node.divisor} !== 0`
 	}),
 	compile: compilePrimitive
 })

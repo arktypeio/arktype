@@ -1,9 +1,7 @@
+import { compilePropAccess, compileSerializedValue } from "../../io/compile.js"
+import { In, type Problem } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
-import {
-	rootKinds,
-	type ConstraintAttachments,
-	type RootKind
-} from "../../shared/define.js"
+import { rootKinds, type RootKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Inner, Node, Schema } from "../../shared/node.js"
 import {
@@ -12,6 +10,7 @@ import {
 	type declareRefinement
 } from "../shared.js"
 import type { PropKind } from "./prop.js"
+import type { NamedPropAttachments } from "./shared.js"
 
 export type RequiredPropSchema = withAttributes<{
 	readonly key: string | symbol
@@ -32,7 +31,7 @@ export type RequiredDeclaration = declareRefinement<{
 		required: "required" | Disjoint | null
 		optional: "required" | Disjoint | null
 	}
-	attach: ConstraintAttachments
+	attach: NamedPropAttachments
 }>
 
 const intersectNamed = (
@@ -69,8 +68,28 @@ export const RequiredImplementation = defineRefinement({
 	normalize: (schema) => schema,
 	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
 	attach: (node) => ({
-		assertValidBasis: createValidBasisAssertion(node),
-		condition: "true"
+		serializedKey: compileSerializedValue(node.key),
+		assertValidBasis: createValidBasisAssertion(node)
 	}),
-	compile: (node, ctx) => `return true`
+	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
+		return ${
+			node.value.compile({
+				...ctx,
+				path: [...ctx.path, node.serializedKey]
+			}).reference
+		}(${In}${compilePropAccess(
+			typeof node.key === "string" ? node.key : node.serializedKey
+		)}) 
+	} else {
+		return ${
+			ctx.onFail === "true"
+				? "true"
+				: JSON.stringify([
+						{
+							path: [...ctx.path, node.serializedKey],
+							message: `Must be provided`
+						} satisfies Problem
+				  ])
+		}
+	}`
 })

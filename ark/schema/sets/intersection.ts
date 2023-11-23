@@ -179,11 +179,14 @@ export const IntersectionImplementation = defineNode({
 		return attachments
 	},
 	compile: (node, ctx) =>
-		node.constraints
-			.map((constraint) => `$ark.${constraint.compile(ctx).alias}(${In})`)
-			.join(" && "),
-	// node.constraints.map((constraint) => constraint.compile(ctx)).join("\n") +
-	// "\nreturn true",
+		"return " +
+		(ctx.onFail === "error"
+			? node.constraints
+					.map((constraint) => `${constraint.compile(ctx).reference}(${In})`)
+					.join(" || ")
+			: node.constraints
+					.map((constraint) => `$ark.${constraint.compile(ctx).alias}(${In})`)
+					.join(" && ")),
 	writeDefaultDescription: (node) => {
 		return node.constraints.length === 0
 			? "an unknown value"

@@ -9,7 +9,7 @@ import {
 	type isAny
 } from "@arktype/util"
 import { isNode } from "../io/registry.js"
-import type { ConstraintAttachments } from "../shared/define.js"
+import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import type { Node, Schema } from "../shared/node.js"
 import {
 	DomainImplementation,
@@ -43,7 +43,7 @@ export const BasisImplementations = {
 export type BasisKind = keyof BasisDeclarations
 
 export type BasisAttachments = extend<
-	ConstraintAttachments,
+	PrimitiveConstraintAttachments,
 	{
 		readonly domain: Domain
 		readonly basisName: string

@@ -7,6 +7,7 @@ import {
 	isArray,
 	throwInternalError,
 	throwParseError,
+	type Fn,
 	type Json
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
@@ -21,7 +22,7 @@ import type {
 	validateSchemaBranch
 } from "./sets/union.js"
 import { createBuiltins } from "./shared/builtins.js"
-import type { CompilationContext } from "./shared/compilation.js"
+import type { CompilationContext, Problem } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -59,6 +60,13 @@ export type UnknownNode = BaseNode<any>
 
 const $ark = registry()
 
+export type Compilation<fn extends Fn = Fn> = {
+	alias: string
+	reference: string
+	fn: fn
+	body: string
+}
+
 export abstract class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
@@ -84,7 +92,12 @@ export abstract class BaseNode<
 			: { ...this.referencesById, [this.id]: this }
 	readonly alias: string = $ark.register(this)
 	readonly reference: string = `$ark.${this.alias}`
-	readonly allows: (data: unknown) => data is t
+	readonly compilations: {
+		allows: Compilation<(data: unknown) => data is t>
+		traverse: Compilation<(data: unknown) => Problem[] | undefined>
+	}
+	readonly allows: this["compilations"]["allows"]["fn"]
+	readonly traverse: this["compilations"]["traverse"]["fn"]
 	readonly description: string
 
 	protected constructor(baseAttachments: BaseAttachments<kind>) {
@@ -106,26 +119,33 @@ export abstract class BaseNode<
 		}
 		const attachments = this.implementation.attach(this as never)
 		Object.assign(this, attachments)
-		this.allows = this.compile().fn as never
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
+		this.compilations = {
+			allows: this.compile() as never,
+			traverse: this.compile({
+				onFail: "error"
+			}) as never
+		}
+		this.allows = this.compilations.allows.fn
+		this.traverse = this.compilations.traverse.fn
 	}
 
 	// TODO: Cache
-	compile(ctx: Partial<CompilationContext> = {}) {
+	compile(ctx: Partial<CompilationContext> = {}): Compilation {
 		const body = this.implementation.compile(this as never, {
 			path: [],
 			discriminants: [],
-			successKind: "true",
-			failureKind: "false",
+			onFail: "true",
 			...ctx
 		})
 		const fn = new CompiledFunction(In, body)
 		const alias = $ark.register(fn)
 		return {
 			alias,
+			reference: $ark.reference(alias),
 			fn,
 			body
 		}
