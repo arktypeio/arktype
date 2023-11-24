@@ -23,7 +23,7 @@
 		"docgen": "ts ./ark/repo/docgen.ts",
 		"test": "mocha",
 		"tnt": "mocha --skipTypes",
-		"bench": "pnpm ts ./ark/type/__tests__/benches/comparison.bench.ts",
+		"bench": "pnpm ts ./ark/schema/__tests__/comparison.bench.ts",
 		"testRepo": "pnpm test && cd ./ark/test && pnpm test && pnpm testTsVersions",
 		"testTsVersions": "ts ./ark/repo/testTsVersions.ts",
 		"typecheck": "tsc --noEmit",

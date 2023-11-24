@@ -7,7 +7,6 @@ import {
 	isArray,
 	throwInternalError,
 	throwParseError,
-	type Fn,
 	type Json
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
@@ -58,19 +57,12 @@ import {
 	type Node,
 	type Schema
 } from "./shared/node.js"
-import { arkKind, isNode, registry, type Reference } from "./shared/registry.js"
+import { arkKind, isNode, registry } from "./shared/registry.js"
 import { inferred } from "./shared/symbols.js"
 
 export type UnknownNode = BaseNode<any>
 
 const $ark = registry()
-
-export type Compilation<fn extends Fn = Fn> = {
-	alias: string
-	reference: string
-	fn: fn
-	body: string
-}
 
 export abstract class BaseNode<
 	kind extends NodeKind = NodeKind,
@@ -84,6 +76,7 @@ export abstract class BaseNode<
 	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
+	readonly alias = $ark.register(this)
 	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
@@ -94,8 +87,10 @@ export abstract class BaseNode<
 	readonly contributesReferencesById: Record<string, UnknownNode> =
 		this.id in this.referencesById
 			? this.referencesById
-			: { ...this.referencesById, [this.id]: this }
-	readonly reference = $ark.register(this)
+			: { ...this.referencesById, [this.alias]: this }
+	readonly contributesReferences: readonly UnknownNode[] = Object.values(
+		this.contributesReferencesById
+	)
 	readonly allows: (data: unknown) => data is t
 	readonly traverse: (data: unknown) => CheckResult<t>
 	readonly description: string
@@ -129,25 +124,23 @@ export abstract class BaseNode<
 
 	// TODO: Cache
 	compile<kind extends CompilationKind>(kind: kind): this[kind] {
-		if (kind === "allows") {
-			return $ark.resolve(
-				this.compileReference({
+		const $ = this.contributesReferences
+			.map((reference) =>
+				reference.compileReference({
 					compilationKind: "allows",
 					path: [],
 					discriminants: []
 				})
-			) as never
+			)
+			.join("\n")
+		if (kind === "allows") {
+			return new CompiledFunction($ + "\n" + `return ${this.alias}`)() as never
 		}
-		const reference = this.compileReference({
-			compilationKind: "traverse",
-			path: [],
-			discriminants: []
-		})
 		return new CompiledFunction(
-			In,
-			`
-    const problems = []
-	${reference}(${In}, problems)
+			$ +
+				"\n" +
+				`const problems = []
+	${this.alias}(${In}, problems)
 	if(problems.length === 0) {
 		return { data: ${In} }
 	}
@@ -156,20 +149,15 @@ export abstract class BaseNode<
 	}
 
 	// TODO: Cache
-	compileReference(ctx: CompilationContext): Reference {
-		const body = this.implementation.compile(this as never, ctx)
-		const fn =
-			ctx.compilationKind === "allows"
-				? new CompiledFunction(In, body)
-				: new CompiledFunction(In, "problems", body)
-		return $ark.register(fn)
+	compileReference(ctx: CompilationContext) {
+		return `function ${this.alias}(${In}){${this.implementation.compile(
+			this as never,
+			ctx
+		)}}`
 	}
 
-	compileInvocation(
-		ctx: CompilationContext,
-		prop?: string
-	): `${Reference}(${string})` {
-		return `${this.compileReference(ctx)}(${In}${
+	compileInvocation(ctx: CompilationContext, prop?: string) {
+		return `${this.alias}(${In}${
 			prop === undefined ? "" : compilePropAccess(prop)
 		}${ctx.compilationKind === "traverse" ? ", problems" : ""})`
 	}

@@ -178,11 +178,18 @@ export const IntersectionImplementation = defineNode({
 		return attachments
 	},
 	compile: (node, ctx) => {
-		const constraintInvocations = node.constraints.map(
-			(constraint) => `${constraint.compileInvocation(ctx)}`
+		const constraintInvocations = node.constraints.map((constraint) =>
+			constraint.compileInvocation(ctx)
 		)
 		return ctx.compilationKind === "allows"
-			? `return ${constraintInvocations.join(" && ")}`
+			? constraintInvocations
+					.map(
+						(call) => `if(!${call}) return false
+`
+					)
+					.join("\n") +
+					"\n" +
+					"return true"
 			: constraintInvocations.join("\n")
 	},
 	writeDefaultDescription: (node) => {

@@ -46,7 +46,7 @@ export type WhenParser<$> = <const def>(
 >
 
 export const createWhenParser = <$>(scope: Scope): WhenParser<$> => {
-	const parser = (def: unknown) => new Type(def, scope).root.reference
+	const parser = (def: unknown) => new Type(def, scope).root.alias
 	return parser as never
 }
 

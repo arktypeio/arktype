@@ -19,7 +19,7 @@ class Registry {
 		global.$ark = this
 	}
 
-	register(value: object | symbol): Reference {
+	register(value: object | symbol) {
 		const baseName = baseNameFor(value)
 		let variableName = baseName
 		let suffix = 2
@@ -27,11 +27,7 @@ class Registry {
 			variableName = `${baseName}${suffix++}`
 		}
 		this[variableName] = value
-		return `$ark.${variableName}`
-	}
-
-	resolve(reference: Reference) {
-		return this[reference.slice(5)]
+		return variableName
 	}
 }
 
