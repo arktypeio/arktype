@@ -1,6 +1,5 @@
 import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
 import type { UnknownNode } from "../node.js"
-import { isDotAccessible } from "./compilation.js"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
@@ -37,6 +36,9 @@ class Registry {
 }
 
 export type Reference = `$ark.${string}`
+
+export const isDotAccessible = (name: string) =>
+	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {

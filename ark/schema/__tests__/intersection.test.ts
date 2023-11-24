@@ -180,7 +180,9 @@ describe("intersections", () => {
 			min: 5
 		})
 		attest(n.traverse(6)).snap({ data: 6 })
-		attest(n.traverse(7)).snap()
+		attest(n.traverse(7)).snap({
+			problems: [{ path: [], message: "Must be a multiple of 3 (was 7)" }]
+		})
 	})
 	it("compiles path problems", () => {
 		const n = node({
@@ -194,9 +196,13 @@ describe("intersections", () => {
 				}
 			}
 		})
-		attest(n.traverse({ a: 6 })).snap()
-		attest(n.traverse({ b: 6 })).snap()
-		attest(n.traverse({ a: 7 })).snap()
+		attest(n.traverse({ a: 6 })).snap({ data: { a: 6 } })
+		attest(n.traverse({ b: 6 })).snap({
+			problems: [{ path: ["a"], message: "Must be provided" }]
+		})
+		attest(n.traverse({ a: 7 })).snap({
+			problems: [{ path: ["a"], message: "Must be a multiple of 3 (was 7)" }]
+		})
 	})
 	it("runtime benchmark", () => {
 		const validInput = {

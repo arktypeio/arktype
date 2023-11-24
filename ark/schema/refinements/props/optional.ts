@@ -55,17 +55,21 @@ export const OptionalImplementation = defineRefinement({
 	},
 	normalize: (schema) => schema,
 	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
-	attach: (node) => ({
-		assertValidBasis: createValidBasisAssertion(node),
-		serializedKey: compileSerializedValue(node.key)
-	}),
+	attach: (node) => {
+		const serializedKey = compileSerializedValue(node.key)
+		return {
+			serializedKey,
+			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
+			assertValidBasis: createValidBasisAssertion(node)
+		}
+	},
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
 		return ${node.value.compileInvocation(
 			{
 				...ctx,
-				path: [...ctx.path, node.serializedKey]
+				path: [...ctx.path, node.compiledKey]
 			},
-			typeof node.key === "string" ? node.key : node.serializedKey
+			node.compiledKey
 		)}
 	}`
 })

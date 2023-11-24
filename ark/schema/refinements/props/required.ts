@@ -70,28 +70,30 @@ export const RequiredImplementation = defineRefinement({
 	},
 	normalize: (schema) => schema,
 	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
-	attach: (node) => ({
-		serializedKey: compileSerializedValue(node.key),
-		assertValidBasis: createValidBasisAssertion(node)
-	}),
+	attach: (node) => {
+		const serializedKey = compileSerializedValue(node.key)
+		return {
+			serializedKey,
+			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
+			assertValidBasis: createValidBasisAssertion(node)
+		}
+	},
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
 		return ${node.value.compileInvocation(
 			{
 				...ctx,
-				path: [...ctx.path, node.serializedKey]
+				path: [...ctx.path, node.compiledKey]
 			},
-			typeof node.key === "string" ? node.key : node.serializedKey
+			node.compiledKey
 		)}
 	} else {
 		${
 			ctx.compilationKind === "allows"
 				? "return false"
-				: `problems.push(${JSON.stringify([
-						{
-							path: [...ctx.path, node.serializedKey],
-							message: `Must be provided`
-						} satisfies Problem
-				  ])}`
+				: `problems.push(${JSON.stringify({
+						path: [...ctx.path, node.compiledKey],
+						message: `Must be provided`
+				  } satisfies Problem)})`
 		}
 	}`
 })

@@ -9,7 +9,7 @@ import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { NodeKind, SetKind } from "./define.js"
 import type { Node } from "./node.js"
-import { registry } from "./registry.js"
+import { isDotAccessible, registry } from "./registry.js"
 
 export const In = "$arkRoot"
 
@@ -150,9 +150,6 @@ export const compileSerializedValue = (value: unknown) => {
 		? registry().register(value)
 		: serializePrimitive(value as SerializablePrimitive)
 }
-
-export const isDotAccessible = (name: string) =>
-	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
 
 export const compilePropAccess = (name: string, optional = false) =>
 	isDotAccessible(name)
