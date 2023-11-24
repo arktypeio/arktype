@@ -4,9 +4,8 @@ import {
 	type extend,
 	type valueOf
 } from "@arktype/util"
-import { In } from "../io/compile.js"
 import type { Builtins } from "../node.js"
-import { compilePrimitive } from "../shared/compilation.js"
+import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type {
 	BoundKind,

@@ -1,5 +1,4 @@
-import { compilePropAccess, compileSerializedValue } from "../../io/compile.js"
-import { In } from "../../shared/compilation.js"
+import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
 import { rootKinds, type RootKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -61,11 +60,12 @@ export const OptionalImplementation = defineRefinement({
 		serializedKey: compileSerializedValue(node.key)
 	}),
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return ${node.value.compileReference({
-			...ctx,
-			path: [...ctx.path, node.serializedKey]
-		})}(${In}${compilePropAccess(
+		return ${node.value.compileInvocation(
+			{
+				...ctx,
+				path: [...ctx.path, node.serializedKey]
+			},
 			typeof node.key === "string" ? node.key : node.serializedKey
-		)})
+		)}
 	}`
 })

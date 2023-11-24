@@ -35,22 +35,22 @@ import {
 import { parseString } from "./parser/string/string.js"
 import type { type } from "./scopes/ark.js"
 import {
+	Type,
 	addArkKind,
 	createTypeParser,
 	generic,
 	hasArkKind,
-	Type,
 	validateUninstantiatedGeneric,
-	type arkKind,
 	type DeclarationParser,
 	type DefinitionParser,
-	type extractIn,
-	type extractOut,
 	type Generic,
 	type GenericProps,
 	type KeyCheckKind,
 	type TypeConfig,
-	type TypeParser
+	type TypeParser,
+	type arkKind,
+	type extractIn,
+	type extractOut
 } from "./type.js"
 
 export type ScopeParser<parent, ambient> = {

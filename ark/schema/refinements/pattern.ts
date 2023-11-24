@@ -1,5 +1,4 @@
-import { In } from "../io/compile.js"
-import { compilePrimitive } from "../shared/compilation.js"
+import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {

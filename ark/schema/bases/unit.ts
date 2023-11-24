@@ -1,6 +1,9 @@
 import { domainOf, stringify } from "@arktype/util"
-import { In, compileSerializedValue } from "../io/compile.js"
-import { compilePrimitive } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	compileSerializedValue
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"

@@ -11,8 +11,6 @@ import {
 	type Json
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
-import { In } from "./io/compile.js"
-import { arkKind, isNode, registry, type Reference } from "./io/registry.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import type {
@@ -22,10 +20,12 @@ import type {
 	validateSchemaBranch
 } from "./sets/union.js"
 import { createBuiltins } from "./shared/builtins.js"
-import type {
-	CompilationContext,
-	CompilationKind,
-	Problem
+import {
+	In,
+	compilePropAccess,
+	type CheckResult,
+	type CompilationContext,
+	type CompilationKind
 } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
@@ -58,6 +58,7 @@ import {
 	type Node,
 	type Schema
 } from "./shared/node.js"
+import { arkKind, isNode, registry, type Reference } from "./shared/registry.js"
 import { inferred } from "./shared/symbols.js"
 
 export type UnknownNode = BaseNode<any>
@@ -96,7 +97,7 @@ export abstract class BaseNode<
 			: { ...this.referencesById, [this.id]: this }
 	readonly reference = $ark.register(this)
 	readonly allows: (data: unknown) => data is t
-	readonly traverse: (data: unknown) => Problem[] | undefined
+	readonly traverse: (data: unknown) => CheckResult<t>
 	readonly description: string
 
 	protected constructor(baseAttachments: BaseAttachments<kind>) {
@@ -122,30 +123,55 @@ export abstract class BaseNode<
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
-		this.allows = $ark.resolve(this.compile("predicate")) as never
-		this.traverse = $ark.resolve(this.compile("traversal")) as never
+		this.allows = this.compile("allows")
+		this.traverse = this.compile("traverse")
 	}
 
 	// TODO: Cache
-	compile(kind: CompilationKind): Reference {
-		return kind === "predicate"
-			? this.compileReference({
-					compilationKind: "predicate",
+	compile<kind extends CompilationKind>(kind: kind): this[kind] {
+		if (kind === "allows") {
+			return $ark.resolve(
+				this.compileReference({
+					compilationKind: "allows",
 					path: [],
 					discriminants: []
-			  })
-			: this.compileReference({
-					compilationKind: "traversal",
-					path: [],
-					discriminants: []
-			  })
+				})
+			) as never
+		}
+		const reference = this.compileReference({
+			compilationKind: "traverse",
+			path: [],
+			discriminants: []
+		})
+		return new CompiledFunction(
+			In,
+			`
+    const problems = []
+	${reference}(${In}, problems)
+	if(problems.length === 0) {
+		return { data: ${In} }
+	}
+	return { problems }`
+		)
 	}
 
 	// TODO: Cache
 	compileReference(ctx: CompilationContext): Reference {
 		const body = this.implementation.compile(this as never, ctx)
-		const fn = new CompiledFunction(In, body)
+		const fn =
+			ctx.compilationKind === "allows"
+				? new CompiledFunction(In, body)
+				: new CompiledFunction(In, "problems", body)
 		return $ark.register(fn)
+	}
+
+	compileInvocation(
+		ctx: CompilationContext,
+		prop?: string
+	): `${Reference}(${string})` {
+		return `${this.compileReference(ctx)}(${In}${
+			prop === undefined ? "" : compilePropAccess(prop)
+		}${ctx.compilationKind === "traverse" ? ", problems" : ""})`
 	}
 
 	inCache?: UnknownNode;

@@ -11,14 +11,16 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import { compileSerializedValue } from "../io/compile.js"
 import type {
 	BaseNode,
 	RootNode,
 	UnknownNode,
 	reducibleKindOf
 } from "../node.js"
-import type { CompilationContext } from "./compilation.js"
+import {
+	compileSerializedValue,
+	type CompilationContext
+} from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
 import type { Declaration, Node, NormalizedSchema } from "./node.js"

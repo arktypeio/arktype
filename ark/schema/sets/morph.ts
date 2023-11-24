@@ -8,8 +8,7 @@ import {
 } from "@arktype/util"
 import type { BasisKind, parseBasis } from "../bases/basis.js"
 import type { NonEnumerableDomain } from "../bases/domain.js"
-import type { Problem } from "../io/problems.js"
-import type { CheckResult, TraversalState } from "../io/traverse.js"
+import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -41,6 +40,11 @@ export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
 	: schema extends IntersectionSchema
 	  ? parseIntersectionSchema<schema>
 	  : Node<ValidatorKind>
+
+export type TraversalState = {
+	path: string[]
+	problems: Problems
+}
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 

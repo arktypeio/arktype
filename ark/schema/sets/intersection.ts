@@ -10,7 +10,6 @@ import {
 import type { BasisKind, parseBasis } from "../bases/basis.js"
 import type { UnknownNode } from "../node.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
-import { In } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	declareNode,
@@ -178,12 +177,14 @@ export const IntersectionImplementation = defineNode({
 		}
 		return attachments
 	},
-	compile: (node, ctx) =>
-		ctx.compilationKind === "predicate"
-			? `return ${node.constraints
-					.map((constraint) => `${constraint.compileReference(ctx)}(${In})`)
-					.join(" && ")}`
-			: `return undefined`,
+	compile: (node, ctx) => {
+		const constraintInvocations = node.constraints.map(
+			(constraint) => `${constraint.compileInvocation(ctx)}`
+		)
+		return ctx.compilationKind === "allows"
+			? `return ${constraintInvocations.join(" && ")}`
+			: constraintInvocations.join("\n")
+	},
 	writeDefaultDescription: (node) => {
 		return node.constraints.length === 0
 			? "an unknown value"

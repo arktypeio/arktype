@@ -1,10 +1,8 @@
 import {
 	In,
-	TraversalState,
 	arkKind,
 	builtins,
 	inferred,
-	registry,
 	type BaseAttributes,
 	type CheckResult,
 	type Morph,
@@ -153,8 +151,6 @@ export type TypeConfig = {
 	keys?: KeyCheckKind
 	mustBe?: string
 }
-
-registry().register(TraversalState)
 
 export class Type<t = unknown, $ = any> extends CompiledFunction<
 	(data: unknown) => CheckResult<extractOut<t>>

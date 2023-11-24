@@ -1,4 +1,4 @@
-export { Problem, Problems } from "@arktype/schema"
+export { Problems, type Problem } from "@arktype/schema"
 export type { Out } from "@arktype/schema"
 export type { Module, Scope } from "./scope.js"
 export {

@@ -1,5 +1,4 @@
 import { isArray, type conform } from "@arktype/util"
-import { In } from "../io/compile.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode, type RootKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -180,12 +179,15 @@ export const UnionImplementation = defineNode({
 	},
 	writeDefaultDescription: (inner) =>
 		inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
-	compile: (node, ctx) =>
-		ctx.compilationKind === "predicate"
-			? `return ${node.branches
-					.map((branch) => `${branch.compileReference(ctx)}(${In})`)
-					.join(" || ")}`
-			: `return undefined`
+
+	compile: (node, ctx) => {
+		const branchInvocations = node.branches.map(
+			(constraint) => `${constraint.compileInvocation(ctx)}`
+		)
+		return ctx.compilationKind === "allows"
+			? `return ${branchInvocations.join(" || ")}`
+			: branchInvocations.join("\n")
+	}
 })
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {

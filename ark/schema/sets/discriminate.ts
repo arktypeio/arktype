@@ -8,7 +8,7 @@ import {
 	type keySet,
 	type mutable
 } from "@arktype/util"
-import { compileSerializedValue } from "../io/compile.js"
+import { compileSerializedValue } from "../shared/compilation.js"
 import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
 import type { BranchNode } from "./union.js"
 

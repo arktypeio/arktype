@@ -1,13 +1,19 @@
-import type { arraySubclassToReadonly } from "@arktype/util"
-import { registry } from "../io/registry.js"
+import {
+	hasDomain,
+	serializePrimitive,
+	type SerializablePrimitive,
+	type arraySubclassToReadonly,
+	type propwiseXor
+} from "@arktype/util"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { NodeKind, SetKind } from "./define.js"
 import type { Node } from "./node.js"
+import { registry } from "./registry.js"
 
 export const In = "$arkRoot"
 
-export type CompilationKind = "predicate" | "traversal"
+export type CompilationKind = "allows" | "traverse"
 
 export type CompilationContext = {
 	path: string[]
@@ -47,10 +53,10 @@ export const compilePrimitive = (
 		// (or an exact value, implying a domain), we don't need to recheck it
 		return ""
 	}
-	return ctx.compilationKind === "predicate"
+	return ctx.compilationKind === "allows"
 		? `return ${node.condition}`
 		: `if (${node.negatedCondition}) {
-	return ${compilePrimitiveProblem(node, ctx)}
+	${compilePrimitiveProblem(node, ctx)}
 }`
 }
 
@@ -110,6 +116,14 @@ class ProblemsArray extends Array<Problem> {
 
 export const Problems: new () => Problems = ProblemsArray
 
+// TODO: fix
+export type ProblemCode = string
+
+export type CheckResult<t = unknown> = propwiseXor<
+	{ data: t },
+	{ problems: Problems }
+>
+
 export type Problems = arraySubclassToReadonly<ProblemsArray>
 
 const problemsReference = registry().register(Problems)
@@ -118,15 +132,29 @@ const compilePrimitiveProblem = (
 	node: Node<PrimitiveKind>,
 	ctx: CompilationContext
 ) => {
-	return `[
+	return `problems.push(
 		{
 			path: ${JSON.stringify(ctx.path)},
 			message: \`Must be ${node.description} (was \${${In}})\`
 		}
-	]`
+	)`
 }
 
 export type Problem = {
 	path: string[]
 	message: string
 }
+
+export const compileSerializedValue = (value: unknown) => {
+	return hasDomain(value, "object") || typeof value === "symbol"
+		? registry().register(value)
+		: serializePrimitive(value as SerializablePrimitive)
+}
+
+export const isDotAccessible = (name: string) =>
+	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
+
+export const compilePropAccess = (name: string, optional = false) =>
+	isDotAccessible(name)
+		? `${optional ? "?" : ""}.${name}`
+		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`

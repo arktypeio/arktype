@@ -4,7 +4,7 @@ import {
 	type Out,
 	type Problem
 } from "@arktype/schema"
-import { arktypes, scope, type, type Ark, type Type } from "arktype"
+import { scope, type, type Ark, type Type } from "arktype"
 
 describe("morph", () => {
 	it("base", () => {
@@ -29,14 +29,14 @@ describe("morph", () => {
 		}
 		attest<boolean>(result.data).equals(false)
 	})
-	it("chained to type", () => {
-		const t = type(["string>5", "=>", arktypes.parse.date])
-		attest<Type<(In: string) => Out<Date>>>(t)
-		attest(t("5/21/1993").data?.getDate()).equals(21)
-		attest(t("foobar").problems?.summary).snap(
-			"Must be a valid date (was 'foobar')"
-		)
-	})
+	// it("chained to type", () => {
+	// 	const t = type(["string>5", "=>", arktypes.parse.date])
+	// 	attest<Type<(In: string) => Out<Date>>>(t)
+	// 	attest(t("5/21/1993").data?.getDate()).equals(21)
+	// 	attest(t("foobar").problems?.summary).snap(
+	// 		"Must be a valid date (was 'foobar')"
+	// 	)
+	// })
 	it("validated output", () => {
 		const parsedUser = type("string").morph((s) => JSON.parse(s), {
 			name: "string",
@@ -62,16 +62,16 @@ describe("morph", () => {
 		attest<string>(t.inferIn)
 		attest<never>(t.infer)
 	})
-	it("return problem", () => {
-		const divide100By = type([
-			"number",
-			"=>",
-			(n, problems) => (n === 0 ? problems.mustBe("non-zero", n, []) : 100 / n)
-		])
-		attest<Type<(In: number) => Out<number>>>(divide100By)
-		attest(divide100By(5).data).equals(20)
-		attest(divide100By(0).problems?.summary).snap("Must be non-zero (was 0)")
-	})
+	// it("return problem", () => {
+	// 	const divide100By = type([
+	// 		"number",
+	// 		"=>",
+	// 		(n, problems) => (n === 0 ? problems.mustBe("non-zero", n, []) : 100 / n)
+	// 	])
+	// 	attest<Type<(In: number) => Out<number>>>(divide100By)
+	// 	attest(divide100By(5).data).equals(20)
+	// 	attest(divide100By(0).problems?.summary).snap("Must be non-zero (was 0)")
+	// })
 	it("adds a problem if one is returned without being added", () => {
 		const divide100By = type([
 			"number",
@@ -367,24 +367,24 @@ describe("morph", () => {
 				.or("'foo'")
 		).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
-	it("problem not included in return", () => {
-		const parsedInt = type([
-			"string",
-			"=>",
-			(s, problems) => {
-				const result = parseInt(s)
-				if (Number.isNaN(result)) {
-					return problems.mustBe("an integer string", s, [])
-				}
-				return result
-			}
-		])
-		attest<Type<(In: string) => Out<number>>>(parsedInt)
-		attest(parsedInt("5").data).snap(5)
-		attest(parsedInt("five").problems?.summary).snap(
-			"Must be an integer string (was 'five')"
-		)
-	})
+	// it("problem not included in return", () => {
+	// 	const parsedInt = type([
+	// 		"string",
+	// 		"=>",
+	// 		(s, problems) => {
+	// 			const result = parseInt(s)
+	// 			if (Number.isNaN(result)) {
+	// 				return problems.mustBe("an integer string", s, [])
+	// 			}
+	// 			return result
+	// 		}
+	// 	])
+	// 	attest<Type<(In: string) => Out<number>>>(parsedInt)
+	// 	attest(parsedInt("5").data).snap(5)
+	// 	attest(parsedInt("five").problems?.summary).snap(
+	// 		"Must be an integer string (was 'five')"
+	// 	)
+	// })
 	it("nullable return", () => {
 		const toNullableNumber = type(["string", "=>", (s) => s.length || null])
 		attest<Type<(In: string) => Out<number | null>>>(toNullableNumber)

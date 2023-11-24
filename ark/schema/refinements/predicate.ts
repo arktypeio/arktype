@@ -1,6 +1,8 @@
-import { compileSerializedValue, In } from "../io/compile.js"
-import type { TraversalState } from "../io/traverse.js"
-import { compilePrimitive } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	compileSerializedValue
+} from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
@@ -55,10 +57,7 @@ export const PredicateImplementation = defineRefinement({
 	compile: compilePrimitive
 })
 
-export type Predicate<data = any> = (
-	data: data,
-	traversal: TraversalState
-) => boolean
+export type Predicate<data = any> = (data: data, traversal: any) => boolean
 
 export type PredicateCast<data = any, narrowed extends data = data> = (
 	data: data

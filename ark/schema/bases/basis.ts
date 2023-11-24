@@ -8,9 +8,9 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import { isNode } from "../io/registry.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import type { Node, Schema } from "../shared/node.js"
+import { isNode } from "../shared/registry.js"
 import {
 	DomainImplementation,
 	type DomainDeclaration,
