@@ -7,7 +7,7 @@ import type { Node } from "./node.js"
 
 export const In = "$arkRoot"
 
-export type OnFail = "true" | "error"
+export type OnFail = "true" | "problem"
 
 export type CompilationContext = {
 	path: string[]
@@ -48,7 +48,7 @@ export const compilePrimitive = (
 		return ""
 	}
 	return ctx.onFail === "true"
-		? node.negatedCondition
+		? `return ${node.negatedCondition}`
 		: `if (${node.negatedCondition}) {
 	return ${compilePrimitiveProblem(node, ctx)}
 }`

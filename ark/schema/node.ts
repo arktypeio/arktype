@@ -126,7 +126,7 @@ export abstract class BaseNode<
 		this.compilations = {
 			allows: this.compile() as never,
 			traverse: this.compile({
-				onFail: "error"
+				onFail: "problem"
 			}) as never
 		}
 		this.allows = this.compilations.allows.fn

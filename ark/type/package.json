@@ -13,6 +13,8 @@
 		"url": "https://github.com/arktypeio/arktype.git"
 	},
 	"type": "module",
+	"main": "./dist/main.js",
+	"types": "./dist/main.d.ts",
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",

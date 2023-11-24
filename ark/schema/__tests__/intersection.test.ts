@@ -164,6 +164,15 @@ describe("intersections", () => {
 		const r = parseSchema("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
+	it("compiles allows", () => {
+		const n = node({
+			basis: "number",
+			divisor: 3,
+			min: 5
+		})
+		attest(n.allows(6)).snap(false)
+		attest(n.allows(7)).snap(true)
+	})
 	it("compiles problems", () => {
 		const n = node({
 			basis: "number",
@@ -194,6 +203,62 @@ describe("intersections", () => {
 		attest(n.traverse({ a: 7 })).snap([
 			{ path: ['"a"'], message: "Must be a multiple of 3 (was 7)" }
 		])
+	})
+	it("runtime benchmark", () => {
+		const validInput = {
+			number: 1,
+			negNumber: -1,
+			maxNumber: Number.MAX_VALUE,
+			string: "string",
+			longString:
+				"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Vivendum intellegat et qui, ei denique consequuntur vix. Semper aeterno percipit ut his, sea ex utinam referrentur repudiandae. No epicuri hendrerit consetetur sit, sit dicta adipiscing ex, in facete detracto deterruisset duo. Quot populo ad qui. Sit fugit nostrum et. Ad per diam dicant interesset, lorem iusto sensibus ut sed. No dicam aperiam vis. Pri posse graeco definitiones cu, id eam populo quaestio adipiscing, usu quod malorum te. Ex nam agam veri, dicunt efficiantur ad qui, ad legere adversarium sit. Commune platonem mel id, brute adipiscing duo an. Vivendum intellegat et qui, ei denique consequuntur vix. Offendit eleifend moderatius ex vix, quem odio mazim et qui, purto expetendis cotidieque quo cu, veri persius vituperata ei nec. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+			boolean: true,
+			deeplyNested: {
+				foo: "bar",
+				num: 1,
+				bool: false
+			}
+		}
+
+		const invalidInput = {
+			number: 1,
+			negNumber: -1,
+			maxNumber: Number.MAX_VALUE,
+			string: "string",
+			longString:
+				"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Vivendum intellegat et qui, ei denique consequuntur vix. Semper aeterno percipit ut his, sea ex utinam referrentur repudiandae. No epicuri hendrerit consetetur sit, sit dicta adipiscing ex, in facete detracto deterruisset duo. Quot populo ad qui. Sit fugit nostrum et. Ad per diam dicant interesset, lorem iusto sensibus ut sed. No dicam aperiam vis. Pri posse graeco definitiones cu, id eam populo quaestio adipiscing, usu quod malorum te. Ex nam agam veri, dicunt efficiantur ad qui, ad legere adversarium sit. Commune platonem mel id, brute adipiscing duo an. Vivendum intellegat et qui, ei denique consequuntur vix. Offendit eleifend moderatius ex vix, quem odio mazim et qui, purto expetendis cotidieque quo cu, veri persius vituperata ei nec. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+			boolean: true,
+			deeplyNested: {
+				foo: "bar",
+				num: 1,
+				bool: 5
+			}
+		}
+
+		const arkType = node({
+			basis: "object",
+			required: [
+				{ key: "number", value: "number" },
+				{ key: "negNumber", value: "number" },
+				{ key: "maxNumber", value: "number" },
+				{ key: "string", value: "string" },
+				{ key: "longString", value: "string" },
+				{ key: "boolean", value: [{ is: true }, { is: false }] },
+				{
+					key: "deeplyNested",
+					value: {
+						basis: "object",
+						required: [
+							{ key: "foo", value: "string" },
+							{ key: "num", value: "number" },
+							{ key: "bool", value: [{ is: true }, { is: false }] }
+						]
+					}
+				}
+			]
+		})
+		attest(arkType.allows(validInput)).equals(false)
+		attest(arkType.allows(invalidInput)).equals(true)
 	})
 	// TODO:
 	// it("strict intersection", () => {

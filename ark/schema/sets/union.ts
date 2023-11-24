@@ -182,12 +182,8 @@ export const UnionImplementation = defineNode({
 		inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
 	compile: (node) =>
 		node.branches
-			.map(
-				(constraint) => `if(${constraint.alias}(${In})) {
-return true
-}`
-			)
-			.join("\n") + "\nreturn false"
+			.map((constraint) => `${constraint.compile().reference}(${In})`)
+			.join("&&")
 })
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {

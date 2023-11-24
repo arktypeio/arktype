@@ -7,6 +7,8 @@
 		"url": "https://arktype.io"
 	},
 	"type": "module",
+	"main": "./dist/main.js",
+	"types": "./dist/main.d.ts",
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",
