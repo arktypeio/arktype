@@ -257,8 +257,8 @@ describe("intersections", () => {
 				}
 			]
 		})
-		attest(arkType.allows(validInput)).equals(false)
-		attest(arkType.allows(invalidInput)).equals(true)
+		attest(arkType.allows(validInput)).equals(true)
+		attest(arkType.allows(invalidInput)).equals(false)
 	})
 	// TODO:
 	// it("strict intersection", () => {

@@ -72,18 +72,16 @@ export const RequiredImplementation = defineRefinement({
 		assertValidBasis: createValidBasisAssertion(node)
 	}),
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return ${
-			node.value.compile({
-				...ctx,
-				path: [...ctx.path, node.serializedKey]
-			}).reference
-		}(${In}${compilePropAccess(
+		return ${node.value.compileReference({
+			...ctx,
+			path: [...ctx.path, node.serializedKey]
+		})}(${In}${compilePropAccess(
 			typeof node.key === "string" ? node.key : node.serializedKey
 		)}) 
 	} else {
-		return ${
-			ctx.onFail === "true"
-				? "true"
+		${
+			ctx.compilationKind === "predicate"
+				? "return false"
 				: JSON.stringify([
 						{
 							path: [...ctx.path, node.serializedKey],

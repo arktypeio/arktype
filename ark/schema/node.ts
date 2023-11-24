@@ -12,7 +12,7 @@ import {
 } from "@arktype/util"
 import { maybeGetBasisKind, type BasisKind } from "./bases/basis.js"
 import { In } from "./io/compile.js"
-import { arkKind, isNode, registry } from "./io/registry.js"
+import { arkKind, isNode, registry, type Reference } from "./io/registry.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import type {
@@ -22,7 +22,11 @@ import type {
 	validateSchemaBranch
 } from "./sets/union.js"
 import { createBuiltins } from "./shared/builtins.js"
-import type { CompilationContext, Problem } from "./shared/compilation.js"
+import type {
+	CompilationContext,
+	CompilationKind,
+	Problem
+} from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -90,14 +94,9 @@ export abstract class BaseNode<
 		this.id in this.referencesById
 			? this.referencesById
 			: { ...this.referencesById, [this.id]: this }
-	readonly alias: string = $ark.register(this)
-	readonly reference: string = `$ark.${this.alias}`
-	readonly compilations: {
-		allows: Compilation<(data: unknown) => data is t>
-		traverse: Compilation<(data: unknown) => Problem[] | undefined>
-	}
-	readonly allows: this["compilations"]["allows"]["fn"]
-	readonly traverse: this["compilations"]["traverse"]["fn"]
+	readonly reference = $ark.register(this)
+	readonly allows: (data: unknown) => data is t
+	readonly traverse: (data: unknown) => Problem[] | undefined
 	readonly description: string
 
 	protected constructor(baseAttachments: BaseAttachments<kind>) {
@@ -123,32 +122,30 @@ export abstract class BaseNode<
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
-		this.compilations = {
-			allows: this.compile() as never,
-			traverse: this.compile({
-				onFail: "problem"
-			}) as never
-		}
-		this.allows = this.compilations.allows.fn
-		this.traverse = this.compilations.traverse.fn
+		this.allows = $ark.getReference(this.compile("predicate")) as never
+		this.traverse = $ark.getReference(this.compile("traversal")) as never
 	}
 
 	// TODO: Cache
-	compile(ctx: Partial<CompilationContext> = {}): Compilation {
-		const body = this.implementation.compile(this as never, {
-			path: [],
-			discriminants: [],
-			onFail: "true",
-			...ctx
-		})
+	compile(kind: CompilationKind): Reference {
+		return kind === "predicate"
+			? this.compileReference({
+					compilationKind: "predicate",
+					path: [],
+					discriminants: []
+			  })
+			: this.compileReference({
+					compilationKind: "traversal",
+					path: [],
+					discriminants: []
+			  })
+	}
+
+	// TODO: Cache
+	compileReference(ctx: CompilationContext): Reference {
+		const body = this.implementation.compile(this as never, ctx)
 		const fn = new CompiledFunction(In, body)
-		const alias = $ark.register(fn)
-		return {
-			alias,
-			reference: $ark.reference(alias),
-			fn,
-			body
-		}
+		return $ark.register(fn)
 	}
 
 	inCache?: UnknownNode;

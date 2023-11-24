@@ -180,9 +180,9 @@ export const UnionImplementation = defineNode({
 	},
 	writeDefaultDescription: (inner) =>
 		inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
-	compile: (node) =>
+	compile: (node, ctx) =>
 		node.branches
-			.map((constraint) => `${constraint.compile().reference}(${In})`)
+			.map((constraint) => `${constraint.compileReference(ctx)}(${In})`)
 			.join("&&")
 })
 

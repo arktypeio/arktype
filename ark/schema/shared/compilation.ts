@@ -7,12 +7,12 @@ import type { Node } from "./node.js"
 
 export const In = "$arkRoot"
 
-export type OnFail = "true" | "problem"
+export type CompilationKind = "predicate" | "traversal"
 
 export type CompilationContext = {
 	path: string[]
 	discriminants: Discriminant[]
-	onFail: OnFail
+	compilationKind: CompilationKind
 }
 
 export type CompositeKind = SetKind | PropKind
@@ -47,8 +47,8 @@ export const compilePrimitive = (
 		// (or an exact value, implying a domain), we don't need to recheck it
 		return ""
 	}
-	return ctx.onFail === "true"
-		? `return ${node.negatedCondition}`
+	return ctx.compilationKind === "predicate"
+		? `return ${node.condition}`
 		: `if (${node.negatedCondition}) {
 	return ${compilePrimitiveProblem(node, ctx)}
 }`
@@ -112,7 +112,7 @@ export const Problems: new () => Problems = ProblemsArray
 
 export type Problems = arraySubclassToReadonly<ProblemsArray>
 
-const problemsReference = registry().register(Problems, "problems")
+const problemsReference = registry().register(Problems)
 
 const compilePrimitiveProblem = (
 	node: Node<PrimitiveKind>,

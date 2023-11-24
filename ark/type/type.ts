@@ -154,7 +154,7 @@ export type TypeConfig = {
 	mustBe?: string
 }
 
-registry().register(TraversalState, "state")
+registry().register(TraversalState)
 
 export class Type<t = unknown, $ = any> extends CompiledFunction<
 	(data: unknown) => CheckResult<extractOut<t>>
@@ -167,7 +167,6 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	config: TypeConfig
 	root: Root<t>
 	condition = ""
-	alias: string
 	allows: this["root"]["allows"]
 	json: Json
 
@@ -177,17 +176,10 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	) {
 		const root = parseTypeRoot(definition, scope) as Root<t>
 		super(In, `return true ? { data: ${In} } : { problems: [] } `)
-		// const state = new ${registry().reference("state")}();
-		// const morphs = [];
-		// 	for(let i = 0; i < morphs.length; i++) {
-		// 	    morphs[i]()
-		// 	}
-		// 	return state.finalize(${In});
 		this.root = root
 		this.allows = root.allows
 		this.config = scope.config
 		this.json = this.root.json
-		this.alias = this.root.alias
 	}
 
 	configure(config: TypeConfig) {

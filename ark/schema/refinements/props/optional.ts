@@ -61,12 +61,10 @@ export const OptionalImplementation = defineRefinement({
 		serializedKey: compileSerializedValue(node.key)
 	}),
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return ${
-			node.value.compile({
-				...ctx,
-				path: [...ctx.path, node.serializedKey]
-			}).reference
-		}(${In}${compilePropAccess(
+		return ${node.value.compileReference({
+			...ctx,
+			path: [...ctx.path, node.serializedKey]
+		})}(${In}${compilePropAccess(
 			typeof node.key === "string" ? node.key : node.serializedKey
 		)})
 	}`

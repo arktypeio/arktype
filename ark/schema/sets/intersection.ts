@@ -181,7 +181,7 @@ export const IntersectionImplementation = defineNode({
 	compile: (node, ctx) =>
 		"return " +
 		node.constraints
-			.map((constraint) => `${constraint.compile(ctx).reference}(${In})`)
+			.map((constraint) => `${constraint.compileReference(ctx)}(${In})`)
 			.join(" || "),
 	writeDefaultDescription: (node) => {
 		return node.constraints.length === 0
