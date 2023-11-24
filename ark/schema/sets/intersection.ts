@@ -179,10 +179,11 @@ export const IntersectionImplementation = defineNode({
 		return attachments
 	},
 	compile: (node, ctx) =>
-		"return " +
-		node.constraints
-			.map((constraint) => `${constraint.compileReference(ctx)}(${In})`)
-			.join(" || "),
+		ctx.compilationKind === "predicate"
+			? `return ${node.constraints
+					.map((constraint) => `${constraint.compileReference(ctx)}(${In})`)
+					.join(" && ")}`
+			: `return undefined`,
 	writeDefaultDescription: (node) => {
 		return node.constraints.length === 0
 			? "an unknown value"

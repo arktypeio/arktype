@@ -122,8 +122,8 @@ export abstract class BaseNode<
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
-		this.allows = $ark.getReference(this.compile("predicate")) as never
-		this.traverse = $ark.getReference(this.compile("traversal")) as never
+		this.allows = $ark.resolve(this.compile("predicate")) as never
+		this.traverse = $ark.resolve(this.compile("traversal")) as never
 	}
 
 	// TODO: Cache

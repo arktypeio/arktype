@@ -170,8 +170,8 @@ describe("intersections", () => {
 			divisor: 3,
 			min: 5
 		})
-		attest(n.allows(6)).snap(false)
-		attest(n.allows(7)).snap(true)
+		attest(n.allows(6)).snap(true)
+		attest(n.allows(7)).snap(false)
 	})
 	it("compiles problems", () => {
 		const n = node({

@@ -181,9 +181,11 @@ export const UnionImplementation = defineNode({
 	writeDefaultDescription: (inner) =>
 		inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
 	compile: (node, ctx) =>
-		node.branches
-			.map((constraint) => `${constraint.compileReference(ctx)}(${In})`)
-			.join("&&")
+		ctx.compilationKind === "predicate"
+			? `return ${node.branches
+					.map((branch) => `${branch.compileReference(ctx)}(${In})`)
+					.join(" || ")}`
+			: `return undefined`
 })
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
