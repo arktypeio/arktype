@@ -1,12 +1,18 @@
 import {
 	JsObjects,
+	Parsing,
 	TsKeywords,
 	Validation,
 	type inferred
 } from "@arktype/schema"
 import type { MatchParser, WhenParser } from "./match.js"
 import { Scope, type Module, type ScopeParser } from "./scope.js"
-import type { DeclarationParser, DefinitionParser, TypeParser } from "./type.js"
+import type {
+	DeclarationParser,
+	DefinitionParser,
+	Generic,
+	TypeParser
+} from "./type.js"
 
 /** Root scopes can be inferred automatically from node definitions, but
  * explicitly typing them can improve responsiveness */
@@ -18,11 +24,42 @@ export type RootScope<exports> = Scope<{
 
 export type ArkResolutions = { exports: Ark; locals: {}; ambient: Ark }
 
-export const ark = Scope.root({
+// For some reason if we try to inline this, it gets evaluated and the module
+// can't be inferred
+export type ParsingResolutions = {
+	exports: Parsing.infer
+	locals: {}
+	ambient: {}
+}
+
+export type TsGenericsResolutions<$ = Ark> = {
+	exports: TsGenericsExports<$>
+	locals: {}
+	ambient: {}
+}
+
+type TsGenericsExports<$ = Ark> = {
+	Record: Generic<
+		["K", "V"],
+		{
+			"[K]": "V"
+		},
+		// as long as the generics in the root scope don't reference one
+		// another, they shouldn't need a bound local scope
+		$
+	>
+}
+
+export const tsGenerics = {} as Module<TsGenericsResolutions>
+
+export const ark: Scope<ArkResolutions> = Scope.root({
 	...TsKeywords.resolutions,
 	...JsObjects.resolutions,
-	...Validation.resolutions
-}).toAmbient()
+	...Validation.resolutions,
+	// TODO: fix
+	...tsGenerics,
+	parse: Parsing.resolutions as {} as Module<ParsingResolutions>
+}).toAmbient() as never
 
 export const arktypes: Module<ArkResolutions> = ark.export()
 
@@ -31,8 +68,9 @@ export const arktypes: Module<ArkResolutions> = ark.export()
 export interface Ark
 	extends TsKeywords.infer,
 		JsObjects.infer,
-		Validation.infer {
-	// parse: ParsingModule
+		Validation.infer,
+		TsGenericsExports {
+	parse: Module<ParsingResolutions>
 }
 
 export const scope: ScopeParser<{}, Ark> = ark.scope as never

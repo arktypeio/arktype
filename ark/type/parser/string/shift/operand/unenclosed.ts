@@ -188,10 +188,10 @@ type tryResolve<
 export const writeNonSubmoduleDotMessage = <name extends string>(
 	name: name
 ): writeNonSubmoduleDotMessage<name> =>
-	`'${name}' must reference a scope to be accessed using dot syntax`
+	`'${name}' must reference a module to be accessed using dot syntax`
 
 type writeNonSubmoduleDotMessage<name extends string> =
-	`'${name}' must reference a scope to be accessed using dot syntax`
+	`'${name}' must reference a module to be accessed using dot syntax`
 
 export const writeMissingSubmoduleAccessMessage = <name extends string>(
 	name: name

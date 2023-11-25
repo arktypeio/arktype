@@ -5,8 +5,6 @@ import { JsObjects } from "./jsObjects.js"
 import { TsKeywords } from "./tsKeywords.js"
 import { Validation } from "./validation.js"
 
-export type ArkResolutions = Ark
-
 export const ark: SchemaScope<ArkResolutions> = SchemaScope.from({
 	...TsKeywords.resolutions,
 	...JsObjects.resolutions,
@@ -28,7 +26,7 @@ export type isCast<def> = typeof inferred | "kind" extends keyof def
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
-export interface Ark
+export interface ArkResolutions
 	extends TsKeywords.resolutions,
 		JsObjects.resolutions,
 		Validation.resolutions {}

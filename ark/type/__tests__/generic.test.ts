@@ -1,7 +1,8 @@
 import { attest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { lazily } from "@arktype/util"
-import { arktypes, scope, type } from "arktype"
+import { scope, type } from "arktype"
+import { arktypes } from "../ark.js"
 import {
 	emptyGenericParameterMessage,
 	writeInvalidGenericArgsMessage
