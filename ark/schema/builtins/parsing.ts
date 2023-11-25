@@ -2,6 +2,7 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
+import type { Schema } from "../schema.js"
 import { SchemaScope, rootSchema } from "../scope.js"
 import type { Out } from "../sets/morph.js"
 import { parsedDate } from "./utils/date.js"
@@ -57,14 +58,16 @@ const json = rootSchema({
 	morph: (s: string): unknown => JSON.parse(s)
 })
 
+const mmmmmmmmmmm = json //=>?
+
 const date = parsedDate
 
 export interface InferredParsing {
-	url: (In: string) => Out<URL>
-	number: (In: string) => Out<number>
-	integer: (In: string) => Out<number>
-	date: (In: string) => Out<Date>
-	json: (In: string) => Out<unknown>
+	url: Schema<"morph", (In: string) => Out<URL>>
+	number: Schema<"morph", (In: string) => Out<number>>
+	integer: Schema<"morph", (In: string) => Out<number>>
+	date: Schema<"morph", (In: string) => Out<Date>>
+	json: Schema<"morph", (In: string) => Out<unknown>>
 }
 
 export const parsing: SchemaScope<InferredParsing> = SchemaScope.from({

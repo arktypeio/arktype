@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { parseNode, schema, type Schema } from "@arktype/schema"
+import { rootNode, schema, type Schema } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 import type { Disjoint } from "../shared/disjoint.js"
 
@@ -145,22 +145,22 @@ describe("intersections", () => {
 		attest(l.equals(r)).equals(false)
 	})
 	it("orthogonal refinements intersect as null", () => {
-		const l = parseNode("divisor", 5)
-		const r = parseNode("max", 100)
+		const l = rootNode("divisor", 5)
+		const r = rootNode("max", 100)
 		const result = l.intersect(r)
 		attest<null>(result).equals(null)
 	})
 	it("possibly disjoint refinements", () => {
-		const l = parseNode("min", 2)
-		const r = parseNode("max", 1)
+		const l = rootNode("min", 2)
+		const r = rootNode("max", 1)
 		const lrResult = l.intersect(r)
 		attest<Disjoint | null>(lrResult)
 		const rlResult = r.intersect(l)
 		attest<Disjoint | null>(rlResult)
 	})
 	it("doesn't equate optional and required props", () => {
-		const l = parseNode("required", { key: "a", value: "number" })
-		const r = parseNode("optional", { key: "a", value: "number" })
+		const l = rootNode("required", { key: "a", value: "number" })
+		const r = rootNode("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
 	it("compiles allows", () => {

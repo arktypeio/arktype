@@ -11,6 +11,8 @@ export const ark: SchemaScope<ArkResolutions> = SchemaScope.from({
 	...validation
 }) as never
 
+export const schema = ark.schema
+
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
 export interface Ark

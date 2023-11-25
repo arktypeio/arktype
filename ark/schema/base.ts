@@ -202,7 +202,7 @@ export abstract class BaseNode<
 				ioInner[k] = v
 			}
 		}
-		return this.scope.parseNode(this.kind, ioInner)
+		return this.scope.node(this.kind, ioInner)
 	}
 
 	toJSON() {
@@ -278,7 +278,7 @@ export abstract class BaseNode<
 		return this.isBasis() ||
 			other.isBasis() ||
 			(this.kind === "predicate" && other.kind === "predicate")
-			? this.scope.parseNode(
+			? this.scope.node(
 					"intersection",
 					unflattenConstraints([this as never, other])
 			  )
@@ -303,7 +303,7 @@ export abstract class BaseNode<
 				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: meta
-			return this.scope.parseNode(l.kind, result) as never
+			return this.scope.node(l.kind, result) as never
 		}
 		return null
 	}

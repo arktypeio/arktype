@@ -7,11 +7,11 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { Definition } from "../shared/nodes.js"
 import { discriminate, type Discriminant } from "./discriminate.js"
 import type {
-	MorphSchema,
+	MorphDefinition,
 	ValidatorDefinition,
 	ValidatorKind,
+	instantiateValidatorSchema,
 	parseMorphSchema,
-	parseValidatorSchema,
 	validateMorphSchema,
 	validateValidator
 } from "./morph.js"
@@ -31,19 +31,19 @@ export type validateSchemaBranch<def, $> = conform<
 		  : validateValidator<def>
 >
 
-export type parseSchemaBranches<branches extends readonly unknown[]> =
+export type instantiateSchemaBranches<branches extends readonly unknown[]> =
 	branches["length"] extends 0
 		? Node<"union", never>
 		: branches["length"] extends 1
-		  ? parseSchemaBranch<branches[0]>
-		  : Node<SchemaKind, parseSchemaBranch<branches[number]>["infer"]>
+		  ? instantiateSchemaBranch<branches[0]>
+		  : Node<SchemaKind, instantiateSchemaBranch<branches[number]>["infer"]>
 
-export type parseSchemaBranch<def> = def extends Schema
+export type instantiateSchemaBranch<def> = def extends Schema
 	? def
-	: def extends MorphSchema
+	: def extends MorphDefinition
 	  ? parseMorphSchema<def>
 	  : def extends ValidatorDefinition
-	    ? parseValidatorSchema<def>
+	    ? instantiateValidatorSchema<def>
 	    : BranchNode
 
 export type UnionDefinition<
@@ -96,7 +96,7 @@ export const UnionImplementation = defineNode({
 		branches: {
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
-					ctx.scope.parseSchemaFromKinds(
+					ctx.scope.schemaWithKindIn(
 						["morph", "intersection", ...basisKinds],
 						branch
 					)
@@ -173,7 +173,7 @@ export const UnionImplementation = defineNode({
 		if (reducedBranches.length !== inner.branches.length) {
 			return
 		}
-		return ctx.scope.parseNode("union", {
+		return ctx.scope.node("union", {
 			...inner,
 			branches: reducedBranches
 		})

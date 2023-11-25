@@ -21,7 +21,8 @@ export interface TsKeywordSchemas {
 export const tsKeywords: SchemaScope<TsKeywordSchemas> = SchemaScope.from({
 	any: {} as Schema<"intersection", any>,
 	bigint: "bigint",
-	boolean: [{ is: false }, { is: true }],
+	// since we know this won't be reduced, it can be safely cast to a union
+	boolean: [{ is: false }, { is: true }] as {} as Schema<"union", boolean>,
 	false: { is: false },
 	never: [],
 	null: { is: null },

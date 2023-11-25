@@ -8,7 +8,7 @@ import {
 	type mutable
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { BasisKind, parseBasis } from "../bases/basis.js"
+import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import type {
 	BaseAttributes,
@@ -48,7 +48,7 @@ export type IntersectionSchema<
 		? basis extends Definition<BasisKind> | undefined
 			? // allow all refinement kinds for base schema
 			  any
-			: parseBasis<basis>["infer"]
+			: instantiateBasis<basis>["infer"]
 		: unknown
 > &
 	BaseAttributes
@@ -76,8 +76,7 @@ export const IntersectionImplementation = defineNode({
 	normalize: (schema) => schema,
 	addContext: (ctx) => {
 		ctx.basis =
-			ctx.input.basis &&
-			ctx.scope.parseSchemaFromKinds(basisKinds, ctx.input.basis)
+			ctx.input.basis && ctx.scope.schemaWithKindIn(basisKinds, ctx.input.basis)
 	},
 	keys: {
 		basis: {
@@ -159,10 +158,7 @@ export const IntersectionImplementation = defineNode({
 		if (alias) {
 			reducedConstraintsByKind.alias = alias
 		}
-		return ctx.scope.parsePrereducedSchema(
-			"intersection",
-			reducedConstraintsByKind
-		)
+		return ctx.scope.prereduced("intersection", reducedConstraintsByKind)
 	},
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
@@ -209,7 +205,7 @@ export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	input: Definition<kind>,
 	ctx: SchemaParseContext<"intersection">
 ): Node<kind> => {
-	const refinement = ctx.scope.parseNode(kind, input) as Node<RefinementKind>
+	const refinement = ctx.scope.node(kind, input) as Node<RefinementKind>
 	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }
@@ -225,7 +221,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 			return
 		}
 		const refinements = input
-			.map((refinement) => ctx.scope.parseNode(kind, refinement))
+			.map((refinement) => ctx.scope.node(kind, refinement))
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
 		// we should only need to assert validity for one, as all listed
 		// refinements should be of the same kind and therefore have the same
@@ -233,7 +229,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 		refinements[0].assertValidBasis(ctx.basis)
 		return refinements
 	}
-	const refinement = ctx.scope.parseNode(kind, input)
+	const refinement = ctx.scope.node(kind, input)
 	refinement.assertValidBasis(ctx.basis)
 	return [refinement]
 }
@@ -319,17 +315,16 @@ type exactBasisMessageOnError<branch, expected> = {
 				: `this schema's basis`}`>
 }
 
-export type validateIntersectionSchema<schema> =
-	schema extends IntersectionBasis
-		? exactBasisMessageOnError<schema, IntersectionSchema<schema["basis"]>>
-		: exactBasisMessageOnError<schema, IntersectionSchema<undefined>>
+export type validateIntersectionSchema<def> = def extends IntersectionBasis
+	? exactBasisMessageOnError<def, IntersectionSchema<def["basis"]>>
+	: exactBasisMessageOnError<def, IntersectionSchema<undefined>>
 
-export type parseIntersectionSchema<schema> =
-	schema extends Required<IntersectionBasis>
-		? keyof schema & RefinementKind extends never
+export type instantiateIntersectionSchema<def> =
+	def extends Required<IntersectionBasis>
+		? keyof def & RefinementKind extends never
 			? // if there are no refinement keys, reduce to the basis node
-			  parseBasis<schema["basis"]>
-			: Node<"intersection", parseBasis<schema["basis"]>["infer"]>
+			  instantiateBasis<def["basis"]>
+			: Node<"intersection", instantiateBasis<def["basis"]>["infer"]>
 		: Node<"intersection">
 
 // export class ArrayPredicate extends composePredicate(

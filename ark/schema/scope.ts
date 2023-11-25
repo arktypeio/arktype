@@ -12,8 +12,8 @@ import type { BaseAttachments, Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
 import type {
-	parseSchemaBranch,
-	parseSchemaBranches,
+	instantiateSchemaBranch,
+	instantiateSchemaBranches,
 	validateSchemaBranch
 } from "./sets/union.js"
 import {
@@ -42,12 +42,14 @@ export type validateAliases<aliases> = {
 }
 
 export type inferAliases<aliases> = {
-	[k in keyof aliases]: aliases[k] extends NormalizedDefinition<"union">
-		? parseSchemaBranches<aliases[k]["branches"]>
-		: aliases[k] extends readonly [...infer branches]
-		  ? parseSchemaBranches<branches>
-		  : parseSchemaBranch<aliases[k]>
-}
+	[k in keyof aliases]: aliases[k] extends Schema
+		? aliases[k]
+		: aliases[k] extends NormalizedDefinition<"union">
+		  ? instantiateSchemaBranches<aliases[k]["branches"]>
+		  : aliases[k] extends readonly [...infer branches]
+		    ? instantiateSchemaBranches<branches>
+		    : instantiateSchemaBranch<aliases[k]>
+} & unknown
 
 export class SchemaScope<resolutions = unknown> {
 	declare infer: resolutions
@@ -60,25 +62,25 @@ export class SchemaScope<resolutions = unknown> {
 
 	static root = new SchemaScope<{}>({})
 
-	parseUnion<const branches extends readonly unknown[]>(
+	union<const branches extends readonly unknown[]>(
 		input: {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], resolutions>
 			}
 		} & NormalizedDefinition<"union">
-	): parseSchemaBranches<branches> {
-		return this.parseNode("union", input, { scope: this }) as never
+	): instantiateSchemaBranches<branches> {
+		return this.node("union", input, { scope: this }) as never
 	}
 
-	parseBranches<const branches extends readonly unknown[]>(
+	branches<const branches extends readonly unknown[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i], resolutions>
 		}
-	): parseSchemaBranches<branches> {
-		return this.parseNode("union", branches) as never
+	): instantiateSchemaBranches<branches> {
+		return this.node("union", branches) as never
 	}
 
-	parseUnits<const branches extends readonly unknown[]>(
+	units<const branches extends readonly unknown[]>(
 		...values: branches
 	): branches["length"] extends 1
 		? Node<"unit", branches[0]>
@@ -90,26 +92,26 @@ export class SchemaScope<resolutions = unknown> {
 			}
 		}
 		const branches = uniqueValues.map((unit) =>
-			this.parsePrereducedSchema("unit", { is: unit })
+			this.prereduced("unit", { is: unit })
 		)
 		if (branches.length === 1) {
 			return branches[0]
 		}
-		return this.parsePrereducedSchema("union", {
+		return this.prereduced("union", {
 			branches
 		}) as never
 	}
 
-	parsePrereducedSchema<kind extends SchemaKind>(
+	prereduced<kind extends SchemaKind>(
 		kind: kind,
 		input: Definition<kind>
 	): Node<kind> {
-		return this.parseNode(kind, input, {
+		return this.node(kind, input, {
 			prereduced: true
 		}) as never
 	}
 
-	parseSchemaFromKinds<defKind extends SchemaKind>(
+	schemaWithKindIn<defKind extends SchemaKind>(
 		allowedKinds: readonly defKind[],
 		input: unknown
 	): Node<reducibleKindOf<defKind>> {
@@ -119,12 +121,12 @@ export class SchemaScope<resolutions = unknown> {
 				`Schema of kind ${kind} should be one of ${allowedKinds}`
 			)
 		}
-		return this.parseNode(kind, input as never, {}) as never
+		return this.node(kind, input as never, {}) as never
 	}
 
 	static parseCache: Record<string, Node> = {}
 
-	parseNode<defKind extends NodeKind>(
+	node<defKind extends NodeKind>(
 		kind: defKind,
 		input: Definition<defKind>,
 		ctxInput?: SchemaParseContextInput
@@ -225,13 +227,16 @@ export class SchemaScope<resolutions = unknown> {
 			: new ($ark.SchemaNode as any)(attachments)
 	}
 
-	readonly schema = Object.assign(this.parseBranches, {
-		units: this.parseUnits,
-		union: this.parseUnion
+	readonly schema = Object.assign(this.branches, {
+		units: this.units,
+		union: this.union,
+		prereduced: this.prereduced
 	})
 }
 
 export const rootSchema = SchemaScope.root.schema
+
+export const rootNode = SchemaScope.root.node
 
 const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)

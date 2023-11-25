@@ -7,7 +7,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { BasisKind, parseBasis } from "../bases/basis.js"
+import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { NonEnumerableDomain } from "../bases/domain.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
@@ -16,7 +16,7 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { Definition, NormalizedDefinition } from "../shared/nodes.js"
 import type {
 	IntersectionSchema,
-	parseIntersectionSchema,
+	instantiateIntersectionSchema,
 	validateIntersectionSchema
 } from "./intersection.js"
 
@@ -26,23 +26,20 @@ export type ValidatorNode = Node<ValidatorKind>
 
 export type ValidatorDefinition = Definition<ValidatorKind>
 
-export type validateValidator<schema> = [schema] extends [
+export type validateValidator<def> = [def] extends [
 	NonEnumerableDomain | Constructor
 ]
-	? schema
-	: schema extends NormalizedDefinition<BasisKind>
-	  ? exactMessageOnError<
-				schema,
-				NormalizedDefinition<keyof schema & BasisKind>
-	    >
-	  : schema extends IntersectionSchema
-	    ? validateIntersectionSchema<schema>
+	? def
+	: def extends NormalizedDefinition<BasisKind>
+	  ? exactMessageOnError<def, NormalizedDefinition<keyof def & BasisKind>>
+	  : def extends IntersectionSchema
+	    ? validateIntersectionSchema<def>
 	    : ValidatorDefinition
 
-export type parseValidatorSchema<schema> = schema extends Definition<BasisKind>
-	? parseBasis<schema>
-	: schema extends IntersectionSchema
-	  ? parseIntersectionSchema<schema>
+export type instantiateValidatorSchema<def> = def extends Definition<BasisKind>
+	? instantiateBasis<def>
+	: def extends IntersectionSchema
+	  ? instantiateIntersectionSchema<def>
 	  : Node<ValidatorKind>
 
 export type TraversalState = {
@@ -60,7 +57,7 @@ export type MorphInner = withAttributes<{
 	readonly morph: readonly Morph[]
 }>
 
-export type MorphSchema = withAttributes<{
+export type MorphDefinition = withAttributes<{
 	readonly in: ValidatorDefinition
 	readonly out?: ValidatorDefinition
 	readonly morph: listable<Morph>
@@ -73,7 +70,7 @@ export type MorphAttachments = {
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
-	schema: MorphSchema
+	schema: MorphDefinition
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint
@@ -89,11 +86,11 @@ export const MorphImplementation = defineNode({
 	keys: {
 		in: {
 			parse: (schema, ctx) =>
-				ctx.scope.parseSchemaFromKinds(["intersection", ...basisKinds], schema)
+				ctx.scope.schemaWithKindIn(["intersection", ...basisKinds], schema)
 		},
 		out: {
 			parse: (schema, ctx) =>
-				ctx.scope.parseSchemaFromKinds(["intersection", ...basisKinds], schema)
+				ctx.scope.schemaWithKindIn(["intersection", ...basisKinds], schema)
 		},
 		morph: {
 			parse: listFrom
@@ -156,24 +153,24 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		: t
 	: Exclude<out, Problem>
 
-export type validateMorphSchema<schema> = {
-	[k in keyof schema]: k extends "in" | "out"
-		? validateValidator<schema[k]>
-		: k extends keyof MorphSchema
-		  ? MorphSchema[k]
+export type validateMorphSchema<def> = {
+	[k in keyof def]: k extends "in" | "out"
+		? validateValidator<def[k]>
+		: k extends keyof MorphDefinition
+		  ? MorphDefinition[k]
 		  : `'${k & string}' is not a valid morph schema key`
 }
 
-export type parseMorphSchema<schema> = schema extends MorphSchema
+export type parseMorphSchema<def> = def extends MorphDefinition
 	? Node<
 			"morph",
 			(
-				In: schema["in"] extends {}
-					? parseValidatorSchema<schema["in"]>["infer"]
+				In: def["in"] extends {}
+					? instantiateValidatorSchema<def["in"]>["infer"]
 					: unknown
-			) => schema["out"] extends {}
-				? Out<parseValidatorSchema<schema["out"]>["infer"]>
-				: schema["morph"] extends
+			) => def["out"] extends {}
+				? Out<instantiateValidatorSchema<def["out"]>["infer"]>
+				: def["morph"] extends
 							| Morph<any, infer o>
 							| readonly [...unknown[], Morph<any, infer o>]
 				  ? Out<inferMorphOut<o>>

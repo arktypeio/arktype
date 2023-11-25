@@ -76,19 +76,19 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	}
 }
 
-export type parseBasis<schema extends Definition<BasisKind>> =
+export type instantiateBasis<def extends Definition<BasisKind>> =
 	//allow any to be used to access all refinements
-	isAny<schema> extends true
+	isAny<def> extends true
 		? any
-		: schema extends NonEnumerableDomain
-		  ? Node<"domain", inferDomain<schema>>
-		  : schema extends Constructor<infer instance>
+		: def extends NonEnumerableDomain
+		  ? Node<"domain", inferDomain<def>>
+		  : def extends Constructor<infer instance>
 		    ? Node<"proto", instance>
-		    : schema extends DomainSchema<infer domain>
+		    : def extends DomainSchema<infer domain>
 		      ? Node<"domain", inferDomain<domain>>
-		      : schema extends ProtoInput<infer proto>
+		      : def extends ProtoInput<infer proto>
 		        ? Node<"proto", instanceOf<proto>>
-		        : schema extends UnitSchema<infer is>
+		        : def extends UnitSchema<infer is>
 		          ? Node<"unit", is>
 		          : never
 

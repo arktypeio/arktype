@@ -37,8 +37,7 @@ export const OptionalImplementation = defineRefinement({
 	keys: {
 		key: {},
 		value: {
-			parse: (schema, ctx) =>
-				ctx.scope.parseSchemaFromKinds(schemaKinds, schema)
+			parse: (schema, ctx) => ctx.scope.schemaWithKindIn(schemaKinds, schema)
 		}
 	},
 	operands: ["object"],
