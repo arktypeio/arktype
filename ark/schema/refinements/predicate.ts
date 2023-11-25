@@ -16,11 +16,11 @@ export type PredicateInner<predicate extends Predicate = Predicate> =
 		readonly predicate: predicate
 	}>
 
-export type PredicateSchema = PredicateInner | Predicate
+export type PredicateDefinition = PredicateInner | Predicate
 
 export type PredicateDeclaration = declareRefinement<{
 	kind: "predicate"
-	schema: PredicateSchema
+	schema: PredicateDefinition
 	inner: PredicateInner
 	intersections: {
 		predicate: "predicate" | null

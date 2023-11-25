@@ -4,7 +4,8 @@ import {
 	type extend,
 	type valueOf
 } from "@arktype/util"
-import type { Builtins } from "../node.js"
+import type { Node } from "../parse.js"
+import type { Builtins } from "../shared/builtins.js"
 import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type {
@@ -12,7 +13,7 @@ import type {
 	PrimitiveConstraintAttachments
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Declaration, Node } from "../shared/node.js"
+import type { Declaration } from "../shared/nodes.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -27,7 +28,7 @@ export type BoundInner<limit extends LimitValue = LimitValue> = withAttributes<{
 
 export type LimitValue = number | string
 
-export type BoundSchema<limit extends LimitValue = LimitValue> =
+export type BoundDefinition<limit extends LimitValue = LimitValue> =
 	| limit
 	| BoundInner<limit>
 
@@ -140,7 +141,7 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 
 export type MinDeclaration = declareRefinement<{
 	kind: "min"
-	schema: BoundSchema<number>
+	schema: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
 	operands: number
@@ -159,7 +160,7 @@ export const MinImplementation = defineBound({
 
 export type MaxDeclaration = declareRefinement<{
 	kind: "max"
-	schema: BoundSchema<number>
+	schema: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
 	operands: number
@@ -178,7 +179,7 @@ export const MaxImplementation = defineBound({
 
 export type MinLengthDeclaration = declareRefinement<{
 	kind: "minLength"
-	schema: BoundSchema<number>
+	schema: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
 	operands: string | readonly unknown[]
@@ -203,7 +204,7 @@ export const MinLengthImplementation = defineBound({
 
 export type MaxLengthDeclaration = declareRefinement<{
 	kind: "maxLength"
-	schema: BoundSchema<number>
+	schema: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
 	operands: string | readonly unknown[]
@@ -223,7 +224,7 @@ export const MaxLengthImplementation = defineBound({
 
 export type AfterDeclaration = declareRefinement<{
 	kind: "after"
-	schema: BoundSchema<string | number>
+	schema: BoundDefinition<string | number>
 	inner: BoundInner<string | number>
 	attach: BoundAttachments<"lower">
 	operands: Date
@@ -241,7 +242,7 @@ export const AfterImplementation = defineBound({
 
 export type BeforeDeclaration = declareRefinement<{
 	kind: "before"
-	schema: BoundSchema<string | number>
+	schema: BoundDefinition<string | number>
 	inner: BoundInner<string | number>
 	attach: BoundAttachments<"upper">
 	operands: Date

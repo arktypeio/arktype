@@ -8,7 +8,7 @@ import {
 	type mutable
 } from "@arktype/util"
 import type { BasisKind, parseBasis } from "../bases/basis.js"
-import type { UnknownNode } from "../node.js"
+import type { Node, UnknownNode } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import type {
 	BaseAttributes,
@@ -27,7 +27,7 @@ import {
 	type SchemaParseContext
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Node, Schema } from "../shared/node.js"
+import type { Input } from "../shared/nodes.js"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {
@@ -38,12 +38,12 @@ export type IntersectionInner = withAttributes<
 >
 
 export type IntersectionSchema<
-	basis extends Schema<BasisKind> | undefined = Schema<BasisKind> | undefined
+	basis extends Input<BasisKind> | undefined = Input<BasisKind> | undefined
 > = {
 	basis?: basis
 } & refinementInputsByKind<
-	basis extends Schema<BasisKind>
-		? basis extends Schema<BasisKind> | undefined
+	basis extends Input<BasisKind>
+		? basis extends Input<BasisKind> | undefined
 			? // allow all refinement kinds for base schema
 			  any
 			: parseBasis<basis>["infer"]
@@ -74,8 +74,7 @@ export const IntersectionImplementation = defineNode({
 	normalize: (schema) => schema,
 	addContext: (ctx) => {
 		ctx.basis =
-			ctx.schema.basis &&
-			ctx.cls.parseTypeFromKinds(basisKinds, ctx.schema.basis)
+			ctx.input.basis && ctx.cls.parseTypeFromKinds(basisKinds, ctx.input.basis)
 	},
 	keys: {
 		basis: {
@@ -201,7 +200,7 @@ export const IntersectionImplementation = defineNode({
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
-	input: Schema<kind>,
+	input: Input<kind>,
 	ctx: SchemaParseContext<"intersection">
 ): Node<kind> => {
 	const refinement = ctx.cls.parseSchema(kind, input) as Node<RefinementKind>
@@ -211,7 +210,7 @@ export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 
 export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
-	input: listable<Schema<kind>>,
+	input: listable<Input<kind>>,
 	ctx: SchemaParseContext<"intersection">
 ) => {
 	if (isArray(input)) {
@@ -302,7 +301,7 @@ export const addConstraint = (
 }
 
 export type IntersectionBasis = {
-	basis?: Schema<BasisKind>
+	basis?: Input<BasisKind>
 }
 
 type exactBasisMessageOnError<branch, expected> = {

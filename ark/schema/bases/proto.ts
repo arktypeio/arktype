@@ -20,13 +20,13 @@ export type ProtoInner<proto extends Constructor = Constructor> =
 		readonly proto: proto
 	}>
 
-export type ProtoSchema<proto extends Constructor = Constructor> =
+export type ProtoInput<proto extends Constructor = Constructor> =
 	| proto
 	| ProtoInner<proto>
 
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
-	schema: ProtoSchema
+	schema: ProtoInput
 	inner: ProtoInner
 	intersections: {
 		proto: "proto" | Disjoint

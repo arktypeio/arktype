@@ -8,8 +8,9 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
+import type { Node } from "../parse.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
-import type { Node, Schema } from "../shared/node.js"
+import type { Input } from "../shared/nodes.js"
 import { isNode } from "../shared/registry.js"
 import {
 	DomainImplementation,
@@ -20,7 +21,7 @@ import {
 import {
 	ProtoImplementation,
 	type ProtoDeclaration,
-	type ProtoSchema
+	type ProtoInput
 } from "./proto.js"
 import {
 	UnitImplementation,
@@ -75,7 +76,7 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	}
 }
 
-export type parseBasis<schema extends Schema<BasisKind>> =
+export type parseBasis<schema extends Input<BasisKind>> =
 	//allow any to be used to access all refinements
 	isAny<schema> extends true
 		? any
@@ -85,7 +86,7 @@ export type parseBasis<schema extends Schema<BasisKind>> =
 		    ? Node<"proto", instance>
 		    : schema extends DomainSchema<infer domain>
 		      ? Node<"domain", inferDomain<domain>>
-		      : schema extends ProtoSchema<infer proto>
+		      : schema extends ProtoInput<infer proto>
 		        ? Node<"proto", instanceOf<proto>>
 		        : schema extends UnitSchema<infer is>
 		          ? Node<"unit", is>

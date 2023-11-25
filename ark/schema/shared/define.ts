@@ -11,20 +11,15 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { BaseNode, UnknownNode } from "../node.js"
-import type { BaseType } from "../type.js"
+import type { BaseNode, Node, UnknownNode } from "../parse.js"
+import type { Schema } from "../schema.js"
 import {
 	compileSerializedValue,
 	type CompilationContext
 } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
-import type {
-	Declaration,
-	Node,
-	NormalizedSchema,
-	reducibleKindOf
-} from "./node.js"
+import type { Declaration, NormalizedInput, reducibleKindOf } from "./nodes.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -65,9 +60,9 @@ export const setKinds = ["union", "morph", "intersection"] as const
 
 export type SetKind = (typeof setKinds)[number]
 
-export const typeKinds = [...setKinds, ...basisKinds] as const
+export const schemaKinds = [...setKinds, ...basisKinds] as const
 
-export type TypeKind = (typeof typeKinds)[number]
+export type SchemaKind = (typeof schemaKinds)[number]
 
 export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
@@ -84,8 +79,8 @@ type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export type Root<
 	t = unknown,
-	kind extends TypeKind = TypeKind
-> = kind extends TypeKind ? BaseType<kind, t> : never
+	kind extends SchemaKind = SchemaKind
+> = kind extends SchemaKind ? Schema<kind, t> : never
 
 type BaseAttributeKeyDefinitions = {
 	[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
@@ -121,8 +116,8 @@ export const defaultInnerKeySerializer = (v: unknown) => {
 	return compileSerializedValue(v)
 }
 
-export type normalizeSchema<schema, inner extends BaseAttributes> = Extract<
-	schema,
+export type normalizeInput<input, inner extends BaseAttributes> = Extract<
+	input,
 	PartialRecord<requiredKeyOf<inner>>
 >
 
@@ -134,7 +129,7 @@ export type SchemaParseContextInput = {
 export type SchemaParseContext<kind extends NodeKind> = extend<
 	SchemaParseContextInput,
 	{
-		schema: NormalizedSchema<kind>
+		input: NormalizedInput<kind>
 		cls: typeof BaseNode
 	}
 >
@@ -152,14 +147,14 @@ export type NodeKeyDefinition<
 				: d["inner"][k]
 		) => JsonData
 		parse?: (
-			schema: k extends keyof NormalizedSchema<d["kind"]>
-				? Exclude<NormalizedSchema<d["kind"]>[k], undefined>
+			schema: k extends keyof NormalizedInput<d["kind"]>
+				? Exclude<NormalizedInput<d["kind"]>[k], undefined>
 				: undefined,
 			ctx: SchemaParseContext<d["kind"]>
 		) => d["inner"][k]
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
-	NormalizedSchema<d["kind"]> extends Pick<d["inner"], k> ? never : "parse"
+	NormalizedInput<d["kind"]> extends Pick<d["inner"], k> ? never : "parse"
 >
 
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
@@ -172,7 +167,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	attach: (node: Node<d["kind"]>) => {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
-	normalize: (schema: d["schema"]) => normalizeSchema<d["schema"], d["inner"]>
+	normalize: (schema: d["schema"]) => normalizeInput<d["schema"], d["inner"]>
 	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 	reduce?: (
 		inner: d["inner"],

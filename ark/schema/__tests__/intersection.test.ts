@@ -1,21 +1,21 @@
 import { attest } from "@arktype/attest"
-import { node, parseSchema, type BaseType } from "@arktype/schema"
+import { parseNode, schema, type Schema } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 import type { Disjoint } from "../shared/disjoint.js"
 
 describe("intersections", () => {
 	it("parse pattern", () => {
-		const t = node({ basis: "string", pattern: ".*" })
-		attest<BaseType<"intersection", string>>(t)
+		const t = schema({ basis: "string", pattern: ".*" })
+		attest<Schema<"intersection", string>>(t)
 		attest(t.json).snap({ basis: "string", pattern: [".*"] })
 	})
 	it("multiple constraints", () => {
-		const l = node({
+		const l = schema({
 			basis: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = node({
+		const r = schema({
 			basis: "number",
 			divisor: 5
 		})
@@ -27,7 +27,7 @@ describe("intersections", () => {
 		})
 	})
 	it("union", () => {
-		const l = node(
+		const l = schema(
 			{
 				basis: "number",
 				divisor: 2
@@ -37,7 +37,7 @@ describe("intersections", () => {
 				divisor: 3
 			}
 		)
-		const r = node({
+		const r = schema({
 			basis: "number",
 			divisor: 5
 		})
@@ -48,7 +48,7 @@ describe("intersections", () => {
 		])
 	})
 	it("in/out", () => {
-		const parseNumber = node({
+		const parseNumber = schema({
 			in: {
 				basis: "string",
 				pattern: wellFormedNumberMatcher,
@@ -64,11 +64,11 @@ describe("intersections", () => {
 		attest(parseNumber.out.json).snap({})
 	})
 	it("reduces union", () => {
-		const n = node("number", {}, { is: 5 })
+		const n = schema("number", {}, { is: 5 })
 		attest(n.json).snap({})
 	})
 	it("in/out union", () => {
-		const n = node(
+		const n = schema(
 			{
 				in: "string",
 				morph: (s: string) => parseFloat(s)
@@ -80,12 +80,12 @@ describe("intersections", () => {
 	})
 	it("errors on unknown key", () => {
 		// @ts-expect-error
-		attest(() => node({ foo: "bar", description: "baz" }))
+		attest(() => schema({ foo: "bar", description: "baz" }))
 			.throws.snap("Error: Key foo is not valid on intersection schema")
 			.type.errors.snap("Type 'string' is not assignable to type 'never'.")
 	})
 	it("union of all types reduced to unknown", () => {
-		const n = node(
+		const n = schema(
 			"string",
 			"number",
 			"object",
@@ -99,12 +99,12 @@ describe("intersections", () => {
 		attest(n.json).snap({})
 	})
 	it("normalizes refinement order", () => {
-		const l = node({
+		const l = schema({
 			basis: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = node({
+		const r = schema({
 			basis: "number",
 			min: 5,
 			divisor: 3
@@ -112,14 +112,14 @@ describe("intersections", () => {
 		attest(l.id).equals(r.id)
 	})
 	it("normalizes prop order", () => {
-		const l = node({
+		const l = schema({
 			basis: "object",
 			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
-		const r = node({
+		const r = schema({
 			basis: "object",
 			required: [
 				{ key: "b", value: "number" },
@@ -129,42 +129,42 @@ describe("intersections", () => {
 		attest(l.id).equals(r.id)
 	})
 	it("normalizes union order", () => {
-		const l = node("number", "string")
-		const r = node("string", "number")
+		const l = schema("number", "string")
+		const r = schema("string", "number")
 		attest(l.id).equals(r.id)
 	})
 	it("doesn't normalize ordered unions", () => {
-		const l = node({
+		const l = schema.union({
 			branches: ["string", "number"],
 			ordered: true
 		})
-		const r = node({
+		const r = schema.union({
 			branches: ["number", "string"],
 			ordered: true
 		})
 		attest(l.equals(r)).equals(false)
 	})
 	it("orthogonal refinements intersect as null", () => {
-		const l = parseSchema("divisor", 5)
-		const r = parseSchema("max", 100)
+		const l = parseNode("divisor", 5)
+		const r = parseNode("max", 100)
 		const result = l.intersect(r)
 		attest<null>(result).equals(null)
 	})
 	it("possibly disjoint refinements", () => {
-		const l = parseSchema("min", 2)
-		const r = parseSchema("max", 1)
+		const l = parseNode("min", 2)
+		const r = parseNode("max", 1)
 		const lrResult = l.intersect(r)
 		attest<Disjoint | null>(lrResult)
 		const rlResult = r.intersect(l)
 		attest<Disjoint | null>(rlResult)
 	})
 	it("doesn't equate optional and required props", () => {
-		const l = parseSchema("required", { key: "a", value: "number" })
-		const r = parseSchema("optional", { key: "a", value: "number" })
+		const l = parseNode("required", { key: "a", value: "number" })
+		const r = parseNode("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
 	it("compiles allows", () => {
-		const n = node({
+		const n = schema({
 			basis: "number",
 			divisor: 3,
 			min: 5
@@ -173,7 +173,7 @@ describe("intersections", () => {
 		attest(n.allows(7)).snap(false)
 	})
 	it("compiles problems", () => {
-		const n = node({
+		const n = schema({
 			basis: "number",
 			divisor: 3,
 			min: 5
@@ -184,7 +184,7 @@ describe("intersections", () => {
 		})
 	})
 	it("compiles path problems", () => {
-		const n = node({
+		const n = schema({
 			basis: "object",
 			required: {
 				key: "a",
@@ -234,7 +234,7 @@ describe("intersections", () => {
 			}
 		}
 
-		const arkType = node({
+		const arkType = schema({
 			basis: "object",
 			required: [
 				{ key: "number", value: "number" },

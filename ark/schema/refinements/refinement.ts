@@ -1,6 +1,6 @@
 import type { extend, listable } from "@arktype/util"
 import type { OpenRefinementKind, RefinementKind } from "../shared/define.js"
-import type { Declaration, Schema } from "../shared/node.js"
+import type { Declaration, Input } from "../shared/nodes.js"
 import { BoundImplementations, type BoundDeclarations } from "./bounds.js"
 import { DivisorImplementation, type DivisorDeclaration } from "./divisor.js"
 import { PatternImplementation, type PatternDeclaration } from "./pattern.js"
@@ -40,8 +40,8 @@ export const RefinementImplementations = {
 
 export type RefinementIntersectionInputsByKind = {
 	[k in RefinementKind]: k extends OpenRefinementKind
-		? listable<Schema<k>>
-		: Schema<k>
+		? listable<Input<k>>
+		: Input<k>
 }
 
 export type RefinementIntersectionInput<

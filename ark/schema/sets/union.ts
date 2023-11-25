@@ -1,13 +1,14 @@
 import { isArray, type conform } from "@arktype/util"
+import type { Node } from "../parse.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { basisKinds, defineNode, type TypeKind } from "../shared/define.js"
+import { basisKinds, defineNode, type SchemaKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Node, Schema } from "../shared/node.js"
+import type { Input } from "../shared/nodes.js"
 import { discriminate, type Discriminant } from "./discriminate.js"
 import type {
 	MorphSchema,
+	ValidatorDefinition,
 	ValidatorKind,
-	ValidatorSchema,
 	parseMorphSchema,
 	parseValidatorSchema,
 	validateMorphSchema,
@@ -16,7 +17,7 @@ import type {
 
 export type BranchKind = "morph" | ValidatorKind
 
-export type BranchSchema = Schema<BranchKind>
+export type BranchDefinition = Input<BranchKind>
 
 export type BranchNode = Node<BranchKind>
 
@@ -32,16 +33,16 @@ export type parseSchemaBranches<branches extends readonly unknown[]> =
 		? Node<"union", never>
 		: branches["length"] extends 1
 		  ? parseSchemaBranch<branches[0]>
-		  : Node<TypeKind, parseSchemaBranch<branches[number]>["infer"]>
+		  : Node<SchemaKind, parseSchemaBranch<branches[number]>["infer"]>
 
 export type parseSchemaBranch<schema> = schema extends MorphSchema
 	? parseMorphSchema<schema>
-	: schema extends ValidatorSchema
+	: schema extends ValidatorDefinition
 	  ? parseValidatorSchema<schema>
 	  : BranchNode
 
-export type UnionSchema<
-	branches extends readonly BranchSchema[] = readonly BranchSchema[]
+export type UnionDefinition<
+	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
 > =
 	| withAttributes<{
 			readonly branches: branches
@@ -60,7 +61,7 @@ export type UnionAttachments = {
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
-	schema: UnionSchema
+	schema: UnionDefinition
 	inner: UnionInner
 	intersections: {
 		union: "union" | Disjoint
@@ -95,7 +96,7 @@ export const UnionImplementation = defineNode({
 						branch
 					)
 				)
-				if (isArray(ctx.schema) || ctx.schema.ordered !== true) {
+				if (isArray(ctx.input) || ctx.input.ordered !== true) {
 					branches.sort((l, r) => (l.id < r.id ? -1 : 1))
 				}
 				return branches

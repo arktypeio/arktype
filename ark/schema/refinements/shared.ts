@@ -1,6 +1,7 @@
 import { throwParseError, type extend } from "@arktype/util"
 import type { BasisKind } from "../bases/basis.js"
-import type { Builtins } from "../node.js"
+import type { Node } from "../parse.js"
+import type { Builtins } from "../shared/builtins.js"
 import type {
 	BaseNodeDeclaration,
 	validateNodeDeclaration
@@ -10,7 +11,7 @@ import {
 	type NodeImplementationInput,
 	type RefinementKind
 } from "../shared/define.js"
-import type { Declaration, Node } from "../shared/node.js"
+import type { Declaration } from "../shared/nodes.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"

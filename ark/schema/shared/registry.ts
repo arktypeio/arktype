@@ -1,5 +1,5 @@
 import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
-import type { UnknownNode } from "../node.js"
+import type { UnknownNode } from "../parse.js"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 

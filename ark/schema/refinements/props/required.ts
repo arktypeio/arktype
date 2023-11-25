@@ -1,12 +1,13 @@
+import type { Node } from "../../parse.js"
 import {
 	In,
 	compileSerializedValue,
 	type Problem
 } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
-import { typeKinds, type TypeKind } from "../../shared/define.js"
+import { schemaKinds, type SchemaKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { Inner, Node, Schema } from "../../shared/node.js"
+import type { Inner, Input } from "../../shared/nodes.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -15,21 +16,21 @@ import {
 import type { PropKind } from "./prop.js"
 import type { NamedPropAttachments } from "./shared.js"
 
-export type RequiredPropSchema = withAttributes<{
+export type RequiredDefinition = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Schema<TypeKind>
+	readonly value: Input<SchemaKind>
 }>
 
-export type RequiredPropInner = withAttributes<{
+export type RequiredInner = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Node<TypeKind>
+	readonly value: Node<SchemaKind>
 }>
 
 export type RequiredDeclaration = declareRefinement<{
 	kind: "required"
-	schema: RequiredPropSchema
+	schema: RequiredDefinition
 	operands: object
-	inner: RequiredPropInner
+	inner: RequiredInner
 	intersections: {
 		required: "required" | Disjoint | null
 		optional: "required" | Disjoint | null
@@ -60,7 +61,7 @@ export const RequiredImplementation = defineRefinement({
 	keys: {
 		key: {},
 		value: {
-			parse: (schema, ctx) => ctx.cls.parseTypeFromKinds(typeKinds, schema)
+			parse: (schema, ctx) => ctx.cls.parseTypeFromKinds(schemaKinds, schema)
 		}
 	},
 	operands: ["object"],

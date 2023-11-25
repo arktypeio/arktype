@@ -1,16 +1,17 @@
-import { BaseNode } from "./node.js"
-import { parseSchema, type BaseAttachments } from "./parse.js"
+import {
+	BaseNode,
+	parseNode,
+	type BaseAttachments,
+	type Node
+} from "./parse.js"
 import type { BranchKind } from "./sets/union.js"
-import type { RefinementKind, Root, TypeKind } from "./shared/define.js"
+import type { RefinementKind, Root, SchemaKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
-import type { Node, Schema } from "./shared/node.js"
+import type { Input } from "./shared/nodes.js"
 import { inferred } from "./shared/symbols.js"
 
-export class BaseType<
-	kind extends TypeKind = TypeKind,
-	t = unknown
-> extends BaseNode<kind, t> {
+export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -27,9 +28,9 @@ export class BaseType<
 
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,
-		schema: Schema<refinementKind>
+		input: Input<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
-		const refinement = parseSchema(kind, schema)
+		const refinement = parseNode(kind, input)
 		return this.and(refinement) as never
 	}
 
@@ -53,10 +54,10 @@ export class BaseType<
 	or<other extends Root>(
 		other: other
 	): Node<
-		"union" | Extract<kind | other["kind"], TypeKind>,
+		"union" | Extract<kind | other["kind"], SchemaKind>,
 		t | other["infer"]
 	> {
-		return parseSchema("union", [...this.branches, ...other.branches]) as never
+		return parseNode("union", [...this.branches, ...other.branches]) as never
 	}
 
 	isUnknown(): this is BaseNode<"intersection", unknown> {
@@ -84,3 +85,12 @@ export class BaseType<
 		)
 	}
 }
+
+export type Schema<kind extends SchemaKind = SchemaKind, t = unknown> = {
+	union: SchemaNode<"union", t>
+	morph: SchemaNode<"morph", t>
+	intersection: SchemaNode<"intersection", t>
+	unit: SchemaNode<"unit", t>
+	proto: SchemaNode<"proto", t>
+	domain: SchemaNode<"domain", t>
+}[kind]

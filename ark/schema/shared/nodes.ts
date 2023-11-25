@@ -1,6 +1,5 @@
 import type { Dict, extend } from "@arktype/util"
 import { BasisImplementations, type BasisDeclarations } from "../bases/basis.js"
-import type { BaseNode } from "../node.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import {
 	RefinementImplementations,
@@ -12,12 +11,11 @@ import {
 	type SetDeclarationsByKind
 } from "../sets/set.js"
 import type { BranchKind } from "../sets/union.js"
-import type { BaseType } from "../type.js"
 import type {
 	ConstraintKind,
 	NodeKind,
-	TypeKind,
-	normalizeSchema
+	SchemaKind,
+	normalizeInput
 } from "./define.js"
 
 export type ConstraintDeclarationsByKind = extend<
@@ -47,10 +45,10 @@ export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 export type Implementation<kind extends NodeKind> =
 	NodeImplementationByKind[kind]
 
-export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
+export type Input<kind extends NodeKind> = Declaration<kind>["schema"]
 
-export type NormalizedSchema<kind extends NodeKind> = normalizeSchema<
-	Schema<kind>,
+export type NormalizedInput<kind extends NodeKind> = normalizeInput<
+	Input<kind>,
 	Inner<kind>
 > &
 	object
@@ -63,7 +61,7 @@ export type ChildrenByKind = {
 		  : k extends "intersection"
 		    ? ConstraintKind
 		    : k extends PropKind
-		      ? TypeKind
+		      ? SchemaKind
 		      : never
 }
 
@@ -78,7 +76,7 @@ export type ParentsByKind = {
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
-	? TypeKind
+	? SchemaKind
 	: kind extends "intersection"
 	  ? ValidatorKind
 	  : kind
@@ -86,8 +84,3 @@ export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
 export type Attachments<kind extends NodeKind> = Declaration<kind>["attach"]
-
-export type Node<
-	kind extends NodeKind = NodeKind,
-	t = unknown
-> = kind extends TypeKind ? BaseType<kind, t> : BaseNode<kind, t>

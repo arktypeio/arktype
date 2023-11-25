@@ -1,12 +1,12 @@
 import { throwInternalError } from "@arktype/util"
-import type { UnknownNode } from "../node.js"
+import type { Node, UnknownNode } from "../parse.js"
 import {
 	nodeKinds,
 	type NodeKind,
 	type OrderedNodeKinds,
 	type RefinementKind
 } from "./define.js"
-import type { Inner, Node, NodeDeclarationsByKind } from "./node.js"
+import type { Inner, NodeDeclarationsByKind } from "./nodes.js"
 
 export const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
 	for (const kind of nodeKinds) {

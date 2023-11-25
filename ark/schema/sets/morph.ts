@@ -8,11 +8,12 @@ import {
 } from "@arktype/util"
 import type { BasisKind, parseBasis } from "../bases/basis.js"
 import type { NonEnumerableDomain } from "../bases/domain.js"
+import type { Node } from "../parse.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Node, NormalizedSchema, Schema } from "../shared/node.js"
+import type { Input, NormalizedInput } from "../shared/nodes.js"
 import type {
 	IntersectionSchema,
 	parseIntersectionSchema,
@@ -23,19 +24,19 @@ export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
 export type ValidatorNode = Node<ValidatorKind>
 
-export type ValidatorSchema = Schema<ValidatorKind>
+export type ValidatorDefinition = Input<ValidatorKind>
 
 export type validateValidator<schema> = [schema] extends [
 	NonEnumerableDomain | Constructor
 ]
 	? schema
-	: schema extends NormalizedSchema<BasisKind>
-	  ? exactMessageOnError<schema, NormalizedSchema<keyof schema & BasisKind>>
+	: schema extends NormalizedInput<BasisKind>
+	  ? exactMessageOnError<schema, NormalizedInput<keyof schema & BasisKind>>
 	  : schema extends IntersectionSchema
 	    ? validateIntersectionSchema<schema>
-	    : ValidatorSchema
+	    : ValidatorDefinition
 
-export type parseValidatorSchema<schema> = schema extends Schema<BasisKind>
+export type parseValidatorSchema<schema> = schema extends Input<BasisKind>
 	? parseBasis<schema>
 	: schema extends IntersectionSchema
 	  ? parseIntersectionSchema<schema>
@@ -57,8 +58,8 @@ export type MorphInner = withAttributes<{
 }>
 
 export type MorphSchema = withAttributes<{
-	readonly in: ValidatorSchema
-	readonly out?: ValidatorSchema
+	readonly in: ValidatorDefinition
+	readonly out?: ValidatorDefinition
 	readonly morph: listable<Morph>
 }>
 
