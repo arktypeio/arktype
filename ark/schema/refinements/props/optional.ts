@@ -1,4 +1,4 @@
-import type { Node } from "../../parse.js"
+import type { Node } from "../../base.js"
 import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
 import { schemaKinds, type SchemaKind } from "../../shared/define.js"

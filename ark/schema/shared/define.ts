@@ -11,7 +11,7 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { BaseNode, Node, UnknownNode } from "../parse.js"
+import type { BaseNode, Node, UnknownNode } from "../base.js"
 import type { Schema } from "../schema.js"
 import {
 	compileSerializedValue,

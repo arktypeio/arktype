@@ -1,5 +1,5 @@
 import { isArray, type conform } from "@arktype/util"
-import type { Node } from "../parse.js"
+import type { Node } from "../base.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode, type SchemaKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"

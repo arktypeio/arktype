@@ -5,7 +5,7 @@ import {
 	type arraySubclassToReadonly,
 	type propwiseXor
 } from "@arktype/util"
-import type { Node } from "../parse.js"
+import type { Node } from "../base.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { NodeKind, SetKind } from "./define.js"

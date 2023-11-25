@@ -7,7 +7,7 @@ import {
 	transform,
 	type entryOf
 } from "@arktype/util"
-import type { Node } from "../parse.js"
+import type { Node } from "../base.js"
 import type { BoundKind, ConstraintKind } from "./define.js"
 import type { rightOf } from "./intersect.js"
 

@@ -7,8 +7,8 @@ import {
 	type listable,
 	type mutable
 } from "@arktype/util"
+import type { Node, UnknownNode } from "../base.js"
 import type { BasisKind, parseBasis } from "../bases/basis.js"
-import type { Node, UnknownNode } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import type {
 	BaseAttributes,

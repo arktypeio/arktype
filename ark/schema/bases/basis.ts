@@ -8,7 +8,7 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import type { Node } from "../parse.js"
+import type { Node } from "../base.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import type { Input } from "../shared/nodes.js"
 import { isNode } from "../shared/registry.js"

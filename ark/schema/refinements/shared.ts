@@ -1,6 +1,6 @@
 import { throwParseError, type extend } from "@arktype/util"
+import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import type { Node } from "../parse.js"
 import type { Builtins } from "../shared/builtins.js"
 import type {
 	BaseNodeDeclaration,

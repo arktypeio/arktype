@@ -6,9 +6,9 @@ import {
 	type exactMessageOnError,
 	type listable
 } from "@arktype/util"
+import type { Node } from "../base.js"
 import type { BasisKind, parseBasis } from "../bases/basis.js"
 import type { NonEnumerableDomain } from "../bases/domain.js"
-import type { Node } from "../parse.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"

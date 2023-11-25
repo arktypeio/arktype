@@ -4,7 +4,7 @@ import {
 	type extend,
 	type valueOf
 } from "@arktype/util"
-import type { Node } from "../parse.js"
+import type { Node } from "../base.js"
 import type { Builtins } from "../shared/builtins.js"
 import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"

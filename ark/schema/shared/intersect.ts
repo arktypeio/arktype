@@ -1,5 +1,5 @@
 import { throwInternalError } from "@arktype/util"
-import type { Node, UnknownNode } from "../parse.js"
+import type { Node, UnknownNode } from "../base.js"
 import {
 	nodeKinds,
 	type NodeKind,

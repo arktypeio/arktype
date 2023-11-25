@@ -1,4 +1,4 @@
-import type { Node } from "../../parse.js"
+import type { Node } from "../../base.js"
 import {
 	In,
 	compileSerializedValue,

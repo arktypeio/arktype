@@ -1,14 +1,11 @@
-import {
-	BaseNode,
-	parseNode,
-	type BaseAttachments,
-	type Node
-} from "./parse.js"
+import { BaseNode, type Node } from "./base.js"
+import { parseNode, type BaseAttachments } from "./parse.js"
 import type { BranchKind } from "./sets/union.js"
 import type { RefinementKind, Root, SchemaKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Input } from "./shared/nodes.js"
+import { registry } from "./shared/registry.js"
 import { inferred } from "./shared/symbols.js"
 
 export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
@@ -85,6 +82,8 @@ export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 		)
 	}
 }
+
+;(registry() as any).SchemaNode = SchemaNode
 
 export type Schema<kind extends SchemaKind = SchemaKind, t = unknown> = {
 	union: SchemaNode<"union", t>
