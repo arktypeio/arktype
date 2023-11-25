@@ -2,8 +2,8 @@ import {
 	builtins,
 	type BoundKind,
 	type LimitValue,
-	type Schema,
-	type TypeNode
+	type Root,
+	type Schema
 } from "@arktype/schema"
 import {
 	isKeyOf,
@@ -146,7 +146,7 @@ export const writeLimitMismatchMessage = (
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitValue,
-	root: TypeNode
+	root: Root
 ): BoundKind[] => {
 	if (root.extends(builtins.number)) {
 		if (typeof limit !== "number") {

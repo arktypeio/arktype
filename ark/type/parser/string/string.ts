@@ -1,4 +1,4 @@
-import type { TypeNode } from "@arktype/schema"
+import type { Root } from "@arktype/schema"
 import {
 	throwInternalError,
 	throwParseError,
@@ -15,7 +15,7 @@ import {
 	writeUnexpectedCharacterMessage
 } from "./shift/operator/operator.js"
 
-export const parseString = (def: string, ctx: ParseContext): TypeNode =>
+export const parseString = (def: string, ctx: ParseContext): Root =>
 	ctx.scope.maybeResolveNode(def) ??
 	((def.endsWith("[]") &&
 		ctx.scope.maybeResolveNode(def.slice(0, -2))?.array()) ||
