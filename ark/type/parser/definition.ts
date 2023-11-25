@@ -2,7 +2,7 @@ import { isNode, schema, type Root } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
-	stringify,
+	printable,
 	throwParseError,
 	type Dict,
 	type ErrorMessage,
@@ -54,7 +54,7 @@ export const parseObject = (def: object, ctx: ParseContext): Root => {
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))
 		default:
 			return throwParseError(
-				writeBadDefinitionTypeMessage(objectKind ?? stringify(def))
+				writeBadDefinitionTypeMessage(objectKind ?? printable(def))
 			)
 	}
 }

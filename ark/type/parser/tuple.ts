@@ -14,7 +14,7 @@ import {
 import {
 	isArray,
 	objectKindOrDomainOf,
-	stringify,
+	printable,
 	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor,
@@ -112,7 +112,7 @@ export const maybeParseTupleExpression = (
 			? throwParseError(
 					writeUnsatisfiableExpressionError(
 						def
-							.map((def) => (typeof def === "string" ? def : stringify(def)))
+							.map((def) => (typeof def === "string" ? def : printable(def)))
 							.join(" ")
 					)
 			  )

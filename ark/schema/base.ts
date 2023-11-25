@@ -2,16 +2,13 @@ import {
 	CompiledFunction,
 	DynamicBase,
 	includes,
-	throwInternalError
+	throwInternalError,
+	type Json,
+	type entriesOf
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
-import {
-	parseNode,
-	parsePrereducedSchema,
-	parseSchemaFromKinds,
-	type BaseAttachments
-} from "./parse.js"
 import type { Schema } from "./schema.js"
+import type { SchemaScope } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import { createBuiltins, type Builtins } from "./shared/builtins.js"
@@ -46,16 +43,30 @@ import {
 	NodeImplementationByKind,
 	type Attachments,
 	type Inner,
+	type childKindOf,
 	type reducibleKindOf
 } from "./shared/nodes.js"
-import { arkKind, registry } from "./shared/registry.js"
+import { arkKind } from "./shared/registry.js"
+
+export type BaseAttachments<kind extends NodeKind> = {
+	readonly kind: kind
+	readonly inner: Inner<kind>
+	readonly entries: entriesOf<Inner<kind>>
+	readonly json: Json
+	readonly typeJson: Json
+	readonly collapsibleJson: Json
+	readonly children: Node<childKindOf<kind>>[]
+	readonly id: string
+	readonly typeId: string
+	readonly scope: SchemaScope
+}
 
 export abstract class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
 > extends DynamicBase<Inner<kind> & Attachments<kind> & BaseAttachments<kind>> {
 	static {
-		registry().BaseNode = this
+		$ark.BaseNode = this
 	}
 
 	readonly [arkKind] = "node"
@@ -66,7 +77,7 @@ export abstract class BaseNode<
 	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
-	readonly alias = registry().register(this)
+	readonly alias = $ark.register(this)
 	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
@@ -191,7 +202,7 @@ export abstract class BaseNode<
 				ioInner[k] = v
 			}
 		}
-		return parseNode(this.kind, ioInner)
+		return this.scope.parseNode(this.kind, ioInner)
 	}
 
 	toJSON() {
@@ -267,7 +278,10 @@ export abstract class BaseNode<
 		return this.isBasis() ||
 			other.isBasis() ||
 			(this.kind === "predicate" && other.kind === "predicate")
-			? parseNode("intersection", unflattenConstraints([this as never, other]))
+			? this.scope.parseNode(
+					"intersection",
+					unflattenConstraints([this as never, other])
+			  )
 			: null
 	}
 
@@ -289,14 +303,10 @@ export abstract class BaseNode<
 				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: meta
-			return parseNode(l.kind, result) as never
+			return this.scope.parseNode(l.kind, result) as never
 		}
 		return null
 	}
-
-	static parseSchema = parseNode
-	static parseTypeFromKinds = parseSchemaFromKinds
-	static parsePrereduced = parsePrereducedSchema
 
 	static isInitialized = false
 	static #builtins: Builtins | undefined

@@ -48,26 +48,26 @@ type snapshotPrimitive<t> = t extends undefined
 	    : t
 
 export const print = (data: unknown, indent?: number) =>
-	console.log(stringify(data, indent))
+	console.log(printable(data, indent))
 
-export const stringify = (data: unknown, indent?: number) => {
+export const printable = (data: unknown, indent?: number) => {
 	switch (domainOf(data)) {
 		case "object":
 			return data instanceof Date
 				? data.toDateString()
 				: JSON.stringify(
-						serializeRecurse(data, stringifyOpts, []),
+						serializeRecurse(data, printableOpts, []),
 						null,
 						indent
 				  )
 		case "symbol":
-			return stringifyOpts.onSymbol(data as symbol)
+			return printableOpts.onSymbol(data as symbol)
 		default:
 			return serializePrimitive(data as SerializablePrimitive)
 	}
 }
 
-const stringifyOpts = {
+const printableOpts = {
 	onCycle: () => "(cycle)",
 	onSymbol: (v) => `(symbol ${v.description ?? "anonymous"})`,
 	onFunction: (v) => `(function ${v.name ?? "anonymous"})`
@@ -81,7 +81,7 @@ const serializeRecurse = (
 	switch (domainOf(data)) {
 		case "object":
 			if (typeof data === "function") {
-				return stringifyOpts.onFunction(data)
+				return printableOpts.onFunction(data)
 			}
 			if (seen.includes(data)) {
 				return "(cycle)"
@@ -99,7 +99,7 @@ const serializeRecurse = (
 			}
 			return result
 		case "symbol":
-			return stringifyOpts.onSymbol(data as symbol)
+			return printableOpts.onSymbol(data as symbol)
 		case "bigint":
 			return `${data}n`
 		case "undefined":

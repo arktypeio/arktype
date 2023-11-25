@@ -7,7 +7,9 @@ export const arkKind = Symbol("ArkTypeInternalKind")
 export const isNode = (o: unknown): o is UnknownNode =>
 	(o as any)?.[arkKind] === "node"
 
-export const registry = () => new Registry()
+declare global {
+	const $ark: Registry
+}
 
 class Registry {
 	[k: string]: unknown

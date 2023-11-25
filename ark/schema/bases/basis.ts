@@ -1,5 +1,5 @@
 import {
-	stringify,
+	printable,
 	throwParseError,
 	type Constructor,
 	type Domain,
@@ -96,7 +96,7 @@ export const getBasisKindOrThrow = (schema: unknown) => {
 	const basisKind = maybeGetBasisKind(schema)
 	if (basisKind === undefined) {
 		return throwParseError(
-			`${stringify(
+			`${printable(
 				schema
 			)} is not a valid basis schema. Please provide one of the following:
 - A string representing a non-enumerable domain ("string", "number", "object", "bigint", or "symbol")

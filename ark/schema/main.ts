@@ -8,14 +8,13 @@ export const schema = Object.assign(parseBranches, {
 
 export const builtins = BaseNode.builtins
 export * from "./base.js"
-export * from "./schema.js"
-export * from "./parse.js"
 export * from "./config.js"
 export * from "./refinements/bounds.js"
 export * from "./refinements/divisor.js"
 export * from "./refinements/pattern.js"
 export * from "./refinements/predicate.js"
 export * from "./refinements/props/prop.js"
+export * from "./schema.js"
 export * from "./sets/discriminate.js"
 export * from "./sets/intersection.js"
 export * from "./sets/morph.js"

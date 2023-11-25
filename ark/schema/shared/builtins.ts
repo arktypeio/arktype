@@ -1,7 +1,7 @@
 import { parseBranches, parsePrereducedSchema } from "../parse.js"
 
-export function createBuiltins() {
-	return {
+export const createBuiltins = () =>
+	({
 		unknown: parseBranches({}),
 		bigint: parseBranches("bigint"),
 		number: parseBranches("number"),
@@ -28,7 +28,6 @@ export function createBuiltins() {
 			{ is: null },
 			{ is: undefined }
 		])
-	} as const
-}
+	}) as const
 
 export type Builtins = ReturnType<typeof createBuiltins>

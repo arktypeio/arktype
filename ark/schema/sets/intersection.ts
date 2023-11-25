@@ -76,7 +76,8 @@ export const IntersectionImplementation = defineNode({
 	normalize: (schema) => schema,
 	addContext: (ctx) => {
 		ctx.basis =
-			ctx.input.basis && ctx.cls.parseTypeFromKinds(basisKinds, ctx.input.basis)
+			ctx.input.basis &&
+			ctx.scope.parseSchemaFromKinds(basisKinds, ctx.input.basis)
 	},
 	keys: {
 		basis: {
@@ -158,7 +159,10 @@ export const IntersectionImplementation = defineNode({
 		if (alias) {
 			reducedConstraintsByKind.alias = alias
 		}
-		return ctx.cls.parsePrereduced("intersection", reducedConstraintsByKind)
+		return ctx.scope.parsePrereducedSchema(
+			"intersection",
+			reducedConstraintsByKind
+		)
 	},
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
@@ -205,7 +209,7 @@ export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	input: Definition<kind>,
 	ctx: SchemaParseContext<"intersection">
 ): Node<kind> => {
-	const refinement = ctx.cls.parseSchema(kind, input) as Node<RefinementKind>
+	const refinement = ctx.scope.parseNode(kind, input) as Node<RefinementKind>
 	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }
@@ -221,7 +225,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 			return
 		}
 		const refinements = input
-			.map((refinement) => ctx.cls.parseSchema(kind, refinement))
+			.map((refinement) => ctx.scope.parseNode(kind, refinement))
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
 		// we should only need to assert validity for one, as all listed
 		// refinements should be of the same kind and therefore have the same
@@ -229,7 +233,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 		refinements[0].assertValidBasis(ctx.basis)
 		return refinements
 	}
-	const refinement = ctx.cls.parseSchema(kind, input)
+	const refinement = ctx.scope.parseNode(kind, input)
 	refinement.assertValidBasis(ctx.basis)
 	return [refinement]
 }

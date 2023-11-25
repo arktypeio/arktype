@@ -1,6 +1,6 @@
 import { schema, type Inner } from "@arktype/schema"
 import {
-	stringify,
+	printable,
 	type Dict,
 	type ErrorMessage,
 	type evaluate
@@ -29,7 +29,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 		ctx.path.push(
 			`${
 				typeof result.innerKey === "symbol"
-					? `[${stringify(result.innerKey)}]`
+					? `[${printable(result.innerKey)}]`
 					: result.innerKey
 			}`
 		)

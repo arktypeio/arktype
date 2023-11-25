@@ -1,5 +1,5 @@
 import { caller } from "@arktype/fs"
-import { snapshot, stringify } from "@arktype/util"
+import { printable, snapshot } from "@arktype/util"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -81,7 +81,7 @@ export class ChainableAssertions implements AssertionRecord {
 				// to give a clearer error message. This avoid problems with objects
 				// like subtypes of array that do not pass node's deep equality test
 				// but serialize to the same value.
-				if (stringify(args[0]) !== stringify(this.actual)) {
+				if (printable(args[0]) !== printable(this.actual)) {
 					assertEquals(expectedSerialized, this.serializedActual, this.ctx)
 				}
 			}

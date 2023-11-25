@@ -9,7 +9,7 @@ import type { Node } from "../base.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { NodeKind, SetKind } from "./define.js"
-import { isDotAccessible, registry } from "./registry.js"
+import { isDotAccessible } from "./registry.js"
 
 export const In = "$arkRoot"
 
@@ -126,7 +126,7 @@ export type CheckResult<t = unknown> = propwiseXor<
 
 export type Problems = arraySubclassToReadonly<ProblemsArray>
 
-const problemsReference = registry().register(Problems)
+const problemsReference = $ark.register(Problems)
 
 const compilePrimitiveProblem = (
 	node: Node<PrimitiveKind>,
@@ -147,7 +147,7 @@ export type Problem = {
 
 export const compileSerializedValue = (value: unknown) => {
 	return hasDomain(value, "object") || typeof value === "symbol"
-		? registry().register(value)
+		? $ark.register(value)
 		: serializePrimitive(value as SerializablePrimitive)
 }
 

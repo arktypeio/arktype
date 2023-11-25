@@ -1,4 +1,4 @@
-import { domainOf, stringify } from "@arktype/util"
+import { domainOf, printable } from "@arktype/util"
 import {
 	In,
 	compilePrimitive,
@@ -38,12 +38,12 @@ export const UnitImplementation = defineNode({
 		default: (l, r) =>
 			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
 	},
-	writeDefaultDescription: (inner) => stringify(inner.is),
+	writeDefaultDescription: (inner) => printable(inner.is),
 	normalize: (schema) => schema,
 	attach: (node) => {
 		const serializedValue = compileSerializedValue(node.is)
 		return {
-			basisName: stringify(node.is),
+			basisName: printable(node.is),
 			domain: domainOf(node.is),
 			condition: `${In} === ${serializedValue}`,
 			negatedCondition: `${In} !== ${serializedValue}`

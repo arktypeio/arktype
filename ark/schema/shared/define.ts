@@ -11,8 +11,9 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { BaseNode, Node, UnknownNode } from "../base.js"
+import type { Node, UnknownNode } from "../base.js"
 import type { Schema } from "../schema.js"
+import type { SchemaScope } from "../scope.js"
 import {
 	compileSerializedValue,
 	type CompilationContext
@@ -128,13 +129,14 @@ export type normalizeInput<input, inner extends BaseAttributes> = Extract<
 export type SchemaParseContextInput = {
 	prereduced?: true
 	basis?: Node<BasisKind> | undefined
+	scope?: SchemaScope
 }
 
 export type SchemaParseContext<kind extends NodeKind> = extend<
 	SchemaParseContextInput,
 	{
 		input: NormalizedDefinition<kind>
-		cls: typeof BaseNode
+		scope: SchemaScope
 	}
 >
 
@@ -200,6 +202,7 @@ export function defineNode<
 	kind extends NodeKind,
 	input extends NodeImplementationInput<Declaration<kind>>
 >(input: { kind: kind } & input): instantiateNodeImplementation<input>
+// eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
 export function defineNode(
 	input: NodeImplementationInput<any>
 ): UnknownNodeImplementation {

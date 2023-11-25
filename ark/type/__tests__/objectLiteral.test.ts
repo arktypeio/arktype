@@ -1,5 +1,4 @@
 import { attest } from "@arktype/attest"
-import { registry } from "@arktype/schema"
 import { scope, type } from "arktype"
 import { writeInvalidPropertyKeyMessage } from "../parser/objectLiteral.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
@@ -32,7 +31,7 @@ describe("object literal", () => {
 	})
 	it("symbol key", () => {
 		const s = Symbol()
-		const name = registry().register(s)
+		const name = $ark.register(s)
 		const t = type({
 			[s]: "string"
 		})
@@ -44,7 +43,7 @@ describe("object literal", () => {
 	})
 	it("optional symbol", () => {
 		const s = Symbol()
-		const name = registry().register(s)
+		const name = $ark.register(s)
 		const t = type({
 			[s]: "number?"
 		})

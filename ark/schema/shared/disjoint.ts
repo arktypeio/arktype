@@ -1,7 +1,7 @@
 import {
 	entriesOf,
 	fromEntries,
-	stringify,
+	printable,
 	throwInternalError,
 	throwParseError,
 	transform,
@@ -159,6 +159,6 @@ export class Disjoint {
 	}
 
 	toString() {
-		return stringify(this.sources)
+		return printable(this.sources)
 	}
 }

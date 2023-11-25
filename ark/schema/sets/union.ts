@@ -21,7 +21,7 @@ export type BranchDefinition = Definition<BranchKind>
 
 export type BranchNode = Node<BranchKind>
 
-export type validateSchemaBranch<schema> = conform<
+export type validateSchemaBranch<schema, $> = conform<
 	schema,
 	"morph" extends keyof schema
 		? validateMorphSchema<schema>
@@ -91,7 +91,7 @@ export const UnionImplementation = defineNode({
 		branches: {
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
-					ctx.cls.parseTypeFromKinds(
+					ctx.scope.parseSchemaFromKinds(
 						["morph", "intersection", ...basisKinds],
 						branch
 					)
@@ -168,7 +168,7 @@ export const UnionImplementation = defineNode({
 		if (reducedBranches.length !== inner.branches.length) {
 			return
 		}
-		return ctx.cls.parsePrereduced("union", {
+		return ctx.scope.parseNode("union", {
 			...inner,
 			branches: reducedBranches
 		})

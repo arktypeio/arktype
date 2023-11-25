@@ -1,6 +1,6 @@
 import { isNode, schema, type Root } from "@arktype/schema"
 import {
-	stringify,
+	printable,
 	throwParseError,
 	tryParseNumber,
 	tryParseWellFormedBigint,
@@ -134,7 +134,7 @@ const maybeParseReference = (
 	if (hasArkKind(resolution, "generic")) {
 		return parseGenericInstantiation(token, resolution, s)
 	}
-	return throwParseError(`Unexpected resolution ${stringify(resolution)}`)
+	return throwParseError(`Unexpected resolution ${printable(resolution)}`)
 }
 
 const maybeParseUnenclosedLiteral = (

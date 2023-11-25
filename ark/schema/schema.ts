@@ -1,16 +1,14 @@
-import { BaseNode, type Node } from "./base.js"
-import { parseNode, type BaseAttachments } from "./parse.js"
+import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import type { BranchKind } from "./sets/union.js"
 import type { RefinementKind, Root, SchemaKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Definition } from "./shared/nodes.js"
-import { registry } from "./shared/registry.js"
 import { inferred } from "./shared/symbols.js"
 
 export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 	static {
-		registry().SchemaNode = this
+		$ark.SchemaNode = this
 	}
 
 	// TODO: standardize name with type
@@ -31,7 +29,7 @@ export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 		kind: refinementKind,
 		input: Definition<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
-		const refinement = parseNode(kind, input)
+		const refinement = this.scope.parseNode(kind, input)
 		return this.and(refinement) as never
 	}
 
@@ -58,7 +56,10 @@ export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 		"union" | Extract<kind | other["kind"], SchemaKind>,
 		t | other["infer"]
 	> {
-		return parseNode("union", [...this.branches, ...other.branches]) as never
+		return this.scope.parseNode("union", [
+			...this.branches,
+			...other.branches
+		]) as never
 	}
 
 	isUnknown(): this is BaseNode<"intersection", unknown> {
