@@ -1,10 +1,4 @@
 import { BaseNode } from "./base.js"
-import { parseBranches, parseUnion, parseUnits } from "./parse.js"
-
-export const schema = Object.assign(parseBranches, {
-	units: parseUnits,
-	union: parseUnion
-})
 
 export const builtins = BaseNode.builtins
 export * from "./base.js"

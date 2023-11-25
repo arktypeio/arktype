@@ -1,5 +1,6 @@
 import { isArray, type conform } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { Schema } from "../schema.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode, type SchemaKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -21,11 +22,13 @@ export type BranchDefinition = Definition<BranchKind>
 
 export type BranchNode = Node<BranchKind>
 
-export type validateSchemaBranch<schema, $> = conform<
-	schema,
-	"morph" extends keyof schema
-		? validateMorphSchema<schema>
-		: validateValidator<schema>
+export type validateSchemaBranch<def, $> = conform<
+	def,
+	def extends Schema
+		? def
+		: "morph" extends keyof def
+		  ? validateMorphSchema<def>
+		  : validateValidator<def>
 >
 
 export type parseSchemaBranches<branches extends readonly unknown[]> =
@@ -35,11 +38,13 @@ export type parseSchemaBranches<branches extends readonly unknown[]> =
 		  ? parseSchemaBranch<branches[0]>
 		  : Node<SchemaKind, parseSchemaBranch<branches[number]>["infer"]>
 
-export type parseSchemaBranch<schema> = schema extends MorphSchema
-	? parseMorphSchema<schema>
-	: schema extends ValidatorDefinition
-	  ? parseValidatorSchema<schema>
-	  : BranchNode
+export type parseSchemaBranch<def> = def extends Schema
+	? def
+	: def extends MorphSchema
+	  ? parseMorphSchema<def>
+	  : def extends ValidatorDefinition
+	    ? parseValidatorSchema<def>
+	    : BranchNode
 
 export type UnionDefinition<
 	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]

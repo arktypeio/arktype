@@ -7,7 +7,7 @@ import {
 import type { withAttributes } from "../../shared/declare.js"
 import { schemaKinds, type SchemaKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { Inner, Definition } from "../../shared/nodes.js"
+import type { Definition, Inner } from "../../shared/nodes.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -61,7 +61,8 @@ export const RequiredImplementation = defineRefinement({
 	keys: {
 		key: {},
 		value: {
-			parse: (schema, ctx) => ctx.cls.parseTypeFromKinds(schemaKinds, schema)
+			parse: (schema, ctx) =>
+				ctx.scope.parseSchemaFromKinds(schemaKinds, schema)
 		}
 	},
 	operands: ["object"],

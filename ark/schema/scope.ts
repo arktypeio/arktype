@@ -5,13 +5,17 @@ import {
 	isArray,
 	printable,
 	throwParseError,
-	transform,
-	type Dict
+	type Dict,
+	type conform
 } from "@arktype/util"
 import type { BaseAttachments, Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
-import type { parseSchemaBranches, validateSchemaBranch } from "./sets/union.js"
+import type {
+	parseSchemaBranch,
+	parseSchemaBranches,
+	validateSchemaBranch
+} from "./sets/union.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
@@ -29,15 +33,32 @@ import {
 } from "./shared/nodes.js"
 import { isNode } from "./shared/registry.js"
 
-export class SchemaScope<resolutions extends Dict = Dict> {
+export type validateAliases<aliases> = {
+	[k in keyof aliases]: "branches" extends keyof aliases[k]
+		? conform<aliases[k], NormalizedDefinition<"union">>
+		: aliases[k] extends readonly [...infer branches]
+		  ? { [i in keyof branches]: validateSchemaBranch<branches[i], aliases> }
+		  : validateSchemaBranch<aliases[k], aliases>
+}
+
+export type inferAliases<aliases> = {
+	[k in keyof aliases]: aliases[k] extends NormalizedDefinition<"union">
+		? parseSchemaBranches<aliases[k]["branches"]>
+		: aliases[k] extends readonly [...infer branches]
+		  ? parseSchemaBranches<branches>
+		  : parseSchemaBranch<aliases[k]>
+}
+
+export class SchemaScope<resolutions = unknown> {
 	declare infer: resolutions
 	resolutions: Record<string, Schema> = {}
 
-	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {
-		transform(aliases, ([k, v]) => {
-			return [k, parseSchemaFromKinds(schemaKinds, v)]
-		})
-	}
+	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {}
+
+	static from = <const aliases>(aliases: validateAliases<aliases>) =>
+		new SchemaScope<inferAliases<aliases>>(aliases as never)
+
+	static root = new SchemaScope<{}>({})
 
 	parseUnion<const branches extends readonly unknown[]>(
 		input: {
@@ -203,7 +224,14 @@ export class SchemaScope<resolutions extends Dict = Dict> {
 			? new ($ark.BaseNode as any)(attachments)
 			: new ($ark.SchemaNode as any)(attachments)
 	}
+
+	readonly schema = Object.assign(this.parseBranches, {
+		units: this.parseUnits,
+		union: this.parseUnion
+	})
 }
+
+export const rootSchema = SchemaScope.root.schema
 
 const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)
@@ -226,23 +254,3 @@ const schemaKindOf = (input: unknown): SchemaKind => {
 	}
 	return throwParseError(`${printable(input)} is not a valid type schema`)
 }
-
-export type validateAliases<aliases> = {
-	[k in keyof aliases]: "branches" extends keyof aliases[k]
-		? NormalizedDefinition<"union">
-		: aliases[k] extends readonly [...infer branches]
-		  ? { [i in keyof branches]: validateSchemaBranch<branches[i], aliases> }
-		  : validateSchemaBranch<aliases[k], aliases>
-}
-
-export const parseSchemaScope = <const aliases>(
-	aliases: validateAliases<aliases>
-) => new (SchemaScope as any)(aliases)
-
-const z = parseSchemaScope({
-	number: ["number", "string"],
-	ordered: {
-		ordered: true,
-		branches: ["string"]
-	}
-})
