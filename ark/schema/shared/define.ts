@@ -147,6 +147,7 @@ export type NodeKeyDefinition<
 	{
 		meta?: true
 		preserveUndefined?: true
+		child?: true
 		serialize?: (
 			schema: d["inner"][k] extends listable<UnknownNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
@@ -160,7 +161,11 @@ export type NodeKeyDefinition<
 		) => d["inner"][k]
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
-	NormalizedDefinition<d["kind"]> extends Pick<d["inner"], k> ? never : "parse"
+	| (NormalizedDefinition<d["kind"]> extends Pick<d["inner"], k>
+			? never
+			: "parse")
+	// require keys containing children specify it
+	| (d["inner"][k] extends listable<UnknownNode> | undefined ? "child" : never)
 >
 
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {

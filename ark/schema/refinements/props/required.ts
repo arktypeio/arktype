@@ -61,6 +61,7 @@ export const RequiredImplementation = defineRefinement({
 	keys: {
 		key: {},
 		value: {
+			child: true,
 			parse: (schema, ctx) => ctx.scope.schemaWithKindIn(schemaKinds, schema)
 		}
 	},

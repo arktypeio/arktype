@@ -150,15 +150,14 @@ export class SchemaScope<resolutions = unknown> {
 				continue
 			}
 			inner[k] = innerValue
-			if (isNode(innerValue)) {
-				json[k] = innerValue.collapsibleJson
-				children.push(innerValue)
-			} else if (
-				isArray(innerValue) &&
-				innerValue.every((_): _ is UnknownNode => isNode(_))
-			) {
-				json[k] = innerValue.map((node) => node.collapsibleJson)
-				children.push(...innerValue)
+			if (keyDefinition.child) {
+				if (Array.isArray(innerValue)) {
+					json[k] = innerValue.map((node) => node.collapsibleJson)
+					children.push(...innerValue)
+				} else {
+					json[k] = innerValue.collapsibleJson
+					children.push(innerValue)
+				}
 			} else {
 				json[k] = keyDefinition.serialize
 					? keyDefinition.serialize(v)

@@ -61,6 +61,7 @@ export const UnionImplementation = defineNode({
 	keys: {
 		ordered: {},
 		branches: {
+			child: true,
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
 					ctx.scope.schemaWithKindIn(

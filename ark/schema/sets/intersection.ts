@@ -76,40 +76,52 @@ export const IntersectionImplementation = defineNode({
 	},
 	keys: {
 		basis: {
+			child: true,
 			// the basis has already been preparsed and added to context
 			parse: (_, ctx) => ctx.basis
 		},
 		divisor: {
+			child: true,
 			parse: (def, ctx) => parseClosedRefinement("divisor", def, ctx)
 		},
 		max: {
+			child: true,
 			parse: (def, ctx) => parseClosedRefinement("max", def, ctx)
 		},
 		min: {
+			child: true,
 			parse: (def, ctx) => parseClosedRefinement("min", def, ctx)
 		},
 		maxLength: {
+			child: true,
 			parse: (def, ctx) => parseClosedRefinement("maxLength", def, ctx)
 		},
 		minLength: {
+			child: true,
 			parse: (def, ctx) => parseClosedRefinement("minLength", def, ctx)
 		},
 		before: {
+			child: true,
 			parse: (def, ctx) => parseClosedRefinement("before", def, ctx)
 		},
 		after: {
+			child: true,
 			parse: (def, ctx) => parseClosedRefinement("after", def, ctx)
 		},
 		pattern: {
+			child: true,
 			parse: (def, ctx) => parseOpenRefinement("pattern", def, ctx)
 		},
 		predicate: {
+			child: true,
 			parse: (def, ctx) => parseOpenRefinement("predicate", def, ctx)
 		},
 		optional: {
+			child: true,
 			parse: (def, ctx) => parseOpenRefinement("optional", def, ctx)
 		},
 		required: {
+			child: true,
 			parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
 		}
 	},
