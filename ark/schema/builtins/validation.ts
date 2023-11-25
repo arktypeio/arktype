@@ -1,5 +1,6 @@
 import type { Schema } from "../schema.js"
 import { SchemaScope, rootSchema } from "../scope.js"
+import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
@@ -64,30 +65,30 @@ export const validation = SchemaScope.from({
 		basis: "string",
 		pattern: /^[A-Za-z]*$/,
 		description: "only letters"
+	},
+	alphanumeric: {
+		basis: "string",
+		pattern: /^[A-Za-z\d]*$/,
+		description: "only letters and digits"
+	},
+	lowercase: {
+		basis: "string",
+		pattern: /^[a-z]*$/,
+		description: "only lowercase letters"
+	},
+	uppercase: {
+		basis: "string",
+		pattern: /^[A-Za-z]*$/,
+		description: "only uppercase letters"
+	},
+	creditCard,
+	email,
+	uuid,
+	url,
+	semver,
+	integer: {
+		basis: "number",
+		divisor: 1,
+		description: "an integer"
 	}
-	// alphanumeric: {
-	// 	basis: "string",
-	// 	pattern: /^[A-Za-z\d]*$/,
-	// 	description: "only letters and digits"
-	// },
-	// lowercase: {
-	// 	basis: "string",
-	// 	pattern: /^[a-z]*$/,
-	// 	description: "only lowercase letters"
-	// },
-	// uppercase: {
-	// 	basis: "string",
-	// 	pattern: /^[A-Za-z]*$/,
-	// 	description: "only uppercase letters"
-	// },
-	// creditCard,
-	// email,
-	// uuid,
-	// url,
-	// semver,
-	// integer: {
-	// 	basis: "number",
-	// 	divisor: 1,
-	// 	description: "an integer"
-	// }
 })

@@ -2,6 +2,7 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
+	type evaluate,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -36,20 +37,17 @@ export type IntersectionInner = withAttributes<
 >
 
 export type IntersectionDefinition<
-	basis extends Definition<BasisKind> | undefined =
-		| Definition<BasisKind>
-		| undefined
-> = {
-	basis?: basis
-} & refinementInputsByKind<
-	basis extends Definition<BasisKind>
-		? basis extends Definition<BasisKind> | undefined
-			? // allow all refinement kinds for base schema
-			  any
-			: instantiateBasis<basis>["infer"]
-		: unknown
-> &
-	BaseAttributes
+	basis extends Definition<BasisKind> | undefined = any
+> = evaluate<
+	{
+		basis?: basis
+	} & refinementInputsByKind<
+		basis extends Definition<BasisKind>
+			? instantiateBasis<basis>["infer"]
+			: unknown
+	> &
+		BaseAttributes
+>
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
 
@@ -71,7 +69,7 @@ export type IntersectionDeclaration = declareNode<{
 
 export const IntersectionImplementation = defineNode({
 	kind: "intersection",
-	normalize: (schema) => schema,
+	normalize: (def) => def,
 	addContext: (ctx) => {
 		ctx.basis =
 			ctx.input.basis && ctx.scope.schemaWithKindIn(basisKinds, ctx.input.basis)
@@ -82,37 +80,37 @@ export const IntersectionImplementation = defineNode({
 			parse: (_, ctx) => ctx.basis
 		},
 		divisor: {
-			parse: (schema, ctx) => parseClosedRefinement("divisor", schema, ctx)
+			parse: (def, ctx) => parseClosedRefinement("divisor", def, ctx)
 		},
 		max: {
-			parse: (schema, ctx) => parseClosedRefinement("max", schema, ctx)
+			parse: (def, ctx) => parseClosedRefinement("max", def, ctx)
 		},
 		min: {
-			parse: (schema, ctx) => parseClosedRefinement("min", schema, ctx)
+			parse: (def, ctx) => parseClosedRefinement("min", def, ctx)
 		},
 		maxLength: {
-			parse: (schema, ctx) => parseClosedRefinement("maxLength", schema, ctx)
+			parse: (def, ctx) => parseClosedRefinement("maxLength", def, ctx)
 		},
 		minLength: {
-			parse: (schema, ctx) => parseClosedRefinement("minLength", schema, ctx)
+			parse: (def, ctx) => parseClosedRefinement("minLength", def, ctx)
 		},
 		before: {
-			parse: (schema, ctx) => parseClosedRefinement("before", schema, ctx)
+			parse: (def, ctx) => parseClosedRefinement("before", def, ctx)
 		},
 		after: {
-			parse: (schema, ctx) => parseClosedRefinement("after", schema, ctx)
+			parse: (def, ctx) => parseClosedRefinement("after", def, ctx)
 		},
 		pattern: {
-			parse: (schema, ctx) => parseOpenRefinement("pattern", schema, ctx)
+			parse: (def, ctx) => parseOpenRefinement("pattern", def, ctx)
 		},
 		predicate: {
-			parse: (schema, ctx) => parseOpenRefinement("predicate", schema, ctx)
+			parse: (def, ctx) => parseOpenRefinement("predicate", def, ctx)
 		},
 		optional: {
-			parse: (schema, ctx) => parseOpenRefinement("optional", schema, ctx)
+			parse: (def, ctx) => parseOpenRefinement("optional", def, ctx)
 		},
 		required: {
-			parse: (schema, ctx) => parseOpenRefinement("required", schema, ctx)
+			parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
 		}
 	},
 	intersections: {

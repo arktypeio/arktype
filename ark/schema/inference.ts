@@ -1,6 +1,7 @@
 import type {
 	Constructor,
 	ErrorMessage,
+	Stringifiable,
 	conform,
 	exactMessageOnError
 } from "@arktype/util"
@@ -102,25 +103,31 @@ export type parseMorphSchema<def> = def extends MorphDefinition
 	  >
 	: never
 
-export type IntersectionBasis = {
-	basis: Definition<BasisKind>
-}
-type exactBasisMessageOnError<branch, expected> = {
-	[k in keyof branch]: k extends keyof expected
-		? conform<branch[k], expected[k]>
-		: ErrorMessage<`'${k & string}' is not allowed by ${branch[keyof branch &
-				BasisKind] extends string
-				? `basis '${branch[keyof branch & BasisKind]}'`
-				: `this schema's basis`}`>
+type basisToString<def> = "basis" extends keyof def
+	? def["basis"] extends Stringifiable
+		? `basis '${def["basis"]}'`
+		: "this schema's basis"
+	: "this schema's basis"
+
+type exactBasisMessageOnError<def, expected> = {
+	[k in keyof def]: k extends keyof expected
+		? conform<def[k], expected[k]>
+		: ErrorMessage<`'${k & string}' is not allowed by ${basisToString<def>}`>
 }
 
-export type validateIntersectionSchema<def> = def extends IntersectionBasis
-	? exactBasisMessageOnError<def, IntersectionDefinition<def["basis"]>>
-	: exactBasisMessageOnError<def, IntersectionDefinition<undefined>>
+export type validateIntersectionSchema<def> = exactBasisMessageOnError<
+	def,
+	"basis" extends keyof def
+		? IntersectionDefinition<
+				def["basis"] extends Definition<BasisKind> ? def["basis"] : undefined
+		  >
+		: IntersectionDefinition<undefined>
+>
 
-export type instantiateIntersectionSchema<def> =
-	def extends Required<IntersectionBasis>
-		? keyof def & RefinementKind extends never
-			? instantiateBasis<def["basis"]>
-			: Node<"intersection", instantiateBasis<def["basis"]>["infer"]>
-		: Node<"intersection">
+export type instantiateIntersectionSchema<def> = def extends {
+	basis: infer basis extends Definition<BasisKind>
+}
+	? keyof def & RefinementKind extends never
+		? instantiateBasis<basis>
+		: Node<"intersection", instantiateBasis<basis>["infer"]>
+	: Node<"intersection">
