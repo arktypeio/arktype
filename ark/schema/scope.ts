@@ -60,7 +60,7 @@ export class SchemaScope<resolutions = unknown> {
 			[i in keyof branches]: validateSchemaBranch<branches[i], resolutions>
 		}
 	): instantiateSchemaBranches<branches> {
-		return this.node("union", branches) as never
+		return this.node("union", branches as never) as never
 	}
 
 	units<const branches extends readonly unknown[]>(
@@ -75,7 +75,7 @@ export class SchemaScope<resolutions = unknown> {
 			}
 		}
 		const branches = uniqueValues.map((unit) =>
-			this.prereduced("unit", { is: unit })
+			this.prereduced("unit", { unit })
 		)
 		if (branches.length === 1) {
 			return branches[0]

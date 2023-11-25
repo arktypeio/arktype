@@ -10,10 +10,10 @@ export const createBuiltins = () =>
 		symbol: rootSchema("symbol"),
 		array: rootSchema(Array),
 		date: rootSchema(Date),
-		false: rootSchema({ is: false }),
-		null: rootSchema({ is: null }),
-		undefined: rootSchema({ is: undefined }),
-		true: rootSchema({ is: true }),
+		false: rootSchema({ unit: false }),
+		null: rootSchema({ unit: null }),
+		undefined: rootSchema({ unit: undefined }),
+		true: rootSchema({ unit: true }),
 		never: rootSchema(),
 		// this is parsed as prereduced so we can compare future
 		// unions to it to determine if they should be reduced to unknown
@@ -23,10 +23,10 @@ export const createBuiltins = () =>
 			"object",
 			"bigint",
 			"symbol",
-			{ is: true },
-			{ is: false },
-			{ is: null },
-			{ is: undefined }
+			{ unit: true },
+			{ unit: false },
+			{ unit: null },
+			{ unit: undefined }
 		])
 	}) as const
 

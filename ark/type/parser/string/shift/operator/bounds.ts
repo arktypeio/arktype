@@ -35,14 +35,14 @@ export const parseBound = (
 ) => {
 	const comparator = shiftComparator(s, start)
 	if (s.root.kind === "unit") {
-		if (typeof s.root.is === "number") {
+		if (typeof s.root.unit === "number") {
 			s.unsetRoot()
-			return s.reduceLeftBound(s.root.is, comparator)
+			return s.reduceLeftBound(s.root.unit, comparator)
 		}
-		if (s.root.is instanceof Date) {
+		if (s.root.unit instanceof Date) {
 			s.unsetRoot()
 			const literal = `d'${
-				s.root.description ?? s.root.is.toISOString()
+				s.root.description ?? s.root.unit.toISOString()
 			}'` as const
 			return s.reduceLeftBound(literal, comparator)
 		}

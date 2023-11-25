@@ -8,7 +8,7 @@ import type {
 import type { Node } from "./base.js"
 import type { instantiateBasis } from "./bases/basis.js"
 import type { NonEnumerableDomain } from "./bases/domain.js"
-import type { isCast, schema } from "./builtins/ark.js"
+import { schema, type isCast } from "./builtins/ark.js"
 import type { Schema } from "./schema.js"
 import type { IntersectionDefinition } from "./sets/intersection.js"
 import type {
@@ -43,9 +43,9 @@ export type inferAliases<aliases> = {
 
 export type validateSchemaBranch<def, $> = isCast<def> extends true
 	? def
-	: "morph" extends keyof def
-	  ? validateMorphSchema<def>
-	  : validateValidatorSchema<def>
+	: keyof def & ("morph" | "in" | "out") extends never
+	  ? validateValidatorSchema<def>
+	  : validateMorphSchema<def>
 
 export type instantiateSchemaBranches<branches extends readonly unknown[]> =
 	branches["length"] extends 0
@@ -68,9 +68,12 @@ export type validateValidatorSchema<def> = [def] extends [
 	NonEnumerableDomain | Constructor
 ]
 	? def
-	: def extends { domain: unknown } | { proto: unknown } | { is: unknown }
-	  ? exactMessageOnError<def, NormalizedDefinition<keyof def & BasisKind>>
-	  : validateIntersectionSchema<def>
+	: keyof def & BasisKind extends never
+	  ? validateIntersectionSchema<def>
+	  : exactMessageOnError<
+				def & object,
+				NormalizedDefinition<keyof def & BasisKind>
+	    >
 
 export type instantiateValidatorSchema<def> = def extends Definition<BasisKind>
 	? instantiateBasis<def>
@@ -117,11 +120,13 @@ type exactBasisMessageOnError<def, expected> = {
 
 export type validateIntersectionSchema<def> = exactBasisMessageOnError<
 	def,
-	"basis" extends keyof def
-		? IntersectionDefinition<
-				def["basis"] extends Definition<BasisKind> ? def["basis"] : undefined
-		  >
-		: IntersectionDefinition<undefined>
+	IntersectionDefinition<
+		"basis" extends keyof def
+			? def["basis"] extends Definition<BasisKind>
+				? def["basis"]
+				: undefined
+			: undefined
+	>
 >
 
 export type instantiateIntersectionSchema<def> = def extends {
@@ -131,3 +136,7 @@ export type instantiateIntersectionSchema<def> = def extends {
 		? instantiateBasis<basis>
 		: Node<"intersection", instantiateBasis<basis>["infer"]>
 	: Node<"intersection">
+
+const a = schema({
+	in: {}
+})

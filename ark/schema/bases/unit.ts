@@ -12,7 +12,7 @@ import type { BasisAttachments } from "./basis.js"
 export type UnitSchema<is = unknown> = UnitInner<is>
 
 export type UnitInner<is = unknown> = withAttributes<{
-	readonly is: is
+	readonly unit: is
 }>
 
 export type UnitDeclaration = declareNode<{
@@ -29,22 +29,22 @@ export type UnitDeclaration = declareNode<{
 export const UnitImplementation = defineNode({
 	kind: "unit",
 	keys: {
-		is: {
+		unit: {
 			preserveUndefined: true
 		}
 	},
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
-			r.allows(l.is) ? l : Disjoint.from("assignability", l.is, r)
+			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	},
-	writeDefaultDescription: (inner) => printable(inner.is),
+	writeDefaultDescription: (inner) => printable(inner.unit),
 	normalize: (schema) => schema,
 	attach: (node) => {
-		const serializedValue = compileSerializedValue(node.is)
+		const serializedValue = compileSerializedValue(node.unit)
 		return {
-			basisName: printable(node.is),
-			domain: domainOf(node.is),
+			basisName: printable(node.unit),
+			domain: domainOf(node.unit),
 			condition: `${In} === ${serializedValue}`,
 			negatedCondition: `${In} !== ${serializedValue}`
 		}

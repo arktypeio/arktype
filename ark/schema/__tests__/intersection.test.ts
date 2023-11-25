@@ -64,7 +64,7 @@ describe("intersections", () => {
 		attest(parseNumber.out.json).snap({})
 	})
 	it("reduces union", () => {
-		const n = schema("number", {}, { is: 5 })
+		const n = schema("number", {}, { unit: 5 })
 		attest(n.json).snap({})
 	})
 	it("in/out union", () => {
@@ -78,12 +78,19 @@ describe("intersections", () => {
 		attest(n.in.json).snap(["number", "string"])
 		attest(n.out.json).snap({})
 	})
-	it("errors on unknown key", () => {
+	it("errors on unknown intersection key", () => {
 		// @ts-expect-error
 		attest(() => schema({ foo: "bar", description: "baz" }))
 			.throws.snap("Error: Key foo is not valid on intersection schema")
 			.type.errors.snap("Type 'string' is not assignable to type 'never'.")
 	})
+	// TODO: Error here
+	// it("errors on unknown morph key", () => {
+	// 	// @ts-expect-error
+	// 	attest(() => schema({ morph: () => true, foo: "string" }))
+	// 		.throws.snap()
+	// 		.type.errors.snap()
+	// })
 	it("union of all types reduced to unknown", () => {
 		const n = schema(
 			"string",
@@ -91,10 +98,10 @@ describe("intersections", () => {
 			"object",
 			"bigint",
 			"symbol",
-			{ is: true },
-			{ is: false },
-			{ is: null },
-			{ is: undefined }
+			{ unit: true },
+			{ unit: false },
+			{ unit: null },
+			{ unit: undefined }
 		)
 		attest(n.json).snap({})
 	})
@@ -242,7 +249,7 @@ describe("intersections", () => {
 				{ key: "maxNumber", value: "number" },
 				{ key: "string", value: "string" },
 				{ key: "longString", value: "string" },
-				{ key: "boolean", value: [{ is: true }, { is: false }] },
+				{ key: "boolean", value: [{ unit: true }, { unit: false }] },
 				{
 					key: "deeplyNested",
 					value: {
@@ -250,7 +257,7 @@ describe("intersections", () => {
 						required: [
 							{ key: "foo", value: "string" },
 							{ key: "num", value: "number" },
-							{ key: "bool", value: [{ is: true }, { is: false }] }
+							{ key: "bool", value: [{ unit: true }, { unit: false }] }
 						]
 					}
 				}

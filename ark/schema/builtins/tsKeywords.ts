@@ -23,16 +23,16 @@ export const tsKeywords: SchemaScope<TsKeywordSchemas> = SchemaScope.from({
 	any: {} as schema.cast<any, "intersection">,
 	bigint: "bigint",
 	// since we know this won't be reduced, it can be safely cast to a union
-	boolean: [{ is: false }, { is: true }] as schema.cast<boolean, "union">,
-	false: { is: false },
+	boolean: [{ unit: false }, { unit: true }] as schema.cast<boolean, "union">,
+	false: { unit: false },
 	never: [],
-	null: { is: null },
+	null: { unit: null },
 	number: "number",
 	object: "object",
 	string: "string",
 	symbol: "symbol",
-	true: { is: true },
+	true: { unit: true },
 	unknown: {},
-	void: { is: undefined } as schema.cast<void, "unit">,
-	undefined: { is: undefined }
+	void: { unit: undefined } as schema.cast<void, "unit">,
+	undefined: { unit: undefined }
 })
