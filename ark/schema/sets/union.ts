@@ -1,6 +1,6 @@
 import { isArray, type conform } from "@arktype/util"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { basisKinds, defineNode, type RootKind } from "../shared/define.js"
+import { basisKinds, defineNode, type TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Node, Schema } from "../shared/node.js"
 import { discriminate, type Discriminant } from "./discriminate.js"
@@ -32,7 +32,7 @@ export type parseSchemaBranches<branches extends readonly unknown[]> =
 		? Node<"union", never>
 		: branches["length"] extends 1
 		  ? parseSchemaBranch<branches[0]>
-		  : Node<RootKind, parseSchemaBranch<branches[number]>["infer"]>
+		  : Node<TypeKind, parseSchemaBranch<branches[number]>["infer"]>
 
 export type parseSchemaBranch<schema> = schema extends MorphSchema
 	? parseMorphSchema<schema>
@@ -90,7 +90,7 @@ export const UnionImplementation = defineNode({
 		branches: {
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
-					ctx.cls.parseRootFromKinds(
+					ctx.cls.parseTypeFromKinds(
 						["morph", "intersection", ...basisKinds],
 						branch
 					)

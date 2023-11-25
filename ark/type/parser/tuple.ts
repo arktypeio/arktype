@@ -5,8 +5,8 @@ import {
 	type Morph,
 	type Out,
 	type Predicate,
-	type Root,
 	type Schema,
+	type TypeNode,
 	type ValidatorKind,
 	type inferMorphOut,
 	type inferNarrow
@@ -41,7 +41,7 @@ import type { BaseCompletions } from "./string/string.js"
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: List, ctx: ParseContext): Root => {
+export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 	const props: unknown[] = []
 	let isVariadic = false
 	for (let i = 0; i < def.length; i++) {
@@ -101,7 +101,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Root => {
 export const maybeParseTupleExpression = (
 	def: List,
 	ctx: ParseContext
-): Root | undefined => {
+): TypeNode | undefined => {
 	const tupleExpressionResult = isIndexOneExpression(def)
 		? indexOneParsers[def[1]](def as never, ctx)
 		: isIndexZeroExpression(def)
@@ -358,12 +358,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => Root
+) => TypeNode
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => Root
+) => TypeNode
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

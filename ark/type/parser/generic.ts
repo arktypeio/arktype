@@ -1,4 +1,4 @@
-import type { Root } from "@arktype/schema"
+import type { TypeNode } from "@arktype/schema"
 import {
 	throwParseError,
 	type ErrorMessage,
@@ -107,8 +107,8 @@ const parseGenericArgsRecurse = (
 	unscanned: string,
 	ctx: ParseContext,
 	argDefs: string[],
-	argNodes: Root[]
-): ParsedArgs<Root[]> => {
+	argNodes: TypeNode[]
+): ParsedArgs<TypeNode[]> => {
 	const s = parseUntilFinalizer(new DynamicState(unscanned, ctx))
 	// remove the finalizing token from the argDef
 	argDefs.push(s.scanner.scanned.slice(0, -1))

@@ -11,19 +11,20 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type {
-	BaseNode,
-	RootNode,
-	UnknownNode,
-	reducibleKindOf
-} from "../node.js"
+import type { BaseNode, UnknownNode } from "../node.js"
+import type { BaseType } from "../type.js"
 import {
 	compileSerializedValue,
 	type CompilationContext
 } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
-import type { Declaration, Node, NormalizedSchema } from "./node.js"
+import type {
+	Declaration,
+	Node,
+	NormalizedSchema,
+	reducibleKindOf
+} from "./node.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -64,9 +65,9 @@ export const setKinds = ["union", "morph", "intersection"] as const
 
 export type SetKind = (typeof setKinds)[number]
 
-export const rootKinds = [...setKinds, ...basisKinds] as const
+export const typeKinds = [...setKinds, ...basisKinds] as const
 
-export type RootKind = (typeof rootKinds)[number]
+export type TypeKind = (typeof typeKinds)[number]
 
 export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
@@ -83,8 +84,8 @@ type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export type Root<
 	t = unknown,
-	kind extends RootKind = RootKind
-> = kind extends RootKind ? RootNode<kind, t> : never
+	kind extends TypeKind = TypeKind
+> = kind extends TypeKind ? BaseType<kind, t> : never
 
 type BaseAttributeKeyDefinitions = {
 	[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>

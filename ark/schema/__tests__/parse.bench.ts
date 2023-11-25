@@ -1,5 +1,5 @@
 import { bench } from "@arktype/attest"
-import { node, type Node, type RootKind } from "@arktype/schema"
+import { node, type Node, type TypeKind } from "@arktype/schema"
 
 bench("domain", () => {
 	return node("string").infer
@@ -15,7 +15,7 @@ bench("no assignment", () => {
 
 bench("assignment", () => {
 	// previously had issues with a union complexity error when assigning to Root | undefined
-	const root: Node<RootKind> | undefined = node({
+	const n: Node<TypeKind> | undefined = node({
 		basis: "string",
 		pattern: "/.*/"
 	})

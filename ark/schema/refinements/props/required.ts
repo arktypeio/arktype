@@ -4,7 +4,7 @@ import {
 	type Problem
 } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
-import { rootKinds, type RootKind } from "../../shared/define.js"
+import { typeKinds, type TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Inner, Node, Schema } from "../../shared/node.js"
 import {
@@ -17,12 +17,12 @@ import type { NamedPropAttachments } from "./shared.js"
 
 export type RequiredPropSchema = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Schema<RootKind>
+	readonly value: Schema<TypeKind>
 }>
 
 export type RequiredPropInner = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Node<RootKind>
+	readonly value: Node<TypeKind>
 }>
 
 export type RequiredDeclaration = declareRefinement<{
@@ -60,7 +60,7 @@ export const RequiredImplementation = defineRefinement({
 	keys: {
 		key: {},
 		value: {
-			parse: (schema, ctx) => ctx.cls.parseRootFromKinds(rootKinds, schema)
+			parse: (schema, ctx) => ctx.cls.parseTypeFromKinds(typeKinds, schema)
 		}
 	},
 	operands: ["object"],

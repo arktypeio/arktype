@@ -4,6 +4,7 @@ export const builtins = BaseNode.builtins
 
 export * from "./config.js"
 export * from "./node.js"
+export * from "./parse.js"
 export * from "./refinements/bounds.js"
 export * from "./refinements/divisor.js"
 export * from "./refinements/pattern.js"
@@ -21,3 +22,4 @@ export * from "./shared/disjoint.js"
 export * from "./shared/node.js"
 export * from "./shared/registry.js"
 export * from "./shared/symbols.js"
+export * from "./type.js"

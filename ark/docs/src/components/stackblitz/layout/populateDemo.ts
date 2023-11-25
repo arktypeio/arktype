@@ -1,6 +1,6 @@
-import "./demo.css"
 import { stringify } from "@arktype/util"
 import type { Problems, Type } from "arktype"
+import "./demo.css"
 
 type PopulateDemoArgs = {
 	type: Type
@@ -27,8 +27,8 @@ const recolor = (input: string) => {
 	const fixedInput: string[] = ["<span class='val'>"]
 	for (const line of lines) {
 		if (line.includes(":")) {
-			const parts = line.split(":")
-			fixedInput.push(`${buildKey(parts[0])}: ${buildVal(parts[1])}`)
+			const [key, ...values] = line.split(":")
+			fixedInput.push(`${buildKey(key)}: ${buildVal(values.join(":"))}`)
 		} else {
 			fixedInput.push(addArkdarkStyles(line))
 		}

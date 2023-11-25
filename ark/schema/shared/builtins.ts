@@ -1,4 +1,4 @@
-import { node, parsePrereduced } from "../node.js"
+import { node, parsePrereduced } from "../parse.js"
 
 export function createBuiltins() {
 	return {

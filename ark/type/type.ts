@@ -8,7 +8,7 @@ import {
 	type Morph,
 	type Out,
 	type Predicate,
-	type Root,
+	type TypeNode,
 	type UnknownNode,
 	type inferMorphOut,
 	type inferNarrow
@@ -161,7 +161,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	declare inferIn: extractIn<t>
 
 	config: TypeConfig
-	root: Root<t>
+	root: TypeNode<t>
 	condition = ""
 	allows: this["root"]["allows"]
 	json: Json
@@ -170,7 +170,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		public definition: unknown,
 		public scope: Scope
 	) {
-		const root = parseTypeRoot(definition, scope) as Root<t>
+		const root = parseTypeRoot(definition, scope) as TypeNode<t>
 		super(In, `return true ? { data: ${In} } : { problems: [] } `)
 		this.root = root
 		this.allows = root.allows
@@ -332,7 +332,7 @@ export type GenericProps<
 	scope: Scope
 }
 
-export type BoundArgs = Record<string, Root>
+export type BoundArgs = Record<string, TypeNode>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 export type Generic<

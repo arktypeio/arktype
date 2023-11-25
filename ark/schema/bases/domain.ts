@@ -42,17 +42,17 @@ export const DomainImplementation = defineNode({
 		domain: (l, r) => Disjoint.from("domain", l, r)
 	},
 	normalize: (input) => (typeof input === "string" ? { domain: input } : input),
-	writeDefaultDescription: (inner) => domainDescriptions[inner.domain],
-	attach: (inner) => ({
-		basisName: inner.domain,
+	writeDefaultDescription: (node) => domainDescriptions[node.domain],
+	attach: (node) => ({
+		basisName: node.domain,
 		condition:
-			inner.domain === "object"
+			node.domain === "object"
 				? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-				: `typeof ${In} === "${inner.domain}"`,
+				: `typeof ${In} === "${node.domain}"`,
 		negatedCondition:
-			inner.domain === "object"
+			node.domain === "object"
 				? `((typeof ${In} !== "object" || ${In} === null) && typeof ${In} !== "function")`
-				: `typeof ${In} !== "${inner.domain}"`
+				: `typeof ${In} !== "${node.domain}"`
 	}),
 	compile: compilePrimitive
 })

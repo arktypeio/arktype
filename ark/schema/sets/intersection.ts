@@ -75,7 +75,7 @@ export const IntersectionImplementation = defineNode({
 	addContext: (ctx) => {
 		ctx.basis =
 			ctx.schema.basis &&
-			ctx.cls.parseRootFromKinds(basisKinds, ctx.schema.basis)
+			ctx.cls.parseTypeFromKinds(basisKinds, ctx.schema.basis)
 	},
 	keys: {
 		basis: {

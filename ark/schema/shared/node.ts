@@ -1,6 +1,6 @@
 import type { Dict, extend } from "@arktype/util"
 import { BasisImplementations, type BasisDeclarations } from "../bases/basis.js"
-import type { BaseNode, RootNode } from "../node.js"
+import type { BaseNode } from "../node.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import {
 	RefinementImplementations,
@@ -12,10 +12,11 @@ import {
 	type SetDeclarationsByKind
 } from "../sets/set.js"
 import type { BranchKind } from "../sets/union.js"
+import type { BaseType } from "../type.js"
 import type {
 	ConstraintKind,
 	NodeKind,
-	RootKind,
+	TypeKind,
 	normalizeSchema
 } from "./define.js"
 
@@ -62,7 +63,7 @@ export type ChildrenByKind = {
 		  : k extends "intersection"
 		    ? ConstraintKind
 		    : k extends PropKind
-		      ? RootKind
+		      ? TypeKind
 		      : never
 }
 
@@ -76,6 +77,12 @@ export type ParentsByKind = {
 
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
+export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
+	? TypeKind
+	: kind extends "intersection"
+	  ? ValidatorKind
+	  : kind
+
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
 export type Attachments<kind extends NodeKind> = Declaration<kind>["attach"]
@@ -83,4 +90,4 @@ export type Attachments<kind extends NodeKind> = Declaration<kind>["attach"]
 export type Node<
 	kind extends NodeKind = NodeKind,
 	t = unknown
-> = kind extends RootKind ? RootNode<kind, t> : BaseNode<kind, t>
+> = kind extends TypeKind ? BaseType<kind, t> : BaseNode<kind, t>

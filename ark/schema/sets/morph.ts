@@ -85,11 +85,11 @@ export const MorphImplementation = defineNode({
 	keys: {
 		in: {
 			parse: (schema, ctx) =>
-				ctx.cls.parseRootFromKinds(["intersection", ...basisKinds], schema)
+				ctx.cls.parseTypeFromKinds(["intersection", ...basisKinds], schema)
 		},
 		out: {
 			parse: (schema, ctx) =>
-				ctx.cls.parseRootFromKinds(["intersection", ...basisKinds], schema)
+				ctx.cls.parseTypeFromKinds(["intersection", ...basisKinds], schema)
 		},
 		morph: {
 			parse: listFrom
