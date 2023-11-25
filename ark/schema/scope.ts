@@ -34,14 +34,14 @@ import {
 } from "./shared/nodes.js"
 import { isNode } from "./shared/registry.js"
 
-export type inferResolutions<resolutions> = {
-	[k in keyof resolutions]: resolutions[k] extends Schema
-		? resolutions[k]["infer"]
-		: never
-}
+export type baseResolutions<resolutions> = { [k in keyof resolutions]: Schema }
 
-export class SchemaScope<resolutions = unknown> {
-	declare infer: inferResolutions<resolutions>
+export class SchemaScope<
+	resolutions extends baseResolutions<resolutions> = any
+> {
+	declare infer: {
+		[k in keyof resolutions]: resolutions[k]["infer"]
+	}
 	resolutions = {} as resolutions
 
 	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {}
