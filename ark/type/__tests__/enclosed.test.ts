@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { type } from "arktype"
 import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
 
 describe("parse enclosed", () => {

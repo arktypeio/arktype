@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { scope } from "arktype"
+import { scope, type } from "arktype"
 
 describe("discrimination", () => {
 	it("2 literal branches", () => {

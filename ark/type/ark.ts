@@ -4,7 +4,9 @@ import {
 	Validation,
 	type inferred
 } from "@arktype/schema"
-import { Scope } from "./scope.js"
+import type { MatchParser, WhenParser } from "./match.js"
+import { Scope, type Module, type ScopeParser } from "./scope.js"
+import type { DeclarationParser, DefinitionParser, TypeParser } from "./type.js"
 
 /** Root scopes can be inferred automatically from node definitions, but
  * explicitly typing them can improve responsiveness */
@@ -22,13 +24,7 @@ export const ark = Scope.root({
 	...Validation.resolutions
 }).toAmbient()
 
-export namespace type {
-	export type cast<to> = {
-		[inferred]?: to
-	}
-}
-
-// export const arktypes: Module<ArkResolutions> = ark.export()
+export const arktypes: Module<ArkResolutions> = ark.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
@@ -39,20 +35,21 @@ export interface Ark
 	// parse: ParsingModule
 }
 
-// export const scope: ScopeParser<{}, Ark> = ark.scope as never
+export const scope: ScopeParser<{}, Ark> = ark.scope as never
 
-// export const type: TypeParser<Ark> = ark.type
+export const type: TypeParser<Ark> = ark.type
 
-// export const match: MatchParser<Ark> = ark.match
+// TODO: cast needed?
+export const match: MatchParser<Ark> = ark.match as never
 
-// export const when: WhenParser<Ark> = ark.when
+export const when: WhenParser<Ark> = ark.when
 
-// export namespace type {
-// 	export type cast<to> = {
-// 		[inferred]?: to
-// 	}
-// }
+export namespace type {
+	export type cast<to> = {
+		[inferred]?: to
+	}
+}
 
-// export const define: DefinitionParser<Ark> = ark.define
+export const define: DefinitionParser<Ark> = ark.define
 
-// export const declare: DeclarationParser<Ark> = ark.declare
+export const declare: DeclarationParser<Ark> = ark.declare
