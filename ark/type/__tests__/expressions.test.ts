@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 import { type, type Out } from "arktype"
+import { scope } from "../ark.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
-import { scope } from "../scopes/ark.js"
 
 describe("tuple expressions", () => {
 	it("nested", () => {

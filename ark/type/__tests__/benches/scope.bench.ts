@@ -1,7 +1,7 @@
 import { bench } from "@arktype/attest"
 // import { scope } from "arktype"
+import type { Ark } from "../../ark.js"
 import type { ScopeParser } from "../../scope.js"
-import type { Ark } from "../../scopes/ark.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 declare const scope: ScopeParser<Ark, Ark>

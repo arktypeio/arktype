@@ -1,6 +1,6 @@
-import { Scope } from "../scope.js"
-import type { Generic } from "../type.js"
-import type { Ark, RootScope } from "./ark.js"
+import type { Ark, RootScope } from "arktype/internal/ark.js"
+import { Scope } from "arktype/internal/scope.js"
+import type { Generic } from "arktype/internal/type.js"
 
 export interface InferredTsGenerics<$ = Ark> {
 	Record: Generic<

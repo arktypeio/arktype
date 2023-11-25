@@ -8,7 +8,7 @@ import type {
 import type { Node } from "./base.js"
 import type { instantiateBasis } from "./bases/basis.js"
 import type { NonEnumerableDomain } from "./bases/domain.js"
-import { schema, type isCast } from "./builtins/ark.js"
+import type { isCast, schema } from "./builtins/ark.js"
 import type { Schema } from "./schema.js"
 import type { IntersectionDefinition } from "./sets/intersection.js"
 import type {
@@ -33,12 +33,16 @@ export type validateAliases<aliases> = {
 		  : validateSchemaBranch<aliases[k], aliases>
 }
 
-export type inferAliases<aliases> = {
-	[k in keyof aliases]: aliases[k] extends NormalizedDefinition<"union">
-		? instantiateSchemaBranches<aliases[k]["branches"]>
-		: aliases[k] extends readonly [...infer branches]
-		  ? instantiateSchemaBranches<branches>
-		  : instantiateSchemaBranch<aliases[k]>
+export type instantiateAliases<aliases> = {
+	[k in keyof aliases]: isCast<aliases[k]> extends true
+		? aliases[k] extends schema.cast<infer to, infer kind>
+			? Schema<kind, to>
+			: never
+		: aliases[k] extends NormalizedDefinition<"union">
+		  ? instantiateSchemaBranches<aliases[k]["branches"]>
+		  : aliases[k] extends readonly [...infer branches]
+		    ? instantiateSchemaBranches<branches>
+		    : instantiateSchemaBranch<aliases[k]>
 } & unknown
 
 export type validateSchemaBranch<def, $> = isCast<def> extends true
@@ -59,7 +63,7 @@ export type instantiateSchemaBranch<def> = isCast<def> extends true
 		? Schema<kind, to>
 		: never
 	: def extends MorphDefinition
-	  ? parseMorphSchema<def>
+	  ? instantiateMorphSchema<def>
 	  : def extends ValidatorDefinition
 	    ? instantiateValidatorSchema<def>
 	    : BranchNode
@@ -89,8 +93,8 @@ export type validateMorphSchema<def> = {
 		  : `'${k & string}' is not a valid morph schema key`
 }
 
-export type parseMorphSchema<def> = def extends MorphDefinition
-	? Node<
+export type instantiateMorphSchema<def> = def extends MorphDefinition
+	? Schema<
 			"morph",
 			(
 				In: def["in"] extends {}
@@ -136,7 +140,3 @@ export type instantiateIntersectionSchema<def> = def extends {
 		? instantiateBasis<basis>
 		: Node<"intersection", instantiateBasis<basis>["infer"]>
 	: Node<"intersection">
-
-const a = schema({
-	in: {}
-})

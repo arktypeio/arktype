@@ -1,6 +1,5 @@
 export { Problems, type Problem } from "@arktype/schema"
 export type { Out } from "@arktype/schema"
-export type { Module, Scope } from "./scope.js"
 export {
 	ark,
 	arktypes,
@@ -11,10 +10,7 @@ export {
 	type,
 	when,
 	type Ark
-} from "./scopes/ark.js"
-export { jsObjects } from "./scopes/jsObjects.js"
-export { tsGenerics } from "./scopes/tsGenerics.js"
-export { tsKeywords } from "./scopes/tsKeywords.js"
-export { validation } from "./scopes/validation.js"
+} from "./ark.js"
+export type { Module, Scope } from "./scope.js"
 export { Type } from "./type.js"
 export type { inferTypeRoot, validateTypeRoot } from "./type.js"

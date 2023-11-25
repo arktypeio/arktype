@@ -10,6 +10,7 @@ import {
 	type isAny,
 	type nominal
 } from "@arktype/util"
+import type { type } from "./ark.js"
 import {
 	createMatchParser,
 	createWhenParser,
@@ -33,7 +34,6 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { parseString } from "./parser/string/string.js"
-import type { type } from "./scopes/ark.js"
 import {
 	addArkKind,
 	createTypeParser,

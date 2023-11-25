@@ -46,21 +46,25 @@ const semver = rootSchema({
 	description: "a valid semantic version (see https://semver.org/)"
 })
 
-export interface ValidationSchemas {
-	alpha: Schema<"intersection", string>
-	alphanumeric: Schema<"intersection", string>
-	lowercase: Schema<"intersection", string>
-	uppercase: Schema<"intersection", string>
-	creditCard: Schema<"intersection", string>
-	email: Schema<"intersection", string>
-	uuid: Schema<"intersection", string>
-	url: Schema<"intersection", string>
-	semver: Schema<"intersection", string>
-	integer: Schema<"intersection", number>
+export namespace Validation {
+	export interface resolutions {
+		alpha: Schema<"intersection", string>
+		alphanumeric: Schema<"intersection", string>
+		lowercase: Schema<"intersection", string>
+		uppercase: Schema<"intersection", string>
+		creditCard: Schema<"intersection", string>
+		email: Schema<"intersection", string>
+		uuid: Schema<"intersection", string>
+		url: Schema<"intersection", string>
+		semver: Schema<"intersection", string>
+		integer: Schema<"intersection", number>
+	}
+
+	export type infer = (typeof Validation)["infer"]
 }
 
 // SchemaScope<ValidationSchemas>
-export const validation = SchemaScope.from({
+export const Validation = SchemaScope.from({
 	alpha: {
 		basis: "string",
 		pattern: /^[A-Za-z]*$/,

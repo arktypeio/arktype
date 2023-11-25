@@ -10,7 +10,7 @@ import {
 import type { BaseAttachments, Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type {
-	inferAliases,
+	instantiateAliases,
 	instantiateSchemaBranches,
 	validateAliases,
 	validateSchemaBranch
@@ -34,14 +34,20 @@ import {
 } from "./shared/nodes.js"
 import { isNode } from "./shared/registry.js"
 
+export type inferResolutions<resolutions> = {
+	[k in keyof resolutions]: resolutions[k] extends Schema
+		? resolutions[k]["infer"]
+		: never
+}
+
 export class SchemaScope<resolutions = unknown> {
-	declare infer: resolutions
-	resolutions: Record<string, Schema> = {}
+	declare infer: inferResolutions<resolutions>
+	resolutions = {} as resolutions
 
 	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {}
 
 	static from = <const aliases>(aliases: validateAliases<aliases>) =>
-		new SchemaScope<inferAliases<aliases>>(aliases as never)
+		new SchemaScope<instantiateAliases<aliases>>(aliases as never)
 
 	static root = new SchemaScope<{}>({})
 

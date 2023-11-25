@@ -60,16 +60,19 @@ const json = rootSchema({
 
 const date = parsedDate
 
-export interface InferredParsing {
-	url: Schema<"morph", (In: string) => Out<URL>>
-	number: Schema<"morph", (In: string) => Out<number>>
-	integer: Schema<"morph", (In: string) => Out<number>>
-	date: Schema<"morph", (In: string) => Out<Date>>
-	json: Schema<"morph", (In: string) => Out<unknown>>
+export namespace Parsing {
+	export interface resolutions {
+		url: Schema<"morph", (In: string) => Out<URL>>
+		number: Schema<"morph", (In: string) => Out<number>>
+		integer: Schema<"morph", (In: string) => Out<number>>
+		date: Schema<"morph", (In: string) => Out<Date>>
+		json: Schema<"morph", (In: string) => Out<unknown>>
+	}
+
+	export type infer = (typeof Parsing)["infer"]
 }
 
-// SchemaScope<InferredParsing>
-export const parsing = SchemaScope.from({
+export const Parsing: SchemaScope<Parsing.resolutions> = SchemaScope.from({
 	url,
 	number,
 	integer,
