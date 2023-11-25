@@ -27,7 +27,7 @@ import {
 	type SchemaParseContext
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Input } from "../shared/nodes.js"
+import type { Definition } from "../shared/nodes.js"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {
@@ -38,12 +38,14 @@ export type IntersectionInner = withAttributes<
 >
 
 export type IntersectionSchema<
-	basis extends Input<BasisKind> | undefined = Input<BasisKind> | undefined
+	basis extends Definition<BasisKind> | undefined =
+		| Definition<BasisKind>
+		| undefined
 > = {
 	basis?: basis
 } & refinementInputsByKind<
-	basis extends Input<BasisKind>
-		? basis extends Input<BasisKind> | undefined
+	basis extends Definition<BasisKind>
+		? basis extends Definition<BasisKind> | undefined
 			? // allow all refinement kinds for base schema
 			  any
 			: parseBasis<basis>["infer"]
@@ -200,7 +202,7 @@ export const IntersectionImplementation = defineNode({
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
-	input: Input<kind>,
+	input: Definition<kind>,
 	ctx: SchemaParseContext<"intersection">
 ): Node<kind> => {
 	const refinement = ctx.cls.parseSchema(kind, input) as Node<RefinementKind>
@@ -210,7 +212,7 @@ export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 
 export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
-	input: listable<Input<kind>>,
+	input: listable<Definition<kind>>,
 	ctx: SchemaParseContext<"intersection">
 ) => {
 	if (isArray(input)) {
@@ -301,7 +303,7 @@ export const addConstraint = (
 }
 
 export type IntersectionBasis = {
-	basis?: Input<BasisKind>
+	basis?: Definition<BasisKind>
 }
 
 type exactBasisMessageOnError<branch, expected> = {

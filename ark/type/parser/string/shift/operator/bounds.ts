@@ -1,7 +1,7 @@
 import {
 	builtins,
 	type BoundKind,
-	type Input,
+	type Definition,
 	type LimitValue,
 	type Root
 } from "@arktype/schema"
@@ -182,7 +182,9 @@ export const getBoundKinds = (
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const openLeftBoundToSchema = (leftBound: OpenLeftBound): Input<BoundKind> => ({
+const openLeftBoundToSchema = (
+	leftBound: OpenLeftBound
+): Definition<BoundKind> => ({
 	limit: isDateLiteral(leftBound.limit)
 		? extractDateLiteralSource(leftBound.limit)
 		: leftBound.limit,

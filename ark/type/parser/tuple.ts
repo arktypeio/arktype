@@ -2,7 +2,7 @@ import {
 	builtins,
 	schema,
 	type BaseAttributes,
-	type Input,
+	type Definition,
 	type Morph,
 	type Out,
 	type Predicate,
@@ -390,7 +390,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 	}
 	// TODO: nested morphs?
 	return schema({
-		in: ctx.scope.parse(def[0], ctx) as Input<ValidatorKind>,
+		in: ctx.scope.parse(def[0], ctx) as Definition<ValidatorKind>,
 		morph: def[2] as Morph
 	})
 }

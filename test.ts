@@ -7,10 +7,10 @@
 import { type } from "arktype"
 import { isDeepStrictEqual } from "util"
 import type { NodeKind } from "./ark/schema/shared/define.js"
-import type { Input } from "./ark/schema/shared/nodes.js"
+import type { Definition } from "./ark/schema/shared/nodes.js"
 import type { Dict } from "./ark/util/records.js"
 
-class Foo<schema extends Input<kind>, kind extends NodeKind> {
+class Foo<schema extends Definition<kind>, kind extends NodeKind> {
 	constructor(schema: schema) {}
 }
 

@@ -7,7 +7,7 @@ import {
 import type { withAttributes } from "../../shared/declare.js"
 import { schemaKinds, type SchemaKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { Inner, Input } from "../../shared/nodes.js"
+import type { Inner, Definition } from "../../shared/nodes.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -18,7 +18,7 @@ import type { NamedPropAttachments } from "./shared.js"
 
 export type RequiredDefinition = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Input<SchemaKind>
+	readonly value: Definition<SchemaKind>
 }>
 
 export type RequiredInner = withAttributes<{

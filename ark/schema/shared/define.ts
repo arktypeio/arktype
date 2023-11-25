@@ -19,7 +19,11 @@ import {
 } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
-import type { Declaration, NormalizedInput, reducibleKindOf } from "./nodes.js"
+import type {
+	Declaration,
+	NormalizedDefinition,
+	reducibleKindOf
+} from "./nodes.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -129,7 +133,7 @@ export type SchemaParseContextInput = {
 export type SchemaParseContext<kind extends NodeKind> = extend<
 	SchemaParseContextInput,
 	{
-		input: NormalizedInput<kind>
+		input: NormalizedDefinition<kind>
 		cls: typeof BaseNode
 	}
 >
@@ -147,14 +151,14 @@ export type NodeKeyDefinition<
 				: d["inner"][k]
 		) => JsonData
 		parse?: (
-			schema: k extends keyof NormalizedInput<d["kind"]>
-				? Exclude<NormalizedInput<d["kind"]>[k], undefined>
+			schema: k extends keyof NormalizedDefinition<d["kind"]>
+				? Exclude<NormalizedDefinition<d["kind"]>[k], undefined>
 				: undefined,
 			ctx: SchemaParseContext<d["kind"]>
 		) => d["inner"][k]
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
-	NormalizedInput<d["kind"]> extends Pick<d["inner"], k> ? never : "parse"
+	NormalizedDefinition<d["kind"]> extends Pick<d["inner"], k> ? never : "parse"
 >
 
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {

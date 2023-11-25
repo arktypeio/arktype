@@ -10,7 +10,7 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
-import type { Input } from "../shared/nodes.js"
+import type { Definition } from "../shared/nodes.js"
 import { isNode } from "../shared/registry.js"
 import {
 	DomainImplementation,
@@ -76,7 +76,7 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	}
 }
 
-export type parseBasis<schema extends Input<BasisKind>> =
+export type parseBasis<schema extends Definition<BasisKind>> =
 	//allow any to be used to access all refinements
 	isAny<schema> extends true
 		? any

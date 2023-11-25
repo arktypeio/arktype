@@ -13,7 +13,7 @@ import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Input, NormalizedInput } from "../shared/nodes.js"
+import type { Definition, NormalizedDefinition } from "../shared/nodes.js"
 import type {
 	IntersectionSchema,
 	parseIntersectionSchema,
@@ -24,19 +24,22 @@ export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
 export type ValidatorNode = Node<ValidatorKind>
 
-export type ValidatorDefinition = Input<ValidatorKind>
+export type ValidatorDefinition = Definition<ValidatorKind>
 
 export type validateValidator<schema> = [schema] extends [
 	NonEnumerableDomain | Constructor
 ]
 	? schema
-	: schema extends NormalizedInput<BasisKind>
-	  ? exactMessageOnError<schema, NormalizedInput<keyof schema & BasisKind>>
+	: schema extends NormalizedDefinition<BasisKind>
+	  ? exactMessageOnError<
+				schema,
+				NormalizedDefinition<keyof schema & BasisKind>
+	    >
 	  : schema extends IntersectionSchema
 	    ? validateIntersectionSchema<schema>
 	    : ValidatorDefinition
 
-export type parseValidatorSchema<schema> = schema extends Input<BasisKind>
+export type parseValidatorSchema<schema> = schema extends Definition<BasisKind>
 	? parseBasis<schema>
 	: schema extends IntersectionSchema
 	  ? parseIntersectionSchema<schema>

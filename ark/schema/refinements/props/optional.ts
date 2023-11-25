@@ -3,7 +3,7 @@ import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
 import { schemaKinds, type SchemaKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { Input } from "../../shared/nodes.js"
+import type { Definition } from "../../shared/nodes.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -18,7 +18,7 @@ export type OptionalInner = withAttributes<{
 
 export type OptionalDefinition = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Input<SchemaKind>
+	readonly value: Definition<SchemaKind>
 }>
 
 export type OptionalDeclaration = declareRefinement<{

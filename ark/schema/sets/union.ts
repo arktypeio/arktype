@@ -3,7 +3,7 @@ import type { Node } from "../base.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode, type SchemaKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Input } from "../shared/nodes.js"
+import type { Definition } from "../shared/nodes.js"
 import { discriminate, type Discriminant } from "./discriminate.js"
 import type {
 	MorphSchema,
@@ -17,7 +17,7 @@ import type {
 
 export type BranchKind = "morph" | ValidatorKind
 
-export type BranchDefinition = Input<BranchKind>
+export type BranchDefinition = Definition<BranchKind>
 
 export type BranchNode = Node<BranchKind>
 

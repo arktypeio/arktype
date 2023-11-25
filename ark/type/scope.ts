@@ -400,7 +400,7 @@ export class Scope<r extends Resolutions = any> {
 		...names: names
 	): destructuredImportContext<
 		r,
-		names extends [] ? keyof r["exports"] : names[number]
+		names extends [] ? keyof r["exports"] & string : names[number]
 	> {
 		return addArkKind(
 			transform(this.export(...names), ([alias, value]) => [

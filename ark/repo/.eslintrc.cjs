@@ -4,7 +4,12 @@ const { defineConfig } = require("eslint-define-config")
 module.exports = defineConfig({
 	root: true,
 	parser: "@typescript-eslint/parser",
-	plugins: ["@typescript-eslint", "import", "only-warn"],
+	plugins: [
+		"@typescript-eslint",
+		"import",
+		"only-warn",
+		"prefer-arrow-functions"
+	],
 	extends: [
 		"eslint:recommended",
 		"plugin:@typescript-eslint/recommended",
@@ -25,6 +30,15 @@ module.exports = defineConfig({
 		curly: "warn",
 		eqeqeq: "warn",
 		"object-shorthand": ["warn"],
+		/**
+		 * Require the use of arrow functions where possible
+		 */
+		"prefer-arrow-functions/prefer-arrow-functions": [
+			"warn",
+			{
+				disallowPrototype: true
+			}
+		],
 		"@typescript-eslint/no-unused-vars": [
 			"warn",
 			{

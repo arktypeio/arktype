@@ -4,7 +4,7 @@ import type { BranchKind } from "./sets/union.js"
 import type { RefinementKind, Root, SchemaKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
-import type { Input } from "./shared/nodes.js"
+import type { Definition } from "./shared/nodes.js"
 import { registry } from "./shared/registry.js"
 import { inferred } from "./shared/symbols.js"
 
@@ -17,7 +17,7 @@ export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 	declare infer: t;
 	declare [inferred]: t
 
-	// import we only declare this, otherwise it would reinitialize a union's branches to undefined
+	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
 
 	protected constructor(attachments: BaseAttachments<kind>) {
@@ -29,7 +29,7 @@ export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,
-		input: Input<refinementKind>
+		input: Definition<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
 		const refinement = parseNode(kind, input)
 		return this.and(refinement) as never

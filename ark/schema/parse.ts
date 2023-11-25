@@ -25,8 +25,8 @@ import {
 } from "./shared/define.js"
 import {
 	NodeImplementationByKind,
+	type Definition,
 	type Inner,
-	type Input,
 	type childKindOf,
 	type reducibleKindOf
 } from "./shared/nodes.js"
@@ -47,29 +47,25 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly typeId: string
 }
 
-export function parseUnion<const branches extends readonly unknown[]>(
+export const parseUnion = <const branches extends readonly unknown[]>(
 	input: {
 		branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i]>
 		}
 	} & UnionDefinition
-): parseSchemaBranches<branches> {
-	return parseNode("union", input) as never
-}
+): parseSchemaBranches<branches> => parseNode("union", input) as never
 
-export function parseBranches<const branches extends readonly unknown[]>(
+export const parseBranches = <const branches extends readonly unknown[]>(
 	...branches: {
 		[i in keyof branches]: validateSchemaBranch<branches[i]>
 	}
-): parseSchemaBranches<branches> {
-	return parseNode("union", branches) as never
-}
+): parseSchemaBranches<branches> => parseNode("union", branches) as never
 
-export function parseUnits<const branches extends readonly unknown[]>(
+export const parseUnits = <const branches extends readonly unknown[]>(
 	...values: branches
 ): branches["length"] extends 1
 	? Node<"unit", branches[0]>
-	: Node<"union" | "unit", branches[number]> {
+	: Node<"union" | "unit", branches[number]> => {
 	const uniqueValues: unknown[] = []
 	for (const value of values) {
 		if (!uniqueValues.includes(value)) {
@@ -87,19 +83,18 @@ export function parseUnits<const branches extends readonly unknown[]>(
 	}) as never
 }
 
-export function parsePrereducedSchema<kind extends SchemaKind>(
+export const parsePrereducedSchema = <kind extends SchemaKind>(
 	kind: kind,
-	input: Input<kind>
-): Node<kind> {
-	return parseNode(kind, input, {
+	input: Definition<kind>
+): Node<kind> =>
+	parseNode(kind, input, {
 		prereduced: true
 	}) as never
-}
 
-export function parseSchemaFromKinds<defKind extends SchemaKind>(
+export const parseSchemaFromKinds = <defKind extends SchemaKind>(
 	allowedKinds: readonly defKind[],
 	input: unknown
-): Node<reducibleKindOf<defKind>> {
+): Node<reducibleKindOf<defKind>> => {
 	const kind = schemaKindOf(input)
 	if (!allowedKinds.includes(kind as never)) {
 		return throwParseError(
@@ -111,11 +106,11 @@ export function parseSchemaFromKinds<defKind extends SchemaKind>(
 
 const parseCache: Record<string, unknown> = {}
 
-export function parseNode<defKind extends NodeKind>(
+export const parseNode = <defKind extends NodeKind>(
 	kind: defKind,
-	input: Input<defKind>,
+	input: Definition<defKind>,
 	ctxInput?: SchemaParseContextInput
-): Node<reducibleKindOf<defKind>> {
+): Node<reducibleKindOf<defKind>> => {
 	if (isNode(input)) {
 		return input as never
 	}
@@ -209,7 +204,7 @@ export function parseNode<defKind extends NodeKind>(
 		: new (registry() as any).SchemaNode(attachments)
 }
 
-function schemaKindOf(input: unknown): SchemaKind {
+const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)
 	if (basisKind) {
 		return basisKind
