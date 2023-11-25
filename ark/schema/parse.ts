@@ -9,11 +9,7 @@ import {
 } from "@arktype/util"
 import type { BaseNode, Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
-import type {
-	UnionDefinition,
-	parseSchemaBranches,
-	validateSchemaBranch
-} from "./sets/union.js"
+import type { parseSchemaBranches, validateSchemaBranch } from "./sets/union.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
@@ -27,6 +23,7 @@ import {
 	NodeImplementationByKind,
 	type Definition,
 	type Inner,
+	type NormalizedDefinition,
 	type childKindOf,
 	type reducibleKindOf
 } from "./shared/nodes.js"
@@ -52,7 +49,7 @@ export const parseUnion = <const branches extends readonly unknown[]>(
 		branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i]>
 		}
-	} & UnionDefinition
+	} & NormalizedDefinition<"union">
 ): parseSchemaBranches<branches> => parseNode("union", input) as never
 
 export const parseBranches = <const branches extends readonly unknown[]>(
