@@ -9,6 +9,10 @@ import { registry } from "./shared/registry.js"
 import { inferred } from "./shared/symbols.js"
 
 export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
+	static {
+		registry().SchemaNode = this
+	}
+
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -82,8 +86,6 @@ export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 		)
 	}
 }
-
-;(registry() as any).SchemaNode = SchemaNode
 
 export type Schema<kind extends SchemaKind = SchemaKind, t = unknown> = {
 	union: SchemaNode<"union", t>

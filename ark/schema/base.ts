@@ -54,6 +54,10 @@ export abstract class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
 > extends DynamicBase<Inner<kind> & Attachments<kind> & BaseAttachments<kind>> {
+	static {
+		registry().BaseNode = this
+	}
+
 	readonly [arkKind] = "node"
 	readonly cls = BaseNode
 
@@ -304,8 +308,6 @@ export abstract class BaseNode<
 		return this.#builtins
 	}
 }
-
-;(registry() as any).BaseNode = BaseNode
 
 export type Node<
 	kind extends NodeKind = NodeKind,
