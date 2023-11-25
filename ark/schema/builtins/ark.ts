@@ -8,9 +8,9 @@ import { validation, type ValidationSchemas } from "./validation.js"
 export type ArkResolutions = Ark
 
 export const ark: SchemaScope<ArkResolutions> = SchemaScope.from({
-	...tsKeywords,
-	...jsObjects,
-	...validation
+	...tsKeywords.resolutions,
+	...jsObjects.resolutions,
+	...validation.resolutions
 }) as never
 
 export const schema = ark.schema
