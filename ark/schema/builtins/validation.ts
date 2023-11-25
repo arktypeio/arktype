@@ -1,5 +1,5 @@
+import type { Schema } from "../schema.js"
 import { SchemaScope, rootSchema } from "../scope.js"
-import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
@@ -45,33 +45,49 @@ const semver = rootSchema({
 	description: "a valid semantic version (see https://semver.org/)"
 })
 
-export interface InferredValidation {
-	alpha: string
-	alphanumeric: string
-	lowercase: string
-	uppercase: string
-	creditCard: string
-	email: string
-	uuid: string
-	url: string
-	semver: string
-	integer: number
+export interface ValidationSchemas {
+	alpha: Schema<"intersection", string>
+	alphanumeric: Schema<"intersection", string>
+	lowercase: Schema<"intersection", string>
+	uppercase: Schema<"intersection", string>
+	creditCard: Schema<"intersection", string>
+	email: Schema<"intersection", string>
+	uuid: Schema<"intersection", string>
+	url: Schema<"intersection", string>
+	semver: Schema<"intersection", string>
+	integer: Schema<"intersection", number>
 }
 
-export const validation: SchemaScope<InferredValidation> = SchemaScope.from({
-	// Character sets
-	// alpha: [/^[A-Za-z]*$/, "@", "only letters"],
-	// alphanumeric: [/^[A-Za-z\d]*$/, "@", "only letters and digits"],
-	// lowercase: [/^[a-z]*$/, "@", "only lowercase letters"],
-	// uppercase: [/^[A-Z]*$/, "@", "only uppercase letters"],
-	creditCard,
-	email,
-	uuid,
-	url,
-	semver,
-	integer: {
-		basis: "number",
-		divisor: 1,
-		description: "an integer"
+// SchemaScope<ValidationSchemas>
+export const validation = SchemaScope.from({
+	alpha: {
+		basis: "string",
+		pattern: /^[A-Za-z]*$/,
+		description: "only letters"
 	}
+	// alphanumeric: {
+	// 	basis: "string",
+	// 	pattern: /^[A-Za-z\d]*$/,
+	// 	description: "only letters and digits"
+	// },
+	// lowercase: {
+	// 	basis: "string",
+	// 	pattern: /^[a-z]*$/,
+	// 	description: "only lowercase letters"
+	// },
+	// uppercase: {
+	// 	basis: "string",
+	// 	pattern: /^[A-Za-z]*$/,
+	// 	description: "only uppercase letters"
+	// },
+	// creditCard,
+	// email,
+	// uuid,
+	// url,
+	// semver,
+	// integer: {
+	// 	basis: "number",
+	// 	divisor: 1,
+	// 	description: "an integer"
+	// }
 })

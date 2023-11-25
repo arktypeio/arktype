@@ -45,7 +45,7 @@ export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 export type Implementation<kind extends NodeKind> =
 	NodeImplementationByKind[kind]
 
-export type Definition<kind extends NodeKind> = Declaration<kind>["schema"]
+export type Definition<kind extends NodeKind> = Declaration<kind>["definition"]
 
 export type NormalizedDefinition<kind extends NodeKind> = normalizeInput<
 	Definition<kind>,

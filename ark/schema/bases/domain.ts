@@ -14,17 +14,17 @@ export type DomainInner<
 // only domains with an infinite number of values are allowed as bases
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
 
-export type DomainSchema<
+export type DomainDefinition<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = domain | NormalizedDomainSchema<domain>
+> = domain | NormalizedDomainDefinition<domain>
 
-export type NormalizedDomainSchema<
+export type NormalizedDomainDefinition<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > = DomainInner<domain>
 
 export type DomainDeclaration = declareNode<{
 	kind: "domain"
-	schema: DomainSchema
+	definition: DomainDefinition
 	inner: DomainInner
 	intersections: {
 		domain: "domain" | Disjoint

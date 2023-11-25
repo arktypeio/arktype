@@ -15,7 +15,7 @@ export type DivisorDefinition = DivisorInner | number
 
 export type DivisorDeclaration = declareRefinement<{
 	kind: "divisor"
-	schema: DivisorDefinition
+	definition: DivisorDefinition
 	inner: DivisorInner
 	intersections: {
 		divisor: "divisor"

@@ -2,8 +2,6 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
-	type ErrorMessage,
-	type conform,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -62,7 +60,7 @@ export type IntersectionAttachments = {
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
-	schema: IntersectionDefinition
+	definition: IntersectionDefinition
 	inner: IntersectionInner
 	intersections: {
 		intersection: "intersection" | Disjoint
@@ -301,31 +299,6 @@ export const addConstraint = (
 	}
 	return result
 }
-
-export type IntersectionBasis = {
-	basis?: Definition<BasisKind>
-}
-
-type exactBasisMessageOnError<branch, expected> = {
-	[k in keyof branch]: k extends keyof expected
-		? conform<branch[k], expected[k]>
-		: ErrorMessage<`'${k & string}' is not allowed by ${branch[keyof branch &
-				BasisKind] extends string
-				? `basis '${branch[keyof branch & BasisKind]}'`
-				: `this schema's basis`}`>
-}
-
-export type validateIntersectionSchema<def> = def extends IntersectionBasis
-	? exactBasisMessageOnError<def, IntersectionDefinition<def["basis"]>>
-	: exactBasisMessageOnError<def, IntersectionDefinition<undefined>>
-
-export type instantiateIntersectionSchema<def> =
-	def extends Required<IntersectionBasis>
-		? keyof def & RefinementKind extends never
-			? // if there are no refinement keys, reduce to the basis node
-			  instantiateBasis<def["basis"]>
-			: Node<"intersection", instantiateBasis<def["basis"]>["infer"]>
-		: Node<"intersection">
 
 // export class ArrayPredicate extends composePredicate(
 // 	Narrowable<"object">,

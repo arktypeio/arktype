@@ -20,7 +20,7 @@ export type PredicateDefinition = PredicateInner | Predicate
 
 export type PredicateDeclaration = declareRefinement<{
 	kind: "predicate"
-	schema: PredicateDefinition
+	definition: PredicateDefinition
 	inner: PredicateInner
 	intersections: {
 		predicate: "predicate" | null

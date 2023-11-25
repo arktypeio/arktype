@@ -1,47 +1,17 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { Schema } from "../schema.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { basisKinds, defineNode, type SchemaKind } from "../shared/define.js"
+import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Definition } from "../shared/nodes.js"
 import { discriminate, type Discriminant } from "./discriminate.js"
-import type {
-	MorphDefinition,
-	ValidatorDefinition,
-	ValidatorKind,
-	instantiateValidatorSchema,
-	parseMorphSchema,
-	validateMorphSchema,
-	validateValidatorSchema
-} from "./morph.js"
+import type { ValidatorKind } from "./morph.js"
 
 export type BranchKind = "morph" | ValidatorKind
 
 export type BranchDefinition = Definition<BranchKind>
 
 export type BranchNode = Node<BranchKind>
-
-export type validateSchemaBranch<def, $> = def extends Schema
-	? def
-	: "morph" extends keyof def
-	  ? validateMorphSchema<def>
-	  : validateValidatorSchema<def>
-
-export type instantiateSchemaBranches<branches extends readonly unknown[]> =
-	branches["length"] extends 0
-		? Node<"union", never>
-		: branches["length"] extends 1
-		  ? instantiateSchemaBranch<branches[0]>
-		  : Node<SchemaKind, instantiateSchemaBranch<branches[number]>["infer"]>
-
-export type instantiateSchemaBranch<def> = def extends Schema
-	? def
-	: def extends MorphDefinition
-	  ? parseMorphSchema<def>
-	  : def extends ValidatorDefinition
-	    ? instantiateValidatorSchema<def>
-	    : BranchNode
 
 export type UnionDefinition<
 	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
@@ -63,7 +33,7 @@ export type UnionAttachments = {
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
-	schema: UnionDefinition
+	definition: UnionDefinition
 	inner: UnionInner
 	intersections: {
 		union: "union" | Disjoint

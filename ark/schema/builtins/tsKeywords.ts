@@ -1,5 +1,6 @@
 import type { Schema } from "../schema.js"
 import { SchemaScope } from "../scope.js"
+import type { schema } from "./ark.js"
 
 export interface TsKeywordSchemas {
 	any: Schema<"intersection", any>
@@ -19,10 +20,10 @@ export interface TsKeywordSchemas {
 }
 
 export const tsKeywords: SchemaScope<TsKeywordSchemas> = SchemaScope.from({
-	any: {} as Schema<"intersection", any>,
+	any: {} as schema.cast<any, "intersection">,
 	bigint: "bigint",
 	// since we know this won't be reduced, it can be safely cast to a union
-	boolean: [{ is: false }, { is: true }] as {} as Schema<"union", boolean>,
+	boolean: [{ is: false }, { is: true }] as schema.cast<boolean, "union">,
 	false: { is: false },
 	never: [],
 	null: { is: null },
@@ -32,6 +33,6 @@ export const tsKeywords: SchemaScope<TsKeywordSchemas> = SchemaScope.from({
 	symbol: "symbol",
 	true: { is: true },
 	unknown: {},
-	void: { is: undefined } as Schema<"unit", void>,
+	void: { is: undefined } as schema.cast<void, "unit">,
 	undefined: { is: undefined }
 })

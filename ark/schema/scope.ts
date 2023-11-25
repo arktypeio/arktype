@@ -5,18 +5,18 @@ import {
 	isArray,
 	printable,
 	throwParseError,
-	type Dict,
-	type conform
+	type Dict
 } from "@arktype/util"
 import type { BaseAttachments, Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
-import type { Schema } from "./schema.js"
 import type {
-	BranchKind,
-	instantiateSchemaBranch,
+	inferAliases,
 	instantiateSchemaBranches,
+	validateAliases,
 	validateSchemaBranch
-} from "./sets/union.js"
+} from "./inference.js"
+import type { Schema } from "./schema.js"
+import type { BranchKind } from "./sets/union.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
@@ -33,24 +33,6 @@ import {
 	type reducibleKindOf
 } from "./shared/nodes.js"
 import { isNode } from "./shared/registry.js"
-
-export type validateAliases<aliases> = {
-	[k in keyof aliases]: "branches" extends keyof aliases[k]
-		? conform<aliases[k], NormalizedDefinition<"union">>
-		: aliases[k] extends readonly [...infer branches]
-		  ? { [i in keyof branches]: validateSchemaBranch<branches[i], aliases> }
-		  : validateSchemaBranch<aliases[k], aliases>
-}
-
-export type inferAliases<aliases> = {
-	[k in keyof aliases]: aliases[k] extends Schema
-		? aliases[k]
-		: aliases[k] extends NormalizedDefinition<"union">
-		  ? instantiateSchemaBranches<aliases[k]["branches"]>
-		  : aliases[k] extends readonly [...infer branches]
-		    ? instantiateSchemaBranches<branches>
-		    : instantiateSchemaBranch<aliases[k]>
-} & unknown
 
 export class SchemaScope<resolutions = unknown> {
 	declare infer: resolutions

@@ -68,7 +68,8 @@ export interface InferredParsing {
 	json: Schema<"morph", (In: string) => Out<unknown>>
 }
 
-export const parsing: SchemaScope<InferredParsing> = SchemaScope.from({
+// SchemaScope<InferredParsing>
+export const parsing = SchemaScope.from({
 	url,
 	number,
 	integer,

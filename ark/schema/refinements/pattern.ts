@@ -16,7 +16,7 @@ export type PatternDefinition = string | PatternInner | RegExp
 
 export type PatternDeclaration = declareRefinement<{
 	kind: "pattern"
-	schema: PatternDefinition
+	definition: PatternDefinition
 	inner: PatternInner
 	intersections: {
 		pattern: "pattern" | null

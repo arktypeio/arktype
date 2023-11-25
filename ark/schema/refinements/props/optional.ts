@@ -23,7 +23,7 @@ export type OptionalDefinition = withAttributes<{
 
 export type OptionalDeclaration = declareRefinement<{
 	kind: "optional"
-	schema: OptionalDefinition
+	definition: OptionalDefinition
 	inner: OptionalInner
 	intersections: {
 		optional: "optional" | null

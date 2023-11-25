@@ -1,46 +1,22 @@
 import {
 	listFrom,
 	throwParseError,
-	type Constructor,
 	type evaluate,
-	type exactMessageOnError,
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { BasisKind, instantiateBasis } from "../bases/basis.js"
-import type { NonEnumerableDomain } from "../bases/domain.js"
+import type { BasisKind } from "../bases/basis.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Definition, NormalizedDefinition } from "../shared/nodes.js"
-import type {
-	IntersectionDefinition,
-	instantiateIntersectionSchema,
-	validateIntersectionSchema
-} from "./intersection.js"
+import type { Definition } from "../shared/nodes.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
 export type ValidatorNode = Node<ValidatorKind>
 
 export type ValidatorDefinition = Definition<ValidatorKind>
-
-export type validateValidatorSchema<def> = [def] extends [
-	NonEnumerableDomain | Constructor
-]
-	? def
-	: def extends NormalizedDefinition<BasisKind>
-	  ? exactMessageOnError<def, NormalizedDefinition<keyof def & BasisKind>>
-	  : def extends IntersectionDefinition
-	    ? validateIntersectionSchema<def>
-	    : ValidatorDefinition
-
-export type instantiateValidatorSchema<def> = def extends Definition<BasisKind>
-	? instantiateBasis<def>
-	: def extends IntersectionDefinition
-	  ? instantiateIntersectionSchema<def>
-	  : Node<ValidatorKind>
 
 export type TraversalState = {
 	path: string[]
@@ -70,7 +46,7 @@ export type MorphAttachments = {
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
-	schema: MorphDefinition
+	definition: MorphDefinition
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint
@@ -152,28 +128,3 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		  out
 		: t
 	: Exclude<out, Problem>
-
-export type validateMorphSchema<def> = {
-	[k in keyof def]: k extends "in" | "out"
-		? validateValidatorSchema<def[k]>
-		: k extends keyof MorphDefinition
-		  ? MorphDefinition[k]
-		  : `'${k & string}' is not a valid morph schema key`
-}
-
-export type parseMorphSchema<def> = def extends MorphDefinition
-	? Node<
-			"morph",
-			(
-				In: def["in"] extends {}
-					? instantiateValidatorSchema<def["in"]>["infer"]
-					: unknown
-			) => def["out"] extends {}
-				? Out<instantiateValidatorSchema<def["out"]>["infer"]>
-				: def["morph"] extends
-							| Morph<any, infer o>
-							| readonly [...unknown[], Morph<any, infer o>]
-				  ? Out<inferMorphOut<o>>
-				  : never
-	  >
-	: never

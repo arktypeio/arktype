@@ -26,7 +26,7 @@ export type ProtoInput<proto extends Constructor = Constructor> =
 
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
-	schema: ProtoInput
+	definition: ProtoInput
 	inner: ProtoInner
 	intersections: {
 		proto: "proto" | Disjoint

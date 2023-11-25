@@ -173,7 +173,9 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	attach: (node: Node<d["kind"]>) => {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
-	normalize: (schema: d["schema"]) => normalizeInput<d["schema"], d["inner"]>
+	normalize: (
+		schema: d["definition"]
+	) => normalizeInput<d["definition"], d["inner"]>
 	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 	reduce?: (
 		inner: d["inner"],

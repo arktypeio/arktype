@@ -28,7 +28,7 @@ export type RequiredInner = withAttributes<{
 
 export type RequiredDeclaration = declareRefinement<{
 	kind: "required"
-	schema: RequiredDefinition
+	definition: RequiredDefinition
 	operands: object
 	inner: RequiredInner
 	intersections: {

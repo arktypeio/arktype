@@ -141,7 +141,7 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 
 export type MinDeclaration = declareRefinement<{
 	kind: "min"
-	schema: BoundDefinition<number>
+	definition: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
 	operands: number
@@ -160,7 +160,7 @@ export const MinImplementation = defineBound({
 
 export type MaxDeclaration = declareRefinement<{
 	kind: "max"
-	schema: BoundDefinition<number>
+	definition: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
 	operands: number
@@ -179,7 +179,7 @@ export const MaxImplementation = defineBound({
 
 export type MinLengthDeclaration = declareRefinement<{
 	kind: "minLength"
-	schema: BoundDefinition<number>
+	definition: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
 	operands: string | readonly unknown[]
@@ -204,7 +204,7 @@ export const MinLengthImplementation = defineBound({
 
 export type MaxLengthDeclaration = declareRefinement<{
 	kind: "maxLength"
-	schema: BoundDefinition<number>
+	definition: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
 	operands: string | readonly unknown[]
@@ -224,7 +224,7 @@ export const MaxLengthImplementation = defineBound({
 
 export type AfterDeclaration = declareRefinement<{
 	kind: "after"
-	schema: BoundDefinition<string | number>
+	definition: BoundDefinition<string | number>
 	inner: BoundInner<string | number>
 	attach: BoundAttachments<"lower">
 	operands: Date
@@ -242,7 +242,7 @@ export const AfterImplementation = defineBound({
 
 export type BeforeDeclaration = declareRefinement<{
 	kind: "before"
-	schema: BoundDefinition<string | number>
+	definition: BoundDefinition<string | number>
 	inner: BoundInner<string | number>
 	attach: BoundAttachments<"upper">
 	operands: Date

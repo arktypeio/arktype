@@ -15,7 +15,7 @@ import { isNode } from "../shared/registry.js"
 import {
 	DomainImplementation,
 	type DomainDeclaration,
-	type DomainSchema,
+	type DomainDefinition,
 	type NonEnumerableDomain
 } from "./domain.js"
 import {
@@ -84,7 +84,7 @@ export type instantiateBasis<def extends Definition<BasisKind>> =
 		  ? Node<"domain", inferDomain<def>>
 		  : def extends Constructor<infer instance>
 		    ? Node<"proto", instance>
-		    : def extends DomainSchema<infer domain>
+		    : def extends DomainDefinition<infer domain>
 		      ? Node<"domain", inferDomain<domain>>
 		      : def extends ProtoInput<infer proto>
 		        ? Node<"proto", instanceOf<proto>>
