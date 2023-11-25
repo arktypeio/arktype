@@ -58,8 +58,6 @@ const json = rootSchema({
 	morph: (s: string): unknown => JSON.parse(s)
 })
 
-const mmmmmmmmmmm = json //=>?
-
 const date = parsedDate
 
 export interface InferredParsing {

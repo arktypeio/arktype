@@ -12,6 +12,7 @@ import type { BaseAttachments, Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
 import type {
+	BranchKind,
 	instantiateSchemaBranch,
 	instantiateSchemaBranches,
 	validateSchemaBranch
@@ -62,7 +63,7 @@ export class SchemaScope<resolutions = unknown> {
 
 	static root = new SchemaScope<{}>({})
 
-	union<const branches extends readonly unknown[]>(
+	union<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], resolutions>
@@ -72,7 +73,7 @@ export class SchemaScope<resolutions = unknown> {
 		return this.node("union", input, { scope: this }) as never
 	}
 
-	branches<const branches extends readonly unknown[]>(
+	branches<const branches extends readonly Definition<BranchKind>[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i], resolutions>
 		}

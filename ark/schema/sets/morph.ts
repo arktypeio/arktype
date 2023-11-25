@@ -15,7 +15,7 @@ import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Definition, NormalizedDefinition } from "../shared/nodes.js"
 import type {
-	IntersectionSchema,
+	IntersectionDefinition,
 	instantiateIntersectionSchema,
 	validateIntersectionSchema
 } from "./intersection.js"
@@ -26,19 +26,19 @@ export type ValidatorNode = Node<ValidatorKind>
 
 export type ValidatorDefinition = Definition<ValidatorKind>
 
-export type validateValidator<def> = [def] extends [
+export type validateValidatorSchema<def> = [def] extends [
 	NonEnumerableDomain | Constructor
 ]
 	? def
 	: def extends NormalizedDefinition<BasisKind>
 	  ? exactMessageOnError<def, NormalizedDefinition<keyof def & BasisKind>>
-	  : def extends IntersectionSchema
+	  : def extends IntersectionDefinition
 	    ? validateIntersectionSchema<def>
 	    : ValidatorDefinition
 
 export type instantiateValidatorSchema<def> = def extends Definition<BasisKind>
 	? instantiateBasis<def>
-	: def extends IntersectionSchema
+	: def extends IntersectionDefinition
 	  ? instantiateIntersectionSchema<def>
 	  : Node<ValidatorKind>
 
@@ -155,7 +155,7 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 
 export type validateMorphSchema<def> = {
 	[k in keyof def]: k extends "in" | "out"
-		? validateValidator<def[k]>
+		? validateValidatorSchema<def[k]>
 		: k extends keyof MorphDefinition
 		  ? MorphDefinition[k]
 		  : `'${k & string}' is not a valid morph schema key`

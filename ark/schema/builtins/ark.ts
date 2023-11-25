@@ -1,5 +1,5 @@
 import { SchemaScope } from "../scope.js"
-import { jsObjects, type InferredJsObjects } from "./jsObjects.js"
+import { jsObjects, type JsObjectSchemas } from "./jsObjects.js"
 import { tsKeywords, type TsKeywordSchemas } from "./tsKeywords.js"
 import { validation, type InferredValidation } from "./validation.js"
 
@@ -17,5 +17,5 @@ export const schema = ark.schema
 // derived from the default scope to be calulated more efficiently
 export interface Ark
 	extends TsKeywordSchemas,
-		InferredJsObjects,
+		JsObjectSchemas,
 		InferredValidation {}

@@ -37,7 +37,7 @@ export type IntersectionInner = withAttributes<
 	}
 >
 
-export type IntersectionSchema<
+export type IntersectionDefinition<
 	basis extends Definition<BasisKind> | undefined =
 		| Definition<BasisKind>
 		| undefined
@@ -62,7 +62,7 @@ export type IntersectionAttachments = {
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
-	schema: IntersectionSchema
+	schema: IntersectionDefinition
 	inner: IntersectionInner
 	intersections: {
 		intersection: "intersection" | Disjoint
@@ -316,8 +316,8 @@ type exactBasisMessageOnError<branch, expected> = {
 }
 
 export type validateIntersectionSchema<def> = def extends IntersectionBasis
-	? exactBasisMessageOnError<def, IntersectionSchema<def["basis"]>>
-	: exactBasisMessageOnError<def, IntersectionSchema<undefined>>
+	? exactBasisMessageOnError<def, IntersectionDefinition<def["basis"]>>
+	: exactBasisMessageOnError<def, IntersectionDefinition<undefined>>
 
 export type instantiateIntersectionSchema<def> =
 	def extends Required<IntersectionBasis>

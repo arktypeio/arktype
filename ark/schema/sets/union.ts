@@ -1,4 +1,4 @@
-import { isArray, type conform } from "@arktype/util"
+import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../schema.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
@@ -13,7 +13,7 @@ import type {
 	instantiateValidatorSchema,
 	parseMorphSchema,
 	validateMorphSchema,
-	validateValidator
+	validateValidatorSchema
 } from "./morph.js"
 
 export type BranchKind = "morph" | ValidatorKind
@@ -22,14 +22,11 @@ export type BranchDefinition = Definition<BranchKind>
 
 export type BranchNode = Node<BranchKind>
 
-export type validateSchemaBranch<def, $> = conform<
-	def,
-	def extends Schema
-		? def
-		: "morph" extends keyof def
-		  ? validateMorphSchema<def>
-		  : validateValidator<def>
->
+export type validateSchemaBranch<def, $> = def extends Schema
+	? def
+	: "morph" extends keyof def
+	  ? validateMorphSchema<def>
+	  : validateValidatorSchema<def>
 
 export type instantiateSchemaBranches<branches extends readonly unknown[]> =
 	branches["length"] extends 0
