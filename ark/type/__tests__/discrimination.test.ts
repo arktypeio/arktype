@@ -1,18 +1,18 @@
 import { attest } from "@arktype/attest"
-import { scope, type } from "arktype"
+import { scope } from "arktype"
 
 describe("discrimination", () => {
 	it("2 literal branches", () => {
 		// should not use a switch with <=2 branches to avoid visual clutter
 		const t = type("'a'|'b'")
-		attest(t.json).snap({ is: "a" })
+		attest(t.json).snap({ unit: "a" })
 		attest(t.allows("a")).equals(true)
 		attest(t.allows("b")).equals(true)
 		attest(t.allows("c")).equals(false)
 	})
 	it(">2 literal branches", () => {
 		const t = type("'a'|'b'|'c'")
-		attest(t.json).snap({ is: "a" })
+		attest(t.json).snap({ unit: "a" })
 		attest(t.allows("a")).equals(true)
 		attest(t.allows("b")).equals(true)
 		attest(t.allows("c")).equals(true)

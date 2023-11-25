@@ -33,10 +33,10 @@ export const parseEnclosed = (
 		new RegExp(enclosed)
 		s.root = schema({ basis: "string", pattern: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
-		s.root = schema({ is: enclosed })
+		s.root = schema({ unit: enclosed })
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = schema({ is: date, description: token })
+		s.root = schema({ unit: date, description: token })
 	}
 }
 

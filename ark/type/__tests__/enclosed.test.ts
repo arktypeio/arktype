@@ -1,18 +1,17 @@
 import { attest } from "@arktype/attest"
-import { type } from "arktype"
 import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
 
 describe("parse enclosed", () => {
 	it("with spaces", () => {
 		const t = type("'this has spaces'")
 		attest<"this has spaces">(t.infer)
-		attest(t.json).snap({ is: "this has spaces" })
+		attest(t.json).snap({ unit: "this has spaces" })
 	})
 	it("with neighbors", () => {
 		const t = type("'foo'|/.*/[]")
 		attest<"foo" | string[]>(t.infer)
 		// TODO: arrays
-		attest(t.json).snap([{ is: "foo" }, { basis: "Array" }])
+		attest(t.json).snap([{ unit: "foo" }, { basis: "Array" }])
 	})
 	describe("errors", () => {
 		describe("unterminated", () => {

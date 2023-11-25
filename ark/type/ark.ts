@@ -1,5 +1,10 @@
-import { JsObjects, TsKeywords, Validation } from "@arktype/schema"
-import { Scope, type Module } from "./scope.js"
+import {
+	JsObjects,
+	TsKeywords,
+	Validation,
+	type inferred
+} from "@arktype/schema"
+import { Scope } from "./scope.js"
 
 /** Root scopes can be inferred automatically from node definitions, but
  * explicitly typing them can improve responsiveness */
@@ -17,7 +22,13 @@ export const ark = Scope.root({
 	...Validation.resolutions
 }).toAmbient()
 
-export const arktypes: Module<ArkResolutions> = ark.export()
+export namespace type {
+	export type cast<to> = {
+		[inferred]?: to
+	}
+}
+
+// export const arktypes: Module<ArkResolutions> = ark.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently

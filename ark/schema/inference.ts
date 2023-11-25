@@ -133,10 +133,10 @@ export type validateIntersectionSchema<def> = exactBasisMessageOnError<
 	>
 >
 
-export type instantiateIntersectionSchema<def> = def extends {
-	basis: infer basis extends Definition<BasisKind>
-}
-	? keyof def & RefinementKind extends never
-		? instantiateBasis<basis>
-		: Node<"intersection", instantiateBasis<basis>["infer"]>
+export type instantiateIntersectionSchema<def> = "basis" extends keyof def
+	? def["basis"] extends Definition<BasisKind>
+		? keyof def & RefinementKind extends never
+			? instantiateBasis<def["basis"]>
+			: Node<"intersection", instantiateBasis<def["basis"]>["infer"]>
+		: Node<"intersection">
 	: Node<"intersection">

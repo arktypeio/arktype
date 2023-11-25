@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
-import { type } from "arktype"
 
 describe("keywords", () => {
 	describe("jsObjects", () => {
@@ -25,7 +24,7 @@ describe("keywords", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
 			// should be simplified to simple checks for true and false literals
-			attest(boolean.json).equals(schema({ is: false }, { is: true }).json)
+			attest(boolean.json).equals(schema({ unit: false }, { unit: true }).json)
 			// TODO:
 			// 			attest(boolean.json).snap(`if( $arkRoot !== false && $arkRoot !== true) {
 			//     return false

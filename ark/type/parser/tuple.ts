@@ -91,7 +91,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Root => {
 				optional: false
 			},
 			// , ctx
-			value: schema({ is: def.length })
+			value: schema({ unit: def.length })
 		})
 	}
 	//  props , ctx
