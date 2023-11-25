@@ -1,4 +1,4 @@
-import { node } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 import { Scope } from "../scope.js"
 import type { RootScope } from "./ark.js"
 
@@ -15,15 +15,15 @@ export interface InferredJsObjects {
 }
 
 export const jsObjects: RootScope<InferredJsObjects> = Scope.root({
-	Function: node(Function),
-	Date: node(Date),
-	Error: node(Error),
-	Map: node(Map),
-	RegExp: node(RegExp),
-	Set: node(Set),
-	WeakMap: node(WeakMap),
-	WeakSet: node(WeakSet),
-	Promise: node(Promise)
+	Function: schema(Function),
+	Date: schema(Date),
+	Error: schema(Error),
+	Map: schema(Map),
+	RegExp: schema(RegExp),
+	Set: schema(Set),
+	WeakMap: schema(WeakMap),
+	WeakSet: schema(WeakSet),
+	Promise: schema(Promise)
 })
 
 export const jsObjectsModule = jsObjects.export()

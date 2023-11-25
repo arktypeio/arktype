@@ -1,12 +1,12 @@
 import {
 	builtins,
-	node,
+	schema,
 	type BaseAttributes,
+	type Input,
 	type Morph,
 	type Out,
 	type Predicate,
 	type Root,
-	type Schema,
 	type ValidatorKind,
 	type inferMorphOut,
 	type inferNarrow
@@ -91,11 +91,11 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Root => {
 				optional: false
 			},
 			// , ctx
-			value: node({ is: def.length })
+			value: schema({ is: def.length })
 		})
 	}
 	//  props , ctx
-	return node(Array)
+	return schema(Array)
 }
 
 export const maybeParseTupleExpression = (
@@ -389,8 +389,8 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 		)
 	}
 	// TODO: nested morphs?
-	return node({
-		in: ctx.scope.parse(def[0], ctx) as Schema<ValidatorKind>,
+	return schema({
+		in: ctx.scope.parse(def[0], ctx) as Input<ValidatorKind>,
 		morph: def[2] as Morph
 	})
 }
@@ -464,9 +464,9 @@ const prefixParsers: {
 							writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
 					  )
 			)
-		return node(...branches)
+		return schema(...branches)
 	},
-	"===": (def) => node.units(...def.slice(1))
+	"===": (def) => schema.units(...def.slice(1))
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

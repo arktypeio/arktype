@@ -1,20 +1,20 @@
-import { isNode, node, type Root } from "@arktype/schema"
+import { isNode, schema, type Root } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
 	stringify,
 	throwParseError,
-	type defined,
 	type Dict,
-	type equals,
 	type ErrorMessage,
+	type List,
+	type Primitive,
+	type defined,
+	type equals,
 	type evaluate,
 	type isAny,
 	type isUnknown,
-	type List,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
-	type Primitive,
 	type requiredKeyOf
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
@@ -29,8 +29,8 @@ import type { validateString } from "./semantic/validate.js"
 import type { BaseCompletions, inferString } from "./string/string.js"
 import {
 	parseTuple,
-	type inferTuple,
 	type TupleExpression,
+	type inferTuple,
 	type validateTuple
 } from "./tuple.js"
 
@@ -45,7 +45,7 @@ export const parseObject = (def: object, ctx: ParseContext): Root => {
 		case "Array":
 			return parseTuple(def as List, ctx)
 		case "RegExp":
-			return node({ basis: "string", pattern: def as RegExp })
+			return schema({ basis: "string", pattern: def as RegExp })
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
 			if (resolvedDef instanceof Type) {

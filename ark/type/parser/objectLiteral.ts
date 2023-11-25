@@ -1,4 +1,4 @@
-import { node, type Inner } from "@arktype/schema"
+import { schema, type Inner } from "@arktype/schema"
 import {
 	stringify,
 	type Dict,
@@ -47,7 +47,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 		}
 		ctx.path.pop()
 	}
-	return node({
+	return schema({
 		basis: "object",
 		required,
 		optional

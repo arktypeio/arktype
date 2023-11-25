@@ -1,4 +1,4 @@
-import { node } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 import { Scope } from "../scope.js"
 import type { RootScope, type } from "./ark.js"
 
@@ -21,19 +21,19 @@ export interface InferredTsKeywords {
 
 export const tsKeywords: RootScope<InferredTsKeywords> = Scope.root({
 	any: "unknown" as type.cast<any>,
-	bigint: node("bigint"),
+	bigint: schema("bigint"),
 	boolean: "true|false",
-	false: node.units(false),
-	never: node(),
-	null: node.units(null),
-	number: node("number"),
-	object: node("object"),
-	string: node("string"),
-	symbol: node("symbol"),
-	true: node.units(true),
-	unknown: node({}),
+	false: schema.units(false),
+	never: schema(),
+	null: schema.units(null),
+	number: schema("number"),
+	object: schema("object"),
+	string: schema("string"),
+	symbol: schema("symbol"),
+	true: schema.units(true),
+	unknown: schema({}),
 	void: "undefined" as type.cast<void>,
-	undefined: node.units(undefined)
+	undefined: schema.units(undefined)
 })
 
 export const tsKeywordsModule = tsKeywords.export()

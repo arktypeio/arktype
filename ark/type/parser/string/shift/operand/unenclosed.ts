@@ -1,4 +1,4 @@
-import { isNode, node, type Root } from "@arktype/schema"
+import { isNode, schema, type Root } from "@arktype/schema"
 import {
 	stringify,
 	throwParseError,
@@ -7,8 +7,8 @@ import {
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
-	type join,
-	type NumberLiteral
+	type NumberLiteral,
+	type join
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
 import {
@@ -23,7 +23,7 @@ import {
 } from "../../../generic.js"
 import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 
@@ -143,11 +143,11 @@ const maybeParseUnenclosedLiteral = (
 ): Root | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
-		return node({ is: maybeNumber })
+		return schema({ is: maybeNumber })
 	}
 	const maybeBigint = tryParseWellFormedBigint(token)
 	if (maybeBigint !== undefined) {
-		return node({ is: maybeBigint })
+		return schema({ is: maybeBigint })
 	}
 }
 

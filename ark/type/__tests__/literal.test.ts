@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 import { type } from "arktype"
 
 describe("literal", () => {
@@ -26,7 +26,7 @@ describe("literal", () => {
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
 			attest(t.json).equals(
-				node.units(true, "foo", 5, 1n, null, undefined, o, s).json
+				schema.units(true, "foo", 5, 1n, null, undefined, o, s).json
 			)
 		})
 	})
@@ -44,7 +44,7 @@ describe("literal", () => {
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
 			attest(t.json).equals(
-				node.units(true, "foo", 5, 1n, null, undefined, o, s).json
+				schema.units(true, "foo", 5, 1n, null, undefined, o, s).json
 			)
 		})
 	})

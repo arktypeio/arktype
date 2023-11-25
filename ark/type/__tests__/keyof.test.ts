@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 import { type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
@@ -14,12 +14,12 @@ describe("keyof", () => {
 	it("root expression", () => {
 		const t = type("keyof", "Date")
 		attest<keyof Date>(t.infer)
-		attest(t.json).equals(node(Date).keyof().json)
+		attest(t.json).equals(schema(Date).keyof().json)
 	})
 	it("primitive", () => {
 		const t = type("keyof bigint")
 		attest<keyof bigint>(t.infer)
-		const expected = node.units(
+		const expected = schema.units(
 			"toLocaleString",
 			"toString",
 			"valueOf",
@@ -47,7 +47,7 @@ describe("keyof", () => {
 	it("tuple expression", () => {
 		const t = type(["keyof", { a: "string" }])
 		attest<"a">(t.infer)
-		attest(t.json).equals(node.units("a").json)
+		attest(t.json).equals(schema.units("a").json)
 	})
 	it("union including non-object", () => {
 		attest(() => type({ a: "number" }).or("boolean").keyof()).throws(
@@ -62,19 +62,19 @@ describe("keyof", () => {
 	it("multiple keyofs", () => {
 		const t = type("keyof keyof string")
 		attest<"toString" | "valueOf">(t.infer)
-		attest(t.json).equals(node.units("toString", "valueOf").json)
+		attest(t.json).equals(schema.units("toString", "valueOf").json)
 	})
 	it("groupable", () => {
 		const t = type("(keyof symbol & string)[]")
 		attest<("toString" | "valueOf" | "description")[]>(t.infer)
 		attest(t.json).equals(
-			node.units("toString", "valueOf", "description").array().json
+			schema.units("toString", "valueOf", "description").array().json
 		)
 	})
 	it("intersection precedence", () => {
 		const t = type("keyof symbol & symbol")
 		attest<typeof Symbol.toStringTag | typeof Symbol.toPrimitive>(t.infer)
-		attest(t.json).is(node.units(Symbol.toStringTag, Symbol.toPrimitive).json)
+		attest(t.json).is(schema.units(Symbol.toStringTag, Symbol.toPrimitive).json)
 	})
 	it("union precedence", () => {
 		const t = type("keyof boolean | number")

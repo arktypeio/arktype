@@ -1,4 +1,4 @@
-import { node } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 import { isKeyOf } from "@arktype/util"
 import type { RegexLiteral } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -31,12 +31,12 @@ export const parseEnclosed = (
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
 		new RegExp(enclosed)
-		s.root = node({ basis: "string", pattern: token as RegexLiteral })
+		s.root = schema({ basis: "string", pattern: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
-		s.root = node({ is: enclosed })
+		s.root = schema({ is: enclosed })
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = node({ is: date, description: token })
+		s.root = schema({ is: date, description: token })
 	}
 }
 
