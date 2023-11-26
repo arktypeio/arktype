@@ -7,7 +7,12 @@ import {
 	throwParseError,
 	type Dict
 } from "@arktype/util"
-import type { BaseAttachments, Node, UnknownNode } from "./base.js"
+import {
+	BaseNode,
+	type BaseAttachments,
+	type Node,
+	type UnknownNode
+} from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type {
 	instantiateAliases,
@@ -15,7 +20,7 @@ import type {
 	validateAliases,
 	validateSchemaBranch
 } from "./inference.js"
-import type { Schema } from "./schema.js"
+import { SchemaNode, type Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
 import {
 	defaultInnerKeySerializer,
@@ -211,14 +216,14 @@ export class SchemaScope<
 			scope: this
 		} satisfies Record<keyof BaseAttachments<any>, unknown>
 		return includes(refinementKinds, kind)
-			? new ($ark.BaseNode as any)(attachments)
-			: new ($ark.SchemaNode as any)(attachments)
+			? new (BaseNode as any)(attachments)
+			: new (SchemaNode as any)(attachments)
 	}
 
-	readonly schema = Object.assign(this.branches, {
-		units: this.units,
-		union: this.union,
-		prereduced: this.prereduced
+	readonly schema = Object.assign(this.branches.bind(this), {
+		units: this.units.bind(this),
+		union: this.union.bind(this),
+		prereduced: this.prereduced.bind(this)
 	})
 }
 

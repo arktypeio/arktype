@@ -19,6 +19,11 @@ class Registry {
 	/** Set internally to avoid circular imports */
 	declare SchemaNode: typeof SchemaNode
 
+	// immediately initialize an instance on import so the global reference resolves
+	static {
+		new Registry()
+	}
+
 	constructor() {
 		const global = globalThis as any
 		if (global.$ark) {
@@ -38,8 +43,6 @@ class Registry {
 		return variableName
 	}
 }
-
-export type Reference = `$ark.${string}`
 
 export const isDotAccessible = (name: string) =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)

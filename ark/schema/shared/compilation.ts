@@ -126,8 +126,6 @@ export type CheckResult<t = unknown> = propwiseXor<
 
 export type Problems = arraySubclassToReadonly<ProblemsArray>
 
-const problemsReference = $ark.register(Problems)
-
 const compilePrimitiveProblem = (
 	node: Node<PrimitiveKind>,
 	ctx: CompilationContext
