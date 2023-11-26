@@ -2,9 +2,11 @@ import {
 	CompiledFunction,
 	DynamicBase,
 	includes,
+	isArray,
 	throwInternalError,
 	type Json,
-	type entriesOf
+	type entriesOf,
+	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
@@ -191,13 +193,11 @@ export abstract class BaseNode<
 			if (keyDefinition.meta) {
 				continue
 			}
-			if (v instanceof BaseNode) {
-				ioInner[k] = v[kind]
-			} else if (
-				Array.isArray(v) &&
-				v.every((_): _ is UnknownNode => _ instanceof BaseNode)
-			) {
-				ioInner[k] = v.map((child) => child[kind])
+			if (keyDefinition.child) {
+				const childValue = v as listable<BaseNode>
+				ioInner[k] = isArray(childValue)
+					? childValue.map((child) => child[kind])
+					: childValue[kind]
 			} else {
 				ioInner[k] = v
 			}

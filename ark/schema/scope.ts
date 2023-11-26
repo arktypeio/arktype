@@ -49,6 +49,7 @@ export class SchemaScope<
 	declare infer: {
 		[k in keyof resolutions]: resolutions[k]["infer"]
 	}
+	private declare static unknownUnion: SchemaNode<"union", unknown>
 	resolutions = {} as resolutions
 
 	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {
@@ -56,6 +57,20 @@ export class SchemaScope<
 			k,
 			this.schemaWithKindIn(schemaKinds, v)
 		]) as never
+		if (SchemaScope.root && !SchemaScope.unknownUnion) {
+			// ensure root has been set before parsing this to avoid a circularity
+			SchemaScope.unknownUnion = this.prereduced("union", [
+				"string",
+				"number",
+				"object",
+				"bigint",
+				"symbol",
+				{ unit: true },
+				{ unit: false },
+				{ unit: null },
+				{ unit: undefined }
+			])
+		}
 	}
 
 	static from = <const aliases>(aliases: validateAliases<aliases>) =>
@@ -204,12 +219,9 @@ export class SchemaScope<
 			return SchemaScope.parseCache[id] as never
 		}
 		const typeId = kind + JSON.stringify(typeJson)
-		// if (
-		// 	$ark.BaseNode.isInitialized &&
-		// 	$ark.BaseNode.builtins.unknownUnion.typeId === typeId
-		// ) {
-		// 	return $ark.BaseNode.builtins.unknown as never
-		// }
+		if (SchemaScope.unknownUnion?.typeId === typeId) {
+			return this.prereduced("intersection", {}) as never
+		}
 		const attachments = {
 			kind,
 			inner,

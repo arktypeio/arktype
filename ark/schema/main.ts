@@ -1,6 +1,3 @@
-import { BaseNode } from "./base.js"
-
-export const builtins = BaseNode.builtins
 export * from "./base.js"
 export * from "./builtins/ark.js"
 export * from "./builtins/jsObjects.js"
