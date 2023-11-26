@@ -32,11 +32,12 @@ import {
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
-import type {
-	Attachments,
-	Inner,
-	childKindOf,
-	reducibleKindOf
+import {
+	NodeImplementationByKind,
+	type Attachments,
+	type Inner,
+	type childKindOf,
+	type reducibleKindOf
 } from "./shared/nodes.js"
 import { arkKind } from "./shared/registry.js"
 import type { Space } from "./space.js"
@@ -49,7 +50,6 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly typeJson: Json
 	readonly collapsibleJson: Json
 	readonly children: Node<childKindOf<kind>>[]
-	readonly implementation: UnknownNodeImplementation
 	readonly id: string
 	readonly typeId: string
 	readonly space: Space
@@ -59,6 +59,9 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	Inner<kind> & Attachments<kind> & BaseAttachments<kind>
 > {
 	readonly [arkKind] = "node"
+	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[
+		this.kind
+	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly alias = $ark.register(this)

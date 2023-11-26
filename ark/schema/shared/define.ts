@@ -122,6 +122,7 @@ export type normalizeInput<input, inner extends BaseAttributes> = Extract<
 
 export type SchemaParseOptions = {
 	prereduced?: true
+	alias?: string
 	basis?: Node<BasisKind> | undefined
 }
 

@@ -6,7 +6,6 @@ import {
 	isArray,
 	printable,
 	throwParseError,
-	transform,
 	type Dict
 } from "@arktype/util"
 import {
@@ -29,7 +28,6 @@ import { In, type CompilationKind } from "./shared/compilation.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
-	schemaKinds,
 	type NodeKind,
 	type SchemaKind,
 	type SchemaParseContext,
@@ -57,35 +55,36 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	readonly schemas: readonly Schema[]
 	readonly referencesById: Record<string, UnknownNode>
 	readonly references: readonly UnknownNode[]
+	readonly bootstrapAllows: this["composeAllows"]
 	allowsSource!: string
-	readonly allowsOf: <alias extends keyof keywords>(
+	readonly composeAllows: <alias extends keyof keywords>(
 		alias: alias
 	) => keywords[alias]["allows"]
 	traverseSource!: string
-	readonly traverseOf: <alias extends keyof keywords>(
+	readonly composeTraverse: <alias extends keyof keywords>(
 		alias: alias
 	) => keywords[alias]["traverse"]
 
-	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {
-		// 1. Parse schema, create basic inner
-		// 2. Use 1 to compile allows
-		// 3. Reduce
-		// 4. Compile traverse, discriminate etc.
-		this.keywords = transform(aliases, ([k, v]) => [
-			k,
-			this.schemaFromKinds(schemaKinds, v)
-		]) as never
-		this.schemas = Object.values(this.keywords)
-		this.referencesById = this.schemas.reduce(
+	private constructor(aliases: Dict<string, unknown>) {
+		const aliasEntries = Object.entries(aliases)
+		const prenodes = aliasEntries.map(
+			([k, v]) => this.parse(schemaKindOf(v), v, { alias: k }) as Schema
+		)
+		this.referencesById = prenodes.reduce(
 			(result, child) => Object.assign(result, child.contributesReferencesById),
 			{}
 		)
 		this.references = Object.values(this.referencesById)
-		this.allowsOf = this.compile("allows")
-		this.traverseOf = this.compile("traverse")
+		this.bootstrapAllows = this.compile("allows")
+		this.schemas = prenodes.map((node) => {
+			node.allows = this.bootstrapAllows(node.alias as never)
+			return this.reduce(node)
+		})
+		this.composeAllows = this.compile("allows")
+		this.composeTraverse = this.compile("traverse")
 		for (const schema of this.schemas) {
-			schema.allows = this.allowsOf(schema.alias as never)
-			schema.traverse = this.traverseOf(schema.alias as never)
+			schema.allows = this.composeAllows(schema.alias as never)
+			schema.traverse = this.composeTraverse(schema.alias as never)
 		}
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
@@ -104,7 +103,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	}
 
 	// TODO: cache
-	compile<kind extends CompilationKind>(kind: kind): this[`${kind}Of`]
+	compile<kind extends CompilationKind>(
+		kind: kind
+	): this[kind extends "allows" ? "composeAllows" : "composeTraverse"]
 	compile(kind: CompilationKind): any {
 		let $ource = `const $ = {
 			${this.references
@@ -224,22 +225,20 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		if (isNode(def)) {
 			return def as never
 		}
-		return this.reduceAndInstantiate(
-			this.parseAttachments(kind, def, opts),
-			opts
-		) as never
+		const node = this.parse(kind, def, opts)
+		return node.isSchema() ? this.reduce(node) : (node as any)
 	}
 
-	private parseAttachments<defKind extends NodeKind>(
-		kind: defKind,
-		def: Definition<defKind>,
+	private parse(
+		kind: NodeKind,
+		def: unknown,
 		opts: SchemaParseOptions
-	): BaseAttachments<any> {
+	): UnknownNode {
 		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
 		] as never
 		const normalizedDefinition: any = implementation.normalize?.(def) ?? def
-		const ctx: SchemaParseContext<defKind> = {
+		const ctx: SchemaParseContext<any> = {
 			...opts,
 			normalizedDefinition,
 			space: this,
@@ -297,9 +296,8 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			return Space.parseCache[id] as never
 		}
 		const typeId = JSON.stringify({ kind, ...typeJson })
-		return {
+		const attachments = {
 			kind,
-			implementation: ctx.implementation,
 			inner,
 			entries: innerEntries,
 			json,
@@ -310,29 +308,22 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			typeId,
 			space: this
 		} satisfies Record<keyof BaseAttachments<any>, unknown> as never
-	}
-
-	private reduceAndInstantiate(
-		attachments: BaseAttachments<any>,
-		opts: SchemaParseOptions
-	): UnknownNode | undefined {
-		if (!opts.prereduced) {
-			if (Space.unknownUnion?.typeId === attachments.typeId) {
-				return Space.keywords.unknown
-			}
-			if (attachments.implementation.reduce) {
-				const reduced = attachments.implementation.reduce(
-					attachments.inner,
-					this
-				)
-				if (reduced) {
-					return reduced
-				}
-			}
-		}
-		return includes(refinementKinds, attachments.kind)
+		return includes(refinementKinds, kind)
 			? new (BaseNode as any)(attachments)
 			: new (SchemaNode as any)(attachments)
+	}
+
+	private reduce(node: Schema): Schema {
+		if (Space.unknownUnion?.typeId === node.typeId) {
+			return Space.keywords.unknown
+		}
+		if (node.implementation.reduce) {
+			const reduced = node.implementation.reduce(node.inner, this)
+			if (reduced) {
+				return reduced as Schema
+			}
+		}
+		return node
 	}
 
 	readonly schema = Object.assign(this.branches.bind(this), {
