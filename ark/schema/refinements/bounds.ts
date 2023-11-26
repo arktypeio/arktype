@@ -5,17 +5,15 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import { JsObjects } from "../builtins/jsObjects.js"
-import { TsKeywords } from "../builtins/tsKeywords.js"
-import type { Schema } from "../schema.js"
 import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type {
 	BoundKind,
-	PrimitiveConstraintAttachments
+	PrimitiveConstraintAttachments,
+	SchemaKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Declaration } from "../shared/nodes.js"
+import type { Declaration, Definition } from "../shared/nodes.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -87,7 +85,7 @@ export type Boundable = NumericallyBoundable | Date
 export const defineBound = <kind extends BoundKind>(boundDefinition: {
 	kind: kind
 	writeDefaultDescription: (node: BoundNode) => string
-	operand: Schema
+	operand: readonly Definition<SchemaKind>[]
 }) =>
 	defineRefinement({
 		// check this generic bound implementation against a concrete case
@@ -155,7 +153,7 @@ export type MinDeclaration = declareRefinement<{
 
 export const MinImplementation = defineBound({
 	kind: "min",
-	operand: TsKeywords.resolutions.number,
+	operand: ["number"],
 	writeDefaultDescription: (node) =>
 		`${node.exclusive ? "more than" : "at least"} ${node.limit}`
 })
@@ -174,7 +172,7 @@ export type MaxDeclaration = declareRefinement<{
 
 export const MaxImplementation = defineBound({
 	kind: "max",
-	operand: TsKeywords.resolutions.number,
+	operand: ["number"],
 	writeDefaultDescription: (node) =>
 		`${node.exclusive ? "less than" : "at most"} ${node.limit}`
 })
@@ -193,7 +191,7 @@ export type MinLengthDeclaration = declareRefinement<{
 
 export const MinLengthImplementation = defineBound({
 	kind: "minLength",
-	operand: TsKeywords.resolutions.string.or(JsObjects.resolutions.Array),
+	operand: ["string", Array],
 	writeDefaultDescription: (node) =>
 		node.exclusive
 			? node.limit === 0
@@ -217,7 +215,7 @@ export type MaxLengthDeclaration = declareRefinement<{
 
 export const MaxLengthImplementation = defineBound({
 	kind: "maxLength",
-	operand: TsKeywords.resolutions.string.or(JsObjects.resolutions.Array),
+	operand: ["string", Array],
 	writeDefaultDescription: (node) =>
 		node.exclusive
 			? `less than ${node.limit} in length`
@@ -237,7 +235,7 @@ export type AfterDeclaration = declareRefinement<{
 
 export const AfterImplementation = defineBound({
 	kind: "before",
-	operand: JsObjects.resolutions.Date,
+	operand: [Date],
 	writeDefaultDescription: (node) =>
 		node.exclusive ? `after ${node.limit}` : `${node.limit} or later`
 })
@@ -256,7 +254,7 @@ export type BeforeDeclaration = declareRefinement<{
 
 export const BeforeImplementation = defineBound({
 	kind: "before",
-	operand: JsObjects.resolutions.Date,
+	operand: [Date],
 	writeDefaultDescription: (node) =>
 		node.exclusive ? `before ${node.limit}` : `${node.limit} or earlier`
 })

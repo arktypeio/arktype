@@ -1,4 +1,3 @@
-import { TsKeywords } from "../builtins/tsKeywords.js"
 import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
@@ -37,7 +36,7 @@ export const PatternImplementation = defineRefinement({
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
 	},
-	operand: TsKeywords.resolutions.string,
+	operand: ["string"],
 	normalize: (schema) =>
 		typeof schema === "string"
 			? { source: schema }

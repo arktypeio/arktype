@@ -1,4 +1,3 @@
-import { TsKeywords } from "../builtins/tsKeywords.js"
 import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
@@ -46,7 +45,7 @@ export const DivisorImplementation = defineRefinement({
 			)
 		})
 	},
-	operand: TsKeywords.resolutions.number,
+	operand: ["number"],
 	normalize: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema,
 	writeDefaultDescription: (inner) =>

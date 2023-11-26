@@ -8,6 +8,7 @@ import { inferred } from "./shared/symbols.js"
 
 export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 	static {
+		// TODO: can remove?
 		$ark.SchemaNode = this
 	}
 
@@ -63,11 +64,11 @@ export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 	}
 
 	isUnknown(): this is BaseNode<"intersection", unknown> {
-		return this.equals(BaseNode.builtins.unknown)
+		return this.hasKind("intersection") && this.constraints.length === 0
 	}
 
 	isNever(): this is BaseNode<"union", never> {
-		return this.equals(BaseNode.builtins.never)
+		return this.hasKind("union") && this.branches.length === 0
 	}
 
 	getPath() {

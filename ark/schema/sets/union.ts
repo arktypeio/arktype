@@ -141,7 +141,7 @@ export const UnionImplementation = defineNode({
 		if (reducedBranches.length !== inner.branches.length) {
 			return
 		}
-		return ctx.scope.node("union", {
+		return ctx.scope.prereduced("union", {
 			...inner,
 			branches: reducedBranches
 		})

@@ -1,8 +1,7 @@
-import { throwParseError, type extend } from "@arktype/util"
+import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { Schema } from "../schema.js"
-import type { Builtins } from "../shared/builtins.js"
 import type {
 	BaseNodeDeclaration,
 	validateNodeDeclaration
@@ -10,9 +9,10 @@ import type {
 import {
 	defineNode,
 	type NodeImplementationInput,
-	type RefinementKind
+	type RefinementKind,
+	type SchemaKind
 } from "../shared/define.js"
-import type { Declaration } from "../shared/nodes.js"
+import type { Declaration, Definition } from "../shared/nodes.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
@@ -21,7 +21,7 @@ export type RefinementImplementationInput<d extends BaseNodeDeclaration> =
 	extend<
 		NodeImplementationInput<d>,
 		{
-			operand: Schema
+			operand: readonly Definition<SchemaKind>[]
 		}
 	>
 
@@ -35,19 +35,28 @@ export type declareRefinement<
 	}
 > = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
 
-export const createValidBasisAssertion =
-	(node: Node<RefinementKind>) => (basis: Node<BasisKind> | undefined) => {
-		const operand = (node.implementation as any).operand as (keyof Builtins)[]
-		if (
-			!operand.some((operand) => basis?.extends(node.cls.builtins[operand]))
-		) {
-			throwParseError(
-				`${node.kind} bound operand must be of type ${operand.join(
-					" or "
-				)} (was ${getBasisName(basis)})`
-			)
-		}
+const operandCache = {} as PartialRecord<RefinementKind, Schema>
+
+export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
+	const operandsDef: readonly Definition<SchemaKind>[] = (
+		node.implementation as any
+	).operand
+	if (operandCache[node.kind] === undefined) {
+		operandCache[node.kind] = node.scope.branches(...operandsDef)
 	}
+	const operand = operandCache[node.kind]!
+	return operand.isUnknown()
+		? () => {}
+		: (basis: Node<BasisKind> | undefined) => {
+				if (!basis?.extends(operand)) {
+					throwParseError(
+						`${node.kind} bound operand must be of type ${operandsDef.join(
+							" or "
+						)} (was ${getBasisName(basis)})`
+					)
+				}
+		  }
+}
 
 export const defineRefinement = <
 	kind extends RefinementKind,

@@ -1,4 +1,3 @@
-import { TsKeywords } from "../builtins/tsKeywords.js"
 import {
 	In,
 	compilePrimitive,
@@ -43,7 +42,7 @@ export const PredicateImplementation = defineRefinement({
 		// resulting from this intersection should also be safe.
 		predicate: () => null
 	},
-	operand: TsKeywords.resolutions.unknown,
+	operand: [{}],
 	normalize: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
 	writeDefaultDescription: (inner) =>

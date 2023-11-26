@@ -1,5 +1,4 @@
 import type { Node } from "../../base.js"
-import { TsKeywords } from "../../builtins/tsKeywords.js"
 import {
 	In,
 	compileSerializedValue,
@@ -66,7 +65,7 @@ export const RequiredImplementation = defineRefinement({
 			parse: (schema, ctx) => ctx.scope.schemaWithKindIn(schemaKinds, schema)
 		}
 	},
-	operand: TsKeywords.resolutions.object,
+	operand: ["object"],
 	intersections: {
 		required: intersectNamed,
 		optional: intersectNamed

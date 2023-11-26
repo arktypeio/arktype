@@ -70,7 +70,7 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 				return "domain"
 			} else if ("proto" in schema) {
 				return "proto"
-			} else if ("is" in schema) {
+			} else if ("unit" in schema) {
 				return "unit"
 			}
 	}
@@ -104,7 +104,7 @@ export const getBasisKindOrThrow = (schema: unknown) => {
 - A schema object with one of the following keys:
 	- "domain"
 	- "proto"
-	- "is"`
+	- "unit"`
 		)
 	}
 	return basisKind
