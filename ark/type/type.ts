@@ -1,8 +1,8 @@
 import {
 	In,
 	arkKind,
-	builtins,
 	inferred,
+	keywords,
 	type BaseAttributes,
 	type CheckResult,
 	type Morph,
@@ -289,7 +289,7 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: transform(g.parameters, ([, name]) => [name, builtins.unknown])
+			args: transform(g.parameters, ([, name]) => [name, keywords.unknown])
 		}
 	)
 	return g

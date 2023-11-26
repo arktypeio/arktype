@@ -53,12 +53,12 @@ type TsGenericsExports<$ = Ark> = {
 export const tsGenerics = {} as Module<TsGenericsResolutions>
 
 export const ark: Scope<ArkResolutions> = Scope.root({
-	...TsKeywords.resolutions,
-	...JsObjects.resolutions,
-	...Validation.resolutions,
+	...TsKeywords.keywords,
+	...JsObjects.keywords,
+	...Validation.keywords,
 	// TODO: fix
 	...tsGenerics,
-	parse: Parsing.resolutions as {} as Module<ParsingResolutions>
+	parse: Parsing.keywords as {} as Module<ParsingResolutions>
 }).toAmbient() as never
 
 export const arktypes: Module<ArkResolutions> = ark.export()

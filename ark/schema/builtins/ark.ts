@@ -5,13 +5,15 @@ import { JsObjects } from "./jsObjects.js"
 import { TsKeywords } from "./tsKeywords.js"
 import { Validation } from "./validation.js"
 
-export const ark: ScopeNode<ArkResolutions> = ScopeNode.from({
-	...TsKeywords.resolutions,
-	...JsObjects.resolutions,
-	...Validation.resolutions
+export const builtin: ScopeNode<ArkResolutions> = ScopeNode.from({
+	...TsKeywords.keywords,
+	...JsObjects.keywords,
+	...Validation.keywords
 }) as never
 
-export const schema = ark.schema
+export const keywords = builtin.keywords
+
+export const schema = builtin.schema
 
 export namespace schema {
 	export type cast<to, kind extends TypeKind = TypeKind> = {

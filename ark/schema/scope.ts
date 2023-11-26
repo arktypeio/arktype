@@ -41,17 +41,17 @@ import {
 import { isNode } from "./shared/registry.js"
 import { TypeNode, type Schema } from "./type.js"
 
-export type nodeResolutions<resolutions> = { [k in keyof resolutions]: Schema }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 
-export class ScopeNode<r extends nodeResolutions<r> = any> {
+export class ScopeNode<keywords extends nodeResolutions<keywords> = any> {
 	declare infer: {
-		[k in keyof r]: r[k]["infer"]
+		[k in keyof keywords]: keywords[k]["infer"]
 	}
 	private declare static unknownUnion: TypeNode<"union", unknown>
-	resolutions = {} as r
+	keywords = {} as keywords
 
 	private constructor(aliases: Dict<string, Definition<TypeKind>>) {
-		this.resolutions = transform(aliases, ([k, v]) => [
+		this.keywords = transform(aliases, ([k, v]) => [
 			k,
 			this.typeFromKinds(typeKinds, v)
 		]) as never
@@ -79,7 +79,7 @@ export class ScopeNode<r extends nodeResolutions<r> = any> {
 	union<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
 			branches: {
-				[i in keyof branches]: validateSchemaBranch<branches[i], r>
+				[i in keyof branches]: validateSchemaBranch<branches[i], keywords>
 			}
 		} & NormalizedDefinition<"union">
 	): instantiateSchemaBranches<branches> {
@@ -88,7 +88,7 @@ export class ScopeNode<r extends nodeResolutions<r> = any> {
 
 	branches<const branches extends readonly Definition<BranchKind>[]>(
 		...branches: {
-			[i in keyof branches]: validateSchemaBranch<branches[i], r>
+			[i in keyof branches]: validateSchemaBranch<branches[i], keywords>
 		}
 	): instantiateSchemaBranches<branches> {
 		return this.node("union", branches as never) as never

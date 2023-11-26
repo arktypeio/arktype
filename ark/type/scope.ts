@@ -1,4 +1,4 @@
-import { builtins, type ProblemCode, type Root } from "@arktype/schema"
+import { keywords, type ProblemCode, type Root } from "@arktype/schema"
 import {
 	domainOf,
 	hasDomain,
@@ -35,22 +35,22 @@ import {
 } from "./parser/string/shift/operand/unenclosed.js"
 import { parseString } from "./parser/string/string.js"
 import {
+	Type,
 	addArkKind,
 	createTypeParser,
 	generic,
 	hasArkKind,
-	Type,
 	validateUninstantiatedGeneric,
-	type arkKind,
 	type DeclarationParser,
 	type DefinitionParser,
-	type extractIn,
-	type extractOut,
 	type Generic,
 	type GenericProps,
 	type KeyCheckKind,
 	type TypeConfig,
-	type TypeParser
+	type TypeParser,
+	type arkKind,
+	type extractIn,
+	type extractOut
 } from "./type.js"
 
 export type ScopeParser<parent, ambient> = {
@@ -100,7 +100,7 @@ export type bindThis<def> = { this: Def<def> }
 
 export const bindThis = () => ({
 	// TODO: fix
-	this: builtins.unknown
+	this: keywords.unknown
 })
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
