@@ -33,7 +33,7 @@ import {
 	type NodeKind,
 	type SchemaKind,
 	type SchemaParseContext,
-	type SchemaParseContextInput,
+	type SchemaParseOptions,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
 import {
@@ -159,7 +159,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			}
 		} & NormalizedDefinition<"union">
 	): instantiateSchemaBranches<branches> {
-		return this.node("union", input, { scope: this }) as never
+		return this.node("union", input) as never
 	}
 
 	branches<const branches extends readonly Definition<BranchKind>[]>(
@@ -218,32 +218,44 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 
 	node<defKind extends NodeKind>(
 		kind: defKind,
-		input: Definition<defKind>,
-		ctxInput?: SchemaParseContextInput
+		def: Definition<defKind>,
+		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<defKind>> {
-		if (isNode(input)) {
-			return input as never
+		if (isNode(def)) {
+			return def as never
 		}
+		return this.reduceAndInstantiate(
+			this.parseAttachments(kind, def, opts),
+			opts
+		) as never
+	}
+
+	private parseAttachments<defKind extends NodeKind>(
+		kind: defKind,
+		def: Definition<defKind>,
+		opts: SchemaParseOptions
+	): BaseAttachments<any> {
 		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
 		] as never
-		const inner: Record<string, unknown> = {}
-		const normalizedInput: any = implementation.normalize?.(input) ?? input
-		const ctx: SchemaParseContext<any> = {
-			...ctxInput,
-			input: normalizedInput,
-			scope: this
+		const normalizedDefinition: any = implementation.normalize?.(def) ?? def
+		const ctx: SchemaParseContext<defKind> = {
+			...opts,
+			normalizedDefinition,
+			space: this,
+			implementation
 		}
-		implementation.addContext?.(ctx)
-		const schemaEntries = entriesOf(normalizedInput).sort((l, r) =>
+		const inner: Record<string, unknown> = {}
+		ctx.implementation.addContext?.(ctx)
+		const schemaEntries = entriesOf(normalizedDefinition).sort((l, r) =>
 			l[0] < r[0] ? -1 : 1
 		)
 		let json: Record<string, unknown> = {}
 		let typeJson: Record<string, unknown> = {}
 		const children: UnknownNode[] = []
 		for (const [k, v] of schemaEntries) {
-			const keyDefinition = implementation.keys[k]
-			if (!(k in implementation.keys)) {
+			const keyDefinition = ctx.implementation.keys[k]
+			if (!(k in ctx.implementation.keys)) {
 				return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 			}
 			const innerValue = keyDefinition.parse ? keyDefinition.parse(v, ctx) : v
@@ -268,19 +280,13 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 				typeJson[k] = json[k]
 			}
 		}
-		if (implementation.reduce && !ctx.prereduced) {
-			const reduced = implementation.reduce(inner, ctx)
-			if (reduced) {
-				return reduced as never
-			}
-		}
 		const innerEntries = entriesOf(inner)
 		let collapsibleJson = json
 		if (
 			innerEntries.length === 1 &&
-			innerEntries[0][0] === implementation.collapseKey
+			innerEntries[0][0] === ctx.implementation.collapseKey
 		) {
-			collapsibleJson = json[implementation.collapseKey] as never
+			collapsibleJson = json[ctx.implementation.collapseKey] as never
 			if (hasDomain(collapsibleJson, "object")) {
 				json = collapsibleJson
 				typeJson = collapsibleJson
@@ -291,11 +297,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			return Space.parseCache[id] as never
 		}
 		const typeId = JSON.stringify({ kind, ...typeJson })
-		if (Space.unknownUnion?.typeId === typeId) {
-			return Space.keywords.unknown as never
-		}
-		const attachments = {
+		return {
 			kind,
+			implementation: ctx.implementation,
 			inner,
 			entries: innerEntries,
 			json,
@@ -305,55 +309,31 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			id,
 			typeId,
 			space: this
-		} satisfies Record<keyof BaseAttachments<any>, unknown>
-		return includes(refinementKinds, kind)
+		} satisfies Record<keyof BaseAttachments<any>, unknown> as never
+	}
+
+	private reduceAndInstantiate(
+		attachments: BaseAttachments<any>,
+		opts: SchemaParseOptions
+	): UnknownNode | undefined {
+		if (!opts.prereduced) {
+			if (Space.unknownUnion?.typeId === attachments.typeId) {
+				return Space.keywords.unknown
+			}
+			if (attachments.implementation.reduce) {
+				const reduced = attachments.implementation.reduce(
+					attachments.inner,
+					this
+				)
+				if (reduced) {
+					return reduced
+				}
+			}
+		}
+		return includes(refinementKinds, attachments.kind)
 			? new (BaseNode as any)(attachments)
 			: new (SchemaNode as any)(attachments)
 	}
-
-	// private reduce() {
-	// 	if (implementation.reduce && !ctx.prereduced) {
-	// 		const reduced = implementation.reduce(inner, ctx)
-	// 		if (reduced) {
-	// 			return reduced as never
-	// 		}
-	// 	}
-	// 	const innerEntries = entriesOf(inner)
-	// 	let collapsibleJson = json
-	// 	if (
-	// 		innerEntries.length === 1 &&
-	// 		innerEntries[0][0] === implementation.collapseKey
-	// 	) {
-	// 		collapsibleJson = json[implementation.collapseKey] as never
-	// 		if (hasDomain(collapsibleJson, "object")) {
-	// 			json = collapsibleJson
-	// 			typeJson = collapsibleJson
-	// 		}
-	// 	}
-	// 	const id = JSON.stringify({ kind, ...json })
-	// 	if (id in Space.parseCache) {
-	// 		return Space.parseCache[id] as never
-	// 	}
-	// 	const typeId = JSON.stringify({ kind, ...typeJson })
-	// 	if (Space.unknownUnion?.typeId === typeId) {
-	// 		return Space.keywords.unknown as never
-	// 	}
-	// 	const attachments = {
-	// 		kind,
-	// 		inner,
-	// 		entries: innerEntries,
-	// 		json,
-	// 		typeJson,
-	// 		collapsibleJson,
-	// 		children,
-	// 		id,
-	// 		typeId,
-	// 		space: this
-	// 	} satisfies Record<keyof BaseAttachments<any>, unknown>
-	// 	return includes(refinementKinds, kind)
-	// 		? new (BaseNode as any)(attachments)
-	// 		: new (SchemaNode as any)(attachments)
-	// }
 
 	readonly schema = Object.assign(this.branches.bind(this), {
 		units: this.units.bind(this),

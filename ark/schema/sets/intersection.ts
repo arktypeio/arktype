@@ -73,7 +73,8 @@ export const IntersectionImplementation = defineNode({
 	normalize: (def) => def,
 	addContext: (ctx) => {
 		ctx.basis =
-			ctx.input.basis && ctx.scope.schemaFromKinds(basisKinds, ctx.input.basis)
+			ctx.normalizedDefinition.basis &&
+			ctx.space.schemaFromKinds(basisKinds, ctx.normalizedDefinition.basis)
 	},
 	keys: {
 		basis: {
@@ -142,7 +143,7 @@ export const IntersectionImplementation = defineNode({
 			return result instanceof Disjoint ? result : unflattenConstraints(result)
 		}
 	},
-	reduce: (inner, ctx) => {
+	reduce: (inner, space) => {
 		const { description, alias, ...constraintsByKind } = inner
 		const inputConstraints = Object.values(
 			constraintsByKind
@@ -167,7 +168,7 @@ export const IntersectionImplementation = defineNode({
 		if (alias) {
 			reducedConstraintsByKind.alias = alias
 		}
-		return ctx.scope.prereduced("intersection", reducedConstraintsByKind)
+		return space.prereduced("intersection", reducedConstraintsByKind)
 	},
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
@@ -217,7 +218,7 @@ export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	input: Definition<kind>,
 	ctx: SchemaParseContext<"intersection">
 ): Node<kind> => {
-	const refinement = ctx.scope.node(kind, input) as Node<RefinementKind>
+	const refinement = ctx.space.node(kind, input) as Node<RefinementKind>
 	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }
@@ -233,7 +234,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 			return
 		}
 		const refinements = input
-			.map((refinement) => ctx.scope.node(kind, refinement))
+			.map((refinement) => ctx.space.node(kind, refinement))
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
 		// we should only need to assert validity for one, as all listed
 		// refinements should be of the same kind and therefore have the same
@@ -241,7 +242,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 		refinements[0].assertValidBasis(ctx.basis)
 		return refinements
 	}
-	const refinement = ctx.scope.node(kind, input)
+	const refinement = ctx.space.node(kind, input)
 	refinement.assertValidBasis(ctx.basis)
 	return [refinement]
 }

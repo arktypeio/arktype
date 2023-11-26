@@ -9,10 +9,10 @@ import { defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
-export type UnitSchema<is = unknown> = UnitInner<is>
+export type UnitSchema<value = unknown> = UnitInner<value>
 
-export type UnitInner<is = unknown> = withAttributes<{
-	readonly unit: is
+export type UnitInner<value = unknown> = withAttributes<{
+	readonly unit: value
 }>
 
 export type UnitDeclaration = declareNode<{

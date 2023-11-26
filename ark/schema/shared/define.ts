@@ -120,17 +120,17 @@ export type normalizeInput<input, inner extends BaseAttributes> = Extract<
 	PartialRecord<requiredKeyOf<inner>>
 >
 
-export type SchemaParseContextInput = {
+export type SchemaParseOptions = {
 	prereduced?: true
 	basis?: Node<BasisKind> | undefined
-	scope?: Space
 }
 
 export type SchemaParseContext<kind extends NodeKind> = extend<
-	SchemaParseContextInput,
+	SchemaParseOptions,
 	{
-		input: NormalizedDefinition<kind>
-		scope: Space
+		implementation: UnknownNodeImplementation
+		normalizedDefinition: NormalizedDefinition<kind>
+		space: Space
 	}
 >
 
@@ -176,10 +176,9 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 		schema: d["definition"]
 	) => normalizeInput<d["definition"], d["inner"]>
 	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
-	// innerAllows: (inner: d["inner"]) => (data: unknown) => boolean
 	reduce?: (
 		inner: d["inner"],
-		ctx: SchemaParseContext<d["kind"]>
+		space: Space
 	) => Node<reducibleKindOf<d["kind"]>> | undefined
 }
 
