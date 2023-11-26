@@ -222,11 +222,20 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		def: Definition<defKind>,
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<defKind>> {
-		if (isNode(def)) {
-			return def as never
-		}
 		const node = this.parse(kind, def, opts)
-		return node.isSchema() ? this.reduce(node) : (node as any)
+		// TODO: fix
+		node.allows = (data): data is unknown => true
+		if (!node.isSchema() || opts.prereduced) {
+			node.traverse = (data) => ({
+				data
+			})
+			return node as never
+		}
+		const reduced = this.reduce(node)
+		reduced.traverse = (data) => ({
+			data
+		})
+		return reduced as never
 	}
 
 	private parse(
@@ -234,6 +243,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		def: unknown,
 		opts: SchemaParseOptions
 	): UnknownNode {
+		if (isNode(def)) {
+			return def as never
+		}
 		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
 			kind
 		] as never
