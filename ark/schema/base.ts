@@ -12,7 +12,6 @@ import type { BasisKind } from "./bases/basis.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
-import { createBuiltins, type Builtins } from "./shared/builtins.js"
 import {
 	In,
 	compilePropAccess,
@@ -302,16 +301,6 @@ export abstract class BaseNode<
 			return this.scope.node(l.kind, result) as never
 		}
 		return null
-	}
-
-	static isInitialized = false
-	static #builtins: Builtins | undefined
-	static get builtins() {
-		if (!this.#builtins) {
-			this.#builtins = createBuiltins()
-			this.isInitialized = true
-		}
-		return this.#builtins
 	}
 }
 
