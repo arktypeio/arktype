@@ -1,6 +1,7 @@
 import { throwParseError, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
+import type { Schema } from "../schema.js"
 import type { Builtins } from "../shared/builtins.js"
 import type {
 	BaseNodeDeclaration,
@@ -20,7 +21,7 @@ export type RefinementImplementationInput<d extends BaseNodeDeclaration> =
 	extend<
 		NodeImplementationInput<d>,
 		{
-			operands: (keyof Builtins)[]
+			operand: Schema
 		}
 	>
 
@@ -29,19 +30,19 @@ export type RefinementOperandAssertion = (
 ) => void
 
 export type declareRefinement<
-	types extends validateNodeDeclaration<types, "operands"> & {
-		operands: unknown
+	types extends validateNodeDeclaration<types, "operand"> & {
+		operand: unknown
 	}
 > = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
 
 export const createValidBasisAssertion =
 	(node: Node<RefinementKind>) => (basis: Node<BasisKind> | undefined) => {
-		const operands = (node.implementation as any).operands as (keyof Builtins)[]
+		const operand = (node.implementation as any).operand as (keyof Builtins)[]
 		if (
-			!operands.some((operand) => basis?.extends(node.cls.builtins[operand]))
+			!operand.some((operand) => basis?.extends(node.cls.builtins[operand]))
 		) {
 			throwParseError(
-				`${node.kind} bound operand must be of type ${operands.join(
+				`${node.kind} bound operand must be of type ${operand.join(
 					" or "
 				)} (was ${getBasisName(basis)})`
 			)

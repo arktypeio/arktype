@@ -3,6 +3,7 @@ import { SchemaScope } from "../scope.js"
 
 export namespace JsObjects {
 	export interface resolutions {
+		Array: Schema<"proto", Array<unknown>>
 		Function: Schema<"proto", Function>
 		Date: Schema<"proto", Date>
 		Error: Schema<"proto", Error>
@@ -18,6 +19,7 @@ export namespace JsObjects {
 }
 
 export const JsObjects: SchemaScope<JsObjects.resolutions> = SchemaScope.from({
+	Array,
 	Function,
 	Date,
 	Error,

@@ -1,4 +1,5 @@
 import type { Node } from "../../base.js"
+import { TsKeywords } from "../../builtins/tsKeywords.js"
 import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
 import { schemaKinds, type SchemaKind } from "../../shared/define.js"
@@ -28,7 +29,7 @@ export type OptionalDeclaration = declareRefinement<{
 	intersections: {
 		optional: "optional" | null
 	}
-	operands: object
+	operand: object
 	attach: NamedPropAttachments
 }>
 
@@ -41,7 +42,7 @@ export const OptionalImplementation = defineRefinement({
 			parse: (schema, ctx) => ctx.scope.schemaWithKindIn(schemaKinds, schema)
 		}
 	},
-	operands: ["object"],
+	operand: TsKeywords.resolutions.object,
 	intersections: {
 		optional: (l, r) => {
 			if (l.key !== r.key) {

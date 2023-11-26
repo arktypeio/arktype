@@ -49,7 +49,7 @@ export type RefinementIntersectionInput<
 > = RefinementIntersectionInputsByKind[kind]
 
 export type refinementKindOf<t> = {
-	[k in RefinementKind]: t extends Declaration<k>["operands"] ? k : never
+	[k in RefinementKind]: t extends Declaration<k>["operand"] ? k : never
 }[RefinementKind]
 
 export type refinementInputsByKind<t> = {

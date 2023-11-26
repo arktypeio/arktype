@@ -1,4 +1,5 @@
 import type { Node } from "../../base.js"
+import { TsKeywords } from "../../builtins/tsKeywords.js"
 import {
 	In,
 	compileSerializedValue,
@@ -29,7 +30,7 @@ export type RequiredInner = withAttributes<{
 export type RequiredDeclaration = declareRefinement<{
 	kind: "required"
 	definition: RequiredDefinition
-	operands: object
+	operand: object
 	inner: RequiredInner
 	intersections: {
 		required: "required" | Disjoint | null
@@ -65,7 +66,7 @@ export const RequiredImplementation = defineRefinement({
 			parse: (schema, ctx) => ctx.scope.schemaWithKindIn(schemaKinds, schema)
 		}
 	},
-	operands: ["object"],
+	operand: TsKeywords.resolutions.object,
 	intersections: {
 		required: intersectNamed,
 		optional: intersectNamed

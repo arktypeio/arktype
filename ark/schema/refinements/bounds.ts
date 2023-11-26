@@ -5,7 +5,9 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { Builtins } from "../shared/builtins.js"
+import { JsObjects } from "../builtins/jsObjects.js"
+import { TsKeywords } from "../builtins/tsKeywords.js"
+import type { Schema } from "../schema.js"
 import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type {
@@ -85,7 +87,7 @@ export type Boundable = NumericallyBoundable | Date
 export const defineBound = <kind extends BoundKind>(boundDefinition: {
 	kind: kind
 	writeDefaultDescription: (node: BoundNode) => string
-	operands: (keyof Builtins)[]
+	operand: Schema
 }) =>
 	defineRefinement({
 		// check this generic bound implementation against a concrete case
@@ -96,7 +98,7 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 			limit: {},
 			exclusive: {}
 		},
-		operands: boundDefinition.operands,
+		operand: boundDefinition.operand,
 		normalize: (schema) =>
 			typeof schema === "object" ? schema : { limit: schema },
 		writeDefaultDescription: boundDefinition.writeDefaultDescription,
@@ -144,7 +146,7 @@ export type MinDeclaration = declareRefinement<{
 	definition: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
-	operands: number
+	operand: number
 	intersections: {
 		min: "min"
 		max: Disjoint | null
@@ -153,7 +155,7 @@ export type MinDeclaration = declareRefinement<{
 
 export const MinImplementation = defineBound({
 	kind: "min",
-	operands: ["number"],
+	operand: TsKeywords.resolutions.number,
 	writeDefaultDescription: (node) =>
 		`${node.exclusive ? "more than" : "at least"} ${node.limit}`
 })
@@ -163,7 +165,7 @@ export type MaxDeclaration = declareRefinement<{
 	definition: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
-	operands: number
+	operand: number
 	intersections: {
 		// TODO: Fix rightOf
 		max: "max"
@@ -172,7 +174,7 @@ export type MaxDeclaration = declareRefinement<{
 
 export const MaxImplementation = defineBound({
 	kind: "max",
-	operands: ["number"],
+	operand: TsKeywords.resolutions.number,
 	writeDefaultDescription: (node) =>
 		`${node.exclusive ? "less than" : "at most"} ${node.limit}`
 })
@@ -182,7 +184,7 @@ export type MinLengthDeclaration = declareRefinement<{
 	definition: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"lower">
-	operands: string | readonly unknown[]
+	operand: string | readonly unknown[]
 	intersections: {
 		minLength: "minLength"
 		maxLength: Disjoint | null
@@ -191,7 +193,7 @@ export type MinLengthDeclaration = declareRefinement<{
 
 export const MinLengthImplementation = defineBound({
 	kind: "minLength",
-	operands: ["string", "array"],
+	operand: TsKeywords.resolutions.string.or(JsObjects.resolutions.Array),
 	writeDefaultDescription: (node) =>
 		node.exclusive
 			? node.limit === 0
@@ -207,7 +209,7 @@ export type MaxLengthDeclaration = declareRefinement<{
 	definition: BoundDefinition<number>
 	inner: BoundInner<number>
 	attach: BoundAttachments<"upper">
-	operands: string | readonly unknown[]
+	operand: string | readonly unknown[]
 	intersections: {
 		maxLength: "maxLength"
 	}
@@ -215,7 +217,7 @@ export type MaxLengthDeclaration = declareRefinement<{
 
 export const MaxLengthImplementation = defineBound({
 	kind: "maxLength",
-	operands: ["string", "array"],
+	operand: TsKeywords.resolutions.string.or(JsObjects.resolutions.Array),
 	writeDefaultDescription: (node) =>
 		node.exclusive
 			? `less than ${node.limit} in length`
@@ -227,7 +229,7 @@ export type AfterDeclaration = declareRefinement<{
 	definition: BoundDefinition<string | number>
 	inner: BoundInner<string | number>
 	attach: BoundAttachments<"lower">
-	operands: Date
+	operand: Date
 	intersections: {
 		after: "after"
 	}
@@ -235,7 +237,7 @@ export type AfterDeclaration = declareRefinement<{
 
 export const AfterImplementation = defineBound({
 	kind: "before",
-	operands: ["date"],
+	operand: JsObjects.resolutions.Date,
 	writeDefaultDescription: (node) =>
 		node.exclusive ? `after ${node.limit}` : `${node.limit} or later`
 })
@@ -245,7 +247,7 @@ export type BeforeDeclaration = declareRefinement<{
 	definition: BoundDefinition<string | number>
 	inner: BoundInner<string | number>
 	attach: BoundAttachments<"upper">
-	operands: Date
+	operand: Date
 	intersections: {
 		before: "before"
 		after: Disjoint | null
@@ -254,7 +256,7 @@ export type BeforeDeclaration = declareRefinement<{
 
 export const BeforeImplementation = defineBound({
 	kind: "before",
-	operands: ["date"],
+	operand: JsObjects.resolutions.Date,
 	writeDefaultDescription: (node) =>
 		node.exclusive ? `before ${node.limit}` : `${node.limit} or earlier`
 })

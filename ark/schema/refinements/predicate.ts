@@ -1,3 +1,4 @@
+import { TsKeywords } from "../builtins/tsKeywords.js"
 import {
 	In,
 	compilePrimitive,
@@ -25,7 +26,7 @@ export type PredicateDeclaration = declareRefinement<{
 	intersections: {
 		predicate: "predicate" | null
 	}
-	operands: unknown
+	operand: unknown
 	attach: PrimitiveConstraintAttachments
 }>
 
@@ -42,7 +43,7 @@ export const PredicateImplementation = defineRefinement({
 		// resulting from this intersection should also be safe.
 		predicate: () => null
 	},
-	operands: ["unknown"],
+	operand: TsKeywords.resolutions.unknown,
 	normalize: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
 	writeDefaultDescription: (inner) =>
