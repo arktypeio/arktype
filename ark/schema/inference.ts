@@ -8,7 +8,7 @@ import type {
 import type { Node } from "./base.js"
 import type { instantiateBasis } from "./bases/basis.js"
 import type { NonEnumerableDomain } from "./bases/domain.js"
-import type { isCast, schema } from "./builtins/ark.js"
+import type { isSchemaCast, schema } from "./builtins/ark.js"
 import type { IntersectionDefinition } from "./sets/intersection.js"
 import type {
 	Morph,
@@ -19,7 +19,7 @@ import type {
 	inferMorphOut
 } from "./sets/morph.js"
 import type { BranchNode } from "./sets/union.js"
-import type { BasisKind, RefinementKind, SchemaKind } from "./shared/define.js"
+import type { BasisKind, RefinementKind, TypeKind } from "./shared/define.js"
 import type { Definition, NormalizedDefinition } from "./shared/nodes.js"
 import type { Schema } from "./type.js"
 
@@ -34,7 +34,7 @@ export type validateAliases<aliases> = {
 }
 
 export type instantiateAliases<aliases> = {
-	[k in keyof aliases]: isCast<aliases[k]> extends true
+	[k in keyof aliases]: isSchemaCast<aliases[k]> extends true
 		? aliases[k] extends schema.cast<infer to, infer kind>
 			? Schema<kind, to>
 			: never
@@ -45,7 +45,7 @@ export type instantiateAliases<aliases> = {
 		    : instantiateSchemaBranch<aliases[k]>
 } & unknown
 
-export type validateSchemaBranch<def, $> = isCast<def> extends true
+export type validateSchemaBranch<def, $> = isSchemaCast<def> extends true
 	? def
 	: keyof def & ("morph" | "in" | "out") extends never
 	  ? validateValidatorSchema<def>
@@ -56,9 +56,9 @@ export type instantiateSchemaBranches<branches extends readonly unknown[]> =
 		? Node<"union", never>
 		: branches["length"] extends 1
 		  ? instantiateSchemaBranch<branches[0]>
-		  : Node<SchemaKind, instantiateSchemaBranch<branches[number]>["infer"]>
+		  : Node<TypeKind, instantiateSchemaBranch<branches[number]>["infer"]>
 
-export type instantiateSchemaBranch<def> = isCast<def> extends true
+export type instantiateSchemaBranch<def> = isSchemaCast<def> extends true
 	? def extends schema.cast<infer to, infer kind>
 		? Schema<kind, to>
 		: never

@@ -72,7 +72,7 @@ export const IntersectionImplementation = defineNode({
 	normalize: (def) => def,
 	addContext: (ctx) => {
 		ctx.basis =
-			ctx.input.basis && ctx.scope.schemaWithKindIn(basisKinds, ctx.input.basis)
+			ctx.input.basis && ctx.scope.typeFromKinds(basisKinds, ctx.input.basis)
 	},
 	keys: {
 		basis: {

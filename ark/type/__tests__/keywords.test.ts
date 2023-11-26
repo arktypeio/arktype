@@ -14,6 +14,19 @@ describe("keywords", () => {
 		})
 	})
 	describe("tsKeywords", () => {
+		it("string strings", () => {
+			/**
+			 * 	In honor of @ark-expect-beta aka log(n):
+			 * 		- Zirco author https://github.com/zirco-lang/zrc
+			 * 		- Shameless Rust stan
+			 * 		- Occasional user of ArkType libraries
+			 * 		- Frequent user of ArkType Discord
+			 * 		- Universally renowned two-finger speed typist
+			 */
+			const string = type("string")
+			attest<string>(string.infer)
+			attest(string("string").data).snap("string")
+		})
 		it("any", () => {
 			const any = type("any")
 			// equivalent to unknown at runtime

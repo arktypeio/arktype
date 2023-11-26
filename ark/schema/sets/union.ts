@@ -64,7 +64,7 @@ export const UnionImplementation = defineNode({
 			child: true,
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
-					ctx.scope.schemaWithKindIn(
+					ctx.scope.typeFromKinds(
 						["morph", "intersection", ...basisKinds],
 						branch
 					)

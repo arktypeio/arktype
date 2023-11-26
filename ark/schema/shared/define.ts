@@ -65,9 +65,9 @@ export const setKinds = ["union", "morph", "intersection"] as const
 
 export type SetKind = (typeof setKinds)[number]
 
-export const schemaKinds = [...setKinds, ...basisKinds] as const
+export const typeKinds = [...setKinds, ...basisKinds] as const
 
-export type SchemaKind = (typeof schemaKinds)[number]
+export type TypeKind = (typeof typeKinds)[number]
 
 export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
@@ -84,8 +84,8 @@ type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export type Root<
 	t = unknown,
-	kind extends SchemaKind = SchemaKind
-> = kind extends SchemaKind ? Schema<kind, t> : never
+	kind extends TypeKind = TypeKind
+> = kind extends TypeKind ? Schema<kind, t> : never
 
 type BaseAttributeKeyDefinitions = {
 	[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>

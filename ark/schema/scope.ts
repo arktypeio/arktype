@@ -25,11 +25,11 @@ import type { BranchKind } from "./sets/union.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
-	schemaKinds,
+	typeKinds,
 	type NodeKind,
-	type SchemaKind,
 	type SchemaParseContext,
 	type SchemaParseContextInput,
+	type TypeKind,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
 import {
@@ -41,19 +41,19 @@ import {
 import { isNode } from "./shared/registry.js"
 import { TypeNode, type Schema } from "./type.js"
 
-export type baseResolutions<resolutions> = { [k in keyof resolutions]: Schema }
+export type nodeResolutions<resolutions> = { [k in keyof resolutions]: Schema }
 
-export class ScopeNode<resolutions extends baseResolutions<resolutions> = any> {
+export class ScopeNode<r extends nodeResolutions<r> = any> {
 	declare infer: {
-		[k in keyof resolutions]: resolutions[k]["infer"]
+		[k in keyof r]: r[k]["infer"]
 	}
 	private declare static unknownUnion: TypeNode<"union", unknown>
-	resolutions = {} as resolutions
+	resolutions = {} as r
 
-	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {
+	private constructor(aliases: Dict<string, Definition<TypeKind>>) {
 		this.resolutions = transform(aliases, ([k, v]) => [
 			k,
-			this.schemaWithKindIn(schemaKinds, v)
+			this.typeFromKinds(typeKinds, v)
 		]) as never
 		if (ScopeNode.root && !ScopeNode.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
@@ -79,7 +79,7 @@ export class ScopeNode<resolutions extends baseResolutions<resolutions> = any> {
 	union<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
 			branches: {
-				[i in keyof branches]: validateSchemaBranch<branches[i], resolutions>
+				[i in keyof branches]: validateSchemaBranch<branches[i], r>
 			}
 		} & NormalizedDefinition<"union">
 	): instantiateSchemaBranches<branches> {
@@ -88,7 +88,7 @@ export class ScopeNode<resolutions extends baseResolutions<resolutions> = any> {
 
 	branches<const branches extends readonly Definition<BranchKind>[]>(
 		...branches: {
-			[i in keyof branches]: validateSchemaBranch<branches[i], resolutions>
+			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
 	): instantiateSchemaBranches<branches> {
 		return this.node("union", branches as never) as never
@@ -116,7 +116,7 @@ export class ScopeNode<resolutions extends baseResolutions<resolutions> = any> {
 		}) as never
 	}
 
-	prereduced<kind extends SchemaKind>(
+	prereduced<kind extends TypeKind>(
 		kind: kind,
 		input: Definition<kind>
 	): Node<kind> {
@@ -125,7 +125,7 @@ export class ScopeNode<resolutions extends baseResolutions<resolutions> = any> {
 		}) as never
 	}
 
-	schemaWithKindIn<defKind extends SchemaKind>(
+	typeFromKinds<defKind extends TypeKind>(
 		allowedKinds: readonly defKind[],
 		input: unknown
 	): Node<reducibleKindOf<defKind>> {
@@ -248,7 +248,7 @@ export const rootSchema = ScopeNode.root.schema
 
 export const rootNode = ScopeNode.root.node
 
-const schemaKindOf = (input: unknown): SchemaKind => {
+const schemaKindOf = (input: unknown): TypeKind => {
 	const basisKind = maybeGetBasisKind(input)
 	if (basisKind) {
 		return basisKind

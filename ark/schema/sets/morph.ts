@@ -63,12 +63,12 @@ export const MorphImplementation = defineNode({
 		in: {
 			child: true,
 			parse: (schema, ctx) =>
-				ctx.scope.schemaWithKindIn(["intersection", ...basisKinds], schema)
+				ctx.scope.typeFromKinds(["intersection", ...basisKinds], schema)
 		},
 		out: {
 			child: true,
 			parse: (schema, ctx) =>
-				ctx.scope.schemaWithKindIn(["intersection", ...basisKinds], schema)
+				ctx.scope.typeFromKinds(["intersection", ...basisKinds], schema)
 		},
 		morph: {
 			parse: listFrom

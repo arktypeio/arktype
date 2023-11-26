@@ -9,7 +9,7 @@ import {
 	defineNode,
 	type NodeImplementationInput,
 	type RefinementKind,
-	type SchemaKind
+	type TypeKind
 } from "../shared/define.js"
 import type { Declaration, Definition } from "../shared/nodes.js"
 import type { Schema } from "../type.js"
@@ -21,7 +21,7 @@ export type RefinementImplementationInput<d extends BaseNodeDeclaration> =
 	extend<
 		NodeImplementationInput<d>,
 		{
-			operand: readonly Definition<SchemaKind>[]
+			operand: readonly Definition<TypeKind>[]
 		}
 	>
 
@@ -38,7 +38,7 @@ export type declareRefinement<
 const operandCache = {} as PartialRecord<RefinementKind, Schema>
 
 export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
-	const operandsDef: readonly Definition<SchemaKind>[] = (
+	const operandsDef: readonly Definition<TypeKind>[] = (
 		node.implementation as any
 	).operand
 	if (operandCache[node.kind] === undefined) {

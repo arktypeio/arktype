@@ -27,15 +27,15 @@ import {
 	constraintKinds,
 	openRefinementKinds,
 	refinementKinds,
-	schemaKinds,
 	setKinds,
+	typeKinds,
 	type ClosedRefinementKind,
 	type ConstraintKind,
 	type NodeKind,
 	type OpenRefinementKind,
 	type RefinementKind,
-	type SchemaKind,
 	type SetKind,
+	type TypeKind,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -229,8 +229,8 @@ export abstract class BaseNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isSchema(): this is Node<SchemaKind> {
-		return includes(schemaKinds, this.kind)
+	isSchema(): this is Node<TypeKind> {
+		return includes(typeKinds, this.kind)
 	}
 
 	isSet(): this is Node<SetKind> {
@@ -318,6 +318,6 @@ export abstract class BaseNode<
 export type Node<
 	kind extends NodeKind = NodeKind,
 	t = unknown
-> = kind extends SchemaKind ? Schema<kind, t> : BaseNode<kind, t>
+> = kind extends TypeKind ? Schema<kind, t> : BaseNode<kind, t>
 
 export type UnknownNode = BaseNode<any>

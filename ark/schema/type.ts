@@ -1,12 +1,12 @@
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import type { BranchKind } from "./sets/union.js"
-import type { RefinementKind, Root, SchemaKind } from "./shared/define.js"
+import type { RefinementKind, Root, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Definition } from "./shared/nodes.js"
 import { inferred } from "./shared/symbols.js"
 
-export class TypeNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
+export class TypeNode<kind extends TypeKind, t> extends BaseNode<kind, t> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -49,7 +49,7 @@ export class TypeNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 	or<other extends Root>(
 		other: other
 	): Node<
-		"union" | Extract<kind | other["kind"], SchemaKind>,
+		"union" | Extract<kind | other["kind"], TypeKind>,
 		t | other["infer"]
 	> {
 		return this.scope.node("union", [
@@ -84,7 +84,7 @@ export class TypeNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 	}
 }
 
-export type Schema<kind extends SchemaKind = SchemaKind, t = unknown> = {
+export type Schema<kind extends TypeKind = TypeKind, t = unknown> = {
 	union: TypeNode<"union", t>
 	morph: TypeNode<"morph", t>
 	intersection: TypeNode<"intersection", t>
