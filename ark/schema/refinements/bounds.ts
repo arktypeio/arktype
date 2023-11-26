@@ -52,8 +52,6 @@ type UpperNode = Node<UpperBoundKind>
 // 	array: "elements"
 // } as const
 
-// export type BoundKind = keyof typeof unitsByBoundKind
-
 export type LimitKind = "lower" | "upper"
 
 export type RelativeComparator<kind extends LimitKind = LimitKind> = {
@@ -80,13 +78,17 @@ export type UpperBoundKind = valueOf<typeof boundKindPairsByLower>
 
 export type NumericallyBoundable = string | number | readonly unknown[]
 
-export type Boundable = NumericallyBoundable | Date
+export type Boundable = Declaration<BoundKind>["operand"]
 
-export const defineBound = <kind extends BoundKind>(boundDefinition: {
+export type BoundNodeDefinition<kind extends BoundKind = BoundKind> = {
 	kind: kind
 	writeDefaultDescription: (node: BoundNode) => string
 	operand: readonly Definition<SchemaKind>[]
-}) =>
+}
+
+export const defineBound = <kind extends BoundKind>(
+	boundDefinition: BoundNodeDefinition<kind>
+) =>
 	defineRefinement({
 		// check this generic bound implementation against a concrete case
 		// ("min"), then cast it to the expected parameterized definition
@@ -101,17 +103,17 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 			typeof schema === "object" ? schema : { limit: schema },
 		writeDefaultDescription: boundDefinition.writeDefaultDescription,
 		attach: (node) => {
-			const comparator = `${
-				isKeyOf(boundDefinition.kind, boundKindPairsByLower) ? ">" : "<"
-			}${
-				node.exclusive ? "" : "="
+			const size = compileSizeOf(boundDefinition)
+			const comparator = boundNodeDefinitionToComparator(
+				boundDefinition,
+				node
 				// cast to lower bound comparator for internal checking
-			}` as RelativeComparator<"lower">
+			) as RelativeComparator<"lower">
 			return {
 				comparator,
 				assertValidBasis: createValidBasisAssertion(node),
-				condition: `${In} ${comparator} ${node.limit}`,
-				negatedCondition: `${In} ${negatedComparators[comparator]} ${node.limit}`
+				condition: `${size} ${comparator} ${node.limit}`,
+				negatedCondition: `${size} ${negatedComparators[comparator]} ${node.limit}`
 			}
 		},
 		intersections: isKeyOf(boundDefinition.kind, boundKindPairsByLower)
@@ -138,6 +140,22 @@ export const defineBound = <kind extends BoundKind>(boundDefinition: {
 			  } as any),
 		compile: compilePrimitive
 	} satisfies RefinementImplementationInput<Declaration<"min">> as never)
+
+const boundNodeDefinitionToComparator = (
+	boundDefinition: BoundNodeDefinition,
+	inner: BoundInner
+) =>
+	`${isKeyOf(boundDefinition.kind, boundKindPairsByLower) ? ">" : "<"}${
+		inner.exclusive ? "" : "="
+	}`
+
+const compileSizeOf = (boundDefinition: BoundNodeDefinition) =>
+	boundDefinition.kind === "min" || boundDefinition.kind === "max"
+		? `${In}`
+		: boundDefinition.kind === "minLength" ||
+		    boundDefinition.kind === "maxLength"
+		  ? `${In}.length`
+		  : `+${In}`
 
 export type MinDeclaration = declareRefinement<{
 	kind: "min"
