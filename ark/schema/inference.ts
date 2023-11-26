@@ -8,7 +8,7 @@ import type {
 import type { Node } from "./base.js"
 import type { instantiateBasis } from "./bases/basis.js"
 import type { NonEnumerableDomain } from "./bases/domain.js"
-import type { isSchemaCast, schema } from "./keywords/ark.js"
+import type { isSchemaCast, schema } from "./keywords/keywords.js"
 import type { IntersectionDefinition } from "./sets/intersection.js"
 import type {
 	Morph,
