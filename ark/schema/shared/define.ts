@@ -12,8 +12,7 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { ScopeNode } from "../scope.js"
-import type { Schema } from "../type.js"
+import type { NodeScope } from "../nodescope.js"
 import {
 	compileSerializedValue,
 	type CompilationContext
@@ -65,9 +64,9 @@ export const setKinds = ["union", "morph", "intersection"] as const
 
 export type SetKind = (typeof setKinds)[number]
 
-export const typeKinds = [...setKinds, ...basisKinds] as const
+export const schemaKinds = [...setKinds, ...basisKinds] as const
 
-export type TypeKind = (typeof typeKinds)[number]
+export type SchemaKind = (typeof schemaKinds)[number]
 
 export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
@@ -81,11 +80,6 @@ export type OrderedNodeKinds = typeof nodeKinds
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
-
-export type Root<
-	t = unknown,
-	kind extends TypeKind = TypeKind
-> = kind extends TypeKind ? Schema<kind, t> : never
 
 type BaseAttributeKeyDefinitions = {
 	[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
@@ -129,14 +123,14 @@ export type normalizeInput<input, inner extends BaseAttributes> = Extract<
 export type SchemaParseContextInput = {
 	prereduced?: true
 	basis?: Node<BasisKind> | undefined
-	scope?: ScopeNode
+	scope?: NodeScope
 }
 
 export type SchemaParseContext<kind extends NodeKind> = extend<
 	SchemaParseContextInput,
 	{
 		input: NormalizedDefinition<kind>
-		scope: ScopeNode
+		scope: NodeScope
 	}
 >
 

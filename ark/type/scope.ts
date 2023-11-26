@@ -1,4 +1,4 @@
-import { keywords, type ProblemCode, type Root } from "@arktype/schema"
+import { keywords, type ProblemCode, type Schema } from "@arktype/schema"
 import {
 	domainOf,
 	hasDomain,
@@ -223,10 +223,10 @@ export type ParseContext = {
 	baseName: string
 	path: string[]
 	scope: Scope
-	args: Record<string, Root> | undefined
+	args: Record<string, Schema> | undefined
 }
 
-type MergedResolutions = Record<string, Root | Generic>
+type MergedResolutions = Record<string, Schema | Generic>
 
 type ParseContextInput = Pick<ParseContext, "baseName" | "args">
 
@@ -236,7 +236,7 @@ export class Scope<r extends Resolutions = any> {
 
 	config: TypeConfig
 
-	private parseCache: Record<string, Root> = {}
+	private parseCache: Record<string, Schema> = {}
 	private resolutions: MergedResolutions
 
 	/** The set of names defined at the root-level of the scope mapped to their
@@ -244,7 +244,7 @@ export class Scope<r extends Resolutions = any> {
 	aliases: Record<string, unknown> = {}
 	private exportedNames: exportedName<r>[] = []
 	private ambient: Scope | null
-	private references: Root[] = []
+	private references: Schema[] = []
 
 	constructor(def: Dict, config: ScopeConfig) {
 		for (const k in def) {
@@ -324,7 +324,7 @@ export class Scope<r extends Resolutions = any> {
 		return this.parse(def, this.createRootContext(input))
 	}
 
-	parse(def: unknown, ctx: ParseContext): Root {
+	parse(def: unknown, ctx: ParseContext): Schema {
 		if (typeof def === "string") {
 			if (ctx.args !== undefined) {
 				// we can only rely on the cache if there are no contextual
@@ -341,7 +341,7 @@ export class Scope<r extends Resolutions = any> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	maybeResolve(name: string): Root | Generic | undefined {
+	maybeResolve(name: string): Schema | Generic | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -391,7 +391,7 @@ export class Scope<r extends Resolutions = any> {
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): Root | undefined {
+	maybeResolveNode(name: string): Schema | undefined {
 		const result = this.maybeResolve(name)
 		return hasArkKind(result, "node") ? (result as never) : undefined
 	}

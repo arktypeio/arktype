@@ -10,7 +10,7 @@ import type { withAttributes } from "../shared/declare.js"
 import type {
 	BoundKind,
 	PrimitiveConstraintAttachments,
-	TypeKind
+	SchemaKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Declaration, Definition } from "../shared/nodes.js"
@@ -85,7 +85,7 @@ export type Boundable = NumericallyBoundable | Date
 export const defineBound = <kind extends BoundKind>(boundDefinition: {
 	kind: kind
 	writeDefaultDescription: (node: BoundNode) => string
-	operand: readonly Definition<TypeKind>[]
+	operand: readonly Definition<SchemaKind>[]
 }) =>
 	defineRefinement({
 		// check this generic bound implementation against a concrete case

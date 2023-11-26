@@ -1,9 +1,9 @@
 import { attest } from "@arktype/attest"
-import { ScopeNode } from "../scope.js"
+import { NodeScope } from "../nodescope.js"
 
 describe("SchemaScope", () => {
 	it("parse", () => {
-		const $ = ScopeNode.from({
+		const $ = NodeScope.from({
 			number: ["number", "string"],
 			ordered: {
 				ordered: true,

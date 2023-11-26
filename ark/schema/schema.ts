@@ -1,12 +1,12 @@
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import type { BranchKind } from "./sets/union.js"
-import type { RefinementKind, Root, TypeKind } from "./shared/define.js"
+import type { RefinementKind, SchemaKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Definition } from "./shared/nodes.js"
 import { inferred } from "./shared/symbols.js"
 
-export class TypeNode<kind extends TypeKind, t> extends BaseNode<kind, t> {
+export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -46,11 +46,11 @@ export class TypeNode<kind extends TypeKind, t> extends BaseNode<kind, t> {
 	}
 
 	// TODO: limit input types
-	or<other extends Root>(
+	or<other extends Schema>(
 		other: other
-	): Node<
-		"union" | Extract<kind | other["kind"], TypeKind>,
-		t | other["infer"]
+	): Schema<
+		t | other["infer"],
+		"union" | Extract<kind | other["kind"], SchemaKind>
 	> {
 		return this.scope.node("union", [
 			...this.branches,
@@ -58,11 +58,11 @@ export class TypeNode<kind extends TypeKind, t> extends BaseNode<kind, t> {
 		]) as never
 	}
 
-	isUnknown(): this is BaseNode<"intersection", unknown> {
+	isUnknown(): this is Schema<unknown, "intersection"> {
 		return this.hasKind("intersection") && this.constraints.length === 0
 	}
 
-	isNever(): this is BaseNode<"union", never> {
+	isNever(): this is Schema<never, "union"> {
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
@@ -70,13 +70,13 @@ export class TypeNode<kind extends TypeKind, t> extends BaseNode<kind, t> {
 		return this
 	}
 
-	array(): Node<"intersection", t[]> {
+	array(): Schema<t[], "intersection"> {
 		return this as never
 	}
 
-	extends<other extends Root>(
+	extends<other extends Schema>(
 		other: other
-	): this is Node<kind, other["infer"]> {
+	): this is Schema<other["infer"], kind> {
 		const intersection = this.intersect(other)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
@@ -84,11 +84,11 @@ export class TypeNode<kind extends TypeKind, t> extends BaseNode<kind, t> {
 	}
 }
 
-export type Schema<kind extends TypeKind = TypeKind, t = unknown> = {
-	union: TypeNode<"union", t>
-	morph: TypeNode<"morph", t>
-	intersection: TypeNode<"intersection", t>
-	unit: TypeNode<"unit", t>
-	proto: TypeNode<"proto", t>
-	domain: TypeNode<"domain", t>
+export type Schema<t = unknown, kind extends SchemaKind = SchemaKind> = {
+	union: SchemaNode<t, "union">
+	morph: SchemaNode<t, "morph">
+	intersection: SchemaNode<t, "intersection">
+	unit: SchemaNode<t, "unit">
+	proto: SchemaNode<t, "proto">
+	domain: SchemaNode<t, "domain">
 }[kind]

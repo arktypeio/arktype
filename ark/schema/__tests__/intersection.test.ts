@@ -6,7 +6,7 @@ import type { Disjoint } from "../shared/disjoint.js"
 describe("intersections", () => {
 	it("parse pattern", () => {
 		const t = schema({ basis: "string", pattern: ".*" })
-		attest<Schema<"intersection", string>>(t)
+		attest<Schema<string, "intersection">>(t)
 		attest(t.json).snap({ basis: "string", pattern: [".*"] })
 	})
 	it("multiple constraints", () => {

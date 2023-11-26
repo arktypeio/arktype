@@ -1,29 +1,29 @@
-import { ScopeNode } from "../scope.js"
-import type { Schema } from "../type.js"
+import { NodeScope } from "../nodescope.js"
+import type { Schema } from "../schema.js"
 import type { schema } from "./keywords.js"
 
 export namespace TsKeywords {
 	export interface resolutions {
-		any: Schema<"intersection", any>
-		bigint: Schema<"domain", bigint>
-		boolean: Schema<"union", boolean>
-		false: Schema<"unit", false>
-		never: Schema<"union", never>
-		null: Schema<"unit", null>
-		number: Schema<"domain", number>
-		object: Schema<"domain", object>
-		string: Schema<"domain", string>
-		symbol: Schema<"domain", symbol>
-		true: Schema<"unit", true>
-		unknown: Schema<"intersection", unknown>
-		void: Schema<"unit", void>
-		undefined: Schema<"unit", undefined>
+		any: Schema<any, "intersection">
+		bigint: Schema<bigint, "domain">
+		boolean: Schema<boolean, "union">
+		false: Schema<false, "unit">
+		never: Schema<never, "union">
+		null: Schema<null, "unit">
+		number: Schema<number, "domain">
+		object: Schema<object, "domain">
+		string: Schema<string, "domain">
+		symbol: Schema<symbol, "domain">
+		true: Schema<true, "unit">
+		unknown: Schema<unknown, "intersection">
+		void: Schema<void, "unit">
+		undefined: Schema<undefined, "unit">
 	}
 
 	export type infer = (typeof TsKeywords)["infer"]
 }
 
-export const TsKeywords: ScopeNode<TsKeywords.resolutions> = ScopeNode.from({
+export const TsKeywords: NodeScope<TsKeywords.resolutions> = NodeScope.from({
 	any: {} as schema.cast<any, "intersection">,
 	bigint: "bigint",
 	// since we know this won't be reduced, it can be safely cast to a union

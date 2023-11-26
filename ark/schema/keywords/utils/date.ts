@@ -1,5 +1,5 @@
 import { throwInternalError } from "@arktype/util"
-import { rootSchema } from "../../scope.js"
+import { rootSchema } from "../../nodescope.js"
 
 type DayDelimiter = "." | "/" | "-"
 

@@ -1,4 +1,4 @@
-import { isNode, schema, type Root } from "@arktype/schema"
+import { isNode, schema, type Schema } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -7,8 +7,8 @@ import {
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
-	type NumberLiteral,
-	type join
+	type join,
+	type NumberLiteral
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
 import {
@@ -23,7 +23,7 @@ import {
 } from "../../../generic.js"
 import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { StaticState, state } from "../../reduce/static.js"
+import type { state, StaticState } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 
@@ -108,7 +108,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): Root =>
+const unenclosedToNode = (s: DynamicState, token: string): Schema =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -120,7 +120,7 @@ const unenclosedToNode = (s: DynamicState, token: string): Root =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): Root | undefined => {
+): Schema | undefined => {
 	if (s.ctx.args?.[token]) {
 		return s.ctx.args[token]
 	}
@@ -140,7 +140,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): Root | undefined => {
+): Schema | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
 		return schema({ unit: maybeNumber })

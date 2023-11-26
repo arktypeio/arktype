@@ -1,7 +1,7 @@
 import type { Node } from "../../base.js"
 import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
-import { typeKinds, type TypeKind } from "../../shared/define.js"
+import { schemaKinds, type SchemaKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Definition } from "../../shared/nodes.js"
 import {
@@ -13,12 +13,12 @@ import type { NamedPropAttachments } from "./shared.js"
 
 export type OptionalInner = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Node<TypeKind>
+	readonly value: Node<SchemaKind>
 }>
 
 export type OptionalDefinition = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Definition<TypeKind>
+	readonly value: Definition<SchemaKind>
 }>
 
 export type OptionalDeclaration = declareRefinement<{
@@ -38,7 +38,7 @@ export const OptionalImplementation = defineRefinement({
 		key: {},
 		value: {
 			child: true,
-			parse: (schema, ctx) => ctx.scope.typeFromKinds(typeKinds, schema)
+			parse: (schema, ctx) => ctx.scope.typeFromKinds(schemaKinds, schema)
 		}
 	},
 	operand: ["object"],

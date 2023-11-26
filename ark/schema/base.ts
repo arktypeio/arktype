@@ -9,7 +9,8 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
-import type { ScopeNode } from "./scope.js"
+import type { NodeScope } from "./nodescope.js"
+import type { Schema } from "./schema.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import {
@@ -26,15 +27,15 @@ import {
 	constraintKinds,
 	openRefinementKinds,
 	refinementKinds,
+	schemaKinds,
 	setKinds,
-	typeKinds,
 	type ClosedRefinementKind,
 	type ConstraintKind,
 	type NodeKind,
 	type OpenRefinementKind,
 	type RefinementKind,
+	type SchemaKind,
 	type SetKind,
-	type TypeKind,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -47,7 +48,6 @@ import {
 	type reducibleKindOf
 } from "./shared/nodes.js"
 import { arkKind } from "./shared/registry.js"
-import type { Schema } from "./type.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
 	readonly kind: kind
@@ -59,13 +59,12 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly children: Node<childKindOf<kind>>[]
 	readonly id: string
 	readonly typeId: string
-	readonly scope: ScopeNode
+	readonly scope: NodeScope
 }
 
-export abstract class BaseNode<
-	kind extends NodeKind = NodeKind,
-	t = unknown
-> extends DynamicBase<Inner<kind> & Attachments<kind> & BaseAttachments<kind>> {
+export abstract class BaseNode<t, kind extends NodeKind> extends DynamicBase<
+	Inner<kind> & Attachments<kind> & BaseAttachments<kind>
+> {
 	readonly [arkKind] = "node"
 	readonly cls = BaseNode
 
@@ -190,7 +189,7 @@ export abstract class BaseNode<
 				continue
 			}
 			if (keyDefinition.child) {
-				const childValue = v as listable<BaseNode>
+				const childValue = v as listable<UnknownNode>
 				ioInner[k] = isArray(childValue)
 					? childValue.map((child) => child[kind])
 					: childValue[kind]
@@ -229,8 +228,8 @@ export abstract class BaseNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isSchema(): this is Node<TypeKind> {
-		return includes(typeKinds, this.kind)
+	isSchema(): this is Node<SchemaKind> {
+		return includes(schemaKinds, this.kind)
 	}
 
 	isSet(): this is Node<SetKind> {
@@ -305,9 +304,8 @@ export abstract class BaseNode<
 	}
 }
 
-export type Node<
-	kind extends NodeKind = NodeKind,
-	t = unknown
-> = kind extends TypeKind ? Schema<kind, t> : BaseNode<kind, t>
+export type Node<kind extends NodeKind = NodeKind> = kind extends SchemaKind
+	? Schema<unknown, kind>
+	: BaseNode<unknown, kind>
 
-export type UnknownNode = BaseNode<any>
+export type UnknownNode = BaseNode<unknown, any>

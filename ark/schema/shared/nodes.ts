@@ -14,7 +14,7 @@ import type { BranchKind } from "../sets/union.js"
 import type {
 	ConstraintKind,
 	NodeKind,
-	TypeKind,
+	SchemaKind,
 	normalizeInput
 } from "./define.js"
 
@@ -61,7 +61,7 @@ export type ChildrenByKind = {
 		  : k extends "intersection"
 		    ? ConstraintKind
 		    : k extends PropKind
-		      ? TypeKind
+		      ? SchemaKind
 		      : never
 }
 
@@ -76,7 +76,7 @@ export type ParentsByKind = {
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
-	? TypeKind
+	? SchemaKind
 	: kind extends "intersection"
 	  ? ValidatorKind
 	  : kind

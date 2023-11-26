@@ -1,5 +1,5 @@
-import { ScopeNode, rootSchema } from "../scope.js"
-import type { Schema } from "../type.js"
+import { NodeScope, rootSchema } from "../nodescope.js"
+import type { Schema } from "../schema.js"
 import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
@@ -48,22 +48,22 @@ const semver = rootSchema({
 
 export namespace Validation {
 	export interface resolutions {
-		alpha: Schema<"intersection", string>
-		alphanumeric: Schema<"intersection", string>
-		lowercase: Schema<"intersection", string>
-		uppercase: Schema<"intersection", string>
-		creditCard: Schema<"intersection", string>
-		email: Schema<"intersection", string>
-		uuid: Schema<"intersection", string>
-		url: Schema<"intersection", string>
-		semver: Schema<"intersection", string>
-		integer: Schema<"intersection", number>
+		alpha: Schema<string, "intersection">
+		alphanumeric: Schema<string, "intersection">
+		lowercase: Schema<string, "intersection">
+		uppercase: Schema<string, "intersection">
+		creditCard: Schema<string, "intersection">
+		email: Schema<string, "intersection">
+		uuid: Schema<string, "intersection">
+		url: Schema<string, "intersection">
+		semver: Schema<string, "intersection">
+		integer: Schema<number, "intersection">
 	}
 
 	export type infer = (typeof Validation)["infer"]
 }
 
-export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from({
+export const Validation: NodeScope<Validation.resolutions> = NodeScope.from({
 	alpha: {
 		basis: "string",
 		pattern: /^[A-Za-z]*$/,

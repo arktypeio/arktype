@@ -8,7 +8,7 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { Schema } from "../schema.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import type { Definition } from "../shared/nodes.js"
 import { isNode } from "../shared/registry.js"
@@ -81,15 +81,15 @@ export type instantiateBasis<def extends Definition<BasisKind>> =
 	isAny<def> extends true
 		? any
 		: def extends NonEnumerableDomain
-		  ? Node<"domain", inferDomain<def>>
+		  ? Schema<inferDomain<def>, "domain">
 		  : def extends Constructor<infer instance>
-		    ? Node<"proto", instance>
+		    ? Schema<instance, "proto">
 		    : def extends DomainDefinition<infer domain>
-		      ? Node<"domain", inferDomain<domain>>
+		      ? Schema<inferDomain<domain>, "domain">
 		      : def extends ProtoInput<infer proto>
-		        ? Node<"proto", instanceOf<proto>>
+		        ? Schema<instanceOf<proto>, "proto">
 		        : def extends UnitSchema<infer is>
-		          ? Node<"unit", is>
+		          ? Schema<is, "unit">
 		          : never
 
 export const getBasisKindOrThrow = (schema: unknown) => {

@@ -1,20 +1,20 @@
-import { isNode, schema, type Root } from "@arktype/schema"
+import { isNode, schema, type Schema } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
 	printable,
 	throwParseError,
-	type Dict,
-	type ErrorMessage,
-	type List,
-	type Primitive,
 	type defined,
+	type Dict,
 	type equals,
+	type ErrorMessage,
 	type evaluate,
 	type isAny,
 	type isUnknown,
+	type List,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
+	type Primitive,
 	type requiredKeyOf
 } from "@arktype/util"
 import type { type } from "../ark.js"
@@ -29,17 +29,17 @@ import type { validateString } from "./semantic/validate.js"
 import type { BaseCompletions, inferString } from "./string/string.js"
 import {
 	parseTuple,
-	type TupleExpression,
 	type inferTuple,
+	type TupleExpression,
 	type validateTuple
 } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): Root => {
+export const parseObject = (def: object, ctx: ParseContext): Schema => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
 			if (isNode(def)) {
-				return def as Root
+				return def as Schema
 			}
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":

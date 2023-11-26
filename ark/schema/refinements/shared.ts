@@ -1,6 +1,7 @@
 import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
+import type { Schema } from "../schema.js"
 import type {
 	BaseNodeDeclaration,
 	validateNodeDeclaration
@@ -9,10 +10,9 @@ import {
 	defineNode,
 	type NodeImplementationInput,
 	type RefinementKind,
-	type TypeKind
+	type SchemaKind
 } from "../shared/define.js"
 import type { Declaration, Definition } from "../shared/nodes.js"
-import type { Schema } from "../type.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
@@ -21,7 +21,7 @@ export type RefinementImplementationInput<d extends BaseNodeDeclaration> =
 	extend<
 		NodeImplementationInput<d>,
 		{
-			operand: readonly Definition<TypeKind>[]
+			operand: readonly Definition<SchemaKind>[]
 		}
 	>
 
@@ -38,7 +38,7 @@ export type declareRefinement<
 const operandCache = {} as PartialRecord<RefinementKind, Schema>
 
 export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
-	const operandsDef: readonly Definition<TypeKind>[] = (
+	const operandsDef: readonly Definition<SchemaKind>[] = (
 		node.implementation as any
 	).operand
 	if (operandCache[node.kind] === undefined) {
