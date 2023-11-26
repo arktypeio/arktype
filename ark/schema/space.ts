@@ -77,6 +77,10 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		this.references = Object.values(this.referencesById)
 		this.allowsOf = this.compile("allows")
 		this.traverseOf = this.compile("traverse")
+		for (const schema of this.schemas) {
+			schema.allows = this.allowsOf(schema.alias as never)
+			schema.traverse = this.traverseOf(schema.alias as never)
+		}
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			Space.unknownUnion = this.prereduced("union", [
@@ -93,8 +97,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		}
 	}
 
-	compile<kind extends CompilationKind>(kind: kind): this[`${kind}Of`] {
-		const $ = `const $ = {
+	compile<kind extends CompilationKind>(kind: kind): this[`${kind}Of`]
+	compile(kind: CompilationKind): any {
+		let $ource = `return {
 			${this.references
 				.map((reference) =>
 					reference.compileReference({
@@ -103,27 +108,26 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 						discriminants: []
 					})
 				)
-				.join(",\n")}
-				}`
+				.join(",\n")}`
 		if (kind === "allows") {
-			return new CompiledFunction(
-				"$arkAlias",
-				`${$}
-return $[arkAlias]`
-			) as never
+			$ource += "}"
+			const $ = new CompiledFunction<() => any>($ource)
+			return (alias: keyof keywords & string) => $()[alias]
 		}
-		return new CompiledFunction(
-			"$arkAlias",
-			`${$}
-	return (${In}) => {
+		for (const schema of this.schemas) {
+			$ource += `,
+	${schema.alias}Root(${In}) {
 		const problems = []
-		$[$arkAlias](${In}, problems)
+		$.${schema.alias}(${In}, problems)
 		if(problems.length === 0) {
 			return { data: ${In} }
 		}
 		return { problems }
 	}`
-		) as never
+		}
+		$ource += "}"
+		const $ = new CompiledFunction<() => any>($ource)
+		return (alias: keyof keywords & string) => $()[`${alias}Root`]
 	}
 
 	get builtin() {

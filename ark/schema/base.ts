@@ -84,8 +84,8 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	readonly contributesReferences: readonly UnknownNode[] = Object.values(
 		this.contributesReferencesById
 	)
-	readonly allows: (data: unknown) => data is t
-	readonly traverse: (data: unknown) => CheckResult<t>
+	declare allows: (data: unknown) => data is t
+	declare traverse: (data: unknown) => CheckResult<t>
 	readonly description: string
 
 	protected constructor(baseAttachments: BaseAttachments<kind>) {
@@ -111,8 +111,6 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
-		this.allows = this.space.allowsOf(this.alias)
-		this.traverse = this.space.traverseOf(this.alias)
 	}
 
 	// TODO: Cache

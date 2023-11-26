@@ -4,7 +4,7 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Definition } from "../shared/nodes.js"
-import { discriminate, type Discriminant } from "./discriminate.js"
+import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
 
 export type BranchKind = "morph" | ValidatorKind
@@ -148,7 +148,7 @@ export const UnionImplementation = defineNode({
 	},
 	attach: (inner) => {
 		return {
-			discriminant: discriminate(inner.branches)
+			discriminant: null //discriminate(inner.branches)
 		}
 	},
 	writeDefaultDescription: (inner) =>
