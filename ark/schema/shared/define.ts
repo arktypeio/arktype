@@ -176,6 +176,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 		schema: d["definition"]
 	) => normalizeInput<d["definition"], d["inner"]>
 	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
+	// innerAllows: (inner: d["inner"]) => (data: unknown) => boolean
 	reduce?: (
 		inner: d["inner"],
 		ctx: SchemaParseContext<d["kind"]>

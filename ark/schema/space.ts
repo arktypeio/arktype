@@ -67,6 +67,10 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	) => keywords[alias]["traverse"]
 
 	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {
+		// 1. Parse schema, create basic inner
+		// 2. Use 1 to compile allows
+		// 3. Reduce
+		// 4. Compile traverse, discriminate etc.
 		this.keywords = transform(aliases, ([k, v]) => [
 			k,
 			this.schemaFromKinds(schemaKinds, v)
