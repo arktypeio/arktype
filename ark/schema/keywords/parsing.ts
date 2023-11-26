@@ -2,9 +2,9 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import { NodeScope, rootSchema } from "../nodescope.js"
 import type { Schema } from "../schema.js"
 import type { Out } from "../sets/morph.js"
+import { Space, rootSchema } from "../space.js"
 import { parsedDate } from "./utils/date.js"
 
 const number = rootSchema({
@@ -72,7 +72,7 @@ export namespace Parsing {
 	export type infer = (typeof Parsing)["infer"]
 }
 
-export const Parsing: NodeScope<Parsing.resolutions> = NodeScope.from({
+export const Parsing: Space<Parsing.resolutions> = Space.from({
 	url,
 	number,
 	integer,

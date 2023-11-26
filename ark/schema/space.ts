@@ -44,7 +44,7 @@ import { isNode } from "./shared/registry.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 
-export class NodeScope<keywords extends nodeResolutions<keywords> = any> {
+export class Space<keywords extends nodeResolutions<keywords> = any> {
 	declare infer: {
 		[k in keyof keywords]: keywords[k]["infer"]
 	}
@@ -55,11 +55,11 @@ export class NodeScope<keywords extends nodeResolutions<keywords> = any> {
 	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {
 		this.keywords = transform(aliases, ([k, v]) => [
 			k,
-			this.typeFromKinds(schemaKinds, v)
+			this.schemaFromKinds(schemaKinds, v)
 		]) as never
-		if (NodeScope.root && !NodeScope.unknownUnion) {
+		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
-			NodeScope.unknownUnion = this.prereduced("union", [
+			Space.unknownUnion = this.prereduced("union", [
 				"string",
 				"number",
 				"object",
@@ -74,13 +74,13 @@ export class NodeScope<keywords extends nodeResolutions<keywords> = any> {
 	}
 
 	get builtin() {
-		return NodeScope.keywords
+		return Space.keywords
 	}
 
 	static from = <const aliases>(aliases: validateAliases<aliases>) =>
-		new NodeScope<instantiateAliases<aliases>>(aliases as never)
+		new Space<instantiateAliases<aliases>>(aliases as never)
 
-	static root = new NodeScope<{}>({})
+	static root = new Space<{}>({})
 
 	union<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
@@ -131,7 +131,7 @@ export class NodeScope<keywords extends nodeResolutions<keywords> = any> {
 		}) as never
 	}
 
-	typeFromKinds<defKind extends SchemaKind>(
+	schemaFromKinds<defKind extends SchemaKind>(
 		allowedKinds: readonly defKind[],
 		input: unknown
 	): Node<reducibleKindOf<defKind>> {
@@ -219,11 +219,11 @@ export class NodeScope<keywords extends nodeResolutions<keywords> = any> {
 			}
 		}
 		const id = kind + JSON.stringify(json)
-		if (id in NodeScope.parseCache) {
-			return NodeScope.parseCache[id] as never
+		if (id in Space.parseCache) {
+			return Space.parseCache[id] as never
 		}
 		const typeId = kind + JSON.stringify(typeJson)
-		if (NodeScope.unknownUnion?.typeId === typeId) {
+		if (Space.unknownUnion?.typeId === typeId) {
 			return this.prereduced("intersection", {}) as never
 		}
 		const attachments = {
@@ -250,11 +250,11 @@ export class NodeScope<keywords extends nodeResolutions<keywords> = any> {
 	})
 }
 
-export const nodescope = NodeScope.from
+export const space = Space.from
 
-export const rootSchema = NodeScope.root.schema.bind(NodeScope.root)
+export const rootSchema = Space.root.schema.bind(Space.root)
 
-export const rootNode = NodeScope.root.node.bind(NodeScope.root)
+export const rootNode = Space.root.node.bind(Space.root)
 
 const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)

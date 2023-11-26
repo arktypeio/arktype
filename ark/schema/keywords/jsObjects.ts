@@ -1,5 +1,5 @@
-import { NodeScope } from "../nodescope.js"
 import type { Schema } from "../schema.js"
+import { Space } from "../space.js"
 
 export namespace JsObjects {
 	export interface resolutions {
@@ -18,7 +18,7 @@ export namespace JsObjects {
 	export type infer = (typeof JsObjects)["infer"]
 }
 
-export const JsObjects: NodeScope<JsObjects.resolutions> = NodeScope.from({
+export const JsObjects: Space<JsObjects.resolutions> = Space.from({
 	Array,
 	Function,
 	Date,

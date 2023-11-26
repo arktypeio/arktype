@@ -1,11 +1,11 @@
-import { NodeScope } from "../nodescope.js"
 import type { SchemaKind } from "../shared/define.js"
 import type { inferred } from "../shared/symbols.js"
+import { Space } from "../space.js"
 import { JsObjects } from "./jsObjects.js"
 import { TsKeywords } from "./tsKeywords.js"
 import { Validation } from "./validation.js"
 
-export const builtin: NodeScope<ArkResolutions> = NodeScope.from({
+export const builtin: Space<ArkResolutions> = Space.from({
 	...TsKeywords.keywords,
 	...JsObjects.keywords,
 	...Validation.keywords
@@ -13,7 +13,7 @@ export const builtin: NodeScope<ArkResolutions> = NodeScope.from({
 
 export const keywords = builtin.keywords
 
-NodeScope.keywords = keywords
+Space.keywords = keywords
 
 export const schema = builtin.schema
 
