@@ -103,12 +103,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		}
 	}
 
-	// compileInvocation(ctx: CompilationContext, prop?: string) {
-	// 	return `$.${this.alias}(${In}${
-	// 		prop === undefined ? "" : compilePropAccess(prop)
-	// 	}${ctx.compilationKind === "traverse" ? ", problems" : ""})`
-	// }
-
 	// TODO: cache
 	compile<kind extends CompilationKind>(kind: kind): this[`${kind}Of`]
 	compile(kind: CompilationKind): any {
@@ -274,12 +268,10 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 				typeJson[k] = json[k]
 			}
 		}
-		if (!ctx.prereduced) {
-			if (implementation.reduce) {
-				const reduced = implementation.reduce(inner, ctx)
-				if (reduced) {
-					return reduced as never
-				}
+		if (implementation.reduce && !ctx.prereduced) {
+			const reduced = implementation.reduce(inner, ctx)
+			if (reduced) {
+				return reduced as never
 			}
 		}
 		const innerEntries = entriesOf(inner)
@@ -294,13 +286,13 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 				typeJson = collapsibleJson
 			}
 		}
-		const id = kind + JSON.stringify(json)
+		const id = JSON.stringify({ kind, ...json })
 		if (id in Space.parseCache) {
 			return Space.parseCache[id] as never
 		}
-		const typeId = kind + JSON.stringify(typeJson)
+		const typeId = JSON.stringify({ kind, ...typeJson })
 		if (Space.unknownUnion?.typeId === typeId) {
-			return this.prereduced("intersection", {}) as never
+			return Space.keywords.unknown as never
 		}
 		const attachments = {
 			kind,
@@ -318,6 +310,50 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			? new (BaseNode as any)(attachments)
 			: new (SchemaNode as any)(attachments)
 	}
+
+	// private reduce() {
+	// 	if (implementation.reduce && !ctx.prereduced) {
+	// 		const reduced = implementation.reduce(inner, ctx)
+	// 		if (reduced) {
+	// 			return reduced as never
+	// 		}
+	// 	}
+	// 	const innerEntries = entriesOf(inner)
+	// 	let collapsibleJson = json
+	// 	if (
+	// 		innerEntries.length === 1 &&
+	// 		innerEntries[0][0] === implementation.collapseKey
+	// 	) {
+	// 		collapsibleJson = json[implementation.collapseKey] as never
+	// 		if (hasDomain(collapsibleJson, "object")) {
+	// 			json = collapsibleJson
+	// 			typeJson = collapsibleJson
+	// 		}
+	// 	}
+	// 	const id = JSON.stringify({ kind, ...json })
+	// 	if (id in Space.parseCache) {
+	// 		return Space.parseCache[id] as never
+	// 	}
+	// 	const typeId = JSON.stringify({ kind, ...typeJson })
+	// 	if (Space.unknownUnion?.typeId === typeId) {
+	// 		return Space.keywords.unknown as never
+	// 	}
+	// 	const attachments = {
+	// 		kind,
+	// 		inner,
+	// 		entries: innerEntries,
+	// 		json,
+	// 		typeJson,
+	// 		collapsibleJson,
+	// 		children,
+	// 		id,
+	// 		typeId,
+	// 		space: this
+	// 	} satisfies Record<keyof BaseAttachments<any>, unknown>
+	// 	return includes(refinementKinds, kind)
+	// 		? new (BaseNode as any)(attachments)
+	// 		: new (SchemaNode as any)(attachments)
+	// }
 
 	readonly schema = Object.assign(this.branches.bind(this), {
 		units: this.units.bind(this),
