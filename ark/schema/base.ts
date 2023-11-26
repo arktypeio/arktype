@@ -125,7 +125,7 @@ export abstract class BaseNode<
 		const $ = this.contributesReferences
 			.map((reference) =>
 				reference.compileReference({
-					compilationKind: "allows",
+					compilationKind: kind,
 					path: [],
 					discriminants: []
 				})
@@ -135,6 +135,7 @@ export abstract class BaseNode<
 			return new CompiledFunction($ + "\n" + `return ${this.alias}`)() as never
 		}
 		return new CompiledFunction(
+			In,
 			$ +
 				"\n" +
 				`const problems = []

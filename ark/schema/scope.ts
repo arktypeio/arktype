@@ -21,6 +21,7 @@ import type {
 	validateAliases,
 	validateSchemaBranch
 } from "./inference.js"
+import type { keywords } from "./keywords/keywords.js"
 import type { BranchKind } from "./sets/union.js"
 import {
 	defaultInnerKeySerializer,
@@ -47,7 +48,8 @@ export class ScopeNode<keywords extends nodeResolutions<keywords> = any> {
 	declare infer: {
 		[k in keyof keywords]: keywords[k]["infer"]
 	}
-	private declare static unknownUnion: TypeNode<"union", unknown>
+	private declare static unknownUnion?: TypeNode<"union", unknown>
+	declare static keywords: typeof keywords
 	keywords = {} as keywords
 
 	private constructor(aliases: Dict<string, Definition<TypeKind>>) {
@@ -69,6 +71,10 @@ export class ScopeNode<keywords extends nodeResolutions<keywords> = any> {
 				{ unit: undefined }
 			])
 		}
+	}
+
+	get builtin() {
+		return ScopeNode.keywords
 	}
 
 	static from = <const aliases>(aliases: validateAliases<aliases>) =>
@@ -244,9 +250,9 @@ export class ScopeNode<keywords extends nodeResolutions<keywords> = any> {
 	})
 }
 
-export const rootSchema = ScopeNode.root.schema
+export const rootSchema = ScopeNode.root.schema.bind(ScopeNode.root)
 
-export const rootNode = ScopeNode.root.node
+export const rootNode = ScopeNode.root.node.bind(ScopeNode.root)
 
 const schemaKindOf = (input: unknown): TypeKind => {
 	const basisKind = maybeGetBasisKind(input)

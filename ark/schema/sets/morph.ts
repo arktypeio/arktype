@@ -120,7 +120,7 @@ export const MorphImplementation = defineNode({
 	attach: (node) => ({
 		inCache: node.inner.in,
 		// TODO: reference?
-		outCache: node.inner.out ?? node.scope.prereduced("intersection", {})
+		outCache: node.inner.out ?? node.scope.builtin.unknown
 	}),
 	compile: () => `return true`
 })

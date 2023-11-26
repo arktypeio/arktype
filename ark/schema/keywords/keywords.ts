@@ -13,6 +13,8 @@ export const builtin: ScopeNode<ArkResolutions> = ScopeNode.from({
 
 export const keywords = builtin.keywords
 
+ScopeNode.keywords = keywords
+
 export const schema = builtin.schema
 
 export namespace schema {
