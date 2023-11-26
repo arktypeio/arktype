@@ -1,7 +1,6 @@
 import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import type { Schema } from "../schema.js"
 import type {
 	BaseNodeDeclaration,
 	validateNodeDeclaration
@@ -13,6 +12,7 @@ import {
 	type SchemaKind
 } from "../shared/define.js"
 import type { Declaration, Definition } from "../shared/nodes.js"
+import type { Schema } from "../type.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"

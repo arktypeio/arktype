@@ -9,8 +9,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
-import type { Schema } from "./schema.js"
-import type { SchemaScope } from "./scope.js"
+import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import { createBuiltins, type Builtins } from "./shared/builtins.js"
@@ -49,6 +48,7 @@ import {
 	type reducibleKindOf
 } from "./shared/nodes.js"
 import { arkKind } from "./shared/registry.js"
+import type { Schema } from "./type.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
 	readonly kind: kind
@@ -60,17 +60,13 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly children: Node<childKindOf<kind>>[]
 	readonly id: string
 	readonly typeId: string
-	readonly scope: SchemaScope
+	readonly scope: ScopeNode
 }
 
 export abstract class BaseNode<
 	kind extends NodeKind = NodeKind,
 	t = unknown
 > extends DynamicBase<Inner<kind> & Attachments<kind> & BaseAttachments<kind>> {
-	static {
-		$ark.BaseNode = this
-	}
-
 	readonly [arkKind] = "node"
 	readonly cls = BaseNode
 

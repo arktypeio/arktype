@@ -1,6 +1,5 @@
 import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
-import type { BaseNode, UnknownNode } from "../base.js"
-import type { SchemaNode } from "../schema.js"
+import type { UnknownNode } from "../base.js"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
@@ -13,11 +12,6 @@ declare global {
 
 class Registry {
 	[k: string]: unknown
-
-	/** Set internally to avoid circular imports */
-	declare BaseNode: typeof BaseNode
-	/** Set internally to avoid circular imports */
-	declare SchemaNode: typeof SchemaNode
 
 	// immediately initialize an instance on import so the global reference resolves
 	static {

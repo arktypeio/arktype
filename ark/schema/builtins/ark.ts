@@ -1,11 +1,11 @@
-import { SchemaScope } from "../scope.js"
+import { ScopeNode } from "../scope.js"
 import type { SchemaKind } from "../shared/define.js"
 import type { inferred } from "../shared/symbols.js"
 import { JsObjects } from "./jsObjects.js"
 import { TsKeywords } from "./tsKeywords.js"
 import { Validation } from "./validation.js"
 
-export const ark: SchemaScope<ArkResolutions> = SchemaScope.from({
+export const ark: ScopeNode<ArkResolutions> = ScopeNode.from({
 	...TsKeywords.resolutions,
 	...JsObjects.resolutions,
 	...Validation.resolutions

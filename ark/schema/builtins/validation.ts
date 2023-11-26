@@ -1,5 +1,5 @@
-import type { Schema } from "../schema.js"
-import { SchemaScope, rootSchema } from "../scope.js"
+import { ScopeNode, rootSchema } from "../scope.js"
+import type { Schema } from "../type.js"
 import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
@@ -63,37 +63,35 @@ export namespace Validation {
 	export type infer = (typeof Validation)["infer"]
 }
 
-export const Validation: SchemaScope<Validation.resolutions> = SchemaScope.from(
-	{
-		alpha: {
-			basis: "string",
-			pattern: /^[A-Za-z]*$/,
-			description: "only letters"
-		},
-		alphanumeric: {
-			basis: "string",
-			pattern: /^[A-Za-z\d]*$/,
-			description: "only letters and digits"
-		},
-		lowercase: {
-			basis: "string",
-			pattern: /^[a-z]*$/,
-			description: "only lowercase letters"
-		},
-		uppercase: {
-			basis: "string",
-			pattern: /^[A-Za-z]*$/,
-			description: "only uppercase letters"
-		},
-		creditCard,
-		email,
-		uuid,
-		url,
-		semver,
-		integer: {
-			basis: "number",
-			divisor: 1,
-			description: "an integer"
-		}
+export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from({
+	alpha: {
+		basis: "string",
+		pattern: /^[A-Za-z]*$/,
+		description: "only letters"
+	},
+	alphanumeric: {
+		basis: "string",
+		pattern: /^[A-Za-z\d]*$/,
+		description: "only letters and digits"
+	},
+	lowercase: {
+		basis: "string",
+		pattern: /^[a-z]*$/,
+		description: "only lowercase letters"
+	},
+	uppercase: {
+		basis: "string",
+		pattern: /^[A-Za-z]*$/,
+		description: "only uppercase letters"
+	},
+	creditCard,
+	email,
+	uuid,
+	url,
+	semver,
+	integer: {
+		basis: "number",
+		divisor: 1,
+		description: "an integer"
 	}
-)
+})

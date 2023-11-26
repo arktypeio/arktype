@@ -6,12 +6,7 @@ import type { intersectionOf } from "./shared/intersect.js"
 import type { Definition } from "./shared/nodes.js"
 import { inferred } from "./shared/symbols.js"
 
-export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
-	static {
-		// TODO: can remove?
-		$ark.SchemaNode = this
-	}
-
+export class TypeNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -90,10 +85,10 @@ export class SchemaNode<kind extends SchemaKind, t> extends BaseNode<kind, t> {
 }
 
 export type Schema<kind extends SchemaKind = SchemaKind, t = unknown> = {
-	union: SchemaNode<"union", t>
-	morph: SchemaNode<"morph", t>
-	intersection: SchemaNode<"intersection", t>
-	unit: SchemaNode<"unit", t>
-	proto: SchemaNode<"proto", t>
-	domain: SchemaNode<"domain", t>
+	union: TypeNode<"union", t>
+	morph: TypeNode<"morph", t>
+	intersection: TypeNode<"intersection", t>
+	unit: TypeNode<"unit", t>
+	proto: TypeNode<"proto", t>
+	domain: TypeNode<"domain", t>
 }[kind]

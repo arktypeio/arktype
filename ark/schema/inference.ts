@@ -9,7 +9,6 @@ import type { Node } from "./base.js"
 import type { instantiateBasis } from "./bases/basis.js"
 import type { NonEnumerableDomain } from "./bases/domain.js"
 import type { isCast, schema } from "./builtins/ark.js"
-import type { Schema } from "./schema.js"
 import type { IntersectionDefinition } from "./sets/intersection.js"
 import type {
 	Morph,
@@ -22,6 +21,7 @@ import type {
 import type { BranchNode } from "./sets/union.js"
 import type { BasisKind, RefinementKind, SchemaKind } from "./shared/define.js"
 import type { Definition, NormalizedDefinition } from "./shared/nodes.js"
+import type { Schema } from "./type.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]

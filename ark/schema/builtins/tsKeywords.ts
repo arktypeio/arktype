@@ -1,5 +1,5 @@
-import type { Schema } from "../schema.js"
-import { SchemaScope } from "../scope.js"
+import { ScopeNode } from "../scope.js"
+import type { Schema } from "../type.js"
 import type { schema } from "./ark.js"
 
 export namespace TsKeywords {
@@ -23,22 +23,20 @@ export namespace TsKeywords {
 	export type infer = (typeof TsKeywords)["infer"]
 }
 
-export const TsKeywords: SchemaScope<TsKeywords.resolutions> = SchemaScope.from(
-	{
-		any: {} as schema.cast<any, "intersection">,
-		bigint: "bigint",
-		// since we know this won't be reduced, it can be safely cast to a union
-		boolean: [{ unit: false }, { unit: true }] as schema.cast<boolean, "union">,
-		false: { unit: false },
-		never: [],
-		null: { unit: null },
-		number: "number",
-		object: "object",
-		string: "string",
-		symbol: "symbol",
-		true: { unit: true },
-		unknown: {},
-		void: { unit: undefined } as schema.cast<void, "unit">,
-		undefined: { unit: undefined }
-	}
-)
+export const TsKeywords: ScopeNode<TsKeywords.resolutions> = ScopeNode.from({
+	any: {} as schema.cast<any, "intersection">,
+	bigint: "bigint",
+	// since we know this won't be reduced, it can be safely cast to a union
+	boolean: [{ unit: false }, { unit: true }] as schema.cast<boolean, "union">,
+	false: { unit: false },
+	never: [],
+	null: { unit: null },
+	number: "number",
+	object: "object",
+	string: "string",
+	symbol: "symbol",
+	true: { unit: true },
+	unknown: {},
+	void: { unit: undefined } as schema.cast<void, "unit">,
+	undefined: { unit: undefined }
+})

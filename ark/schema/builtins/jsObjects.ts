@@ -1,5 +1,5 @@
-import type { Schema } from "../schema.js"
-import { SchemaScope } from "../scope.js"
+import { ScopeNode } from "../scope.js"
+import type { Schema } from "../type.js"
 
 export namespace JsObjects {
 	export interface resolutions {
@@ -18,7 +18,7 @@ export namespace JsObjects {
 	export type infer = (typeof JsObjects)["infer"]
 }
 
-export const JsObjects: SchemaScope<JsObjects.resolutions> = SchemaScope.from({
+export const JsObjects: ScopeNode<JsObjects.resolutions> = ScopeNode.from({
 	Array,
 	Function,
 	Date,

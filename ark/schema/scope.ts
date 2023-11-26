@@ -21,7 +21,6 @@ import type {
 	validateAliases,
 	validateSchemaBranch
 } from "./inference.js"
-import { SchemaNode, type Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
 import {
 	defaultInnerKeySerializer,
@@ -40,16 +39,15 @@ import {
 	type reducibleKindOf
 } from "./shared/nodes.js"
 import { isNode } from "./shared/registry.js"
+import { TypeNode, type Schema } from "./type.js"
 
 export type baseResolutions<resolutions> = { [k in keyof resolutions]: Schema }
 
-export class SchemaScope<
-	resolutions extends baseResolutions<resolutions> = any
-> {
+export class ScopeNode<resolutions extends baseResolutions<resolutions> = any> {
 	declare infer: {
 		[k in keyof resolutions]: resolutions[k]["infer"]
 	}
-	private declare static unknownUnion: SchemaNode<"union", unknown>
+	private declare static unknownUnion: TypeNode<"union", unknown>
 	resolutions = {} as resolutions
 
 	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {
@@ -57,9 +55,9 @@ export class SchemaScope<
 			k,
 			this.schemaWithKindIn(schemaKinds, v)
 		]) as never
-		if (SchemaScope.root && !SchemaScope.unknownUnion) {
+		if (ScopeNode.root && !ScopeNode.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
-			SchemaScope.unknownUnion = this.prereduced("union", [
+			ScopeNode.unknownUnion = this.prereduced("union", [
 				"string",
 				"number",
 				"object",
@@ -74,9 +72,9 @@ export class SchemaScope<
 	}
 
 	static from = <const aliases>(aliases: validateAliases<aliases>) =>
-		new SchemaScope<instantiateAliases<aliases>>(aliases as never)
+		new ScopeNode<instantiateAliases<aliases>>(aliases as never)
 
-	static root = new SchemaScope<{}>({})
+	static root = new ScopeNode<{}>({})
 
 	union<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
@@ -215,11 +213,11 @@ export class SchemaScope<
 			}
 		}
 		const id = kind + JSON.stringify(json)
-		if (id in SchemaScope.parseCache) {
-			return SchemaScope.parseCache[id] as never
+		if (id in ScopeNode.parseCache) {
+			return ScopeNode.parseCache[id] as never
 		}
 		const typeId = kind + JSON.stringify(typeJson)
-		if (SchemaScope.unknownUnion?.typeId === typeId) {
+		if (ScopeNode.unknownUnion?.typeId === typeId) {
 			return this.prereduced("intersection", {}) as never
 		}
 		const attachments = {
@@ -236,7 +234,7 @@ export class SchemaScope<
 		} satisfies Record<keyof BaseAttachments<any>, unknown>
 		return includes(refinementKinds, kind)
 			? new (BaseNode as any)(attachments)
-			: new (SchemaNode as any)(attachments)
+			: new (TypeNode as any)(attachments)
 	}
 
 	readonly schema = Object.assign(this.branches.bind(this), {
@@ -246,9 +244,9 @@ export class SchemaScope<
 	})
 }
 
-export const rootSchema = SchemaScope.root.schema
+export const rootSchema = ScopeNode.root.schema
 
-export const rootNode = SchemaScope.root.node
+export const rootNode = ScopeNode.root.node
 
 const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)

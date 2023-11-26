@@ -12,8 +12,8 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { Schema } from "../schema.js"
-import type { SchemaScope } from "../scope.js"
+import type { ScopeNode } from "../scope.js"
+import type { Schema } from "../type.js"
 import {
 	compileSerializedValue,
 	type CompilationContext
@@ -129,14 +129,14 @@ export type normalizeInput<input, inner extends BaseAttributes> = Extract<
 export type SchemaParseContextInput = {
 	prereduced?: true
 	basis?: Node<BasisKind> | undefined
-	scope?: SchemaScope
+	scope?: ScopeNode
 }
 
 export type SchemaParseContext<kind extends NodeKind> = extend<
 	SchemaParseContextInput,
 	{
 		input: NormalizedDefinition<kind>
-		scope: SchemaScope
+		scope: ScopeNode
 	}
 >
 
