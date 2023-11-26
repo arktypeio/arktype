@@ -1,9 +1,9 @@
 import { attest } from "@arktype/attest"
-import { Space } from "../space.js"
+import { space } from "../space.js"
 
 describe("SchemaScope", () => {
 	it("parse", () => {
-		const $ = Space.from({
+		const $ = space({
 			number: ["number", "string"],
 			ordered: {
 				ordered: true,

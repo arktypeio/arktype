@@ -42,7 +42,7 @@ export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
 		node.implementation as any
 	).operand
 	if (operandCache[node.kind] === undefined) {
-		operandCache[node.kind] = node.scope.branches(...operandsDef)
+		operandCache[node.kind] = node.space.branches(...operandsDef)
 	}
 	const operand = operandCache[node.kind]!
 	return operand.isUnknown()

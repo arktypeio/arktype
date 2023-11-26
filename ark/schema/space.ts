@@ -1,4 +1,5 @@
 import {
+	CompiledFunction,
 	entriesOf,
 	hasDomain,
 	includes,
@@ -24,6 +25,7 @@ import type {
 import type { keywords } from "./keywords/keywords.js"
 import { SchemaNode, type Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
+import { In, type CompilationKind } from "./shared/compilation.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
@@ -52,11 +54,29 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	declare static keywords: typeof keywords
 	keywords = {} as keywords
 
+	readonly schemas: readonly Schema[]
+	readonly referencesById: Record<string, UnknownNode>
+	readonly references: readonly UnknownNode[]
+	readonly allowsOf: <alias extends keyof keywords>(
+		alias: alias
+	) => keywords[alias]["allows"]
+	readonly traverseOf: <alias extends keyof keywords>(
+		alias: alias
+	) => keywords[alias]["traverse"]
+
 	private constructor(aliases: Dict<string, Definition<SchemaKind>>) {
 		this.keywords = transform(aliases, ([k, v]) => [
 			k,
 			this.schemaFromKinds(schemaKinds, v)
 		]) as never
+		this.schemas = Object.values(this.keywords)
+		this.referencesById = this.schemas.reduce(
+			(result, child) => Object.assign(result, child.contributesReferencesById),
+			{}
+		)
+		this.references = Object.values(this.referencesById)
+		this.allowsOf = this.compile("allows")
+		this.traverseOf = this.compile("traverse")
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			Space.unknownUnion = this.prereduced("union", [
@@ -71,6 +91,39 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 				{ unit: undefined }
 			])
 		}
+	}
+
+	compile<kind extends CompilationKind>(kind: kind): this[`${kind}Of`] {
+		const $ = `const $ = {
+			${this.references
+				.map((reference) =>
+					reference.compileReference({
+						compilationKind: kind,
+						path: [],
+						discriminants: []
+					})
+				)
+				.join(",\n")}
+				}`
+		if (kind === "allows") {
+			return new CompiledFunction(
+				"$arkAlias",
+				`${$}
+return $[arkAlias]`
+			) as never
+		}
+		return new CompiledFunction(
+			"$arkAlias",
+			`${$}
+	return (${In}) => {
+		const problems = []
+		$[$arkAlias](${In}, problems)
+		if(problems.length === 0) {
+			return { data: ${In} }
+		}
+		return { problems }
+	}`
+		) as never
 	}
 
 	get builtin() {
@@ -236,7 +289,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			children,
 			id,
 			typeId,
-			scope: this
+			space: this
 		} satisfies Record<keyof BaseAttachments<any>, unknown>
 		return includes(refinementKinds, kind)
 			? new (BaseNode as any)(attachments)

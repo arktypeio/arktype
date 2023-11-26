@@ -1,5 +1,4 @@
 import {
-	CompiledFunction,
 	DynamicBase,
 	includes,
 	isArray,
@@ -16,8 +15,7 @@ import {
 	In,
 	compilePropAccess,
 	type CheckResult,
-	type CompilationContext,
-	type CompilationKind
+	type CompilationContext
 } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
@@ -59,7 +57,7 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly children: Node<childKindOf<kind>>[]
 	readonly id: string
 	readonly typeId: string
-	readonly scope: Space
+	readonly space: Space
 }
 
 export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
@@ -113,40 +111,13 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
-		this.allows = this.compile("allows")
-		this.traverse = this.compile("traverse")
-	}
-
-	// TODO: Cache
-	compile<kind extends CompilationKind>(kind: kind): this[kind] {
-		const $ = this.contributesReferences
-			.map((reference) =>
-				reference.compileReference({
-					compilationKind: kind,
-					path: [],
-					discriminants: []
-				})
-			)
-			.join("\n")
-		if (kind === "allows") {
-			return new CompiledFunction($ + "\n" + `return ${this.alias}`)() as never
-		}
-		return new CompiledFunction(
-			In,
-			$ +
-				"\n" +
-				`const problems = []
-	${this.alias}(${In}, problems)
-	if(problems.length === 0) {
-		return { data: ${In} }
-	}
-	return { problems }`
-		)
+		this.allows = this.space.allowsOf(this.alias)
+		this.traverse = this.space.traverseOf(this.alias)
 	}
 
 	// TODO: Cache
 	compileReference(ctx: CompilationContext) {
-		return `function ${this.alias}(${In}){${this.implementation.compile(
+		return `${this.alias}(${In}){${this.implementation.compile(
 			this as never,
 			ctx
 		)}}`
@@ -195,7 +166,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				ioInner[k] = v
 			}
 		}
-		return this.scope.node(this.kind, ioInner)
+		return this.space.node(this.kind, ioInner)
 	}
 
 	toJSON() {
@@ -271,7 +242,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		return this.isBasis() ||
 			other.isBasis() ||
 			(this.kind === "predicate" && other.kind === "predicate")
-			? this.scope.node(
+			? this.space.node(
 					"intersection",
 					unflattenConstraints([this as never, other])
 			  )
@@ -296,7 +267,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: meta
-			return this.scope.node(l.kind, result) as never
+			return this.space.node(l.kind, result) as never
 		}
 		return null
 	}

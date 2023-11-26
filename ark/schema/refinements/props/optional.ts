@@ -51,7 +51,7 @@ export const OptionalImplementation = defineRefinement({
 			const value = l.value.intersect(r.value)
 			return {
 				key: optional,
-				value: value instanceof Disjoint ? l.scope.builtin.never : value
+				value: value instanceof Disjoint ? l.space.builtin.never : value
 			}
 		}
 	},

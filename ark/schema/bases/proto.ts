@@ -57,7 +57,7 @@ export const ProtoImplementation = defineNode({
 		domain: (l, r) =>
 			r.domain === "object"
 				? l
-				: Disjoint.from("domain", l.scope.builtin.object, r)
+				: Disjoint.from("domain", l.space.builtin.object, r)
 	},
 	normalize: (input) =>
 		typeof input === "function" ? { proto: input } : input,
