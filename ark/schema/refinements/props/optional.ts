@@ -1,5 +1,9 @@
 import type { Node } from "../../base.js"
-import { In, compileSerializedValue } from "../../shared/compilation.js"
+import {
+	In,
+	compilePropAccess,
+	compileSerializedValue
+} from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
 import { schemaKinds, type SchemaKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -66,12 +70,8 @@ export const OptionalImplementation = defineRefinement({
 		}
 	},
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return ${node.value.compileInvocation(
-			{
-				...ctx,
-				path: [...ctx.path, node.compiledKey]
-			},
-			node.compiledKey
-		)}
+		return $.${node.alias}(${In}${compilePropAccess(node.compiledKey)}${
+			ctx.compilationKind === "allows" ? "" : ", problems"
+		})
 	}`
 })

@@ -11,12 +11,7 @@ import type { BasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
-import {
-	In,
-	compilePropAccess,
-	type CheckResult,
-	type CompilationContext
-} from "./shared/compilation.js"
+import type { CheckResult, CompilationContext } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -84,6 +79,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	readonly contributesReferences: readonly UnknownNode[] = Object.values(
 		this.contributesReferencesById
 	)
+
 	declare allows: (data: unknown) => data is t
 	declare traverse: (data: unknown) => CheckResult<t>
 	readonly description: string
@@ -113,18 +109,8 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		)
 	}
 
-	// TODO: Cache
-	compileReference(ctx: CompilationContext) {
-		return `${this.alias}(${In}){${this.implementation.compile(
-			this as never,
-			ctx
-		)}}`
-	}
-
-	compileInvocation(ctx: CompilationContext, prop?: string) {
-		return `${this.alias}(${In}${
-			prop === undefined ? "" : compilePropAccess(prop)
-		}${ctx.compilationKind === "traverse" ? ", problems" : ""})`
+	compileBody(ctx: CompilationContext) {
+		return this.implementation.compile(this as never, ctx)
 	}
 
 	inCache?: UnknownNode;

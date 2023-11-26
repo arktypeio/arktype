@@ -1,6 +1,7 @@
 import type { Node } from "../../base.js"
 import {
 	In,
+	compilePropAccess,
 	compileSerializedValue,
 	type Problem
 } from "../../shared/compilation.js"
@@ -81,13 +82,9 @@ export const RequiredImplementation = defineRefinement({
 		}
 	},
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return ${node.value.compileInvocation(
-			{
-				...ctx,
-				path: [...ctx.path, node.compiledKey]
-			},
-			node.compiledKey
-		)}
+		return $.${node.alias}(${In}${compilePropAccess(node.compiledKey)}${
+			ctx.compilationKind === "allows" ? "" : ", problems"
+		})
 	} else {
 		${
 			ctx.compilationKind === "allows"

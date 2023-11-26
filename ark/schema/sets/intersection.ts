@@ -9,6 +9,7 @@ import {
 import type { Node, UnknownNode } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
+import { In } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	declareNode,
@@ -187,8 +188,11 @@ export const IntersectionImplementation = defineNode({
 		return attachments
 	},
 	compile: (node, ctx) => {
-		const constraintInvocations = node.constraints.map((constraint) =>
-			constraint.compileInvocation(ctx)
+		const constraintInvocations = node.constraints.map(
+			(constraint) =>
+				`$.${constraint.alias}(${In}${
+					ctx.compilationKind === "allows" ? "" : ", problems"
+				})`
 		)
 		return ctx.compilationKind === "allows"
 			? constraintInvocations

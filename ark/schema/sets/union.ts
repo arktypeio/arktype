@@ -1,5 +1,6 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
+import { In } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -156,7 +157,10 @@ export const UnionImplementation = defineNode({
 
 	compile: (node, ctx) => {
 		const branchInvocations = node.branches.map(
-			(constraint) => `${constraint.compileInvocation(ctx)}`
+			(branch) =>
+				`$.${branch.alias}(${In}${
+					ctx.compilationKind === "allows" ? "" : ", problems"
+				})`
 		)
 		return ctx.compilationKind === "allows"
 			? `return ${branchInvocations.join(" || ")}`

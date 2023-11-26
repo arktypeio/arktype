@@ -57,9 +57,11 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	readonly schemas: readonly Schema[]
 	readonly referencesById: Record<string, UnknownNode>
 	readonly references: readonly UnknownNode[]
+	allowsSource!: string
 	readonly allowsOf: <alias extends keyof keywords>(
 		alias: alias
 	) => keywords[alias]["allows"]
+	traverseSource!: string
 	readonly traverseOf: <alias extends keyof keywords>(
 		alias: alias
 	) => keywords[alias]["traverse"]
@@ -97,20 +99,31 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		}
 	}
 
+	// compileInvocation(ctx: CompilationContext, prop?: string) {
+	// 	return `$.${this.alias}(${In}${
+	// 		prop === undefined ? "" : compilePropAccess(prop)
+	// 	}${ctx.compilationKind === "traverse" ? ", problems" : ""})`
+	// }
+
+	// TODO: cache
 	compile<kind extends CompilationKind>(kind: kind): this[`${kind}Of`]
 	compile(kind: CompilationKind): any {
-		let $ource = `return {
+		let $ource = `const $ = {
 			${this.references
-				.map((reference) =>
-					reference.compileReference({
+				.map(
+					(reference) => `${reference.alias}(${In}){
+					${reference.compileBody({
 						compilationKind: kind,
 						path: [],
 						discriminants: []
-					})
+					})}
+			}`
 				)
 				.join(",\n")}`
 		if (kind === "allows") {
-			$ource += "}"
+			$ource += `}
+			return $`
+			this.allowsSource = $ource
 			const $ = new CompiledFunction<() => any>($ource)
 			return (alias: keyof keywords & string) => $()[alias]
 		}
@@ -125,7 +138,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		return { problems }
 	}`
 		}
-		$ource += "}"
+		$ource += `}
+		return $`
+		this.traverseSource = $ource
 		const $ = new CompiledFunction<() => any>($ource)
 		return (alias: keyof keywords & string) => $()[`${alias}Root`]
 	}
