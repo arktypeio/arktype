@@ -49,24 +49,23 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	declare infer: {
 		[k in keyof keywords]: keywords[k]["infer"]
 	}
-	private declare static unknownUnion?: Schema<unknown, "union">
 	declare static keywords: typeof keywords
+	private declare static unknownUnion?: Schema<unknown, "union">
+
+	private readonly phase: "parse" | "reduce" | "extend" = "parse"
 	keywords = {} as keywords
 
-	readonly schemas: readonly Schema[]
+	// populated during initial schema parse
 	readonly localAliases: Record<string, UnknownNode> = {}
-	readonly locals: readonly UnknownNode[]
-	private readonly allowsScope: Record<string, UnknownNode["allows"]>
-	private readonly traverseScope: Record<string, UnknownNode["traverse"]>
+	// @ts-expect-error not sure why ts doesn't realize this has been assigned
+	readonly schemas = Object.entries(this.aliases).map(
+		([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
+	)
+	readonly locals: readonly UnknownNode[] = Object.values(this.localAliases)
+	private readonly allowsScope: Record<string, UnknownNode["allows"]> = {}
+	private readonly traverseScope: Record<string, UnknownNode["traverse"]> = {}
 
-	private constructor(aliases: Dict<string, unknown>) {
-		const aliasEntries = Object.entries(aliases)
-		this.schemas = aliasEntries.map(
-			([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
-		)
-		this.locals = Object.values(this.localAliases)
-		this.allowsScope = this.compile("allows")
-		this.traverseScope = this.compile("traverse")
+	private constructor(public aliases: Dict<string, unknown>) {
 		for (const reference of this.locals) {
 			reference.allows.bind(this.allowsScope)
 			reference.traverse.bind(this.traverseScope)
