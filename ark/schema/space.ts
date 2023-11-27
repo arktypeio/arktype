@@ -25,7 +25,11 @@ import type {
 import type { keywords } from "./keywords/keywords.js"
 import { SchemaNode, type Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
-import { In, type CompilationKind } from "./shared/compilation.js"
+import {
+	In,
+	type CompilationKind,
+	type CompiledMethods
+} from "./shared/compilation.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
@@ -52,28 +56,24 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	declare static keywords: typeof keywords
 	private declare static unknownUnion?: Schema<unknown, "union">
 
-	private readonly phase: "parse" | "reduce" | "extend" = "parse"
+	private phase: "parse" | "reduce" | "extend" = "parse"
 	keywords = {} as keywords
 
 	// populated during initial schema parse
 	readonly localAliases: Record<string, UnknownNode> = {}
-	readonly schemas = Object.entries(this.aliases).map(
-		([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
-	)
+	readonly schemas = this.bootstrap()
 	readonly locals: readonly UnknownNode[] = Object.values(this.localAliases)
-	private readonly allowsScope: Record<string, UnknownNode["allows"]> = {}
-	private readonly traverseScope: Record<string, UnknownNode["traverse"]> = {}
+	private compilations = {
+		allows: {} as Record<string, CompiledMethods["allows"]>,
+		traverse: {} as Record<string, CompiledMethods["traverse"]>
+	}
 
 	private constructor(public aliases: Dict<string, unknown>) {
-		for (const reference of this.locals) {
-			reference.allows.bind(this.allowsScope)
-			reference.traverse.bind(this.traverseScope)
-		}
 		// TODO: references, everything would have to somehow be updated here?
 		this.schemas = this.schemas.map((node) => this.reduce(node))
 		this.keywords = transform(this.schemas, ([, v]) => [v.alias, v]) as never
-		Object.assign(this.allowsScope, this.compile("allows"))
-		Object.assign(this.traverseScope, this.compile("traverse"))
+		Object.assign(this.compilations.allows, this.compileThis("allows"))
+		Object.assign(this.compilations.traverse, this.compileThis("traverse"))
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			Space.unknownUnion = this.prereduced("union", [
@@ -90,14 +90,33 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		}
 	}
 
-	private boostrap() {
-		const schema = Object.entries(this.aliases).map(
+	private bootstrap() {
+		const bootstrapSchemas = Object.entries(this.aliases).map(
 			([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
 		)
+		this.phase = "reduce"
+		const schemas = bootstrapSchemas.map((node) => this.reduce(node))
+		return bootstrapSchemas
+	}
+
+	compile<kind extends CompilationKind>(
+		node: UnknownNode,
+		kind: kind
+	): CompiledMethods[kind] {
+		const fn = new CompiledFunction(
+			In,
+			node.compileBody({
+				path: [],
+				discriminants: [],
+				compilationKind: kind
+			})
+		).bind(this.compilations[kind])
+		this.compilations[kind][node.alias] = fn as never
+		return fn as never
 	}
 
 	// TODO: cache
-	private compile(kind: CompilationKind) {
+	private compileThis(kind: CompilationKind) {
 		let $ource = `return {
 			${this.locals
 				.map(
@@ -208,7 +227,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<defKind>> {
 		const node = this.parse(kind, def, opts)
-		if (this.allowsScope === undefined) {
+		if (this.phase === "parse") {
 			// TODO: this isn't valid unless aliases stay the same they can't
 			this.localAliases[node.alias] = node
 		}
@@ -326,10 +345,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 }
 
 export const space = Space.from
-
-export const rootSchema = Space.root.schema.bind(Space.root)
-
-export const rootNode = Space.root.node.bind(Space.root)
 
 const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)

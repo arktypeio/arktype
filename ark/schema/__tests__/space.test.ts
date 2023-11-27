@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { space } from "../space.js"
 
-describe("SchemaScope", () => {
+describe("space", () => {
 	it("parse", () => {
 		const $ = space({
 			numberOrString: ["number", "string"]

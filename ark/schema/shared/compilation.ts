@@ -15,6 +15,11 @@ export const In = "$arkRoot"
 
 export type CompilationKind = "allows" | "traverse"
 
+export type CompiledMethods<t = never> = {
+	allows: (data: unknown) => data is t
+	traverse: (data: unknown) => CheckResult<t>
+}
+
 export type CompilationContext = {
 	path: string[]
 	discriminants: Discriminant[]
