@@ -61,24 +61,21 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 
 	private constructor(aliases: Dict<string, unknown>) {
 		const aliasEntries = Object.entries(aliases)
-		const prenodes = aliasEntries.map(
+		this.schemas = aliasEntries.map(
 			([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
 		)
 		this.locals = Object.values(this.localAliases)
 		this.allowsScope = this.compile("allows")
-		this.traverseScope = {}
-		for (const reference of this.locals) {
-			reference.allows = this.bind(reference.alias, "allows")
-		}
-		// TODO: references, everything would have to somehow be updated here?
-		this.schemas = prenodes.map((node) => this.reduce(node))
-		this.keywords = transform(this.schemas, ([, v]) => [v.alias, v]) as never
-		this.allowsScope = this.compile("allows")
 		this.traverseScope = this.compile("traverse")
 		for (const reference of this.locals) {
-			reference.allows = this.bind(reference.alias as never, "allows")
-			reference.traverse = this.bind(reference.alias as never, "traverse")
+			reference.allows.bind(this.allowsScope)
+			reference.traverse.bind(this.traverseScope)
 		}
+		// TODO: references, everything would have to somehow be updated here?
+		this.schemas = this.schemas.map((node) => this.reduce(node))
+		this.keywords = transform(this.schemas, ([, v]) => [v.alias, v]) as never
+		Object.assign(this.allowsScope, this.compile("allows"))
+		Object.assign(this.traverseScope, this.compile("traverse"))
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			Space.unknownUnion = this.prereduced("union", [
@@ -126,14 +123,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		}
 		$ource += "}"
 		return new CompiledFunction<() => any>($ource)()
-	}
-
-	private bind(alias: string | Function, kind: CompilationKind) {
-		const $ = kind === "allows" ? this.allowsScope : this.traverseScope
-		if (typeof alias === "function") {
-			return alias.bind($)
-		}
-		return $[alias]
 	}
 
 	get builtin() {
@@ -214,43 +203,11 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		def: Definition<defKind>,
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<defKind>> {
-		let node = this.parse(kind, def, opts)
+		const node = this.parse(kind, def, opts)
 		if (this.allowsScope === undefined) {
+			// TODO: this isn't valid unless aliases stay the same they can't
 			this.localAliases[node.alias] = node
-			return node as never
 		}
-		if (node.alias in this.allowsScope) {
-			return node as never
-		}
-		node.allows = new CompiledFunction(
-			In,
-			node.compileBody({
-				path: [],
-				discriminants: [],
-				compilationKind: "allows"
-			})
-		).bind(this.allowsScope) as never
-		this.allowsScope[node.alias] = node.allows
-		if (node.isSchema() && !opts.prereduced) {
-			node = this.reduce(node)
-			this.allowsScope[node.alias] = new CompiledFunction(
-				In,
-				node.compileBody({
-					path: [],
-					discriminants: [],
-					compilationKind: "allows"
-				})
-			).bind(this.allowsScope) as never
-		}
-		node.traverse = new CompiledFunction(
-			In,
-			node.compileBody({
-				path: [],
-				discriminants: [],
-				compilationKind: "traverse"
-			})
-		).bind(this.traverseScope) as never
-		this.traverseScope[node.alias] = node.traverse
 		return node as never
 	}
 

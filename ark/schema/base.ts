@@ -1,4 +1,5 @@
 import {
+	CompiledFunction,
 	DynamicBase,
 	includes,
 	isArray,
@@ -11,7 +12,11 @@ import type { BasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
-import type { CheckResult, CompilationContext } from "./shared/compilation.js"
+import {
+	In,
+	type CheckResult,
+	type CompilationContext
+} from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -98,6 +103,22 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		}
 		const attachments = this.implementation.attach(this as never)
 		Object.assign(this, attachments)
+		this.allows = new CompiledFunction(
+			In,
+			this.compileBody({
+				path: [],
+				discriminants: [],
+				compilationKind: "allows"
+			})
+		)
+		this.traverse = new CompiledFunction(
+			In,
+			this.compileBody({
+				path: [],
+				discriminants: [],
+				compilationKind: "traverse"
+			})
+		)
 		this.alias ??= $ark.register(this)
 		this.contributesReferencesById =
 			this.alias in this.referencesById
