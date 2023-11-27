@@ -25,11 +25,7 @@ import type {
 import type { keywords } from "./keywords/keywords.js"
 import { SchemaNode, type Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
-import {
-	In,
-	type CheckResult,
-	type CompilationKind
-} from "./shared/compilation.js"
+import { In, type CompilationKind } from "./shared/compilation.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
@@ -58,43 +54,30 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	keywords = {} as keywords
 
 	readonly schemas: readonly Schema[]
-	readonly referencesById: Record<string, UnknownNode>
-	readonly references: readonly UnknownNode[]
-	allowsSource!: string
-	readonly composeAllows: <
-		alias extends keyof keywords | ((data: unknown) => boolean)
-	>(
-		alias: alias
-	) => alias extends keyof keywords ? keywords[alias]["allows"] : alias
-	traverseSource!: string
-	readonly composeTraverse: <
-		alias extends keyof keywords | ((data: unknown) => CheckResult<unknown>)
-	>(
-		alias: alias
-	) => alias extends keyof keywords ? keywords[alias]["traverse"] : alias
+	readonly localAliases: Record<string, UnknownNode> = {}
+	readonly locals: readonly UnknownNode[]
+	private readonly allowsScope: Record<string, UnknownNode["allows"]>
+	private readonly traverseScope: Record<string, UnknownNode["traverse"]>
 
 	private constructor(aliases: Dict<string, unknown>) {
 		const aliasEntries = Object.entries(aliases)
 		const prenodes = aliasEntries.map(
-			([k, v]) => this.parse(schemaKindOf(v), v, { alias: k }) as Schema
+			([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
 		)
-		this.referencesById = prenodes.reduce(
-			(result, child) => Object.assign(result, child.contributesReferencesById),
-			{}
-		)
-		this.references = Object.values(this.referencesById)
-		const bootstrapAllows = this.compile("allows")
-		for (const reference of this.references) {
-			reference.allows = bootstrapAllows(reference.alias as never)
+		this.locals = Object.values(this.localAliases)
+		this.allowsScope = this.compile("allows")
+		this.traverseScope = {}
+		for (const reference of this.locals) {
+			reference.allows = this.bind(reference.alias, "allows")
 		}
 		// TODO: references, everything would have to somehow be updated here?
 		this.schemas = prenodes.map((node) => this.reduce(node))
 		this.keywords = transform(this.schemas, ([, v]) => [v.alias, v]) as never
-		this.composeAllows = this.compile("allows")
-		this.composeTraverse = this.compile("traverse")
-		for (const reference of this.references) {
-			reference.allows = this.composeAllows(reference.alias as never)
-			reference.traverse = this.composeTraverse(reference.alias as never)
+		this.allowsScope = this.compile("allows")
+		this.traverseScope = this.compile("traverse")
+		for (const reference of this.locals) {
+			reference.allows = this.bind(reference.alias as never, "allows")
+			reference.traverse = this.bind(reference.alias as never, "traverse")
 		}
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
@@ -113,12 +96,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	}
 
 	// TODO: cache
-	compile<kind extends CompilationKind>(
-		kind: kind
-	): this[kind extends "allows" ? "composeAllows" : "composeTraverse"]
-	compile(kind: CompilationKind): any {
+	private compile(kind: CompilationKind) {
 		let $ource = `return {
-			${this.references
+			${this.locals
 				.map(
 					(reference) => `${reference.alias}(${In}){
 					${reference.compileBody({
@@ -131,14 +111,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 				.join(",\n")}`
 		if (kind === "allows") {
 			$ource += "}"
-			this.allowsSource = $ource
-			const $ = new CompiledFunction<() => any>($ource)
-			return ((alias) => {
-				if (typeof alias === "function") {
-					return alias.bind($())
-				}
-				return $()[alias]
-			}) as this["composeAllows"]
+			return new CompiledFunction<() => any>($ource)()
 		}
 		for (const schema of this.schemas) {
 			$ource += `,
@@ -152,14 +125,15 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	}`
 		}
 		$ource += "}"
-		this.traverseSource = $ource
-		const $ = new CompiledFunction<() => any>($ource)
-		return ((alias) => {
-			if (typeof alias === "function") {
-				return alias.bind($())
-			}
-			return $()[alias]
-		}) as this["composeTraverse"]
+		return new CompiledFunction<() => any>($ource)()
+	}
+
+	private bind(alias: string | Function, kind: CompilationKind) {
+		const $ = kind === "allows" ? this.allowsScope : this.traverseScope
+		if (typeof alias === "function") {
+			return alias.bind($)
+		}
+		return $[alias]
 	}
 
 	get builtin() {
@@ -240,31 +214,44 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		def: Definition<defKind>,
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<defKind>> {
-		const node = this.parse(kind, def, opts)
-		if (this.composeAllows === undefined) {
+		let node = this.parse(kind, def, opts)
+		if (this.allowsScope === undefined) {
+			this.localAliases[node.alias] = node
 			return node as never
 		}
-		node.allows = this.composeAllows(
-			new CompiledFunction(
+		if (node.alias in this.allowsScope) {
+			return node as never
+		}
+		node.allows = new CompiledFunction(
+			In,
+			node.compileBody({
+				path: [],
+				discriminants: [],
+				compilationKind: "allows"
+			})
+		).bind(this.allowsScope) as never
+		this.allowsScope[node.alias] = node.allows
+		if (node.isSchema() && !opts.prereduced) {
+			node = this.reduce(node)
+			this.allowsScope[node.alias] = new CompiledFunction(
 				In,
 				node.compileBody({
 					path: [],
 					discriminants: [],
 					compilationKind: "allows"
 				})
-			)
-		)
-		if (!node.isSchema() || opts.prereduced) {
-			node.traverse = (data) => ({
-				data
-			})
-			return node as never
+			).bind(this.allowsScope) as never
 		}
-		const reduced = this.reduce(node)
-		reduced.traverse = (data) => ({
-			data
-		})
-		return reduced as never
+		node.traverse = new CompiledFunction(
+			In,
+			node.compileBody({
+				path: [],
+				discriminants: [],
+				compilationKind: "traverse"
+			})
+		).bind(this.traverseScope) as never
+		this.traverseScope[node.alias] = node.traverse
+		return node as never
 	}
 
 	private parse(

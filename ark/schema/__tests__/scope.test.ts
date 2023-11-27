@@ -4,12 +4,10 @@ import { space } from "../space.js"
 describe("SchemaScope", () => {
 	it("parse", () => {
 		const $ = space({
-			number: ["number", "string"],
-			ordered: {
-				ordered: true,
-				branches: ["string"]
-			}
+			numberOrString: ["number", "string"]
 		})
-		attest($)
+		attest($.keywords.numberOrString.allows(5)).equals(true)
+		attest($.keywords.numberOrString.allows("foo")).equals(true)
+		attest($.keywords.numberOrString.allows(null)).equals(false)
 	})
 })
