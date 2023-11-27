@@ -1,5 +1,4 @@
-import { bench } from "@arktype/attest"
-import { type } from "arktype"
+// import { type } from "arktype"
 
 const validInput = {
 	number: 1,
@@ -36,19 +35,19 @@ const dataArray = [...new Array(1000)].map((_, i) => ({
 	number: i
 }))
 
-const arkType = type({
-	number: "number",
-	negNumber: "number",
-	maxNumber: "number",
-	string: "string",
-	longString: "string",
-	boolean: "boolean",
-	deeplyNested: {
-		foo: "string",
-		num: "number",
-		bool: "boolean"
-	}
-})
+// const arkType = type({
+// 	number: "number",
+// 	negNumber: "number",
+// 	maxNumber: "number",
+// 	string: "string",
+// 	longString: "string",
+// 	boolean: "boolean",
+// 	deeplyNested: {
+// 		foo: "string",
+// 		num: "number",
+// 		bool: "boolean"
+// 	}
+// })
 
 const checkSingle = ($arkRoot: any) => {
 	if (
@@ -102,8 +101,7 @@ const checkSingle = ($arkRoot: any) => {
 }
 
 const scope = new Function(
-	"alias",
-	`const $ = {
+	`return {
         isString($arkRoot) {
             if (!(typeof $arkRoot === "string")) {
                 return false
@@ -138,67 +136,82 @@ const scope = new Function(
             return true
         },
         deep($arkRoot) {
-            if(!$.isObject($arkRoot)) {
+            if(!this.isObject($arkRoot)) {
                 return false
             }
             if (
-                !($.isBoolean($arkRoot.bool))
+                !(this.isBoolean($arkRoot.bool))
             ) {
                 return false
             }
-            if (!($.isString($arkRoot.foo))) {
+            if (!(this.isString($arkRoot.foo))) {
                 return false
             }
-            if (!($.isNumber($arkRoot.num))) {
+            if (!(this.isNumber($arkRoot.num))) {
                 return false
             }
             return true
         },
         foo($arkRoot) {
             if (
-                !$.isObject($arkRoot)
+                !this.isObject($arkRoot)
             ) {
                 return false
             }
-            if ( !$.isBoolean($arkRoot.boolean)) {
+            if ( !this.isBoolean($arkRoot.boolean)) {
                 return false
             }
-            if (!($.isString($arkRoot.longString))) {
+            if (!(this.isString($arkRoot.longString))) {
                 return false
             }
-            if (!$.isNumber($arkRoot.maxNumber)) {
+            if (!this.isNumber($arkRoot.maxNumber)) {
                 return false
             }
-            if (!$.isNumber($arkRoot.negNumber)) {
+            if (!this.isNumber($arkRoot.negNumber)) {
                 return false
             }
-            if (!$.isNumber($arkRoot.number)) {
+            if (!this.isNumber($arkRoot.number)) {
                 return false
             }
-            if (!($.isString($arkRoot.string))) {
+            if (!(this.isString($arkRoot.string))) {
                 return false
             }
-            return $.deep($arkRoot.deeplyNested)
+            return this.deep($arkRoot.deeplyNested)
         }
-    }
-    return $[alias]`
+    }`
 )
 
-const checkScoped = scope("foo")
+const checkScoped = scope() //?
 
-const allows = arkType.allows
+function check(this: any, data: unknown) {
+	return this.foo(data)
+}
 
-bench("scoped", () => {
-	for (let i = 0; i < 1000; i++) {
-		checkScoped(dataArray[i])
-	}
-}).median([6.79, "us"])
+const z = function (this: any, data: unknown) {
+	return this.foo(data)
+}.bind(checkScoped)
 
-bench("allows", () => {
-	for (let i = 0; i < 1000; i++) {
-		allows(dataArray[i])
-	}
-}).median([7.81, "us"])
+const result = z(invalidInput) //?
+
+// const allows = arkType.allows
+
+// bench("scoped", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		checkScoped(dataArray[i])
+// 	}
+// }).median([6.79, "us"])
+
+// bench("scoped2", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		z(dataArray[i])
+// 	}
+// }).median([5.77, "us"])
+
+// bench("allows", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		allows(dataArray[i])
+// 	}
+// }).median([7.81, "us"])
 
 // console.log(checkScoped(validInput))
 
