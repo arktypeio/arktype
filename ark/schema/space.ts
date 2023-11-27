@@ -91,6 +91,12 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		}
 	}
 
+	private boostrap() {
+		const schema = Object.entries(this.aliases).map(
+			([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
+		)
+	}
+
 	// TODO: cache
 	private compile(kind: CompilationKind) {
 		let $ource = `return {
