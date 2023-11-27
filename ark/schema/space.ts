@@ -57,7 +57,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 
 	// populated during initial schema parse
 	readonly localAliases: Record<string, UnknownNode> = {}
-	// @ts-expect-error not sure why ts doesn't realize this has been assigned
 	readonly schemas = Object.entries(this.aliases).map(
 		([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
 	)
