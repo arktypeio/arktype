@@ -191,7 +191,7 @@ export const IntersectionImplementation = defineNode({
 	compile: (node, ctx) => {
 		const constraintInvocations = node.constraints.map(
 			(constraint) =>
-				`$.${constraint.alias}(${In}${
+				`this.${constraint.alias}(${In}${
 					ctx.compilationKind === "allows" ? "" : ", problems"
 				})`
 		)

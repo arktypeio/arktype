@@ -122,7 +122,7 @@ export const MorphImplementation = defineNode({
 		// TODO: reference?
 		outCache: node.inner.out ?? node.space.builtin.unknown
 	}),
-	compile: () => `return true`
+	compile: (node, ctx) => node.in.compileBody(ctx)
 })
 
 export type inferMorphOut<out> = out extends CheckResult<infer t>

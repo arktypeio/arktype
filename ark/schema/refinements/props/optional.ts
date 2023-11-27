@@ -70,7 +70,7 @@ export const OptionalImplementation = defineRefinement({
 		}
 	},
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return $.${node.alias}(${In}${compilePropAccess(node.compiledKey)}${
+		return this.${node.alias}(${In}${compilePropAccess(node.compiledKey)}${
 			ctx.compilationKind === "allows" ? "" : ", problems"
 		})
 	}`

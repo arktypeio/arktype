@@ -64,7 +64,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
-	readonly alias = $ark.register(this)
+	readonly alias: string
 	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
@@ -72,13 +72,8 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	readonly references: readonly UnknownNode[] = Object.values(
 		this.referencesById
 	)
-	readonly contributesReferencesById: Record<string, UnknownNode> =
-		this.id in this.referencesById
-			? this.referencesById
-			: { ...this.referencesById, [this.alias]: this }
-	readonly contributesReferences: readonly UnknownNode[] = Object.values(
-		this.contributesReferencesById
-	)
+	readonly contributesReferencesById: Record<string, UnknownNode>
+	readonly contributesReferences: readonly UnknownNode[]
 
 	declare allows: (data: unknown) => data is t
 	declare traverse: (data: unknown) => CheckResult<t>
@@ -87,12 +82,12 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	protected constructor(baseAttachments: BaseAttachments<kind>) {
 		super(baseAttachments as never)
 		for (const k in baseAttachments.inner) {
-			if (k in this) {
+			if (k in this && k !== "description" && k !== "alias") {
 				// if we attempt to overwrite an existing node key, throw unless
 				// it is expected and can be safely ignored.
 				// in and out cannot overwrite their respective getters, so instead
 				// morph assigns them to `inCache` and `outCache`
-				if (k !== "in" && k !== "out" && k !== "description") {
+				if (k !== "in" && k !== "out") {
 					throwInternalError(
 						`Unexpected attempt to overwrite existing node key ${k} from ${this.kind} inner`
 					)
@@ -103,6 +98,12 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		}
 		const attachments = this.implementation.attach(this as never)
 		Object.assign(this, attachments)
+		this.alias ??= $ark.register(this)
+		this.contributesReferencesById =
+			this.alias in this.referencesById
+				? this.referencesById
+				: { ...this.referencesById, [this.alias]: this }
+		this.contributesReferences = Object.values(this.contributesReferencesById)
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never

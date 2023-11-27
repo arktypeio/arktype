@@ -161,7 +161,7 @@ export const UnionImplementation = defineNode({
 	compile: (node, ctx) => {
 		const branchInvocations = node.branches.map(
 			(branch) =>
-				`$.${branch.alias}(${In}${
+				`this.${branch.alias}(${In}${
 					ctx.compilationKind === "allows" ? "" : ", problems"
 				})`
 		)

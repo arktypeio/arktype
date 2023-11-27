@@ -1,4 +1,4 @@
-// import { type } from "arktype"
+import { type } from "arktype"
 
 const validInput = {
 	number: 1,
@@ -35,19 +35,19 @@ const dataArray = [...new Array(1000)].map((_, i) => ({
 	number: i
 }))
 
-// const arkType = type({
-// 	number: "number",
-// 	negNumber: "number",
-// 	maxNumber: "number",
-// 	string: "string",
-// 	longString: "string",
-// 	boolean: "boolean",
-// 	deeplyNested: {
-// 		foo: "string",
-// 		num: "number",
-// 		bool: "boolean"
-// 	}
-// })
+const arkType = type({
+	number: "number",
+	negNumber: "number",
+	maxNumber: "number",
+	string: "string",
+	longString: "string",
+	boolean: "boolean",
+	deeplyNested: {
+		foo: "string",
+		num: "number",
+		bool: "boolean"
+	}
+})
 
 const checkSingle = ($arkRoot: any) => {
 	if (
@@ -193,7 +193,9 @@ const z = function (this: any, data: unknown) {
 
 const result = z(invalidInput) //?
 
-// const allows = arkType.allows
+const allows = arkType.allows
+
+console.log(allows(validInput))
 
 // bench("scoped", () => {
 // 	for (let i = 0; i < 1000; i++) {

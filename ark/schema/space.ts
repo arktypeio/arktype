@@ -6,6 +6,7 @@ import {
 	isArray,
 	printable,
 	throwParseError,
+	transform,
 	type Dict
 } from "@arktype/util"
 import {
@@ -80,6 +81,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			node.allows = this.bootstrapAllows(node.alias as never)
 			return this.reduce(node)
 		})
+		this.keywords = transform(this.schemas, ([, v]) => [v.alias, v]) as never
 		this.composeAllows = this.compile("allows")
 		this.composeTraverse = this.compile("traverse")
 		for (const schema of this.schemas) {
@@ -107,7 +109,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		kind: kind
 	): this[kind extends "allows" ? "composeAllows" : "composeTraverse"]
 	compile(kind: CompilationKind): any {
-		let $ource = `const $ = {
+		let $ource = `return {
 			${this.references
 				.map(
 					(reference) => `${reference.alias}(${In}){
@@ -120,8 +122,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 				)
 				.join(",\n")}`
 		if (kind === "allows") {
-			$ource += `}
-			return $`
+			$ource += "}"
 			this.allowsSource = $ource
 			const $ = new CompiledFunction<() => any>($ource)
 			return (alias: keyof keywords & string) => $()[alias]
@@ -130,15 +131,14 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			$ource += `,
 	${schema.alias}Root(${In}) {
 		const problems = []
-		$.${schema.alias}(${In}, problems)
+		this.${schema.alias}(${In}, problems)
 		if(problems.length === 0) {
 			return { data: ${In} }
 		}
 		return { problems }
 	}`
 		}
-		$ource += `}
-		return $`
+		$ource += "}"
 		this.traverseSource = $ource
 		const $ = new CompiledFunction<() => any>($ource)
 		return (alias: keyof keywords & string) => $()[`${alias}Root`]
@@ -255,6 +255,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			normalizedDefinition,
 			space: this,
 			implementation
+		}
+		if (opts.alias) {
+			normalizedDefinition.alias = opts.alias
 		}
 		const inner: Record<string, unknown> = {}
 		ctx.implementation.addContext?.(ctx)
