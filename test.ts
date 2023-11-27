@@ -1,112 +1,226 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
-// import { isDeepStrictEqual } from "util"
-// import { type Dict } from "./ark/util/main.js"
-// import { node } from "./ark/schema/main.js"
-// import { wellFormedNumberMatcher } from "./ark/util/main.js"
+import { type } from "arktype"
+// import { keywords } from "./ark/schema/main.js"
 
-import { isDeepStrictEqual } from "util"
-import type { Dict } from "./ark/util/records.js"
+// keywords.number.allows(5) //?
+// keywords.number.allows("") //?
 
-// const parseNumber2 = node({
-// 	basis: "string",
-// 	pattern: wellFormedNumberMatcher,
-// 	description: "a well-formed numeric string"
-// })
-
-// console.log(parseNumber2.description)
-
-// // parseNumber2
-// const parseNumber = node(
-// 	{
-// 		in: {
-// 			basis: "string",
-// 			pattern: wellFormedNumberMatcher,
-// 			description: "a well-formed numeric string"
-// 		},
-// 		morph: (s: string) => parseFloat(s)
-// 	},
-// 	"number"
-// )
-
-// parseNumber.description //?
-
-// parseNumber.in.description //?
-
-// parseNumber.out.description //?
-
-// parseNumber.out.json //?
-
-export const intersectBranches = (
-	l: readonly Dict[],
-	r: readonly Dict[],
-	ordered = false
-): readonly Dict[] => {
-	// If the corresponding r branch is identified as a subtype of an l branch, the
-	// value at rIndex is set to null so we can avoid including previous/future
-	// inersections in the reduced result.
-	const batchesByR: (Dict[] | null)[] = r.map(() => [])
-	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: Dict } = {}
-		for (let rIndex = 0; rIndex < r.length; rIndex++) {
-			if (batchesByR[rIndex] === null) {
-				// rBranch is a subtype of an lBranch and
-				// will not yield any distinct intersection
-				continue
-			}
-			if (isDeepStrictEqual(l[lIndex], r[rIndex])) {
-				// Combination of subtype and supertype cases
-				batchesByR[rIndex] = null
-				candidatesByR = {}
-				break
-			}
-			const branchIntersection = intersect(l[lIndex], r[rIndex])
-			if (branchIntersection === null) {
-				// Doesn't tell us anything useful about their relationships
-				// with other branches
-				continue
-			}
-			if (isDeepStrictEqual(branchIntersection, l[lIndex])) {
-				// If the current l branch is a subtype of r, intersections
-				// with previous and remaining branches of r won't lead to
-				// distinct intersections.
-				batchesByR[rIndex]!.push(l[lIndex])
-				candidatesByR = {}
-				break
-			}
-			if (isDeepStrictEqual(branchIntersection, r[rIndex])) {
-				// If the current r branch is a subtype of l, set its batch to
-				// null, removing any previous intersections and preventing any
-				// of its remaining intersections from being computed.
-				batchesByR[rIndex] = null
-			} else {
-				// If neither l nor r is a subtype of the other, add their
-				// intersection as a candidate (could still be removed if it is
-				// determined l or r is a subtype of a remaining branch).
-				candidatesByR[rIndex] = branchIntersection
-			}
-		}
-		for (const rIndex in candidatesByR) {
-			// batchesByR at rIndex should never be null if it is in candidatesByR
-			batchesByR[rIndex]![lIndex] = candidatesByR[rIndex]
-		}
+const validInput = {
+	number: 1,
+	negNumber: -1,
+	maxNumber: Number.MAX_VALUE,
+	string: "string",
+	longString:
+		"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Vivendum intellegat et qui, ei denique consequuntur vix. Semper aeterno percipit ut his, sea ex utinam referrentur repudiandae. No epicuri hendrerit consetetur sit, sit dicta adipiscing ex, in facete detracto deterruisset duo. Quot populo ad qui. Sit fugit nostrum et. Ad per diam dicant interesset, lorem iusto sensibus ut sed. No dicam aperiam vis. Pri posse graeco definitiones cu, id eam populo quaestio adipiscing, usu quod malorum te. Ex nam agam veri, dicunt efficiantur ad qui, ad legere adversarium sit. Commune platonem mel id, brute adipiscing duo an. Vivendum intellegat et qui, ei denique consequuntur vix. Offendit eleifend moderatius ex vix, quem odio mazim et qui, purto expetendis cotidieque quo cu, veri persius vituperata ei nec. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+	boolean: true,
+	deeplyNested: {
+		foo: "bar",
+		num: 1,
+		bool: false
 	}
-	// Compile the reduced intersection result, including:
-	// 		1. Remaining candidates resulting from distinct intersections or strict subtypes of r
-	// 		2. Original r branches corresponding to indices with a null batch (subtypes of l)
-	return batchesByR.flatMap((batch, i) => batch ?? r[i]) as never
 }
 
-const intersect = (l: Dict, r: Dict) => {
-	const result = { ...l, ...r }
-	for (const k in result) {
-		if (k in l && k in r && l[k] !== r[k]) {
-			return null
-		}
+const invalidInput = {
+	number: 1,
+	negNumber: -1,
+	maxNumber: Number.MAX_VALUE,
+	string: "string",
+	longString:
+		"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Vivendum intellegat et qui, ei denique consequuntur vix. Semper aeterno percipit ut his, sea ex utinam referrentur repudiandae. No epicuri hendrerit consetetur sit, sit dicta adipiscing ex, in facete detracto deterruisset duo. Quot populo ad qui. Sit fugit nostrum et. Ad per diam dicant interesset, lorem iusto sensibus ut sed. No dicam aperiam vis. Pri posse graeco definitiones cu, id eam populo quaestio adipiscing, usu quod malorum te. Ex nam agam veri, dicunt efficiantur ad qui, ad legere adversarium sit. Commune platonem mel id, brute adipiscing duo an. Vivendum intellegat et qui, ei denique consequuntur vix. Offendit eleifend moderatius ex vix, quem odio mazim et qui, purto expetendis cotidieque quo cu, veri persius vituperata ei nec. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+	boolean: true,
+	deeplyNested: {
+		foo: "bar",
+		num: 1,
+		bool: 5
 	}
-	return result
 }
 
-const result = intersectBranches(
-	[{ c: 3 }, { d: 4 }],
-	[{ b: 2, c: 3 }, { b: 2 }, { f: 2 }]
-) //?
+const dataArray = [...new Array(1000)].map((_, i) => ({
+	...validInput,
+	number: i
+}))
+
+const arkType = type({
+	number: "number",
+	negNumber: "number",
+	maxNumber: "number",
+	string: "string",
+	longString: "string",
+	boolean: "boolean",
+	deeplyNested: {
+		foo: "string",
+		num: "number",
+		bool: "boolean"
+	}
+})
+
+const checkSingle = ($arkRoot: any) => {
+	if (
+		!(
+			(typeof $arkRoot === "object" && $arkRoot !== null) ||
+			typeof $arkRoot === "function"
+		)
+	) {
+		return false
+	}
+	if ($arkRoot.boolean !== false && $arkRoot.boolean !== true) {
+		return false
+	}
+	if (
+		!(
+			(typeof $arkRoot.deeplyNested === "object" &&
+				$arkRoot.deeplyNested !== null) ||
+			typeof $arkRoot.deeplyNested === "function"
+		)
+	) {
+		return false
+	}
+	if (
+		$arkRoot.deeplyNested.bool !== false &&
+		$arkRoot.deeplyNested.bool !== true
+	) {
+		return false
+	}
+	if (!(typeof $arkRoot.deeplyNested.foo === "string")) {
+		return false
+	}
+	if (!(typeof $arkRoot.deeplyNested.num === "number")) {
+		return false
+	}
+	if (!(typeof $arkRoot.longString === "string")) {
+		return false
+	}
+	if (!(typeof $arkRoot.maxNumber === "number")) {
+		return false
+	}
+	if (!(typeof $arkRoot.negNumber === "number")) {
+		return false
+	}
+	if (!(typeof $arkRoot.number === "number")) {
+		return false
+	}
+	if (!(typeof $arkRoot.string === "string")) {
+		return false
+	}
+	return true
+}
+
+const scope = new Function(
+	`return {
+        isString($arkRoot) {
+            if (!(typeof $arkRoot === "string")) {
+                return false
+            }
+            return true
+        },
+        isNumber($arkRoot) {
+            if (!(typeof $arkRoot === "number")) {
+                return false
+            }
+            return true
+        },
+        isBoolean($arkRoot) {
+            if (
+                $arkRoot !== false &&
+                $arkRoot !== true
+            ) {
+                return false
+            }
+            return true
+        },
+        isObject($arkRoot) {
+            if (
+                !(
+                    (typeof $arkRoot=== "object" &&
+                        $arkRoot !== null) ||
+                    typeof $arkRoot === "function"
+                )
+            ) {
+                return false
+            }
+            return true
+        },
+        deep($arkRoot) {
+            if(!this.isObject($arkRoot)) {
+                return false
+            }
+            if (
+                !(this.isBoolean($arkRoot.bool))
+            ) {
+                return false
+            }
+            if (!(this.isString($arkRoot.foo))) {
+                return false
+            }
+            if (!(this.isNumber($arkRoot.num))) {
+                return false
+            }
+            return true
+        },
+        foo($arkRoot) {
+            if (
+                !this.isObject($arkRoot)
+            ) {
+                return false
+            }
+            if ( !this.isBoolean($arkRoot.boolean)) {
+                return false
+            }
+            if (!(this.isString($arkRoot.longString))) {
+                return false
+            }
+            if (!this.isNumber($arkRoot.maxNumber)) {
+                return false
+            }
+            if (!this.isNumber($arkRoot.negNumber)) {
+                return false
+            }
+            if (!this.isNumber($arkRoot.number)) {
+                return false
+            }
+            if (!(this.isString($arkRoot.string))) {
+                return false
+            }
+            return this.deep($arkRoot.deeplyNested)
+        }
+    }`
+)
+
+const checkScoped = scope() //?
+
+function check(this: any, data: unknown) {
+	return this.foo(data)
+}
+
+const z = function (this: any, data: unknown) {
+	return this.foo(data)
+}.bind(checkScoped)
+
+const result = z(invalidInput) //?
+
+const allows = arkType.allows //?
+
+allows.toString() //?
+
+console.log(arkType.allows)
+
+console.log(allows(validInput))
+
+console.log(allows(invalidInput))
+
+// bench("scoped", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		checkScoped(dataArray[i])
+// 	}
+// }).median([6.79, "us"])
+
+// bench("scoped2", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		z(dataArray[i])
+// 	}
+// }).median([5.77, "us"])
+
+// bench("allows", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		allows(dataArray[i])
+// 	}
+// }).median([7.81, "us"])

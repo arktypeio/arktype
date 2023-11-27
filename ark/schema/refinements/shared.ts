@@ -8,6 +8,7 @@ import type {
 } from "../shared/declare.js"
 import {
 	defineNode,
+	schemaKinds,
 	type NodeImplementationInput,
 	type RefinementKind,
 	type SchemaKind
@@ -35,22 +36,21 @@ export type declareRefinement<
 	}
 > = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
 
-const operandCache = {} as PartialRecord<RefinementKind, Schema>
+const operandCache = {} as PartialRecord<RefinementKind, readonly Schema[]>
 
 export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
 	const operandsDef: readonly Definition<SchemaKind>[] = (
 		node.implementation as any
 	).operand
-	if (operandCache[node.kind] === undefined) {
-		operandCache[node.kind] = node.space.branches(...operandsDef)
-	}
-	const operand = operandCache[node.kind]!
-	return operand.isUnknown()
+	const operands: readonly Schema[] = operandsDef.map((o) =>
+		node.space.schemaFromKinds(schemaKinds, o)
+	)
+	return operands.length === 1 && operands[0].isUnknown()
 		? () => {}
 		: (basis: Node<BasisKind> | undefined) => {
-				if (!basis?.extends(operand)) {
+				if (!operands.some((o) => basis?.extends(o))) {
 					throwParseError(
-						`${node.kind} bound operand must be of type ${operandsDef.join(
+						`${node.kind} operand must be of type ${operandsDef.join(
 							" or "
 						)} (was ${getBasisName(basis)})`
 					)

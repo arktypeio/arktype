@@ -195,8 +195,6 @@ const result = z(invalidInput) //?
 
 const allows = arkType.allows
 
-console.log(allows(validInput))
-
 // bench("scoped", () => {
 // 	for (let i = 0; i < 1000; i++) {
 // 		checkScoped(dataArray[i])

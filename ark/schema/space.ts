@@ -25,7 +25,11 @@ import type {
 import type { keywords } from "./keywords/keywords.js"
 import { SchemaNode, type Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
-import { In, type CompilationKind } from "./shared/compilation.js"
+import {
+	In,
+	type CheckResult,
+	type CompilationKind
+} from "./shared/compilation.js"
 import {
 	defaultInnerKeySerializer,
 	refinementKinds,
@@ -56,15 +60,18 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	readonly schemas: readonly Schema[]
 	readonly referencesById: Record<string, UnknownNode>
 	readonly references: readonly UnknownNode[]
-	readonly bootstrapAllows: this["composeAllows"]
 	allowsSource!: string
-	readonly composeAllows: <alias extends keyof keywords>(
+	readonly composeAllows: <
+		alias extends keyof keywords | ((data: unknown) => boolean)
+	>(
 		alias: alias
-	) => keywords[alias]["allows"]
+	) => alias extends keyof keywords ? keywords[alias]["allows"] : alias
 	traverseSource!: string
-	readonly composeTraverse: <alias extends keyof keywords>(
+	readonly composeTraverse: <
+		alias extends keyof keywords | ((data: unknown) => CheckResult<unknown>)
+	>(
 		alias: alias
-	) => keywords[alias]["traverse"]
+	) => alias extends keyof keywords ? keywords[alias]["traverse"] : alias
 
 	private constructor(aliases: Dict<string, unknown>) {
 		const aliasEntries = Object.entries(aliases)
@@ -76,17 +83,18 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			{}
 		)
 		this.references = Object.values(this.referencesById)
-		this.bootstrapAllows = this.compile("allows")
-		this.schemas = prenodes.map((node) => {
-			node.allows = this.bootstrapAllows(node.alias as never)
-			return this.reduce(node)
-		})
+		const bootstrapAllows = this.compile("allows")
+		for (const reference of this.references) {
+			reference.allows = bootstrapAllows(reference.alias as never)
+		}
+		// TODO: references, everything would have to somehow be updated here?
+		this.schemas = prenodes.map((node) => this.reduce(node))
 		this.keywords = transform(this.schemas, ([, v]) => [v.alias, v]) as never
 		this.composeAllows = this.compile("allows")
 		this.composeTraverse = this.compile("traverse")
-		for (const schema of this.schemas) {
-			schema.allows = this.composeAllows(schema.alias as never)
-			schema.traverse = this.composeTraverse(schema.alias as never)
+		for (const reference of this.references) {
+			reference.allows = this.composeAllows(reference.alias as never)
+			reference.traverse = this.composeTraverse(reference.alias as never)
 		}
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
@@ -125,7 +133,12 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			$ource += "}"
 			this.allowsSource = $ource
 			const $ = new CompiledFunction<() => any>($ource)
-			return (alias: keyof keywords & string) => $()[alias]
+			return ((alias) => {
+				if (typeof alias === "function") {
+					return alias.bind($())
+				}
+				return $()[alias]
+			}) as this["composeAllows"]
 		}
 		for (const schema of this.schemas) {
 			$ource += `,
@@ -141,7 +154,12 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		$ource += "}"
 		this.traverseSource = $ource
 		const $ = new CompiledFunction<() => any>($ource)
-		return (alias: keyof keywords & string) => $()[`${alias}Root`]
+		return ((alias) => {
+			if (typeof alias === "function") {
+				return alias.bind($())
+			}
+			return $()[alias]
+		}) as this["composeTraverse"]
 	}
 
 	get builtin() {
@@ -223,8 +241,19 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<defKind>> {
 		const node = this.parse(kind, def, opts)
-		// TODO: fix
-		node.allows = (data): data is unknown => true
+		if (this.composeAllows === undefined) {
+			return node as never
+		}
+		node.allows = this.composeAllows(
+			new CompiledFunction(
+				In,
+				node.compileBody({
+					path: [],
+					discriminants: [],
+					compilationKind: "allows"
+				})
+			)
+		)
 		if (!node.isSchema() || opts.prereduced) {
 			node.traverse = (data) => ({
 				data
