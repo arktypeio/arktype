@@ -1,8 +1,38 @@
+/* eslint-disable @typescript-eslint/no-restricted-imports */
+import { bench } from "@arktype/attest"
 import { type } from "arktype"
-// import { keywords } from "./ark/schema/main.js"
+import { rootSchema, schema, space } from "./ark/schema/main.js"
+import { range } from "./ark/util/main.js"
 
-// keywords.number.allows(5) //?
-// keywords.number.allows("") //?
+const aNumber = schema({
+	basis: "object",
+	required: { key: "a", value: "number" }
+}).allows
+
+const aNumberType = type({
+	a: "number"
+}).allows
+
+const aNumberData = range(1000).map((_, i) => ({ a: i }))
+
+const result = aNumber({ a: 5 }) //?. $
+
+range(1000).forEach((i) => {
+	aNumberType(aNumberData[i]) //?.
+})
+
+range(1000).forEach((i) => {
+	aNumber(aNumberData[i]) //?.
+})
+
+const baselineANumber = (data: unknown) =>
+	((typeof data === "object" && data !== null) || typeof data === "function") &&
+	"a" in data &&
+	typeof data.a === "number"
+
+range(1000).forEach((i) => {
+	baselineANumber(aNumberData[i]) //?.
+})
 
 const validInput = {
 	number: 1,
@@ -34,7 +64,7 @@ const invalidInput = {
 	}
 }
 
-const dataArray = [...new Array(1000)].map((_, i) => ({
+const dataArray = range(1000).map((i) => ({
 	...validInput,
 	number: i
 }))
@@ -53,174 +83,100 @@ const arkType = type({
 	}
 })
 
-const checkSingle = ($arkRoot: any) => {
-	if (
-		!(
-			(typeof $arkRoot === "object" && $arkRoot !== null) ||
-			typeof $arkRoot === "function"
-		)
-	) {
-		return false
+const arkNode = rootSchema({
+	basis: "object",
+	required: [
+		{ key: "number", value: "number" },
+		{ key: "negNumber", value: "number" },
+		{ key: "maxNumber", value: "number" },
+		{ key: "string", value: "string" },
+		{ key: "longString", value: "string" },
+		{ key: "boolean", value: [{ unit: true }, { unit: false }] },
+		{
+			key: "deeplyNested",
+			value: {
+				basis: "object",
+				required: [
+					{ key: "foo", value: "string" },
+					{ key: "num", value: "number" },
+					{ key: "bool", value: [{ unit: true }, { unit: false }] }
+				]
+			}
+		}
+	]
+})
+
+const arkSpace = space({
+	any: {} as schema.cast<any, "intersection">,
+	bigint: "bigint",
+	// since we know this won't be reduced, it can be safely cast to a union
+	boolean: [{ unit: false }, { unit: true }] as schema.cast<boolean, "union">,
+	false: { unit: false },
+	never: [],
+	null: { unit: null },
+	number: "number",
+	object: "object",
+	string: "string",
+	symbol: "symbol",
+	true: { unit: true },
+	unknown: {},
+	void: { unit: undefined } as schema.cast<void, "unit">,
+	undefined: { unit: undefined },
+	foo: {
+		basis: "object",
+		required: [
+			{ key: "number", value: "number" },
+			{ key: "negNumber", value: "number" },
+			{ key: "maxNumber", value: "number" },
+			{ key: "string", value: "string" },
+			{ key: "longString", value: "string" },
+			{ key: "boolean", value: [{ unit: true }, { unit: false }] },
+			{
+				key: "deeplyNested",
+				value: {
+					basis: "object",
+					required: [
+						{ key: "foo", value: "string" },
+						{ key: "num", value: "number" },
+						{ key: "bool", value: [{ unit: true }, { unit: false }] }
+					]
+				}
+			}
+		]
 	}
-	if ($arkRoot.boolean !== false && $arkRoot.boolean !== true) {
-		return false
-	}
-	if (
-		!(
-			(typeof $arkRoot.deeplyNested === "object" &&
-				$arkRoot.deeplyNested !== null) ||
-			typeof $arkRoot.deeplyNested === "function"
-		)
-	) {
-		return false
-	}
-	if (
-		$arkRoot.deeplyNested.bool !== false &&
-		$arkRoot.deeplyNested.bool !== true
-	) {
-		return false
-	}
-	if (!(typeof $arkRoot.deeplyNested.foo === "string")) {
-		return false
-	}
-	if (!(typeof $arkRoot.deeplyNested.num === "number")) {
-		return false
-	}
-	if (!(typeof $arkRoot.longString === "string")) {
-		return false
-	}
-	if (!(typeof $arkRoot.maxNumber === "number")) {
-		return false
-	}
-	if (!(typeof $arkRoot.negNumber === "number")) {
-		return false
-	}
-	if (!(typeof $arkRoot.number === "number")) {
-		return false
-	}
-	if (!(typeof $arkRoot.string === "string")) {
-		return false
-	}
-	return true
-}
+})
 
-const scope = new Function(
-	`return {
-        isString($arkRoot) {
-            if (!(typeof $arkRoot === "string")) {
-                return false
-            }
-            return true
-        },
-        isNumber($arkRoot) {
-            if (!(typeof $arkRoot === "number")) {
-                return false
-            }
-            return true
-        },
-        isBoolean($arkRoot) {
-            if (
-                $arkRoot !== false &&
-                $arkRoot !== true
-            ) {
-                return false
-            }
-            return true
-        },
-        isObject($arkRoot) {
-            if (
-                !(
-                    (typeof $arkRoot=== "object" &&
-                        $arkRoot !== null) ||
-                    typeof $arkRoot === "function"
-                )
-            ) {
-                return false
-            }
-            return true
-        },
-        deep($arkRoot) {
-            if(!this.isObject($arkRoot)) {
-                return false
-            }
-            if (
-                !(this.isBoolean($arkRoot.bool))
-            ) {
-                return false
-            }
-            if (!(this.isString($arkRoot.foo))) {
-                return false
-            }
-            if (!(this.isNumber($arkRoot.num))) {
-                return false
-            }
-            return true
-        },
-        foo($arkRoot) {
-            if (
-                !this.isObject($arkRoot)
-            ) {
-                return false
-            }
-            if ( !this.isBoolean($arkRoot.boolean)) {
-                return false
-            }
-            if (!(this.isString($arkRoot.longString))) {
-                return false
-            }
-            if (!this.isNumber($arkRoot.maxNumber)) {
-                return false
-            }
-            if (!this.isNumber($arkRoot.negNumber)) {
-                return false
-            }
-            if (!this.isNumber($arkRoot.number)) {
-                return false
-            }
-            if (!(this.isString($arkRoot.string))) {
-                return false
-            }
-            return this.deep($arkRoot.deeplyNested)
-        }
-    }`
-)
+const anonymousJit = arkSpace.parseJit("intersection", {
+	basis: "object",
+	required: [
+		{ key: "number", value: "number" },
+		{ key: "negNumber", value: "number" },
+		{ key: "maxNumber", value: "number" },
+		{ key: "string", value: "string" },
+		{ key: "longString", value: "string" },
+		{ key: "boolean", value: [{ unit: true }, { unit: false }] },
+		{
+			key: "deeplyNested",
+			value: {
+				basis: "object",
+				required: [
+					{ key: "foo", value: "string" },
+					{ key: "num", value: "number" },
+					{ key: "bool", value: [{ unit: true }, { unit: false }] }
+				]
+			}
+		}
+	]
+})
 
-const checkScoped = scope() //?
+range(1000).forEach((i) => {
+	arkType.allows(dataArray[i]) //?.
+})
 
-function check(this: any, data: unknown) {
-	return this.foo(data)
-}
+range(1000).forEach((i) => {
+	arkSpace.keywords.foo.allows(dataArray[i]) //?.
+})
 
-const z = function (this: any, data: unknown) {
-	return this.foo(data)
-}.bind(checkScoped)
-
-const result = z(invalidInput) //?
-
-const allows = arkType.allows //?
-
-allows.toString() //?
-
-console.log(arkType.allows)
-
-console.log(allows(validInput))
-
-console.log(allows(invalidInput))
-
-// bench("scoped", () => {
-// 	for (let i = 0; i < 1000; i++) {
-// 		checkScoped(dataArray[i])
-// 	}
-// }).median([6.79, "us"])
-
-// bench("scoped2", () => {
-// 	for (let i = 0; i < 1000; i++) {
-// 		z(dataArray[i])
-// 	}
-// }).median([5.77, "us"])
-
-// bench("allows", () => {
-// 	for (let i = 0; i < 1000; i++) {
-// 		allows(dataArray[i])
-// 	}
-// }).median([7.81, "us"])
+range(1000).forEach((i) => {
+	anonymousJit.allows(dataArray[i]) //?.
+})

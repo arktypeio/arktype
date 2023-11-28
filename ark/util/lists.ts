@@ -102,3 +102,6 @@ export const includes = <array extends readonly unknown[]>(
 	array: array,
 	element: unknown
 ): element is array[number] => array.includes(element)
+
+export const range = (length: number): number[] =>
+	[...new Array(length)].map((_, i) => i)

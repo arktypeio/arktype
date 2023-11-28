@@ -1,6 +1,7 @@
 import { bench } from "@arktype/attest"
+import { range } from "@arktype/util"
 import { type } from "arktype"
-import type { schema } from "../keywords/keywords.js"
+import { schema } from "../keywords/keywords.js"
 import { rootSchema, space } from "../space.js"
 
 const validInput = {
@@ -33,7 +34,7 @@ const invalidInput = {
 	}
 }
 
-const dataArray = [...new Array(1000)].map((_, i) => ({
+const dataArray = range(1000).map((_, i) => ({
 	...validInput,
 	number: i
 }))
@@ -138,7 +139,31 @@ const anonymousJit = arkSpace.parseJit("intersection", {
 	]
 })
 
-// const allows = arkNode.space.compilations.allows[arkNode.alias]
+const aNumber = schema({
+	basis: "object",
+	required: { key: "a", value: "number" }
+}).allows
+
+const aNumberData = range(1000).map((_, i) => ({ a: i }))
+
+// bench("anonymous", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		aNumber(aNumberData[i])
+// 	}
+// }).median([1.4, "us"])
+
+// const baselineANumber = (data: unknown) =>
+// 	((typeof data === "object" && data !== null) || typeof data === "function") &&
+// 	"a" in data &&
+// 	typeof data.a === "number"
+
+// bench("anonymous", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		baselineANumber(aNumberData[i])
+// 	}
+// }).median([1.35, "us"])
+
+// const allows = arkNode.allows
 
 // bench("anonymous", () => {
 // 	for (let i = 0; i < 1000; i++) {
@@ -155,10 +180,10 @@ const anonymousJit = arkSpace.parseJit("intersection", {
 // 	}
 // }).median([7.58, "us"])
 
-const allowsJit = anonymousJit.allows
+// const allowsJit = anonymousJit.allows
 
-bench("anonymous", () => {
-	for (let i = 0; i < 1000; i++) {
-		allowsJit(dataArray[i])
-	}
-}).median([8.37, "us"])
+// bench("anonymous", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		allowsJit(dataArray[i])
+// 	}
+// }).median([8.37, "us"])

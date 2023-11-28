@@ -3,7 +3,7 @@
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
-		"source.organizeImports"
+		"source.sortImports"
 	],
 	"eslint.codeActionsOnSave.rules": [
 		"object-shorthand",
