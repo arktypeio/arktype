@@ -1,9 +1,13 @@
+import { isArray, printable, throwParseError } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
+import { maybeGetBasisKind } from "./bases/basis.js"
 import type { BranchKind } from "./sets/union.js"
+import { Problems, type CheckResult } from "./shared/compilation.js"
 import type { RefinementKind, SchemaKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Definition } from "./shared/nodes.js"
+import { isNode } from "./shared/registry.js"
 import { inferred } from "./shared/symbols.js"
 
 export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
@@ -14,18 +18,27 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
 
-	protected constructor(attachments: BaseAttachments<kind>) {
+	constructor(attachments: BaseAttachments<kind>) {
 		super(attachments)
 		// in a union, branches will have already been assigned from inner
 		// otherwise, initialize it to a singleton array containing the current branch node
 		this.branches ??= [this as never]
 	}
 
+	apply(data: unknown): CheckResult<t> {
+		const problems: Problems = new Problems()
+		this.traverse(data, problems)
+		if (problems.length === 0) {
+			return { data } as any
+		}
+		return { problems }
+	}
+
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,
 		input: Definition<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
-		const refinement = this.space.node(kind, input)
+		const refinement = this.space.parseNode(kind, input)
 		return this.and(refinement) as never
 	}
 
@@ -52,10 +65,10 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 		t | other["infer"],
 		"union" | Extract<kind | other["kind"], SchemaKind>
 	> {
-		return this.space.node("union", [
+		return this.space.parseBranches(
 			...this.branches,
 			...other.branches
-		]) as never
+		) as never
 	}
 
 	isUnknown(): this is Schema<unknown, "intersection"> {
@@ -92,3 +105,25 @@ export type Schema<t = unknown, kind extends SchemaKind = SchemaKind> = {
 	proto: SchemaNode<t, "proto">
 	domain: SchemaNode<t, "domain">
 }[kind]
+
+export const schemaKindOf = (input: unknown): SchemaKind => {
+	const basisKind = maybeGetBasisKind(input)
+	if (basisKind) {
+		return basisKind
+	}
+	if (typeof input === "object" && input !== null) {
+		if (isNode(input)) {
+			if (input.isSchema()) {
+				return input.kind
+			}
+			// otherwise, error at end of function
+		} else if ("morph" in input) {
+			return "morph"
+		} else if ("branches" in input || isArray(input)) {
+			return "union"
+		} else {
+			return "intersection"
+		}
+	}
+	throwParseError(`${printable(input)} is not a valid type schema`)
+}

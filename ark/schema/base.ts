@@ -11,7 +11,7 @@ import type { BasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
-import type { CheckResult, CompilationContext } from "./shared/compilation.js"
+import type { CompilationContext, Problems } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -65,24 +65,27 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly alias: string
-	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
-		(result, child) => Object.assign(result, child.contributesReferencesById),
-		{}
-	)
+	readonly referencesByAlias: Record<string, UnknownNode> =
+		this.children.reduce(
+			(result, child) => Object.assign(result, child.contributesReferencesById),
+			{}
+		)
 	readonly references: readonly UnknownNode[] = Object.values(
-		this.referencesById
+		this.referencesByAlias
 	)
 	readonly contributesReferencesById: Record<string, UnknownNode>
 	readonly contributesReferences: readonly UnknownNode[]
 
 	declare allows: (data: unknown) => data is t
-	declare traverse: (data: unknown) => CheckResult<t>
-	readonly description: string
+	declare traverse: (data: unknown, problems: Problems) => void
+	// we use declare here to avoid it being initialized outside the constructor
+	// and detected as an overwritten key
+	declare readonly description: string
 
-	protected constructor(baseAttachments: BaseAttachments<kind>) {
+	constructor(baseAttachments: BaseAttachments<kind>) {
 		super(baseAttachments as never)
 		for (const k in baseAttachments.inner) {
-			if (k in this && k !== "description" && k !== "alias") {
+			if (k in this) {
 				// if we attempt to overwrite an existing node key, throw unless
 				// it is expected and can be safely ignored.
 				// in and out cannot overwrite their respective getters, so instead
@@ -102,9 +105,9 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		this.allows = this.space.compile(this, "allows")
 		this.traverse = this.space.compile(this, "traverse")
 		this.contributesReferencesById =
-			this.alias in this.referencesById
-				? this.referencesById
-				: { ...this.referencesById, [this.alias]: this }
+			this.alias in this.referencesByAlias
+				? this.referencesByAlias
+				: { ...this.referencesByAlias, [this.alias]: this }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
@@ -153,7 +156,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				ioInner[k] = v
 			}
 		}
-		return this.space.node(this.kind, ioInner)
+		return this.space.parseNode(this.kind, ioInner)
 	}
 
 	toJSON() {
@@ -229,7 +232,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		return this.isBasis() ||
 			other.isBasis() ||
 			(this.kind === "predicate" && other.kind === "predicate")
-			? this.space.node(
+			? this.space.parseNode(
 					"intersection",
 					unflattenConstraints([this as never, other])
 			  )
@@ -254,7 +257,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: meta
-			return this.space.node(l.kind, result) as never
+			return this.space.parseNode(l.kind, result) as never
 		}
 		return null
 	}

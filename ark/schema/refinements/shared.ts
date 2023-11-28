@@ -43,7 +43,7 @@ export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
 		node.implementation as any
 	).operand
 	const operands: readonly Schema[] = operandsDef.map((o) =>
-		node.space.schemaFromKinds(schemaKinds, o)
+		node.space.parseSchemaFromKinds(schemaKinds, o)
 	)
 	return operands.length === 1 && operands[0].isUnknown()
 		? () => {}

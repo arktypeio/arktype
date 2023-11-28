@@ -27,7 +27,7 @@
 		"./ark/type/main.ts",
 		"./ark/schema/main.ts"
 	],
-	"typescript.tsserver.experimental.enableProjectDiagnostics": false,
+	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"prettier.ignorePath": "ark/repo/.prettierignore",
 	"prettier.prettierPath": "./node_modules/prettier/index.cjs",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc

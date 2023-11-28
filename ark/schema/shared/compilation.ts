@@ -17,7 +17,7 @@ export type CompilationKind = "allows" | "traverse"
 
 export type CompiledMethods<t = never> = {
 	allows: (data: unknown) => data is t
-	traverse: (data: unknown) => CheckResult<t>
+	traverse: (data: unknown, problems: Problems) => void
 }
 
 export type CompilationContext = {

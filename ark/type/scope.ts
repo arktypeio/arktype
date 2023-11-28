@@ -403,7 +403,7 @@ export class Scope<r extends Resolutions = any> {
 		names extends [] ? keyof r["exports"] & string : names[number]
 	> {
 		return addArkKind(
-			transform(this.export(...names), ([alias, value]) => [
+			transform(this.export(...names), (alias, value) => [
 				`#${alias as string}`,
 				value
 			]) as never,
@@ -465,7 +465,7 @@ export class Scope<r extends Resolutions = any> {
 		}
 		const namesToExport = names.length ? names : this.exportedNames
 		return addArkKind(
-			transform(namesToExport, ([, name]) => [
+			transform(namesToExport, (_, name) => [
 				name,
 				this.exportCache![name]
 			]) as never,
@@ -484,7 +484,7 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 			const innerResolutions = resolutionsOfModule(v as never)
 			const prefixedResolutions = transform(
 				innerResolutions,
-				([innerK, innerV]) => [`${k}.${innerK}`, innerV]
+				(innerK, innerV) => [`${k}.${innerK}`, innerV]
 			)
 			Object.assign(result, prefixedResolutions)
 		} else if (hasArkKind(v, "generic")) {

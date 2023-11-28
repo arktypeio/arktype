@@ -4,7 +4,6 @@ import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
 
 export type BaseAttributes = {
-	readonly alias?: string
 	readonly description?: string
 }
 

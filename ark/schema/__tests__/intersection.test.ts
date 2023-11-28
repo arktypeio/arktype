@@ -185,8 +185,8 @@ describe("intersections", () => {
 			divisor: 3,
 			min: 5
 		})
-		attest(n.traverse(6)).snap({ data: 6 })
-		attest(n.traverse(7)).snap({
+		attest(n.apply(6)).snap({ data: 6 })
+		attest(n.apply(7)).snap({
 			problems: [{ path: [], message: "Must be a multiple of 3 (was 7)" }]
 		})
 	})
@@ -202,11 +202,11 @@ describe("intersections", () => {
 				}
 			}
 		})
-		attest(n.traverse({ a: 6 })).snap({ data: { a: 6 } })
-		attest(n.traverse({ b: 6 })).snap({
+		attest(n.apply({ a: 6 })).snap({ data: { a: 6 } })
+		attest(n.apply({ b: 6 })).snap({
 			problems: [{ path: ["a"], message: "Must be provided" }]
 		})
-		attest(n.traverse({ a: 7 })).snap({
+		attest(n.apply({ a: 7 })).snap({
 			problems: [{ path: ["a"], message: "Must be a multiple of 3 (was 7)" }]
 		})
 	})

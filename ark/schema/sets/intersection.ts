@@ -8,6 +8,7 @@ import {
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
+import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import { In } from "../shared/compilation.js"
 import type {
@@ -23,8 +24,7 @@ import {
 	type ClosedRefinementKind,
 	type ConstraintKind,
 	type OpenRefinementKind,
-	type RefinementKind,
-	type SchemaParseContext
+	type RefinementKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Definition } from "../shared/nodes.js"
@@ -72,9 +72,9 @@ export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	normalize: (def) => def,
 	addContext: (ctx) => {
+		const def = ctx.definition as IntersectionDefinition
 		ctx.basis =
-			ctx.normalizedDefinition.basis &&
-			ctx.space.schemaFromKinds(basisKinds, ctx.normalizedDefinition.basis)
+			def.basis && ctx.space.parseSchemaFromKinds(basisKinds, def.basis)
 	},
 	keys: {
 		basis: {
@@ -144,7 +144,7 @@ export const IntersectionImplementation = defineNode({
 		}
 	},
 	reduce: (inner, space) => {
-		const { description, alias, ...constraintsByKind } = inner
+		const { description, ...constraintsByKind } = inner
 		const inputConstraints = Object.values(
 			constraintsByKind
 		).flat() as ConstraintSet
@@ -165,10 +165,7 @@ export const IntersectionImplementation = defineNode({
 		if (description) {
 			reducedConstraintsByKind.description = description
 		}
-		if (alias) {
-			reducedConstraintsByKind.alias = alias
-		}
-		return space.prereduced("intersection", reducedConstraintsByKind)
+		return space.parsePrereduced("intersection", reducedConstraintsByKind)
 	},
 	attach: (node) => {
 		const attachments: mutable<IntersectionAttachments, 2> = {
@@ -216,9 +213,9 @@ export const IntersectionImplementation = defineNode({
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
 	input: Definition<kind>,
-	ctx: SchemaParseContext<"intersection">
+	ctx: SchemaParseContext
 ): Node<kind> => {
-	const refinement = ctx.space.node(kind, input) as Node<RefinementKind>
+	const refinement = ctx.space.parseNode(kind, input) as Node<RefinementKind>
 	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }
@@ -226,7 +223,7 @@ export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
 	input: listable<Definition<kind>>,
-	ctx: SchemaParseContext<"intersection">
+	ctx: SchemaParseContext
 ) => {
 	if (isArray(input)) {
 		if (input.length === 0) {
@@ -234,7 +231,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 			return
 		}
 		const refinements = input
-			.map((refinement) => ctx.space.node(kind, refinement))
+			.map((refinement) => ctx.space.parseNode(kind, refinement))
 			.sort((l, r) => (l.id < r.id ? -1 : 1))
 		// we should only need to assert validity for one, as all listed
 		// refinements should be of the same kind and therefore have the same
@@ -242,7 +239,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 		refinements[0].assertValidBasis(ctx.basis)
 		return refinements
 	}
-	const refinement = ctx.space.node(kind, input)
+	const refinement = ctx.space.parseNode(kind, input)
 	refinement.assertValidBasis(ctx.basis)
 	return [refinement]
 }

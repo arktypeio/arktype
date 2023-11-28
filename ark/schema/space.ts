@@ -1,20 +1,13 @@
 import {
 	CompiledFunction,
-	entriesOf,
-	hasDomain,
-	includes,
 	isArray,
 	printable,
+	throwInternalError,
 	throwParseError,
 	transform,
 	type Dict
 } from "@arktype/util"
-import {
-	BaseNode,
-	type BaseAttachments,
-	type Node,
-	type UnknownNode
-} from "./base.js"
+import type { Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type {
 	instantiateAliases,
@@ -23,27 +16,19 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords } from "./keywords/keywords.js"
-import { SchemaNode, type Schema } from "./schema.js"
+import { parse, type SchemaParseOptions } from "./parse.js"
+import type { Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
 import {
 	In,
 	type CompilationKind,
 	type CompiledMethods
 } from "./shared/compilation.js"
-import {
-	defaultInnerKeySerializer,
-	refinementKinds,
-	type NodeKind,
-	type SchemaKind,
-	type SchemaParseContext,
-	type SchemaParseOptions,
-	type UnknownNodeImplementation
-} from "./shared/define.js"
-import {
-	NodeImplementationByKind,
-	type Definition,
-	type NormalizedDefinition,
-	type reducibleKindOf
+import { nodeKinds, type NodeKind, type SchemaKind } from "./shared/define.js"
+import type {
+	Definition,
+	NormalizedDefinition,
+	reducibleKindOf
 } from "./shared/nodes.js"
 import { isNode } from "./shared/registry.js"
 
@@ -55,28 +40,32 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	}
 	declare static keywords: typeof keywords
 	private declare static unknownUnion?: Schema<unknown, "union">
-
-	private phase: "parse" | "reduce" | "extend" = "parse"
 	keywords = {} as keywords
-
+	readonly schemas: readonly Schema[]
 	// populated during initial schema parse
-	readonly localAliases: Record<string, UnknownNode> = {}
-	readonly schemas = this.bootstrap()
-	readonly locals: readonly UnknownNode[] = Object.values(this.localAliases)
-	private compilations = {
+	readonly referencesByAlias: Record<string, UnknownNode> = {}
+	readonly references: readonly UnknownNode[]
+	readonly compilations = {
 		allows: {} as Record<string, CompiledMethods["allows"]>,
 		traverse: {} as Record<string, CompiledMethods["traverse"]>
 	}
 
-	private constructor(public aliases: Dict<string, unknown>) {
-		// TODO: references, everything would have to somehow be updated here?
-		this.schemas = this.schemas.map((node) => this.reduce(node))
-		this.keywords = transform(this.schemas, ([, v]) => [v.alias, v]) as never
-		Object.assign(this.compilations.allows, this.compileThis("allows"))
-		Object.assign(this.compilations.traverse, this.compileThis("traverse"))
+	constructor(public aliases: Dict<string, unknown>) {
+		this.schemas = Object.entries(this.aliases).map(([k, v]) => {
+			const node = this.parseNode(schemaKindOf(v), v as never, {
+				alias: k
+			})
+			// TODO: same alias across multiple nodes?
+			Object.assign(this.referencesByAlias, node.referencesByAlias)
+			return node
+		})
+		this.keywords = transform(this.schemas, (_, v) => [v.alias, v]) as never
+		this.references = Object.values(this.referencesByAlias)
+		// Object.assign(this.compilations.allows, this.compileThis("allows"))
+		// Object.assign(this.compilations.traverse, this.compileThis("traverse"))
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
-			Space.unknownUnion = this.prereduced("union", [
+			Space.unknownUnion = this.parsePrereduced("union", [
 				"string",
 				"number",
 				"object",
@@ -88,15 +77,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 				{ unit: undefined }
 			])
 		}
-	}
-
-	private bootstrap() {
-		const bootstrapSchemas = Object.entries(this.aliases).map(
-			([k, v]) => this.node(schemaKindOf(v), v as never, { alias: k }) as Schema
-		)
-		this.phase = "reduce"
-		const schemas = bootstrapSchemas.map((node) => this.reduce(node))
-		return bootstrapSchemas
 	}
 
 	compile<kind extends CompilationKind>(
@@ -115,38 +95,33 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		return fn as never
 	}
 
-	// TODO: cache
-	private compileThis(kind: CompilationKind) {
-		let $ource = `return {
-			${this.locals
-				.map(
-					(reference) => `${reference.alias}(${In}){
-					${reference.compileBody({
-						compilationKind: kind,
-						path: [],
-						discriminants: []
-					})}
-			}`
-				)
-				.join(",\n")}`
-		if (kind === "allows") {
-			$ource += "}"
-			return new CompiledFunction<() => any>($ource)()
-		}
-		for (const schema of this.schemas) {
-			$ource += `,
-	${schema.alias}Root(${In}) {
-		const problems = []
-		this.${schema.alias}(${In}, problems)
-		if(problems.length === 0) {
-			return { data: ${In} }
-		}
-		return { problems }
-	}`
-		}
-		$ource += "}"
-		return new CompiledFunction<() => any>($ource)()
-	}
+	// // TODO: cache
+	// private compileThis(kind: CompilationKind) {
+	// 	let $ource = `return {
+	// 		${this.references
+	// 			.map(
+	// 				(reference) => `${reference.alias}(${In}){
+	// 				${reference.compileBody({
+	// 					compilationKind: kind,
+	// 					path: [],
+	// 					discriminants: []
+	// 				})}
+	// 		}`
+	// 			)
+	// 			.join(",\n")}`
+	// 	if (kind === "allows") {
+	// 		$ource += "}"
+	// 		return new CompiledFunction<() => any>($ource)()
+	// 	}
+	// 	for (const schema of this.schemas) {
+	// 		$ource += `,
+	// ${schema.alias}Root(${In}) {
+
+	// }`
+	// 	}
+	// 	$ource += "}"
+	// 	return new CompiledFunction<() => any>($ource)()
+	// }
 
 	get builtin() {
 		return Space.keywords
@@ -157,25 +132,25 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 
 	static root = new Space<{}>({})
 
-	union<const branches extends readonly Definition<BranchKind>[]>(
+	parseUnion<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], keywords>
 			}
 		} & NormalizedDefinition<"union">
 	): instantiateSchemaBranches<branches> {
-		return this.node("union", input) as never
+		return this.parseNode("union", input) as never
 	}
 
-	branches<const branches extends readonly Definition<BranchKind>[]>(
+	parseBranches<const branches extends readonly Definition<BranchKind>[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i], keywords>
 		}
 	): instantiateSchemaBranches<branches> {
-		return this.node("union", branches as never) as never
+		return this.parseNode("union", branches as never) as never
 	}
 
-	units<const branches extends readonly unknown[]>(
+	parseUnits<const branches extends readonly unknown[]>(
 		...values: branches
 	): branches["length"] extends 1
 		? Schema<branches[0], "unit">
@@ -187,164 +162,72 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			}
 		}
 		const branches = uniqueValues.map((unit) =>
-			this.prereduced("unit", { unit })
+			this.parsePrereduced("unit", { unit })
 		)
 		if (branches.length === 1) {
 			return branches[0]
 		}
-		return this.prereduced("union", {
+		return this.parsePrereduced("union", {
 			branches
 		}) as never
 	}
 
-	prereduced<kind extends SchemaKind>(
+	parsePrereduced<kind extends SchemaKind>(
 		kind: kind,
-		input: Definition<kind>
+		def: Definition<kind>
 	): Node<kind> {
-		return this.node(kind, input, {
+		return this.parseNode(kind, def, {
 			prereduced: true
 		}) as never
 	}
 
-	schemaFromKinds<defKind extends SchemaKind>(
+	parseSchemaFromKinds<defKind extends SchemaKind>(
 		allowedKinds: readonly defKind[],
-		input: unknown
+		def: Definition<defKind>
 	): Node<reducibleKindOf<defKind>> {
-		const kind = schemaKindOf(input)
+		const kind = schemaKindOf(def)
 		if (!allowedKinds.includes(kind as never)) {
 			return throwParseError(
 				`Schema of kind ${kind} should be one of ${allowedKinds}`
 			)
 		}
-		return this.node(kind, input as never, {}) as never
+		return this.parseNode(kind, def as never) as never
 	}
 
-	static parseCache: Record<string, Node> = {}
-
-	node<defKind extends NodeKind>(
-		kind: defKind,
-		def: Definition<defKind>,
+	private readonly anonymousTypeCountsByKind = transform(
+		nodeKinds,
+		(_, kind) => [kind, 0]
+	)
+	parseNode<kind extends NodeKind>(
+		kind: kind,
+		def: Definition<kind>,
 		opts: SchemaParseOptions = {}
-	): Node<reducibleKindOf<defKind>> {
-		const node = this.parse(kind, def, opts)
-		if (this.phase === "parse") {
-			// TODO: this isn't valid unless aliases stay the same they can't
-			this.localAliases[node.alias] = node
+	): Node<reducibleKindOf<kind>> {
+		if (opts.alias && opts.alias in this.referencesByAlias) {
+			return throwInternalError(
+				`Unexpected attempt to recreate existing alias ${opts.alias}`
+			)
 		}
-		return node as never
-	}
-
-	private parse(
-		kind: NodeKind,
-		def: unknown,
-		opts: SchemaParseOptions
-	): UnknownNode {
-		if (isNode(def)) {
-			return def as never
-		}
-		const implementation: UnknownNodeImplementation = NodeImplementationByKind[
-			kind
-		] as never
-		const normalizedDefinition: any = implementation.normalize?.(def) ?? def
-		const ctx: SchemaParseContext<any> = {
+		return parse(kind, def, {
 			...opts,
-			normalizedDefinition,
 			space: this,
-			implementation
-		}
-		if (opts.alias) {
-			normalizedDefinition.alias = opts.alias
-		}
-		const inner: Record<string, unknown> = {}
-		ctx.implementation.addContext?.(ctx)
-		const schemaEntries = entriesOf(normalizedDefinition).sort((l, r) =>
-			l[0] < r[0] ? -1 : 1
-		)
-		let json: Record<string, unknown> = {}
-		let typeJson: Record<string, unknown> = {}
-		const children: UnknownNode[] = []
-		for (const [k, v] of schemaEntries) {
-			const keyDefinition = ctx.implementation.keys[k]
-			if (!(k in ctx.implementation.keys)) {
-				return throwParseError(`Key ${k} is not valid on ${kind} schema`)
-			}
-			const innerValue = keyDefinition.parse ? keyDefinition.parse(v, ctx) : v
-			if (innerValue === undefined && !keyDefinition.preserveUndefined) {
-				continue
-			}
-			inner[k] = innerValue
-			if (keyDefinition.child) {
-				if (Array.isArray(innerValue)) {
-					json[k] = innerValue.map((node) => node.collapsibleJson)
-					children.push(...innerValue)
-				} else {
-					json[k] = innerValue.collapsibleJson
-					children.push(innerValue)
-				}
-			} else {
-				json[k] = keyDefinition.serialize
-					? keyDefinition.serialize(v)
-					: defaultInnerKeySerializer(v)
-			}
-			if (!keyDefinition.meta) {
-				typeJson[k] = json[k]
-			}
-		}
-		const innerEntries = entriesOf(inner)
-		let collapsibleJson = json
-		if (
-			innerEntries.length === 1 &&
-			innerEntries[0][0] === ctx.implementation.collapseKey
-		) {
-			collapsibleJson = json[ctx.implementation.collapseKey] as never
-			if (hasDomain(collapsibleJson, "object")) {
-				json = collapsibleJson
-				typeJson = collapsibleJson
-			}
-		}
-		const id = JSON.stringify({ kind, ...json })
-		if (id in Space.parseCache) {
-			return Space.parseCache[id] as never
-		}
-		const typeId = JSON.stringify({ kind, ...typeJson })
-		const attachments = {
-			kind,
-			inner,
-			entries: innerEntries,
-			json,
-			typeJson,
-			collapsibleJson,
-			children,
-			id,
-			typeId,
-			space: this
-		} satisfies Record<keyof BaseAttachments<any>, unknown> as never
-		return includes(refinementKinds, kind)
-			? new (BaseNode as any)(attachments)
-			: new (SchemaNode as any)(attachments)
+			alias: opts.alias ?? `${kind}${++this.anonymousTypeCountsByKind[kind]}`,
+			definition: def
+		}) as never
 	}
 
-	private reduce(node: Schema): Schema {
-		if (Space.unknownUnion?.typeId === node.typeId) {
-			return Space.keywords.unknown
-		}
-		if (node.implementation.reduce) {
-			const reduced = node.implementation.reduce(node.inner, this)
-			if (reduced) {
-				return reduced as Schema
-			}
-		}
-		return node
-	}
-
-	readonly schema = Object.assign(this.branches.bind(this), {
-		units: this.units.bind(this),
-		union: this.union.bind(this),
-		prereduced: this.prereduced.bind(this)
+	readonly schema = Object.assign(this.parseBranches.bind(this), {
+		units: this.parseUnits.bind(this),
+		union: this.parseUnion.bind(this),
+		prereduced: this.parsePrereduced.bind(this)
 	})
 }
 
 export const space = Space.from
+
+export const rootSchema = Space.root.schema
+
+export const rootNode = Space.root.parseNode
 
 const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)

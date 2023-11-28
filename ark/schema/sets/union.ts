@@ -65,15 +65,13 @@ export const UnionImplementation = defineNode({
 			child: true,
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
-					ctx.space.schemaFromKinds(
+					ctx.space.parseSchemaFromKinds(
 						["morph", "intersection", ...basisKinds],
 						branch
 					)
 				)
-				if (
-					isArray(ctx.normalizedDefinition) ||
-					ctx.normalizedDefinition.ordered !== true
-				) {
+				const def = ctx.definition as UnionDefinition
+				if (isArray(def) || def.ordered !== true) {
 					branches.sort((l, r) => (l.id < r.id ? -1 : 1))
 				}
 				return branches
@@ -145,7 +143,7 @@ export const UnionImplementation = defineNode({
 		if (reducedBranches.length !== inner.branches.length) {
 			return
 		}
-		return space.prereduced("union", {
+		return space.parsePrereduced("union", {
 			...inner,
 			branches: reducedBranches
 		})

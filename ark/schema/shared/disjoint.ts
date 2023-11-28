@@ -137,7 +137,7 @@ export class Disjoint {
 			([path, disjoints]) =>
 				[
 					path,
-					transform(disjoints, ([kind, disjoint]) => [
+					transform(disjoints, (kind, disjoint) => [
 						kind,
 						{ l: disjoint.r, r: disjoint.l }
 					])

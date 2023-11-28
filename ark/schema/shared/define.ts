@@ -4,7 +4,6 @@ import type {
 	JsonData,
 	PartialRecord,
 	evaluate,
-	extend,
 	listable,
 	optionalizeKeys,
 	requireKeys,
@@ -12,6 +11,7 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
+import type { SchemaParseContext } from "../parse.js"
 import type { Space } from "../space.js"
 import {
 	compileSerializedValue,
@@ -120,21 +120,6 @@ export type normalizeInput<input, inner extends BaseAttributes> = Extract<
 	PartialRecord<requiredKeyOf<inner>>
 >
 
-export type SchemaParseOptions = {
-	prereduced?: true
-	alias?: string
-	basis?: Node<BasisKind> | undefined
-}
-
-export type SchemaParseContext<kind extends NodeKind> = extend<
-	SchemaParseOptions,
-	{
-		implementation: UnknownNodeImplementation
-		normalizedDefinition: NormalizedDefinition<kind>
-		space: Space
-	}
->
-
 export type NodeKeyDefinition<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"]
@@ -152,7 +137,7 @@ export type NodeKeyDefinition<
 			schema: k extends keyof NormalizedDefinition<d["kind"]>
 				? Exclude<NormalizedDefinition<d["kind"]>[k], undefined>
 				: undefined,
-			ctx: SchemaParseContext<d["kind"]>
+			ctx: SchemaParseContext
 		) => d["inner"][k]
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
@@ -167,7 +152,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
 	collapseKey?: keyof d["inner"]
-	addContext?: (ctx: SchemaParseContext<d["kind"]>) => void
+	addContext?: (ctx: SchemaParseContext) => void
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (node: Node<d["kind"]>) => string
 	attach: (node: Node<d["kind"]>) => {

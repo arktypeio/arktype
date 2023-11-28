@@ -289,7 +289,7 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: transform(g.parameters, ([, name]) => [name, keywords.unknown])
+			args: transform(g.parameters, (_, name) => [name, keywords.unknown])
 		}
 	)
 	return g
@@ -302,7 +302,7 @@ export const generic = (
 ) => {
 	return Object.assign(
 		(...args: unknown[]) => {
-			const argNodes = transform(parameters, ([i, param]) => [
+			const argNodes = transform(parameters, (i, param) => [
 				param,
 				parseTypeRoot(args[i], scope)
 			])

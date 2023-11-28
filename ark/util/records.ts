@@ -78,11 +78,11 @@ export const transform = <
 	transformed extends Entry | readonly Entry[]
 >(
 	o: o,
-	flatMapEntry: (entry: entryOf<o>) => transformed
+	flatMapEntry: (...entry: entryOf<o>) => transformed
 ) =>
 	Object.fromEntries(
 		entriesOf(o).flatMap((entry) => {
-			const result = flatMapEntry(entry)
+			const result = flatMapEntry(...entry)
 			return isArray(result[0]) ? (result as never) : [result]
 		})
 	) as evaluate<
