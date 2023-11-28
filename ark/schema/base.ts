@@ -67,13 +67,14 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly referencesByAlias: Record<string, UnknownNode> =
 		this.children.reduce(
-			(result, child) => Object.assign(result, child.contributesReferencesById),
+			(result, child) =>
+				Object.assign(result, child.contributesReferencesByAlias),
 			{}
 		)
 	readonly references: readonly UnknownNode[] = Object.values(
 		this.referencesByAlias
 	)
-	readonly contributesReferencesById: Record<string, UnknownNode>
+	readonly contributesReferencesByAlias: Record<string, UnknownNode>
 	readonly contributesReferences: readonly UnknownNode[]
 
 	declare allows: (data: unknown) => data is t
@@ -103,11 +104,13 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		Object.assign(this, attachments)
 		this.allows = this.space.compile(this, "allows")
 		this.traverse = this.space.compile(this, "traverse")
-		this.contributesReferencesById =
+		this.contributesReferencesByAlias =
 			this.alias in this.referencesByAlias
 				? this.referencesByAlias
 				: { ...this.referencesByAlias, [this.alias]: this }
-		this.contributesReferences = Object.values(this.contributesReferencesById)
+		this.contributesReferences = Object.values(
+			this.contributesReferencesByAlias
+		)
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never

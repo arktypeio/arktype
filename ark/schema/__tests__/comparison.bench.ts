@@ -1,6 +1,7 @@
 import { bench } from "@arktype/attest"
 import { type } from "arktype"
-import { rootSchema } from "../space.js"
+import type { schema } from "../keywords/keywords.js"
+import { rootSchema, space } from "../space.js"
 
 const validInput = {
 	number: 1,
@@ -74,69 +75,90 @@ const arkNode = rootSchema({
 	]
 })
 
-const checkSingle = ($arkRoot: any) => {
-	if (
-		!(
-			(typeof $arkRoot === "object" && $arkRoot !== null) ||
-			typeof $arkRoot === "function"
-		)
-	) {
-		return false
+const arkSpace = space({
+	any: {} as schema.cast<any, "intersection">,
+	bigint: "bigint",
+	// since we know this won't be reduced, it can be safely cast to a union
+	boolean: [{ unit: false }, { unit: true }] as schema.cast<boolean, "union">,
+	false: { unit: false },
+	never: [],
+	null: { unit: null },
+	number: "number",
+	object: "object",
+	string: "string",
+	symbol: "symbol",
+	true: { unit: true },
+	unknown: {},
+	void: { unit: undefined } as schema.cast<void, "unit">,
+	undefined: { unit: undefined },
+	foo: {
+		basis: "object",
+		required: [
+			{ key: "number", value: "number" },
+			{ key: "negNumber", value: "number" },
+			{ key: "maxNumber", value: "number" },
+			{ key: "string", value: "string" },
+			{ key: "longString", value: "string" },
+			{ key: "boolean", value: [{ unit: true }, { unit: false }] },
+			{
+				key: "deeplyNested",
+				value: {
+					basis: "object",
+					required: [
+						{ key: "foo", value: "string" },
+						{ key: "num", value: "number" },
+						{ key: "bool", value: [{ unit: true }, { unit: false }] }
+					]
+				}
+			}
+		]
 	}
-	if ($arkRoot.boolean !== false && $arkRoot.boolean !== true) {
-		return false
-	}
-	if (
-		!(
-			(typeof $arkRoot.deeplyNested === "object" &&
-				$arkRoot.deeplyNested !== null) ||
-			typeof $arkRoot.deeplyNested === "function"
-		)
-	) {
-		return false
-	}
-	if (
-		$arkRoot.deeplyNested.bool !== false &&
-		$arkRoot.deeplyNested.bool !== true
-	) {
-		return false
-	}
-	if (!(typeof $arkRoot.deeplyNested.foo === "string")) {
-		return false
-	}
-	if (!(typeof $arkRoot.deeplyNested.num === "number")) {
-		return false
-	}
-	if (!(typeof $arkRoot.longString === "string")) {
-		return false
-	}
-	if (!(typeof $arkRoot.maxNumber === "number")) {
-		return false
-	}
-	if (!(typeof $arkRoot.negNumber === "number")) {
-		return false
-	}
-	if (!(typeof $arkRoot.number === "number")) {
-		return false
-	}
-	if (!(typeof $arkRoot.string === "string")) {
-		return false
-	}
-	return true
-}
+})
 
-const allows = arkNode.allows
+const anonymousJit = arkSpace.parseJit("intersection", {
+	basis: "object",
+	required: [
+		{ key: "number", value: "number" },
+		{ key: "negNumber", value: "number" },
+		{ key: "maxNumber", value: "number" },
+		{ key: "string", value: "string" },
+		{ key: "longString", value: "string" },
+		{ key: "boolean", value: [{ unit: true }, { unit: false }] },
+		{
+			key: "deeplyNested",
+			value: {
+				basis: "object",
+				required: [
+					{ key: "foo", value: "string" },
+					{ key: "num", value: "number" },
+					{ key: "bool", value: [{ unit: true }, { unit: false }] }
+				]
+			}
+		}
+	]
+})
 
-// const z = arkNode.allows(validInput) //?
+// const allows = arkNode.space.compilations.allows[arkNode.alias]
 
-bench("scoped", () => {
+// bench("anonymous", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		allows(dataArray[i])
+// 	}
+// }).median([175.95, "us"])
+
+// const scopeAllows = arkSpace.compilations.allows
+// const foo = scopeAllows.foo.bind(scopeAllows)
+
+// bench("scoped", () => {
+// 	for (let i = 0; i < 1000; i++) {
+// 		foo(dataArray[i])
+// 	}
+// }).median([7.58, "us"])
+
+const allowsJit = anonymousJit.allows
+
+bench("anonymous", () => {
 	for (let i = 0; i < 1000; i++) {
-		checkSingle(dataArray[i])
+		allowsJit(dataArray[i])
 	}
-}).median([7.32, "us"])
-
-bench("allows", () => {
-	for (let i = 0; i < 1000; i++) {
-		allows(dataArray[i])
-	}
-}).median([175.95, "us"])
+}).median([8.37, "us"])

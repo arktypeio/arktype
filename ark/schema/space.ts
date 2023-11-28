@@ -57,13 +57,12 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 				alias: k
 			})
 			// TODO: same alias across multiple nodes?
-			Object.assign(this.referencesByAlias, node.referencesByAlias)
+			Object.assign(this.referencesByAlias, node.contributesReferencesByAlias)
 			return node
 		})
 		this.keywords = transform(this.schemas, (_, v) => [v.alias, v]) as never
 		this.references = Object.values(this.referencesByAlias)
-		Object.assign(this.compilations.allows, this.compileThis("allows"))
-		Object.assign(this.compilations.traverse, this.compileThis("traverse"))
+		this.compilations = this.getCompilations(this.references)
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			Space.unknownUnion = this.parsePrereduced("union", [
@@ -97,10 +96,26 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		return fn as never
 	}
 
-	private compileThis(kind: CompilationKind) {
-		return new CompiledFunction<() => any>(`return {
+	private getCompilations(
+		references: readonly UnknownNode[]
+	): this["compilations"] {
+		return {
+			allows: new CompiledFunction(
+				this.compileMethodKind("allows", references)
+			)(),
+			traverse: new CompiledFunction(
+				this.compileMethodKind("traverse", references)
+			)()
+		} as never
+	}
+
+	private compileMethodKind(
+		kind: CompilationKind,
+		references: readonly UnknownNode[]
+	) {
+		return `return {
 			${
-				this.references
+				references
 					.map(
 						(reference) => `${reference.alias}(${In}){
 					${reference.compileBody({
@@ -111,7 +126,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			}`
 					)
 					.join(",\n") + "}"
-			}`)()
+			}`
 	}
 
 	get builtin() {
@@ -122,6 +137,21 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		new Space<instantiateAliases<aliases>>(aliases as never)
 
 	static root = new Space<{}>({})
+
+	parseJit<kind extends NodeKind>(
+		kind: kind,
+		def: Definition<kind>,
+		opts: SchemaParseOptions = {}
+	): Node<reducibleKindOf<kind>> {
+		const node = this.parseNode(kind, def, opts)
+		const byAlias = {
+			...this.referencesByAlias,
+			...node.contributesReferencesByAlias
+		}
+		const $ = this.getCompilations(Object.values(byAlias)).allows
+		node.allows = $[node.alias].bind($)
+		return node
+	}
 
 	parseUnion<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
