@@ -83,7 +83,7 @@ export const RequiredImplementation = defineRefinement({
 		}
 	},
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return this.${node.alias}(${In}${compilePropAccess(node.compiledKey)}${
+		return this.${node.value.alias}(${In}${compilePropAccess(node.compiledKey)}${
 			ctx.compilationKind === "allows" ? "" : ", problems"
 		})
 	} else {

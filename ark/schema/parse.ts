@@ -24,7 +24,7 @@ import {
 	type Definition,
 	type reducibleKindOf
 } from "./shared/nodes.js"
-import type { Space } from "./space.js"
+import { Space } from "./space.js"
 
 // TODO: just string?
 // if (Space.root && !Space.unknownUnion) {
@@ -121,6 +121,7 @@ export const parse = <defKind extends NodeKind>(
 	const id = JSON.stringify({ kind, ...json })
 	const typeId = JSON.stringify({ kind, ...typeJson })
 	const baseAttachments = {
+		alias: ctx.alias,
 		kind,
 		inner,
 		entries,
@@ -130,14 +131,15 @@ export const parse = <defKind extends NodeKind>(
 		children,
 		id,
 		typeId,
-		space: this
+		space: ctx.space
 	} satisfies Record<keyof BaseAttachments<any>, unknown> as never
-	// if (Space.unknownUnion?.typeId === node.typeId) {
-	// 	return Space.keywords.unknown
-	// }
+	if (ctx.space.cls.unknownUnion?.typeId === typeId) {
+		return Space.keywords.unknown as never
+	}
 	if (implementation.reduce && !ctx.prereduced) {
 		const reduced = implementation.reduce(inner, ctx.space)
 		if (reduced) {
+			// TODO: update alias on reduction
 			return reduced as never
 		}
 	}

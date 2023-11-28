@@ -140,7 +140,7 @@ export const UnionImplementation = defineNode({
 			// TODO: description?
 			return reducedBranches[0]
 		}
-		if (reducedBranches.length !== inner.branches.length) {
+		if (reducedBranches.length === inner.branches.length) {
 			return
 		}
 		return space.parsePrereduced("union", {

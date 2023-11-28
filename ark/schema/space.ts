@@ -39,8 +39,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		[k in keyof keywords]: keywords[k]["infer"]
 	}
 	declare static keywords: typeof keywords
-	private declare static unknownUnion?: Schema<unknown, "union">
+	declare static unknownUnion?: Schema<unknown, "union">
 	keywords = {} as keywords
+	readonly cls = Space
 	readonly schemas: readonly Schema[]
 	// populated during initial schema parse
 	readonly referencesByAlias: Record<string, UnknownNode> = {}
@@ -61,8 +62,8 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		})
 		this.keywords = transform(this.schemas, (_, v) => [v.alias, v]) as never
 		this.references = Object.values(this.referencesByAlias)
-		// Object.assign(this.compilations.allows, this.compileThis("allows"))
-		// Object.assign(this.compilations.traverse, this.compileThis("traverse"))
+		Object.assign(this.compilations.allows, this.compileThis("allows"))
+		Object.assign(this.compilations.traverse, this.compileThis("traverse"))
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			Space.unknownUnion = this.parsePrereduced("union", [
@@ -83,45 +84,35 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		node: UnknownNode,
 		kind: kind
 	): CompiledMethods[kind] {
-		const fn = new CompiledFunction(
-			In,
-			node.compileBody({
-				path: [],
-				discriminants: [],
-				compilationKind: kind
-			})
-		).bind(this.compilations[kind])
+		const compiledArgs = kind === "allows" ? [In] : [In, "problems"]
+		const body = node.compileBody({
+			path: [],
+			discriminants: [],
+			compilationKind: kind
+		})
+		const fn = new CompiledFunction(...compiledArgs, body).bind(
+			this.compilations[kind]
+		)
 		this.compilations[kind][node.alias] = fn as never
 		return fn as never
 	}
 
-	// // TODO: cache
-	// private compileThis(kind: CompilationKind) {
-	// 	let $ource = `return {
-	// 		${this.references
-	// 			.map(
-	// 				(reference) => `${reference.alias}(${In}){
-	// 				${reference.compileBody({
-	// 					compilationKind: kind,
-	// 					path: [],
-	// 					discriminants: []
-	// 				})}
-	// 		}`
-	// 			)
-	// 			.join(",\n")}`
-	// 	if (kind === "allows") {
-	// 		$ource += "}"
-	// 		return new CompiledFunction<() => any>($ource)()
-	// 	}
-	// 	for (const schema of this.schemas) {
-	// 		$ource += `,
-	// ${schema.alias}Root(${In}) {
-
-	// }`
-	// 	}
-	// 	$ource += "}"
-	// 	return new CompiledFunction<() => any>($ource)()
-	// }
+	private compileThis(kind: CompilationKind) {
+		return new CompiledFunction<() => any>(`return {
+			${
+				this.references
+					.map(
+						(reference) => `${reference.alias}(${In}){
+					${reference.compileBody({
+						compilationKind: kind,
+						path: [],
+						discriminants: []
+					})}
+			}`
+					)
+					.join(",\n") + "}"
+			}`)()
+	}
 
 	get builtin() {
 		return Space.keywords
@@ -225,9 +216,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 
 export const space = Space.from
 
-export const rootSchema = Space.root.schema
+export const rootSchema = Space.root.schema.bind(Space.root)
 
-export const rootNode = Space.root.parseNode
+export const rootNode = Space.root.parseNode.bind(Space.root)
 
 const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)

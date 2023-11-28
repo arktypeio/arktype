@@ -1,4 +1,6 @@
+import { bench } from "@arktype/attest"
 import { type } from "arktype"
+import { rootSchema } from "../space.js"
 
 const validInput = {
 	number: 1,
@@ -47,6 +49,29 @@ const arkType = type({
 		num: "number",
 		bool: "boolean"
 	}
+})
+
+const arkNode = rootSchema({
+	basis: "object",
+	required: [
+		{ key: "number", value: "number" },
+		{ key: "negNumber", value: "number" },
+		{ key: "maxNumber", value: "number" },
+		{ key: "string", value: "string" },
+		{ key: "longString", value: "string" },
+		{ key: "boolean", value: [{ unit: true }, { unit: false }] },
+		{
+			key: "deeplyNested",
+			value: {
+				basis: "object",
+				required: [
+					{ key: "foo", value: "string" },
+					{ key: "num", value: "number" },
+					{ key: "bool", value: [{ unit: true }, { unit: false }] }
+				]
+			}
+		}
+	]
 })
 
 const checkSingle = ($arkRoot: any) => {
@@ -100,22 +125,18 @@ const checkSingle = ($arkRoot: any) => {
 	return true
 }
 
-const allows = arkType.allows
+const allows = arkNode.allows
 
-// bench("scoped", () => {
-// 	for (let i = 0; i < 1000; i++) {
-// 		checkScoped(dataArray[i])
-// 	}
-// }).median([6.79, "us"])
+// const z = arkNode.allows(validInput) //?
 
-// bench("scoped2", () => {
-// 	for (let i = 0; i < 1000; i++) {
-// 		z(dataArray[i])
-// 	}
-// }).median([5.77, "us"])
+bench("scoped", () => {
+	for (let i = 0; i < 1000; i++) {
+		checkSingle(dataArray[i])
+	}
+}).median([7.32, "us"])
 
-// bench("allows", () => {
-// 	for (let i = 0; i < 1000; i++) {
-// 		allows(dataArray[i])
-// 	}
-// }).median([7.81, "us"])
+bench("allows", () => {
+	for (let i = 0; i < 1000; i++) {
+		allows(dataArray[i])
+	}
+}).median([175.95, "us"])

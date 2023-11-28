@@ -43,6 +43,7 @@ import { arkKind } from "./shared/registry.js"
 import type { Space } from "./space.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
+	readonly alias: string
 	readonly kind: kind
 	readonly inner: Inner<kind>
 	readonly entries: entriesOf<Inner<kind>>
@@ -64,7 +65,6 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
-	readonly alias: string
 	readonly referencesByAlias: Record<string, UnknownNode> =
 		this.children.reduce(
 			(result, child) => Object.assign(result, child.contributesReferencesById),
@@ -101,7 +101,6 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		}
 		const attachments = this.implementation.attach(this as never)
 		Object.assign(this, attachments)
-		this.alias ??= $ark.register(this)
 		this.allows = this.space.compile(this, "allows")
 		this.traverse = this.space.compile(this, "traverse")
 		this.contributesReferencesById =
