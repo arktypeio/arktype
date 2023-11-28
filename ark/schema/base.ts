@@ -43,7 +43,7 @@ import { arkKind } from "./shared/registry.js"
 import type { Space } from "./space.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
-	readonly alias: string
+	readonly uuid: string
 	readonly kind: kind
 	readonly inner: Inner<kind>
 	readonly entries: entriesOf<Inner<kind>>
@@ -105,9 +105,9 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		this.allows = this.space.compile(this, "allows")
 		this.traverse = this.space.compile(this, "traverse")
 		this.contributesReferencesByAlias =
-			this.alias in this.referencesByAlias
+			this.uuid in this.referencesByAlias
 				? this.referencesByAlias
-				: { ...this.referencesByAlias, [this.alias]: this }
+				: { ...this.referencesByAlias, [this.uuid]: this }
 		this.contributesReferences = Object.values(
 			this.contributesReferencesByAlias
 		)

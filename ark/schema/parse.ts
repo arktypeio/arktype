@@ -3,6 +3,8 @@ import {
 	hasDomain,
 	includes,
 	throwParseError,
+	transform,
+	type PartialRecord,
 	type extend
 } from "@arktype/util"
 import {
@@ -14,6 +16,7 @@ import {
 import { SchemaNode } from "./schema.js"
 import {
 	defaultInnerKeySerializer,
+	nodeKinds,
 	schemaKinds,
 	type BasisKind,
 	type NodeKind,
@@ -26,22 +29,6 @@ import {
 } from "./shared/nodes.js"
 import { Space } from "./space.js"
 
-// TODO: just string?
-// if (Space.root && !Space.unknownUnion) {
-//     // ensure root has been set before parsing this to avoid a circularity
-//     Space.unknownUnion = this.prereduced("union", [
-//         "string",
-//         "number",
-//         "object",
-//         "bigint",
-//         "symbol",
-//         { unit: true },
-//         { unit: false },
-//         { unit: null },
-//         { unit: undefined }
-//     ])
-// }
-
 export type SchemaParseOptions = {
 	alias?: string
 	prereduced?: true
@@ -51,8 +38,6 @@ export type SchemaParseOptions = {
 export type SchemaParseContext = extend<
 	SchemaParseOptions,
 	{
-		// alias is required in context so respecify it that way
-		alias: string
 		space: Space
 		definition: unknown
 	}
@@ -74,7 +59,7 @@ export const parse = <defKind extends NodeKind>(
 		kind
 	] as never
 	const normalizedDefinition: any = implementation.normalize?.(def) ?? def
-	const inner: Record<string, unknown> = {}
+	const inner: Record<string, unknown> = ctx.alias ? { alias: ctx.alias } : {}
 	implementation.addContext?.(ctx)
 	const schemaEntries = entriesOf(normalizedDefinition).sort((l, r) =>
 		l[0] < r[0] ? -1 : 1
@@ -120,8 +105,10 @@ export const parse = <defKind extends NodeKind>(
 	}
 	const id = JSON.stringify({ kind, ...json })
 	const typeId = JSON.stringify({ kind, ...typeJson })
+	const prefix = ctx.alias ?? kind
+	typeCountsByPrefix[prefix] ??= 0
 	const baseAttachments = {
-		alias: ctx.alias,
+		uuid: `${prefix}${++typeCountsByPrefix[prefix]!}`,
 		kind,
 		inner,
 		entries,
@@ -147,3 +134,5 @@ export const parse = <defKind extends NodeKind>(
 		? new SchemaNode(baseAttachments)
 		: (new BaseNode(baseAttachments) as any)
 }
+
+const typeCountsByPrefix: PartialRecord<string, number> = {}

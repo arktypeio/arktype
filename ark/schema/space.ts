@@ -34,6 +34,11 @@ import { isNode } from "./shared/registry.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 
+export const compilations = {
+	allows: {} as Record<string, CompiledMethods["allows"]>,
+	traverse: {} as Record<string, CompiledMethods["traverse"]>
+}
+
 export class Space<keywords extends nodeResolutions<keywords> = any> {
 	declare infer: {
 		[k in keyof keywords]: keywords[k]["infer"]
@@ -46,10 +51,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	// populated during initial schema parse
 	readonly referencesByAlias: Record<string, UnknownNode> = {}
 	readonly references: readonly UnknownNode[]
-	readonly compilations = {
-		allows: {} as Record<string, CompiledMethods["allows"]>,
-		traverse: {} as Record<string, CompiledMethods["traverse"]>
-	}
 
 	constructor(public aliases: Dict<string, unknown>) {
 		this.schemas = Object.entries(this.aliases).map(([k, v]) => {
@@ -60,9 +61,8 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			Object.assign(this.referencesByAlias, node.contributesReferencesByAlias)
 			return node
 		})
-		this.keywords = transform(this.schemas, (_, v) => [v.alias, v]) as never
+		this.keywords = transform(this.schemas, (_, v) => [v.alias!, v]) as never
 		this.references = Object.values(this.referencesByAlias)
-		this.compilations = this.getCompilations(this.references)
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			Space.unknownUnion = this.parsePrereduced("union", [
@@ -90,44 +90,59 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			compilationKind: kind
 		})
 		const fn = new CompiledFunction(...compiledArgs, body).bind(
-			this.compilations[kind]
+			compilations[kind]
 		)
-		this.compilations[kind][node.alias] = fn as never
+		compilations[kind][node.uuid] = fn as never
 		return fn as never
 	}
 
-	private getCompilations(
-		references: readonly UnknownNode[]
-	): this["compilations"] {
-		return {
-			allows: new CompiledFunction(
-				this.compileMethodKind("allows", references)
-			)(),
-			traverse: new CompiledFunction(
-				this.compileMethodKind("traverse", references)
-			)()
-		} as never
-	}
+	// private getCompilations(
+	// 	references: readonly UnknownNode[]
+	// ): this["compilations"] {
+	// 	return {
+	// 		allows: new CompiledFunction(
+	// 			this.compileMethodKind("allows", references)
+	// 		)(),
+	// 		traverse: new CompiledFunction(
+	// 			this.compileMethodKind("traverse", references)
+	// 		)()
+	// 	} as never
+	// }
 
-	private compileMethodKind(
-		kind: CompilationKind,
-		references: readonly UnknownNode[]
-	) {
-		return `return {
-			${
-				references
-					.map(
-						(reference) => `${reference.alias}(${In}){
-					${reference.compileBody({
-						compilationKind: kind,
-						path: [],
-						discriminants: []
-					})}
-			}`
-					)
-					.join(",\n") + "}"
-			}`
-	}
+	// private compileMethodKind(
+	// 	kind: CompilationKind,
+	// 	references: readonly UnknownNode[]
+	// ) {
+	// 	return `return {
+	// 		${
+	// 			references
+	// 				.map(
+	// 					(reference) => `${reference.alias}(${In}){
+	// 				${reference.compileBody({
+	// 					compilationKind: kind,
+	// 					path: [],
+	// 					discriminants: []
+	// 				})}
+	// 		}`
+	// 				)
+	// 				.join(",\n") + "}"
+	// 		}`
+	// }
+
+	// parseJit<kind extends NodeKind>(
+	// 	kind: kind,
+	// 	def: Definition<kind>,
+	// 	opts: SchemaParseOptions = {}
+	// ): Node<reducibleKindOf<kind>> {
+	// 	const node = this.parseNode(kind, def, opts)
+	// 	const byAlias = {
+	// 		...this.referencesByAlias,
+	// 		...node.contributesReferencesByAlias
+	// 	}
+	// 	const $ = this.getCompilations(Object.values(byAlias)).allows
+	// 	node.allows = $[node.alias].bind($)
+	// 	return node
+	// }
 
 	get builtin() {
 		return Space.keywords
@@ -137,21 +152,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		new Space<instantiateAliases<aliases>>(aliases as never)
 
 	static root = new Space<{}>({})
-
-	parseJit<kind extends NodeKind>(
-		kind: kind,
-		def: Definition<kind>,
-		opts: SchemaParseOptions = {}
-	): Node<reducibleKindOf<kind>> {
-		const node = this.parseNode(kind, def, opts)
-		const byAlias = {
-			...this.referencesByAlias,
-			...node.contributesReferencesByAlias
-		}
-		const $ = this.getCompilations(Object.values(byAlias)).allows
-		node.allows = $[node.alias].bind($)
-		return node
-	}
 
 	parseUnion<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
@@ -215,16 +215,12 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		return this.parseNode(kind, def as never) as never
 	}
 
-	private readonly anonymousTypeCountsByKind = transform(
-		nodeKinds,
-		(_, kind) => [kind, 0]
-	)
 	parseNode<kind extends NodeKind>(
 		kind: kind,
 		def: Definition<kind>,
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<kind>> {
-		if (opts.alias && opts.alias in this.referencesByAlias) {
+		if (opts.alias && opts.alias in this.keywords) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
 			)
@@ -232,7 +228,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		return parse(kind, def, {
 			...opts,
 			space: this,
-			alias: opts.alias ?? `${kind}${++this.anonymousTypeCountsByKind[kind]}`,
 			definition: def
 		}) as never
 	}

@@ -11,11 +11,17 @@ const aNumber = schema({
 
 const aNumberType = type({
 	a: "number"
-}).allows
+})
 
-const aNumberData = range(1000).map((_, i) => ({ a: i }))
+const thousand = range(1000)
+
+const aNumberData = range(1000).map((i) => ({ a: i }))
 
 const result = aNumber({ a: 5 }) //?. $
+
+aNumberType.root.alias //?
+
+aNumberType.allows({ a: 5 }) //?
 
 range(1000).forEach((i) => {
 	aNumberType(aNumberData[i]) //?.
@@ -83,29 +89,6 @@ const arkType = type({
 	}
 })
 
-const arkNode = rootSchema({
-	basis: "object",
-	required: [
-		{ key: "number", value: "number" },
-		{ key: "negNumber", value: "number" },
-		{ key: "maxNumber", value: "number" },
-		{ key: "string", value: "string" },
-		{ key: "longString", value: "string" },
-		{ key: "boolean", value: [{ unit: true }, { unit: false }] },
-		{
-			key: "deeplyNested",
-			value: {
-				basis: "object",
-				required: [
-					{ key: "foo", value: "string" },
-					{ key: "num", value: "number" },
-					{ key: "bool", value: [{ unit: true }, { unit: false }] }
-				]
-			}
-		}
-	]
-})
-
 const arkSpace = space({
 	any: {} as schema.cast<any, "intersection">,
 	bigint: "bigint",
@@ -146,37 +129,24 @@ const arkSpace = space({
 	}
 })
 
-const anonymousJit = arkSpace.parseJit("intersection", {
-	basis: "object",
-	required: [
-		{ key: "number", value: "number" },
-		{ key: "negNumber", value: "number" },
-		{ key: "maxNumber", value: "number" },
-		{ key: "string", value: "string" },
-		{ key: "longString", value: "string" },
-		{ key: "boolean", value: [{ unit: true }, { unit: false }] },
-		{
-			key: "deeplyNested",
-			value: {
-				basis: "object",
-				required: [
-					{ key: "foo", value: "string" },
-					{ key: "num", value: "number" },
-					{ key: "bool", value: [{ unit: true }, { unit: false }] }
-				]
-			}
-		}
-	]
-})
+bench("space", () => {
+	thousand.forEach((i) => {
+		arkSpace.keywords.foo.allows(dataArray[i])
+	})
+}).median([164.23, "us"])
+
+bench("test", () => {
+	thousand.forEach((i) => {
+		arkType.allows(dataArray[i])
+	})
+}).median([164.23, "us"])
+
+arkType.allows(validInput) //?
 
 range(1000).forEach((i) => {
 	arkType.allows(dataArray[i]) //?.
 })
 
-range(1000).forEach((i) => {
-	arkSpace.keywords.foo.allows(dataArray[i]) //?.
-})
-
-range(1000).forEach((i) => {
-	anonymousJit.allows(dataArray[i]) //?.
-})
+// range(1000).forEach((i) => {
+// 	arkSpace.keywords.foo.allows(dataArray[i]) //?.
+// })
