@@ -17,23 +17,19 @@
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",
-			"types": "./dist/main.d.ts",
-			"default": "./dist/main.js"
+			"import": "./dist/main.js",
+			"types": "./dist/main.d.ts"
 		},
 		"./internal/*": {
 			"arktype-repo": "./*",
-			"types": "./dist/*",
-			"default": "./dist/*"
+			"import": "./dist/*"
 		}
 	},
 	"files": [
-		"dist",
-		"**/*.ts",
-		"!**/*.tsBuildInfo",
-		"!__tests__"
+		"dist"
 	],
 	"scripts": {
-		"build": "tsc --build ./tsconfig.build.json",
+		"build": "tsup --config ../repo/tsup.config.ts",
 		"bench": "ts ./__tests__/comparison.bench.ts",
 		"test": "ts ../repo/testPackage.ts",
 		"tnt": "ts ../repo/testPackage.ts --skipTypes"

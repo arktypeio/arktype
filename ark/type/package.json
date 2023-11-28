@@ -23,18 +23,16 @@
 		},
 		"./internal/*": {
 			"arktype-repo": "./*",
-			"types": "./dist/*",
-			"default": "./dist/*"
+			"import": "./dist/*"
 		}
 	},
 	"files": [
 		"dist",
-		"**/*.ts",
-		"!**/*.tsBuildInfo",
-		"!__tests__"
+		"!__tests__",
+		"**/*.ts"
 	],
 	"scripts": {
-		"build": "tsc --build ./tsconfig.build.json",
+		"build": "tsup --config ../repo/tsup.config.ts",
 		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
