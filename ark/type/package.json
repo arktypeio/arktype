@@ -19,7 +19,8 @@
 		".": {
 			"arktype-repo": "./main.js",
 			"types": "./dist/main.d.ts",
-			"default": "./dist/main.js"
+			"import": "./dist/main.js",
+			"default": "./dist/main.cjs"
 		},
 		"./internal/*": {
 			"arktype-repo": "./*",
