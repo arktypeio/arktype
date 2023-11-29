@@ -97,7 +97,7 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 	if (duplicatedPrefixes.length) {
 		completions = `Encountered multiple completion candidates for string(s) '${duplicatedPrefixes.join(
 			", "
-		)}'. Assertions on the same prefix must be split int multip le attest calls so the results can be distinguished.`
+		)}'. Assertions on the same prefix must be split into multiple attest calls so the results can be distinguished.`
 	}
 
 	return completions
