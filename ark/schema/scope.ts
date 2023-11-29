@@ -38,6 +38,10 @@ export const globalResolutions: BaseResolutions = {}
 
 export type BaseResolutions = Record<string, Schema>
 
+export interface ArkConfig {
+	preserve(): never
+}
+
 export type StaticScope = {
 	exports: BaseResolutions
 	locals: BaseResolutions

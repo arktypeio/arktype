@@ -12,11 +12,10 @@ import type { Schema } from "./schema.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
-import {
-	compileAnonymous,
-	type CompilationContext,
-	type CompilationKind,
-	type Problems
+import type {
+	CompilationContext,
+	CompilationKind,
+	Problems
 } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
@@ -45,7 +44,7 @@ import {
 	type childKindOf,
 	type reducibleKindOf
 } from "./shared/nodes.js"
-import { arkKind } from "./shared/registry.js"
+import { arkKind } from "./shared/symbols.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
 	alias?: string

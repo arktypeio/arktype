@@ -1,7 +1,7 @@
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
 
-import type { returnOf } from "@arktype/util"
+import type { intersectUnion, overloadOf, returnOf } from "@arktype/util"
 import type { UnknownNode } from "../base.js"
 import type { ModuleNode } from "../scope.js"
 
@@ -28,11 +28,9 @@ declare global {
 	}
 }
 
-export type inferArkKind<
-	kind extends keyof returnOf<InternalArkConfig["kinds"]>
-> = returnOf<InternalArkConfig["kinds"]>[kind]
-
-export type ArkKinds = returnOf<InternalArkConfig["kinds"]>
+export type ArkKinds = intersectUnion<
+	returnOf<overloadOf<InternalArkConfig["kinds"]>>
+>
 
 export type ArkKind = keyof ArkKinds
 
