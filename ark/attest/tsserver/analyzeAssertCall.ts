@@ -57,7 +57,7 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 	const duplicatedPrefixes: string[] = []
 
 	for (const descendant of descendants) {
-		if (ts.isStringLiteral(descendant) ) {
+		if (ts.isStringLiteral(descendant)) {
 			// descendant.pos tends to be an open quote while d.end tends to be right after the closing quote.
 			// It seems to be more consistent using this to get the pos for the completion over descendant.pos
 			const lastPositionOfInnerString =
@@ -80,8 +80,11 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 				if (prefix in completions) {
 					duplicatedPrefixes.push(prefix)
 				} else {
-					for(const entry of entries){
-						if(entry.name.startsWith(prefix) && entry.name.length > prefix.length){
+					for (const entry of entries) {
+						if (
+							entry.name.startsWith(prefix) &&
+							entry.name.length > prefix.length
+						) {
 							completions[prefix] ??= []
 							completions[prefix].push(entry.name)
 						}
@@ -96,6 +99,6 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 			", "
 		)}'. Assertions on the same prefix must be split int multip le attest calls so the results can be distinguished.`
 	}
-	
+
 	return completions
 }

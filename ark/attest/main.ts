@@ -11,4 +11,3 @@ export type {
 	TypeRelationship
 } from "./tsserver/getAssertionsInFile.js"
 export { getTsVersionUnderTest } from "./utils.js"
-

@@ -1,18 +1,22 @@
-import { caller } from "@arktype/fs";
-import { printable, snapshot } from "@arktype/util";
-import * as assert from "node:assert/strict";
-import { isDeepStrictEqual } from "node:util";
-import { getSnapshotByName, queueSnapshotUpdate, type SnapshotArgs } from "../snapshot/snapshot.js";
-import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js";
-import type { Completions } from "../tsserver/analyzeAssertCall.js";
-import { chainableNoOpProxy } from "../utils.js";
-import { assertEquals } from "./assertEquals.js";
-import type { AssertionContext } from "./attest.js";
+import { caller } from "@arktype/fs"
+import { printable, snapshot } from "@arktype/util"
+import * as assert from "node:assert/strict"
+import { isDeepStrictEqual } from "node:util"
+import {
+	getSnapshotByName,
+	queueSnapshotUpdate,
+	type SnapshotArgs
+} from "../snapshot/snapshot.js"
+import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
+import type { Completions } from "../tsserver/analyzeAssertCall.js"
+import { chainableNoOpProxy } from "../utils.js"
+import { assertEquals } from "./assertEquals.js"
+import type { AssertionContext } from "./attest.js"
 import {
 	assertEqualOrMatching,
 	callAssertedFunction,
 	getThrownMessage
-} from "./utils.js";
+} from "./utils.js"
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean
@@ -229,7 +233,7 @@ export type ChainContext = {
 
 export type functionAssertions<kind extends AssertionKind> = {
 	throws: inferredAssertions<[message: string | RegExp], kind, string>
-	completions: inferredAssertions<[message: string], kind, Completions>
+	completions: inferredAssertions<[Completions], kind, Completions>
 } & ("type" extends kind
 	? {
 			throwsAndHasTypeError: (message: string | RegExp) => undefined

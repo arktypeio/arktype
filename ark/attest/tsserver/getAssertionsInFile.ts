@@ -145,8 +145,8 @@ export const compareTsTypes = (
 				? "equality"
 				: "subtype"
 			: isSupertype
-			? "supertype"
-			: "none"
+			  ? "supertype"
+			  : "none"
 	}
 }
 

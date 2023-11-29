@@ -1,14 +1,12 @@
-import { type SerializedAssertionData } from "@arktype/attest"
-import type { SourcePosition } from "@arktype/fs"
-import { caller, getCallStack } from "@arktype/fs"
-import type { AttestConfig } from "../config.js"
-import { getConfig } from "../config.js"
+import type { SerializedAssertionData } from "@arktype/attest"
+import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
+import { getConfig, type AttestConfig } from "../config.js"
 import { getAssertionDataAtPosition } from "../tsserver/getAssertionDataAtPosition.js"
 import { assertExpectedType } from "./assertEquals.js"
 import {
-    ChainableAssertions,
-    type AssertionKind,
-    type rootAssertions
+	ChainableAssertions,
+	type AssertionKind,
+	type rootAssertions
 } from "./chainableAssertions.js"
 
 export type AttestFn = {

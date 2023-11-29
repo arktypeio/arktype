@@ -1,6 +1,5 @@
 import type tsvfs from "@typescript/vfs"
 import type ts from "typescript"
-import type { Diagnostic } from "typescript"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
 import {
@@ -17,7 +16,7 @@ interface InternalTypeChecker extends ts.TypeChecker {
 	// These APIs are not publicly exposed
 	getInstantiationCount: () => number
 	isTypeAssignableTo: (source: ts.Type, target: ts.Type) => boolean
-	getDiagnostics: () => Diagnostic[]
+	getDiagnostics: () => ts.Diagnostic[]
 }
 
 export const getInternalTypeChecker = (

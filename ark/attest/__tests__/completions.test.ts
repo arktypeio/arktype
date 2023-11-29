@@ -32,13 +32,13 @@ describe("autocompletes", () => {
 				u: ["undefined", "unknown", "uppercase", "uuid", "url"]
 			})
 		})
-		test("Checks that results are equivalent", () => {
+		test("Both formats provide exact results", () => {
 			//@ts-expect-error
-			attest(() => type({ a: "u" })).completions.snap({
+			attest(() => type({ a: "u" })).completions({
 				u: ["undefined", "unknown", "uppercase", "uuid", "url"]
 			})
 			//@ts-expect-error
-			attest(() => type({ a: "u" })).type.completions.snap({
+			attest(() => type({ a: "u" })).type.completions({
 				u: ["undefined", "unknown", "uppercase", "uuid", "url"]
 			})
 		})
@@ -51,7 +51,7 @@ describe("autocompletes", () => {
 				"": ["extra", "prop1", "prop2"]
 			})
 		})
-		test("Typed object", () => {
+		test("Lists available keys", () => {
 			//@ts-expect-error
 			attest(() => type("str", "@", { "": "" })).completions.snap({
 				str: ["string"],
@@ -107,13 +107,13 @@ describe("autocompletes", () => {
 					attest(
 						// @ts-expect-error
 						() => type({ a: "st", b: "st", c: "b" })
-					).type.completions.snap("(undefined)"),
+					).type.completions.snap(),
 				Error,
 				"Did not throw"
 			)
 		})
 
-		  test("Unresolvable", () => {
+		test("Unresolvable", () => {
 			// @ts-expect-error
 			attest(() => type("y")).completions.snap({})
 		})
