@@ -1,22 +1,18 @@
-import { caller } from "@arktype/fs"
-import { printable, snapshot } from "@arktype/util"
-import * as assert from "node:assert/strict"
-import { isDeepStrictEqual } from "node:util"
-import {
-	getSnapshotByName,
-	queueSnapshotUpdate,
-	type SnapshotArgs
-} from "../snapshot/snapshot.js"
-import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
-import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.js"
-import { chainableNoOpProxy } from "../utils.js"
-import { assertEquals } from "./assertEquals.js"
-import type { AssertionContext } from "./attest.js"
+import { caller } from "@arktype/fs";
+import { printable, snapshot } from "@arktype/util";
+import * as assert from "node:assert/strict";
+import { isDeepStrictEqual } from "node:util";
+import { getSnapshotByName, queueSnapshotUpdate, type SnapshotArgs } from "../snapshot/snapshot.js";
+import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js";
+import type { Completions } from "../tsserver/analyzeAssertCall.js";
+import { chainableNoOpProxy } from "../utils.js";
+import { assertEquals } from "./assertEquals.js";
+import type { AssertionContext } from "./attest.js";
 import {
 	assertEqualOrMatching,
 	callAssertedFunction,
 	getThrownMessage
-} from "./utils.js"
+} from "./utils.js";
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean
@@ -153,10 +149,20 @@ export class ChainableAssertions implements AssertionRecord {
 		if (!this.ctx.cfg.skipTypes) {
 			assertEqualOrMatching(
 				matchValue,
-				getArgTypesAtPosition(this.ctx.position).errors.join("\n"),
+				this.ctx.assertionData?.errors.join("\n"),
 				this.ctx
 			)
 		}
+	}
+
+	get completions() {
+		if (this.ctx.cfg.skipTypes) {
+			return chainableNoOpProxy
+		}
+		const completions = this.ctx.assertionData?.completions
+		checkCompletionsForErrors(completions)
+		this.ctx.actual = completions
+		return this.immediateOrChained()
 	}
 
 	get type() {
@@ -168,33 +174,27 @@ export class ChainableAssertions implements AssertionRecord {
 		const self = this
 		return {
 			get toString() {
-				self.ctx.actual = getArgTypesAtPosition(self.ctx.position).args[0].type
+				self.ctx.actual = self.ctx.assertionData?.args[0].type
 				return self.immediateOrChained()
 			},
 			get errors() {
-				self.ctx.actual = getArgTypesAtPosition(self.ctx.position).errors.join(
-					"\n"
-				)
+				self.ctx.actual = self.ctx.assertionData?.errors.join("\n")
 				self.ctx.allowRegex = true
+				return self.immediateOrChained()
+			},
+			get completions() {
+				const completions = self.ctx.assertionData?.completions
+				checkCompletionsForErrors(completions)
+				self.ctx.actual = completions
 				return self.immediateOrChained()
 			}
 		}
 	}
-
-	// get typed() {
-	// 	if (this.ctx.cfg.skipTypes) {
-	// 		return undefined
-	// 	}
-	// 	const assertionData = getTypeDataAtPos(this.ctx.position)
-	// 	if (!assertionData.type.expected) {
-	// 		throw new Error(
-	// 			`Expected an 'as' expression after 'typed' prop access at position ${this.ctx.position.char} on ` +
-	// 				`line ${this.ctx.position.line} of ${this.ctx.position.file}.`
-	// 		)
-	// 	}
-	// 	assertExpectedType(assertionData)
-	// 	return undefined
-	// }
+}
+const checkCompletionsForErrors = (completions?: Completions) => {
+	if (typeof completions === "string") {
+		throw new Error(completions)
+	}
 }
 
 export type AssertionKind = "value" | "type"
@@ -229,6 +229,7 @@ export type ChainContext = {
 
 export type functionAssertions<kind extends AssertionKind> = {
 	throws: inferredAssertions<[message: string | RegExp], kind, string>
+	completions: inferredAssertions<[message: string], kind, Completions>
 } & ("type" extends kind
 	? {
 			throwsAndHasTypeError: (message: string | RegExp) => undefined
@@ -252,18 +253,19 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	snap: snapProperty<expected, kind>
 	equals: (value: expected) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
+	completions: (value: expected) => nextAssertions<kind>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }
 
 export type TypeAssertionsRoot = {
 	type: TypeAssertionProps
-	//typed: unknown
 }
 
 export type TypeAssertionProps = {
 	toString: valueFromTypeAssertion<string>
 	errors: valueFromTypeAssertion<string | RegExp, string>
+	completions: valueFromTypeAssertion<Completions>
 }
 
 export type ExternalSnapshotOptions = {

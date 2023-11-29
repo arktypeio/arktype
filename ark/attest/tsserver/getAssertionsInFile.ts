@@ -6,7 +6,7 @@ import {
 	getStringifiableType,
 	type StringifiableType
 } from "./analysis.js"
-import { analyzeAssertCall } from "./analyzeAssertCall.js"
+import { analyzeAssertCall, type Completions } from "./analyzeAssertCall.js"
 import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
 
 export type LinePositionRange = {
@@ -21,12 +21,12 @@ export type SerializedArgAssertion = {
 		typeArgs: TypeRelationship[]
 	}
 }
-
 export type SerializedAssertionData = {
 	location: LinePositionRange
 	args: SerializedArgAssertion[]
 	typeArgs: SerializedArgAssertion[]
 	errors: string[]
+	completions: Completions
 }
 
 export const getExpressionsByName = (
@@ -145,8 +145,8 @@ export const compareTsTypes = (
 				? "equality"
 				: "subtype"
 			: isSupertype
-			  ? "supertype"
-			  : "none"
+			? "supertype"
+			: "none"
 	}
 }
 

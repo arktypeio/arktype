@@ -2,22 +2,14 @@ import { caller } from "@arktype/fs"
 import { performance } from "node:perf_hooks"
 import { chainableNoOpProxy } from "../utils.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import {
-	unhandledExceptionMessages,
-	type BenchContext,
-	type BenchableFunction,
-	type UntilOptions
-} from "./bench.js"
+import type { BenchContext, BenchableFunction, UntilOptions } from "./bench.js"
+import { unhandledExceptionMessages } from "./bench.js"
 import { await1K } from "./generated/await1k.js"
 import { call1K } from "./generated/call1k.js"
-import {
-	createTimeComparison,
-	createTimeMeasure,
-	type MarkMeasure,
-	type Measure,
-	type TimeUnit
-} from "./measure.js"
-import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.js"
+import type { MarkMeasure, Measure, TimeUnit } from "./measure.js"
+import { createTimeComparison, createTimeMeasure } from "./measure.js"
+import type { BenchTypeAssertions } from "./type.js"
+import { createBenchTypeAssertion } from "./type.js"
 
 export type StatName = keyof typeof stats
 

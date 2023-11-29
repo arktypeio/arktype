@@ -3,7 +3,7 @@ export { attest } from "./assert/attest.js"
 export { bench } from "./bench/bench.js"
 export { getDefaultAttestConfig, type AttestConfig } from "./config.js"
 export { cleanup, setup } from "./tsserver/cacheAssertions.js"
-export { getArgTypesAtPosition } from "./tsserver/getArgTypesAtPosition.js"
+export { getAssertionDataAtPosition } from "./tsserver/getAssertionDataAtPosition.js"
 export type {
 	LinePositionRange,
 	SerializedArgAssertion,
@@ -11,3 +11,4 @@ export type {
 	TypeRelationship
 } from "./tsserver/getAssertionsInFile.js"
 export { getTsVersionUnderTest } from "./utils.js"
+

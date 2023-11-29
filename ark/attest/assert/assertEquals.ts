@@ -1,6 +1,8 @@
 import { printable, throwInternalError } from "@arktype/util"
 import * as assert from "node:assert/strict"
-import type { SerializedAssertionData } from "../tsserver/getAssertionsInFile.js"
+import type {
+	SerializedAssertionData
+} from "../tsserver/getAssertionsInFile.js"
 import type { AssertionContext } from "./attest.js"
 
 export type ThrowAsertionErrorContext = {

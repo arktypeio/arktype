@@ -1,8 +1,12 @@
-import { caller, type SourcePosition } from "@arktype/fs"
-import { ensureCacheDirs, getConfig, type AttestConfig } from "../config.js"
+import type { SourcePosition } from "@arktype/fs"
+import { caller } from "@arktype/fs"
+import type { AttestConfig } from "../config.js"
+import { ensureCacheDirs, getConfig } from "../config.js"
 import { chainableNoOpProxy } from "../utils.js"
-import { BenchAssertions, type TimeAssertionName } from "./call.js"
-import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.js"
+import type { TimeAssertionName } from "./call.js"
+import { BenchAssertions } from "./call.js"
+import type { BenchTypeAssertions } from "./type.js"
+import { createBenchTypeAssertion } from "./type.js"
 
 export type UntilOptions = {
 	ms?: number

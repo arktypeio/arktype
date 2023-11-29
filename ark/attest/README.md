@@ -123,16 +123,16 @@ This ensures that type assertions can be made across processes without creating 
 
 ### APIs
 
-The most flexible attest APIs are `getArgTypesAtPosition` and `caller`.
+The most flexible attest APIs are `getAssertionDataAtPosition` and `caller`.
 
 Here's an example of how you might use them in your own API:
 
 ```ts
-import { getArgTypesAtPosition, caller } from "@arktype/attest"
+import { getAssertionDataAtPosition, caller } from "@arktype/attest"
 
 const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 	const position = caller()
-	const types = getArgTypesAtPosition(position)
+	const types = getAssertionDataAtPosition(position)
 	// assert that the type of actualValue is the same as the type of expectedType
 	const relationship = types.args[0].relationships.typeArgs[0]
 	if (relationship === undefined) {

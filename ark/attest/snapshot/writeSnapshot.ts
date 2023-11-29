@@ -11,12 +11,8 @@ import { basename, join } from "node:path"
 import type ts from "typescript"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
-import {
-	findCallExpressionAncestor,
-	resolveSnapshotPath,
-	type QueuedUpdate,
-	type SnapshotArgs
-} from "./snapshot.js"
+import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
+import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
 	name: string
@@ -116,8 +112,8 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
 				l.position.line > r.position.line
 					? 1
 					: r.position.line > l.position.line
-					  ? -1
-					  : l.position.char - r.position.char
+					? -1
+					: l.position.char - r.position.char
 			)
 		)
 	}

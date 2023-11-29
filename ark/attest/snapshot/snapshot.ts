@@ -1,9 +1,5 @@
-import {
-	positionToString,
-	readJson,
-	writeJson,
-	type SourcePosition
-} from "@arktype/fs"
+import type { SourcePosition } from "@arktype/fs"
+import { positionToString, readJson, writeJson } from "@arktype/fs"
 import { randomUUID } from "node:crypto"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type ts from "typescript"
@@ -60,14 +56,6 @@ export const getSnapshotByName = (
 	return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
 
-let writeCachedUpdatesOnExit = false
-
-process.on("exit", () => {
-	if (writeCachedUpdatesOnExit) {
-		writeCachedInlineSnapshotUpdates()
-	}
-})
-
 /**
  * Writes the update and position to cacheDir, which will eventually be read and copied to the source
  * file by a cleanup process after all tests have completed.
@@ -82,9 +70,6 @@ export const queueSnapshotUpdate = (args: SnapshotArgs) => {
 		),
 		args
 	)
-	if (isBench || !config.skipTypes) {
-		writeCachedUpdatesOnExit = true
-	}
 }
 
 export type QueuedUpdate = {
