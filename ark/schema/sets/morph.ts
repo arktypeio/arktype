@@ -1,9 +1,6 @@
 import {
 	listFrom,
 	throwParseError,
-	type BuiltinObjectKind,
-	type BuiltinObjects,
-	type Primitive,
 	type evaluate,
 	type listable
 } from "@arktype/util"
@@ -27,8 +24,6 @@ export type TraversalState = {
 }
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
-
-export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export type Out<o = any> = ["=>", o]
 
@@ -136,36 +131,3 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		  out
 		: t
 	: Exclude<out, Problem>
-
-export type extractIn<t> = includesMorphs<t> extends true
-	? extractMorphs<t, "in">
-	: t
-
-export type extractOut<t> = includesMorphs<t> extends true
-	? extractMorphs<t, "out">
-	: t
-
-type includesMorphs<t> = [
-	t,
-	extractMorphs<t, "in">,
-	t,
-	extractMorphs<t, "out">
-] extends [extractMorphs<t, "in">, t, extractMorphs<t, "out">, t]
-	? false
-	: true
-
-type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
-	infer i,
-	infer o
->
-	? io extends "in"
-		? i
-		: o
-	: t extends TerminallyInferredObjectKind | Primitive
-	  ? t
-	  : { [k in keyof t]: extractMorphs<t[k], io> }
-
-/** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObjectKind =
-	| ReturnType<ArkConfig["preserve"]>
-	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array">]

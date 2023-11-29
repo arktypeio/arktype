@@ -5,9 +5,7 @@ import {
 	keywords,
 	type BaseAttributes,
 	type CheckResult,
-	type KeyCheckKind,
 	type Morph,
-	type MorphAst,
 	type Out,
 	type Predicate,
 	type Schema,
@@ -38,6 +36,7 @@ import type { inferIntersection } from "./parser/semantic/intersections.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
+	MorphAst,
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import { bindThis, type Module, type Scope } from "./scope.js"
@@ -118,9 +117,35 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 	return parser as never
 }
 
+export type ArkKinds = {
+	node: UnknownNode
+	generic: Generic
+	module: Module
+}
+
+export const addArkKind = <kind extends ArkKind>(
+	value: Omit<ArkKinds[kind], arkKind> & { [arkKind]?: kind },
+	kind: kind
+): ArkKinds[kind] =>
+	Object.defineProperty(value, arkKind, {
+		value: kind,
+		enumerable: false
+	}) as never
+
+export type arkKind = typeof arkKind
+
+export type ArkKind = keyof ArkKinds
+
+export const hasArkKind = <kind extends ArkKind>(
+	value: unknown,
+	kind: kind
+): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
+
 export type DefinitionParser<$> = <def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
+
+export type KeyCheckKind = "distilled" | "strict" | "loose"
 
 export type TypeConfig = {
 	keys?: KeyCheckKind

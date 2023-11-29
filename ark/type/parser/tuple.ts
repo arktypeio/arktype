@@ -409,6 +409,8 @@ export type parseMorph<inDef, morph, $, args> = morph extends Morph
 	  ) => Out<inferMorphOut<ReturnType<morph>>>
 	: never
 
+export type MorphAst<i = any, o = any> = (In: i) => Out<o>
+
 export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 	if (typeof def[2] !== "function") {
 		return throwParseError(
