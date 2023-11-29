@@ -5,7 +5,9 @@ import {
 	type KeyCheckKind,
 	type ProblemCode,
 	type Schema,
-	type arkKind
+	type arkKind,
+	type extractIn,
+	type extractOut
 } from "@arktype/schema"
 import {
 	domainOf,
@@ -52,9 +54,7 @@ import {
 	type Generic,
 	type GenericProps,
 	type TypeConfig,
-	type TypeParser,
-	type extractIn,
-	type extractOut
+	type TypeParser
 } from "./type.js"
 
 declare global {
@@ -63,6 +63,7 @@ declare global {
 			type: Type
 			scope: Scope
 			generic: Generic
+			module: Module
 		}
 	}
 }

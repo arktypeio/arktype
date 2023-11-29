@@ -9,6 +9,7 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
+import type { ArkConfig } from "../scope.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
@@ -145,7 +146,7 @@ export type extractOut<t> = includesMorphs<t> extends true
 	? extractMorphs<t, "out">
 	: t
 
-type includesMorphs<t> = [
+export type includesMorphs<t> = [
 	t,
 	extractMorphs<t, "in">,
 	t,

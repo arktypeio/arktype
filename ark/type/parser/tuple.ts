@@ -8,6 +8,8 @@ import {
 	type Predicate,
 	type Schema,
 	type ValidatorKind,
+	type extractIn,
+	type extractOut,
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
@@ -25,7 +27,6 @@ import {
 	type isAny
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
-import type { extractIn, extractOut } from "../type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { inferIntersection } from "./semantic/intersections.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/semantic.js"

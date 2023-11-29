@@ -7,8 +7,7 @@ import type { RefinementKind, SchemaKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Definition } from "./shared/nodes.js"
-import { isNode } from "./shared/registry.js"
-import { inferred } from "./shared/symbols.js"
+import { inferred, isNode } from "./shared/symbols.js"
 
 export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 	// TODO: standardize name with type

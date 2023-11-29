@@ -1,4 +1,4 @@
-import { isNode, schema, type Schema } from "@arktype/schema"
+import { hasArkKind, isNode, schema, type Schema } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -7,15 +7,11 @@ import {
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
-	type join,
-	type NumberLiteral
+	type NumberLiteral,
+	type join
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
-import {
-	hasArkKind,
-	type Generic,
-	type GenericProps
-} from "../../../../type.js"
+import type { Generic, GenericProps } from "../../../../type.js"
 import {
 	parseGenericArgs,
 	writeInvalidGenericArgsMessage,
@@ -23,7 +19,7 @@ import {
 } from "../../../generic.js"
 import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 

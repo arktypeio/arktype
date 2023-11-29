@@ -131,7 +131,7 @@ const arkSpace = scopeNode({
 
 bench("space", () => {
 	thousand.forEach((i) => {
-		arkSpace.keywords.foo.allows(dataArray[i])
+		arkSpace.resolutions.foo.allows(dataArray[i])
 	})
 }).median([164.23, "us"])
 

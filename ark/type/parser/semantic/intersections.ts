@@ -1,4 +1,4 @@
-import type { Out } from "@arktype/schema"
+import type { MorphAst, Out } from "@arktype/schema"
 import {
 	Hkt,
 	type List,
@@ -7,7 +7,6 @@ import {
 	type intersectArrays,
 	type isAny
 } from "@arktype/util"
-import type { MorphAst } from "../tuple.js"
 
 export type inferIntersection<l, r> = [l] extends [never]
 	? never

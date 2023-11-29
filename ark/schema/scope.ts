@@ -5,12 +5,9 @@ import {
 	throwParseError,
 	transform,
 	type Dict,
-	type PartialRecord,
-	type conform,
-	type evaluate
+	type PartialRecord
 } from "@arktype/util"
-import { addArkKind } from "arktype/internal/type.js"
-import type { Node, UnknownNode } from "./base.js"
+import type { Node } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type {
 	instantiateAliases,
@@ -22,7 +19,6 @@ import type { keywords, schema } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { KeyCheckKind } from "./refinements/props/shared.js"
 import type { Schema } from "./schema.js"
-import type { extractOut } from "./sets/morph.js"
 import type { BranchKind } from "./sets/union.js"
 import type { ProblemCode } from "./shared/compilation.js"
 import type { NodeKind, SchemaKind } from "./shared/define.js"
@@ -31,6 +27,7 @@ import type {
 	NormalizedDefinition,
 	reducibleKindOf
 } from "./shared/nodes.js"
+import { isNode, type addArkKind } from "./shared/symbols.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 
@@ -42,167 +39,66 @@ export interface ArkConfig {
 	preserve(): never
 }
 
-export type StaticScope = {
-	exports: BaseResolutions
-	locals: BaseResolutions
-	ambient: BaseResolutions
-}
-
 export type ModuleNode<resolutions extends BaseResolutions = BaseResolutions> =
 	addArkKind<"moduleNode", resolutions>
 
-export type ScopeParser<parent, ambient> = <const aliases>(
-	aliases: validateAliases<aliases>
-) => ScopeNode<{
-	exports: instantiateAliases<aliases>
-	locals: conform<parent, BaseResolutions>
-	ambient: conform<ambient, BaseResolutions>
-}>
-
 export type ScopeOptions = {
-	ambient?: ScopeNode
 	codes?: Record<ProblemCode, { mustBe?: string }>
 	keys?: KeyCheckKind
 }
 
-export class ScopeNode<s extends StaticScope = any> {
-	declare infer: extractOut<s["exports"]>
+export class ScopeNode<r extends BaseResolutions = any> {
+	declare infer: {
+		[k in keyof r]: r[k] extends schema.cast<infer t> ? t : never
+	}
 	declare static keywords: typeof keywords
 	declare static unknownUnion?: Schema<unknown, "union">
 	readonly cls = ScopeNode
-	// populated during initial schema parse
-	private ambient: ScopeNode | undefined
+	readonly resolutions = {} as r
+	readonly referencesById: BaseResolutions = {}
 
 	constructor(
 		public def: Dict<string, unknown>,
 		opts: ScopeOptions = {}
 	) {
-		this.ambient = opts.ambient
-		// if (ScopeNode.root && !ScopeNode.unknownUnion) {
-		// 	// ensure root has been set before parsing this to avoid a circularity
-		// 	ScopeNode.unknownUnion = this.parsePrereduced("union", [
-		// 		"string",
-		// 		"number",
-		// 		"object",
-		// 		"bigint",
-		// 		"symbol",
-		// 		{ unit: true },
-		// 		{ unit: false },
-		// 		{ unit: null },
-		// 		{ unit: undefined }
-		// 	])
-		// }
+		for (const k in this.def) {
+			;(this.resolutions as BaseResolutions)[k] = this.parseNode(
+				schemaKindOf(this.def[k]),
+				this.def[k] as never,
+				{
+					alias: k
+				}
+			)
+		}
+		if (ScopeNode.root && !ScopeNode.unknownUnion) {
+			// ensure root has been set before parsing this to avoid a circularity
+			ScopeNode.unknownUnion = this.parsePrereduced("union", [
+				"string",
+				"number",
+				"object",
+				"bigint",
+				"symbol",
+				{ unit: true },
+				{ unit: false },
+				{ unit: null },
+				{ unit: undefined }
+			])
+		}
 	}
 
 	get builtin() {
 		return ScopeNode.keywords
 	}
 
-	from: ScopeParser<s["exports"], s["ambient"]> = (aliases) =>
-		new ScopeNode(aliases)
+	static from = <const aliases>(aliases: validateAliases<aliases>) =>
+		new ScopeNode<instantiateAliases<aliases>>(aliases)
 
-	toAmbient(): ScopeNode<{
-		exports: s["exports"]
-		locals: s["locals"]
-		ambient: s["exports"]
-	}> {
-		// TODO: private?
-		return new ScopeNode(this.def, {
-			ambient: this
-			// ...this.config
-		})
-	}
-
-	static root: ScopeParser<{}, {}> = (aliases) => new ScopeNode(aliases)
-
-	// import<names extends exportedName<r>[]>(
-	// 	...names: names
-	// ): destructuredImportContext<
-	// 	r,
-	// 	names extends [] ? keyof r["exports"] & string : names[number]
-	// > {
-	// 	return addArkKind(
-	// 		transform(this.export(...names), (alias, value) => [
-	// 			`#${alias as string}`,
-	// 			value
-	// 		]) as never,
-	// 		"module"
-	// 	) as never
-	// }
-
-	// TODO: submodules?
-	private exportCache: ModuleNode<BaseResolutions> | undefined
-	export<names extends (keyof s["exports"])[]>(
-		...names: names
-	): ModuleNode<
-		names["length"] extends 0 ? s["exports"] : Pick<s["exports"], names[number]>
-	>
-	export(...names: string[]) {
-		if (!this.exportCache) {
-			this.exportCache = { [arkKind]: "module" }
-			for (const k in this.def) {
-				this.exportCache[k] = this.parseNode(
-					schemaKindOf(this.def[k]),
-					this.def[k] as never,
-					{
-						alias: k
-					}
-				)
-			}
-		}
-		if (names.length === 0) {
-			return this.exportCache
-		}
-		return addArkKind(
-			transform(names, (_, name) => [name, this.exportCache![name]]) as never,
-			"module"
-		) as never
-	}
-
-	// private exportedResolutions: MergedResolutions | undefined
-	// private exportCache: ExportCache | undefined
-	// export<names extends exportedName<r>[]>(
-	// 	...names: names
-	// ): Module<
-	// 	names extends [] ? r : destructuredExportContext<r, names[number]>
-	// > {
-	// 	if (!this.exportCache) {
-	// 		this.exportCache = {}
-	// 		for (const name of this.exportedNames) {
-	// 			let def = this.aliases[name]
-	// 			if (hasArkKind(def, "generic")) {
-	// 				this.exportCache[name] = def
-	// 				continue
-	// 			}
-	// 			// TODO: thunk generics?
-	// 			// handle generics before invoking thunks, since they use
-	// 			// varargs they will incorrectly be considered thunks
-	// 			if (isThunk(def)) {
-	// 				def = def()
-	// 			}
-	// 			if (hasArkKind(def, "module")) {
-	// 				this.exportCache[name] = def
-	// 			} else {
-	// 				this.exportCache[name] = new Type(this.maybeResolve(name), this)
-	// 			}
-	// 		}
-	// 		this.exportedResolutions = resolutionsOfModule(this.exportCache)
-	// 		Object.assign(this.resolutions, this.exportedResolutions)
-	// 	}
-	// 	const namesToExport = names.length ? names : this.exportedNames
-	// 	return addArkKind(
-	// 		transform(namesToExport, (_, name) => [
-	// 			name,
-	// 			this.exportCache![name]
-	// 		]) as never,
-	// 		"module"
-	// 	) as never
-	// }
+	static root = this.from({})
 
 	parseUnion<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
 			branches: {
-				[i in keyof branches]: validateSchemaBranch<branches[i], s>
+				[i in keyof branches]: validateSchemaBranch<branches[i], r>
 			}
 		} & NormalizedDefinition<"union">
 	): instantiateSchemaBranches<branches> {
@@ -211,7 +107,7 @@ export class ScopeNode<s extends StaticScope = any> {
 
 	parseBranches<const branches extends readonly Definition<BranchKind>[]>(
 		...branches: {
-			[i in keyof branches]: validateSchemaBranch<branches[i], s>
+			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
 	): instantiateSchemaBranches<branches> {
 		return this.parseNode("union", branches as never) as never
@@ -270,7 +166,7 @@ export class ScopeNode<s extends StaticScope = any> {
 		const prefix = opts.alias ?? kind
 		ScopeNode.typeCountsByPrefix[prefix] ??= 0
 		const uuid = `${prefix}${++ScopeNode.typeCountsByPrefix[prefix]!}`
-		if (opts.alias && opts.alias in this.keywords) {
+		if (opts.alias && opts.alias in this.resolutions) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
 			)

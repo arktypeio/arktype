@@ -11,7 +11,7 @@ import {
 import type { Schema } from "../schema.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import type { Definition } from "../shared/nodes.js"
-import { isNode } from "../shared/registry.js"
+import { isNode } from "../shared/symbols.js"
 import {
 	DomainImplementation,
 	type DomainDeclaration,

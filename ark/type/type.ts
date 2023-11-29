@@ -7,22 +7,20 @@ import {
 	type CheckResult,
 	type KeyCheckKind,
 	type Morph,
-	type MorphAst,
 	type Out,
 	type Predicate,
 	type Schema,
-	type UnknownNode,
+	type extractIn,
+	type extractOut,
+	type includesMorphs,
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
 import {
 	CompiledFunction,
 	transform,
-	type BuiltinObjectKind,
-	type BuiltinObjects,
 	type Constructor,
 	type Json,
-	type Primitive,
 	type conform
 } from "@arktype/util"
 import type {
@@ -40,7 +38,7 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import { bindThis, type Module, type Scope } from "./scope.js"
+import { bindThis, type Scope } from "./scope.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -331,36 +329,3 @@ type bindGenericInstantiation<params extends string[], $, args> = {
 		$
 	>
 }
-
-export type extractIn<t> = includesMorphs<t> extends true
-	? extractMorphs<t, "in">
-	: t
-
-export type extractOut<t> = includesMorphs<t> extends true
-	? extractMorphs<t, "out">
-	: t
-
-type includesMorphs<t> = [
-	t,
-	extractMorphs<t, "in">,
-	t,
-	extractMorphs<t, "out">
-] extends [extractMorphs<t, "in">, t, extractMorphs<t, "out">, t]
-	? false
-	: true
-
-type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
-	infer i,
-	infer o
->
-	? io extends "in"
-		? i
-		: o
-	: t extends TerminallyInferredObjectKind | Primitive
-	  ? t
-	  : { [k in keyof t]: extractMorphs<t[k], io> }
-
-/** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObjectKind =
-	| ReturnType<ArkConfig["preserve"]>
-	| BuiltinObjects[Exclude<BuiltinObjectKind, "Object" | "Array">]
