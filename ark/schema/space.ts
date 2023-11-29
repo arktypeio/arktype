@@ -1,5 +1,4 @@
 import {
-	CompiledFunction,
 	isArray,
 	printable,
 	throwInternalError,
@@ -20,12 +19,7 @@ import type { keywords } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
-import {
-	In,
-	type CompilationKind,
-	type CompiledMethods
-} from "./shared/compilation.js"
-import { nodeKinds, type NodeKind, type SchemaKind } from "./shared/define.js"
+import type { NodeKind, SchemaKind } from "./shared/define.js"
 import type {
 	Definition,
 	NormalizedDefinition,
@@ -47,7 +41,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	readonly cls = Space
 	readonly schemas: readonly Schema[]
 	// populated during initial schema parse
-	readonly referencesByAlias: Record<string, UnknownNode> = {}
+	readonly referencesById: Record<string, UnknownNode> = {}
 	readonly references: readonly UnknownNode[]
 
 	constructor(public aliases: Dict<string, unknown>) {
@@ -55,11 +49,11 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			const node = this.parseNode(schemaKindOf(v), v as never, {
 				alias: k
 			})
-			Object.assign(this.referencesByAlias, node.contributesReferencesByAlias)
+			Object.assign(this.referencesById, node.contributesReferencesById)
 			return node
 		})
 		this.keywords = transform(this.schemas, (_, v) => [v.alias!, v]) as never
-		this.references = Object.values(this.referencesByAlias)
+		this.references = Object.values(this.referencesById)
 		if (Space.root && !Space.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			Space.unknownUnion = this.parsePrereduced("union", [

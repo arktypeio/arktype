@@ -47,6 +47,7 @@ import { arkKind } from "./shared/registry.js"
 import type { Space } from "./space.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
+	alias?: string
 	readonly uuid: string
 	readonly kind: kind
 	readonly inner: Inner<kind>
@@ -69,16 +70,14 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
-	readonly referencesByAlias: Record<string, UnknownNode> =
-		this.children.reduce(
-			(result, child) =>
-				Object.assign(result, child.contributesReferencesByAlias),
-			{}
-		)
-	readonly references: readonly UnknownNode[] = Object.values(
-		this.referencesByAlias
+	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
+		(result, child) => Object.assign(result, child.contributesReferencesById),
+		{}
 	)
-	readonly contributesReferencesByAlias: Record<string, UnknownNode>
+	readonly references: readonly UnknownNode[] = Object.values(
+		this.referencesById
+	)
+	readonly contributesReferencesById: Record<string, UnknownNode>
 	readonly contributesReferences: readonly UnknownNode[]
 
 	declare allows: (data: unknown) => data is t
@@ -106,13 +105,11 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		}
 		const attachments = this.implementation.attach(this as never)
 		Object.assign(this, attachments)
-		this.contributesReferencesByAlias =
-			this.uuid in this.referencesByAlias
-				? this.referencesByAlias
-				: { ...this.referencesByAlias, [this.uuid]: this }
-		this.contributesReferences = Object.values(
-			this.contributesReferencesByAlias
-		)
+		this.contributesReferencesById =
+			this.uuid in this.referencesById
+				? this.referencesById
+				: { ...this.referencesById, [this.uuid]: this }
+		this.contributesReferences = Object.values(this.contributesReferencesById)
 		this.allows = compileAnonymous(this as never, "allows")
 		this.traverse = compileAnonymous(this as never, "traverse")
 		// important this is last as writeDefaultDescription could rely on attached

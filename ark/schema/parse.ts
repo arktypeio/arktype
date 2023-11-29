@@ -3,8 +3,6 @@ import {
 	hasDomain,
 	includes,
 	throwParseError,
-	transform,
-	type PartialRecord,
 	type extend
 } from "@arktype/util"
 import {
@@ -16,7 +14,6 @@ import {
 import { SchemaNode } from "./schema.js"
 import {
 	defaultInnerKeySerializer,
-	nodeKinds,
 	schemaKinds,
 	type BasisKind,
 	type NodeKind,
@@ -60,7 +57,7 @@ export const parse = <defKind extends NodeKind>(
 		kind
 	] as never
 	const normalizedDefinition: any = implementation.normalize?.(def) ?? def
-	const inner: Record<string, unknown> = ctx.alias ? { alias: ctx.alias } : {}
+	const inner: Record<string, unknown> = {}
 	implementation.addContext?.(ctx)
 	const schemaEntries = entriesOf(normalizedDefinition).sort((l, r) =>
 		l[0] < r[0] ? -1 : 1
@@ -117,6 +114,7 @@ export const parse = <defKind extends NodeKind>(
 		}
 	}
 	const baseAttachments = {
+		alias: ctx.alias,
 		uuid: ctx.uuid,
 		kind,
 		inner,

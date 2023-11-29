@@ -144,7 +144,7 @@ export const IntersectionImplementation = defineNode({
 		}
 	},
 	reduce: (inner, space) => {
-		const { description, alias, ...constraintsByKind } = inner
+		const { description, ...constraintsByKind } = inner
 		const inputConstraints = Object.values(
 			constraintsByKind
 		).flat() as ConstraintSet
@@ -164,9 +164,6 @@ export const IntersectionImplementation = defineNode({
 		) as mutable<IntersectionInner>
 		if (description) {
 			reducedConstraintsByKind.description = description
-		}
-		if (alias) {
-			reducedConstraintsByKind.alias = alias
 		}
 		return space.parsePrereduced("intersection", reducedConstraintsByKind)
 	},

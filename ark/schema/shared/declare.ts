@@ -5,7 +5,6 @@ import type { rightOf } from "./intersect.js"
 
 export type BaseAttributes = {
 	readonly description?: string
-	readonly alias?: string
 }
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>

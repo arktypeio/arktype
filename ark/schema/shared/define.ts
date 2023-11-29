@@ -194,9 +194,6 @@ export function defineNode(
 	input: NodeImplementationInput<any>
 ): UnknownNodeImplementation {
 	Object.assign(input.keys, {
-		alias: {
-			meta: true
-		},
 		description: {
 			meta: true
 		}
