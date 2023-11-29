@@ -35,7 +35,12 @@ const getIsolatedEnv = () => {
 	}
 	const tsconfigInfo = getTsConfigInfoOrThrow()
 	const libFiles = getTsLibFiles(tsconfigInfo.compilerOptions)
-	const system = tsvfs.createSystem(libFiles.defaultMapFromNodeModules)
+	const projectRoot = process.cwd()
+	const system = tsvfs.createFSBackedSystem(
+		libFiles.defaultMapFromNodeModules,
+		projectRoot,
+		ts
+	)
 	__virtualEnv = tsvfs.createVirtualTypeScriptEnvironment(
 		system,
 		[],

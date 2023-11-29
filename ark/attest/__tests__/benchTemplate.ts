@@ -1,4 +1,4 @@
-import { bench } from "@arktype/attest"
+import { bench, type SerializedAssertionData } from "@arktype/attest"
 
 const fakeCallOptions = {
 	until: { count: 2 },
@@ -36,6 +36,10 @@ type makeComplexType<S extends string> = S extends `${infer head}${infer tail}`
 
 bench("bench type", () => {
 	return {} as makeComplexType<"defenestration">
+}).types()
+
+bench("bench type from external module", () => {
+	return {} as SerializedAssertionData
 }).types()
 
 bench(
