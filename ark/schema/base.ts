@@ -9,6 +9,7 @@ import {
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
+import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import {
@@ -44,7 +45,6 @@ import {
 	type reducibleKindOf
 } from "./shared/nodes.js"
 import { arkKind } from "./shared/registry.js"
-import type { Space } from "./space.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
 	alias?: string
@@ -58,7 +58,7 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly children: Node<childKindOf<kind>>[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly space: Space
+	readonly scope: ScopeNode
 }
 
 export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
@@ -159,7 +159,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				ioInner[k] = v
 			}
 		}
-		return this.space.parseNode(this.kind, ioInner)
+		return this.scope.parseNode(this.kind, ioInner)
 	}
 
 	toJSON() {
@@ -235,7 +235,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		return this.isBasis() ||
 			other.isBasis() ||
 			(this.kind === "predicate" && other.kind === "predicate")
-			? this.space.parseNode(
+			? this.scope.parseNode(
 					"intersection",
 					unflattenConstraints([this as never, other])
 			  )
@@ -260,7 +260,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: meta
-			return this.space.parseNode(l.kind, result) as never
+			return this.scope.parseNode(l.kind, result) as never
 		}
 		return null
 	}

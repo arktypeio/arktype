@@ -59,7 +59,7 @@ export const RequiredImplementation = defineRefinement({
 		value: {
 			child: true,
 			parse: (schema, ctx) =>
-				ctx.space.parseSchemaFromKinds(schemaKinds, schema)
+				ctx.scope.parseSchemaFromKinds(schemaKinds, schema)
 		}
 	},
 	operand: ["object"],

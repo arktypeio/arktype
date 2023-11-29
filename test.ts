@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 import { bench } from "@arktype/attest"
 import { type } from "arktype"
-import { rootSchema, schema, space } from "./ark/schema/main.js"
+import { rootSchema, schema, scopeNode } from "./ark/schema/main.js"
 import { range } from "./ark/util/main.js"
 
 const aNumber = schema({
@@ -89,7 +89,7 @@ const arkType = type({
 	}
 })
 
-const arkSpace = space({
+const arkSpace = scopeNode({
 	any: {} as schema.cast<any, "intersection">,
 	bigint: "bigint",
 	// since we know this won't be reduced, it can be safely cast to a union

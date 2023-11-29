@@ -1,9 +1,9 @@
 import { attest } from "@arktype/attest"
-import { space } from "../space.js"
+import { scopeNode } from "../scope.js"
 
-describe("space", () => {
+describe("scope", () => {
 	it("parse", () => {
-		const $ = space({
+		const $ = scopeNode({
 			numberOrString: ["number", "string"]
 		})
 		attest($.keywords.numberOrString.allows(5)).equals(true)

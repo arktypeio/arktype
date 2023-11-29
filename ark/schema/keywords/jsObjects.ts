@@ -1,5 +1,5 @@
 import type { Schema } from "../schema.js"
-import { Space } from "../space.js"
+import { ScopeNode } from "../scope.js"
 
 export namespace JsObjects {
 	export interface resolutions {
@@ -18,7 +18,7 @@ export namespace JsObjects {
 	export type infer = (typeof JsObjects)["infer"]
 }
 
-export const JsObjects: Space<JsObjects.resolutions> = Space.from({
+export const JsObjects: ScopeNode<JsObjects.resolutions> = ScopeNode.from({
 	Array,
 	Function,
 	Date,

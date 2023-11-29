@@ -63,12 +63,12 @@ export const MorphImplementation = defineNode({
 		in: {
 			child: true,
 			parse: (schema, ctx) =>
-				ctx.space.parseSchemaFromKinds(["intersection", ...basisKinds], schema)
+				ctx.scope.parseSchemaFromKinds(["intersection", ...basisKinds], schema)
 		},
 		out: {
 			child: true,
 			parse: (schema, ctx) =>
-				ctx.space.parseSchemaFromKinds(["intersection", ...basisKinds], schema)
+				ctx.scope.parseSchemaFromKinds(["intersection", ...basisKinds], schema)
 		},
 		morph: {
 			parse: listFrom
@@ -120,7 +120,7 @@ export const MorphImplementation = defineNode({
 	attach: (node) => ({
 		inCache: node.inner.in,
 		// TODO: reference?
-		outCache: node.inner.out ?? node.space.builtin.unknown
+		outCache: node.inner.out ?? node.scope.builtin.unknown
 	}),
 	compile: (node, ctx) => node.in.compileBody(ctx)
 })

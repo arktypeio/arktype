@@ -39,7 +39,7 @@ export const OptionalImplementation = defineRefinement({
 		value: {
 			child: true,
 			parse: (schema, ctx) =>
-				ctx.space.parseSchemaFromKinds(schemaKinds, schema)
+				ctx.scope.parseSchemaFromKinds(schemaKinds, schema)
 		}
 	},
 	operand: ["object"],
@@ -52,7 +52,7 @@ export const OptionalImplementation = defineRefinement({
 			const value = l.value.intersect(r.value)
 			return {
 				key: optional,
-				value: value instanceof Disjoint ? l.space.builtin.never : value
+				value: value instanceof Disjoint ? l.scope.builtin.never : value
 			}
 		}
 	},

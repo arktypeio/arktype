@@ -32,14 +32,14 @@ export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 export const globalResolutions: Record<string, Node> = {}
 
 // TODO: SWITCH TO EXPORT MODEL TO MIRROR TYPE, SOLVE CYCLIC COMPILATION 🚀💪⛵
-export class Space<keywords extends nodeResolutions<keywords> = any> {
+export class ScopeNode<keywords extends nodeResolutions<keywords> = any> {
 	declare infer: {
 		[k in keyof keywords]: keywords[k]["infer"]
 	}
 	declare static keywords: typeof keywords
 	declare static unknownUnion?: Schema<unknown, "union">
 	keywords = {} as keywords
-	readonly cls = Space
+	readonly cls = ScopeNode
 	readonly schemas: readonly Schema[]
 	// populated during initial schema parse
 	readonly referencesById: Record<string, UnknownNode> = {}
@@ -55,9 +55,9 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		})
 		this.keywords = transform(this.schemas, (_, v) => [v.alias!, v]) as never
 		this.references = Object.values(this.referencesById)
-		if (Space.root && !Space.unknownUnion) {
+		if (ScopeNode.root && !ScopeNode.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
-			Space.unknownUnion = this.parsePrereduced("union", [
+			ScopeNode.unknownUnion = this.parsePrereduced("union", [
 				"string",
 				"number",
 				"object",
@@ -72,13 +72,13 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	}
 
 	get builtin() {
-		return Space.keywords
+		return ScopeNode.keywords
 	}
 
 	static from = <const aliases>(aliases: validateAliases<aliases>) =>
-		new Space<instantiateAliases<aliases>>(aliases as never)
+		new ScopeNode<instantiateAliases<aliases>>(aliases as never)
 
-	static root = new Space<{}>({})
+	static root = new ScopeNode<{}>({})
 
 	parseUnion<const branches extends readonly Definition<BranchKind>[]>(
 		input: {
@@ -149,8 +149,8 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<kind>> {
 		const prefix = opts.alias ?? kind
-		Space.typeCountsByPrefix[prefix] ??= 0
-		const uuid = `${prefix}${++Space.typeCountsByPrefix[prefix]!}`
+		ScopeNode.typeCountsByPrefix[prefix] ??= 0
+		const uuid = `${prefix}${++ScopeNode.typeCountsByPrefix[prefix]!}`
 		if (opts.alias && opts.alias in this.keywords) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
@@ -158,7 +158,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		}
 		return parse(kind, def, {
 			...opts,
-			space: this,
+			scope: this,
 			definition: def,
 			id: uuid
 		}) as never
@@ -171,11 +171,11 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 	})
 }
 
-export const space = Space.from
+export const scopeNode = ScopeNode.from
 
-export const rootSchema = Space.root.schema.bind(Space.root)
+export const rootSchema = ScopeNode.root.schema.bind(ScopeNode.root)
 
-export const rootNode = Space.root.parseNode.bind(Space.root)
+export const rootNode = ScopeNode.root.parseNode.bind(ScopeNode.root)
 
 const schemaKindOf = (input: unknown): SchemaKind => {
 	const basisKind = maybeGetBasisKind(input)

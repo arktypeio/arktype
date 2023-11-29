@@ -1,5 +1,5 @@
 import type { Schema } from "../schema.js"
-import { Space, rootSchema } from "../space.js"
+import { ScopeNode, rootSchema } from "../scope.js"
 import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
@@ -63,7 +63,7 @@ export namespace Validation {
 	export type infer = (typeof Validation)["infer"]
 }
 
-export const Validation: Space<Validation.resolutions> = Space.from({
+export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from({
 	alpha: {
 		basis: "string",
 		pattern: /^[A-Za-z]*$/,

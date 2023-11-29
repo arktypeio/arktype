@@ -3,8 +3,8 @@ import {
 	wellFormedNumberMatcher
 } from "@arktype/util"
 import type { Schema } from "../schema.js"
+import { ScopeNode, rootSchema } from "../scope.js"
 import type { Out } from "../sets/morph.js"
-import { Space, rootSchema } from "../space.js"
 import { parsedDate } from "./utils/date.js"
 
 const number = rootSchema({
@@ -72,7 +72,7 @@ export namespace Parsing {
 	export type infer = (typeof Parsing)["infer"]
 }
 
-export const Parsing: Space<Parsing.resolutions> = Space.from({
+export const Parsing: ScopeNode<Parsing.resolutions> = ScopeNode.from({
 	url,
 	number,
 	integer,

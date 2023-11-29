@@ -1,5 +1,5 @@
 import type { Schema } from "../schema.js"
-import { Space } from "../space.js"
+import { ScopeNode } from "../scope.js"
 import type { schema } from "./keywords.js"
 
 export namespace TsKeywords {
@@ -23,7 +23,7 @@ export namespace TsKeywords {
 	export type infer = (typeof TsKeywords)["infer"]
 }
 
-export const TsKeywords: Space<TsKeywords.resolutions> = Space.from({
+export const TsKeywords: ScopeNode<TsKeywords.resolutions> = ScopeNode.from({
 	any: {} as schema.cast<any, "intersection">,
 	bigint: "bigint",
 	// since we know this won't be reduced, it can be safely cast to a union

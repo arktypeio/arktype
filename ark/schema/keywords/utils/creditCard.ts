@@ -1,4 +1,4 @@
-import { rootSchema } from "../../space.js"
+import { rootSchema } from "../../scope.js"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string) => {

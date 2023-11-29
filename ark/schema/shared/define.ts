@@ -12,7 +12,7 @@ import type {
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { Space } from "../space.js"
+import type { ScopeNode } from "../scope.js"
 import {
 	compileSerializedValue,
 	type CompilationContext
@@ -164,7 +164,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 	reduce?: (
 		inner: d["inner"],
-		space: Space
+		scope: ScopeNode
 	) => Node<reducibleKindOf<d["kind"]>> | undefined
 }
 

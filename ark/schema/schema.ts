@@ -38,7 +38,7 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 		kind: refinementKind,
 		input: Definition<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
-		const refinement = this.space.parseNode(kind, input)
+		const refinement = this.scope.parseNode(kind, input)
 		return this.and(refinement) as never
 	}
 
@@ -65,7 +65,7 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 		t | other["infer"],
 		"union" | Extract<kind | other["kind"], SchemaKind>
 	> {
-		return this.space.parseBranches(
+		return this.scope.parseBranches(
 			...this.branches,
 			...other.branches
 		) as never

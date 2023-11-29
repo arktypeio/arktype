@@ -12,6 +12,7 @@ import {
 	type UnknownNode
 } from "./base.js"
 import { SchemaNode } from "./schema.js"
+import { ScopeNode } from "./scope.js"
 import {
 	defaultInnerKeySerializer,
 	schemaKinds,
@@ -24,7 +25,6 @@ import {
 	type Definition,
 	type reducibleKindOf
 } from "./shared/nodes.js"
-import { Space } from "./space.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -36,7 +36,7 @@ export type SchemaParseContext = extend<
 	SchemaParseOptions,
 	{
 		id: string
-		space: Space
+		scope: ScopeNode
 		definition: unknown
 	}
 >
@@ -103,11 +103,11 @@ export const parse = <defKind extends NodeKind>(
 	}
 	const innerId = JSON.stringify({ kind, ...json })
 	const typeId = JSON.stringify({ kind, ...typeJson })
-	if (ctx.space.cls.unknownUnion?.typeId === typeId) {
-		return Space.keywords.unknown as never
+	if (ctx.scope.cls.unknownUnion?.typeId === typeId) {
+		return ScopeNode.keywords.unknown as never
 	}
 	if (implementation.reduce && !ctx.prereduced) {
-		const reduced = implementation.reduce(inner, ctx.space)
+		const reduced = implementation.reduce(inner, ctx.scope)
 		if (reduced) {
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
@@ -130,7 +130,7 @@ export const parse = <defKind extends NodeKind>(
 		children,
 		innerId,
 		typeId,
-		space: ctx.space
+		scope: ctx.scope
 	} satisfies Record<keyof BaseAttachments<any>, unknown> as never
 	return includes(schemaKinds, kind)
 		? new SchemaNode(baseAttachments)
