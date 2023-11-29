@@ -1,4 +1,5 @@
-import { bench, type SerializedAssertionData } from "@arktype/attest"
+import { bench } from "@arktype/attest"
+import type { makeComplexType as externalmakeComplexType } from "./utils.js"
 
 const fakeCallOptions = {
 	until: { count: 2 },
@@ -39,8 +40,8 @@ bench("bench type", () => {
 }).types([182, "instantiations"])
 
 bench("bench type from external module", () => {
-	return {} as SerializedAssertionData
-}).types([13, "instantiations"])
+	return {} as externalmakeComplexType<"defenestration">
+}).types([206, "instantiations"])
 
 bench(
 	"bench call and type",
@@ -51,3 +52,5 @@ bench(
 )
 	.mean([2, "ms"])
 	.types([352, "instantiations"])
+
+bench("empty", () => {}).types([13, "instantiations"])
