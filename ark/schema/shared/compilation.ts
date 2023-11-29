@@ -1,11 +1,12 @@
 import {
+	CompiledFunction,
 	hasDomain,
 	serializePrimitive,
 	type SerializablePrimitive,
 	type arraySubclassToReadonly,
 	type propwiseXor
 } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { Node, UnknownNode } from "../base.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { NodeKind, SetKind } from "./define.js"
@@ -29,6 +30,35 @@ export type CompilationContext = {
 export type CompositeKind = SetKind | PropKind
 
 export type PrimitiveKind = Exclude<NodeKind, CompositeKind>
+
+export const compileAnonymous = <kind extends CompilationKind>(
+	node: Node,
+	kind: kind
+): CompiledMethods[kind] => {
+	const $ = compileScope(node.contributesReferences, kind)
+	return $[node.uuid].bind($) as never
+}
+
+export const compileScope = <kind extends CompilationKind>(
+	references: readonly Node[],
+	kind: kind
+): Record<string, CompiledMethods[kind]> => {
+	const compiledArgs = kind === "allows" ? [In] : [In, "problems"]
+	const body = `return {
+	${references
+		.map(
+			(reference) => `${reference.uuid}(${In}){
+${reference.compileBody({
+	compilationKind: kind,
+	path: [],
+	discriminants: []
+})}
+}`
+		)
+		.join(",\n")}
+}`
+	return new CompiledFunction(...compiledArgs, body)() as never
+}
 
 export const compilePrimitive = (
 	node: Node<PrimitiveKind>,

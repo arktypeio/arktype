@@ -11,7 +11,11 @@ import type { BasisKind } from "./bases/basis.js"
 import type { Schema } from "./schema.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
-import type { CompilationContext, Problems } from "./shared/compilation.js"
+import {
+	compileAnonymous,
+	type CompilationContext,
+	type Problems
+} from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -102,8 +106,6 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		}
 		const attachments = this.implementation.attach(this as never)
 		Object.assign(this, attachments)
-		this.allows = this.space.compile(this, "allows")
-		this.traverse = this.space.compile(this, "traverse")
 		this.contributesReferencesByAlias =
 			this.uuid in this.referencesByAlias
 				? this.referencesByAlias
@@ -111,6 +113,8 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		this.contributesReferences = Object.values(
 			this.contributesReferencesByAlias
 		)
+		this.allows = compileAnonymous(this as never, "allows")
+		this.traverse = compileAnonymous(this as never, "traverse")
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never

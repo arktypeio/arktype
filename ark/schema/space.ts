@@ -5,7 +5,8 @@ import {
 	throwInternalError,
 	throwParseError,
 	transform,
-	type Dict
+	type Dict,
+	type PartialRecord
 } from "@arktype/util"
 import type { Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
@@ -34,10 +35,7 @@ import { isNode } from "./shared/registry.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 
-export const compilations = {
-	allows: {} as Record<string, CompiledMethods["allows"]>,
-	traverse: {} as Record<string, CompiledMethods["traverse"]>
-}
+export const globalResolutions: Record<string, Node> = {}
 
 export class Space<keywords extends nodeResolutions<keywords> = any> {
 	declare infer: {
@@ -57,7 +55,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			const node = this.parseNode(schemaKindOf(v), v as never, {
 				alias: k
 			})
-			// TODO: same alias across multiple nodes?
 			Object.assign(this.referencesByAlias, node.contributesReferencesByAlias)
 			return node
 		})
@@ -78,71 +75,6 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			])
 		}
 	}
-
-	compile<kind extends CompilationKind>(
-		node: UnknownNode,
-		kind: kind
-	): CompiledMethods[kind] {
-		const compiledArgs = kind === "allows" ? [In] : [In, "problems"]
-		const body = node.compileBody({
-			path: [],
-			discriminants: [],
-			compilationKind: kind
-		})
-		const fn = new CompiledFunction(...compiledArgs, body).bind(
-			compilations[kind]
-		)
-		compilations[kind][node.uuid] = fn as never
-		return fn as never
-	}
-
-	// private getCompilations(
-	// 	references: readonly UnknownNode[]
-	// ): this["compilations"] {
-	// 	return {
-	// 		allows: new CompiledFunction(
-	// 			this.compileMethodKind("allows", references)
-	// 		)(),
-	// 		traverse: new CompiledFunction(
-	// 			this.compileMethodKind("traverse", references)
-	// 		)()
-	// 	} as never
-	// }
-
-	// private compileMethodKind(
-	// 	kind: CompilationKind,
-	// 	references: readonly UnknownNode[]
-	// ) {
-	// 	return `return {
-	// 		${
-	// 			references
-	// 				.map(
-	// 					(reference) => `${reference.alias}(${In}){
-	// 				${reference.compileBody({
-	// 					compilationKind: kind,
-	// 					path: [],
-	// 					discriminants: []
-	// 				})}
-	// 		}`
-	// 				)
-	// 				.join(",\n") + "}"
-	// 		}`
-	// }
-
-	// parseJit<kind extends NodeKind>(
-	// 	kind: kind,
-	// 	def: Definition<kind>,
-	// 	opts: SchemaParseOptions = {}
-	// ): Node<reducibleKindOf<kind>> {
-	// 	const node = this.parseNode(kind, def, opts)
-	// 	const byAlias = {
-	// 		...this.referencesByAlias,
-	// 		...node.contributesReferencesByAlias
-	// 	}
-	// 	const $ = this.getCompilations(Object.values(byAlias)).allows
-	// 	node.allows = $[node.alias].bind($)
-	// 	return node
-	// }
 
 	get builtin() {
 		return Space.keywords
@@ -215,11 +147,15 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		return this.parseNode(kind, def as never) as never
 	}
 
+	private static typeCountsByPrefix: PartialRecord<string, number> = {}
 	parseNode<kind extends NodeKind>(
 		kind: kind,
 		def: Definition<kind>,
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<kind>> {
+		const prefix = opts.alias ?? kind
+		Space.typeCountsByPrefix[prefix] ??= 0
+		const uuid = `${prefix}${++Space.typeCountsByPrefix[prefix]!}`
 		if (opts.alias && opts.alias in this.keywords) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
@@ -228,7 +164,8 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 		return parse(kind, def, {
 			...opts,
 			space: this,
-			definition: def
+			definition: def,
+			uuid
 		}) as never
 	}
 

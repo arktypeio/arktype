@@ -38,6 +38,7 @@ export type SchemaParseOptions = {
 export type SchemaParseContext = extend<
 	SchemaParseOptions,
 	{
+		uuid: string
 		space: Space
 		definition: unknown
 	}
@@ -105,10 +106,18 @@ export const parse = <defKind extends NodeKind>(
 	}
 	const id = JSON.stringify({ kind, ...json })
 	const typeId = JSON.stringify({ kind, ...typeJson })
-	const prefix = ctx.alias ?? kind
-	typeCountsByPrefix[prefix] ??= 0
+	if (ctx.space.cls.unknownUnion?.typeId === typeId) {
+		return Space.keywords.unknown as never
+	}
+	if (implementation.reduce && !ctx.prereduced) {
+		const reduced = implementation.reduce(inner, ctx.space)
+		if (reduced) {
+			// TODO: update alias on reduction
+			return reduced as never
+		}
+	}
 	const baseAttachments = {
-		uuid: `${prefix}${++typeCountsByPrefix[prefix]!}`,
+		uuid: ctx.uuid,
 		kind,
 		inner,
 		entries,
@@ -120,19 +129,7 @@ export const parse = <defKind extends NodeKind>(
 		typeId,
 		space: ctx.space
 	} satisfies Record<keyof BaseAttachments<any>, unknown> as never
-	if (ctx.space.cls.unknownUnion?.typeId === typeId) {
-		return Space.keywords.unknown as never
-	}
-	if (implementation.reduce && !ctx.prereduced) {
-		const reduced = implementation.reduce(inner, ctx.space)
-		if (reduced) {
-			// TODO: update alias on reduction
-			return reduced as never
-		}
-	}
 	return includes(schemaKinds, kind)
 		? new SchemaNode(baseAttachments)
 		: (new BaseNode(baseAttachments) as any)
 }
-
-const typeCountsByPrefix: PartialRecord<string, number> = {}
