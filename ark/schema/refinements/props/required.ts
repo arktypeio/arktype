@@ -1,9 +1,9 @@
 import type { Node } from "../../base.js"
 import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
-import { schemaKinds, type SchemaKind } from "../../shared/define.js"
+import { typeKinds, type TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { Definition, Inner } from "../../shared/nodes.js"
+import type { Inner, Schema } from "../../shared/nodes.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
@@ -12,19 +12,19 @@ import {
 import type { PropKind } from "./prop.js"
 import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
 
-export type RequiredDefinition = withAttributes<{
+export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Definition<SchemaKind>
+	readonly value: Schema<TypeKind>
 }>
 
 export type RequiredInner = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Node<SchemaKind>
+	readonly value: Node<TypeKind>
 }>
 
 export type RequiredDeclaration = declareRefinement<{
 	kind: "required"
-	definition: RequiredDefinition
+	schema: RequiredSchema
 	operand: object
 	inner: RequiredInner
 	intersections: {
@@ -58,8 +58,7 @@ export const RequiredImplementation = defineRefinement({
 		key: {},
 		value: {
 			child: true,
-			parse: (schema, ctx) =>
-				ctx.scope.parseSchemaFromKinds(schemaKinds, schema)
+			parse: (schema, ctx) => ctx.scope.parseSchemaFromKinds(typeKinds, schema)
 		}
 	},
 	operand: ["object"],

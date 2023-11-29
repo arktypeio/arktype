@@ -1,4 +1,4 @@
-import { isNode, schema, type Schema } from "@arktype/schema"
+import { isNode, schema, type TypeNode } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -34,12 +34,12 @@ import {
 	type validateTuple
 } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): Schema => {
+export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
 			if (isNode(def)) {
-				return def as Schema
+				return def as TypeNode
 			}
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":

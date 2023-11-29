@@ -4,17 +4,17 @@ import { In } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Definition } from "../shared/nodes.js"
+import type { Schema } from "../shared/nodes.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
 
 export type BranchKind = "morph" | ValidatorKind
 
-export type BranchDefinition = Definition<BranchKind>
+export type BranchDefinition = Schema<BranchKind>
 
 export type BranchNode = Node<BranchKind>
 
-export type UnionDefinition<
+export type UnionSchema<
 	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
 > =
 	| withAttributes<{
@@ -34,7 +34,7 @@ export type UnionAttachments = {
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
-	definition: UnionDefinition
+	schema: UnionSchema
 	inner: UnionInner
 	intersections: {
 		union: "union" | Disjoint
@@ -70,7 +70,7 @@ export const UnionImplementation = defineNode({
 						branch
 					)
 				)
-				const def = ctx.definition as UnionDefinition
+				const def = ctx.definition as UnionSchema
 				if (isArray(def) || def.ordered !== true) {
 					branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
 				}

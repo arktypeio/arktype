@@ -3,13 +3,13 @@ import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type { BranchKind } from "./sets/union.js"
 import { Problems, type CheckResult } from "./shared/compilation.js"
-import type { RefinementKind, SchemaKind } from "./shared/define.js"
+import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
-import type { Definition } from "./shared/nodes.js"
+import type { Schema } from "./shared/nodes.js"
 import { inferred, isNode } from "./shared/symbols.js"
 
-export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
+export class BaseType<t, kind extends TypeKind> extends BaseNode<t, kind> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -35,7 +35,7 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,
-		input: Definition<refinementKind>
+		input: Schema<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
 		const refinement = this.scope.parseNode(kind, input)
 		return this.and(refinement) as never
@@ -58,11 +58,11 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 	}
 
 	// TODO: limit input types
-	or<other extends Schema>(
+	or<other extends TypeNode>(
 		other: other
-	): Schema<
+	): TypeNode<
 		t | other["infer"],
-		"union" | Extract<kind | other["kind"], SchemaKind>
+		"union" | Extract<kind | other["kind"], TypeKind>
 	> {
 		return this.scope.parseBranches(
 			...this.branches,
@@ -70,11 +70,11 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 		) as never
 	}
 
-	isUnknown(): this is Schema<unknown, "intersection"> {
+	isUnknown(): this is TypeNode<unknown, "intersection"> {
 		return this.hasKind("intersection") && this.constraints.length === 0
 	}
 
-	isNever(): this is Schema<never, "union"> {
+	isNever(): this is TypeNode<never, "union"> {
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
@@ -82,13 +82,13 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 		return this
 	}
 
-	array(): Schema<t[], "intersection"> {
+	array(): TypeNode<t[], "intersection"> {
 		return this as never
 	}
 
-	extends<other extends Schema>(
+	extends<other extends TypeNode>(
 		other: other
-	): this is Schema<other["infer"], kind> {
+	): this is TypeNode<other["infer"], kind> {
 		const intersection = this.intersect(other)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
@@ -96,33 +96,11 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 	}
 }
 
-export type Schema<t = unknown, kind extends SchemaKind = SchemaKind> = {
-	union: SchemaNode<t, "union">
-	morph: SchemaNode<t, "morph">
-	intersection: SchemaNode<t, "intersection">
-	unit: SchemaNode<t, "unit">
-	proto: SchemaNode<t, "proto">
-	domain: SchemaNode<t, "domain">
+export type TypeNode<t = unknown, kind extends TypeKind = TypeKind> = {
+	union: BaseType<t, "union">
+	morph: BaseType<t, "morph">
+	intersection: BaseType<t, "intersection">
+	unit: BaseType<t, "unit">
+	proto: BaseType<t, "proto">
+	domain: BaseType<t, "domain">
 }[kind]
-
-export const schemaKindOf = (input: unknown): SchemaKind => {
-	const basisKind = maybeGetBasisKind(input)
-	if (basisKind) {
-		return basisKind
-	}
-	if (typeof input === "object" && input !== null) {
-		if (isNode(input)) {
-			if (input.isSchema()) {
-				return input.kind
-			}
-			// otherwise, error at end of function
-		} else if ("morph" in input) {
-			return "morph"
-		} else if ("branches" in input || isArray(input)) {
-			return "union"
-		} else {
-			return "intersection"
-		}
-	}
-	throwParseError(`${printable(input)} is not a valid type schema`)
-}

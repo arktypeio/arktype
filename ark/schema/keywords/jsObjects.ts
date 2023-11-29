@@ -1,18 +1,18 @@
-import type { Schema } from "../schema.js"
 import { ScopeNode } from "../scope.js"
+import type { TypeNode } from "../type.js"
 
 export namespace JsObjects {
 	export interface resolutions {
-		Array: Schema<Array<unknown>, "proto">
-		Function: Schema<Function, "proto">
-		Date: Schema<Date, "proto">
-		Error: Schema<Error, "proto">
-		Map: Schema<Map<unknown, unknown>, "proto">
-		RegExp: Schema<RegExp, "proto">
-		Set: Schema<Set<unknown>, "proto">
-		WeakMap: Schema<WeakMap<object, unknown>, "proto">
-		WeakSet: Schema<WeakSet<object>, "proto">
-		Promise: Schema<Promise<unknown>, "proto">
+		Array: TypeNode<Array<unknown>, "proto">
+		Function: TypeNode<Function, "proto">
+		Date: TypeNode<Date, "proto">
+		Error: TypeNode<Error, "proto">
+		Map: TypeNode<Map<unknown, unknown>, "proto">
+		RegExp: TypeNode<RegExp, "proto">
+		Set: TypeNode<Set<unknown>, "proto">
+		WeakMap: TypeNode<WeakMap<object, unknown>, "proto">
+		WeakSet: TypeNode<WeakSet<object>, "proto">
+		Promise: TypeNode<Promise<unknown>, "proto">
 	}
 
 	export type infer = (typeof JsObjects)["infer"]

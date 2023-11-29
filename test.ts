@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 import { bench } from "@arktype/attest"
 import { type } from "arktype"
-import { rootSchema, schema, scopeNode } from "./ark/schema/main.js"
+import { schema, scopeNode } from "./ark/schema/main.js"
 import { range } from "./ark/util/main.js"
 
 const aNumber = schema({

@@ -1,23 +1,23 @@
-import type { Schema } from "../schema.js"
 import { ScopeNode } from "../scope.js"
+import type { TypeNode } from "../type.js"
 import type { schema } from "./keywords.js"
 
 export namespace TsKeywords {
 	export interface resolutions {
-		any: Schema<any, "intersection">
-		bigint: Schema<bigint, "domain">
-		boolean: Schema<boolean, "union">
-		false: Schema<false, "unit">
-		never: Schema<never, "union">
-		null: Schema<null, "unit">
-		number: Schema<number, "domain">
-		object: Schema<object, "domain">
-		string: Schema<string, "domain">
-		symbol: Schema<symbol, "domain">
-		true: Schema<true, "unit">
-		unknown: Schema<unknown, "intersection">
-		void: Schema<void, "unit">
-		undefined: Schema<undefined, "unit">
+		any: TypeNode<any, "intersection">
+		bigint: TypeNode<bigint, "domain">
+		boolean: TypeNode<boolean, "union">
+		false: TypeNode<false, "unit">
+		never: TypeNode<never, "union">
+		null: TypeNode<null, "unit">
+		number: TypeNode<number, "domain">
+		object: TypeNode<object, "domain">
+		string: TypeNode<string, "domain">
+		symbol: TypeNode<symbol, "domain">
+		true: TypeNode<true, "unit">
+		unknown: TypeNode<unknown, "intersection">
+		void: TypeNode<void, "unit">
+		undefined: TypeNode<undefined, "unit">
 	}
 
 	export type infer = (typeof TsKeywords)["infer"]

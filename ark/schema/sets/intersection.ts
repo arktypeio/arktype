@@ -27,7 +27,7 @@ import {
 	type RefinementKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Definition } from "../shared/nodes.js"
+import type { Schema } from "../shared/nodes.js"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {
@@ -37,15 +37,13 @@ export type IntersectionInner = withAttributes<
 	}
 >
 
-export type IntersectionDefinition<
-	basis extends Definition<BasisKind> | undefined = any
+export type IntersectionSchema<
+	basis extends Schema<BasisKind> | undefined = any
 > = evaluate<
 	{
 		basis?: basis
 	} & refinementInputsByKind<
-		basis extends Definition<BasisKind>
-			? instantiateBasis<basis>["infer"]
-			: unknown
+		basis extends Schema<BasisKind> ? instantiateBasis<basis>["infer"] : unknown
 	> &
 		BaseAttributes
 >
@@ -59,7 +57,7 @@ export type IntersectionAttachments = {
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
-	definition: IntersectionDefinition
+	schema: IntersectionSchema
 	inner: IntersectionInner
 	intersections: {
 		intersection: "intersection" | Disjoint
@@ -72,7 +70,7 @@ export const IntersectionImplementation = defineNode({
 	kind: "intersection",
 	normalize: (def) => def,
 	addContext: (ctx) => {
-		const def = ctx.definition as IntersectionDefinition
+		const def = ctx.definition as IntersectionSchema
 		ctx.basis =
 			def.basis && ctx.scope.parseSchemaFromKinds(basisKinds, def.basis)
 	},
@@ -212,7 +210,7 @@ export const IntersectionImplementation = defineNode({
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
-	input: Definition<kind>,
+	input: Schema<kind>,
 	ctx: SchemaParseContext
 ): Node<kind> => {
 	const refinement = ctx.scope.parseNode(kind, input) as Node<RefinementKind>
@@ -222,7 +220,7 @@ export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 
 export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
-	input: listable<Definition<kind>>,
+	input: listable<Schema<kind>>,
 	ctx: SchemaParseContext
 ) => {
 	if (isArray(input)) {

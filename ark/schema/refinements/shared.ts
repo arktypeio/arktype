@@ -1,19 +1,19 @@
 import { throwParseError, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import type { Schema } from "../schema.js"
 import type {
 	BaseNodeDeclaration,
 	validateNodeDeclaration
 } from "../shared/declare.js"
 import {
 	defineNode,
-	schemaKinds,
+	typeKinds,
 	type NodeImplementationInput,
 	type RefinementKind,
-	type SchemaKind
+	type TypeKind
 } from "../shared/define.js"
-import type { Declaration, Definition } from "../shared/nodes.js"
+import type { Declaration, Schema } from "../shared/nodes.js"
+import type { TypeNode } from "../type.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
@@ -22,7 +22,7 @@ export type RefinementImplementationInput<d extends BaseNodeDeclaration> =
 	extend<
 		NodeImplementationInput<d>,
 		{
-			operand: readonly Definition<SchemaKind>[]
+			operand: readonly Schema<TypeKind>[]
 		}
 	>
 
@@ -37,11 +37,10 @@ export type declareRefinement<
 > = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
 
 export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
-	const operandsDef: readonly Definition<SchemaKind>[] = (
-		node.implementation as any
-	).operand
-	const operands: readonly Schema[] = operandsDef.map((o) =>
-		node.scope.parseSchemaFromKinds(schemaKinds, o)
+	const operandsDef: readonly Schema<TypeKind>[] = (node.implementation as any)
+		.operand
+	const operands: readonly TypeNode[] = operandsDef.map((o) =>
+		node.scope.parseSchemaFromKinds(typeKinds, o)
 	)
 	return operands.length === 1 && operands[0].isUnknown()
 		? () => {}

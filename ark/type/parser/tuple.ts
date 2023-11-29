@@ -2,11 +2,11 @@ import {
 	keywords,
 	schema,
 	type BaseAttributes,
-	type Definition,
 	type Morph,
 	type Out,
 	type Predicate,
 	type Schema,
+	type TypeNode,
 	type ValidatorKind,
 	type extractIn,
 	type extractOut,
@@ -42,7 +42,7 @@ import type { BaseCompletions } from "./string/string.js"
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: List, ctx: ParseContext): Schema => {
+export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 	const props: unknown[] = []
 	let isVariadic = false
 	for (let i = 0; i < def.length; i++) {
@@ -102,7 +102,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Schema => {
 export const maybeParseTupleExpression = (
 	def: List,
 	ctx: ParseContext
-): Schema | undefined => {
+): TypeNode | undefined => {
 	const tupleExpressionResult = isIndexOneExpression(def)
 		? indexOneParsers[def[1]](def as never, ctx)
 		: isIndexZeroExpression(def)
@@ -359,12 +359,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => Schema
+) => TypeNode
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => Schema
+) => TypeNode
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
@@ -391,7 +391,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 	}
 	// TODO: nested morphs?
 	return schema({
-		in: ctx.scope.parse(def[0], ctx) as Definition<ValidatorKind>,
+		in: ctx.scope.parse(def[0], ctx) as Schema<ValidatorKind>,
 		morph: def[2] as Morph
 	})
 }

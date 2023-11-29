@@ -11,11 +11,11 @@ export type DivisorInner = withAttributes<{
 	readonly divisor: number
 }>
 
-export type DivisorDefinition = DivisorInner | number
+export type DivisorSchema = DivisorInner | number
 
 export type DivisorDeclaration = declareRefinement<{
 	kind: "divisor"
-	definition: DivisorDefinition
+	schema: DivisorSchema
 	inner: DivisorInner
 	intersections: {
 		divisor: "divisor"

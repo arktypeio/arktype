@@ -12,11 +12,11 @@ export type PatternInner = withAttributes<{
 	readonly flags?: string
 }>
 
-export type PatternDefinition = string | PatternInner | RegExp
+export type PatternSchema = string | PatternInner | RegExp
 
 export type PatternDeclaration = declareRefinement<{
 	kind: "pattern"
-	definition: PatternDefinition
+	schema: PatternSchema
 	inner: PatternInner
 	intersections: {
 		pattern: "pattern" | null

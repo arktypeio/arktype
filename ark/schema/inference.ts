@@ -9,11 +9,10 @@ import type { Node } from "./base.js"
 import type { instantiateBasis } from "./bases/basis.js"
 import type { NonEnumerableDomain } from "./bases/domain.js"
 import type { isSchemaCast, schema } from "./keywords/keywords.js"
-import type { Schema } from "./schema.js"
-import type { IntersectionDefinition } from "./sets/intersection.js"
+import type { IntersectionSchema } from "./sets/intersection.js"
 import type {
 	Morph,
-	MorphDefinition,
+	MorphSchema,
 	Out,
 	ValidatorDefinition,
 	ValidatorKind,
@@ -21,7 +20,8 @@ import type {
 } from "./sets/morph.js"
 import type { BranchNode } from "./sets/union.js"
 import type { BasisKind, RefinementKind } from "./shared/define.js"
-import type { Definition, NormalizedDefinition } from "./shared/nodes.js"
+import type { NormalizedDefinition, Schema } from "./shared/nodes.js"
+import type { TypeNode } from "./type.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]
@@ -36,7 +36,7 @@ export type validateAliases<aliases> = {
 export type instantiateAliases<aliases> = {
 	[k in keyof aliases]: isSchemaCast<aliases[k]> extends true
 		? aliases[k] extends schema.cast<infer to, infer kind>
-			? Schema<to, kind>
+			? TypeNode<to, kind>
 			: never
 		: aliases[k] extends NormalizedDefinition<"union">
 		  ? instantiateSchemaBranches<aliases[k]["branches"]>
@@ -48,27 +48,27 @@ export type instantiateAliases<aliases> = {
 export type validateSchemaBranch<def, $> = isSchemaCast<def> extends true
 	? def
 	: keyof def & ("morph" | "in" | "out") extends never
-	  ? validateValidatorSchema<def>
+	  ? validateMorphChild<def>
 	  : validateMorphSchema<def>
 
 export type instantiateSchemaBranches<branches extends readonly unknown[]> =
 	branches["length"] extends 0
-		? Schema<never, "union">
+		? TypeNode<never, "union">
 		: branches["length"] extends 1
 		  ? instantiateSchemaBranch<branches[0]>
-		  : Schema<instantiateSchemaBranch<branches[number]>["infer"]>
+		  : TypeNode<instantiateSchemaBranch<branches[number]>["infer"]>
 
 export type instantiateSchemaBranch<def> = isSchemaCast<def> extends true
 	? def extends schema.cast<infer to, infer kind>
-		? Schema<to, kind>
+		? TypeNode<to, kind>
 		: never
-	: def extends MorphDefinition
+	: def extends MorphSchema
 	  ? instantiateMorphSchema<def>
 	  : def extends ValidatorDefinition
-	    ? instantiateValidatorSchema<def>
+	    ? instantiateMorphChild<def>
 	    : BranchNode
 
-export type validateValidatorSchema<def> = [def] extends [
+export type validateMorphChild<def> = [def] extends [
 	NonEnumerableDomain | Constructor
 ]
 	? def
@@ -79,28 +79,28 @@ export type validateValidatorSchema<def> = [def] extends [
 				NormalizedDefinition<keyof def & BasisKind>
 	    >
 
-export type instantiateValidatorSchema<def> = def extends Definition<BasisKind>
+export type instantiateMorphChild<def> = def extends Schema<BasisKind>
 	? instantiateBasis<def>
-	: def extends IntersectionDefinition
+	: def extends IntersectionSchema
 	  ? instantiateIntersectionSchema<def>
 	  : Node<ValidatorKind>
 
 export type validateMorphSchema<def> = {
 	[k in keyof def]: k extends "in" | "out"
-		? validateValidatorSchema<def[k]>
-		: k extends keyof MorphDefinition
-		  ? MorphDefinition[k]
+		? validateMorphChild<def[k]>
+		: k extends keyof MorphSchema
+		  ? MorphSchema[k]
 		  : `'${k & string}' is not a valid morph schema key`
 }
 
-export type instantiateMorphSchema<def> = def extends MorphDefinition
-	? Schema<
+export type instantiateMorphSchema<def> = def extends MorphSchema
+	? TypeNode<
 			(
 				In: def["in"] extends {}
-					? instantiateValidatorSchema<def["in"]>["infer"]
+					? instantiateMorphChild<def["in"]>["infer"]
 					: unknown
 			) => def["out"] extends {}
-				? Out<instantiateValidatorSchema<def["out"]>["infer"]>
+				? Out<instantiateMorphChild<def["out"]>["infer"]>
 				: def["morph"] extends
 							| Morph<any, infer o>
 							| readonly [...unknown[], Morph<any, infer o>]
@@ -124,9 +124,9 @@ type exactBasisMessageOnError<def, expected> = {
 
 export type validateIntersectionSchema<def> = exactBasisMessageOnError<
 	def,
-	IntersectionDefinition<
+	IntersectionSchema<
 		"basis" extends keyof def
-			? def["basis"] extends Definition<BasisKind>
+			? def["basis"] extends Schema<BasisKind>
 				? def["basis"]
 				: undefined
 			: undefined
@@ -134,9 +134,9 @@ export type validateIntersectionSchema<def> = exactBasisMessageOnError<
 >
 
 export type instantiateIntersectionSchema<def> = "basis" extends keyof def
-	? def["basis"] extends Definition<BasisKind>
+	? def["basis"] extends Schema<BasisKind>
 		? keyof def & RefinementKind extends never
 			? instantiateBasis<def["basis"]>
-			: Schema<instantiateBasis<def["basis"]>["infer"], "intersection">
+			: TypeNode<instantiateBasis<def["basis"]>["infer"], "intersection">
 		: Node<"intersection">
 	: Node<"intersection">

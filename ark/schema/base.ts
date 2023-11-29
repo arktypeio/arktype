@@ -8,7 +8,6 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
-import type { Schema } from "./schema.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
@@ -24,15 +23,15 @@ import {
 	constraintKinds,
 	openRefinementKinds,
 	refinementKinds,
-	schemaKinds,
 	setKinds,
+	typeKinds,
 	type ClosedRefinementKind,
 	type ConstraintKind,
 	type NodeKind,
 	type OpenRefinementKind,
 	type RefinementKind,
-	type SchemaKind,
 	type SetKind,
+	type TypeKind,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -45,6 +44,7 @@ import {
 	type reducibleKindOf
 } from "./shared/nodes.js"
 import { arkKind } from "./shared/symbols.js"
+import type { TypeNode } from "./type.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
 	alias?: string
@@ -193,8 +193,8 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isSchema(): this is Node<SchemaKind> {
-		return includes(schemaKinds, this.kind)
+	isType(): this is Node<TypeKind> {
+		return includes(typeKinds, this.kind)
 	}
 
 	isSet(): this is Node<SetKind> {
@@ -276,8 +276,8 @@ export const throwUnitializedMethodError = (
 	throw new Error(`${id} must be bound to its scope to invoke ${method}`)
 }
 
-export type Node<kind extends NodeKind = NodeKind> = kind extends SchemaKind
-	? Schema<unknown, kind>
+export type Node<kind extends NodeKind = NodeKind> = kind extends TypeKind
+	? TypeNode<unknown, kind>
 	: BaseNode<unknown, kind>
 
 export type UnknownNode = BaseNode<unknown, any>

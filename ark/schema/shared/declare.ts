@@ -27,7 +27,7 @@ export type BaseIntersectionMap = {
 
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
-	definition: unknown
+	schema: unknown
 	inner: BaseAttributes
 	intersections: BaseIntersectionMap[kind]
 	attach: Dict
@@ -35,7 +35,7 @@ export type DeclarationInput<kind extends NodeKind> = {
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind
-	definition: unknown
+	schema: unknown
 	inner: BaseAttributes
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null

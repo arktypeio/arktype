@@ -18,22 +18,22 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { KeyCheckKind } from "./refinements/props/shared.js"
-import type { Schema } from "./schema.js"
 import type { BranchKind } from "./sets/union.js"
 import type { ProblemCode } from "./shared/compilation.js"
-import type { NodeKind, SchemaKind } from "./shared/define.js"
+import type { NodeKind, TypeKind } from "./shared/define.js"
 import type {
-	Definition,
 	NormalizedDefinition,
+	Schema,
 	reducibleKindOf
 } from "./shared/nodes.js"
 import { isNode, type addArkKind } from "./shared/symbols.js"
+import type { TypeNode } from "./type.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 
 export const globalResolutions: BaseResolutions = {}
 
-export type BaseResolutions = Record<string, Schema>
+export type BaseResolutions = Record<string, TypeNode>
 
 export interface ArkConfig {
 	preserve(): never
@@ -47,12 +47,12 @@ export type ScopeOptions = {
 	keys?: KeyCheckKind
 }
 
-export class ScopeNode<r extends BaseResolutions = any> {
+export class ScopeNode<r extends object = any> {
 	declare infer: {
 		[k in keyof r]: r[k] extends schema.cast<infer t> ? t : never
 	}
 	declare static keywords: typeof keywords
-	declare static unknownUnion?: Schema<unknown, "union">
+	declare static unknownUnion?: TypeNode<unknown, "union">
 	readonly cls = ScopeNode
 	readonly resolutions = {} as r
 	readonly referencesById: BaseResolutions = {}
@@ -63,7 +63,7 @@ export class ScopeNode<r extends BaseResolutions = any> {
 	) {
 		for (const k in this.def) {
 			;(this.resolutions as BaseResolutions)[k] = this.parseNode(
-				schemaKindOf(this.def[k]),
+				assertTypeKind(this.def[k]),
 				this.def[k] as never,
 				{
 					alias: k
@@ -95,7 +95,7 @@ export class ScopeNode<r extends BaseResolutions = any> {
 
 	static root = this.from({})
 
-	parseUnion<const branches extends readonly Definition<BranchKind>[]>(
+	parseUnion<const branches extends readonly Schema<BranchKind>[]>(
 		input: {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], r>
@@ -105,7 +105,7 @@ export class ScopeNode<r extends BaseResolutions = any> {
 		return this.parseNode("union", input) as never
 	}
 
-	parseBranches<const branches extends readonly Definition<BranchKind>[]>(
+	parseBranches<const branches extends readonly Schema<BranchKind>[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
@@ -116,8 +116,8 @@ export class ScopeNode<r extends BaseResolutions = any> {
 	parseUnits<const branches extends readonly unknown[]>(
 		...values: branches
 	): branches["length"] extends 1
-		? Schema<branches[0], "unit">
-		: Schema<branches[number], "union" | "unit"> {
+		? TypeNode<branches[0], "unit">
+		: TypeNode<branches[number], "union" | "unit"> {
 		const uniqueValues: unknown[] = []
 		for (const value of values) {
 			if (!uniqueValues.includes(value)) {
@@ -135,20 +135,20 @@ export class ScopeNode<r extends BaseResolutions = any> {
 		}) as never
 	}
 
-	parsePrereduced<kind extends SchemaKind>(
+	parsePrereduced<kind extends TypeKind>(
 		kind: kind,
-		def: Definition<kind>
+		def: Schema<kind>
 	): Node<kind> {
 		return this.parseNode(kind, def, {
 			prereduced: true
 		}) as never
 	}
 
-	parseSchemaFromKinds<defKind extends SchemaKind>(
+	parseSchemaFromKinds<defKind extends TypeKind>(
 		allowedKinds: readonly defKind[],
-		def: Definition<defKind>
+		def: Schema<defKind>
 	): Node<reducibleKindOf<defKind>> {
-		const kind = schemaKindOf(def)
+		const kind = assertTypeKind(def)
 		if (!allowedKinds.includes(kind as never)) {
 			return throwParseError(
 				`Schema of kind ${kind} should be one of ${allowedKinds}`
@@ -160,7 +160,7 @@ export class ScopeNode<r extends BaseResolutions = any> {
 	private static typeCountsByPrefix: PartialRecord<string, number> = {}
 	parseNode<kind extends NodeKind>(
 		kind: kind,
-		def: Definition<kind>,
+		def: Schema<kind>,
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<kind>> {
 		const prefix = opts.alias ?? kind
@@ -201,14 +201,14 @@ export const writeDuplicateNameMessage = <name extends string>(
 
 type writeDuplicateNameMessage<name extends string> = `Duplicate name '${name}'`
 
-const schemaKindOf = (input: unknown): SchemaKind => {
+const assertTypeKind = (input: unknown): TypeKind => {
 	const basisKind = maybeGetBasisKind(input)
 	if (basisKind) {
 		return basisKind
 	}
 	if (typeof input === "object" && input !== null) {
 		if (isNode(input)) {
-			if (input.isSchema()) {
+			if (input.isType()) {
 				return input.kind
 			}
 			// otherwise, error at end of function

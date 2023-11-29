@@ -1,12 +1,12 @@
 import { attest } from "@arktype/attest"
-import { rootNode, schema, type Schema } from "@arktype/schema"
+import { rootNode, schema, type TypeNode } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 import type { Disjoint } from "../shared/disjoint.js"
 
 describe("intersections", () => {
 	it("parse pattern", () => {
 		const t = schema({ basis: "string", pattern: ".*" })
-		attest<Schema<string, "intersection">>(t)
+		attest<TypeNode<string, "intersection">>(t)
 		attest(t.json).snap({ basis: "string", pattern: [".*"] })
 	})
 	it("multiple constraints", () => {

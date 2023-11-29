@@ -8,20 +8,20 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import type { Schema } from "../schema.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
-import type { Definition } from "../shared/nodes.js"
+import type { Schema } from "../shared/nodes.js"
 import { isNode } from "../shared/symbols.js"
+import type { TypeNode } from "../type.js"
 import {
 	DomainImplementation,
 	type DomainDeclaration,
-	type DomainDefinition,
+	type DomainSchema,
 	type NonEnumerableDomain
 } from "./domain.js"
 import {
 	ProtoImplementation,
 	type ProtoDeclaration,
-	type ProtoInput
+	type ProtoSchema
 } from "./proto.js"
 import {
 	UnitImplementation,
@@ -76,23 +76,23 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	}
 }
 
-export type instantiateBasis<def extends Definition<BasisKind>> =
+export type instantiateBasis<def extends Schema<BasisKind>> =
 	//allow any to be used to access all refinements
 	isAny<def> extends true
 		? any
 		: def extends NonEnumerableDomain
-		  ? Schema<inferDomain<def>, "domain">
+		  ? TypeNode<inferDomain<def>, "domain">
 		  : def extends Constructor<infer instance>
-		    ? Schema<instance, "proto">
-		    : def extends DomainDefinition<infer domain>
-		      ? Schema<inferDomain<domain>, "domain">
-		      : def extends ProtoInput<infer proto>
-		        ? Schema<instanceOf<proto>, "proto">
+		    ? TypeNode<instance, "proto">
+		    : def extends DomainSchema<infer domain>
+		      ? TypeNode<inferDomain<domain>, "domain">
+		      : def extends ProtoSchema<infer proto>
+		        ? TypeNode<instanceOf<proto>, "proto">
 		        : def extends UnitSchema<infer is>
-		          ? Schema<is, "unit">
+		          ? TypeNode<is, "unit">
 		          : never
 
-export const getBasisKindOrThrow = (schema: unknown) => {
+export const assertBasisKind = (schema: unknown) => {
 	const basisKind = maybeGetBasisKind(schema)
 	if (basisKind === undefined) {
 		return throwParseError(

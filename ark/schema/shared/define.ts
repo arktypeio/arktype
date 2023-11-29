@@ -64,9 +64,9 @@ export const setKinds = ["union", "morph", "intersection"] as const
 
 export type SetKind = (typeof setKinds)[number]
 
-export const schemaKinds = [...setKinds, ...basisKinds] as const
+export const typeKinds = [...setKinds, ...basisKinds] as const
 
-export type SchemaKind = (typeof schemaKinds)[number]
+export type TypeKind = (typeof typeKinds)[number]
 
 export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
@@ -158,9 +158,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	attach: (node: Node<d["kind"]>) => {
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 	}
-	normalize: (
-		schema: d["definition"]
-	) => normalizeInput<d["definition"], d["inner"]>
+	normalize: (schema: d["schema"]) => normalizeInput<d["schema"], d["inner"]>
 	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 	reduce?: (
 		inner: d["inner"],

@@ -1,5 +1,5 @@
-import type { Schema } from "../schema.js"
 import { ScopeNode, rootSchema } from "../scope.js"
+import type { TypeNode } from "../type.js"
 import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
@@ -48,16 +48,16 @@ const semver = rootSchema({
 
 export namespace Validation {
 	export interface resolutions {
-		alpha: Schema<string, "intersection">
-		alphanumeric: Schema<string, "intersection">
-		lowercase: Schema<string, "intersection">
-		uppercase: Schema<string, "intersection">
-		creditCard: Schema<string, "intersection">
-		email: Schema<string, "intersection">
-		uuid: Schema<string, "intersection">
-		url: Schema<string, "intersection">
-		semver: Schema<string, "intersection">
-		integer: Schema<number, "intersection">
+		alpha: TypeNode<string, "intersection">
+		alphanumeric: TypeNode<string, "intersection">
+		lowercase: TypeNode<string, "intersection">
+		uppercase: TypeNode<string, "intersection">
+		creditCard: TypeNode<string, "intersection">
+		email: TypeNode<string, "intersection">
+		uuid: TypeNode<string, "intersection">
+		url: TypeNode<string, "intersection">
+		semver: TypeNode<string, "intersection">
+		integer: TypeNode<number, "intersection">
 	}
 
 	export type infer = (typeof Validation)["infer"]

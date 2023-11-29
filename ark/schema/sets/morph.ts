@@ -14,13 +14,13 @@ import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Definition } from "../shared/nodes.js"
+import type { Schema } from "../shared/nodes.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
 export type ValidatorNode = Node<ValidatorKind>
 
-export type ValidatorDefinition = Definition<ValidatorKind>
+export type ValidatorDefinition = Schema<ValidatorKind>
 
 export type TraversalState = {
 	path: string[]
@@ -39,7 +39,7 @@ export type MorphInner = withAttributes<{
 	readonly morph: readonly Morph[]
 }>
 
-export type MorphDefinition = withAttributes<{
+export type MorphSchema = withAttributes<{
 	readonly in: ValidatorDefinition
 	readonly out?: ValidatorDefinition
 	readonly morph: listable<Morph>
@@ -52,7 +52,7 @@ export type MorphAttachments = {
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
-	definition: MorphDefinition
+	schema: MorphSchema
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint

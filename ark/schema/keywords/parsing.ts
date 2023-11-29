@@ -2,9 +2,9 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import type { Schema } from "../schema.js"
 import { ScopeNode, rootSchema } from "../scope.js"
 import type { Out } from "../sets/morph.js"
+import type { TypeNode } from "../type.js"
 import { parsedDate } from "./utils/date.js"
 
 const number = rootSchema({
@@ -62,11 +62,11 @@ const date = parsedDate
 
 export namespace Parsing {
 	export interface resolutions {
-		url: Schema<(In: string) => Out<URL>, "morph">
-		number: Schema<(In: string) => Out<number>, "morph">
-		integer: Schema<(In: string) => Out<number>, "morph">
-		date: Schema<(In: string) => Out<Date>, "morph">
-		json: Schema<(In: string) => Out<unknown>, "morph">
+		url: TypeNode<(In: string) => Out<URL>, "morph">
+		number: TypeNode<(In: string) => Out<number>, "morph">
+		integer: TypeNode<(In: string) => Out<number>, "morph">
+		date: TypeNode<(In: string) => Out<Date>, "morph">
+		json: TypeNode<(In: string) => Out<unknown>, "morph">
 	}
 
 	export type infer = (typeof Parsing)["infer"]

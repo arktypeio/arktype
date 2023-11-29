@@ -11,20 +11,20 @@ import {
 	type Node,
 	type UnknownNode
 } from "./base.js"
-import { SchemaNode } from "./schema.js"
 import { ScopeNode } from "./scope.js"
 import {
 	defaultInnerKeySerializer,
-	schemaKinds,
+	typeKinds,
 	type BasisKind,
 	type NodeKind,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
 import {
 	NodeImplementationByKind,
-	type Definition,
+	type Schema,
 	type reducibleKindOf
 } from "./shared/nodes.js"
+import { BaseType } from "./type.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -43,7 +43,7 @@ export type SchemaParseContext = extend<
 
 export const parse = <defKind extends NodeKind>(
 	kind: defKind,
-	def: Definition<defKind>,
+	def: Schema<defKind>,
 	ctx: SchemaParseContext
 ): Node<reducibleKindOf<defKind>> => {
 	if (def instanceof BaseNode) {
@@ -132,7 +132,7 @@ export const parse = <defKind extends NodeKind>(
 		typeId,
 		scope: ctx.scope
 	} satisfies Record<keyof BaseAttachments<any>, unknown> as never
-	return includes(schemaKinds, kind)
-		? new SchemaNode(baseAttachments)
+	return includes(typeKinds, kind)
+		? new BaseType(baseAttachments)
 		: (new BaseNode(baseAttachments) as any)
 }

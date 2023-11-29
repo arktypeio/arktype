@@ -1,9 +1,9 @@
 import {
 	keywords,
 	type BoundKind,
-	type Definition,
 	type LimitValue,
-	type Schema
+	type Schema,
+	type TypeNode
 } from "@arktype/schema"
 import {
 	isKeyOf,
@@ -146,7 +146,7 @@ export const writeLimitMismatchMessage = (
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitValue,
-	root: Schema
+	root: TypeNode
 ): BoundKind[] => {
 	if (root.extends(keywords.number)) {
 		if (typeof limit !== "number") {
@@ -184,7 +184,7 @@ type singleEqualsMessage = typeof singleEqualsMessage
 
 const openLeftBoundToSchema = (
 	leftBound: OpenLeftBound
-): Definition<BoundKind> => ({
+): Schema<BoundKind> => ({
 	limit: isDateLiteral(leftBound.limit)
 		? extractDateLiteralSource(leftBound.limit)
 		: leftBound.limit,

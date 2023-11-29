@@ -17,7 +17,7 @@ export type UnitInner<value = unknown> = withAttributes<{
 
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
-	definition: UnitSchema
+	schema: UnitSchema
 	inner: UnitInner
 	intersections: {
 		unit: "unit" | Disjoint
