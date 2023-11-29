@@ -1,4 +1,12 @@
-import { keywords, type ProblemCode, type Schema } from "@arktype/schema"
+import {
+	addArkKind,
+	hasArkKind,
+	keywords,
+	type KeyCheckKind,
+	type ProblemCode,
+	type Schema,
+	type arkKind
+} from "@arktype/schema"
 import {
 	domainOf,
 	hasDomain,
@@ -35,23 +43,29 @@ import {
 } from "./parser/string/shift/operand/unenclosed.js"
 import { parseString } from "./parser/string/string.js"
 import {
-	addArkKind,
+	Type,
 	createTypeParser,
 	generic,
-	hasArkKind,
-	Type,
 	validateUninstantiatedGeneric,
-	type arkKind,
 	type DeclarationParser,
 	type DefinitionParser,
-	type extractIn,
-	type extractOut,
 	type Generic,
 	type GenericProps,
-	type KeyCheckKind,
 	type TypeConfig,
-	type TypeParser
+	type TypeParser,
+	type extractIn,
+	type extractOut
 } from "./type.js"
+
+declare global {
+	interface InternalArkConfig {
+		kinds(): {
+			type: Type
+			scope: Scope
+			generic: Generic
+		}
+	}
+}
 
 export type ScopeParser<parent, ambient> = {
 	<const def>(def: validateScope<def, parent & ambient>): Scope<{

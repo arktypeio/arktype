@@ -1,10 +1,4 @@
 import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
-import type { UnknownNode } from "../base.js"
-
-export const arkKind = Symbol("ArkTypeInternalKind")
-
-export const isNode = (o: unknown): o is UnknownNode =>
-	(o as any)?.[arkKind] === "node"
 
 declare global {
 	const $ark: Registry

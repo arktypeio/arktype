@@ -1,5 +1,6 @@
 import { OptionalImplementation, type OptionalDeclaration } from "./optional.js"
 import { RequiredImplementation, type RequiredDeclaration } from "./required.js"
+export { type KeyCheckKind } from "./shared.js"
 
 export type PropDeclarations = {
 	required: RequiredDeclaration

@@ -15,6 +15,7 @@ import type { ValidatorKind } from "./sets/morph.js"
 import {
 	compileAnonymous,
 	type CompilationContext,
+	type CompilationKind,
 	type Problems
 } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
@@ -80,8 +81,11 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	readonly contributesReferencesById: Record<string, UnknownNode>
 	readonly contributesReferences: readonly UnknownNode[]
 
-	declare allows: (data: unknown) => data is t
-	declare traverse: (data: unknown, problems: Problems) => void
+	// these are replaced by thie type's ScopeNode when an export method is called
+	allows = (data: unknown): data is t =>
+		throwUnitializedMethodError(this.id, "allows")
+	traverse = (data: unknown, problems: Problems): void =>
+		throwUnitializedMethodError(this.id, "traverse")
 	// we use declare here to avoid it being initialized outside the constructor
 	// and detected as an overwritten key
 	declare readonly description: string
@@ -110,8 +114,8 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				? this.referencesById
 				: { ...this.referencesById, [this.id]: this }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
-		this.allows = compileAnonymous(this as never, "allows")
-		this.traverse = compileAnonymous(this as never, "traverse")
+		// this.allows = compileAnonymous(this as never, "allows")
+		// this.traverse = compileAnonymous(this as never, "traverse")
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
@@ -264,6 +268,13 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		}
 		return null
 	}
+}
+
+export const throwUnitializedMethodError = (
+	id: string,
+	method: CompilationKind
+) => {
+	throw new Error(`${id} must be bound to its scope to invoke ${method}`)
 }
 
 export type Node<kind extends NodeKind = NodeKind> = kind extends SchemaKind

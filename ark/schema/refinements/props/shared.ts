@@ -1,9 +1,5 @@
 import type { Node } from "../../base.js"
-import {
-	In,
-	type CompilationContext,
-	type CompilationKind
-} from "../../shared/compilation.js"
+import { In, type CompilationContext } from "../../shared/compilation.js"
 import { isDotAccessible } from "../../shared/registry.js"
 import type { PropKind } from "./prop.js"
 
@@ -31,3 +27,5 @@ export const compilePresentProp = (
 	problems.currentPath.pop()
 	`
 }
+
+export type KeyCheckKind = "distilled" | "strict" | "loose"
