@@ -1,6 +1,6 @@
 import { caller, filePath } from "@arktype/fs"
 import { throwInternalError } from "@arktype/util"
-import tsvfs from "@typescript/vfs"
+import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
 import { getInternalTypeChecker } from "../tsserver/analysis.js"
 import {
@@ -17,8 +17,12 @@ import {
 } from "../tsserver/tsserver.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
-import type { Measure, MeasureComparison, TypeUnit } from "./measure.js"
-import { createTypeComparison } from "./measure.js"
+import {
+	createTypeComparison,
+	type Measure,
+	type MeasureComparison,
+	type TypeUnit
+} from "./measure.js"
 
 export type BenchTypeAssertions = {
 	types: (instantiations?: Measure<TypeUnit>) => void
@@ -41,13 +45,13 @@ const getIsolatedEnv = () => {
 	return __virtualEnv
 }
 
-export const createFile = (
+const createFile = (
 	env: tsvfs.VirtualTypeScriptEnvironment,
 	fileName: string,
 	fileText: string
 ) => {
 	env.createFile(fileName, fileText)
-	return env.getSourceFile(fileName)!
+	return env.getSourceFile(fileName)
 }
 
 const getProgram = (env?: tsvfs.VirtualTypeScriptEnvironment) => {
