@@ -64,7 +64,7 @@ export type BaseAttachments<kind extends NodeKind> = {
 export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	Inner<kind> & Attachments<kind> & BaseAttachments<kind>
 > {
-	readonly [arkKind] = "node"
+	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
 	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[
 		this.kind
 	] as never

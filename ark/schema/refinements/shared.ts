@@ -40,7 +40,7 @@ export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
 	const operandsDef: readonly Schema<TypeKind>[] = (node.implementation as any)
 		.operand
 	const operands: readonly TypeNode[] = operandsDef.map((o) =>
-		node.scope.parseSchemaFromKinds(typeKinds, o)
+		node.scope.parseTypeNode(o)
 	)
 	return operands.length === 1 && operands[0].isUnknown()
 		? () => {}

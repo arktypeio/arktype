@@ -408,7 +408,7 @@ export class Scope<r extends Resolutions = any> {
 
 	maybeResolveNode(name: string): TypeNode | undefined {
 		const result = this.maybeResolve(name)
-		return hasArkKind(result, "node") ? (result as never) : undefined
+		return hasArkKind(result, "typeNode") ? (result as never) : undefined
 	}
 
 	import<names extends exportedName<r>[]>(

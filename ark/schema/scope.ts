@@ -39,9 +39,6 @@ export interface ArkConfig {
 	preserve(): never
 }
 
-export type ModuleNode<resolutions extends BaseResolutions = BaseResolutions> =
-	addArkKind<"moduleNode", resolutions>
-
 export type ScopeOptions = {
 	codes?: Record<ProblemCode, { mustBe?: string }>
 	keys?: KeyCheckKind
@@ -144,17 +141,17 @@ export class ScopeNode<r extends object = any> {
 		}) as never
 	}
 
-	parseSchemaFromKinds<defKind extends TypeKind>(
-		allowedKinds: readonly defKind[],
-		def: Schema<defKind>
+	parseTypeNode<defKind extends TypeKind>(
+		schema: Schema<defKind>,
+		allowedKinds?: readonly defKind[]
 	): Node<reducibleKindOf<defKind>> {
-		const kind = assertTypeKind(def)
-		if (!allowedKinds.includes(kind as never)) {
+		const kind = assertTypeKind(schema)
+		if (allowedKinds && !allowedKinds.includes(kind as never)) {
 			return throwParseError(
 				`Schema of kind ${kind} should be one of ${allowedKinds}`
 			)
 		}
-		return this.parseNode(kind, def as never) as never
+		return this.parseNode(kind, schema as never) as never
 	}
 
 	private static typeCountsByPrefix: PartialRecord<string, number> = {}

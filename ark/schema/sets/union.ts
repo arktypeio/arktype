@@ -65,10 +65,11 @@ export const UnionImplementation = defineNode({
 			child: true,
 			parse: (schema, ctx) => {
 				const branches = schema.map((branch) =>
-					ctx.scope.parseSchemaFromKinds(
-						["morph", "intersection", ...basisKinds],
-						branch
-					)
+					ctx.scope.parseTypeNode(branch, [
+						"morph",
+						"intersection",
+						...basisKinds
+					])
 				)
 				const def = ctx.definition as UnionSchema
 				if (isArray(def) || def.ordered !== true) {

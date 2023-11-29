@@ -2,8 +2,10 @@
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
 
 import type { intersectUnion, overloadOf, returnOf } from "@arktype/util"
-import type { UnknownNode } from "../base.js"
-import type { ModuleNode } from "../scope.js"
+import type { Node, UnknownNode } from "../base.js"
+import type { ScopeNode } from "../scope.js"
+import type { TypeNode } from "../type.js"
+import type { RefinementKind } from "./define.js"
 
 // easiest solution seems to be just having it declared as a value so it doesn't break when we import at runtime
 export const inferred = Symbol("inferred")
@@ -11,7 +13,8 @@ export const inferred = Symbol("inferred")
 export const arkKind = Symbol("ArkTypeInternalKind")
 
 export const isNode = (o: unknown): o is UnknownNode =>
-	(o as any)?.[arkKind] === "node"
+	(o as UnknownNode)?.[arkKind] === "typeNode" ||
+	(o as UnknownNode)?.[arkKind] === "refinementNode"
 
 export type cast<to> = {
 	[inferred]?: to
@@ -22,8 +25,9 @@ export type Preinferred = cast<unknown>
 declare global {
 	export interface InternalArkConfig {
 		kinds(): {
-			node: UnknownNode
-			moduleNode: ModuleNode
+			typeNode: TypeNode
+			refinementNode: Node<RefinementKind>
+			scopeNode: ScopeNode
 		}
 	}
 }
