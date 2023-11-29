@@ -26,7 +26,7 @@ export class SchemaNode<t, kind extends SchemaKind> extends BaseNode<t, kind> {
 	}
 
 	apply(data: unknown): CheckResult<t> {
-		const problems: Problems = new Problems()
+		const problems = new Problems()
 		this.traverse(data, problems)
 		if (problems.length === 0) {
 			return { data } as any

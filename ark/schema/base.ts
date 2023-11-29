@@ -48,7 +48,7 @@ import type { Space } from "./space.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
 	alias?: string
-	readonly uuid: string
+	readonly id: string
 	readonly kind: kind
 	readonly inner: Inner<kind>
 	readonly entries: entriesOf<Inner<kind>>
@@ -56,7 +56,7 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly typeJson: Json
 	readonly collapsibleJson: Json
 	readonly children: Node<childKindOf<kind>>[]
-	readonly id: string
+	readonly innerId: string
 	readonly typeId: string
 	readonly space: Space
 }
@@ -106,9 +106,9 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		const attachments = this.implementation.attach(this as never)
 		Object.assign(this, attachments)
 		this.contributesReferencesById =
-			this.uuid in this.referencesById
+			this.id in this.referencesById
 				? this.referencesById
-				: { ...this.referencesById, [this.uuid]: this }
+				: { ...this.referencesById, [this.id]: this }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
 		this.allows = compileAnonymous(this as never, "allows")
 		this.traverse = compileAnonymous(this as never, "traverse")

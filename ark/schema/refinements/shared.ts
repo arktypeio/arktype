@@ -1,4 +1,4 @@
-import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
+import { throwParseError, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { Schema } from "../schema.js"
@@ -35,8 +35,6 @@ export type declareRefinement<
 		operand: unknown
 	}
 > = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
-
-const operandCache = {} as PartialRecord<RefinementKind, readonly Schema[]>
 
 export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
 	const operandsDef: readonly Definition<SchemaKind>[] = (

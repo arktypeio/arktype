@@ -116,7 +116,7 @@ describe("intersections", () => {
 			min: 5,
 			divisor: 3
 		})
-		attest(l.id).equals(r.id)
+		attest(l.innerId).equals(r.innerId)
 	})
 	it("normalizes prop order", () => {
 		const l = schema({
@@ -133,12 +133,12 @@ describe("intersections", () => {
 				{ key: "a", value: "string" }
 			]
 		})
-		attest(l.id).equals(r.id)
+		attest(l.innerId).equals(r.innerId)
 	})
 	it("normalizes union order", () => {
 		const l = schema("number", "string")
 		const r = schema("string", "number")
-		attest(l.id).equals(r.id)
+		attest(l.innerId).equals(r.innerId)
 	})
 	it("doesn't normalize ordered unions", () => {
 		const l = schema.union({
@@ -186,9 +186,7 @@ describe("intersections", () => {
 			min: 5
 		})
 		attest(n.apply(6)).snap({ data: 6 })
-		attest(n.apply(7)).snap({
-			problems: [{ path: [], message: "Must be a multiple of 3 (was 7)" }]
-		})
+		attest(n.apply(7).problems?.summary).snap("Must be a multiple of 3")
 	})
 	it("compiles path problems", () => {
 		const n = schema({
@@ -203,12 +201,10 @@ describe("intersections", () => {
 			}
 		})
 		attest(n.apply({ a: 6 })).snap({ data: { a: 6 } })
-		attest(n.apply({ b: 6 })).snap({
-			problems: [{ path: ["a"], message: "Must be provided" }]
-		})
-		attest(n.apply({ a: 7 })).snap({
-			problems: [{ path: ["a"], message: "Must be a multiple of 3 (was 7)" }]
-		})
+		attest(n.apply({ b: 6 }).problems?.summary).snap("Must be provided")
+		attest(n.apply({ a: 7 }).problems?.summary).snap(
+			"a must be a multiple of 3"
+		)
 	})
 	it("runtime benchmark", () => {
 		const validInput = {

@@ -72,7 +72,7 @@ export const UnionImplementation = defineNode({
 				)
 				const def = ctx.definition as UnionDefinition
 				if (isArray(def) || def.ordered !== true) {
-					branches.sort((l, r) => (l.id < r.id ? -1 : 1))
+					branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
 				}
 				return branches
 			}
@@ -159,7 +159,7 @@ export const UnionImplementation = defineNode({
 	compile: (node, ctx) => {
 		const branchInvocations = node.branches.map(
 			(branch) =>
-				`this.${branch.uuid}(${In}${
+				`this.${branch.id}(${In}${
 					ctx.compilationKind === "allows" ? "" : ", problems"
 				})`
 		)

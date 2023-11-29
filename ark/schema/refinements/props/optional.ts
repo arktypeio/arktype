@@ -1,9 +1,5 @@
 import type { Node } from "../../base.js"
-import {
-	In,
-	compilePropAccess,
-	compileSerializedValue
-} from "../../shared/compilation.js"
+import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
 import { schemaKinds, type SchemaKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -13,7 +9,7 @@ import {
 	defineRefinement,
 	type declareRefinement
 } from "../shared.js"
-import type { NamedPropAttachments } from "./shared.js"
+import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
 
 export type OptionalInner = withAttributes<{
 	readonly key: string | symbol
@@ -71,8 +67,6 @@ export const OptionalImplementation = defineRefinement({
 		}
 	},
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return this.${node.value.uuid}(${In}${compilePropAccess(node.compiledKey)}${
-			ctx.compilationKind === "allows" ? "" : ", problems"
-		})
+		${compilePresentProp(node, ctx)}
 	}`
 })

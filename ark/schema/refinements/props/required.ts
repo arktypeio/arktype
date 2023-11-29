@@ -1,10 +1,5 @@
 import type { Node } from "../../base.js"
-import {
-	In,
-	compilePropAccess,
-	compileSerializedValue,
-	type Problem
-} from "../../shared/compilation.js"
+import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
 import { schemaKinds, type SchemaKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -15,7 +10,7 @@ import {
 	type declareRefinement
 } from "../shared.js"
 import type { PropKind } from "./prop.js"
-import type { NamedPropAttachments } from "./shared.js"
+import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
 
 export type RequiredDefinition = withAttributes<{
 	readonly key: string | symbol
@@ -83,17 +78,12 @@ export const RequiredImplementation = defineRefinement({
 		}
 	},
 	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		return this.${node.value.uuid}(${In}${compilePropAccess(node.compiledKey)}${
-			ctx.compilationKind === "allows" ? "" : ", problems"
-		})
+		${compilePresentProp(node, ctx)}
 	} else {
 		${
 			ctx.compilationKind === "allows"
 				? "return false"
-				: `problems.push(${JSON.stringify({
-						path: [...ctx.path, node.compiledKey],
-						message: `Must be provided`
-				  } satisfies Problem)})`
+				: `problems.add("provided")`
 		}
 	}`
 })

@@ -31,6 +31,7 @@ export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 
 export const globalResolutions: Record<string, Node> = {}
 
+// TODO: SWITCH TO EXPORT MODEL TO MIRROR TYPE, SOLVE CYCLIC COMPILATION 🚀💪⛵
 export class Space<keywords extends nodeResolutions<keywords> = any> {
 	declare infer: {
 		[k in keyof keywords]: keywords[k]["infer"]
@@ -159,7 +160,7 @@ export class Space<keywords extends nodeResolutions<keywords> = any> {
 			...opts,
 			space: this,
 			definition: def,
-			uuid
+			id: uuid
 		}) as never
 	}
 

@@ -188,7 +188,7 @@ export const IntersectionImplementation = defineNode({
 	compile: (node, ctx) => {
 		const constraintInvocations = node.constraints.map(
 			(constraint) =>
-				`this.${constraint.uuid}(${In}${
+				`this.${constraint.id}(${In}${
 					ctx.compilationKind === "allows" ? "" : ", problems"
 				})`
 		)
@@ -232,7 +232,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 		}
 		const refinements = input
 			.map((refinement) => ctx.space.parseNode(kind, refinement))
-			.sort((l, r) => (l.id < r.id ? -1 : 1))
+			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
 		// we should only need to assert validity for one, as all listed
 		// refinements should be of the same kind and therefore have the same
 		// operand requirements

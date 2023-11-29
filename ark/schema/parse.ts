@@ -35,7 +35,7 @@ export type SchemaParseOptions = {
 export type SchemaParseContext = extend<
 	SchemaParseOptions,
 	{
-		uuid: string
+		id: string
 		space: Space
 		definition: unknown
 	}
@@ -101,7 +101,7 @@ export const parse = <defKind extends NodeKind>(
 			typeJson = collapsibleJson
 		}
 	}
-	const id = JSON.stringify({ kind, ...json })
+	const innerId = JSON.stringify({ kind, ...json })
 	const typeId = JSON.stringify({ kind, ...typeJson })
 	if (ctx.space.cls.unknownUnion?.typeId === typeId) {
 		return Space.keywords.unknown as never
@@ -109,13 +109,18 @@ export const parse = <defKind extends NodeKind>(
 	if (implementation.reduce && !ctx.prereduced) {
 		const reduced = implementation.reduce(inner, ctx.space)
 		if (reduced) {
-			// TODO: update alias on reduction
+			// if we're defining the resolution of an alias and the result is
+			// reduced to another node, add the alias to that node if it doesn't
+			// already have one.
+			if (ctx.alias) {
+				reduced.alias ??= ctx.alias
+			}
 			return reduced as never
 		}
 	}
 	const baseAttachments = {
 		alias: ctx.alias,
-		uuid: ctx.uuid,
+		id: ctx.id,
 		kind,
 		inner,
 		entries,
@@ -123,7 +128,7 @@ export const parse = <defKind extends NodeKind>(
 		typeJson,
 		collapsibleJson,
 		children,
-		id,
+		innerId,
 		typeId,
 		space: ctx.space
 	} satisfies Record<keyof BaseAttachments<any>, unknown> as never

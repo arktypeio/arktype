@@ -6,11 +6,10 @@ import {
 	type arraySubclassToReadonly,
 	type propwiseXor
 } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { Node } from "../base.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { NodeKind, SetKind } from "./define.js"
-import { isDotAccessible } from "./registry.js"
 
 export const In = "$arkRoot"
 
@@ -36,18 +35,18 @@ export const compileAnonymous = <kind extends CompilationKind>(
 	kind: kind
 ): CompiledMethods[kind] => {
 	const $ = compileScope(node.contributesReferences, kind)
-	return $[node.uuid].bind($) as never
+	return $[node.id].bind($) as never
 }
 
 export const compileScope = <kind extends CompilationKind>(
 	references: readonly Node[],
 	kind: kind
 ): Record<string, CompiledMethods[kind]> => {
-	const compiledArgs = kind === "allows" ? [In] : [In, "problems"]
+	const compiledArgs = kind === "allows" ? In : `${In}, problems`
 	const body = `return {
 	${references
 		.map(
-			(reference) => `${reference.uuid}(${In}){
+			(reference) => `${reference.id}(${compiledArgs}){
 ${reference.compileBody({
 	compilationKind: kind,
 	path: [],
@@ -57,7 +56,7 @@ ${reference.compileBody({
 		)
 		.join(",\n")}
 }`
-	return new CompiledFunction(...compiledArgs, body)() as never
+	return new CompiledFunction(body)() as never
 }
 
 export const compilePrimitive = (
@@ -104,12 +103,31 @@ export class ArkTypeError extends TypeError {
 	}
 }
 
+export class Problem {
+	public message: string
+
+	constructor(
+		public path: string[],
+		public description: string
+	) {
+		this.message = path.length
+			? `${path.join(".")} must be ${description}`
+			: `Must be ${description}`
+	}
+
+	toString() {
+		return this.message
+	}
+}
+
 class ProblemsArray extends Array<Problem> {
+	currentPath: string[] = []
 	byPath: Record<string, Problem> = {}
 	count = 0
 
-	add(problem: Problem) {
-		const pathKey = `${problem.path}`
+	add(description: string) {
+		const problem = new Problem([...this.currentPath], description)
+		const pathKey = this.currentPath.join(".")
 		const existing = this.byPath[pathKey]
 		if (existing) {
 			// if (existing.hasCode("intersection")) {
@@ -165,17 +183,7 @@ const compilePrimitiveProblem = (
 	node: Node<PrimitiveKind>,
 	ctx: CompilationContext
 ) => {
-	return `problems.push(
-		{
-			path: ${JSON.stringify(ctx.path)},
-			message: \`Must be ${node.description} (was \${${In}})\`
-		}
-	)`
-}
-
-export type Problem = {
-	path: string[]
-	message: string
+	return `problems.add(${JSON.stringify(node.description)})`
 }
 
 export const compileSerializedValue = (value: unknown) => {
@@ -183,8 +191,3 @@ export const compileSerializedValue = (value: unknown) => {
 		? $ark.register(value)
 		: serializePrimitive(value as SerializablePrimitive)
 }
-
-export const compilePropAccess = (name: string, optional = false) =>
-	isDotAccessible(name)
-		? `${optional ? "?" : ""}.${name}`
-		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
