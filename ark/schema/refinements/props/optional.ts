@@ -61,9 +61,11 @@ export const OptionalImplementation = defineRefinement({
 		const serializedKey = compileSerializedValue(node.key)
 		return {
 			serializedKey,
-			allows: (data) =>
-				!(node.key in data) ||
-				node.value.allows((data as Record<string | symbol, unknown>)[node.key]),
+			traverse: (data, problems) => {
+				if (node.key in data) {
+					node.value.traverse((data as any)[node.key], problems)
+				}
+			},
 			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
 			assertValidBasis: createValidBasisAssertion(node)
 		}

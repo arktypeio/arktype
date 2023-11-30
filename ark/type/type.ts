@@ -136,7 +136,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	config: TypeConfig
 	root: TypeNode<t>
 	condition = ""
-	allows: this["root"]["allows"]
+	allows: this["root"]["traverse"]
 	json: Json
 
 	constructor(
@@ -146,7 +146,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		const root = parseTypeRoot(definition, scope) as TypeNode<t>
 		super(In, `return true ? { data: ${In} } : { problems: [] } `)
 		this.root = root
-		this.allows = root.allows
+		this.allows = root.traverse
 		this.config = scope.config
 		this.json = this.root.json
 	}

@@ -35,13 +35,13 @@ export type InputData<kind extends NodeKind> = kind extends RefinementKind
 	? RefinementOperand<kind>
 	: unknown
 
-export type AllowsImplementation<kind extends NodeKind> = (
+export type Traversal<kind extends NodeKind> = (
 	data: InputData<kind>,
 	problems: Problems
-) => boolean
+) => void
 
 export type NodeAttachments<kind extends NodeKind> = {
-	allows: AllowsImplementation<kind>
+	traverse: Traversal<kind>
 }
 
 export type DeclarationInput<kind extends NodeKind> = {

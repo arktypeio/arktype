@@ -13,9 +13,9 @@ import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import { In } from "../shared/compilation.js"
 import type {
-	AllowsImplementation,
 	BaseAttributes,
 	NodeAttachments,
+	Traversal,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
@@ -187,7 +187,8 @@ export const IntersectionImplementation = defineNode({
 		return {
 			constraints,
 			refinements,
-			allows: (data) => constraints.every((c) => c.allows(data))
+			traverse: (data, problems) =>
+				constraints.every((c) => c.traverse(data as never, problems))
 		}
 	},
 	compile: (node, ctx) => {

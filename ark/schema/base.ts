@@ -61,7 +61,7 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly scope: ScopeNode
 }
 
-export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
+export class BaseNode<kind extends NodeKind> extends DynamicBase<
 	Inner<kind> & Attachments<kind> & BaseAttachments<kind>
 > {
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
@@ -70,6 +70,9 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
+	readonly includesPredicate: boolean =
+		this.kind === "predicate" ||
+		this.children.some((child) => child.includesPredicate)
 	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
@@ -80,8 +83,9 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	readonly contributesReferencesById: Record<string, UnknownNode>
 	readonly contributesReferences: readonly UnknownNode[]
 
+	// TODO: types?
 	// these are replaced by thie type's ScopeNode when an export method is called
-	allows = (data: unknown): data is t =>
+	allows = (data: unknown): boolean =>
 		throwUnitializedMethodError(this.id, "allows")
 	traverse = (data: unknown, problems: Problems): void =>
 		throwUnitializedMethodError(this.id, "traverse")
@@ -278,6 +282,6 @@ export const throwUnitializedMethodError = (
 
 export type Node<kind extends NodeKind = NodeKind> = kind extends TypeKind
 	? TypeNode<unknown, kind>
-	: BaseNode<unknown, kind>
+	: BaseNode<kind>
 
-export type UnknownNode = BaseNode<unknown, any>
+export type UnknownNode = BaseNode<any>

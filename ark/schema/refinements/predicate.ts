@@ -1,7 +1,8 @@
 import {
 	In,
 	compilePrimitive,
-	compileSerializedValue
+	compileSerializedValue,
+	composePrimitiveTraversal
 } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
@@ -51,7 +52,7 @@ export const PredicateImplementation = defineRefinement({
 		`valid according to ${inner.predicate.name}`,
 	attach: (node) => ({
 		assertValidBasis: createValidBasisAssertion(node),
-		allows: node.predicate,
+		traverse: composePrimitiveTraversal(node, node.predicate),
 		condition: `${compileSerializedValue(node.predicate)}(${In})`,
 		negatedCondition: `${compileSerializedValue(
 			node.predicate

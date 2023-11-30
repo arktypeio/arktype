@@ -8,7 +8,8 @@ import {
 import {
 	In,
 	compilePrimitive,
-	compileSerializedValue
+	compileSerializedValue,
+	composePrimitiveTraversal
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defaultInnerKeySerializer, defineNode } from "../shared/define.js"
@@ -73,7 +74,10 @@ export const ProtoImplementation = defineNode({
 		}`
 		return {
 			basisName: `${node.proto.name}`,
-			allows: (data) => data instanceof node.proto,
+			traverse: composePrimitiveTraversal(
+				node,
+				(data) => data instanceof node.proto
+			),
 			domain: "object",
 			condition,
 			negatedCondition: `${condition} === false`

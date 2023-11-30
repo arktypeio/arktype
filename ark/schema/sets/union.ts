@@ -158,7 +158,8 @@ export const UnionImplementation = defineNode({
 	},
 	attach: (node) => {
 		return {
-			allows: (data) => node.branches.some((b) => b.allows(data)),
+			traverse: (data, problems) =>
+				node.branches.some((b) => b.traverse(data, problems)),
 			discriminant: null //discriminate(inner.branches)
 		}
 	},

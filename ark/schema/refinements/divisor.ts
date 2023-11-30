@@ -1,4 +1,8 @@
-import { In, compilePrimitive } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	composePrimitiveTraversal
+} from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
@@ -51,7 +55,10 @@ export const DivisorImplementation = defineRefinement({
 	writeDefaultDescription: (inner) =>
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
 	attach: (node) => ({
-		allows: (data) => data % node.divisor === 0,
+		traverse: composePrimitiveTraversal(
+			node,
+			(data) => data % node.divisor === 0
+		),
 		assertValidBasis: createValidBasisAssertion(node),
 		condition: `${In} % ${node.divisor} === 0`,
 		negatedCondition: `${In} % ${node.divisor} !== 0`

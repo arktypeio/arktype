@@ -6,8 +6,8 @@ describe("scope", () => {
 		const $ = scopeNode({
 			numberOrString: ["number", "string"]
 		})
-		attest($.resolutions.numberOrString.allows(5)).equals(true)
-		attest($.resolutions.numberOrString.allows("foo")).equals(true)
-		attest($.resolutions.numberOrString.allows(null)).equals(false)
+		attest($.resolutions.numberOrString.traverse(5)).equals(true)
+		attest($.resolutions.numberOrString.traverse("foo")).equals(true)
+		attest($.resolutions.numberOrString.traverse(null)).equals(false)
 	})
 })

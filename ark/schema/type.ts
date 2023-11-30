@@ -9,7 +9,7 @@ import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema } from "./shared/nodes.js"
 import { inferred, isNode } from "./shared/symbols.js"
 
-export class BaseType<t, kind extends TypeKind> extends BaseNode<t, kind> {
+export class BaseType<t, kind extends TypeKind> extends BaseNode<kind> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t

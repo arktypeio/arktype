@@ -74,9 +74,13 @@ export const RequiredImplementation = defineRefinement({
 		return {
 			serializedKey,
 			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
-			allows: (data) =>
-				node.key in data &&
-				node.value.allows((data as Record<string | symbol, unknown>)[node.key]),
+			traverse: (data, problems) => {
+				if (node.key in data) {
+					node.value.traverse((data as any)[node.key], problems)
+				} else {
+					problems.add("provided")
+				}
+			},
 			assertValidBasis: createValidBasisAssertion(node)
 		}
 	},

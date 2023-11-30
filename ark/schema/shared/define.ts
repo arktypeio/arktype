@@ -169,15 +169,19 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	addContext?: (ctx: SchemaParseContext) => void
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (node: Node<d["kind"]>) => string
-	attach: (node: BaseInitializedNode<d["kind"]>) => {
-		[k in unsatisfiedAttachKey<d["kind"]>]: Attachments<d["kind"]>[k]
-	}
+	attach: AttachImplementation<d["kind"]>
 	normalize: (schema: d["schema"]) => normalizeInput<d["schema"], d["inner"]>
 	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 	reduce?: (
 		inner: d["inner"],
 		scope: ScopeNode
 	) => Node<reducibleKindOf<d["kind"]>> | undefined
+}
+
+export type AttachImplementation<kind extends NodeKind> = (
+	node: BaseInitializedNode<kind>
+) => {
+	[k in unsatisfiedAttachKey<kind>]: Attachments<kind>[k]
 }
 
 export type UnknownNodeImplementation = optionalizeKeys<

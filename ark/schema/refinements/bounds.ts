@@ -5,8 +5,12 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import { In, compilePrimitive } from "../shared/compilation.js"
-import type { AllowsImplementation, withAttributes } from "../shared/declare.js"
+import {
+	In,
+	compilePrimitive,
+	composePrimitiveTraversal
+} from "../shared/compilation.js"
+import type { InputData, Traversal, withAttributes } from "../shared/declare.js"
 import type {
 	BaseInitializedNode,
 	BoundKind,
@@ -86,7 +90,9 @@ export type Boundable = Declaration<BoundKind>["operand"]
 
 export type BoundNodeDefinition<kind extends BoundKind = BoundKind> = {
 	kind: kind
-	defineAllows: (node: BaseInitializedNode<kind>) => AllowsImplementation<kind>
+	defineChecker: (
+		node: BaseInitializedNode<kind>
+	) => (data: InputData<kind>) => boolean
 	writeDefaultDescription: (node: BoundNode) => string
 	operand: readonly Schema<TypeKind>[]
 }
@@ -122,11 +128,10 @@ export const defineBound = <kind extends BoundKind>(
 				node.exclusive
 				// cast to lower bound comparator for internal checking
 			) as RelativeComparator<"lower">
+			const checker = boundDefinition.defineChecker(node as never)
 			return {
 				comparator,
-				allows: boundDefinition.defineAllows(
-					node as never
-				) as AllowsImplementation<"min">,
+				traverse: composePrimitiveTraversal(node, checker),
 				assertValidBasis: createValidBasisAssertion(node),
 				condition: `${size} ${comparator} ${node.limit}`,
 				negatedCondition: `${size} ${negatedComparators[comparator]} ${node.limit}`
@@ -182,7 +187,7 @@ export type MinDeclaration = declareRefinement<{
 export const MinImplementation = defineBound({
 	kind: "min",
 	operand: ["number"],
-	defineAllows: (node) =>
+	defineChecker: (node) =>
 		node.exclusive ? (data) => data > node.limit : (data) => data >= node.limit,
 	writeDefaultDescription: (node) =>
 		`${node.exclusive ? "more than" : "at least"} ${node.limit}`
@@ -203,7 +208,7 @@ export type MaxDeclaration = declareRefinement<{
 export const MaxImplementation = defineBound({
 	kind: "max",
 	operand: ["number"],
-	defineAllows: (node) =>
+	defineChecker: (node) =>
 		node.exclusive ? (data) => data < node.limit : (data) => data <= node.limit,
 	writeDefaultDescription: (node) =>
 		`${node.exclusive ? "less than" : "at most"} ${node.limit}`
@@ -224,7 +229,7 @@ export type MinLengthDeclaration = declareRefinement<{
 export const MinLengthImplementation = defineBound({
 	kind: "minLength",
 	operand: ["string", Array],
-	defineAllows: (node) =>
+	defineChecker: (node) =>
 		node.exclusive
 			? (data) => data.length > node.limit
 			: (data) => data.length >= node.limit,
@@ -252,7 +257,7 @@ export type MaxLengthDeclaration = declareRefinement<{
 export const MaxLengthImplementation = defineBound({
 	kind: "maxLength",
 	operand: ["string", Array],
-	defineAllows: (node) =>
+	defineChecker: (node) =>
 		node.exclusive
 			? (data) => data.length < node.limit
 			: (data) => data.length <= node.limit,
@@ -276,7 +281,7 @@ export type AfterDeclaration = declareRefinement<{
 export const AfterImplementation = defineBound({
 	kind: "before",
 	operand: [Date],
-	defineAllows: (node) =>
+	defineChecker: (node) =>
 		node.exclusive
 			? (data) => +data > node.limit
 			: (data) => +data >= node.limit,
@@ -299,7 +304,7 @@ export type BeforeDeclaration = declareRefinement<{
 export const BeforeImplementation = defineBound({
 	kind: "before",
 	operand: [Date],
-	defineAllows: (node) =>
+	defineChecker: (node) =>
 		node.exclusive
 			? (data) => +data < node.limit
 			: (data) => +data <= node.limit,

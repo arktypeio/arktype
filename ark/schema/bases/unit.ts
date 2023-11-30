@@ -2,7 +2,8 @@ import { domainOf, printable } from "@arktype/util"
 import {
 	In,
 	compilePrimitive,
-	compileSerializedValue
+	compileSerializedValue,
+	composePrimitiveTraversal
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
@@ -36,7 +37,7 @@ export const UnitImplementation = defineNode({
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
-			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+			r.traverse(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	},
 	writeDefaultDescription: (inner) => printable(inner.unit),
 	normalize: (schema) => schema,
@@ -44,7 +45,7 @@ export const UnitImplementation = defineNode({
 		const serializedValue = compileSerializedValue(node.unit)
 		return {
 			basisName: printable(node.unit),
-			allows: (data) => data === node.unit,
+			traverse: composePrimitiveTraversal(node, (data) => data === node.unit),
 			domain: domainOf(node.unit),
 			condition: `${In} === ${serializedValue}`,
 			negatedCondition: `${In} !== ${serializedValue}`

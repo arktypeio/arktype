@@ -1,5 +1,9 @@
 import type { extend } from "@arktype/util"
-import { In, compilePrimitive } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	composePrimitiveTraversal
+} from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
@@ -57,7 +61,7 @@ export const PatternImplementation = defineRefinement({
 		return {
 			assertValidBasis: createValidBasisAssertion(node),
 			regex,
-			allows: regex.test,
+			traverse: composePrimitiveTraversal(node, regex.test),
 			condition: `/${node.source}/${node.flags ?? ""}.test(${In})`,
 			negatedCondition: `/${node.source}/${
 				node.flags ?? ""

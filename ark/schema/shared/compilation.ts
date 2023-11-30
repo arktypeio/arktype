@@ -7,9 +7,11 @@ import {
 	type propwiseXor
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { Predicate } from "../refinements/predicate.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
-import type { NodeKind, SetKind } from "./define.js"
+import type { Traversal } from "./declare.js"
+import type { BaseInitializedNode, NodeKind, SetKind } from "./define.js"
 
 export const In = "$arkRoot"
 
@@ -67,6 +69,17 @@ ${reference.compileBody({
 }`
 	return new CompiledFunction(body)() as never
 }
+
+export const composePrimitiveTraversal =
+	<kind extends PrimitiveKind>(
+		node: BaseInitializedNode<kind>,
+		predicate: Predicate
+	): Traversal<kind> =>
+	(data, problems) => {
+		if (!predicate(data, problems)) {
+			problems.add(node.description)
+		}
+	}
 
 export const compilePrimitive = (
 	node: Node<PrimitiveKind>,
