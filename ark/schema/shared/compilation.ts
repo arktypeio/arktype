@@ -10,7 +10,7 @@ import type { Node } from "../base.js"
 import type { Predicate } from "../refinements/predicate.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
-import type { Traversal } from "./declare.js"
+import type { InputData, Traversal } from "./declare.js"
 import type { BaseInitializedNode, NodeKind, SetKind } from "./define.js"
 
 export const In = "$arkRoot"
@@ -73,7 +73,7 @@ ${reference.compileBody({
 export const composePrimitiveTraversal =
 	<kind extends PrimitiveKind>(
 		node: BaseInitializedNode<kind>,
-		predicate: Predicate
+		predicate: Predicate<InputData<kind>>
 	): Traversal<kind> =>
 	(data, problems) => {
 		if (!predicate(data, problems)) {

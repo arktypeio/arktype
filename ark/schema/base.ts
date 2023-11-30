@@ -8,15 +8,17 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
+import type { Predicate, PredicateCast } from "./refinements/predicate.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
-import type {
-	CompilationContext,
-	CompilationKind,
-	Problems
+import {
+	Problems,
+	type CompilationContext,
+	type CompilationKind,
+	type CompiledAllows
 } from "./shared/compilation.js"
-import type { BaseAttributes } from "./shared/declare.js"
+import type { BaseAttributes, InputData } from "./shared/declare.js"
 import {
 	basisKinds,
 	closedRefinementKinds,
@@ -70,9 +72,10 @@ export class BaseNode<kind extends NodeKind> extends DynamicBase<
 	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
-	readonly includesPredicate: boolean =
-		this.kind === "predicate" ||
-		this.children.some((child) => child.includesPredicate)
+	readonly includesContextDependentPredicate: boolean =
+		// if a predicate accepts exactly one arg, we can safely skip passing context
+		(this.hasKind("predicate") && this.predicate.length !== 1) ||
+		this.children.some((child) => child.includesContextDependentPredicate)
 	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
@@ -83,12 +86,6 @@ export class BaseNode<kind extends NodeKind> extends DynamicBase<
 	readonly contributesReferencesById: Record<string, UnknownNode>
 	readonly contributesReferences: readonly UnknownNode[]
 
-	// TODO: types?
-	// these are replaced by thie type's ScopeNode when an export method is called
-	allows = (data: unknown): boolean =>
-		throwUnitializedMethodError(this.id, "allows")
-	traverse = (data: unknown, problems: Problems): void =>
-		throwUnitializedMethodError(this.id, "traverse")
 	// we use declare here to avoid it being initialized outside the constructor
 	// and detected as an overwritten key
 	declare readonly description: string

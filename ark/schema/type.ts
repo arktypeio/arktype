@@ -1,6 +1,7 @@
 import { isArray, printable, throwParseError } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
+import type { PredicateCast } from "./refinements/predicate.js"
 import type { BranchKind } from "./sets/union.js"
 import { Problems, type CheckResult } from "./shared/compilation.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"
@@ -22,6 +23,12 @@ export class BaseType<t, kind extends TypeKind> extends BaseNode<kind> {
 		// in a union, branches will have already been assigned from inner
 		// otherwise, initialize it to a singleton array containing the current branch node
 		this.branches ??= [this as never]
+	}
+
+	allows = (data: unknown): data is t => {
+		const problems = new Problems()
+		this.traverse(data as never, problems)
+		return problems.length === 0
 	}
 
 	apply(data: unknown): CheckResult<t> {

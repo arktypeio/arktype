@@ -2,7 +2,8 @@ import {
 	In,
 	compilePrimitive,
 	compileSerializedValue,
-	composePrimitiveTraversal
+	composePrimitiveTraversal,
+	type Problems
 } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
@@ -12,12 +13,12 @@ import {
 	type declareRefinement
 } from "./shared.js"
 
-export type PredicateInner<predicate extends Predicate = Predicate> =
+export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
 	withAttributes<{
 		readonly predicate: predicate
 	}>
 
-export type PredicateSchema = PredicateInner | Predicate
+export type PredicateSchema = PredicateInner | Predicate<any>
 
 export type PredicateDeclaration = declareRefinement<{
 	kind: "predicate"
@@ -61,11 +62,15 @@ export const PredicateImplementation = defineRefinement({
 	compile: compilePrimitive
 })
 
-export type Predicate<data = any> = (data: data, traversal: any) => boolean
+export type Predicate<input = unknown> = (
+	input: input,
+	problems: Problems
+) => boolean
 
-export type PredicateCast<data = any, narrowed extends data = data> = (
-	data: data
-) => data is narrowed
+export type PredicateCast<input = never, narrowed extends input = input> = (
+	input: input,
+	problems: Problems
+) => input is narrowed
 
 export type inferNarrow<In, predicate> = predicate extends (
 	data: any,
