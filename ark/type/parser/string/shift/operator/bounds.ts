@@ -1,7 +1,7 @@
 import {
 	keywords,
 	type BoundKind,
-	type LimitValue,
+	type LimitSchemaValue,
 	type Schema,
 	type TypeNode
 } from "@arktype/schema"
@@ -140,12 +140,12 @@ export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 
 export const writeLimitMismatchMessage = (
 	root: string,
-	limitValue: LimitValue
+	limitValue: LimitSchemaValue
 ) => `Limit '${limitValue}' cannot bound ${root}`
 
 export const getBoundKinds = (
 	comparator: Comparator,
-	limit: LimitValue,
+	limit: LimitSchemaValue,
 	root: TypeNode
 ): BoundKind[] => {
 	if (root.extends(keywords.number)) {

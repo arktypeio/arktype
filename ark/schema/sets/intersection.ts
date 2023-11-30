@@ -3,6 +3,7 @@ import {
 	isArray,
 	throwInternalError,
 	type evaluate,
+	type extend,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -12,7 +13,9 @@ import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import { In } from "../shared/compilation.js"
 import type {
+	AllowsImplementation,
 	BaseAttributes,
+	NodeAttachments,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
@@ -50,10 +53,13 @@ export type IntersectionSchema<
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
 
-export type IntersectionAttachments = {
-	constraints: ConstraintSet
-	refinements: readonly Node<RefinementKind>[]
-}
+export type IntersectionAttachments = extend<
+	NodeAttachments<"intersection">,
+	{
+		constraints: ConstraintSet
+		refinements: readonly Node<RefinementKind>[]
+	}
+>
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
@@ -165,22 +171,24 @@ export const IntersectionImplementation = defineNode({
 		return scope.parsePrereduced("intersection", reducedConstraintsByKind)
 	},
 	attach: (node) => {
-		const attachments: mutable<IntersectionAttachments, 2> = {
-			constraints: [],
-			refinements: []
-		}
+		const constraints: mutable<ConstraintSet> = []
+		const refinements: Node<RefinementKind>[] = []
 		for (const [k, v] of node.entries) {
 			if (k === "basis") {
-				attachments.constraints.push(v)
+				constraints.push(v)
 			} else if (includes(openRefinementKinds, k)) {
-				attachments.constraints.push(...(v as any))
-				attachments.refinements.push(...(v as any))
+				constraints.push(...(v as any))
+				refinements.push(...(v as any))
 			} else if (includes(closedRefinementKinds, k)) {
-				attachments.constraints.push(v as never)
-				attachments.refinements.push(v as never)
+				constraints.push(v as never)
+				refinements.push(v as never)
 			}
 		}
-		return attachments
+		return {
+			constraints,
+			refinements,
+			allows: (data) => constraints.every((c) => c.allows(data))
+		}
 	},
 	compile: (node, ctx) => {
 		const constraintInvocations = node.constraints.map(

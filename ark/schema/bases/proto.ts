@@ -32,7 +32,7 @@ export type ProtoDeclaration = declareNode<{
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
-	attach: BasisAttachments
+	attach: BasisAttachments<"proto">
 }>
 
 // // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -73,6 +73,7 @@ export const ProtoImplementation = defineNode({
 		}`
 		return {
 			basisName: `${node.proto.name}`,
+			allows: (data) => data instanceof node.proto,
 			domain: "object",
 			condition,
 			negatedCondition: `${condition} === false`

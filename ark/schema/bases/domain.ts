@@ -1,5 +1,9 @@
-import type { Domain } from "@arktype/util"
-import { compilePrimitive, In } from "../shared/compilation.js"
+import { domainOf, hasDomain, type Domain } from "@arktype/util"
+import {
+	In,
+	compilePrimitive,
+	type CompiledAllows
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -29,7 +33,7 @@ export type DomainDeclaration = declareNode<{
 	intersections: {
 		domain: "domain" | Disjoint
 	}
-	attach: BasisAttachments
+	attach: BasisAttachments<"domain">
 }>
 
 export const DomainImplementation = defineNode({
@@ -43,17 +47,20 @@ export const DomainImplementation = defineNode({
 	},
 	normalize: (input) => (typeof input === "string" ? { domain: input } : input),
 	writeDefaultDescription: (node) => domainDescriptions[node.domain],
-	attach: (node) => ({
-		basisName: node.domain,
-		condition:
-			node.domain === "object"
-				? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-				: `typeof ${In} === "${node.domain}"`,
-		negatedCondition:
-			node.domain === "object"
-				? `((typeof ${In} !== "object" || ${In} === null) && typeof ${In} !== "function")`
-				: `typeof ${In} !== "${node.domain}"`
-	}),
+	attach: (node) => {
+		return {
+			basisName: node.domain,
+			allows: (data) => domainOf(data) === node.domain,
+			condition:
+				node.domain === "object"
+					? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
+					: `typeof ${In} === "${node.domain}"`,
+			negatedCondition:
+				node.domain === "object"
+					? `((typeof ${In} !== "object" || ${In} === null) && typeof ${In} !== "function")`
+					: `typeof ${In} !== "${node.domain}"`
+		}
+	},
 	compile: compilePrimitive
 })
 

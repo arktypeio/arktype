@@ -1,3 +1,4 @@
+import type { extend } from "@arktype/util"
 import { In, compilePrimitive } from "../shared/compilation.js"
 import type { withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
@@ -14,6 +15,11 @@ export type PatternInner = withAttributes<{
 
 export type PatternSchema = string | PatternInner | RegExp
 
+export type PatternAttachments = extend<
+	PrimitiveConstraintAttachments<"pattern">,
+	{ regex: RegExp }
+>
+
 export type PatternDeclaration = declareRefinement<{
 	kind: "pattern"
 	schema: PatternSchema
@@ -22,7 +28,7 @@ export type PatternDeclaration = declareRefinement<{
 		pattern: "pattern" | null
 	}
 	operand: string
-	attach: PrimitiveConstraintAttachments
+	attach: PatternAttachments
 }>
 
 export const PatternImplementation = defineRefinement({
@@ -47,8 +53,11 @@ export const PatternImplementation = defineRefinement({
 			  : schema,
 	writeDefaultDescription: (inner) => `matched by ${inner.source}`,
 	attach: (node) => {
+		const regex = new RegExp(node.source, node.flags)
 		return {
 			assertValidBasis: createValidBasisAssertion(node),
+			regex,
+			allows: regex.test,
 			condition: `/${node.source}/${node.flags ?? ""}.test(${In})`,
 			negatedCondition: `/${node.source}/${
 				node.flags ?? ""

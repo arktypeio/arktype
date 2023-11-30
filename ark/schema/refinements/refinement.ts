@@ -38,6 +38,9 @@ export const RefinementImplementations = {
 	...PropImplementations
 } as const satisfies Record<RefinementKind, unknown>
 
+export type RefinementOperand<kind extends RefinementKind> =
+	Declaration<kind>["operand"]
+
 export type RefinementIntersectionInputsByKind = {
 	[k in RefinementKind]: k extends OpenRefinementKind
 		? listable<Schema<k>>
@@ -49,7 +52,7 @@ export type RefinementIntersectionInput<
 > = RefinementIntersectionInputsByKind[kind]
 
 export type refinementKindOf<t> = {
-	[k in RefinementKind]: t extends Declaration<k>["operand"] ? k : never
+	[k in RefinementKind]: t extends RefinementOperand<k> ? k : never
 }[RefinementKind]
 
 export type refinementInputsByKind<t> = {

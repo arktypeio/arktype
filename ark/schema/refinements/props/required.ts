@@ -1,7 +1,8 @@
+import type { Dict } from "@arktype/util"
 import type { Node } from "../../base.js"
 import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
-import { typeKinds, type TypeKind } from "../../shared/define.js"
+import type { TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Inner, Schema } from "../../shared/nodes.js"
 import {
@@ -73,6 +74,9 @@ export const RequiredImplementation = defineRefinement({
 		return {
 			serializedKey,
 			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
+			allows: (data) =>
+				node.key in data &&
+				node.value.allows((data as Record<string | symbol, unknown>)[node.key]),
 			assertValidBasis: createValidBasisAssertion(node)
 		}
 	},

@@ -23,7 +23,7 @@ export type UnitDeclaration = declareNode<{
 		unit: "unit" | Disjoint
 		default: "unit" | Disjoint
 	}
-	attach: BasisAttachments
+	attach: BasisAttachments<"unit">
 }>
 
 export const UnitImplementation = defineNode({
@@ -44,6 +44,7 @@ export const UnitImplementation = defineNode({
 		const serializedValue = compileSerializedValue(node.unit)
 		return {
 			basisName: printable(node.unit),
+			allows: (data) => data === node.unit,
 			domain: domainOf(node.unit),
 			condition: `${In} === ${serializedValue}`,
 			negatedCondition: `${In} !== ${serializedValue}`

@@ -8,6 +8,7 @@ import type {
 import {
 	defineNode,
 	typeKinds,
+	type BaseInitializedNode,
 	type NodeImplementationInput,
 	type RefinementKind,
 	type TypeKind
@@ -36,7 +37,9 @@ export type declareRefinement<
 	}
 > = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
 
-export const createValidBasisAssertion = (node: Node<RefinementKind>) => {
+export const createValidBasisAssertion = (
+	node: BaseInitializedNode<RefinementKind>
+) => {
 	const operandsDef: readonly Schema<TypeKind>[] = (node.implementation as any)
 		.operand
 	const operands: readonly TypeNode[] = operandsDef.map((o) =>

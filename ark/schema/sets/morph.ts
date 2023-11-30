@@ -5,13 +5,18 @@ import {
 	type BuiltinObjects,
 	type Primitive,
 	type evaluate,
+	type extend,
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { ArkConfig } from "../scope.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type {
+	NodeAttachments,
+	declareNode,
+	withAttributes
+} from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Schema } from "../shared/nodes.js"
@@ -45,10 +50,13 @@ export type MorphSchema = withAttributes<{
 	readonly morph: listable<Morph>
 }>
 
-export type MorphAttachments = {
-	inCache: ValidatorNode
-	outCache: ValidatorNode
-}
+export type MorphAttachments = extend<
+	NodeAttachments<"morph">,
+	{
+		inCache: ValidatorNode
+		outCache: ValidatorNode
+	}
+>
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
@@ -124,6 +132,7 @@ export const MorphImplementation = defineNode({
 	writeDefaultDescription: (node) =>
 		`a morph from ${node.inner.in} to ${node.inner.out}`,
 	attach: (node) => ({
+		allows: node.in.allows,
 		inCache: node.inner.in,
 		// TODO: reference?
 		outCache: node.inner.out ?? node.scope.builtin.unknown

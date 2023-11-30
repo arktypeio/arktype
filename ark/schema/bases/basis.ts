@@ -43,8 +43,8 @@ export const BasisImplementations = {
 
 export type BasisKind = keyof BasisDeclarations
 
-export type BasisAttachments = extend<
-	PrimitiveConstraintAttachments,
+export type BasisAttachments<kind extends BasisKind> = extend<
+	PrimitiveConstraintAttachments<kind>,
 	{
 		readonly domain: Domain
 		readonly basisName: string

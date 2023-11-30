@@ -1,7 +1,11 @@
-import { isArray } from "@arktype/util"
+import { isArray, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import { In } from "../shared/compilation.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type {
+	NodeAttachments,
+	declareNode,
+	withAttributes
+} from "../shared/declare.js"
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Schema } from "../shared/nodes.js"
@@ -28,9 +32,12 @@ export type UnionInner = withAttributes<{
 	readonly ordered?: true
 }>
 
-export type UnionAttachments = {
-	discriminant: Discriminant | null
-}
+export type UnionAttachments = extend<
+	NodeAttachments<"union">,
+	{
+		discriminant: Discriminant | null
+	}
+>
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
@@ -149,8 +156,9 @@ export const UnionImplementation = defineNode({
 			branches: reducedBranches
 		})
 	},
-	attach: (inner) => {
+	attach: (node) => {
 		return {
+			allows: (data) => node.branches.some((b) => b.allows(data)),
 			discriminant: null //discriminate(inner.branches)
 		}
 	},

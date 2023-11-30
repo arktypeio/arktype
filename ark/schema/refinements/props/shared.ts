@@ -1,12 +1,17 @@
+import type { extend } from "@arktype/util"
 import type { Node } from "../../base.js"
 import { In, type CompilationContext } from "../../shared/compilation.js"
+import type { NodeAttachments } from "../../shared/declare.js"
 import { isDotAccessible } from "../../shared/registry.js"
 import type { PropKind } from "./prop.js"
 
-export type NamedPropAttachments = {
-	serializedKey: string
-	compiledKey: string
-}
+export type NamedPropAttachments = extend<
+	NodeAttachments<PropKind>,
+	{
+		serializedKey: string
+		compiledKey: string
+	}
+>
 
 export const compilePropAccess = (name: string, optional = false) =>
 	isDotAccessible(name)

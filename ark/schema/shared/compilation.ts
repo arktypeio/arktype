@@ -15,9 +15,18 @@ export const In = "$arkRoot"
 
 export type CompilationKind = "allows" | "traverse"
 
-export type CompiledMethods<t = never> = {
-	allows: (data: unknown) => data is t
-	traverse: (data: unknown, problems: readonly Problem[]) => void
+export type CompiledAllows<input = unknown, narrowed extends input = input> = (
+	data: input
+) => data is narrowed
+
+export type CompiledTraverse<input = unknown> = (
+	data: input,
+	problems: readonly Problem[]
+) => void
+
+export type CompiledMethods<input = unknown, narrowed extends input = input> = {
+	allows: CompiledAllows<input, narrowed>
+	traverse: CompiledTraverse<narrowed>
 }
 
 export type CompilationContext = {

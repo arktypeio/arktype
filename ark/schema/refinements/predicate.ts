@@ -26,9 +26,11 @@ export type PredicateDeclaration = declareRefinement<{
 		predicate: "predicate" | null
 	}
 	operand: unknown
-	attach: PrimitiveConstraintAttachments
+	attach: PrimitiveConstraintAttachments<"predicate">
 }>
 
+// TODO: If node contains a predicate reference that doesn't take 1 arg, we need
+// to wrap it with traversal state for allows
 export const PredicateImplementation = defineRefinement({
 	kind: "predicate",
 	collapseKey: "predicate",
@@ -49,6 +51,7 @@ export const PredicateImplementation = defineRefinement({
 		`valid according to ${inner.predicate.name}`,
 	attach: (node) => ({
 		assertValidBasis: createValidBasisAssertion(node),
+		allows: node.predicate,
 		condition: `${compileSerializedValue(node.predicate)}(${In})`,
 		negatedCondition: `${compileSerializedValue(
 			node.predicate

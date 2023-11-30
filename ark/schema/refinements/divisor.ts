@@ -21,7 +21,7 @@ export type DivisorDeclaration = declareRefinement<{
 		divisor: "divisor"
 	}
 	operand: number
-	attach: PrimitiveConstraintAttachments
+	attach: PrimitiveConstraintAttachments<"divisor">
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -51,6 +51,7 @@ export const DivisorImplementation = defineRefinement({
 	writeDefaultDescription: (inner) =>
 		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
 	attach: (node) => ({
+		allows: (data) => data % node.divisor === 0,
 		assertValidBasis: createValidBasisAssertion(node),
 		condition: `${In} % ${node.divisor} === 0`,
 		negatedCondition: `${In} % ${node.divisor} !== 0`

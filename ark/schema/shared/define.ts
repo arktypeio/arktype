@@ -4,6 +4,7 @@ import type {
 	JsonData,
 	PartialRecord,
 	evaluate,
+	extend,
 	listable,
 	optionalizeKeys,
 	requireKeys,
@@ -17,10 +18,16 @@ import {
 	compileSerializedValue,
 	type CompilationContext
 } from "./compilation.js"
-import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
+import type {
+	BaseAttributes,
+	BaseNodeDeclaration,
+	NodeAttachments
+} from "./declare.js"
 import type { reifyIntersections } from "./intersect.js"
 import type {
+	Attachments,
 	Declaration,
+	Inner,
 	NormalizedDefinition,
 	reducibleKindOf
 } from "./nodes.js"
@@ -98,10 +105,13 @@ export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
 	>
 }
 
-export type PrimitiveConstraintAttachments = {
-	readonly condition: string
-	readonly negatedCondition: string
-}
+export type PrimitiveConstraintAttachments<kind extends NodeKind> = extend<
+	NodeAttachments<kind>,
+	{
+		readonly condition: string
+		readonly negatedCondition: string
+	}
+>
 
 export const defaultInnerKeySerializer = (v: unknown) => {
 	if (
@@ -148,6 +158,10 @@ export type NodeKeyDefinition<
 	| (d["inner"][k] extends listable<UnknownNode> | undefined ? "child" : never)
 >
 
+export type BaseInitializedNode<kind extends NodeKind> = kind extends NodeKind
+	? Omit<Node<kind>, unsatisfiedAttachKey<kind>>
+	: never
+
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: InnerKeyDefinitions<d>
@@ -155,8 +169,8 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	addContext?: (ctx: SchemaParseContext) => void
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
 	writeDefaultDescription: (node: Node<d["kind"]>) => string
-	attach: (node: Node<d["kind"]>) => {
-		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
+	attach: (node: BaseInitializedNode<d["kind"]>) => {
+		[k in unsatisfiedAttachKey<d["kind"]>]: Attachments<d["kind"]>[k]
 	}
 	normalize: (schema: d["schema"]) => normalizeInput<d["schema"], d["inner"]>
 	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
@@ -175,13 +189,13 @@ export type UnknownNodeImplementation = optionalizeKeys<
 	"reduce"
 >
 
-type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
-	[k in keyof d["attach"]]: k extends keyof d["inner"]
-		? d["inner"][k] extends d["attach"][k]
+type unsatisfiedAttachKey<kind extends NodeKind> = {
+	[k in keyof Attachments<kind>]: k extends keyof Inner<kind>
+		? Inner<kind>[k] extends Attachments<kind>[k]
 			? never
 			: k
 		: k
-}[keyof d["attach"]]
+}[keyof Attachments<kind>]
 
 export function defineNode<
 	kind extends NodeKind,
