@@ -15,7 +15,6 @@ import { In } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	NodeAttachments,
-	Traversal,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
@@ -187,8 +186,10 @@ export const IntersectionImplementation = defineNode({
 		return {
 			constraints,
 			refinements,
-			traverse: (data, problems) =>
-				constraints.every((c) => c.traverse(data as never, problems))
+			traverseAllows: (data, problems) =>
+				constraints.every((c) => c.traverseAllows(data as never, problems)),
+			traverseApply: (data, problems) =>
+				constraints.forEach((c) => c.traverseApply(data as never, problems))
 		}
 	},
 	compile: (node, ctx) => {

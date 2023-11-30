@@ -61,7 +61,8 @@ export const PatternImplementation = defineRefinement({
 		return {
 			assertValidBasis: createValidBasisAssertion(node),
 			regex,
-			traverse: composePrimitiveTraversal(node, regex.test),
+			traverseAllows: regex.test,
+			traverseApply: composePrimitiveTraversal(node, regex.test),
 			condition: `/${node.source}/${node.flags ?? ""}.test(${In})`,
 			negatedCondition: `/${node.source}/${
 				node.flags ?? ""

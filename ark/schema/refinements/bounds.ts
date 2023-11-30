@@ -10,7 +10,7 @@ import {
 	compilePrimitive,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type { InputData, Traversal, withAttributes } from "../shared/declare.js"
+import type { InputData, withAttributes } from "../shared/declare.js"
 import type {
 	BaseInitializedNode,
 	BoundKind,
@@ -128,10 +128,13 @@ export const defineBound = <kind extends BoundKind>(
 				node.exclusive
 				// cast to lower bound comparator for internal checking
 			) as RelativeComparator<"lower">
-			const checker = boundDefinition.defineChecker(node as never)
+			const checker = boundDefinition.defineChecker(node as never) as (
+				data: InputData<"min">
+			) => boolean
 			return {
 				comparator,
-				traverse: composePrimitiveTraversal(node, checker),
+				traverseAllows: checker,
+				traverseApply: composePrimitiveTraversal(node as never, checker),
 				assertValidBasis: createValidBasisAssertion(node),
 				condition: `${size} ${comparator} ${node.limit}`,
 				negatedCondition: `${size} ${negatedComparators[comparator]} ${node.limit}`

@@ -1,16 +1,13 @@
-import { isArray, printable, throwParseError } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
-import { maybeGetBasisKind } from "./bases/basis.js"
-import type { PredicateCast } from "./refinements/predicate.js"
 import type { BranchKind } from "./sets/union.js"
 import { Problems, type CheckResult } from "./shared/compilation.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema } from "./shared/nodes.js"
-import { inferred, isNode } from "./shared/symbols.js"
+import { inferred } from "./shared/symbols.js"
 
-export class BaseType<t, kind extends TypeKind> extends BaseNode<kind> {
+export class BaseType<t, kind extends TypeKind> extends BaseNode<t, kind> {
 	// TODO: standardize name with type
 	declare infer: t;
 	declare [inferred]: t
@@ -23,21 +20,6 @@ export class BaseType<t, kind extends TypeKind> extends BaseNode<kind> {
 		// in a union, branches will have already been assigned from inner
 		// otherwise, initialize it to a singleton array containing the current branch node
 		this.branches ??= [this as never]
-	}
-
-	allows = (data: unknown): data is t => {
-		const problems = new Problems()
-		this.traverse(data as never, problems)
-		return problems.length === 0
-	}
-
-	apply(data: unknown): CheckResult<t> {
-		const problems = new Problems()
-		this.traverse(data, problems)
-		if (problems.length === 0) {
-			return { data } as any
-		}
-		return { problems }
 	}
 
 	constrain<refinementKind extends RefinementKind>(

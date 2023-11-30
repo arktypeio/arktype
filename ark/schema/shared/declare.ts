@@ -1,10 +1,7 @@
-import type { Dict, evaluate, extend } from "@arktype/util"
+import type { evaluate, extend } from "@arktype/util"
+import type { Predicate } from "../refinements/predicate.js"
 import type { RefinementOperand } from "../refinements/refinement.js"
-import type {
-	CompiledAllows,
-	CompiledMethods,
-	Problems
-} from "./compilation.js"
+import type { Problems } from "./compilation.js"
 import type { ConstraintKind, NodeKind, RefinementKind } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
@@ -35,14 +32,20 @@ export type InputData<kind extends NodeKind> = kind extends RefinementKind
 	? RefinementOperand<kind>
 	: unknown
 
-export type Traversal<kind extends NodeKind> = (
+export type NodeAttachments<kind extends NodeKind> = {
+	traverseAllows: TraverseAllows<kind>
+	traverseApply: TraverseApply<kind>
+}
+
+export type TraverseAllows<kind extends NodeKind> = (
+	data: InputData<kind>,
+	problems: Problems
+) => boolean
+
+export type TraverseApply<kind extends NodeKind> = (
 	data: InputData<kind>,
 	problems: Problems
 ) => void
-
-export type NodeAttachments<kind extends NodeKind> = {
-	traverse: Traversal<kind>
-}
 
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind

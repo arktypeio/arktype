@@ -2,8 +2,7 @@ import { domainOf, hasDomain, type Domain } from "@arktype/util"
 import {
 	In,
 	compilePrimitive,
-	composePrimitiveTraversal,
-	type CompiledAllows
+	composePrimitiveTraversal
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
@@ -49,12 +48,11 @@ export const DomainImplementation = defineNode({
 	normalize: (input) => (typeof input === "string" ? { domain: input } : input),
 	writeDefaultDescription: (node) => domainDescriptions[node.domain],
 	attach: (node) => {
+		const traverseAllows = (data: unknown) => domainOf(data) === node.domain
 		return {
 			basisName: node.domain,
-			traverse: composePrimitiveTraversal(
-				node,
-				(data) => domainOf(data) === node.domain
-			),
+			traverseAllows,
+			traverseApply: composePrimitiveTraversal(node, traverseAllows),
 			condition:
 				node.domain === "object"
 					? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`

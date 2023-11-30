@@ -176,8 +176,8 @@ describe("intersections", () => {
 			divisor: 3,
 			min: 5
 		})
-		attest(n.traverse(6)).snap(true)
-		attest(n.traverse(7)).snap(false)
+		attest(n.allows(6)).snap(true)
+		attest(n.allows(7)).snap(false)
 	})
 	it("compiles problems", () => {
 		const n = schema({
@@ -259,8 +259,8 @@ describe("intersections", () => {
 				}
 			]
 		})
-		attest(arkType.traverse(validInput)).equals(true)
-		attest(arkType.traverse(invalidInput)).equals(false)
+		attest(arkType.allows(validInput)).equals(true)
+		attest(arkType.allows(invalidInput)).equals(false)
 	})
 	// TODO:
 	// it("strict intersection", () => {

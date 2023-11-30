@@ -61,9 +61,12 @@ export const OptionalImplementation = defineRefinement({
 		const serializedKey = compileSerializedValue(node.key)
 		return {
 			serializedKey,
-			traverse: (data, problems) => {
+			traverseAllows: (data, problems) =>
+				!(node.key in data) ||
+				node.value.traverseAllows((data as any)[node.key], problems),
+			traverseApply: (data, problems) => {
 				if (node.key in data) {
-					node.value.traverse((data as any)[node.key], problems)
+					node.value.traverseApply((data as any)[node.key], problems)
 				}
 			},
 			compiledKey: typeof node.key === "string" ? node.key : serializedKey,

@@ -72,12 +72,11 @@ export const ProtoImplementation = defineNode({
 		const condition = `${In} instanceof ${
 			objectKindOf(node.proto) ?? compileSerializedValue(node.proto)
 		}`
+		const traverseAllows = (data: unknown) => data instanceof node.proto
 		return {
 			basisName: `${node.proto.name}`,
-			traverse: composePrimitiveTraversal(
-				node,
-				(data) => data instanceof node.proto
-			),
+			traverseAllows,
+			traverseApply: composePrimitiveTraversal(node, traverseAllows),
 			domain: "object",
 			condition,
 			negatedCondition: `${condition} === false`

@@ -37,15 +37,17 @@ export const UnitImplementation = defineNode({
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
-			r.traverse(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 	},
 	writeDefaultDescription: (inner) => printable(inner.unit),
 	normalize: (schema) => schema,
 	attach: (node) => {
 		const serializedValue = compileSerializedValue(node.unit)
+		const traverseAllows = (data: unknown) => data === node.unit
 		return {
 			basisName: printable(node.unit),
-			traverse: composePrimitiveTraversal(node, (data) => data === node.unit),
+			traverseAllows,
+			traverseApply: composePrimitiveTraversal(node, traverseAllows),
 			domain: domainOf(node.unit),
 			condition: `${In} === ${serializedValue}`,
 			negatedCondition: `${In} !== ${serializedValue}`

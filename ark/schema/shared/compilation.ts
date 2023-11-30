@@ -10,12 +10,12 @@ import type { Node } from "../base.js"
 import type { Predicate } from "../refinements/predicate.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
-import type { InputData, Traversal } from "./declare.js"
+import type { InputData, NodeAttachments } from "./declare.js"
 import type { BaseInitializedNode, NodeKind, SetKind } from "./define.js"
 
 export const In = "$arkRoot"
 
-export type CompilationKind = "allows" | "traverse"
+export type CompilationKind = "allows" | "apply"
 
 export type CompiledAllows<input = unknown, narrowed extends input = input> = (
 	data: input
@@ -28,7 +28,7 @@ export type CompiledTraverse<input = unknown> = (
 
 export type CompiledMethods<input = unknown, narrowed extends input = input> = {
 	allows: CompiledAllows<input, narrowed>
-	traverse: CompiledTraverse<narrowed>
+	apply: CompiledTraverse<narrowed>
 }
 
 export type CompilationContext = {
@@ -74,7 +74,7 @@ export const composePrimitiveTraversal =
 	<kind extends PrimitiveKind>(
 		node: BaseInitializedNode<kind>,
 		predicate: Predicate<InputData<kind>>
-	): Traversal<kind> =>
+	): NodeAttachments<kind>["traverseApply"] =>
 	(data, problems) => {
 		if (!predicate(data, problems)) {
 			problems.add(node.description)

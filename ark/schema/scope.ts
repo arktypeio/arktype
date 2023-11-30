@@ -7,7 +7,7 @@ import {
 	type Dict,
 	type PartialRecord
 } from "@arktype/util"
-import type { Node } from "./base.js"
+import type { Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type {
 	instantiateAliases,
@@ -19,7 +19,11 @@ import type { keywords, schema } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { KeyCheckKind } from "./refinements/props/shared.js"
 import type { BranchKind } from "./sets/union.js"
-import type { ProblemCode } from "./shared/compilation.js"
+import {
+	compileAnonymous,
+	compileScope,
+	type ProblemCode
+} from "./shared/compilation.js"
 import type { NodeKind, TypeKind } from "./shared/define.js"
 import type {
 	NormalizedDefinition,
@@ -52,7 +56,9 @@ export class ScopeNode<r extends object = any> {
 	declare static unknownUnion?: TypeNode<unknown, "union">
 	readonly cls = ScopeNode
 	readonly resolutions = {} as r
-	readonly referencesById: BaseResolutions = {}
+	readonly referencesById: Record<string, UnknownNode> = {}
+	readonly references: readonly Node[]
+	resolved = false
 
 	constructor(
 		public def: Dict<string, unknown>,
@@ -67,6 +73,23 @@ export class ScopeNode<r extends object = any> {
 				}
 			)
 		}
+		this.references = Object.values(this.resolutions)
+		const compiledAllowsTraversals = compileScope(this.references, "allows")
+		const compiledApplyTraversals = compileScope(this.references, "apply")
+		for (const reference of this.references) {
+			reference.traverseAllows = compiledAllowsTraversals[reference.id].bind(
+				compiledAllowsTraversals
+			)
+			if (!reference.includesContextDependentPredicate) {
+				// if the reference doesn't require context, we can assign over
+				// it directly to avoid having to initialize it
+				reference.allows = reference.traverseAllows as never
+			}
+			reference.traverseApply = compiledApplyTraversals[reference.id].bind(
+				compiledApplyTraversals
+			)
+		}
+		this.resolved = true
 		if (ScopeNode.root && !ScopeNode.unknownUnion) {
 			// ensure root has been set before parsing this to avoid a circularity
 			ScopeNode.unknownUnion = this.parsePrereduced("union", [
@@ -162,18 +185,29 @@ export class ScopeNode<r extends object = any> {
 	): Node<reducibleKindOf<kind>> {
 		const prefix = opts.alias ?? kind
 		ScopeNode.typeCountsByPrefix[prefix] ??= 0
-		const uuid = `${prefix}${++ScopeNode.typeCountsByPrefix[prefix]!}`
+		const id = `${prefix}${++ScopeNode.typeCountsByPrefix[prefix]!}`
 		if (opts.alias && opts.alias in this.resolutions) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
 			)
 		}
-		return parse(kind, def, {
+		const node = parse(kind, def, {
 			...opts,
 			scope: this,
 			definition: def,
-			id: uuid
-		}) as never
+			id
+		})
+		// TODO: centralize
+		if (this.resolved) {
+			node.traverseAllows = compileAnonymous(node, "allows")
+			if (!node.includesContextDependentPredicate) {
+				node.allows = node.traverseAllows as never
+			}
+			node.traverseApply = compileAnonymous(node, "apply")
+		} else {
+			this.referencesById[id] = node
+		}
+		return node as never
 	}
 
 	readonly schema = Object.assign(this.parseBranches.bind(this), {

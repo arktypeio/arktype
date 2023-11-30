@@ -8,17 +8,16 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
-import type { Predicate, PredicateCast } from "./refinements/predicate.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type { ValidatorKind } from "./sets/morph.js"
 import {
 	Problems,
+	type CheckResult,
 	type CompilationContext,
-	type CompilationKind,
-	type CompiledAllows
+	type CompilationKind
 } from "./shared/compilation.js"
-import type { BaseAttributes, InputData } from "./shared/declare.js"
+import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
 	closedRefinementKinds,
@@ -63,7 +62,7 @@ export type BaseAttachments<kind extends NodeKind> = {
 	readonly scope: ScopeNode
 }
 
-export class BaseNode<kind extends NodeKind> extends DynamicBase<
+export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	Inner<kind> & Attachments<kind> & BaseAttachments<kind>
 > {
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
@@ -74,7 +73,7 @@ export class BaseNode<kind extends NodeKind> extends DynamicBase<
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
-		(this.hasKind("predicate") && this.predicate.length !== 1) ||
+		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
 	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
@@ -120,6 +119,20 @@ export class BaseNode<kind extends NodeKind> extends DynamicBase<
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
 		)
+	}
+
+	allows = (data: unknown): data is t => {
+		const problems = new Problems()
+		return this.traverseAllows(data as never, problems)
+	}
+
+	apply(data: unknown): CheckResult<t> {
+		const problems = new Problems()
+		this.traverseApply(data as never, problems)
+		if (problems.length === 0) {
+			return { data } as any
+		}
+		return { problems }
 	}
 
 	compileBody(ctx: CompilationContext) {
@@ -279,6 +292,6 @@ export const throwUnitializedMethodError = (
 
 export type Node<kind extends NodeKind = NodeKind> = kind extends TypeKind
 	? TypeNode<unknown, kind>
-	: BaseNode<kind>
+	: BaseNode<unknown, kind>
 
-export type UnknownNode = BaseNode<any>
+export type UnknownNode = BaseNode<unknown, any>

@@ -74,9 +74,12 @@ export const RequiredImplementation = defineRefinement({
 		return {
 			serializedKey,
 			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
-			traverse: (data, problems) => {
+			traverseAllows: (data, problems) =>
+				node.key in data &&
+				node.value.traverseAllows((data as any)[node.key], problems),
+			traverseApply: (data, problems) => {
 				if (node.key in data) {
-					node.value.traverse((data as any)[node.key], problems)
+					node.value.traverseApply((data as any)[node.key], problems)
 				} else {
 					problems.add("provided")
 				}

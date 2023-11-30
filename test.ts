@@ -7,7 +7,7 @@ import { range } from "./ark/util/main.js"
 const aNumber = schema({
 	basis: "object",
 	required: { key: "a", value: "number" }
-}).traverse
+}).allows
 
 const aNumberType = type({
 	a: "number"
@@ -129,19 +129,21 @@ const arkSpace = scopeNode({
 	}
 })
 
-bench("space", () => {
-	thousand.forEach((i) => {
-		arkSpace.resolutions.foo.traverse(dataArray[i])
-	})
-}).median([164.23, "us"])
+// bench("space", () => {
+// 	thousand.forEach((i) => {
+// 		arkSpace.resolutions.foo.allows(dataArray[i])
+// 	})
+// }).median([164.23, "us"])
 
 bench("test", () => {
 	thousand.forEach((i) => {
 		arkType.allows(dataArray[i])
 	})
-}).median([164.23, "us"])
+}).median([7.3, "us"])
 
 arkType.allows(validInput) //?
+
+arkType.allows(invalidInput) //?
 
 range(1000).forEach((i) => {
 	arkType.allows(dataArray[i]) //?.

@@ -132,7 +132,8 @@ export const MorphImplementation = defineNode({
 	writeDefaultDescription: (node) =>
 		`a morph from ${node.inner.in} to ${node.inner.out}`,
 	attach: (node) => ({
-		traverse: (data, problems) => node.in.traverse(data, problems),
+		traverseAllows: (data, problems) => node.in.traverseAllows(data, problems),
+		traverseApply: (data, problems) => node.in.traverseApply(data, problems),
 		inCache: node.inner.in,
 		// TODO: reference?
 		outCache: node.inner.out ?? node.scope.builtin.unknown

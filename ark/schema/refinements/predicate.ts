@@ -51,14 +51,17 @@ export const PredicateImplementation = defineRefinement({
 		typeof schema === "function" ? { predicate: schema } : schema,
 	writeDefaultDescription: (inner) =>
 		`valid according to ${inner.predicate.name}`,
-	attach: (node) => ({
-		assertValidBasis: createValidBasisAssertion(node),
-		traverse: composePrimitiveTraversal(node, node.predicate),
-		condition: `${compileSerializedValue(node.predicate)}(${In})`,
-		negatedCondition: `${compileSerializedValue(
-			node.predicate
-		)}(${In}) === false`
-	}),
+	attach: (node) => {
+		return {
+			assertValidBasis: createValidBasisAssertion(node),
+			traverseAllows: node.predicate,
+			traverseApply: composePrimitiveTraversal(node, node.predicate),
+			condition: `${compileSerializedValue(node.predicate)}(${In})`,
+			negatedCondition: `${compileSerializedValue(
+				node.predicate
+			)}(${In}) === false`
+		}
+	},
 	compile: compilePrimitive
 })
 

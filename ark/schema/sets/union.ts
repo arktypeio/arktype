@@ -158,14 +158,15 @@ export const UnionImplementation = defineNode({
 	},
 	attach: (node) => {
 		return {
-			traverse: (data, problems) =>
-				node.branches.some((b) => b.traverse(data, problems)),
+			traverseAllows: (data, problems) =>
+				node.branches.some((b) => b.traverseAllows(data, problems)),
+			traverseApply: (data, problems) =>
+				node.branches.forEach((b) => b.traverseApply(data, problems)),
 			discriminant: null //discriminate(inner.branches)
 		}
 	},
 	writeDefaultDescription: (inner) =>
 		inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
-
 	compile: (node, ctx) => {
 		const branchInvocations = node.branches.map(
 			(branch) =>
