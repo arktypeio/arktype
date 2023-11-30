@@ -3,8 +3,7 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	type Dict,
-	type PartialRecord
+	type Dict
 } from "@arktype/util"
 import type { Node, UnknownNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
@@ -18,11 +17,7 @@ import type { keywords, schema } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { KeyCheckKind } from "./refinements/props/shared.js"
 import type { BranchKind } from "./sets/union.js"
-import {
-	compileAnonymous,
-	compileScope,
-	type ProblemCode
-} from "./shared/compilation.js"
+import { bindCompiledScope, type ProblemCode } from "./shared/compilation.js"
 import type { NodeKind, TypeKind } from "./shared/define.js"
 import type {
 	NormalizedDefinition,
@@ -33,8 +28,6 @@ import { isNode } from "./shared/symbols.js"
 import type { TypeNode } from "./type.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
-
-export const globalResolutions: BaseResolutions = {}
 
 export type BaseResolutions = Record<string, TypeNode>
 
@@ -52,7 +45,6 @@ export class ScopeNode<r extends object = any> {
 		[k in keyof r]: r[k] extends schema.cast<infer t> ? t : never
 	}
 	declare static keywords: typeof keywords
-	declare static unknownUnion?: TypeNode<unknown, "union">
 	readonly cls = ScopeNode
 	readonly resolutions = {} as r
 	readonly referencesById: Record<string, UnknownNode> = {}
@@ -72,36 +64,28 @@ export class ScopeNode<r extends object = any> {
 				}
 			)
 		}
-		this.references = Object.values(this.resolutions)
-		const compiledAllowsTraversals = compileScope(this.references, "allows")
-		const compiledApplyTraversals = compileScope(this.references, "apply")
-		for (const reference of this.references) {
-			reference.traverseAllows = compiledAllowsTraversals[reference.id].bind(
-				compiledAllowsTraversals
-			)
-			if (!reference.includesContextDependentPredicate) {
-				// if the reference doesn't require context, we can assign over
-				// it directly to avoid having to initialize it
-				reference.allows = reference.traverseAllows as never
-			}
-			reference.traverseApply = compiledApplyTraversals[reference.id].bind(
-				compiledApplyTraversals
-			)
-		}
+		this.references = Object.values(this.referencesById)
+		bindCompiledScope(this.references, this.references)
 		this.resolved = true
-		if (ScopeNode.root && !ScopeNode.unknownUnion) {
+		if (ScopeNode.keywords) {
 			// ensure root has been set before parsing this to avoid a circularity
-			ScopeNode.unknownUnion = this.parsePrereduced("union", [
-				"string",
-				"number",
-				"object",
-				"bigint",
-				"symbol",
-				{ unit: true },
-				{ unit: false },
-				{ unit: null },
-				{ unit: undefined }
-			])
+			this.parseNode(
+				"union",
+				{
+					branches: [
+						"string",
+						"number",
+						"object",
+						"bigint",
+						"symbol",
+						{ unit: true },
+						{ unit: false },
+						{ unit: null },
+						{ unit: undefined }
+					]
+				},
+				{ reduceTo: ScopeNode.keywords.unknown }
+			)
 		}
 	}
 
@@ -176,15 +160,11 @@ export class ScopeNode<r extends object = any> {
 		return this.parseNode(kind, schema as never) as never
 	}
 
-	private static typeCountsByPrefix: PartialRecord<string, number> = {}
 	parseNode<kind extends NodeKind>(
 		kind: kind,
 		def: Schema<kind>,
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<kind>> {
-		const prefix = opts.alias ?? kind
-		ScopeNode.typeCountsByPrefix[prefix] ??= 0
-		const id = `${prefix}${++ScopeNode.typeCountsByPrefix[prefix]!}`
 		if (opts.alias && opts.alias in this.resolutions) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
@@ -193,18 +173,16 @@ export class ScopeNode<r extends object = any> {
 		const node = parse(kind, def, {
 			...opts,
 			scope: this,
-			definition: def,
-			id
+			definition: def
 		})
-		// TODO: centralize
 		if (this.resolved) {
-			node.traverseAllows = compileAnonymous(node, "allows")
-			if (!node.includesContextDependentPredicate) {
-				node.allows = node.traverseAllows as never
-			}
-			node.traverseApply = compileAnonymous(node, "apply")
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			bindCompiledScope([node], node.contributesReferences)
 		} else {
-			this.referencesById[id] = node
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			this.referencesById[node.id] = node
 		}
 		return node as never
 	}

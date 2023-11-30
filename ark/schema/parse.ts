@@ -3,6 +3,7 @@ import {
 	hasDomain,
 	includes,
 	throwParseError,
+	type PartialRecord,
 	type extend
 } from "@arktype/util"
 import {
@@ -11,7 +12,7 @@ import {
 	type Node,
 	type UnknownNode
 } from "./base.js"
-import { ScopeNode } from "./scope.js"
+import type { BaseResolutions, ScopeNode } from "./scope.js"
 import {
 	defaultInnerKeySerializer,
 	typeKinds,
@@ -29,17 +30,20 @@ import { BaseType } from "./type.js"
 export type SchemaParseOptions = {
 	alias?: string
 	prereduced?: true
+	reduceTo?: Node
 	basis?: Node<BasisKind> | undefined
 }
 
 export type SchemaParseContext = extend<
 	SchemaParseOptions,
 	{
-		id: string
 		scope: ScopeNode
 		definition: unknown
 	}
 >
+
+const globalResolutions: Record<string, Node> = {}
+const typeCountsByPrefix: PartialRecord<string, number> = {}
 
 export const parse = <defKind extends NodeKind>(
 	kind: defKind,
@@ -102,9 +106,12 @@ export const parse = <defKind extends NodeKind>(
 		}
 	}
 	const innerId = JSON.stringify({ kind, ...json })
+	if (ctx.reduceTo) {
+		return (globalResolutions[innerId] = ctx.reduceTo) as never
+	}
 	const typeId = JSON.stringify({ kind, ...typeJson })
-	if (ctx.scope.cls.unknownUnion?.typeId === typeId) {
-		return ScopeNode.keywords.unknown as never
+	if (innerId in globalResolutions) {
+		return globalResolutions[innerId] as never
 	}
 	if (implementation.reduce && !ctx.prereduced) {
 		const reduced = implementation.reduce(inner, ctx.scope)
@@ -118,9 +125,12 @@ export const parse = <defKind extends NodeKind>(
 			return reduced as never
 		}
 	}
+	const prefix = ctx.alias ?? kind
+	typeCountsByPrefix[prefix] ??= 0
+	const id = `${prefix}${++typeCountsByPrefix[prefix]!}`
 	const baseAttachments = {
+		id,
 		alias: ctx.alias,
-		id: ctx.id,
 		kind,
 		inner,
 		entries,
@@ -131,8 +141,24 @@ export const parse = <defKind extends NodeKind>(
 		innerId,
 		typeId,
 		scope: ctx.scope
-	} satisfies Record<keyof BaseAttachments<any>, unknown> as never
-	return includes(typeKinds, kind)
-		? new BaseType(baseAttachments)
-		: (new BaseNode(baseAttachments) as any)
+	} satisfies UnknownAttachments as BaseAttachments<reducibleKindOf<defKind>>
+	return (globalResolutions[innerId] = instantiateAttachments(baseAttachments))
+}
+
+type UnknownAttachments = Record<keyof BaseAttachments<"union">, any>
+
+type UnknownNodeConstructor<kind extends NodeKind> = new (
+	baseAttachments: BaseAttachments<kind>
+) => Node<kind>
+
+const instantiateAttachments = <kind extends NodeKind>(
+	baseAttachments: BaseAttachments<kind>
+) => {
+	const ctor: UnknownNodeConstructor<kind> = includes(
+		typeKinds,
+		baseAttachments.kind
+	)
+		? BaseType
+		: (BaseNode as any)
+	return new ctor(baseAttachments)
 }

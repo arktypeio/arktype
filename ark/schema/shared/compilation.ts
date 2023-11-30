@@ -41,15 +41,29 @@ export type CompositeKind = SetKind | PropKind
 
 export type PrimitiveKind = Exclude<NodeKind, CompositeKind>
 
-export const compileAnonymous = <kind extends CompilationKind>(
-	node: Node,
-	kind: kind
-): CompiledMethods[kind] => {
-	const $ = compileScope(node.contributesReferences, kind)
-	return $[node.id].bind($) as never
+// TODO: allows/apply root needed for refinements?
+export const bindCompiledScope = (
+	nodesToBind: readonly Node[],
+	references: readonly Node[]
+) => {
+	const compiledAllowsTraversals = compileScope(references, "allows")
+	const compiledApplyTraversals = compileScope(references, "apply")
+	for (const node of nodesToBind) {
+		node.traverseAllows = compiledAllowsTraversals[node.id].bind(
+			compiledAllowsTraversals
+		)
+		if (!node.includesContextDependentPredicate) {
+			// if the reference doesn't require context, we can assign over
+			// it directly to avoid having to initialize it
+			node.allows = node.traverseAllows as never
+		}
+		node.traverseApply = compiledApplyTraversals[node.id].bind(
+			compiledApplyTraversals
+		)
+	}
 }
 
-export const compileScope = <kind extends CompilationKind>(
+const compileScope = <kind extends CompilationKind>(
 	references: readonly Node[],
 	kind: kind
 ): Record<string, CompiledMethods[kind]> => {
