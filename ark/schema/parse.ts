@@ -30,6 +30,11 @@ import { BaseType } from "./type.js"
 export type SchemaParseOptions = {
 	alias?: string
 	prereduced?: true
+	/** Instead of creating the node, compute the innerId of the definition and
+	 * point it to the specified resolution.
+	 *
+	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
+	 **/
 	reduceTo?: Node
 	basis?: Node<BasisKind> | undefined
 }

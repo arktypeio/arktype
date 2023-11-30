@@ -259,7 +259,6 @@ export class Scope<r extends Resolutions = any> {
 	aliases: Record<string, unknown> = {}
 	private exportedNames: exportedName<r>[] = []
 	private ambient: Scope | null
-	private references: TypeNode[] = []
 
 	constructor(def: Dict, config: ScopeConfig) {
 		for (const k in def) {

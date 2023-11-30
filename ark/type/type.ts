@@ -16,6 +16,9 @@ import {
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
+import { schema } from "@arktype/schema/internal/keywords/keywords.js"
+import type { TypeKind } from "@arktype/schema/internal/shared/define.js"
+import { BaseType } from "@arktype/schema/internal/type.js"
 import {
 	CompiledFunction,
 	transform,
@@ -23,6 +26,7 @@ import {
 	type Json,
 	type conform
 } from "@arktype/util"
+import { type } from "./ark.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -125,9 +129,11 @@ export type TypeConfig = {
 	mustBe?: string
 }
 
-export class Type<t = unknown, $ = any> extends CompiledFunction<
-	(data: unknown) => CheckResult<extractOut<t>>
-> {
+export type TypeContext = {
+	kind: TypeKind
+}
+
+export class Type<t = unknown, $ = any> extends BaseType<t, TypeKind> {
 	declare [inferred]: t
 	declare inferMorph: t
 	declare infer: extractOut<t>
@@ -135,7 +141,6 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
 	config: TypeConfig
 	root: TypeNode<t>
-	condition = ""
 	allows: this["root"]["allows"]
 	json: Json
 
@@ -144,7 +149,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		public scope: Scope
 	) {
 		const root = parseTypeRoot(definition, scope) as TypeNode<t>
-		super(In, `return true ? { data: ${In} } : { problems: [] } `)
+		super(root as never)
 		this.root = root
 		this.allows = root.allows
 		this.config = scope.config
@@ -166,7 +171,8 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	}
 
 	// TODO: Morph intersections, ordering
-	and<def>(
+	/** @ts-expect-error */
+	override and<def>(
 		def: validateTypeRoot<def, $>
 	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
 		return new Type(
@@ -174,8 +180,10 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 			this.scope
 		) as never
 	}
-
-	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
+	/** @ts-expect-error */
+	override or<def>(
+		def: validateTypeRoot<def, $>
+	): Type<t | inferTypeRoot<def, $>, $> {
 		return new Type(
 			this.root.or(parseTypeRoot(def, this.scope)),
 			this.scope
@@ -232,14 +240,27 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	}
 
 	// TODO: parse these
-	equals<other>(other: Type<other>): this is Type<other, $> {
+	equals<def>(
+		other: validateTypeRoot<def, $>
+	): this is Type<inferTypeRoot<def, $>, $> {
 		return this.root === (other.root as unknown)
 	}
 
-	extends<other>(other: Type<other>): this is Type<other, $> {
+	extends<def>(
+		other: validateTypeRoot<def, $>
+	): this is Type<inferTypeRoot<def, $>, $> {
 		return this.root.extends(other.root)
 	}
 }
+
+export type TypeNode<t = unknown, kind extends TypeKind = TypeKind> = {
+	union: BaseType<t, "union">
+	morph: BaseType<t, "morph">
+	intersection: BaseType<t, "intersection">
+	unit: BaseType<t, "unit">
+	proto: BaseType<t, "proto">
+	domain: BaseType<t, "domain">
+}[kind]
 
 const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
 	scope.parseDefinition(def, { args: args ?? bindThis(), baseName: "type" })

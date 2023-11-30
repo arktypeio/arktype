@@ -10,7 +10,7 @@ import {
 import type { BasisKind } from "./bases/basis.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
-import type { ValidatorKind } from "./sets/morph.js"
+import type { ValidatorKind, extractOut } from "./sets/morph.js"
 import {
 	Problems,
 	type CheckResult,
@@ -63,7 +63,10 @@ export type BaseAttachments<kind extends NodeKind> = {
 }
 
 export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
-	Inner<kind> & Attachments<kind> & BaseAttachments<kind>
+	Inner<kind> &
+		Attachments<kind> &
+		// TODO: extract out
+		BaseAttachments<kind> & { (data: unknown): CheckResult<t> }
 > {
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
 	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[

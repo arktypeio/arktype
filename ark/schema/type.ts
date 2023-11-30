@@ -1,6 +1,5 @@
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import type { BranchKind } from "./sets/union.js"
-import { Problems, type CheckResult } from "./shared/compilation.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"

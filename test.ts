@@ -10,7 +10,7 @@ const aNumber = schema({
 }).allows
 
 const aNumberType = type({
-	a: "number"
+	a: `${"num"}ber`
 })
 
 const thousand = range(1000)
