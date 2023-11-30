@@ -3,7 +3,6 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	transform,
 	type Dict,
 	type PartialRecord
 } from "@arktype/util"
@@ -30,7 +29,7 @@ import type {
 	Schema,
 	reducibleKindOf
 } from "./shared/nodes.js"
-import { isNode, type addArkKind } from "./shared/symbols.js"
+import { isNode } from "./shared/symbols.js"
 import type { TypeNode } from "./type.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
@@ -58,7 +57,7 @@ export class ScopeNode<r extends object = any> {
 	readonly resolutions = {} as r
 	readonly referencesById: Record<string, UnknownNode> = {}
 	readonly references: readonly Node[]
-	resolved = false
+	protected resolved = false
 
 	constructor(
 		public def: Dict<string, unknown>,
