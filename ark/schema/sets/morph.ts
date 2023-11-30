@@ -17,9 +17,9 @@ import type {
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
-import { basisKinds, defineNode } from "../shared/define.js"
+import { basisKinds, defineNode, type NodeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Schema } from "../shared/nodes.js"
+import type { Schema, reducibleKindOf } from "../shared/nodes.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
@@ -147,6 +147,14 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		  out
 		: t
 	: Exclude<out, Problem>
+
+export type inKindOf<kind extends NodeKind> = kind extends "morph"
+	? ValidatorKind
+	: reducibleKindOf<kind>
+
+export type outKindOf<kind extends NodeKind> = kind extends "morph"
+	? ValidatorKind
+	: reducibleKindOf<kind>
 
 export type extractIn<t> = includesMorphs<t> extends true
 	? extractMorphs<t, "in">

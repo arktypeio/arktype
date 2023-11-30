@@ -10,12 +10,16 @@ import {
 import type { BasisKind } from "./bases/basis.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
-import type { ValidatorKind, extractOut } from "./sets/morph.js"
+import type {
+	extractIn,
+	extractOut,
+	inKindOf,
+	outKindOf
+} from "./sets/morph.js"
 import {
 	Problems,
 	type CheckResult,
-	type CompilationContext,
-	type CompilationKind
+	type CompilationContext
 } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
@@ -41,10 +45,9 @@ import {
 	NodeImplementationByKind,
 	type Attachments,
 	type Inner,
-	type childKindOf,
-	type reducibleKindOf
+	type childKindOf
 } from "./shared/nodes.js"
-import { arkKind } from "./shared/symbols.js"
+import { arkKind, inferred } from "./shared/symbols.js"
 import type { TypeNode } from "./type.js"
 
 export type BaseAttachments<kind extends NodeKind> = {
@@ -68,6 +71,9 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		// TODO: extract out
 		BaseAttachments<kind> & { (data: unknown): CheckResult<t> }
 > {
+	declare infer: extractOut<t>;
+	declare [inferred]: t;
+
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
 	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[
 		this.kind
@@ -143,7 +149,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	}
 
 	inCache?: UnknownNode;
-	get in(): Node<kind extends "morph" ? ValidatorKind : reducibleKindOf<kind>> {
+	get in(): Node<inKindOf<kind>, extractIn<t>> {
 		if (!this.inCache) {
 			this.inCache = this.getIo("in")
 		}
@@ -151,9 +157,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	}
 
 	outCache?: UnknownNode
-	get out(): Node<
-		kind extends "morph" ? ValidatorKind : reducibleKindOf<kind>
-	> {
+	get out(): Node<outKindOf<kind>, extractOut<t>> {
 		if (!this.outCache) {
 			this.outCache = this.getIo("out")
 		}
@@ -286,15 +290,9 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	}
 }
 
-export const throwUnitializedMethodError = (
-	id: string,
-	method: CompilationKind
-) => {
-	throw new Error(`${id} must be bound to its scope to invoke ${method}`)
-}
-
-export type Node<kind extends NodeKind = NodeKind> = kind extends TypeKind
-	? TypeNode<unknown, kind>
-	: BaseNode<unknown, kind>
+export type Node<
+	kind extends NodeKind = NodeKind,
+	t = unknown
+> = kind extends TypeKind ? TypeNode<t, kind> : BaseNode<t, kind>
 
 export type UnknownNode = BaseNode<unknown, any>

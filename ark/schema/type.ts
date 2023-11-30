@@ -1,4 +1,5 @@
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
+import type { extractOut } from "./sets/morph.js"
 import type { BranchKind } from "./sets/union.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -7,10 +8,6 @@ import type { Schema } from "./shared/nodes.js"
 import { inferred } from "./shared/symbols.js"
 
 export class BaseType<t, kind extends TypeKind> extends BaseNode<t, kind> {
-	// TODO: standardize name with type
-	declare infer: t;
-	declare [inferred]: t
-
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
 

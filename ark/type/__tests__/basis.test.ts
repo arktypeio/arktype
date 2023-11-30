@@ -8,8 +8,12 @@ describe("basis intersections", () => {
 		const a = [0]
 		const literal = type("===", a)
 		const cls = type("instanceof", Array)
-		attest<TypeNode<number[]>>(literal.and(cls).root).equals(literal.root)
-		attest<TypeNode<number[]>>(cls.and(literal).root).equals(literal.root)
+		const lr = literal.and(cls)
+		attest<number[]>(lr.infer)
+		attest(lr.json).equals(literal.json)
+		const rl = cls.and(literal)
+		attest<number[]>(rl.infer)
+		attest(rl.json).equals(literal.json)
 	})
 	it("unsatisfiable class & literal", () => {
 		const a = [0]
@@ -21,8 +25,8 @@ describe("basis intersections", () => {
 	it("domain & literal", () => {
 		const literal = type("'foo'")
 		const domain = type("string")
-		attest<TypeNode<"foo">>(literal.and(domain).root).equals(literal.root)
-		attest<TypeNode<"foo">>(domain.and(literal).root).equals(literal.root)
+		attest(literal.and(domain).json).equals(literal.json)
+		attest(domain.and(literal).json).equals(literal.json)
 	})
 	it("unsatisfiable domain & literal", () => {
 		const literal = type("'foo'")
@@ -37,7 +41,7 @@ describe("basis intersections", () => {
 	it("domain & class", () => {
 		const domain = type("object")
 		const cls = type("instanceof", Date)
-		attest<TypeNode<Date>>(domain.and(cls).root).equals(cls.root)
-		attest<TypeNode<Date>>(cls.and(domain).root).equals(cls.root)
+		attest(domain.and(cls).json).equals(cls.json)
+		attest(cls.and(domain).json).equals(cls.json)
 	})
 })

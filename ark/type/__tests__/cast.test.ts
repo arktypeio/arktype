@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import type { Constructor } from "@arktype/util"
-import type { Type    } from "arktype"
-import { type } from "arktype";
+import { type, type Type } from "arktype"
 
 describe("cast", () => {
 	it("primitive", () => {
@@ -22,12 +21,12 @@ describe("cast", () => {
 		const constructable = type({} as type.cast<F>)
 		attest<Type<F>>(constructable)
 		attest<F>(constructable.infer)
-		attest<F>(constructable.inferIn)
+		attest<F>(constructable.in.infer)
 	})
 	it("infer constructable", () => {
 		const constructable = type({} as type.cast<Constructor>)
 		attest<Type<Constructor>>(constructable)
 		attest<Constructor>(constructable.infer)
-		attest<Constructor>(constructable.inferIn)
+		attest<Constructor>(constructable.in.infer)
 	})
 })

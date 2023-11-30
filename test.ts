@@ -19,7 +19,7 @@ const aNumberData = range(1000).map((i) => ({ a: i }))
 
 const result = aNumber({ a: 5 }) //?. $
 
-aNumberType.root.alias //?
+aNumberType.alias //?
 
 aNumberType.allows({ a: 5 }) //?
 
