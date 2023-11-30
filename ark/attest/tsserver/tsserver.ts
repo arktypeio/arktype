@@ -23,9 +23,7 @@ export class TsServer {
 				ts.sys,
 				dirname(this.tsConfigInfo.path)
 			)
-			.fileNames.filter(
-				(path) => path.startsWith(fromCwd()) && path.includes("__tests__")
-			)
+			.fileNames.filter((path) => path.startsWith(fromCwd()))
 
 		const system = tsvfs.createFSBackedSystem(
 			tsLibPaths.defaultMapFromNodeModules,
