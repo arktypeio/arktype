@@ -29,7 +29,7 @@ export type UnitDeclaration = declareNode<{
 
 export const UnitImplementation = defineNode({
 	kind: "unit",
-	innerKeys: {
+	keys: {
 		unit: {
 			preserveUndefined: true
 		}

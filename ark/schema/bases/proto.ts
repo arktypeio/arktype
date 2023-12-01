@@ -12,7 +12,7 @@ import {
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
 import type { declareNode } from "../shared/declare.js"
-import { defaultInnerKeySerializer, defineNode } from "../shared/define.js"
+import { defaultValueSerializer, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
@@ -40,11 +40,11 @@ export type ProtoDeclaration = declareNode<{
 export const ProtoImplementation = defineNode({
 	kind: "proto",
 	collapseKey: "proto",
-	innerKeys: {
+	keys: {
 		proto: {
 			serialize: (constructor) =>
 				getExactBuiltinConstructorName(constructor) ??
-				defaultInnerKeySerializer(constructor)
+				defaultValueSerializer(constructor)
 		}
 	},
 	intersections: {

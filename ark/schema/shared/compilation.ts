@@ -6,11 +6,11 @@ import {
 	type arraySubclassToReadonly,
 	type propwiseXor
 } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { BaseAttachments, Node } from "../base.js"
 import type { Predicate } from "../refinements/predicate.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
-import type { InputData, NodeAttachments } from "./declare.js"
+import type { InputData, NodeAttachments, TraverseApply } from "./declare.js"
 import type { BaseInitializedNode, NodeKind, SetKind } from "./define.js"
 
 export const In = "$arkRoot"
@@ -88,7 +88,7 @@ export const composePrimitiveTraversal =
 	<kind extends PrimitiveKind>(
 		node: BaseInitializedNode<kind>,
 		predicate: Predicate<InputData<kind>>
-	): NodeAttachments<kind>["traverseApply"] =>
+	): TraverseApply<kind> =>
 	(data, problems) => {
 		if (!predicate(data, problems)) {
 			problems.add(node.description)

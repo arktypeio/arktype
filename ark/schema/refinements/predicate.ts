@@ -5,7 +5,7 @@ import {
 	composePrimitiveTraversal,
 	type Problems
 } from "../shared/compilation.js"
-import type { withAttributes } from "../shared/declare.js"
+import type { BaseAttributes, withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
 	createValidBasisAssertion,
@@ -14,21 +14,25 @@ import {
 } from "./shared.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
-	withAttributes<{
+	{
 		readonly predicate: predicate
-	}>
+	}
 
-export type PredicateSchema = PredicateInner | Predicate<any>
+export type NormalizedPredicateSchema = withAttributes<PredicateInner>
+
+export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
 export type PredicateDeclaration = declareRefinement<{
 	kind: "predicate"
+	normalizedSchema: NormalizedPredicateSchema
 	schema: PredicateSchema
 	inner: PredicateInner
+	meta: BaseAttributes
 	intersections: {
 		predicate: "predicate" | null
 	}
 	operand: unknown
-	attach: PrimitiveConstraintAttachments<"predicate">
+	attach: PrimitiveConstraintAttachments
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
@@ -36,7 +40,7 @@ export type PredicateDeclaration = declareRefinement<{
 export const PredicateImplementation = defineRefinement({
 	kind: "predicate",
 	collapseKey: "predicate",
-	innerKeys: {
+	keys: {
 		predicate: {}
 	},
 	intersections: {

@@ -9,7 +9,7 @@ import {
 	defineNode,
 	typeKinds,
 	type BaseInitializedNode,
-	type NodeImplementationInput,
+	type NodeParserImplementation,
 	type RefinementKind,
 	type TypeKind
 } from "../shared/define.js"
@@ -21,7 +21,7 @@ export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 
 export type RefinementImplementationInput<d extends BaseNodeDeclaration> =
 	extend<
-		NodeImplementationInput<d>,
+		NodeParserImplementation<d>,
 		{
 			operand: readonly Schema<TypeKind>[]
 		}

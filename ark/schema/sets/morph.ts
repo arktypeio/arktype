@@ -5,7 +5,6 @@ import {
 	type BuiltinObjects,
 	type Primitive,
 	type evaluate,
-	type extend,
 	type listable
 } from "@arktype/util"
 import type { MorphAst } from "arktype/internal/parser/tuple.js"
@@ -14,7 +13,7 @@ import type { BasisKind } from "../bases/basis.js"
 import type { ArkConfig } from "../scope.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type {
-	NodeAttachments,
+	BaseAttributes,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
@@ -50,17 +49,16 @@ export type MorphSchema = withAttributes<{
 	readonly morph: listable<Morph>
 }>
 
-export type MorphAttachments = extend<
-	NodeAttachments<"morph">,
-	{
-		inCache: ValidatorNode
-		outCache: ValidatorNode
-	}
->
+export type MorphAttachments = {
+	inCache: ValidatorNode
+	outCache: ValidatorNode
+}
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
 	schema: MorphSchema
+	normalizedSchema: MorphSchema
+	meta: BaseAttributes
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint

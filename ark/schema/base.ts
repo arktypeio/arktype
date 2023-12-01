@@ -6,6 +6,7 @@ import {
 	type Dict,
 	type Entry,
 	type Json,
+	type JsonData,
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
@@ -70,10 +71,11 @@ export interface BaseAttachments {
 	readonly id: string
 	readonly kind: NodeKind
 	readonly inner: Dict
+	readonly meta: Dict
 	readonly entries: readonly Entry<string>[]
 	readonly json: Json
 	readonly typeJson: Json
-	readonly collapsibleJson: Json
+	readonly collapsibleJson: JsonData
 	readonly children: Node[]
 	readonly innerId: string
 	readonly typeId: string

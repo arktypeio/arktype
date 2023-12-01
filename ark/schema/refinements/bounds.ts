@@ -10,7 +10,11 @@ import {
 	compilePrimitive,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type { InputData, withAttributes } from "../shared/declare.js"
+import type {
+	BaseAttributes,
+	InputData,
+	withAttributes
+} from "../shared/declare.js"
 import type {
 	BaseInitializedNode,
 	BoundKind,
@@ -108,7 +112,7 @@ export const defineBound = <kind extends BoundKind>(
 		// ("min"), then cast it to the expected parameterized definition
 		kind: boundDefinition.kind as "min",
 		collapseKey: "limit",
-		innerKeys: {
+		keys: {
 			limit: {},
 			exclusive: {
 				// omit key with value false since it is the default
@@ -178,6 +182,8 @@ const compileSizeOf = (kind: BoundKind) =>
 export type MinDeclaration = declareRefinement<{
 	kind: "min"
 	schema: BoundSchema<number>
+	normalizedSchema: NormalizedBoundSchema<number>
+	meta: BaseAttributes
 	inner: BoundInner
 	attach: BoundAttachments<"min", "lower">
 	operand: number
@@ -199,6 +205,8 @@ export const MinImplementation = defineBound({
 export type MaxDeclaration = declareRefinement<{
 	kind: "max"
 	schema: BoundSchema<number>
+	normalizedSchema: NormalizedBoundSchema<number>
+	meta: BaseAttributes
 	inner: BoundInner
 	attach: BoundAttachments<"max", "upper">
 	operand: number
@@ -220,6 +228,8 @@ export const MaxImplementation = defineBound({
 export type MinLengthDeclaration = declareRefinement<{
 	kind: "minLength"
 	schema: BoundSchema<number>
+	normalizedSchema: NormalizedBoundSchema<number>
+	meta: BaseAttributes
 	inner: BoundInner
 	attach: BoundAttachments<"minLength", "lower">
 	operand: string | readonly unknown[]
@@ -249,6 +259,8 @@ export const MinLengthImplementation = defineBound({
 export type MaxLengthDeclaration = declareRefinement<{
 	kind: "maxLength"
 	schema: BoundSchema<number>
+	normalizedSchema: NormalizedBoundSchema<number>
+	meta: BaseAttributes
 	inner: BoundInner
 	attach: BoundAttachments<"maxLength", "upper">
 	operand: string | readonly unknown[]
@@ -273,6 +285,8 @@ export const MaxLengthImplementation = defineBound({
 export type AfterDeclaration = declareRefinement<{
 	kind: "after"
 	schema: BoundSchema<string | number>
+	normalizedSchema: NormalizedBoundSchema<string | number>
+	meta: BaseAttributes
 	inner: BoundInner
 	attach: BoundAttachments<"after", "lower">
 	operand: Date
@@ -295,6 +309,8 @@ export const AfterImplementation = defineBound({
 export type BeforeDeclaration = declareRefinement<{
 	kind: "before"
 	schema: BoundSchema<string | number>
+	normalizedSchema: NormalizedBoundSchema<string | number>
+	meta: BaseAttributes
 	inner: BoundInner
 	attach: BoundAttachments<"before", "upper">
 	operand: Date

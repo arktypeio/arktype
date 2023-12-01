@@ -2,8 +2,6 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
-	type evaluate,
-	type extend,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -14,7 +12,6 @@ import type { refinementInputsByKind } from "../refinements/refinement.js"
 import { In } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
-	NodeAttachments,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
@@ -51,170 +48,23 @@ export type IntersectionSchema<
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
 
-export type IntersectionAttachments = extend<
-	NodeAttachments<"intersection">,
-	{
-		constraints: ConstraintSet
-		refinements: readonly Node<RefinementKind>[]
-	}
->
+export type IntersectionAttachments = {
+	constraints: ConstraintSet
+	refinements: readonly Node<RefinementKind>[]
+}
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
+	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
+	meta: BaseAttributes
 	intersections: {
 		intersection: "intersection" | Disjoint
 		default: "intersection" | Disjoint
 	}
 	attach: IntersectionAttachments
 }>
-
-export const IntersectionImplementation = defineNode({
-	kind: "intersection",
-	normalize: (def) => def,
-	addContext: (ctx) => {
-		const def = ctx.definition as IntersectionSchema
-		ctx.basis = def.basis && ctx.scope.parseTypeNode(def.basis, basisKinds)
-	},
-	innerKeys: {
-		basis: {
-			child: true,
-			// the basis has already been preparsed and added to context
-			parse: (_, ctx) => ctx.basis
-		},
-		divisor: {
-			child: true,
-			parse: (def, ctx) => parseClosedRefinement("divisor", def, ctx)
-		},
-		max: {
-			child: true,
-			parse: (def, ctx) => parseClosedRefinement("max", def, ctx)
-		},
-		min: {
-			child: true,
-			parse: (def, ctx) => parseClosedRefinement("min", def, ctx)
-		},
-		maxLength: {
-			child: true,
-			parse: (def, ctx) => parseClosedRefinement("maxLength", def, ctx)
-		},
-		minLength: {
-			child: true,
-			parse: (def, ctx) => parseClosedRefinement("minLength", def, ctx)
-		},
-		before: {
-			child: true,
-			parse: (def, ctx) => parseClosedRefinement("before", def, ctx)
-		},
-		after: {
-			child: true,
-			parse: (def, ctx) => parseClosedRefinement("after", def, ctx)
-		},
-		pattern: {
-			child: true,
-			parse: (def, ctx) => parseOpenRefinement("pattern", def, ctx)
-		},
-		predicate: {
-			child: true,
-			parse: (def, ctx) => parseOpenRefinement("predicate", def, ctx)
-		},
-		optional: {
-			child: true,
-			parse: (def, ctx) => parseOpenRefinement("optional", def, ctx)
-		},
-		required: {
-			child: true,
-			parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
-		}
-	},
-	intersections: {
-		intersection: (l, r) => {
-			let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
-			for (const refinement of r.refinements) {
-				if (result instanceof Disjoint) {
-					break
-				}
-				result = addConstraint(result, refinement)
-			}
-			return result instanceof Disjoint ? result : unflattenConstraints(result)
-		},
-		default: (l, r) => {
-			const result = addConstraint(l.constraints, r)
-			return result instanceof Disjoint ? result : unflattenConstraints(result)
-		}
-	},
-	reduce: (inner, scope) => {
-		const { description, ...constraintsByKind } = inner
-		const inputConstraints = Object.values(
-			constraintsByKind
-		).flat() as ConstraintSet
-		const reducedConstraints = reduceConstraints([], inputConstraints)
-		if (reducedConstraints instanceof Disjoint) {
-			return reducedConstraints.throw()
-		}
-		if (reducedConstraints.length === 1 && reducedConstraints[0].isBasis()) {
-			// TODO: description?
-			return reducedConstraints[0]
-		}
-		if (reducedConstraints.length === inputConstraints.length) {
-			return
-		}
-		const reducedConstraintsByKind = unflattenConstraints(
-			reducedConstraints
-		) as mutable<IntersectionInner>
-		if (description) {
-			reducedConstraintsByKind.description = description
-		}
-		return scope.parsePrereduced("intersection", reducedConstraintsByKind)
-	},
-	attach: (node) => {
-		const constraints: mutable<ConstraintSet> = []
-		const refinements: Node<RefinementKind>[] = []
-		for (const [k, v] of node.entries) {
-			if (k === "basis") {
-				constraints.push(v)
-			} else if (includes(openRefinementKinds, k)) {
-				constraints.push(...(v as any))
-				refinements.push(...(v as any))
-			} else if (includes(closedRefinementKinds, k)) {
-				constraints.push(v as never)
-				refinements.push(v as never)
-			}
-		}
-		return {
-			constraints,
-			refinements,
-			traverseAllows: (data, problems) =>
-				constraints.every((c) => c.traverseAllows(data as never, problems)),
-			traverseApply: (data, problems) =>
-				constraints.forEach((c) => c.traverseApply(data as never, problems))
-		}
-	},
-	compile: (node, ctx) => {
-		const constraintInvocations = node.constraints.map(
-			(constraint) =>
-				`this.${constraint.id}(${In}${
-					ctx.compilationKind === "allows" ? "" : ", problems"
-				})`
-		)
-		return ctx.compilationKind === "allows"
-			? constraintInvocations
-					.map(
-						(call) => `if(!${call}) return false
-`
-					)
-					.join("\n") +
-					"\n" +
-					"return true"
-			: constraintInvocations.join("\n")
-	},
-	writeDefaultDescription: (node) => {
-		return node.constraints.length === 0
-			? "an unknown value"
-			: node.constraints.join(" and ")
-	}
-})
 
 export const Intersection = composeParser<IntersectionDeclaration>({
 	kind: "intersection",
@@ -223,7 +73,7 @@ export const Intersection = composeParser<IntersectionDeclaration>({
 		const def = ctx.definition as IntersectionSchema
 		ctx.basis = def.basis && ctx.scope.parseTypeNode(def.basis, basisKinds)
 	},
-	innerKeys: {
+	keys: {
 		basis: {
 			child: true,
 			// the basis has already been preparsed and added to context
@@ -274,27 +124,9 @@ export const Intersection = composeParser<IntersectionDeclaration>({
 			parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
 		}
 	},
-	intersections: {
-		intersection: (l, r) => {
-			let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
-			for (const refinement of r.refinements) {
-				if (result instanceof Disjoint) {
-					break
-				}
-				result = addConstraint(result, refinement)
-			}
-			return result instanceof Disjoint ? result : unflattenConstraints(result)
-		},
-		default: (l, r) => {
-			const result = addConstraint(l.constraints, r)
-			return result instanceof Disjoint ? result : unflattenConstraints(result)
-		}
-	},
+	metaKeys: {},
 	reduce: (inner, scope) => {
-		const { description, ...constraintsByKind } = inner
-		const inputConstraints = Object.values(
-			constraintsByKind
-		).flat() as ConstraintSet
+		const inputConstraints = Object.values(inner).flat() as ConstraintSet
 		const reducedConstraints = reduceConstraints([], inputConstraints)
 		if (reducedConstraints instanceof Disjoint) {
 			return reducedConstraints.throw()
@@ -309,58 +141,73 @@ export const Intersection = composeParser<IntersectionDeclaration>({
 		const reducedConstraintsByKind = unflattenConstraints(
 			reducedConstraints
 		) as mutable<IntersectionInner>
-		if (description) {
-			reducedConstraintsByKind.description = description
-		}
 		return scope.parsePrereduced("intersection", reducedConstraintsByKind)
-	},
-	attach: (node) => {
-		const constraints: mutable<ConstraintSet> = []
-		const refinements: Node<RefinementKind>[] = []
-		for (const [k, v] of node.entries) {
-			if (k === "basis") {
-				constraints.push(v)
-			} else if (includes(openRefinementKinds, k)) {
-				constraints.push(...(v as any))
-				refinements.push(...(v as any))
-			} else if (includes(closedRefinementKinds, k)) {
-				constraints.push(v as never)
-				refinements.push(v as never)
-			}
-		}
-		return {
-			constraints,
-			refinements,
-			traverseAllows: (data, problems) =>
-				constraints.every((c) => c.traverseAllows(data as never, problems)),
-			traverseApply: (data, problems) =>
-				constraints.forEach((c) => c.traverseApply(data as never, problems))
-		}
-	},
-	compile: (node, ctx) => {
-		const constraintInvocations = node.constraints.map(
-			(constraint) =>
-				`this.${constraint.id}(${In}${
-					ctx.compilationKind === "allows" ? "" : ", problems"
-				})`
-		)
-		return ctx.compilationKind === "allows"
-			? constraintInvocations
-					.map(
-						(call) => `if(!${call}) return false
-`
-					)
-					.join("\n") +
-					"\n" +
-					"return true"
-			: constraintInvocations.join("\n")
-	},
-	writeDefaultDescription: (node) => {
-		return node.constraints.length === 0
-			? "an unknown value"
-			: node.constraints.join(" and ")
 	}
 })
+
+// intersections: {
+// 	intersection: (l, r) => {
+// 		let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
+// 		for (const refinement of r.refinements) {
+// 			if (result instanceof Disjoint) {
+// 				break
+// 			}
+// 			result = addConstraint(result, refinement)
+// 		}
+// 		return result instanceof Disjoint ? result : unflattenConstraints(result)
+// 	},
+// 	default: (l, r) => {
+// 		const result = addConstraint(l.constraints, r)
+// 		return result instanceof Disjoint ? result : unflattenConstraints(result)
+// 	}
+// },
+
+// attach: (node) => {
+// 	const constraints: mutable<ConstraintSet> = []
+// 	const refinements: Node<RefinementKind>[] = []
+// 	for (const [k, v] of node.entries) {
+// 		if (k === "basis") {
+// 			constraints.push(v)
+// 		} else if (includes(openRefinementKinds, k)) {
+// 			constraints.push(...(v as any))
+// 			refinements.push(...(v as any))
+// 		} else if (includes(closedRefinementKinds, k)) {
+// 			constraints.push(v as never)
+// 			refinements.push(v as never)
+// 		}
+// 	}
+// 	return {
+// 		constraints,
+// 		refinements,
+// 		traverseAllows: (data, problems) =>
+// 			constraints.every((c) => c.traverseAllows(data as never, problems)),
+// 		traverseApply: (data, problems) =>
+// 			constraints.forEach((c) => c.traverseApply(data as never, problems))
+// 	}
+// },
+// compile: (node, ctx) => {
+// 	const constraintInvocations = node.constraints.map(
+// 		(constraint) =>
+// 			`this.${constraint.id}(${In}${
+// 				ctx.compilationKind === "allows" ? "" : ", problems"
+// 			})`
+// 	)
+// 	return ctx.compilationKind === "allows"
+// 		? constraintInvocations
+// 				.map(
+// 					(call) => `if(!${call}) return false
+// `
+// 				)
+// 				.join("\n") +
+// 				"\n" +
+// 				"return true"
+// 		: constraintInvocations.join("\n")
+// },
+// writeDefaultDescription: (node) => {
+// 	return node.constraints.length === 0
+// 		? "an unknown value"
+// 		: node.constraints.join(" and ")
+// }
 
 export class IntersectionNode<t = unknown> extends BaseType<t> {
 	constructor(baseAttachments: BaseAttachments) {

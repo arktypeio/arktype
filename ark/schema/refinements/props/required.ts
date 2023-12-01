@@ -1,7 +1,7 @@
 import type { Dict } from "@arktype/util"
 import type { Node } from "../../base.js"
 import { In, compileSerializedValue } from "../../shared/compilation.js"
-import type { withAttributes } from "../../shared/declare.js"
+import type { BaseAttributes, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Inner, Schema } from "../../shared/nodes.js"
@@ -26,8 +26,10 @@ export type RequiredInner = {
 export type RequiredDeclaration = declareRefinement<{
 	kind: "required"
 	schema: RequiredSchema
+	normalizedSchema: RequiredSchema
 	operand: object
 	inner: RequiredInner
+	meta: BaseAttributes
 	intersections: {
 		required: "required" | Disjoint | null
 		optional: "required" | Disjoint | null
@@ -55,7 +57,7 @@ const intersectNamed = (
 
 export const RequiredImplementation = defineRefinement({
 	kind: "required",
-	innerKeys: {
+	keys: {
 		key: {},
 		value: {
 			child: true,

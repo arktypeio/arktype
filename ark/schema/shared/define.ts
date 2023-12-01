@@ -1,10 +1,7 @@
 import type {
-	Dict,
 	ErrorMessage,
 	JsonData,
 	PartialRecord,
-	evaluate,
-	extend,
 	listable,
 	optionalizeKeys,
 	requireKeys,
@@ -14,21 +11,12 @@ import type {
 import type { BaseNode, Node } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
-import {
-	compileSerializedValue,
-	type CompilationContext
-} from "./compilation.js"
-import type {
-	BaseAttributes,
-	BaseNodeDeclaration,
-	NodeAttachments
-} from "./declare.js"
-import type { reifyIntersections } from "./intersect.js"
+import { compileSerializedValue } from "./compilation.js"
+import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type {
 	Attachments,
 	Declaration,
 	Inner,
-	NormalizedDefinition,
 	reducibleKindOf
 } from "./nodes.js"
 
@@ -89,22 +77,20 @@ export type OrderedNodeKinds = typeof nodeKinds
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
-	[k in keyof d["inner"]]: NodeKeyDefinition<d, k>
+	[k in keyof d["normalizedSchema"]]: NodeKeyImplementation<
+		// TODO: normalized
+		d["normalizedSchema"],
+		k extends keyof d["inner"] ? d["inner"] : d["meta"],
+		k
+	>
 }
 
-export type MetaKeyDefinitions<d extends BaseNodeDeclaration> = {
-	[k in keyof d["meta"]]: NodeKeyDefinition<d, k>
+export type PrimitiveConstraintAttachments = {
+	readonly condition: string
+	readonly negatedCondition: string
 }
 
-export type PrimitiveConstraintAttachments<kind extends NodeKind> = extend<
-	NodeAttachments<kind>,
-	{
-		readonly condition: string
-		readonly negatedCondition: string
-	}
->
-
-export const defaultInnerKeySerializer = (v: unknown) => {
+export const defaultValueSerializer = (v: unknown) => {
 	if (
 		typeof v === "string" ||
 		typeof v === "boolean" ||
@@ -121,53 +107,53 @@ export type normalizeInput<input, inner extends BaseAttributes> = Extract<
 	PartialRecord<requiredKeyOf<inner>>
 >
 
-export type NodeKeyDefinition<
-	d extends BaseNodeDeclaration,
-	k extends keyof d["inner"]
+export type NodeKeyImplementation<
+	schema,
+	o,
+	k extends keyof schema & keyof o
 > = requireKeys<
 	{
 		preserveUndefined?: true
 		child?: true
 		serialize?: (
-			schema: d["inner"][k] extends listable<BaseNode> | undefined
+			schema: o[k] extends listable<BaseNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
-				: d["inner"][k]
+				: o[k]
 		) => JsonData
 		parse?: (
-			schema: k extends keyof NormalizedDefinition<d["kind"]>
-				? Exclude<NormalizedDefinition<d["kind"]>[k], undefined>
-				: undefined,
+			schema: Exclude<schema[k], undefined>,
 			ctx: SchemaParseContext
-		) => d["inner"][k]
+		) => o[k]
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
-	| (NormalizedDefinition<d["kind"]> extends Pick<d["inner"], k>
-			? never
-			: "parse")
+	| (schema[k] extends Pick<o, k> ? never : "parse")
 	// require keys containing children specify it
-	| (d["inner"][k] extends listable<BaseNode> | undefined ? "child" : never)
+	| (o[k] extends listable<BaseNode> | undefined ? "child" : never)
 >
 
 export type BaseInitializedNode<kind extends NodeKind> = kind extends NodeKind
 	? Omit<Node<kind>, unsatisfiedAttachKey<kind>>
 	: never
 
-export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
+export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
-	innerKeys: InnerKeyDefinitions<d>
-	metaKeys?: MetaKeyDefinitions<d>
-	collapseKey?: keyof d["inner"]
+	keys: InnerKeyDefinitions<d>
+	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void
-	intersections: reifyIntersections<d["kind"], d["intersections"]>
-	writeDefaultDescription: (node: Node<d["kind"]>) => string
+
 	attach: AttachImplementation<d["kind"]>
-	normalize: (schema: d["schema"]) => normalizeInput<d["schema"], d["inner"]>
-	compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
+	normalize: (
+		schema: d["normalizedSchema"]
+	) => normalizeInput<d["normalizedSchema"], d["inner"]>
 	reduce?: (
 		inner: d["inner"],
 		scope: ScopeNode
 	) => Node<reducibleKindOf<d["kind"]>> | undefined
-} & (d["meta"] extends Dict ? { metaKeys: {} } : {})
+}
+
+// writeDefaultDescription: (node: Node<d["kind"]>) => string
+// compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
+// intersections: reifyIntersections<d["kind"], d["intersections"]>
 
 export type AttachImplementation<kind extends NodeKind> = (
 	node: BaseInitializedNode<kind>
@@ -176,7 +162,7 @@ export type AttachImplementation<kind extends NodeKind> = (
 }
 
 export type UnknownNodeImplementation = optionalizeKeys<
-	NodeImplementationInput<BaseNodeDeclaration>,
+	NodeParserImplementation<BaseNodeDeclaration>,
 	"reduce"
 >
 
@@ -190,13 +176,13 @@ type unsatisfiedAttachKey<kind extends NodeKind> = {
 
 export function defineNode<
 	kind extends NodeKind,
-	impl extends NodeImplementationInput<Declaration<kind>>
+	impl extends NodeParserImplementation<Declaration<kind>>
 >(input: { kind: kind } & impl): impl
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
 export function defineNode(
-	input: NodeImplementationInput<any>
+	input: NodeParserImplementation<any>
 ): UnknownNodeImplementation {
-	Object.assign(input.innerKeys, {
+	Object.assign(input.keys, {
 		description: {
 			meta: true
 		}

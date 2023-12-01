@@ -4,7 +4,7 @@ import {
 	compilePrimitive,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type { withAttributes } from "../shared/declare.js"
+import type { BaseAttributes, withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
 	createValidBasisAssertion,
@@ -17,17 +17,21 @@ export type PatternInner = {
 	readonly flags?: string
 }
 
-export type PatternSchema = string | withAttributes<PatternInner> | RegExp
+export type NormalizedPatternSchema = withAttributes<PatternInner>
+
+export type PatternSchema = NormalizedPatternSchema | string | RegExp
 
 export type PatternAttachments = extend<
-	PrimitiveConstraintAttachments<"pattern">,
+	PrimitiveConstraintAttachments,
 	{ regex: RegExp }
 >
 
 export type PatternDeclaration = declareRefinement<{
 	kind: "pattern"
 	schema: PatternSchema
+	normalizedSchema: NormalizedPatternSchema
 	inner: PatternInner
+	meta: BaseAttributes
 	intersections: {
 		pattern: "pattern" | null
 	}
@@ -38,7 +42,7 @@ export type PatternDeclaration = declareRefinement<{
 export const PatternImplementation = defineRefinement({
 	kind: "pattern",
 	collapseKey: "source",
-	innerKeys: {
+	keys: {
 		source: {},
 		flags: {}
 	},

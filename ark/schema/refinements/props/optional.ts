@@ -1,6 +1,6 @@
 import type { Node } from "../../base.js"
 import { In, compileSerializedValue } from "../../shared/compilation.js"
-import type { withAttributes } from "../../shared/declare.js"
+import type { BaseAttributes, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Schema } from "../../shared/nodes.js"
@@ -24,7 +24,9 @@ export type OptionalSchema = withAttributes<{
 export type OptionalDeclaration = declareRefinement<{
 	kind: "optional"
 	schema: OptionalSchema
+	normalizedSchema: OptionalSchema
 	inner: OptionalInner
+	meta: BaseAttributes
 	intersections: {
 		optional: "optional" | null
 	}
@@ -34,7 +36,7 @@ export type OptionalDeclaration = declareRefinement<{
 
 export const OptionalImplementation = defineRefinement({
 	kind: "optional",
-	innerKeys: {
+	keys: {
 		key: {},
 		value: {
 			child: true,

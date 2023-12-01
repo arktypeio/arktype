@@ -1,8 +1,8 @@
-import { isArray, type extend } from "@arktype/util"
+import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
-import { In, type Problems } from "../shared/compilation.js"
+import { In } from "../shared/compilation.js"
 import type {
-	NodeAttachments,
+	BaseAttributes,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
@@ -21,29 +21,30 @@ export type BranchNode = Node<BranchKind>
 
 export type UnionSchema<
 	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
-> =
-	| withAttributes<{
-			readonly branches: branches
-			readonly ordered?: true
-	  }>
-	| branches
+> = NormalizedUnionSchema<branches> | branches
+
+export type NormalizedUnionSchema<
+	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
+> = withAttributes<{
+	readonly branches: branches
+	readonly ordered?: true
+}>
 
 export type UnionInner = {
 	readonly branches: readonly BranchNode[]
 	readonly ordered?: true
 }
 
-export type UnionAttachments = extend<
-	NodeAttachments<"union">,
-	{
-		discriminant: Discriminant | null
-	}
->
+export type UnionAttachments = {
+	discriminant: Discriminant | null
+}
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
 	schema: UnionSchema
+	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
+	meta: BaseAttributes
 	intersections: {
 		union: "union" | Disjoint
 		morph: "union" | Disjoint
@@ -67,7 +68,7 @@ const intersectBranch = (
 export const UnionImplementation = defineNode({
 	kind: "union",
 	collapseKey: "branches",
-	innerKeys: {
+	keys: {
 		ordered: {},
 		branches: {
 			child: true,
@@ -85,61 +86,6 @@ export const UnionImplementation = defineNode({
 				}
 				return branches
 			}
-		}
-	},
-	intersections: {
-		union: (l, r) => {
-			if (
-				(l.branches.length === 0 || r.branches.length === 0) &&
-				l.branches.length !== r.branches.length
-			) {
-				// if exactly one operand is never, we can use it to discriminate based on presence
-				return Disjoint.from(
-					"presence",
-					l.branches.length !== 0,
-					r.branches.length !== 0
-				)
-			}
-			let resultBranches: readonly BranchNode[] | Disjoint
-			if (l.ordered) {
-				if (r.ordered) {
-					return Disjoint.from("indiscriminableMorphs", l, r)
-				}
-				resultBranches = intersectBranches(r.branches, l.branches)
-				if (resultBranches instanceof Disjoint) {
-					resultBranches.invert()
-				}
-			} else {
-				resultBranches = intersectBranches(l.branches, r.branches)
-			}
-			if (resultBranches instanceof Disjoint) {
-				return resultBranches
-			}
-			return l.ordered || r.ordered
-				? {
-						branches: resultBranches,
-						ordered: true
-				  }
-				: { branches: resultBranches }
-		},
-		morph: intersectBranch,
-		intersection: intersectBranch,
-		default: (l, r) => {
-			const branches: BranchNode[] = []
-			for (const branch of l.branches) {
-				const branchResult = branch.intersect(r)
-				if (!(branchResult instanceof Disjoint)) {
-					branches.push(branchResult)
-				}
-			}
-			return branches.length === 0
-				? Disjoint.from("union", l.branches, [r])
-				: l.ordered
-				  ? {
-							branches,
-							ordered: true
-				    }
-				  : { branches }
 		}
 	},
 	normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
@@ -165,21 +111,78 @@ export const UnionImplementation = defineNode({
 				node.branches.forEach((b) => b.traverseApply(data, problems)),
 			discriminant: null //discriminate(inner.branches)
 		}
-	},
-	writeDefaultDescription: (inner) =>
-		inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
-	compile: (node, ctx) => {
-		const branchInvocations = node.branches.map(
-			(branch) =>
-				`this.${branch.id}(${In}${
-					ctx.compilationKind === "allows" ? "" : ", problems"
-				})`
-		)
-		return ctx.compilationKind === "allows"
-			? `return ${branchInvocations.join(" || ")}`
-			: branchInvocations.join("\n")
 	}
 })
+
+// intersections: {
+// 	union: (l, r) => {
+// 		if (
+// 			(l.branches.length === 0 || r.branches.length === 0) &&
+// 			l.branches.length !== r.branches.length
+// 		) {
+// 			// if exactly one operand is never, we can use it to discriminate based on presence
+// 			return Disjoint.from(
+// 				"presence",
+// 				l.branches.length !== 0,
+// 				r.branches.length !== 0
+// 			)
+// 		}
+// 		let resultBranches: readonly BranchNode[] | Disjoint
+// 		if (l.ordered) {
+// 			if (r.ordered) {
+// 				return Disjoint.from("indiscriminableMorphs", l, r)
+// 			}
+// 			resultBranches = intersectBranches(r.branches, l.branches)
+// 			if (resultBranches instanceof Disjoint) {
+// 				resultBranches.invert()
+// 			}
+// 		} else {
+// 			resultBranches = intersectBranches(l.branches, r.branches)
+// 		}
+// 		if (resultBranches instanceof Disjoint) {
+// 			return resultBranches
+// 		}
+// 		return l.ordered || r.ordered
+// 			? {
+// 					branches: resultBranches,
+// 					ordered: true
+// 			  }
+// 			: { branches: resultBranches }
+// 	},
+// 	morph: intersectBranch,
+// 	intersection: intersectBranch,
+// 	default: (l, r) => {
+// 		const branches: BranchNode[] = []
+// 		for (const branch of l.branches) {
+// 			const branchResult = branch.intersect(r)
+// 			if (!(branchResult instanceof Disjoint)) {
+// 				branches.push(branchResult)
+// 			}
+// 		}
+// 		return branches.length === 0
+// 			? Disjoint.from("union", l.branches, [r])
+// 			: l.ordered
+// 			  ? {
+// 						branches,
+// 						ordered: true
+// 				}
+// 			  : { branches }
+// 	}
+// },
+
+// writeDefaultDescription: (inner) =>
+// inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
+// compile: (node, ctx) => {
+// const branchInvocations = node.branches.map(
+// 	(branch) =>
+// 		`this.${branch.id}(${In}${
+// 			ctx.compilationKind === "allows" ? "" : ", problems"
+// 		})`
+// )
+// return ctx.compilationKind === "allows"
+// 	? `return ${branchInvocations.join(" || ")}`
+// 	: branchInvocations.join("\n")
+// }
 
 export class UnionNode<t = unknown> extends BaseType<t> {}
 
