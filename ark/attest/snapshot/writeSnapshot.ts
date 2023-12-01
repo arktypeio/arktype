@@ -39,16 +39,29 @@ export const updateExternalSnapshot = ({
 	writeJson(snapshotPath, snapshotData)
 }
 
-export const writeCachedInlineSnapshotUpdates = () => {
-	const config = getConfig()
-	if (!existsSync(config.snapCacheDir)) {
-		throw new Error(
-			`Unable to update snapshots as expected cache directory ${config.snapCacheDir} does not exist.`
-		)
+let snapshotsWillBeWritten = false
+export const writeSnapshotUpdatesOnExit = () => {
+	if (snapshotsWillBeWritten) {
+		return
 	}
-	const attestSnapUpdates = getQueuedUpdates(config.snapCacheDir)
-	const benchSnapUpdates = getQueuedUpdates(config.benchSnapCacheDir)
-	writeUpdates([...attestSnapUpdates, ...benchSnapUpdates])
+	process.on("exit", writeCachedInlineSnapshotUpdates)
+	snapshotsWillBeWritten = true
+}
+
+/**
+ * This will fail if you have a sub process that writes cached snapshots and then deletes the snapshot cache that the root
+ * process is using
+ */
+const writeCachedInlineSnapshotUpdates = () => {
+	const config = getConfig()
+	const updates: QueuedUpdate[] = []
+	if (existsSync(config.snapCacheDir)) {
+		updates.push(...getQueuedUpdates(config.snapCacheDir))
+	}
+	if (existsSync(config.benchSnapCacheDir)) {
+		updates.push(...getQueuedUpdates(config.benchSnapCacheDir))
+	}
+	writeUpdates(updates)
 	rmSync(config.snapCacheDir, { recursive: true, force: true })
 	rmSync(config.benchSnapCacheDir, { recursive: true, force: true })
 }

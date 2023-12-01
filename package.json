@@ -9,7 +9,7 @@
 		"url": "https://arktype.io"
 	},
 	"engines": {
-		"node": ">=16"
+		"node": ">=16 <20"
 	},
 	"repository": {
 		"type": "git",
@@ -40,7 +40,6 @@
 	"devDependencies": {
 		"@arktype/attest": "workspace:*",
 		"@arktype/repo": "workspace:*",
-		"arktype": "workspace:*",
 		"@changesets/changelog-github": "0.4.8",
 		"@changesets/cli": "2.26.2",
 		"@swc/cli": "0.1.63",
@@ -49,7 +48,8 @@
 		"@types/node": "20.10.0",
 		"@typescript-eslint/eslint-plugin": "6.12.0",
 		"@typescript-eslint/parser": "6.12.0",
-		"@typescript/analyze-trace": "^0.10.1",
+		"@typescript/analyze-trace": "0.10.1",
+		"arktype": "workspace:*",
 		"c8": "8.0.1",
 		"eslint": "8.54.0",
 		"eslint-config-prettier": "9.0.0",
@@ -65,7 +65,8 @@
 		"prettier-plugin-jsdoc": "1.1.1",
 		"ts-node": "11.0.0-beta.1",
 		"tsup": "8.0.1",
-		"typescript": "5.3.2"
+		"typescript": "5.3.2",
+		"@microsoft/api-extractor": "7.38.3"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",

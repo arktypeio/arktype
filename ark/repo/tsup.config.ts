@@ -1,8 +1,9 @@
 import { defineConfig } from "tsup"
 
 export default defineConfig({
+	tsconfig: "tsconfig.build.json",
 	entry: ["main.ts"],
 	format: ["cjs", "esm"],
-	// dts: true,
+	experimentalDts: true,
 	clean: true
 })

@@ -1,6 +1,7 @@
+import type { SerializedAssertionData } from "@arktype/attest"
 import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
 import { getConfig, type AttestConfig } from "../config.js"
-import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.js"
+import { getAssertionDataAtPosition } from "../tsserver/getAssertionDataAtPosition.js"
 import { assertExpectedType } from "./assertEquals.js"
 import {
 	ChainableAssertions,
@@ -24,6 +25,8 @@ export type AssertionContext = {
 	position: SourcePosition
 	defaultExpected?: unknown
 	assertionStack: string
+	assertionData?: SerializedAssertionData
+	lastSnapName?: string
 }
 
 export type InternalAssertionHooks = {
@@ -48,11 +51,12 @@ export const attestInternal = (
 		...ctxHooks
 	}
 	if (!cfg.skipTypes) {
-		const assertionData = getArgTypesAtPosition(position)
+		const assertionData = getAssertionDataAtPosition(position)
 		if (assertionData.typeArgs[0]) {
 			// if there is an expected type arg
 			assertExpectedType(assertionData, ctx)
 		}
+		ctx.assertionData = assertionData
 	}
 	return new ChainableAssertions(ctx)
 }

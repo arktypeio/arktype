@@ -14,7 +14,7 @@ import {
 	getAbsolutePosition,
 	nearestCallExpressionChild
 } from "../tsserver/tsserver.js"
-import { writeCachedInlineSnapshotUpdates } from "./writeSnapshot.js"
+import { writeSnapshotUpdatesOnExit } from "./writeSnapshot.js"
 
 export type SnapshotArgs = {
 	position: SourcePosition
@@ -60,14 +60,6 @@ export const getSnapshotByName = (
 	return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
 
-let writeCachedUpdatesOnExit = false
-
-process.on("exit", () => {
-	if (writeCachedUpdatesOnExit) {
-		writeCachedInlineSnapshotUpdates()
-	}
-})
-
 /**
  * Writes the update and position to cacheDir, which will eventually be read and copied to the source
  * file by a cleanup process after all tests have completed.
@@ -82,8 +74,8 @@ export const queueSnapshotUpdate = (args: SnapshotArgs) => {
 		),
 		args
 	)
-	if (isBench || !config.skipTypes) {
-		writeCachedUpdatesOnExit = true
+	if (isBench) {
+		writeSnapshotUpdatesOnExit()
 	}
 }
 

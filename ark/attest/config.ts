@@ -4,7 +4,6 @@ import { join, resolve } from "node:path"
 
 type MutableAttestConfig = {
 	tsconfig: string | undefined
-	preserveCache: boolean
 	updateSnapshots: boolean
 	skipTypes: boolean
 	attestAliases: string[]
@@ -31,7 +30,6 @@ export const getDefaultAttestConfig = (): AttestConfig => {
 			? fromCwd("tsconfig.json")
 			: undefined,
 		attestAliases: ["attest", "attestInternal"],
-		preserveCache: false,
 		updateSnapshots: false,
 		skipTypes: false,
 		benchPercentThreshold: 20,
