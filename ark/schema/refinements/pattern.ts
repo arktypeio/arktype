@@ -46,10 +46,6 @@ export const PatternImplementation = defineRefinement({
 		source: {},
 		flags: {}
 	},
-	intersections: {
-		// For now, non-equal regex are naively intersected
-		pattern: () => null
-	},
 	operand: ["string"],
 	normalize: (schema) =>
 		typeof schema === "string"
@@ -59,7 +55,6 @@ export const PatternImplementation = defineRefinement({
 					? { source: schema.source, flags: schema.flags }
 					: { source: schema.source }
 			  : schema,
-	writeDefaultDescription: (inner) => `matched by ${inner.source}`,
 	attach: (node) => {
 		const regex = new RegExp(node.source, node.flags)
 		return {
@@ -72,6 +67,12 @@ export const PatternImplementation = defineRefinement({
 				node.flags ?? ""
 			}.test(${In}) === false`
 		}
-	},
-	compile: compilePrimitive
+	}
 })
+
+// intersections: {
+// 	// For now, non-equal regex are naively intersected
+// 	pattern: () => null
+// },
+// writeDefaultDescription: (inner) => `matched by ${inner.source}`,
+// compile: compilePrimitive

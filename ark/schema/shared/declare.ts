@@ -5,7 +5,9 @@ import type { ConstraintKind, NodeKind, RefinementKind } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
 
-export type BaseAttributes = Dict
+export type BaseAttributes = {
+	readonly description?: string
+}
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
 

@@ -9,12 +9,10 @@ declare const f: {
 	(a: 2, b: 2): 2
 }
 
-function pipe<f extends Fn<any[]>, args extends readonly unknown[]>(
+const pipe = <f extends Fn<any[]>, args extends readonly unknown[]>(
 	args: conform<args, Parameters<overloadOf<f>>>,
 	f: f
-): ReturnType<overloadOf<f, args>> {
-	return f(...args) as never
-}
+): ReturnType<overloadOf<f, args>> => f(...args) as never
 
 describe("overloads", () => {
 	it("parameters", () => {

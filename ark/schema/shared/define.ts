@@ -10,6 +10,7 @@ import type {
 } from "@arktype/util"
 import type { BaseNode, Node } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
+import type { PatternDeclaration } from "../refinements/pattern.js"
 import type { ScopeNode } from "../scope.js"
 import { compileSerializedValue } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
@@ -128,7 +129,7 @@ export type NodeKeyImplementation<
 	// require parse if we can't guarantee the schema value will be valid on inner
 	| (d["normalizedSchema"][k] extends instantiated ? never : "parse")
 	// require keys containing children specify it
-	| (instantiated extends listable<BaseNode> | undefined ? "child" : never)
+	| ([instantiated] extends [listable<BaseNode> | undefined] ? "child" : never)
 	// require meta keys are specified
 	| (k extends keyof d["meta"] ? "meta" : never)
 >

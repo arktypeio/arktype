@@ -1,8 +1,4 @@
-import {
-	In,
-	compilePrimitive,
-	composePrimitiveTraversal
-} from "../shared/compilation.js"
+import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	TraverseAllows,
@@ -50,18 +46,9 @@ export const DivisorImplementation = defineRefinement({
 	keys: {
 		divisor: {}
 	},
-	intersections: {
-		divisor: (l, r) => ({
-			divisor: Math.abs(
-				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-			)
-		})
-	},
 	operand: ["number"],
 	normalize: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema,
-	writeDefaultDescription: (inner) =>
-		inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
 	attach: (node) => {
 		const traverseAllows: TraverseAllows<"divisor"> = (data) =>
 			data % node.divisor === 0
@@ -72,9 +59,19 @@ export const DivisorImplementation = defineRefinement({
 			condition: `${In} % ${node.divisor} === 0`,
 			negatedCondition: `${In} % ${node.divisor} !== 0`
 		}
-	},
-	compile: compilePrimitive
+	}
 })
+
+// intersections: {
+// 	divisor: (l, r) => ({
+// 		divisor: Math.abs(
+// 			(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+// 		)
+// 	})
+// },
+// compile: compilePrimitive,
+// writeDefaultDescription: (inner) =>
+// 	inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

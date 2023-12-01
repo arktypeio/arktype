@@ -124,7 +124,6 @@ export const Intersection = composeParser<IntersectionDeclaration>({
 			parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
 		}
 	},
-	metaKeys: {},
 	reduce: (inner, scope) => {
 		const inputConstraints = Object.values(inner).flat() as ConstraintSet
 		const reducedConstraints = reduceConstraints([], inputConstraints)
