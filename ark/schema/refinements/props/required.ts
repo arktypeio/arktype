@@ -1,6 +1,5 @@
-import type { Dict } from "@arktype/util"
 import type { Node } from "../../base.js"
-import { In, compileSerializedValue } from "../../shared/compilation.js"
+import { compileSerializedValue } from "../../shared/compilation.js"
 import type { BaseAttributes, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -11,7 +10,7 @@ import {
 	type declareRefinement
 } from "../shared.js"
 import type { PropKind } from "./prop.js"
-import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
+import type { NamedPropAttachments } from "./shared.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
@@ -65,12 +64,7 @@ export const RequiredImplementation = defineRefinement({
 		}
 	},
 	operand: ["object"],
-	intersections: {
-		required: intersectNamed,
-		optional: intersectNamed
-	},
 	normalize: (schema) => schema,
-	writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
 	attach: (node) => {
 		const serializedKey = compileSerializedValue(node.key)
 		return {
@@ -88,14 +82,20 @@ export const RequiredImplementation = defineRefinement({
 			},
 			assertValidBasis: createValidBasisAssertion(node)
 		}
-	},
-	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		${compilePresentProp(node, ctx)}
-	} else {
-		${
-			ctx.compilationKind === "allows"
-				? "return false"
-				: `problems.add("provided")`
-		}
-	}`
+	}
 })
+
+// intersections: {
+// 	required: intersectNamed,
+// 	optional: intersectNamed
+// },
+// writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
+// compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
+// 	${compilePresentProp(node, ctx)}
+// } else {
+// 	${
+// 		ctx.compilationKind === "allows"
+// 			? "return false"
+// 			: `problems.add("provided")`
+// 	}
+// }`

@@ -1,6 +1,5 @@
 import {
 	listFrom,
-	throwParseError,
 	type BuiltinObjectKind,
 	type BuiltinObjects,
 	type Primitive,

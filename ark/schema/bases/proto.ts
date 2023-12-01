@@ -11,9 +11,9 @@ import {
 	compileSerializedValue,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseAttributes, declareNode } from "../shared/declare.js"
 import { defaultValueSerializer, defineNode } from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = {
@@ -27,12 +27,14 @@ export type ProtoSchema<proto extends Constructor = Constructor> =
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
 	schema: ProtoSchema
+	normalizedSchema: ProtoInner
 	inner: ProtoInner
+	meta: BaseAttributes
 	intersections: {
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
-	attach: BasisAttachments<"proto">
+	attach: BasisAttachments
 }>
 
 // // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -47,26 +49,8 @@ export const ProtoImplementation = defineNode({
 				defaultValueSerializer(constructor)
 		}
 	},
-	intersections: {
-		proto: (l, r) =>
-			constructorExtends(l.proto, r.proto)
-				? l
-				: constructorExtends(r.proto, l.proto)
-				  ? r
-				  : Disjoint.from("proto", l, r),
-		domain: (l, r) =>
-			r.domain === "object"
-				? l
-				: Disjoint.from("domain", l.scope.builtin.object, r)
-	},
 	normalize: (input) =>
 		typeof input === "function" ? { proto: input } : input,
-	writeDefaultDescription: (node) => {
-		const knownObjectKind = getExactBuiltinConstructorName(node.proto)
-		return knownObjectKind
-			? objectKindDescriptions[knownObjectKind]
-			: `an instance of ${node.proto.name}`
-	},
 	attach: (node) => {
 		const condition = `${In} instanceof ${
 			objectKindOf(node.proto) ?? compileSerializedValue(node.proto)
@@ -80,6 +64,25 @@ export const ProtoImplementation = defineNode({
 			condition,
 			negatedCondition: `${condition} === false`
 		}
-	},
-	compile: compilePrimitive
+	}
 })
+
+// intersections: {
+// 	proto: (l, r) =>
+// 		constructorExtends(l.proto, r.proto)
+// 			? l
+// 			: constructorExtends(r.proto, l.proto)
+// 			  ? r
+// 			  : Disjoint.from("proto", l, r),
+// 	domain: (l, r) =>
+// 		r.domain === "object"
+// 			? l
+// 			: Disjoint.from("domain", l.scope.builtin.object, r)
+// },
+// writeDefaultDescription: (node) => {
+// 	const knownObjectKind = getExactBuiltinConstructorName(node.proto)
+// 	return knownObjectKind
+// 		? objectKindDescriptions[knownObjectKind]
+// 		: `an instance of ${node.proto.name}`
+// },
+// compile: compilePrimitive,

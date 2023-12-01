@@ -16,14 +16,10 @@ import type {
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type { BranchKind } from "./sets/union.js"
+import type { BranchKind, NormalizedUnionSchema } from "./sets/union.js"
 import { bindCompiledScope, type ProblemCode } from "./shared/compilation.js"
 import type { NodeKind, TypeKind } from "./shared/define.js"
-import type {
-	NormalizedDefinition,
-	Schema,
-	reducibleKindOf
-} from "./shared/nodes.js"
+import type { Schema, reducibleKindOf } from "./shared/nodes.js"
 import { isNode } from "./shared/symbols.js"
 import type { TypeNode } from "./type.js"
 
@@ -103,7 +99,7 @@ export class ScopeNode<r extends object = any> {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], r>
 			}
-		} & NormalizedDefinition<"union">
+		} & NormalizedUnionSchema
 	): instantiateSchemaBranches<branches> {
 		return this.parseNode("union", input) as never
 	}

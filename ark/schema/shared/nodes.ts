@@ -1,5 +1,4 @@
 import type { Dict, extend } from "@arktype/util"
-import type { Node } from "../base.js"
 import { BasisImplementations, type BasisDeclarations } from "../bases/basis.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import {
@@ -12,7 +11,6 @@ import {
 	type SetDeclarationsByKind
 } from "../sets/set.js"
 import type { BranchKind } from "../sets/union.js"
-import type { BaseType } from "../type.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -48,12 +46,6 @@ export type Implementation<kind extends NodeKind> =
 	NodeImplementationByKind[kind]
 
 export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
-
-export type NormalizedDefinition<kind extends NodeKind> = normalizeInput<
-	Schema<kind>,
-	Inner<kind>
-> &
-	object
 
 export type ChildrenByKind = {
 	[k in NodeKind]: k extends "union"

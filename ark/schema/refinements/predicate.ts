@@ -43,18 +43,10 @@ export const PredicateImplementation = defineRefinement({
 	keys: {
 		predicate: {}
 	},
-	intersections: {
-		// TODO: allow changed order to be the same type
-		// as long as the narrows in l and r are individually safe to check
-		// in the order they're specified, checking them in the order
-		// resulting from this intersection should also be safe.
-		predicate: () => null
-	},
 	operand: [{}],
 	normalize: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
-	writeDefaultDescription: (inner) =>
-		`valid according to ${inner.predicate.name}`,
+
 	attach: (node) => {
 		return {
 			assertValidBasis: createValidBasisAssertion(node),
@@ -65,9 +57,19 @@ export const PredicateImplementation = defineRefinement({
 				node.predicate
 			)}(${In}) === false`
 		}
-	},
-	compile: compilePrimitive
+	}
 })
+
+// intersections: {
+// 	// TODO: allow changed order to be the same type
+// 	// as long as the narrows in l and r are individually safe to check
+// 	// in the order they're specified, checking them in the order
+// 	// resulting from this intersection should also be safe.
+// 	predicate: () => null
+// },
+// writeDefaultDescription: (inner) =>
+// 	`valid according to ${inner.predicate.name}`,
+// 	compile: compilePrimitive
 
 export type Predicate<input = unknown> = (
 	input: input,

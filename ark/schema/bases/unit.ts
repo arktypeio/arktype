@@ -5,9 +5,13 @@ import {
 	compileSerializedValue,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type {
+	BaseAttributes,
+	declareNode,
+	withAttributes
+} from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
 export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
@@ -19,12 +23,14 @@ export type UnitInner<value = unknown> = {
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
 	schema: UnitSchema
+	normalizedSchema: UnitSchema
 	inner: UnitInner
+	meta: BaseAttributes
 	intersections: {
 		unit: "unit" | Disjoint
 		default: "unit" | Disjoint
 	}
-	attach: BasisAttachments<"unit">
+	attach: BasisAttachments
 }>
 
 export const UnitImplementation = defineNode({
@@ -34,12 +40,6 @@ export const UnitImplementation = defineNode({
 			preserveUndefined: true
 		}
 	},
-	intersections: {
-		unit: (l, r) => Disjoint.from("unit", l, r),
-		default: (l, r) =>
-			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
-	},
-	writeDefaultDescription: (inner) => printable(inner.unit),
 	normalize: (schema) => schema,
 	attach: (node) => {
 		const serializedValue = compileSerializedValue(node.unit)
@@ -52,6 +52,13 @@ export const UnitImplementation = defineNode({
 			condition: `${In} === ${serializedValue}`,
 			negatedCondition: `${In} !== ${serializedValue}`
 		}
-	},
-	compile: compilePrimitive
+	}
 })
+
+// intersections: {
+// 	unit: (l, r) => Disjoint.from("unit", l, r),
+// 	default: (l, r) =>
+// 		r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+// },
+// writeDefaultDescription: (inner) => printable(inner.unit),
+// compile: compilePrimitive,

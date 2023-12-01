@@ -5,11 +5,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import {
-	In,
-	compilePrimitive,
-	composePrimitiveTraversal
-} from "../shared/compilation.js"
+import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	InputData,
@@ -21,7 +17,7 @@ import type {
 	PrimitiveConstraintAttachments,
 	TypeKind
 } from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import type { Declaration, Schema } from "../shared/nodes.js"
 import {
 	createValidBasisAssertion,
@@ -48,21 +44,14 @@ export type BoundSchema<limit extends LimitSchemaValue = LimitSchemaValue> =
 	| limit
 	| NormalizedBoundSchema<limit>
 
-export type BoundAttachments<
-	kind extends BoundKind,
-	limitKind extends LimitKind
-> = extend<
-	PrimitiveConstraintAttachments<kind>,
+export type BoundAttachments<limitKind extends LimitKind> = extend<
+	PrimitiveConstraintAttachments,
 	{
 		comparator: RelativeComparator<limitKind>
 	}
 >
 
 type BoundNode = Node<BoundKind>
-
-type LowerNode = Node<LowerBoundKind>
-
-type UpperNode = Node<UpperBoundKind>
 
 export type LimitKind = "lower" | "upper"
 
@@ -124,7 +113,6 @@ export const defineBound = <kind extends BoundKind>(
 			typeof schema === "object"
 				? { ...schema, limit: normalizeLimit(schema.limit) }
 				: { limit: normalizeLimit(schema) },
-		writeDefaultDescription: boundDefinition.writeDefaultDescription,
 		attach: (node) => {
 			const size = compileSizeOf(node.kind)
 			const comparator = compileComparator(
@@ -143,31 +131,33 @@ export const defineBound = <kind extends BoundKind>(
 				condition: `${size} ${comparator} ${node.limit}`,
 				negatedCondition: `${size} ${negatedComparators[comparator]} ${node.limit}`
 			}
-		},
-		intersections: isKeyOf(boundDefinition.kind, boundKindPairsByLower)
-			? // can't check intersections against a concrete case since the intersection
-			  // pairings are dynamic keys, so just type the functions internally and cast
-			  {
-					// symmetric lower bound intersection
-					[boundDefinition.kind]: (l: LowerNode, r: LowerNode): LowerNode =>
-						l.limit > r.limit || (l.limit === r.limit && l.exclusive) ? l : r,
-					// asymmetric bound intersections are handled by the lower bound
-					[boundKindPairsByLower[boundDefinition.kind]]: (
-						l: LowerNode,
-						r: UpperNode
-					): Disjoint | null =>
-						l.limit > r.limit ||
-						(l.limit === r.limit && (l.exclusive || r.exclusive))
-							? Disjoint.from("bound", l, r)
-							: null
-			  }
-			: ({
-					// symmetric upper bound intersection
-					[boundDefinition.kind]: (l: BoundNode, r: BoundNode): BoundNode =>
-						l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
-			  } as any),
-		compile: compilePrimitive
+		}
 	} satisfies RefinementImplementationInput<Declaration<"min">> as never)
+
+// writeDefaultDescription: boundDefinition.writeDefaultDescription,
+// intersections: isKeyOf(boundDefinition.kind, boundKindPairsByLower)
+// 	? // can't check intersections against a concrete case since the intersection
+// 	  // pairings are dynamic keys, so just type the functions internally and cast
+// 	  {
+// 			// symmetric lower bound intersection
+// 			[boundDefinition.kind]: (l: LowerNode, r: LowerNode): LowerNode =>
+// 				l.limit > r.limit || (l.limit === r.limit && l.exclusive) ? l : r,
+// 			// asymmetric bound intersections are handled by the lower bound
+// 			[boundKindPairsByLower[boundDefinition.kind]]: (
+// 				l: LowerNode,
+// 				r: UpperNode
+// 			): Disjoint | null =>
+// 				l.limit > r.limit ||
+// 				(l.limit === r.limit && (l.exclusive || r.exclusive))
+// 					? Disjoint.from("bound", l, r)
+// 					: null
+// 	  }
+// 	: ({
+// 			// symmetric upper bound intersection
+// 			[boundDefinition.kind]: (l: BoundNode, r: BoundNode): BoundNode =>
+// 				l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
+// 	  } as any),
+// compile: compilePrimitive
 
 const compileComparator = (kind: BoundKind, exclusive: true | undefined) =>
 	`${isKeyOf(kind, boundKindPairsByLower) ? ">" : "<"}${exclusive ? "" : "="}`
@@ -185,7 +175,7 @@ export type MinDeclaration = declareRefinement<{
 	normalizedSchema: NormalizedBoundSchema<number>
 	meta: BaseAttributes
 	inner: BoundInner
-	attach: BoundAttachments<"min", "lower">
+	attach: BoundAttachments<"lower">
 	operand: number
 	intersections: {
 		min: "min"
@@ -208,7 +198,7 @@ export type MaxDeclaration = declareRefinement<{
 	normalizedSchema: NormalizedBoundSchema<number>
 	meta: BaseAttributes
 	inner: BoundInner
-	attach: BoundAttachments<"max", "upper">
+	attach: BoundAttachments<"upper">
 	operand: number
 	intersections: {
 		// TODO: Fix rightOf
@@ -231,7 +221,7 @@ export type MinLengthDeclaration = declareRefinement<{
 	normalizedSchema: NormalizedBoundSchema<number>
 	meta: BaseAttributes
 	inner: BoundInner
-	attach: BoundAttachments<"minLength", "lower">
+	attach: BoundAttachments<"lower">
 	operand: string | readonly unknown[]
 	intersections: {
 		minLength: "minLength"
@@ -262,7 +252,7 @@ export type MaxLengthDeclaration = declareRefinement<{
 	normalizedSchema: NormalizedBoundSchema<number>
 	meta: BaseAttributes
 	inner: BoundInner
-	attach: BoundAttachments<"maxLength", "upper">
+	attach: BoundAttachments<"upper">
 	operand: string | readonly unknown[]
 	intersections: {
 		maxLength: "maxLength"
@@ -288,7 +278,7 @@ export type AfterDeclaration = declareRefinement<{
 	normalizedSchema: NormalizedBoundSchema<string | number>
 	meta: BaseAttributes
 	inner: BoundInner
-	attach: BoundAttachments<"after", "lower">
+	attach: BoundAttachments<"lower">
 	operand: Date
 	intersections: {
 		after: "after"
@@ -312,7 +302,7 @@ export type BeforeDeclaration = declareRefinement<{
 	normalizedSchema: NormalizedBoundSchema<string | number>
 	meta: BaseAttributes
 	inner: BoundInner
-	attach: BoundAttachments<"before", "upper">
+	attach: BoundAttachments<"upper">
 	operand: Date
 	intersections: {
 		before: "before"

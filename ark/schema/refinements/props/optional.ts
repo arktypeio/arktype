@@ -1,15 +1,14 @@
 import type { Node } from "../../base.js"
-import { In, compileSerializedValue } from "../../shared/compilation.js"
+import { compileSerializedValue } from "../../shared/compilation.js"
 import type { BaseAttributes, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
-import { Disjoint } from "../../shared/disjoint.js"
 import type { Schema } from "../../shared/nodes.js"
 import {
 	createValidBasisAssertion,
 	defineRefinement,
 	type declareRefinement
 } from "../shared.js"
-import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
+import type { NamedPropAttachments } from "./shared.js"
 
 export type OptionalInner = {
 	readonly key: string | symbol
@@ -44,21 +43,7 @@ export const OptionalImplementation = defineRefinement({
 		}
 	},
 	operand: ["object"],
-	intersections: {
-		optional: (l, r) => {
-			if (l.key !== r.key) {
-				return null
-			}
-			const optional = l.key
-			const value = l.value.intersect(r.value)
-			return {
-				key: optional,
-				value: value instanceof Disjoint ? l.scope.builtin.never : value
-			}
-		}
-	},
 	normalize: (schema) => schema,
-	writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,
 	attach: (node) => {
 		const serializedKey = compileSerializedValue(node.key)
 		return {
@@ -74,8 +59,23 @@ export const OptionalImplementation = defineRefinement({
 			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
 			assertValidBasis: createValidBasisAssertion(node)
 		}
-	},
-	compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-		${compilePresentProp(node, ctx)}
-	}`
+	}
 })
+
+// intersections: {
+// 	optional: (l, r) => {
+// 		if (l.key !== r.key) {
+// 			return null
+// 		}
+// 		const optional = l.key
+// 		const value = l.value.intersect(r.value)
+// 		return {
+// 			key: optional,
+// 			value: value instanceof Disjoint ? l.scope.builtin.never : value
+// 		}
+// 	}
+// },
+// compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
+// 	${compilePresentProp(node, ctx)}
+// }`,
+// writeDefaultDescription: (inner) => `${String(inner.key)}?: ${inner.value}`,

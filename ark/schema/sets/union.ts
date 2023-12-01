@@ -1,6 +1,5 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
-import { In } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	declareNode,

@@ -1,4 +1,4 @@
-import { scope, type } from "arktype"
+import { type } from "arktype"
 import assert from "assert"
 import { describe, test } from "mocha"
 import { attest } from "../assert/attest.js"
@@ -9,58 +9,49 @@ type Obj = {
 	extra: unknown
 }
 const obj: Obj = { prop1: "", prop2: "", extra: "" }
-describe("autocompletes", () => {
-	describe("String completions", () => {
-		test("Allows different quote types", () => {
-			attest(() => type("string")).type.completions({})
-			// prettier-ignore
-			// @ts-expect-error
-			attest(() => type('st')).type.completions({"st":["string"]})
-			//@ts-expect-error
-			attest(() => type(`st`)).type.completions({ st: ["string"] })
-		})
-		test("Completions shortcut", () => {
-			//@ts-expect-error
-			attest(() => type({ a: "u" })).completions({
-				u: ["undefined", "unknown", "uppercase", "uuid", "url"]
-			})
+
+describe("completions", () => {
+	test("quote types", () => {
+		// @ts-expect-error
+		attest(() => type("st")).completions({ st: ["string"] })
+		// prettier-ignore
+		// @ts-expect-error
+		attest(() => type('st')).completions({st:["string"]})
+		//@ts-expect-error
+		attest(() => type(`st`)).completions({ st: ["string"] })
+	})
+	test(".type.completions", () => {
+		//@ts-expect-error
+		attest(() => type({ a: "u" })).type.completions({
+			u: ["undefined", "unknown", "uppercase", "uuid", "url"]
 		})
 	})
-
-	describe("Key completions", () => {
-		test("Casted object", () => {
-			//@ts-expect-error
-			attest({ "": "data" } as Obj).completions({
-				"": ["extra", "prop1", "prop2"]
-			})
-			test("Lists available keys", () => {
-				//@ts-expect-error
-				attest(() => type("number", "@", { "": "string" })).completions({
-					"": ["description"]
-				})
-			})
+	test("keys", () => {
+		//@ts-expect-error
+		attest(() => type("number", "@", { "": "string" })).completions({
+			"": ["description"]
 		})
-
-		describe("Property access", () => {
-			test("Autocompletes properties", () => {
-				//@ts-expect-error
-				attest(() => obj[""]).type.completions({
-					"": ["extra", "prop1", "prop2"]
-				})
-			})
+	})
+	test("keys from cast object", () => {
+		//@ts-expect-error
+		attest({ "": "data" } as Obj).completions({
+			"": ["extra", "prop1", "prop2"]
 		})
-		describe("Errors", () => {
-			test("Throws on duplicate string", () => {
-				assert.throws(
-					() => attest({ "": "" }).type.completions({}),
-					Error,
-					"multiple completion candidates"
-				)
-			})
-
-			test("Unresolvable", () => {
-				attest("").completions({})
-			})
+	})
+	test("index access", () => {
+		//@ts-expect-error
+		attest(() => obj[""]).type.completions({
+			"": ["extra", "prop1", "prop2"]
 		})
+	})
+	test("duplicate string error", () => {
+		assert.throws(
+			() => attest({ "": "" }).type.completions({}),
+			Error,
+			"multiple completion candidates"
+		)
+	})
+	test("empty", () => {
+		attest("").completions({})
 	})
 })

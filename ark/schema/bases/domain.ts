@@ -1,12 +1,16 @@
-import { domainOf, hasDomain, type Domain } from "@arktype/util"
+import { domainOf, type Domain } from "@arktype/util"
 import {
 	In,
 	compilePrimitive,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type {
+	BaseAttributes,
+	declareNode,
+	withAttributes
+} from "../shared/declare.js"
 import { defineNode } from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
 export type DomainInner<
@@ -20,20 +24,22 @@ export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
 
 export type DomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = domain | NormalizedDomainDefinition<domain>
+> = domain | NormalizedDomainSchema<domain>
 
-export type NormalizedDomainDefinition<
+export type NormalizedDomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > = DomainInner<domain>
 
 export type DomainDeclaration = declareNode<{
 	kind: "domain"
 	schema: DomainSchema
+	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
+	meta: BaseAttributes
 	intersections: {
 		domain: "domain" | Disjoint
 	}
-	attach: BasisAttachments<"domain">
+	attach: BasisAttachments
 }>
 
 export const DomainImplementation = defineNode({
@@ -42,11 +48,7 @@ export const DomainImplementation = defineNode({
 	keys: {
 		domain: {}
 	},
-	intersections: {
-		domain: (l, r) => Disjoint.from("domain", l, r)
-	},
 	normalize: (input) => (typeof input === "string" ? { domain: input } : input),
-	writeDefaultDescription: (node) => domainDescriptions[node.domain],
 	attach: (node) => {
 		const traverseAllows = (data: unknown) => domainOf(data) === node.domain
 		return {
@@ -62,9 +64,14 @@ export const DomainImplementation = defineNode({
 					? `((typeof ${In} !== "object" || ${In} === null) && typeof ${In} !== "function")`
 					: `typeof ${In} !== "${node.domain}"`
 		}
-	},
-	compile: compilePrimitive
+	}
 })
+
+// intersections: {
+// 	domain: (l, r) => Disjoint.from("domain", l, r)
+// },
+// writeDefaultDescription: (node) => domainDescriptions[node.domain],
+// compile: compilePrimitive,
 
 const enumerableDomainDescriptions = {
 	boolean: "boolean",

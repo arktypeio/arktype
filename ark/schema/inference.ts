@@ -18,14 +18,14 @@ import type {
 	ValidatorKind,
 	inferMorphOut
 } from "./sets/morph.js"
-import type { BranchNode } from "./sets/union.js"
+import type { BranchNode, NormalizedUnionSchema } from "./sets/union.js"
 import type { BasisKind, RefinementKind } from "./shared/define.js"
-import type { NormalizedDefinition, Schema } from "./shared/nodes.js"
+import type { Declaration, Schema } from "./shared/nodes.js"
 import type { TypeNode } from "./type.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]
-		? conform<aliases[k], NormalizedDefinition<"union">>
+		? conform<aliases[k], NormalizedUnionSchema>
 		: aliases[k] extends readonly [...infer branches]
 		  ? {
 					[i in keyof branches]: validateSchemaBranch<branches[i], aliases>
@@ -38,7 +38,7 @@ export type instantiateAliases<aliases> = {
 		? aliases[k] extends schema.cast<infer to, infer kind>
 			? TypeNode<to, kind>
 			: never
-		: aliases[k] extends NormalizedDefinition<"union">
+		: aliases[k] extends NormalizedUnionSchema
 		  ? instantiateSchemaBranches<aliases[k]["branches"]>
 		  : aliases[k] extends readonly [...infer branches]
 		    ? instantiateSchemaBranches<branches>
@@ -76,7 +76,7 @@ export type validateMorphChild<def> = [def] extends [
 	  ? validateIntersectionSchema<def>
 	  : exactMessageOnError<
 				def & object,
-				NormalizedDefinition<keyof def & BasisKind>
+				Declaration<keyof def & BasisKind>["normalizedSchema"]
 	    >
 
 export type instantiateMorphChild<def> = def extends Schema<BasisKind>
