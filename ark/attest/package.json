@@ -1,24 +1,25 @@
 {
 	"name": "@arktype/attest",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
 		"url": "https://arktype.io"
 	},
 	"type": "module",
-	"main": "./dist/main.js",
-	"types": "./dist/main.d.ts",
+	"main": "./dist/main.cjs",
+	"types": "./dist/main.d.cts",
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",
-			"types": "./dist/main.d.ts",
-			"import": "./dist/main.js",
-			"default": "./dist/main.cjs"
-		},
-		"./internal/*": {
-			"arktype-repo": "./*",
-			"import": "./dist/*"
+			"import": {
+				"types": "./dist/main.d.ts",
+				"default": "./dist/main.js"
+			},
+			"default": {
+				"types": "./dist/main.d.cts",
+				"default": "./dist/main.cjs"
+			}
 		}
 	},
 	"files": [
@@ -35,7 +36,9 @@
 		"arktype": "workspace:*",
 		"@arktype/fs": "workspace:*",
 		"@arktype/util": "workspace:*",
-		"@typescript/vfs": "1.5.0",
+		"@typescript/vfs": "1.5.0"
+	},
+	"devDependencies": {
 		"typescript": "5.3.2"
 	},
 	"peerDependencies": {

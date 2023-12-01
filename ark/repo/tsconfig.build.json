@@ -1,10 +1,8 @@
 {
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
-		"noEmit": false,
-		"module": "CommonJS",
-		"moduleResolution": "Node",
-		"customConditions": null,
-		"verbatimModuleSyntax": false
-	}
+		"outDir": "dist",
+		"noEmit": false
+	},
+	"exclude": ["dist", "__tests__"]
 }

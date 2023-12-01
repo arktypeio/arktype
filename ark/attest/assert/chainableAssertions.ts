@@ -8,7 +8,7 @@ import {
 	type SnapshotArgs
 } from "../snapshot/snapshot.js"
 import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
-import { getArgTypesAtPosition } from "../tsserver/getArgTypesAtPosition.js"
+import type { Completions } from "../tsserver/analyzeAssertCall.js"
 import { chainableNoOpProxy } from "../utils.js"
 import { assertEquals } from "./assertEquals.js"
 import type { AssertionContext } from "./attest.js"
@@ -65,7 +65,7 @@ export class ChainableAssertions implements AssertionRecord {
 	get snap(): snapProperty<unknown, AssertionKind> {
 		// Use variadic args to distinguish undefined being passed explicitly from no args
 		const inline = (...args: unknown[]) => {
-			const snapName = (args.at(1) ?? "snap") as string
+			const snapName = this.ctx.lastSnapName ?? "snap"
 			const expectedSerialized = this.serialize(args[0])
 			if (!args.length || this.ctx.cfg.updateSnapshots) {
 				if (this.snapRequiresUpdate(expectedSerialized)) {
@@ -153,10 +153,22 @@ export class ChainableAssertions implements AssertionRecord {
 		if (!this.ctx.cfg.skipTypes) {
 			assertEqualOrMatching(
 				matchValue,
-				getArgTypesAtPosition(this.ctx.position).errors.join("\n"),
+				this.ctx.assertionData?.errors.join("\n"),
 				this.ctx
 			)
 		}
+	}
+
+	get completions() {
+		if (this.ctx.cfg.skipTypes) {
+			return chainableNoOpProxy
+		}
+		const completions = this.ctx.assertionData?.completions
+		checkCompletionsForErrors(completions)
+		this.ctx.actual = completions
+		this.ctx.lastSnapName = "completions"
+
+		return this.snap
 	}
 
 	get type() {
@@ -168,33 +180,24 @@ export class ChainableAssertions implements AssertionRecord {
 		const self = this
 		return {
 			get toString() {
-				self.ctx.actual = getArgTypesAtPosition(self.ctx.position).args[0].type
+				self.ctx.actual = self.ctx.assertionData?.args[0].type
 				return self.immediateOrChained()
 			},
 			get errors() {
-				self.ctx.actual = getArgTypesAtPosition(self.ctx.position).errors.join(
-					"\n"
-				)
+				self.ctx.actual = self.ctx.assertionData?.errors.join("\n")
 				self.ctx.allowRegex = true
 				return self.immediateOrChained()
+			},
+			get completions() {
+				return self.completions
 			}
 		}
 	}
-
-	// get typed() {
-	// 	if (this.ctx.cfg.skipTypes) {
-	// 		return undefined
-	// 	}
-	// 	const assertionData = getTypeDataAtPos(this.ctx.position)
-	// 	if (!assertionData.type.expected) {
-	// 		throw new Error(
-	// 			`Expected an 'as' expression after 'typed' prop access at position ${this.ctx.position.char} on ` +
-	// 				`line ${this.ctx.position.line} of ${this.ctx.position.file}.`
-	// 		)
-	// 	}
-	// 	assertExpectedType(assertionData)
-	// 	return undefined
-	// }
+}
+const checkCompletionsForErrors = (completions?: Completions) => {
+	if (typeof completions === "string") {
+		throw new Error(completions)
+	}
 }
 
 export type AssertionKind = "value" | "type"
@@ -252,18 +255,19 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	snap: snapProperty<expected, kind>
 	equals: (value: expected) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
+	completions: (value?: Completions) => void
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }
 
 export type TypeAssertionsRoot = {
 	type: TypeAssertionProps
-	//typed: unknown
 }
 
 export type TypeAssertionProps = {
 	toString: valueFromTypeAssertion<string>
 	errors: valueFromTypeAssertion<string | RegExp, string>
+	completions: (value?: Completions) => void
 }
 
 export type ExternalSnapshotOptions = {

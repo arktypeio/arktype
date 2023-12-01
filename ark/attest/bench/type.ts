@@ -28,11 +28,7 @@ export type BenchTypeAssertions = {
 	types: (instantiations?: Measure<TypeUnit>) => void
 }
 
-let __virtualEnv: tsvfs.VirtualTypeScriptEnvironment | undefined
 const getIsolatedEnv = () => {
-	if (__virtualEnv) {
-		return __virtualEnv
-	}
 	const tsconfigInfo = getTsConfigInfoOrThrow()
 	const libFiles = getTsLibFiles(tsconfigInfo.compilerOptions)
 	const projectRoot = process.cwd()
@@ -41,13 +37,12 @@ const getIsolatedEnv = () => {
 		projectRoot,
 		ts
 	)
-	__virtualEnv = tsvfs.createVirtualTypeScriptEnvironment(
+	return tsvfs.createVirtualTypeScriptEnvironment(
 		system,
 		[],
 		ts,
 		tsconfigInfo.compilerOptions
 	)
-	return __virtualEnv
 }
 
 const createFile = (
@@ -107,12 +102,7 @@ const getInstantiationsContributedByNode = (
 	const baselineFile = getBaselineSourceFile(originalFile)
 
 	const baselineFileWithBenchBlock =
-		baselineFile + "\n" + benchBlock.getFullText()
-
-	const instantiationsWithNode = getInstantiationsWithFile(
-		baselineFileWithBenchBlock,
-		fakePath
-	)
+		baselineFile + `\nconst $attestIsolatedBench = ${benchBlock.getFullText()}`
 
 	if (!instantiationsByPath[fakePath]) {
 		console.log(`⏳ attest: Analyzing type assertions...`)
@@ -124,6 +114,11 @@ const getInstantiationsContributedByNode = (
 		instantiationsByPath[fakePath] = instantiationsWithoutNode
 		console.log(`⏳ Cached type assertions \n`)
 	}
+
+	const instantiationsWithNode = getInstantiationsWithFile(
+		baselineFileWithBenchBlock,
+		fakePath
+	)
 
 	return instantiationsWithNode - instantiationsByPath[fakePath]
 }
