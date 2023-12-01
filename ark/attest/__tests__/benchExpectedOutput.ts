@@ -1,4 +1,5 @@
 import { bench } from "@arktype/attest"
+import type { makeComplexType as externalmakeComplexType } from "./utils.js"
 
 const fakeCallOptions = {
 	until: { count: 2 },
@@ -36,7 +37,11 @@ type makeComplexType<S extends string> = S extends `${infer head}${infer tail}`
 
 bench("bench type", () => {
 	return {} as makeComplexType<"defenestration">
-}).types([169, "instantiations"])
+}).types([177, "instantiations"])
+
+bench("bench type from external module", () => {
+	return {} as externalmakeComplexType<"defenestration">
+}).types([193, "instantiations"])
 
 bench(
 	"bench call and type",
@@ -46,4 +51,6 @@ bench(
 	fakeCallOptions
 )
 	.mean([2, "ms"])
-	.types([337, "instantiations"])
+	.types([345, "instantiations"])
+
+bench("empty", () => {}).types([0, "instantiations"])

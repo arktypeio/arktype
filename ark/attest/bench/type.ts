@@ -35,7 +35,12 @@ const getIsolatedEnv = () => {
 	}
 	const tsconfigInfo = getTsConfigInfoOrThrow()
 	const libFiles = getTsLibFiles(tsconfigInfo.compilerOptions)
-	const system = tsvfs.createSystem(libFiles.defaultMapFromNodeModules)
+	const projectRoot = process.cwd()
+	const system = tsvfs.createFSBackedSystem(
+		libFiles.defaultMapFromNodeModules,
+		projectRoot,
+		ts
+	)
 	__virtualEnv = tsvfs.createVirtualTypeScriptEnvironment(
 		system,
 		[],
@@ -65,73 +70,62 @@ const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	return instantiationCount
 }
 
-const transformBenchSource = (
-	originalFile: ts.SourceFile,
-	isolatedBenchExpressionText: string,
-	includeBenchFn: boolean,
-	fakePath: string
-) => {
-	getIsolatedEnv().createFile(fakePath, originalFile.getFullText())
-	const fileToTransform = getIsolatedEnv().getSourceFile(fakePath)!
-	const currentBenchStatement =
-		getDescendants(fileToTransform).find(
-			(descendant) =>
-				descendant.kind === ts.SyntaxKind.ExpressionStatement &&
-				descendant.getText() === isolatedBenchExpressionText
-		) ??
-		throwInternalError(
-			`Could not find a bench expression with text ${isolatedBenchExpressionText}`
-		)
-	if (!includeBenchFn) {
-		return fileToTransform
-			.getFullText()
-			.replace(currentBenchStatement.getFullText(), "")
-	}
-	return fileToTransform.getText()
-}
-
 const getFirstAncestorByKindOrThrow = (node: ts.Node, kind: ts.SyntaxKind) =>
 	getAncestors(node).find((ancestor) => ancestor.kind === kind) ??
 	throwInternalError(
 		`Could not find an ancestor of kind ${ts.SyntaxKind[kind]}`
 	)
 
+const getBaselineSourceFile = (originalFile: ts.SourceFile): string => {
+	const benchCalls = getExpressionsByName(originalFile, ["bench"])
+
+	const benchExpressions = benchCalls.map((node) =>
+		getFirstAncestorByKindOrThrow(node, ts.SyntaxKind.ExpressionStatement)
+	)
+
+	let baselineSourceFileText = originalFile.getFullText()
+
+	benchExpressions.forEach((benchExpression) => {
+		baselineSourceFileText = baselineSourceFileText.replace(
+			benchExpression.getFullText(),
+			""
+		)
+	})
+
+	return baselineSourceFileText
+}
+
 const instantiationsByPath: { [path: string]: number } = {}
 
-const getInstantiationsContributedByNode = (benchCall: ts.CallExpression) => {
-	const originalFile = benchCall.getSourceFile()
+const getInstantiationsContributedByNode = (
+	benchBlock: ts.FunctionExpression | ts.ArrowFunction
+) => {
+	const originalFile = benchBlock.getSourceFile()
 	const originalPath = filePath(originalFile.fileName)
 	const fakePath = originalPath + ".nonexistent.ts"
-	const benchExpression = getFirstAncestorByKindOrThrow(
-		benchCall,
-		ts.SyntaxKind.ExpressionStatement
+
+	const baselineFile = getBaselineSourceFile(originalFile)
+
+	const baselineFileWithBenchBlock =
+		baselineFile + "\n" + benchBlock.getFullText()
+
+	const instantiationsWithNode = getInstantiationsWithFile(
+		baselineFileWithBenchBlock,
+		fakePath
 	)
-	const originalBenchExpressionText = benchExpression.getText()
+
 	if (!instantiationsByPath[fakePath]) {
 		console.log(`⏳ attest: Analyzing type assertions...`)
-		const instantiationsWithNode = getInstantiationsWithFile(
-			transformBenchSource(
-				originalFile,
-				originalBenchExpressionText,
-				true,
-				fakePath
-			),
+		const instantiationsWithoutNode = getInstantiationsWithFile(
+			baselineFile,
 			fakePath
 		)
-		instantiationsByPath[fakePath] = instantiationsWithNode
+
+		instantiationsByPath[fakePath] = instantiationsWithoutNode
 		console.log(`⏳ Cached type assertions \n`)
 	}
 
-	const instantiationsWithoutNode = getInstantiationsWithFile(
-		transformBenchSource(
-			originalFile,
-			originalBenchExpressionText,
-			false,
-			fakePath
-		),
-		fakePath
-	)
-	return instantiationsByPath[fakePath] - instantiationsWithoutNode
+	return instantiationsWithNode - instantiationsByPath[fakePath]
 }
 
 export const createBenchTypeAssertion = (
@@ -141,6 +135,7 @@ export const createBenchTypeAssertion = (
 		ctx.lastSnapCallPosition = caller()
 		const instance = TsServer.instance
 		const file = instance.getSourceFileOrThrow(ctx.benchCallPosition.file)
+
 		const benchNode = nearestCallExpressionChild(
 			file,
 			getAbsolutePosition(file, ctx.benchCallPosition)
@@ -149,9 +144,18 @@ export const createBenchTypeAssertion = (
 		if (!benchFn) {
 			throw new Error("Unable to retrieve bench expression node.")
 		}
-		const instantiationsContributed = getInstantiationsContributedByNode(
-			benchFn[0]
-		)
+
+		const benchBody = getDescendants(benchFn[0]).find(
+			(node) => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+		) as ts.ArrowFunction | ts.FunctionExpression | undefined
+
+		if (!benchBody) {
+			throw new Error("Unable to retrieve bench body node.")
+		}
+
+		const instantiationsContributed =
+			getInstantiationsContributedByNode(benchBody)
+
 		const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
 			instantiationsContributed,
 			args[0]
