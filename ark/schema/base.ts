@@ -28,7 +28,7 @@ import { unflattenConstraints } from "./sets/intersection.js"
 import type {
 	extractIn,
 	extractOut,
-	inKindOf,
+	ioKindOf,
 	outKindOf
 } from "./sets/morph.js"
 import {
@@ -98,19 +98,14 @@ export class BaseNode<t = unknown> extends DynamicBase<
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
-	readonly referencesById: Record<string, BaseNode> = this.children.reduce(
+	readonly referencesById: Record<string, Node> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
 	)
-	readonly references: readonly BaseNode[] = Object.values(this.referencesById)
-	readonly contributesReferencesById: Record<string, BaseNode>
-	readonly contributesReferences: readonly BaseNode[]
+	readonly references: readonly Node[] = Object.values(this.referencesById)
+	readonly contributesReferencesById: Record<string, Node>
+	readonly contributesReferences: readonly Node[]
 
-<<<<<<< HEAD
-=======
-	declare allows: (data: unknown) => data is t
-	declare traverse: (data: unknown, problems: Problems) => void
->>>>>>> beta
 	// we use declare here to avoid it being initialized outside the constructor
 	// and detected as an overwritten key
 	declare readonly description: string
@@ -139,11 +134,6 @@ export class BaseNode<t = unknown> extends DynamicBase<
 				? this.referencesById
 				: { ...this.referencesById, [this.id]: this }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
-<<<<<<< HEAD
-=======
-		this.allows = compileAnonymous(this as never, "allows")
-		this.traverse = compileAnonymous(this as never, "traverse")
->>>>>>> beta
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
@@ -169,7 +159,7 @@ export class BaseNode<t = unknown> extends DynamicBase<
 	}
 
 	inCache?: BaseNode;
-	get in(): Node<inKindOf<this["kind"]>, extractIn<t>> {
+	get in(): Node<ioKindOf<this["kind"]>, extractIn<t>> {
 		if (!this.inCache) {
 			this.inCache = this.getIo("in")
 		}

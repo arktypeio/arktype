@@ -56,7 +56,7 @@ export class BaseType<t> extends BaseNode<t> {
 		return this.hasKind("intersection") && this.constraints.length === 0
 	}
 
-	isNever(): this is TypeNode<never, "union"> {
+	isNever(): this is BaseType<never> {
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
@@ -64,7 +64,7 @@ export class BaseType<t> extends BaseNode<t> {
 		return this
 	}
 
-	array(): TypeNode<t[], "intersection"> {
+	array(): IntersectionNode<t[]> {
 		return this as never
 	}
 

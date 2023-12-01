@@ -7,11 +7,11 @@ import {
 	type listable,
 	type mutable
 } from "@arktype/util"
-import type { BaseNode, Node } from "../base.js"
+import type { BaseAttachments, BaseNode, Node } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
-import { In } from "../shared/compilation.js"
+import { In, type Problems } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	NodeAttachments,
@@ -31,6 +31,7 @@ import {
 import { Disjoint } from "../shared/disjoint.js"
 import type { Schema } from "../shared/nodes.js"
 import { isNode } from "../shared/symbols.js"
+import { BaseType } from "../type.js"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {
@@ -217,6 +218,12 @@ export const IntersectionImplementation = defineNode({
 			: node.constraints.join(" and ")
 	}
 })
+
+export class IntersectionNode<t = unknown> extends BaseType<t> {
+	constructor(baseAttachments: BaseAttachments) {
+		super(baseAttachments)
+	}
+}
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,

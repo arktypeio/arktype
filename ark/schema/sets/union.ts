@@ -1,6 +1,6 @@
 import { isArray, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
-import { In } from "../shared/compilation.js"
+import { In, type Problems } from "../shared/compilation.js"
 import type {
 	NodeAttachments,
 	declareNode,
@@ -9,6 +9,7 @@ import type {
 import { basisKinds, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Schema } from "../shared/nodes.js"
+import { BaseType } from "../type.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
 
@@ -179,6 +180,8 @@ export const UnionImplementation = defineNode({
 			: branchInvocations.join("\n")
 	}
 })
+
+export class UnionNode<t = unknown> extends BaseType<t> {}
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
 // 		// TODO: error messages for traversal

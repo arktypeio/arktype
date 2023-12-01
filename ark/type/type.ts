@@ -28,7 +28,6 @@ import type { inferIntersection } from "./parser/semantic/intersections.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
-	MorphAst,
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import { bindThis, type Scope } from "./scope.js"

@@ -21,6 +21,7 @@ import type {
 import { basisKinds, defineNode, type NodeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Schema, reducibleKindOf } from "../shared/nodes.js"
+import { BaseType } from "../type.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
 
@@ -39,7 +40,7 @@ export type Out<o = any> = ["=>", o]
 
 export type MorphInner = withAttributes<{
 	readonly in: ValidatorNode
-	readonly out?: ValidatorNode
+	readonly out: ValidatorNode
 	readonly morph: readonly Morph[]
 }>
 
@@ -134,11 +135,15 @@ export const MorphImplementation = defineNode({
 		traverseAllows: (data, problems) => node.in.traverseAllows(data, problems),
 		traverseApply: (data, problems) => node.in.traverseApply(data, problems),
 		inCache: node.inner.in,
-		// TODO: reference?
 		outCache: node.inner.out ?? node.scope.builtin.unknown
 	}),
 	compile: (node, ctx) => node.in.compileBody(ctx)
 })
+
+export class MorphNode<t = unknown> extends BaseType<t> {
+	inCache = this.inner.in
+	outCache = this.inner.out ?? this.scope.builtin.unknown
+}
 
 export type inferMorphOut<out> = out extends CheckResult<infer t>
 	? out extends null
@@ -147,11 +152,7 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		: t
 	: Exclude<out, Problem>
 
-export type inKindOf<kind extends NodeKind> = kind extends "morph"
-	? ValidatorKind
-	: reducibleKindOf<kind>
-
-export type outKindOf<kind extends NodeKind> = kind extends "morph"
+export type ioKindOf<kind extends NodeKind> = kind extends "morph"
 	? ValidatorKind
 	: reducibleKindOf<kind>
 
