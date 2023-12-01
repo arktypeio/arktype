@@ -60,10 +60,10 @@ export type entriesOf<o extends object> = entryOf<o>[]
 export const entriesOf = <o extends object>(o: o) =>
 	Object.entries(o) as entriesOf<o>
 
-type Entry<key extends PropertyKey = PropertyKey, value = unknown> = readonly [
-	key: key,
-	value: value
-]
+export type Entry<
+	key extends PropertyKey = PropertyKey,
+	value = unknown
+> = readonly [key: key, value: value]
 
 export type fromEntries<entries extends readonly Entry[]> = evaluate<{
 	[entry in entries[number] as entry[0]]: entry[1]

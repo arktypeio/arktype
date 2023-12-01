@@ -7,7 +7,7 @@ import {
 	type listable,
 	type mutable
 } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { BaseNode, Node } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
@@ -30,6 +30,7 @@ import {
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Schema } from "../shared/nodes.js"
+import { isNode } from "../shared/symbols.js"
 
 export type IntersectionInner = withAttributes<
 	{ basis?: Node<BasisKind> } & {
@@ -266,9 +267,7 @@ const reduceConstraints = (
 }
 
 export const flattenConstraints = (inner: IntersectionInner): ConstraintSet =>
-	Object.values(inner).flatMap((v) =>
-		typeof v === "object" ? (v as UnknownNode) : []
-	)
+	Object.values(inner).flatMap((v) => (isNode(v) ? v : isArray(v) ? v : []))
 
 export const unflattenConstraints = (
 	constraints: ConstraintSet

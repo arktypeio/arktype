@@ -11,7 +11,7 @@ import type {
 	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { BaseNode, Node } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
 import {
@@ -139,7 +139,7 @@ export type NodeKeyDefinition<
 		preserveUndefined?: true
 		child?: true
 		serialize?: (
-			schema: d["inner"][k] extends listable<UnknownNode> | undefined
+			schema: d["inner"][k] extends listable<BaseNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
 				: d["inner"][k]
 		) => JsonData
@@ -155,7 +155,7 @@ export type NodeKeyDefinition<
 			? never
 			: "parse")
 	// require keys containing children specify it
-	| (d["inner"][k] extends listable<UnknownNode> | undefined ? "child" : never)
+	| (d["inner"][k] extends listable<BaseNode> | undefined ? "child" : never)
 >
 
 export type BaseInitializedNode<kind extends NodeKind> = kind extends NodeKind

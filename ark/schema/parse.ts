@@ -6,13 +6,8 @@ import {
 	type PartialRecord,
 	type extend
 } from "@arktype/util"
-import {
-	BaseNode,
-	type BaseAttachments,
-	type Node,
-	type UnknownNode
-} from "./base.js"
-import type { BaseResolutions, ScopeNode } from "./scope.js"
+import { BaseNode, type BaseAttachments, type Node } from "./base.js"
+import type { ScopeNode } from "./scope.js"
 import {
 	defaultInnerKeySerializer,
 	typeKinds,
@@ -73,7 +68,7 @@ export const parse = <defKind extends NodeKind>(
 	)
 	let json: Record<string, unknown> = {}
 	let typeJson: Record<string, unknown> = {}
-	const children: UnknownNode[] = []
+	const children: BaseNode[] = []
 	for (const [k, v] of schemaEntries) {
 		const keyDefinition = implementation.keys[k]
 		if (!(k in implementation.keys)) {
@@ -146,18 +141,16 @@ export const parse = <defKind extends NodeKind>(
 		innerId,
 		typeId,
 		scope: ctx.scope
-	} satisfies UnknownAttachments as BaseAttachments<reducibleKindOf<defKind>>
+	} satisfies BaseAttachments
 	return (globalResolutions[innerId] = instantiateAttachments(baseAttachments))
 }
 
-type UnknownAttachments = Record<keyof BaseAttachments<"union">, any>
-
 type UnknownNodeConstructor<kind extends NodeKind> = new (
-	baseAttachments: BaseAttachments<kind>
+	baseAttachments: BaseAttachments
 ) => Node<kind>
 
 const instantiateAttachments = <kind extends NodeKind>(
-	baseAttachments: BaseAttachments<kind>
+	baseAttachments: BaseAttachments
 ) => {
 	const ctor: UnknownNodeConstructor<kind> = includes(
 		typeKinds,

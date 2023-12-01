@@ -1,5 +1,5 @@
 import { throwInternalError } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { BaseNode, Node } from "../base.js"
 import {
 	nodeKinds,
 	type NodeKind,
@@ -8,7 +8,7 @@ import {
 } from "./define.js"
 import type { Inner, NodeDeclarationsByKind } from "./nodes.js"
 
-export const leftOperandOf = (l: UnknownNode, r: UnknownNode) => {
+export const leftOperandOf = (l: BaseNode, r: BaseNode) => {
 	for (const kind of nodeKinds) {
 		if (l.kind === kind) {
 			return l

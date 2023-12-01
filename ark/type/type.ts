@@ -119,15 +119,7 @@ export type TypeConfig = {
 	mustBe?: string
 }
 
-export type TypeContext = {
-	kind: TypeKind
-}
-
-export class Type<
-	t = unknown,
-	$ = any,
-	c extends TypeContext = { kind: TypeKind }
-> extends BaseType<t, c["kind"]> {
+export class Type<t = unknown, $ = any> extends BaseType<t> {
 	declare [inferred]: t
 	declare inferMorph: t
 
@@ -209,7 +201,7 @@ export class Type<
 		return new Type(super.constrain("predicate", def), this.scope) as never
 	}
 
-	array(): Type<t[], $, { kind: "intersection" }> {
+	array(): Type<t[], $> {
 		return new Type(super.array(), this.scope) as never
 	}
 

@@ -2,7 +2,7 @@
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
 
 import type { intersectUnion, overloadOf, returnOf } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { BaseNode, Node } from "../base.js"
 import type { ScopeNode } from "../scope.js"
 import type { TypeNode } from "../type.js"
 import type { RefinementKind } from "./define.js"
@@ -12,9 +12,9 @@ export const inferred = Symbol("inferred")
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
-export const isNode = (o: unknown): o is UnknownNode =>
-	(o as UnknownNode)?.[arkKind] === "typeNode" ||
-	(o as UnknownNode)?.[arkKind] === "refinementNode"
+export const isNode = (o: unknown): o is BaseNode =>
+	(o as BaseNode)?.[arkKind] === "typeNode" ||
+	(o as BaseNode)?.[arkKind] === "refinementNode"
 
 export type cast<to> = {
 	[inferred]?: to

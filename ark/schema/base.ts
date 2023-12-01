@@ -3,11 +3,26 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
+	type Dict,
+	type Entry,
 	type Json,
 	type entriesOf,
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
+import type {
+	AfterNode,
+	BeforeNode,
+	DivisorNode,
+	MaxLengthNode,
+	MaxNode,
+	MinLengthNode,
+	MinNode,
+	OptionalNode,
+	PatternNode,
+	PredicateNode,
+	RequiredNode
+} from "./refinements/refinement.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
 import type {
@@ -41,35 +56,34 @@ import {
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
-import {
-	NodeImplementationByKind,
-	type Attachments,
-	type Inner,
-	type childKindOf
-} from "./shared/nodes.js"
+import { NodeImplementationByKind } from "./shared/nodes.js"
 import { arkKind, inferred } from "./shared/symbols.js"
-import type { TypeNode } from "./type.js"
+import type {
+	DomainNode,
+	IntersectionNode,
+	MorphNode,
+	ProtoNode,
+	UnionNode,
+	UnitNode
+} from "./type.js"
 
-export type BaseAttachments<kind extends NodeKind> = {
+export interface BaseAttachments {
 	alias?: string
 	readonly id: string
-	readonly kind: kind
-	readonly inner: Inner<kind>
-	readonly entries: entriesOf<Inner<kind>>
+	readonly kind: NodeKind
+	readonly inner: Dict
+	readonly entries: readonly Entry[]
 	readonly json: Json
 	readonly typeJson: Json
 	readonly collapsibleJson: Json
-	readonly children: Node<childKindOf<kind>>[]
+	readonly children: Node[]
 	readonly innerId: string
 	readonly typeId: string
 	readonly scope: ScopeNode
 }
 
-export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
-	Inner<kind> &
-		Attachments<kind> &
-		// TODO: extract out
-		BaseAttachments<kind> & { (data: unknown): CheckResult<t> }
+export class BaseNode<t = unknown> extends DynamicBase<
+	BaseAttachments & { (data: unknown): CheckResult<extractOut<t>> }
 > {
 	declare infer: extractOut<t>;
 	declare [inferred]: t;
@@ -84,21 +98,19 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
-	readonly referencesById: Record<string, UnknownNode> = this.children.reduce(
+	readonly referencesById: Record<string, BaseNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
 	)
-	readonly references: readonly UnknownNode[] = Object.values(
-		this.referencesById
-	)
-	readonly contributesReferencesById: Record<string, UnknownNode>
-	readonly contributesReferences: readonly UnknownNode[]
+	readonly references: readonly BaseNode[] = Object.values(this.referencesById)
+	readonly contributesReferencesById: Record<string, BaseNode>
+	readonly contributesReferences: readonly BaseNode[]
 
 	// we use declare here to avoid it being initialized outside the constructor
 	// and detected as an overwritten key
 	declare readonly description: string
 
-	constructor(baseAttachments: BaseAttachments<kind>) {
+	constructor(baseAttachments: BaseAttachments) {
 		super(baseAttachments as never)
 		for (const k in baseAttachments.inner) {
 			if (k in this) {
@@ -122,8 +134,6 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				? this.referencesById
 				: { ...this.referencesById, [this.id]: this }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
-		// this.allows = compileAnonymous(this as never, "allows")
-		// this.traverse = compileAnonymous(this as never, "traverse")
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never
@@ -148,23 +158,23 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		return this.implementation.compile(this as never, ctx)
 	}
 
-	inCache?: UnknownNode;
-	get in(): Node<inKindOf<kind>, extractIn<t>> {
+	inCache?: BaseNode;
+	get in(): Node<inKindOf<this["kind"]>, extractIn<t>> {
 		if (!this.inCache) {
 			this.inCache = this.getIo("in")
 		}
 		return this.inCache as never
 	}
 
-	outCache?: UnknownNode
-	get out(): Node<outKindOf<kind>, extractOut<t>> {
+	outCache?: BaseNode
+	get out(): Node<outKindOf<this["kind"]>, extractOut<t>> {
 		if (!this.outCache) {
 			this.outCache = this.getIo("out")
 		}
 		return this.outCache as never
 	}
 
-	private getIo(kind: "in" | "out"): UnknownNode {
+	private getIo(kind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) {
 			return this
 		}
@@ -175,7 +185,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 				continue
 			}
 			if (keyDefinition.child) {
-				const childValue = v as listable<UnknownNode>
+				const childValue = v as listable<BaseNode>
 				ioInner[k] = isArray(childValue)
 					? childValue.map((child) => child[kind])
 					: childValue[kind]
@@ -190,7 +200,7 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		return this.json
 	}
 
-	equals(other: UnknownNode) {
+	equals(other: BaseNode) {
 		return this.typeId === other.typeId
 	}
 
@@ -230,11 +240,11 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 		return this.description
 	}
 
-	private static intersectionCache: Record<string, UnknownNode | Disjoint> = {}
-	intersect<other extends Node>(
+	private static intersectionCache: Record<string, BaseNode | Disjoint> = {}
+	intersect<other extends BaseNode>(
 		other: other
-	): intersectionOf<kind, other["kind"]>
-	intersect(other: UnknownNode): UnknownNode | Disjoint | null {
+	): intersectionOf<this["kind"], other["kind"]>
+	intersect(other: BaseNode): BaseNode | Disjoint | null {
 		const cacheKey = `${this.typeId}&${other.typeId}`
 		if (BaseNode.intersectionCache[cacheKey] !== undefined) {
 			return BaseNode.intersectionCache[cacheKey]
@@ -266,16 +276,16 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 			: null
 	}
 
-	intersectClosed<other extends Node>(
+	intersectClosed<other extends BaseNode>(
 		other: other
-	): Node<kind | other["kind"]> | Disjoint | null {
+	): Node<this["kind"] | other["kind"]> | Disjoint | null {
 		if (this.equals(other)) {
 			// TODO: meta
 			return this as never
 		}
 		const l = leftOperandOf(this, other)
 		const thisIsLeft = l === this
-		const r: UnknownNode = thisIsLeft ? other : this
+		const r: BaseNode = thisIsLeft ? other : this
 		const intersections = l.implementation.intersections
 		const intersector = (intersections as any)[r.kind] ?? intersections.default
 		const result = intersector?.(l, r)
@@ -290,9 +300,22 @@ export class BaseNode<t, kind extends NodeKind> extends DynamicBase<
 	}
 }
 
-export type Node<
-	kind extends NodeKind = NodeKind,
-	t = unknown
-> = kind extends TypeKind ? TypeNode<t, kind> : BaseNode<t, kind>
-
-export type UnknownNode = BaseNode<unknown, any>
+export type Node<kind extends NodeKind = NodeKind, t = unknown> = {
+	union: UnionNode<t>
+	morph: MorphNode<t>
+	intersection: IntersectionNode<t>
+	unit: UnitNode<t>
+	proto: ProtoNode<t>
+	domain: DomainNode<t>
+	divisor: DivisorNode
+	min: MinNode
+	max: MaxNode
+	minLength: MinLengthNode
+	maxLength: MaxLengthNode
+	after: AfterNode
+	before: BeforeNode
+	pattern: PatternNode
+	predicate: PredicateNode
+	required: RequiredNode
+	optional: OptionalNode
+}[kind]

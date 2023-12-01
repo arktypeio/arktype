@@ -5,7 +5,7 @@ import {
 	throwParseError,
 	type Dict
 } from "@arktype/util"
-import type { Node, UnknownNode } from "./base.js"
+import type { BaseNode, Node } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type {
 	instantiateAliases,
@@ -47,7 +47,7 @@ export class ScopeNode<r extends object = any> {
 	declare static keywords: typeof keywords
 	readonly cls = ScopeNode
 	readonly resolutions = {} as r
-	readonly referencesById: Record<string, UnknownNode> = {}
+	readonly referencesById: Record<string, Node> = {}
 	readonly references: readonly Node[]
 	protected resolved = false
 
