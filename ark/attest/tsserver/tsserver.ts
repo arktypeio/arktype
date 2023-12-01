@@ -2,8 +2,6 @@ import { fromCwd, type SourcePosition } from "@arktype/fs"
 import * as tsvfs from "@typescript/vfs"
 import { dirname, join } from "node:path"
 import ts from "typescript"
-import { getFileKey } from "../utils.js"
-
 export class TsServer {
 	programFilePaths!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
@@ -18,6 +16,7 @@ export class TsServer {
 			return TsServer.#instance
 		}
 		const tsLibPaths = getTsLibFiles(tsConfigInfo.compilerOptions)
+
 		this.programFilePaths = ts
 			.parseJsonConfigFileContent(
 				this.tsConfigInfo.compilerOptions,
@@ -25,20 +24,27 @@ export class TsServer {
 				dirname(this.tsConfigInfo.path)
 			)
 			.fileNames.filter((path) => path.startsWith(fromCwd()))
+
+		const system = tsvfs.createFSBackedSystem(
+			tsLibPaths.defaultMapFromNodeModules,
+			dirname(this.tsConfigInfo.path),
+			ts
+		)
+
 		this.virtualEnv = tsvfs.createVirtualTypeScriptEnvironment(
-			ts.sys,
-			[...tsLibPaths.resolvedPaths, ...this.programFilePaths],
+			system,
+			this.programFilePaths,
 			ts,
 			this.tsConfigInfo.compilerOptions
 		)
+
 		TsServer.#instance = this
 	}
 
 	getSourceFileOrThrow(path: string) {
-		const fileKey = getFileKey(path)
-		const file = this.virtualEnv.getSourceFile(fileKey)
+		const file = this.virtualEnv.getSourceFile(path)
 		if (!file) {
-			throw new Error(`Could not find ${fileKey}.`)
+			throw new Error(`Could not find ${path}.`)
 		}
 		return file
 	}
