@@ -65,7 +65,7 @@ export class ChainableAssertions implements AssertionRecord {
 	get snap(): snapProperty<unknown, AssertionKind> {
 		// Use variadic args to distinguish undefined being passed explicitly from no args
 		const inline = (...args: unknown[]) => {
-			const snapName = (args.at(1) ?? "snap") as string
+			const snapName = this.ctx.lastSnapName ?? "snap"
 			const expectedSerialized = this.serialize(args[0])
 			if (!args.length || this.ctx.cfg.updateSnapshots) {
 				if (this.snapRequiresUpdate(expectedSerialized)) {
@@ -166,7 +166,9 @@ export class ChainableAssertions implements AssertionRecord {
 		const completions = this.ctx.assertionData?.completions
 		checkCompletionsForErrors(completions)
 		this.ctx.actual = completions
-		return this.immediateOrChained()
+		this.ctx.lastSnapName = "completions"
+
+		return this.snap
 	}
 
 	get type() {
@@ -187,10 +189,7 @@ export class ChainableAssertions implements AssertionRecord {
 				return self.immediateOrChained()
 			},
 			get completions() {
-				const completions = self.ctx.assertionData?.completions
-				checkCompletionsForErrors(completions)
-				self.ctx.actual = completions
-				return self.immediateOrChained()
+				return self.completions
 			}
 		}
 	}
@@ -233,7 +232,6 @@ export type ChainContext = {
 
 export type functionAssertions<kind extends AssertionKind> = {
 	throws: inferredAssertions<[message: string | RegExp], kind, string>
-	completions: inferredAssertions<[Completions], kind, Completions>
 } & ("type" extends kind
 	? {
 			throwsAndHasTypeError: (message: string | RegExp) => undefined
@@ -257,7 +255,7 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	snap: snapProperty<expected, kind>
 	equals: (value: expected) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
-	completions: (value: expected) => nextAssertions<kind>
+	completions: (value?: Completions) => void
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }
@@ -269,7 +267,7 @@ export type TypeAssertionsRoot = {
 export type TypeAssertionProps = {
 	toString: valueFromTypeAssertion<string>
 	errors: valueFromTypeAssertion<string | RegExp, string>
-	completions: valueFromTypeAssertion<Completions>
+	completions: (value?: Completions) => void
 }
 
 export type ExternalSnapshotOptions = {

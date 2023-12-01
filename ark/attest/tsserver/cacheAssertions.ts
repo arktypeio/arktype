@@ -1,7 +1,7 @@
 import { writeJson } from "@arktype/fs"
 import { rmSync } from "node:fs"
 import { ensureCacheDirs, getConfig, type AttestConfig } from "../config.js"
-import { writeCachedInlineSnapshotUpdates } from "../snapshot/writeSnapshot.js"
+import { writeSnapshotUpdatesOnExit } from "../snapshot/writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 
 export const setup = (options: Partial<AttestConfig> = {}) => {
@@ -22,12 +22,5 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 }
 
 export const cleanup = () => {
-	const config = getConfig()
-	try {
-		writeCachedInlineSnapshotUpdates()
-	} finally {
-		if (!config.preserveCache) {
-			rmSync(config.cacheDir, { recursive: true, force: true })
-		}
-	}
+	writeSnapshotUpdatesOnExit()
 }

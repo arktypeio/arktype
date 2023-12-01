@@ -1,3 +1,4 @@
+import { transform } from "@arktype/util"
 import ts from "typescript"
 import type { StringifiableType } from "./analysis.js"
 import {
@@ -53,52 +54,42 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 	const descendants = getDescendants(arg)
 	const file = attestCall.getSourceFile()
 	const text = file.getFullText()
-	let completions: Completions | string = {}
-	const duplicatedPrefixes: string[] = []
+	const completions: Completions | string = {}
 
 	for (const descendant of descendants) {
-		if (ts.isStringLiteral(descendant)) {
+		if (ts.isStringLiteral(descendant) || ts.isTemplateLiteral(descendant)) {
 			// descendant.pos tends to be an open quote while d.end tends to be right after the closing quote.
 			// It seems to be more consistent using this to get the pos for the completion over descendant.pos
 			const lastPositionOfInnerString =
-				descendant.end - (/["']/.test(text[descendant.end - 1]) ? 1 : 2)
-
+				descendant.end - (/["'`]/.test(text[descendant.end - 1]) ? 1 : 2)
 			const completionData =
 				TsServer.instance.virtualEnv.languageService.getCompletionsAtPosition(
 					file.fileName,
 					lastPositionOfInnerString,
 					undefined
 				)
+			const prefix =
+				"text" in descendant ? descendant.text : descendant.getText()
 
-			const prefix = descendant.text
 			const entries = completionData?.entries ?? []
 
-			if (
-				(entries.length === 1 && entries[0].name !== prefix) ||
-				entries.length > 1
-			) {
-				if (prefix in completions) {
-					duplicatedPrefixes.push(prefix)
-				} else {
-					for (const entry of entries) {
-						if (
-							entry.name.startsWith(prefix) &&
-							entry.name.length > prefix.length
-						) {
-							completions[prefix] ??= []
-							completions[prefix].push(entry.name)
-						}
+			if (prefix in completions) {
+				return `Encountered multiple completion candidates for string(s) '${prefix}'. Assertions on the same prefix must be split into multiple attest calls so the results can be distinguished.`
+			} else {
+				completions[prefix] = []
+				for (const entry of entries) {
+					if (
+						entry.name.startsWith(prefix) &&
+						entry.name.length > prefix.length
+					) {
+						completions[prefix].push(entry.name)
 					}
 				}
 			}
 		}
 	}
 
-	if (duplicatedPrefixes.length) {
-		completions = `Encountered multiple completion candidates for string(s) '${duplicatedPrefixes.join(
-			", "
-		)}'. Assertions on the same prefix must be split into multiple attest calls so the results can be distinguished.`
-	}
-
-	return completions
+	return transform(completions, (prefix, entries) =>
+		entries.length >= 1 ? [prefix, entries] : []
+	)
 }

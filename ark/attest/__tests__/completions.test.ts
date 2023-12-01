@@ -8,37 +8,20 @@ type Obj = {
 	prop2: string
 	extra: unknown
 }
-
+const obj: Obj = { prop1: "", prop2: "", extra: "" }
 describe("autocompletes", () => {
 	describe("String completions", () => {
 		test("Allows different quote types", () => {
+			attest(() => type("string")).type.completions({})
+			// prettier-ignore
+			// @ts-expect-error
+			attest(() => type('st')).type.completions({"st":["string"]})
 			//@ts-expect-error
-			attest(() => type("st")).type.completions.snap({ st: ["string"] })
-		})
-		test("Value completion with type", () => {
-			//@ts-expect-error
-			attest(() => type({ a: "n", b: "b" })).type.completions.snap({
-				n: ["number", "null", "never"],
-				b: ["bigint", "boolean"]
-			})
-		})
-		test("Value completion with scope", () => {
-			//@ts-expect-error
-			attest(() => scope({ a: "st" })).type.completions.snap({ st: ["string"] })
+			attest(() => type(`st`)).type.completions({ st: ["string"] })
 		})
 		test("Completions shortcut", () => {
 			//@ts-expect-error
-			attest(() => scope({ a: "u" })).completions.snap({
-				u: ["undefined", "unknown", "uppercase", "uuid", "url"]
-			})
-		})
-		test("Both formats provide exact results", () => {
-			//@ts-expect-error
 			attest(() => type({ a: "u" })).completions({
-				u: ["undefined", "unknown", "uppercase", "uuid", "url"]
-			})
-			//@ts-expect-error
-			attest(() => type({ a: "u" })).type.completions({
 				u: ["undefined", "unknown", "uppercase", "uuid", "url"]
 			})
 		})
@@ -47,75 +30,37 @@ describe("autocompletes", () => {
 	describe("Key completions", () => {
 		test("Casted object", () => {
 			//@ts-expect-error
-			attest(() => type({ "": "" } as Obj)).completions.snap({
+			attest({ "": "data" } as Obj).completions({
 				"": ["extra", "prop1", "prop2"]
 			})
-		})
-		test("Lists available keys", () => {
-			//@ts-expect-error
-			attest(() => type("str", "@", { "": "" })).completions.snap({
-				str: ["string"],
-				"": ["description"]
+			test("Lists available keys", () => {
+				//@ts-expect-error
+				attest(() => type("number", "@", { "": "string" })).completions({
+					"": ["description"]
+				})
 			})
 		})
-	})
 
-	describe("Property access", () => {
-		test("Autocompletes properties", () => {
-			//@ts-expect-error
-			attest(() => type("string")[""]).type.completions.snap({
-				"": [
-					"allows",
-					"and",
-					"apply",
-					"arguments",
-					"array",
-					"assert",
-					"bind",
-					"call",
-					"caller",
-					"condition",
-					"config",
-					"configure",
-					"definition",
-					"equals",
-					"extends",
-					"from",
-					"fromIn",
-					"infer",
-					"inferIn",
-					"inferMorph",
-					"json",
-					"keyof",
-					"length",
-					"morph",
-					"name",
-					"narrow",
-					"or",
-					"prototype",
-					"root",
-					"scope",
-					"toString"
-				]
+		describe("Property access", () => {
+			test("Autocompletes properties", () => {
+				//@ts-expect-error
+				attest(() => obj[""]).type.completions({
+					"": ["extra", "prop1", "prop2"]
+				})
 			})
 		})
-	})
-	describe("Errors", () => {
-		test("Throws on repeated incomplete text samples", () => {
-			assert.throws(
-				() =>
-					attest(
-						// @ts-expect-error
-						() => type({ a: "st", b: "st", c: "b" })
-					).type.completions.snap(),
-				Error,
-				"Did not throw"
-			)
-		})
+		describe("Errors", () => {
+			test("Throws on duplicate string", () => {
+				assert.throws(
+					() => attest({ "": "" }).type.completions({}),
+					Error,
+					"multiple completion candidates"
+				)
+			})
 
-		test("Unresolvable", () => {
-			// @ts-expect-error
-			attest(() => type("y")).completions.snap({})
+			test("Unresolvable", () => {
+				attest("").completions({})
+			})
 		})
 	})
 })

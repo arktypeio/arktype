@@ -26,6 +26,7 @@ export type AssertionContext = {
 	defaultExpected?: unknown
 	assertionStack: string
 	assertionData?: SerializedAssertionData
+	lastSnapName?: string
 }
 
 export type InternalAssertionHooks = {
