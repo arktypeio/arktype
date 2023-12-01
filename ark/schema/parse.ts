@@ -75,10 +75,6 @@ const instantiateAttachments = <kind extends NodeKind>(
 export const composeParser = <d extends BaseNodeDeclaration>(
 	impl: NodeParserImplementation<d>
 ) => {
-	const metaKeys: MetaKeyDefinitions<BaseNodeDeclaration> = {
-		description: {} as any,
-		...impl.metaKeys
-	}
 	return (
 		def: d["schema"],
 		ctx: SchemaParseContext
@@ -103,7 +99,7 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 		const children: BaseNode[] = []
 		for (const entry of schemaEntries) {
 			const k = entry[0]
-			const keyImpl = impl.keys[k] ?? metaKeys[k]
+			const keyImpl = impl.keys[k]
 			if (!keyImpl) {
 				return throwParseError(`Key ${k} is not valid on ${impl.kind} schema`)
 			}

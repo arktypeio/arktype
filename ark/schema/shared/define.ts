@@ -76,13 +76,8 @@ export type OrderedNodeKinds = typeof nodeKinds
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
-export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
-	[k in keyof d["normalizedSchema"]]: NodeKeyImplementation<
-		// TODO: normalized
-		d["normalizedSchema"],
-		k extends keyof d["inner"] ? d["inner"] : d["meta"],
-		k
-	>
+export type KeyDefinitions<d extends BaseNodeDeclaration> = {
+	[k in keyof d["normalizedSchema"]]: NodeKeyImplementation<d, k>
 }
 
 export type PrimitiveConstraintAttachments = {
@@ -108,27 +103,34 @@ export type normalizeInput<input, inner extends BaseAttributes> = Extract<
 >
 
 export type NodeKeyImplementation<
-	schema,
-	o,
-	k extends keyof schema & keyof o
+	d extends BaseNodeDeclaration,
+	k extends keyof d["normalizedSchema"],
+	instantiated = k extends keyof d["inner"]
+		? d["inner"][k]
+		: k extends keyof d["meta"]
+		  ? d["meta"][k]
+		  : never
 > = requireKeys<
 	{
 		preserveUndefined?: true
+		meta?: true
 		child?: true
 		serialize?: (
-			schema: o[k] extends listable<BaseNode> | undefined
+			schema: instantiated extends listable<BaseNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
-				: o[k]
+				: instantiated
 		) => JsonData
 		parse?: (
-			schema: Exclude<schema[k], undefined>,
+			schema: Exclude<d["normalizedSchema"][k], undefined>,
 			ctx: SchemaParseContext
-		) => o[k]
+		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
-	| (schema[k] extends Pick<o, k> ? never : "parse")
+	| (d["normalizedSchema"][k] extends instantiated ? never : "parse")
 	// require keys containing children specify it
-	| (o[k] extends listable<BaseNode> | undefined ? "child" : never)
+	| (instantiated extends listable<BaseNode> | undefined ? "child" : never)
+	// require meta keys are specified
+	| (k extends keyof d["meta"] ? "meta" : never)
 >
 
 export type BaseInitializedNode<kind extends NodeKind> = kind extends NodeKind
@@ -137,10 +139,9 @@ export type BaseInitializedNode<kind extends NodeKind> = kind extends NodeKind
 
 export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
-	keys: InnerKeyDefinitions<d>
+	keys: KeyDefinitions<d>
 	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void
-
 	attach: AttachImplementation<d["kind"]>
 	normalize: (
 		schema: d["normalizedSchema"]
