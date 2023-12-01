@@ -8,6 +8,7 @@ import {
 	type extend,
 	type listable
 } from "@arktype/util"
+import type { MorphAst } from "arktype/internal/parser/tuple.js"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { ArkConfig } from "../scope.js"
@@ -33,8 +34,6 @@ export type TraversalState = {
 }
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
-
-export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export type Out<o = any> = ["=>", o]
 

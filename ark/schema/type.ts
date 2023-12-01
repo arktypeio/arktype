@@ -1,4 +1,4 @@
-import type { entriesOf, entryOf } from "@arktype/util"
+import type { entriesOf } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import type { BranchKind } from "./sets/union.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"

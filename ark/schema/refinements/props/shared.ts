@@ -32,5 +32,3 @@ export const compilePresentProp = (
 	problems.currentPath.pop()
 	`
 }
-
-export type KeyCheckKind = "distilled" | "strict" | "loose"

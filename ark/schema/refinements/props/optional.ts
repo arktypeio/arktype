@@ -1,7 +1,7 @@
 import type { Node } from "../../base.js"
 import { In, compileSerializedValue } from "../../shared/compilation.js"
 import type { withAttributes } from "../../shared/declare.js"
-import { typeKinds, type TypeKind } from "../../shared/define.js"
+import type { TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Schema } from "../../shared/nodes.js"
 import {

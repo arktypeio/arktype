@@ -2,7 +2,6 @@ import {
 	addArkKind,
 	hasArkKind,
 	keywords,
-	type KeyCheckKind,
 	type ProblemCode,
 	type TypeNode,
 	type arkKind,
@@ -53,6 +52,7 @@ import {
 	type DefinitionParser,
 	type Generic,
 	type GenericProps,
+	type KeyCheckKind,
 	type TypeConfig,
 	type TypeParser
 } from "./type.js"

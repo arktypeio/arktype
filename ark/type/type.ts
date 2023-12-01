@@ -4,11 +4,9 @@ import {
 	inferred,
 	keywords,
 	type BaseAttributes,
-	type KeyCheckKind,
 	type Morph,
 	type Out,
 	type Predicate,
-	type TypeKind,
 	type TypeNode,
 	type extractIn,
 	type extractOut,
@@ -30,6 +28,7 @@ import type { inferIntersection } from "./parser/semantic/intersections.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
+	MorphAst,
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import { bindThis, type Scope } from "./scope.js"
@@ -113,6 +112,8 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 export type DefinitionParser<$> = <def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
+
+export type KeyCheckKind = "distilled" | "strict" | "loose"
 
 export type TypeConfig = {
 	keys?: KeyCheckKind

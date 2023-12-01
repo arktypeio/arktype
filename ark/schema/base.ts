@@ -106,6 +106,11 @@ export class BaseNode<t = unknown> extends DynamicBase<
 	readonly contributesReferencesById: Record<string, BaseNode>
 	readonly contributesReferences: readonly BaseNode[]
 
+<<<<<<< HEAD
+=======
+	declare allows: (data: unknown) => data is t
+	declare traverse: (data: unknown, problems: Problems) => void
+>>>>>>> beta
 	// we use declare here to avoid it being initialized outside the constructor
 	// and detected as an overwritten key
 	declare readonly description: string
@@ -134,6 +139,11 @@ export class BaseNode<t = unknown> extends DynamicBase<
 				? this.referencesById
 				: { ...this.referencesById, [this.id]: this }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
+<<<<<<< HEAD
+=======
+		this.allows = compileAnonymous(this as never, "allows")
+		this.traverse = compileAnonymous(this as never, "traverse")
+>>>>>>> beta
 		// important this is last as writeDefaultDescription could rely on attached
 		this.description ??= this.implementation.writeDefaultDescription(
 			this as never

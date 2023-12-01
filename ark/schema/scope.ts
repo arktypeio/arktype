@@ -5,7 +5,8 @@ import {
 	throwParseError,
 	type Dict
 } from "@arktype/util"
-import type { BaseNode, Node } from "./base.js"
+import type { KeyCheckKind } from "arktype/internal/type.js"
+import type { Node } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type {
 	instantiateAliases,
@@ -15,7 +16,6 @@ import type {
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type { KeyCheckKind } from "./refinements/props/shared.js"
 import type { BranchKind } from "./sets/union.js"
 import { bindCompiledScope, type ProblemCode } from "./shared/compilation.js"
 import type { NodeKind, TypeKind } from "./shared/define.js"
