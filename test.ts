@@ -1,22 +1,18 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 import { bench } from "@arktype/attest"
 import { type } from "arktype"
-import { rootSchema, schema, scopeNode } from "./ark/schema/main.js"
-import { range } from "./ark/util/main.js"
 
-// bench("string", () => {
-// 	const t = type("string|number|boolean|Date")
-// }).types([3979, "instantiations"])
+bench("string", () => {
+	const t = type("string|number|boolean|Date")
+}).types([3979, "instantiations"])
 
 // bench("z", () => {
 // 	const t = type("string")
 // }).types([1866, "instantiations"])
 
-const m = type("string")
-
 bench("number", () => {
-	const t = {}
-}).types([1142, "instantiations"])
+	const t = type("string")
+}).types([1866, "instantiations"])
 
 // const aNumber = schema({
 // 	basis: "object",
