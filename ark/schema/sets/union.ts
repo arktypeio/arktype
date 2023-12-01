@@ -28,10 +28,10 @@ export type UnionSchema<
 	  }>
 	| branches
 
-export type UnionInner = withAttributes<{
+export type UnionInner = {
 	readonly branches: readonly BranchNode[]
 	readonly ordered?: true
-}>
+}
 
 export type UnionAttachments = extend<
 	NodeAttachments<"union">,
@@ -67,7 +67,7 @@ const intersectBranch = (
 export const UnionImplementation = defineNode({
 	kind: "union",
 	collapseKey: "branches",
-	keys: {
+	innerKeys: {
 		ordered: {},
 		branches: {
 			child: true,

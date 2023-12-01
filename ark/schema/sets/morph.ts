@@ -38,11 +38,11 @@ export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type Out<o = any> = ["=>", o]
 
-export type MorphInner = withAttributes<{
+export type MorphInner = {
 	readonly in: ValidatorNode
 	readonly out: ValidatorNode
 	readonly morph: readonly Morph[]
-}>
+}
 
 export type MorphSchema = withAttributes<{
 	readonly in: ValidatorDefinition
@@ -73,7 +73,7 @@ export type MorphDeclaration = declareNode<{
 // TODO: recursively extract in
 export const MorphImplementation = defineNode({
 	kind: "morph",
-	keys: {
+	innerKeys: {
 		in: {
 			child: true,
 			parse: (schema, ctx) =>

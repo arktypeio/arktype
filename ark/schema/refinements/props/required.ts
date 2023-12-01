@@ -18,10 +18,10 @@ export type RequiredSchema = withAttributes<{
 	readonly value: Schema<TypeKind>
 }>
 
-export type RequiredInner = withAttributes<{
+export type RequiredInner = {
 	readonly key: string | symbol
 	readonly value: Node<TypeKind>
-}>
+}
 
 export type RequiredDeclaration = declareRefinement<{
 	kind: "required"
@@ -55,7 +55,7 @@ const intersectNamed = (
 
 export const RequiredImplementation = defineRefinement({
 	kind: "required",
-	keys: {
+	innerKeys: {
 		key: {},
 		value: {
 			child: true,

@@ -1,4 +1,4 @@
-import type { evaluate, extend } from "@arktype/util"
+import type { Dict, evaluate, extend } from "@arktype/util"
 import type { Predicate } from "../refinements/predicate.js"
 import type { RefinementOperand } from "../refinements/refinement.js"
 import type { Problems } from "./compilation.js"
@@ -6,9 +6,7 @@ import type { ConstraintKind, NodeKind, RefinementKind } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
 
-export type BaseAttributes = {
-	readonly description?: string
-}
+export type BaseAttributes = Dict
 
 export type withAttributes<o extends object> = extend<BaseAttributes, o>
 
@@ -50,7 +48,8 @@ export type TraverseApply<kind extends NodeKind> = (
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
 	schema: unknown
-	inner: BaseAttributes
+	inner: Dict
+	meta?: Dict
 	intersections: BaseIntersectionMap[kind]
 	attach: NodeAttachments<kind>
 }
@@ -58,7 +57,8 @@ export type DeclarationInput<kind extends NodeKind> = {
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
-	inner: BaseAttributes
+	inner: Dict
+	meta?: Dict
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}

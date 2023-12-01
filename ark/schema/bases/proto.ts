@@ -11,15 +11,14 @@ import {
 	compileSerializedValue,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode } from "../shared/declare.js"
 import { defaultInnerKeySerializer, defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
-export type ProtoInner<proto extends Constructor = Constructor> =
-	withAttributes<{
-		readonly proto: proto
-	}>
+export type ProtoInner<proto extends Constructor = Constructor> = {
+	readonly proto: proto
+}
 
 export type ProtoSchema<proto extends Constructor = Constructor> =
 	| proto
@@ -41,7 +40,7 @@ export type ProtoDeclaration = declareNode<{
 export const ProtoImplementation = defineNode({
 	kind: "proto",
 	collapseKey: "proto",
-	keys: {
+	innerKeys: {
 		proto: {
 			serialize: (constructor) =>
 				getExactBuiltinConstructorName(constructor) ??

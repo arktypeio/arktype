@@ -114,23 +114,6 @@ export class BaseNode<out t = unknown> extends DynamicBase<
 
 	constructor(baseAttachments: BaseAttachments) {
 		super(baseAttachments as never)
-		for (const k in baseAttachments.inner) {
-			if (k in this) {
-				// if we attempt to overwrite an existing node key, throw unless
-				// it is expected and can be safely ignored.
-				// in and out cannot overwrite their respective getters, so instead
-				// morph assigns them to `inCache` and `outCache`
-				if (k !== "in" && k !== "out") {
-					throwInternalError(
-						`Unexpected attempt to overwrite existing node key ${k} from ${this.kind} inner`
-					)
-				}
-			} else {
-				this[k] = this.inner[k] as never
-			}
-		}
-		const attachments = this.implementation.attach(this as never)
-		Object.assign(this, attachments)
 		this.contributesReferencesById =
 			this.id in this.referencesById
 				? this.referencesById

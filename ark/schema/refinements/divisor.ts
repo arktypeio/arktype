@@ -11,11 +11,11 @@ import {
 	type declareRefinement
 } from "./shared.js"
 
-export type DivisorInner = withAttributes<{
+export type DivisorInner = {
 	readonly divisor: number
-}>
+}
 
-export type DivisorSchema = DivisorInner | number
+export type DivisorSchema = withAttributes<DivisorInner> | number
 
 export type DivisorDeclaration = declareRefinement<{
 	kind: "divisor"
@@ -39,7 +39,7 @@ export type writeIndivisibleMessage<root extends string> =
 export const DivisorImplementation = defineRefinement({
 	kind: "divisor",
 	collapseKey: "divisor",
-	keys: {
+	innerKeys: {
 		divisor: {}
 	},
 	intersections: {

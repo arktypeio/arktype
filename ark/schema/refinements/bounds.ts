@@ -26,10 +26,10 @@ import {
 	type declareRefinement
 } from "./shared.js"
 
-export type BoundInner = withAttributes<{
+export type BoundInner = {
 	readonly limit: number
 	readonly exclusive?: true
-}>
+}
 
 export type LimitSchemaValue = number | string
 
@@ -108,7 +108,7 @@ export const defineBound = <kind extends BoundKind>(
 		// ("min"), then cast it to the expected parameterized definition
 		kind: boundDefinition.kind as "min",
 		collapseKey: "limit",
-		keys: {
+		innerKeys: {
 			limit: {},
 			exclusive: {
 				// omit key with value false since it is the default

@@ -10,11 +10,11 @@ import { defineNode } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
-export type UnitSchema<value = unknown> = UnitInner<value>
+export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
 
-export type UnitInner<value = unknown> = withAttributes<{
+export type UnitInner<value = unknown> = {
 	readonly unit: value
-}>
+}
 
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
@@ -29,7 +29,7 @@ export type UnitDeclaration = declareNode<{
 
 export const UnitImplementation = defineNode({
 	kind: "unit",
-	keys: {
+	innerKeys: {
 		unit: {
 			preserveUndefined: true
 		}

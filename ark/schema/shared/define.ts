@@ -88,21 +88,12 @@ export type OrderedNodeKinds = typeof nodeKinds
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
-type BaseAttributeKeyDefinitions = {
-	[k in keyof BaseAttributes]: NodeKeyDefinition<BaseNodeDeclaration, k>
+export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
+	[k in keyof d["inner"]]: NodeKeyDefinition<d, k>
 }
 
-export type instantiateNodeImplementation<definition> = evaluate<
-	definition & {
-		keys: BaseAttributeKeyDefinitions
-	}
->
-
-export type InnerKeyDefinitions<d extends BaseNodeDeclaration> = {
-	[k in Exclude<keyof d["inner"], keyof BaseAttributes>]: NodeKeyDefinition<
-		d,
-		k
-	>
+export type MetaKeyDefinitions<d extends BaseNodeDeclaration> = {
+	[k in keyof d["meta"]]: NodeKeyDefinition<d, k>
 }
 
 export type PrimitiveConstraintAttachments<kind extends NodeKind> = extend<
@@ -135,7 +126,6 @@ export type NodeKeyDefinition<
 	k extends keyof d["inner"]
 > = requireKeys<
 	{
-		meta?: true
 		preserveUndefined?: true
 		child?: true
 		serialize?: (
@@ -164,7 +154,8 @@ export type BaseInitializedNode<kind extends NodeKind> = kind extends NodeKind
 
 export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
-	keys: InnerKeyDefinitions<d>
+	innerKeys: InnerKeyDefinitions<d>
+	metaKeys?: MetaKeyDefinitions<d>
 	collapseKey?: keyof d["inner"]
 	addContext?: (ctx: SchemaParseContext) => void
 	intersections: reifyIntersections<d["kind"], d["intersections"]>
@@ -176,7 +167,7 @@ export type NodeImplementationInput<d extends BaseNodeDeclaration> = {
 		inner: d["inner"],
 		scope: ScopeNode
 	) => Node<reducibleKindOf<d["kind"]>> | undefined
-}
+} & (d["meta"] extends Dict ? { metaKeys: {} } : {})
 
 export type AttachImplementation<kind extends NodeKind> = (
 	node: BaseInitializedNode<kind>
@@ -185,11 +176,7 @@ export type AttachImplementation<kind extends NodeKind> = (
 }
 
 export type UnknownNodeImplementation = optionalizeKeys<
-	instantiateNodeImplementation<
-		NodeImplementationInput<BaseNodeDeclaration> & {
-			keys: Dict<string, NodeKeyDefinition<any, any>>
-		}
-	>,
+	NodeImplementationInput<BaseNodeDeclaration>,
 	"reduce"
 >
 
@@ -203,13 +190,13 @@ type unsatisfiedAttachKey<kind extends NodeKind> = {
 
 export function defineNode<
 	kind extends NodeKind,
-	input extends NodeImplementationInput<Declaration<kind>>
->(input: { kind: kind } & input): instantiateNodeImplementation<input>
+	impl extends NodeImplementationInput<Declaration<kind>>
+>(input: { kind: kind } & impl): impl
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
 export function defineNode(
 	input: NodeImplementationInput<any>
 ): UnknownNodeImplementation {
-	Object.assign(input.keys, {
+	Object.assign(input.innerKeys, {
 		description: {
 			meta: true
 		}

@@ -39,7 +39,7 @@ export type DomainDeclaration = declareNode<{
 export const DomainImplementation = defineNode({
 	kind: "domain",
 	collapseKey: "domain",
-	keys: {
+	innerKeys: {
 		domain: {}
 	},
 	intersections: {

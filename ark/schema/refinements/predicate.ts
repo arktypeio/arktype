@@ -36,7 +36,7 @@ export type PredicateDeclaration = declareRefinement<{
 export const PredicateImplementation = defineRefinement({
 	kind: "predicate",
 	collapseKey: "predicate",
-	keys: {
+	innerKeys: {
 		predicate: {}
 	},
 	intersections: {

@@ -12,12 +12,12 @@ import {
 	type declareRefinement
 } from "./shared.js"
 
-export type PatternInner = withAttributes<{
+export type PatternInner = {
 	readonly source: string
 	readonly flags?: string
-}>
+}
 
-export type PatternSchema = string | PatternInner | RegExp
+export type PatternSchema = string | withAttributes<PatternInner> | RegExp
 
 export type PatternAttachments = extend<
 	PrimitiveConstraintAttachments<"pattern">,
@@ -38,7 +38,7 @@ export type PatternDeclaration = declareRefinement<{
 export const PatternImplementation = defineRefinement({
 	kind: "pattern",
 	collapseKey: "source",
-	keys: {
+	innerKeys: {
 		source: {},
 		flags: {}
 	},

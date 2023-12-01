@@ -11,10 +11,10 @@ import {
 } from "../shared.js"
 import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
 
-export type OptionalInner = withAttributes<{
+export type OptionalInner = {
 	readonly key: string | symbol
 	readonly value: Node<TypeKind>
-}>
+}
 
 export type OptionalSchema = withAttributes<{
 	readonly key: string | symbol
@@ -34,7 +34,7 @@ export type OptionalDeclaration = declareRefinement<{
 
 export const OptionalImplementation = defineRefinement({
 	kind: "optional",
-	keys: {
+	innerKeys: {
 		key: {},
 		value: {
 			child: true,
