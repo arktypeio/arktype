@@ -1,4 +1,4 @@
-import { throwParseError, type extend } from "@arktype/util"
+import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type {
@@ -37,20 +37,24 @@ export type declareRefinement<
 	}
 > = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
 
+const cache = {} as PartialRecord<RefinementKind, readonly TypeNode[]>
+
 export const createValidBasisAssertion = (
 	node: BaseInitializedNode<RefinementKind>
 ) => {
-	const operandsDef: readonly Schema<TypeKind>[] = (node.implementation as any)
-		.operand
-	const operands: readonly TypeNode[] = operandsDef.map((o) =>
-		node.scope.parseTypeNode(o)
-	)
+	if (!cache[node.kind]) {
+		const operandsDef: readonly Schema<TypeKind>[] = (
+			node.implementation as any
+		).operand
+		cache[node.kind] = operandsDef.map((o) => node.scope.parseTypeNode(o))
+	}
+	const operands = cache[node.kind]!
 	return operands.length === 1 && operands[0].isUnknown()
 		? () => {}
 		: (basis: Node<BasisKind> | undefined) => {
 				if (!operands.some((o) => basis?.extends(o))) {
 					throwParseError(
-						`${node.kind} operand must be of type ${operandsDef.join(
+						`${node.kind} operand must be of type ${operands.join(
 							" or "
 						)} (was ${getBasisName(basis)})`
 					)
