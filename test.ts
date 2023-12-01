@@ -1,154 +1,56 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
-import { bench } from "@arktype/attest"
-import { type } from "arktype"
-import { schema, scopeNode } from "./ark/schema/main.js"
-import { range } from "./ark/util/main.js"
-
-const aNumber = schema({
-	basis: "object",
-	required: { key: "a", value: "number" }
-}).allows
-
-const aNumberType = type({
-	a: `${"num"}ber`
-})
-
-const thousand = range(1000)
-
-const aNumberData = range(1000).map((i) => ({ a: i }))
-
-const result = aNumber({ a: 5 }) //?. $
-
-aNumberType.alias //?
-
-aNumberType.allows({ a: 5 }) //?
-
-range(1000).forEach((i) => {
-	aNumberType(aNumberData[i]) //?.
-})
-
-range(1000).forEach((i) => {
-	aNumber(aNumberData[i]) //?.
-})
-
-const baselineANumber = (data: unknown) =>
-	((typeof data === "object" && data !== null) || typeof data === "function") &&
-	"a" in data &&
-	typeof data.a === "number"
-
-range(1000).forEach((i) => {
-	baselineANumber(aNumberData[i]) //?.
-})
-
-const validInput = {
-	number: 1,
-	negNumber: -1,
-	maxNumber: Number.MAX_VALUE,
-	string: "string",
-	longString:
-		"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Vivendum intellegat et qui, ei denique consequuntur vix. Semper aeterno percipit ut his, sea ex utinam referrentur repudiandae. No epicuri hendrerit consetetur sit, sit dicta adipiscing ex, in facete detracto deterruisset duo. Quot populo ad qui. Sit fugit nostrum et. Ad per diam dicant interesset, lorem iusto sensibus ut sed. No dicam aperiam vis. Pri posse graeco definitiones cu, id eam populo quaestio adipiscing, usu quod malorum te. Ex nam agam veri, dicunt efficiantur ad qui, ad legere adversarium sit. Commune platonem mel id, brute adipiscing duo an. Vivendum intellegat et qui, ei denique consequuntur vix. Offendit eleifend moderatius ex vix, quem odio mazim et qui, purto expetendis cotidieque quo cu, veri persius vituperata ei nec. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-	boolean: true,
-	deeplyNested: {
-		foo: "bar",
-		num: 1,
-		bool: false
+class Callable {
+	constructor(fn: Function) {
+		return () => fn.call(this)
 	}
 }
 
-const invalidInput = {
-	number: 1,
-	negNumber: -1,
-	maxNumber: Number.MAX_VALUE,
-	string: "string",
-	longString:
-		"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Vivendum intellegat et qui, ei denique consequuntur vix. Semper aeterno percipit ut his, sea ex utinam referrentur repudiandae. No epicuri hendrerit consetetur sit, sit dicta adipiscing ex, in facete detracto deterruisset duo. Quot populo ad qui. Sit fugit nostrum et. Ad per diam dicant interesset, lorem iusto sensibus ut sed. No dicam aperiam vis. Pri posse graeco definitiones cu, id eam populo quaestio adipiscing, usu quod malorum te. Ex nam agam veri, dicunt efficiantur ad qui, ad legere adversarium sit. Commune platonem mel id, brute adipiscing duo an. Vivendum intellegat et qui, ei denique consequuntur vix. Offendit eleifend moderatius ex vix, quem odio mazim et qui, purto expetendis cotidieque quo cu, veri persius vituperata ei nec. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-	boolean: true,
-	deeplyNested: {
-		foo: "bar",
-		num: 1,
-		bool: 5
+class MeCallable extends Callable {
+	constructor() {
+		super(() => Sub.prototype.foo.call(this))
+		Object.setPrototypeOf(this, Sub.prototype)
+	}
+	salutation = "Mr. "
+	doSomething() {
+		return this.salutation + "doSomething"
 	}
 }
 
-const dataArray = range(1000).map((i) => ({
-	...validInput,
-	number: i
-}))
+class Sub extends MeCallable {
+	// constructor() {
+	// 	super(() => {
+	// 		return this.foo
+	// 	})
+	// }
 
-const arkType = type({
-	number: "number",
-	negNumber: "number",
-	maxNumber: "number",
-	string: "string",
-	longString: "string",
-	boolean: "boolean",
-	deeplyNested: {
-		foo: "string",
-		num: "number",
-		bool: "boolean"
+	foo() {
+		return this.doSomething()
 	}
-})
+}
 
-const arkSpace = scopeNode({
-	any: {} as schema.cast<any, "intersection">,
-	bigint: "bigint",
-	// since we know this won't be reduced, it can be safely cast to a union
-	boolean: [{ unit: false }, { unit: true }] as schema.cast<boolean, "union">,
-	false: { unit: false },
-	never: [],
-	null: { unit: null },
-	number: "number",
-	object: "object",
-	string: "string",
-	symbol: "symbol",
-	true: { unit: true },
-	unknown: {},
-	void: { unit: undefined } as schema.cast<void, "unit">,
-	undefined: { unit: undefined },
-	foo: {
-		basis: "object",
-		required: [
-			{ key: "number", value: "number" },
-			{ key: "negNumber", value: "number" },
-			{ key: "maxNumber", value: "number" },
-			{ key: "string", value: "string" },
-			{ key: "longString", value: "string" },
-			{ key: "boolean", value: [{ unit: true }, { unit: false }] },
-			{
-				key: "deeplyNested",
-				value: {
-					basis: "object",
-					required: [
-						{ key: "foo", value: "string" },
-						{ key: "num", value: "number" },
-						{ key: "bool", value: [{ unit: true }, { unit: false }] }
-					]
-				}
-			}
-		]
+const abc = new Sub()
+
+abc.doSomething() //?
+abc() //?
+
+class Callable2 {
+	constructor(defaultFn: Function) {
+		return (...args: any[]) => {
+			return defaultFn.call(this, ...args)
+		}
 	}
-})
+}
 
-// bench("space", () => {
-// 	thousand.forEach((i) => {
-// 		arkSpace.resolutions.foo.allows(dataArray[i])
-// 	})
-// }).median([164.23, "us"])
+class MeCallable2 extends Callable2 {
+	constructor() {
+		super((name: string) => "Hello: " + this.salutation + name)
+		Object.setPrototypeOf(this, MeCallable.prototype)
+	}
+	salutation = "Mr. "
+	doSomething() {
+		console.log(this.salutation, "doSomething")
+	}
+}
 
-bench("test", () => {
-	thousand.forEach((i) => {
-		arkType.allows(dataArray[i])
-	})
-}).median([7.3, "us"])
+const abc2 = new MeCallable2()
 
-arkType.allows(validInput) //?
-
-arkType.allows(invalidInput) //?
-
-range(1000).forEach((i) => {
-	arkType.allows(dataArray[i]) //?.
-})
-
-// range(1000).forEach((i) => {
-// 	arkSpace.keywords.foo.allows(dataArray[i]) //?.
-// })
+abc2("ff") //?

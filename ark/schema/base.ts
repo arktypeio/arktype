@@ -6,7 +6,6 @@ import {
 	type Dict,
 	type Entry,
 	type Json,
-	type entriesOf,
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
@@ -25,18 +24,17 @@ import type {
 } from "./refinements/refinement.js"
 import type { ScopeNode } from "./scope.js"
 import { unflattenConstraints } from "./sets/intersection.js"
-import type {
-	extractIn,
-	extractOut,
-	ioKindOf,
-	outKindOf
-} from "./sets/morph.js"
+import type { extractIn, extractOut, ioKindOf } from "./sets/morph.js"
 import {
 	Problems,
 	type CheckResult,
 	type CompilationContext
 } from "./shared/compilation.js"
-import type { BaseAttributes } from "./shared/declare.js"
+import type {
+	BaseAttributes,
+	TraverseAllows,
+	TraverseApply
+} from "./shared/declare.js"
 import {
 	basisKinds,
 	closedRefinementKinds,
@@ -72,7 +70,7 @@ export interface BaseAttachments {
 	readonly id: string
 	readonly kind: NodeKind
 	readonly inner: Dict
-	readonly entries: readonly Entry[]
+	readonly entries: readonly Entry<string>[]
 	readonly json: Json
 	readonly typeJson: Json
 	readonly collapsibleJson: Json
@@ -80,9 +78,13 @@ export interface BaseAttachments {
 	readonly innerId: string
 	readonly typeId: string
 	readonly scope: ScopeNode
+	traverseAllows: TraverseAllows<any>
+	traverseApply: TraverseApply<any>
 }
 
-export class BaseNode<t = unknown> extends DynamicBase<
+// TODO: is this ok- from?
+// @ts-expect-error cast t to covariant since morphs are embedded
+export class BaseNode<out t = unknown> extends DynamicBase<
 	BaseAttachments & { (data: unknown): CheckResult<extractOut<t>> }
 > {
 	declare infer: extractOut<t>;
@@ -167,7 +169,7 @@ export class BaseNode<t = unknown> extends DynamicBase<
 	}
 
 	outCache?: BaseNode
-	get out(): Node<outKindOf<this["kind"]>, extractOut<t>> {
+	get out(): Node<ioKindOf<this["kind"]>, extractOut<t>> {
 		if (!this.outCache) {
 			this.outCache = this.getIo("out")
 		}
@@ -244,7 +246,7 @@ export class BaseNode<t = unknown> extends DynamicBase<
 	intersect<other extends BaseNode>(
 		other: other
 	): intersectionOf<this["kind"], other["kind"]>
-	intersect(other: BaseNode): BaseNode | Disjoint | null {
+	intersect(other: Node): BaseNode | Disjoint | null {
 		const cacheKey = `${this.typeId}&${other.typeId}`
 		if (BaseNode.intersectionCache[cacheKey] !== undefined) {
 			return BaseNode.intersectionCache[cacheKey]
@@ -300,7 +302,7 @@ export class BaseNode<t = unknown> extends DynamicBase<
 	}
 }
 
-export type Node<kind extends NodeKind = NodeKind, t = unknown> = {
+export type Node<kind extends NodeKind = NodeKind, t = any> = {
 	union: UnionNode<t>
 	morph: MorphNode<t>
 	intersection: IntersectionNode<t>

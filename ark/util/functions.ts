@@ -1,7 +1,7 @@
 import { throwInternalError } from "./errors.js"
 
 export type Fn<
-	args extends readonly unknown[] = readonly never[],
+	args extends readonly unknown[] = readonly any[],
 	returns = unknown
 > = (...args: args) => returns
 

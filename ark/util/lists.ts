@@ -24,7 +24,7 @@ export type split<
 	? head extends delimiter
 		? split<tail, delimiter, "", [...result, current]>
 		: split<tail, delimiter, `${current}${head}`, result>
-	: [...result, s]
+	: [...result, current]
 
 export const getPath = (root: unknown, path: string[]): unknown => {
 	let result: any = root
