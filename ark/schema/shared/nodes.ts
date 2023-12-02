@@ -11,7 +11,7 @@ import {
 	type SetDeclarationsByKind
 } from "../sets/set.js"
 import type { BranchKind } from "../sets/union.js"
-import type { CompiledMethods } from "./compilation.js"
+import type { TraversalMethods } from "./compilation.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -80,6 +80,6 @@ export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
 export type Attachments<kind extends NodeKind> = Inner<kind> &
 	Declaration<kind>["attach"] &
-	CompiledMethods<
+	TraversalMethods<
 		kind extends RefinementKind ? Declaration<kind>["operand"] : unknown
 	>

@@ -17,16 +17,19 @@ export const In = "$arkRoot"
 
 export type CompilationKind = "allows" | "apply"
 
-export type TraverseAllows<input = unknown> = (data: input) => boolean
+export type TraverseAllows<input = unknown> = (
+	data: input,
+	problems: Problems
+) => boolean
 
 export type TraverseApply<input = unknown> = (
 	data: input,
 	problems: readonly Problem[]
 ) => void
 
-export type CompiledMethods<input = unknown> = {
-	allows: TraverseAllows<input>
-	apply: TraverseApply<input>
+export type TraversalMethods<input = unknown> = {
+	traverseAllows: TraverseAllows<input>
+	traverseApply: TraverseApply<input>
 }
 
 export type CompilationContext = {
@@ -64,7 +67,7 @@ export const bindCompiledScope = (
 const compileScope = <kind extends CompilationKind>(
 	references: readonly Node[],
 	kind: kind
-): Record<string, CompiledMethods[kind]> => {
+): Record<string, TraversalMethods[kind]> => {
 	const compiledArgs = kind === "allows" ? In : `${In}, problems`
 	const body = `return {
 	${references

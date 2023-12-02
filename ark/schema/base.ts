@@ -30,7 +30,7 @@ import {
 	Problems,
 	type CheckResult,
 	type CompilationContext,
-	type CompiledMethods
+	type TraversalMethods
 } from "./shared/compilation.js"
 import type { BaseAttributes } from "./shared/declare.js"
 import {
@@ -63,7 +63,7 @@ import type {
 	UnitNode
 } from "./type.js"
 
-export interface BaseAttachments extends CompiledMethods {
+export interface BaseAttachments extends TraversalMethods {
 	alias?: string
 	readonly id: string
 	readonly kind: NodeKind
@@ -80,8 +80,7 @@ export interface BaseAttachments extends CompiledMethods {
 }
 
 // TODO: is this ok- from?
-// @ts-expect-error cast t to covariant since morphs are embedded
-export class BaseNode<out t = unknown> extends DynamicBase<
+export abstract class BaseNode<t = unknown> extends DynamicBase<
 	BaseAttachments & { (data: unknown): CheckResult<extractOut<t>> }
 > {
 	declare infer: extractOut<t>;
@@ -116,11 +115,10 @@ export class BaseNode<out t = unknown> extends DynamicBase<
 				? this.referencesById
 				: { ...this.referencesById, [this.id]: this }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
-		// important this is last as writeDefaultDescription could rely on attached
-		this.description ??= this.implementation.writeDefaultDescription(
-			this as never
-		)
+		this.description ??= this.writeDefaultDescription()
 	}
+
+	abstract writeDefaultDescription(): string
 
 	allows = (data: unknown): data is t => {
 		const problems = new Problems()

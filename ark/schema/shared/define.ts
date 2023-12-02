@@ -12,7 +12,7 @@ import type {
 import type { BaseNode, Node } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
-import { compileSerializedValue, type CompiledMethods } from "./compilation.js"
+import { compileSerializedValue, type TraversalMethods } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reducibleKindOf } from "./nodes.js"
 
@@ -154,7 +154,7 @@ export type AttachImplementation<d extends BaseNodeDeclaration> = (
 	{
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 		// TODO: remove kind
-	} & CompiledMethods<d["kind"]>
+	} & TraversalMethods<d["kind"]>
 >
 
 export type UnknownNodeImplementation = optionalizeKeys<
