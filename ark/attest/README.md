@@ -63,6 +63,19 @@ describe("attest features", () => {
 		)
 	})
 
+	it("completion snapshotting", () => {
+		// snapshot expected completions for any string literal!
+		// @ts-expect-error (if your expression would throw, prepend () =>)
+		attest(() => type({ a: "a", b: "b" })).completions({
+			a: ["any", "alpha", "alphanumeric"],
+			b: ["bigint", "boolean"]
+		})
+		type Legends = { faker?: "🐐"; [others: string]: unknown }
+		// works for keys or index access as well (may need prettier-ignore to avoid removing quotes)
+		// prettier-ignore
+		attest({ "f": "🐐" } as Legends).completions({ "f": ["faker"] })
+	})
+
 	it("integrate runtime logic with type assertions", () => {
 		const arrayOf = type("<t>", "t[]")
 		const numericArray = arrayOf("number | bigint")

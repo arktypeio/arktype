@@ -1,5 +1,6 @@
 import { attest, getTsVersionUnderTest } from "@arktype/attest"
 import { type } from "arktype"
+import { scope } from "arktype/internal/ark.js"
 
 // @arktype/attest assertions can be made from any unit test framework with a global setup/teardown
 describe("attest features", () => {
@@ -23,6 +24,20 @@ describe("attest features", () => {
 		attest(() => type({ "[object]": "string" })).type.errors(
 			"Indexed key definition 'object' must be a string, number or symbol"
 		)
+	})
+
+	it("completion snapshotting", () => {
+		// snapshot expected completions for any string literal!
+		// @ts-expect-error (if your expression would throw, prepend () =>)
+		attest(() => type({ a: "a", b: "b" })).completions({
+			a: ["any", "alpha", "alphanumeric"],
+			b: ["bigint", "boolean"]
+		})
+		type Legends = { faker?: "🐐"; [others: string]: unknown }
+		// works for keys or index access as well (may need prettier-ignore to
+		// avoid removing quotes)
+		// prettier-ignore
+		attest({ "f": "🐐" } as Legends).completions({ "f": ["faker"] })
 	})
 
 	it("integrate runtime logic with type assertions", () => {
