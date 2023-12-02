@@ -54,7 +54,7 @@ const getInstantiationsWithFile = (fileText: string, fakePath: string) => {
 
 const transformBenchSource = (
     originalFile: SourceFile,
-    isolatedBenchExressionText: string,
+    isolatedBenchExpressionText: string,
     includeBenchFn: boolean,
     fakePath: string
 ) => {
@@ -62,7 +62,7 @@ const transformBenchSource = (
     const currentBenchStatement = fileToTransform.getFirstDescendantOrThrow(
         (node) =>
             node.isKind(SyntaxKind.ExpressionStatement) &&
-            node.getText() === isolatedBenchExressionText
+            node.getText() === isolatedBenchExpressionText
     ) as Node<ts.ExpressionStatement>
     if (!includeBenchFn) {
         emptyBenchFn(currentBenchStatement)

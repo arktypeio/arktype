@@ -221,7 +221,7 @@ const checkTypeAssertion = (
 }
 
 // Using any as isTypeAssignableTo is not publicly exposed
-const getInteralTypeChecker = (project: Project) =>
+const getInternalTypeChecker = (project: Project) =>
     project.getTypeChecker().compilerObject as ts.TypeChecker & {
         isTypeAssignableTo: (first: ts.Type, second: ts.Type) => boolean
     }
@@ -230,7 +230,7 @@ const checkMutualAssignability = (
     assertionTypes: Required<AssertionTypes>,
     project: Project
 ) => {
-    const checker = getInteralTypeChecker(project)
+    const checker = getInternalTypeChecker(project)
     const isActualAssignableToExpected = checker.isTypeAssignableTo(
         assertionTypes.actual.compilerType,
         assertionTypes.expected.compilerType
