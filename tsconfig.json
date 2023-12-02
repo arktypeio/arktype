@@ -18,16 +18,14 @@
 		"stripInternal": true,
 		"lib": ["ESNext"],
 		"jsx": "react",
-		"customConditions": ["arktype-repo"]
-		// Can be used in place of arktype-repo in Bun
-		// "paths": {
-		// 	"arktype": ["./ark/type/main.ts"],
-		// 	"@arktype/util": ["./ark/util/main.ts"],
-		// 	"@arktype/fs": ["./ark/fs/main.ts"],
-		// 	"@arktype/schema": ["./ark/schema/main.ts"],
-		// 	"@arktype/attest": ["./ark/attest/main.ts"]
-		// },
-		// "types": ["node", "mocha"]
+		"paths": {
+			"arktype": ["./ark/type/main.ts"],
+			"@arktype/util": ["./ark/util/main.ts"],
+			"@arktype/fs": ["./ark/fs/main.ts"],
+			"@arktype/schema": ["./ark/schema/main.ts"],
+			"@arktype/attest": ["./ark/attest/main.ts"]
+		},
+		"types": ["node", "mocha"]
 	},
 	"ts-node": {
 		"esm": true,

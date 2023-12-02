@@ -31,11 +31,8 @@
 	"prettier.ignorePath": "ark/repo/.prettierignore",
 	"prettier.prettierPath": "./node_modules/prettier/index.cjs",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
-	"mochaExplorer.nodeArgv": [
-		"--loader=ts-node/esm",
-		"--no-warnings=ExperimentalWarning",
-		"--conditions=arktype-repo"
-	],
+	// --loader is required here instead of --import for test explorer compatibility
+	"mochaExplorer.nodeArgv": ["--loader=tsx"],
 	// ignore attest it requires type information
 	"mochaExplorer.ignore": ["ark/attest/**/*"],
 	"mochaExplorer.require": "ark/repo/mocha.fixtures.ts",

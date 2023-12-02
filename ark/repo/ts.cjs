@@ -9,7 +9,7 @@ if (fileArgIndex === process.argv.length - 1) {
 }
 
 execSync(
-	`node --conditions arktype-repo --loader ts-node/esm --no-warnings=ExperimentalWarning ${process.argv
+	`node --import=tsx --require=tsconfig-paths/register --no-warnings=ExperimentalWarning ${process.argv
 		.slice(fileArgIndex + 1)
 		.join(" ")}`,
 	{

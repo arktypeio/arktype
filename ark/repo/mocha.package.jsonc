@@ -8,10 +8,6 @@
 {
 	"spec": ["__tests__/*.test.*"],
 	"ignore": "node_modules/**/*",
-	"node-option": [
-		"loader=ts-node/esm",
-		"no-warnings=ExperimentalWarning",
-		"conditions=arktype-repo"
-	],
+	"node-option": ["import=tsx"],
 	"require": "../repo/mocha.fixtures.ts"
 }

@@ -11,12 +11,10 @@
 	"types": "./out/main.d.ts",
 	"exports": {
 		".": {
-			"arktype-repo": "./main.js",
 			"types": "./out/main.d.ts",
 			"default": "./out/main.js"
 		},
 		"./internal/*": {
-			"arktype-repo": "./*",
 			"default": "./out/*"
 		}
 	},
@@ -26,7 +24,7 @@
 		"**/*.ts"
 	],
 	"scripts": {
-		"build": "ts ../repo/build.ts",
-		"test": "ts ../repo/testPackage.ts"
+		"build": "tsx ../repo/build.ts",
+		"test": "tsx ../repo/testPackage.ts"
 	}
 }

@@ -16,12 +16,10 @@
 	"types": "./out/main.d.ts",
 	"exports": {
 		".": {
-			"arktype-repo": "./main.js",
 			"types": "./out/main.d.ts",
 			"default": "./out/main.js"
 		},
 		"./internal/*": {
-			"arktype-repo": "./*",
 			"default": "./out/*"
 		}
 	},
@@ -31,10 +29,10 @@
 		"**/*.ts"
 	],
 	"scripts": {
-		"build": "ts ../repo/build.ts",
-		"bench": "ts ./__tests__/comparison.bench.ts",
-		"test": "ts ../repo/testPackage.ts",
-		"tnt": "ts ../repo/testPackage.ts --skipTypes"
+		"build": "tsx ../repo/build.ts",
+		"bench": "tsx ./__tests__/comparison.bench.ts",
+		"test": "tsx ../repo/testPackage.ts",
+		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
 		"@arktype/util": "workspace:*"

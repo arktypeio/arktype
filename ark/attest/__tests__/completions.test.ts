@@ -1,4 +1,4 @@
-import { type } from "arktype"
+import { hasDomain } from "@arktype/util"
 import assert from "assert"
 import { describe, test } from "mocha"
 import { attest } from "../assert/attest.js"
@@ -10,29 +10,31 @@ type Obj = {
 }
 const obj: Obj = { prop1: "", prop2: "", extra: "" }
 
+type Ark = {
+	ark: "type"
+}
+
+type Arks = {
+	ark: "string" | "semver" | "symbol"
+}
+
 describe("completions", () => {
 	test("quote types", () => {
 		// @ts-expect-error
-		attest(() => type("st")).completions({ st: ["string"] })
+		attest({ ark: "" } as Ark).completions({ "": ["type"] })
 		// prettier-ignore
 		// @ts-expect-error
-		attest(() => type('st')).completions({st:["string"]})
+		attest({ ark: "t" } as Ark).completions({t: ["type"]})
 		//@ts-expect-error
-		attest(() => type(`st`)).completions({ st: ["string"] })
+		attest({ ark: "ty" } as Ark).completions({ ty: ["type"] })
 	})
 	test(".type.completions", () => {
 		//@ts-expect-error
-		attest(() => type({ a: "u" })).type.completions({
-			u: ["undefined", "unknown", "uppercase", "uuid", "url"]
+		attest({ ark: "s" } as Arks).type.completions({
+			s: ["string", "symbol", "semver"]
 		})
 	})
 	test("keys", () => {
-		//@ts-expect-error
-		attest(() => type("number", "@", { "": "string" })).completions({
-			"": ["description"]
-		})
-	})
-	test("keys from cast object", () => {
 		//@ts-expect-error
 		attest({ "": "data" } as Obj).completions({
 			"": ["extra", "prop1", "prop2"]
@@ -40,8 +42,8 @@ describe("completions", () => {
 	})
 	test("index access", () => {
 		//@ts-expect-error
-		attest(() => obj[""]).type.completions({
-			"": ["extra", "prop1", "prop2"]
+		attest(() => obj["p"]).type.completions({
+			p: ["prop1", "prop2"]
 		})
 	})
 	test("duplicate string error", () => {
@@ -53,5 +55,10 @@ describe("completions", () => {
 	})
 	test("empty", () => {
 		attest("").completions({})
+	})
+	test("external package", () => {
+		hasDomain({}, "object")
+		// @ts-expect-error
+		attest(() => hasDomain({}, "b")).completions
 	})
 })
