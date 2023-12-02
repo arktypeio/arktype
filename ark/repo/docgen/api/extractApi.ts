@@ -46,7 +46,7 @@ export const extractApi = (project: Project, packageRoot: string) => {
 			{
 				subpath: ".",
 				exports: extractExportsFromDts(
-					project.addSourceFileAtPath(join(packageRoot, "dist", "main.d.ts"))
+					project.addSourceFileAtPath(join(packageRoot, "out", "main.d.ts"))
 				)
 			}
 		]

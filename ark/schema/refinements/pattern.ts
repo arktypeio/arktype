@@ -1,4 +1,5 @@
 import type { extend } from "@arktype/util"
+import { composeParser } from "../parse.js"
 import {
 	In,
 	compilePrimitive,
@@ -39,7 +40,7 @@ export type PatternDeclaration = declareRefinement<{
 	attach: PatternAttachments
 }>
 
-export const PatternImplementation = defineRefinement({
+export const PatternImplementation = composeParser<PatternDeclaration>({
 	kind: "pattern",
 	collapseKey: "source",
 	keys: {

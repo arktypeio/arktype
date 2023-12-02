@@ -145,7 +145,7 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	addContext?: (ctx: SchemaParseContext) => void
 	attach: AttachImplementation<d["kind"]>
 	normalize: (
-		schema: d["normalizedSchema"]
+		schema: d["schema"]
 	) => normalizeInput<d["normalizedSchema"], d["inner"]>
 	reduce?: (
 		inner: d["inner"],

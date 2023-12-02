@@ -12,27 +12,26 @@
 		"url": "https://github.com/arktypeio/arktype.git"
 	},
 	"type": "module",
-	"main": "./dist/main.js",
-	"types": "./dist/main.d.ts",
+	"main": "./out/main.js",
+	"types": "./out/main.d.ts",
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",
-			"types": "./dist/main.d.ts",
-			"import": "./dist/main.js",
-			"default": "./dist/main.cjs"
+			"types": "./out/main.d.ts",
+			"default": "./out/main.js"
 		},
 		"./internal/*": {
 			"arktype-repo": "./*",
-			"import": "./dist/*"
+			"default": "./out/*"
 		}
 	},
 	"files": [
-		"dist",
+		"out",
 		"!__tests__",
 		"**/*.ts"
 	],
 	"scripts": {
-		"build": "tsup --config ../repo/tsup.config.ts",
+		"build": "ts ../repo/build.ts",
 		"bench": "ts ./__tests__/comparison.bench.ts",
 		"test": "ts ../repo/testPackage.ts",
 		"tnt": "ts ../repo/testPackage.ts --skipTypes"

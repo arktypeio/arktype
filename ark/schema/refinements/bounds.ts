@@ -5,6 +5,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import { composeParser } from "../parse.js"
 import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
@@ -96,7 +97,7 @@ export const normalizeLimit = (limit: LimitSchemaValue): number =>
 export const defineBound = <kind extends BoundKind>(
 	boundDefinition: BoundNodeDefinition<kind>
 ) =>
-	defineRefinement({
+	composeParser({
 		// check this generic bound implementation against a concrete case
 		// ("min"), then cast it to the expected parameterized definition
 		kind: boundDefinition.kind as "min",

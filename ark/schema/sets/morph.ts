@@ -9,6 +9,7 @@ import {
 import type { MorphAst } from "arktype/internal/parser/tuple.js"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
+import { composeParser } from "../parse.js"
 import type { ArkConfig } from "../scope.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type {
@@ -68,7 +69,7 @@ export type MorphDeclaration = declareNode<{
 }>
 
 // TODO: recursively extract in
-export const MorphImplementation = defineNode({
+export const MorphImplementation = composeParser<MorphDeclaration>({
 	kind: "morph",
 	keys: {
 		in: {

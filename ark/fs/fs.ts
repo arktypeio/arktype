@@ -153,7 +153,7 @@ export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
 
 const inFileFilter: WalkOptions = {
 	include: (path) => tsFileMatcher.test(path),
-	ignoreDirsMatching: /node_modules|dist|docgen/
+	ignoreDirsMatching: /node_modules|out|dist|docgen/
 }
 
 export const getSourceFilePaths = (dir = ".") => walkPaths(dir, inFileFilter)

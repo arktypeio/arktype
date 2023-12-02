@@ -1,3 +1,4 @@
+import { composeParser } from "../parse.js"
 import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
@@ -40,7 +41,7 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export const DivisorImplementation = defineRefinement({
+export const DivisorImplementation = composeParser<DivisorDeclaration>({
 	kind: "divisor",
 	collapseKey: "divisor",
 	keys: {

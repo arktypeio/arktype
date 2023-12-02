@@ -1,41 +1,39 @@
 {
 	"name": "@arktype/attest",
-	"version": "0.2.0",
+	"version": "0.2.3",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
 		"url": "https://arktype.io"
 	},
 	"type": "module",
-	"main": "./dist/main.cjs",
-	"types": "./dist/main.d.cts",
+	"main": "./out/main.js",
+	"types": "./out/main.d.ts",
 	"exports": {
 		".": {
 			"arktype-repo": "./main.js",
-			"import": {
-				"types": "./dist/main.d.ts",
-				"default": "./dist/main.js"
-			},
-			"default": {
-				"types": "./dist/main.d.cts",
-				"default": "./dist/main.cjs"
-			}
+			"types": "./out/main.d.ts",
+			"default": "./out/main.js"
+		},
+		"./internal/*": {
+			"arktype-repo": "./*",
+			"default": "./out/*"
 		}
 	},
 	"files": [
-		"dist",
+		"out",
 		"!__tests__",
 		"**/*.ts"
 	],
 	"scripts": {
-		"build": "tsup --config ../repo/tsup.config.ts",
+		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts",
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
-		"@arktype/fs": "workspace:*",
-		"@arktype/util": "workspace:*",
+		"arktype": "latest",
+		"@arktype/fs": "0.0.7",
+		"@arktype/util": "0.0.7",
 		"@typescript/vfs": "1.5.0"
 	},
 	"devDependencies": {

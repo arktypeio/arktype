@@ -1,3 +1,4 @@
+import { composeParser } from "../parse.js"
 import {
 	In,
 	compilePrimitive,
@@ -37,7 +38,7 @@ export type PredicateDeclaration = declareRefinement<{
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
-export const PredicateImplementation = defineRefinement({
+export const PredicateImplementation = composeParser<PredicateDeclaration>({
 	kind: "predicate",
 	collapseKey: "predicate",
 	keys: {
@@ -46,7 +47,6 @@ export const PredicateImplementation = defineRefinement({
 	operand: [{}],
 	normalize: (schema) =>
 		typeof schema === "function" ? { predicate: schema } : schema,
-
 	attach: (node) => {
 		return {
 			assertValidBasis: createValidBasisAssertion(node),

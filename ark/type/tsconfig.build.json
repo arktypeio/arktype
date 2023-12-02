@@ -1,8 +1,1 @@
-{
-	"extends": "../../tsconfig.json",
-	"compilerOptions": {
-		"outDir": "dist",
-		"noEmit": false
-	},
-	"exclude": ["dist", "__tests__"]
-}
+../repo/tsconfig.build.json

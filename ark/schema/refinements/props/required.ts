@@ -1,4 +1,5 @@
 import type { Node } from "../../base.js"
+import { composeParser } from "../../parse.js"
 import { compileSerializedValue } from "../../shared/compilation.js"
 import type { BaseAttributes, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
@@ -54,7 +55,7 @@ const intersectNamed = (
 	}
 }
 
-export const RequiredImplementation = defineRefinement({
+export const RequiredImplementation = composeParser<RequiredDeclaration>({
 	kind: "required",
 	keys: {
 		key: {},

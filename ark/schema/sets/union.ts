@@ -1,5 +1,6 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
+import { composeParser } from "../parse.js"
 import type {
 	BaseAttributes,
 	declareNode,
@@ -64,7 +65,7 @@ const intersectBranch = (
 	return l.ordered ? { branches, ordered: true } : { branches }
 }
 
-export const UnionImplementation = defineNode({
+export const UnionImplementation = composeParser<UnionDeclaration>({
 	kind: "union",
 	collapseKey: "branches",
 	keys: {
