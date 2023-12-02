@@ -18,7 +18,7 @@ import {
 	type NodeKind,
 	type NodeParserImplementation
 } from "./shared/define.js"
-import type { Schema, reducibleKindOf } from "./shared/nodes.js"
+import type { Attachments, Schema, reducibleKindOf } from "./shared/nodes.js"
 import { BaseType } from "./type.js"
 
 export type SchemaParseOptions = {
@@ -73,7 +73,7 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 		def: d["schema"],
 		ctx: SchemaParseContext
 		// TODO: Build into declaration
-	): Node<reducibleKindOf<d["kind"]>> => {
+	): Attachments<d["kind"]> => {
 		if (def instanceof BaseNode) {
 			return def.kind === impl.kind
 				? (def as never)
@@ -171,7 +171,8 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 				attachments[k] = attachments[k] as never
 			}
 		}
-		Object.assign(attachments, impl.attach(attachments as never))
-		return (globalResolutions[innerId] = instantiateAttachments(attachments))
+		return attachments as {} as Attachments<d["kind"]>
+		// Object.assign(attachments, impl.attach(attachments as never))
+		// return (globalResolutions[innerId] = instantiateAttachments(attachments))
 	}
 }

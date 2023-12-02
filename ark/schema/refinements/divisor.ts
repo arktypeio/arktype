@@ -23,14 +23,11 @@ export type DivisorSchema = NormalizedDivisorSchema | number
 export type DivisorDeclaration = declareRefinement<{
 	kind: "divisor"
 	schema: DivisorSchema
-	normalizedSchema: NormalizedDivisorSchema
 	inner: DivisorInner
-	meta: BaseAttributes
 	intersections: {
 		divisor: "divisor"
 	}
 	operand: number
-	attach: PrimitiveConstraintAttachments
 }>
 
 export const writeIndivisibleMessage = <root extends string>(

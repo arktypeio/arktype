@@ -5,7 +5,7 @@ import {
 	type listable,
 	type mutable
 } from "@arktype/util"
-import type { BaseAttachments, Node } from "../base.js"
+import { BaseNode, type BaseAttachments, type Node } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import { composeParser, type SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
@@ -54,14 +54,11 @@ export type IntersectionAttachments = {
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
-	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
-	meta: BaseAttributes
 	intersections: {
 		intersection: "intersection" | Disjoint
 		default: "intersection" | Disjoint
 	}
-	attach: IntersectionAttachments
 }>
 
 export const IntersectionImplementation =
@@ -165,6 +162,11 @@ export const IntersectionImplementation =
 			}
 		}
 	})
+
+export class IntersectionNode<t = unknown> extends BaseNode<
+	t,
+	IntersectionDeclaration
+> {}
 
 // intersections: {
 // 	intersection: (l, r) => {

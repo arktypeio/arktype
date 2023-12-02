@@ -26,14 +26,12 @@ export type PatternAttachments = extend<
 export type PatternDeclaration = declareRefinement<{
 	kind: "pattern"
 	schema: PatternSchema
-	normalizedSchema: NormalizedPatternSchema
 	inner: PatternInner
-	meta: BaseAttributes
+
 	intersections: {
 		pattern: "pattern" | null
 	}
 	operand: string
-	attach: PatternAttachments
 }>
 
 export const PatternImplementation = composeRefinement<PatternDeclaration>({

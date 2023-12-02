@@ -24,15 +24,12 @@ export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
 export type PredicateDeclaration = declareRefinement<{
 	kind: "predicate"
-	normalizedSchema: NormalizedPredicateSchema
 	schema: PredicateSchema
 	inner: PredicateInner
-	meta: BaseAttributes
 	intersections: {
 		predicate: "predicate" | null
 	}
 	operand: unknown
-	attach: PrimitiveConstraintAttachments
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need

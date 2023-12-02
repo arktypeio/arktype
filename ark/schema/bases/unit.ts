@@ -22,14 +22,12 @@ export type UnitInner<value = unknown> = {
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
 	schema: UnitSchema
-	normalizedSchema: UnitSchema
 	inner: UnitInner
-	meta: BaseAttributes
+
 	intersections: {
 		unit: "unit" | Disjoint
 		default: "unit" | Disjoint
 	}
-	attach: BasisAttachments
 }>
 
 export const UnitImplementation = composeParser<UnitDeclaration>({

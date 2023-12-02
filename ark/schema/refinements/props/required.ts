@@ -26,10 +26,9 @@ export type RequiredInner = {
 export type RequiredDeclaration = declareRefinement<{
 	kind: "required"
 	schema: RequiredSchema
-	normalizedSchema: RequiredSchema
 	operand: object
 	inner: RequiredInner
-	meta: BaseAttributes
+
 	intersections: {
 		required: "required" | Disjoint | null
 		optional: "required" | Disjoint | null

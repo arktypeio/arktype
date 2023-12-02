@@ -170,8 +170,6 @@ const compileSizeOf = (kind: BoundKind) =>
 export type MinDeclaration = declareRefinement<{
 	kind: "min"
 	schema: BoundSchema<number>
-	normalizedSchema: NormalizedBoundSchema<number>
-	meta: BaseAttributes
 	inner: BoundInner
 	attach: BoundAttachments<"lower">
 	operand: number
@@ -193,10 +191,7 @@ export const MinImplementation = defineBound({
 export type MaxDeclaration = declareRefinement<{
 	kind: "max"
 	schema: BoundSchema<number>
-	normalizedSchema: NormalizedBoundSchema<number>
-	meta: BaseAttributes
 	inner: BoundInner
-	attach: BoundAttachments<"upper">
 	operand: number
 	intersections: {
 		// TODO: Fix rightOf
@@ -216,10 +211,8 @@ export const MaxImplementation = defineBound({
 export type MinLengthDeclaration = declareRefinement<{
 	kind: "minLength"
 	schema: BoundSchema<number>
-	normalizedSchema: NormalizedBoundSchema<number>
-	meta: BaseAttributes
+
 	inner: BoundInner
-	attach: BoundAttachments<"lower">
 	operand: string | readonly unknown[]
 	intersections: {
 		minLength: "minLength"
@@ -247,10 +240,8 @@ export const MinLengthImplementation = defineBound({
 export type MaxLengthDeclaration = declareRefinement<{
 	kind: "maxLength"
 	schema: BoundSchema<number>
-	normalizedSchema: NormalizedBoundSchema<number>
-	meta: BaseAttributes
+
 	inner: BoundInner
-	attach: BoundAttachments<"upper">
 	operand: string | readonly unknown[]
 	intersections: {
 		maxLength: "maxLength"
@@ -273,10 +264,7 @@ export const MaxLengthImplementation = defineBound({
 export type AfterDeclaration = declareRefinement<{
 	kind: "after"
 	schema: BoundSchema<string | number>
-	normalizedSchema: NormalizedBoundSchema<string | number>
-	meta: BaseAttributes
 	inner: BoundInner
-	attach: BoundAttachments<"lower">
 	operand: Date
 	intersections: {
 		after: "after"
@@ -297,10 +285,8 @@ export const AfterImplementation = defineBound({
 export type BeforeDeclaration = declareRefinement<{
 	kind: "before"
 	schema: BoundSchema<string | number>
-	normalizedSchema: NormalizedBoundSchema<string | number>
-	meta: BaseAttributes
+
 	inner: BoundInner
-	attach: BoundAttachments<"upper">
 	operand: Date
 	intersections: {
 		before: "before"

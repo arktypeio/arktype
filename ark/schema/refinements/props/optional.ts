@@ -24,9 +24,8 @@ export type OptionalSchema = withAttributes<{
 export type OptionalDeclaration = declareRefinement<{
 	kind: "optional"
 	schema: OptionalSchema
-	normalizedSchema: OptionalSchema
 	inner: OptionalInner
-	meta: BaseAttributes
+
 	intersections: {
 		optional: "optional" | null
 	}

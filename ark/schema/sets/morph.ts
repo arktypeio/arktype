@@ -57,15 +57,13 @@ export type MorphAttachments = {
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
 	schema: MorphSchema
-	normalizedSchema: MorphSchema
-	meta: BaseAttributes
+
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint
 		intersection: "morph" | Disjoint
 		default: "morph" | Disjoint
 	}
-	attach: MorphAttachments
 }>
 
 // TODO: recursively extract in

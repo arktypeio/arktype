@@ -1,9 +1,15 @@
-import type { Dict, evaluate, extend } from "@arktype/util"
-import type { RefinementOperand } from "../refinements/refinement.js"
-import type { Problems } from "./compilation.js"
-import type { ConstraintKind, NodeKind, RefinementKind } from "./define.js"
+import type { Dict, PartialRecord, evaluate, extend } from "@arktype/util"
+import type { BaseAttachments } from "../base.js"
+import type { PropKind } from "../refinements/props/prop.js"
+import type {
+	ConstraintKind,
+	NodeKind,
+	RefinementKind,
+	SetKind
+} from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
+import type { Declaration } from "./nodes.js"
 
 export type BaseAttributes = {
 	readonly description?: string
@@ -30,36 +36,63 @@ export type BaseIntersectionMap = {
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
 	schema: unknown
-	normalizedSchema: Dict
 	inner: Dict
-	meta: BaseAttributes
+	meta?: Dict
+	checks?: unknown
+	childKind?: NodeKind
 	intersections: BaseIntersectionMap[kind]
-	attach: Dict
 }
 
-export type BaseNodeDeclaration = {
-	kind: NodeKind
-	schema: unknown
-	normalizedSchema: Dict
-	inner: Dict
-	meta: BaseAttributes & { [k: string]: unknown }
-	intersections: {
-		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
-	}
-	attach: Dict
-}
-
-export type validateNodeDeclaration<types, additionalKeys = never> = {
-	[k in keyof DeclarationInput<any>]: types extends {
+export type validateNodeDeclaration<d, additionalKeys = never> = {
+	[k in keyof DeclarationInput<any>]: d extends {
 		kind: infer kind extends NodeKind
 	}
 		? DeclarationInput<kind>[k]
 		: never
 } & {
-	[k in Exclude<
-		keyof types,
-		keyof BaseNodeDeclaration | additionalKeys
-	>]?: never
+	[k in Exclude<keyof d, keyof DeclarationInput<any> | additionalKeys>]?: never
 }
 
-export type declareNode<types extends validateNodeDeclaration<types>> = types
+type extractNormalizedSchema<schema, inner> = schema extends PartialRecord<
+	keyof inner,
+	unknown
+>
+	? schema
+	: never
+
+type ParentsByKind = {
+	[k in NodeKind]: {
+		[pKind in NodeKind]: k extends Declaration<k>["childKind"] ? pKind : never
+	}[NodeKind]
+}
+
+type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
+
+export type declareNode<d extends validateNodeDeclaration<d>> = extend<
+	Omit<d, "attach">,
+	{
+		meta: "meta" extends keyof d
+			? extend<BaseAttributes, d["meta"]>
+			: BaseAttributes
+		normalizedSchema: extractNormalizedSchema<d["schema"], d["inner"]>
+		checks: "checks" extends keyof d ? d["checks"] : unknown
+		attachments: extend<BaseAttachments, d["inner"]>
+		childKind: "childKind" extends keyof d ? d["childKind"] : never
+		parentKind: parentKindOf<d["kind"]>
+	}
+>
+
+export type BaseNodeDeclaration = {
+	kind: NodeKind
+	schema: unknown
+	normalizedSchema: BaseAttributes & Dict
+	meta: BaseAttributes & Dict
+	attachments: BaseAttachments
+	inner: Dict
+	checks: unknown
+	childKind: NodeKind
+	parentKind: SetKind | PropKind
+	intersections: {
+		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
+	}
+}

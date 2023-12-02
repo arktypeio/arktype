@@ -32,7 +32,7 @@ import {
 	type CompilationContext,
 	type TraversalMethods
 } from "./shared/compilation.js"
-import type { BaseAttributes } from "./shared/declare.js"
+import type { BaseAttributes, BaseNodeDeclaration } from "./shared/declare.js"
 import {
 	basisKinds,
 	closedRefinementKinds,
@@ -79,9 +79,11 @@ export interface BaseAttachments extends TraversalMethods {
 	readonly scope: ScopeNode
 }
 
-// TODO: is this ok- from?
-export abstract class BaseNode<t = unknown> extends DynamicBase<
-	BaseAttachments & { (data: unknown): CheckResult<extractOut<t>> }
+export abstract class BaseNode<
+	t = unknown,
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> extends DynamicBase<
+	d["attachments"] & { (data: unknown): CheckResult<extractOut<t>> }
 > {
 	declare infer: extractOut<t>;
 	declare [inferred]: t;

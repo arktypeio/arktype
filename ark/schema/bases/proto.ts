@@ -25,14 +25,11 @@ export type ProtoSchema<proto extends Constructor = Constructor> =
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
 	schema: ProtoSchema
-	normalizedSchema: ProtoInner
 	inner: ProtoInner
-	meta: BaseAttributes
 	intersections: {
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
-	attach: BasisAttachments
 }>
 
 // // readonly literalKeys = prototypeKeysOf(this.rule.prototype)

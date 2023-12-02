@@ -43,16 +43,13 @@ export type UnionAttachments = {
 export type UnionDeclaration = declareNode<{
 	kind: "union"
 	schema: UnionSchema
-	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
-	meta: BaseAttributes
 	intersections: {
 		union: "union" | Disjoint
 		morph: "union" | Disjoint
 		intersection: "union" | Disjoint
 		default: "union" | Disjoint
 	}
-	attach: UnionAttachments
 }>
 
 const intersectBranch = (

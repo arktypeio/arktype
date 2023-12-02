@@ -1,4 +1,5 @@
 import { domainOf, type Domain } from "@arktype/util"
+import { BaseNode } from "../base.js"
 import { composeParser } from "../parse.js"
 import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type {
@@ -7,6 +8,7 @@ import type {
 	withAttributes
 } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
+import type { Attachments } from "../shared/nodes.js"
 import type { BasisAttachments } from "./basis.js"
 
 export type DomainInner<
@@ -29,13 +31,10 @@ export type NormalizedDomainSchema<
 export type DomainDeclaration = declareNode<{
 	kind: "domain"
 	schema: DomainSchema
-	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
-	meta: BaseAttributes
 	intersections: {
 		domain: "domain" | Disjoint
 	}
-	attach: BasisAttachments
 }>
 
 export const DomainImplementation = composeParser<DomainDeclaration>({
@@ -63,10 +62,18 @@ export const DomainImplementation = composeParser<DomainDeclaration>({
 	}
 })
 
+export class DomainNode<t = unknown> extends BaseNode<
+	t,
+	Attachments<"domain">
+> {
+	writeDefaultDescription() {
+		return domainDescriptions[this.domain]
+	}
+}
+
 // intersections: {
 // 	domain: (l, r) => Disjoint.from("domain", l, r)
 // },
-// writeDefaultDescription: (node) => domainDescriptions[node.domain],
 // compile: compilePrimitive,
 
 const enumerableDomainDescriptions = {
