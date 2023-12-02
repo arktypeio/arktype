@@ -1,10 +1,10 @@
 import { composeParser } from "../parse.js"
-import { In, composePrimitiveTraversal } from "../shared/compilation.js"
-import type {
-	BaseAttributes,
-	TraverseAllows,
-	withAttributes
-} from "../shared/declare.js"
+import {
+	In,
+	composePrimitiveTraversal,
+	type TraverseAllows
+} from "../shared/compilation.js"
+import type { BaseAttributes, withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
 	composeOperandAssertion,
@@ -51,7 +51,7 @@ export const DivisorImplementation = composeRefinement<DivisorDeclaration>({
 	normalize: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema,
 	attach: (node) => {
-		const traverseAllows: TraverseAllows<"divisor"> = (data) =>
+		const traverseAllows: TraverseAllows<number> = (data) =>
 			data % node.divisor === 0
 		return {
 			traverseAllows,

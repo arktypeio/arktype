@@ -29,13 +29,10 @@ import type { extractIn, extractOut, ioKindOf } from "./sets/morph.js"
 import {
 	Problems,
 	type CheckResult,
-	type CompilationContext
+	type CompilationContext,
+	type CompiledMethods
 } from "./shared/compilation.js"
-import type {
-	BaseAttributes,
-	TraverseAllows,
-	TraverseApply
-} from "./shared/declare.js"
+import type { BaseAttributes } from "./shared/declare.js"
 import {
 	basisKinds,
 	closedRefinementKinds,
@@ -66,7 +63,7 @@ import type {
 	UnitNode
 } from "./type.js"
 
-export interface BaseAttachments {
+export interface BaseAttachments extends CompiledMethods {
 	alias?: string
 	readonly id: string
 	readonly kind: NodeKind

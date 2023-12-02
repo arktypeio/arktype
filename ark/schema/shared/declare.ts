@@ -27,25 +27,6 @@ export type BaseIntersectionMap = {
 	>
 }
 
-export type InputData<kind extends NodeKind> = kind extends RefinementKind
-	? RefinementOperand<kind>
-	: unknown
-
-export type NodeAttachments<kind extends NodeKind> = {
-	traverseAllows: TraverseAllows<kind>
-	traverseApply: TraverseApply<kind>
-}
-
-export type TraverseAllows<kind extends NodeKind> = (
-	data: InputData<kind>,
-	problems: Problems
-) => boolean
-
-export type TraverseApply<kind extends NodeKind> = (
-	data: InputData<kind>,
-	problems: Problems
-) => void
-
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
 	schema: unknown

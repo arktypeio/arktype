@@ -11,20 +11,10 @@ import type {
 } from "@arktype/util"
 import type { BaseNode, Node } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { PatternDeclaration } from "../refinements/pattern.js"
 import type { ScopeNode } from "../scope.js"
-import { compileSerializedValue } from "./compilation.js"
-import type {
-	BaseAttributes,
-	BaseNodeDeclaration,
-	NodeAttachments
-} from "./declare.js"
-import type {
-	Attachments,
-	Declaration,
-	Inner,
-	reducibleKindOf
-} from "./nodes.js"
+import { compileSerializedValue, type CompiledMethods } from "./compilation.js"
+import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
+import type { reducibleKindOf } from "./nodes.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -164,7 +154,7 @@ export type AttachImplementation<d extends BaseNodeDeclaration> = (
 	{
 		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
 		// TODO: remove kind
-	} & NodeAttachments<d["kind"]>
+	} & CompiledMethods<d["kind"]>
 >
 
 export type UnknownNodeImplementation = optionalizeKeys<

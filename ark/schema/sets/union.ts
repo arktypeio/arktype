@@ -3,7 +3,7 @@ import type { Node } from "../base.js"
 import { composeParser } from "../parse.js"
 import type {
 	BaseAttributes,
-	NodeAttachments,
+	CompiledMethods,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"

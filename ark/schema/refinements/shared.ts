@@ -1,5 +1,5 @@
 import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { BaseAttachments, Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import { composeParser } from "../parse.js"
 import type {
@@ -37,7 +37,7 @@ export type declareRefinement<
 
 const cache = {} as PartialRecord<RefinementKind, readonly TypeNode[]>
 
-export const composeOperandAssertion = (inner: never) => {
+export const composeOperandAssertion = (inner: BaseAttachments) => {
 	if (!cache[inner.kind]) {
 		const operandsDef: readonly Schema<TypeKind>[] = (
 			inner.implementation as any
