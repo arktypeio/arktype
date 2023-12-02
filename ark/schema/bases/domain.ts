@@ -2,14 +2,8 @@ import { domainOf, type Domain } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import { composeParser } from "../parse.js"
 import { In, composePrimitiveTraversal } from "../shared/compilation.js"
-import type {
-	BaseAttributes,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
-import type { Attachments } from "../shared/nodes.js"
-import type { BasisAttachments } from "./basis.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -43,29 +37,25 @@ export const DomainImplementation = composeParser<DomainDeclaration>({
 	keys: {
 		domain: {}
 	},
-	normalize: (input) => (typeof input === "string" ? { domain: input } : input),
-	attach: (node) => {
-		const traverseAllows = (data: unknown) => domainOf(data) === node.domain
-		return {
-			basisName: node.domain,
-			traverseAllows,
-			traverseApply: composePrimitiveTraversal(node, traverseAllows),
-			condition:
-				node.domain === "object"
-					? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-					: `typeof ${In} === "${node.domain}"`,
-			negatedCondition:
-				node.domain === "object"
-					? `((typeof ${In} !== "object" || ${In} === null) && typeof ${In} !== "function")`
-					: `typeof ${In} !== "${node.domain}"`
-		}
-	}
+	normalize: (input) => (typeof input === "string" ? { domain: input } : input)
 })
 
-export class DomainNode<t = unknown> extends BaseNode<
-	t,
-	Attachments<"domain">
-> {
+export class DomainNode<t = unknown> extends BaseNode<t, DomainDeclaration> {
+	basisName = this.domain
+
+	condition =
+		this.domain === "object"
+			? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
+			: `typeof ${In} === "${this.domain}"`
+
+	negatedCondition =
+		this.domain === "object"
+			? `((typeof ${In} !== "object" || ${In} === null) && typeof ${In} !== "function")`
+			: `typeof ${In} !== "${this.domain}"`
+
+	traverseAllows = (data: unknown) => domainOf(data) === this.domain
+	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+
 	writeDefaultDescription() {
 		return domainDescriptions[this.domain]
 	}

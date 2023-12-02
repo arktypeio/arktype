@@ -1,7 +1,6 @@
 import {
 	entriesOf,
 	hasDomain,
-	includes,
 	throwParseError,
 	type Json,
 	type JsonData,
@@ -13,13 +12,11 @@ import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import {
 	defaultValueSerializer,
-	typeKinds,
 	type BasisKind,
 	type NodeKind,
 	type NodeParserImplementation
 } from "./shared/define.js"
-import type { Attachments, Schema, reducibleKindOf } from "./shared/nodes.js"
-import { BaseType } from "./type.js"
+import type { Schema, reducibleKindOf } from "./shared/nodes.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -50,30 +47,10 @@ export declare function parse<defKind extends NodeKind>(
 	ctx: SchemaParseContext
 ): Node<reducibleKindOf<defKind>>
 
-type UnknownNodeConstructor<kind extends NodeKind> = new (
-	baseAttachments: BaseAttachments
-) => Node<kind>
-
-const instantiateAttachments = <kind extends NodeKind>(
-	baseAttachments: BaseAttachments
-) => {
-	const ctor: UnknownNodeConstructor<kind> = includes(
-		typeKinds,
-		baseAttachments.kind
-	)
-		? BaseType
-		: (BaseNode as any)
-	return new ctor(baseAttachments)
-}
-
 export const composeParser = <d extends BaseNodeDeclaration>(
 	impl: NodeParserImplementation<d>
 ) => {
-	return (
-		def: d["schema"],
-		ctx: SchemaParseContext
-		// TODO: Build into declaration
-	): Attachments<d["kind"]> => {
+	return (def: d["schema"], ctx: SchemaParseContext): d["attachments"] => {
 		if (def instanceof BaseNode) {
 			return def.kind === impl.kind
 				? (def as never)
@@ -165,14 +142,13 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 			innerId,
 			typeId,
 			scope: ctx.scope
-		} satisfies BaseAttachments
+		} satisfies BaseAttachments as Record<string, any>
 		for (const k in inner) {
 			if (k !== "in" && k !== "out") {
 				attachments[k] = attachments[k] as never
 			}
 		}
-		return attachments as {} as Attachments<d["kind"]>
-		// Object.assign(attachments, impl.attach(attachments as never))
+		return attachments as d["attachments"]
 		// return (globalResolutions[innerId] = instantiateAttachments(attachments))
 	}
 }

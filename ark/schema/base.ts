@@ -30,7 +30,8 @@ import {
 	Problems,
 	type CheckResult,
 	type CompilationContext,
-	type TraversalMethods
+	type TraverseAllows,
+	type TraverseApply
 } from "./shared/compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./shared/declare.js"
 import {
@@ -63,7 +64,7 @@ import type {
 	UnitNode
 } from "./type.js"
 
-export interface BaseAttachments extends TraversalMethods {
+export interface BaseAttachments {
 	alias?: string
 	readonly id: string
 	readonly kind: NodeKind
@@ -121,6 +122,8 @@ export abstract class BaseNode<
 	}
 
 	abstract writeDefaultDescription(): string
+	abstract traverseAllows: TraverseAllows<d["checks"]>
+	abstract traverseApply: TraverseApply<d["checks"]>
 
 	allows = (data: unknown): data is t => {
 		const problems = new Problems()

@@ -69,7 +69,7 @@ type ParentsByKind = {
 type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type declareNode<d extends validateNodeDeclaration<d>> = extend<
-	Omit<d, "attach">,
+	d,
 	{
 		meta: "meta" extends keyof d
 			? extend<BaseAttributes, d["meta"]>

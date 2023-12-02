@@ -27,7 +27,6 @@ export type PatternDeclaration = declareRefinement<{
 	kind: "pattern"
 	schema: PatternSchema
 	inner: PatternInner
-
 	intersections: {
 		pattern: "pattern" | null
 	}

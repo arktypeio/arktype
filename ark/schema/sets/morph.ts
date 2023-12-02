@@ -49,15 +49,9 @@ export type MorphSchema = withAttributes<{
 	readonly morph: listable<Morph>
 }>
 
-export type MorphAttachments = {
-	inCache: ValidatorNode
-	outCache: ValidatorNode
-}
-
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
 	schema: MorphSchema
-
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint
@@ -84,13 +78,7 @@ export const MorphImplementation = composeParser<MorphDeclaration>({
 			parse: listFrom
 		}
 	},
-	normalize: (schema) => schema,
-	attach: (node) => ({
-		traverseAllows: (data, problems) => node.in.traverseAllows(data, problems),
-		traverseApply: (data, problems) => node.in.traverseApply(data, problems),
-		inCache: node.inner.in,
-		outCache: node.inner.out ?? node.scope.builtin.unknown
-	})
+	normalize: (schema) => schema
 })
 
 // intersections: {
@@ -137,7 +125,9 @@ export const MorphImplementation = composeParser<MorphDeclaration>({
 // 	`a morph from ${node.inner.in} to ${node.inner.out}`,
 // compile: (node, ctx) => node.in.compileBody(ctx),
 
-export class MorphNode<t = unknown> extends BaseType<t> {
+export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
+	traverseAllows = (data, problems) => this.in.traverseAllows(data, problems)
+	traverseApply = (data, problems) => this.in.traverseApply(data, problems)
 	inCache = this.inner.in
 	outCache = this.inner.out ?? this.scope.builtin.unknown
 }

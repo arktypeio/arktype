@@ -1,11 +1,7 @@
 import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
 import type { BaseAttachments, Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import { composeParser } from "../parse.js"
-import type {
-	BaseNodeDeclaration,
-	validateNodeDeclaration
-} from "../shared/declare.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type {
 	NodeParserImplementation,
 	RefinementKind,
@@ -29,12 +25,6 @@ export type RefinementOperandAssertion = (
 	basis: Node<BasisKind> | undefined
 ) => void
 
-export type declareRefinement<
-	types extends validateNodeDeclaration<types, "operand"> & {
-		operand: unknown
-	}
-> = types & { attach: { assertValidBasis: RefinementOperandAssertion } }
-
 const cache = {} as PartialRecord<RefinementKind, readonly TypeNode[]>
 
 export const composeOperandAssertion = (inner: BaseAttachments) => {
@@ -57,7 +47,3 @@ export const composeOperandAssertion = (inner: BaseAttachments) => {
 				}
 		  }
 }
-
-export const composeRefinement = <d extends BaseNodeDeclaration>(
-	impl: RefinementImplementationInput<d>
-) => composeParser(impl)

@@ -100,17 +100,18 @@ export const UnionImplementation = composeParser<UnionDeclaration>({
 			...inner,
 			branches: reducedBranches
 		})
-	},
-	attach: (node) => {
-		return {
-			traverseAllows: (data, problems) =>
-				node.branches.some((b) => b.traverseAllows(data, problems)),
-			traverseApply: (data, problems) =>
-				node.branches.forEach((b) => b.traverseApply(data, problems)),
-			discriminant: null //discriminate(inner.branches)
-		}
 	}
 })
+
+// attach: (node) => {
+// 	return {
+// 		traverseAllows: (data, problems) =>
+// 			node.branches.some((b) => b.traverseAllows(data, problems)),
+// 		traverseApply: (data, problems) =>
+// 			node.branches.forEach((b) => b.traverseApply(data, problems)),
+// 		discriminant: null //discriminate(inner.branches)
+// 	}
+// }
 
 // intersections: {
 // 	union: (l, r) => {

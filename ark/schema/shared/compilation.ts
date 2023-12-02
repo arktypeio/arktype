@@ -15,7 +15,12 @@ import type { Attachments } from "./nodes.js"
 
 export const In = "$arkRoot"
 
-export type CompilationKind = "allows" | "apply"
+export type TraversalKind = keyof TraversalMethodsByKind
+
+type TraversalMethodsByKind<input = unknown> = {
+	allows: TraverseAllows<input>
+	apply: TraverseApply<input>
+}
 
 export type TraverseAllows<input = unknown> = (
 	data: input,
@@ -27,15 +32,10 @@ export type TraverseApply<input = unknown> = (
 	problems: readonly Problem[]
 ) => void
 
-export type TraversalMethods<input = unknown> = {
-	traverseAllows: TraverseAllows<input>
-	traverseApply: TraverseApply<input>
-}
-
 export type CompilationContext = {
 	path: string[]
 	discriminants: Discriminant[]
-	compilationKind: CompilationKind
+	compilationKind: TraversalKind
 }
 
 export type CompositeKind = SetKind | PropKind
@@ -64,10 +64,10 @@ export const bindCompiledScope = (
 	}
 }
 
-const compileScope = <kind extends CompilationKind>(
+const compileScope = <kind extends TraversalKind>(
 	references: readonly Node[],
 	kind: kind
-): Record<string, TraversalMethods[kind]> => {
+): Record<string, TraversalMethodsByKind[kind]> => {
 	const compiledArgs = kind === "allows" ? In : `${In}, problems`
 	const body = `return {
 	${references

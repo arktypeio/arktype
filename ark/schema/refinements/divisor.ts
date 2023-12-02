@@ -1,16 +1,5 @@
 import { composeParser } from "../parse.js"
-import {
-	In,
-	composePrimitiveTraversal,
-	type TraverseAllows
-} from "../shared/compilation.js"
-import type { BaseAttributes, withAttributes } from "../shared/declare.js"
-import type { PrimitiveConstraintAttachments } from "../shared/define.js"
-import {
-	composeOperandAssertion,
-	composeRefinement,
-	type declareRefinement
-} from "./shared.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 
 export type DivisorInner = {
 	readonly divisor: number
@@ -20,14 +9,14 @@ export type NormalizedDivisorSchema = withAttributes<DivisorInner>
 
 export type DivisorSchema = NormalizedDivisorSchema | number
 
-export type DivisorDeclaration = declareRefinement<{
+export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
 	schema: DivisorSchema
 	inner: DivisorInner
 	intersections: {
 		divisor: "divisor"
 	}
-	operand: number
+	checks: number
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -38,27 +27,28 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export const DivisorImplementation = composeRefinement<DivisorDeclaration>({
+export const DivisorImplementation = composeParser<DivisorDeclaration>({
 	kind: "divisor",
 	collapseKey: "divisor",
 	keys: {
 		divisor: {}
 	},
-	operand: ["number"],
+	// operand: ["number"],
 	normalize: (schema) =>
-		typeof schema === "number" ? { divisor: schema } : schema,
-	attach: (node) => {
-		const traverseAllows: TraverseAllows<number> = (data) =>
-			data % node.divisor === 0
-		return {
-			traverseAllows,
-			traverseApply: composePrimitiveTraversal(node, traverseAllows),
-			assertValidBasis: composeOperandAssertion(node),
-			condition: `${In} % ${node.divisor} === 0`,
-			negatedCondition: `${In} % ${node.divisor} !== 0`
-		}
-	}
+		typeof schema === "number" ? { divisor: schema } : schema
 })
+
+// attach: (node) => {
+// 	const traverseAllows: TraverseAllows<number> = (data) =>
+// 		data % node.divisor === 0
+// 	return {
+// 		traverseAllows,
+// 		traverseApply: composePrimitiveTraversal(node, traverseAllows),
+// 		assertValidBasis: composeOperandAssertion(node),
+// 		condition: `${In} % ${node.divisor} === 0`,
+// 		negatedCondition: `${In} % ${node.divisor} !== 0`
+// 	}
+// }
 
 // intersections: {
 // 	divisor: (l, r) => ({

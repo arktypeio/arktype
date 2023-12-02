@@ -1,12 +1,16 @@
 import type { entriesOf } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import type { BranchKind } from "./sets/union.js"
+import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Attachments, Inner, Schema } from "./shared/nodes.js"
 
-export class BaseType<t> extends BaseNode<t> {
+export abstract class BaseType<
+	t = unknown,
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> extends BaseNode<t, d> {
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
 	declare readonly kind: TypeKind

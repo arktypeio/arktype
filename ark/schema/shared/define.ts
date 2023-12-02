@@ -134,7 +134,6 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	keys: KeyDefinitions<d>
 	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void
-	attach: AttachImplementation<d>
 	normalize: (
 		schema: d["schema"]
 	) => normalizeInput<d["normalizedSchema"], d["inner"]>
@@ -148,24 +147,7 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 // compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 // intersections: reifyIntersections<d["kind"], d["intersections"]>
 
-export type AttachImplementation<d extends BaseNodeDeclaration> = (
-	inner: d["inner"]
-) => evaluate<
-	{
-		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
-		// TODO: remove kind
-	} & TraversalMethods<d["kind"]>
->
-
 export type UnknownNodeImplementation = optionalizeKeys<
 	NodeParserImplementation<BaseNodeDeclaration>,
 	"reduce"
 >
-
-type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
-	[k in keyof d["attach"]]: k extends keyof d["inner"]
-		? d["inner"][k] extends d["attach"][k]
-			? never
-			: k
-		: k
-}[keyof d["attach"]]
