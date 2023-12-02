@@ -1,15 +1,11 @@
 import type { extend } from "@arktype/util"
 import { composeParser } from "../parse.js"
-import {
-	In,
-	compilePrimitive,
-	composePrimitiveTraversal
-} from "../shared/compilation.js"
+import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type { BaseAttributes, withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
-	createValidBasisAssertion,
-	defineRefinement,
+	composeOperandAssertion,
+	composeRefinement,
 	type declareRefinement
 } from "./shared.js"
 
@@ -40,7 +36,7 @@ export type PatternDeclaration = declareRefinement<{
 	attach: PatternAttachments
 }>
 
-export const PatternImplementation = composeParser<PatternDeclaration>({
+export const PatternImplementation = composeRefinement<PatternDeclaration>({
 	kind: "pattern",
 	collapseKey: "source",
 	keys: {
@@ -59,7 +55,7 @@ export const PatternImplementation = composeParser<PatternDeclaration>({
 	attach: (node) => {
 		const regex = new RegExp(node.source, node.flags)
 		return {
-			assertValidBasis: createValidBasisAssertion(node),
+			assertValidBasis: composeOperandAssertion(node),
 			regex,
 			traverseAllows: regex.test,
 			traverseApply: composePrimitiveTraversal(node, regex.test),

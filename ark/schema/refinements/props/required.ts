@@ -6,8 +6,8 @@ import type { TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Inner, Schema } from "../../shared/nodes.js"
 import {
-	createValidBasisAssertion,
-	defineRefinement,
+	composeOperandAssertion,
+	composeRefinement,
 	type declareRefinement
 } from "../shared.js"
 import type { PropKind } from "./prop.js"
@@ -55,7 +55,7 @@ const intersectNamed = (
 	}
 }
 
-export const RequiredImplementation = composeParser<RequiredDeclaration>({
+export const RequiredImplementation = composeRefinement<RequiredDeclaration>({
 	kind: "required",
 	keys: {
 		key: {},
@@ -81,7 +81,7 @@ export const RequiredImplementation = composeParser<RequiredDeclaration>({
 					problems.add("provided")
 				}
 			},
-			assertValidBasis: createValidBasisAssertion(node)
+			assertValidBasis: composeOperandAssertion(node)
 		}
 	}
 })

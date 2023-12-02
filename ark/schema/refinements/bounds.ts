@@ -5,15 +5,14 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import { composeParser } from "../parse.js"
 import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
+	BaseNodeDeclaration,
 	InputData,
 	withAttributes
 } from "../shared/declare.js"
 import type {
-	BaseInitializedNode,
 	BoundKind,
 	PrimitiveConstraintAttachments,
 	TypeKind
@@ -21,8 +20,8 @@ import type {
 import type { Disjoint } from "../shared/disjoint.js"
 import type { Declaration, Schema } from "../shared/nodes.js"
 import {
-	createValidBasisAssertion,
-	defineRefinement,
+	composeOperandAssertion,
+	composeRefinement,
 	type RefinementImplementationInput,
 	type declareRefinement
 } from "./shared.js"
@@ -82,11 +81,9 @@ export type NumericallyBoundable = string | number | readonly unknown[]
 
 export type Boundable = Declaration<BoundKind>["operand"]
 
-export type BoundNodeDefinition<kind extends BoundKind = BoundKind> = {
-	kind: kind
-	defineChecker: (
-		node: BaseInitializedNode<kind>
-	) => (data: InputData<kind>) => boolean
+export type BoundNodeDefinition<d extends BaseNodeDeclaration> = {
+	kind: d["kind"]
+	defineChecker: (inner: d["inner"]) => (data: never) => boolean
 	writeDefaultDescription: (node: BoundNode) => string
 	operand: readonly Schema<TypeKind>[]
 }
@@ -94,10 +91,10 @@ export type BoundNodeDefinition<kind extends BoundKind = BoundKind> = {
 export const normalizeLimit = (limit: LimitSchemaValue): number =>
 	typeof limit === "string" ? new Date(limit).valueOf() : limit
 
-export const defineBound = <kind extends BoundKind>(
-	boundDefinition: BoundNodeDefinition<kind>
+export const defineBound = <d extends BaseNodeDeclaration>(
+	boundDefinition: BoundNodeDefinition<d>
 ) =>
-	composeParser({
+	composeRefinement({
 		// check this generic bound implementation against a concrete case
 		// ("min"), then cast it to the expected parameterized definition
 		kind: boundDefinition.kind as "min",
@@ -128,7 +125,7 @@ export const defineBound = <kind extends BoundKind>(
 				comparator,
 				traverseAllows: checker,
 				traverseApply: composePrimitiveTraversal(node as never, checker),
-				assertValidBasis: createValidBasisAssertion(node),
+				assertValidBasis: composeOperandAssertion(node),
 				condition: `${size} ${comparator} ${node.limit}`,
 				negatedCondition: `${size} ${negatedComparators[comparator]} ${node.limit}`
 			}

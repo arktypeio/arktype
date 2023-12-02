@@ -2,6 +2,7 @@ import type {
 	ErrorMessage,
 	JsonData,
 	PartialRecord,
+	evaluate,
 	listable,
 	optionalizeKeys,
 	requireKeys,
@@ -13,7 +14,11 @@ import type { SchemaParseContext } from "../parse.js"
 import type { PatternDeclaration } from "../refinements/pattern.js"
 import type { ScopeNode } from "../scope.js"
 import { compileSerializedValue } from "./compilation.js"
-import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
+import type {
+	BaseAttributes,
+	BaseNodeDeclaration,
+	NodeAttachments
+} from "./declare.js"
 import type {
 	Attachments,
 	Declaration,
@@ -134,16 +139,12 @@ export type NodeKeyImplementation<
 	| (k extends keyof d["meta"] ? "meta" : never)
 >
 
-export type BaseInitializedNode<kind extends NodeKind> = kind extends NodeKind
-	? Omit<Node<kind>, unsatisfiedAttachKey<kind>>
-	: never
-
 export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	kind: d["kind"]
 	keys: KeyDefinitions<d>
 	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void
-	attach: AttachImplementation<d["kind"]>
+	attach: AttachImplementation<d>
 	normalize: (
 		schema: d["schema"]
 	) => normalizeInput<d["normalizedSchema"], d["inner"]>
@@ -157,37 +158,24 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 // compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 // intersections: reifyIntersections<d["kind"], d["intersections"]>
 
-export type AttachImplementation<kind extends NodeKind> = (
-	node: BaseInitializedNode<kind>
-) => {
-	[k in unsatisfiedAttachKey<kind>]: Attachments<kind>[k]
-}
+export type AttachImplementation<d extends BaseNodeDeclaration> = (
+	inner: d["inner"]
+) => evaluate<
+	{
+		[k in unsatisfiedAttachKey<d>]: d["attach"][k]
+		// TODO: remove kind
+	} & NodeAttachments<d["kind"]>
+>
 
 export type UnknownNodeImplementation = optionalizeKeys<
 	NodeParserImplementation<BaseNodeDeclaration>,
 	"reduce"
 >
 
-type unsatisfiedAttachKey<kind extends NodeKind> = {
-	[k in keyof Attachments<kind>]: k extends keyof Inner<kind>
-		? Inner<kind>[k] extends Attachments<kind>[k]
+type unsatisfiedAttachKey<d extends BaseNodeDeclaration> = {
+	[k in keyof d["attach"]]: k extends keyof d["inner"]
+		? d["inner"][k] extends d["attach"][k]
 			? never
 			: k
 		: k
-}[keyof Attachments<kind>]
-
-export function defineNode<
-	kind extends NodeKind,
-	impl extends NodeParserImplementation<Declaration<kind>>
->(input: { kind: kind } & impl): impl
-// eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function defineNode(
-	input: NodeParserImplementation<any>
-): UnknownNodeImplementation {
-	Object.assign(input.keys, {
-		description: {
-			meta: true
-		}
-	})
-	return input as never
-}
+}[keyof d["attach"]]

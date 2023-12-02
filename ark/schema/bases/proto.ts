@@ -1,18 +1,16 @@
 import {
-	constructorExtends,
 	getExactBuiltinConstructorName,
-	objectKindDescriptions,
 	objectKindOf,
 	type Constructor
 } from "@arktype/util"
+import { composeParser } from "../parse.js"
 import {
 	In,
-	compilePrimitive,
 	compileSerializedValue,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
 import type { BaseAttributes, declareNode } from "../shared/declare.js"
-import { defaultValueSerializer, defineNode } from "../shared/define.js"
+import { defaultValueSerializer } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
@@ -39,7 +37,7 @@ export type ProtoDeclaration = declareNode<{
 
 // // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export const ProtoImplementation = defineNode({
+export const ProtoImplementation = composeParser<ProtoDeclaration>({
 	kind: "proto",
 	collapseKey: "proto",
 	keys: {

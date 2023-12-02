@@ -1,7 +1,7 @@
 import { domainOf, printable } from "@arktype/util"
+import { composeParser } from "../parse.js"
 import {
 	In,
-	compilePrimitive,
 	compileSerializedValue,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
@@ -10,7 +10,6 @@ import type {
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
-import { defineNode } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
@@ -33,7 +32,7 @@ export type UnitDeclaration = declareNode<{
 	attach: BasisAttachments
 }>
 
-export const UnitImplementation = defineNode({
+export const UnitImplementation = composeParser<UnitDeclaration>({
 	kind: "unit",
 	keys: {
 		unit: {

@@ -7,8 +7,8 @@ import type {
 } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
-	createValidBasisAssertion,
-	defineRefinement,
+	composeOperandAssertion,
+	composeRefinement,
 	type declareRefinement
 } from "./shared.js"
 
@@ -41,7 +41,7 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export const DivisorImplementation = composeParser<DivisorDeclaration>({
+export const DivisorImplementation = composeRefinement<DivisorDeclaration>({
 	kind: "divisor",
 	collapseKey: "divisor",
 	keys: {
@@ -56,7 +56,7 @@ export const DivisorImplementation = composeParser<DivisorDeclaration>({
 		return {
 			traverseAllows,
 			traverseApply: composePrimitiveTraversal(node, traverseAllows),
-			assertValidBasis: createValidBasisAssertion(node),
+			assertValidBasis: composeOperandAssertion(node),
 			condition: `${In} % ${node.divisor} === 0`,
 			negatedCondition: `${In} % ${node.divisor} !== 0`
 		}

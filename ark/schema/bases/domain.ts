@@ -1,15 +1,11 @@
 import { domainOf, type Domain } from "@arktype/util"
-import {
-	In,
-	compilePrimitive,
-	composePrimitiveTraversal
-} from "../shared/compilation.js"
+import { composeParser } from "../parse.js"
+import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type {
 	BaseAttributes,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
-import { defineNode } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { BasisAttachments } from "./basis.js"
 
@@ -42,7 +38,7 @@ export type DomainDeclaration = declareNode<{
 	attach: BasisAttachments
 }>
 
-export const DomainImplementation = defineNode({
+export const DomainImplementation = composeParser<DomainDeclaration>({
 	kind: "domain",
 	collapseKey: "domain",
 	keys: {

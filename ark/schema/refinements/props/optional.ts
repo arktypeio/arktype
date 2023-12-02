@@ -5,8 +5,8 @@ import type { BaseAttributes, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
 import type { Schema } from "../../shared/nodes.js"
 import {
-	createValidBasisAssertion,
-	defineRefinement,
+	composeOperandAssertion,
+	composeRefinement,
 	type declareRefinement
 } from "../shared.js"
 import type { NamedPropAttachments } from "./shared.js"
@@ -34,7 +34,7 @@ export type OptionalDeclaration = declareRefinement<{
 	attach: NamedPropAttachments
 }>
 
-export const OptionalImplementation = composeParser<OptionalDeclaration>({
+export const OptionalImplementation = composeRefinement<OptionalDeclaration>({
 	kind: "optional",
 	keys: {
 		key: {},
@@ -58,7 +58,7 @@ export const OptionalImplementation = composeParser<OptionalDeclaration>({
 				}
 			},
 			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
-			assertValidBasis: createValidBasisAssertion(node)
+			assertValidBasis: composeOperandAssertion(node)
 		}
 	}
 })

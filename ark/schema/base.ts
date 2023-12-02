@@ -80,8 +80,6 @@ export interface BaseAttachments {
 	readonly innerId: string
 	readonly typeId: string
 	readonly scope: ScopeNode
-	traverseAllows: TraverseAllows<any>
-	traverseApply: TraverseApply<any>
 }
 
 // TODO: is this ok- from?

@@ -17,7 +17,7 @@ import type {
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
-import { basisKinds, defineNode, type NodeKind } from "../shared/define.js"
+import { basisKinds, type NodeKind } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { Schema, reducibleKindOf } from "../shared/nodes.js"
 import { BaseType } from "../type.js"

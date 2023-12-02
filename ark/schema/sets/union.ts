@@ -3,10 +3,11 @@ import type { Node } from "../base.js"
 import { composeParser } from "../parse.js"
 import type {
 	BaseAttributes,
+	NodeAttachments,
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
-import { basisKinds, defineNode } from "../shared/define.js"
+import { basisKinds } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Schema } from "../shared/nodes.js"
 import { BaseType } from "../type.js"

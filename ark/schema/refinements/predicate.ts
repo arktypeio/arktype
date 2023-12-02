@@ -1,7 +1,6 @@
 import { composeParser } from "../parse.js"
 import {
 	In,
-	compilePrimitive,
 	compileSerializedValue,
 	composePrimitiveTraversal,
 	type Problems
@@ -9,8 +8,8 @@ import {
 import type { BaseAttributes, withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
-	createValidBasisAssertion,
-	defineRefinement,
+	composeOperandAssertion,
+	composeRefinement,
 	type declareRefinement
 } from "./shared.js"
 
@@ -38,7 +37,7 @@ export type PredicateDeclaration = declareRefinement<{
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
-export const PredicateImplementation = composeParser<PredicateDeclaration>({
+export const PredicateImplementation = composeRefinement<PredicateDeclaration>({
 	kind: "predicate",
 	collapseKey: "predicate",
 	keys: {
@@ -49,7 +48,7 @@ export const PredicateImplementation = composeParser<PredicateDeclaration>({
 		typeof schema === "function" ? { predicate: schema } : schema,
 	attach: (node) => {
 		return {
-			assertValidBasis: createValidBasisAssertion(node),
+			assertValidBasis: composeOperandAssertion(node),
 			traverseAllows: node.predicate,
 			traverseApply: composePrimitiveTraversal(node, node.predicate),
 			condition: `${compileSerializedValue(node.predicate)}(${In})`,
