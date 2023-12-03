@@ -89,21 +89,23 @@ export interface BaseAttachments {
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends BaseAttachments {
-	inner: d["inner"]
-	entries: entriesOf<d["inner"]>
-	children: Node<d["childKind"]>[]
+	inner: BaseNodeDeclaration extends d ? {} : d["inner"]
+	entries: BaseNodeDeclaration extends d
+		? Entry<string>[]
+		: entriesOf<d["inner"]>
+	children: BaseNodeDeclaration extends d ? Node[] : Node<d["childKind"]>[]
 }
 
-export interface NodeSubclass<kind extends NodeKind = NodeKind> {
-	readonly kind: kind
+export interface NodeSubclass {
+	readonly kind: NodeKind
 	// allow subclasses to accept narrowed check input
-	readonly declaration: BaseNodeDeclaration & { checks: any }
+	readonly declaration: BaseNodeDeclaration
 	readonly parser: BaseParser
 }
 
 export abstract class BaseNode<
-	t = unknown,
-	subclass extends NodeSubclass = NodeSubclass
+	t = any,
+	subclass extends NodeSubclass = any
 > extends DynamicBase<
 	attachmentsOf<subclass["declaration"]> & {
 		(data: unknown): CheckResult<extractOut<t>>
@@ -111,7 +113,7 @@ export abstract class BaseNode<
 > {
 	declare infer: extractOut<t>;
 	declare [inferred]: t
-	readonly subclass: subclass = this.constructor as never
+	//readonly subclass: subclass = this.constructor as any
 	readonly kind: subclass["kind"] = (this as any).subclass.kind;
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
 	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[
@@ -168,7 +170,7 @@ export abstract class BaseNode<
 	}
 
 	inCache?: BaseNode;
-	get in(): Node<ioKindOf<this["kind"]>, extractIn<t>> {
+	get in(): BaseNode<extractIn<t>> {
 		if (!this.inCache) {
 			this.inCache = this.getIo("in")
 		}
@@ -176,7 +178,7 @@ export abstract class BaseNode<
 	}
 
 	outCache?: BaseNode
-	get out(): Node<ioKindOf<this["kind"]>, extractOut<t>> {
+	get out(): BaseNode<extractOut<t>> {
 		if (!this.outCache) {
 			this.outCache = this.getIo("out")
 		}

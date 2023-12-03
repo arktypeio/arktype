@@ -8,12 +8,7 @@ import {
 import type { ValidatorKind } from "../sets/morph.js"
 import { SetNodesByKind, type SetDeclarationsByKind } from "../sets/set.js"
 import type { BranchKind } from "../sets/union.js"
-import type {
-	ConstraintKind,
-	NodeKind,
-	RefinementKind,
-	TypeKind
-} from "./define.js"
+import type { ConstraintKind, NodeKind, TypeKind } from "./define.js"
 
 export type ConstraintDeclarationsByKind = extend<
 	BasisDeclarations,

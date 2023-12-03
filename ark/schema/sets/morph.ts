@@ -100,8 +100,7 @@ export type MorphDeclaration = declareNode<{
 // 			  }
 // 	}
 // },
-// writeDefaultDescription: (node) =>
-// 	`a morph from ${node.inner.in} to ${node.inner.out}`,
+
 // compile: (node, ctx) => node.in.compileBody(ctx),
 
 export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
@@ -133,8 +132,12 @@ export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
 	traverseApply = (data: unknown, problems: Problems) =>
 		this.in.traverseApply(data, problems)
 
-	inCache = this.inner.in
-	outCache = this.inner.out ?? this.scope.builtin.unknown
+	// inCache = this.inner.in
+	// outCache = this.inner.out ?? this.scope.builtin.unknown
+
+	writeDefaultDescription() {
+		return `a morph from ${this.in} to ${this.out}`
+	}
 }
 
 export type inferMorphOut<out> = out extends CheckResult<infer t>

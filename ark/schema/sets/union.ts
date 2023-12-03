@@ -31,10 +31,6 @@ export type UnionInner = {
 	readonly ordered?: true
 }
 
-export type UnionAttachments = {
-	discriminant: Discriminant | null
-}
-
 export type UnionDeclaration = declareNode<{
 	kind: "union"
 	schema: UnionSchema
@@ -141,7 +137,7 @@ const intersectBranch = (
 export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
 	static readonly kind = "union"
 	static declaration: UnionDeclaration
-	static parser = composeParser({
+	static parser = this.composeParser({
 		collapseKey: "branches",
 		keys: {
 			ordered: {},
@@ -179,6 +175,8 @@ export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
 			})
 		}
 	})
+
+	discriminant: Discriminant | null
 }
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {

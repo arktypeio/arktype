@@ -28,7 +28,8 @@ describe("map", () => {
 	})
 
 	it("object with index", () => {
-		const result = map({ a: true, b: false }, (k, v, i) =>
+		// needs to be annotated for now due to a TS bug
+		const result = map({ a: true, b: false }, (k, v, i: number) =>
 			k === "a"
 				? ([
 						[k, v],
@@ -52,7 +53,8 @@ describe("map", () => {
 	})
 
 	it("converts numeric key with index to array", () => {
-		const result = map({ a: true, b: false, c: 5 }, (k, v, i) =>
+		// needs to be annotated for now due to a TS bug
+		const result = map({ a: true, b: false, c: 5 }, (k, v, i: number) =>
 			k === "a" ? ([0, v] as const) : ([i, v] as const)
 		)
 		attest<(boolean | 5)[]>(result).equals([true, false, 5])

@@ -74,26 +74,32 @@ export type Boundable = NumericallyBoundable | Date
 const normalizeLimit = (limit: LimitSchemaValue): number =>
 	typeof limit === "string" ? new Date(limit).valueOf() : limit
 
+export type BoundSubclass = extend<
+	NodeSubclass,
+	{
+		kind: BoundKind
+		declaration: {
+			inner: BoundInner
+		}
+	}
+>
+
 export abstract class BaseBound<
-	subclass extends NodeSubclass<BoundKind>
+	subclass extends BoundSubclass
 > extends RefinementNode<subclass> {
+	o = this.inner
 	size = compileSizeOf(this.kind)
-	// const comparator = compileComparator(
-	// 	this.kind,
-	// 	this.exclusive
-	// 	// cast to lower bound comparator for internal checking
-	// ) as RelativeComparator<"lower">
-	// const checker = boundDefinition.defineChecker(node as never) as (
-	// 	data: InputData<"min">
-	// ) => boolean
-	// return {
-	// 	comparator,
-	// 	traverseAllows: checker,
-	// 	traverseApply: composePrimitiveTraversal(node as never, checker),
-	// 	assertValidBasis: composeOperandAssertion(node),
-	// 	condition: `${size} ${comparator} ${this.limit}`,
-	// 	negatedCondition: `${size} ${negatedComparators[comparator]} ${this.limit}`
-	// }
+	comparator = compileComparator(
+		this.kind,
+		this.exclusive
+		// cast to lower bound comparator for internal checking
+	)
+	traverseApply = this.createPrimitiveTraversal()
+
+	condition = `${this.size} ${this.comparator} ${this.limit}`
+	negatedCondition = `${this.size} ${negatedComparators[this.comparator]} ${
+		this.limit
+	}`
 
 	static createBoundParserImplementation<
 		self,
@@ -144,7 +150,9 @@ export abstract class BaseBound<
 // compile: compilePrimitive
 
 const compileComparator = (kind: BoundKind, exclusive: true | undefined) =>
-	`${isKeyOf(kind, boundKindPairsByLower) ? ">" : "<"}${exclusive ? "" : "="}`
+	`${isKeyOf(kind, boundKindPairsByLower) ? ">" : "<"}${
+		exclusive ? "" : "="
+	}` as const
 
 const compileSizeOf = (kind: BoundKind) =>
 	kind === "min" || kind === "max"

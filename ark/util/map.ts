@@ -62,28 +62,28 @@ export function map<
 	transformed extends listable<Entry<number>>
 >(
 	o: o,
-	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
+	flatMapEntry: (...args: entryOf<o>) => transformed
 ): arrayFromListableEntries<extractEntries<transformed>>
 export function map<
 	const o extends object,
 	transformed extends listable<Entry<number>>
 >(
 	o: o,
-	flatMapEntry: (...args: entryOf<o>) => transformed
+	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
 ): arrayFromListableEntries<extractEntries<transformed>>
 export function map<
 	const o extends object,
 	transformed extends listable<Entry<string | symbol>>
 >(
 	o: o,
-	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
+	flatMapEntry: (...args: entryOf<o>) => transformed
 ): objectFromListableEntries<extractEntrySets<transformed>>
 export function map<
 	const o extends object,
 	transformed extends listable<Entry<string | symbol>>
 >(
 	o: o,
-	flatMapEntry: (...args: entryOf<o>) => transformed
+	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
 ): objectFromListableEntries<extractEntrySets<transformed>>
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
 export function map(

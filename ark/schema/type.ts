@@ -2,13 +2,14 @@ import {
 	BaseNode,
 	type BaseAttachments,
 	type Node,
-	type NodeSubclass
+	type NodeSubclass,
+	type TypeNode
 } from "./base.js"
 import type {
 	IntersectionDeclaration,
 	IntersectionNode
 } from "./sets/intersection.js"
-import type { BranchKind } from "./sets/union.js"
+import type { BranchKind, UnionNode } from "./sets/union.js"
 import type { RefinementKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
@@ -53,20 +54,20 @@ export abstract class BaseType<
 	}
 
 	// TODO: limit input types
-	or<other extends BaseType>(
+	or<other extends TypeNode>(
 		other: other
-	): BaseType<t | other["infer"], "union" | this["kind"] | other["kind"]> {
+	): TypeNode<t | other["infer"], "union" | this["kind"] | other["kind"]> {
 		return this.scope.parseBranches(
 			...this.branches,
 			...(other.branches as any)
 		) as never
 	}
 
-	isUnknown(): this is BaseType<unknown, IntersectionDeclaration> {
+	isUnknown(): this is IntersectionNode<unknown> {
 		return this.hasKind("intersection") && this.constraints.length === 0
 	}
 
-	isNever(): this is BaseType<never> {
+	isNever(): this is UnionNode<never> {
 		return this.hasKind("union") && this.branches.length === 0
 	}
 

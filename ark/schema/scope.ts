@@ -132,7 +132,7 @@ export class ScopeNode<r extends object = any> {
 			this.parsePrereduced("unit", { unit })
 		)
 		if (branches.length === 1) {
-			return branches[0]
+			return branches[0] as never
 		}
 		return this.parsePrereduced("union", {
 			branches

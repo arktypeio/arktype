@@ -1,30 +1,23 @@
 import {
-	includes,
 	isArray,
 	throwInternalError,
 	type listable,
 	type mutable
 } from "@arktype/util"
-import { BaseNode, type BaseAttachments, type Node } from "../base.js"
+import type { Node } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
-import { composeParser, type SchemaParseContext } from "../parse.js"
+import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
-import type {
-	BaseAttributes,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
-	closedRefinementKinds,
-	openRefinementKinds,
 	type ClosedRefinementKind,
 	type ConstraintKind,
 	type OpenRefinementKind,
 	type RefinementKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { Schema } from "../shared/nodes.js"
+import type { Schema, reducibleKindOf } from "../shared/nodes.js"
 import { isNode } from "../shared/symbols.js"
 import { BaseType } from "../type.js"
 
@@ -167,6 +160,14 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			return scope.parsePrereduced("intersection", reducedConstraintsByKind)
 		}
 	})
+
+	readonly constraints: ConstraintSet = Object.values(this.inner).flat()
+
+	writeDefaultDescription() {
+		return this.constraints.length === 0
+			? "an unknown value"
+			: this.constraints.join(" and ")
+	}
 }
 
 // intersections: {
@@ -204,11 +205,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 // 				"return true"
 // 		: constraintInvocations.join("\n")
 // },
-// writeDefaultDescription: (node) => {
-// 	return node.constraints.length === 0
-// 		? "an unknown value"
-// 		: node.constraints.join(" and ")
-// }
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
@@ -224,7 +220,7 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
 	ctx: SchemaParseContext
-) => {
+): readonly Node<reducibleKindOf<kind>>[] | undefined => {
 	if (isArray(input)) {
 		if (input.length === 0) {
 			// Omit empty lists as input
