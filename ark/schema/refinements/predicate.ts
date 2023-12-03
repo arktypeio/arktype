@@ -5,13 +5,8 @@ import {
 	composePrimitiveTraversal,
 	type Problems
 } from "../shared/compilation.js"
-import type { BaseAttributes, withAttributes } from "../shared/declare.js"
-import type { PrimitiveConstraintAttachments } from "../shared/define.js"
-import {
-	composeOperandAssertion,
-	composeRefinement,
-	type declareRefinement
-} from "./shared.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import { RefinementNode } from "./shared.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
 	{
@@ -22,39 +17,42 @@ export type NormalizedPredicateSchema = withAttributes<PredicateInner>
 
 export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
-export type PredicateDeclaration = declareRefinement<{
+export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
 	schema: PredicateSchema
 	inner: PredicateInner
 	intersections: {
 		predicate: "predicate" | null
 	}
-	operand: unknown
+	checks: unknown
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
-export const PredicateImplementation = composeRefinement<PredicateDeclaration>({
+export const PredicateImplementation = composeParser<PredicateDeclaration>({
 	kind: "predicate",
 	collapseKey: "predicate",
 	keys: {
 		predicate: {}
 	},
-	operand: [{}],
 	normalize: (schema) =>
-		typeof schema === "function" ? { predicate: schema } : schema,
-	attach: (node) => {
-		return {
-			assertValidBasis: composeOperandAssertion(node),
-			traverseAllows: node.predicate,
-			traverseApply: composePrimitiveTraversal(node, node.predicate),
-			condition: `${compileSerializedValue(node.predicate)}(${In})`,
-			negatedCondition: `${compileSerializedValue(
-				node.predicate
-			)}(${In}) === false`
-		}
-	}
+		typeof schema === "function" ? { predicate: schema } : schema
 })
+
+export class PredicateNode extends RefinementNode<PredicateDeclaration> {
+	traverseAllows = this.predicate
+	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	condition = `${compileSerializedValue(this.predicate)}(${In})`
+	negatedCondition = `!${this.condition}`
+
+	getCheckedDefinitions() {
+		return [{}] as const
+	}
+
+	writeDefaultDescription() {
+		return `valid according to ${this.predicate.name}`
+	}
+}
 
 // intersections: {
 // 	// TODO: allow changed order to be the same type
@@ -63,8 +61,7 @@ export const PredicateImplementation = composeRefinement<PredicateDeclaration>({
 // 	// resulting from this intersection should also be safe.
 // 	predicate: () => null
 // },
-// writeDefaultDescription: (inner) =>
-// 	`valid according to ${inner.predicate.name}`,
+
 // 	compile: compilePrimitive
 
 export type Predicate<input = unknown> = (

@@ -1,5 +1,7 @@
 import { composeParser } from "../parse.js"
+import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
+import { RefinementNode } from "./shared.js"
 
 export type DivisorInner = {
 	readonly divisor: number
@@ -33,22 +35,24 @@ export const DivisorImplementation = composeParser<DivisorDeclaration>({
 	keys: {
 		divisor: {}
 	},
-	// operand: ["number"],
 	normalize: (schema) =>
 		typeof schema === "number" ? { divisor: schema } : schema
 })
 
-// attach: (node) => {
-// 	const traverseAllows: TraverseAllows<number> = (data) =>
-// 		data % node.divisor === 0
-// 	return {
-// 		traverseAllows,
-// 		traverseApply: composePrimitiveTraversal(node, traverseAllows),
-// 		assertValidBasis: composeOperandAssertion(node),
-// 		condition: `${In} % ${node.divisor} === 0`,
-// 		negatedCondition: `${In} % ${node.divisor} !== 0`
-// 	}
-// }
+export class DivisorNode extends RefinementNode<DivisorDeclaration> {
+	traverseAllows = (data: number) => data % this.divisor === 0
+	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	condition = `${In} % ${this.divisor} === 0`
+	negatedCondition = `${In} % ${this.divisor} !== 0`
+
+	getCheckedDefinitions() {
+		return ["number"] as const
+	}
+
+	writeDefaultDescription() {
+		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
+	}
+}
 
 // intersections: {
 // 	divisor: (l, r) => ({
@@ -58,8 +62,6 @@ export const DivisorImplementation = composeParser<DivisorDeclaration>({
 // 	})
 // },
 // compile: compilePrimitive,
-// writeDefaultDescription: (inner) =>
-// 	inner.divisor === 1 ? "an integer" : `a multiple of ${inner.divisor}`,
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

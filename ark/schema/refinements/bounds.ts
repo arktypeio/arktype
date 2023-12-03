@@ -20,6 +20,7 @@ import type {
 import type { Disjoint } from "../shared/disjoint.js"
 import type { Declaration, Schema } from "../shared/nodes.js"
 import {
+	RefinementNode,
 	composeOperandAssertion,
 	composeRefinement,
 	type RefinementImplementationInput,
@@ -91,7 +92,31 @@ export type BoundNodeDefinition<d extends BaseNodeDeclaration> = {
 export const normalizeLimit = (limit: LimitSchemaValue): number =>
 	typeof limit === "string" ? new Date(limit).valueOf() : limit
 
-export const defineBound = <d extends BaseNodeDeclaration>(
+export abstract class BaseBound<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> extends RefinementNode<d> {}
+
+// attach: (node) => {
+// 	const size = compileSizeOf(node.kind)
+// 	const comparator = compileComparator(
+// 		node.kind,
+// 		node.exclusive
+// 		// cast to lower bound comparator for internal checking
+// 	) as RelativeComparator<"lower">
+// 	const checker = boundDefinition.defineChecker(node as never) as (
+// 		data: InputData<"min">
+// 	) => boolean
+// 	return {
+// 		comparator,
+// 		traverseAllows: checker,
+// 		traverseApply: composePrimitiveTraversal(node as never, checker),
+// 		assertValidBasis: composeOperandAssertion(node),
+// 		condition: `${size} ${comparator} ${node.limit}`,
+// 		negatedCondition: `${size} ${negatedComparators[comparator]} ${node.limit}`
+// 	}
+// }
+
+export const composeBoundParser = <d extends BaseNodeDeclaration>(
 	boundDefinition: BoundNodeDefinition<d>
 ) =>
 	composeRefinement({
@@ -110,26 +135,7 @@ export const defineBound = <d extends BaseNodeDeclaration>(
 		normalize: (schema: BoundSchema) =>
 			typeof schema === "object"
 				? { ...schema, limit: normalizeLimit(schema.limit) }
-				: { limit: normalizeLimit(schema) },
-		attach: (node) => {
-			const size = compileSizeOf(node.kind)
-			const comparator = compileComparator(
-				node.kind,
-				node.exclusive
-				// cast to lower bound comparator for internal checking
-			) as RelativeComparator<"lower">
-			const checker = boundDefinition.defineChecker(node as never) as (
-				data: InputData<"min">
-			) => boolean
-			return {
-				comparator,
-				traverseAllows: checker,
-				traverseApply: composePrimitiveTraversal(node as never, checker),
-				assertValidBasis: composeOperandAssertion(node),
-				condition: `${size} ${comparator} ${node.limit}`,
-				negatedCondition: `${size} ${negatedComparators[comparator]} ${node.limit}`
-			}
-		}
+				: { limit: normalizeLimit(schema) }
 	} satisfies RefinementImplementationInput<Declaration<"min">> as never)
 
 // writeDefaultDescription: boundDefinition.writeDefaultDescription,

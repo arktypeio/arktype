@@ -1,13 +1,9 @@
 import type { extend } from "@arktype/util"
 import { composeParser } from "../parse.js"
 import { In, composePrimitiveTraversal } from "../shared/compilation.js"
-import type { BaseAttributes, withAttributes } from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
-import {
-	composeOperandAssertion,
-	composeRefinement,
-	type declareRefinement
-} from "./shared.js"
+import { RefinementNode } from "./shared.js"
 
 export type PatternInner = {
 	readonly source: string
@@ -23,17 +19,17 @@ export type PatternAttachments = extend<
 	{ regex: RegExp }
 >
 
-export type PatternDeclaration = declareRefinement<{
+export type PatternDeclaration = declareNode<{
 	kind: "pattern"
 	schema: PatternSchema
 	inner: PatternInner
 	intersections: {
 		pattern: "pattern" | null
 	}
-	operand: string
+	checks: string
 }>
 
-export const PatternImplementation = composeRefinement<PatternDeclaration>({
+export const PatternImplementation = composeParser<PatternDeclaration>({
 	kind: "pattern",
 	collapseKey: "source",
 	keys: {
@@ -48,25 +44,28 @@ export const PatternImplementation = composeRefinement<PatternDeclaration>({
 			  ? schema.flags
 					? { source: schema.source, flags: schema.flags }
 					: { source: schema.source }
-			  : schema,
-	attach: (node) => {
-		const regex = new RegExp(node.source, node.flags)
-		return {
-			assertValidBasis: composeOperandAssertion(node),
-			regex,
-			traverseAllows: regex.test,
-			traverseApply: composePrimitiveTraversal(node, regex.test),
-			condition: `/${node.source}/${node.flags ?? ""}.test(${In})`,
-			negatedCondition: `/${node.source}/${
-				node.flags ?? ""
-			}.test(${In}) === false`
-		}
-	}
+			  : schema
 })
+
+export class PatternNode extends RefinementNode<PatternDeclaration> {
+	regex = new RegExp(this.source, this.flags)
+
+	traverseAllows = this.regex.test
+	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	condition = `/${this.source}/${this.flags ?? ""}.test(${In})`
+	negatedCondition = `!${this.condition}`
+
+	getCheckedDefinitions() {
+		return ["string"] as const
+	}
+
+	writeDefaultDescription() {
+		return `matched by ${this.source}`
+	}
+}
 
 // intersections: {
 // 	// For now, non-equal regex are naively intersected
 // 	pattern: () => null
 // },
-// writeDefaultDescription: (inner) => `matched by ${inner.source}`,
 // compile: compilePrimitive

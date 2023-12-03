@@ -3,7 +3,6 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
-	type Constructor,
 	type Dict,
 	type Entry,
 	type Json,
@@ -12,23 +11,21 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
+import type { DomainNode } from "./bases/domain.js"
+import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
-import type {
-	AfterNode,
-	BeforeNode,
-	DivisorNode,
-	MaxLengthNode,
-	MaxNode,
-	MinLengthNode,
-	MinNode,
-	OptionalNode,
-	PatternNode,
-	PredicateNode,
-	RequiredNode
-} from "./refinements/refinement.js"
 import type { ScopeNode } from "./scope.js"
-import { unflattenConstraints } from "./sets/intersection.js"
-import type { extractIn, extractOut, ioKindOf } from "./sets/morph.js"
+import {
+	unflattenConstraints,
+	type IntersectionNode
+} from "./sets/intersection.js"
+import type {
+	MorphNode,
+	extractIn,
+	extractOut,
+	ioKindOf
+} from "./sets/morph.js"
+import type { UnionNode } from "./sets/union.js"
 import {
 	Problems,
 	type CheckResult,
@@ -66,13 +63,6 @@ import {
 } from "./shared/intersect.js"
 import { NodeImplementationByKind } from "./shared/nodes.js"
 import { arkKind, inferred } from "./shared/symbols.js"
-import type {
-	DomainNode,
-	IntersectionNode,
-	MorphNode,
-	ProtoNode,
-	UnionNode
-} from "./type.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -321,22 +311,27 @@ type declarationOf<cls> = cls extends {
 	? declaration
 	: never
 
-export type Node<kind extends NodeKind = NodeKind, t = any> = {
+export type Node<kind extends NodeKind = NodeKind, t = unknown> = {
 	union: UnionNode<t>
 	morph: MorphNode<t>
 	intersection: IntersectionNode<t>
 	unit: UnitNode<t>
 	proto: ProtoNode<t>
 	domain: DomainNode<t>
-	divisor: DivisorNode
-	min: MinNode
-	max: MaxNode
-	minLength: MinLengthNode
-	maxLength: MaxLengthNode
-	after: AfterNode
-	before: BeforeNode
-	pattern: PatternNode
-	predicate: PredicateNode
-	required: RequiredNode
-	optional: OptionalNode
-}[kind]
+	// divisor: DivisorNode
+	// min: MinNode
+	// max: MaxNode
+	// minLength: MinLengthNode
+	// maxLength: MaxLengthNode
+	// after: AfterNode
+	// before: BeforeNode
+	// pattern: PatternNode
+	// predicate: PredicateNode
+	// required: RequiredNode
+	// optional: OptionalNode
+}[kind & TypeKind]
+
+export type TypeNode<t = unknown, kind extends TypeKind = TypeKind> = Node<
+	kind,
+	t
+>
