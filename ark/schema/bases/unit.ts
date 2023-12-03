@@ -1,8 +1,5 @@
 import { domainOf, printable } from "@arktype/util"
-import {
-	In,
-	compileSerializedValue
-} from "../shared/compilation.js"
+import { In, compileSerializedValue } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseType } from "../type.js"

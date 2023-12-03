@@ -1,5 +1,5 @@
+import type { TypeNode } from "../base.js"
 import { ScopeNode, rootSchema } from "../scope.js"
-import type { TypeNode } from "../type.js"
 import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution

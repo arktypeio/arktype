@@ -1,5 +1,5 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
-import type { NarrowedAttachments } from "../base.js"
+import type { BaseAttachments, NarrowedAttachments } from "../base.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type {
 	ConstraintKind,
@@ -74,10 +74,10 @@ export type declareNode<d extends validateNodeDeclaration<d>> = extend<
 	}
 >
 
-export type attachmentsOf<d extends BaseNodeDeclaration> = extend<
-	NarrowedAttachments<d>,
-	d["inner"]
->
+export type attachmentsOf<d extends BaseNodeDeclaration> =
+	BaseNodeDeclaration extends d
+		? BaseAttachments
+		: extend<NarrowedAttachments<d>, d["inner"]>
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind

@@ -1,5 +1,5 @@
+import type { TypeNode } from "../base.js"
 import { ScopeNode } from "../scope.js"
-import type { TypeNode } from "../type.js"
 import type { schema } from "./keywords.js"
 
 export namespace TsKeywords {
