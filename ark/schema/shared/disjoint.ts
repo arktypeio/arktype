@@ -1,10 +1,10 @@
 import {
 	entriesOf,
 	fromEntries,
+	map,
 	printable,
 	throwInternalError,
 	throwParseError,
-	transform,
 	type entryOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
@@ -137,7 +137,7 @@ export class Disjoint {
 			([path, disjoints]) =>
 				[
 					path,
-					transform(disjoints, (kind, disjoint) => [
+					map(disjoints, (kind, disjoint) => [
 						kind,
 						{ l: disjoint.r, r: disjoint.l }
 					])

@@ -5,13 +5,9 @@ import {
 	compileSerializedValue,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type {
-	BaseAttributes,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
-import type { BasisAttachments } from "./basis.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
+import { BaseType } from "../type.js"
 
 export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
 
@@ -23,7 +19,6 @@ export type UnitDeclaration = declareNode<{
 	kind: "unit"
 	schema: UnitSchema
 	inner: UnitInner
-
 	intersections: {
 		unit: "unit" | Disjoint
 		default: "unit" | Disjoint
@@ -37,25 +32,29 @@ export const UnitImplementation = composeParser<UnitDeclaration>({
 			preserveUndefined: true
 		}
 	},
-	normalize: (schema) => schema,
-	attach: (node) => {
-		const serializedValue = compileSerializedValue(node.unit)
-		const traverseAllows = (data: unknown) => data === node.unit
-		return {
-			basisName: printable(node.unit),
-			traverseAllows,
-			traverseApply: composePrimitiveTraversal(node, traverseAllows),
-			domain: domainOf(node.unit),
-			condition: `${In} === ${serializedValue}`,
-			negatedCondition: `${In} !== ${serializedValue}`
-		}
-	}
+	normalize: (schema) => schema
 })
 
-// intersections: {
-// 	unit: (l, r) => Disjoint.from("unit", l, r),
-// 	default: (l, r) =>
-// 		r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
-// },
-// writeDefaultDescription: (inner) => printable(inner.unit),
+export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
+	declare static declaration: UnitDeclaration
+
+	serializedValue = compileSerializedValue(this.unit)
+	traverseAllows = (data: unknown) => data === this.unit
+	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	basisName = printable(this.unit)
+	domain = domainOf(this.unit)
+	condition = `${In} === ${this.serializedValue}`
+	negatedCondition = `${In} !== ${this.serializedValue}`
+
+	writeDefaultDescription() {
+		return this.basisName
+	}
+
+	static intersections = this.defineIntersections({
+		unit: (l, r) => Disjoint.from("unit", l, r),
+		default: (l, r) =>
+			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+	})
+}
+
 // compile: compilePrimitive,

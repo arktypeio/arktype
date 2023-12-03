@@ -9,7 +9,7 @@ import {
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import type { ScopeNode } from "./scope.js"
-import type { BaseNodeDeclaration } from "./shared/declare.js"
+import type { BaseNodeDeclaration, attachmentsOf } from "./shared/declare.js"
 import {
 	defaultValueSerializer,
 	type BasisKind,
@@ -50,7 +50,7 @@ export declare function parse<defKind extends NodeKind>(
 export const composeParser = <d extends BaseNodeDeclaration>(
 	impl: NodeParserImplementation<d>
 ) => {
-	return (def: d["schema"], ctx: SchemaParseContext): d["attachments"] => {
+	return (def: d["schema"], ctx: SchemaParseContext): attachmentsOf<d> => {
 		if (def instanceof BaseNode) {
 			return def.kind === impl.kind
 				? (def as never)
@@ -148,7 +148,7 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 				attachments[k] = attachments[k] as never
 			}
 		}
-		return attachments as d["attachments"]
+		return attachments as never
 		// return (globalResolutions[innerId] = instantiateAttachments(attachments))
 	}
 }

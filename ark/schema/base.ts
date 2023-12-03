@@ -3,13 +3,16 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
+	type Constructor,
 	type Dict,
 	type Entry,
 	type Json,
 	type JsonData,
+	type entriesOf,
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
+import type { UnitNode } from "./bases/unit.js"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -33,7 +36,11 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/compilation.js"
-import type { BaseAttributes, BaseNodeDeclaration } from "./shared/declare.js"
+import type {
+	BaseAttributes,
+	BaseNodeDeclaration,
+	attachmentsOf
+} from "./shared/declare.js"
 import {
 	basisKinds,
 	closedRefinementKinds,
@@ -52,7 +59,11 @@ import {
 	type UnknownNodeImplementation
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
-import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
+import {
+	leftOperandOf,
+	type intersectionOf,
+	type reifyIntersections
+} from "./shared/intersect.js"
 import { NodeImplementationByKind } from "./shared/nodes.js"
 import { arkKind, inferred } from "./shared/symbols.js"
 import type {
@@ -60,8 +71,7 @@ import type {
 	IntersectionNode,
 	MorphNode,
 	ProtoNode,
-	UnionNode,
-	UnitNode
+	UnionNode
 } from "./type.js"
 
 export interface BaseAttachments {
@@ -70,7 +80,7 @@ export interface BaseAttachments {
 	readonly kind: NodeKind
 	readonly inner: Dict
 	readonly meta: Dict
-	readonly entries: readonly Entry<string>[]
+	readonly entries: readonly Entry[]
 	readonly json: Json
 	readonly typeJson: Json
 	readonly collapsibleJson: JsonData
@@ -80,11 +90,19 @@ export interface BaseAttachments {
 	readonly scope: ScopeNode
 }
 
+export interface NarrowedAttachments<d extends BaseNodeDeclaration>
+	extends BaseAttachments {
+	kind: d["kind"]
+	inner: d["inner"]
+	entries: entriesOf<d["inner"]>
+	children: Node<d["childKind"]>[]
+}
+
 export abstract class BaseNode<
 	t = unknown,
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends DynamicBase<
-	d["attachments"] & { (data: unknown): CheckResult<extractOut<t>> }
+	attachmentsOf<d> & { (data: unknown): CheckResult<extractOut<t>> }
 > {
 	declare infer: extractOut<t>;
 	declare [inferred]: t;
@@ -283,7 +301,25 @@ export abstract class BaseNode<
 		}
 		return null
 	}
+
+	declare static declaration: BaseNodeDeclaration
+
+	protected static defineIntersections<self>(
+		this: self,
+		intersections: reifyIntersections<
+			declarationOf<self>["kind"],
+			declarationOf<self>["intersections"]
+		>
+	) {
+		return intersections
+	}
 }
+
+type declarationOf<cls> = cls extends {
+	declaration: infer declaration extends BaseNodeDeclaration
+}
+	? declaration
+	: never
 
 export type Node<kind extends NodeKind = NodeKind, t = any> = {
 	union: UnionNode<t>

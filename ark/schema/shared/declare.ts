@@ -1,5 +1,5 @@
 import type { Dict, PartialRecord, evaluate, extend } from "@arktype/util"
-import type { BaseAttachments } from "../base.js"
+import type { BaseAttachments, NarrowedAttachments } from "../base.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type {
 	ConstraintKind,
@@ -76,19 +76,22 @@ export type declareNode<d extends validateNodeDeclaration<d>> = extend<
 			: BaseAttributes
 		normalizedSchema: extractNormalizedSchema<d["schema"], d["inner"]>
 		checks: "checks" extends keyof d ? d["checks"] : unknown
-		attachments: extend<BaseAttachments, d["inner"]>
 		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
 	}
 >
 
+export type attachmentsOf<d extends BaseNodeDeclaration> = extend<
+	NarrowedAttachments<d>,
+	d["inner"]
+>
+
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: BaseAttributes & Dict
-	meta: BaseAttributes & Dict
-	attachments: BaseAttachments
-	inner: Dict
+	normalizedSchema: BaseAttributes
+	meta: BaseAttributes
+	inner: {}
 	checks: unknown
 	childKind: NodeKind
 	parentKind: SetKind | PropKind

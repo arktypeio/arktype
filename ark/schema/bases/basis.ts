@@ -11,23 +11,20 @@ import {
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import type { Schema } from "../shared/nodes.js"
 import { isNode } from "../shared/symbols.js"
-import type { TypeNode } from "../type.js"
 import {
 	DomainImplementation,
 	type DomainDeclaration,
+	type DomainNode,
 	type DomainSchema,
 	type NonEnumerableDomain
 } from "./domain.js"
 import {
 	ProtoImplementation,
 	type ProtoDeclaration,
+	type ProtoNode,
 	type ProtoSchema
 } from "./proto.js"
-import {
-	UnitImplementation,
-	type UnitDeclaration,
-	type UnitSchema
-} from "./unit.js"
+import { UnitNode, type UnitDeclaration, type UnitSchema } from "./unit.js"
 
 export type BasisDeclarations = {
 	domain: DomainDeclaration
@@ -38,7 +35,7 @@ export type BasisDeclarations = {
 export const BasisImplementations = {
 	domain: DomainImplementation,
 	proto: ProtoImplementation,
-	unit: UnitImplementation
+	unit: UnitNode
 }
 
 export type BasisKind = keyof BasisDeclarations
@@ -81,15 +78,15 @@ export type instantiateBasis<def extends Schema<BasisKind>> =
 	isAny<def> extends true
 		? any
 		: def extends NonEnumerableDomain
-		  ? TypeNode<inferDomain<def>, "domain">
+		  ? DomainNode<inferDomain<def>>
 		  : def extends Constructor<infer instance>
-		    ? TypeNode<instance, "proto">
+		    ? ProtoNode<instance>
 		    : def extends DomainSchema<infer domain>
-		      ? TypeNode<inferDomain<domain>, "domain">
+		      ? DomainNode<inferDomain<domain>>
 		      : def extends ProtoSchema<infer proto>
-		        ? TypeNode<instanceOf<proto>, "proto">
+		        ? ProtoNode<instanceOf<proto>>
 		        : def extends UnitSchema<infer is>
-		          ? TypeNode<is, "unit">
+		          ? UnitNode<is>
 		          : never
 
 export const assertBasisKind = (schema: unknown) => {

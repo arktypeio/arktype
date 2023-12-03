@@ -1,5 +1,6 @@
 import {
 	getExactBuiltinConstructorName,
+	objectKindDescriptions,
 	objectKindOf,
 	type Constructor
 } from "@arktype/util"
@@ -9,18 +10,21 @@ import {
 	compileSerializedValue,
 	composePrimitiveTraversal
 } from "../shared/compilation.js"
-import type { BaseAttributes, declareNode } from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defaultValueSerializer } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
-import type { BasisAttachments } from "./basis.js"
+import { BaseType } from "../type.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = {
 	readonly proto: proto
 }
 
+export type NormalizedProtoSchema<proto extends Constructor = Constructor> =
+	withAttributes<ProtoInner<proto>>
+
 export type ProtoSchema<proto extends Constructor = Constructor> =
 	| proto
-	| ProtoInner<proto>
+	| NormalizedProtoSchema<proto>
 
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
@@ -44,23 +48,26 @@ export const ProtoImplementation = composeParser<ProtoDeclaration>({
 				defaultValueSerializer(constructor)
 		}
 	},
-	normalize: (input) =>
-		typeof input === "function" ? { proto: input } : input,
-	attach: (node) => {
-		const condition = `${In} instanceof ${
-			objectKindOf(node.proto) ?? compileSerializedValue(node.proto)
-		}`
-		const traverseAllows = (data: unknown) => data instanceof node.proto
-		return {
-			basisName: `${node.proto.name}`,
-			traverseAllows,
-			traverseApply: composePrimitiveTraversal(node, traverseAllows),
-			domain: "object",
-			condition,
-			negatedCondition: `${condition} === false`
-		}
-	}
+	normalize: (input) => (typeof input === "function" ? { proto: input } : input)
 })
+
+export class ProtoNode<t = unknown> extends BaseType<t, ProtoDeclaration> {
+	readonly basisName = `${this.proto.name}`
+	readonly domain = "object"
+	readonly condition = `${In} instanceof ${
+		objectKindOf(this.proto) ?? compileSerializedValue(this.proto)
+	}`
+	readonly negatedCondition = `${this.condition} === false`
+	traverseAllows = (data: unknown) => data instanceof this.proto
+	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+
+	writeDefaultDescription() {
+		const knownObjectKind = getExactBuiltinConstructorName(this.proto)
+		return knownObjectKind
+			? objectKindDescriptions[knownObjectKind]
+			: `an instance of ${this.proto.name}`
+	}
+}
 
 // intersections: {
 // 	proto: (l, r) =>
@@ -73,11 +80,5 @@ export const ProtoImplementation = composeParser<ProtoDeclaration>({
 // 		r.domain === "object"
 // 			? l
 // 			: Disjoint.from("domain", l.scope.builtin.object, r)
-// },
-// writeDefaultDescription: (node) => {
-// 	const knownObjectKind = getExactBuiltinConstructorName(node.proto)
-// 	return knownObjectKind
-// 		? objectKindDescriptions[knownObjectKind]
-// 		: `an instance of ${node.proto.name}`
 // },
 // compile: compilePrimitive,

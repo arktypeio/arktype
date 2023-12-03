@@ -14,7 +14,7 @@ import {
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
-import { transform, type Constructor, type conform } from "@arktype/util"
+import { map, type Constructor, type conform } from "@arktype/util"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -256,7 +256,7 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: transform(g.parameters, (_, name) => [name, keywords.unknown])
+			args: map(g.parameters, (_, name) => [name, keywords.unknown])
 		}
 	)
 	return g
@@ -269,7 +269,7 @@ export const generic = (
 ) => {
 	return Object.assign(
 		(...args: unknown[]) => {
-			const argNodes = transform(parameters, (i, param) => [
+			const argNodes = map(parameters, (i, param) => [
 				param,
 				parseTypeRoot(args[i], scope)
 			])

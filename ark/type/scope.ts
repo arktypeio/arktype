@@ -12,8 +12,8 @@ import {
 	domainOf,
 	hasDomain,
 	isThunk,
+	map,
 	throwParseError,
-	transform,
 	type Dict,
 	type evaluate,
 	type isAny,
@@ -417,7 +417,7 @@ export class Scope<r extends Resolutions = any> {
 		names extends [] ? keyof r["exports"] & string : names[number]
 	> {
 		return addArkKind(
-			transform(this.export(...names), (alias, value) => [
+			map(this.export(...names), (alias, value) => [
 				`#${alias as string}`,
 				value
 			]) as never,
@@ -479,10 +479,7 @@ export class Scope<r extends Resolutions = any> {
 		}
 		const namesToExport = names.length ? names : this.exportedNames
 		return addArkKind(
-			transform(namesToExport, (_, name) => [
-				name,
-				this.exportCache![name]
-			]) as never,
+			map(namesToExport, (_, name) => [name, this.exportCache![name]]) as never,
 			"module"
 		) as never
 	}
@@ -496,10 +493,10 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 		const v = typeSet[k]
 		if (hasArkKind(v, "module")) {
 			const innerResolutions = resolutionsOfModule(v as never)
-			const prefixedResolutions = transform(
-				innerResolutions,
-				(innerK, innerV) => [`${k}.${innerK}`, innerV]
-			)
+			const prefixedResolutions = map(innerResolutions, (innerK, innerV) => [
+				`${k}.${innerK}`,
+				innerV
+			])
 			Object.assign(result, prefixedResolutions)
 		} else if (hasArkKind(v, "generic")) {
 			result[k] = v

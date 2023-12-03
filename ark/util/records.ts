@@ -73,32 +73,6 @@ export const fromEntries = <const entries extends readonly Entry[]>(
 	entries: entries
 ) => Object.fromEntries(entries) as fromEntries<entries>
 
-export const transform = <
-	const o extends object,
-	transformed extends Entry | readonly Entry[]
->(
-	o: o,
-	flatMapEntry: (...entry: entryOf<o>) => transformed
-) =>
-	Object.fromEntries(
-		entriesOf(o).flatMap((entry) => {
-			const result = flatMapEntry(...entry)
-			return isArray(result[0]) || result.length === 0
-				? // if we have an empty array (for filtering) or an array with
-				  // another array as its first element, treat it as a list of
-				  (result as never)
-				: // otherwise, it should be a single entry, so nest it in a tuple
-				  // so it doesn't get spread when the result is flattened
-				  [result]
-		})
-	) as evaluate<
-		intersectUnion<
-			fromEntries<
-				transformed extends readonly Entry[] ? transformed : [transformed]
-			>
-		>
-	>
-
 /** Mimics the result of Object.keys(...) */
 export type keysOf<o> = o extends readonly unknown[]
 	? number extends o["length"]

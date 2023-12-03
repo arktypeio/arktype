@@ -1,56 +1,26 @@
-class Callable {
-	constructor(fn: Function) {
-		return () => fn.call(this)
-	}
-}
+export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
-class MeCallable extends Callable {
-	constructor() {
-		super(() => Sub.prototype.foo.call(this))
-		Object.setPrototypeOf(this, Sub.prototype)
-	}
-	salutation = "Mr. "
-	doSomething() {
-		return this.salutation + "doSomething"
-	}
-}
+export type entryOf<o> = {
+	[k in keyof o]-?: [k, o[k] & ({} | null)]
+}[o extends readonly unknown[] ? keyof o & number : keyof o] &
+	unknown
 
-class Sub extends MeCallable {
-	// constructor() {
-	// 	super(() => {
-	// 		return this.foo
-	// 	})
-	// }
+type Entry<key extends PropertyKey = PropertyKey, value = unknown> = readonly [
+	key: key,
+	value: value
+]
 
-	foo() {
-		return this.doSomething()
-	}
-}
+export type fromEntries<entries, result = {}> = entries extends readonly [
+	Entry<infer k, infer v>,
+	...infer tail
+]
+	? fromEntries<tail, result & { [_ in k]: v }>
+	: evaluate<result>
 
-const abc = new Sub()
+export type intersectUnion<t> = (
+	t extends unknown ? (_: t) => void : never
+) extends (_: infer intersection) => void
+	? intersection
+	: never
 
-abc.doSomething() //?
-abc() //?
-
-class Callable2 {
-	constructor(defaultFn: Function) {
-		return (...args: any[]) => {
-			return defaultFn.call(this, ...args)
-		}
-	}
-}
-
-class MeCallable2 extends Callable2 {
-	constructor() {
-		super((name: string) => "Hello: " + this.salutation + name)
-		Object.setPrototypeOf(this, MeCallable.prototype)
-	}
-	salutation = "Mr. "
-	doSomething() {
-		console.log(this.salutation, "doSomething")
-	}
-}
-
-const abc2 = new MeCallable2()
-
-abc2("ff") //?
+type listable<t> = t | readonly t[]

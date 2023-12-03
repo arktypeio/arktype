@@ -1,4 +1,4 @@
-import { transform } from "@arktype/util"
+import { map } from "@arktype/util"
 import ts from "typescript"
 import type { StringifiableType } from "./analysis.js"
 import {
@@ -89,7 +89,7 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 		}
 	}
 
-	return transform(completions, (prefix, entries) =>
+	return map(completions, (prefix, entries) =>
 		entries.length >= 1 ? [prefix, entries] : []
 	)
 }

@@ -8,6 +8,7 @@ import {
 import type { KeyCheckKind } from "arktype/internal/type.js"
 import type { Node } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
+import type { UnitNode } from "./bases/unit.js"
 import type {
 	instantiateAliases,
 	instantiateSchemaBranches,
@@ -16,16 +17,20 @@ import type {
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type { BranchKind, NormalizedUnionSchema } from "./sets/union.js"
+import type {
+	BranchKind,
+	NormalizedUnionSchema,
+	UnionNode
+} from "./sets/union.js"
 import { bindCompiledScope, type ProblemCode } from "./shared/compilation.js"
 import type { NodeKind, TypeKind } from "./shared/define.js"
 import type { Schema, reducibleKindOf } from "./shared/nodes.js"
 import { isNode } from "./shared/symbols.js"
-import type { TypeNode } from "./type.js"
+import type { BaseType } from "./type.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseType }
 
-export type BaseResolutions = Record<string, TypeNode>
+export type BaseResolutions = Record<string, BaseType>
 
 export interface ArkConfig {
 	preserve(): never
@@ -115,8 +120,8 @@ export class ScopeNode<r extends object = any> {
 	parseUnits<const branches extends readonly unknown[]>(
 		...values: branches
 	): branches["length"] extends 1
-		? TypeNode<branches[0], "unit">
-		: TypeNode<branches[number], "union" | "unit"> {
+		? UnionNode<branches[0]>
+		: UnionNode<branches[number]> | UnitNode<branches[number]> {
 		const uniqueValues: unknown[] = []
 		for (const value of values) {
 			if (!uniqueValues.includes(value)) {

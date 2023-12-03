@@ -1,11 +1,14 @@
-import type { entriesOf } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
+import type {
+	IntersectionDeclaration,
+	IntersectionNode
+} from "./sets/intersection.js"
 import type { BranchKind } from "./sets/union.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
-import type { RefinementKind, TypeKind } from "./shared/define.js"
+import type { RefinementKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
-import type { Attachments, Inner, Schema } from "./shared/nodes.js"
+import type { Schema } from "./shared/nodes.js"
 
 export abstract class BaseType<
 	t = unknown,
@@ -13,7 +16,6 @@ export abstract class BaseType<
 > extends BaseNode<t, d> {
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
-	declare readonly kind: TypeKind
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)
@@ -47,16 +49,16 @@ export abstract class BaseType<
 	}
 
 	// TODO: limit input types
-	or<other extends TypeNode>(
+	or<other extends BaseType>(
 		other: other
-	): TypeNode<t | other["infer"], "union" | this["kind"] | other["kind"]> {
+	): BaseType<t | other["infer"], "union" | this["kind"] | other["kind"]> {
 		return this.scope.parseBranches(
 			...this.branches,
 			...(other.branches as any)
 		) as never
 	}
 
-	isUnknown(): this is TypeNode<unknown, "intersection"> {
+	isUnknown(): this is BaseType<unknown, IntersectionDeclaration> {
 		return this.hasKind("intersection") && this.constraints.length === 0
 	}
 
@@ -72,40 +74,12 @@ export abstract class BaseType<
 		return this as never
 	}
 
-	extends<other extends TypeNode>(
+	extends<other extends BaseType>(
 		other: other
-	): this is TypeNode<other["infer"]> {
+	): this is BaseType<other["infer"]> {
 		const intersection = this.intersect(other)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
 	}
 }
-
-export type TypeNode<t = unknown, kind extends TypeKind = TypeKind> = Node<
-	kind,
-	t
->
-
-interface BaseTypeKindAttachments<t, kind extends TypeKind>
-	extends BaseType<t> {
-	kind: kind
-	inner: Inner<kind>
-	entries: entriesOf<Inner<kind>>
-	// <childKindOf<kind>>
-	children: Node[]
-}
-
-export type BaseTypeOfKind<t, kind extends TypeKind> = BaseTypeKindAttachments<
-	t,
-	kind
-> &
-	Attachments<kind>
-
-export interface UnionNode<t = unknown> extends BaseTypeOfKind<t, "union"> {}
-export interface IntersectionNode<t = unknown>
-	extends BaseTypeOfKind<t, "intersection"> {}
-export interface MorphNode<t = unknown> extends BaseTypeOfKind<t, "morph"> {}
-export interface UnitNode<t = unknown> extends BaseTypeOfKind<t, "unit"> {}
-export interface ProtoNode<t = unknown> extends BaseTypeOfKind<t, "proto"> {}
-export interface DomainNode<t = unknown> extends BaseTypeOfKind<t, "domain"> {}
