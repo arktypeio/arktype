@@ -15,6 +15,7 @@ import type { DomainNode } from "./bases/domain.js"
 import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
 import type { BaseParser, SchemaParseContext } from "./parse.js"
+import type { Predicate } from "./refinements/predicate.js"
 import type { ScopeNode } from "./scope.js"
 import {
 	unflattenConstraints,
@@ -104,15 +105,7 @@ export abstract class BaseNode<
 	}
 > {
 	declare infer: extractOut<t>;
-	declare [inferred]: t
-
-	static composeParser: <
-		self,
-		d extends BaseNodeDeclaration = declarationOf<self>
-	>(
-		this: self,
-		impl: NodeParserImplementation<d>
-	) => (def: d["schema"], ctx: SchemaParseContext) => attachmentsOf<d>;
+	declare [inferred]: t;
 
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
 	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[
@@ -319,6 +312,26 @@ export abstract class BaseNode<
 		>
 	) {
 		return intersections
+	}
+
+	protected static composeParser: <
+		self,
+		d extends BaseNodeDeclaration = declarationOf<self>
+	>(
+		this: self,
+		impl: NodeParserImplementation<d>
+	) => (def: d["schema"], ctx: SchemaParseContext) => attachmentsOf<d>
+
+	protected createPrimitiveTraversal(
+		this: BaseNode & {
+			children: readonly never[]
+		}
+	): TraverseApply<this["kind"]> {
+		return (data, problems) => {
+			if (!this.traverseAllows(data, problems)) {
+				problems.add(this.description)
+			}
+		}
 	}
 }
 

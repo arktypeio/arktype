@@ -127,8 +127,12 @@ export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
 		normalize: (schema) => schema
 	})
 
-	traverseAllows = (data, problems) => this.in.traverseAllows(data, problems)
-	traverseApply = (data, problems) => this.in.traverseApply(data, problems)
+	traverseAllows = (data: unknown, problems: Problems) =>
+		this.in.traverseAllows(data, problems)
+
+	traverseApply = (data: unknown, problems: Problems) =>
+		this.in.traverseApply(data, problems)
+
 	inCache = this.inner.in
 	outCache = this.inner.out ?? this.scope.builtin.unknown
 }

@@ -1,5 +1,4 @@
-import { composeParser } from "../parse.js"
-import { In, composePrimitiveTraversal } from "../shared/compilation.js"
+import { In } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { RefinementNode } from "./shared.js"
 
@@ -42,7 +41,7 @@ export class DivisorNode extends RefinementNode<typeof DivisorNode> {
 	})
 
 	traverseAllows = (data: number) => data % this.divisor === 0
-	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	traverseApply = this.createPrimitiveTraversal()
 	condition = `${In} % ${this.divisor} === 0`
 	negatedCondition = `${In} % ${this.divisor} !== 0`
 

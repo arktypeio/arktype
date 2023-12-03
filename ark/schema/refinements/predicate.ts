@@ -1,8 +1,6 @@
-import { composeParser } from "../parse.js"
 import {
 	In,
 	compileSerializedValue,
-	composePrimitiveTraversal,
 	type Problems
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
@@ -43,7 +41,7 @@ export class PredicateNode extends RefinementNode<typeof PredicateNode> {
 	})
 
 	traverseAllows = this.predicate
-	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	traverseApply = this.createPrimitiveTraversal()
 	condition = `${compileSerializedValue(this.predicate)}(${In})`
 	negatedCondition = `!${this.condition}`
 

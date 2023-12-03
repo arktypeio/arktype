@@ -1,9 +1,7 @@
 import { domainOf, printable } from "@arktype/util"
-import { composeParser } from "../parse.js"
 import {
 	In,
-	compileSerializedValue,
-	composePrimitiveTraversal
+	compileSerializedValue
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -39,7 +37,7 @@ export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
 
 	serializedValue = compileSerializedValue(this.unit)
 	traverseAllows = (data: unknown) => data === this.unit
-	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	traverseApply = this.createPrimitiveTraversal()
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
 	condition = `${In} === ${this.serializedValue}`

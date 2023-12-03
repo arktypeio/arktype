@@ -2,9 +2,8 @@
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
 
 import type { intersectUnion, overloadOf, returnOf } from "@arktype/util"
-import type { BaseNode, Node } from "../base.js"
+import type { BaseNode, Node, TypeNode } from "../base.js"
 import type { ScopeNode } from "../scope.js"
-import type { TypeNode } from "../type.js"
 import type { RefinementKind } from "./define.js"
 
 // easiest solution seems to be just having it declared as a value so it doesn't break when we import at runtime

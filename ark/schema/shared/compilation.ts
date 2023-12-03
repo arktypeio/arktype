@@ -7,11 +7,9 @@ import {
 	type propwiseXor
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { Predicate } from "../refinements/predicate.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { NodeKind, SetKind } from "./define.js"
-import type { Attachments } from "./nodes.js"
 
 export const In = "$arkRoot"
 
@@ -29,7 +27,7 @@ export type TraverseAllows<input = unknown> = (
 
 export type TraverseApply<input = unknown> = (
 	data: input,
-	problems: readonly Problem[]
+	problems: Problems
 ) => void
 
 export type CompilationContext = {
@@ -84,17 +82,6 @@ ${reference.compileBody({
 }`
 	return new CompiledFunction(body)() as never
 }
-
-export const composePrimitiveTraversal =
-	<kind extends PrimitiveKind>(
-		node: Attachments<kind>,
-		predicate: Predicate<InputData<kind>>
-	): TraverseApply<kind> =>
-	(data, problems) => {
-		if (!predicate(data, problems)) {
-			problems.add(node.description)
-		}
-	}
 
 export const compilePrimitive = (
 	node: Node<PrimitiveKind>,

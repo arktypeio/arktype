@@ -1,15 +1,13 @@
 import type { Node } from "../../base.js"
-import { composeParser } from "../../parse.js"
-import { compileSerializedValue } from "../../shared/compilation.js"
-import type { BaseAttributes, withAttributes } from "../../shared/declare.js"
+import {
+	compileSerializedValue,
+	type Problems
+} from "../../shared/compilation.js"
+import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { Inner, Schema } from "../../shared/nodes.js"
-import {
-	composeOperandAssertion,
-	composeRefinement,
-	type declareRefinement
-} from "../shared.js"
+import { RefinementNode } from "../shared.js"
 import type { PropKind } from "./prop.js"
 import type { NamedPropAttachments } from "./shared.js"
 
@@ -23,17 +21,15 @@ export type RequiredInner = {
 	readonly value: Node<TypeKind>
 }
 
-export type RequiredDeclaration = declareRefinement<{
+export type RequiredDeclaration = declareNode<{
 	kind: "required"
 	schema: RequiredSchema
-	operand: object
 	inner: RequiredInner
-
 	intersections: {
 		required: "required" | Disjoint | null
 		optional: "required" | Disjoint | null
 	}
-	attach: NamedPropAttachments
+	checks: object
 }>
 
 const intersectNamed = (
@@ -54,36 +50,44 @@ const intersectNamed = (
 	}
 }
 
-export const RequiredImplementation = composeRefinement<RequiredDeclaration>({
-	kind: "required",
-	keys: {
-		key: {},
-		value: {
-			child: true,
-			parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
-		}
-	},
-	operand: ["object"],
-	normalize: (schema) => schema,
-	attach: (node) => {
-		const serializedKey = compileSerializedValue(node.key)
-		return {
-			serializedKey,
-			compiledKey: typeof node.key === "string" ? node.key : serializedKey,
-			traverseAllows: (data, problems) =>
-				node.key in data &&
-				node.value.traverseAllows((data as any)[node.key], problems),
-			traverseApply: (data, problems) => {
-				if (node.key in data) {
-					node.value.traverseApply((data as any)[node.key], problems)
-				} else {
-					problems.add("provided")
-				}
-			},
-			assertValidBasis: composeOperandAssertion(node)
+export class RequiredNode extends RefinementNode<typeof RequiredNode> {
+	static declaration: RequiredDeclaration
+	static parser = this.composeParser({
+		kind: "required",
+		keys: {
+			key: {},
+			value: {
+				child: true,
+				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
+			}
+		},
+		normalize: (schema) => schema
+	})
+
+	serializedKey = compileSerializedValue(this.key)
+
+	traverseAllows = (data: object, problems: Problems) =>
+		this.key in data &&
+		this.value.traverseAllows((data as any)[this.key], problems)
+
+	traverseApply = (data: object, problems: Problems) => {
+		if (this.key in data) {
+			this.value.traverseApply((data as any)[this.key], problems)
+		} else {
+			problems.add("provided")
 		}
 	}
-})
+
+	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
+
+	getCheckedDefinitions() {
+		return ["object"] as const
+	}
+
+	writeDefaultDescription() {
+		return `${String(this.key)}?: ${this.value}`
+	}
+}
 
 // intersections: {
 // 	required: intersectNamed,

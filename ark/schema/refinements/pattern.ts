@@ -1,6 +1,5 @@
 import type { extend } from "@arktype/util"
-import { composeParser } from "../parse.js"
-import { In, composePrimitiveTraversal } from "../shared/compilation.js"
+import { In } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import { RefinementNode } from "./shared.js"
@@ -51,7 +50,7 @@ export class PatternNode extends RefinementNode<typeof PatternNode> {
 	regex = new RegExp(this.source, this.flags)
 
 	traverseAllows = this.regex.test
-	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	traverseApply = this.createPrimitiveTraversal()
 	condition = `/${this.source}/${this.flags ?? ""}.test(${In})`
 	negatedCondition = `!${this.condition}`
 

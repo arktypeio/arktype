@@ -5,7 +5,8 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
-	type extend
+	type extend,
+	type valueOf
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import type { ScopeNode } from "./scope.js"
@@ -13,6 +14,7 @@ import type { BaseNodeDeclaration, attachmentsOf } from "./shared/declare.js"
 import {
 	defaultValueSerializer,
 	type BasisKind,
+	type KeyDefinitions,
 	type NodeKind,
 	type NodeParserImplementation
 } from "./shared/define.js"
@@ -72,10 +74,12 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 		)
 		let json: Record<string, unknown> = {}
 		let typeJson: Record<string, unknown> = {}
-		const children: BaseNode[] = []
+		const children: Node[] = []
 		for (const entry of schemaEntries) {
 			const k = entry[0]
-			const keyImpl = impl.keys[k]
+			const keyImpl = (
+				impl.keys as PartialRecord<string, valueOf<KeyDefinitions<d>>>
+			)[k]
 			if (!keyImpl) {
 				return throwParseError(`Key ${k} is not valid on ${impl.kind} schema`)
 			}
@@ -110,11 +114,11 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 				typeJson = collapsibleJson
 			}
 		}
-		const innerId = JSON.stringify({ kind, ...json })
+		const innerId = JSON.stringify({ kind: impl.kind, ...json })
 		if (ctx.reduceTo) {
 			return (globalResolutions[innerId] = ctx.reduceTo) as never
 		}
-		const typeId = JSON.stringify({ kind, ...typeJson })
+		const typeId = JSON.stringify({ kind: impl.kind, ...typeJson })
 		if (innerId in globalResolutions) {
 			return globalResolutions[innerId] as never
 		}
@@ -135,7 +139,6 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 		const id = `${prefix}${++typeCountsByPrefix[prefix]!}`
 		const attachments = {
 			id,
-			alias: ctx.alias,
 			kind: impl.kind,
 			inner,
 			meta,
@@ -148,6 +151,9 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 			typeId,
 			scope: ctx.scope
 		} satisfies BaseAttachments as Record<string, any>
+		if (ctx.alias) {
+			attachments.alias = ctx.alias
+		}
 		for (const k in inner) {
 			if (k !== "in" && k !== "out") {
 				attachments[k] = attachments[k] as never

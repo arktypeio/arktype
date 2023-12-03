@@ -1,5 +1,5 @@
-import type { Dict, PartialRecord, evaluate, extend } from "@arktype/util"
-import type { BaseAttachments, NarrowedAttachments } from "../base.js"
+import type { Dict, evaluate, extend } from "@arktype/util"
+import type { NarrowedAttachments } from "../base.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type {
 	ConstraintKind,

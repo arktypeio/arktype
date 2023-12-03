@@ -5,11 +5,11 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import { In, composePrimitiveTraversal } from "../shared/compilation.js"
+import { composeParser } from "../parse.js"
+import { In } from "../shared/compilation.js"
 import type {
-	BaseAttributes,
 	BaseNodeDeclaration,
-	InputData,
+	declareNode,
 	withAttributes
 } from "../shared/declare.js"
 import type {
@@ -19,13 +19,7 @@ import type {
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { Declaration, Schema } from "../shared/nodes.js"
-import {
-	RefinementNode,
-	composeOperandAssertion,
-	composeRefinement,
-	type RefinementImplementationInput,
-	type declareRefinement
-} from "./shared.js"
+import { RefinementNode, type RefinementImplementationInput } from "./shared.js"
 
 export type BoundInner = {
 	readonly limit: number
@@ -119,7 +113,7 @@ export abstract class BaseBound<
 export const composeBoundParser = <d extends BaseNodeDeclaration>(
 	boundDefinition: BoundNodeDefinition<d>
 ) =>
-	composeRefinement({
+	composeParser({
 		// check this generic bound implementation against a concrete case
 		// ("min"), then cast it to the expected parameterized definition
 		kind: boundDefinition.kind as "min",
@@ -173,12 +167,11 @@ const compileSizeOf = (kind: BoundKind) =>
 		  ? `${In}.length`
 		  : `+${In}`
 
-export type MinDeclaration = declareRefinement<{
+export type MinDeclaration = declareNode<{
 	kind: "min"
 	schema: BoundSchema<number>
 	inner: BoundInner
-	attach: BoundAttachments<"lower">
-	operand: number
+	checks: number
 	intersections: {
 		min: "min"
 		max: Disjoint | null
@@ -194,11 +187,11 @@ export const MinImplementation = defineBound({
 		`${node.exclusive ? "more than" : "at least"} ${node.limit}`
 })
 
-export type MaxDeclaration = declareRefinement<{
+export type MaxDeclaration = declareNode<{
 	kind: "max"
 	schema: BoundSchema<number>
 	inner: BoundInner
-	operand: number
+	checks: number
 	intersections: {
 		// TODO: Fix rightOf
 		max: "max"
@@ -214,12 +207,11 @@ export const MaxImplementation = defineBound({
 		`${node.exclusive ? "less than" : "at most"} ${node.limit}`
 })
 
-export type MinLengthDeclaration = declareRefinement<{
+export type MinLengthDeclaration = declareNode<{
 	kind: "minLength"
 	schema: BoundSchema<number>
-
 	inner: BoundInner
-	operand: string | readonly unknown[]
+	checks: string | readonly unknown[]
 	intersections: {
 		minLength: "minLength"
 		maxLength: Disjoint | null
@@ -243,12 +235,11 @@ export const MinLengthImplementation = defineBound({
 			  : `at least ${node.limit} in length`
 })
 
-export type MaxLengthDeclaration = declareRefinement<{
+export type MaxLengthDeclaration = declareNode<{
 	kind: "maxLength"
 	schema: BoundSchema<number>
-
 	inner: BoundInner
-	operand: string | readonly unknown[]
+	checks: string | readonly unknown[]
 	intersections: {
 		maxLength: "maxLength"
 	}
@@ -267,11 +258,11 @@ export const MaxLengthImplementation = defineBound({
 			: `at most ${node.limit} in length`
 })
 
-export type AfterDeclaration = declareRefinement<{
+export type AfterDeclaration = declareNode<{
 	kind: "after"
 	schema: BoundSchema<string | number>
 	inner: BoundInner
-	operand: Date
+	checks: Date
 	intersections: {
 		after: "after"
 	}
@@ -288,12 +279,11 @@ export const AfterImplementation = defineBound({
 		node.exclusive ? `after ${node.limit}` : `${node.limit} or later`
 })
 
-export type BeforeDeclaration = declareRefinement<{
+export type BeforeDeclaration = declareNode<{
 	kind: "before"
 	schema: BoundSchema<string | number>
-
 	inner: BoundInner
-	operand: Date
+	checks: Date
 	intersections: {
 		before: "before"
 		after: Disjoint | null

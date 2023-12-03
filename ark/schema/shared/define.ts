@@ -2,7 +2,6 @@ import type {
 	ErrorMessage,
 	JsonData,
 	PartialRecord,
-	evaluate,
 	listable,
 	optionalizeKeys,
 	requireKeys,
@@ -12,7 +11,7 @@ import type {
 import type { BaseNode, Node } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
-import { compileSerializedValue, type TraversalMethods } from "./compilation.js"
+import { compileSerializedValue } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { reducibleKindOf } from "./nodes.js"
 

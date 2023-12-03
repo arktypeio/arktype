@@ -5,7 +5,7 @@ import { BoundImplementations, type BoundDeclarations } from "./bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./divisor.js"
 import { PatternNode, type PatternDeclaration } from "./pattern.js"
 import { PredicateNode, type PredicateDeclaration } from "./predicate.js"
-import { PropImplementations, type PropDeclarations } from "./props/prop.js"
+import { PropNodes, type PropDeclarations } from "./props/prop.js"
 
 export type ClosedRefinementDeclarations = extend<
 	BoundDeclarations,
@@ -32,7 +32,7 @@ export const RefinementNodes = {
 	pattern: PatternNode,
 	predicate: PredicateNode,
 	...BoundImplementations,
-	...PropImplementations
+	...PropNodes
 } as const satisfies Record<RefinementKind, unknown>
 
 export type RefinementOperand<kind extends RefinementKind> =

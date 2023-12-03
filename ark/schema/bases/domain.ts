@@ -1,6 +1,5 @@
 import { domainOf, type Domain } from "@arktype/util"
-import { composeParser } from "../parse.js"
-import { In, composePrimitiveTraversal } from "../shared/compilation.js"
+import { In } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import { BaseType } from "../type.js"
@@ -56,7 +55,7 @@ export class DomainNode<t = unknown> extends BaseType<t, typeof DomainNode> {
 			: `typeof ${In} !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
-	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
+	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return domainDescriptions[this.domain]

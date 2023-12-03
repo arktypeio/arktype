@@ -1,5 +1,5 @@
-import { OptionalImplementation, type OptionalDeclaration } from "./optional.js"
-import { RequiredImplementation, type RequiredDeclaration } from "./required.js"
+import { OptionalNode, type OptionalDeclaration } from "./optional.js"
+import { RequiredNode, type RequiredDeclaration } from "./required.js"
 
 export type PropDeclarations = {
 	required: RequiredDeclaration
@@ -8,9 +8,9 @@ export type PropDeclarations = {
 
 export type PropKind = keyof PropDeclarations
 
-export const PropImplementations = {
-	required: RequiredImplementation,
-	optional: OptionalImplementation
+export const PropNodes = {
+	required: RequiredNode,
+	optional: OptionalNode
 }
 
 /**** NAMED *****/
