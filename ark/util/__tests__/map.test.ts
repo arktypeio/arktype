@@ -18,6 +18,15 @@ describe("map", () => {
 		}>(result).equals({ a: true, c: "d", e: "f" })
 	})
 
+	it("filters empty result", () => {
+		const result = map({ a: true, b: false }, (k, v) =>
+			k === "a" ? ([k, v] as const) : []
+		)
+		attest<{
+			a: true
+		}>(result).equals({ a: true })
+	})
+
 	it("object with index", () => {
 		const result = map({ a: true, b: false }, (k, v, i) =>
 			k === "a"
