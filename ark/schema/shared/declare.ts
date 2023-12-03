@@ -53,13 +53,6 @@ export type validateNodeDeclaration<d, additionalKeys = never> = {
 	[k in Exclude<keyof d, keyof DeclarationInput<any> | additionalKeys>]?: never
 }
 
-type extractNormalizedSchema<schema, inner> = schema extends PartialRecord<
-	keyof inner,
-	unknown
->
-	? schema
-	: never
-
 type ParentsByKind = {
 	[k in NodeKind]: {
 		[pKind in NodeKind]: k extends Declaration<k>["childKind"] ? pKind : never
@@ -74,7 +67,7 @@ export type declareNode<d extends validateNodeDeclaration<d>> = extend<
 		meta: "meta" extends keyof d
 			? extend<BaseAttributes, d["meta"]>
 			: BaseAttributes
-		normalizedSchema: extractNormalizedSchema<d["schema"], d["inner"]>
+		normalizedSchema: Extract<d["schema"], BaseAttributes>
 		checks: "checks" extends keyof d ? d["checks"] : unknown
 		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>

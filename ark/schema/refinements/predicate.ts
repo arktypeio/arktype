@@ -29,17 +29,19 @@ export type PredicateDeclaration = declareNode<{
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
-export const PredicateImplementation = composeParser<PredicateDeclaration>({
-	kind: "predicate",
-	collapseKey: "predicate",
-	keys: {
-		predicate: {}
-	},
-	normalize: (schema) =>
-		typeof schema === "function" ? { predicate: schema } : schema
-})
 
-export class PredicateNode extends RefinementNode<PredicateDeclaration> {
+export class PredicateNode extends RefinementNode<typeof PredicateNode> {
+	static declaration: PredicateDeclaration
+	static parser = this.composeParser({
+		kind: "predicate",
+		collapseKey: "predicate",
+		keys: {
+			predicate: {}
+		},
+		normalize: (schema) =>
+			typeof schema === "function" ? { predicate: schema } : schema
+	})
+
 	traverseAllows = this.predicate
 	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
 	condition = `${compileSerializedValue(this.predicate)}(${In})`

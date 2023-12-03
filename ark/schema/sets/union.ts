@@ -1,12 +1,7 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import { composeParser } from "../parse.js"
-import type {
-	BaseAttributes,
-	CompiledMethods,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Schema } from "../shared/nodes.js"
@@ -62,46 +57,6 @@ const intersectBranch = (
 	}
 	return l.ordered ? { branches, ordered: true } : { branches }
 }
-
-export const UnionImplementation = composeParser<UnionDeclaration>({
-	kind: "union",
-	collapseKey: "branches",
-	keys: {
-		ordered: {},
-		branches: {
-			child: true,
-			parse: (schema, ctx) => {
-				const branches = schema.map((branch) =>
-					ctx.scope.parseTypeNode(branch, [
-						"morph",
-						"intersection",
-						...basisKinds
-					])
-				)
-				const def = ctx.definition as UnionSchema
-				if (isArray(def) || def.ordered !== true) {
-					branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
-				}
-				return branches
-			}
-		}
-	},
-	normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
-	reduce: (inner, scope) => {
-		const reducedBranches = reduceBranches(inner)
-		if (reducedBranches.length === 1) {
-			// TODO: description?
-			return reducedBranches[0]
-		}
-		if (reducedBranches.length === inner.branches.length) {
-			return
-		}
-		return scope.parsePrereduced("union", {
-			...inner,
-			branches: reducedBranches
-		})
-	}
-})
 
 // attach: (node) => {
 // 	return {
@@ -183,7 +138,48 @@ export const UnionImplementation = composeParser<UnionDeclaration>({
 // 	: branchInvocations.join("\n")
 // }
 
-export class UnionNode<t = unknown> extends BaseType<t> {}
+export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
+	static declaration: UnionDeclaration
+	static parser = composeParser<UnionDeclaration>({
+		kind: "union",
+		collapseKey: "branches",
+		keys: {
+			ordered: {},
+			branches: {
+				child: true,
+				parse: (schema, ctx) => {
+					const branches = schema.map((branch) =>
+						ctx.scope.parseTypeNode(branch, [
+							"morph",
+							"intersection",
+							...basisKinds
+						])
+					)
+					const def = ctx.definition as UnionSchema
+					if (isArray(def) || def.ordered !== true) {
+						branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
+					}
+					return branches
+				}
+			}
+		},
+		normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
+		reduce: (inner, scope) => {
+			const reducedBranches = reduceBranches(inner)
+			if (reducedBranches.length === 1) {
+				// TODO: description?
+				return reducedBranches[0]
+			}
+			if (reducedBranches.length === inner.branches.length) {
+				return
+			}
+			return scope.parsePrereduced("union", {
+				...inner,
+				branches: reducedBranches
+			})
+		}
+	})
+}
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
 // 		// TODO: error messages for traversal

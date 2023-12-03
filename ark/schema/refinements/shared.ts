@@ -1,5 +1,10 @@
 import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
-import { BaseNode, type Node, type TypeNode } from "../base.js"
+import {
+	BaseNode,
+	type Node,
+	type NodeSubclass,
+	type TypeNode
+} from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type {
@@ -27,8 +32,8 @@ export type RefinementOperandAssertion = (
 const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
 export abstract class RefinementNode<
-	d extends BaseNodeDeclaration
-> extends BaseNode<unknown, d> {
+	subclass extends NodeSubclass
+> extends BaseNode<unknown, subclass> {
 	abstract getCheckedDefinitions(): readonly Schema<TypeKind>[]
 	readonly checks: readonly TypeNode[] =
 		cache[this.kind] ??

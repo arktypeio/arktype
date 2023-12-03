@@ -61,8 +61,36 @@ export type IntersectionDeclaration = declareNode<{
 	}
 }>
 
-export const IntersectionImplementation =
-	composeParser<IntersectionDeclaration>({
+// attach: (node) => {
+// 	const constraints: mutable<ConstraintSet> = []
+// 	const refinements: Node<RefinementKind>[] = []
+// 	for (const [k, v] of node.entries) {
+// 		if (k === "basis") {
+// 			constraints.push(v)
+// 		} else if (includes(openRefinementKinds, k)) {
+// 			constraints.push(...(v as any))
+// 			refinements.push(...(v as any))
+// 		} else if (includes(closedRefinementKinds, k)) {
+// 			constraints.push(v as never)
+// 			refinements.push(v as never)
+// 		}
+// 	}
+// 	return {
+// 		constraints,
+// 		refinements,
+// 		traverseAllows: (data, problems) =>
+// 			constraints.every((c) => c.traverseAllows(data as never, problems)),
+// 		traverseApply: (data, problems) =>
+// 			constraints.forEach((c) => c.traverseApply(data as never, problems))
+// 	}
+// }
+
+export class IntersectionNode<t = unknown> extends BaseType<
+	t,
+	typeof IntersectionNode
+> {
+	static declaration: IntersectionDeclaration
+	static parser = this.composeParser({
 		kind: "intersection",
 		normalize: (def) => def,
 		addContext: (ctx) => {
@@ -137,36 +165,9 @@ export const IntersectionImplementation =
 				reducedConstraints
 			) as mutable<IntersectionInner>
 			return scope.parsePrereduced("intersection", reducedConstraintsByKind)
-		},
-		attach: (node) => {
-			const constraints: mutable<ConstraintSet> = []
-			const refinements: Node<RefinementKind>[] = []
-			for (const [k, v] of node.entries) {
-				if (k === "basis") {
-					constraints.push(v)
-				} else if (includes(openRefinementKinds, k)) {
-					constraints.push(...(v as any))
-					refinements.push(...(v as any))
-				} else if (includes(closedRefinementKinds, k)) {
-					constraints.push(v as never)
-					refinements.push(v as never)
-				}
-			}
-			return {
-				constraints,
-				refinements,
-				traverseAllows: (data, problems) =>
-					constraints.every((c) => c.traverseAllows(data as never, problems)),
-				traverseApply: (data, problems) =>
-					constraints.forEach((c) => c.traverseApply(data as never, problems))
-			}
 		}
 	})
-
-export class IntersectionNode<t = unknown> extends BaseNode<
-	t,
-	IntersectionDeclaration
-> {}
+}
 
 // intersections: {
 // 	intersection: (l, r) => {
@@ -208,12 +209,6 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 // 		? "an unknown value"
 // 		: node.constraints.join(" and ")
 // }
-
-export class IntersectionNode<t = unknown> extends BaseType<t> {
-	constructor(baseAttachments: BaseAttachments) {
-		super(baseAttachments)
-	}
-}
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,

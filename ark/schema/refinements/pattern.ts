@@ -29,25 +29,25 @@ export type PatternDeclaration = declareNode<{
 	checks: string
 }>
 
-export const PatternImplementation = composeParser<PatternDeclaration>({
-	kind: "pattern",
-	collapseKey: "source",
-	keys: {
-		source: {},
-		flags: {}
-	},
-	operand: ["string"],
-	normalize: (schema) =>
-		typeof schema === "string"
-			? { source: schema }
-			: schema instanceof RegExp
-			  ? schema.flags
-					? { source: schema.source, flags: schema.flags }
-					: { source: schema.source }
-			  : schema
-})
+export class PatternNode extends RefinementNode<typeof PatternNode> {
+	static declaration: PatternDeclaration
+	static parser = this.composeParser({
+		kind: "pattern",
+		collapseKey: "source",
+		keys: {
+			source: {},
+			flags: {}
+		},
+		normalize: (schema) =>
+			typeof schema === "string"
+				? { source: schema }
+				: schema instanceof RegExp
+				  ? schema.flags
+						? { source: schema.source, flags: schema.flags }
+						: { source: schema.source }
+				  : schema
+	})
 
-export class PatternNode extends RefinementNode<PatternDeclaration> {
 	regex = new RegExp(this.source, this.flags)
 
 	traverseAllows = this.regex.test

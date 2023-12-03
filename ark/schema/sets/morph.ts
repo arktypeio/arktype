@@ -60,27 +60,6 @@ export type MorphDeclaration = declareNode<{
 	}
 }>
 
-// TODO: recursively extract in
-export const MorphImplementation = composeParser<MorphDeclaration>({
-	kind: "morph",
-	keys: {
-		in: {
-			child: true,
-			parse: (schema, ctx) =>
-				ctx.scope.parseTypeNode(schema, ["intersection", ...basisKinds])
-		},
-		out: {
-			child: true,
-			parse: (schema, ctx) =>
-				ctx.scope.parseTypeNode(schema, ["intersection", ...basisKinds])
-		},
-		morph: {
-			parse: listFrom
-		}
-	},
-	normalize: (schema) => schema
-})
-
 // intersections: {
 // 	morph: (l, r) => {
 // 		if (l.morph.some((morph, i) => morph !== r.morph[i])) {
@@ -125,7 +104,29 @@ export const MorphImplementation = composeParser<MorphDeclaration>({
 // 	`a morph from ${node.inner.in} to ${node.inner.out}`,
 // compile: (node, ctx) => node.in.compileBody(ctx),
 
-export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
+export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
+	static declaration: MorphDeclaration
+	// TODO: recursively extract in?
+	static parser = this.composeParser({
+		kind: "morph",
+		keys: {
+			in: {
+				child: true,
+				parse: (schema, ctx) =>
+					ctx.scope.parseTypeNode(schema, ["intersection", ...basisKinds])
+			},
+			out: {
+				child: true,
+				parse: (schema, ctx) =>
+					ctx.scope.parseTypeNode(schema, ["intersection", ...basisKinds])
+			},
+			morph: {
+				parse: listFrom
+			}
+		},
+		normalize: (schema) => schema
+	})
+
 	traverseAllows = (data, problems) => this.in.traverseAllows(data, problems)
 	traverseApply = (data, problems) => this.in.traverseApply(data, problems)
 	inCache = this.inner.in

@@ -38,20 +38,22 @@ export type ProtoDeclaration = declareNode<{
 
 // // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export const ProtoImplementation = composeParser<ProtoDeclaration>({
-	kind: "proto",
-	collapseKey: "proto",
-	keys: {
-		proto: {
-			serialize: (constructor) =>
-				getExactBuiltinConstructorName(constructor) ??
-				defaultValueSerializer(constructor)
-		}
-	},
-	normalize: (input) => (typeof input === "function" ? { proto: input } : input)
-})
+export class ProtoNode<t = unknown> extends BaseType<t, typeof ProtoNode> {
+	static declaration: ProtoDeclaration
+	static parser = this.composeParser({
+		kind: "proto",
+		collapseKey: "proto",
+		keys: {
+			proto: {
+				serialize: (constructor) =>
+					getExactBuiltinConstructorName(constructor) ??
+					defaultValueSerializer(constructor)
+			}
+		},
+		normalize: (input) =>
+			typeof input === "function" ? { proto: input } : input
+	})
 
-export class ProtoNode<t = unknown> extends BaseType<t, ProtoDeclaration> {
 	readonly basisName = `${this.proto.name}`
 	readonly domain = "object"
 	readonly condition = `${In} instanceof ${

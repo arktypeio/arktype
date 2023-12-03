@@ -14,6 +14,7 @@ import type { BasisKind } from "./bases/basis.js"
 import type { DomainNode } from "./bases/domain.js"
 import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
+import type { BaseParser, SchemaParseContext } from "./parse.js"
 import type { ScopeNode } from "./scope.js"
 import {
 	unflattenConstraints,
@@ -49,6 +50,7 @@ import {
 	type ClosedRefinementKind,
 	type ConstraintKind,
 	type NodeKind,
+	type NodeParserImplementation,
 	type OpenRefinementKind,
 	type RefinementKind,
 	type SetKind,
@@ -88,14 +90,29 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
+export type NodeSubclass = {
+	readonly declaration: BaseNodeDeclaration
+	readonly parser: BaseParser
+}
+
 export abstract class BaseNode<
 	t = unknown,
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
+	subclass extends NodeSubclass = NodeSubclass
 > extends DynamicBase<
-	attachmentsOf<d> & { (data: unknown): CheckResult<extractOut<t>> }
+	attachmentsOf<subclass["declaration"]> & {
+		(data: unknown): CheckResult<extractOut<t>>
+	}
 > {
 	declare infer: extractOut<t>;
-	declare [inferred]: t;
+	declare [inferred]: t
+
+	static composeParser: <
+		self,
+		d extends BaseNodeDeclaration = declarationOf<self>
+	>(
+		this: self,
+		impl: NodeParserImplementation<d>
+	) => (def: d["schema"], ctx: SchemaParseContext) => attachmentsOf<d>;
 
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
 	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[

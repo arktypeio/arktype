@@ -47,6 +47,11 @@ export declare function parse<defKind extends NodeKind>(
 	ctx: SchemaParseContext
 ): Node<reducibleKindOf<defKind>>
 
+export type BaseParser = (
+	schema: never,
+	ctx: SchemaParseContext
+) => BaseAttachments
+
 export const composeParser = <d extends BaseNodeDeclaration>(
 	impl: NodeParserImplementation<d>
 ) => {

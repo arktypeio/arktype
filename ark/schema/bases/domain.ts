@@ -1,9 +1,9 @@
 import { domainOf, type Domain } from "@arktype/util"
-import { BaseNode } from "../base.js"
 import { composeParser } from "../parse.js"
 import { In, composePrimitiveTraversal } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
+import { BaseType } from "../type.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -31,16 +31,18 @@ export type DomainDeclaration = declareNode<{
 	}
 }>
 
-export const DomainImplementation = composeParser<DomainDeclaration>({
-	kind: "domain",
-	collapseKey: "domain",
-	keys: {
-		domain: {}
-	},
-	normalize: (input) => (typeof input === "string" ? { domain: input } : input)
-})
+export class DomainNode<t = unknown> extends BaseType<t, typeof DomainNode> {
+	static declaration: DomainDeclaration
+	static parser = this.composeParser({
+		kind: "domain",
+		collapseKey: "domain",
+		keys: {
+			domain: {}
+		},
+		normalize: (input) =>
+			typeof input === "string" ? { domain: input } : input
+	})
 
-export class DomainNode<t = unknown> extends BaseNode<t, DomainDeclaration> {
 	basisName = this.domain
 
 	condition =

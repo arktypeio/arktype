@@ -12,18 +12,12 @@ import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import type { Schema } from "../shared/nodes.js"
 import { isNode } from "../shared/symbols.js"
 import {
-	DomainImplementation,
+	DomainNode,
 	type DomainDeclaration,
-	type DomainNode,
 	type DomainSchema,
 	type NonEnumerableDomain
 } from "./domain.js"
-import {
-	ProtoImplementation,
-	type ProtoDeclaration,
-	type ProtoNode,
-	type ProtoSchema
-} from "./proto.js"
+import { ProtoNode, type ProtoDeclaration, type ProtoSchema } from "./proto.js"
 import { UnitNode, type UnitDeclaration, type UnitSchema } from "./unit.js"
 
 export type BasisDeclarations = {
@@ -33,8 +27,8 @@ export type BasisDeclarations = {
 }
 
 export const BasisImplementations = {
-	domain: DomainImplementation,
-	proto: ProtoImplementation,
+	domain: DomainNode,
+	proto: ProtoNode,
 	unit: UnitNode
 }
 

@@ -6,10 +6,7 @@ import {
 	type RefinementDeclarations
 } from "../refinements/refinement.js"
 import type { ValidatorKind } from "../sets/morph.js"
-import {
-	SetImplementationByKind,
-	type SetDeclarationsByKind
-} from "../sets/set.js"
+import { SetNodesByKind, type SetDeclarationsByKind } from "../sets/set.js"
 import type { BranchKind } from "../sets/union.js"
 import type { TraversalMethods } from "./compilation.js"
 import type {
@@ -35,7 +32,7 @@ export type NodeDeclarationsByKind = extend<
 >
 
 export const NodeImplementationByKind = {
-	...SetImplementationByKind,
+	...SetNodesByKind,
 	...ConstraintImplementationByKind
 } as const satisfies Dict<NodeKind>
 

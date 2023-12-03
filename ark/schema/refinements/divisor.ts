@@ -29,17 +29,18 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export const DivisorImplementation = composeParser<DivisorDeclaration>({
-	kind: "divisor",
-	collapseKey: "divisor",
-	keys: {
-		divisor: {}
-	},
-	normalize: (schema) =>
-		typeof schema === "number" ? { divisor: schema } : schema
-})
+export class DivisorNode extends RefinementNode<typeof DivisorNode> {
+	static declaration: DivisorDeclaration
+	static parser = this.composeParser({
+		kind: "divisor",
+		collapseKey: "divisor",
+		keys: {
+			divisor: {}
+		},
+		normalize: (schema) =>
+			typeof schema === "number" ? { divisor: schema } : schema
+	})
 
-export class DivisorNode extends RefinementNode<DivisorDeclaration> {
 	traverseAllows = (data: number) => data % this.divisor === 0
 	traverseApply = composePrimitiveTraversal(this, this.traverseAllows)
 	condition = `${In} % ${this.divisor} === 0`

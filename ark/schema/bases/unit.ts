@@ -25,18 +25,17 @@ export type UnitDeclaration = declareNode<{
 	}
 }>
 
-export const UnitImplementation = composeParser<UnitDeclaration>({
-	kind: "unit",
-	keys: {
-		unit: {
-			preserveUndefined: true
-		}
-	},
-	normalize: (schema) => schema
-})
-
-export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
-	declare static declaration: UnitDeclaration
+export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
+	static declaration: UnitDeclaration
+	static parser = this.composeParser({
+		kind: "unit",
+		keys: {
+			unit: {
+				preserveUndefined: true
+			}
+		},
+		normalize: (schema) => schema
+	})
 
 	serializedValue = compileSerializedValue(this.unit)
 	traverseAllows = (data: unknown) => data === this.unit

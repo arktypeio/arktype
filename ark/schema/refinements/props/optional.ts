@@ -1,14 +1,8 @@
 import type { Node } from "../../base.js"
-import { composeParser } from "../../parse.js"
 import { compileSerializedValue } from "../../shared/compilation.js"
-import type { BaseAttributes, withAttributes } from "../../shared/declare.js"
+import type { withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
 import type { Schema } from "../../shared/nodes.js"
-import {
-	composeOperandAssertion,
-	composeRefinement,
-	type declareRefinement
-} from "../shared.js"
 import type { NamedPropAttachments } from "./shared.js"
 
 export type OptionalInner = {

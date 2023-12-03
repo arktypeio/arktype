@@ -2,12 +2,9 @@ import type { extend, listable } from "@arktype/util"
 import type { OpenRefinementKind, RefinementKind } from "../shared/define.js"
 import type { Declaration, Schema } from "../shared/nodes.js"
 import { BoundImplementations, type BoundDeclarations } from "./bounds.js"
-import { DivisorImplementation, type DivisorDeclaration } from "./divisor.js"
-import { PatternImplementation, type PatternDeclaration } from "./pattern.js"
-import {
-	PredicateImplementation,
-	type PredicateDeclaration
-} from "./predicate.js"
+import { DivisorNode, type DivisorDeclaration } from "./divisor.js"
+import { PatternNode, type PatternDeclaration } from "./pattern.js"
+import { PredicateNode, type PredicateDeclaration } from "./predicate.js"
 import { PropImplementations, type PropDeclarations } from "./props/prop.js"
 
 export type ClosedRefinementDeclarations = extend<
@@ -31,9 +28,9 @@ export type RefinementDeclarations = extend<
 >
 
 export const RefinementNodes = {
-	divisor: DivisorImplementation,
-	pattern: PatternImplementation,
-	predicate: PredicateImplementation,
+	divisor: DivisorNode,
+	pattern: PatternNode,
+	predicate: PredicateNode,
 	...BoundImplementations,
 	...PropImplementations
 } as const satisfies Record<RefinementKind, unknown>
