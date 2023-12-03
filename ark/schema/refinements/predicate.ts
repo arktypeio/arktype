@@ -29,9 +29,9 @@ export type PredicateDeclaration = declareNode<{
 // to wrap it with traversal state for allows
 
 export class PredicateNode extends RefinementNode<typeof PredicateNode> {
+	static readonly kind = "predicate"
 	static declaration: PredicateDeclaration
 	static parser = this.composeParser({
-		kind: "predicate",
 		collapseKey: "predicate",
 		keys: {
 			predicate: {}

@@ -29,9 +29,9 @@ export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
 export class DivisorNode extends RefinementNode<typeof DivisorNode> {
+	static readonly kind = "divisor"
 	static declaration: DivisorDeclaration
 	static parser = this.composeParser({
-		kind: "divisor",
 		collapseKey: "divisor",
 		keys: {
 			divisor: {}

@@ -8,7 +8,6 @@ import {
 import type { ValidatorKind } from "../sets/morph.js"
 import { SetNodesByKind, type SetDeclarationsByKind } from "../sets/set.js"
 import type { BranchKind } from "../sets/union.js"
-import type { TraversalMethods } from "./compilation.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -74,9 +73,3 @@ export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	  : kind
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
-
-export type Attachments<kind extends NodeKind> = Inner<kind> &
-	Declaration<kind>["attach"] &
-	TraversalMethods<
-		kind extends RefinementKind ? Declaration<kind>["operand"] : unknown
-	>

@@ -7,6 +7,7 @@ import {
 	type Json,
 	type JsonData,
 	type entriesOf,
+	type extend,
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
@@ -14,6 +15,14 @@ import type { DomainNode } from "./bases/domain.js"
 import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
 import type { BaseParser, SchemaParseContext } from "./parse.js"
+import type {
+	AfterNode,
+	BeforeNode,
+	MaxLengthNode,
+	MaxNode,
+	MinLengthNode,
+	MinNode
+} from "./refinements/bounds.js"
 import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
@@ -66,7 +75,6 @@ import { arkKind, inferred } from "./shared/symbols.js"
 export interface BaseAttachments {
 	alias?: string
 	readonly id: string
-	readonly kind: NodeKind
 	readonly inner: Dict
 	readonly meta: Dict
 	readonly entries: readonly Entry[]
@@ -81,14 +89,15 @@ export interface BaseAttachments {
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends BaseAttachments {
-	kind: d["kind"]
 	inner: d["inner"]
 	entries: entriesOf<d["inner"]>
 	children: Node<d["childKind"]>[]
 }
 
-export type NodeSubclass = {
-	readonly declaration: BaseNodeDeclaration
+export interface NodeSubclass<kind extends NodeKind = NodeKind> {
+	readonly kind: kind
+	// allow subclasses to accept narrowed check input
+	readonly declaration: BaseNodeDeclaration & { checks: any }
 	readonly parser: BaseParser
 }
 
@@ -101,8 +110,9 @@ export abstract class BaseNode<
 	}
 > {
 	declare infer: extractOut<t>;
-	declare [inferred]: t;
-
+	declare [inferred]: t
+	readonly subclass: subclass = this.constructor as never
+	readonly kind: subclass["kind"] = (this as any).subclass.kind;
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
 	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[
 		this.kind
@@ -136,8 +146,8 @@ export abstract class BaseNode<
 	}
 
 	abstract writeDefaultDescription(): string
-	abstract traverseAllows: TraverseAllows<d["checks"]>
-	abstract traverseApply: TraverseApply<d["checks"]>
+	abstract traverseAllows: TraverseAllows<subclass["declaration"]["checks"]>
+	abstract traverseApply: TraverseApply<subclass["declaration"]["checks"]>
 
 	allows = (data: unknown): data is t => {
 		const problems = new Problems()
@@ -331,7 +341,7 @@ export abstract class BaseNode<
 	}
 }
 
-type declarationOf<cls> = cls extends {
+export type declarationOf<cls> = cls extends {
 	declaration: infer declaration extends BaseNodeDeclaration
 }
 	? declaration
@@ -345,12 +355,12 @@ export type Node<kind extends NodeKind = NodeKind, t = unknown> = {
 	proto: ProtoNode<t>
 	domain: DomainNode<t>
 	divisor: DivisorNode
-	// min: MinNode
-	// max: MaxNode
-	// minLength: MinLengthNode
-	// maxLength: MaxLengthNode
-	// after: AfterNode
-	// before: BeforeNode
+	min: MinNode
+	max: MaxNode
+	minLength: MinLengthNode
+	maxLength: MaxLengthNode
+	after: AfterNode
+	before: BeforeNode
 	pattern: PatternNode
 	predicate: PredicateNode
 	required: RequiredNode

@@ -105,10 +105,10 @@ export type MorphDeclaration = declareNode<{
 // compile: (node, ctx) => node.in.compileBody(ctx),
 
 export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
+	static readonly kind = "morph"
 	static declaration: MorphDeclaration
 	// TODO: recursively extract in?
 	static parser = this.composeParser({
-		kind: "morph",
 		keys: {
 			in: {
 				child: true,

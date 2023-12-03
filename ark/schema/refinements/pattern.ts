@@ -29,9 +29,9 @@ export type PatternDeclaration = declareNode<{
 }>
 
 export class PatternNode extends RefinementNode<typeof PatternNode> {
+	static readonly kind = "pattern"
 	static declaration: PatternDeclaration
 	static parser = this.composeParser({
-		kind: "pattern",
 		collapseKey: "source",
 		keys: {
 			source: {},

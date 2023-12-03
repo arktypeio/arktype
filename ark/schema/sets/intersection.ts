@@ -89,9 +89,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	typeof IntersectionNode
 > {
+	static readonly kind = "intersection"
 	static declaration: IntersectionDeclaration
 	static parser = this.composeParser({
-		kind: "intersection",
 		normalize: (def) => def,
 		addContext: (ctx) => {
 			const def = ctx.definition as IntersectionSchema

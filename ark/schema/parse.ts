@@ -139,7 +139,6 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 		const id = `${prefix}${++typeCountsByPrefix[prefix]!}`
 		const attachments = {
 			id,
-			kind: impl.kind,
 			inner,
 			meta,
 			entries,

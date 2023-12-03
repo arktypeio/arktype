@@ -4,8 +4,7 @@ import {
 	type extend,
 	type valueOf
 } from "@arktype/util"
-import type { Node } from "../base.js"
-import { composeParser } from "../parse.js"
+import type { NodeSubclass, declarationOf } from "../base.js"
 import { In } from "../shared/compilation.js"
 import type {
 	BaseNodeDeclaration,
@@ -14,12 +13,10 @@ import type {
 } from "../shared/declare.js"
 import type {
 	BoundKind,
-	PrimitiveConstraintAttachments,
-	TypeKind
+	PrimitiveConstraintAttachments
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
-import type { Declaration, Schema } from "../shared/nodes.js"
-import { RefinementNode, type RefinementImplementationInput } from "./shared.js"
+import { RefinementNode } from "./shared.js"
 
 export type BoundInner = {
 	readonly limit: number
@@ -45,8 +42,6 @@ export type BoundAttachments<limitKind extends LimitKind> = extend<
 		comparator: RelativeComparator<limitKind>
 	}
 >
-
-type BoundNode = Node<BoundKind>
 
 export type LimitKind = "lower" | "upper"
 
@@ -74,65 +69,56 @@ export type UpperBoundKind = valueOf<typeof boundKindPairsByLower>
 
 export type NumericallyBoundable = string | number | readonly unknown[]
 
-export type Boundable = Declaration<BoundKind>["operand"]
+export type Boundable = NumericallyBoundable | Date
 
-export type BoundNodeDefinition<d extends BaseNodeDeclaration> = {
-	kind: d["kind"]
-	defineChecker: (inner: d["inner"]) => (data: never) => boolean
-	writeDefaultDescription: (node: BoundNode) => string
-	operand: readonly Schema<TypeKind>[]
-}
-
-export const normalizeLimit = (limit: LimitSchemaValue): number =>
+const normalizeLimit = (limit: LimitSchemaValue): number =>
 	typeof limit === "string" ? new Date(limit).valueOf() : limit
 
 export abstract class BaseBound<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends RefinementNode<d> {}
+	subclass extends NodeSubclass<BoundKind>
+> extends RefinementNode<subclass> {
+	size = compileSizeOf(this.kind)
+	// const comparator = compileComparator(
+	// 	this.kind,
+	// 	this.exclusive
+	// 	// cast to lower bound comparator for internal checking
+	// ) as RelativeComparator<"lower">
+	// const checker = boundDefinition.defineChecker(node as never) as (
+	// 	data: InputData<"min">
+	// ) => boolean
+	// return {
+	// 	comparator,
+	// 	traverseAllows: checker,
+	// 	traverseApply: composePrimitiveTraversal(node as never, checker),
+	// 	assertValidBasis: composeOperandAssertion(node),
+	// 	condition: `${size} ${comparator} ${this.limit}`,
+	// 	negatedCondition: `${size} ${negatedComparators[comparator]} ${this.limit}`
+	// }
 
-// attach: (node) => {
-// 	const size = compileSizeOf(node.kind)
-// 	const comparator = compileComparator(
-// 		node.kind,
-// 		node.exclusive
-// 		// cast to lower bound comparator for internal checking
-// 	) as RelativeComparator<"lower">
-// 	const checker = boundDefinition.defineChecker(node as never) as (
-// 		data: InputData<"min">
-// 	) => boolean
-// 	return {
-// 		comparator,
-// 		traverseAllows: checker,
-// 		traverseApply: composePrimitiveTraversal(node as never, checker),
-// 		assertValidBasis: composeOperandAssertion(node),
-// 		condition: `${size} ${comparator} ${node.limit}`,
-// 		negatedCondition: `${size} ${negatedComparators[comparator]} ${node.limit}`
-// 	}
-// }
+	static createBoundParserImplementation<
+		self,
+		d extends BaseNodeDeclaration = declarationOf<self>
+	>(this: self, kind: d["kind"]) {
+		return {
+			kind,
+			collapseKey: "limit",
+			keys: {
+				limit: {
+					parse: normalizeLimit
+				},
+				exclusive: {
+					// omit key with value false since it is the default
+					parse: (flag: boolean) => flag || undefined
+				}
+			},
+			normalize: (schema: BoundSchema) =>
+				(typeof schema === "object"
+					? { ...schema, limit: schema.limit }
+					: { limit: schema }) as d["normalizedSchema"]
+		} as const
+	}
+}
 
-export const composeBoundParser = <d extends BaseNodeDeclaration>(
-	boundDefinition: BoundNodeDefinition<d>
-) =>
-	composeParser({
-		// check this generic bound implementation against a concrete case
-		// ("min"), then cast it to the expected parameterized definition
-		kind: boundDefinition.kind as "min",
-		collapseKey: "limit",
-		keys: {
-			limit: {},
-			exclusive: {
-				// omit key with value false since it is the default
-				parse: (flag) => flag || undefined
-			}
-		},
-		operand: boundDefinition.operand,
-		normalize: (schema: BoundSchema) =>
-			typeof schema === "object"
-				? { ...schema, limit: normalizeLimit(schema.limit) }
-				: { limit: normalizeLimit(schema) }
-	} satisfies RefinementImplementationInput<Declaration<"min">> as never)
-
-// writeDefaultDescription: boundDefinition.writeDefaultDescription,
 // intersections: isKeyOf(boundDefinition.kind, boundKindPairsByLower)
 // 	? // can't check intersections against a concrete case since the intersection
 // 	  // pairings are dynamic keys, so just type the functions internally and cast
@@ -178,14 +164,25 @@ export type MinDeclaration = declareNode<{
 	}
 }>
 
-export const MinImplementation = defineBound({
-	kind: "min",
-	operand: ["number"],
-	defineChecker: (node) =>
-		node.exclusive ? (data) => data > node.limit : (data) => data >= node.limit,
-	writeDefaultDescription: (node) =>
-		`${node.exclusive ? "more than" : "at least"} ${node.limit}`
-})
+export class MinNode extends BaseBound<typeof MinNode> {
+	static readonly kind = "min"
+	static declaration: MinDeclaration
+	static parser = this.composeParser(
+		this.createBoundParserImplementation("min")
+	)
+
+	traverseAllows = this.exclusive
+		? (data: number) => data > this.limit
+		: (data: number) => data >= this.limit
+
+	writeDefaultDescription() {
+		return `${this.exclusive ? "more than" : "at least"} ${this.limit}`
+	}
+
+	getCheckedDefinitions() {
+		return ["number"] as const
+	}
+}
 
 export type MaxDeclaration = declareNode<{
 	kind: "max"
@@ -198,14 +195,25 @@ export type MaxDeclaration = declareNode<{
 	}
 }>
 
-export const MaxImplementation = defineBound({
-	kind: "max",
-	operand: ["number"],
-	defineChecker: (node) =>
-		node.exclusive ? (data) => data < node.limit : (data) => data <= node.limit,
-	writeDefaultDescription: (node) =>
-		`${node.exclusive ? "less than" : "at most"} ${node.limit}`
-})
+export class MaxNode extends BaseBound<typeof MaxNode> {
+	static readonly kind = "max"
+	static declaration: MaxDeclaration
+	static parser = this.composeParser(
+		this.createBoundParserImplementation("max")
+	)
+
+	traverseAllows = this.exclusive
+		? (data: number) => data < this.limit
+		: (data: number) => data <= this.limit
+
+	writeDefaultDescription() {
+		return `${this.exclusive ? "less than" : "at most"} ${this.limit}`
+	}
+
+	getCheckedDefinitions() {
+		return ["number"] as const
+	}
+}
 
 export type MinLengthDeclaration = declareNode<{
 	kind: "minLength"
@@ -218,22 +226,31 @@ export type MinLengthDeclaration = declareNode<{
 	}
 }>
 
-export const MinLengthImplementation = defineBound({
-	kind: "minLength",
-	operand: ["string", Array],
-	defineChecker: (node) =>
-		node.exclusive
-			? (data) => data.length > node.limit
-			: (data) => data.length >= node.limit,
-	writeDefaultDescription: (node) =>
-		node.exclusive
-			? node.limit === 0
+export class MinLengthNode extends BaseBound<typeof MinLengthNode> {
+	static readonly kind = "minLength"
+	static declaration: MinLengthDeclaration
+	static parser = this.composeParser(
+		this.createBoundParserImplementation("minLength")
+	)
+
+	traverseAllows = this.exclusive
+		? (data: string | readonly unknown[]) => data.length > this.limit
+		: (data: string | readonly unknown[]) => data.length >= this.limit
+
+	writeDefaultDescription() {
+		return this.exclusive
+			? this.limit === 0
 				? "non-empty"
-				: `more than ${node.limit} in length`
-			: node.limit === 1
+				: `more than length ${this.limit}`
+			: this.limit === 1
 			  ? "non-empty"
-			  : `at least ${node.limit} in length`
-})
+			  : `at least length ${this.limit}`
+	}
+
+	getCheckedDefinitions() {
+		return ["string", Array] as const
+	}
+}
 
 export type MaxLengthDeclaration = declareNode<{
 	kind: "maxLength"
@@ -245,18 +262,26 @@ export type MaxLengthDeclaration = declareNode<{
 	}
 }>
 
-export const MaxLengthImplementation = defineBound({
-	kind: "maxLength",
-	operand: ["string", Array],
-	defineChecker: (node) =>
-		node.exclusive
-			? (data) => data.length < node.limit
-			: (data) => data.length <= node.limit,
-	writeDefaultDescription: (node) =>
-		node.exclusive
-			? `less than ${node.limit} in length`
-			: `at most ${node.limit} in length`
-})
+export class MaxLengthNode extends BaseBound<typeof MaxLengthNode> {
+	static readonly kind = "maxLength"
+	static declaration: MaxLengthDeclaration
+	static parser = this.composeParser(
+		this.createBoundParserImplementation("maxLength")
+	)
+	traverseAllows = this.exclusive
+		? (data: string | readonly unknown[]) => data.length < this.limit
+		: (data: string | readonly unknown[]) => data.length <= this.limit
+
+	writeDefaultDescription() {
+		return this.exclusive
+			? `less than length ${this.limit}`
+			: `at most length ${this.limit}`
+	}
+
+	getCheckedDefinitions() {
+		return ["string", Array] as const
+	}
+}
 
 export type AfterDeclaration = declareNode<{
 	kind: "after"
@@ -268,16 +293,25 @@ export type AfterDeclaration = declareNode<{
 	}
 }>
 
-export const AfterImplementation = defineBound({
-	kind: "before",
-	operand: [Date],
-	defineChecker: (node) =>
-		node.exclusive
-			? (data) => +data > node.limit
-			: (data) => +data >= node.limit,
-	writeDefaultDescription: (node) =>
-		node.exclusive ? `after ${node.limit}` : `${node.limit} or later`
-})
+export class AfterNode extends BaseBound<typeof AfterNode> {
+	static readonly kind = "after"
+	static declaration: AfterDeclaration
+	static parser = this.composeParser(
+		this.createBoundParserImplementation("after")
+	)
+
+	traverseAllows = this.exclusive
+		? (data: Date) => +data > this.limit
+		: (data: Date) => +data >= this.limit
+
+	writeDefaultDescription() {
+		return this.exclusive ? `after ${this.limit}` : `${this.limit} or later`
+	}
+
+	getCheckedDefinitions() {
+		return [Date] as const
+	}
+}
 
 export type BeforeDeclaration = declareNode<{
 	kind: "before"
@@ -290,16 +324,25 @@ export type BeforeDeclaration = declareNode<{
 	}
 }>
 
-export const BeforeImplementation = defineBound({
-	kind: "before",
-	operand: [Date],
-	defineChecker: (node) =>
-		node.exclusive
-			? (data) => +data < node.limit
-			: (data) => +data <= node.limit,
-	writeDefaultDescription: (node) =>
-		node.exclusive ? `before ${node.limit}` : `${node.limit} or earlier`
-})
+export class BeforeNode extends BaseBound<typeof BeforeNode> {
+	static readonly kind = "before"
+	static declaration: BeforeDeclaration
+	static parser = this.composeParser(
+		this.createBoundParserImplementation("before")
+	)
+
+	traverseAllows = this.exclusive
+		? (data: Date) => +data < this.limit
+		: (data: Date) => +data <= this.limit
+
+	writeDefaultDescription() {
+		return this.exclusive ? `before ${this.limit}` : `${this.limit} or earlier`
+	}
+
+	getCheckedDefinitions() {
+		return [Date] as const
+	}
+}
 
 export type BoundDeclarations = {
 	min: MinDeclaration
@@ -310,11 +353,11 @@ export type BoundDeclarations = {
 	before: BeforeDeclaration
 }
 
-export const BoundImplementations = {
-	min: MinImplementation,
-	max: MaxImplementation,
-	minLength: MinLengthImplementation,
-	maxLength: MaxLengthImplementation,
-	after: AfterImplementation,
-	before: BeforeImplementation
+export const BoundNodes = {
+	min: MinNode,
+	max: MaxNode,
+	minLength: MinLengthNode,
+	maxLength: MaxLengthNode,
+	after: AfterNode,
+	before: BeforeNode
 }

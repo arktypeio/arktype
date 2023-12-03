@@ -139,9 +139,9 @@ const intersectBranch = (
 // }
 
 export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
+	static readonly kind = "union"
 	static declaration: UnionDeclaration
-	static parser = composeParser<UnionDeclaration>({
-		kind: "union",
+	static parser = composeParser({
 		collapseKey: "branches",
 		keys: {
 			ordered: {},

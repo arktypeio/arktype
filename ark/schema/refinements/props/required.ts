@@ -51,9 +51,9 @@ const intersectNamed = (
 }
 
 export class RequiredNode extends RefinementNode<typeof RequiredNode> {
+	static readonly kind = "required"
 	static declaration: RequiredDeclaration
 	static parser = this.composeParser({
-		kind: "required",
 		keys: {
 			key: {},
 			value: {

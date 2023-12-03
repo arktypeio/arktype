@@ -5,7 +5,7 @@ import type {
 	conform,
 	exactMessageOnError
 } from "@arktype/util"
-import type { Node } from "./base.js"
+import type { Node, TypeNode } from "./base.js"
 import type { instantiateBasis } from "./bases/basis.js"
 import type { NonEnumerableDomain } from "./bases/domain.js"
 import type { isSchemaCast, schema } from "./keywords/keywords.js"
@@ -21,7 +21,6 @@ import type {
 import type { BranchNode, NormalizedUnionSchema } from "./sets/union.js"
 import type { BasisKind, RefinementKind } from "./shared/define.js"
 import type { Declaration, Schema } from "./shared/nodes.js"
-import type { TypeNode } from "./type.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]

@@ -31,9 +31,9 @@ export type DomainDeclaration = declareNode<{
 }>
 
 export class DomainNode<t = unknown> extends BaseType<t, typeof DomainNode> {
+	static readonly kind: "domain"
 	static declaration: DomainDeclaration
 	static parser = this.composeParser({
-		kind: "domain",
 		collapseKey: "domain",
 		keys: {
 			domain: {}

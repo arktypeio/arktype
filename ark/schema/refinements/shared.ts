@@ -10,6 +10,7 @@ import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type {
 	NodeKind,
 	NodeParserImplementation,
+	RefinementKind,
 	TypeKind
 } from "../shared/define.js"
 import type { Schema } from "../shared/nodes.js"

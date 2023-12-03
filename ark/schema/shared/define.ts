@@ -129,7 +129,6 @@ export type NodeKeyImplementation<
 >
 
 export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
-	kind: d["kind"]
 	keys: KeyDefinitions<d>
 	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void

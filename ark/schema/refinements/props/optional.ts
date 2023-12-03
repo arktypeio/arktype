@@ -30,9 +30,9 @@ export type OptionalDeclaration = declareNode<{
 }>
 
 export class OptionalNode extends RefinementNode<typeof OptionalNode> {
+	static readonly kind = "optional"
 	static declaration: OptionalDeclaration
 	static parser = this.composeParser({
-		kind: "optional",
 		keys: {
 			key: {},
 			value: {

@@ -21,9 +21,9 @@ export type UnitDeclaration = declareNode<{
 }>
 
 export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
+	static readonly kind: "unit"
 	static declaration: UnitDeclaration
 	static parser = this.composeParser({
-		kind: "unit",
 		keys: {
 			unit: {
 				preserveUndefined: true
