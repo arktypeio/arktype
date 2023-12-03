@@ -39,6 +39,8 @@ export const validationSyntax = type({
 // in the upcoming release, you can use chaining to define expressions directly
 // that use objects or functions that can't be embedded in strings
 
+const z = type({ value: "string" }, "&", { format: "'bigint'" })
+
 export const parseBigintLiteral = type({ value: "string" })
 	.and({
 		format: "'bigint'"

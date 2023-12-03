@@ -104,8 +104,8 @@ export interface NodeSubclass {
 }
 
 export abstract class BaseNode<
-	t = any,
-	subclass extends NodeSubclass = any
+	t = unknown,
+	subclass extends NodeSubclass = NodeSubclass
 > extends DynamicBase<
 	attachmentsOf<subclass["declaration"]> & {
 		(data: unknown): CheckResult<extractOut<t>>
@@ -142,7 +142,7 @@ export abstract class BaseNode<
 		this.contributesReferencesById =
 			this.id in this.referencesById
 				? this.referencesById
-				: { ...this.referencesById, [this.id]: this }
+				: { ...this.referencesById, [this.id]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
 		this.description ??= this.writeDefaultDescription()
 	}
@@ -187,9 +187,9 @@ export abstract class BaseNode<
 
 	private getIo(kind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) {
-			return this
+			return this as never
 		}
-		const ioInner: Record<string, unknown> = {}
+		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
 			const keyDefinition = this.implementation.keys[k as keyof BaseAttributes]!
 			if (keyDefinition.meta) {
@@ -331,7 +331,7 @@ export abstract class BaseNode<
 	) => (def: d["schema"], ctx: SchemaParseContext) => attachmentsOf<d>
 
 	protected createPrimitiveTraversal(
-		this: BaseNode & {
+		this: BaseNode<any> & {
 			children: readonly never[]
 		}
 	): TraverseApply<subclass["declaration"]["checks"]> {
@@ -349,7 +349,7 @@ export type declarationOf<cls> = cls extends {
 	? declaration
 	: never
 
-export type Node<kind extends NodeKind = NodeKind, t = unknown> = {
+export type Node<kind extends NodeKind = NodeKind, t = any> = {
 	union: UnionNode<t>
 	morph: MorphNode<t>
 	intersection: IntersectionNode<t>
@@ -369,7 +369,5 @@ export type Node<kind extends NodeKind = NodeKind, t = unknown> = {
 	optional: OptionalNode
 }[kind]
 
-export type TypeNode<t = unknown, kind extends TypeKind = TypeKind> = Node<
-	kind,
-	t
->
+// TODO: possible to default these to unknown?
+export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>

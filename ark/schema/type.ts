@@ -10,14 +10,18 @@ import type {
 	IntersectionNode
 } from "./sets/intersection.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
-import type { RefinementKind } from "./shared/define.js"
+import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema } from "./shared/nodes.js"
 
+export interface TypeSubclass extends NodeSubclass {
+	readonly kind: TypeKind
+}
+
 export abstract class BaseType<
 	t = unknown,
-	subclass extends NodeSubclass = NodeSubclass
+	subclass extends TypeSubclass = TypeSubclass
 > extends BaseNode<t, subclass> {
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
@@ -48,7 +52,7 @@ export abstract class BaseType<
 	// TODO: inferIntersection
 	and<other extends Node>(
 		other: other
-	): Exclude<intersectionOf<this["kind"], other["kind"]>, Disjoint> {
+	): Exclude<intersectionOf<subclass["kind"], other["kind"]>, Disjoint> {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
@@ -56,7 +60,7 @@ export abstract class BaseType<
 	// TODO: limit input types
 	or<other extends TypeNode>(
 		other: other
-	): TypeNode<t | other["infer"], "union" | this["kind"] | other["kind"]> {
+	): TypeNode<t | other["infer"], "union" | subclass["kind"] | other["kind"]> {
 		return this.scope.parseBranches(
 			...this.branches,
 			...(other.branches as any)
@@ -79,9 +83,7 @@ export abstract class BaseType<
 		return this as never
 	}
 
-	extends<other extends BaseType>(
-		other: other
-	): this is BaseType<other["infer"]> {
+	extends<other extends TypeNode>(other: other) {
 		const intersection = this.intersect(other)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)

@@ -1,6 +1,7 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import { composeParser } from "../parse.js"
+import type { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -53,16 +54,6 @@ const intersectBranch = (
 	}
 	return l.ordered ? { branches, ordered: true } : { branches }
 }
-
-// attach: (node) => {
-// 	return {
-// 		traverseAllows: (data, problems) =>
-// 			node.branches.some((b) => b.traverseAllows(data, problems)),
-// 		traverseApply: (data, problems) =>
-// 			node.branches.forEach((b) => b.traverseApply(data, problems)),
-// 		discriminant: null //discriminate(inner.branches)
-// 	}
-// }
 
 // intersections: {
 // 	union: (l, r) => {
@@ -120,8 +111,6 @@ const intersectBranch = (
 // 	}
 // },
 
-// writeDefaultDescription: (inner) =>
-// inner.branches.length === 0 ? "never" : inner.branches.join(" or "),
 // compile: (node, ctx) => {
 // const branchInvocations = node.branches.map(
 // 	(branch) =>
@@ -176,7 +165,17 @@ export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
 		}
 	})
 
-	discriminant: Discriminant | null
+	discriminant: Discriminant | null = null //discriminate(inner.branches)
+
+	traverseAllows = (data: unknown, problems: Problems) =>
+		this.branches.some((b) => b.traverseAllows(data, problems))
+
+	traverseApply = (data: unknown, problems: Problems) =>
+		this.branches.forEach((b) => b.traverseApply(data, problems))
+
+	writeDefaultDescription() {
+		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
+	}
 }
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {

@@ -55,14 +55,15 @@ export type BaseParser = (
 ) => BaseAttachments
 
 export const composeParser = <d extends BaseNodeDeclaration>(
+	kind: d["kind"],
 	impl: NodeParserImplementation<d>
 ) => {
 	return (def: d["schema"], ctx: SchemaParseContext): attachmentsOf<d> => {
 		if (def instanceof BaseNode) {
-			return def.kind === impl.kind
+			return def.kind === kind
 				? (def as never)
 				: throwParseError(
-						`Node of kind ${def.kind} is not valid as a ${impl.kind} definition`
+						`Node of kind ${def.kind} is not valid as a ${kind} definition`
 				  )
 		}
 		const normalizedDefinition: any = impl.normalize?.(def) ?? def
@@ -81,7 +82,7 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 				impl.keys as PartialRecord<string, valueOf<KeyDefinitions<d>>>
 			)[k]
 			if (!keyImpl) {
-				return throwParseError(`Key ${k} is not valid on ${impl.kind} schema`)
+				return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 			}
 			const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
 			if (v === undefined && !keyImpl.preserveUndefined) {
@@ -114,11 +115,11 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 				typeJson = collapsibleJson
 			}
 		}
-		const innerId = JSON.stringify({ kind: impl.kind, ...json })
+		const innerId = JSON.stringify({ kind, ...json })
 		if (ctx.reduceTo) {
 			return (globalResolutions[innerId] = ctx.reduceTo) as never
 		}
-		const typeId = JSON.stringify({ kind: impl.kind, ...typeJson })
+		const typeId = JSON.stringify({ kind, ...typeJson })
 		if (innerId in globalResolutions) {
 			return globalResolutions[innerId] as never
 		}
@@ -134,7 +135,7 @@ export const composeParser = <d extends BaseNodeDeclaration>(
 				return reduced as never
 			}
 		}
-		const prefix = ctx.alias ?? impl.kind
+		const prefix = ctx.alias ?? kind
 		typeCountsByPrefix[prefix] ??= 0
 		const id = `${prefix}${++typeCountsByPrefix[prefix]!}`
 		const attachments = {

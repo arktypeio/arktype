@@ -6,17 +6,11 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import type { MorphAst } from "arktype/internal/parser/tuple.js"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import { composeParser } from "../parse.js"
 import type { ArkConfig } from "../scope.js"
 import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
-import type {
-	BaseAttributes,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeKind } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { Schema, reducibleKindOf } from "../shared/nodes.js"
@@ -36,6 +30,8 @@ export type TraversalState = {
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type Out<o = any> = ["=>", o]
+
+export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export type MorphInner = {
 	readonly in: ValidatorNode
@@ -177,10 +173,7 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
 		: o
 	: t extends TerminallyInferredObjectKind | Primitive
 	  ? t
-	  : // TODO: check instantiations
-	    unknown extends t
-	    ? unknown
-	    : { [k in keyof t]: extractMorphs<t[k], io> }
+	  : { [k in keyof t]: extractMorphs<t[k], io> }
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

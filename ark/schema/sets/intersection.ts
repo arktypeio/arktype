@@ -8,6 +8,7 @@ import type { Node } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
+import type { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -53,30 +54,6 @@ export type IntersectionDeclaration = declareNode<{
 		default: "intersection" | Disjoint
 	}
 }>
-
-// attach: (node) => {
-// 	const constraints: mutable<ConstraintSet> = []
-// 	const refinements: Node<RefinementKind>[] = []
-// 	for (const [k, v] of node.entries) {
-// 		if (k === "basis") {
-// 			constraints.push(v)
-// 		} else if (includes(openRefinementKinds, k)) {
-// 			constraints.push(...(v as any))
-// 			refinements.push(...(v as any))
-// 		} else if (includes(closedRefinementKinds, k)) {
-// 			constraints.push(v as never)
-// 			refinements.push(v as never)
-// 		}
-// 	}
-// 	return {
-// 		constraints,
-// 		refinements,
-// 		traverseAllows: (data, problems) =>
-// 			constraints.every((c) => c.traverseAllows(data as never, problems)),
-// 		traverseApply: (data, problems) =>
-// 			constraints.forEach((c) => c.traverseApply(data as never, problems))
-// 	}
-// }
 
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
@@ -162,6 +139,12 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	})
 
 	readonly constraints: ConstraintSet = Object.values(this.inner).flat()
+
+	traverseAllows = (data: unknown, problems: Problems): boolean =>
+		this.constraints.every((c) => c.traverseAllows(data as never, problems))
+
+	traverseApply = (data: unknown, problems: Problems) =>
+		this.constraints.forEach((c) => c.traverseApply(data as never, problems))
 
 	writeDefaultDescription() {
 		return this.constraints.length === 0

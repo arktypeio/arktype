@@ -417,8 +417,8 @@ export class Scope<r extends Resolutions = any> {
 		names extends [] ? keyof r["exports"] & string : names[number]
 	> {
 		return addArkKind(
-			map(this.export(...names), (alias, value) => [
-				`#${alias as string}`,
+			map(this.export(...names) as Dict, (alias, value) => [
+				`#${alias}`,
 				value
 			]) as never,
 			"module"

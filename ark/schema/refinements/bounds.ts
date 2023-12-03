@@ -87,14 +87,12 @@ export type BoundSubclass = extend<
 export abstract class BaseBound<
 	subclass extends BoundSubclass
 > extends RefinementNode<subclass> {
-	o = this.inner
 	size = compileSizeOf(this.kind)
 	comparator = compileComparator(
 		this.kind,
 		this.exclusive
 		// cast to lower bound comparator for internal checking
 	)
-	traverseApply = this.createPrimitiveTraversal()
 
 	condition = `${this.size} ${this.comparator} ${this.limit}`
 	negatedCondition = `${this.size} ${negatedComparators[this.comparator]} ${
@@ -182,6 +180,7 @@ export class MinNode extends BaseBound<typeof MinNode> {
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.limit
 		: (data: number) => data >= this.limit
+	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return `${this.exclusive ? "more than" : "at least"} ${this.limit}`
@@ -213,6 +212,7 @@ export class MaxNode extends BaseBound<typeof MaxNode> {
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.limit
 		: (data: number) => data <= this.limit
+	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return `${this.exclusive ? "less than" : "at most"} ${this.limit}`
@@ -244,6 +244,7 @@ export class MinLengthNode extends BaseBound<typeof MinLengthNode> {
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length > this.limit
 		: (data: string | readonly unknown[]) => data.length >= this.limit
+	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return this.exclusive
@@ -279,6 +280,7 @@ export class MaxLengthNode extends BaseBound<typeof MaxLengthNode> {
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length < this.limit
 		: (data: string | readonly unknown[]) => data.length <= this.limit
+	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return this.exclusive
@@ -311,6 +313,7 @@ export class AfterNode extends BaseBound<typeof AfterNode> {
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.limit
 		: (data: Date) => +data >= this.limit
+	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return this.exclusive ? `after ${this.limit}` : `${this.limit} or later`
@@ -342,6 +345,7 @@ export class BeforeNode extends BaseBound<typeof BeforeNode> {
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.limit
 		: (data: Date) => +data <= this.limit
+	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return this.exclusive ? `before ${this.limit}` : `${this.limit} or earlier`

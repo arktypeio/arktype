@@ -53,7 +53,7 @@ describe("map", () => {
 	})
 
 	it("converts numeric key with index to array", () => {
-		// needs to be annotated for now due to a TS bug
+		// index needs to be annotated for now due to a TS bug
 		const result = map({ a: true, b: false, c: 5 }, (k, v, i: number) =>
 			k === "a" ? ([0, v] as const) : ([i, v] as const)
 		)
