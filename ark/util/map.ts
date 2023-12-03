@@ -48,7 +48,6 @@ export function map(
 	o: object,
 	flatMapEntry: (...entry: Entry<any>) => listable<Entry>
 ): any {
-	let treatResultAsArray = true
 	const entries: Entry[] = Object.entries(o).flatMap((entry) => {
 		const result = flatMapEntry(...entry)
 		const entrySet =
@@ -59,14 +58,10 @@ export function map(
 				: // otherwise, it should be a single entry, so nest it in a tuple
 				  // so it doesn't get spread when the result is flattened
 				  [result as Entry]
-		treatResultAsArray &&= entrySet.every(
-			(entry) => typeof entry[0] === "number"
-		)
 		return entrySet
 	})
-	if (entries.length === 0) {
-		return {}
-	}
 	const objectResult = Object.fromEntries(entries)
-	return treatResultAsArray ? Object.assign([], objectResult) : objectResult
+	return typeof entries[0][0] === "number"
+		? Object.assign([], objectResult)
+		: objectResult
 }
