@@ -1,4 +1,5 @@
 import {
+	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
 	objectKindOf,
@@ -12,7 +13,7 @@ import {
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defaultValueSerializer } from "../shared/define.js"
-import type { Disjoint } from "../shared/disjoint.js"
+import { Disjoint } from "../shared/disjoint.js"
 import { BaseType } from "../type.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = {
@@ -36,7 +37,7 @@ export type ProtoDeclaration = declareNode<{
 	}
 }>
 
-// // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
+// readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
 export class ProtoNode<t = unknown> extends BaseType<t, typeof ProtoNode> {
 	static readonly kind: "proto"
@@ -52,6 +53,18 @@ export class ProtoNode<t = unknown> extends BaseType<t, typeof ProtoNode> {
 		},
 		normalize: (input) =>
 			typeof input === "function" ? { proto: input } : input
+	})
+	static intersections = this.defineIntersections({
+		proto: (l, r) =>
+			constructorExtends(l.proto, r.proto)
+				? l
+				: constructorExtends(r.proto, l.proto)
+				  ? r
+				  : Disjoint.from("proto", l, r),
+		domain: (l, r) =>
+			r.domain === "object"
+				? l
+				: Disjoint.from("domain", l.scope.builtin.object, r)
 	})
 
 	readonly basisName = `${this.proto.name}`
@@ -74,17 +87,3 @@ export class ProtoNode<t = unknown> extends BaseType<t, typeof ProtoNode> {
 			: `an instance of ${this.proto.name}`
 	}
 }
-
-// intersections: {
-// 	proto: (l, r) =>
-// 		constructorExtends(l.proto, r.proto)
-// 			? l
-// 			: constructorExtends(r.proto, l.proto)
-// 			  ? r
-// 			  : Disjoint.from("proto", l, r),
-// 	domain: (l, r) =>
-// 		r.domain === "object"
-// 			? l
-// 			: Disjoint.from("domain", l.scope.builtin.object, r)
-// },
-// compile: compilePrimitive,

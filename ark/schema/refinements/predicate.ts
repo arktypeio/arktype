@@ -41,6 +41,13 @@ export class PredicateNode extends RefinementNode<typeof PredicateNode> {
 		normalize: (schema) =>
 			typeof schema === "function" ? { predicate: schema } : schema
 	})
+	static intersections = this.defineIntersections({
+		// TODO: allow changed order to be the same type
+		// as long as the narrows in l and r are individually safe to check
+		// in the order they're specified, checking them in the order
+		// resulting from this intersection should also be safe.
+		predicate: () => null
+	})
 
 	traverseAllows = this.predicate
 	traverseApply = this.createPrimitiveTraversal()
@@ -59,14 +66,6 @@ export class PredicateNode extends RefinementNode<typeof PredicateNode> {
 		return `valid according to ${this.predicate.name}`
 	}
 }
-
-// intersections: {
-// 	// TODO: allow changed order to be the same type
-// 	// as long as the narrows in l and r are individually safe to check
-// 	// in the order they're specified, checking them in the order
-// 	// resulting from this intersection should also be safe.
-// 	predicate: () => null
-// },
 
 export type Predicate<input = unknown> = (
 	input: input,

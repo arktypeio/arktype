@@ -4,7 +4,7 @@ import {
 	type extend,
 	type valueOf
 } from "@arktype/util"
-import type { NodeSubclass, declarationOf } from "../base.js"
+import type { Node, NodeSubclass, declarationOf } from "../base.js"
 import {
 	In,
 	compilePrimitive,
@@ -19,7 +19,7 @@ import type {
 	BoundKind,
 	PrimitiveConstraintAttachments
 } from "../shared/define.js"
-import type { Disjoint } from "../shared/disjoint.js"
+import { Disjoint } from "../shared/disjoint.js"
 import { RefinementNode } from "./shared.js"
 
 export type BoundInner = {
@@ -69,7 +69,11 @@ export const boundKindPairsByLower = {
 
 export type LowerBoundKind = keyof typeof boundKindPairsByLower
 
+export type LowerNode = Node<LowerBoundKind>
+
 export type UpperBoundKind = valueOf<typeof boundKindPairsByLower>
+
+export type UpperNode = Node<UpperBoundKind>
 
 export type NumericallyBoundable = string | number | readonly unknown[]
 
@@ -91,6 +95,33 @@ export type BoundSubclass = extend<
 export abstract class BaseBound<
 	subclass extends BoundSubclass
 > extends RefinementNode<subclass> {
+	protected static self = this as {} as BoundSubclass
+
+	static intersections = isKeyOf(this.self.kind, boundKindPairsByLower)
+		? this.defineIntersections(
+				// can't check intersections against a concrete case since the intersection
+				// pairings are dynamic keys, so just type the functions internally and cast
+				{
+					// symmetric lower bound intersection
+					[this.self.kind]: (l: LowerNode, r: LowerNode): LowerNode =>
+						l.limit > r.limit || (l.limit === r.limit && l.exclusive) ? l : r,
+					// asymmetric bound intersections are handled by the lower bound
+					[boundKindPairsByLower[this.self.kind]]: (
+						l: LowerNode,
+						r: UpperNode
+					): Disjoint | null =>
+						l.limit > r.limit ||
+						(l.limit === r.limit && (l.exclusive || r.exclusive))
+							? Disjoint.from("bound", l, r)
+							: null
+				}
+		  )
+		: this.defineIntersections({
+				// symmetric upper bound intersection
+				[this.self.kind]: (l: UpperNode, r: UpperNode): Node<UpperBoundKind> =>
+					l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
+		  })
+
 	size = compileSizeOf(this.kind)
 	comparator = compileComparator(
 		this.kind,
@@ -130,30 +161,6 @@ export abstract class BaseBound<
 		return compilePrimitive(this as never, ctx)
 	}
 }
-
-// intersections: isKeyOf(boundDefinition.kind, boundKindPairsByLower)
-// 	? // can't check intersections against a concrete case since the intersection
-// 	  // pairings are dynamic keys, so just type the functions internally and cast
-// 	  {
-// 			// symmetric lower bound intersection
-// 			[boundDefinition.kind]: (l: LowerNode, r: LowerNode): LowerNode =>
-// 				l.limit > r.limit || (l.limit === r.limit && l.exclusive) ? l : r,
-// 			// asymmetric bound intersections are handled by the lower bound
-// 			[boundKindPairsByLower[boundDefinition.kind]]: (
-// 				l: LowerNode,
-// 				r: UpperNode
-// 			): Disjoint | null =>
-// 				l.limit > r.limit ||
-// 				(l.limit === r.limit && (l.exclusive || r.exclusive))
-// 					? Disjoint.from("bound", l, r)
-// 					: null
-// 	  }
-// 	: ({
-// 			// symmetric upper bound intersection
-// 			[boundDefinition.kind]: (l: BoundNode, r: BoundNode): BoundNode =>
-// 				l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
-// 	  } as any),
-// compile: compilePrimitive
 
 const compileComparator = (kind: BoundKind, exclusive: true | undefined) =>
 	`${isKeyOf(kind, boundKindPairsByLower) ? ">" : "<"}${

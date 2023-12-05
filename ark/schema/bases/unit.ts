@@ -37,6 +37,12 @@ export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
 		normalize: (schema) => schema
 	})
 
+	static intersections = this.defineIntersections({
+		unit: (l, r) => Disjoint.from("unit", l, r),
+		default: (l, r) =>
+			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+	})
+
 	serializedValue = compileSerializedValue(this.unit)
 	traverseAllows = (data: unknown) => data === this.unit
 	traverseApply = this.createPrimitiveTraversal()
@@ -52,12 +58,6 @@ export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
 	compileBody(ctx: CompilationContext): string {
 		return compilePrimitive(this, ctx)
 	}
-
-	static intersections = this.defineIntersections({
-		unit: (l, r) => Disjoint.from("unit", l, r),
-		default: (l, r) =>
-			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
-	})
 }
 
 // compile: compilePrimitive,

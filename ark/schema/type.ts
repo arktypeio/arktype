@@ -10,18 +10,21 @@ import type {
 	IntersectionNode
 } from "./sets/intersection.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
+import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema } from "./shared/nodes.js"
 
-export interface TypeSubclass extends NodeSubclass {
+export interface TypeSubclass<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> extends NodeSubclass<d> {
 	readonly kind: TypeKind
 }
 
 export abstract class BaseType<
 	t = unknown,
-	subclass extends TypeSubclass = TypeSubclass
+	subclass extends TypeSubclass<subclass["declaration"]> = TypeSubclass
 > extends BaseNode<t, subclass> {
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]

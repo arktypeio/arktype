@@ -50,6 +50,10 @@ export class PatternNode extends RefinementNode<typeof PatternNode> {
 						: { source: schema.source }
 				  : schema
 	})
+	static intersections = this.defineIntersections({
+		// For now, non-equal regex are naively intersected
+		pattern: () => null
+	})
 
 	regex = new RegExp(this.source, this.flags)
 
@@ -70,8 +74,3 @@ export class PatternNode extends RefinementNode<typeof PatternNode> {
 		return `matched by ${this.source}`
 	}
 }
-
-// intersections: {
-// 	// For now, non-equal regex are naively intersected
-// 	pattern: () => null
-// },

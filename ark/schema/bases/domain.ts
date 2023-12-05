@@ -5,7 +5,7 @@ import {
 	type CompilationContext
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
+import { Disjoint } from "../shared/disjoint.js"
 import { BaseType } from "../type.js"
 
 export type DomainInner<
@@ -45,6 +45,9 @@ export class DomainNode<t = unknown> extends BaseType<t, typeof DomainNode> {
 		normalize: (input) =>
 			typeof input === "string" ? { domain: input } : input
 	})
+	static intersections = this.defineIntersections({
+		domain: (l, r) => Disjoint.from("domain", l, r)
+	})
 
 	basisName = this.domain
 
@@ -69,11 +72,6 @@ export class DomainNode<t = unknown> extends BaseType<t, typeof DomainNode> {
 		return domainDescriptions[this.domain]
 	}
 }
-
-// intersections: {
-// 	domain: (l, r) => Disjoint.from("domain", l, r)
-// },
-// compile: compilePrimitive,
 
 const enumerableDomainDescriptions = {
 	boolean: "boolean",

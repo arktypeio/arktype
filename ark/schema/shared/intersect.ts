@@ -8,7 +8,7 @@ import {
 } from "./define.js"
 import type { Inner, NodeDeclarationsByKind } from "./nodes.js"
 
-export const leftOperandOf = (l: BaseNode, r: BaseNode) => {
+export const leftOperandOf = (l: Node, r: Node) => {
 	for (const kind of nodeKinds) {
 		if (l.kind === kind) {
 			return l
@@ -39,21 +39,33 @@ export type IntersectionMaps = {
 	[k in NodeKind]: NodeDeclarationsByKind[k]["intersections"]
 }
 
-export type reifyIntersections<lKind extends NodeKind, intersectionMap> = {
-	[rKind in keyof intersectionMap]: rKind extends "default"
-		? (
-				l: Node<lKind>,
-				r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
-		  ) => reifyIntersectionResult<intersectionMap[rKind]>
-		: (
-				l: Node<lKind>,
-				r: Node<rKind & NodeKind>
-		  ) => reifyIntersectionResult<intersectionMap[rKind]>
-}
+export type reifyIntersections<
+	lKind extends NodeKind,
+	intersectionMap
+> = lKind extends NodeKind
+	? {
+			[rKind in keyof intersectionMap]: rKind extends "default"
+				? (
+						l: Node<lKind>,
+						r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
+				  ) => reifyIntersectionResult<intersectionMap[rKind]>
+				: (
+						l: Node<lKind>,
+						r: Node<rKind & NodeKind>
+				  ) => reifyIntersectionResult<intersectionMap[rKind]>
+	  }
+	: never
 
 type reifyIntersectionResult<result> = result extends NodeKind
 	? Inner<result>
 	: result
+
+export type intersectionOf2<l extends NodeKind, r extends NodeKind> = [
+	l,
+	r
+] extends [r, l]
+	? instantiateIntersection<l>
+	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
 
 export type intersectionOf<l extends NodeKind, r extends NodeKind> = [
 	l,

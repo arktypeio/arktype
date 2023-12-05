@@ -35,6 +35,7 @@ export type writeIndivisibleMessage<root extends string> =
 export class DivisorNode extends RefinementNode<typeof DivisorNode> {
 	static readonly kind = "divisor"
 	static declaration: DivisorDeclaration
+
 	static parser = this.composeParser({
 		collapseKey: "divisor",
 		keys: {
@@ -42,6 +43,14 @@ export class DivisorNode extends RefinementNode<typeof DivisorNode> {
 		},
 		normalize: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema
+	})
+
+	static intersections = this.defineIntersections({
+		divisor: (l, r) => ({
+			divisor: Math.abs(
+				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+			)
+		})
 	})
 
 	traverseAllows = (data: number) => data % this.divisor === 0
@@ -61,14 +70,6 @@ export class DivisorNode extends RefinementNode<typeof DivisorNode> {
 		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 }
-
-// intersections: {
-// 	divisor: (l, r) => ({
-// 		divisor: Math.abs(
-// 			(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-// 		)
-// 	})
-// },
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

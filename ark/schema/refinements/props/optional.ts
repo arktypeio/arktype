@@ -7,9 +7,10 @@ import {
 } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
+import { Disjoint } from "../../shared/disjoint.js"
 import type { Schema } from "../../shared/nodes.js"
 import { RefinementNode } from "../shared.js"
-import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
+import { compilePresentProp } from "./shared.js"
 
 export type OptionalInner = {
 	readonly key: string | symbol
@@ -44,6 +45,19 @@ export class OptionalNode extends RefinementNode<typeof OptionalNode> {
 		},
 		normalize: (schema) => schema
 	})
+	static intersections = this.defineIntersections({
+		optional: (l, r) => {
+			if (l.key !== r.key) {
+				return null
+			}
+			const optional = l.key
+			const value = l.value.intersect(r.value)
+			return {
+				key: optional,
+				value: value instanceof Disjoint ? l.scope.builtin.never : value
+			}
+		}
+	})
 
 	serializedKey = compileSerializedValue(this.key)
 
@@ -73,17 +87,3 @@ export class OptionalNode extends RefinementNode<typeof OptionalNode> {
 		return `${String(this.compiledKey)}?: ${this.value}`
 	}
 }
-
-// intersections: {
-// 	optional: (l, r) => {
-// 		if (l.key !== r.key) {
-// 			return null
-// 		}
-// 		const optional = l.key
-// 		const value = l.value.intersect(r.value)
-// 		return {
-// 			key: optional,
-// 			value: value instanceof Disjoint ? l.scope.builtin.never : value
-// 		}
-// 	}
-// },

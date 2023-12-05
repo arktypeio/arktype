@@ -66,6 +66,11 @@ export class RequiredNode extends RefinementNode<typeof RequiredNode> {
 		normalize: (schema) => schema
 	})
 
+	static intersections = this.defineIntersections({
+		required: intersectNamed,
+		optional: intersectNamed
+	})
+
 	serializedKey = compileSerializedValue(this.key)
 
 	traverseAllows = (data: object, problems: Problems) =>
@@ -102,8 +107,3 @@ export class RequiredNode extends RefinementNode<typeof RequiredNode> {
 		return `${String(this.compiledKey)}: ${this.value}`
 	}
 }
-
-// intersections: {
-// 	required: intersectNamed,
-// 	optional: intersectNamed
-// },

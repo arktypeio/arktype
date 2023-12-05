@@ -142,6 +142,23 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		}
 	})
 
+	static intersections = this.defineIntersections({
+		intersection: (l, r) => {
+			let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
+			for (const refinement of r.constraints) {
+				if (result instanceof Disjoint) {
+					break
+				}
+				result = addConstraint(result, refinement)
+			}
+			return result instanceof Disjoint ? result : unflattenConstraints(result)
+		},
+		default: (l, r) => {
+			const result = addConstraint(l.constraints, r)
+			return result instanceof Disjoint ? result : unflattenConstraints(result)
+		}
+	})
+
 	readonly constraints: ConstraintSet = Object.values(this.inner).flat()
 
 	traverseAllows = (data: unknown, problems: Problems): boolean =>
@@ -175,23 +192,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			: constraintInvocations.join("\n")
 	}
 }
-
-// intersections: {
-// 	intersection: (l, r) => {
-// 		let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
-// 		for (const refinement of r.refinements) {
-// 			if (result instanceof Disjoint) {
-// 				break
-// 			}
-// 			result = addConstraint(result, refinement)
-// 		}
-// 		return result instanceof Disjoint ? result : unflattenConstraints(result)
-// 	},
-// 	default: (l, r) => {
-// 		const result = addConstraint(l.constraints, r)
-// 		return result instanceof Disjoint ? result : unflattenConstraints(result)
-// 	}
-// },
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,

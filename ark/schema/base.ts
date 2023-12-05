@@ -2,12 +2,13 @@ import {
 	DynamicBase,
 	includes,
 	isArray,
+	throwInternalError,
 	type Dict,
 	type Entry,
 	type Json,
 	type JsonData,
 	type entriesOf,
-	type extend,
+	type instanceOf,
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
@@ -29,13 +30,11 @@ import type { PredicateNode } from "./refinements/predicate.js"
 import type { OptionalNode } from "./refinements/props/optional.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { ScopeNode } from "./scope.js"
-import type { IntersectionNode } from "./sets/intersection.js"
-import type {
-	MorphNode,
-	extractIn,
-	extractOut,
-	ioKindOf
-} from "./sets/morph.js"
+import {
+	unflattenConstraints,
+	type IntersectionNode
+} from "./sets/intersection.js"
+import type { MorphNode, extractIn, extractOut } from "./sets/morph.js"
 import type { UnionNode } from "./sets/union.js"
 import {
 	Problems,
@@ -64,12 +63,15 @@ import {
 	type OpenRefinementKind,
 	type RefinementKind,
 	type SetKind,
-	type TypeKind,
-	type UnknownNodeImplementation
+	type TypeKind
 } from "./shared/define.js"
-import type { Disjoint } from "./shared/disjoint.js"
-import type { intersectionOf, reifyIntersections } from "./shared/intersect.js"
-import { NodeImplementationByKind } from "./shared/nodes.js"
+import { Disjoint } from "./shared/disjoint.js"
+import {
+	leftOperandOf,
+	type intersectionOf,
+	type reifyIntersections,
+	type rightOf
+} from "./shared/intersect.js"
 import { arkKind, inferred } from "./shared/symbols.js"
 
 export interface BaseAttachments {
@@ -96,25 +98,26 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: BaseNodeDeclaration extends d ? Node[] : Node<d["childKind"]>[]
 }
 
-export interface NodeSubclass {
+export interface NodeSubclass<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> {
 	readonly kind: NodeKind
 	// allow subclasses to accept narrowed check input
 	readonly declaration: BaseNodeDeclaration
 	readonly parser: BaseParser
+	readonly intersections: reifyIntersections<d["kind"], d["intersections"]>
 }
 
 export abstract class BaseNode<
 	t = unknown,
-	subclass extends NodeSubclass = NodeSubclass
+	subclass extends NodeSubclass<subclass["declaration"]> = NodeSubclass
 > extends DynamicBase<attachmentsOf<subclass["declaration"]>> {
 	declare infer: extractOut<t>;
 	declare [inferred]: t
-	//readonly subclass: subclass = this.constructor as any
+
+	readonly cls: subclass = this.constructor as never
 	readonly kind: subclass["kind"] = (this as any).subclass.kind;
 	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
-	readonly implementation: UnknownNodeImplementation = NodeImplementationByKind[
-		this.kind
-	] as never
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
@@ -180,7 +183,7 @@ export abstract class BaseNode<
 		}
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
-			const keyDefinition = this.implementation.keys[k as keyof BaseAttributes]!
+			const keyDefinition = this.cls.parser.keys[k as keyof BaseAttributes]!
 			if (keyDefinition.meta) {
 				continue
 			}
@@ -240,74 +243,83 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	private static intersectionCache: Record<string, BaseNode | Disjoint> = {}
-	declare intersect: <other extends BaseNode>(
+	private static intersectionCache: Record<string, Node | Disjoint> = {}
+	intersect<other extends Node>(
 		other: other
-	) => intersectionOf<this["kind"], other["kind"]>
-	// intersect(other: Node): BaseNode | Disjoint | null {
-	// 	const cacheKey = `${this.typeId}&${other.typeId}`
-	// 	if (BaseNode.intersectionCache[cacheKey] !== undefined) {
-	// 		return BaseNode.intersectionCache[cacheKey]
-	// 	}
-	// 	const closedResult = this.intersectClosed(other as never)
-	// 	if (closedResult !== null) {
-	// 		BaseNode.intersectionCache[cacheKey] = closedResult
-	// 		BaseNode.intersectionCache[`${other.typeId}&${this.typeId}`] =
-	// 			// also cache the result with other's condition as the key.
-	// 			// if it was a Disjoint, it has to be inverted so that l,r
-	// 			// still line up correctly
-	// 			closedResult instanceof Disjoint ? closedResult.invert() : closedResult
-	// 		return closedResult
-	// 	}
-	// 	if (this.isSet() || other.isSet()) {
-	// 		return throwInternalError(
-	// 			`Unexpected null intersection between non-constraints ${this.kind} and ${other.kind}`
-	// 		)
-	// 	}
-	// 	// if either constraint is a basis or both don't require a basis (i.e.
-	// 	// are predicates), it can form an intersection
-	// 	return this.isBasis() ||
-	// 		other.isBasis() ||
-	// 		(this.kind === "predicate" && other.kind === "predicate")
-	// 		? this.scope.parseNode(
-	// 				"intersection",
-	// 				unflattenConstraints([this as never, other])
-	// 		  )
-	// 		: null
-	// }
+	): intersectionOf<this["kind"], other["kind"]>
+	intersect(other: Node): Node | Disjoint | null {
+		const cacheKey = `${this.typeId}&${other.typeId}`
+		if (BaseNode.intersectionCache[cacheKey] !== undefined) {
+			return BaseNode.intersectionCache[cacheKey]
+		}
+		const closedResult = this.intersectClosed(other as never)
+		if (closedResult !== null) {
+			BaseNode.intersectionCache[cacheKey] = closedResult
+			BaseNode.intersectionCache[`${other.typeId}&${this.typeId}`] =
+				// also cache the result with other's condition as the key.
+				// if it was a Disjoint, it has to be inverted so that l,r
+				// still line up correctly
+				closedResult instanceof Disjoint ? closedResult.invert() : closedResult
+			return closedResult
+		}
+		if (this.isSet() || other.isSet()) {
+			return throwInternalError(
+				`Unexpected null intersection between non-constraints ${this.kind} and ${other.kind}`
+			)
+		}
+		// if either constraint is a basis or both don't require a basis (i.e.
+		// are predicates), it can form an intersection
+		return this.isBasis() ||
+			other.isBasis() ||
+			(this.kind === "predicate" && other.kind === "predicate")
+			? this.scope.parseNode(
+					"intersection",
+					unflattenConstraints([this as never, other])
+			  )
+			: null
+	}
 
-	// intersectClosed<other extends BaseNode>(
-	// 	other: other
-	// ): Node<this["kind"] | other["kind"]> | Disjoint | null {
-	// 	if (this.equals(other)) {
-	// 		// TODO: meta
-	// 		return this as never
-	// 	}
-	// 	const l = leftOperandOf(this, other)
-	// 	const thisIsLeft = l === this
-	// 	const r: BaseNode = thisIsLeft ? other : this
-	// 	const intersections = l.implementation.intersections
-	// 	const intersector = (intersections as any)[r.kind] ?? intersections.default
-	// 	const result = intersector?.(l, r)
-	// 	if (result) {
-	// 		if (result instanceof Disjoint) {
-	// 			return thisIsLeft ? result : result.invert()
-	// 		}
-	// 		// TODO: meta
-	// 		return this.scope.parseNode(l.kind, result) as never
-	// 	}
-	// 	return null
-	// }
+	intersectClosed<other extends Node>(
+		other: other
+	): Node<this["kind"] | other["kind"]> | Disjoint | null {
+		if (this.equals(other)) {
+			// TODO: meta
+			return this as never
+		}
+		const l = leftOperandOf(this as never, other)
+		const thisIsLeft = l === (this as never)
+		const r: Node = thisIsLeft ? other : (this as never)
+		const intersections = l.cls.intersections
+		const intersector = (intersections as any)[r.kind] ?? intersections.default
+		const result = intersector?.(l, r)
+		if (result) {
+			if (result instanceof Disjoint) {
+				return thisIsLeft ? result : result.invert()
+			}
+			// TODO: meta
+			return this.scope.parseNode(l.kind, result) as never
+		}
+		return null
+	}
 
 	declare static declaration: BaseNodeDeclaration
 
-	protected static defineIntersections<self>(
-		this: self,
-		intersections: reifyIntersections<
-			declarationOf<self>["kind"],
-			declarationOf<self>["intersections"]
-		>
-	) {
+	protected static defineIntersections<
+		self,
+		intersections extends {
+			[rKind in NodeKind | "default"]?: rKind extends NodeKind
+				? (
+						l: instanceOf<self>,
+						r: Node<rKind>
+				  ) => declarationOf<self>["inner"] | Disjoint | null
+				: (
+						l: instanceOf<self>,
+						r: Node<
+							Exclude<rightOf<declarationOf<self>["kind"]>, keyof intersections>
+						>
+				  ) => declarationOf<self>["inner"] | Disjoint | null
+		}
+	>(this: self, intersections: intersections) {
 		return intersections
 	}
 
@@ -333,6 +345,12 @@ export abstract class BaseNode<
 }
 
 export type declarationOf<cls> = cls extends {
+	declaration: infer declaration extends BaseNodeDeclaration
+}
+	? declaration
+	: never
+
+export type subclassOf<cls> = cls extends {
 	declaration: infer declaration extends BaseNodeDeclaration
 }
 	? declaration
