@@ -106,11 +106,7 @@ export interface NodeSubclass {
 export abstract class BaseNode<
 	t = unknown,
 	subclass extends NodeSubclass = NodeSubclass
-> extends DynamicBase<
-	attachmentsOf<subclass["declaration"]> & {
-		(data: unknown): CheckResult<extractOut<t>>
-	}
-> {
+> extends DynamicBase<attachmentsOf<subclass["declaration"]>> {
 	declare infer: extractOut<t>;
 	declare [inferred]: t
 	//readonly subclass: subclass = this.constructor as any
@@ -150,6 +146,7 @@ export abstract class BaseNode<
 	abstract writeDefaultDescription(): string
 	abstract traverseAllows: TraverseAllows<subclass["declaration"]["checks"]>
 	abstract traverseApply: TraverseApply<subclass["declaration"]["checks"]>
+	abstract compileBody(ctx: CompilationContext): string
 
 	allows = (data: unknown): data is t => {
 		const problems = new Problems()
@@ -163,10 +160,6 @@ export abstract class BaseNode<
 			return { data } as any
 		}
 		return { problems }
-	}
-
-	compileBody(ctx: CompilationContext) {
-		return this.implementation.compile(this as never, ctx)
 	}
 
 	inCache?: BaseNode<extractIn<t>>;

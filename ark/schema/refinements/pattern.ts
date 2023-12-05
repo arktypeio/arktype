@@ -1,5 +1,9 @@
 import type { extend } from "@arktype/util"
-import { In } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	type CompilationContext
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import { RefinementNode } from "./shared.js"
@@ -54,6 +58,10 @@ export class PatternNode extends RefinementNode<typeof PatternNode> {
 	condition = `/${this.source}/${this.flags ?? ""}.test(${In})`
 	negatedCondition = `!${this.condition}`
 
+	compileBody(ctx: CompilationContext) {
+		return compilePrimitive(this, ctx)
+	}
+
 	getCheckedDefinitions() {
 		return ["string"] as const
 	}
@@ -67,4 +75,3 @@ export class PatternNode extends RefinementNode<typeof PatternNode> {
 // 	// For now, non-equal regex are naively intersected
 // 	pattern: () => null
 // },
-// compile: compilePrimitive

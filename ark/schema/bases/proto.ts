@@ -4,7 +4,12 @@ import {
 	objectKindOf,
 	type Constructor
 } from "@arktype/util"
-import { In, compileSerializedValue } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	compileSerializedValue,
+	type CompilationContext
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { defaultValueSerializer } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
@@ -57,6 +62,10 @@ export class ProtoNode<t = unknown> extends BaseType<t, typeof ProtoNode> {
 	readonly negatedCondition = `${this.condition} === false`
 	traverseAllows = (data: unknown) => data instanceof this.proto
 	traverseApply = this.createPrimitiveTraversal()
+
+	compileBody(ctx: CompilationContext): string {
+		return compilePrimitive(this, ctx)
+	}
 
 	writeDefaultDescription() {
 		const knownObjectKind = getExactBuiltinConstructorName(this.proto)

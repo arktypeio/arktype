@@ -8,7 +8,11 @@ import type { Node } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
-import type { Problems } from "../shared/compilation.js"
+import {
+	In,
+	type CompilationContext,
+	type Problems
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -151,6 +155,25 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			? "an unknown value"
 			: this.constraints.join(" and ")
 	}
+
+	compileBody(ctx: CompilationContext) {
+		const constraintInvocations = this.constraints.map(
+			(constraint) =>
+				`this.${constraint.id}(${In}${
+					ctx.compilationKind === "allows" ? "" : ", problems"
+				})`
+		)
+		return ctx.compilationKind === "allows"
+			? constraintInvocations
+					.map(
+						(call) => `if(!${call}) return false
+	`
+					)
+					.join("\n") +
+					"\n" +
+					"return true"
+			: constraintInvocations.join("\n")
+	}
 }
 
 // intersections: {
@@ -168,25 +191,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 // 		const result = addConstraint(l.constraints, r)
 // 		return result instanceof Disjoint ? result : unflattenConstraints(result)
 // 	}
-// },
-
-// compile: (node, ctx) => {
-// 	const constraintInvocations = node.constraints.map(
-// 		(constraint) =>
-// 			`this.${constraint.id}(${In}${
-// 				ctx.compilationKind === "allows" ? "" : ", problems"
-// 			})`
-// 	)
-// 	return ctx.compilationKind === "allows"
-// 		? constraintInvocations
-// 				.map(
-// 					(call) => `if(!${call}) return false
-// `
-// 				)
-// 				.join("\n") +
-// 				"\n" +
-// 				"return true"
-// 		: constraintInvocations.join("\n")
 // },
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
@@ -236,9 +240,6 @@ const reduceConstraints = (
 	}
 	return result instanceof Disjoint ? result : result
 }
-
-export const flattenConstraints = (inner: IntersectionInner): ConstraintSet =>
-	Object.values(inner).flatMap((v) => (isNode(v) ? v : isArray(v) ? v : []))
 
 export const unflattenConstraints = (
 	constraints: ConstraintSet

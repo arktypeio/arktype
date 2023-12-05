@@ -5,7 +5,11 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { NodeSubclass, declarationOf } from "../base.js"
-import { In } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	type CompilationContext
+} from "../shared/compilation.js"
 import type {
 	BaseNodeDeclaration,
 	declareNode,
@@ -120,6 +124,10 @@ export abstract class BaseBound<
 					? { ...schema, limit: schema.limit }
 					: { limit: schema }) as d["normalizedSchema"]
 		} as const
+	}
+
+	compileBody(ctx: CompilationContext) {
+		return compilePrimitive(this as never, ctx)
 	}
 }
 

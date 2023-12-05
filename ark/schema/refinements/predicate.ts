@@ -1,6 +1,8 @@
 import {
 	In,
+	compilePrimitive,
 	compileSerializedValue,
+	type CompilationContext,
 	type Problems
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
@@ -49,6 +51,10 @@ export class PredicateNode extends RefinementNode<typeof PredicateNode> {
 		return [{}] as const
 	}
 
+	compileBody(ctx: CompilationContext) {
+		return compilePrimitive(this, ctx)
+	}
+
 	writeDefaultDescription() {
 		return `valid according to ${this.predicate.name}`
 	}
@@ -61,8 +67,6 @@ export class PredicateNode extends RefinementNode<typeof PredicateNode> {
 // 	// resulting from this intersection should also be safe.
 // 	predicate: () => null
 // },
-
-// 	compile: compilePrimitive
 
 export type Predicate<input = unknown> = (
 	input: input,

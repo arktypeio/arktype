@@ -1,5 +1,9 @@
 import { domainOf, type Domain } from "@arktype/util"
-import { In } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	type CompilationContext
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import { BaseType } from "../type.js"
@@ -56,6 +60,10 @@ export class DomainNode<t = unknown> extends BaseType<t, typeof DomainNode> {
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
 	traverseApply = this.createPrimitiveTraversal()
+
+	compileBody(ctx: CompilationContext): string {
+		return compilePrimitive(this, ctx)
+	}
 
 	writeDefaultDescription() {
 		return domainDescriptions[this.domain]

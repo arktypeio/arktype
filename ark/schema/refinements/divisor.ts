@@ -1,4 +1,8 @@
-import { In } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	type CompilationContext
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { RefinementNode } from "./shared.js"
 
@@ -45,6 +49,10 @@ export class DivisorNode extends RefinementNode<typeof DivisorNode> {
 	condition = `${In} % ${this.divisor} === 0`
 	negatedCondition = `${In} % ${this.divisor} !== 0`
 
+	compileBody(ctx: CompilationContext) {
+		return compilePrimitive(this, ctx)
+	}
+
 	getCheckedDefinitions() {
 		return ["number"] as const
 	}
@@ -61,7 +69,6 @@ export class DivisorNode extends RefinementNode<typeof DivisorNode> {
 // 		)
 // 	})
 // },
-// compile: compilePrimitive,
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

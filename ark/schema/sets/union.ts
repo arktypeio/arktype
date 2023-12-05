@@ -1,7 +1,11 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import { composeParser } from "../parse.js"
-import type { Problems } from "../shared/compilation.js"
+import {
+	In,
+	type CompilationContext,
+	type Problems
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -111,18 +115,6 @@ const intersectBranch = (
 // 	}
 // },
 
-// compile: (node, ctx) => {
-// const branchInvocations = node.branches.map(
-// 	(branch) =>
-// 		`this.${branch.id}(${In}${
-// 			ctx.compilationKind === "allows" ? "" : ", problems"
-// 		})`
-// )
-// return ctx.compilationKind === "allows"
-// 	? `return ${branchInvocations.join(" || ")}`
-// 	: branchInvocations.join("\n")
-// }
-
 export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
 	static readonly kind = "union"
 	static declaration: UnionDeclaration
@@ -175,6 +167,18 @@ export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
+	}
+
+	compileBody(ctx: CompilationContext) {
+		const branchInvocations = this.branches.map(
+			(branch) =>
+				`this.${branch.id}(${In}${
+					ctx.compilationKind === "allows" ? "" : ", problems"
+				})`
+		)
+		return ctx.compilationKind === "allows"
+			? `return ${branchInvocations.join(" || ")}`
+			: branchInvocations.join("\n")
 	}
 }
 

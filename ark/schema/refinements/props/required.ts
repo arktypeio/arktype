@@ -1,6 +1,8 @@
 import type { Node } from "../../base.js"
 import {
+	In,
 	compileSerializedValue,
+	type CompilationContext,
 	type Problems
 } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
@@ -9,7 +11,7 @@ import { Disjoint } from "../../shared/disjoint.js"
 import type { Inner, Schema } from "../../shared/nodes.js"
 import { RefinementNode } from "../shared.js"
 import type { PropKind } from "./prop.js"
-import type { NamedPropAttachments } from "./shared.js"
+import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
@@ -80,12 +82,24 @@ export class RequiredNode extends RefinementNode<typeof RequiredNode> {
 
 	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
 
+	compileBody(ctx: CompilationContext) {
+		return `if(${this.serializedKey} in ${In}) {
+			${compilePresentProp(this, ctx)}
+		} else {
+			${
+				ctx.compilationKind === "allows"
+					? "return false"
+					: `problems.add("provided")`
+			}
+		}`
+	}
+
 	getCheckedDefinitions() {
 		return ["object"] as const
 	}
 
 	writeDefaultDescription() {
-		return `${String(this.key)}?: ${this.value}`
+		return `${String(this.compiledKey)}: ${this.value}`
 	}
 }
 
@@ -93,13 +107,3 @@ export class RequiredNode extends RefinementNode<typeof RequiredNode> {
 // 	required: intersectNamed,
 // 	optional: intersectNamed
 // },
-// writeDefaultDescription: (inner) => `${String(inner.key)}: ${inner.value}`,
-// compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-// 	${compilePresentProp(node, ctx)}
-// } else {
-// 	${
-// 		ctx.compilationKind === "allows"
-// 			? "return false"
-// 			: `problems.add("provided")`
-// 	}
-// }`

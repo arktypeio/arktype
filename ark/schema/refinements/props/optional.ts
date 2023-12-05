@@ -1,13 +1,15 @@
 import type { Node } from "../../base.js"
 import {
+	In,
 	compileSerializedValue,
+	type CompilationContext,
 	type Problems
 } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { TypeKind } from "../../shared/define.js"
 import type { Schema } from "../../shared/nodes.js"
 import { RefinementNode } from "../shared.js"
-import type { NamedPropAttachments } from "./shared.js"
+import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
 
 export type OptionalInner = {
 	readonly key: string | symbol
@@ -55,6 +57,12 @@ export class OptionalNode extends RefinementNode<typeof OptionalNode> {
 		}
 	}
 
+	compileBody(ctx: CompilationContext): string {
+		return `if(${this.serializedKey} in ${In}) {
+			${compilePresentProp(this, ctx)}
+		}`
+	}
+
 	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
 
 	getCheckedDefinitions() {
@@ -62,7 +70,7 @@ export class OptionalNode extends RefinementNode<typeof OptionalNode> {
 	}
 
 	writeDefaultDescription() {
-		return `${String(this.key)}?: ${this.value}`
+		return `${String(this.compiledKey)}?: ${this.value}`
 	}
 }
 
@@ -79,6 +87,3 @@ export class OptionalNode extends RefinementNode<typeof OptionalNode> {
 // 		}
 // 	}
 // },
-// compile: (node, ctx) => `if(${node.serializedKey} in ${In}) {
-// 	${compilePresentProp(node, ctx)}
-// }`,

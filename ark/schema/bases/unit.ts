@@ -1,5 +1,10 @@
 import { domainOf, printable } from "@arktype/util"
-import { In, compileSerializedValue } from "../shared/compilation.js"
+import {
+	In,
+	compilePrimitive,
+	compileSerializedValue,
+	type CompilationContext
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseType } from "../type.js"
@@ -42,6 +47,10 @@ export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
 
 	writeDefaultDescription() {
 		return this.basisName
+	}
+
+	compileBody(ctx: CompilationContext): string {
+		return compilePrimitive(this, ctx)
 	}
 
 	static intersections = this.defineIntersections({

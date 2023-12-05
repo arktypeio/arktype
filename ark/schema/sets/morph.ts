@@ -9,7 +9,12 @@ import {
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { ArkConfig } from "../scope.js"
-import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
+import type {
+	CheckResult,
+	CompilationContext,
+	Problem,
+	Problems
+} from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeKind } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
@@ -128,11 +133,15 @@ export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
 	traverseApply = (data: unknown, problems: Problems) =>
 		this.in.traverseApply(data, problems)
 
-	// inCache = this.inner.in
-	// outCache = this.inner.out ?? this.scope.builtin.unknown
+	inCache = this.inner.in
+	outCache = this.inner.out ?? this.scope.builtin.unknown
 
 	writeDefaultDescription() {
 		return `a morph from ${this.in} to ${this.out}`
+	}
+
+	compileBody(ctx: CompilationContext): string {
+		return this.in.compileBody(ctx)
 	}
 }
 
