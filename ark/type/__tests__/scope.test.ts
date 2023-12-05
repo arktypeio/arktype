@@ -49,7 +49,7 @@ describe("scope", () => {
 			a: ["string", "=>", (s) => s.length]
 		})
 		attest<{ a: number }>($.infer)
-		attest<{ a: string }>($.inferIn)
+		attest<{ a: string }>($.in.infer)
 	})
 	it("scope.scope", () => {
 		const $ = scope({

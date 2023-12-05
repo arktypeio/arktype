@@ -11,7 +11,7 @@ describe("morph", () => {
 		const t = type("boolean").morph((data) => `${data}`)
 		attest<Type<(In: boolean) => Out<string>>>(t)
 		attest<string>(t.infer)
-		attest<boolean>(t.inferIn)
+		attest<boolean>(t.in.infer)
 		const result = t(true)
 		if (result.problems) {
 			return result.problems.throw()
@@ -54,12 +54,12 @@ describe("morph", () => {
 	})
 	it("any as out", () => {
 		const t = type("string", "=>", (s) => s as any)
-		attest<string>(t.inferIn)
+		attest<string>(t.in.infer)
 		attest<any>(t.infer)
 	})
 	it("never as out", () => {
 		const t = type("string", "=>", (s) => s as never)
-		attest<string>(t.inferIn)
+		attest<string>(t.in.infer)
 		attest<never>(t.infer)
 	})
 	// it("return problem", () => {

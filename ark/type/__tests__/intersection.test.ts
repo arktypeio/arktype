@@ -55,7 +55,7 @@ describe("intersection", () => {
 				b: true
 			}
 			c: "hello"
-		}>(t.inferIn)
+		}>(t.in.infer)
 
 		attest<{ a: number; b: boolean[]; c: "hello" }>(t.infer)
 	})

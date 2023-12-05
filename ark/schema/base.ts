@@ -169,20 +169,16 @@ export abstract class BaseNode<
 		return this.implementation.compile(this as never, ctx)
 	}
 
-	inCache?: BaseNode;
-	get in(): BaseNode<extractIn<t>> {
-		if (!this.inCache) {
-			this.inCache = this.getIo("in")
-		}
-		return this.inCache as never
+	inCache?: BaseNode<extractIn<t>>;
+	get in() {
+		this.inCache ??= this.getIo("in") as never
+		return this.inCache
 	}
 
-	outCache?: BaseNode
-	get out(): BaseNode<extractOut<t>> {
-		if (!this.outCache) {
-			this.outCache = this.getIo("out")
-		}
-		return this.outCache as never
+	outCache?: BaseNode<extractOut<t>>
+	get out() {
+		this.outCache ??= this.getIo("out") as never
+		return this.outCache
 	}
 
 	private getIo(kind: "in" | "out"): BaseNode {
@@ -211,7 +207,7 @@ export abstract class BaseNode<
 		return this.json
 	}
 
-	equals(other: BaseNode) {
+	equals(other: Node) {
 		return this.typeId === other.typeId
 	}
 

@@ -56,7 +56,7 @@ describe("instanceof", () => {
 			attest<Type<ArkClass, Ark>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
-			attest(ark.inferIn).type.toString("ArkClass")
+			attest(ark.in.infer).type.toString("ArkClass")
 			const a = new ArkClass()
 			attest(ark(a).data).equals(a)
 			attest(ark({}).problems?.summary).snap(
@@ -78,7 +78,7 @@ describe("instanceof", () => {
 			attest<Type<ArkClass, Ark>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
-			attest(ark.inferIn).type.toString("ArkClass")
+			attest(ark.in.infer).type.toString("ArkClass")
 		})
 	})
 	describe("root expression", () => {
