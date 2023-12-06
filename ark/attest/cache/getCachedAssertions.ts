@@ -1,7 +1,21 @@
-import type { LinePosition, SourcePosition } from "@arktype/fs"
+import { readJson, type LinePosition, type SourcePosition } from "@arktype/fs"
+import { existsSync } from "node:fs"
+import type { AttestConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
-import { getAssertionsByFile } from "./analysis.js"
-import type { LinePositionRange } from "./getAssertionsInFile.js"
+import {
+	analyzeProjectAssertions,
+	type LinePositionRange
+} from "./writeAssertionCache.js"
+
+export const getCachedAssertionData = (config: AttestConfig) => {
+	if (!existsSync(config.assertionCacheFile)) {
+		throw new Error(
+			`Unable to find precached assertion data at '${config.assertionCacheFile}'. ` +
+				`please use Attest CLI or call 'cacheTypeAssertions' before running your tests.`
+		)
+	}
+	return readJson(config.assertionCacheFile)
+}
 
 const isPositionWithinRange = (
 	{ line, char }: LinePosition,
@@ -21,7 +35,7 @@ const isPositionWithinRange = (
 
 export const getAssertionDataAtPosition = (position: SourcePosition) => {
 	const fileKey = getFileKey(position.file)
-	const assertionsByFile = getAssertionsByFile()
+	const assertionsByFile = analyzeProjectAssertions()
 	if (!assertionsByFile[fileKey]) {
 		throw new Error(`Found no assertion data for '${fileKey}'.`)
 	}

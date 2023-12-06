@@ -2,8 +2,8 @@ import { ensureDir } from "@arktype/fs"
 import { snapshot } from "@arktype/util"
 import { rmSync } from "node:fs"
 import process from "node:process"
+import { queueSnapshotUpdate } from "../cache/snapshots.js"
 import { getConfig } from "../config.js"
-import { queueSnapshotUpdate } from "../snapshot/snapshot.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
 import {
 	stringifyMeasure,

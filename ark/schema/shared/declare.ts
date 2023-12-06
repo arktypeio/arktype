@@ -82,7 +82,7 @@ export type BaseNodeDeclaration = {
 	schema: unknown
 	normalizedSchema: BaseAttributes
 	meta: BaseAttributes
-	inner: Dict
+	inner: {}
 	checks: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind

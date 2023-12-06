@@ -2,19 +2,17 @@ import { caller, filePath } from "@arktype/fs"
 import { throwInternalError } from "@arktype/util"
 import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
-import { getInternalTypeChecker } from "../tsserver/analysis.js"
-import {
-	getAncestors,
-	getDescendants,
-	getExpressionsByName
-} from "../tsserver/getAssertionsInFile.js"
 import {
 	TsServer,
 	getAbsolutePosition,
+	getAncestors,
+	getDescendants,
+	getInternalTypeChecker,
 	getTsConfigInfoOrThrow,
 	getTsLibFiles,
 	nearestCallExpressionChild
-} from "../tsserver/tsserver.js"
+} from "../cache/ts.js"
+import { getExpressionsByName } from "../cache/writeAssertionCache.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
 import {

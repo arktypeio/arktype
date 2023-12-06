@@ -5,10 +5,10 @@ import { isDeepStrictEqual } from "node:util"
 import {
 	getSnapshotByName,
 	queueSnapshotUpdate,
+	updateExternalSnapshot,
 	type SnapshotArgs
-} from "../snapshot/snapshot.js"
-import { updateExternalSnapshot } from "../snapshot/writeSnapshot.js"
-import type { Completions } from "../tsserver/analyzeAssertCall.js"
+} from "../cache/snapshots.js"
+import type { Completions } from "../cache/writeAssertionCache.js"
 import { chainableNoOpProxy } from "../utils.js"
 import { assertEquals } from "./assertEquals.js"
 import type { AssertionContext } from "./attest.js"

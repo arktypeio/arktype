@@ -18,14 +18,7 @@ module.exports = defineConfig({
 	],
 	settings: {
 		"import/parsers": {
-			"@typescript-eslint/parser": [
-				".ts",
-				".tsx",
-				".mts",
-				".mtsx",
-				".cts",
-				".ctsx"
-			]
+			"@typescript-eslint/parser": ["ts", "tsx"]
 		},
 		"import/resolver": {
 			typescript: true,
@@ -38,7 +31,8 @@ module.exports = defineConfig({
 		"**/node_modules/**",
 		"**/*js",
 		"**/generated/**",
-		"*.astro"
+		"*.astro",
+		"*.scratch.ts"
 	],
 	rules: {
 		/**
@@ -74,20 +68,6 @@ module.exports = defineConfig({
 		],
 		"@typescript-eslint/no-import-type-side-effects": "warn",
 		"import/no-duplicates": ["warn", { "prefer-inline": true }],
-		// Sort import statements. We don't autofix this in VSCode as we rely on
-		// TS to handle it, otherwise there are conflicts with import type settings
-		"import/order": [
-			"warn",
-			{
-				// Avoid conflicts with TypeScript's organizeImports builtin
-				groups: [["builtin", "external"], "parent", "sibling", "index"],
-				alphabetize: {
-					order: "asc",
-					orderImportKind: "asc"
-				},
-				"newlines-between": "never"
-			}
-		],
 		// Per the typescript-eslint docs: "you must disable the base rule as it can report incorrect errors"
 		"no-restricted-imports": "off",
 		"@typescript-eslint/no-restricted-imports": [

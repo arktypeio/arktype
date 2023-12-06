@@ -2,12 +2,7 @@ import { caller } from "@arktype/fs"
 import { performance } from "node:perf_hooks"
 import { chainableNoOpProxy } from "../utils.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import {
-	unhandledExceptionMessages,
-	type BenchContext,
-	type BenchableFunction,
-	type UntilOptions
-} from "./bench.js"
+import type { BenchContext, BenchableFunction, UntilOptions } from "./bench.js"
 import { await1K } from "./generated/await1k.js"
 import { call1K } from "./generated/call1k.js"
 import {
@@ -250,3 +245,14 @@ export class BenchAssertions<
 		) as any as ReturnedAssertions
 	}
 }
+
+const unhandledExceptionMessages: string[] = []
+
+process.on("beforeExit", () => {
+	if (unhandledExceptionMessages.length) {
+		console.error(
+			`${unhandledExceptionMessages.length} unhandled exception(s) occurred during your benches (see details above).`
+		)
+		process.exit(1)
+	}
+})

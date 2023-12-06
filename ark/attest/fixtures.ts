@@ -1,8 +1,8 @@
 import { writeJson } from "@arktype/fs"
 import { rmSync } from "node:fs"
-import { ensureCacheDirs, getConfig, type AttestConfig } from "../config.js"
-import { writeSnapshotUpdatesOnExit } from "../snapshot/writeSnapshot.js"
-import { getAssertionsByFile } from "./analysis.js"
+import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.js"
+import { analyzeProjectAssertions } from "./cache/writeAssertionCache.js"
+import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.js"
 
 export const setup = (options: Partial<AttestConfig> = {}) => {
 	const config = getConfig()
@@ -15,10 +15,7 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 	console.log(
 		"⏳ Waiting for TypeScript to check your project (this may take a while)..."
 	)
-	writeJson(
-		config.assertionCacheFile,
-		getAssertionsByFile({ isInitialCache: true })
-	)
+	writeJson(config.assertionCacheFile, analyzeProjectAssertions())
 }
 
 export const cleanup = () => {

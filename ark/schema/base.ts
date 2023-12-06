@@ -142,13 +142,13 @@ export abstract class BaseNode<
 	#inCache?: BaseNode;
 	get in(): Node<ioKindOf<d["kind"]>> {
 		this.#inCache ??= this.getIo("in")
-		return this.inCache as never
+		return this.#inCache as never
 	}
 
 	#outCache?: BaseNode
 	get out(): Node<ioKindOf<d["kind"]>> {
 		this.#outCache ??= this.getIo("out")
-		return this.outCache as never
+		return this.#outCache as never
 	}
 
 	#descriptionCache?: string

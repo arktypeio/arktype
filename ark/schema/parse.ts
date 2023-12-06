@@ -2,7 +2,6 @@ import {
 	entriesOf,
 	hasDomain,
 	throwParseError,
-	type Dict,
 	type Json,
 	type JsonData,
 	type PartialRecord,
@@ -16,7 +15,6 @@ import {
 	defaultValueSerializer,
 	type BasisKind,
 	type KeyDefinitions,
-	type NodeKeyImplementation,
 	type NodeKind,
 	type UnknownNodeImplementation
 } from "./shared/define.js"

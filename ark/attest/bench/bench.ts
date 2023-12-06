@@ -44,16 +44,6 @@ export type InitialBenchAssertions<Fn extends BenchableFunction> =
 	BenchAssertions<Fn> & BenchTypeAssertions
 
 const currentSuitePath: string[] = []
-export const unhandledExceptionMessages: string[] = []
-
-process.on("beforeExit", () => {
-	if (unhandledExceptionMessages.length) {
-		console.error(
-			`${unhandledExceptionMessages.length} unhandled exception(s) occurred during your benches (see details above).`
-		)
-		process.exit(1)
-	}
-})
 
 export const bench = <Fn extends BenchableFunction>(
 	name: string,

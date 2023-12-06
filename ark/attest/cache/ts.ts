@@ -2,6 +2,7 @@ import { fromCwd, type SourcePosition } from "@arktype/fs"
 import * as tsvfs from "@typescript/vfs"
 import { dirname, join } from "node:path"
 import ts from "typescript"
+
 export class TsServer {
 	programFilePaths!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
@@ -127,3 +128,61 @@ export const getTsLibFiles = (tsconfigOptions: ts.CompilerOptions) => {
 export const getProgram = (env?: tsvfs.VirtualTypeScriptEnvironment) =>
 	env?.languageService.getProgram() ??
 	TsServer.instance.virtualEnv.languageService.getProgram()!
+
+export interface InternalTypeChecker extends ts.TypeChecker {
+	// These APIs are not publicly exposed
+	getInstantiationCount: () => number
+	isTypeAssignableTo: (source: ts.Type, target: ts.Type) => boolean
+	getDiagnostics: () => ts.Diagnostic[]
+}
+
+export const getInternalTypeChecker = (
+	env?: tsvfs.VirtualTypeScriptEnvironment
+) => getProgram(env).getTypeChecker() as InternalTypeChecker
+
+export interface StringifiableType extends ts.Type {
+	toString(): string
+	isUnresolvable: boolean
+}
+
+export const getStringifiableType = (node: ts.Node): StringifiableType => {
+	const typeChecker = getInternalTypeChecker()
+	// in a call like attest<object>({a: true}),
+	// passing arg.expression avoids inferring {a: true} as object
+	const nodeType = typeChecker.getTypeAtLocation(node)
+	const stringified = typeChecker.typeToString(nodeType)
+	return Object.assign(nodeType, {
+		toString: () => stringified,
+		isUnresolvable: (nodeType as any).intrinsicName === "error"
+	})
+}
+
+export type ArgumentTypes = {
+	args: StringifiableType[]
+	typeArgs: StringifiableType[]
+}
+
+export const extractArgumentTypesFromCall = (
+	call: ts.CallExpression
+): ArgumentTypes => ({
+	args: call.arguments.map((arg) => getStringifiableType(arg)),
+	typeArgs:
+		call.typeArguments?.map((typeArg) => getStringifiableType(typeArg)) ?? []
+})
+
+export const getDescendants = (node: ts.Node): ts.Node[] =>
+	getDescendantsRecurse(node)
+
+const getDescendantsRecurse = (node: ts.Node): ts.Node[] => [
+	node,
+	...node.getChildren().flatMap((child) => getDescendantsRecurse(child))
+]
+
+export const getAncestors = (node: ts.Node) => {
+	const ancestors: ts.Node[] = []
+	while (node.parent) {
+		ancestors.push(node)
+		node = node.parent
+	}
+	return ancestors
+}

@@ -113,11 +113,6 @@ type validateScope<def, $> = {
 
 export type bindThis<def> = { this: Def<def> }
 
-export const bindThis = () => ({
-	// TODO: fix
-	this: keywords.unknown
-})
-
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
 
@@ -445,6 +440,11 @@ export class Scope<r extends Resolutions = any> {
 		// }`
 		// 			)
 		// 			.join("\n")
+	}
+
+	bindThis() {
+		// TODO: fix
+		return { this: keywords.unknown }
 	}
 
 	private exportedResolutions: MergedResolutions | undefined

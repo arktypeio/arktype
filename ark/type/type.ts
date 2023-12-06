@@ -15,7 +15,7 @@ import {
 	type inferNarrow
 } from "@arktype/schema"
 import {
-	CompiledFunction,
+	CastableBase,
 	map,
 	type Constructor,
 	type Json,
@@ -36,7 +36,7 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import { bindThis, type Scope } from "./scope.js"
+import type { Scope, bindThis } from "./scope.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -125,7 +125,7 @@ export type TypeConfig = {
 	mustBe?: string
 }
 
-export class Type<t = unknown, $ = any> extends CompiledFunction<
+export class Type<t = unknown, $ = any> extends CastableBase<
 	(data: unknown) => CheckResult<extractOut<t>>
 > {
 	declare [inferred]: t
@@ -142,7 +142,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 		public scope: Scope
 	) {
 		const root = parseTypeRoot(definition, scope) as TypeNode<t>
-		super(root as never)
+		super()
 		this.root = root
 		this.allows = root.allows
 		this.config = scope.config
@@ -251,7 +251,10 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 }
 
 const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
-	scope.parseDefinition(def, { args: args ?? bindThis(), baseName: "type" })
+	scope.parseDefinition(def, {
+		args: args ?? scope.bindThis(),
+		baseName: "type"
+	})
 
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 

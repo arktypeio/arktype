@@ -31,9 +31,8 @@
 	"prettier.ignorePath": "ark/repo/.prettierignore",
 	"prettier.prettierPath": "./node_modules/prettier/index.cjs",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
-	// --loader is required here instead of --import for test explorer compatibility
-	"mochaExplorer.nodeArgv": ["--loader=tsx"],
-	// ignore attest it requires type information
+	"mochaExplorer.nodeArgv": ["--import=tsx"],
+	// ignore attest since it requires type information
 	"mochaExplorer.ignore": ["ark/attest/**/*"],
 	"mochaExplorer.require": "ark/repo/mocha.fixtures.ts",
 	"mochaExplorer.timeout": 0,
@@ -47,6 +46,5 @@
 		// Hair Space: used as a sentinel for error messages
 		" ": true
 	},
-	"typescript.tsdk": "node_modules/typescript/lib",
-	"debug.javascript.autoAttachFilter": "smart"
+	"typescript.tsdk": "node_modules/typescript/lib"
 }
