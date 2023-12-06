@@ -16,6 +16,22 @@ module.exports = defineConfig({
 		"plugin:import/typescript",
 		"prettier"
 	],
+	settings: {
+		"import/parsers": {
+			"@typescript-eslint/parser": [
+				".ts",
+				".tsx",
+				".mts",
+				".mtsx",
+				".cts",
+				".ctsx"
+			]
+		},
+		"import/resolver": {
+			typescript: true,
+			node: true
+		}
+	},
 	ignorePatterns: [
 		"**/dist/**",
 		"**/out/**",
@@ -30,7 +46,7 @@ module.exports = defineConfig({
 		 */
 		curly: "warn",
 		eqeqeq: "warn",
-		"object-shorthand": ["warn"],
+		"object-shorthand": "warn",
 		/**
 		 * Require the use of arrow functions where possible
 		 */
@@ -51,6 +67,7 @@ module.exports = defineConfig({
 		/**
 		 * Imports
 		 */
+		"import/no-cycle": "warn",
 		"@typescript-eslint/consistent-type-imports": [
 			"warn",
 			{ fixStyle: "inline-type-imports" }
