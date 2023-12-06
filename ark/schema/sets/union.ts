@@ -60,8 +60,6 @@ const intersectBranch = (
 }
 
 export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
-	static readonly kind = "union"
-
 	static parser: NodeParserImplementation<UnionDeclaration> = {
 		collapseKey: "branches",
 		keys: {

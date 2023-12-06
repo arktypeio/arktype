@@ -4,7 +4,7 @@ import {
 	type extend,
 	type valueOf
 } from "@arktype/util"
-import type { Node, NodeSubclass, UnknownNodeSubclass } from "../base.js"
+import type { Node } from "../base.js"
 import {
 	In,
 	compilePrimitive,
@@ -118,7 +118,6 @@ export type BaseBoundDeclaration = extend<
 export abstract class BaseBound<
 	d extends BaseBoundDeclaration
 > extends RefinementNode<d> {
-	static kind: BoundKind
 	static intersections = {} as any
 
 	static parser = {
@@ -180,8 +179,6 @@ export type MinDeclaration = declareNode<{
 }>
 
 export class MinNode extends BaseBound<MinDeclaration> {
-	static readonly kind = "min"
-
 	static intersections = createLowerIntersections("min")
 
 	traverseAllows = this.exclusive
@@ -210,8 +207,6 @@ export type MaxDeclaration = declareNode<{
 }>
 
 export class MaxNode extends BaseBound<MaxDeclaration> {
-	static readonly kind = "max"
-
 	static intersections = createUpperIntersections("max")
 
 	traverseAllows = this.exclusive
@@ -240,8 +235,6 @@ export type MinLengthDeclaration = declareNode<{
 }>
 
 export class MinLengthNode extends BaseBound<MinLengthDeclaration> {
-	static readonly kind = "minLength"
-
 	static intersections = createLowerIntersections("minLength")
 
 	traverseAllows = this.exclusive
@@ -275,8 +268,6 @@ export type MaxLengthDeclaration = declareNode<{
 }>
 
 export class MaxLengthNode extends BaseBound<MaxLengthDeclaration> {
-	static readonly kind = "maxLength"
-
 	static intersections = createUpperIntersections("maxLength")
 
 	traverseAllows = this.exclusive
@@ -306,8 +297,6 @@ export type AfterDeclaration = declareNode<{
 }>
 
 export class AfterNode extends BaseBound<AfterDeclaration> {
-	static readonly kind = "after"
-
 	static intersections = createLowerIntersections("after")
 
 	traverseAllows = this.exclusive
@@ -336,8 +325,6 @@ export type BeforeDeclaration = declareNode<{
 }>
 
 export class BeforeNode extends BaseBound<BeforeDeclaration> {
-	static readonly kind = "before"
-
 	static intersections = createUpperIntersections("before")
 
 	traverseAllows = this.exclusive

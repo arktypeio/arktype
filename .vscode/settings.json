@@ -47,5 +47,6 @@
 		// Hair Space: used as a sentinel for error messages
 		" ": true
 	},
-	"typescript.tsdk": "node_modules/typescript/lib"
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"debug.javascript.autoAttachFilter": "smart"
 }

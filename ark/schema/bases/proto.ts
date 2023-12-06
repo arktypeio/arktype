@@ -44,8 +44,6 @@ export type ProtoDeclaration = declareNode<{
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
 export class ProtoNode<t = unknown> extends BaseType<t, ProtoDeclaration> {
-	static readonly kind: "proto"
-
 	static parser: NodeParserImplementation<ProtoDeclaration> = {
 		collapseKey: "proto",
 		keys: {

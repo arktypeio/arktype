@@ -2,6 +2,7 @@ import {
 	entriesOf,
 	hasDomain,
 	throwParseError,
+	type Dict,
 	type Json,
 	type JsonData,
 	type PartialRecord,
@@ -15,8 +16,8 @@ import {
 	defaultValueSerializer,
 	type BasisKind,
 	type KeyDefinitions,
+	type NodeKeyImplementation,
 	type NodeKind,
-	type NodeParserImplementation,
 	type UnknownNodeImplementation
 } from "./shared/define.js"
 import {
@@ -47,6 +48,10 @@ export type SchemaParseContext = extend<
 
 const globalResolutions: Record<string, Node> = {}
 const typeCountsByPrefix: PartialRecord<string, number> = {}
+
+const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
+	description: { meta: true }
+} satisfies KeyDefinitions<BaseNodeDeclaration> as never
 
 export function parse<defKind extends NodeKind>(
 	kind: defKind,
@@ -80,9 +85,9 @@ export function parse(
 	const children: Node[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
-		const keyImpl = (
-			impl.keys as PartialRecord<string, valueOf<KeyDefinitions<any>>>
-		)[k]
+		const keyImpl =
+			(impl.keys as PartialRecord<string, valueOf<KeyDefinitions<any>>>)[k] ??
+			baseKeys[k]
 		if (!keyImpl) {
 			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 		}
@@ -90,7 +95,7 @@ export function parse(
 		if (v === undefined && !keyImpl.preserveUndefined) {
 			continue
 		}
-		inner[k] = v
+
 		if (keyImpl.child) {
 			if (Array.isArray(v)) {
 				json[k] = v.map((node) => node.collapsibleJson)
@@ -104,7 +109,10 @@ export function parse(
 				? keyImpl.serialize(v)
 				: defaultValueSerializer(v)
 		}
-		if (k in impl.keys) {
+		if (keyImpl.meta) {
+			meta[k] = v
+		} else {
+			inner[k] = v
 			typeJson[k] = json[k]
 		}
 	}
@@ -142,6 +150,7 @@ export function parse(
 	const id = `${prefix}${++typeCountsByPrefix[prefix]!}`
 	const attachments = {
 		id,
+		kind,
 		inner,
 		meta,
 		entries,
@@ -164,7 +173,3 @@ export function parse(
 	}
 	return (globalResolutions[innerId] = new cls(attachments as never))
 }
-
-export const defineParser = <d extends BaseNodeDeclaration>(
-	impl: NodeParserImplementation<d>
-) => impl

@@ -64,8 +64,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	IntersectionDeclaration
 > {
-	static readonly kind = "intersection"
-
 	static parser: NodeParserImplementation<IntersectionDeclaration> = {
 		normalize: (def) => def,
 		addContext: (ctx) => {

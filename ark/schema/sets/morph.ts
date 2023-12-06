@@ -64,8 +64,6 @@ export type MorphDeclaration = declareNode<{
 }>
 
 export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
-	static readonly kind = "morph"
-
 	// TODO: recursively extract in?
 	static parser: NodeParserImplementation<MorphDeclaration> = {
 		keys: {

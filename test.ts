@@ -1,3 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { schema } from "./ark/schema/main.js"
+
+schema("bigint")
+
 // class Callable {
 // 	constructor(fn: Function) {
 // 		return () => fn.call(this)

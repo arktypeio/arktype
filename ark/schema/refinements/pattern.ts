@@ -37,8 +37,6 @@ export type PatternDeclaration = declareNode<{
 }>
 
 export class PatternNode extends RefinementNode<PatternDeclaration> {
-	static readonly kind = "pattern"
-
 	static parser: NodeParserImplementation<PatternDeclaration> = {
 		collapseKey: "source",
 		keys: {

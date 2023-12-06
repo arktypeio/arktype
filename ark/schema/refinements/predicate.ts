@@ -33,8 +33,6 @@ export type PredicateDeclaration = declareNode<{
 // to wrap it with traversal state for allows
 
 export class PredicateNode extends RefinementNode<PredicateDeclaration> {
-	static readonly kind = "predicate"
-
 	static parser: NodeParserImplementation<PredicateDeclaration> = {
 		collapseKey: "predicate",
 		keys: {

@@ -1,18 +1,8 @@
-import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
-import {
-	BaseNode,
-	type Node,
-	type NodeSubclass,
-	type TypeNode,
-	type UnknownNodeSubclass
-} from "../base.js"
+import { throwParseError, type PartialRecord } from "@arktype/util"
+import { BaseNode, type Node, type TypeNode } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
-import type {
-	NodeKind,
-	NodeParserImplementation,
-	TypeKind
-} from "../shared/define.js"
+import type { NodeKind, TypeKind } from "../shared/define.js"
 import type { Schema } from "../shared/nodes.js"
 import { arkKind } from "../shared/symbols.js"
 

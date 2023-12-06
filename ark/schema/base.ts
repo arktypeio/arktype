@@ -72,6 +72,7 @@ import { arkKind, type ArkKind } from "./shared/symbols.js"
 
 export interface BaseAttachments {
 	alias?: string
+	readonly kind: NodeKind
 	readonly id: string
 	readonly inner: Dict
 	readonly meta: BaseAttributes & Dict
@@ -87,21 +88,13 @@ export interface BaseAttachments {
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends BaseAttachments {
+	kind: d["kind"]
 	inner: d["inner"]
 	entries: entriesOf<d["inner"]>
 	children: Node<d["childKind"]>[]
 }
 
-export interface NodeSubclass<d extends BaseNodeDeclaration> {
-	readonly kind: d["kind"]
-	// allow subclasses to accept narrowed check input
-	readonly declaration: BaseNodeDeclaration
-	readonly parser: NodeParserImplementation<d>
-	readonly intersections: NodeIntersections<d>
-}
-
 export interface UnknownNodeSubclass {
-	readonly kind: NodeKind
 	// allow subclasses to accept narrowed check input
 	readonly declaration: BaseNodeDeclaration
 	readonly parser: NodeParserImplementation<BaseNodeDeclaration>
@@ -116,7 +109,7 @@ export abstract class BaseNode<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends DynamicBase<attachmentsOf<d>> {
 	readonly cls: UnknownNodeSubclass = this.constructor as never
-	readonly kind: d["kind"] = this.cls.kind
+
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
