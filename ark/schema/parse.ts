@@ -157,8 +157,9 @@ export function parse(
 		attachments.alias = ctx.alias
 	}
 	for (const k in inner) {
+		// avoid conflict with builtin cached getters
 		if (k !== "in" && k !== "out") {
-			attachments[k] = attachments[k] as never
+			attachments[k] = inner[k]
 		}
 	}
 	return (globalResolutions[innerId] = new cls(attachments as never))

@@ -28,9 +28,9 @@ import type { PredicateNode } from "./refinements/predicate.js"
 import type { OptionalNode } from "./refinements/props/optional.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { ScopeNode } from "./scope.js"
-import {
-	unflattenConstraints,
-	type IntersectionNode
+import type {
+	IntersectionInner,
+	IntersectionNode
 } from "./sets/intersection.js"
 import type { MorphNode } from "./sets/morph.js"
 import type { UnionNode } from "./sets/union.js"
@@ -74,7 +74,7 @@ export interface BaseAttachments {
 	alias?: string
 	readonly id: string
 	readonly inner: Dict
-	readonly meta: Dict
+	readonly meta: BaseAttributes & Dict
 	readonly entries: readonly Entry[]
 	readonly json: Json
 	readonly typeJson: Json
@@ -131,10 +131,6 @@ export abstract class BaseNode<
 	readonly contributesReferencesById: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
 
-	// we use declare here to avoid it being initialized outside the constructor
-	// and detected as an overwritten key
-	declare readonly description: string
-
 	constructor(baseAttachments: BaseAttachments) {
 		super(baseAttachments as never)
 		this.contributesReferencesById =
@@ -142,7 +138,6 @@ export abstract class BaseNode<
 				? this.referencesById
 				: { ...this.referencesById, [this.id]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
-		this.description ??= this.writeDefaultDescription()
 	}
 
 	abstract readonly [arkKind]: ArkKind
@@ -151,16 +146,23 @@ export abstract class BaseNode<
 	abstract traverseApply: TraverseApply<d["checks"]>
 	abstract compileBody(ctx: CompilationContext): string
 
-	inCache?: BaseNode;
+	#inCache?: BaseNode;
 	get in(): Node<ioKindOf<d["kind"]>> {
-		this.inCache ??= this.getIo("in")
+		this.#inCache ??= this.getIo("in")
 		return this.inCache as never
 	}
 
-	outCache?: BaseNode
+	#outCache?: BaseNode
 	get out(): Node<ioKindOf<d["kind"]>> {
-		this.outCache ??= this.getIo("out")
+		this.#outCache ??= this.getIo("out")
 		return this.outCache as never
+	}
+
+	#descriptionCache?: string
+	get description() {
+		this.#descriptionCache ??=
+			this.meta.description ?? this.writeDefaultDescription()
+		return this.#descriptionCache
 	}
 
 	private getIo(kind: "in" | "out"): BaseNode {
@@ -255,14 +257,23 @@ export abstract class BaseNode<
 		}
 		// if either constraint is a basis or both don't require a basis (i.e.
 		// are predicates), it can form an intersection
-		return this.isBasis() ||
-			other.isBasis() ||
-			(this.kind === "predicate" && other.kind === "predicate")
-			? this.scope.parseNode(
-					"intersection",
-					unflattenConstraints([this as never, other])
-			  )
-			: null
+		const intersectionInner: IntersectionInner | null = this.isBasis()
+			? {
+					basis: this,
+					[other.kind]: other.isOpenRefinement() ? other : [other]
+			  }
+			: other.isBasis()
+			  ? {
+						basis: other,
+						[this.kind]: this.isOpenRefinement() ? this : [this]
+			    }
+			  : this.hasKind("predicate") && other.hasKind("predicate")
+			    ? { predicate: [this, other] }
+			    : null
+		return (
+			intersectionInner &&
+			this.scope.parseNode("intersection", intersectionInner)
+		)
 	}
 
 	intersectClosed<other extends Node>(
