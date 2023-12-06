@@ -1,10 +1,6 @@
 import { bench } from "@arktype/attest"
-// import { scope } from "arktype"
-import type { Ark } from "../../ark.js"
-import type { ScopeParser } from "../../scope.js"
+import { scope, type Ark } from "arktype"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
-
-declare const scope: ScopeParser<Ark, Ark>
 
 // const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } }).compile()
 // const dejaVu: typeof recursive.dejaVu.infer = {}

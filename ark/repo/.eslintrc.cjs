@@ -31,6 +31,7 @@ module.exports = defineConfig({
 		"**/node_modules/**",
 		"**/*js",
 		"**/generated/**",
+		"**/experiments/**",
 		"*.astro",
 		"*.scratch.ts"
 	],

@@ -1,6 +1,10 @@
 import { DynamicBase } from "@arktype/util"
-import { ark, type Ark } from "../../ark.js"
-import { Type, type inferTypeRoot, type validateTypeRoot } from "../../type.js"
+import { ark, type Ark } from "../../type/ark.js"
+import {
+	Type,
+	type inferTypeRoot,
+	type validateTypeRoot
+} from "../../type/type.js"
 
 const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 	const validator = new Type(def, ark)

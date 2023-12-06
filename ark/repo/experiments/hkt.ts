@@ -1,15 +1,15 @@
-import type { Hkt } from "@arktype/util"
+// import type { Hkt } from "@arktype/util"
 
-// Custom user type
-interface Chunk<T> {
-	t: T
-	isChunk: true
-}
+// // Custom user type
+// interface Chunk<T> {
+// 	t: T
+// 	isChunk: true
+// }
 
-// User defines the HKT signature
-interface ToChunk extends Hkt.Kind {
-	f(x: this[Hkt.key]): Chunk<typeof x>
-}
+// // User defines the HKT signature
+// interface ToChunk extends Hkt.Kind {
+// 	f(x: this[Hkt.key]): Chunk<typeof x>
+// }
 
 // Original HKT implementation:
 // export type Module<r extends Resolutions = any> = {
