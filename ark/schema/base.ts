@@ -73,6 +73,7 @@ import {
 	type reifyIntersections,
 	type rightOf
 } from "./shared/intersect.js"
+import type { ioKindOf, reducibleKindOf } from "./shared/nodes.js"
 import { arkKind, inferred } from "./shared/symbols.js"
 
 export interface BaseAttachments {
@@ -170,13 +171,13 @@ export abstract class BaseNode<
 		return { problems }
 	}
 
-	inCache?: BaseNode<extractIn<t>>;
+	inCache?: Node<ioKindOf<subclass["kind"]>, extractIn<t>>;
 	get in() {
 		this.inCache ??= this.getIo("in") as never
 		return this.inCache
 	}
 
-	outCache?: BaseNode<extractOut<t>>
+	outCache?: Node<ioKindOf<subclass["kind"]>, extractOut<t>>
 	get out() {
 		this.outCache ??= this.getIo("out") as never
 		return this.outCache
@@ -294,9 +295,10 @@ export abstract class BaseNode<
 		const l = leftOperandOf(this as never, other)
 		const thisIsLeft = l === (this as never)
 		const r: Node = thisIsLeft ? other : (this as never)
-		const intersections = l.cls.intersections
-		const intersector = (intersections as any)[r.kind] ?? intersections.default
-		const result = intersector?.(l, r)
+		const intersections = l.cls
+			.intersections as NodeIntersections<BaseNodeDeclaration>
+		const intersector = intersections[r.kind] ?? intersections.default
+		const result = intersector?.(l, r as never)
 		if (result) {
 			if (result instanceof Disjoint) {
 				return thisIsLeft ? result : result.invert()
@@ -306,31 +308,6 @@ export abstract class BaseNode<
 		}
 		return null
 	}
-
-	declare static declaration: BaseNodeDeclaration
-
-	protected static defineIntersections<
-		self,
-		intersections extends {
-			[rKind in NodeKind | "default"]?: rKind extends NodeKind
-				? (
-						l: instanceOf<self>,
-						r: Node<rKind>
-				  ) => declarationOf<self>["inner"] | Disjoint | null
-				: (
-						l: instanceOf<self>,
-						r: Node<
-							Exclude<rightOf<declarationOf<self>["kind"]>, keyof intersections>
-						>
-				  ) => declarationOf<self>["inner"] | Disjoint | null
-		}
-	>(this: self, intersections: intersections) {
-		return intersections
-	}
-
-	protected static defineParser: <d extends BaseNodeDeclaration>(
-		impl: NodeParserImplementation<d>
-	) => NodeParserImplementation<d>
 
 	protected createPrimitiveTraversal(
 		this: BaseNode<any> & {
@@ -344,18 +321,6 @@ export abstract class BaseNode<
 		}
 	}
 }
-
-export type declarationOf<cls> = cls extends {
-	declaration: infer declaration extends BaseNodeDeclaration
-}
-	? declaration
-	: never
-
-export type subclassOf<cls> = cls extends {
-	declaration: infer declaration extends BaseNodeDeclaration
-}
-	? declaration
-	: never
 
 export type Node<kind extends NodeKind = NodeKind, t = any> = {
 	union: UnionNode<t>

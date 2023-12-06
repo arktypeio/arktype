@@ -129,7 +129,8 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 	(data: unknown) => CheckResult<extractOut<t>>
 > {
 	declare [inferred]: t
-	declare infer: t
+	// TODO: in/out?
+	declare infer: extractOut<t>
 
 	config: TypeConfig
 	root: TypeNode<t>

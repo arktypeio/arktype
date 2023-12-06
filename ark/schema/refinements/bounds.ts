@@ -4,17 +4,13 @@ import {
 	type extend,
 	type valueOf
 } from "@arktype/util"
-import type { Node, NodeSubclass, declarationOf } from "../base.js"
+import type { Node, NodeSubclass } from "../base.js"
 import {
 	In,
 	compilePrimitive,
 	type CompilationContext
 } from "../shared/compilation.js"
-import type {
-	BaseNodeDeclaration,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type {
 	BoundKind,
 	NodeParserImplementation,

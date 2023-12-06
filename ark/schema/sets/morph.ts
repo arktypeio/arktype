@@ -17,14 +17,10 @@ import type {
 	Problems
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import {
-	basisKinds,
-	type NodeKind,
-	type NodeParserImplementation
-} from "../shared/define.js"
+import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import type { Schema, reducibleKindOf } from "../shared/nodes.js"
+import type { Schema } from "../shared/nodes.js"
 import { BaseType } from "../type.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
@@ -135,10 +131,15 @@ export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
 		this.in.traverseAllows(data, problems)
 
 	traverseApply = (data: unknown, problems: Problems) =>
-		this.in.traverseApply(data, problems)
+		this.in.traverseApply(data, problems);
 
-	inCache = this.inner.in
-	outCache = this.inner.out ?? this.scope.builtin.unknown
+	override get in(): Node<ValidatorKind, extractIn<t>> {
+		return this.inner.in
+	}
+
+	override get out(): Node<ValidatorKind, extractOut<t>> {
+		return this.inner.out ?? this.scope.builtin.unknown
+	}
 
 	writeDefaultDescription() {
 		return `a morph from ${this.in} to ${this.out}`
@@ -155,10 +156,6 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		  out
 		: t
 	: Exclude<out, Problem>
-
-export type ioKindOf<kind extends NodeKind> = kind extends "morph"
-	? ValidatorKind
-	: reducibleKindOf<kind>
 
 export type extractIn<t> = includesMorphs<t> extends true
 	? extractMorphs<t, "in">

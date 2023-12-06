@@ -61,6 +61,10 @@ export type ParentsByKind = {
 
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
+export type ioKindOf<kind extends NodeKind> = kind extends "morph"
+	? ValidatorKind
+	: reducibleKindOf<kind>
+
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? TypeKind
 	: kind extends "intersection"

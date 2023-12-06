@@ -1,11 +1,12 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 import { type, type Out } from "arktype"
-import { scope } from "../ark.js"
+import { scope, type Ark } from "../ark.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
+import type { Type } from "../type.js"
 
 describe("tuple expressions", () => {
 	it("nested", () => {
@@ -106,7 +107,7 @@ describe("root expression", () => {
 	})
 	it("morph", () => {
 		const t = type({ a: "string" }, "=>", (In) => ({ b: In.a }))
-		attest<(In: { a: string }) => Out<{ b: string }>>(t.inferMorph)
+		attest<Type<(In: { a: string }) => Out<{ b: string }>, Ark>>(t)
 	})
 	it("narrow", () => {
 		const t = type(

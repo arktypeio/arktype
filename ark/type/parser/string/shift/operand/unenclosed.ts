@@ -62,7 +62,7 @@ export const parseGenericInstantiation = (
 	name: string,
 	g: Generic,
 	s: DynamicState
-) => {
+): TypeNode => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<") {
@@ -79,7 +79,7 @@ export const parseGenericInstantiation = (
 	s.scanner.jumpToIndex(
 		remainingChars === 0 ? s.scanner.length : -remainingChars
 	)
-	return g(...parsedArgs.result).root
+	return g(...parsedArgs.result).root as never
 }
 
 export type parseGenericInstantiation<

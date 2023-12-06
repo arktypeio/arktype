@@ -23,6 +23,7 @@ import {
 	type RefinementKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import type { Schema, reducibleKindOf } from "../shared/nodes.js"
 import { isNode } from "../shared/symbols.js"
 import { BaseType } from "../type.js"
@@ -144,7 +145,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		}
 	}
 
-	static intersections = this.defineIntersections({
+	static intersections: NodeIntersections<IntersectionDeclaration> = {
 		intersection: (l, r) => {
 			let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
 			for (const refinement of r.constraints) {
@@ -159,7 +160,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			const result = addConstraint(l.constraints, r)
 			return result instanceof Disjoint ? result : unflattenConstraints(result)
 		}
-	})
+	}
 
 	readonly constraints: ConstraintSet = Object.values(this.inner).flat()
 
