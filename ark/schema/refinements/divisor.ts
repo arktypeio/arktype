@@ -4,6 +4,8 @@ import {
 	type CompilationContext
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { NodeParserImplementation } from "../shared/define.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementNode } from "./shared.js"
 
 export type DivisorInner = {
@@ -36,22 +38,22 @@ export class DivisorNode extends RefinementNode<typeof DivisorNode> {
 	static readonly kind = "divisor"
 	static declaration: DivisorDeclaration
 
-	static parser = this.composeParser({
+	static parser: NodeParserImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",
 		keys: {
 			divisor: {}
 		},
 		normalize: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema
-	})
+	}
 
-	static intersections = this.defineIntersections({
+	static intersections: NodeIntersections<DivisorDeclaration> = {
 		divisor: (l, r) => ({
 			divisor: Math.abs(
 				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
 			)
 		})
-	})
+	}
 
 	traverseAllows = (data: number) => data % this.divisor === 0
 	traverseApply = this.createPrimitiveTraversal()

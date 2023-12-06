@@ -18,6 +18,7 @@ import {
 	basisKinds,
 	type ClosedRefinementKind,
 	type ConstraintKind,
+	type NodeParserImplementation,
 	type OpenRefinementKind,
 	type RefinementKind
 } from "../shared/define.js"
@@ -65,7 +66,8 @@ export class IntersectionNode<t = unknown> extends BaseType<
 > {
 	static readonly kind = "intersection"
 	static declaration: IntersectionDeclaration
-	static parser = this.composeParser({
+
+	static parser: NodeParserImplementation<IntersectionDeclaration> = {
 		normalize: (def) => def,
 		addContext: (ctx) => {
 			const def = ctx.definition as IntersectionSchema
@@ -140,7 +142,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			) as mutable<IntersectionInner>
 			return scope.parsePrereduced("intersection", reducedConstraintsByKind)
 		}
-	})
+	}
 
 	static intersections = this.defineIntersections({
 		intersection: (l, r) => {

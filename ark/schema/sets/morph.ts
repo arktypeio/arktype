@@ -17,8 +17,13 @@ import type {
 	Problems
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { basisKinds, type NodeKind } from "../shared/define.js"
+import {
+	basisKinds,
+	type NodeKind,
+	type NodeParserImplementation
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import type { Schema, reducibleKindOf } from "../shared/nodes.js"
 import { BaseType } from "../type.js"
 
@@ -66,7 +71,7 @@ export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
 	static readonly kind = "morph"
 	static declaration: MorphDeclaration
 	// TODO: recursively extract in?
-	static parser = this.composeParser({
+	static parser: NodeParserImplementation<MorphDeclaration> = {
 		keys: {
 			in: {
 				child: true,
@@ -83,9 +88,9 @@ export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
 			}
 		},
 		normalize: (schema) => schema
-	})
+	}
 
-	static intersections = this.defineIntersections({
+	static intersections: NodeIntersections<MorphDeclaration> = {
 		morph: (l, r) => {
 			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
 				// TODO: is this always a parse error? what about for union reduction etc.
@@ -124,7 +129,7 @@ export class MorphNode<t = unknown> extends BaseType<t, typeof MorphNode> {
 						in: constrainedInput
 				  }
 		}
-	})
+	}
 
 	traverseAllows = (data: unknown, problems: Problems) =>
 		this.in.traverseAllows(data, problems)

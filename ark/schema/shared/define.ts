@@ -135,17 +135,9 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	normalize: (
 		schema: d["schema"]
 	) => normalizeInput<d["normalizedSchema"], d["inner"]>
-	reduce?: (
-		inner: d["inner"],
-		scope: ScopeNode
-	) => Node<reducibleKindOf<d["kind"]>> | undefined
+	reduce?: (inner: d["inner"], scope: ScopeNode) => BaseNode | undefined
 }
 
 // writeDefaultDescription: (node: Node<d["kind"]>) => string
 // compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
 // intersections: reifyIntersections<d["kind"], d["intersections"]>
-
-export type UnknownNodeImplementation = optionalizeKeys<
-	NodeParserImplementation<BaseNodeDeclaration>,
-	"reduce"
->

@@ -6,12 +6,13 @@ import {
 	type Problems
 } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
-import type { TypeKind } from "../../shared/define.js"
+import type { NodeParserImplementation, TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
+import type { NodeIntersections } from "../../shared/intersect.js"
 import type { Inner, Schema } from "../../shared/nodes.js"
 import { RefinementNode } from "../shared.js"
 import type { PropKind } from "./prop.js"
-import { compilePresentProp, type NamedPropAttachments } from "./shared.js"
+import { compilePresentProp } from "./shared.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
@@ -55,7 +56,7 @@ const intersectNamed = (
 export class RequiredNode extends RefinementNode<typeof RequiredNode> {
 	static readonly kind = "required"
 	static declaration: RequiredDeclaration
-	static parser = this.composeParser({
+	static parser: NodeParserImplementation<RequiredDeclaration> = {
 		keys: {
 			key: {},
 			value: {
@@ -64,12 +65,12 @@ export class RequiredNode extends RefinementNode<typeof RequiredNode> {
 			}
 		},
 		normalize: (schema) => schema
-	})
+	}
 
-	static intersections = this.defineIntersections({
+	static intersections: NodeIntersections<RequiredDeclaration> = {
 		required: intersectNamed,
 		optional: intersectNamed
-	})
+	}
 
 	serializedKey = compileSerializedValue(this.key)
 

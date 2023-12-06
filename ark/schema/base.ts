@@ -68,6 +68,7 @@ import {
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	leftOperandOf,
+	type NodeIntersections,
 	type intersectionOf,
 	type reifyIntersections,
 	type rightOf
@@ -104,8 +105,12 @@ export interface NodeSubclass<
 	readonly kind: NodeKind
 	// allow subclasses to accept narrowed check input
 	readonly declaration: BaseNodeDeclaration
-	readonly parser: BaseParser
-	readonly intersections: reifyIntersections<d["kind"], d["intersections"]>
+	readonly parser: BaseNodeDeclaration extends d
+		? NodeParserImplementation<any>
+		: NodeParserImplementation<d>
+	readonly intersections: BaseNodeDeclaration extends d
+		? Record<string, (l: any, r: any) => {} | Disjoint | null>
+		: NodeIntersections<d>
 }
 
 export abstract class BaseNode<
@@ -323,13 +328,9 @@ export abstract class BaseNode<
 		return intersections
 	}
 
-	protected static composeParser: <
-		self,
-		d extends BaseNodeDeclaration = declarationOf<self>
-	>(
-		this: self,
+	protected static defineParser: <d extends BaseNodeDeclaration>(
 		impl: NodeParserImplementation<d>
-	) => (def: d["schema"], ctx: SchemaParseContext) => attachmentsOf<d>
+	) => NodeParserImplementation<d>
 
 	protected createPrimitiveTraversal(
 		this: BaseNode<any> & {

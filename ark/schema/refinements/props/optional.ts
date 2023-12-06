@@ -6,8 +6,9 @@ import {
 	type Problems
 } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
-import type { TypeKind } from "../../shared/define.js"
+import type { NodeParserImplementation, TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
+import type { NodeIntersections } from "../../shared/intersect.js"
 import type { Schema } from "../../shared/nodes.js"
 import { RefinementNode } from "../shared.js"
 import { compilePresentProp } from "./shared.js"
@@ -35,7 +36,8 @@ export type OptionalDeclaration = declareNode<{
 export class OptionalNode extends RefinementNode<typeof OptionalNode> {
 	static readonly kind = "optional"
 	static declaration: OptionalDeclaration
-	static parser = this.composeParser({
+
+	static parser: NodeParserImplementation<OptionalDeclaration> = {
 		keys: {
 			key: {},
 			value: {
@@ -44,8 +46,9 @@ export class OptionalNode extends RefinementNode<typeof OptionalNode> {
 			}
 		},
 		normalize: (schema) => schema
-	})
-	static intersections = this.defineIntersections({
+	}
+
+	static intersections: NodeIntersections<OptionalDeclaration> = {
 		optional: (l, r) => {
 			if (l.key !== r.key) {
 				return null
@@ -54,10 +57,11 @@ export class OptionalNode extends RefinementNode<typeof OptionalNode> {
 			const value = l.value.intersect(r.value)
 			return {
 				key: optional,
-				value: value instanceof Disjoint ? l.scope.builtin.never : value
+				value:
+					value instanceof Disjoint ? (l.scope.builtin.never as never) : value
 			}
 		}
-	})
+	}
 
 	serializedKey = compileSerializedValue(this.key)
 

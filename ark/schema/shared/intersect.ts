@@ -1,5 +1,6 @@
 import { throwInternalError } from "@arktype/util"
 import type { BaseNode, Node } from "../base.js"
+import type { BaseNodeDeclaration } from "./declare.js"
 import {
 	nodeKinds,
 	type NodeKind,
@@ -37,6 +38,18 @@ type accumulateRightKinds<
 
 export type IntersectionMaps = {
 	[k in NodeKind]: NodeDeclarationsByKind[k]["intersections"]
+}
+
+export type NodeIntersections<d extends BaseNodeDeclaration> = {
+	[rKind in keyof d["intersections"]]: rKind extends "default"
+		? (
+				l: Node<d["kind"]>,
+				r: Node<Exclude<rightOf<d["kind"]>, keyof d["intersections"]>>
+		  ) => reifyIntersectionResult<d["intersections"][rKind]>
+		: (
+				l: Node<d["kind"]>,
+				r: Node<rKind & NodeKind>
+		  ) => reifyIntersectionResult<d["intersections"][rKind]>
 }
 
 export type reifyIntersections<

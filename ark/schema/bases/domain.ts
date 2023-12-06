@@ -5,7 +5,9 @@ import {
 	type CompilationContext
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseType } from "../type.js"
 
 export type DomainInner<
@@ -37,17 +39,18 @@ export type DomainDeclaration = declareNode<{
 export class DomainNode<t = unknown> extends BaseType<t, typeof DomainNode> {
 	static readonly kind: "domain"
 	static declaration: DomainDeclaration
-	static parser = this.composeParser({
+	static parser: NodeParserImplementation<DomainDeclaration> = {
 		collapseKey: "domain",
 		keys: {
 			domain: {}
 		},
 		normalize: (input) =>
 			typeof input === "string" ? { domain: input } : input
-	})
-	static intersections = this.defineIntersections({
+	}
+
+	static intersections: NodeIntersections<DomainDeclaration> = {
 		domain: (l, r) => Disjoint.from("domain", l, r)
-	})
+	}
 
 	basisName = this.domain
 

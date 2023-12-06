@@ -6,7 +6,9 @@ import {
 	type CompilationContext
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseType } from "../type.js"
 
 export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
@@ -28,20 +30,21 @@ export type UnitDeclaration = declareNode<{
 export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
 	static readonly kind: "unit"
 	static declaration: UnitDeclaration
-	static parser = this.composeParser({
+
+	static parser: NodeParserImplementation<UnitDeclaration> = {
 		keys: {
 			unit: {
 				preserveUndefined: true
 			}
 		},
 		normalize: (schema) => schema
-	})
+	}
 
-	static intersections = this.defineIntersections({
+	static intersections: NodeIntersections<UnitDeclaration> = {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
-	})
+	}
 
 	serializedValue = compileSerializedValue(this.unit)
 	traverseAllows = (data: unknown) => data === this.unit

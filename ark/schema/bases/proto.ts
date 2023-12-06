@@ -12,8 +12,12 @@ import {
 	type CompilationContext
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { defaultValueSerializer } from "../shared/define.js"
+import {
+	defaultValueSerializer,
+	type NodeParserImplementation
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseType } from "../type.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = {
@@ -42,7 +46,7 @@ export type ProtoDeclaration = declareNode<{
 export class ProtoNode<t = unknown> extends BaseType<t, typeof ProtoNode> {
 	static readonly kind: "proto"
 	static declaration: ProtoDeclaration
-	static parser = this.composeParser({
+	static parser: NodeParserImplementation<ProtoDeclaration> = {
 		collapseKey: "proto",
 		keys: {
 			proto: {
@@ -53,8 +57,9 @@ export class ProtoNode<t = unknown> extends BaseType<t, typeof ProtoNode> {
 		},
 		normalize: (input) =>
 			typeof input === "function" ? { proto: input } : input
-	})
-	static intersections = this.defineIntersections({
+	}
+
+	static intersections: NodeIntersections<ProtoDeclaration> = {
 		proto: (l, r) =>
 			constructorExtends(l.proto, r.proto)
 				? l
@@ -65,7 +70,7 @@ export class ProtoNode<t = unknown> extends BaseType<t, typeof ProtoNode> {
 			r.domain === "object"
 				? l
 				: Disjoint.from("domain", l.scope.builtin.object, r)
-	})
+	}
 
 	readonly basisName = `${this.proto.name}`
 	readonly domain = "object"

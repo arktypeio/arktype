@@ -17,9 +17,12 @@ import type {
 } from "../shared/declare.js"
 import type {
 	BoundKind,
+	NodeParserImplementation,
 	PrimitiveConstraintAttachments
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
+import type { Declaration } from "../shared/nodes.js"
 import { RefinementNode } from "./shared.js"
 
 export type BoundInner = {
@@ -92,35 +95,47 @@ export type BoundSubclass = extend<
 	}
 >
 
+const createLowerIntersections = <kind extends LowerBoundKind>(kind: kind) =>
+	({
+		// symmetric lower bound intersection
+		[kind]: (l: LowerNode, r: LowerNode): LowerNode =>
+			l.limit > r.limit || (l.limit === r.limit && l.exclusive) ? l : r,
+		// asymmetric bound intersections are handled by the lower bound
+		[boundKindPairsByLower[kind]]: (
+			l: LowerNode,
+			r: UpperNode
+		): Disjoint | null =>
+			l.limit > r.limit || (l.limit === r.limit && (l.exclusive || r.exclusive))
+				? Disjoint.from("bound", l, r)
+				: null
+	}) as {} as NodeIntersections<Declaration<kind>>
+
+const createUpperIntersections = <kind extends UpperBoundKind>(kind: kind) =>
+	({
+		// symmetric upper bound intersection
+		[kind]: (l: UpperNode, r: UpperNode): Node<UpperBoundKind> =>
+			l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
+	}) as {} as NodeIntersections<Declaration<kind>>
+
 export abstract class BaseBound<
 	subclass extends BoundSubclass
 > extends RefinementNode<subclass> {
-	protected static self = this as {} as BoundSubclass
-
-	static intersections = isKeyOf(this.self.kind, boundKindPairsByLower)
-		? this.defineIntersections(
-				// can't check intersections against a concrete case since the intersection
-				// pairings are dynamic keys, so just type the functions internally and cast
-				{
-					// symmetric lower bound intersection
-					[this.self.kind]: (l: LowerNode, r: LowerNode): LowerNode =>
-						l.limit > r.limit || (l.limit === r.limit && l.exclusive) ? l : r,
-					// asymmetric bound intersections are handled by the lower bound
-					[boundKindPairsByLower[this.self.kind]]: (
-						l: LowerNode,
-						r: UpperNode
-					): Disjoint | null =>
-						l.limit > r.limit ||
-						(l.limit === r.limit && (l.exclusive || r.exclusive))
-							? Disjoint.from("bound", l, r)
-							: null
-				}
-		  )
-		: this.defineIntersections({
-				// symmetric upper bound intersection
-				[this.self.kind]: (l: UpperNode, r: UpperNode): Node<UpperBoundKind> =>
-					l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
-		  })
+	static parser: NodeParserImplementation<Declaration<BoundKind>> = {
+		collapseKey: "limit",
+		keys: {
+			limit: {
+				parse: normalizeLimit
+			},
+			exclusive: {
+				// omit key with value false since it is the default
+				parse: (flag: boolean) => flag || undefined
+			}
+		},
+		normalize: (schema: BoundSchema) =>
+			(typeof schema === "object"
+				? { ...schema, limit: schema.limit }
+				: { limit: schema }) as NormalizedBoundSchema
+	} as const
 
 	size = compileSizeOf(this.kind)
 	comparator = compileComparator(
@@ -133,29 +148,6 @@ export abstract class BaseBound<
 	negatedCondition = `${this.size} ${negatedComparators[this.comparator]} ${
 		this.limit
 	}`
-
-	static createBoundParserImplementation<
-		self,
-		d extends BaseNodeDeclaration = declarationOf<self>
-	>(this: self, kind: d["kind"]) {
-		return {
-			kind,
-			collapseKey: "limit",
-			keys: {
-				limit: {
-					parse: normalizeLimit
-				},
-				exclusive: {
-					// omit key with value false since it is the default
-					parse: (flag: boolean) => flag || undefined
-				}
-			},
-			normalize: (schema: BoundSchema) =>
-				(typeof schema === "object"
-					? { ...schema, limit: schema.limit }
-					: { limit: schema }) as d["normalizedSchema"]
-		} as const
-	}
 
 	compileBody(ctx: CompilationContext) {
 		return compilePrimitive(this as never, ctx)
@@ -188,9 +180,8 @@ export type MinDeclaration = declareNode<{
 export class MinNode extends BaseBound<typeof MinNode> {
 	static readonly kind = "min"
 	static declaration: MinDeclaration
-	static parser = this.composeParser(
-		this.createBoundParserImplementation("min")
-	)
+
+	static intersections = createLowerIntersections("min")
 
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.limit
@@ -220,9 +211,8 @@ export type MaxDeclaration = declareNode<{
 export class MaxNode extends BaseBound<typeof MaxNode> {
 	static readonly kind = "max"
 	static declaration: MaxDeclaration
-	static parser = this.composeParser(
-		this.createBoundParserImplementation("max")
-	)
+
+	static intersections = createUpperIntersections("max")
 
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.limit
@@ -252,9 +242,8 @@ export type MinLengthDeclaration = declareNode<{
 export class MinLengthNode extends BaseBound<typeof MinLengthNode> {
 	static readonly kind = "minLength"
 	static declaration: MinLengthDeclaration
-	static parser = this.composeParser(
-		this.createBoundParserImplementation("minLength")
-	)
+
+	static intersections = createLowerIntersections("minLength")
 
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length > this.limit
@@ -289,9 +278,9 @@ export type MaxLengthDeclaration = declareNode<{
 export class MaxLengthNode extends BaseBound<typeof MaxLengthNode> {
 	static readonly kind = "maxLength"
 	static declaration: MaxLengthDeclaration
-	static parser = this.composeParser(
-		this.createBoundParserImplementation("maxLength")
-	)
+
+	static intersections = createUpperIntersections("maxLength")
+
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length < this.limit
 		: (data: string | readonly unknown[]) => data.length <= this.limit
@@ -321,9 +310,8 @@ export type AfterDeclaration = declareNode<{
 export class AfterNode extends BaseBound<typeof AfterNode> {
 	static readonly kind = "after"
 	static declaration: AfterDeclaration
-	static parser = this.composeParser(
-		this.createBoundParserImplementation("after")
-	)
+
+	static intersections = createLowerIntersections("after")
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.limit
@@ -353,9 +341,8 @@ export type BeforeDeclaration = declareNode<{
 export class BeforeNode extends BaseBound<typeof BeforeNode> {
 	static readonly kind = "before"
 	static declaration: BeforeDeclaration
-	static parser = this.composeParser(
-		this.createBoundParserImplementation("before")
-	)
+
+	static intersections = createUpperIntersections("before")
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.limit

@@ -7,8 +7,9 @@ import {
 	type Problems
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { basisKinds } from "../shared/define.js"
+import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import type { Schema } from "../shared/nodes.js"
 import { BaseType } from "../type.js"
 import type { Discriminant } from "./discriminate.js"
@@ -62,7 +63,7 @@ const intersectBranch = (
 export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
 	static readonly kind = "union"
 	static declaration: UnionDeclaration
-	static parser = this.composeParser({
+	static parser: NodeParserImplementation<UnionDeclaration> = {
 		collapseKey: "branches",
 		keys: {
 			ordered: {},
@@ -99,33 +100,9 @@ export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
 				branches: reducedBranches
 			})
 		}
-	})
-
-	discriminant: Discriminant | null = null //discriminate(inner.branches)
-
-	traverseAllows = (data: unknown, problems: Problems) =>
-		this.branches.some((b) => b.traverseAllows(data, problems))
-
-	traverseApply = (data: unknown, problems: Problems) =>
-		this.branches.forEach((b) => b.traverseApply(data, problems))
-
-	writeDefaultDescription() {
-		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
 	}
 
-	compileBody(ctx: CompilationContext) {
-		const branchInvocations = this.branches.map(
-			(branch) =>
-				`this.${branch.id}(${In}${
-					ctx.compilationKind === "allows" ? "" : ", problems"
-				})`
-		)
-		return ctx.compilationKind === "allows"
-			? `return ${branchInvocations.join(" || ")}`
-			: branchInvocations.join("\n")
-	}
-
-	static intersections = this.defineIntersections({
+	static intersections: NodeIntersections<UnionDeclaration> = {
 		union: (l, r) => {
 			if (
 				(l.branches.length === 0 || r.branches.length === 0) &&
@@ -179,7 +156,31 @@ export class UnionNode<t = unknown> extends BaseType<t, typeof UnionNode> {
 				    }
 				  : { branches }
 		}
-	})
+	}
+
+	discriminant: Discriminant | null = null //discriminate(inner.branches)
+
+	traverseAllows = (data: unknown, problems: Problems) =>
+		this.branches.some((b) => b.traverseAllows(data, problems))
+
+	traverseApply = (data: unknown, problems: Problems) =>
+		this.branches.forEach((b) => b.traverseApply(data, problems))
+
+	writeDefaultDescription() {
+		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
+	}
+
+	compileBody(ctx: CompilationContext) {
+		const branchInvocations = this.branches.map(
+			(branch) =>
+				`this.${branch.id}(${In}${
+					ctx.compilationKind === "allows" ? "" : ", problems"
+				})`
+		)
+		return ctx.compilationKind === "allows"
+			? `return ${branchInvocations.join(" || ")}`
+			: branchInvocations.join("\n")
+	}
 }
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {

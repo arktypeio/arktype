@@ -5,7 +5,11 @@ import {
 	type CompilationContext
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { PrimitiveConstraintAttachments } from "../shared/define.js"
+import type {
+	NodeParserImplementation,
+	PrimitiveConstraintAttachments
+} from "../shared/define.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementNode } from "./shared.js"
 
 export type PatternInner = {
@@ -35,7 +39,8 @@ export type PatternDeclaration = declareNode<{
 export class PatternNode extends RefinementNode<typeof PatternNode> {
 	static readonly kind = "pattern"
 	static declaration: PatternDeclaration
-	static parser = this.composeParser({
+
+	static parser: NodeParserImplementation<PatternDeclaration> = {
 		collapseKey: "source",
 		keys: {
 			source: {},
@@ -49,11 +54,12 @@ export class PatternNode extends RefinementNode<typeof PatternNode> {
 						? { source: schema.source, flags: schema.flags }
 						: { source: schema.source }
 				  : schema
-	})
-	static intersections = this.defineIntersections({
+	}
+
+	static intersections: NodeIntersections<PatternDeclaration> = {
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
-	})
+	}
 
 	regex = new RegExp(this.source, this.flags)
 

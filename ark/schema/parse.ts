@@ -54,6 +54,10 @@ export type BaseParser = (
 	ctx: SchemaParseContext
 ) => BaseAttachments
 
+export const defineParser = <d extends BaseNodeDeclaration>(
+	impl: NodeParserImplementation<d>
+) => impl
+
 export const composeParser = <d extends BaseNodeDeclaration>(
 	kind: d["kind"],
 	impl: NodeParserImplementation<d>

@@ -6,6 +6,8 @@ import {
 	type Problems
 } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { NodeParserImplementation } from "../shared/define.js"
+import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementNode } from "./shared.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
@@ -33,21 +35,23 @@ export type PredicateDeclaration = declareNode<{
 export class PredicateNode extends RefinementNode<typeof PredicateNode> {
 	static readonly kind = "predicate"
 	static declaration: PredicateDeclaration
-	static parser = this.composeParser({
+
+	static parser: NodeParserImplementation<PredicateDeclaration> = {
 		collapseKey: "predicate",
 		keys: {
 			predicate: {}
 		},
 		normalize: (schema) =>
 			typeof schema === "function" ? { predicate: schema } : schema
-	})
-	static intersections = this.defineIntersections({
+	}
+
+	static intersections: NodeIntersections<PredicateDeclaration> = {
 		// TODO: allow changed order to be the same type
 		// as long as the narrows in l and r are individually safe to check
 		// in the order they're specified, checking them in the order
 		// resulting from this intersection should also be safe.
 		predicate: () => null
-	})
+	}
 
 	traverseAllows = this.predicate
 	traverseApply = this.createPrimitiveTraversal()
