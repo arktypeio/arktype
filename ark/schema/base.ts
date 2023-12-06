@@ -116,8 +116,7 @@ export abstract class BaseNode<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends DynamicBase<attachmentsOf<d>> {
 	readonly cls: UnknownNodeSubclass = this.constructor as never
-	readonly kind: d["kind"] = this.cls.kind;
-	abstract readonly [arkKind]: ArkKind
+	readonly kind: d["kind"] = this.cls.kind
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
@@ -146,6 +145,7 @@ export abstract class BaseNode<
 		this.description ??= this.writeDefaultDescription()
 	}
 
+	abstract readonly [arkKind]: ArkKind
 	abstract writeDefaultDescription(): string
 	abstract traverseAllows: TraverseAllows<d["checks"]>
 	abstract traverseApply: TraverseApply<d["checks"]>
@@ -322,5 +322,4 @@ export type Node<kind extends NodeKind = NodeKind, t = any> = {
 	optional: OptionalNode
 }[kind]
 
-// TODO: possible to default these to unknown?
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>

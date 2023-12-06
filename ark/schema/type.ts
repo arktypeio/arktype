@@ -3,23 +3,14 @@ import {
 	BaseNode,
 	type BaseAttachments,
 	type Node,
-	type NodeSubclass,
-	type TypeNode,
-	type UnknownNodeSubclass
+	type TypeNode
 } from "./base.js"
-import type {
-	IntersectionDeclaration,
-	IntersectionNode
-} from "./sets/intersection.js"
+import type { IntersectionNode } from "./sets/intersection.js"
 import type { extractIn, extractOut } from "./sets/morph.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
 import { Problems, type CheckResult } from "./shared/compilation.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
-import type {
-	NodeParserImplementation,
-	RefinementKind,
-	TypeKind
-} from "./shared/define.js"
+import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema, ioKindOf } from "./shared/nodes.js"

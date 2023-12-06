@@ -1,6 +1,5 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
-import { composeParser } from "../parse.js"
 import {
 	In,
 	type CompilationContext,

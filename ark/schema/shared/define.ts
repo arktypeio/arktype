@@ -13,7 +13,6 @@ import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
 import { compileSerializedValue } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
-import type { reducibleKindOf } from "./nodes.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -138,6 +137,7 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	reduce?: (inner: d["inner"], scope: ScopeNode) => Node | undefined
 }
 
-// writeDefaultDescription: (node: Node<d["kind"]>) => string
-// compile: (node: Node<d["kind"]>, ctx: CompilationContext) => string
-// intersections: reifyIntersections<d["kind"], d["intersections"]>
+export type UnknownNodeImplementation = optionalizeKeys<
+	NodeParserImplementation<BaseNodeDeclaration>,
+	"reduce"
+>
