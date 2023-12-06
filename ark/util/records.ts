@@ -1,7 +1,5 @@
 import type { Fn } from "./functions.js"
 import type { defined, evaluate } from "./generics.js"
-import { isArray } from "./objectKinds.js"
-import type { intersectUnion } from "./unionToTuple.js"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v

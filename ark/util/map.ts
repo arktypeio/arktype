@@ -1,4 +1,3 @@
-import type { returnOf } from "./functions.js"
 import type { evaluate } from "./generics.js"
 import type { listable } from "./lists.js"
 import type { Entry, entryOf, fromEntries } from "./records.js"

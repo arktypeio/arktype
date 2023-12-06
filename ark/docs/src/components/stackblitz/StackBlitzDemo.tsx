@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react"
-import type { DemoProps 
-
-
-,
+import {
+	DEMO_ELEMENT_ID,
 	createStackblitzDemo,
-	DEMO_ELEMENT_ID
+	type DemoProps
 } from "./stackblitzGenerators/createStackblitzDemo.js"
 
 export const StackBlitzDemo = (demoProps: DemoProps) => {

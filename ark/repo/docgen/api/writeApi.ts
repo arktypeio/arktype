@@ -10,7 +10,6 @@ import type {
 	ExportData,
 	PackageExtractionData
 } from "./extractApi.js"
-import { generateKeywordMasterList, operatorsTable } from "./postProcess.js"
 import {
 	formatTagData,
 	packTsDocTags,
@@ -51,17 +50,11 @@ const writeEntryPoint = (
 		// avoid a docusaurus build failure
 		appendFileSync(mdFilePath, generateMarkdownForExport(exported, data))
 	}
-	postProcessMarkdownSpawners(entryPointOutDir)
 }
 
 export type ScopeData = { [k: string]: string }
 const scopeData: ScopeData[] = []
 const operatingTable: string[] = []
-
-const postProcessMarkdownSpawners = (entryPointOutDir: string) => {
-	generateKeywordMasterList(join(entryPointOutDir, "keywords.md"), scopeData)
-	operatorsTable(join(entryPointOutDir, "operators.md"), operatingTable)
-}
 
 const generateMarkdownForExport = (
 	exported: ExportData,

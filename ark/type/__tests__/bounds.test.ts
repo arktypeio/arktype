@@ -1,5 +1,4 @@
 import { attest } from "@arktype/attest"
-import type { BoundInner } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
@@ -15,11 +14,11 @@ import {
 	writeUnboundableMessage
 } from "../parser/string/shift/operator/bounds.js"
 
-export const expectedBoundsCondition = (...bounds: BoundInner[]) => ""
-// node("number", ...bounds).json
+// export const expectedBoundsCondition = (...bounds: BoundInner[]) => ""
+// // node("number", ...bounds).json
 
-export const expectedDateBoundsCondition = (...bounds: BoundInner[]) => ""
-// node(Date, ...bounds).json
+// export const expectedDateBoundsCondition = (...bounds: BoundInner[]) => ""
+// // node(Date, ...bounds).json
 
 describe("bounds", () => {
 	describe("parse", () => {

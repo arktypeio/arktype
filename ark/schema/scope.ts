@@ -53,7 +53,7 @@ export class ScopeNode<r extends object = any> {
 
 	constructor(
 		public def: Dict<string, unknown>,
-		opts: ScopeOptions = {}
+		public opts: ScopeOptions = {}
 	) {
 		for (const k in this.def) {
 			;(this.resolutions as BaseResolutions)[k] = this.parseNode(

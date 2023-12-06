@@ -1,6 +1,6 @@
 import { readFile, tsFileMatcher } from "@arktype/fs"
 import type { Project } from "ts-morph"
-import { defaultConfig, type DocGenSnippetsConfig } from "../docgen.js"
+import type { DocGenSnippetsConfig } from "../docgen.js"
 import {
 	extractionTokens,
 	includesTokenFrom,
@@ -27,7 +27,7 @@ export type ExtractSnippetsArgs = {
 export const extractSnippets = (
 	sourcePaths: string[],
 	project: Project,
-	config: DocGenSnippetsConfig = defaultConfig.snippets
+	config: DocGenSnippetsConfig
 ): SnippetsByPath => {
 	const snippetsByPath: SnippetsByPath = {}
 	for (const path of sourcePaths) {

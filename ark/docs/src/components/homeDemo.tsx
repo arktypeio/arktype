@@ -1,6 +1,3 @@
-import { motion } from "framer-motion"
-import React, { useState } from "react"
-
 export const HomeDemo = () => {
 	// const { pathname } = useLocation()
 	// const palette = useTheme().palette

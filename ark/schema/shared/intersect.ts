@@ -1,5 +1,5 @@
 import { throwInternalError } from "@arktype/util"
-import type { BaseNode, Node } from "../base.js"
+import type { Node } from "../base.js"
 import type { BaseNodeDeclaration } from "./declare.js"
 import {
 	nodeKinds,

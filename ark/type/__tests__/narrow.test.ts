@@ -38,8 +38,10 @@ describe("narrow", () => {
 				if (a === b) {
 					return true
 				}
-				// problems.mustBe("equal to b", a, ["a"])
-				// problems.mustBe("equal to a", b, ["b"])
+				//  a, ["a"]
+				problems.add("equal to b")
+				//  b, ["b"]
+				problems.add("equal to a")
 				return false
 			}
 		])

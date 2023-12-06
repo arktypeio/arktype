@@ -14,9 +14,9 @@ describe("key traversal", () => {
 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
 			keys: "strict"
 		})
-		// attest(o({ a: 2 }).problems?.summary).snap(
-		//     'a must be a string or removed (was {"a":2})'
-		// )
+		attest(o({ a: 2 }).problems?.summary).snap(
+			'a must be a string or removed (was {"a":2})'
+		)
 	})
 	it("distilled type", () => {
 		const t = type({

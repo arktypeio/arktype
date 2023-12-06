@@ -448,7 +448,7 @@ const prefixParsers: {
 	[token in IndexZeroOperator]: PrefixParser<token>
 } = {
 	keyof: parseKeyOfTuple,
-	instanceof: (def, ctx) => {
+	instanceof: (def) => {
 		if (typeof def[1] !== "function") {
 			return throwParseError(
 				writeInvalidConstructorMessage(objectKindOrDomainOf(def[1]))

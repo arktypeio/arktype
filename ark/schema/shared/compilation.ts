@@ -113,7 +113,7 @@ export const compilePrimitive = (
 	return ctx.compilationKind === "allows"
 		? `return ${node.condition}`
 		: `if (${node.negatedCondition}) {
-	${compilePrimitiveProblem(node, ctx)}
+	${compilePrimitiveProblem(node)}
 }`
 }
 
@@ -202,10 +202,7 @@ export type CheckResult<t = unknown> = propwiseXor<
 
 export type Problems = arraySubclassToReadonly<ProblemsArray>
 
-const compilePrimitiveProblem = (
-	node: Node<PrimitiveKind>,
-	ctx: CompilationContext
-) => {
+const compilePrimitiveProblem = (node: Node<PrimitiveKind>) => {
 	return `problems.add(${JSON.stringify(node.description)})`
 }
 

@@ -1,4 +1,4 @@
-import { Card, CardGrid, TabItem, Tabs } from "@astrojs/starlight/components"
+import { Card, TabItem, Tabs } from "@astrojs/starlight/components"
 import { motion, useAnimation, useScroll } from "framer-motion"
 import React from "react"
 

@@ -57,10 +57,7 @@ export const defaultConfig = createConfig({
 	},
 	mappedDirs: [
 		{
-			sources: [
-				join(repoDirs.docs, "examples"),
-				join(innerDocsDir, "demos", "layout")
-			],
+			sources: [examplesDir, join(innerDocsDir, "demos", "layout")],
 			targets: [join(innerDocsDir, "demos", "generated")],
 			transformOutputPaths: (path) => {
 				let outputFileName = basename(path)
@@ -125,7 +122,11 @@ const getSnippetsAndUpdateReferences = (project: Project) => {
 		)
 		return !oldDocMatcher && !sourceCodeMatchers
 	})
-	const snippets = extractSnippets(sourceControlPaths, project)
+	const snippets = extractSnippets(
+		sourceControlPaths,
+		project,
+		defaultConfig.snippets
+	)
 	updateSnippetReferences(snippets)
 	process.stdout.write("✅\n")
 	return snippets
