@@ -37,12 +37,13 @@ import {
 	type GenericDeclaration,
 	type GenericParamsParseError
 } from "./parser/generic.js"
+import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
-import { parseString } from "./parser/string/string.js"
+import { fullStringParse } from "./parser/string/string.js"
 import {
 	Type,
 	createTypeParser,
@@ -338,16 +339,25 @@ export class Scope<r extends Resolutions = any> {
 			if (ctx.args !== undefined) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
-				return parseString(def, ctx)
+				return this.parseString(def, ctx)
 			}
 			if (!this.parseCache[def]) {
-				this.parseCache[def] = parseString(def, ctx)
+				this.parseCache[def] = this.parseString(def, ctx)
 			}
 			return this.parseCache[def]
 		}
 		return hasDomain(def, "object")
 			? parseObject(def, ctx)
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
+	}
+
+	parseString(def: string, ctx: ParseContext): TypeNode {
+		return (
+			this.maybeResolveNode(def) ??
+			((def.endsWith("[]") &&
+				this.maybeResolveNode(def.slice(0, -2))?.array()) ||
+				fullStringParse(new DynamicState(def, ctx)))
+		)
 	}
 
 	maybeResolve(name: string): TypeNode | Generic | undefined {

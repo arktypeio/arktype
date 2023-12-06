@@ -6,12 +6,9 @@ import type {
 } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { inferDefinition } from "../definition.js"
+import type { Comparator, LimitLiteral } from "../string/reduce/shared.js"
 import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
-import type {
-	Comparator,
-	LimitLiteral
-} from "../string/shift/operator/bounds.js"
 import type { inferIntersection } from "./intersections.js"
 
 export type inferAst<ast, $, args> = ast extends List

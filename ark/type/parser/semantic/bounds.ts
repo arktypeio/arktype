@@ -1,10 +1,12 @@
 import type { NumericallyBoundable } from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
 import type {
-	BoundExpressionKind,
 	Comparator,
 	InvertedComparators,
-	LimitLiteral,
+	LimitLiteral
+} from "../string/reduce/shared.js"
+import type {
+	BoundExpressionKind,
 	writeInvalidLimitMessage,
 	writeUnboundableMessage
 } from "../string/shift/operator/bounds.js"

@@ -6,19 +6,20 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
+import { parseOperand } from "../shift/operand/operand.js"
+import { parseOperator } from "../shift/operator/operator.js"
+import { Scanner } from "../shift/scanner.js"
+import { parseUntilFinalizer } from "../string.js"
 import {
 	invertedComparators,
 	minComparators,
-	type Comparator,
-	type LimitLiteral
-} from "../shift/operator/bounds.js"
-import { Scanner } from "../shift/scanner.js"
-import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage,
+	type Comparator,
+	type LimitLiteral,
 	type OpenLeftBound,
 	type StringifiablePrefixOperator
 } from "./shared.js"
@@ -146,6 +147,20 @@ export class DynamicState {
 			delete this.branches["&"]
 		}
 		this.root = undefined
+	}
+
+	parseUntilFinalizer() {
+		return parseUntilFinalizer(
+			new DynamicState(this.scanner.unscanned, this.ctx)
+		)
+	}
+
+	parseOperator(this: DynamicStateWithRoot) {
+		return parseOperator(this)
+	}
+
+	parseOperand() {
+		return parseOperand(this)
 	}
 
 	private assertRangeUnset() {

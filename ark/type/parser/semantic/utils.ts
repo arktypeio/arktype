@@ -1,5 +1,5 @@
 import type { List, Stringifiable } from "@arktype/util"
-import type { Comparator } from "../string/shift/operator/bounds.js"
+import type { Comparator } from "../string/reduce/shared.js"
 import type { InfixExpression, PostfixExpression } from "./semantic.js"
 
 export type astToString<ast> = `'${astToStringRecurse<ast>}'`

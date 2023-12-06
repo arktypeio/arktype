@@ -1,12 +1,40 @@
-import {
-	invertedComparators,
-	type Comparator,
-	type InvertedComparators,
-	type LimitLiteral,
-	type MinComparator
-} from "../shift/operator/bounds.js"
+import type { DateLiteral } from "../shift/operand/date.js"
 
 export type StringifiablePrefixOperator = "keyof"
+
+export const minComparators = {
+	">": true,
+	">=": true
+} as const
+
+export type MinComparator = keyof typeof minComparators
+
+export const maxComparators = {
+	"<": true,
+	"<=": true
+} as const
+
+export type MaxComparator = keyof typeof maxComparators
+
+export const comparators = {
+	...minComparators,
+	...maxComparators,
+	"==": true
+}
+
+export type Comparator = keyof typeof comparators
+
+export const invertedComparators = {
+	"<": ">",
+	">": "<",
+	"<=": ">=",
+	">=": "<=",
+	"==": "=="
+} as const satisfies Record<Comparator, Comparator>
+
+export type InvertedComparators = typeof invertedComparators
+
+export type LimitLiteral = number | DateLiteral
 
 export type OpenLeftBound = { limit: LimitLiteral; comparator: MinComparator }
 

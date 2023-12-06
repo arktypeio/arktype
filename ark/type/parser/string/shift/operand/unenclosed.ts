@@ -12,16 +12,16 @@ import {
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
-import {
-	parseGenericArgs,
-	writeInvalidGenericArgsMessage,
-	type ParsedArgs
-} from "../../../generic.js"
 import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
+import {
+	parseGenericArgs,
+	writeInvalidGenericArgsMessage,
+	type ParsedArgs
+} from "./genericArgs.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
 	const token = s.scanner.shiftUntilNextTerminator()
@@ -68,12 +68,7 @@ export const parseGenericInstantiation = (
 	if (lookahead !== "<") {
 		return s.error(writeInvalidGenericArgsMessage(name, g.parameters, []))
 	}
-	const parsedArgs = parseGenericArgs(
-		name,
-		g.parameters,
-		s.scanner.unscanned,
-		s.ctx
-	)
+	const parsedArgs = parseGenericArgs(name, g.parameters, s)
 	const remainingChars = parsedArgs.unscanned.length
 	// set the scanner position to where the args scanner left off
 	s.scanner.jumpToIndex(

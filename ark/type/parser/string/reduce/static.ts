@@ -1,13 +1,11 @@
 import type { Completion, defined, ErrorMessage } from "@arktype/util"
+import type { Scanner } from "../shift/scanner.js"
 import type {
 	Comparator,
 	InvertedComparators,
 	LimitLiteral,
 	MaxComparator,
-	MinComparator
-} from "../shift/operator/bounds.js"
-import type { Scanner } from "../shift/scanner.js"
-import type {
+	MinComparator,
 	OpenLeftBound,
 	StringifiablePrefixOperator,
 	writeMultipleLeftBoundsMessage,

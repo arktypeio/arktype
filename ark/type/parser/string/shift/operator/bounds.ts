@@ -17,16 +17,16 @@ import type {
 	DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
 import {
+	maxComparators,
 	writeUnpairableComparatorMessage,
+	type Comparator,
+	type LimitLiteral,
+	type MaxComparator,
 	type OpenLeftBound
 } from "../../reduce/shared.js"
 import type { StaticState, state } from "../../reduce/static.js"
-import {
-	extractDateLiteralSource,
-	isDateLiteral,
-	type DateLiteral
-} from "../operand/date.js"
-import { parseOperand } from "../operand/operand.js"
+import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
+import type { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseBound = (
@@ -66,30 +66,6 @@ export type parseBound<
 			: parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
 		: shiftResultOrError
 	: never
-
-export const minComparators = {
-	">": true,
-	">=": true
-} as const
-
-export type MinComparator = keyof typeof minComparators
-
-export const maxComparators = {
-	"<": true,
-	"<=": true
-} as const
-
-export type MaxComparator = keyof typeof maxComparators
-
-export const comparators = {
-	...minComparators,
-	...maxComparators,
-	"==": true
-}
-
-export type Comparator = keyof typeof comparators
-
-export type LimitLiteral = number | DateLiteral
 
 const oneCharComparators = {
 	"<": true,
@@ -198,7 +174,7 @@ export const parseRightBound = (
 	// store the node that will be bounded
 	const previousRoot = s.unsetRoot()
 	const previousScannerIndex = s.scanner.location
-	parseOperand(s)
+	s.parseOperand()
 	// after parsing the next operand, use the locations to get the
 	// token from which it was parsed
 	const limitToken = s.scanner.sliceChars(
@@ -286,13 +262,3 @@ export type writeInvalidLimitMessage<
 	: "followed"} by a corresponding literal (was '${limit}')`
 
 export type BoundExpressionKind = "left" | "right"
-
-export const invertedComparators = {
-	"<": ">",
-	">": "<",
-	"<=": ">=",
-	">=": "<=",
-	"==": "=="
-} as const satisfies Record<Comparator, Comparator>
-
-export type InvertedComparators = typeof invertedComparators

@@ -1,25 +1,17 @@
-import type { TypeNode } from "@arktype/schema"
 import {
 	throwInternalError,
 	throwParseError,
 	type ErrorMessage
 } from "@arktype/util"
-import type { ParseContext } from "../../scope.js"
 import type { inferAst } from "../semantic/semantic.js"
-import { DynamicState, type DynamicStateWithRoot } from "./reduce/dynamic.js"
+import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
 import type { StaticState, state } from "./reduce/static.js"
-import { parseOperand } from "./shift/operand/operand.js"
+import type { parseOperand } from "./shift/operand/operand.js"
 import {
-	parseOperator,
-	writeUnexpectedCharacterMessage
+	writeUnexpectedCharacterMessage,
+	type parseOperator
 } from "./shift/operator/operator.js"
-
-export const parseString = (def: string, ctx: ParseContext): TypeNode =>
-	ctx.scope.maybeResolveNode(def) ??
-	((def.endsWith("[]") &&
-		ctx.scope.maybeResolveNode(def.slice(0, -2))?.array()) ||
-		fullStringParse(def, ctx))
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -32,8 +24,8 @@ export type parseString<def extends string, $, args> = def extends keyof $
 	: def extends `${infer child}[]`
 	  ? child extends keyof $
 			? [child, "[]"]
-			: fullStringParse<def, $, args>
-	  : fullStringParse<def, $, args>
+			: fullStringParse<state.initialize<def>, $, args>
+	  : fullStringParse<state.initialize<def>, $, args>
 
 export type inferString<def extends string, $, args> = inferAst<
 	parseString<def, $, args>,
@@ -47,13 +39,12 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (def: string, ctx: ParseContext) => {
-	const s = new DynamicState(def, ctx)
-	parseOperand(s)
+export const fullStringParse = (s: DynamicState) => {
+	s.parseOperand()
 	const result = parseUntilFinalizer(s).root
 	if (!result) {
 		return throwInternalError(
-			`Root was unexpectedly unset after parsing string '${def}'`
+			`Root was unexpectedly unset after parsing string '${s.scanner.scanned}'`
 		)
 	}
 	s.scanner.shiftUntilNonWhitespace()
@@ -64,8 +55,8 @@ export const fullStringParse = (def: string, ctx: ParseContext) => {
 	return result
 }
 
-type fullStringParse<def extends string, $, args> = extractFinalizedResult<
-	parseUntilFinalizer<state.initialize<def>, $, args>
+type fullStringParse<s extends StaticState, $, args> = extractFinalizedResult<
+	parseUntilFinalizer<s, $, args>
 >
 
 export const parseUntilFinalizer = (s: DynamicState) => {
@@ -84,7 +75,7 @@ export type parseUntilFinalizer<
 	: s
 
 const next = (s: DynamicState) =>
-	s.hasRoot() ? parseOperator(s) : parseOperand(s)
+	s.hasRoot() ? s.parseOperator() : s.parseOperand()
 
 type next<s extends StaticState, $, args> = s["root"] extends undefined
 	? parseOperand<s, $, args>
