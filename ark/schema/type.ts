@@ -3,37 +3,75 @@ import {
 	type BaseAttachments,
 	type Node,
 	type NodeSubclass,
-	type TypeNode
+	type TypeNode,
+	type UnknownNodeSubclass
 } from "./base.js"
 import type {
 	IntersectionDeclaration,
 	IntersectionNode
 } from "./sets/intersection.js"
+import type { extractIn, extractOut } from "./sets/morph.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
+import { Problems, type CheckResult } from "./shared/compilation.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
-import type { RefinementKind, TypeKind } from "./shared/define.js"
+import type {
+	NodeParserImplementation,
+	RefinementKind,
+	TypeKind
+} from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
-import type { Schema } from "./shared/nodes.js"
+import type { Schema, ioKindOf } from "./shared/nodes.js"
+import { arkKind, inferred } from "./shared/symbols.js"
 
-export interface TypeSubclass<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends NodeSubclass<d> {
+export interface TypeSubclass<d extends BaseNodeDeclaration>
+	extends NodeSubclass<d> {
+	readonly kind: TypeKind
+}
+
+export interface UnknownTypeSubclass extends UnknownNodeSubclass {
 	readonly kind: TypeKind
 }
 
 export abstract class BaseType<
 	t = unknown,
-	subclass extends TypeSubclass<subclass["declaration"]> = TypeSubclass
-> extends BaseNode<t, subclass> {
+	subclass extends TypeSubclass<subclass["declaration"]> = UnknownTypeSubclass
+> extends BaseNode<subclass> {
+	declare infer: extractOut<t>;
+	declare [inferred]: t
+
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
-	declare readonly branches: readonly Node<BranchKind>[]
+	declare readonly branches: readonly Node<BranchKind>[];
+
+	readonly [arkKind] = "typeNode"
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)
 		// in a union, branches will have already been assigned from inner
 		// otherwise, initialize it to a singleton array containing the current branch node
 		this.branches ??= [this as never]
+	}
+
+	override get in(): Node<ioKindOf<subclass["kind"]>, extractIn<t>> {
+		return super.in
+	}
+
+	override get out(): Node<ioKindOf<subclass["kind"]>, extractOut<t>> {
+		return super.out
+	}
+
+	allows = (data: unknown): data is t => {
+		const problems = new Problems()
+		return this.traverseAllows(data as never, problems)
+	}
+
+	apply(data: unknown): CheckResult<t> {
+		const problems = new Problems()
+		this.traverseApply(data as never, problems)
+		if (problems.length === 0) {
+			return { data } as any
+		}
+		return { problems }
 	}
 
 	constrain<refinementKind extends RefinementKind>(

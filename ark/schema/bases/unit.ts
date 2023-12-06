@@ -1,6 +1,7 @@
 import { domainOf, printable } from "@arktype/util"
 import {
 	In,
+	Problems,
 	compilePrimitive,
 	compileSerializedValue,
 	type CompilationContext
@@ -43,7 +44,9 @@ export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
 	static intersections: NodeIntersections<UnitDeclaration> = {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
-			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+			r.traverseAllows(l.unit, new Problems())
+				? l
+				: Disjoint.from("assignability", l.unit, r)
 	}
 
 	serializedValue = compileSerializedValue(this.unit)

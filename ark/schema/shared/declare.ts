@@ -75,14 +75,16 @@ export type declareNode<d extends validateNodeDeclaration<d>> = extend<
 >
 
 export type attachmentsOf<d extends BaseNodeDeclaration> =
-	NarrowedAttachments<d> & d["inner"]
+	BaseNodeDeclaration extends d
+		? BaseAttachments
+		: NarrowedAttachments<d> & d["inner"]
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseAttributes
 	meta: BaseAttributes
-	inner: {}
+	inner: Dict
 	checks: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind

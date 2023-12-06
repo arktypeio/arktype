@@ -135,7 +135,7 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	normalize: (
 		schema: d["schema"]
 	) => normalizeInput<d["normalizedSchema"], d["inner"]>
-	reduce?: (inner: d["inner"], scope: ScopeNode) => BaseNode | undefined
+	reduce?: (inner: d["inner"], scope: ScopeNode) => Node | undefined
 }
 
 // writeDefaultDescription: (node: Node<d["kind"]>) => string

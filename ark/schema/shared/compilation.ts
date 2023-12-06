@@ -40,7 +40,6 @@ export type CompositeKind = SetKind | PropKind
 
 export type PrimitiveKind = Exclude<NodeKind, CompositeKind>
 
-// TODO: allows/apply root needed for refinements?
 export const bindCompiledScope = (
 	nodesToBind: readonly Node[],
 	references: readonly Node[]
@@ -51,7 +50,7 @@ export const bindCompiledScope = (
 		node.traverseAllows = compiledAllowsTraversals[node.id].bind(
 			compiledAllowsTraversals
 		)
-		if (!node.includesContextDependentPredicate) {
+		if (node.isType() && !node.includesContextDependentPredicate) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
 			node.allows = node.traverseAllows as never

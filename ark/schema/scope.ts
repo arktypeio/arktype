@@ -6,7 +6,7 @@ import {
 	type Dict
 } from "@arktype/util"
 import type { KeyCheckKind } from "arktype/internal/type.js"
-import type { Node } from "./base.js"
+import type { Node, TypeNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type { UnitNode } from "./bases/unit.js"
 import type {
@@ -28,9 +28,9 @@ import type { Schema, reducibleKindOf } from "./shared/nodes.js"
 import { isNode } from "./shared/symbols.js"
 import type { BaseType } from "./type.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseType }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 
-export type BaseResolutions = Record<string, BaseType>
+export type BaseResolutions = Record<string, TypeNode>
 
 export interface ArkConfig {
 	preserve(): never

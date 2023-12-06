@@ -10,7 +10,11 @@ import {
 	compilePrimitive,
 	type CompilationContext
 } from "../shared/compilation.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type {
+	BaseNodeDeclaration,
+	declareNode,
+	withAttributes
+} from "../shared/declare.js"
 import type {
 	BoundKind,
 	NodeParserImplementation,
@@ -81,16 +85,6 @@ export type Boundable = NumericallyBoundable | Date
 const normalizeLimit = (limit: LimitSchemaValue): number =>
 	typeof limit === "string" ? new Date(limit).valueOf() : limit
 
-export type BoundSubclass = extend<
-	NodeSubclass,
-	{
-		kind: BoundKind
-		declaration: {
-			inner: BoundInner
-		}
-	}
->
-
 const createLowerIntersections = <kind extends LowerBoundKind>(kind: kind) =>
 	({
 		// symmetric lower bound intersection
@@ -113,10 +107,20 @@ const createUpperIntersections = <kind extends UpperBoundKind>(kind: kind) =>
 			l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
 	}) as {} as NodeIntersections<Declaration<kind>>
 
+export interface BoundSubclass<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> extends NodeSubclass<d> {
+	readonly kind: BoundKind
+
+	readonly declaration: BoundDeclarations[BoundKind]
+}
+
 export abstract class BaseBound<
-	subclass extends BoundSubclass
+	subclass extends BoundSubclass<subclass["declaration"]>
 > extends RefinementNode<subclass> {
-	static parser: NodeParserImplementation<Declaration<BoundKind>> = {
+	static declaration: BoundDeclarations[BoundKind]
+
+	static parser = {
 		collapseKey: "limit",
 		keys: {
 			limit: {
@@ -129,9 +133,10 @@ export abstract class BaseBound<
 		},
 		normalize: (schema: BoundSchema) =>
 			(typeof schema === "object"
-				? { ...schema, limit: schema.limit }
-				: { limit: schema }) as NormalizedBoundSchema
-	} as const
+				? // pretend limit is a number to allow subclasses like min
+				  { ...schema, limit: schema.limit as number }
+				: { limit: schema }) as NormalizedBoundSchema<number>
+	} as const satisfies NodeParserImplementation<Declaration<BoundKind>>
 
 	size = compileSizeOf(this.kind)
 	comparator = compileComparator(

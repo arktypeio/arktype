@@ -8,14 +8,12 @@ import {
 	type Json,
 	type JsonData,
 	type entriesOf,
-	type instanceOf,
 	type listable
 } from "@arktype/util"
 import type { BasisKind } from "./bases/basis.js"
 import type { DomainNode } from "./bases/domain.js"
 import type { ProtoNode } from "./bases/proto.js"
 import type { UnitNode } from "./bases/unit.js"
-import type { BaseParser, SchemaParseContext } from "./parse.js"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -34,11 +32,9 @@ import {
 	unflattenConstraints,
 	type IntersectionNode
 } from "./sets/intersection.js"
-import type { MorphNode, extractIn, extractOut } from "./sets/morph.js"
+import type { MorphNode } from "./sets/morph.js"
 import type { UnionNode } from "./sets/union.js"
 import {
-	Problems,
-	type CheckResult,
 	type CompilationContext,
 	type TraverseAllows,
 	type TraverseApply
@@ -69,12 +65,10 @@ import { Disjoint } from "./shared/disjoint.js"
 import {
 	leftOperandOf,
 	type NodeIntersections,
-	type intersectionOf,
-	type reifyIntersections,
-	type rightOf
+	type intersectionOf
 } from "./shared/intersect.js"
-import type { ioKindOf, reducibleKindOf } from "./shared/nodes.js"
-import { arkKind, inferred } from "./shared/symbols.js"
+import type { ioKindOf } from "./shared/nodes.js"
+import { arkKind, type ArkKind } from "./shared/symbols.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -93,37 +87,36 @@ export interface BaseAttachments {
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends BaseAttachments {
-	inner: BaseNodeDeclaration extends d ? {} : d["inner"]
-	entries: BaseNodeDeclaration extends d
-		? Entry<string>[]
-		: entriesOf<d["inner"]>
-	children: BaseNodeDeclaration extends d ? Node[] : Node<d["childKind"]>[]
+	inner: d["inner"]
+	entries: entriesOf<d["inner"]>
+	children: Node<d["childKind"]>[]
 }
 
-export interface NodeSubclass<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> {
+export interface NodeSubclass<d extends BaseNodeDeclaration> {
+	readonly kind: d["kind"]
+	// allow subclasses to accept narrowed check input
+	readonly declaration: BaseNodeDeclaration
+	readonly parser: NodeParserImplementation<d>
+	readonly intersections: NodeIntersections<d>
+}
+
+export interface UnknownNodeSubclass {
 	readonly kind: NodeKind
 	// allow subclasses to accept narrowed check input
 	readonly declaration: BaseNodeDeclaration
-	readonly parser: BaseNodeDeclaration extends d
-		? NodeParserImplementation<any>
-		: NodeParserImplementation<d>
-	readonly intersections: BaseNodeDeclaration extends d
-		? Record<string, (l: any, r: any) => {} | Disjoint | null>
-		: NodeIntersections<d>
+	readonly parser: NodeParserImplementation<BaseNodeDeclaration>
+	readonly intersections: Record<
+		string,
+		(l: any, r: any) => {} | Disjoint | null
+	>
 }
 
 export abstract class BaseNode<
-	t = unknown,
-	subclass extends NodeSubclass<subclass["declaration"]> = NodeSubclass
+	subclass extends NodeSubclass<subclass["declaration"]> = UnknownNodeSubclass
 > extends DynamicBase<attachmentsOf<subclass["declaration"]>> {
-	declare infer: extractOut<t>;
-	declare [inferred]: t
-
-	readonly cls: subclass = this.constructor as never
-	readonly kind: subclass["kind"] = (this as any).subclass.kind;
-	readonly [arkKind] = this.isType() ? "typeNode" : "refinementNode"
+	protected readonly cls: subclass = this.constructor as never
+	readonly kind: subclass["kind"] = this.cls.kind;
+	abstract readonly [arkKind]: ArkKind
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
@@ -157,30 +150,16 @@ export abstract class BaseNode<
 	abstract traverseApply: TraverseApply<subclass["declaration"]["checks"]>
 	abstract compileBody(ctx: CompilationContext): string
 
-	allows = (data: unknown): data is t => {
-		const problems = new Problems()
-		return this.traverseAllows(data as never, problems)
+	inCache?: BaseNode;
+	get in(): Node<ioKindOf<subclass["kind"]>> {
+		this.inCache ??= this.getIo("in")
+		return this.inCache as never
 	}
 
-	apply(data: unknown): CheckResult<t> {
-		const problems = new Problems()
-		this.traverseApply(data as never, problems)
-		if (problems.length === 0) {
-			return { data } as any
-		}
-		return { problems }
-	}
-
-	inCache?: Node<ioKindOf<subclass["kind"]>, extractIn<t>>;
-	get in() {
-		this.inCache ??= this.getIo("in") as never
-		return this.inCache
-	}
-
-	outCache?: Node<ioKindOf<subclass["kind"]>, extractOut<t>>
-	get out() {
-		this.outCache ??= this.getIo("out") as never
-		return this.outCache
+	outCache?: BaseNode
+	get out(): Node<ioKindOf<subclass["kind"]>> {
+		this.outCache ??= this.getIo("out")
+		return this.outCache as never
 	}
 
 	private getIo(kind: "in" | "out"): BaseNode {
@@ -202,7 +181,7 @@ export abstract class BaseNode<
 				ioInner[k] = v
 			}
 		}
-		return this.scope.parseNode(this.kind, ioInner)
+		return this.scope.parseNode(this.kind, ioInner) as never
 	}
 
 	toJSON() {
