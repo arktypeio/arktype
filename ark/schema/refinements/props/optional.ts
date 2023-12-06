@@ -33,9 +33,8 @@ export type OptionalDeclaration = declareNode<{
 	checks: object
 }>
 
-export class OptionalNode extends RefinementNode<typeof OptionalNode> {
+export class OptionalNode extends RefinementNode<OptionalDeclaration> {
 	static readonly kind = "optional"
-	static declaration: OptionalDeclaration
 
 	static parser: NodeParserImplementation<OptionalDeclaration> = {
 		keys: {

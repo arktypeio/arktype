@@ -1,4 +1,4 @@
-import { hasArkKind, isNode, schema, type TypeNode } from "@arktype/schema"
+import { hasArkKind, isTypeNode, schema, type TypeNode } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -121,7 +121,7 @@ const maybeParseReference = (
 		return s.ctx.args[token]
 	}
 	const resolution = s.ctx.scope.maybeResolve(token)
-	if (isNode(resolution)) {
+	if (isTypeNode(resolution)) {
 		return resolution
 	}
 	if (resolution === undefined) {

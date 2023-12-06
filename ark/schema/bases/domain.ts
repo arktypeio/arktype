@@ -36,9 +36,9 @@ export type DomainDeclaration = declareNode<{
 	}
 }>
 
-export class DomainNode<t = unknown> extends BaseType<t, typeof DomainNode> {
+export class DomainNode<t = unknown> extends BaseType<t, DomainDeclaration> {
 	static readonly kind: "domain"
-	static declaration: DomainDeclaration
+
 	static parser: NodeParserImplementation<DomainDeclaration> = {
 		collapseKey: "domain",
 		keys: {

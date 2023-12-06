@@ -1,3 +1,4 @@
+import type { extend } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseAttachments,
@@ -24,19 +25,15 @@ import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema, ioKindOf } from "./shared/nodes.js"
 import { arkKind, inferred } from "./shared/symbols.js"
 
-export interface TypeSubclass<d extends BaseNodeDeclaration>
-	extends NodeSubclass<d> {
-	readonly kind: TypeKind
-}
-
-export interface UnknownTypeSubclass extends UnknownNodeSubclass {
-	readonly kind: TypeKind
-}
+export type BaseTypeDeclaration = extend<
+	BaseNodeDeclaration,
+	{ kind: TypeKind }
+>
 
 export abstract class BaseType<
 	t = unknown,
-	subclass extends TypeSubclass<subclass["declaration"]> = UnknownTypeSubclass
-> extends BaseNode<subclass> {
+	d extends BaseTypeDeclaration = BaseTypeDeclaration
+> extends BaseNode<d> {
 	declare infer: extractOut<t>;
 	declare [inferred]: t
 
@@ -52,11 +49,11 @@ export abstract class BaseType<
 		this.branches ??= [this as never]
 	}
 
-	override get in(): Node<ioKindOf<subclass["kind"]>, extractIn<t>> {
+	override get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
 		return super.in
 	}
 
-	override get out(): Node<ioKindOf<subclass["kind"]>, extractOut<t>> {
+	override get out(): Node<ioKindOf<d["kind"]>, extractOut<t>> {
 		return super.out
 	}
 
@@ -93,7 +90,7 @@ export abstract class BaseType<
 	// TODO: inferIntersection
 	and<other extends Node>(
 		other: other
-	): Exclude<intersectionOf<subclass["kind"], other["kind"]>, Disjoint> {
+	): Exclude<intersectionOf<d["kind"], other["kind"]>, Disjoint> {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
@@ -101,7 +98,7 @@ export abstract class BaseType<
 	// TODO: limit input types
 	or<other extends TypeNode>(
 		other: other
-	): TypeNode<t | other["infer"], "union" | subclass["kind"] | other["kind"]> {
+	): TypeNode<t | other["infer"], "union" | d["kind"] | other["kind"]> {
 		return this.scope.parseBranches(
 			...this.branches,
 			...(other.branches as any)

@@ -10,7 +10,7 @@ import {
 } from "@arktype/util"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import type { Schema } from "../shared/nodes.js"
-import { isNode } from "../shared/symbols.js"
+import { isTypeNode } from "../shared/symbols.js"
 import {
 	DomainNode,
 	type DomainDeclaration,
@@ -52,7 +52,7 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 			if (schema === null) {
 				return
 			}
-			if (isNode(schema)) {
+			if (isTypeNode(schema)) {
 				if (schema.isBasis()) {
 					return schema.kind
 				}

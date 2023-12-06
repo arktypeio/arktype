@@ -4,7 +4,7 @@ import {
 	type extend,
 	type valueOf
 } from "@arktype/util"
-import type { Node, NodeSubclass } from "../base.js"
+import type { Node, NodeSubclass, UnknownNodeSubclass } from "../base.js"
 import {
 	In,
 	compilePrimitive,
@@ -107,18 +107,19 @@ const createUpperIntersections = <kind extends UpperBoundKind>(kind: kind) =>
 			l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
 	}) as {} as NodeIntersections<Declaration<kind>>
 
-export interface BoundSubclass<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends NodeSubclass<d> {
-	readonly kind: BoundKind
-
-	readonly declaration: BoundDeclarations[BoundKind]
-}
+export type BaseBoundDeclaration = extend<
+	BaseNodeDeclaration,
+	{
+		kind: BoundKind
+		inner: BoundInner
+	}
+>
 
 export abstract class BaseBound<
-	subclass extends BoundSubclass<subclass["declaration"]>
-> extends RefinementNode<subclass> {
-	static declaration: BoundDeclarations[BoundKind]
+	d extends BaseBoundDeclaration
+> extends RefinementNode<d> {
+	static kind: BoundKind
+	static intersections = {} as any
 
 	static parser = {
 		collapseKey: "limit",
@@ -178,9 +179,8 @@ export type MinDeclaration = declareNode<{
 	}
 }>
 
-export class MinNode extends BaseBound<typeof MinNode> {
+export class MinNode extends BaseBound<MinDeclaration> {
 	static readonly kind = "min"
-	static declaration: MinDeclaration
 
 	static intersections = createLowerIntersections("min")
 
@@ -209,9 +209,8 @@ export type MaxDeclaration = declareNode<{
 	}
 }>
 
-export class MaxNode extends BaseBound<typeof MaxNode> {
+export class MaxNode extends BaseBound<MaxDeclaration> {
 	static readonly kind = "max"
-	static declaration: MaxDeclaration
 
 	static intersections = createUpperIntersections("max")
 
@@ -240,9 +239,8 @@ export type MinLengthDeclaration = declareNode<{
 	}
 }>
 
-export class MinLengthNode extends BaseBound<typeof MinLengthNode> {
+export class MinLengthNode extends BaseBound<MinLengthDeclaration> {
 	static readonly kind = "minLength"
-	static declaration: MinLengthDeclaration
 
 	static intersections = createLowerIntersections("minLength")
 
@@ -276,9 +274,8 @@ export type MaxLengthDeclaration = declareNode<{
 	}
 }>
 
-export class MaxLengthNode extends BaseBound<typeof MaxLengthNode> {
+export class MaxLengthNode extends BaseBound<MaxLengthDeclaration> {
 	static readonly kind = "maxLength"
-	static declaration: MaxLengthDeclaration
 
 	static intersections = createUpperIntersections("maxLength")
 
@@ -308,9 +305,8 @@ export type AfterDeclaration = declareNode<{
 	}
 }>
 
-export class AfterNode extends BaseBound<typeof AfterNode> {
+export class AfterNode extends BaseBound<AfterDeclaration> {
 	static readonly kind = "after"
-	static declaration: AfterDeclaration
 
 	static intersections = createLowerIntersections("after")
 
@@ -339,9 +335,8 @@ export type BeforeDeclaration = declareNode<{
 	}
 }>
 
-export class BeforeNode extends BaseBound<typeof BeforeNode> {
+export class BeforeNode extends BaseBound<BeforeDeclaration> {
 	static readonly kind = "before"
-	static declaration: BeforeDeclaration
 
 	static intersections = createUpperIntersections("before")
 

@@ -1,4 +1,4 @@
-import { isNode, schema, type TypeNode } from "@arktype/schema"
+import { isTypeNode, schema, type TypeNode } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -38,8 +38,8 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
-			if (isNode(def)) {
-				return def as TypeNode
+			if (isTypeNode(def)) {
+				return def
 			}
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":

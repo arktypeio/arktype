@@ -34,9 +34,8 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export class DivisorNode extends RefinementNode<typeof DivisorNode> {
+export class DivisorNode extends RefinementNode<DivisorDeclaration> {
 	static readonly kind = "divisor"
-	static declaration: DivisorDeclaration
 
 	static parser: NodeParserImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",

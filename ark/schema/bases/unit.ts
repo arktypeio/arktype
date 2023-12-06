@@ -28,9 +28,8 @@ export type UnitDeclaration = declareNode<{
 	}
 }>
 
-export class UnitNode<t = unknown> extends BaseType<t, typeof UnitNode> {
+export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
 	static readonly kind: "unit"
-	static declaration: UnitDeclaration
 
 	static parser: NodeParserImplementation<UnitDeclaration> = {
 		keys: {

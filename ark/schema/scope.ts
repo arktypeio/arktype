@@ -25,8 +25,7 @@ import type {
 import { bindCompiledScope, type ProblemCode } from "./shared/compilation.js"
 import type { NodeKind, TypeKind } from "./shared/define.js"
 import type { Schema, reducibleKindOf } from "./shared/nodes.js"
-import { isNode } from "./shared/symbols.js"
-import type { BaseType } from "./type.js"
+import { isTypeNode } from "./shared/symbols.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 
@@ -216,10 +215,8 @@ const assertTypeKind = (input: unknown): TypeKind => {
 		return basisKind
 	}
 	if (typeof input === "object" && input !== null) {
-		if (isNode(input)) {
-			if (input.isType()) {
-				return input.kind
-			}
+		if (isTypeNode(input)) {
+			return input.kind
 			// otherwise, error at end of function
 		} else if ("morph" in input) {
 			return "morph"

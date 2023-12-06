@@ -11,9 +11,8 @@ export const inferred = Symbol("inferred")
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
-export const isNode = (o: unknown): o is BaseNode =>
-	(o as BaseNode)?.[arkKind] === "typeNode" ||
-	(o as BaseNode)?.[arkKind] === "refinementNode"
+export const isTypeNode = (o: unknown): o is TypeNode =>
+	(o as BaseNode)?.[arkKind] === "typeNode"
 
 export type cast<to> = {
 	[inferred]?: to

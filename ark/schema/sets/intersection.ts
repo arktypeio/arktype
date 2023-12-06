@@ -25,7 +25,6 @@ import {
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import type { Schema, reducibleKindOf } from "../shared/nodes.js"
-import { isNode } from "../shared/symbols.js"
 import { BaseType } from "../type.js"
 
 export type IntersectionInner = { basis?: Node<BasisKind> } & {
@@ -63,10 +62,9 @@ export type IntersectionDeclaration = declareNode<{
 
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
-	typeof IntersectionNode
+	IntersectionDeclaration
 > {
 	static readonly kind = "intersection"
-	static declaration: IntersectionDeclaration
 
 	static parser: NodeParserImplementation<IntersectionDeclaration> = {
 		normalize: (def) => def,

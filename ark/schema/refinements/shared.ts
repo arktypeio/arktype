@@ -3,7 +3,8 @@ import {
 	BaseNode,
 	type Node,
 	type NodeSubclass,
-	type TypeNode
+	type TypeNode,
+	type UnknownNodeSubclass
 } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
@@ -21,8 +22,8 @@ export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
 export abstract class RefinementNode<
-	subclass extends NodeSubclass<subclass["declaration"]>
-> extends BaseNode<subclass> {
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> extends BaseNode<d> {
 	readonly [arkKind] = "refinementNode"
 
 	abstract getCheckedDefinitions(): readonly Schema<TypeKind>[]

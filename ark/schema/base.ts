@@ -34,10 +34,10 @@ import {
 } from "./sets/intersection.js"
 import type { MorphNode } from "./sets/morph.js"
 import type { UnionNode } from "./sets/union.js"
-import {
-	type CompilationContext,
-	type TraverseAllows,
-	type TraverseApply
+import type {
+	CompilationContext,
+	TraverseAllows,
+	TraverseApply
 } from "./shared/compilation.js"
 import type {
 	BaseAttributes,
@@ -107,15 +107,16 @@ export interface UnknownNodeSubclass {
 	readonly parser: NodeParserImplementation<BaseNodeDeclaration>
 	readonly intersections: Record<
 		string,
+		// TODO: Node or inner?
 		(l: any, r: any) => {} | Disjoint | null
 	>
 }
 
 export abstract class BaseNode<
-	subclass extends NodeSubclass<subclass["declaration"]> = UnknownNodeSubclass
-> extends DynamicBase<attachmentsOf<subclass["declaration"]>> {
-	protected readonly cls: subclass = this.constructor as never
-	readonly kind: subclass["kind"] = this.cls.kind;
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> extends DynamicBase<attachmentsOf<d>> {
+	readonly cls: UnknownNodeSubclass = this.constructor as never
+	readonly kind: d["kind"] = this.cls.kind;
 	abstract readonly [arkKind]: ArkKind
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
@@ -146,18 +147,18 @@ export abstract class BaseNode<
 	}
 
 	abstract writeDefaultDescription(): string
-	abstract traverseAllows: TraverseAllows<subclass["declaration"]["checks"]>
-	abstract traverseApply: TraverseApply<subclass["declaration"]["checks"]>
+	abstract traverseAllows: TraverseAllows<d["checks"]>
+	abstract traverseApply: TraverseApply<d["checks"]>
 	abstract compileBody(ctx: CompilationContext): string
 
 	inCache?: BaseNode;
-	get in(): Node<ioKindOf<subclass["kind"]>> {
+	get in(): Node<ioKindOf<d["kind"]>> {
 		this.inCache ??= this.getIo("in")
 		return this.inCache as never
 	}
 
 	outCache?: BaseNode
-	get out(): Node<ioKindOf<subclass["kind"]>> {
+	get out(): Node<ioKindOf<d["kind"]>> {
 		this.outCache ??= this.getIo("out")
 		return this.outCache as never
 	}
@@ -266,7 +267,7 @@ export abstract class BaseNode<
 
 	intersectClosed<other extends Node>(
 		other: other
-	): Node<this["kind"] | other["kind"]> | Disjoint | null {
+	): Node<d["kind"] | other["kind"]> | Disjoint | null {
 		if (this.equals(other)) {
 			// TODO: meta
 			return this as never
@@ -292,7 +293,7 @@ export abstract class BaseNode<
 		this: BaseNode<any> & {
 			children: readonly never[]
 		}
-	): TraverseApply<subclass["declaration"]["checks"]> {
+	): TraverseApply<d["checks"]> {
 		return (data, problems) => {
 			if (!this.traverseAllows(data, problems)) {
 				problems.add(this.description)
