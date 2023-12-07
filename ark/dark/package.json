@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "3.6.4",
+	"version": "3.6.5",
 	"private": true,
 	"publisher": "arktypeio",
 	"type": "module",
@@ -52,7 +52,7 @@
 			},
 			"errorLens.replace": [
 				{
-					"matcher": ".*\n([^\n]*)$",
+					"matcher": "[^]*\n([^\n]*)$",
 					"message": "$1"
 				},
 				{
@@ -65,10 +65,6 @@
 				},
 				{
 					"matcher": "Type '.*' is not assignable to type 'indexParseError<(.*)>'.",
-					"message": "$1"
-				},
-				{
-					"matcher": ".*\n([^\n]*)$",
 					"message": "$1"
 				}
 			]

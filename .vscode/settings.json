@@ -11,6 +11,8 @@
 		"import/no-duplicates",
 		"@typescript-eslint/no-import-type-side-effects"
 	],
+	"eslint.codeActionsOnSave.mode": "problems",
+	"eslint.run": "onSave",
 	"eslint.rules.customizations": [
 		// This will still be caught when run from the CLI, but it's too often
 		// I'm in the middle of writing something and see this. It's already
