@@ -1,4 +1,4 @@
-import type { Node } from "../../base.js"
+import type { Node, TypeNode, TypeSchema } from "../../base.js"
 import type { CompilationContext, Problems } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { NodeParserImplementation, TypeKind } from "../../shared/define.js"
@@ -7,11 +7,6 @@ import type { NodeIntersections } from "../../shared/intersect.js"
 import type { Schema } from "../../shared/nodes.js"
 import { RefinementNode } from "../shared.js"
 
-// export class ArrayPredicate extends composePredicate(
-// 	Narrowable<"object">,
-// 	Instantiatable<typeof Array>,
-// 	Boundable
-// ) {
 // 	// TODO: add minLength prop that would result from collapsing types like [...number[], number]
 // 	// to a single variadic number prop with minLength 1
 // 	// Figure out best design for integrating with named props.
@@ -22,13 +17,13 @@ import { RefinementNode } from "../shared.js"
 // }
 
 export type IndexSchema = withAttributes<{
-	readonly key: Schema<TypeKind>
-	readonly value: Schema<TypeKind>
+	readonly key: TypeSchema
+	readonly value: TypeSchema
 }>
 
 export type IndexInner = {
-	readonly key: Node<TypeKind>
-	readonly value: Node<TypeKind>
+	readonly key: TypeNode
+	readonly value: TypeNode
 }
 
 export type IndexDeclaration = declareNode<{

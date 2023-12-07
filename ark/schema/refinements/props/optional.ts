@@ -1,4 +1,4 @@
-import type { Node } from "../../base.js"
+import type { Node, TypeSchema } from "../../base.js"
 import {
 	In,
 	compileSerializedValue,
@@ -20,7 +20,7 @@ export type OptionalInner = {
 
 export type OptionalSchema = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Schema<TypeKind>
+	readonly value: TypeSchema
 }>
 
 export type OptionalDeclaration = declareNode<{

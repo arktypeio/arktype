@@ -1,4 +1,4 @@
-import type { Node } from "../../base.js"
+import type { Node, TypeSchema } from "../../base.js"
 import {
 	In,
 	compileSerializedValue,
@@ -15,7 +15,7 @@ import { compilePresentProp, type NamedPropKind } from "./shared.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
-	readonly value: Schema<TypeKind>
+	readonly value: TypeSchema
 }>
 
 export type RequiredInner = {

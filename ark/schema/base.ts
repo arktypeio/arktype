@@ -28,6 +28,7 @@ import type { PredicateNode } from "./refinements/predicate.js"
 import type { IndexNode } from "./refinements/props/index.js"
 import type { OptionalNode } from "./refinements/props/optional.js"
 import type { RequiredNode } from "./refinements/props/required.js"
+import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
 import type {
 	IntersectionInner,
@@ -68,7 +69,7 @@ import {
 	type NodeIntersections,
 	type intersectionOf
 } from "./shared/intersect.js"
-import type { ioKindOf } from "./shared/nodes.js"
+import type { Schema, ioKindOf } from "./shared/nodes.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -305,7 +306,7 @@ export abstract class BaseNode<
 	}
 }
 
-export type Node<kind extends NodeKind = NodeKind, t = any> = {
+interface NodesByKind<t = any> {
 	union: UnionNode<t>
 	morph: MorphNode<t>
 	intersection: IntersectionNode<t>
@@ -324,6 +325,14 @@ export type Node<kind extends NodeKind = NodeKind, t = any> = {
 	required: RequiredNode
 	optional: OptionalNode
 	index: IndexNode
-}[kind]
+	sequence: SequenceNode
+}
+
+export type Node<
+	kind extends NodeKind = NodeKind,
+	t = any
+> = NodesByKind<t>[kind]
 
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
+
+export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
