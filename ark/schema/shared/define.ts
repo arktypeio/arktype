@@ -74,8 +74,13 @@ export type OrderedNodeKinds = typeof nodeKinds
 type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
 
 export type KeyDefinitions<d extends BaseNodeDeclaration> = {
-	[k in keyof d["normalizedSchema"]]: NodeKeyImplementation<d, k>
+	[k in undefinedKey<d>]: NodeKeyImplementation<d, k>
 }
+
+type undefinedKey<d extends BaseNodeDeclaration> = Exclude<
+	keyof d["normalizedSchema"],
+	keyof BaseAttributes
+>
 
 export type PrimitiveConstraintAttachments = {
 	readonly condition: string
@@ -140,7 +145,7 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	reduce?: (inner: d["inner"], scope: ScopeNode) => Node | undefined
 }
 
-export type UnknownNodeImplementation = optionalizeKeys<
+export type UnknownNodeParser = optionalizeKeys<
 	NodeParserImplementation<BaseNodeDeclaration>,
 	"reduce"
 >

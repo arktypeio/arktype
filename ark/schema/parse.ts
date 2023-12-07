@@ -16,7 +16,7 @@ import {
 	type BasisKind,
 	type KeyDefinitions,
 	type NodeKind,
-	type UnknownNodeImplementation
+	type UnknownNodeParser
 } from "./shared/define.js"
 import {
 	NodeImplementationByKind,
@@ -63,7 +63,7 @@ export function parse(
 	ctx: SchemaParseContext
 ): Node {
 	const cls = NodeImplementationByKind[kind]
-	const impl = cls.parser as UnknownNodeImplementation
+	const impl = cls.parser as UnknownNodeParser
 	if (schema instanceof BaseNode) {
 		return schema.kind === kind
 			? (schema as never)

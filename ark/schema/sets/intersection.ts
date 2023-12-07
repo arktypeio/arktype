@@ -155,6 +155,14 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			required: {
 				child: true,
 				parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
+			},
+			index: {
+				child: true,
+				parse: (def, ctx) => parseOpenRefinement("index", def, ctx)
+			},
+			sequence: {
+				child: true,
+				parse: (def, ctx) => parseOpenRefinement("sequence", def, ctx)
 			}
 		},
 		reduce: (inner, scope) => {

@@ -80,9 +80,9 @@ export type attachmentsOf<d extends BaseNodeDeclaration> =
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: BaseAttributes
-	meta: BaseAttributes
-	inner: {}
+	normalizedSchema: Dict & BaseAttributes
+	meta: Dict & BaseAttributes
+	inner: Dict
 	checks: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind

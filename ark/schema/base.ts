@@ -61,7 +61,8 @@ import {
 	type OpenRefinementKind,
 	type RefinementKind,
 	type SetKind,
-	type TypeKind
+	type TypeKind,
+	type UnknownNodeParser
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
@@ -95,10 +96,8 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
-export interface UnknownNodeSubclass {
-	// allow subclasses to accept narrowed check input
-	readonly declaration: BaseNodeDeclaration
-	readonly parser: NodeParserImplementation<BaseNodeDeclaration>
+export type UnknownNodeSubclass = {
+	readonly parser: UnknownNodeParser
 	readonly intersections: Record<
 		string,
 		// TODO: Node or inner?
@@ -163,8 +162,8 @@ export abstract class BaseNode<
 			return this as never
 		}
 		const ioInner: Record<any, unknown> = {}
-		for (const [k, v] of this.entries) {
-			const keyDefinition = this.cls.parser.keys[k as keyof BaseAttributes]!
+		for (const [k, v] of this.entries as readonly Entry<string>[]) {
+			const keyDefinition = this.cls.parser.keys[k]
 			if (keyDefinition.meta) {
 				continue
 			}

@@ -9,18 +9,15 @@ import type { Disjoint } from "../../shared/disjoint.js"
 import type { NodeIntersections } from "../../shared/intersect.js"
 import { RefinementNode } from "../shared.js"
 
-// 	// TODO: add minLength prop that would result from collapsing types like [...number[], number]
-// 	// to a single variadic number prop with minLength 1
-
 export type SequenceSchema = withAttributes<{
 	readonly prefix?: readonly TypeSchema[]
-	readonly variadic?: TypeSchema
+	readonly element: TypeSchema
 	readonly postfix?: readonly TypeSchema[]
 }>
 
 export type SequenceInner = {
 	readonly prefix?: readonly TypeNode[]
-	readonly variadic?: TypeNode
+	readonly element: TypeNode
 	readonly postfix?: readonly TypeNode[]
 }
 
@@ -36,7 +33,7 @@ export type SequenceDeclaration = declareNode<{
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
-	"postfix" | "prefix"
+	"prefix" | "postfix"
 > = {
 	child: true,
 	parse: (schema, ctx) =>
@@ -47,7 +44,7 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 	static parser: NodeParserImplementation<SequenceDeclaration> = {
 		keys: {
 			prefix: fixedSequenceKeyDefinition,
-			variadic: {
+			element: {
 				child: true,
 				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
 			},
@@ -60,9 +57,62 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 		sequence: (l) => l
 	}
 
-	traverseAllows = (data: readonly unknown[], problems: Problems) => true
+	// TODO: reduce variadic
+	prefixLength = this.prefix?.length ?? 0
+	postfixLength = this.postfix?.length ?? 0
+	protected minLength = this.prefixLength + this.postfixLength
 
-	traverseApply = (data: readonly unknown[], problems: Problems) => {}
+	traverseAllows = (data: readonly unknown[], problems: Problems) => {
+		if (data.length < this.minLength) {
+			return false
+		}
+
+		let i = 0
+
+		if (this.prefix) {
+			for (i; i < this.prefixLength; i++) {
+				if (!this.prefix[i].traverseAllows(data[i], problems)) {
+					return false
+				}
+			}
+		}
+
+		const postfixStartIndex = data.length - this.postfixLength
+
+		for (i; i++; i < postfixStartIndex) {
+			if (!this.element.traverseAllows(data[i], problems)) {
+				return false
+			}
+		}
+
+		if (this.postfix) {
+			for (i; i < data.length; i++) {
+				if (!this.postfix[i].traverseAllows(data[i], problems)) {
+					return false
+				}
+			}
+		}
+		return true
+	}
+
+	traverseApply = (data: readonly unknown[], problems: Problems) => {
+		let i = 0
+		if (this.prefix) {
+			for (i; i < this.prefixLength; i++) {
+				this.prefix[i].traverseApply(data[i], problems)
+			}
+		}
+		// TODO: optional
+		const variadicSize = data.length - this.postfixLength
+		for (i; i++; i < variadicSize) {
+			this.element.traverseApply(data[i], problems)
+		}
+		if (this.postfix) {
+			for (i; i < data.length; i++) {
+				this.postfix[i].traverseApply(data[i], problems)
+			}
+		}
+	}
 
 	getCheckedDefinitions() {
 		return [Array] as const
