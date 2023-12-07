@@ -1,5 +1,9 @@
 import type { TypeNode, TypeSchema } from "../../base.js"
-import type { CompilationContext, Problems } from "../../shared/compilation.js"
+import {
+	In,
+	type CompilationContext,
+	type Problems
+} from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type {
 	NodeKeyImplementation,
@@ -15,6 +19,15 @@ export type SequenceSchema = withAttributes<{
 	readonly postfix?: readonly TypeSchema[]
 }>
 
+export type SequenceInner = {
+	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
+	readonly prefix?: readonly TypeNode[]
+	// the variadic element
+	readonly element: TypeNode
+	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
+	readonly postfix?: readonly TypeNode[]
+}
+
 export type SequenceDeclaration = declareNode<{
 	kind: "sequence"
 	schema: SequenceSchema
@@ -24,15 +37,6 @@ export type SequenceDeclaration = declareNode<{
 	}
 	checks: readonly unknown[]
 }>
-
-export type SequenceInner = {
-	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
-	readonly prefix?: readonly TypeNode[]
-	// the variadic element
-	readonly element: TypeNode
-	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
-	readonly postfix?: readonly TypeNode[]
-}
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
@@ -147,6 +151,52 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 		}
 	}
 
+	compileBody(ctx: CompilationContext): string {
+		// TODO: traversal?
+		let body = `if(${In}.length < ${this.minLength}) {
+	return false
+}\n`
+		this.prefix?.forEach((node, i) => {
+			body += `if(!${node.compileBody(ctx)}) {
+	this.${node.id}(${In}[${i}], problems)
+}\n`
+		})
+		body += `for(let i = ${this.prefixLength}; )`
+
+		// const postfixStartIndex = data.length - this.postfixLength
+
+		// for (i; i++; i < postfixStartIndex) {
+		// 	this.element.traverseAllows(data[i], problems)
+		// }
+
+		// if (this.postfix) {
+		// 	for (i; i < data.length; i++) {
+		// 		this.postfix[i].traverseAllows(data[i], problems)
+		// 	}
+		// }
+
+		return body
+		// ${this.prefix ? }
+		// if (this.prefix) {
+		// 	for (i; i < this.prefixLength; i++) {
+		// 		this.prefix[i].traverseAllows(data[i], problems)
+		// 	}
+		// }
+
+		// const postfixStartIndex = data.length - this.postfixLength
+
+		// for (i; i++; i < postfixStartIndex) {
+		// 	this.element.traverseAllows(data[i], problems)
+		// }
+
+		// if (this.postfix) {
+		// 	for (i; i < data.length; i++) {
+		// 		this.postfix[i].traverseAllows(data[i], problems)
+		// 	}
+		// }
+		// `
+	}
+
 	getCheckedDefinitions() {
 		return [Array] as const
 	}
@@ -156,10 +206,6 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 		parts.push(`zero or more elements containing ${this.element}`)
 		this.postfix?.forEach((node) => parts.push(String(node)))
 		return `An array of ${parts.join(" followed by ")}`
-	}
-
-	compileBody(ctx: CompilationContext): string {
-		return ""
 	}
 }
 
