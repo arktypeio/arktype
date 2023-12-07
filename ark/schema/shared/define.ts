@@ -33,11 +33,14 @@ export const closedRefinementKinds = ["divisor", ...boundKinds] as const
 
 export type ClosedRefinementKind = (typeof closedRefinementKinds)[number]
 
+export const propKinds = ["required", "optional", "index"] as const
+
+export type PropKind = (typeof propKinds)[number]
+
 export const openRefinementKinds = [
 	"pattern",
 	"predicate",
-	"required",
-	"optional"
+	...propKinds
 ] as const
 
 export type OpenRefinementKind = (typeof openRefinementKinds)[number]

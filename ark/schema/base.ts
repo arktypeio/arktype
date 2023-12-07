@@ -25,6 +25,7 @@ import type {
 import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
+import type { IndexNode } from "./refinements/props/index.js"
 import type { OptionalNode } from "./refinements/props/optional.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { ScopeNode } from "./scope.js"
@@ -322,6 +323,7 @@ export type Node<kind extends NodeKind = NodeKind, t = any> = {
 	predicate: PredicateNode
 	required: RequiredNode
 	optional: OptionalNode
+	index: IndexNode
 }[kind]
 
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>

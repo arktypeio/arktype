@@ -7,10 +7,9 @@ import {
 	type propwiseXor
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { extractOut } from "../sets/morph.js"
-import type { NodeKind, SetKind } from "./define.js"
+import type { NodeKind, PropKind, SetKind } from "./define.js"
 
 export const In = "$arkRoot"
 

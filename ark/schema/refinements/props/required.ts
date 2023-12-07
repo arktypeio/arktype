@@ -11,8 +11,7 @@ import { Disjoint } from "../../shared/disjoint.js"
 import type { NodeIntersections } from "../../shared/intersect.js"
 import type { Inner, Schema } from "../../shared/nodes.js"
 import { RefinementNode } from "../shared.js"
-import type { PropKind } from "./prop.js"
-import { compilePresentProp } from "./shared.js"
+import { compilePresentProp, type NamedPropKind } from "./shared.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
@@ -36,9 +35,9 @@ export type RequiredDeclaration = declareNode<{
 }>
 
 const intersectNamed = (
-	l: Node<PropKind>,
-	r: Node<PropKind>
-): Inner<PropKind> | Disjoint | null => {
+	l: Node<NamedPropKind>,
+	r: Node<NamedPropKind>
+): Inner<NamedPropKind> | Disjoint | null => {
 	if (l.key !== r.key) {
 		return null
 	}

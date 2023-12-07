@@ -1,6 +1,5 @@
 import type { Dict, extend } from "@arktype/util"
 import { BasisImplementations, type BasisDeclarations } from "../bases/basis.js"
-import type { PropKind } from "../refinements/props/prop.js"
 import {
 	RefinementNodes,
 	type RefinementDeclarations
@@ -8,7 +7,7 @@ import {
 import type { ValidatorKind } from "../sets/morph.js"
 import { SetNodesByKind, type SetDeclarationsByKind } from "../sets/set.js"
 import type { BranchKind } from "../sets/union.js"
-import type { ConstraintKind, NodeKind, TypeKind } from "./define.js"
+import type { ConstraintKind, NodeKind, PropKind, TypeKind } from "./define.js"
 
 export type ConstraintDeclarationsByKind = extend<
 	BasisDeclarations,

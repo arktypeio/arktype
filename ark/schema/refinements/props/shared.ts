@@ -1,12 +1,8 @@
 import type { Node } from "../../base.js"
 import { In, type CompilationContext } from "../../shared/compilation.js"
 import { isDotAccessible } from "../../shared/registry.js"
-import type { PropKind } from "./prop.js"
 
-export type NamedPropAttachments = {
-	readonly serializedKey: string
-	readonly compiledKey: string
-}
+export type NamedPropKind = "required" | "optional"
 
 export const compilePropAccess = (name: string, optional = false) =>
 	isDotAccessible(name)
@@ -14,7 +10,7 @@ export const compilePropAccess = (name: string, optional = false) =>
 		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
 
 export const compilePresentProp = (
-	node: Node<PropKind>,
+	node: Node<NamedPropKind>,
 	ctx: CompilationContext
 ) => {
 	if (ctx.compilationKind === "allows") {

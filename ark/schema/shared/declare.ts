@@ -1,9 +1,9 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
-import type { PropKind } from "../refinements/props/prop.js"
 import type {
 	ConstraintKind,
 	NodeKind,
+	PropKind,
 	RefinementKind,
 	SetKind
 } from "./define.js"

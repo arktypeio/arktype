@@ -60,6 +60,42 @@ export type IntersectionDeclaration = declareNode<{
 	}
 }>
 
+// 	readonly literalKeys = this.named.map((prop) => prop.key.name)
+// 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
+// 	readonly indexedKeyOf = cached(
+// 		() =>
+// 			new TypeNode(
+// 				this.indexed.flatMap((entry) => entry.key.branches),
+// 				this.meta
+// 			)
+// 	)
+// 	readonly keyof = cached(() => this.namedKeyOf().or(this.indexedKeyOf()))
+
+// get(key: string | TypeNode) {
+// 	return typeof key === "string"
+// 		? this.named.find((entry) => entry.value.branches)?.value
+// 		: this.indexed.find((entry) => entry.key.equals(key))?.value
+// }
+
+// compile(ctx: CompilationContext) {
+// 	if (this.indexed.length === 0) {
+// 		return compileNamedProps(this.named, ctx)
+// 	}
+// 	if (this.indexed.length === 1) {
+// 		// if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
+// 		const indexMatcher = extractArrayIndexRegex(this.indexed[0].key)
+// 		if (indexMatcher) {
+// 			return compileArray(
+// 				indexMatcher,
+// 				this.indexed[0].value,
+// 				this.named,
+// 				ctx
+// 			)
+// 		}
+// 	}
+// 	return compileIndexed(this.named, this.indexed, ctx)
+// }
+
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	IntersectionDeclaration
@@ -288,23 +324,3 @@ export const addConstraint = (
 	}
 	return result
 }
-
-// export class ArrayPredicate extends composePredicate(
-// 	Narrowable<"object">,
-// 	Instantiatable<typeof Array>,
-// 	Boundable
-// ) {
-// 	// TODO: add minLength prop that would result from collapsing types like [...number[], number]
-// 	// to a single variadic number prop with minLength 1
-// 	// Figure out best design for integrating with named props.
-
-// 	readonly prefix?: readonly TypeRoot[]
-// 	readonly variadic?: TypeRoot
-// 	readonly postfix?: readonly TypeRoot[]
-// }
-
-// export class DatePredicate extends composePredicate(
-// 	Narrowable<"object">,
-// 	Instantiatable<typeof Date>,
-// 	Boundable
-// ) {}
