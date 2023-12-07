@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "CommonJS",
+		"moduleResolution": "Node",
+		"esModuleInterop": true,
+		"sourceMap": true,
+		"composite": true,
+		"declarationMap": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"outDir": "out",
+		"noEmit": false,
+		"paths": {}
+	},
+	"exclude": ["out", "__tests__"]
+}

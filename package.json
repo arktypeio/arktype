@@ -20,6 +20,7 @@
 	"scripts": {
 		"prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
 		"build": "pnpm -r build",
+		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"docgen": "tsx ./ark/repo/docgen.ts",
 		"test": "mocha",
 		"tnt": "mocha --skipTypes",

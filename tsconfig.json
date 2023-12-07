@@ -31,5 +31,5 @@
 			"@arktype/attest/*": ["./ark/attest/*"]
 		}
 	},
-	"exclude": ["./ark/docs"]
+	"exclude": ["./ark/docs", "**/out/**"]
 }

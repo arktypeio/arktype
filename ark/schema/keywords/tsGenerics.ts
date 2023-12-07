@@ -25,4 +25,4 @@
 // 	// careful to keep the inferred types in sync
 // }) as never
 
-// export const tsGenericsModule = tsGenerics.export()
+export const tsGenericsModule = {} //tsGenerics.export()

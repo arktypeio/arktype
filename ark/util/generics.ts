@@ -28,23 +28,10 @@ export type exactMessageOnError<t extends object, u extends object> = {
 
 export type defer<t> = [t][t extends any ? 0 : never]
 
-export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
-
-export type mergeAll<t extends readonly unknown[]> = t["length"] extends 1
-	? t[0]
-	: mergeAllRecurse<t>
-
-type mergeAllRecurse<t extends readonly unknown[]> = t extends readonly [
-	infer head,
-	...infer tail
-]
-	? merge<head, mergeAll<tail>>
-	: []
-
-/**
- * Simple interesection (&) combined with evaluate to improve display
- */
-export type and<l, r> = evaluate<l & r>
+export type merge<base, merged> = {
+	[k in Exclude<keyof base, keyof merged>]: base[k]
+} & merged &
+	unknown
 
 /**
  * Interesection (`&`) that avoids evaluating `unknown` to `{}`
