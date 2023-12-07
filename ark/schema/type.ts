@@ -14,7 +14,7 @@ import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema, ioKindOf } from "./shared/nodes.js"
-import { arkKind, inferred } from "./shared/symbols.js"
+import { inferred } from "./shared/symbols.js"
 
 export type BaseTypeDeclaration = extend<
 	BaseNodeDeclaration,
@@ -29,9 +29,7 @@ export abstract class BaseType<
 	declare [inferred]: t
 
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
-	declare readonly branches: readonly Node<BranchKind>[];
-
-	readonly [arkKind] = "typeNode"
+	declare readonly branches: readonly Node<BranchKind>[]
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)

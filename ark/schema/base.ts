@@ -68,7 +68,6 @@ import {
 	type intersectionOf
 } from "./shared/intersect.js"
 import type { ioKindOf } from "./shared/nodes.js"
-import { arkKind, type ArkKind } from "./shared/symbols.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -133,7 +132,6 @@ export abstract class BaseNode<
 		this.contributesReferences = Object.values(this.contributesReferencesById)
 	}
 
-	abstract readonly [arkKind]: ArkKind
 	abstract writeDefaultDescription(): string
 	abstract traverseAllows: TraverseAllows<d["checks"]>
 	abstract traverseApply: TraverseApply<d["checks"]>
@@ -208,7 +206,7 @@ export abstract class BaseNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isType(): this is Node<TypeKind> {
+	isType(): this is TypeNode {
 		return includes(typeKinds, this.kind)
 	}
 

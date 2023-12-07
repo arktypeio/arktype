@@ -29,9 +29,9 @@
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
-		"arktype": "latest",
-		"@arktype/fs": "0.0.7",
-		"@arktype/util": "0.0.7",
+		"arktype": "workspace*",
+		"@arktype/fs": "workspace:*",
+		"@arktype/util": "workspace*",
 		"@typescript/vfs": "1.5.0"
 	},
 	"devDependencies": {

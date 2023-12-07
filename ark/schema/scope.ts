@@ -5,7 +5,6 @@ import {
 	throwParseError,
 	type Dict
 } from "@arktype/util"
-import type { KeyCheckKind } from "arktype/internal/type.js"
 import type { Node, TypeNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
 import type { UnitNode } from "./bases/unit.js"
@@ -25,7 +24,7 @@ import type {
 import { bindCompiledScope, type ProblemCode } from "./shared/compilation.js"
 import type { NodeKind, TypeKind } from "./shared/define.js"
 import type { Schema, reducibleKindOf } from "./shared/nodes.js"
-import { isTypeNode } from "./shared/symbols.js"
+import { BaseType } from "./type.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 
@@ -34,6 +33,8 @@ export type BaseResolutions = Record<string, TypeNode>
 export interface ArkConfig {
 	preserve(): never
 }
+
+export type KeyCheckKind = "distilled" | "strict" | "loose"
 
 export type ScopeOptions = {
 	codes?: Record<ProblemCode, { mustBe?: string }>
@@ -215,7 +216,7 @@ const assertTypeKind = (input: unknown): TypeKind => {
 		return basisKind
 	}
 	if (typeof input === "object" && input !== null) {
-		if (isTypeNode(input)) {
+		if (input instanceof BaseType) {
 			return input.kind
 			// otherwise, error at end of function
 		} else if ("morph" in input) {

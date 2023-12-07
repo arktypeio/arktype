@@ -1,10 +1,9 @@
 import {
-	addArkKind,
-	hasArkKind,
+	BaseType,
 	keywords,
+	type KeyCheckKind,
 	type ProblemCode,
 	type TypeNode,
-	type arkKind,
 	type extractIn,
 	type extractOut
 } from "@arktype/schema"
@@ -53,21 +52,10 @@ import {
 	type DefinitionParser,
 	type Generic,
 	type GenericProps,
-	type KeyCheckKind,
 	type TypeConfig,
 	type TypeParser
 } from "./type.js"
-
-declare global {
-	interface InternalArkConfig {
-		kinds(): {
-			type: Type
-			scope: Scope
-			generic: Generic
-			module: Module
-		}
-	}
-}
+import { addArkKind, hasArkKind, type arkKind } from "./util.js"
 
 export type ScopeParser<parent, ambient> = {
 	<const def>(def: validateScope<def, parent & ambient>): Scope<{
@@ -412,7 +400,7 @@ export class Scope<r extends Resolutions = any> {
 
 	maybeResolveNode(name: string): TypeNode | undefined {
 		const result = this.maybeResolve(name)
-		return hasArkKind(result, "typeNode") ? (result as never) : undefined
+		return result instanceof BaseType ? (result as never) : undefined
 	}
 
 	import<names extends exportedName<r>[]>(
@@ -511,8 +499,7 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 		} else if (hasArkKind(v, "generic")) {
 			result[k] = v
 		} else {
-			// TODO: needed?
-			result[k] = v.root as never
+			result[k] = (v as Type).root
 		}
 	}
 	return result

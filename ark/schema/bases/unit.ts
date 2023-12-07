@@ -41,7 +41,7 @@ export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
 	static intersections: NodeIntersections<UnitDeclaration> = {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
-			r.traverseAllows(l.unit, new Problems())
+			r.traverseAllows(l.unit as never, new Problems())
 				? l
 				: Disjoint.from("assignability", l.unit, r)
 	}

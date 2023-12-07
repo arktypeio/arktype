@@ -2,7 +2,8 @@
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
 		"outDir": "out",
-		"noEmit": false
+		"noEmit": false,
+		"paths": {}
 	},
 	"exclude": ["out", "__tests__"]
 }

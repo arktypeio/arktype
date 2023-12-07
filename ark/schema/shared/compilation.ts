@@ -181,7 +181,7 @@ class ProblemsArray extends Array<Problem> {
 		return this.toString()
 	}
 
-	override toString() {
+	toString() {
 		return this.join("\n")
 	}
 

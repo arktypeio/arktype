@@ -1,9 +1,9 @@
 import {
-	arkKind,
 	inferred,
 	keywords,
 	type BaseAttributes,
 	type CheckResult,
+	type KeyCheckKind,
 	type Morph,
 	type Out,
 	type Predicate,
@@ -37,6 +37,7 @@ import type {
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import type { Scope, bindThis } from "./scope.js"
+import { arkKind } from "./util.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -117,8 +118,6 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 export type DefinitionParser<$> = <def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
-
-export type KeyCheckKind = "distilled" | "strict" | "loose"
 
 export type TypeConfig = {
 	keys?: KeyCheckKind

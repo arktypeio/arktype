@@ -1,4 +1,4 @@
-import { hasArkKind, isTypeNode, schema, type TypeNode } from "@arktype/schema"
+import { BaseType, schema, type TypeNode } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -12,6 +12,7 @@ import {
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
+import { hasArkKind } from "../../../../util.js"
 import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -116,7 +117,7 @@ const maybeParseReference = (
 		return s.ctx.args[token]
 	}
 	const resolution = s.ctx.scope.maybeResolve(token)
-	if (isTypeNode(resolution)) {
+	if (resolution instanceof BaseType) {
 		return resolution
 	}
 	if (resolution === undefined) {
