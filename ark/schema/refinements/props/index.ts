@@ -12,7 +12,7 @@ export type IndexSchema = withAttributes<{
 }>
 
 export type IndexInner = {
-	readonly key: TypeNode
+	readonly key: TypeNode<string | symbol>
 	readonly value: TypeNode
 }
 
@@ -64,7 +64,7 @@ export class IndexNode extends RefinementNode<IndexDeclaration> {
 	}
 
 	writeDefaultDescription() {
-		return ""
+		return `[${this.key}]: ${this.value}`
 	}
 
 	compileBody(ctx: CompilationContext): string {

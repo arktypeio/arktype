@@ -96,20 +96,29 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 	}
 
 	traverseApply = (data: readonly unknown[], problems: Problems) => {
+		if (data.length < this.minLength) {
+			// TODO: possible to unify with minLength?
+			problems.add(`at least length ${this.minLength}`)
+			return
+		}
+
 		let i = 0
+
 		if (this.prefix) {
 			for (i; i < this.prefixLength; i++) {
-				this.prefix[i].traverseApply(data[i], problems)
+				this.prefix[i].traverseAllows(data[i], problems)
 			}
 		}
-		// TODO: optional
-		const variadicSize = data.length - this.postfixLength
-		for (i; i++; i < variadicSize) {
-			this.element.traverseApply(data[i], problems)
+
+		const postfixStartIndex = data.length - this.postfixLength
+
+		for (i; i++; i < postfixStartIndex) {
+			this.element.traverseAllows(data[i], problems)
 		}
+
 		if (this.postfix) {
 			for (i; i < data.length; i++) {
-				this.postfix[i].traverseApply(data[i], problems)
+				this.postfix[i].traverseAllows(data[i], problems)
 			}
 		}
 	}
@@ -119,7 +128,10 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 	}
 
 	writeDefaultDescription() {
-		return ""
+		const parts = this.prefix?.map(String) ?? []
+		parts.push(`zero or more elements containing ${this.element}`)
+		this.postfix?.forEach((node) => parts.push(String(node)))
+		return `An array of ${parts.join(" followed by ")}`
 	}
 
 	compileBody(ctx: CompilationContext): string {
