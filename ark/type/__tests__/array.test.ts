@@ -129,8 +129,8 @@ describe("array", () => {
 			it("spreads simple arrays", () => {
 				const wellRested = type(["string", "...number[]"])
 				attest<[string, ...number[]]>(wellRested.infer)
-				attest(wellRested(["foo"]).data).equals(["foo"])
-				attest(wellRested(["foo", 1, 2]).data).equals(["foo", 1, 2])
+				attest(wellRested(["foo"]).out).equals(["foo"])
+				attest(wellRested(["foo", 1, 2]).out).equals(["foo", 1, 2])
 			})
 			it("tuple expression", () => {
 				const wellRestedTuple = type([

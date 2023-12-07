@@ -31,7 +31,7 @@ export const user = type({
 })
 
 // Validators return typed data or clear, customizable errors.
-export const { data, problems } = user({
+export const { out, problems } = user({
 	name: "Alan Turing",
 	device: {
 		// problems.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
@@ -90,7 +90,7 @@ const packageData: Package = {
 }
 packageData.dependencies![0].dependencies = [packageData]
 
-export const { data, problems } = types.package(packageData)
+export const { out, problems } = types.package(packageData)
 ```
 
 ## Syntax
@@ -148,7 +148,7 @@ export const parseBigintLiteral = type({ value: "string" })
 	)
 	.morph((data) => BigInt(data.value.slice(-1)))
 
-export const { data, problems } = parseBigintLiteral("999n")
+export const { out, problems } = parseBigintLiteral("999n")
 //             ^ bigint | undefined
 ```
 
@@ -192,20 +192,20 @@ export const parseOperator = (s: DynamicState): void => {
 	return lookahead === ""
 		? s.finalize()
 		: lookahead === "["
-		? s.scanner.shift() === "]"
-			? s.rootToArray()
-			: s.error(incompleteArrayTokenMessage)
-		: isKeyOf(lookahead, Scanner.branchTokens)
-		? s.pushRootToBranch(lookahead)
-		: lookahead === ")"
-		? s.finalizeGroup()
-		: isKeyOf(lookahead, Scanner.comparatorStartChars)
-		? parseBound(s, lookahead)
-		: lookahead === "%"
-		? parseDivisor(s)
-		: lookahead === " "
-		? parseOperator(s)
-		: throwInternalError(writeUnexpectedCharacterMessage(lookahead))
+		  ? s.scanner.shift() === "]"
+				? s.rootToArray()
+				: s.error(incompleteArrayTokenMessage)
+		  : isKeyOf(lookahead, Scanner.branchTokens)
+		    ? s.pushRootToBranch(lookahead)
+		    : lookahead === ")"
+		      ? s.finalizeGroup()
+		      : isKeyOf(lookahead, Scanner.comparatorStartChars)
+		        ? parseBound(s, lookahead)
+		        : lookahead === "%"
+		          ? parseDivisor(s)
+		          : lookahead === " "
+		            ? parseOperator(s)
+		            : throwInternalError(writeUnexpectedCharacterMessage(lookahead))
 }
 
 export type parseOperator<s extends StaticState> =
@@ -215,16 +215,16 @@ export type parseOperator<s extends StaticState> =
 				? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
 				: error<incompleteArrayTokenMessage>
 			: lookahead extends Scanner.BranchToken
-			? state.reduceBranch<s, lookahead, unscanned>
-			: lookahead extends ")"
-			? state.finalizeGroup<s, unscanned>
-			: lookahead extends Scanner.ComparatorStartChar
-			? parseBound<s, lookahead, unscanned>
-			: lookahead extends "%"
-			? parseDivisor<s, unscanned>
-			: lookahead extends " "
-			? parseOperator<state.scanTo<s, unscanned>>
-			: error<writeUnexpectedCharacterMessage<lookahead>>
+			  ? state.reduceBranch<s, lookahead, unscanned>
+			  : lookahead extends ")"
+			    ? state.finalizeGroup<s, unscanned>
+			    : lookahead extends Scanner.ComparatorStartChar
+			      ? parseBound<s, lookahead, unscanned>
+			      : lookahead extends "%"
+			        ? parseDivisor<s, unscanned>
+			        : lookahead extends " "
+			          ? parseOperator<state.scanTo<s, unscanned>>
+			          : error<writeUnexpectedCharacterMessage<lookahead>>
 		: state.finalize<s>
 ```
 

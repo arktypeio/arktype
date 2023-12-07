@@ -12,4 +12,4 @@ const boxType = createBox(type("string"))
 const badBox = createBox(type("number"))
 
 console.log(boxType({ box: 5 }).problems?.summary)
-console.log(boxType({ box: "foo" }).data)
+console.log(boxType({ box: "foo" }).out)

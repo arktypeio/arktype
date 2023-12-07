@@ -8,7 +8,7 @@ describe("key traversal", () => {
 			a: "string"
 		})
 		const dataWithExtraneousB = getExtraneousB()
-		attest(t(dataWithExtraneousB).data).equals(dataWithExtraneousB)
+		attest(t(dataWithExtraneousB).out).equals(dataWithExtraneousB)
 	})
 	it("invalid union", () => {
 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
@@ -22,14 +22,14 @@ describe("key traversal", () => {
 		const t = type({
 			a: "string"
 		}).configure({ keys: "distilled" })
-		attest(t({ a: "ok" }).data).equals({ a: "ok" })
-		attest(t(getExtraneousB()).data).snap({ a: "ok" })
+		attest(t({ a: "ok" }).out).equals({ a: "ok" })
+		attest(t(getExtraneousB()).out).snap({ a: "ok" })
 	})
 	it("distilled array", () => {
 		const o = type({ a: "email[]" }).configure({
 			keys: "distilled"
 		})
-		attest(o({ a: ["shawn@arktype.io"] }).data).snap({
+		attest(o({ a: ["shawn@arktype.io"] }).out).snap({
 			a: ["shawn@arktype.io"]
 		})
 		attest(o({ a: ["notAnEmail"] }).problems?.summary).snap(
@@ -43,9 +43,9 @@ describe("key traversal", () => {
 			keys: "distilled"
 		})
 		// can distill to first branch
-		attest(o({ a: "to", z: "bra" }).data).snap({ a: "to" })
+		attest(o({ a: "to", z: "bra" }).out).snap({ a: "to" })
 		// can distill to second branch
-		attest(o({ b: true, c: false }).data).snap({ b: true })
+		attest(o({ b: true, c: false }).out).snap({ b: true })
 		// can handle missing keys
 		attest(o({ a: 2 }).problems?.summary).snap(
 			'a must be a string or b must be defined (was {"a":2})'
@@ -55,14 +55,14 @@ describe("key traversal", () => {
 		const t = type({
 			a: "string"
 		}).configure({ keys: "strict" })
-		attest(t({ a: "ok" }).data).equals({ a: "ok" })
+		attest(t({ a: "ok" }).out).equals({ a: "ok" })
 		attest(t(getExtraneousB()).problems?.summary).snap("b must be removed")
 	})
 	it("strict array", () => {
 		const o = type({ a: "string[]" }).configure({
 			keys: "strict"
 		})
-		attest(o({ a: ["shawn"] }).data).snap({ a: ["shawn"] })
+		attest(o({ a: ["shawn"] }).out).snap({ a: ["shawn"] })
 		attest(o({ a: [2] }).problems?.summary).snap(
 			"a/0 must be a string (was number)"
 		)

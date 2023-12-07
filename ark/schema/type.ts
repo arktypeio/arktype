@@ -55,7 +55,7 @@ export abstract class BaseType<
 		const problems = new Problems()
 		this.traverseApply(data as never, problems)
 		if (problems.length === 0) {
-			return { data } as any
+			return { out: data } as any
 		}
 		return { problems }
 	}

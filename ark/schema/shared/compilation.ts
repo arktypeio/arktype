@@ -9,6 +9,7 @@ import {
 import type { Node } from "../base.js"
 import type { PropKind } from "../refinements/props/prop.js"
 import type { Discriminant } from "../sets/discriminate.js"
+import type { extractOut } from "../sets/morph.js"
 import type { NodeKind, SetKind } from "./define.js"
 
 export const In = "$arkRoot"
@@ -20,13 +21,13 @@ type TraversalMethodsByKind<input = unknown> = {
 	apply: TraverseApply<input>
 }
 
-export type TraverseAllows<input = unknown> = (
-	data: input,
+export type TraverseAllows<data = unknown> = (
+	data: data,
 	problems: Problems
 ) => boolean
 
-export type TraverseApply<input = unknown> = (
-	data: input,
+export type TraverseApply<data = unknown> = (
+	data: data,
 	problems: Problems
 ) => void
 
@@ -196,7 +197,7 @@ export const Problems: new () => Problems = ProblemsArray
 export type ProblemCode = string
 
 export type CheckResult<t = unknown> = propwiseXor<
-	{ data: t },
+	{ out: extractOut<t> },
 	{ problems: Problems }
 >
 

@@ -75,7 +75,7 @@ describe("cyclic", () => {
 	it("allows valid", () => {
 		const types = getCyclicScope().export()
 		const data = getCyclicData()
-		attest(types.package(data).data).snap({
+		attest(types.package(data).out).snap({
 			name: "arktype",
 			dependencies: [{ name: "typescript" }, "(cycle)" as any as Package],
 			contributors: [{ email: "david@arktype.io" }]

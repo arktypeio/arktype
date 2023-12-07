@@ -7,11 +7,11 @@ import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclo
 describe("type methods", () => {
 	it("root discriminates", () => {
 		const t = type("string")
-		const { data, problems } = t("")
+		const { out, problems } = t("")
 		if (problems) {
 			problems.throw()
 		} else {
-			attest<string>(data)
+			attest<string>(out)
 		}
 	})
 	it("allows", () => {

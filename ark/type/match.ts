@@ -105,7 +105,7 @@ export type WhenMatchParser<ctx extends MatchContext> = <
 export type MatchInvokation<ctx extends MatchContext> = <
 	data extends ctx["inConstraint"]
 >(
-	In: data
+	data: data
 ) => {
 	[i in Extract<keyof ctx["thens"], `${number}`>]: ctx["thens"][i] extends Fn<
 		[infer In],

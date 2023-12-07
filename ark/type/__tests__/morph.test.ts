@@ -16,7 +16,7 @@ describe("morph", () => {
 		if (result.problems) {
 			return result.problems.throw()
 		}
-		attest<string>(result.data).equals("true")
+		attest<string>(result.out).equals("true")
 		attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
 		attest(t.root).equals(type(["boolean", "=>", (data) => `${data}`]).root)
 	})
@@ -27,12 +27,12 @@ describe("morph", () => {
 		if (result.problems) {
 			return result.problems.throw()
 		}
-		attest<boolean>(result.data).equals(false)
+		attest<boolean>(result.out).equals(false)
 	})
 	// it("chained to type", () => {
 	// 	const t = type(["string>5", "=>", arktypes.parse.date])
 	// 	attest<Type<(In: string) => Out<Date>>>(t)
-	// 	attest(t("5/21/1993").data?.getDate()).equals(21)
+	// 	attest(t("5/21/1993").out?.getDate()).equals(21)
 	// 	attest(t("foobar").problems?.summary).snap(
 	// 		"Must be a valid date (was 'foobar')"
 	// 	)
@@ -69,7 +69,7 @@ describe("morph", () => {
 	// 		(n, problems) => (n === 0 ? problems.mustBe("non-zero", n, []) : 100 / n)
 	// 	])
 	// 	attest<Type<(In: number) => Out<number>>>(divide100By)
-	// 	attest(divide100By(5).data).equals(20)
+	// 	attest(divide100By(5).out).equals(20)
 	// 	attest(divide100By(0).problems?.summary).snap("Must be non-zero (was 0)")
 	// })
 	it("adds a problem if one is returned without being added", () => {
@@ -96,7 +96,7 @@ describe("morph", () => {
 		if (result.problems) {
 			return result.problems.throw()
 		}
-		attest<{ a: number }>(result.data).equals({ a: 4 })
+		attest<{ a: number }>(result.out).equals({ a: 4 })
 	})
 	it("in array", () => {
 		const types = scope({
@@ -108,7 +108,7 @@ describe("morph", () => {
 		if (result.problems) {
 			return result.problems.throw()
 		}
-		attest<number[]>(result.data).equals([1, 2, 3])
+		attest<number[]>(result.out).equals([1, 2, 3])
 	})
 	it("object inference", () => {
 		const t = type([{ a: "string" }, "=>", (data) => `${data}`])
@@ -380,7 +380,7 @@ describe("morph", () => {
 	// 		}
 	// 	])
 	// 	attest<Type<(In: string) => Out<number>>>(parsedInt)
-	// 	attest(parsedInt("5").data).snap(5)
+	// 	attest(parsedInt("5").out).snap(5)
 	// 	attest(parsedInt("five").problems?.summary).snap(
 	// 		"Must be an integer string (was 'five')"
 	// 	)

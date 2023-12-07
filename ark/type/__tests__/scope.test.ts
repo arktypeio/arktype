@@ -134,7 +134,7 @@ describe("scope", () => {
 			X: Apple
 		}).export()
 
-		const { data } = X({ pear: { tasty: true } })
+		const { out: data } = X({ pear: { tasty: true } })
 		attest(data).snap({ pear: { tasty: true } })
 	})
 })

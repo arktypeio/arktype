@@ -125,7 +125,7 @@ export type TypeConfig = {
 }
 
 export class Type<t = unknown, $ = any> extends CastableBase<
-	(data: unknown) => CheckResult<extractOut<t>>
+	(data: unknown) => CheckResult<t>
 > {
 	declare [inferred]: t
 	// TODO: in/out?
@@ -221,7 +221,7 @@ export class Type<t = unknown, $ = any> extends CastableBase<
 
 	assert(data: unknown): extractOut<t> {
 		const result = this.call(null, data)
-		return result.problems ? result.problems.throw() : result.data
+		return result.problems ? result.problems.throw() : result.out
 	}
 
 	equals<def>(

@@ -15,11 +15,11 @@ const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 		static infer: inferTypeRoot<def, Ark>
 
 		constructor(input: unknown) {
-			const { data, problems } = validator(input)
+			const { out, problems } = validator(input)
 			if (problems) {
 				return problems.throw()
 			}
-			super(data as never)
+			super(out as never)
 		}
 
 		static and<cls extends typeof TypeConstructor, andDef>(

@@ -12,7 +12,7 @@ describe("instanceof", () => {
 			attest<Error>(t.infer)
 			attest(t.json).equals(schema(Error).json)
 			const e = new Error()
-			attest(t(e).data).equals(e)
+			attest(t(e).out).equals(e)
 			attest(t({}).problems?.summary).snap("Must be an Error (was Object)")
 		})
 		it("inherited", () => {
@@ -21,7 +21,7 @@ describe("instanceof", () => {
 			// for some reason the return of TypeError's constructor is actually
 			// inferred as Error? Disabling this check for now, seems like an anomaly.
 			// attest<TypeError>(t.infer)
-			attest(t(e).data).equals(e)
+			attest(t(e).out).equals(e)
 			attest(t(new Error()).problems?.summary).snap(
 				"Must be an instance of TypeError (was Error)"
 			)
@@ -36,7 +36,7 @@ describe("instanceof", () => {
 			const t = type(["instanceof", Base])
 			attest<Base>(t.infer)
 			const sub = new Sub()
-			attest(t(sub).data).equals(sub)
+			attest(t(sub).out).equals(sub)
 		})
 		it("multiple branches", () => {
 			const t = type(["instanceof", Date, Array])
@@ -58,7 +58,7 @@ describe("instanceof", () => {
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
 			const a = new ArkClass()
-			attest(ark(a).data).equals(a)
+			attest(ark(a).out).equals(a)
 			attest(ark({}).problems?.summary).snap(
 				"Must be an instance of ArkClass (was Object)"
 			)

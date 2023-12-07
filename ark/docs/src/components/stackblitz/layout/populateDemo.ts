@@ -17,7 +17,7 @@ export const populateDemo = ({ data, type, problems }: PopulateDemoArgs) => {
 	if (problems) {
 		resultElement.textContent = `❌ problems:\n\n${problems}`
 	} else {
-		resultElement.textContent = `✅ data:\n\n${stringify(data, 2)}`
+		resultElement.textContent = `✅ out:\n\n${stringify(data, 2)}`
 		resultElement.innerHTML = recolor(resultElement.innerHTML)
 	}
 }

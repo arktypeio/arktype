@@ -9,7 +9,7 @@ describe("narrow", () => {
 		const odd = type(["number", ":", isOdd])
 		attest<number>(odd.infer)
 		// attest(odd.node).equals({ number: { narrow: isOdd as any } })
-		attest(odd(1).data).equals(1)
+		attest(odd(1).out).equals(1)
 		attest(odd(2).problems?.summary).snap(
 			"Must be valid according to isOdd (was 2)"
 		)
@@ -45,7 +45,7 @@ describe("narrow", () => {
 				return false
 			}
 		])
-		attest(abEqual({ a: 1, b: 1 }).data).equals({ a: 1, b: 1 })
+		attest(abEqual({ a: 1, b: 1 }).out).equals({ a: 1, b: 1 })
 		attest(abEqual({ a: 1, b: 2 }).problems?.summary).snap(
 			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
 		)
@@ -79,7 +79,7 @@ describe("narrow", () => {
 				s === [...s].reverse().join("") ? true : !problems.add("a palindrome")
 		])
 		attest<Type<string>>(palindrome)
-		attest(palindrome("dad").data).snap("dad")
+		attest(palindrome("dad").out).snap("dad")
 		attest(palindrome("david").problems?.summary).snap(
 			"Must be a palindrome (was 'david')"
 		)

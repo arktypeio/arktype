@@ -174,8 +174,8 @@ describe("object literal", () => {
 	})
 	it("traverse optional", () => {
 		const o = type({ "a?": "string" }).configure({ keys: "strict" })
-		attest(o({ a: "a" }).data).snap({ a: "a" })
-		attest(o({}).data).snap({})
+		attest(o({ a: "a" }).out).snap({ a: "a" })
+		attest(o({}).out).snap({})
 		attest(o({ a: 1 }).problems?.summary).snap(
 			"a must be a string (was number)"
 		)
