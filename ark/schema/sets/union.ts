@@ -83,7 +83,7 @@ export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
 			}
 		},
 		normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
-		reduce: (inner, scope) => {
+		reduce: (inner, meta, scope) => {
 			const reducedBranches = reduceBranches(inner)
 			if (reducedBranches.length === 1) {
 				// TODO: description?
@@ -93,6 +93,7 @@ export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
 				return
 			}
 			return scope.parsePrereduced("union", {
+				...meta,
 				...inner,
 				branches: reducedBranches
 			})

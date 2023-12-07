@@ -37,7 +37,10 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 > = {
 	child: true,
 	parse: (schema, ctx) =>
-		schema.map((element) => ctx.scope.parseTypeNode(element))
+		schema.length === 0
+			? // omit empty affixes
+			  undefined
+			: schema.map((element) => ctx.scope.parseTypeNode(element))
 }
 
 export class SequenceNode extends RefinementNode<SequenceDeclaration> {
@@ -50,14 +53,31 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 			},
 			postfix: fixedSequenceKeyDefinition
 		},
-		normalize: (schema) => schema
+		normalize: (schema) => schema,
+		reduce: (inner, meta, scope) => {
+			if (!inner.postfix) {
+				return
+			}
+			const postfix = inner.postfix.slice()
+			const prefix = inner.prefix?.slice() ?? []
+			while (postfix[0]?.equals(inner.element)) {
+				prefix.push(postfix.shift()!)
+			}
+			if (postfix.length < inner.postfix.length) {
+				return scope.parsePrereduced("sequence", {
+					...meta,
+					...inner,
+					prefix,
+					postfix
+				})
+			}
+		}
 	}
 
 	static intersections: NodeIntersections<SequenceDeclaration> = {
 		sequence: (l) => l
 	}
 
-	// TODO: reduce variadic
 	prefixLength = this.prefix?.length ?? 0
 	postfixLength = this.postfix?.length ?? 0
 	protected minLength = this.prefixLength + this.postfixLength

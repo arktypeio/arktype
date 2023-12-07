@@ -142,7 +142,11 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	normalize: (
 		schema: d["schema"]
 	) => normalizeInput<d["normalizedSchema"], d["inner"]>
-	reduce?: (inner: d["inner"], scope: ScopeNode) => Node | undefined
+	reduce?: (
+		inner: d["inner"],
+		meta: d["meta"],
+		scope: ScopeNode
+	) => Node | undefined
 }
 
 export type UnknownNodeParser = optionalizeKeys<

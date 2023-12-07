@@ -165,7 +165,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				parse: (def, ctx) => parseOpenRefinement("sequence", def, ctx)
 			}
 		},
-		reduce: (inner, scope) => {
+		reduce: (inner, meta, scope) => {
 			const inputConstraints = Object.values(inner).flat() as ConstraintSet
 			const reducedConstraints = reduceConstraints([], inputConstraints)
 			if (reducedConstraints instanceof Disjoint) {
@@ -178,10 +178,11 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			if (reducedConstraints.length === inputConstraints.length) {
 				return
 			}
-			const reducedConstraintsByKind = unflattenConstraints(
-				reducedConstraints
-			) as mutable<IntersectionInner>
-			return scope.parsePrereduced("intersection", reducedConstraintsByKind)
+			const reducedSchema = Object.assign(
+				unflattenConstraints(reducedConstraints),
+				meta
+			)
+			return scope.parsePrereduced("intersection", reducedSchema)
 		}
 	}
 

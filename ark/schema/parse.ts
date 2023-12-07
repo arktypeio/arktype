@@ -132,7 +132,7 @@ export function parse(
 		return globalResolutions[innerId]
 	}
 	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, ctx.scope)
+		const reduced = impl.reduce(inner, meta, ctx.scope)
 		if (reduced) {
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't

@@ -139,7 +139,7 @@ export class ScopeNode<r extends object = any> {
 		}) as never
 	}
 
-	parsePrereduced<kind extends TypeKind>(
+	parsePrereduced<kind extends NodeKind>(
 		kind: kind,
 		def: Schema<kind>
 	): Node<kind> {
