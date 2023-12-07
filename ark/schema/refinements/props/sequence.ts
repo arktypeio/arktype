@@ -15,12 +15,6 @@ export type SequenceSchema = withAttributes<{
 	readonly postfix?: readonly TypeSchema[]
 }>
 
-export type SequenceInner = {
-	readonly prefix?: readonly TypeNode[]
-	readonly element: TypeNode
-	readonly postfix?: readonly TypeNode[]
-}
-
 export type SequenceDeclaration = declareNode<{
 	kind: "sequence"
 	schema: SequenceSchema
@@ -30,6 +24,15 @@ export type SequenceDeclaration = declareNode<{
 	}
 	checks: readonly unknown[]
 }>
+
+export type SequenceInner = {
+	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
+	readonly prefix?: readonly TypeNode[]
+	// the variadic element
+	readonly element: TypeNode
+	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
+	readonly postfix?: readonly TypeNode[]
+}
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
@@ -67,6 +70,7 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 				return scope.parsePrereduced("sequence", {
 					...meta,
 					...inner,
+					// empty lists will be omitted during normalization
 					prefix,
 					postfix
 				})
