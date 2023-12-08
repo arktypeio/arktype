@@ -2,7 +2,7 @@ import type {
 	DateLiteral,
 	Refinements,
 	RegexLiteral,
-	extractBase,
+	distill,
 	is
 } from "@arktype/schema"
 import type {
@@ -29,7 +29,7 @@ import type { inferIntersection } from "./intersections.js"
 
 export type inferAstRoot<ast, $, args> = inferAst<ast, $, args, {}>
 
-export type inferAstBase<ast, $, args> = extractBase<inferAstRoot<ast, $, args>>
+export type inferAstBase<ast, $, args> = distill<inferAstRoot<ast, $, args>>
 
 export type inferAst<
 	ast,

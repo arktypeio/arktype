@@ -157,50 +157,47 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		: t
 	: Exclude<out, Problem>
 
-export type extractBase<t> = includesRefinements<t> extends true
-	? extractBaseType<t>
+export type distill<t> = includesMorphs<t> extends true
+	? distillRecurse<t, "out", "base">
 	: t
 
 export type extractIn<t> = includesMorphs<t> extends true
-	? extractIo<t, "in">
+	? distillRecurse<t, "in", "refined">
 	: t
 
 export type extractOut<t> = includesMorphs<t> extends true
-	? extractIo<t, "out">
+	? distillRecurse<t, "out", "refined">
 	: t
 
 export type includesMorphs<t> = [
 	t,
-	extractIo<t, "in">,
+	distillRecurse<t, "in", "base">,
 	t,
-	extractIo<t, "out">
-] extends [extractIo<t, "in">, t, extractIo<t, "out">, t]
-	? false
-	: true
-
-export type includesRefinements<t> = [t, extractBaseType<t>] extends [
-	extractBaseType<t>,
+	distillRecurse<t, "out", "base">
+] extends [
+	distillRecurse<t, "in", "base">,
+	t,
+	distillRecurse<t, "out", "base">,
 	t
 ]
 	? false
 	: true
 
-type extractBaseType<t> = t extends is<infer base>
-	? base
-	: t extends TerminallyInferredObjectKind | Primitive
-	  ? t
-	  : { [k in keyof t]: extractBaseType<t[k]> }
-
-type extractIo<t, io extends "in" | "out"> = t extends MorphAst<
-	infer i,
-	infer o
->
+type distillRecurse<
+	t,
+	io extends "in" | "out",
+	refinements extends "base" | "refined"
+> = t extends MorphAst<infer i, infer o>
 	? io extends "in"
 		? i
 		: o
-	: t extends TerminallyInferredObjectKind | Primitive
-	  ? t
-	  : { [k in keyof t]: extractIo<t[k], io> }
+	: t extends is<infer base>
+	  ? refinements extends "base"
+			? distillRecurse<base, io, refinements>
+			: t
+	  : t extends TerminallyInferredObjectKind | Primitive
+	    ? t
+	    : { [k in keyof t]: distillRecurse<t[k], io, refinements> }
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

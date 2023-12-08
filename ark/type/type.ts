@@ -8,7 +8,7 @@ import {
 	type Out,
 	type Predicate,
 	type TypeNode,
-	type extractBase,
+	type distill,
 	type extractIn,
 	type extractOut,
 	type includesMorphs,
@@ -126,11 +126,11 @@ export type TypeConfig = {
 }
 
 export class Type<t = unknown, $ = any> extends CastableBase<
-	(data: unknown) => CheckResult<extractBase<extractOut<t>>>
+	(data: unknown) => CheckResult<distill<t>>
 > {
 	declare [inferred]: t
 	// TODO: in/out?
-	declare infer: extractBase<extractOut<t>>
+	declare infer: distill<t>
 
 	config: TypeConfig
 	root: TypeNode<t>
