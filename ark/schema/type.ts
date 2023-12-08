@@ -107,7 +107,10 @@ export abstract class BaseType<
 	}
 
 	array(): IntersectionNode<t[]> {
-		return this as never
+		return this.scope.parsePrereduced("intersection", {
+			basis: Array,
+			sequence: this
+		})
 	}
 
 	extends<other extends TypeNode>(other: other) {

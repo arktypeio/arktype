@@ -14,7 +14,7 @@ export type Json =
 	| {
 			[k: string | number]: JsonData
 	  }
-	| readonly JsonData[]
+	| JsonData[]
 
 export type JsonData = string | boolean | number | null | Json
 

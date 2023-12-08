@@ -64,14 +64,17 @@ export function parse(
 ): Node {
 	const cls = NodeImplementationByKind[kind]
 	const impl = cls.parser as UnknownNodeParser
-	if (schema instanceof BaseNode) {
-		return schema.kind === kind
+	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
+	// check if we already have a Node after normalization in case a node is a
+	// valid collapsed schema for the kind (e.g. sequence can collapse to
+	// element accepting a TypeSchema (or Node))
+	if (normalizedDefinition instanceof BaseNode) {
+		return normalizedDefinition.kind === kind
 			? (schema as never)
 			: throwParseError(
-					`Node of kind ${schema.kind} is not valid as a ${kind} definition`
+					`Node of kind ${normalizedDefinition.kind} is not valid as a ${kind} definition`
 			  )
 	}
-	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
 	const inner: Record<string, unknown> = {}
 	const meta: Record<string, unknown> = {}
 	impl.addContext?.(ctx)

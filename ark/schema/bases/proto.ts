@@ -72,11 +72,10 @@ export class ProtoNode<t = unknown> extends BaseType<t, ProtoDeclaration> {
 	}
 
 	readonly basisName = `${this.proto.name}`
+	readonly serializedConstructor = (this.json as { proto: string }).proto
 	readonly domain = "object"
-	readonly condition = `${In} instanceof ${
-		objectKindOf(this.proto) ?? compileSerializedValue(this.proto)
-	}`
-	readonly negatedCondition = `${this.condition} === false`
+	readonly condition = `${In} instanceof ${this.serializedConstructor}`
+	readonly negatedCondition = `!(${this.condition})`
 	traverseAllows = (data: unknown) => data instanceof this.proto
 	traverseApply = this.createPrimitiveTraversal()
 

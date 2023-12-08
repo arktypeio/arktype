@@ -55,6 +55,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 
 export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 	static parser: NodeParserImplementation<SequenceDeclaration> = {
+		collapseKey: "element",
 		keys: {
 			prefix: fixedSequenceKeyDefinition,
 			element: {
@@ -167,17 +168,20 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 	this.${prefixEl.id}(${In}[${i}], problems)
 }\n`
 		})
-		body += `const lastVariadicIndex = data.length${
+		body += `const lastVariadicIndex = ${In}.length${
 			this.postfix ? `- ${this.postfixLength}` : ""
 		}
 for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
-	this.${this.element.id}(${In}[i], problems)	
+	if(!this.${this.element.id}(${In}[i], problems)){
+		return false
+	}	
 }\n`
 		this.postfix?.forEach((postfixEl, i) => {
 			body += `if(!${postfixEl.compileBody(ctx)}) {
 this.${postfixEl.id}(${In}[${i}], problems)
 }\n`
 		})
+		body += "return true"
 		return body
 	}
 
@@ -189,7 +193,7 @@ this.${postfixEl.id}(${In}[${i}], problems)
 		const parts = this.prefix?.map(String) ?? []
 		parts.push(`zero or more elements containing ${this.element}`)
 		this.postfix?.forEach((node) => parts.push(String(node)))
-		return `An array of ${parts.join(" followed by ")}`
+		return `an array of ${parts.join(" followed by ")}`
 	}
 }
 
