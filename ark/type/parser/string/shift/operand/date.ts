@@ -1,8 +1,5 @@
+import type { DateLiteral } from "@arktype/schema"
 import { throwParseError, tryParseNumber } from "@arktype/util"
-
-export type DateLiteral<source extends string = string> =
-	| `d"${source}"`
-	| `d'${source}'`
 
 export const isDateLiteral = (value: unknown): value is DateLiteral =>
 	typeof value === "string" &&

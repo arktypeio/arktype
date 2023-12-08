@@ -1,4 +1,17 @@
-import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
+import type {
+	DateLiteral,
+	Refinements,
+	RegexLiteral,
+	extractBase,
+	sub
+} from "@arktype/schema"
+import type {
+	BigintLiteral,
+	List,
+	NumberLiteral,
+	evaluate,
+	extend
+} from "@arktype/util"
 import type {
 	UnparsedScope,
 	resolve,
@@ -6,14 +19,26 @@ import type {
 } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { inferDefinition } from "../definition.js"
-import type { Comparator, LimitLiteral } from "../string/reduce/shared.js"
-import type { DateLiteral } from "../string/shift/operand/date.js"
+import type {
+	Comparator,
+	InvertedComparators,
+	LimitLiteral
+} from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { inferIntersection } from "./intersections.js"
 
-export type inferAst<ast, $, args> = ast extends List
-	? inferExpression<ast, $, args>
-	: inferTerminal<ast, $, args>
+export type inferAstRoot<ast, $, args> = inferAst<ast, $, args, {}>
+
+export type inferAstBase<ast, $, args> = extractBase<inferAstRoot<ast, $, args>>
+
+export type inferAst<
+	ast,
+	$,
+	args,
+	refinements extends Refinements
+> = ast extends List
+	? inferExpression<ast, $, args, refinements>
+	: inferTerminal<ast, $, args, refinements>
 
 export type GenericInstantiationAst<
 	g extends GenericProps = GenericProps,
@@ -23,7 +48,8 @@ export type GenericInstantiationAst<
 export type inferExpression<
 	ast extends List,
 	$,
-	args
+	args,
+	refinements extends Refinements
 > = ast extends GenericInstantiationAst
 	? inferDefinition<
 			ast[0]["definition"],
@@ -40,27 +66,40 @@ export type inferExpression<
 					`${number}` as ast[0]["parameters"][i]]: inferAst<
 					ast[2][i & keyof ast[2]],
 					$,
-					args
+					args,
+					refinements
 				>
 			}
 	  >
 	: ast[1] extends "[]"
-	  ? inferAst<ast[0], $, args>[]
+	  ? inferAst<ast[0], $, args, refinements>[]
 	  : ast[1] extends "|"
-	    ? inferAst<ast[0], $, args> | inferAst<ast[2], $, args>
+	    ?
+					| inferAst<ast[0], $, args, refinements>
+					| inferAst<ast[2], $, args, refinements>
 	    : ast[1] extends "&"
 	      ? inferIntersection<
-						inferAst<ast[0], $, args>,
-						inferAst<ast[2], $, args>
+						inferAst<ast[0], $, args, refinements>,
+						inferAst<ast[2], $, args, refinements>
 	        >
 	      : ast[1] extends Comparator
 	        ? ast[0] extends LimitLiteral
-						? inferAst<ast[2], $, args>
-						: inferAst<ast[0], $, args>
+						? inferAst<
+								ast[2],
+								$,
+								args,
+								refinements & { [_ in InvertedComparators[ast[1]]]: ast[0] }
+						  >
+						: inferAst<ast[0], $, args, refinements & { [_ in ast[1]]: ast[2] }>
 	        : ast[1] extends "%"
-	          ? inferAst<ast[0], $, args>
+	          ? inferAst<
+								ast[0],
+								$,
+								args,
+								refinements & { [k in `%${ast[2] & string}`]: 0 }
+	            >
 	          : ast[0] extends "keyof"
-	            ? keyof inferAst<ast[1], $, args>
+	            ? keyof inferAst<ast[1], $, args, refinements>
 	            : never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
@@ -85,20 +124,26 @@ export type InfixExpression<
 	r = unknown
 > = [l, operator, r]
 
-export type RegexLiteral<source extends string = string> = `/${source}/`
-
-export type inferTerminal<token, $, args> = token extends keyof args | keyof $
-	? resolve<token, $, args>
+export type inferTerminal<
+	token,
+	$,
+	args,
+	refinements extends Refinements
+> = token extends keyof args | keyof $
+	? {} extends refinements
+		? resolve<token, $, args>
+		: sub<resolve<token, $, args>, evaluate<refinements>>
 	: token extends StringLiteral<infer text>
 	  ? text
 	  : token extends RegexLiteral
-	    ? string //& { pattern?: token }
+	    ? sub<string, extend<refinements, { [_ in token]: true }>>
 	    : token extends DateLiteral
-	      ? Date
+	      ? sub<Date, extend<refinements, { [_ in token]: true }>>
 	      : token extends NumberLiteral<infer value>
 	        ? value
 	        : token extends BigintLiteral<infer value>
 	          ? value
-	          : // doing this last allows us to infer never if it isn't valid rather than check
+	          : // TODO: refinements
+	            // doing this last allows us to infer never if it isn't valid rather than check
 	            // if it's a valid submodule reference ahead of time
 	            tryInferSubmoduleReference<$, token>

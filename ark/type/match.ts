@@ -102,7 +102,7 @@ export type WhenMatchParser<ctx extends MatchContext> = <
 	then: then
 ) => ChainableMatchParser<replaceKey<ctx, "thens", [...ctx["thens"], then]>>
 
-export type MatchInvokation<ctx extends MatchContext> = <
+export type MatchInvocation<ctx extends MatchContext> = <
 	data extends ctx["inConstraint"]
 >(
 	data: data
@@ -118,7 +118,7 @@ export type MatchInvokation<ctx extends MatchContext> = <
 }[Extract<keyof ctx["thens"], `${number}`>]
 
 export type ChainableMatchParser<ctx extends MatchContext> =
-	MatchInvokation<ctx> & {
+	MatchInvocation<ctx> & {
 		cases: CaseMatchParser<ctx>
 		when: WhenMatchParser<ctx>
 	}

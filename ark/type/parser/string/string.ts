@@ -3,7 +3,7 @@ import {
 	throwParseError,
 	type ErrorMessage
 } from "@arktype/util"
-import type { inferAst } from "../semantic/semantic.js"
+import type { inferAstRoot } from "../semantic/semantic.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
 import type { StaticState, state } from "./reduce/static.js"
@@ -27,7 +27,7 @@ export type parseString<def extends string, $, args> = def extends keyof $
 			: fullStringParse<state.initialize<def>, $, args>
 	  : fullStringParse<state.initialize<def>, $, args>
 
-export type inferString<def extends string, $, args> = inferAst<
+export type inferString<def extends string, $, args> = inferAstRoot<
 	parseString<def, $, args>,
 	$,
 	args

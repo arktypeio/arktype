@@ -10,7 +10,7 @@ import type {
 	writeInvalidLimitMessage,
 	writeUnboundableMessage
 } from "../string/shift/operator/bounds.js"
-import type { inferAst } from "./semantic.js"
+import type { inferAstBase } from "./semantic.js"
 import type { astToString } from "./utils.js"
 import type { validateAst } from "./validate.js"
 
@@ -33,7 +33,7 @@ export type validateBound<
 	boundKind extends BoundExpressionKind,
 	$,
 	args
-> = inferAst<boundedAst, $, args> extends infer bounded
+> = inferAstBase<boundedAst, $, args> extends infer bounded
 	? [bounded] extends [NumericallyBoundable]
 		? limit extends number
 			? validateAst<boundedAst, $, args>

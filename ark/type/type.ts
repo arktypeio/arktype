@@ -8,6 +8,7 @@ import {
 	type Out,
 	type Predicate,
 	type TypeNode,
+	type extractBase,
 	type extractIn,
 	type extractOut,
 	type includesMorphs,
@@ -125,11 +126,11 @@ export type TypeConfig = {
 }
 
 export class Type<t = unknown, $ = any> extends CastableBase<
-	(data: unknown) => CheckResult<t>
+	(data: unknown) => CheckResult<extractBase<extractOut<t>>>
 > {
 	declare [inferred]: t
 	// TODO: in/out?
-	declare infer: extractOut<t>
+	declare infer: extractBase<extractOut<t>>
 
 	config: TypeConfig
 	root: TypeNode<t>
@@ -175,10 +176,11 @@ export class Type<t = unknown, $ = any> extends CastableBase<
 		) as never
 	}
 
-	morph<morph extends Morph<extractOut<t>>>(
+	// TODO: standardize these
+	morph<morph extends Morph<this["infer"]>>(
 		morph: morph
 	): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
-	morph<morph extends Morph<extractOut<t>>, def>(
+	morph<morph extends Morph<this["infer"]>, def>(
 		morph: morph,
 		outValidator: validateTypeRoot<def, $>
 	): Type<
@@ -219,7 +221,7 @@ export class Type<t = unknown, $ = any> extends CastableBase<
 		return new Type(this.root.keyof(), this.scope) as never
 	}
 
-	assert(data: unknown): extractOut<t> {
+	assert(data: unknown): this["infer"] {
 		const result = this.call(null, data)
 		return result.problems ? result.problems.throw() : result.out
 	}

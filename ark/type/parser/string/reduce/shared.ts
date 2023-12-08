@@ -1,4 +1,4 @@
-import type { DateLiteral } from "../shift/operand/date.js"
+import type { DateLiteral } from "@arktype/schema"
 
 export type StringifiablePrefixOperator = "keyof"
 

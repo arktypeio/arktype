@@ -1,8 +1,7 @@
-import { schema } from "@arktype/schema"
+import { schema, type RegexLiteral } from "@arktype/schema"
 import { isKeyOf } from "@arktype/util"
-import type { RegexLiteral } from "../../../semantic/semantic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { StaticState, state } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 import { tryParseDate, writeInvalidDateMessage } from "./date.js"
 

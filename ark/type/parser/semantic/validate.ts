@@ -1,3 +1,4 @@
+import type { Refinements } from "@arktype/schema"
 import type {
 	BigintLiteral,
 	Completion,

@@ -196,7 +196,7 @@ export const Problems: new () => Problems = ProblemsArray
 export type ProblemCode = string
 
 export type CheckResult<t = unknown> = propwiseXor<
-	{ out: extractOut<t> },
+	{ out: t },
 	{ problems: Problems }
 >
 

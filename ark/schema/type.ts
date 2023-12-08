@@ -6,7 +6,7 @@ import {
 	type TypeNode
 } from "./base.js"
 import type { IntersectionNode } from "./sets/intersection.js"
-import type { extractIn, extractOut } from "./sets/morph.js"
+import type { extractBase, extractIn, extractOut } from "./sets/morph.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
 import { Problems, type CheckResult } from "./shared/compilation.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
@@ -46,12 +46,12 @@ export abstract class BaseType<
 		return super.out
 	}
 
-	allows = (data: unknown): data is t => {
+	allows = (data: unknown): data is extractBase<extractIn<t>> => {
 		const problems = new Problems()
 		return this.traverseAllows(data as never, problems)
 	}
 
-	apply(data: unknown): CheckResult<t> {
+	apply(data: unknown): CheckResult<extractOut<t>> {
 		const problems = new Problems()
 		this.traverseApply(data as never, problems)
 		if (problems.length === 0) {

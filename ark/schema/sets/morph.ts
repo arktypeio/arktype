@@ -9,6 +9,7 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
+import type { sub } from "../refinements/refinement.js"
 import type { ArkConfig } from "../scope.js"
 import type {
 	CheckResult,
@@ -156,24 +157,41 @@ export type inferMorphOut<out> = out extends CheckResult<infer t>
 		: t
 	: Exclude<out, Problem>
 
+export type extractBase<t> = includesRefinements<t> extends true
+	? extractBaseType<t>
+	: t
+
 export type extractIn<t> = includesMorphs<t> extends true
-	? extractMorphs<t, "in">
+	? extractIo<t, "in">
 	: t
 
 export type extractOut<t> = includesMorphs<t> extends true
-	? extractMorphs<t, "out">
+	? extractIo<t, "out">
 	: t
 
 export type includesMorphs<t> = [
 	t,
-	extractMorphs<t, "in">,
+	extractIo<t, "in">,
 	t,
-	extractMorphs<t, "out">
-] extends [extractMorphs<t, "in">, t, extractMorphs<t, "out">, t]
+	extractIo<t, "out">
+] extends [extractIo<t, "in">, t, extractIo<t, "out">, t]
 	? false
 	: true
 
-type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
+export type includesRefinements<t> = [t, extractBaseType<t>] extends [
+	extractBaseType<t>,
+	t
+]
+	? false
+	: true
+
+type extractBaseType<t> = t extends sub<infer base>
+	? base
+	: t extends TerminallyInferredObjectKind | Primitive
+	  ? t
+	  : { [k in keyof t]: extractBaseType<t[k]> }
+
+type extractIo<t, io extends "in" | "out"> = t extends MorphAst<
 	infer i,
 	infer o
 >
@@ -182,7 +200,7 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
 		: o
 	: t extends TerminallyInferredObjectKind | Primitive
 	  ? t
-	  : { [k in keyof t]: extractMorphs<t[k], io> }
+	  : { [k in keyof t]: extractIo<t[k], io> }
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
