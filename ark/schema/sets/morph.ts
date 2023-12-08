@@ -9,7 +9,7 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
-import type { sub } from "../refinements/refinement.js"
+import type { is } from "../refinements/refinement.js"
 import type { ArkConfig } from "../scope.js"
 import type {
 	CheckResult,
@@ -185,7 +185,7 @@ export type includesRefinements<t> = [t, extractBaseType<t>] extends [
 	? false
 	: true
 
-type extractBaseType<t> = t extends sub<infer base>
+type extractBaseType<t> = t extends is<infer base>
 	? base
 	: t extends TerminallyInferredObjectKind | Primitive
 	  ? t

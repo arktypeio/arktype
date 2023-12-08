@@ -3,7 +3,7 @@ import type {
 	Refinements,
 	RegexLiteral,
 	extractBase,
-	sub
+	is
 } from "@arktype/schema"
 import type {
 	BigintLiteral,
@@ -132,13 +132,13 @@ export type inferTerminal<
 > = token extends keyof args | keyof $
 	? {} extends refinements
 		? resolve<token, $, args>
-		: sub<resolve<token, $, args>, evaluate<refinements>>
+		: is<resolve<token, $, args>, refinements>
 	: token extends StringLiteral<infer text>
 	  ? text
 	  : token extends RegexLiteral
-	    ? sub<string, extend<refinements, { [_ in token]: true }>>
+	    ? is<string, extend<refinements, { [_ in token]: true }>>
 	    : token extends DateLiteral
-	      ? sub<Date, extend<refinements, { [_ in token]: true }>>
+	      ? is<Date, extend<refinements, { [_ in token]: true }>>
 	      : token extends NumberLiteral<infer value>
 	        ? value
 	        : token extends BigintLiteral<infer value>

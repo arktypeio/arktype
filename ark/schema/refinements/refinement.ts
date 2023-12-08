@@ -97,8 +97,4 @@ export type Refinements = evaluate<
 		}
 >
 
-export type sub<t = unknown, refinements = Refinements> = [
-	t,
-	":?>",
-	refinements
-]
+export type is<t = unknown, refinements = Refinements> = [t, ":?>", refinements]
