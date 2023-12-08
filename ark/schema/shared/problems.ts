@@ -1,4 +1,5 @@
 import type { arraySubclassToReadonly, propwiseXor } from "@arktype/util"
+import type { TraversalContext } from "./context.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems
@@ -14,11 +15,11 @@ export class Problem<data = unknown> {
 
 	constructor(
 		public path: string[],
-		public description: string
+		public rule: string
 	) {
 		this.message = path.length
-			? `${path.join(".")} must be ${description}`
-			: `Must be ${description}`
+			? `${path.join(".")} must be ${rule}`
+			: `Must be ${rule}`
 	}
 
 	toString() {
@@ -26,14 +27,38 @@ export class Problem<data = unknown> {
 	}
 }
 
-class ProblemsArray extends Array<Problem> {
-	currentPath: string[] = []
+const ReadonlyArray = Array as new <T>(
+	...args: ConstructorParameters<typeof Array>
+) => ReadonlyArray<T>
+
+export class Problems extends ReadonlyArray<Problem> {
+	// TODO: add at custom path
+
+	constructor(protected context: TraversalContext) {
+		super()
+	}
+
 	byPath: Record<string, Problem> = {}
 	count = 0
 
+	// mustBe(mustBe: string, data: unknown, path: Path) {
+	// 	return this.addProblem("custom", mustBe, data, path)
+	// }
+
+	// addProblem<code extends ProblemCode>(
+	// 	code: code,
+	// 	...args: ProblemParameters<code>
+	// ) {
+	// 	// TODO: fix
+	// 	const problem = new problemsByCode[code](
+	// 		...(args as never[])
+	// 	) as any as Problem
+	// 	return this.problems.add(problem)
+	// }
+
 	add(description: string) {
-		const problem = new Problem([...this.currentPath], description)
-		const pathKey = this.currentPath.join(".")
+		const problem = new Problem([...this.context.path], description)
+		const pathKey = this.context.path.join(".")
 		const existing = this.byPath[pathKey]
 		if (existing) {
 			// if (existing.hasCode("intersection")) {
@@ -54,7 +79,7 @@ class ProblemsArray extends Array<Problem> {
 			// }
 		} else {
 			this.byPath[pathKey] = problem
-			this.push(problem)
+			;(this as any).push(problem)
 		}
 		this.count++
 		return problem
@@ -73,8 +98,6 @@ class ProblemsArray extends Array<Problem> {
 	}
 }
 
-export const Problems: new () => Problems = ProblemsArray
-
 // TODO: fix
 export type ProblemCode = string
 
@@ -82,5 +105,3 @@ export type CheckResult<out = unknown> = propwiseXor<
 	{ out: out },
 	{ problems: Problems }
 >
-
-export type Problems = arraySubclassToReadonly<ProblemsArray>
