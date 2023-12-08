@@ -86,7 +86,7 @@ export class RequiredNode extends RefinementNode<RequiredDeclaration> {
 
 	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
 
-	compileBody(ctx: CompilationContext) {
+	compileBody(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${In}) {
 			${compilePresentProp(this, ctx)}
 		} else {

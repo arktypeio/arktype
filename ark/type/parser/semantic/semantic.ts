@@ -89,10 +89,10 @@ export type RegexLiteral<source extends string = string> = `/${source}/`
 
 export type inferTerminal<token, $, args> = token extends keyof args | keyof $
 	? resolve<token, $, args>
-	: token extends StringLiteral<infer Text>
-	  ? Text
+	: token extends StringLiteral<infer text>
+	  ? text
 	  : token extends RegexLiteral
-	    ? string
+	    ? string //& { pattern?: token }
 	    : token extends DateLiteral
 	      ? Date
 	      : token extends NumberLiteral<infer value>
