@@ -2,6 +2,7 @@ import type { CompilationContext } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
+import { Problem } from "../shared/problems.js"
 import { RefinementNode } from "./shared.js"
 
 export type DivisorInner = {

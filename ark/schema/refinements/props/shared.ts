@@ -14,12 +14,12 @@ export const compilePresentProp = (
 	ctx: CompilationContext
 ) => {
 	if (ctx.compilationKind === "allows") {
-		return `return this.${node.value.id}(${ctx.arg}${compilePropAccess(
+		return `return this.${node.value.id}(${ctx.argName}${compilePropAccess(
 			node.compiledKey
 		)})`
 	}
 	return `problems.currentPath.push(${node.serializedKey})
-	this.${node.value.id}(${ctx.arg}${compilePropAccess(
+	this.${node.value.id}(${ctx.argName}${compilePropAccess(
 		node.compiledKey
 	)}, problems)
 	problems.currentPath.pop()

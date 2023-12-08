@@ -9,7 +9,6 @@ import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
 import type { CompilationContext } from "../scope.js"
-import type { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -22,6 +21,7 @@ import {
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import type { Schema, reducibleKindOf } from "../shared/nodes.js"
+import type { Problems } from "../shared/problems.js"
 import { BaseType } from "../type.js"
 
 export type IntersectionInner = { basis?: Node<BasisKind> } & {
@@ -218,7 +218,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	compileBody(ctx: CompilationContext) {
 		const constraintInvocations = this.constraints.map(
 			(constraint) =>
-				`this.${constraint.id}(${ctx.arg}${
+				`this.${constraint.id}(${ctx.argName}${
 					ctx.compilationKind === "allows" ? "" : ", problems"
 				})`
 		)

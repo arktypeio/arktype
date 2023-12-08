@@ -1,11 +1,4 @@
-import {
-	hasDomain,
-	serializePrimitive,
-	type SerializablePrimitive,
-	type arraySubclassToReadonly,
-	type propwiseXor
-} from "@arktype/util"
-import type { Node } from "../base.js"
+import type { arraySubclassToReadonly, propwiseXor } from "@arktype/util"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems
@@ -16,7 +9,7 @@ export class ArkTypeError extends TypeError {
 	}
 }
 
-export class Problem {
+export class Problem<data = unknown> {
 	public message: string
 
 	constructor(

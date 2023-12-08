@@ -1,11 +1,11 @@
 import type { Node, TypeSchema } from "../../base.js"
 import type { CompilationContext } from "../../scope.js"
-import type { Problems } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { NodeParserImplementation, TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { NodeIntersections } from "../../shared/intersect.js"
 import type { Schema } from "../../shared/nodes.js"
+import type { Problems } from "../../shared/problems.js"
 import { compileSerializedValue } from "../../shared/registry.js"
 import { RefinementNode } from "../shared.js"
 import { compilePresentProp } from "./shared.js"
@@ -71,7 +71,7 @@ export class OptionalNode extends RefinementNode<OptionalDeclaration> {
 	}
 
 	compileBody(ctx: CompilationContext): string {
-		return `if(${this.serializedKey} in ${ctx.arg}) {
+		return `if(${this.serializedKey} in ${ctx.argName}) {
 			${compilePresentProp(this, ctx)}
 		}`
 	}

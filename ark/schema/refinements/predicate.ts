@@ -1,8 +1,8 @@
 import type { CompilationContext } from "../scope.js"
-import type { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
+import type { Problems } from "../shared/problems.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import { RefinementNode } from "./shared.js"
 

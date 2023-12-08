@@ -1,10 +1,10 @@
 import type { TypeNode, TypeSchema } from "../../base.js"
 import type { CompilationContext } from "../../scope.js"
-import type { Problems } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { NodeParserImplementation } from "../../shared/define.js"
 import type { Disjoint } from "../../shared/disjoint.js"
 import type { NodeIntersections } from "../../shared/intersect.js"
+import type { Problems } from "../../shared/problems.js"
 import { RefinementNode } from "../shared.js"
 
 export type IndexSchema = withAttributes<{

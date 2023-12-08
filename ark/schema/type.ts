@@ -8,12 +8,12 @@ import {
 import type { IntersectionNode } from "./sets/intersection.js"
 import type { distill, extractIn, extractOut } from "./sets/morph.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
-import { Problems, type CheckResult } from "./shared/compilation.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema, ioKindOf } from "./shared/nodes.js"
+import { Problems, type CheckResult } from "./shared/problems.js"
 import { inferred } from "./shared/symbols.js"
 
 export type BaseTypeDeclaration = extend<

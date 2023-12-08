@@ -11,12 +11,12 @@ import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { is } from "../refinements/refinement.js"
 import type { ArkConfig, CompilationContext } from "../scope.js"
-import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import type { Schema } from "../shared/nodes.js"
+import type { CheckResult, Problem, Problems } from "../shared/problems.js"
 import { BaseType } from "../type.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>

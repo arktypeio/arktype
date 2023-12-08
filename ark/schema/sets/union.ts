@@ -1,12 +1,12 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { CompilationContext } from "../scope.js"
-import type { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import type { Schema } from "../shared/nodes.js"
+import type { Problems } from "../shared/problems.js"
 import { BaseType } from "../type.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
@@ -169,7 +169,7 @@ export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
 	compileBody(ctx: CompilationContext) {
 		const branchInvocations = this.branches.map(
 			(branch) =>
-				`this.${branch.id}(${ctx.arg}${
+				`this.${branch.id}(${ctx.argName}${
 					ctx.compilationKind === "allows" ? "" : ", problems"
 				})`
 		)

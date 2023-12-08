@@ -26,9 +26,9 @@ import type {
 	NormalizedUnionSchema,
 	UnionNode
 } from "./sets/union.js"
-import type { ProblemCode, Problems } from "./shared/compilation.js"
 import type { NodeKind, PropKind, SetKind, TypeKind } from "./shared/define.js"
 import type { Schema, reducibleKindOf } from "./shared/nodes.js"
+import type { ProblemCode, Problems } from "./shared/problems.js"
 import { BaseType } from "./type.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
@@ -227,7 +227,7 @@ export class ScopeNode<r extends object = any> {
 		.map(
 			(reference) => `${reference.id}(${compiledArgs}){
 ${reference.compileBody({
-	arg: this.argName,
+	argName: this.argName,
 	compilationKind: kind,
 	path: [],
 	discriminants: []
@@ -267,8 +267,12 @@ ${reference.compileBody({
 		return ctx.compilationKind === "allows"
 			? `return ${node.condition}`
 			: `if (${node.negatedCondition}) {
-	${compilePrimitiveProblem(node)}
+	${this.compilePrimitiveProblem(node)}
 }`
+	}
+
+	compilePrimitiveProblem(node: Node<PrimitiveKind>) {
+		return `problems.add(${JSON.stringify(node.description)})`
 	}
 
 	readonly schema = Object.assign(this.parseBranches.bind(this), {
@@ -322,7 +326,7 @@ export type TraverseApply<data = unknown> = (
 ) => void
 
 export type CompilationContext = {
-	arg: string
+	argName: string
 	path: string[]
 	discriminants: Discriminant[]
 	compilationKind: TraversalKind
@@ -331,7 +335,3 @@ export type CompilationContext = {
 export type CompositeKind = SetKind | PropKind
 
 export type PrimitiveKind = Exclude<NodeKind, CompositeKind>
-
-const compilePrimitiveProblem = (node: Node<PrimitiveKind>) => {
-	return `problems.add(${JSON.stringify(node.description)})`
-}

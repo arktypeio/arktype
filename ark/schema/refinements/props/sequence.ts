@@ -1,6 +1,5 @@
 import type { TypeNode, TypeSchema } from "../../base.js"
 import type { CompilationContext } from "../../scope.js"
-import type { Problems } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type {
 	NodeKeyImplementation,
@@ -8,6 +7,7 @@ import type {
 } from "../../shared/define.js"
 import type { Disjoint } from "../../shared/disjoint.js"
 import type { NodeIntersections } from "../../shared/intersect.js"
+import type { Problems } from "../../shared/problems.js"
 import { RefinementNode } from "../shared.js"
 
 export type NormalizedSequenceSchema = withAttributes<{
@@ -157,25 +157,25 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 
 	compileBody(ctx: CompilationContext): string {
 		// TODO: traversal?
-		let body = `if(${ctx.arg}.length < ${this.minLength}) {
+		let body = `if(${ctx.argName}.length < ${this.minLength}) {
 	return false
 }\n`
 		this.prefix?.forEach((prefixEl, i) => {
 			body += `if(!${prefixEl.compileBody(ctx)}) {
-	this.${prefixEl.id}(${ctx.arg}[${i}], problems)
+	this.${prefixEl.id}(${ctx.argName}[${i}], problems)
 }\n`
 		})
-		body += `const lastVariadicIndex = ${ctx.arg}.length${
+		body += `const lastVariadicIndex = ${ctx.argName}.length${
 			this.postfix ? `- ${this.postfixLength}` : ""
 		}
 for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
-	if(!this.${this.element.id}(${ctx.arg}[i], problems)){
+	if(!this.${this.element.id}(${ctx.argName}[i], problems)){
 		return false
 	}	
 }\n`
 		this.postfix?.forEach((postfixEl, i) => {
 			body += `if(!${postfixEl.compileBody(ctx)}) {
-this.${postfixEl.id}(${ctx.arg}[${i}], problems)
+this.${postfixEl.id}(${ctx.argName}[${i}], problems)
 }\n`
 		})
 		body += "return true"

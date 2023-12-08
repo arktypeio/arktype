@@ -1,10 +1,10 @@
 import { domainOf, printable } from "@arktype/util"
 import type { CompilationContext } from "../scope.js"
-import { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
+import { Problems } from "../shared/problems.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import { BaseType } from "../type.js"
 
