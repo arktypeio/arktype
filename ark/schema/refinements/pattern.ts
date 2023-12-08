@@ -1,9 +1,5 @@
 import type { extend } from "@arktype/util"
-import {
-	In,
-	compilePrimitive,
-	type CompilationContext
-} from "../shared/compilation.js"
+import type { CompilationContext } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type {
 	NodeParserImplementation,
@@ -63,11 +59,11 @@ export class PatternNode extends RefinementNode<PatternDeclaration> {
 
 	traverseAllows = this.regex.test
 	traverseApply = this.createPrimitiveTraversal()
-	condition = `/${this.source}/${this.flags ?? ""}.test(${In})`
+	condition = `/${this.source}/${this.flags ?? ""}.test(${this.scope.argName})`
 	negatedCondition = `!${this.condition}`
 
 	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this, ctx)
+		return this.scope.compilePrimitive(this, ctx)
 	}
 
 	getCheckedDefinitions() {

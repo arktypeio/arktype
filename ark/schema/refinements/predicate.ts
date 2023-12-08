@@ -1,13 +1,9 @@
-import {
-	In,
-	compilePrimitive,
-	compileSerializedValue,
-	type CompilationContext,
-	type Problems
-} from "../shared/compilation.js"
+import type { CompilationContext } from "../scope.js"
+import type { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
+import { compileSerializedValue } from "../shared/registry.js"
 import { RefinementNode } from "./shared.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
@@ -53,7 +49,7 @@ export class PredicateNode extends RefinementNode<PredicateDeclaration> {
 
 	traverseAllows = this.predicate
 	traverseApply = this.createPrimitiveTraversal()
-	condition = `${compileSerializedValue(this.predicate)}(${In})`
+	condition = `${compileSerializedValue(this.predicate)}(${this.scope.argName})`
 	negatedCondition = `!${this.condition}`
 
 	getCheckedDefinitions() {
@@ -61,7 +57,7 @@ export class PredicateNode extends RefinementNode<PredicateDeclaration> {
 	}
 
 	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this, ctx)
+		return this.scope.compilePrimitive(this, ctx)
 	}
 
 	writeDefaultDescription() {

@@ -1,9 +1,6 @@
 import type { TypeNode, TypeSchema } from "../../base.js"
-import {
-	In,
-	type CompilationContext,
-	type Problems
-} from "../../shared/compilation.js"
+import type { CompilationContext } from "../../scope.js"
+import type { Problems } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type {
 	NodeKeyImplementation,
@@ -160,25 +157,25 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 
 	compileBody(ctx: CompilationContext): string {
 		// TODO: traversal?
-		let body = `if(${In}.length < ${this.minLength}) {
+		let body = `if(${ctx.arg}.length < ${this.minLength}) {
 	return false
 }\n`
 		this.prefix?.forEach((prefixEl, i) => {
 			body += `if(!${prefixEl.compileBody(ctx)}) {
-	this.${prefixEl.id}(${In}[${i}], problems)
+	this.${prefixEl.id}(${ctx.arg}[${i}], problems)
 }\n`
 		})
-		body += `const lastVariadicIndex = ${In}.length${
+		body += `const lastVariadicIndex = ${ctx.arg}.length${
 			this.postfix ? `- ${this.postfixLength}` : ""
 		}
 for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
-	if(!this.${this.element.id}(${In}[i], problems)){
+	if(!this.${this.element.id}(${ctx.arg}[i], problems)){
 		return false
 	}	
 }\n`
 		this.postfix?.forEach((postfixEl, i) => {
 			body += `if(!${postfixEl.compileBody(ctx)}) {
-this.${postfixEl.id}(${In}[${i}], problems)
+this.${postfixEl.id}(${ctx.arg}[${i}], problems)
 }\n`
 		})
 		body += "return true"

@@ -5,11 +5,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import {
-	In,
-	compilePrimitive,
-	type CompilationContext
-} from "../shared/compilation.js"
+import type { CompilationContext } from "../scope.js"
 import type {
 	BaseNodeDeclaration,
 	declareNode,
@@ -138,7 +134,7 @@ export abstract class BaseBound<
 				: { limit: schema }) as NormalizedBoundSchema<number>
 	} as const satisfies NodeParserImplementation<Declaration<BoundKind>>
 
-	size = compileSizeOf(this.kind)
+	size = compileSizeOf(this.kind, this.scope.argName)
 	comparator = compileComparator(
 		this.kind,
 		this.exclusive
@@ -151,7 +147,7 @@ export abstract class BaseBound<
 	}`
 
 	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this as never, ctx)
+		return this.scope.compilePrimitive(this as never, ctx)
 	}
 }
 
@@ -160,12 +156,12 @@ const compileComparator = (kind: BoundKind, exclusive: true | undefined) =>
 		exclusive ? "" : "="
 	}` as const
 
-const compileSizeOf = (kind: BoundKind) =>
+const compileSizeOf = (kind: BoundKind, argName: string) =>
 	kind === "min" || kind === "max"
-		? `${In}`
+		? `${argName}`
 		: kind === "minLength" || kind === "maxLength"
-		  ? `${In}.length`
-		  : `+${In}`
+		  ? `${argName}.length`
+		  : `+${argName}`
 
 export type MinDeclaration = declareNode<{
 	kind: "min"

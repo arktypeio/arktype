@@ -132,7 +132,7 @@ export type inferTerminal<
 > = token extends keyof args | keyof $
 	? {} extends refinements
 		? resolve<token, $, args>
-		: is<resolve<token, $, args>, refinements>
+		: is<resolve<token, $, args>, evaluate<refinements>>
 	: token extends StringLiteral<infer text>
 	  ? text
 	  : token extends RegexLiteral

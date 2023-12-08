@@ -29,18 +29,18 @@ import type { IndexNode } from "./refinements/props/index.js"
 import type { OptionalNode } from "./refinements/props/optional.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { SequenceNode } from "./refinements/props/sequence.js"
-import type { ScopeNode } from "./scope.js"
+import type {
+	CompilationContext,
+	ScopeNode,
+	TraverseAllows,
+	TraverseApply
+} from "./scope.js"
 import type {
 	IntersectionInner,
 	IntersectionNode
 } from "./sets/intersection.js"
 import type { MorphNode } from "./sets/morph.js"
 import type { UnionNode } from "./sets/union.js"
-import type {
-	CompilationContext,
-	TraverseAllows,
-	TraverseApply
-} from "./shared/compilation.js"
 import type {
 	BaseAttributes,
 	BaseNodeDeclaration,

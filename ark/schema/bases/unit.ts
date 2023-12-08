@@ -1,15 +1,11 @@
 import { domainOf, printable } from "@arktype/util"
-import {
-	In,
-	Problems,
-	compilePrimitive,
-	compileSerializedValue,
-	type CompilationContext
-} from "../shared/compilation.js"
+import type { CompilationContext } from "../scope.js"
+import { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
+import { compileSerializedValue } from "../shared/registry.js"
 import { BaseType } from "../type.js"
 
 export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
@@ -52,16 +48,14 @@ export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
 	traverseApply = this.createPrimitiveTraversal()
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
-	condition = `${In} === ${this.serializedValue}`
-	negatedCondition = `${In} !== ${this.serializedValue}`
+	condition = `${this.scope.argName} === ${this.serializedValue}`
+	negatedCondition = `${this.scope.argName} !== ${this.serializedValue}`
 
 	writeDefaultDescription() {
 		return this.basisName
 	}
 
 	compileBody(ctx: CompilationContext): string {
-		return compilePrimitive(this, ctx)
+		return this.scope.compilePrimitive(this, ctx)
 	}
 }
-
-// compile: compilePrimitive,

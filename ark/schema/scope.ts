@@ -1,9 +1,13 @@
 import {
+	CompiledFunction,
+	hasDomain,
 	isArray,
 	printable,
+	serializePrimitive,
 	throwInternalError,
 	throwParseError,
-	type Dict
+	type Dict,
+	type SerializablePrimitive
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
@@ -16,13 +20,14 @@ import type {
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
+import type { Discriminant } from "./sets/discriminate.js"
 import type {
 	BranchKind,
 	NormalizedUnionSchema,
 	UnionNode
 } from "./sets/union.js"
-import { bindCompiledScope, type ProblemCode } from "./shared/compilation.js"
-import type { NodeKind, TypeKind } from "./shared/define.js"
+import type { ProblemCode, Problems } from "./shared/compilation.js"
+import type { NodeKind, PropKind, SetKind, TypeKind } from "./shared/define.js"
 import type { Schema, reducibleKindOf } from "./shared/nodes.js"
 import { BaseType } from "./type.js"
 
@@ -66,7 +71,7 @@ export class ScopeNode<r extends object = any> {
 			)
 		}
 		this.references = Object.values(this.referencesById)
-		bindCompiledScope(this.references, this.references)
+		this.bindCompiledScope(this.references, this.references)
 		this.resolved = true
 		if (ScopeNode.keywords) {
 			// ensure root has been set before parsing this to avoid a circularity
@@ -179,13 +184,91 @@ export class ScopeNode<r extends object = any> {
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
 			// including only its references
-			bindCompiledScope([node], node.contributesReferences)
+			this.bindCompiledScope([node], node.contributesReferences)
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
 			this.referencesById[node.id] = node
 		}
 		return node as never
+	}
+
+	readonly argName = "$arkRoot"
+
+	protected bindCompiledScope(
+		nodesToBind: readonly Node[],
+		references: readonly Node[]
+	) {
+		const compiledAllowsTraversals = this.compileScope(references, "allows")
+		const compiledApplyTraversals = this.compileScope(references, "apply")
+		for (const node of nodesToBind) {
+			node.traverseAllows = compiledAllowsTraversals[node.id].bind(
+				compiledAllowsTraversals
+			)
+			if (node.isType() && !node.includesContextDependentPredicate) {
+				// if the reference doesn't require context, we can assign over
+				// it directly to avoid having to initialize it
+				node.allows = node.traverseAllows as never
+			}
+			node.traverseApply = compiledApplyTraversals[node.id].bind(
+				compiledApplyTraversals
+			)
+		}
+	}
+
+	protected compileScope<kind extends TraversalKind>(
+		references: readonly Node[],
+		kind: kind
+	): Record<string, TraversalMethodsByKind[kind]> {
+		const compiledArgs =
+			kind === "allows" ? this.argName : `${this.argName}, problems`
+		const body = `return {
+	${references
+		.map(
+			(reference) => `${reference.id}(${compiledArgs}){
+${reference.compileBody({
+	arg: this.argName,
+	compilationKind: kind,
+	path: [],
+	discriminants: []
+})}
+}`
+		)
+		.join(",\n")}
+}`
+		return new CompiledFunction(body)() as never
+	}
+
+	compilePrimitive(node: Node<PrimitiveKind>, ctx: CompilationContext) {
+		const pathString = ctx.path.join()
+		if (
+			node.kind === "domain" &&
+			node.domain === "object" &&
+			ctx.discriminants.some((d) => d.path.join().startsWith(pathString))
+		) {
+			// if we've already checked a path at least as long as the current one,
+			// we don't need to revalidate that we're in an object
+			return ""
+		}
+		if (
+			(node.kind === "domain" || node.kind === "unit") &&
+			ctx.discriminants.some(
+				(d) =>
+					d.path.join() === pathString &&
+					(node.kind === "domain"
+						? d.kind === "domain" || d.kind === "value"
+						: d.kind === "value")
+			)
+		) {
+			// if the discriminant has already checked the domain at the current path
+			// (or an exact value, implying a domain), we don't need to recheck it
+			return ""
+		}
+		return ctx.compilationKind === "allows"
+			? `return ${node.condition}`
+			: `if (${node.negatedCondition}) {
+	${compilePrimitiveProblem(node)}
+}`
 	}
 
 	readonly schema = Object.assign(this.parseBranches.bind(this), {
@@ -200,15 +283,6 @@ export const scopeNode = ScopeNode.from
 export const rootSchema = ScopeNode.root.schema.bind(ScopeNode.root)
 
 export const rootNode = ScopeNode.root.parseNode.bind(ScopeNode.root)
-
-export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
-	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
-
-export const writeDuplicateNameMessage = <name extends string>(
-	name: name
-): writeDuplicateNameMessage<name> => `Duplicate name '${name}'`
-
-type writeDuplicateNameMessage<name extends string> = `Duplicate name '${name}'`
 
 const assertTypeKind = (input: unknown): TypeKind => {
 	const basisKind = maybeGetBasisKind(input)
@@ -228,4 +302,36 @@ const assertTypeKind = (input: unknown): TypeKind => {
 		}
 	}
 	return throwParseError(`${printable(input)} is not a valid type schema`)
+}
+
+export type TraversalKind = keyof TraversalMethodsByKind
+
+type TraversalMethodsByKind<input = unknown> = {
+	allows: TraverseAllows<input>
+	apply: TraverseApply<input>
+}
+
+export type TraverseAllows<data = unknown> = (
+	data: data,
+	problems: Problems
+) => boolean
+
+export type TraverseApply<data = unknown> = (
+	data: data,
+	problems: Problems
+) => void
+
+export type CompilationContext = {
+	arg: string
+	path: string[]
+	discriminants: Discriminant[]
+	compilationKind: TraversalKind
+}
+
+export type CompositeKind = SetKind | PropKind
+
+export type PrimitiveKind = Exclude<NodeKind, CompositeKind>
+
+const compilePrimitiveProblem = (node: Node<PrimitiveKind>) => {
+	return `problems.add(${JSON.stringify(node.description)})`
 }

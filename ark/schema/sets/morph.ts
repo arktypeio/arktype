@@ -10,13 +10,8 @@ import {
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { is } from "../refinements/refinement.js"
-import type { ArkConfig } from "../scope.js"
-import type {
-	CheckResult,
-	CompilationContext,
-	Problem,
-	Problems
-} from "../shared/compilation.js"
+import type { ArkConfig, CompilationContext } from "../scope.js"
+import type { CheckResult, Problem, Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"

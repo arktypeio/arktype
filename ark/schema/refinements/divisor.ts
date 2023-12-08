@@ -1,8 +1,4 @@
-import {
-	In,
-	compilePrimitive,
-	type CompilationContext
-} from "../shared/compilation.js"
+import type { CompilationContext } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -55,11 +51,11 @@ export class DivisorNode extends RefinementNode<DivisorDeclaration> {
 
 	traverseAllows = (data: number) => data % this.divisor === 0
 	traverseApply = this.createPrimitiveTraversal()
-	condition = `${In} % ${this.divisor} === 0`
-	negatedCondition = `${In} % ${this.divisor} !== 0`
+	condition = `${this.scope.argName} % ${this.divisor} === 0`
+	negatedCondition = `${this.scope.argName} % ${this.divisor} !== 0`
 
 	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this, ctx)
+		return this.scope.compilePrimitive(this, ctx)
 	}
 
 	getCheckedDefinitions() {

@@ -1,5 +1,6 @@
 import type { TypeNode, TypeSchema } from "../../base.js"
-import type { CompilationContext, Problems } from "../../shared/compilation.js"
+import type { CompilationContext } from "../../scope.js"
+import type { Problems } from "../../shared/compilation.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { NodeParserImplementation } from "../../shared/define.js"
 import type { Disjoint } from "../../shared/disjoint.js"

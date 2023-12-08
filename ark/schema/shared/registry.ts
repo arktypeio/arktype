@@ -1,4 +1,11 @@
-import { domainOf, objectKindOf, throwInternalError } from "@arktype/util"
+import {
+	domainOf,
+	hasDomain,
+	objectKindOf,
+	serializePrimitive,
+	throwInternalError,
+	type SerializablePrimitive
+} from "@arktype/util"
 
 declare global {
 	const $ark: Registry
@@ -34,6 +41,12 @@ class Registry {
 
 export const isDotAccessible = (name: string) =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
+
+export const compileSerializedValue = (value: unknown) => {
+	return hasDomain(value, "object") || typeof value === "symbol"
+		? $ark.register(value)
+		: serializePrimitive(value as SerializablePrimitive)
+}
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {

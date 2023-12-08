@@ -8,11 +8,8 @@ import type { Node } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
-import {
-	In,
-	type CompilationContext,
-	type Problems
-} from "../shared/compilation.js"
+import type { CompilationContext } from "../scope.js"
+import type { Problems } from "../shared/compilation.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -221,7 +218,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	compileBody(ctx: CompilationContext) {
 		const constraintInvocations = this.constraints.map(
 			(constraint) =>
-				`this.${constraint.id}(${In}${
+				`this.${constraint.id}(${ctx.arg}${
 					ctx.compilationKind === "allows" ? "" : ", problems"
 				})`
 		)

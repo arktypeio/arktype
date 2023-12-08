@@ -5,12 +5,7 @@ import {
 	objectKindOf,
 	type Constructor
 } from "@arktype/util"
-import {
-	In,
-	compilePrimitive,
-	compileSerializedValue,
-	type CompilationContext
-} from "../shared/compilation.js"
+import type { CompilationContext } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	defaultValueSerializer,
@@ -74,13 +69,13 @@ export class ProtoNode<t = unknown> extends BaseType<t, ProtoDeclaration> {
 	readonly basisName = `${this.proto.name}`
 	readonly serializedConstructor = (this.json as { proto: string }).proto
 	readonly domain = "object"
-	readonly condition = `${In} instanceof ${this.serializedConstructor}`
+	readonly condition = `${this.scope.argName} instanceof ${this.serializedConstructor}`
 	readonly negatedCondition = `!(${this.condition})`
 	traverseAllows = (data: unknown) => data instanceof this.proto
 	traverseApply = this.createPrimitiveTraversal()
 
 	compileBody(ctx: CompilationContext): string {
-		return compilePrimitive(this, ctx)
+		return this.scope.compilePrimitive(this, ctx)
 	}
 
 	writeDefaultDescription() {

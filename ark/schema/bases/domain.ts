@@ -1,9 +1,5 @@
 import { domainOf, type Domain } from "@arktype/util"
-import {
-	In,
-	compilePrimitive,
-	type CompilationContext
-} from "../shared/compilation.js"
+import type { CompilationContext } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -55,19 +51,19 @@ export class DomainNode<t = unknown> extends BaseType<t, DomainDeclaration> {
 
 	condition =
 		this.domain === "object"
-			? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-			: `typeof ${In} === "${this.domain}"`
+			? `((typeof this.scope.argName === "object" && this.scope.argName !== null) || typeof this.scope.argName === "function")`
+			: `typeof this.scope.argName === "${this.domain}"`
 
 	negatedCondition =
 		this.domain === "object"
-			? `((typeof ${In} !== "object" || ${In} === null) && typeof ${In} !== "function")`
-			: `typeof ${In} !== "${this.domain}"`
+			? `((typeof this.scope.argName !== "object" || this.scope.argName === null) && typeof this.scope.argName !== "function")`
+			: `typeof this.scope.argName !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
 	traverseApply = this.createPrimitiveTraversal()
 
 	compileBody(ctx: CompilationContext): string {
-		return compilePrimitive(this, ctx)
+		return this.scope.compilePrimitive(this, ctx)
 	}
 
 	writeDefaultDescription() {

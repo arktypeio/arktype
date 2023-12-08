@@ -11,8 +11,8 @@ import type {
 import type { BaseNode, Node } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
-import { compileSerializedValue } from "./compilation.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
+import { compileSerializedValue } from "./registry.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
