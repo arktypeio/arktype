@@ -13,11 +13,13 @@ import type { Disjoint } from "../../shared/disjoint.js"
 import type { NodeIntersections } from "../../shared/intersect.js"
 import { RefinementNode } from "../shared.js"
 
-export type SequenceSchema = withAttributes<{
+export type NormalizedSequenceSchema = withAttributes<{
 	readonly prefix?: readonly TypeSchema[]
 	readonly element: TypeSchema
 	readonly postfix?: readonly TypeSchema[]
 }>
+
+export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
 export type SequenceInner = {
 	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
@@ -31,6 +33,7 @@ export type SequenceInner = {
 export type SequenceDeclaration = declareNode<{
 	kind: "sequence"
 	schema: SequenceSchema
+	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
 	intersections: {
 		sequence: "sequence" | Disjoint | null
@@ -60,7 +63,10 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 			},
 			postfix: fixedSequenceKeyDefinition
 		},
-		normalize: (schema) => schema,
+		normalize: (schema) =>
+			typeof schema === "object" && "element" in schema
+				? schema
+				: { element: schema },
 		reduce: (inner, meta, scope) => {
 			if (!inner.postfix) {
 				return
@@ -156,45 +162,23 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 		let body = `if(${In}.length < ${this.minLength}) {
 	return false
 }\n`
-		this.prefix?.forEach((node, i) => {
-			body += `if(!${node.compileBody(ctx)}) {
-	this.${node.id}(${In}[${i}], problems)
+		this.prefix?.forEach((prefixEl, i) => {
+			body += `if(!${prefixEl.compileBody(ctx)}) {
+	this.${prefixEl.id}(${In}[${i}], problems)
 }\n`
 		})
-		body += `for(let i = ${this.prefixLength}; )`
-
-		// const postfixStartIndex = data.length - this.postfixLength
-
-		// for (i; i++; i < postfixStartIndex) {
-		// 	this.element.traverseAllows(data[i], problems)
-		// }
-
-		// if (this.postfix) {
-		// 	for (i; i < data.length; i++) {
-		// 		this.postfix[i].traverseAllows(data[i], problems)
-		// 	}
-		// }
-
+		body += `const lastVariadicIndex = data.length${
+			this.postfix ? `- ${this.postfixLength}` : ""
+		}
+for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
+	this.${this.element.id}(${In}[i], problems)	
+}\n`
+		this.postfix?.forEach((postfixEl, i) => {
+			body += `if(!${postfixEl.compileBody(ctx)}) {
+this.${postfixEl.id}(${In}[${i}], problems)
+}\n`
+		})
 		return body
-		// ${this.prefix ? }
-		// if (this.prefix) {
-		// 	for (i; i < this.prefixLength; i++) {
-		// 		this.prefix[i].traverseAllows(data[i], problems)
-		// 	}
-		// }
-
-		// const postfixStartIndex = data.length - this.postfixLength
-
-		// for (i; i++; i < postfixStartIndex) {
-		// 	this.element.traverseAllows(data[i], problems)
-		// }
-
-		// if (this.postfix) {
-		// 	for (i; i < data.length; i++) {
-		// 		this.postfix[i].traverseAllows(data[i], problems)
-		// 	}
-		// }
-		// `
 	}
 
 	getCheckedDefinitions() {

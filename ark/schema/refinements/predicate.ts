@@ -22,6 +22,7 @@ export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
 	schema: PredicateSchema
+	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
 	intersections: {
 		predicate: "predicate" | null

@@ -21,6 +21,7 @@ export type UnitInner<value = unknown> = {
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
 	schema: UnitSchema
+	normalizedSchema: UnitSchema
 	inner: UnitInner
 	intersections: {
 		unit: "unit" | Disjoint

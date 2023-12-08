@@ -53,6 +53,7 @@ export type IntersectionAttachments = {
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
+	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
 	intersections: {
 		intersection: "intersection" | Disjoint

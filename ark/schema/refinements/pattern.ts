@@ -29,6 +29,7 @@ export type PatternAttachments = extend<
 export type PatternDeclaration = declareNode<{
 	kind: "pattern"
 	schema: PatternSchema
+	normalizedSchema: NormalizedPatternSchema
 	inner: PatternInner
 	intersections: {
 		pattern: "pattern" | null

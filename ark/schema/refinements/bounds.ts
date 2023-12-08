@@ -170,6 +170,7 @@ const compileSizeOf = (kind: BoundKind) =>
 export type MinDeclaration = declareNode<{
 	kind: "min"
 	schema: BoundSchema<number>
+	normalizedSchema: NormalizedBoundSchema<number>
 	inner: BoundInner
 	checks: number
 	intersections: {
@@ -198,6 +199,7 @@ export class MinNode extends BaseBound<MinDeclaration> {
 export type MaxDeclaration = declareNode<{
 	kind: "max"
 	schema: BoundSchema<number>
+	normalizedSchema: NormalizedBoundSchema<number>
 	inner: BoundInner
 	checks: number
 	intersections: {
@@ -226,6 +228,7 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 export type MinLengthDeclaration = declareNode<{
 	kind: "minLength"
 	schema: BoundSchema<number>
+	normalizedSchema: NormalizedBoundSchema<number>
 	inner: BoundInner
 	checks: string | readonly unknown[]
 	intersections: {
@@ -260,6 +263,7 @@ export class MinLengthNode extends BaseBound<MinLengthDeclaration> {
 export type MaxLengthDeclaration = declareNode<{
 	kind: "maxLength"
 	schema: BoundSchema<number>
+	normalizedSchema: NormalizedBoundSchema<number>
 	inner: BoundInner
 	checks: string | readonly unknown[]
 	intersections: {
@@ -289,6 +293,7 @@ export class MaxLengthNode extends BaseBound<MaxLengthDeclaration> {
 export type AfterDeclaration = declareNode<{
 	kind: "after"
 	schema: BoundSchema<string | number>
+	normalizedSchema: NormalizedBoundSchema<string | number>
 	inner: BoundInner
 	checks: Date
 	intersections: {
@@ -316,6 +321,7 @@ export class AfterNode extends BaseBound<AfterDeclaration> {
 export type BeforeDeclaration = declareNode<{
 	kind: "before"
 	schema: BoundSchema<string | number>
+	normalizedSchema: NormalizedBoundSchema<string | number>
 	inner: BoundInner
 	checks: Date
 	intersections: {

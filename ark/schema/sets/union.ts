@@ -39,6 +39,7 @@ export type UnionInner = {
 export type UnionDeclaration = declareNode<{
 	kind: "union"
 	schema: UnionSchema
+	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
 	intersections: {
 		union: "union" | Disjoint

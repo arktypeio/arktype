@@ -36,6 +36,7 @@ export type BaseIntersectionMap = {
 export type DeclarationInput<kind extends NodeKind> = {
 	kind: kind
 	schema: unknown
+	normalizedSchema: BaseAttributes
 	inner: Dict
 	meta?: Dict
 	checks?: unknown
@@ -67,7 +68,6 @@ export type declareNode<d extends validateNodeDeclaration<d>> = extend<
 		meta: "meta" extends keyof d
 			? extend<BaseAttributes, d["meta"]>
 			: BaseAttributes
-		normalizedSchema: Extract<d["schema"], BaseAttributes>
 		checks: "checks" extends keyof d ? d["checks"] : unknown
 		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>

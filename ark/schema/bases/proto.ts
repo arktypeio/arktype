@@ -34,6 +34,7 @@ export type ProtoSchema<proto extends Constructor = Constructor> =
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
 	schema: ProtoSchema
+	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
 	intersections: {
 		proto: "proto" | Disjoint

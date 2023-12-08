@@ -30,6 +30,7 @@ export type NormalizedDomainSchema<
 export type DomainDeclaration = declareNode<{
 	kind: "domain"
 	schema: DomainSchema
+	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
 	intersections: {
 		domain: "domain" | Disjoint

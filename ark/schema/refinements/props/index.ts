@@ -19,6 +19,7 @@ export type IndexInner = {
 export type IndexDeclaration = declareNode<{
 	kind: "index"
 	schema: IndexSchema
+	normalizedSchema: IndexSchema
 	inner: IndexInner
 	intersections: {
 		index: "index" | Disjoint | null

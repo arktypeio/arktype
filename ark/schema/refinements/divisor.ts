@@ -19,6 +19,7 @@ export type DivisorSchema = NormalizedDivisorSchema | number
 export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
 	schema: DivisorSchema
+	normalizedSchema: NormalizedDivisorSchema
 	inner: DivisorInner
 	intersections: {
 		divisor: "divisor"

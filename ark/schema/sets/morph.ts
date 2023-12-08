@@ -55,6 +55,7 @@ export type MorphSchema = withAttributes<{
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
 	schema: MorphSchema
+	normalizedSchema: MorphSchema
 	inner: MorphInner
 	intersections: {
 		morph: "morph" | Disjoint

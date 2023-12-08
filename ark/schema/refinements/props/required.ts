@@ -26,6 +26,7 @@ export type RequiredInner = {
 export type RequiredDeclaration = declareNode<{
 	kind: "required"
 	schema: RequiredSchema
+	normalizedSchema: RequiredSchema
 	inner: RequiredInner
 	intersections: {
 		required: "required" | Disjoint | null

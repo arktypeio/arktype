@@ -26,6 +26,7 @@ export type OptionalSchema = withAttributes<{
 export type OptionalDeclaration = declareNode<{
 	kind: "optional"
 	schema: OptionalSchema
+	normalizedSchema: OptionalSchema
 	inner: OptionalInner
 	intersections: {
 		optional: "optional" | null
