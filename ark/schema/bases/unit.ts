@@ -1,10 +1,10 @@
 import { domainOf, printable } from "@arktype/util"
 import type { CompilationContext } from "../scope.js"
+import { TraversalContext } from "../shared/context.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { Problems } from "../shared/problems.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import { BaseType } from "../type.js"
 
@@ -38,7 +38,7 @@ export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
 	static intersections: NodeIntersections<UnitDeclaration> = {
 		unit: (l, r) => Disjoint.from("unit", l, r),
 		default: (l, r) =>
-			r.traverseAllows(l.unit as never, new Problems())
+			r.traverseAllows(l.unit as never, new TraversalContext())
 				? l
 				: Disjoint.from("assignability", l.unit, r)
 	}
