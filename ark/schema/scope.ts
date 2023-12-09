@@ -97,10 +97,13 @@ export class ScopeNode<r extends object = any> {
 		return ScopeNode.keywords
 	}
 
-	static from = <const aliases>(aliases: validateAliases<aliases>) =>
-		new ScopeNode<instantiateAliases<aliases>>(aliases)
+	static from<const aliases>(
+		aliases: validateAliases<aliases>
+	): ScopeNode<instantiateAliases<aliases>> {
+		return new ScopeNode(aliases)
+	}
 
-	static root = this.from({})
+	static root: ScopeNode<{}> = this.from({})
 
 	parseUnion<const branches extends readonly Schema<BranchKind>[]>(
 		input: {
@@ -273,11 +276,35 @@ ${reference.compileBody({
 		return `problems.add(${JSON.stringify(node.description)})`
 	}
 
-	readonly schema = Object.assign(this.parseBranches.bind(this), {
-		units: this.parseUnits.bind(this),
-		union: this.parseUnion.bind(this),
-		prereduced: this.parsePrereduced.bind(this)
-	})
+	readonly schema: SchemaParser<r> = Object.assign(
+		this.parseBranches.bind(this),
+		{
+			units: this.parseUnits.bind(this),
+			union: this.parseUnion.bind(this)
+		}
+	) as never
+}
+
+export type SchemaParser<r extends object> = {
+	<const branches extends readonly Schema<BranchKind>[]>(
+		...branches: {
+			[i in keyof branches]: validateSchemaBranch<branches[i], r>
+		}
+	): instantiateSchemaBranches<branches>
+
+	union<const branches extends readonly Schema<BranchKind>[]>(
+		input: {
+			branches: {
+				[i in keyof branches]: validateSchemaBranch<branches[i], r>
+			}
+		} & NormalizedUnionSchema
+	): instantiateSchemaBranches<branches>
+
+	units<const branches extends readonly unknown[]>(
+		...values: branches
+	): branches["length"] extends 1
+		? UnionNode<branches[0]>
+		: UnionNode<branches[number]> | UnitNode<branches[number]>
 }
 
 export const scopeNode = ScopeNode.from
