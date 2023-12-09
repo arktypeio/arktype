@@ -1,5 +1,9 @@
 import type { TypeNode, TypeSchema } from "../../base.js"
-import type { CompilationContext } from "../../scope.js"
+import type {
+	CompilationContext,
+	TraverseAllows,
+	TraverseApply
+} from "../../scope.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type {
 	NodeKeyImplementation,
@@ -7,7 +11,6 @@ import type {
 } from "../../shared/define.js"
 import type { Disjoint } from "../../shared/disjoint.js"
 import type { NodeIntersections } from "../../shared/intersect.js"
-import type { Problems } from "../../shared/problems.js"
 import { RefinementNode } from "../shared.js"
 
 export type NormalizedSequenceSchema = withAttributes<{
@@ -94,7 +97,7 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 	postfixLength = this.postfix?.length ?? 0
 	protected minLength = this.prefixLength + this.postfixLength
 
-	traverseAllows = (data: readonly unknown[], problems: Problems) => {
+	traverseAllows: TraverseAllows<readonly unknown[]> = (data, ctx) => {
 		if (data.length < this.minLength) {
 			return false
 		}
@@ -103,7 +106,7 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 
 		if (this.prefix) {
 			for (i; i < this.prefixLength; i++) {
-				if (!this.prefix[i].traverseAllows(data[i], problems)) {
+				if (!this.prefix[i].traverseAllows(data[i], ctx)) {
 					return false
 				}
 			}
@@ -112,14 +115,14 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 		const postfixStartIndex = data.length - this.postfixLength
 
 		for (i; i++; i < postfixStartIndex) {
-			if (!this.element.traverseAllows(data[i], problems)) {
+			if (!this.element.traverseAllows(data[i], ctx)) {
 				return false
 			}
 		}
 
 		if (this.postfix) {
 			for (i; i < data.length; i++) {
-				if (!this.postfix[i].traverseAllows(data[i], problems)) {
+				if (!this.postfix[i].traverseAllows(data[i], ctx)) {
 					return false
 				}
 			}
@@ -127,10 +130,10 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 		return true
 	}
 
-	traverseApply = (data: readonly unknown[], problems: Problems) => {
+	traverseApply: TraverseApply<readonly unknown[]> = (data, ctx) => {
 		if (data.length < this.minLength) {
 			// TODO: possible to unify with minLength?
-			problems.add(`at least length ${this.minLength}`)
+			ctx.problems.add(`at least length ${this.minLength}`)
 			return
 		}
 
@@ -138,19 +141,19 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 
 		if (this.prefix) {
 			for (i; i < this.prefixLength; i++) {
-				this.prefix[i].traverseAllows(data[i], problems)
+				this.prefix[i].traverseAllows(data[i], ctx)
 			}
 		}
 
 		const postfixStartIndex = data.length - this.postfixLength
 
 		for (i; i++; i < postfixStartIndex) {
-			this.element.traverseAllows(data[i], problems)
+			this.element.traverseAllows(data[i], ctx)
 		}
 
 		if (this.postfix) {
 			for (i; i < data.length; i++) {
-				this.postfix[i].traverseAllows(data[i], problems)
+				this.postfix[i].traverseAllows(data[i], ctx)
 			}
 		}
 	}

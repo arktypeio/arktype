@@ -1,6 +1,10 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { CompilationContext } from "../scope.js"
+import type {
+	CompilationContext,
+	TraverseAllows,
+	TraverseApply
+} from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -156,11 +160,11 @@ export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
 
 	discriminant: Discriminant | null = null //discriminate(inner.branches)
 
-	traverseAllows = (data: unknown, problems: Problems) =>
-		this.branches.some((b) => b.traverseAllows(data, problems))
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.branches.some((b) => b.traverseAllows(data, ctx))
 
-	traverseApply = (data: unknown, problems: Problems) =>
-		this.branches.forEach((b) => b.traverseApply(data, problems))
+	traverseApply: TraverseApply = (data, ctx) =>
+		this.branches.forEach((b) => b.traverseApply(data, ctx))
 
 	writeDefaultDescription() {
 		return this.branches.length === 0 ? "never" : this.branches.join(" or ")

@@ -1,5 +1,9 @@
 import type { Node, TypeSchema } from "../../base.js"
-import type { CompilationContext } from "../../scope.js"
+import type {
+	CompilationContext,
+	TraverseAllows,
+	TraverseApply
+} from "../../scope.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { NodeParserImplementation, TypeKind } from "../../shared/define.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -60,13 +64,13 @@ export class OptionalNode extends RefinementNode<OptionalDeclaration> {
 
 	serializedKey = compileSerializedValue(this.key)
 
-	traverseAllows = (data: object, problems: Problems) =>
+	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		!(this.key in data) ||
-		this.value.traverseAllows((data as any)[this.key], problems)
+		this.value.traverseAllows((data as any)[this.key], ctx)
 
-	traverseApply = (data: object, problems: Problems) => {
+	traverseApply: TraverseApply<object> = (data: object, ctx) => {
 		if (this.key in data) {
-			this.value.traverseApply((data as any)[this.key], problems)
+			this.value.traverseApply((data as any)[this.key], ctx)
 		}
 	}
 

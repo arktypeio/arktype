@@ -1,5 +1,9 @@
 import type { TypeNode, TypeSchema } from "../../base.js"
-import type { CompilationContext } from "../../scope.js"
+import type {
+	CompilationContext,
+	TraverseAllows,
+	TraverseApply
+} from "../../scope.js"
 import type { declareNode, withAttributes } from "../../shared/declare.js"
 import type { NodeParserImplementation } from "../../shared/define.js"
 import type { Disjoint } from "../../shared/disjoint.js"
@@ -47,17 +51,17 @@ export class IndexNode extends RefinementNode<IndexDeclaration> {
 		index: (l) => l
 	}
 
-	traverseAllows = (data: object, problems: Problems) =>
+	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(
 			(entry) =>
-				!this.key.traverseAllows(entry[0], problems) ||
-				this.value.traverseAllows(entry[1], problems)
+				!this.key.traverseAllows(entry[0], ctx) ||
+				this.value.traverseAllows(entry[1], ctx)
 		)
 
-	traverseApply = (data: object, problems: Problems) =>
+	traverseApply: TraverseApply<object> = (data, ctx) =>
 		Object.entries(data).forEach((entry) => {
-			if (this.key.traverseAllows(entry[0], problems)) {
-				this.value.traverseAllows(entry[1], problems)
+			if (this.key.traverseAllows(entry[0], ctx)) {
+				this.value.traverseAllows(entry[1], ctx)
 			}
 		})
 

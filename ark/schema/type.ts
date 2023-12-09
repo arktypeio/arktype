@@ -8,12 +8,13 @@ import {
 import type { IntersectionNode } from "./sets/intersection.js"
 import type { distill, extractIn, extractOut } from "./sets/morph.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
+import { TraversalContext } from "./shared/context.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type { RefinementKind, TypeKind } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import type { Schema, ioKindOf } from "./shared/nodes.js"
-import { Problems, type CheckResult } from "./shared/problems.js"
+import type { CheckResult } from "./shared/problems.js"
 import { inferred } from "./shared/symbols.js"
 
 export type BaseTypeDeclaration = extend<
@@ -47,17 +48,17 @@ export abstract class BaseType<
 	}
 
 	allows = (data: unknown): data is distill<extractIn<t>> => {
-		const problems = new Problems()
-		return this.traverseAllows(data as never, problems)
+		const ctx = new TraversalContext()
+		return this.traverseAllows(data as never, ctx)
 	}
 
 	apply(data: unknown): CheckResult<extractOut<t>> {
-		const problems = new Problems()
-		this.traverseApply(data as never, problems)
-		if (problems.length === 0) {
+		const ctx = new TraversalContext()
+		this.traverseApply(data as never, ctx)
+		if (ctx.problems.length === 0) {
 			return { out: data } as any
 		}
-		return { problems }
+		return { problems: ctx.problems }
 	}
 
 	constrain<refinementKind extends RefinementKind>(

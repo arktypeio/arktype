@@ -297,9 +297,9 @@ export abstract class BaseNode<
 			children: readonly never[]
 		}
 	): TraverseApply<d["checks"]> {
-		return (data, problems) => {
-			if (!this.traverseAllows(data, problems)) {
-				problems.add(this.description)
+		return (data, ctx) => {
+			if (!this.traverseAllows(data, ctx)) {
+				ctx.problems.add(this.description)
 			}
 		}
 	}

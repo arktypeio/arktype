@@ -8,7 +8,11 @@ import type { Node } from "../base.js"
 import type { BasisKind, instantiateBasis } from "../bases/basis.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { refinementInputsByKind } from "../refinements/refinement.js"
-import type { CompilationContext } from "../scope.js"
+import type {
+	CompilationContext,
+	TraverseAllows,
+	TraverseApply
+} from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -203,11 +207,11 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	readonly constraints: ConstraintSet = Object.values(this.inner).flat()
 
-	traverseAllows = (data: unknown, problems: Problems): boolean =>
-		this.constraints.every((c) => c.traverseAllows(data as never, problems))
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.constraints.every((c) => c.traverseAllows(data as never, ctx))
 
-	traverseApply = (data: unknown, problems: Problems) =>
-		this.constraints.forEach((c) => c.traverseApply(data as never, problems))
+	traverseApply: TraverseApply = (data, ctx) =>
+		this.constraints.forEach((c) => c.traverseApply(data as never, ctx))
 
 	writeDefaultDescription() {
 		return this.constraints.length === 0

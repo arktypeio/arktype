@@ -2,7 +2,7 @@ import { Problems } from "./problems.js"
 
 export class TraversalContext {
 	path = []
-	problemsStack: Problems[] = [new Problems()]
+	problemsStack: Problems[] = [new Problems(this)]
 	// TODO: add morphs here
 	entriesToPrune: [data: Record<string, unknown>, key: string][] = []
 
@@ -16,13 +16,13 @@ export class TraversalContext {
 	}
 
 	pushUnion() {
-		this.problemsStack.push(new Problems())
+		this.problemsStack.push(new Problems(this))
 	}
 
 	popUnion(branchCount: number, data: unknown, path: string[]) {
 		const branchProblems = this.problemsStack.pop()!
 		if (branchProblems.count === branchCount) {
-			this.addProblem("union", branchProblems, data, path)
+			this.problems.add("union") //addProblem("union", branchProblems, data, path)
 		}
 	}
 }

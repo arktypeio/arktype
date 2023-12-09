@@ -1,13 +1,10 @@
 import {
 	CompiledFunction,
-	hasDomain,
 	isArray,
 	printable,
-	serializePrimitive,
 	throwInternalError,
 	throwParseError,
-	type Dict,
-	type SerializablePrimitive
+	type Dict
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import { maybeGetBasisKind } from "./bases/basis.js"
@@ -26,9 +23,10 @@ import type {
 	NormalizedUnionSchema,
 	UnionNode
 } from "./sets/union.js"
+import type { TraversalContext } from "./shared/context.js"
 import type { NodeKind, PropKind, SetKind, TypeKind } from "./shared/define.js"
 import type { Schema, reducibleKindOf } from "./shared/nodes.js"
-import type { ProblemCode, Problems } from "./shared/problems.js"
+import type { ProblemCode } from "./shared/problems.js"
 import { BaseType } from "./type.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
@@ -317,12 +315,12 @@ type TraversalMethodsByKind<input = unknown> = {
 
 export type TraverseAllows<data = unknown> = (
 	data: data,
-	problems: Problems
+	ctx: TraversalContext
 ) => boolean
 
 export type TraverseApply<data = unknown> = (
 	data: data,
-	problems: Problems
+	ctx: TraversalContext
 ) => void
 
 export type CompilationContext = {

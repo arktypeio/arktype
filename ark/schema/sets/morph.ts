@@ -10,7 +10,12 @@ import {
 import type { Node } from "../base.js"
 import type { BasisKind } from "../bases/basis.js"
 import type { is } from "../refinements/refinement.js"
-import type { ArkConfig, CompilationContext } from "../scope.js"
+import type {
+	ArkConfig,
+	CompilationContext,
+	TraverseAllows,
+	TraverseApply
+} from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -122,11 +127,11 @@ export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
 		}
 	}
 
-	traverseAllows = (data: unknown, problems: Problems) =>
-		this.in.traverseAllows(data, problems)
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.in.traverseAllows(data, ctx)
 
-	traverseApply = (data: unknown, problems: Problems) =>
-		this.in.traverseApply(data, problems);
+	traverseApply: TraverseApply = (data, ctx) =>
+		this.in.traverseApply(data, ctx);
 
 	override get in(): Node<ValidatorKind, extractIn<t>> {
 		return this.inner.in

@@ -1,4 +1,5 @@
 import type { CompilationContext } from "../scope.js"
+import type { TraversalContext } from "../shared/context.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -65,9 +66,9 @@ export class PredicateNode extends RefinementNode<PredicateDeclaration> {
 	}
 }
 
-export type Predicate<input = unknown> = (
-	input: input,
-	problems: Problems
+export type Predicate<data = unknown> = (
+	data: data,
+	ctx: TraversalContext
 ) => boolean
 
 export type PredicateCast<input = never, narrowed extends input = input> = (
