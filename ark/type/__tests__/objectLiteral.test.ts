@@ -1,6 +1,9 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-import { writeInvalidPropertyKeyMessage } from "../parser/objectLiteral.js"
+import {
+	writeInvalidPropertyKeyMessage,
+	writeInvalidSpreadTypeMessage
+} from "../parser/objectLiteral.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { writeUnboundableMessage } from "../parser/string/shift/operator/bounds.js"
 
@@ -51,6 +54,98 @@ describe("object literal", () => {
 		attest(t.json).equals({
 			basis: "object",
 			optional: [{ key: name, value: "number" }]
+		})
+	})
+	describe("spread syntax", () => {
+		it("within scope", () => {
+			const s = scope({
+				user: { isAdmin: "false", name: "string" },
+				admin: { "...": "user", isAdmin: "true" }
+			}).export()
+
+			attest<{ isAdmin: true; name: string }>(s.admin.infer)
+			attest(s.admin.json).equals({
+				basis: "object",
+				required: [
+					{ key: "isAdmin", value: { unit: true } },
+					{ key: "name", value: "string" }
+				]
+			})
+		})
+
+		it("from another `type` call", () => {
+			const user = type({ isAdmin: "false", name: "string" })
+			const admin = type({ "...": user, isAdmin: "true" })
+
+			attest<{ isAdmin: true; name: string }>(admin.infer)
+			attest(admin.json).equals({
+				basis: "object",
+				required: [
+					{ key: "isAdmin", value: { unit: true } },
+					{ key: "name", value: "string" }
+				]
+			})
+		})
+
+		it("from an object literal", () => {
+			// no idea why you'd want to do this
+			const t = type({
+				"...": {
+					inherited: "boolean",
+					overridden: "string"
+				},
+				overridden: "number"
+			})
+
+			attest<{
+				inherited: boolean
+				overridden: number
+			}>(t.infer)
+
+			attest(t.json).snap({
+				basis: "object",
+				required: [
+					{ key: "inherited", value: [{ unit: false }, { unit: true }] },
+					{ key: "overridden", value: "number" }
+				]
+			})
+		})
+
+		it("escaped key", () => {
+			const t = type({
+				"\\...": "string"
+			})
+
+			attest<{ "...": string }>(t.infer)
+
+			attest(t.json).equals({
+				basis: "object",
+				required: [{ key: "...", value: "string" }]
+			})
+		})
+
+		it("with non-object", () => {
+			// @ts-expect-error
+			attest(() => type({ "...": "string" })).throwsAndHasTypeError(
+				'Spread types may only be created from object types (was "string")'
+			)
+		})
+
+		// this is a regression test to ensure nodes are handled even if they aren't just an object
+		it("with complex type", () => {
+			const adminUser = type({
+				"...": [{ name: "string" }, "&", { isAdmin: "false" }],
+				isAdmin: "true"
+			})
+
+			attest<{ isAdmin: true; name: string }>(adminUser.infer)
+			attest(adminUser.json).snap({
+				basis: "object",
+				required: [
+					{ key: "isAdmin", value: { unit: true } },
+					{ key: "name", value: "string" }
+				]
+			})
 		})
 	})
 	describe("optional keys and definition reduction", () => {

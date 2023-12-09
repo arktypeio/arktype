@@ -26,7 +26,7 @@ export type EntryParseResult<kind extends ParsedKeyKind = ParsedKeyKind> =
 
 type ParsedValueKind = "required" | "optional"
 
-type ParsedKeyKind = "required" | "optional" | "indexed"
+type ParsedKeyKind = "required" | "optional" | "indexed" | "spread"
 
 type parsedEntry<result extends EntryParseResult> = result
 
@@ -73,13 +73,20 @@ const getInnerValue = (value: unknown): ValueParseResult => {
 	}
 }
 
+// these methods are also used in tuple parsing, however the keys of a tuple will always be 0, 1,
+// 2, etc and never be `...`, meaning `"spread"` as a kind will never occur in tuples
+
 export const parseEntry = ([key, value]: DefinitionEntry): EntryParseResult => {
 	const keyParseResult: KeyParseResult =
 		typeof key === "string" && key.at(-1) === "?"
 			? key.at(-2) === Scanner.escapeToken
 				? { innerKey: `${key.slice(0, -2)}?`, kind: "required" }
 				: { innerKey: key.slice(0, -1), kind: "optional" }
-			: { innerKey: key, kind: "required" }
+			: key === "..."
+			  ? { innerKey: "...", kind: "spread" }
+			  : key === "\\..."
+			    ? { innerKey: "...", kind: "required" }
+			    : { innerKey: key, kind: "required" }
 	const valueParseResult = getInnerValue(value)
 	return {
 		innerKey: keyParseResult.innerKey,
@@ -124,18 +131,22 @@ type parseKey<k> = k extends OptionalStringDefinition<infer inner>
 				kind: "optional"
 				innerKey: inner
 		  }>
-	: k extends IndexedKey<infer def>
-	  ? parsedKey<{
-				kind: "indexed"
-				innerKey: def
-	    }>
-	  : k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
-					IndexedKey}`
-	    ? parsedKey<{
-					kind: "required"
-					innerKey: escapedIndexKey
-	      }>
-	    : parsedKey<{
-					kind: "required"
-					innerKey: k & (string | symbol)
-	      }>
+	: k extends "..."
+	  ? parsedKey<{ kind: "spread"; innerKey: "..." }>
+	  : k extends "\\..."
+	    ? parsedKey<{ kind: "required"; innerKey: "..." }>
+	    : k extends IndexedKey<infer def>
+	      ? parsedKey<{
+						kind: "indexed"
+						innerKey: def
+	        }>
+	      : k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
+							IndexedKey}`
+	        ? parsedKey<{
+							kind: "required"
+							innerKey: escapedIndexKey
+	          }>
+	        : parsedKey<{
+							kind: "required"
+							innerKey: k & (string | symbol)
+	          }>
