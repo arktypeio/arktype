@@ -93,6 +93,7 @@ export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 		sequence: (l) => l
 	}
 
+	readonly hasOpenIntersection = false
 	prefixLength = this.prefix?.length ?? 0
 	postfixLength = this.postfix?.length ?? 0
 	protected minLength = this.prefixLength + this.postfixLength

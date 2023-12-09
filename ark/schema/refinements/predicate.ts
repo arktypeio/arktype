@@ -1,4 +1,4 @@
-import type { CompilationContext } from "../scope.js"
+import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { TraversalContext } from "../shared/context.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
@@ -48,8 +48,13 @@ export class PredicateNode extends RefinementNode<PredicateDeclaration> {
 		predicate: () => null
 	}
 
+	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
-	traverseApply = this.createPrimitiveTraversal()
+	traverseApply: TraverseApply = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.problems.add(this.description)
+		}
+	}
 	condition = `${compileSerializedValue(this.predicate)}(${this.scope.argName})`
 	negatedCondition = `!${this.condition}`
 

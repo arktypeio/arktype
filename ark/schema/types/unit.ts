@@ -1,5 +1,5 @@
 import { domainOf, printable } from "@arktype/util"
-import type { CompilationContext } from "../scope.js"
+import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -42,7 +42,11 @@ export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
 
 	serializedValue = compileSerializedValue(this.unit)
 	traverseAllows = (data: unknown) => data === this.unit
-	traverseApply = this.createPrimitiveTraversal()
+	traverseApply: TraverseApply = (data, ctx) => {
+		if (!this.traverseAllows(data)) {
+			ctx.problems.add(this.description)
+		}
+	}
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
 	condition = `${this.scope.argName} === ${this.serializedValue}`

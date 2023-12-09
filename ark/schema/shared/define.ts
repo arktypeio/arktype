@@ -146,7 +146,4 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	) => Node | undefined
 }
 
-export type UnknownNodeParser = optionalizeKeys<
-	NodeParserImplementation<BaseNodeDeclaration>,
-	"reduce"
->
+export type UnknownNodeParser = NodeParserImplementation<BaseNodeDeclaration>

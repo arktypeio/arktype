@@ -59,6 +59,7 @@ export class OptionalNode extends RefinementNode<OptionalDeclaration> {
 		}
 	}
 
+	readonly hasOpenIntersection = true
 	serializedKey = compileSerializedValue(this.key)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

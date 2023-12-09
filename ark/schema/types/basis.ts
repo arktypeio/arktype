@@ -8,6 +8,7 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
+import { isNode } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
@@ -52,7 +53,7 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 			if (schema === null) {
 				return
 			}
-			if (schema instanceof BaseType) {
+			if (isNode(schema)) {
 				if (schema.isBasis()) {
 					return schema.kind
 				}

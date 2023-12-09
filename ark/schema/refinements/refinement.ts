@@ -1,10 +1,6 @@
-import type { evaluate, extend, listable } from "@arktype/util"
-import type {
-	MaxComparator,
-	MinComparator
-} from "arktype/internal/parser/string/reduce/shared.js"
-import type { Declaration, Schema } from "../kinds.js"
-import type { OpenRefinementKind, RefinementKind } from "../shared/define.js"
+import type { evaluate, extend } from "@arktype/util"
+import type { Declaration } from "../kinds.js"
+import type { RefinementKind } from "../shared/define.js"
 import {
 	BoundNodes,
 	type BoundDeclarations,
@@ -15,7 +11,7 @@ import type { IndexDeclaration } from "./index.js"
 import type { OptionalDeclaration } from "./optional.js"
 import { PatternNode, type PatternDeclaration } from "./pattern.js"
 import { PredicateNode, type PredicateDeclaration } from "./predicate.js"
-import { PropNodes, type PropDeclarations } from "./prop.js"
+import { PropNodes } from "./prop.js"
 import type { RequiredDeclaration } from "./required.js"
 import type { SequenceDeclaration } from "./sequence.js"
 
@@ -51,7 +47,7 @@ export const RefinementNodes = {
 export type RefinementOperand<kind extends RefinementKind> =
 	Declaration<kind>["checks"]
 
-export type Comparator = MinComparator | MaxComparator | "=="
+export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
 export type BoundRefinements = { [k in Comparator]?: LimitSchemaValue }
 

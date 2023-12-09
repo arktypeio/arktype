@@ -5,8 +5,8 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { Declaration } from "../kinds.js"
-import type { CompilationContext } from "../scope.js"
+import type { Declaration, hasOpenIntersection } from "../kinds.js"
+import type { CompilationContext, TraverseApply } from "../scope.js"
 import type {
 	BaseNodeDeclaration,
 	declareNode,
@@ -134,6 +134,13 @@ export abstract class BaseBound<
 				: { limit: schema }) as NormalizedBoundSchema<number>
 	} as const satisfies NodeParserImplementation<Declaration<BoundKind>>
 
+	readonly hasOpenIntersection = false as hasOpenIntersection<d>
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.problems.add(this.description)
+		}
+	}
 	size = compileSizeOf(this.kind, this.scope.argName)
 	comparator = compileComparator(
 		this.kind,
@@ -181,7 +188,6 @@ export class MinNode extends BaseBound<MinDeclaration> {
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.limit
 		: (data: number) => data >= this.limit
-	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return `${this.exclusive ? "more than" : "at least"} ${this.limit}`
@@ -210,7 +216,6 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.limit
 		: (data: number) => data <= this.limit
-	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return `${this.exclusive ? "less than" : "at most"} ${this.limit}`
@@ -239,7 +244,6 @@ export class MinLengthNode extends BaseBound<MinLengthDeclaration> {
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length > this.limit
 		: (data: string | readonly unknown[]) => data.length >= this.limit
-	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return this.exclusive
@@ -273,7 +277,6 @@ export class MaxLengthNode extends BaseBound<MaxLengthDeclaration> {
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length < this.limit
 		: (data: string | readonly unknown[]) => data.length <= this.limit
-	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return this.exclusive
@@ -303,7 +306,6 @@ export class AfterNode extends BaseBound<AfterDeclaration> {
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.limit
 		: (data: Date) => +data >= this.limit
-	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return this.exclusive ? `after ${this.limit}` : `${this.limit} or later`
@@ -332,7 +334,6 @@ export class BeforeNode extends BaseBound<BeforeDeclaration> {
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.limit
 		: (data: Date) => +data <= this.limit
-	traverseApply = this.createPrimitiveTraversal()
 
 	writeDefaultDescription() {
 		return this.exclusive ? `before ${this.limit}` : `${this.limit} or earlier`

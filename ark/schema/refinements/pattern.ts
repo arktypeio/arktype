@@ -1,5 +1,5 @@
 import type { extend } from "@arktype/util"
-import type { CompilationContext } from "../scope.js"
+import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type {
 	NodeParserImplementation,
@@ -55,10 +55,14 @@ export class PatternNode extends RefinementNode<PatternDeclaration> {
 		pattern: () => null
 	}
 
+	readonly hasOpenIntersection = true
 	regex = new RegExp(this.source, this.flags)
-
 	traverseAllows = this.regex.test
-	traverseApply = this.createPrimitiveTraversal()
+	traverseApply: TraverseApply<string> = (data, ctx) => {
+		if (!this.traverseAllows(data)) {
+			ctx.problems.add(this.description)
+		}
+	}
 	condition = `/${this.source}/${this.flags ?? ""}.test(${this.scope.argName})`
 	negatedCondition = `!${this.condition}`
 
