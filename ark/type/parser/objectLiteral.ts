@@ -36,7 +36,8 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 	// https://discord.com/channels/957797212103016458/1103023445035462678/1182814502471860334
 	let hasSeenFirstKey = false
 
-	for (const entry of stringAndSymbolicEntriesOf(def)) {
+	const entries = stringAndSymbolicEntriesOf(def)
+	for (const entry of entries) {
 		const result = parseEntry(entry)
 
 		if (result.kind === "spread") {
@@ -58,8 +59,18 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 			}
 
 			// For each key on spreadNode, add it to our object.
-			required.push(...(spreadNode.required ?? []))
-			optional.push(...(spreadNode.optional ?? []))
+			// We filter out keys from the spreadNode that will be defined later on this same object
+			// because the currently parsed definition will overwrite them.
+			const requiredEntriesFromSpread = (spreadNode.required ?? []).filter(
+				(e) => !entries.some(([k]) => k === e.key)
+			)
+
+			const optionalEntriesFromSpread = (spreadNode.optional ?? []).filter(
+				(e) => !entries.some(([k]) => k === e.key)
+			)
+
+			required.push(...requiredEntriesFromSpread)
+			optional.push(...optionalEntriesFromSpread)
 
 			continue
 		}
@@ -72,17 +83,6 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 			}`
 		)
 		const valueNode = ctx.scope.parse(result.innerValue, ctx)
-
-		const existingRequired = required.findIndex(
-			(e) => e.key === result.innerKey
-		)
-		const existingOptional = optional.findIndex(
-			(e) => e.key === result.innerKey
-		)
-
-		if (existingRequired !== -1) required.splice(existingRequired, 1)
-
-		if (existingOptional !== -1) optional.splice(existingOptional, 1)
 
 		if (result.kind === "optional") {
 			optional.push({
