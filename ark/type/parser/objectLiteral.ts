@@ -47,15 +47,9 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 		} else if (result.kind === "spread") {
 			const spreadNode = ctx.scope.parse(result.innerValue, ctx)
 
-			if (!spreadNode.extends(keywords.object)) {
+			if (spreadNode.kind !== "intersection" || !spreadNode.extends(keywords.object)) {
 				return throwParseError(
 					writeInvalidSpreadTypeMessage(printable(result.innerValue))
-				)
-			}
-
-			if (spreadNode.kind !== "intersection") {
-				return throwParseError(
-					`Spread operator may not be used with a ${spreadNode.kind} node`
 				)
 			}
 
@@ -99,7 +93,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 		}
 		ctx.path.pop()
 
-		hasSeenFirstKey || (hasSeenFirstKey = true)
+		hasSeenFirstKey ||= true
 	}
 
 	return schema({
@@ -192,7 +186,7 @@ type writeInvalidPropertyKeyMessage<indexDef extends string> =
 export const writeInvalidSpreadTypeMessage = <def extends string>(
 	def: def
 ): writeInvalidSpreadTypeMessage<def> =>
-	`Spread types may only be created from object types (was ${def})`
+	`Spread operand must resolve to an object literal type (was ${def})`
 
 type writeInvalidSpreadTypeMessage<def extends string> =
-	`Spread types may only be created from object types (was ${def})`
+	`Spread operand must resolve to an object literal type (was ${def})`
