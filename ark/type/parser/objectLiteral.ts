@@ -1,12 +1,15 @@
-import { schema, type Inner } from "@arktype/schema"
+import { keywords, schema, type Inner } from "@arktype/schema"
 import {
 	printable,
+	throwParseError,
 	type Dict,
 	type ErrorMessage,
-	type evaluate
+	type evaluate,
+	type merge
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
+import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
 import {
 	parseEntry,
@@ -24,8 +27,54 @@ const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 	const required: Inner<"required">[] = []
 	const optional: Inner<"optional">[] = []
-	for (const entry of stringAndSymbolicEntriesOf(def)) {
+
+	// We only allow a spread operator to be used as the first key in an object
+	// because to match JS behavior any keys before the spread are overwritten
+	// by the values in the target object, so there'd be no useful purpose in having it
+	// anywhere except for the beginning.
+	// Discussion in ArkType Discord:
+	// https://discord.com/channels/957797212103016458/1103023445035462678/1182814502471860334
+	let hasSeenFirstKey = false
+
+	const entries = stringAndSymbolicEntriesOf(def)
+	for (const entry of entries) {
 		const result = parseEntry(entry)
+
+		if (result.kind === "spread") {
+			if (hasSeenFirstKey) {
+				return throwParseError(
+					"Spread operator may only be used as the first key in an object"
+				)
+			}
+
+			const spreadNode = ctx.scope.parse(result.innerValue, ctx)
+
+			if (
+				spreadNode.kind !== "intersection" ||
+				!spreadNode.extends(keywords.object)
+			) {
+				return throwParseError(
+					writeInvalidSpreadTypeMessage(printable(result.innerValue))
+				)
+			}
+
+			// For each key on spreadNode, add it to our object.
+			// We filter out keys from the spreadNode that will be defined later on this same object
+			// because the currently parsed definition will overwrite them.
+			const requiredEntriesFromSpread = (spreadNode.required ?? []).filter(
+				(e) => !entries.some(([k]) => k === e.key)
+			)
+
+			const optionalEntriesFromSpread = (spreadNode.optional ?? []).filter(
+				(e) => !entries.some(([k]) => k === e.key)
+			)
+
+			required.push(...requiredEntriesFromSpread)
+			optional.push(...optionalEntriesFromSpread)
+
+			continue
+		}
+
 		ctx.path.push(
 			`${
 				typeof result.innerKey === "symbol"
@@ -34,6 +83,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 			}`
 		)
 		const valueNode = ctx.scope.parse(result.innerValue, ctx)
+
 		if (result.kind === "optional") {
 			optional.push({
 				key: result.innerKey,
@@ -46,7 +96,10 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 			})
 		}
 		ctx.path.pop()
+
+		hasSeenFirstKey ||= true
 	}
+
 	return schema({
 		basis: "object",
 		required,
@@ -54,24 +107,35 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 	})
 }
 
+/**
+ * Infers the contents of an object literal, ignoring a spread definition
+ * You probably want to use {@link inferObjectLiteral} instead.
+ */
+type inferObjectLiteralInner<def extends object, $, args> = {
+	// since def is a const parameter, we remove the readonly modifier here
+	// support for builtin readonly tracked here:
+	// https://github.com/arktypeio/arktype/issues/808
+	-readonly [k in keyof def as nonOptionalKeyFrom<
+		k,
+		def[k],
+		$,
+		args
+	>]: inferDefinition<def[k], $, args>
+} & {
+	-readonly [k in keyof def as optionalKeyFrom<k, def[k]>]?: inferDefinition<
+		def[k] extends OptionalValue<infer inner> ? inner : def[k],
+		$,
+		args
+	>
+}
+
 export type inferObjectLiteral<def extends object, $, args> = evaluate<
-	{
-		// since def is a const parameter, we remove the readonly modifier here
-		// support for builtin readonly tracked here:
-		// https://github.com/arktypeio/arktype/issues/808
-		-readonly [k in keyof def as nonOptionalKeyFrom<
-			k,
-			def[k],
-			$,
-			args
-		>]: inferDefinition<def[k], $, args>
-	} & {
-		-readonly [k in keyof def as optionalKeyFrom<k, def[k]>]?: inferDefinition<
-			def[k] extends OptionalValue<infer inner> ? inner : def[k],
-			$,
-			args
-		>
-	}
+	"..." extends keyof def
+		? merge<
+				inferDefinition<def["..."], $, args>,
+				inferObjectLiteralInner<def, $, args>
+		  >
+		: inferObjectLiteralInner<def, $, args>
 >
 
 export type validateObjectLiteral<def, $, args> = {
@@ -84,7 +148,11 @@ export type validateObjectLiteral<def, $, args> = {
 			    // move on to the validating the value definition
 			    validateDefinition<def[k], $, args>
 			  : indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
-		: validateObjectValue<def[k], $, args>
+		: k extends "..."
+		  ? inferDefinition<def[k], $, args> extends object
+				? validateDefinition<def[k], $, args>
+				: indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
+		  : validateObjectValue<def[k], $, args>
 }
 
 type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
@@ -118,3 +186,11 @@ export const writeInvalidPropertyKeyMessage = <indexDef extends string>(
 
 type writeInvalidPropertyKeyMessage<indexDef extends string> =
 	`Indexed key definition '${indexDef}' must be a string, number or symbol`
+
+export const writeInvalidSpreadTypeMessage = <def extends string>(
+	def: def
+): writeInvalidSpreadTypeMessage<def> =>
+	`Spread operand must resolve to an object literal type (was ${def})`
+
+type writeInvalidSpreadTypeMessage<def extends string> =
+	`Spread operand must resolve to an object literal type (was ${def})`
