@@ -1,3 +1,4 @@
+import type { TypeNode } from "@arktype/schema"
 import {
 	throwInternalError,
 	throwParseError,
@@ -39,7 +40,7 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState) => {
+export const fullStringParse = (s: DynamicState): TypeNode => {
 	s.parseOperand()
 	const result = parseUntilFinalizer(s).root
 	if (!result) {

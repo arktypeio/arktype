@@ -7,17 +7,8 @@ import {
 	type SerializablePrimitive
 } from "@arktype/util"
 
-declare global {
-	const $ark: Registry
-}
-
 class Registry {
 	[k: string]: unknown
-
-	// immediately initialize an instance on import so the global reference resolves
-	static {
-		new Registry()
-	}
 
 	constructor() {
 		const global = globalThis as any
@@ -38,6 +29,9 @@ class Registry {
 		return variableName
 	}
 }
+
+// immediately initialize an instance on import so the global reference resolves
+new Registry()
 
 export const isDotAccessible = (name: string) =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
