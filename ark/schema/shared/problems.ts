@@ -1,4 +1,4 @@
-import type { arraySubclassToReadonly, propwiseXor } from "@arktype/util"
+import type { propwiseXor } from "@arktype/util"
 import type { TraversalContext } from "./context.js"
 
 export class ArkTypeError extends TypeError {

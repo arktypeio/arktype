@@ -61,11 +61,6 @@ export type CollapsingList<t = unknown> =
 	| t
 	| readonly [t, t, ...t[]]
 
-export type arraySubclassToReadonly<t extends unknown[]> =
-	readonly t[number][] & {
-		[k in Exclude<keyof t, keyof unknown[]>]: t[k]
-	}
-
 export const listFrom = <t>(data: t) =>
 	(Array.isArray(data) ? data : [data]) as t extends readonly unknown[]
 		? [t] extends [null]
