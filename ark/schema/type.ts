@@ -25,7 +25,7 @@ export type BaseTypeDeclaration = extend<
 export abstract class BaseType<
 	t = unknown,
 	d extends BaseTypeDeclaration = BaseTypeDeclaration
-> extends BaseNode<d> {
+> extends BaseNode<t, d> {
 	declare infer: extractOut<t>;
 	declare [inferred]: t
 
@@ -45,20 +45,6 @@ export abstract class BaseType<
 
 	override get out(): Node<ioKindOf<d["kind"]>, extractOut<t>> {
 		return super.out
-	}
-
-	allows = (data: unknown): data is distill<extractIn<t>> => {
-		const ctx = new TraversalContext()
-		return this.traverseAllows(data as never, ctx)
-	}
-
-	apply(data: unknown): CheckResult<extractOut<t>> {
-		const ctx = new TraversalContext()
-		this.traverseApply(data as never, ctx)
-		if (ctx.problems.length === 0) {
-			return { out: data } as any
-		}
-		return { problems: ctx.problems }
 	}
 
 	constrain<refinementKind extends RefinementKind>(

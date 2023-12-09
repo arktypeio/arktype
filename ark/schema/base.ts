@@ -39,8 +39,9 @@ import type {
 	IntersectionInner,
 	IntersectionNode
 } from "./sets/intersection.js"
-import type { MorphNode } from "./sets/morph.js"
+import type { MorphNode, distill, extractIn, extractOut } from "./sets/morph.js"
 import type { UnionNode } from "./sets/union.js"
+import { TraversalContext } from "./shared/context.js"
 import type {
 	BaseAttributes,
 	BaseNodeDeclaration,
@@ -71,6 +72,7 @@ import {
 	type intersectionOf
 } from "./shared/intersect.js"
 import type { Schema, ioKindOf } from "./shared/nodes.js"
+import type { CheckResult } from "./shared/problems.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -106,6 +108,7 @@ export type UnknownNodeSubclass = {
 }
 
 export abstract class BaseNode<
+	t = unknown,
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends DynamicBase<attachmentsOf<d>> {
 	readonly cls: UnknownNodeSubclass = this.constructor as never
@@ -137,6 +140,20 @@ export abstract class BaseNode<
 	abstract traverseAllows: TraverseAllows<d["checks"]>
 	abstract traverseApply: TraverseApply<d["checks"]>
 	abstract compileBody(ctx: CompilationContext): string
+
+	allows = (data: unknown): data is distill<extractIn<t>> => {
+		const ctx = new TraversalContext()
+		return this.traverseAllows(data as never, ctx)
+	}
+
+	apply(data: unknown): CheckResult<distill<extractOut<t>>> {
+		const ctx = new TraversalContext()
+		this.traverseApply(data as never, ctx)
+		if (ctx.problems.length === 0) {
+			return { out: data } as any
+		}
+		return { problems: ctx.problems }
+	}
 
 	#inCache?: BaseNode;
 	get in(): Node<ioKindOf<d["kind"]>> {
@@ -293,7 +310,7 @@ export abstract class BaseNode<
 	}
 
 	protected createPrimitiveTraversal(
-		this: BaseNode<any> & {
+		this: BaseNode<any, any> & {
 			children: readonly never[]
 		}
 	): TraverseApply<d["checks"]> {
