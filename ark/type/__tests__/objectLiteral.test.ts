@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { printable } from "@arktype/util"
 import { scope, type } from "arktype"
 import {
 	writeInvalidPropertyKeyMessage,
@@ -127,7 +128,7 @@ describe("object literal", () => {
 		it("with non-object", () => {
 			// @ts-expect-error
 			attest(() => type({ "...": "string" })).throwsAndHasTypeError(
-				'Spread types may only be created from object types (was "string")'
+				writeInvalidSpreadTypeMessage(printable("string"))
 			)
 		})
 

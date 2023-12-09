@@ -104,9 +104,8 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 }
 
 export type inferObjectLiteral<def extends object, $, args> = evaluate<
-	merge<
-		def extends { readonly "...": infer spreadDef }
-			? inferDefinition<spreadDef, $, args>
+	merge<"..." extends keyof def 
+			? inferDefinition<def['...'], $, args>
 			: {},
 		{
 			// since def is a const parameter, we remove the readonly modifier here
