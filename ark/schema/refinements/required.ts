@@ -73,6 +73,8 @@ export class RequiredNode extends RefinementNode<RequiredDeclaration> {
 		optional: intersectNamed
 	}
 
+	readonly hasOpenIntersection = true
+
 	serializedKey = compileSerializedValue(this.key)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

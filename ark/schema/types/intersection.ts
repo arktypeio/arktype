@@ -246,7 +246,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 }
 
 export type RefinementIntersectionInputsByKind = {
-	[k in RefinementKind]: hasOpenIntersection<k> extends true
+	[k in RefinementKind]: hasOpenIntersection<Declaration<k>> extends true
 		? listable<Schema<k>>
 		: Schema<k>
 }

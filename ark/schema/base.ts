@@ -10,7 +10,7 @@ import {
 	type entriesOf,
 	type listable
 } from "@arktype/util"
-import type { Schema, ioKindOf } from "./kinds.js"
+import type { Schema, hasOpenIntersection, ioKindOf } from "./kinds.js"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -112,6 +112,9 @@ export type UnknownNodeSubclass = {
 	>
 }
 
+export const isNode = (value: unknown): value is Node =>
+	value instanceof BaseNode
+
 export abstract class BaseNode<
 	t = unknown,
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
@@ -141,6 +144,7 @@ export abstract class BaseNode<
 		this.contributesReferences = Object.values(this.contributesReferencesById)
 	}
 
+	abstract hasOpenIntersection: hasOpenIntersection<d>
 	abstract writeDefaultDescription(): string
 	abstract traverseAllows: TraverseAllows<d["checks"]>
 	abstract traverseApply: TraverseApply<d["checks"]>
@@ -312,18 +316,6 @@ export abstract class BaseNode<
 			return this.scope.parseNode(l.kind, result) as never
 		}
 		return null
-	}
-
-	protected createPrimitiveTraversal(
-		this: BaseNode<any, any> & {
-			children: readonly never[]
-		}
-	): TraverseApply<d["checks"]> {
-		return (data, ctx) => {
-			if (!this.traverseAllows(data, ctx)) {
-				ctx.problems.add(this.description)
-			}
-		}
 	}
 }
 

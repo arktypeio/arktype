@@ -7,7 +7,7 @@
 		"skipLibCheck": true,
 		"strict": true,
 		"sourceMap": true,
-		"composite": true,
+		"declaration": true,
 		"declarationMap": true,
 		"verbatimModuleSyntax": true,
 		"esModuleInterop": true,
@@ -20,16 +20,11 @@
 		"jsx": "react",
 		"paths": {
 			"arktype": ["./ark/type/main.ts"],
-			"arktype/internal/*": ["./ark/type/*"],
 			"@arktype/util": ["./ark/util/main.ts"],
-			"@arktype/util/*": ["./ark/util/*"],
 			"@arktype/fs": ["./ark/fs/main.ts"],
-			"@arktype/fs/*": ["./ark/fs/*"],
 			"@arktype/schema": ["./ark/schema/main.ts"],
-			"@arktype/schema/*": ["./ark/schema/*"],
-			"@arktype/attest": ["./ark/attest/main.ts"],
-			"@arktype/attest/*": ["./ark/attest/*"]
+			"@arktype/attest": ["./ark/attest/main.ts"]
 		}
 	},
-	"exclude": ["./ark/docs", "**/out/**"]
+	"exclude": ["./ark/docs"]
 }

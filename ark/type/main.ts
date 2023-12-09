@@ -1,5 +1,5 @@
 export { Problems, type Problem } from "@arktype/schema"
-export type { Out } from "@arktype/schema"
+export type { Out, is } from "@arktype/schema"
 export {
 	ark,
 	arktypes,

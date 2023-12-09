@@ -104,7 +104,7 @@ export function map(
 		return entrySet
 	})
 	const objectResult = Object.fromEntries(entries)
-	return typeof entries[0][0] === "number"
+	return typeof entries[0]?.[0] === "number"
 		? Object.assign([], objectResult)
 		: objectResult
 }

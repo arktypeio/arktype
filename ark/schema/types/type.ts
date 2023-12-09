@@ -5,7 +5,7 @@ import {
 	type Node,
 	type TypeNode
 } from "../base.js"
-import type { Schema, ioKindOf } from "../kinds.js"
+import type { Schema, hasOpenIntersection, ioKindOf } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { RefinementKind, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -29,6 +29,8 @@ export abstract class BaseType<
 
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
+
+	hasOpenIntersection = false as hasOpenIntersection<d>
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)
