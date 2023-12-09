@@ -30,15 +30,14 @@ class Registry {
 	}
 }
 
-// immediately initialize an instance on import so the global reference resolves
-new Registry()
+export const registry = new Registry()
 
 export const isDotAccessible = (name: string) =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
 
 export const compileSerializedValue = (value: unknown) => {
 	return hasDomain(value, "object") || typeof value === "symbol"
-		? $ark.register(value)
+		? registry.register(value)
 		: serializePrimitive(value as SerializablePrimitive)
 }
 

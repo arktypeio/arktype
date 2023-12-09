@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { registry } from "@arktype/schema"
 import { printable } from "@arktype/util"
 import { scope, type } from "arktype"
 import {
@@ -35,7 +36,7 @@ describe("object literal", () => {
 	})
 	it("symbol key", () => {
 		const s = Symbol()
-		const name = $ark.register(s)
+		const name = registry.register(s)
 		const t = type({
 			[s]: "string"
 		})
@@ -47,7 +48,7 @@ describe("object literal", () => {
 	})
 	it("optional symbol", () => {
 		const s = Symbol()
-		const name = $ark.register(s)
+		const name = registry.register(s)
 		const t = type({
 			[s]: "number?"
 		})
