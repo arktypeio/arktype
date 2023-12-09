@@ -1,18 +1,20 @@
-import type { Node, TypeSchema } from "../../base.js"
+import type { Node, TypeSchema } from "../base.js"
+import type { Inner } from "../kinds.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
 	TraverseApply
-} from "../../scope.js"
-import type { declareNode, withAttributes } from "../../shared/declare.js"
-import type { NodeParserImplementation, TypeKind } from "../../shared/define.js"
-import { Disjoint } from "../../shared/disjoint.js"
-import type { NodeIntersections } from "../../shared/intersect.js"
-import type { Inner } from "../../shared/nodes.js"
-import type { Problems } from "../../shared/problems.js"
-import { compileSerializedValue } from "../../shared/registry.js"
-import { RefinementNode } from "../shared.js"
-import { compilePresentProp, type NamedPropKind } from "./shared.js"
+} from "../scope.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { NodeParserImplementation, TypeKind } from "../shared/define.js"
+import { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
+import { compileSerializedValue } from "../shared/registry.js"
+import {
+	RefinementNode,
+	compilePresentProp,
+	type NamedPropKind
+} from "./shared.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol

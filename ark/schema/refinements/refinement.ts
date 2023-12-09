@@ -3,32 +3,37 @@ import type {
 	MaxComparator,
 	MinComparator
 } from "arktype/internal/parser/string/reduce/shared.js"
+import type { Declaration, Schema } from "../kinds.js"
 import type { OpenRefinementKind, RefinementKind } from "../shared/define.js"
-import type { Declaration, Schema } from "../shared/nodes.js"
 import {
 	BoundNodes,
 	type BoundDeclarations,
 	type LimitSchemaValue
 } from "./bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./divisor.js"
+import type { IndexDeclaration } from "./index.js"
+import type { OptionalDeclaration } from "./optional.js"
 import { PatternNode, type PatternDeclaration } from "./pattern.js"
 import { PredicateNode, type PredicateDeclaration } from "./predicate.js"
-import { PropNodes, type PropDeclarations } from "./props/prop.js"
+import { PropNodes, type PropDeclarations } from "./prop.js"
+import type { RequiredDeclaration } from "./required.js"
+import type { SequenceDeclaration } from "./sequence.js"
 
 export type ClosedRefinementDeclarations = extend<
 	BoundDeclarations,
 	{
+		sequence: SequenceDeclaration
 		divisor: DivisorDeclaration
 	}
 >
 
-export type OpenRefinementDeclarations = extend<
-	PropDeclarations,
-	{
-		pattern: PatternDeclaration
-		predicate: PredicateDeclaration
-	}
->
+export type OpenRefinementDeclarations = {
+	required: RequiredDeclaration
+	optional: OptionalDeclaration
+	index: IndexDeclaration
+	pattern: PatternDeclaration
+	predicate: PredicateDeclaration
+}
 
 export type RefinementDeclarations = extend<
 	ClosedRefinementDeclarations,
@@ -45,24 +50,6 @@ export const RefinementNodes = {
 
 export type RefinementOperand<kind extends RefinementKind> =
 	Declaration<kind>["checks"]
-
-export type RefinementIntersectionInputsByKind = {
-	[k in RefinementKind]: k extends OpenRefinementKind
-		? listable<Schema<k>>
-		: Schema<k>
-}
-
-export type RefinementIntersectionInput<
-	kind extends RefinementKind = RefinementKind
-> = RefinementIntersectionInputsByKind[kind]
-
-export type refinementKindOf<t> = {
-	[k in RefinementKind]: t extends RefinementOperand<k> ? k : never
-}[RefinementKind]
-
-export type refinementInputsByKind<t> = {
-	[k in refinementKindOf<t>]?: RefinementIntersectionInput<k>
-}
 
 export type Comparator = MinComparator | MaxComparator | "=="
 

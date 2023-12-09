@@ -7,8 +7,6 @@ import {
 	type Dict
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
-import { maybeGetBasisKind } from "./bases/basis.js"
-import type { UnitNode } from "./bases/unit.js"
 import type {
 	instantiateAliases,
 	instantiateSchemaBranches,
@@ -16,18 +14,20 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
+import type { Schema, reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type { Discriminant } from "./sets/discriminate.js"
+import type { TraversalContext } from "./shared/context.js"
+import type { NodeKind, PropKind, SetKind, TypeKind } from "./shared/define.js"
+import type { ProblemCode } from "./shared/problems.js"
+import { maybeGetBasisKind } from "./types/basis.js"
+import type { Discriminant } from "./types/discriminate.js"
+import { BaseType } from "./types/type.js"
 import type {
 	BranchKind,
 	NormalizedUnionSchema,
 	UnionNode
-} from "./sets/union.js"
-import type { TraversalContext } from "./shared/context.js"
-import type { NodeKind, PropKind, SetKind, TypeKind } from "./shared/define.js"
-import type { Schema, reducibleKindOf } from "./shared/nodes.js"
-import type { ProblemCode } from "./shared/problems.js"
-import { BaseType } from "./type.js"
+} from "./types/union.js"
+import type { UnitNode } from "./types/unit.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 

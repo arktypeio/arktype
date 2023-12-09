@@ -1,11 +1,9 @@
 import type {
 	ErrorMessage,
 	JsonData,
-	PartialRecord,
 	listable,
 	optionalizeKeys,
 	requireKeys,
-	requiredKeyOf,
 	satisfy
 } from "@arktype/util"
 import type { BaseNode, Node } from "../base.js"
@@ -29,7 +27,11 @@ export const boundKinds = [
 
 export type BoundKind = (typeof boundKinds)[number]
 
-export const closedRefinementKinds = ["divisor", ...boundKinds] as const
+export const closedRefinementKinds = [
+	"divisor",
+	"sequence",
+	...boundKinds
+] as const
 
 export type ClosedRefinementKind = (typeof closedRefinementKinds)[number]
 
@@ -40,7 +42,9 @@ export type PropKind = (typeof propKinds)[number]
 export const openRefinementKinds = [
 	"pattern",
 	"predicate",
-	...propKinds
+	"required",
+	"optional",
+	"index"
 ] as const
 
 export type OpenRefinementKind = (typeof openRefinementKinds)[number]
@@ -99,11 +103,6 @@ export const defaultValueSerializer = (v: unknown) => {
 	return compileSerializedValue(v)
 }
 
-export type normalizeInput<input, inner extends BaseAttributes> = Extract<
-	input,
-	PartialRecord<requiredKeyOf<inner>>
->
-
 export type NodeKeyImplementation<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["normalizedSchema"],
@@ -139,9 +138,7 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	keys: KeyDefinitions<d>
 	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void
-	normalize: (
-		schema: d["schema"]
-	) => normalizeInput<d["normalizedSchema"], d["inner"]>
+	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	reduce?: (
 		inner: d["inner"],
 		meta: d["meta"],

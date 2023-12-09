@@ -1,15 +1,16 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
+import type { Declaration } from "../kinds.js"
 import type {
 	ConstraintKind,
 	NodeKind,
+	OpenRefinementKind,
 	PropKind,
 	RefinementKind,
 	SetKind
 } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
-import type { Declaration } from "./nodes.js"
 
 export type BaseAttributes = {
 	readonly description?: string
@@ -23,7 +24,7 @@ export type BaseIntersectionMap = {
 			[requiredKey in lKey]:
 				| lKey
 				| Disjoint
-				| (lKey extends RefinementKind ? null : never)
+				| (lKey extends OpenRefinementKind ? null : never)
 		} & {
 			[rKey in rightOf<lKey> | "default"]?:
 				| lKey

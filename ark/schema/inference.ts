@@ -6,10 +6,12 @@ import type {
 	exactMessageOnError
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
-import type { instantiateBasis } from "./bases/basis.js"
-import type { NonEnumerableDomain } from "./bases/domain.js"
 import type { isSchemaCast, schema } from "./keywords/keywords.js"
-import type { IntersectionSchema } from "./sets/intersection.js"
+import type { Declaration, Schema } from "./kinds.js"
+import type { BasisKind, RefinementKind } from "./shared/define.js"
+import type { instantiateBasis } from "./types/basis.js"
+import type { NonEnumerableDomain } from "./types/domain.js"
+import type { IntersectionSchema } from "./types/intersection.js"
 import type {
 	Morph,
 	MorphSchema,
@@ -17,10 +19,8 @@ import type {
 	ValidatorDefinition,
 	ValidatorKind,
 	inferMorphOut
-} from "./sets/morph.js"
-import type { BranchNode, NormalizedUnionSchema } from "./sets/union.js"
-import type { BasisKind, RefinementKind } from "./shared/define.js"
-import type { Declaration, Schema } from "./shared/nodes.js"
+} from "./types/morph.js"
+import type { BranchNode, NormalizedUnionSchema } from "./types/union.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]

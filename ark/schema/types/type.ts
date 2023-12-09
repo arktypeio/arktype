@@ -4,18 +4,16 @@ import {
 	type BaseAttachments,
 	type Node,
 	type TypeNode
-} from "./base.js"
-import type { IntersectionNode } from "./sets/intersection.js"
-import type { distill, extractIn, extractOut } from "./sets/morph.js"
-import type { BranchKind, UnionNode } from "./sets/union.js"
-import { TraversalContext } from "./shared/context.js"
-import type { BaseNodeDeclaration } from "./shared/declare.js"
-import type { RefinementKind, TypeKind } from "./shared/define.js"
-import { Disjoint } from "./shared/disjoint.js"
-import type { intersectionOf } from "./shared/intersect.js"
-import type { Schema, ioKindOf } from "./shared/nodes.js"
-import type { CheckResult } from "./shared/problems.js"
-import { inferred } from "./shared/symbols.js"
+} from "../base.js"
+import type { Schema, ioKindOf } from "../kinds.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
+import type { RefinementKind, TypeKind } from "../shared/define.js"
+import { Disjoint } from "../shared/disjoint.js"
+import type { intersectionOf } from "../shared/intersect.js"
+import { inferred } from "../shared/symbols.js"
+import type { IntersectionNode } from "./intersection.js"
+import type { extractIn, extractOut } from "./morph.js"
+import type { BranchKind, UnionNode } from "./union.js"
 
 export type BaseTypeDeclaration = extend<
 	BaseNodeDeclaration,

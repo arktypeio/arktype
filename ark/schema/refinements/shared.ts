@@ -1,8 +1,34 @@
 import { throwParseError, type PartialRecord } from "@arktype/util"
 import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
-import type { BasisKind } from "../bases/basis.js"
+import type { CompilationContext } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { NodeKind } from "../shared/define.js"
+import { isDotAccessible } from "../shared/registry.js"
+import type { BasisKind } from "../types/basis.js"
+
+export type NamedPropKind = "required" | "optional"
+
+export const compilePropAccess = (name: string, optional = false) =>
+	isDotAccessible(name)
+		? `${optional ? "?" : ""}.${name}`
+		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
+
+export const compilePresentProp = (
+	node: Node<NamedPropKind>,
+	ctx: CompilationContext
+) => {
+	if (ctx.compilationKind === "allows") {
+		return `return this.${node.value.id}(${ctx.argName}${compilePropAccess(
+			node.compiledKey
+		)})`
+	}
+	return `problems.currentPath.push(${node.serializedKey})
+	this.${node.value.id}(${ctx.argName}${compilePropAccess(
+		node.compiledKey
+	)}, problems)
+	problems.currentPath.pop()
+	`
+}
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"

@@ -1,5 +1,6 @@
 import { throwInternalError } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { Inner, NodeDeclarationsByKind } from "../kinds.js"
 import type { BaseNodeDeclaration } from "./declare.js"
 import {
 	nodeKinds,
@@ -7,7 +8,6 @@ import {
 	type OrderedNodeKinds,
 	type RefinementKind
 } from "./define.js"
-import type { Inner, NodeDeclarationsByKind } from "./nodes.js"
 
 export const leftOperandOf = (l: Node, r: Node) => {
 	for (const kind of nodeKinds) {

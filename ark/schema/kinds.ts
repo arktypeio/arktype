@@ -1,13 +1,29 @@
 import type { Dict, extend } from "@arktype/util"
-import { BasisImplementations, type BasisDeclarations } from "../bases/basis.js"
 import {
 	RefinementNodes,
 	type RefinementDeclarations
-} from "../refinements/refinement.js"
-import type { ValidatorKind } from "../sets/morph.js"
-import { SetNodesByKind, type SetDeclarationsByKind } from "../sets/set.js"
-import type { BranchKind } from "../sets/union.js"
-import type { ConstraintKind, NodeKind, PropKind, TypeKind } from "./define.js"
+} from "./refinements/refinement.js"
+import type {
+	ConstraintKind,
+	NodeKind,
+	PropKind,
+	TypeKind
+} from "./shared/define.js"
+import { BasisImplementations, type BasisDeclarations } from "./types/basis.js"
+import {
+	IntersectionNode,
+	type IntersectionDeclaration
+} from "./types/intersection.js"
+import {
+	MorphNode,
+	type MorphDeclaration,
+	type ValidatorKind
+} from "./types/morph.js"
+import {
+	UnionNode,
+	type BranchKind,
+	type UnionDeclaration
+} from "./types/union.js"
 
 export type ConstraintDeclarationsByKind = extend<
 	BasisDeclarations,
@@ -17,6 +33,18 @@ export type ConstraintDeclarationsByKind = extend<
 export const ConstraintImplementationByKind = {
 	...BasisImplementations,
 	...RefinementNodes
+}
+
+export type SetDeclarationsByKind = {
+	union: UnionDeclaration
+	morph: MorphDeclaration
+	intersection: IntersectionDeclaration
+}
+
+export const SetNodesByKind = {
+	union: UnionNode,
+	morph: MorphNode,
+	intersection: IntersectionNode
 }
 
 export type NodeDeclarationsByKind = extend<

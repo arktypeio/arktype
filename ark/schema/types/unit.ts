@@ -5,7 +5,7 @@ import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
-import { BaseType } from "../type.js"
+import { BaseType } from "./type.js"
 
 export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
 

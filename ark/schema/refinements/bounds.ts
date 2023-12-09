@@ -5,6 +5,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { Declaration } from "../kinds.js"
 import type { CompilationContext } from "../scope.js"
 import type {
 	BaseNodeDeclaration,
@@ -18,7 +19,6 @@ import type {
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import type { Declaration } from "../shared/nodes.js"
 import { RefinementNode } from "./shared.js"
 
 export type BoundInner = {

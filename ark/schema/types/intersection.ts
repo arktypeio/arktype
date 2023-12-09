@@ -5,9 +5,9 @@ import {
 	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { BasisKind, instantiateBasis } from "../bases/basis.js"
+import type { Declaration, Schema, reducibleKindOf } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { refinementInputsByKind } from "../refinements/refinement.js"
+import type { RefinementOperand } from "../refinements/refinement.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
@@ -18,18 +18,19 @@ import {
 	basisKinds,
 	type ClosedRefinementKind,
 	type ConstraintKind,
+	type NodeKind,
 	type NodeParserImplementation,
 	type OpenRefinementKind,
+	type PropKind,
 	type RefinementKind
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import type { Schema, reducibleKindOf } from "../shared/nodes.js"
-import type { Problems } from "../shared/problems.js"
-import { BaseType } from "../type.js"
+import type { BasisKind, instantiateBasis } from "./basis.js"
+import { BaseType } from "./type.js"
 
 export type IntersectionInner = { basis?: Node<BasisKind> } & {
-	[k in RefinementKind]?: k extends OpenRefinementKind
+	[k in RefinementKind | PropKind]?: k extends OpenRefinementKind
 		? readonly Node<k>[]
 		: Node<k>
 }
@@ -164,7 +165,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			sequence: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("sequence", def, ctx)
+				parse: (def, ctx) => parseClosedRefinement("sequence", def, ctx)
 			}
 		},
 		reduce: (inner, meta, scope) => {
@@ -237,6 +238,31 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					"return true"
 			: constraintInvocations.join("\n")
 	}
+}
+
+type hasOpenIntersection<k extends NodeKind> =
+	k extends keyof Declaration<k>["intersections"]
+		? null extends Declaration<k>["intersections"][k]
+			? true
+			: false
+		: never
+
+export type RefinementIntersectionInputsByKind = {
+	[k in RefinementKind]: hasOpenIntersection<k> extends true
+		? listable<Schema<k>>
+		: Schema<k>
+}
+
+export type RefinementIntersectionInput<
+	kind extends RefinementKind = RefinementKind
+> = RefinementIntersectionInputsByKind[kind]
+
+export type refinementKindOf<t> = {
+	[k in RefinementKind]: t extends RefinementOperand<k> ? k : never
+}[RefinementKind]
+
+export type refinementInputsByKind<t> = {
+	[k in refinementKindOf<t>]?: RefinementIntersectionInput<k>
 }
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(

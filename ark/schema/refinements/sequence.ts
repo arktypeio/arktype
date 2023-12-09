@@ -1,17 +1,17 @@
-import type { TypeNode, TypeSchema } from "../../base.js"
+import type { TypeNode, TypeSchema } from "../base.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
 	TraverseApply
-} from "../../scope.js"
-import type { declareNode, withAttributes } from "../../shared/declare.js"
+} from "../scope.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type {
 	NodeKeyImplementation,
 	NodeParserImplementation
-} from "../../shared/define.js"
-import type { Disjoint } from "../../shared/disjoint.js"
-import type { NodeIntersections } from "../../shared/intersect.js"
-import { RefinementNode } from "../shared.js"
+} from "../shared/define.js"
+import type { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
+import { RefinementNode } from "./shared.js"
 
 export type NormalizedSequenceSchema = withAttributes<{
 	readonly prefix?: readonly TypeSchema[]
@@ -36,7 +36,7 @@ export type SequenceDeclaration = declareNode<{
 	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
 	intersections: {
-		sequence: "sequence" | Disjoint | null
+		sequence: "sequence" | Disjoint
 	}
 	checks: readonly unknown[]
 }>

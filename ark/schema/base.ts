@@ -10,10 +10,7 @@ import {
 	type entriesOf,
 	type listable
 } from "@arktype/util"
-import type { BasisKind } from "./bases/basis.js"
-import type { DomainNode } from "./bases/domain.js"
-import type { ProtoNode } from "./bases/proto.js"
-import type { UnitNode } from "./bases/unit.js"
+import type { Schema, ioKindOf } from "./kinds.js"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -23,24 +20,18 @@ import type {
 	MinNode
 } from "./refinements/bounds.js"
 import type { DivisorNode } from "./refinements/divisor.js"
+import type { IndexNode } from "./refinements/index.js"
+import type { OptionalNode } from "./refinements/optional.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
-import type { IndexNode } from "./refinements/props/index.js"
-import type { OptionalNode } from "./refinements/props/optional.js"
-import type { RequiredNode } from "./refinements/props/required.js"
-import type { SequenceNode } from "./refinements/props/sequence.js"
+import type { RequiredNode } from "./refinements/required.js"
+import type { SequenceNode } from "./refinements/sequence.js"
 import type {
 	CompilationContext,
 	ScopeNode,
 	TraverseAllows,
 	TraverseApply
 } from "./scope.js"
-import type {
-	IntersectionInner,
-	IntersectionNode
-} from "./sets/intersection.js"
-import type { MorphNode, distill, extractIn, extractOut } from "./sets/morph.js"
-import type { UnionNode } from "./sets/union.js"
 import { TraversalContext } from "./shared/context.js"
 import type {
 	BaseAttributes,
@@ -71,8 +62,22 @@ import {
 	type NodeIntersections,
 	type intersectionOf
 } from "./shared/intersect.js"
-import type { Schema, ioKindOf } from "./shared/nodes.js"
 import type { CheckResult } from "./shared/problems.js"
+import type { BasisKind } from "./types/basis.js"
+import type { DomainNode } from "./types/domain.js"
+import type {
+	IntersectionInner,
+	IntersectionNode
+} from "./types/intersection.js"
+import type {
+	MorphNode,
+	distill,
+	extractIn,
+	extractOut
+} from "./types/morph.js"
+import type { ProtoNode } from "./types/proto.js"
+import type { UnionNode } from "./types/union.js"
+import type { UnitNode } from "./types/unit.js"
 
 export interface BaseAttachments {
 	alias?: string

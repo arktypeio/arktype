@@ -9,6 +9,11 @@ import {
 	type valueOf
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
+import {
+	NodeImplementationByKind,
+	type Schema,
+	type reducibleKindOf
+} from "./kinds.js"
 import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import {
@@ -18,11 +23,6 @@ import {
 	type NodeKind,
 	type UnknownNodeParser
 } from "./shared/define.js"
-import {
-	NodeImplementationByKind,
-	type Schema,
-	type reducibleKindOf
-} from "./shared/nodes.js"
 
 export type SchemaParseOptions = {
 	alias?: string

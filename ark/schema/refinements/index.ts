@@ -1,15 +1,14 @@
-import type { TypeNode, TypeSchema } from "../../base.js"
+import type { TypeNode, TypeSchema } from "../base.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
 	TraverseApply
-} from "../../scope.js"
-import type { declareNode, withAttributes } from "../../shared/declare.js"
-import type { NodeParserImplementation } from "../../shared/define.js"
-import type { Disjoint } from "../../shared/disjoint.js"
-import type { NodeIntersections } from "../../shared/intersect.js"
-import type { Problems } from "../../shared/problems.js"
-import { RefinementNode } from "../shared.js"
+} from "../scope.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { NodeParserImplementation } from "../shared/define.js"
+import type { Disjoint } from "../shared/disjoint.js"
+import type { NodeIntersections } from "../shared/intersect.js"
+import { RefinementNode } from "./shared.js"
 
 export type IndexSchema = withAttributes<{
 	readonly key: TypeSchema

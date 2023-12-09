@@ -13,7 +13,7 @@ import {
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { BaseType } from "../type.js"
+import { BaseType } from "./type.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = {
 	readonly proto: proto

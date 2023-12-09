@@ -8,9 +8,8 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
+import type { Schema } from "../kinds.js"
 import type { PrimitiveConstraintAttachments } from "../shared/define.js"
-import type { Schema } from "../shared/nodes.js"
-import { BaseType } from "../type.js"
 import {
 	DomainNode,
 	type DomainDeclaration,
@@ -18,6 +17,7 @@ import {
 	type NonEnumerableDomain
 } from "./domain.js"
 import { ProtoNode, type ProtoDeclaration, type ProtoSchema } from "./proto.js"
+import { BaseType } from "./type.js"
 import { UnitNode, type UnitDeclaration, type UnitSchema } from "./unit.js"
 
 export type BasisDeclarations = {

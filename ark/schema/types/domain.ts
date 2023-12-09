@@ -4,7 +4,7 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { BaseType } from "../type.js"
+import { BaseType } from "./type.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain

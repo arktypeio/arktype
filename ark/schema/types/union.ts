@@ -1,5 +1,6 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { Schema } from "../kinds.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
@@ -9,11 +10,10 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import type { Schema } from "../shared/nodes.js"
 import type { Problems } from "../shared/problems.js"
-import { BaseType } from "../type.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
+import { BaseType } from "./type.js"
 
 export type BranchKind = "morph" | ValidatorKind
 
