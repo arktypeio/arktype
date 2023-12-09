@@ -40,7 +40,7 @@ const nonexistentCurrentLine = {
 
 export type FormatFilePathOptions = {
 	relative?: string | boolean
-	seperator?: string
+	separator?: string
 }
 
 export const positionToString = (position: SourcePosition) =>
@@ -48,7 +48,7 @@ export const positionToString = (position: SourcePosition) =>
 
 export const formatFilePath = (
 	original: string,
-	{ relative, seperator }: FormatFilePathOptions
+	{ relative, separator }: FormatFilePathOptions
 ) => {
 	let formatted = original
 	if (original.startsWith("file:///")) {
@@ -60,8 +60,8 @@ export const formatFilePath = (
 			formatted
 		)
 	}
-	if (seperator) {
-		formatted = formatted.replace(new RegExp(`\\${path.sep}`, "g"), seperator)
+	if (separator) {
+		formatted = formatted.replace(new RegExp(`\\${path.sep}`, "g"), separator)
 	}
 	return formatted
 }
