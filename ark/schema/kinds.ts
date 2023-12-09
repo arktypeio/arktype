@@ -92,6 +92,13 @@ export type ioKindOf<kind extends NodeKind> = kind extends "morph"
 	? ValidatorKind
 	: reducibleKindOf<kind>
 
+export type hasOpenIntersection<k extends NodeKind> =
+	k extends keyof Declaration<k>["intersections"]
+		? null extends Declaration<k>["intersections"][k]
+			? true
+			: false
+		: never
+
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? TypeKind
 	: kind extends "intersection"

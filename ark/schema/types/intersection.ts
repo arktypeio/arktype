@@ -5,7 +5,12 @@ import {
 	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { Declaration, Schema, reducibleKindOf } from "../kinds.js"
+import type {
+	Declaration,
+	Schema,
+	hasOpenIntersection,
+	reducibleKindOf
+} from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { RefinementOperand } from "../refinements/refinement.js"
 import type {
@@ -239,13 +244,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			: constraintInvocations.join("\n")
 	}
 }
-
-type hasOpenIntersection<k extends NodeKind> =
-	k extends keyof Declaration<k>["intersections"]
-		? null extends Declaration<k>["intersections"][k]
-			? true
-			: false
-		: never
 
 export type RefinementIntersectionInputsByKind = {
 	[k in RefinementKind]: hasOpenIntersection<k> extends true

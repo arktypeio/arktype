@@ -98,7 +98,6 @@ export class Problems extends ReadonlyArray<Problem> {
 	}
 }
 
-// TODO: fix
 export type ProblemCode = string
 
 export type CheckResult<out = unknown> = propwiseXor<
