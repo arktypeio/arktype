@@ -3,7 +3,7 @@ import * as assert from "node:assert/strict"
 import type { SerializedAssertionData } from "../cache/writeAssertionCache.js"
 import type { AssertionContext } from "./attest.js"
 
-export type ThrowAsertionErrorContext = {
+export type ThrowAssertionErrorContext = {
 	message: string
 	expected?: unknown
 	actual?: unknown
@@ -13,7 +13,7 @@ export type ThrowAsertionErrorContext = {
 export const throwAssertionError = ({
 	ctx,
 	...errorArgs
-}: ThrowAsertionErrorContext): never => {
+}: ThrowAssertionErrorContext): never => {
 	const e = new assert.AssertionError(errorArgs)
 	e.stack = ctx.assertionStack
 	throw e
