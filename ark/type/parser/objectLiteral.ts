@@ -47,7 +47,10 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 		} else if (result.kind === "spread") {
 			const spreadNode = ctx.scope.parse(result.innerValue, ctx)
 
-			if (spreadNode.kind !== "intersection" || !spreadNode.extends(keywords.object)) {
+			if (
+				spreadNode.kind !== "intersection" ||
+				!spreadNode.extends(keywords.object)
+			) {
 				return throwParseError(
 					writeInvalidSpreadTypeMessage(printable(result.innerValue))
 				)
@@ -103,31 +106,35 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 	})
 }
 
-export type inferObjectLiteral<def extends object, $, args> = evaluate<
-	merge<"..." extends keyof def 
-			? inferDefinition<def['...'], $, args>
-			: {},
-		{
-			// since def is a const parameter, we remove the readonly modifier here
-			// support for builtin readonly tracked here:
-			// https://github.com/arktypeio/arktype/issues/808
-			-readonly [k in keyof def as nonOptionalKeyFrom<
-				k,
-				def[k],
-				$,
-				args
-			>]: inferDefinition<def[k], $, args>
-		} & {
-			-readonly [k in keyof def as optionalKeyFrom<
-				k,
-				def[k]
-			>]?: inferDefinition<
-				def[k] extends OptionalValue<infer inner> ? inner : def[k],
-				$,
-				args
-			>
-		}
+/**
+ * Infers the contents of an object literal, ignoring a spread definition
+ * You probably want to use {@link inferObjectLiteral} instead.
+ */
+type inferObjectLiteralInner<def extends object, $, args> = {
+	// since def is a const parameter, we remove the readonly modifier here
+	// support for builtin readonly tracked here:
+	// https://github.com/arktypeio/arktype/issues/808
+	-readonly [k in keyof def as nonOptionalKeyFrom<
+		k,
+		def[k],
+		$,
+		args
+	>]: inferDefinition<def[k], $, args>
+} & {
+	-readonly [k in keyof def as optionalKeyFrom<k, def[k]>]?: inferDefinition<
+		def[k] extends OptionalValue<infer inner> ? inner : def[k],
+		$,
+		args
 	>
+}
+
+export type inferObjectLiteral<def extends object, $, args> = evaluate<
+	"..." extends keyof def
+		? merge<
+				inferDefinition<def["..."], $, args>,
+				inferObjectLiteralInner<def, $, args>
+		  >
+		: inferObjectLiteralInner<def, $, args>
 >
 
 export type validateObjectLiteral<def, $, args> = {
