@@ -1,5 +1,4 @@
-import { schema, type Inner } from "@arktype/schema"
-import { keywords } from "@arktype/schema/internal/keywords/keywords.js"
+import { keywords, schema, type Inner } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -40,11 +39,13 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
 	for (const entry of stringAndSymbolicEntriesOf(def)) {
 		const result = parseEntry(entry)
 
-		if (result.kind === "spread" && hasSeenFirstKey) {
-			return throwParseError(
-				"Spread operator may only be used as the first key in an object"
-			)
-		} else if (result.kind === "spread") {
+		if (result.kind === "spread") {
+			if (hasSeenFirstKey) {
+				return throwParseError(
+					"Spread operator may only be used as the first key in an object"
+				)
+			}
+
 			const spreadNode = ctx.scope.parse(result.innerValue, ctx)
 
 			if (
@@ -148,10 +149,7 @@ export type validateObjectLiteral<def, $, args> = {
 			    validateDefinition<def[k], $, args>
 			  : indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
 		: k extends "..."
-		  ? inferDefinition<def[k], $, args> extends Record<
-					string | number | symbol,
-					unknown
-		    >
+		  ? inferDefinition<def[k], $, args> extends object
 				? validateDefinition<def[k], $, args>
 				: indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
 		  : validateObjectValue<def[k], $, args>
