@@ -134,6 +134,38 @@ You'll need to make sure that setup with whatever aliases you need before the fi
 
 This ensures that type assertions can be made across processes without creating a new TSServer instance for each.
 
+### TS Versions
+
+Attest provides utilities for testing your code against multiple versions of TypeScript. This is particularly useful for library authors who want to ensure compatibility across different TypeScript versions.
+
+For example, here's the script ArkType uses to ensure consistency across TS versions in CI:
+
+```ts
+import { forEachTypeScriptVersion } from "@arktype/attest"
+import { shell } from "@arktype/fs"
+
+forEachTypeScriptVersion(() => {
+	shell("pnpm test")
+})
+```
+
+By default, `forEachTypeScriptVersion` will look for TypeScript versions in `node_modules` with the prefix `attest-ts`. This way, you can maintain a list of versions you'd like to support that will be installed alongside your other dev dependencies and referenced only during these tests:
+
+```json
+"devDependencies": {
+	"typescript": "5.3.2",
+	"attest-ts50": "npm:typescript@5.0",
+	"attest-ts51": "npm:typescript@5.1",
+	"attest-ts52": "npm:typescript@5.2",
+	"attest-ts53": "npm:typescript@5.3",
+	"attest-ts54": "npm:typescript@next"
+}
+```
+
+If you prefer, you can pass a custom list of directories containing TS installations to `forEachTypeScriptVersion`'s optional second parameter.
+
+After all versions have run, your original `typescript` version will be restored, regardless of the results.
+
 ### APIs
 
 The most flexible attest APIs are `getAssertionDataAtPosition` and `caller`.

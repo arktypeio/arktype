@@ -10,4 +10,8 @@ export type {
 } from "./cache/writeAssertionCache.js"
 export { getDefaultAttestConfig, type AttestConfig } from "./config.js"
 export { cleanup, setup } from "./fixtures.js"
-export { getTsVersionUnderTest } from "./utils.js"
+export {
+	findAttestTypeScriptVersions,
+	forEachTypeScriptVersion,
+	getTsVersionUnderTest
+} from "./tsVersioning.js"
