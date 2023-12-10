@@ -50,11 +50,6 @@ export class PredicateNode extends RefinementNode<PredicateDeclaration> {
 
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
-	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) {
-			ctx.problems.add(this.description)
-		}
-	}
 	condition = `${compileSerializedValue(this.predicate)}(${this.scope.argName})`
 	negatedCondition = `!${this.condition}`
 

@@ -1,6 +1,6 @@
 import { throwParseError, type PartialRecord } from "@arktype/util"
 import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
-import type { CompilationContext } from "../scope.js"
+import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { NodeKind } from "../shared/define.js"
 import { isDotAccessible } from "../shared/registry.js"
@@ -44,6 +44,12 @@ export abstract class RefinementNode<
 		(cache[this.kind] = this.getCheckedDefinitions().map((o) =>
 			this.scope.parseTypeNode(o)
 		))
+
+	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.problems.add(this.description)
+		}
+	}
 
 	assertValidBasis(basis: Node<BasisKind> | undefined) {
 		if (this.checks.length === 1 && this.checks[0].isUnknown()) {

@@ -136,11 +136,6 @@ export abstract class BaseBound<
 
 	readonly hasOpenIntersection = false as hasOpenIntersection<d>
 
-	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) {
-			ctx.problems.add(this.description)
-		}
-	}
 	size = compileSizeOf(this.kind, this.scope.argName)
 	comparator = compileComparator(
 		this.kind,

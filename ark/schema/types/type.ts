@@ -5,14 +5,14 @@ import {
 	type Node,
 	type TypeNode
 } from "../base.js"
-import type { Schema, hasOpenIntersection, ioKindOf } from "../kinds.js"
+import type { Schema, hasOpenIntersection } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { RefinementKind, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { intersectionOf } from "../shared/intersect.js"
 import { inferred } from "../shared/symbols.js"
 import type { IntersectionNode } from "./intersection.js"
-import type { extractIn, extractOut } from "./morph.js"
+import type { extractOut } from "./morph.js"
 import type { BranchKind, UnionNode } from "./union.js"
 
 export type BaseTypeDeclaration = extend<
@@ -37,14 +37,6 @@ export abstract class BaseType<
 		// in a union, branches will have already been assigned from inner
 		// otherwise, initialize it to a singleton array containing the current branch node
 		this.branches ??= [this as never]
-	}
-
-	override get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
-		return super.in
-	}
-
-	override get out(): Node<ioKindOf<d["kind"]>, extractOut<t>> {
-		return super.out
 	}
 
 	constrain<refinementKind extends RefinementKind>(

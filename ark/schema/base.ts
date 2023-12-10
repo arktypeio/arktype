@@ -159,13 +159,13 @@ export abstract class BaseNode<
 	}
 
 	#inCache?: BaseNode;
-	get in(): Node<ioKindOf<d["kind"]>> {
+	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
 		this.#inCache ??= this.getIo("in")
 		return this.#inCache as never
 	}
 
 	#outCache?: BaseNode
-	get out(): Node<ioKindOf<d["kind"]>> {
+	get out(): Node<ioKindOf<d["kind"]>, extractOut<t>> {
 		this.#outCache ??= this.getIo("out")
 		return this.#outCache as never
 	}

@@ -2,7 +2,6 @@ import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { Problem } from "../shared/problems.js"
 import { RefinementNode } from "./shared.js"
 
 export type DivisorInner = {
@@ -52,11 +51,7 @@ export class DivisorNode extends RefinementNode<DivisorDeclaration> {
 
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
-	traverseApply: TraverseApply<number> = (data, ctx) => {
-		if (!this.traverseAllows(data)) {
-			ctx.problems.add(this.description)
-		}
-	}
+
 	condition = `${this.scope.argName} % ${this.divisor} === 0`
 	negatedCondition = `${this.scope.argName} % ${this.divisor} !== 0`
 
