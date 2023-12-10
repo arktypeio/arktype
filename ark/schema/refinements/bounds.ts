@@ -6,17 +6,13 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Declaration, hasOpenIntersection } from "../kinds.js"
-import type { CompilationContext, TraverseApply } from "../scope.js"
+import type { CompilationContext } from "../scope.js"
 import type {
 	BaseNodeDeclaration,
-	declareNode,
+	declarePrimitive,
 	withAttributes
 } from "../shared/declare.js"
-import type {
-	BoundKind,
-	NodeParserImplementation,
-	PrimitiveConstraintAttachments
-} from "../shared/define.js"
+import type { BoundKind, NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementNode } from "./shared.js"
@@ -38,13 +34,6 @@ export type NormalizedBoundSchema<
 export type BoundSchema<limit extends LimitSchemaValue = LimitSchemaValue> =
 	| limit
 	| NormalizedBoundSchema<limit>
-
-export type BoundAttachments<limitKind extends LimitKind> = extend<
-	PrimitiveConstraintAttachments,
-	{
-		comparator: RelativeComparator<limitKind>
-	}
->
 
 export type LimitKind = "lower" | "upper"
 
@@ -165,7 +154,7 @@ const compileSizeOf = (kind: BoundKind, argName: string) =>
 		  ? `${argName}.length`
 		  : `+${argName}`
 
-export type MinDeclaration = declareNode<{
+export type MinDeclaration = declarePrimitive<{
 	kind: "min"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -193,7 +182,7 @@ export class MinNode extends BaseBound<MinDeclaration> {
 	}
 }
 
-export type MaxDeclaration = declareNode<{
+export type MaxDeclaration = declarePrimitive<{
 	kind: "max"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -221,7 +210,7 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 	}
 }
 
-export type MinLengthDeclaration = declareNode<{
+export type MinLengthDeclaration = declarePrimitive<{
 	kind: "minLength"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -255,7 +244,7 @@ export class MinLengthNode extends BaseBound<MinLengthDeclaration> {
 	}
 }
 
-export type MaxLengthDeclaration = declareNode<{
+export type MaxLengthDeclaration = declarePrimitive<{
 	kind: "maxLength"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -284,7 +273,7 @@ export class MaxLengthNode extends BaseBound<MaxLengthDeclaration> {
 	}
 }
 
-export type AfterDeclaration = declareNode<{
+export type AfterDeclaration = declarePrimitive<{
 	kind: "after"
 	schema: BoundSchema<string | number>
 	normalizedSchema: NormalizedBoundSchema<string | number>
@@ -311,7 +300,7 @@ export class AfterNode extends BaseBound<AfterDeclaration> {
 	}
 }
 
-export type BeforeDeclaration = declareNode<{
+export type BeforeDeclaration = declarePrimitive<{
 	kind: "before"
 	schema: BoundSchema<string | number>
 	normalizedSchema: NormalizedBoundSchema<string | number>

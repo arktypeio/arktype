@@ -1,5 +1,5 @@
-import type { CompilationContext, TraverseApply } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { CompilationContext } from "../scope.js"
+import type { declarePrimitive, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementNode } from "./shared.js"
@@ -12,7 +12,7 @@ export type NormalizedDivisorSchema = withAttributes<DivisorInner>
 
 export type DivisorSchema = NormalizedDivisorSchema | number
 
-export type DivisorDeclaration = declareNode<{
+export type DivisorDeclaration = declarePrimitive<{
 	kind: "divisor"
 	schema: DivisorSchema
 	normalizedSchema: NormalizedDivisorSchema

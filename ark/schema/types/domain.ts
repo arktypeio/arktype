@@ -1,6 +1,10 @@
 import { domainOf, type Domain } from "@arktype/util"
 import type { CompilationContext, TraverseApply } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type {
+	declareNode,
+	declarePrimitive,
+	withAttributes
+} from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -23,7 +27,7 @@ export type NormalizedDomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > = DomainInner<domain>
 
-export type DomainDeclaration = declareNode<{
+export type DomainDeclaration = declarePrimitive<{
 	kind: "domain"
 	schema: DomainSchema
 	normalizedSchema: NormalizedDomainSchema

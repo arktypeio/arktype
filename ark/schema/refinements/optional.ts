@@ -4,7 +4,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareComposite, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -21,7 +21,7 @@ export type OptionalSchema = withAttributes<{
 	readonly value: TypeSchema
 }>
 
-export type OptionalDeclaration = declareNode<{
+export type OptionalDeclaration = declareComposite<{
 	kind: "optional"
 	schema: OptionalSchema
 	normalizedSchema: OptionalSchema

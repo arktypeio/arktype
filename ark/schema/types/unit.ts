@@ -1,6 +1,10 @@
 import { domainOf, printable } from "@arktype/util"
 import type { CompilationContext, TraverseApply } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type {
+	declareNode,
+	declarePrimitive,
+	withAttributes
+} from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -13,7 +17,7 @@ export type UnitInner<value = unknown> = {
 	readonly unit: value
 }
 
-export type UnitDeclaration = declareNode<{
+export type UnitDeclaration = declarePrimitive<{
 	kind: "unit"
 	schema: UnitSchema
 	normalizedSchema: UnitSchema

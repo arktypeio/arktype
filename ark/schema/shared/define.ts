@@ -2,7 +2,6 @@ import type {
 	ErrorMessage,
 	JsonData,
 	listable,
-	optionalizeKeys,
 	requireKeys,
 	satisfy
 } from "@arktype/util"
@@ -72,10 +71,9 @@ type undefinedKey<d extends BaseNodeDeclaration> = Exclude<
 	keyof BaseAttributes
 >
 
-export type PrimitiveConstraintAttachments = {
-	readonly condition: string
-	readonly negatedCondition: string
-}
+export type AttachProperties<d extends BaseNodeDeclaration> = (
+	inner: d["inner"]
+) => d["attachments"]
 
 export const defaultValueSerializer = (v: unknown) => {
 	if (

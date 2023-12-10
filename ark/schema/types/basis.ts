@@ -2,15 +2,12 @@ import {
 	printable,
 	throwParseError,
 	type Constructor,
-	type Domain,
-	type extend,
 	type inferDomain,
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
 import { isNode } from "../base.js"
 import type { Schema } from "../kinds.js"
-import type { PrimitiveConstraintAttachments } from "../shared/define.js"
 import {
 	DomainNode,
 	type DomainDeclaration,
@@ -18,7 +15,6 @@ import {
 	type NonEnumerableDomain
 } from "./domain.js"
 import { ProtoNode, type ProtoDeclaration, type ProtoSchema } from "./proto.js"
-import { BaseType } from "./type.js"
 import { UnitNode, type UnitDeclaration, type UnitSchema } from "./unit.js"
 
 export type BasisDeclarations = {
@@ -34,14 +30,6 @@ export const BasisImplementations = {
 }
 
 export type BasisKind = keyof BasisDeclarations
-
-export type BasisAttachments = extend<
-	PrimitiveConstraintAttachments,
-	{
-		readonly domain: Domain
-		readonly basisName: string
-	}
->
 
 export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	switch (typeof schema) {

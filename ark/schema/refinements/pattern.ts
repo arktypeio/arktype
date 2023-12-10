@@ -1,10 +1,6 @@
-import type { extend } from "@arktype/util"
-import type { CompilationContext, TraverseApply } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
-import type {
-	NodeParserImplementation,
-	PrimitiveConstraintAttachments
-} from "../shared/define.js"
+import type { CompilationContext } from "../scope.js"
+import type { declarePrimitive, withAttributes } from "../shared/declare.js"
+import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementNode } from "./shared.js"
 
@@ -17,12 +13,7 @@ export type NormalizedPatternSchema = withAttributes<PatternInner>
 
 export type PatternSchema = NormalizedPatternSchema | string | RegExp
 
-export type PatternAttachments = extend<
-	PrimitiveConstraintAttachments,
-	{ regex: RegExp }
->
-
-export type PatternDeclaration = declareNode<{
+export type PatternDeclaration = declarePrimitive<{
 	kind: "pattern"
 	schema: PatternSchema
 	normalizedSchema: NormalizedPatternSchema

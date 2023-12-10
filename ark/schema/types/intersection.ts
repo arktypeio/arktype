@@ -20,7 +20,11 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type {
+	declareComposite,
+	declareNode,
+	withAttributes
+} from "../shared/declare.js"
 import {
 	basisKinds,
 	type ConstraintKind,
@@ -56,7 +60,7 @@ export type IntersectionAttachments = {
 	refinements: readonly Node<RefinementKind>[]
 }
 
-export type IntersectionDeclaration = declareNode<{
+export type IntersectionDeclaration = declareComposite<{
 	kind: "intersection"
 	schema: IntersectionSchema
 	normalizedSchema: IntersectionSchema

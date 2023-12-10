@@ -1,4 +1,4 @@
-import type { Dict, evaluate, extend } from "@arktype/util"
+import type { Dict, evaluate, extend, optionalizeKeys } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenRefinementKind } from "../kinds.js"
 import type { ConstraintKind, NodeKind, PropKind, SetKind } from "./define.js"
@@ -27,25 +27,20 @@ export type BaseIntersectionMap = {
 	>
 }
 
-export type DeclarationInput<kind extends NodeKind> = {
-	kind: kind
+export type UnknownIntersections = {
+	[rKey in NodeKind | "default"]?: NodeKind | Disjoint | null
+}
+
+export type DeclarationInput = {
+	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseAttributes
 	inner: Dict
+	attachments: Dict
 	meta?: Dict
 	checks?: unknown
 	childKind?: NodeKind
-	intersections: BaseIntersectionMap[kind]
-}
-
-export type validateNodeDeclaration<d, additionalKeys = never> = {
-	[k in keyof DeclarationInput<any>]: d extends {
-		kind: infer kind extends NodeKind
-	}
-		? DeclarationInput<kind>[k]
-		: never
-} & {
-	[k in Exclude<keyof d, keyof DeclarationInput<any> | additionalKeys>]?: never
+	intersections: UnknownIntersections
 }
 
 type ParentsByKind = {
@@ -56,7 +51,7 @@ type ParentsByKind = {
 
 type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
-export type declareNode<d extends validateNodeDeclaration<d>> = extend<
+export type declareNode<d extends DeclarationInput> = extend<
 	d,
 	{
 		meta: "meta" extends keyof d
@@ -76,6 +71,7 @@ export type BaseNodeDeclaration = {
 	schema: unknown
 	normalizedSchema: Dict & BaseAttributes
 	meta: Dict & BaseAttributes
+	attachments: Dict
 	inner: Dict
 	checks: any
 	childKind: NodeKind
@@ -83,4 +79,28 @@ export type BaseNodeDeclaration = {
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}
+}
+
+export type CompositeAttachments = {}
+
+export type CompositeDeclarationInput = optionalizeKeys<
+	DeclarationInput,
+	"attachments"
+>
+
+export type declareComposite<d extends PrimitiveDeclarationInput> = declareNode<
+	d & { attachments: CompositeAttachments }
+>
+
+export type declarePrimitive<d extends PrimitiveDeclarationInput> = declareNode<
+	d & { attachments: PrimitiveConstraintAttachments }
+>
+
+export type PrimitiveDeclarationInput = optionalizeKeys<
+	DeclarationInput,
+	"attachments"
+>
+export type PrimitiveConstraintAttachments = {
+	readonly condition: string
+	readonly negatedCondition: string
 }
