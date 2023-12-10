@@ -27,7 +27,7 @@ export class Problem {
 	}
 }
 
-export class Problems extends ReadonlyArray<Problem[]> {
+export class Problems extends ReadonlyArray<Problem> {
 	// TODO: add at custom path
 
 	constructor(protected context: TraversalContext) {
