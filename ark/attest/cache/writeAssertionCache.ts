@@ -17,7 +17,7 @@ export type AssertionsByFile = Record<string, SerializedAssertionData[]>
 export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const config = getConfig()
 	const instance = TsServer.instance
-	const filePaths = instance.programFilePaths
+	const filePaths = instance.rootFiles
 	const diagnosticsByFile = getDiagnosticsByFile()
 	const assertionsByFile: AssertionsByFile = {}
 	for (const path of filePaths) {

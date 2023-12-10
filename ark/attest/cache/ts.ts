@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import ts from "typescript"
 
 export class TsServer {
-	programFilePaths!: string[]
+	rootFiles!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
 
 	static #instance: TsServer | null = null
@@ -18,7 +18,7 @@ export class TsServer {
 		}
 		const tsLibPaths = getTsLibFiles(tsConfigInfo.compilerOptions)
 
-		this.programFilePaths = ts
+		this.rootFiles = ts
 			.parseJsonConfigFileContent(
 				this.tsConfigInfo.compilerOptions,
 				ts.sys,
@@ -34,7 +34,7 @@ export class TsServer {
 
 		this.virtualEnv = tsvfs.createVirtualTypeScriptEnvironment(
 			system,
-			this.programFilePaths,
+			this.rootFiles,
 			ts,
 			this.tsConfigInfo.compilerOptions
 		)
