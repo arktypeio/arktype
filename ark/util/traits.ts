@@ -1,8 +1,7 @@
 import type { intersectParameters } from "./intersections.js"
-import type { NonEmptyList } from "./lists.js"
 import type { Constructor } from "./objectKinds.js"
 
-export type TraitComposition = <traits extends NonEmptyList<Constructor>>(
+export type TraitComposition = <traits extends readonly Constructor[]>(
 	...traits: traits
 ) => compose<traits>
 

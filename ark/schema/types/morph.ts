@@ -16,15 +16,12 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type {
-	declareComposite,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { TraversalContext } from "../shared/context.js"
+import type { declareComposite, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import type { CheckResult, Problem, Problems } from "../shared/problems.js"
+import type { CheckResult, Problem } from "../shared/problems.js"
 import type { BasisKind } from "./basis.js"
 import { BaseType } from "./type.js"
 
@@ -34,12 +31,7 @@ export type ValidatorNode = Node<ValidatorKind>
 
 export type ValidatorDefinition = Schema<ValidatorKind>
 
-export type TraversalState = {
-	path: string[]
-	problems: Problems
-}
-
-export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
+export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
 export type Out<o = any> = ["=>", o]
 

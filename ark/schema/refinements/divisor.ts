@@ -1,8 +1,11 @@
+import { compose } from "@arktype/util"
+import { BaseNode } from "../base.js"
 import type { CompilationContext } from "../scope.js"
 import type { declarePrimitive, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementNode } from "./shared.js"
+import { RefinementTrait } from "./trait.js"
 
 export type DivisorInner = {
 	readonly divisor: number
@@ -31,7 +34,10 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export class DivisorNode extends RefinementNode<DivisorDeclaration> {
+export class DivisorNode extends compose(
+	BaseNode<number, DivisorDeclaration>,
+	RefinementTrait<DivisorDeclaration>
+) {
 	static parser: NodeParserImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",
 		keys: {
@@ -56,7 +62,7 @@ export class DivisorNode extends RefinementNode<DivisorDeclaration> {
 	negatedCondition = `${this.scope.argName} % ${this.divisor} !== 0`
 
 	compileBody(ctx: CompilationContext) {
-		return this.scope.compilePrimitive(this, ctx)
+		return this.scope.compilePrimitive(this as any, ctx)
 	}
 
 	getCheckedDefinitions() {
@@ -67,6 +73,43 @@ export class DivisorNode extends RefinementNode<DivisorDeclaration> {
 		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 }
+
+// export class DivisorNode extends RefinementNode<DivisorDeclaration> {
+// 	static parser: NodeParserImplementation<DivisorDeclaration> = {
+// 		collapseKey: "divisor",
+// 		keys: {
+// 			divisor: {}
+// 		},
+// 		normalize: (schema) =>
+// 			typeof schema === "number" ? { divisor: schema } : schema
+// 	}
+
+// 	static intersections: NodeIntersections<DivisorDeclaration> = {
+// 		divisor: (l, r) => ({
+// 			divisor: Math.abs(
+// 				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+// 			)
+// 		})
+// 	}
+
+// 	readonly hasOpenIntersection = false
+// 	traverseAllows = (data: number) => data % this.divisor === 0
+
+// 	condition = `${this.scope.argName} % ${this.divisor} === 0`
+// 	negatedCondition = `${this.scope.argName} % ${this.divisor} !== 0`
+
+// 	compileBody(ctx: CompilationContext) {
+// 		return this.scope.compilePrimitive(this, ctx)
+// 	}
+
+// 	getCheckedDefinitions() {
+// 		return ["number"] as const
+// 	}
+
+// 	writeDefaultDescription() {
+// 		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
+// 	}
+// }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
