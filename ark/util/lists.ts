@@ -87,11 +87,9 @@ export const spliterate = <item, included extends item>(
 	return result
 }
 
-export const ReadonlyArray = Array as unknown as new <
-	T extends readonly unknown[]
->(
-	...args: T
-) => T
+export const ReadonlyArray = Array as unknown as new <T>(
+	...args: ConstructorParameters<typeof Array<T>>
+) => ReadonlyArray<T>
 
 export const includes = <array extends readonly unknown[]>(
 	array: array,

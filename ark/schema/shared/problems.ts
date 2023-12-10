@@ -1,4 +1,4 @@
-import type { propwiseXor } from "@arktype/util"
+import { ReadonlyArray, type propwiseXor } from "@arktype/util"
 import type { TraversalContext } from "./context.js"
 
 export class ArkTypeError extends TypeError {
@@ -10,7 +10,7 @@ export class ArkTypeError extends TypeError {
 	}
 }
 
-export class Problem<data = unknown> {
+export class Problem {
 	public message: string
 
 	constructor(
@@ -27,11 +27,7 @@ export class Problem<data = unknown> {
 	}
 }
 
-const ReadonlyArray = Array as new <T>(
-	...args: ConstructorParameters<typeof Array>
-) => ReadonlyArray<T>
-
-export class Problems extends ReadonlyArray<Problem> {
+export class Problems extends ReadonlyArray<Problem[]> {
 	// TODO: add at custom path
 
 	constructor(protected context: TraversalContext) {

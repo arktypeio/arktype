@@ -51,13 +51,13 @@ export class DomainNode<t = unknown> extends BaseType<t, DomainDeclaration> {
 
 	condition =
 		this.domain === "object"
-			? `((typeof this.scope.argName === "object" && this.scope.argName !== null) || typeof this.scope.argName === "function")`
-			: `typeof this.scope.argName === "${this.domain}"`
+			? `((typeof ${this.scope.argName} === "object" && ${this.scope.argName} !== null) || typeof ${this.scope.argName} === "function")`
+			: `typeof ${this.scope.argName} === "${this.domain}"`
 
 	negatedCondition =
 		this.domain === "object"
-			? `((typeof this.scope.argName !== "object" || this.scope.argName === null) && typeof this.scope.argName !== "function")`
-			: `typeof this.scope.argName !== "${this.domain}"`
+			? `((typeof ${this.scope.argName} !== "object" || ${this.scope.argName} === null) && typeof ${this.scope.argName} !== "function")`
+			: `typeof ${this.scope.argName} !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
 	traverseApply: TraverseApply = (data, ctx) => {

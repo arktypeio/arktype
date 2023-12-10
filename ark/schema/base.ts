@@ -102,7 +102,6 @@ export type UnknownNodeSubclass = {
 	readonly parser: UnknownNodeParser
 	readonly intersections: Record<
 		string,
-		// TODO: Node or inner?
 		(l: any, r: any) => {} | Disjoint | null
 	>
 }
