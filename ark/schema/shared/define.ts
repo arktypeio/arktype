@@ -27,31 +27,17 @@ export const boundKinds = [
 
 export type BoundKind = (typeof boundKinds)[number]
 
-export const closedRefinementKinds = [
-	"divisor",
-	"sequence",
-	...boundKinds
-] as const
-
-export type ClosedRefinementKind = (typeof closedRefinementKinds)[number]
-
 export const propKinds = ["required", "optional", "index", "sequence"] as const
 
 export type PropKind = (typeof propKinds)[number]
 
-export const openRefinementKinds = [
+export const refinementKinds = [
 	"pattern",
 	"predicate",
-	"required",
-	"optional",
-	"index"
-] as const
-
-export type OpenRefinementKind = (typeof openRefinementKinds)[number]
-
-export const refinementKinds = [
-	...closedRefinementKinds,
-	...openRefinementKinds
+	"divisor",
+	"sequence",
+	...boundKinds,
+	...propKinds
 ] as const
 
 export type RefinementKind = (typeof refinementKinds)[number]

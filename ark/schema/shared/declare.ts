@@ -1,14 +1,7 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
-import type { Declaration } from "../kinds.js"
-import type {
-	ConstraintKind,
-	NodeKind,
-	OpenRefinementKind,
-	PropKind,
-	RefinementKind,
-	SetKind
-} from "./define.js"
+import type { Declaration, OpenRefinementKind } from "../kinds.js"
+import type { ConstraintKind, NodeKind, PropKind, SetKind } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
 

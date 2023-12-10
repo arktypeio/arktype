@@ -40,17 +40,12 @@ import type {
 } from "./shared/declare.js"
 import {
 	basisKinds,
-	closedRefinementKinds,
 	constraintKinds,
-	openRefinementKinds,
 	refinementKinds,
 	setKinds,
 	typeKinds,
-	type ClosedRefinementKind,
 	type ConstraintKind,
 	type NodeKind,
-	type NodeParserImplementation,
-	type OpenRefinementKind,
 	type RefinementKind,
 	type SetKind,
 	type TypeKind,
@@ -221,14 +216,6 @@ export abstract class BaseNode<
 		return includes(basisKinds, this.kind)
 	}
 
-	isClosedRefinement(): this is Node<ClosedRefinementKind> {
-		return includes(closedRefinementKinds, this.kind)
-	}
-
-	isOpenRefinement(): this is Node<OpenRefinementKind> {
-		return includes(openRefinementKinds, this.kind)
-	}
-
 	isRefinement(): this is Node<RefinementKind> {
 		return includes(refinementKinds, this.kind)
 	}
@@ -278,12 +265,12 @@ export abstract class BaseNode<
 		const intersectionInner: IntersectionInner | null = this.isBasis()
 			? {
 					basis: this,
-					[other.kind]: other.isOpenRefinement() ? other : [other]
+					[other.kind]: other.hasOpenIntersection ? [other] : other
 			  }
 			: other.isBasis()
 			  ? {
 						basis: other,
-						[this.kind]: this.isOpenRefinement() ? this : [this]
+						[this.kind]: this.hasOpenIntersection ? [this] : this
 			    }
 			  : this.hasKind("predicate") && other.hasKind("predicate")
 			    ? { predicate: [this, other] }

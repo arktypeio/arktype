@@ -64,16 +64,18 @@ export function parse(
 ): Node {
 	const cls = NodeImplementationByKind[kind]
 	const impl = cls.parser as UnknownNodeParser
+	if (schema instanceof BaseNode) {
+		return schema.kind === kind
+			? (schema as never)
+			: throwMismatchedNodeSchemaError(kind, schema.kind)
+	}
 	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
-	// check if we already have a Node after normalization in case a node is a
-	// valid collapsed schema for the kind (e.g. sequence can collapse to
-	// element accepting a TypeSchema (or Node))
+	// check again after normalization in case a node is a valid collapsed
+	// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 	if (normalizedDefinition instanceof BaseNode) {
 		return normalizedDefinition.kind === kind
-			? (schema as never)
-			: throwParseError(
-					`Node of kind ${normalizedDefinition.kind} is not valid as a ${kind} definition`
-			  )
+			? (normalizedDefinition as never)
+			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
 	}
 	const inner: Record<string, unknown> = {}
 	const meta: Record<string, unknown> = {}
@@ -174,3 +176,8 @@ export function parse(
 	}
 	return (globalResolutions[innerId] = new cls(attachments as never))
 }
+
+const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
+	throwParseError(
+		`Node of kind ${actual} is not valid as a ${expected} definition`
+	)

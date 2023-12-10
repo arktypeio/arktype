@@ -8,6 +8,7 @@ import type {
 	ConstraintKind,
 	NodeKind,
 	PropKind,
+	RefinementKind,
 	TypeKind
 } from "./shared/define.js"
 import { BasisImplementations, type BasisDeclarations } from "./types/basis.js"
@@ -95,6 +96,12 @@ export type ioKindOf<kind extends NodeKind> = kind extends "morph"
 
 export type hasOpenIntersection<d extends BaseNodeDeclaration> =
 	null extends d["intersections"][d["kind"]] ? true : false
+
+export type OpenRefinementKind = {
+	[k in NodeKind]: hasOpenIntersection<Declaration<k>> extends true ? k : never
+}[NodeKind]
+
+export type ClosedRefinementKind = Exclude<RefinementKind, OpenRefinementKind>
 
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? TypeKind

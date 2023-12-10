@@ -6,7 +6,9 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type {
+	ClosedRefinementKind,
 	Declaration,
+	OpenRefinementKind,
 	Schema,
 	hasOpenIntersection,
 	reducibleKindOf
@@ -21,11 +23,8 @@ import type {
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
-	type ClosedRefinementKind,
 	type ConstraintKind,
-	type NodeKind,
 	type NodeParserImplementation,
-	type OpenRefinementKind,
 	type PropKind,
 	type RefinementKind
 } from "../shared/define.js"
@@ -318,10 +317,10 @@ export const unflattenConstraints = (
 	for (const constraint of constraints) {
 		if (constraint.isBasis()) {
 			inner.basis = constraint
-		} else if (constraint.isOpenRefinement()) {
+		} else if (constraint.hasOpenIntersection) {
 			inner[constraint.kind] ??= [] as any
 			;(inner as any)[constraint.kind].push(constraint)
-		} else if (constraint.isClosedRefinement()) {
+		} else {
 			if (inner[constraint.kind]) {
 				return throwInternalError(
 					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
