@@ -1,4 +1,4 @@
-import { throwParseError, type PartialRecord } from "@arktype/util"
+import { Trait, throwParseError, type PartialRecord } from "@arktype/util"
 import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
 import type {
 	CompilationContext,
@@ -42,7 +42,7 @@ const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
 export abstract class RefinementTrait<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> {
+> extends Trait {
 	abstract kind: RefinementKind
 	abstract scope: ScopeNode
 	abstract getCheckedDefinitions(): readonly TypeSchema[]

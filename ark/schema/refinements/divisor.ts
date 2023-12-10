@@ -4,7 +4,6 @@ import type { CompilationContext } from "../scope.js"
 import type { declarePrimitive, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { RefinementNode } from "./shared.js"
 import { RefinementTrait } from "./trait.js"
 
 export type DivisorInner = {
