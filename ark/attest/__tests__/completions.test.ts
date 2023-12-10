@@ -1,7 +1,7 @@
+import { attest } from "@arktype/attest"
 import { hasDomain } from "@arktype/util"
 import assert from "assert"
 import { describe, test } from "mocha"
-import { attest } from "../assert/attest.js"
 
 type Obj = {
 	prop1: string

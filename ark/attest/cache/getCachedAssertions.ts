@@ -1,20 +1,25 @@
 import { readJson, type LinePosition, type SourcePosition } from "@arktype/fs"
 import { existsSync } from "node:fs"
-import type { AttestConfig } from "../config.js"
+import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
-import {
-	analyzeProjectAssertions,
-	type LinePositionRange
+import type {
+	AssertionsByFile,
+	LinePositionRange
 } from "./writeAssertionCache.js"
 
-export const getCachedAssertionData = (config: AttestConfig) => {
-	if (!existsSync(config.assertionCacheFile)) {
-		throw new Error(
-			`Unable to find precached assertion data at '${config.assertionCacheFile}'. ` +
-				`please use Attest CLI or call 'cacheTypeAssertions' before running your tests.`
-		)
+let assertionCache: AssertionsByFile | undefined
+export const getCachedAssertionData = () => {
+	if (!assertionCache) {
+		const config = getConfig()
+		if (!existsSync(config.assertionCacheFile)) {
+			throw new Error(
+				`Unable to find precached assertion data at '${config.assertionCacheFile}'. ` +
+					`please use Attest CLI or call 'cacheTypeAssertions' before running your tests.`
+			)
+		}
+		assertionCache = readJson(config.assertionCacheFile)
 	}
-	return readJson(config.assertionCacheFile)
+	return assertionCache!
 }
 
 const isPositionWithinRange = (
@@ -35,7 +40,7 @@ const isPositionWithinRange = (
 
 export const getAssertionDataAtPosition = (position: SourcePosition) => {
 	const fileKey = getFileKey(position.file)
-	const assertionsByFile = analyzeProjectAssertions()
+	const assertionsByFile = getCachedAssertionData()
 	if (!assertionsByFile[fileKey]) {
 		throw new Error(`Found no assertion data for '${fileKey}'.`)
 	}
