@@ -20,6 +20,7 @@ describe("intersections", () => {
 			divisor: 5
 		})
 		const result = l.and(r)
+		attest<IntersectionNode<number>>(result)
 		attest(result.json).snap({
 			basis: "number",
 			divisor: 15,
