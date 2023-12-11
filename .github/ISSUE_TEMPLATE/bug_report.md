@@ -18,7 +18,7 @@ assignees: "ssalbdivad"
 ### 🧩 Context
 
 -   ArkType version:
--   TypeScript version (4.8, 4.9, or 5.0):
+-   TypeScript version (4.8+):
 -   Other context you think may be relevant (Node version, OS, etc.):
 
 ### 🧑‍💻 Repro
