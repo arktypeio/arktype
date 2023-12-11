@@ -13,6 +13,18 @@ export abstract class Trait {
 	}
 }
 
+const collectPrototypeDescriptors = (trait: Function) => {
+	let proto = trait.prototype
+	let result: PropertyDescriptorMap = {}
+	do {
+		// ensure prototypes are sorted from lowest to highest precedence
+		result = Object.assign(Object.getOwnPropertyDescriptors(proto), result)
+		proto = Object.getPrototypeOf(proto)
+	} while (proto !== Object.prototype && proto !== null)
+
+	return result
+}
+
 export const compose = ((...traits: Function[]) => {
 	const base: any = function (this: any, ...args: any[]) {
 		for (const trait of traits) {
@@ -20,11 +32,9 @@ export const compose = ((...traits: Function[]) => {
 		}
 		Object.defineProperty(this, traitsOf, { value: traits, enumerable: false })
 	}
+
 	for (const trait of traits) {
-		base.prototype = Object.create(
-			trait.prototype,
-			Object.getOwnPropertyDescriptors(base.prototype)
-		)
+		Object.defineProperties(base.prototype, collectPrototypeDescriptors(trait))
 	}
 	return base
 }) as TraitComposition

@@ -1,7 +1,11 @@
 import { compose } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import type { CompilationContext } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import {
+	PrimitiveNode,
+	type declareNode,
+	type withAttributes
+} from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementTrait } from "./trait.js"
@@ -35,7 +39,8 @@ export type writeIndivisibleMessage<root extends string> =
 
 export class DivisorNode extends compose(
 	BaseNode<number, DivisorDeclaration>,
-	RefinementTrait<DivisorDeclaration>
+	RefinementTrait<DivisorDeclaration>,
+	PrimitiveNode<DivisorDeclaration>
 ) {
 	static parser: NodeParserImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",
@@ -59,10 +64,6 @@ export class DivisorNode extends compose(
 
 	condition = `${this.scope.argName} % ${this.divisor} === 0`
 	negatedCondition = `${this.scope.argName} % ${this.divisor} !== 0`
-
-	compileBody(ctx: CompilationContext) {
-		return this.scope.compilePrimitive(this as any, ctx)
-	}
 
 	getCheckedDefinitions() {
 		return ["number"] as const

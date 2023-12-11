@@ -27,29 +27,6 @@ export abstract class Boundable<data> extends Trait {
 	}
 }
 
-class StringChecker extends compose(Describable, Boundable<string>) {
-	sizeOf(data: string) {
-		return data.length
-	}
-	writeDefaultDescription() {
-		return "foo"
-	}
-}
-
-const shortString = new StringChecker(
-	{ limit: 5 },
-	{ description: "a short string" }
-)
-attest(shortString.check("foo")).equals(true)
-attest(shortString.check("toolong")).equals(false)
-attest(shortString.description).equals("a short string")
-attest(shortString.writeDefaultDescription()).equals("foo")
-attest([
-	shortString instanceof StringChecker,
-	shortString instanceof Boundable,
-	shortString instanceof Describable
-]).equals([true, true, true])
-
 describe("traits", () => {
 	it("compose", () => {
 		class StringChecker extends compose(Describable, Boundable<string>) {

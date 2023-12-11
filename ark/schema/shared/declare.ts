@@ -1,7 +1,12 @@
 import { Trait, type Dict, type evaluate, type extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenRefinementKind } from "../kinds.js"
-import type { TraverseAllows } from "../scope.js"
+import type {
+	CompilationContext,
+	ScopeNode,
+	TraverseAllows,
+	TraverseApply
+} from "../scope.js"
 import type { ConstraintKind, NodeKind, PropKind, SetKind } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
@@ -83,7 +88,20 @@ export type BaseNodeDeclaration = {
 export abstract class PrimitiveNode<
 	d extends BaseNodeDeclaration
 > extends Trait {
+	abstract readonly scope: ScopeNode
+	abstract readonly description: string
+
 	abstract readonly condition: string
 	abstract readonly negatedCondition: string
 	abstract readonly traverseAllows: TraverseAllows<d["checks"]>
+
+	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.problems.add(this.description)
+		}
+	}
+
+	compileBody(ctx: CompilationContext) {
+		return this.scope.compilePrimitive(this as any, ctx)
+	}
 }

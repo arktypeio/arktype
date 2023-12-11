@@ -103,8 +103,6 @@ export type BaseBoundDeclaration = extend<
 export abstract class BaseBound<
 	d extends BaseBoundDeclaration
 > extends RefinementNode<d> {
-	static intersections = {} as any
-
 	static parser = {
 		collapseKey: "limit",
 		keys: {

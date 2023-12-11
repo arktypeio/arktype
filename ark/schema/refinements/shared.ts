@@ -45,12 +45,6 @@ export abstract class RefinementNode<
 			this.scope.parseTypeNode(o)
 		))
 
-	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) {
-			ctx.problems.add(this.description)
-		}
-	}
-
 	assertValidBasis(basis: Node<BasisKind> | undefined) {
 		if (this.checks.length === 1 && this.checks[0].isUnknown()) {
 			return

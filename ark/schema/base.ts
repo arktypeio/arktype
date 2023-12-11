@@ -158,23 +158,23 @@ export abstract class BaseNode<
 		return { problems: ctx.problems }
 	}
 
-	#inCache?: BaseNode;
+	private inCache?: BaseNode;
 	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
-		this.#inCache ??= this.getIo("in")
-		return this.#inCache as never
+		this.inCache ??= this.getIo("in")
+		return this.inCache as never
 	}
 
-	#outCache?: BaseNode
+	private outCache?: BaseNode
 	get out(): Node<ioKindOf<d["kind"]>, extractOut<t>> {
-		this.#outCache ??= this.getIo("out")
-		return this.#outCache as never
+		this.outCache ??= this.getIo("out")
+		return this.outCache as never
 	}
 
-	#descriptionCache?: string
+	private descriptionCache?: string
 	get description() {
-		this.#descriptionCache ??=
+		this.descriptionCache ??=
 			this.meta.description ?? this.writeDefaultDescription()
-		return this.#descriptionCache
+		return this.descriptionCache
 	}
 
 	private getIo(kind: "in" | "out"): BaseNode {

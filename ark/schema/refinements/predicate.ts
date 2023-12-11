@@ -1,11 +1,18 @@
+import { compose } from "@arktype/util"
+import { BaseNode } from "../base.js"
 import type { CompilationContext } from "../scope.js"
 import type { TraversalContext } from "../shared/context.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import {
+	PrimitiveNode,
+	type declareNode,
+	type withAttributes
+} from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import type { Problems } from "../shared/problems.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import { RefinementNode } from "./shared.js"
+import { RefinementTrait } from "./trait.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
 	{
@@ -30,7 +37,11 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends RefinementNode<PredicateDeclaration> {
+export class PredicateNode extends compose(
+	BaseNode<unknown, PredicateDeclaration>,
+	RefinementTrait<PredicateDeclaration>,
+	PrimitiveNode<PredicateDeclaration>
+) {
 	static parser: NodeParserImplementation<PredicateDeclaration> = {
 		collapseKey: "predicate",
 		keys: {
