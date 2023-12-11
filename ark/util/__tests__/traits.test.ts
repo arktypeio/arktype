@@ -23,29 +23,18 @@ export class Boundable<data> extends Trait<{ sizeOf(data: data): number }> {
 	}
 }
 
-const z = compose(
-	Describable,
-	Boundable<string>
-)({
-	sizeOf(data: string) {
-		return data.length
-	},
-	writeDefaultDescription() {
-		return "foo"
-	}
-})
-
 describe("traits", () => {
 	it("compose", () => {
-		class StringChecker extends compose(Describable, Boundable<string>) {
+		class StringChecker extends compose(
+			Describable,
+			Boundable<string>
+		)({
 			sizeOf(data: string) {
+				this.check(data)
 				return data.length
-			}
-
-			writeDefaultDescription() {
-				return "foo"
-			}
-		}
+			},
+			writeDefaultDescription: () => "foo"
+		}) {}
 
 		const shortString = new StringChecker(
 			{ limit: 5 },
@@ -78,33 +67,31 @@ describe("traits", () => {
 		]).equals([true, true, true])
 	})
 	it("works with subclasses", () => {
-		abstract class Foo extends Boundable<number> {
+		class Foo extends Boundable<number> {
 			getFoo() {
 				return "foo"
 			}
 		}
-		class Bar extends compose(Foo) {
-			sizeOf(data: number) {
-				return data
-			}
-		}
+		class Bar extends compose(Foo)({
+			sizeOf: (data: number) => data
+		}) {}
 		const b = new Bar({ limit: 2 })
 		attest(b.check(1)).equals(true)
 		attest(b.check(3)).equals(false)
 		attest(b.getFoo()).equals("foo")
 	})
 	it("preserves static", () => {
-		abstract class A extends Trait {
+		class A extends Trait {
 			static readonly a = "a"
 
 			readonly a = "a"
 		}
-		abstract class B extends Trait {
+		class B extends Trait {
 			static readonly b = "b"
 
 			readonly b = "b"
 		}
-		class C extends compose(A, B) {
+		class C extends compose(A, B)({}) {
 			static readonly c = "c"
 
 			readonly c = "c"
@@ -120,19 +107,19 @@ describe("traits", () => {
 	})
 
 	it("trait from trait", () => {
-		abstract class A extends Trait {
+		class A extends Trait {
 			readonly a = "a"
 		}
-		abstract class B extends Trait {
+		class B extends Trait {
 			readonly b = "b"
 		}
-		class C extends compose(A, B) {
+		class C extends compose(A, B)({}) {
 			readonly c = "c"
 		}
 		class D extends Trait {
 			readonly d = "d"
 		}
-		class E extends compose(C, D) {
+		class E extends compose(C, D)({}) {
 			readonly e = "e"
 		}
 		const e = new E()
@@ -165,35 +152,35 @@ describe("traits", () => {
 	// 	// @ts-expect-error
 	// 	attest(class A3 extends compose(A1, A2) {}).type.errors.snap()
 	// })
-	it("can disambiguate", () => {
-		abstract class Rhombus extends Trait {
-			constructor(public sideLength: number) {
-				super()
-			}
+	// it("can disambiguate", () => {
+	// 	abstract class Rhombus extends Trait {
+	// 		constructor(public sideLength: number) {
+	// 			super()
+	// 		}
 
-			abstract area(): number
-		}
+	// 		abstract area(): number
+	// 	}
 
-		abstract class Rectangle extends Trait {
-			constructor(
-				public width: number,
-				public height: number
-			) {
-				super()
-			}
+	// 	abstract class Rectangle extends Trait {
+	// 		constructor(
+	// 			public width: number,
+	// 			public height: number
+	// 		) {
+	// 			super()
+	// 		}
 
-			abstract area(): number
-		}
+	// 		abstract area(): number
+	// 	}
 
-		class Square extends compose([Rhombus, Rectangle], { area: Rhombus }) {
-			constructor(sideLength: number) {
-				super(sideLength, sideLength)
-			}
-		}
-		const square = new Square(5)
-		attest(square.area()).equals(25)
-		attest(square instanceof Square).equals(true)
-		attest(square instanceof Rhombus).equals(true)
-		attest(square instanceof Rectangle).equals(true)
-	})
+	// 	class Square extends compose([Rhombus, Rectangle], { area: Rhombus }) {
+	// 		constructor(sideLength: number) {
+	// 			super(sideLength, sideLength)
+	// 		}
+	// 	}
+	// 	const square = new Square(5)
+	// 	attest(square.area()).equals(25)
+	// 	attest(square instanceof Square).equals(true)
+	// 	attest(square instanceof Rhombus).equals(true)
+	// 	attest(square instanceof Rectangle).equals(true)
+	// })
 })

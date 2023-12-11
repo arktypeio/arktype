@@ -50,6 +50,18 @@ export const intersectUniqueLists = <item>(
 	return intersection
 }
 
+export type filter<
+	t extends readonly unknown[],
+	constraint,
+	result extends unknown[] = []
+> = t extends readonly [infer head, ...infer tail]
+	? filter<
+			tail,
+			constraint,
+			head extends constraint ? [...result, head] : result
+	  >
+	: result
+
 export type List<t = unknown> = readonly t[]
 
 export type listable<t> = t | readonly t[]

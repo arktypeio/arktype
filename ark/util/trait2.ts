@@ -1,38 +1,48 @@
 import { hasDomain } from "./domain.js"
-import type { ErrorMessage } from "./errors.js"
-import type { conform, evaluate } from "./generics.js"
+import type { evaluate } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
-import {
-	ancestorsOf,
-	type Constructor,
-	type instanceOf
-} from "./objectKinds.js"
-import { NoopBase, type valueOf } from "./records.js"
+import type { filter } from "./lists.js"
+import { ancestorsOf, type Constructor } from "./objectKinds.js"
+import { NoopBase, type optionalizeKeys } from "./records.js"
 
 export type TraitComposition = {
-	// <
-	// 	traits extends readonly TraitConstructor[],
-	// 	disambiguation extends disambiguationOf<traits>
-	// >(
-	// 	traits: conform<traits, validateTraits<traits, disambiguation>>,
-	// 	disambiguation: disambiguation
-	// ): compose<traits>
-
 	<traits extends readonly TraitConstructor[]>(
-		...traits: traits //, validateTraits<traits, {}>>
+		...traits: traits
 	): compose<traits> extends infer composed extends ComposedTraits
-		? <implementation extends composed["abstracted"]>(
-				implementation: implementation
-		  ) => evaluate<composed["statics"]> &
+		? <implementation extends baseImplementationOf<traits, composed>>(
+				implementation: implementation &
+					ThisType<implementation & composed["implemented"]>
+		  ) => composed["statics"] &
 				(abstract new (
 					...args: composed["params"]
-				) => evaluate<composed["implemented"]>)
+				) => evaluate<implementation & composed["implemented"]>)
 		: never
 }
 
-// type disambiguationOf<traits extends readonly Constructor[]> = {
-// 	[k in ambiguousKeyOf<traits>]: traitsWithKey<traits, k>[number]
-// }
+type optionalizeSatisfied<implementation> = optionalizeKeys<
+	implementation,
+	{
+		[k in keyof implementation]: undefined extends implementation[k] ? k : never
+	}[keyof implementation]
+>
+
+type baseImplementationOf<
+	traits extends readonly TraitConstructor[],
+	composed extends ComposedTraits
+> = optionalizeSatisfied<{
+	[k in keyof composed["abstracted"]]: k extends keyof composed["implemented"]
+		? composed["implemented"][k] extends composed["abstracted"][k]
+			? filter<
+					traits,
+					TraitConstructor<any[], { [_ in k]: unknown }>
+			  > extends infer implementations extends TraitConstructor[]
+				? implementations["length"] extends 1
+					? composed["implemented"][k] | undefined
+					: composed["implemented"][k]
+				: never
+			: composed["abstracted"][k] & composed["implemented"][k]
+		: composed["abstracted"][k]
+}>
 
 // even though the value we attach will be identical, we use this so classes
 // won't be treated as instanceof a Trait
@@ -165,103 +175,3 @@ export type composeRecurse<
 			abstracted: evaluate<abstracted>
 			statics: evaluate<statics>
 	  }
-
-export type Disambiguation = Record<PropertyKey, Constructor>
-
-// type validateTraits<
-// 	traits extends readonly unknown[],
-// 	disambiguation extends Disambiguation,
-// 	instance = {}
-// > = traits extends readonly [
-// 	abstract new (...args: infer nextArgs) => infer nextInstance,
-// 	...infer tail
-// ]
-// 	? [
-// 			abstract new (
-// 				...args: nextArgs
-// 			) => validateExtension<instance, nextInstance, disambiguation>,
-// 			...validateTraits<tail, disambiguation, instance & nextInstance>
-// 	  ]
-// 	: []
-
-// type validateExtension<base, next, disambiguation extends Disambiguation> = {
-// 	[k in keyof next]: k extends Exclude<keyof base, keyof Trait>
-// 		? k extends keyof disambiguation
-// 			? next[k]
-// 			: ErrorMessage<`Key '${k & string} appears in multiple implementations'`>
-// 		: next[k]
-// }
-
-// type traitsWithKey<
-// 	traits extends readonly unknown[],
-// 	k extends PropertyKey,
-// 	result extends unknown[] = []
-// > = traits extends readonly [Constructor<infer instance>, ...infer tail]
-// 	? traitsWithKey<
-// 			tail,
-// 			k,
-// 			k extends keyof instance ? [...result, traits[0]] : result
-// 	  >
-// 	: result
-
-// export type ambiguousKeyOf<traits extends readonly Constructor[]> = valueOf<{
-// 	[k in Exclude<keyof instanceOf<compose<traits>>, keyof Trait>]: traitsWithKey<
-// 		traits,
-// 		k
-// 	>["length"] extends 1
-// 		? never
-// 		: k
-// }>
-
-// type validateTraits<
-// 	traits extends readonly Trait[],
-// 	base extends Trait = EmptyTrait,
-// 	result extends Trait[] = []
-// > = traits extends readonly [
-// 	infer head extends Trait,
-// 	...infer tail extends Trait[]
-// ]
-// 	? validateTraits<
-// 			tail,
-// 			intersectTraits<base, head>,
-// 			[...result, validateExtension<base, head>]
-// 	  >
-// 	: result
-
-// type validateExtension<l extends Trait, r extends Trait> = [l, r] extends [
-// 	Trait<any, infer lImplementation, infer lBase>,
-// 	Trait<infer rInput, infer rImplementation, infer rBase>
-// ]
-// 	? Trait<
-// 			rInput,
-// 			{
-// 				[k in keyof rImplementation]: k extends keyof lImplementation
-// 					? error<`Key '${k & string} appears in multiple implementations'`>
-// 					: k extends keyof lBase
-// 					? rImplementation[k] extends lBase[k]
-// 						? rImplementation[k]
-// 						: error<`'${k &
-// 								string}' incorrectly implements a previous base constraint'`>
-// 					: rImplementation[k]
-// 			},
-// 			{
-// 				[k in keyof rBase]: k extends keyof lImplementation
-// 					? lImplementation[k] extends rBase[k]
-// 						? rBase[k]
-// 						: error<`'${k &
-// 								string}' conflicts with a previously implemented constraint'`>
-// 					: rBase[k]
-// 			}
-// 	  >
-// 	: never
-
-// type intersectTraits<l extends Trait, r extends Trait> = [l, r] extends [
-// 	Trait<infer lArgs, infer lImplementation, infer lBase>,
-// 	Trait<infer rArgs, infer rImplementation, infer rBase>
-// ]
-// 	? Trait<
-// 			intersectParameters<lArgs, rArgs>,
-// 			evaluate<lImplementation & rImplementation>,
-// 			evaluate<Omit<lBase & rBase, keyof (lImplementation & rImplementation)>>
-// 	  >
-// 	: never
