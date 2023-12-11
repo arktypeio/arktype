@@ -1,11 +1,21 @@
 import { hasDomain } from "./domain.js"
+import type { evaluate } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
-import { ShallowClone } from "./records.js"
+import { ShallowClone, type valueOf } from "./records.js"
 
-export type TraitComposition = <traits extends readonly Constructor[]>(
-	...traits: traits
-) => compose<traits>
+type ambiguities<traits extends readonly Constructor[], instance> = {
+	[k in ambiguousKeyOf<traits, instance>]: traitsWithKey<traits, k>
+}
+
+export type TraitComposition = {
+	<traits extends readonly Constructor[]>(...traits: traits): compose<traits>
+
+	<traits extends readonly Constructor[]>(
+		disambiguate: ambiguities<traits, compose<traits>>,
+		...traits: traits
+	): compose<traits>
+}
 
 // even though the value we attach will be identical, we use this so classes
 // won't be treated as instanceof a Trait
@@ -122,4 +132,28 @@ export type composeRecurse<
 			statics & { [k in keyof traits[0]]: traits[0][k] },
 			instance & nextInstance
 	  >
-	: statics & (abstract new (...args: parameters) => instance)
+	: evaluate<statics> & (abstract new (...args: parameters) => instance)
+
+type traitsWithKey<
+	traits extends readonly unknown[],
+	k extends PropertyKey,
+	result extends unknown[] = []
+> = traits extends readonly [Constructor<infer instance>, ...infer tail]
+	? traitsWithKey<
+			tail,
+			k,
+			k extends keyof instance ? [...result, instance] : result
+	  >
+	: result
+
+export type ambiguousKeyOf<
+	traits extends readonly unknown[],
+	instance
+> = valueOf<{
+	[k in Exclude<keyof instance, keyof Trait>]: traitsWithKey<
+		traits,
+		k
+	>["length"] extends 1
+		? never
+		: k
+}>

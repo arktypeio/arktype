@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { Trait, compose } from "@arktype/util"
+import { Trait, compose, shallowClone } from "@arktype/util"
 
 export abstract class Describable extends Trait {
 	description: string
@@ -134,5 +134,55 @@ describe("traits", () => {
 		attest<"d">(e.d).equals("d")
 		attest<"e">(e.e).equals("e")
 		attest(e.traitsOf()).equals([A, B, C, D])
+	})
+
+	it("requires abstract properties be implemented", () => {
+		abstract class A {
+			abstract a(): number
+		}
+		abstract class B {
+			abstract b(): number
+		}
+		// @ts-expect-error
+		attest(class C extends compose(A, B) {}).type.errors.snap()
+	})
+	it("requires abstract properties be implemented", () => {
+		abstract class A1 {
+			abstract a(): number
+		}
+		abstract class A2 {
+			abstract a(): number
+		}
+		attest(class A3 extends compose(A1, A2) {}).type.errors.snap()
+	})
+	it("can disambiguate", () => {
+		abstract class Rhombus extends Trait {
+			constructor(public sideLength: number) {
+				super()
+			}
+
+			abstract area(): number
+		}
+
+		abstract class Rectangle extends Trait {
+			constructor(
+				public width: number,
+				public height: number
+			) {
+				super()
+			}
+
+			abstract area(): number
+		}
+		class Square extends compose(Rhombus, Rectangle) {
+			constructor(sideLength: number) {
+				super(sideLength, sideLength)
+			}
+		}
+		const square = new Square(5)
+		attest(square.area()).equals(25)
+		attest(square instanceof Square).equals(true)
+		attest(square instanceof Rhombus).equals(true)
+		attest(square instanceof Rectangle).equals(true)
 	})
 })
