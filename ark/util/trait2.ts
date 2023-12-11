@@ -101,14 +101,19 @@ export abstract class Trait<t extends object = {}> extends NoopBase<t> {
 		return hasTrait(this)
 	}
 
-	traitsOf(): readonly Function[] {
+	traitsOf(): readonly TraitConstructor[] {
 		return implementedTraits in this.constructor
-			? (this.constructor[implementedTraits] as Function[])
+			? (this.constructor[implementedTraits] as TraitConstructor[])
 			: []
 	}
 }
 
-const collectPrototypeDescriptors = (trait: Function) => {
+type Disambiguation = Record<string, TraitConstructor>
+
+const collectPrototypeDescriptors = (
+	trait: TraitConstructor,
+	disambiguation: Disambiguation
+) => {
 	let proto = trait.prototype
 	let result: PropertyDescriptorMap = {}
 	do {
@@ -116,47 +121,63 @@ const collectPrototypeDescriptors = (trait: Function) => {
 		result = Object.assign(Object.getOwnPropertyDescriptors(proto), result)
 		proto = Object.getPrototypeOf(proto)
 	} while (proto !== Object.prototype && proto !== null)
-
+	for (const k in disambiguation) {
+		if (disambiguation[k] !== trait) {
+			// remove keys disambiguated to resolve to other traits
+			delete result[k]
+		}
+	}
 	return result
 }
 
-export const compose = ((...traits: Function[]) => {
-	if (traits.length === 0) {
-		return Object
-	}
-	if (traits.length === 1) {
-		return traits[0]
-	}
-	const base: any = function (this: any, ...args: any[]) {
-		for (const trait of traits) {
-			const instance = Reflect.construct(trait, args, this.constructor)
-			Object.assign(this, instance)
+export const compose = ((...traits: TraitConstructor[]) =>
+	(implementation: object, disambiguation: Disambiguation = {}) => {
+		if (traits.length === 0) {
+			return Object
 		}
-	}
-	const flatImplementedTraits: Function[] = []
-	for (const trait of traits) {
-		// copy static properties
-		Object.assign(base, trait)
-		// flatten and copy prototype
-		Object.defineProperties(base.prototype, collectPrototypeDescriptors(trait))
-		if (implementedTraits in trait) {
-			// add any ancestor traits from which the current trait was composed
-			for (const innerTrait of trait[implementedTraits] as Function[]) {
-				if (!flatImplementedTraits.includes(innerTrait)) {
-					flatImplementedTraits.push(innerTrait)
-				}
+		if (traits.length === 1) {
+			return traits[0]
+		}
+		const base: any = function (this: any, ...args: any[]) {
+			for (const trait of traits) {
+				const instance = Reflect.construct(trait, args, this.constructor)
+				Object.assign(this, instance)
 			}
 		}
-		if (!flatImplementedTraits.includes(trait)) {
-			flatImplementedTraits.push(trait)
+		const flatImplementedTraits: TraitConstructor[] = []
+		for (const trait of traits) {
+			// copy static properties
+			Object.assign(base, trait)
+			// flatten and copy prototype
+			Object.defineProperties(
+				base.prototype,
+				collectPrototypeDescriptors(trait, disambiguation)
+			)
+			if (implementedTraits in trait) {
+				// add any ancestor traits from which the current trait was composed
+				for (const innerTrait of trait[
+					implementedTraits
+				] as TraitConstructor[]) {
+					if (!flatImplementedTraits.includes(innerTrait)) {
+						flatImplementedTraits.push(innerTrait)
+					}
+				}
+			}
+			if (!flatImplementedTraits.includes(trait)) {
+				flatImplementedTraits.push(trait)
+			}
 		}
-	}
-	Object.defineProperty(base, implementedTraits, {
-		value: flatImplementedTraits,
-		enumerable: false
-	})
-	return base
-}) as TraitComposition
+		Object.defineProperty(base, implementedTraits, {
+			value: flatImplementedTraits,
+			enumerable: false
+		})
+		// copy implementation last since it overrides traits
+		Object.defineProperties(
+			base.prototype,
+			Object.getOwnPropertyDescriptors(implementation)
+		)
+		return base
+	}) as TraitComposition
 
 type TraitConstructor<
 	params extends readonly unknown[] = any[],
