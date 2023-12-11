@@ -1,20 +1,30 @@
 import { hasDomain } from "./domain.js"
-import type { evaluate } from "./generics.js"
+import type { ErrorMessage } from "./errors.js"
+import type { conform, evaluate } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
-import { ancestorsOf, type Constructor } from "./objectKinds.js"
+import {
+	ancestorsOf,
+	type Constructor,
+	type instanceOf
+} from "./objectKinds.js"
 import { ShallowClone, type valueOf } from "./records.js"
 
-type ambiguities<traits extends readonly Constructor[], instance> = {
-	[k in ambiguousKeyOf<traits, instance>]: traitsWithKey<traits, k>
-}
-
 export type TraitComposition = {
-	<traits extends readonly Constructor[]>(...traits: traits): compose<traits>
+	<
+		traits extends readonly Constructor[],
+		disambiguation extends disambiguationOf<traits>
+	>(
+		traits: conform<traits, validateTraits<traits, disambiguation>>,
+		disambiguation: disambiguation
+	): compose<traits>
 
 	<traits extends readonly Constructor[]>(
-		disambiguate: ambiguities<traits, compose<traits>>,
-		...traits: traits
+		...traits: conform<traits, validateTraits<traits, {}>>
 	): compose<traits>
+}
+
+type disambiguationOf<traits extends readonly Constructor[]> = {
+	[k in ambiguousKeyOf<traits>]: traitsWithKey<traits, k>[number]
 }
 
 // even though the value we attach will be identical, we use this so classes
@@ -134,6 +144,32 @@ export type composeRecurse<
 	  >
 	: evaluate<statics> & (abstract new (...args: parameters) => instance)
 
+export type Disambiguation = Record<PropertyKey, Constructor>
+
+type validateTraits<
+	traits extends readonly unknown[],
+	disambiguation extends Disambiguation,
+	instance = {}
+> = traits extends readonly [
+	abstract new (...args: infer nextArgs) => infer nextInstance,
+	...infer tail
+]
+	? [
+			abstract new (
+				...args: nextArgs
+			) => validateExtension<instance, nextInstance, disambiguation>,
+			...validateTraits<tail, disambiguation, instance & nextInstance>
+	  ]
+	: []
+
+type validateExtension<base, next, disambiguation extends Disambiguation> = {
+	[k in keyof next]: k extends Exclude<keyof base, keyof Trait>
+		? k extends keyof disambiguation
+			? next[k]
+			: ErrorMessage<`Key '${k & string} appears in multiple implementations'`>
+		: next[k]
+}
+
 type traitsWithKey<
 	traits extends readonly unknown[],
 	k extends PropertyKey,
@@ -142,15 +178,12 @@ type traitsWithKey<
 	? traitsWithKey<
 			tail,
 			k,
-			k extends keyof instance ? [...result, instance] : result
+			k extends keyof instance ? [...result, traits[0]] : result
 	  >
 	: result
 
-export type ambiguousKeyOf<
-	traits extends readonly unknown[],
-	instance
-> = valueOf<{
-	[k in Exclude<keyof instance, keyof Trait>]: traitsWithKey<
+export type ambiguousKeyOf<traits extends readonly Constructor[]> = valueOf<{
+	[k in Exclude<keyof instanceOf<compose<traits>>, keyof Trait>]: traitsWithKey<
 		traits,
 		k
 	>["length"] extends 1

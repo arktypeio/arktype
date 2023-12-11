@@ -146,15 +146,17 @@ describe("traits", () => {
 		// @ts-expect-error
 		attest(class C extends compose(A, B) {}).type.errors.snap()
 	})
-	it("requires abstract properties be implemented", () => {
-		abstract class A1 {
-			abstract a(): number
-		}
-		abstract class A2 {
-			abstract a(): number
-		}
-		attest(class A3 extends compose(A1, A2) {}).type.errors.snap()
-	})
+	// https://github.com/microsoft/TypeScript/issues/56738
+	// it("requires duplicate abstract properties be implemented", () => {
+	// 	abstract class A1 {
+	// 		abstract a(): number
+	// 	}
+	// 	abstract class A2 {
+	// 		abstract a(): number
+	// 	}
+	// 	// @ts-expect-error
+	// 	attest(class A3 extends compose(A1, A2) {}).type.errors.snap()
+	// })
 	it("can disambiguate", () => {
 		abstract class Rhombus extends Trait {
 			constructor(public sideLength: number) {
@@ -174,7 +176,8 @@ describe("traits", () => {
 
 			abstract area(): number
 		}
-		class Square extends compose(Rhombus, Rectangle) {
+
+		class Square extends compose([Rhombus, Rectangle], { area: Rhombus }) {
 			constructor(sideLength: number) {
 				super(sideLength, sideLength)
 			}
