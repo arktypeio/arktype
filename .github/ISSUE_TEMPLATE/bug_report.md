@@ -31,7 +31,7 @@ assignees: "ssalbdivad"
 5. Copy the source code you used to repro the bug and paste it into the code block below.
 -->
 
-https://stackblitz.com/edit/arktype-bug?devToolsHeight=33&file=demo.ts
+https://stackblitz.com/edit/arktype-repro?devToolsHeight=33&file=demo.ts
 
 ```ts
 import { type, scope } from "arktype"
