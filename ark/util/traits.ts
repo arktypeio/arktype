@@ -1,5 +1,7 @@
+import { hasDomain } from "./domain.js"
 import type { intersectParameters } from "./intersections.js"
-import type { Constructor } from "./objectKinds.js"
+import { ancestorsOf, type Constructor } from "./objectKinds.js"
+import { ShallowClone } from "./records.js"
 
 export type TraitComposition = <traits extends readonly Constructor[]>(
 	...traits: traits
@@ -9,12 +11,36 @@ export type TraitComposition = <traits extends readonly Constructor[]>(
 // won't be treated as instanceof a Trait
 const implementedTraits = Symbol("implementedTraits")
 
+export const hasTrait = (traitClass: Constructor) => (o: unknown) => {
+	if (!hasDomain(o, "object")) {
+		return false
+	}
+	if (
+		implementedTraits in o.constructor &&
+		(o.constructor[implementedTraits] as Function[]).includes(traitClass)
+	) {
+		return true
+	}
+	// emulate standard instanceof behavior
+	return ancestorsOf(o).includes(traitClass)
+}
+
 export abstract class Trait {
-	static [Symbol.hasInstance](o: object) {
-		return (
-			implementedTraits in o.constructor &&
-			(o.constructor[implementedTraits] as Function[]).includes(this)
-		)
+	static get [Symbol.hasInstance]() {
+		return hasTrait(this)
+	}
+
+	traitsOf(): readonly Function[] {
+		return implementedTraits in this.constructor
+			? (this.constructor[implementedTraits] as Function[])
+			: []
+	}
+}
+
+// @ts-expect-error see ShallowClone
+export abstract class DynamicTrait<t extends object> extends ShallowClone<t> {
+	static get [Symbol.hasInstance]() {
+		return hasTrait(this)
 	}
 
 	traitsOf(): readonly Function[] {

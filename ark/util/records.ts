@@ -105,7 +105,7 @@ export type replaceKey<o, k extends keyof o, v> = evaluate<
 
 export type valueOf<o> = o[keyof o]
 
-const ShallowClone = class {
+export const ShallowClone = class {
 	constructor(properties: object) {
 		Object.assign(this, properties)
 	}

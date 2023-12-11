@@ -147,6 +147,22 @@ export type instanceOf<constructor> = constructor extends Constructor<
 	? instance
 	: never
 
+/**
+ * Returns an array of constructors for all ancestors (i.e., prototypes) of a given object.
+ *
+ * @param {object} o - The object to find the ancestors of.
+ * @returns {Function[]} An array of constructors for all ancestors of the object.
+ */
+export const ancestorsOf = (o: object) => {
+	let proto = Object.getPrototypeOf(o)
+	const result: Function[] = []
+	while (proto !== null) {
+		result.push(proto.constructor)
+		proto = Object.getPrototypeOf(proto)
+	}
+	return result
+}
+
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
 	const result: (string | symbol)[] = []

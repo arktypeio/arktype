@@ -74,43 +74,6 @@ export class DivisorNode extends compose(
 	}
 }
 
-// export class DivisorNode extends RefinementNode<DivisorDeclaration> {
-// 	static parser: NodeParserImplementation<DivisorDeclaration> = {
-// 		collapseKey: "divisor",
-// 		keys: {
-// 			divisor: {}
-// 		},
-// 		normalize: (schema) =>
-// 			typeof schema === "number" ? { divisor: schema } : schema
-// 	}
-
-// 	static intersections: NodeIntersections<DivisorDeclaration> = {
-// 		divisor: (l, r) => ({
-// 			divisor: Math.abs(
-// 				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-// 			)
-// 		})
-// 	}
-
-// 	readonly hasOpenIntersection = false
-// 	traverseAllows = (data: number) => data % this.divisor === 0
-
-// 	condition = `${this.scope.argName} % ${this.divisor} === 0`
-// 	negatedCondition = `${this.scope.argName} % ${this.divisor} !== 0`
-
-// 	compileBody(ctx: CompilationContext) {
-// 		return this.scope.compilePrimitive(this, ctx)
-// 	}
-
-// 	getCheckedDefinitions() {
-// 		return ["number"] as const
-// 	}
-
-// 	writeDefaultDescription() {
-// 		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
-// 	}
-// }
-
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
 	let previous: number
