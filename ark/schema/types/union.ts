@@ -6,11 +6,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type {
-	declareComposite,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -40,7 +36,7 @@ export type UnionInner = {
 	readonly ordered?: true
 }
 
-export type UnionDeclaration = declareComposite<{
+export type UnionDeclaration = declareNode<{
 	kind: "union"
 	schema: UnionSchema
 	normalizedSchema: NormalizedUnionSchema

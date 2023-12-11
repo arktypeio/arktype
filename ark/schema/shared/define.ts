@@ -71,10 +71,6 @@ type undefinedKey<d extends BaseNodeDeclaration> = Exclude<
 	keyof BaseAttributes
 >
 
-export type AttachProperties<d extends BaseNodeDeclaration> = (
-	inner: d["inner"]
-) => d["attachments"]
-
 export const defaultValueSerializer = (v: unknown) => {
 	if (
 		typeof v === "string" ||

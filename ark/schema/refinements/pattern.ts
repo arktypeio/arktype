@@ -1,5 +1,5 @@
 import type { CompilationContext } from "../scope.js"
-import type { declarePrimitive, withAttributes } from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementNode } from "./shared.js"
@@ -13,7 +13,7 @@ export type NormalizedPatternSchema = withAttributes<PatternInner>
 
 export type PatternSchema = NormalizedPatternSchema | string | RegExp
 
-export type PatternDeclaration = declarePrimitive<{
+export type PatternDeclaration = declareNode<{
 	kind: "pattern"
 	schema: PatternSchema
 	normalizedSchema: NormalizedPatternSchema

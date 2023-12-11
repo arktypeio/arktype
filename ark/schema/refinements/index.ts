@@ -4,11 +4,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type {
-	declareComposite,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -24,7 +20,7 @@ export type IndexInner = {
 	readonly value: TypeNode
 }
 
-export type IndexDeclaration = declareComposite<{
+export type IndexDeclaration = declareNode<{
 	kind: "index"
 	schema: IndexSchema
 	normalizedSchema: IndexSchema

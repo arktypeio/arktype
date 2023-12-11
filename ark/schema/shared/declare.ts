@@ -1,6 +1,7 @@
-import type { Dict, evaluate, extend, optionalizeKeys } from "@arktype/util"
+import { Trait, type Dict, type evaluate, type extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenRefinementKind } from "../kinds.js"
+import type { TraverseAllows } from "../scope.js"
 import type { ConstraintKind, NodeKind, PropKind, SetKind } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
@@ -36,7 +37,6 @@ export type DeclarationInput = {
 	schema: unknown
 	normalizedSchema: BaseAttributes
 	inner: Dict
-	attachments: Dict
 	meta?: Dict
 	checks?: unknown
 	childKind?: NodeKind
@@ -71,7 +71,6 @@ export type BaseNodeDeclaration = {
 	schema: unknown
 	normalizedSchema: Dict & BaseAttributes
 	meta: Dict & BaseAttributes
-	attachments: Dict
 	inner: Dict
 	checks: any
 	childKind: NodeKind
@@ -81,26 +80,10 @@ export type BaseNodeDeclaration = {
 	}
 }
 
-export type CompositeAttachments = {}
-
-export type CompositeDeclarationInput = optionalizeKeys<
-	DeclarationInput,
-	"attachments"
->
-
-export type declareComposite<d extends PrimitiveDeclarationInput> = declareNode<
-	d & { attachments: CompositeAttachments }
->
-
-export type declarePrimitive<d extends PrimitiveDeclarationInput> = declareNode<
-	d & { attachments: PrimitiveConstraintAttachments }
->
-
-export type PrimitiveDeclarationInput = optionalizeKeys<
-	DeclarationInput,
-	"attachments"
->
-export type PrimitiveConstraintAttachments = {
-	readonly condition: string
-	readonly negatedCondition: string
+export abstract class PrimitiveNode<
+	d extends BaseNodeDeclaration
+> extends Trait {
+	abstract readonly condition: string
+	abstract readonly negatedCondition: string
+	abstract readonly traverseAllows: TraverseAllows<d["checks"]>
 }

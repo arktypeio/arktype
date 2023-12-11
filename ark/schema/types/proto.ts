@@ -2,15 +2,10 @@ import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
-	objectKindOf,
 	type Constructor
 } from "@arktype/util"
 import type { CompilationContext, TraverseApply } from "../scope.js"
-import type {
-	declareNode,
-	declarePrimitive,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	defaultValueSerializer,
 	type NodeParserImplementation
@@ -30,7 +25,7 @@ export type ProtoSchema<proto extends Constructor = Constructor> =
 	| proto
 	| NormalizedProtoSchema<proto>
 
-export type ProtoDeclaration = declarePrimitive<{
+export type ProtoDeclaration = declareNode<{
 	kind: "proto"
 	schema: ProtoSchema
 	normalizedSchema: NormalizedProtoSchema

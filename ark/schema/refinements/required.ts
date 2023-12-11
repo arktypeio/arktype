@@ -5,11 +5,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type {
-	declareComposite,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -30,7 +26,7 @@ export type RequiredInner = {
 	readonly value: Node<TypeKind>
 }
 
-export type RequiredDeclaration = declareComposite<{
+export type RequiredDeclaration = declareNode<{
 	kind: "required"
 	schema: RequiredSchema
 	normalizedSchema: RequiredSchema

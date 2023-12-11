@@ -9,7 +9,7 @@ import type { Declaration, hasOpenIntersection } from "../kinds.js"
 import type { CompilationContext } from "../scope.js"
 import type {
 	BaseNodeDeclaration,
-	declarePrimitive,
+	declareNode,
 	withAttributes
 } from "../shared/declare.js"
 import type { BoundKind, NodeParserImplementation } from "../shared/define.js"
@@ -154,7 +154,7 @@ const compileSizeOf = (kind: BoundKind, argName: string) =>
 		  ? `${argName}.length`
 		  : `+${argName}`
 
-export type MinDeclaration = declarePrimitive<{
+export type MinDeclaration = declareNode<{
 	kind: "min"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -182,7 +182,7 @@ export class MinNode extends BaseBound<MinDeclaration> {
 	}
 }
 
-export type MaxDeclaration = declarePrimitive<{
+export type MaxDeclaration = declareNode<{
 	kind: "max"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -210,7 +210,7 @@ export class MaxNode extends BaseBound<MaxDeclaration> {
 	}
 }
 
-export type MinLengthDeclaration = declarePrimitive<{
+export type MinLengthDeclaration = declareNode<{
 	kind: "minLength"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -244,7 +244,7 @@ export class MinLengthNode extends BaseBound<MinLengthDeclaration> {
 	}
 }
 
-export type MaxLengthDeclaration = declarePrimitive<{
+export type MaxLengthDeclaration = declareNode<{
 	kind: "maxLength"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -273,7 +273,7 @@ export class MaxLengthNode extends BaseBound<MaxLengthDeclaration> {
 	}
 }
 
-export type AfterDeclaration = declarePrimitive<{
+export type AfterDeclaration = declareNode<{
 	kind: "after"
 	schema: BoundSchema<string | number>
 	normalizedSchema: NormalizedBoundSchema<string | number>
@@ -300,7 +300,7 @@ export class AfterNode extends BaseBound<AfterDeclaration> {
 	}
 }
 
-export type BeforeDeclaration = declarePrimitive<{
+export type BeforeDeclaration = declareNode<{
 	kind: "before"
 	schema: BoundSchema<string | number>
 	normalizedSchema: NormalizedBoundSchema<string | number>

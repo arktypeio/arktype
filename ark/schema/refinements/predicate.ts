@@ -1,6 +1,6 @@
 import type { CompilationContext } from "../scope.js"
 import type { TraversalContext } from "../shared/context.js"
-import type { declarePrimitive, withAttributes } from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import type { Problems } from "../shared/problems.js"
@@ -16,7 +16,7 @@ export type NormalizedPredicateSchema = withAttributes<PredicateInner>
 
 export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
-export type PredicateDeclaration = declarePrimitive<{
+export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
 	schema: PredicateSchema
 	normalizedSchema: NormalizedPredicateSchema

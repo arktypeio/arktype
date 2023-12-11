@@ -4,11 +4,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type {
-	declareComposite,
-	declareNode,
-	withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type {
 	NodeKeyImplementation,
 	NodeParserImplementation
@@ -34,7 +30,7 @@ export type SequenceInner = {
 	readonly postfix?: readonly TypeNode[]
 }
 
-export type SequenceDeclaration = declareComposite<{
+export type SequenceDeclaration = declareNode<{
 	kind: "sequence"
 	schema: SequenceSchema
 	normalizedSchema: NormalizedSequenceSchema

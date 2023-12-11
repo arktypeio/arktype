@@ -1,7 +1,7 @@
 import { compose } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import type { CompilationContext } from "../scope.js"
-import type { declarePrimitive, withAttributes } from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { RefinementTrait } from "./trait.js"
@@ -14,7 +14,7 @@ export type NormalizedDivisorSchema = withAttributes<DivisorInner>
 
 export type DivisorSchema = NormalizedDivisorSchema | number
 
-export type DivisorDeclaration = declarePrimitive<{
+export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
 	schema: DivisorSchema
 	normalizedSchema: NormalizedDivisorSchema
