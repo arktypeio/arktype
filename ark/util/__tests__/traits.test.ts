@@ -1,10 +1,8 @@
 import { attest } from "@arktype/attest"
-import { Trait, compose, shallowClone } from "@arktype/util"
+import { Trait, compose } from "../trait2.js"
 
-export abstract class Describable extends Trait {
+export class Describable extends Trait<{ writeDefaultDescription(): string }> {
 	description: string
-
-	abstract writeDefaultDescription(): string
 
 	constructor(rule: unknown, attributes?: { description?: string }) {
 		super()
@@ -12,7 +10,7 @@ export abstract class Describable extends Trait {
 	}
 }
 
-export abstract class Boundable<data> extends Trait {
+export class Boundable<data> extends Trait<{ sizeOf(data: data): number }> {
 	limit: number | undefined
 
 	constructor(rule: { limit?: number }) {
@@ -20,12 +18,22 @@ export abstract class Boundable<data> extends Trait {
 		this.limit = rule.limit
 	}
 
-	abstract sizeOf(data: data): number
-
 	check(data: data) {
 		return this.limit === undefined || this.sizeOf(data) <= this.limit
 	}
 }
+
+const z = compose(
+	Describable,
+	Boundable<string>
+)({
+	sizeOf(data: string) {
+		return data.length
+	},
+	writeDefaultDescription() {
+		return "foo"
+	}
+})
 
 describe("traits", () => {
 	it("compose", () => {
