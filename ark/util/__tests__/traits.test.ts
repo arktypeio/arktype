@@ -132,26 +132,49 @@ describe("traits", () => {
 	})
 
 	it("requires abstract properties be implemented", () => {
-		abstract class A {
-			abstract a(): number
-		}
-		abstract class B {
-			abstract b(): number
-		}
+		class A extends Trait<{ a(): number }> {}
+		class B extends Trait<{ b(): number }> {}
+
 		// @ts-expect-error
-		attest(class C extends compose(A, B) {}).type.errors.snap()
+		attest(class C extends compose(A, B)({}) {}).type.errors(
+			"Type '{}' is missing the following properties from type '{ a: () => number; b: () => number; }': a, b"
+		)
 	})
-	// https://github.com/microsoft/TypeScript/issues/56738
-	// it("requires duplicate abstract properties be implemented", () => {
-	// 	abstract class A1 {
-	// 		abstract a(): number
-	// 	}
-	// 	abstract class A2 {
-	// 		abstract a(): number
-	// 	}
-	// 	// @ts-expect-error
-	// 	attest(class A3 extends compose(A1, A2) {}).type.errors.snap()
-	// })
+
+	it("can disambiguate conflicting implementations", () => {
+		class A1 extends Trait {
+			a(): number {
+				return 1
+			}
+		}
+		class A2 extends Trait {
+			a(): number | boolean {
+				return 2
+			}
+		}
+
+		// @ts-expect-error
+		attest(class A3 extends compose(A1, A2)({}) {}).type.errors(
+			"Arguments for the rest parameter 'disambiguation' were not provided."
+		)
+
+		// you can disambiguate by implementing the method yourself
+
+		class A4 extends compose(
+			A1,
+			A2
+		)({
+			a: () => 4 as const
+		}) {}
+
+		attest<4>(new A4().a()).equals(4)
+
+		// or you can disambiguate by specifying a disambiguation param
+
+		class A5 extends compose(A1, A2)({}, { a: A1 }) {}
+
+		attest<number>(new A5().a()).equals(1)
+	})
 	// it("can disambiguate", () => {
 	// 	abstract class Rhombus extends Trait {
 	// 		constructor(public sideLength: number) {

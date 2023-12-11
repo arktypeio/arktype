@@ -1,5 +1,5 @@
 import { hasDomain } from "./domain.js"
-import type { evaluate } from "./generics.js"
+import type { conform, evaluate } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { filter } from "./lists.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
@@ -9,39 +9,70 @@ export type TraitComposition = {
 	<traits extends readonly TraitConstructor[]>(
 		...traits: traits
 	): compose<traits> extends infer composed extends ComposedTraits
-		? <implementation extends baseImplementationOf<traits, composed>>(
-				implementation: implementation &
-					ThisType<implementation & composed["implemented"]>
+		? <implementation>(
+				implementation: conform<
+					implementation,
+					baseImplementationOf<composed>
+				> &
+					ThisType<implementation & composed["implemented"]>,
+				...disambiguation: baseDisambiguationOf<
+					traits,
+					implementation,
+					composed
+				> extends infer disambiguation
+					? {} extends disambiguation
+						? []
+						: [disambiguation]
+					: never
 		  ) => composed["statics"] &
 				(abstract new (
 					...args: composed["params"]
-				) => evaluate<implementation & composed["implemented"]>)
+				) => evaluate<
+					intersectImplementations<implementation, composed["implemented"]>
+				>)
 		: never
 }
 
-type optionalizeSatisfied<implementation> = optionalizeKeys<
-	implementation,
+type optionalizeSatisfied<base> = optionalizeKeys<
+	base,
 	{
-		[k in keyof implementation]: undefined extends implementation[k] ? k : never
-	}[keyof implementation]
+		[k in keyof base]: undefined extends base[k] ? k : never
+	}[keyof base]
 >
 
-type baseImplementationOf<
+type baseImplementationOf<composed extends ComposedTraits> =
+	optionalizeSatisfied<{
+		[k in keyof composed["abstracted"]]: k extends keyof composed["implemented"]
+			? composed["implemented"][k] extends composed["abstracted"][k]
+				? composed["implemented"][k] | undefined
+				: composed["abstracted"][k] & composed["implemented"][k]
+			: composed["abstracted"][k]
+	}>
+
+type omitUnambiguous<base> = Omit<
+	base,
+	{
+		[k in keyof base]: undefined extends base[k] ? k : never
+	}[keyof base]
+>
+
+type baseDisambiguationOf<
 	traits extends readonly TraitConstructor[],
+	implementation,
 	composed extends ComposedTraits
-> = optionalizeSatisfied<{
-	[k in keyof composed["abstracted"]]: k extends keyof composed["implemented"]
-		? composed["implemented"][k] extends composed["abstracted"][k]
-			? filter<
-					traits,
-					TraitConstructor<any[], { [_ in k]: unknown }>
-			  > extends infer implementations extends TraitConstructor[]
-				? implementations["length"] extends 1
-					? composed["implemented"][k] | undefined
-					: composed["implemented"][k]
-				: never
-			: composed["abstracted"][k] & composed["implemented"][k]
-		: composed["abstracted"][k]
+> = omitUnambiguous<{
+	[k in keyof composed["implemented"]]: k extends keyof implementation
+		? undefined
+		: k extends keyof Trait
+		  ? undefined
+		  : filter<
+						traits,
+						TraitConstructor<any[], { [_ in k]: unknown }>
+		      > extends infer implementations extends TraitConstructor[]
+		    ? implementations["length"] extends 1
+					? undefined
+					: implementations[number]
+		    : never
 }>
 
 // even though the value we attach will be identical, we use this so classes
@@ -129,13 +160,13 @@ export const compose = ((...traits: Function[]) => {
 
 type TraitConstructor<
 	params extends readonly unknown[] = any[],
-	implemented = {},
+	instance = {},
 	abstracted = {},
 	statics = {}
 > = statics &
 	(new (...args: params) => {
 		$abstracts: abstracted
-	} & implemented)
+	} & instance)
 
 export type ComposedTraits = {
 	params: readonly unknown[]
@@ -147,7 +178,18 @@ export type ComposedTraits = {
 export type compose<traits extends readonly TraitConstructor[]> =
 	composeRecurse<traits, [], {}, {}, {}>
 
-export type composeRecurse<
+type intersectImplementations<l, r> = {
+	[k in keyof l]: k extends keyof r
+		? l[k] extends (...args: infer lArgs) => infer lReturn
+			? r[k] extends (...args: infer rArgs) => infer rReturn
+				? // ensure function intersections aren't handled as overloads which leads to unsafe behavior
+				  (...args: intersectParameters<lArgs, rArgs>) => lReturn & rReturn
+				: l[k] & r[k]
+			: l[k] & r[k]
+		: l[k]
+} & Omit<r, keyof l>
+
+type composeRecurse<
 	traits extends readonly unknown[],
 	params extends readonly unknown[],
 	implemented,
@@ -156,7 +198,7 @@ export type composeRecurse<
 > = traits extends readonly [
 	TraitConstructor<
 		infer nextParams,
-		infer nextImplemented,
+		infer nextInstance,
 		infer nextAbstracted,
 		infer nextStatics
 	>,
@@ -165,9 +207,12 @@ export type composeRecurse<
 	? composeRecurse<
 			tail,
 			intersectParameters<params, nextParams>,
-			implemented & nextImplemented,
-			abstracted & nextAbstracted,
-			statics & nextStatics
+			intersectImplementations<
+				implemented,
+				Omit<nextInstance, keyof nextAbstracted>
+			>,
+			intersectImplementations<abstracted, nextAbstracted>,
+			intersectImplementations<statics, nextStatics>
 	  >
 	: {
 			params: params
