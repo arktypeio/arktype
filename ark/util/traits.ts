@@ -48,7 +48,7 @@ type baseImplementationOf<composed extends ComposedTraits> =
 		[k in keyof composed["abstracted"]]: k extends keyof composed["implemented"]
 			? composed["implemented"][k] extends composed["abstracted"][k]
 				? composed["implemented"][k] | undefined
-				: composed["abstracted"][k] & composed["implemented"][k]
+				: composed["implemented"][k]
 			: composed["abstracted"][k]
 	}>
 
