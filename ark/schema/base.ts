@@ -1,5 +1,5 @@
 import {
-	DynamicTrait,
+	DynamicBase,
 	includes,
 	isArray,
 	throwInternalError,
@@ -112,7 +112,7 @@ export const isNode = (value: unknown): value is Node =>
 export abstract class BaseNode<
 	t = unknown,
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends DynamicTrait<attachmentsOf<d>> {
+> extends DynamicBase<attachmentsOf<d>> {
 	readonly cls: UnknownNodeSubclass = this.constructor as never
 
 	readonly includesMorph: boolean =

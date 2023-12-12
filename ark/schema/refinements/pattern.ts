@@ -31,11 +31,7 @@ export type PatternDeclaration = declareNode<{
 	checks: string
 }>
 
-export class PatternNode extends compose(
-	BaseNode<string, PatternDeclaration>,
-	RefinementTrait<PatternDeclaration>,
-	PrimitiveNode<PatternDeclaration>
-) {
+export class PatternNode extends RefinementNode<PatternDeclaration> {
 	static parser: NodeParserImplementation<PatternDeclaration> = {
 		collapseKey: "source",
 		keys: {

@@ -37,11 +37,7 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends compose(
-	BaseNode<unknown, PredicateDeclaration>,
-	RefinementTrait<PredicateDeclaration>,
-	PrimitiveNode<PredicateDeclaration>
-) {
+export class PredicateNode extends RefinementNode<PredicateDeclaration> {
 	static parser: NodeParserImplementation<PredicateDeclaration> = {
 		collapseKey: "predicate",
 		keys: {
