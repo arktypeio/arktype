@@ -49,12 +49,6 @@ export class RefinementTrait<
 	traverseAllows: TraverseAllows
 	getCheckedDefinitions(): readonly TypeSchema[]
 }> {
-	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) {
-			ctx.problems.add(this.description)
-		}
-	}
-
 	assertValidBasis(basis: Node<BasisKind> | undefined) {
 		cache[this.kind] ??= this.getCheckedDefinitions().map((o) =>
 			this.scope.parseTypeNode(o)

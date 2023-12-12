@@ -139,7 +139,8 @@ export class BaseNode<
 	readonly contributesReferences: readonly Node[]
 
 	constructor(baseAttachments: BaseAttachments) {
-		super(baseAttachments as never)
+		super()
+		Object.assign(this, baseAttachments)
 		this.contributesReferencesById =
 			this.id in this.referencesById
 				? this.referencesById
@@ -206,7 +207,7 @@ export class BaseNode<
 		return this.json
 	}
 
-	equals(other: Node) {
+	equals(other: Node): boolean {
 		return this.typeId === other.typeId
 	}
 

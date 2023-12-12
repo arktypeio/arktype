@@ -68,15 +68,30 @@ type baseDisambiguationOf<
 		? undefined
 		: k extends keyof Trait
 		  ? undefined
-		  : filter<
-						traits,
-						TraitConstructor<any[], { [_ in k]: unknown }, { [_ in k]?: never }>
-		      > extends infer implementations extends TraitConstructor[]
+		  : traitsImplementingKey<traits, k> extends infer implementations extends
+						TraitConstructor[]
 		    ? implementations["length"] extends 1
 					? undefined
 					: implementations[number]
 		    : never
 }>
+
+type traitsImplementingKey<
+	traits extends readonly unknown[],
+	k,
+	result extends unknown[] = []
+> = traits extends readonly [
+	TraitConstructor<any[], infer instance, infer abstracts>,
+	...infer tail
+]
+	? traitsImplementingKey<
+			tail,
+			k,
+			k extends Exclude<keyof instance, keyof abstracts>
+				? [...result, traits[0]]
+				: result
+	  >
+	: result
 
 // even though the value we attach will be identical, we use this so classes
 // won't be treated as instanceof a Trait
@@ -179,7 +194,7 @@ export const compose = ((...traits: TraitConstructor[]) =>
 		return base
 	}) as TraitComposition
 
-type TraitConstructor<
+export type TraitConstructor<
 	params extends readonly unknown[] = any[],
 	instance = {},
 	abstracted = {},

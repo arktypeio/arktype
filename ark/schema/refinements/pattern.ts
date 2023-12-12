@@ -33,7 +33,7 @@ export class PatternNode extends compose(
 	BaseNode<string, PatternDeclaration>,
 	RefinementTrait<PatternDeclaration>,
 	PrimitiveNode<PatternDeclaration>
-) {
+)({}) {
 	static parser: NodeParserImplementation<PatternDeclaration> = {
 		collapseKey: "source",
 		keys: {

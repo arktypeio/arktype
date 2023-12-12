@@ -1,4 +1,4 @@
-import { compose } from "@arktype/util"
+import { compose, type TraitConstructor } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import {
 	PrimitiveNode,
@@ -40,19 +40,22 @@ export class DivisorNode extends compose(
 	BaseNode<number, DivisorDeclaration>,
 	RefinementTrait<DivisorDeclaration>,
 	PrimitiveNode<DivisorDeclaration>
-)(
-	{
-		traverseAllows: (data: number) => data % this.divisor === 0,
-		condition: `${this.scope.argName} % ${this.divisor} === 0`,
-		negatedCondition: `${this.scope.argName} % ${this.divisor} !== 0`,
-		hasOpenIntersection: false,
-		getCheckedDefinitions: () => ["number"] as const,
-		writeDefaultDescription() {
-			return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
-		}
+)({
+	traverseAllows(data: number) {
+		return data % this.divisor === 0
 	},
-	{}
-) {
+	get condition() {
+		return `${this.scope.argName} % ${this.divisor} === 0`
+	},
+	get negatedCondition() {
+		return `${this.scope.argName} % ${this.divisor} !== 0`
+	},
+	hasOpenIntersection: false,
+	getCheckedDefinitions: () => ["number"] as const,
+	writeDefaultDescription() {
+		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
+	}
+}) {
 	static parser: NodeParserImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",
 		keys: {
