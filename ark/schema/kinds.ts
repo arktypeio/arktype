@@ -1,8 +1,24 @@
 import type { Dict, extend } from "@arktype/util"
+import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
+import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
+import { IndexNode, type IndexDeclaration } from "./refinements/index.js"
 import {
-	RefinementNodes,
-	type RefinementDeclarations
-} from "./refinements/refinement.js"
+	OptionalNode,
+	type OptionalDeclaration
+} from "./refinements/optional.js"
+import { PatternNode, type PatternDeclaration } from "./refinements/pattern.js"
+import {
+	PredicateNode,
+	type PredicateDeclaration
+} from "./refinements/predicate.js"
+import {
+	RequiredNode,
+	type RequiredDeclaration
+} from "./refinements/required.js"
+import {
+	SequenceNode,
+	type SequenceDeclaration
+} from "./refinements/sequence.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type {
 	ConstraintKind,
@@ -11,7 +27,7 @@ import type {
 	RefinementKind,
 	TypeKind
 } from "./shared/define.js"
-import { BasisImplementations, type BasisDeclarations } from "./types/basis.js"
+import { DomainNode, type DomainDeclaration } from "./types/domain.js"
 import {
 	IntersectionNode,
 	type IntersectionDeclaration
@@ -21,42 +37,48 @@ import {
 	type MorphDeclaration,
 	type ValidatorKind
 } from "./types/morph.js"
+import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
 import {
 	UnionNode,
 	type BranchKind,
 	type UnionDeclaration
 } from "./types/union.js"
-
-export type ConstraintDeclarationsByKind = extend<
-	BasisDeclarations,
-	RefinementDeclarations
->
-
-export const ConstraintImplementationByKind = {
-	...BasisImplementations,
-	...RefinementNodes
-}
-
-export type SetDeclarationsByKind = {
-	union: UnionDeclaration
-	morph: MorphDeclaration
-	intersection: IntersectionDeclaration
-}
-
-export const SetNodesByKind = {
-	union: UnionNode,
-	morph: MorphNode,
-	intersection: IntersectionNode
-}
+import { UnitNode, type UnitDeclaration } from "./types/unit.js"
 
 export type NodeDeclarationsByKind = extend<
-	ConstraintDeclarationsByKind,
-	SetDeclarationsByKind
+	BoundDeclarations,
+	{
+		domain: DomainDeclaration
+		unit: UnitDeclaration
+		proto: ProtoDeclaration
+		union: UnionDeclaration
+		morph: MorphDeclaration
+		intersection: IntersectionDeclaration
+		sequence: SequenceDeclaration
+		divisor: DivisorDeclaration
+		required: RequiredDeclaration
+		optional: OptionalDeclaration
+		index: IndexDeclaration
+		pattern: PatternDeclaration
+		predicate: PredicateDeclaration
+	}
 >
 
 export const NodeImplementationByKind = {
-	...SetNodesByKind,
-	...ConstraintImplementationByKind
+	...BoundNodes,
+	domain: DomainNode,
+	unit: UnitNode,
+	proto: ProtoNode,
+	union: UnionNode,
+	morph: MorphNode,
+	intersection: IntersectionNode,
+	divisor: DivisorNode,
+	pattern: PatternNode,
+	predicate: PredicateNode,
+	required: RequiredNode,
+	optional: OptionalNode,
+	index: IndexNode,
+	sequence: SequenceNode
 } as const satisfies Dict<NodeKind>
 
 export type NodeImplementationByKind = typeof NodeImplementationByKind
@@ -102,6 +124,9 @@ export type OpenRefinementKind = {
 }[NodeKind]
 
 export type ClosedRefinementKind = Exclude<RefinementKind, OpenRefinementKind>
+
+export type RefinementOperand<kind extends RefinementKind> =
+	Declaration<kind>["checks"]
 
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? TypeKind

@@ -1,15 +1,7 @@
-import { compose } from "@arktype/util"
-import { BaseNode } from "../base.js"
-import type { CompilationContext } from "../scope.js"
-import {
-	PrimitiveNode,
-	type declareNode,
-	type withAttributes
-} from "../shared/declare.js"
+import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { RefinementNode } from "./shared.js"
-import { RefinementTrait } from "./trait.js"
+import { PrimitiveRefinementNode } from "./refinement.js"
 
 export type PatternInner = {
 	readonly source: string
@@ -31,7 +23,7 @@ export type PatternDeclaration = declareNode<{
 	checks: string
 }>
 
-export class PatternNode extends RefinementNode<PatternDeclaration> {
+export class PatternNode extends PrimitiveRefinementNode<PatternDeclaration> {
 	static parser: NodeParserImplementation<PatternDeclaration> = {
 		collapseKey: "source",
 		keys: {

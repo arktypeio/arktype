@@ -44,6 +44,7 @@ import {
 	refinementKinds,
 	setKinds,
 	typeKinds,
+	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
 	type RefinementKind,
@@ -58,7 +59,6 @@ import {
 	type intersectionOf
 } from "./shared/intersect.js"
 import type { CheckResult } from "./shared/problems.js"
-import type { BasisKind } from "./types/basis.js"
 import type { DomainNode } from "./types/domain.js"
 import type {
 	IntersectionInner,

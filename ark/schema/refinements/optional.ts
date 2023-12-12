@@ -9,7 +9,7 @@ import type { NodeParserImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
-import { RefinementNode, compilePresentProp } from "./shared.js"
+import { RefinementNode, compilePresentProp } from "./refinement.js"
 
 export type OptionalInner = {
 	readonly key: string | symbol

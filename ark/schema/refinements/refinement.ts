@@ -1,77 +1,77 @@
-import type { evaluate, extend } from "@arktype/util"
-import type { Declaration } from "../kinds.js"
-import type { RefinementKind } from "../shared/define.js"
-import {
-	BoundNodes,
-	type BoundDeclarations,
-	type LimitSchemaValue
-} from "./bounds.js"
-import { DivisorNode, type DivisorDeclaration } from "./divisor.js"
-import { IndexNode, type IndexDeclaration } from "./index.js"
-import { OptionalNode, type OptionalDeclaration } from "./optional.js"
-import { PatternNode, type PatternDeclaration } from "./pattern.js"
-import { PredicateNode, type PredicateDeclaration } from "./predicate.js"
-import { RequiredNode, type RequiredDeclaration } from "./required.js"
-import { SequenceNode, type SequenceDeclaration } from "./sequence.js"
+import { throwParseError, type PartialRecord } from "@arktype/util"
+import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
+import type { CompilationContext, TraverseApply } from "../scope.js"
+import type { BaseNodeDeclaration, PrimitiveNode } from "../shared/declare.js"
+import type { BasisKind, NodeKind } from "../shared/define.js"
+import { isDotAccessible } from "../shared/registry.js"
 
-export type RefinementDeclarations = extend<
-	BoundDeclarations,
-	{
-		sequence: SequenceDeclaration
-		divisor: DivisorDeclaration
-		required: RequiredDeclaration
-		optional: OptionalDeclaration
-		index: IndexDeclaration
-		pattern: PatternDeclaration
-		predicate: PredicateDeclaration
+export type NamedPropKind = "required" | "optional"
+
+export const compilePropAccess = (name: string, optional = false) =>
+	isDotAccessible(name)
+		? `${optional ? "?" : ""}.${name}`
+		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
+
+export const compilePresentProp = (
+	node: Node<NamedPropKind>,
+	ctx: CompilationContext
+) => {
+	if (ctx.compilationKind === "allows") {
+		return `return this.${node.value.id}(${ctx.argName}${compilePropAccess(
+			node.compiledKey
+		)})`
 	}
->
-
-export const RefinementNodes = {
-	...BoundNodes,
-	divisor: DivisorNode,
-	pattern: PatternNode,
-	predicate: PredicateNode,
-	required: RequiredNode,
-	optional: OptionalNode,
-	index: IndexNode,
-	sequence: SequenceNode
-} as const satisfies Record<RefinementKind, unknown>
-
-export type RefinementOperand<kind extends RefinementKind> =
-	Declaration<kind>["checks"]
-
-export type Comparator = "<" | "<=" | ">" | ">=" | "=="
-
-export type BoundRefinements = { [k in Comparator]?: LimitSchemaValue }
-
-export type DivisorRefinements = { [k in `%${number}`]: 0 }
-
-export type RegexLiteral<source extends string = string> = `/${source}/`
-
-export type PatternRefinements = {
-	[k in RegexLiteral]: true
+	return `problems.currentPath.push(${node.serializedKey})
+	this.${node.value.id}(${ctx.argName}${compilePropAccess(
+		node.compiledKey
+	)}, problems)
+	problems.currentPath.pop()
+	`
 }
 
-export type DateLiteral<source extends string = string> =
-	| `d"${source}"`
-	| `d'${source}'`
+export const getBasisName = (basis: Node<BasisKind> | undefined) =>
+	basis?.basisName ?? "unknown"
 
-export type DateRefinements = {
-	[k in DateLiteral]: true
-}
+const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
-export type Refinements = evaluate<
-	BoundRefinements &
-		DivisorRefinements &
-		PatternRefinements &
-		DateRefinements & {
-			anonymousDate?: true
-			anonymousBounds?: true
-			anonymousDivisor?: true
-			anonymousPattern?: true
-			anonymousPredicate?: true
+export abstract class RefinementNode<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> extends BaseNode<any, d> {
+	abstract getCheckedDefinitions(): readonly TypeSchema[]
+	readonly checks: readonly TypeNode[] =
+		cache[this.kind] ??
+		(cache[this.kind] = this.getCheckedDefinitions().map((o) =>
+			this.scope.parseTypeNode(o)
+		))
+
+	assertValidBasis(basis: Node<BasisKind> | undefined) {
+		if (this.checks.length === 1 && this.checks[0].isUnknown()) {
+			return
 		}
->
+		if (!this.checks.some((o) => basis?.extends(o))) {
+			throwParseError(
+				`${this.kind} operand must be of type ${this.checks.join(
+					" or "
+				)} (was ${getBasisName(basis)})`
+			)
+		}
+	}
+}
 
-export type is<t = unknown, refinements = Refinements> = [t, ":?>", refinements]
+export abstract class PrimitiveRefinementNode<d extends BaseNodeDeclaration>
+	extends RefinementNode<d>
+	implements PrimitiveNode
+{
+	abstract readonly condition: string
+	abstract readonly negatedCondition: string
+
+	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.problems.add(this.description)
+		}
+	}
+
+	compileBody(ctx: CompilationContext) {
+		return this.scope.compilePrimitive(this as any, ctx)
+	}
+}

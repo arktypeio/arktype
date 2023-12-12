@@ -9,12 +9,12 @@ import type {
 	ClosedRefinementKind,
 	Declaration,
 	OpenRefinementKind,
+	RefinementOperand,
 	Schema,
 	hasOpenIntersection,
 	reducibleKindOf
 } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { RefinementOperand } from "../refinements/refinement.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
@@ -23,6 +23,7 @@ import type {
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
+	type BasisKind,
 	type ConstraintKind,
 	type NodeParserImplementation,
 	type PropKind,
@@ -30,7 +31,7 @@ import {
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import type { BasisKind, instantiateBasis } from "./basis.js"
+import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
 export type IntersectionInner = { basis?: Node<BasisKind> } & {

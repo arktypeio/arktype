@@ -8,7 +8,7 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { RefinementNode } from "./shared.js"
+import { RefinementNode } from "./refinement.js"
 
 export type IndexSchema = withAttributes<{
 	readonly key: TypeSchema

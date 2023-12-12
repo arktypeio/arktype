@@ -9,7 +9,6 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
-import type { is } from "../refinements/refinement.js"
 import type {
 	ArkConfig,
 	CompilationContext,
@@ -18,11 +17,15 @@ import type {
 } from "../scope.js"
 import type { TraversalContext } from "../shared/context.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
+import {
+	basisKinds,
+	type BasisKind,
+	type NodeParserImplementation
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import type { CheckResult, Problem } from "../shared/problems.js"
-import type { BasisKind } from "./basis.js"
+import type { is } from "../shared/utils.js"
 import { BaseType } from "./type.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>

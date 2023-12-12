@@ -8,28 +8,10 @@ import {
 } from "@arktype/util"
 import { isNode } from "../base.js"
 import type { Schema } from "../kinds.js"
-import {
-	DomainNode,
-	type DomainDeclaration,
-	type DomainSchema,
-	type NonEnumerableDomain
-} from "./domain.js"
-import { ProtoNode, type ProtoDeclaration, type ProtoSchema } from "./proto.js"
-import { UnitNode, type UnitDeclaration, type UnitSchema } from "./unit.js"
-
-export type BasisDeclarations = {
-	domain: DomainDeclaration
-	proto: ProtoDeclaration
-	unit: UnitDeclaration
-}
-
-export const BasisImplementations = {
-	domain: DomainNode,
-	proto: ProtoNode,
-	unit: UnitNode
-}
-
-export type BasisKind = keyof BasisDeclarations
+import type { BasisKind } from "../shared/define.js"
+import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
+import type { ProtoNode, ProtoSchema } from "./proto.js"
+import type { UnitNode, UnitSchema } from "./unit.js"
 
 export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	switch (typeof schema) {

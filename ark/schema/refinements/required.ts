@@ -14,7 +14,7 @@ import {
 	RefinementNode,
 	compilePresentProp,
 	type NamedPropKind
-} from "./shared.js"
+} from "./refinement.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
