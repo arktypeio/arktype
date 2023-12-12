@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { Trait, compose } from "../trait2.js"
+import { Trait, compose } from "../traits.js"
 
 export class Describable extends Trait<{ writeDefaultDescription(): string }> {
 	description: string

@@ -1,8 +1,13 @@
-import { throwParseError, type PartialRecord } from "@arktype/util"
-import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
-import type { CompilationContext, TraverseApply } from "../scope.js"
+import { Trait, throwParseError, type PartialRecord } from "@arktype/util"
+import type { BaseNode, Node, TypeNode, TypeSchema } from "../base.js"
+import type {
+	CompilationContext,
+	ScopeNode,
+	TraverseAllows,
+	TraverseApply
+} from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
-import type { NodeKind } from "../shared/define.js"
+import type { NodeKind, RefinementKind } from "../shared/define.js"
 import { isDotAccessible } from "../shared/registry.js"
 import type { BasisKind } from "../types/basis.js"
 
@@ -35,23 +40,29 @@ export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 
 const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
-export abstract class RefinementNode<
+export class RefinementTrait<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends BaseNode<any, d> {
-	abstract getCheckedDefinitions(): readonly TypeSchema[]
-	readonly checks: readonly TypeNode[] =
-		cache[this.kind] ??
-		(cache[this.kind] = this.getCheckedDefinitions().map((o) =>
-			this.scope.parseTypeNode(o)
-		))
+> extends Trait<{
+	kind: RefinementKind
+	scope: ScopeNode
+	description: string
+	traverseAllows: TraverseAllows
+	getCheckedDefinitions(): readonly TypeSchema[]
+}> {
+	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.problems.add(this.description)
+		}
+	}
 
 	assertValidBasis(basis: Node<BasisKind> | undefined) {
-		if (this.checks.length === 1 && this.checks[0].isUnknown()) {
-			return
-		}
-		if (!this.checks.some((o) => basis?.extends(o))) {
+		cache[this.kind] ??= this.getCheckedDefinitions().map((o) =>
+			this.scope.parseTypeNode(o)
+		)
+		const allowed = cache[this.kind]!
+		if (!allowed.some((o) => basis?.extends(o))) {
 			throwParseError(
-				`${this.kind} operand must be of type ${this.checks.join(
+				`${this.kind} operand must be of type ${allowed.join(
 					" or "
 				)} (was ${getBasisName(basis)})`
 			)

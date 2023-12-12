@@ -41,7 +41,7 @@ export class PredicateNode extends compose(
 	BaseNode<unknown, PredicateDeclaration>,
 	RefinementTrait<PredicateDeclaration>,
 	PrimitiveNode<PredicateDeclaration>
-) {
+)({}) {
 	static parser: NodeParserImplementation<PredicateDeclaration> = {
 		collapseKey: "predicate",
 		keys: {
