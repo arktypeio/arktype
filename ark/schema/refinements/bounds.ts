@@ -15,7 +15,7 @@ import type {
 import type { BoundKind, NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { RefinementTrait } from "./shared.js"
+import { RefinementNode } from "./shared.js"
 
 export type BoundInner = {
 	readonly limit: number
@@ -100,9 +100,9 @@ export type BaseBoundDeclaration = extend<
 	}
 >
 
-export class BaseBound<
+export abstract class BaseBound<
 	d extends BaseBoundDeclaration
-> extends RefinementTrait<d> {
+> extends RefinementNode<d> {
 	static parser = {
 		collapseKey: "limit",
 		keys: {
