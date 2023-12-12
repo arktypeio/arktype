@@ -1,5 +1,4 @@
-import { compose } from "@arktype/util"
-import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
+import type { TypeNode, TypeSchema } from "../base.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
@@ -12,7 +11,7 @@ import type {
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { RefinementTrait } from "./shared.js"
+import { RefinementNode } from "./shared.js"
 
 export type NormalizedSequenceSchema = withAttributes<{
 	readonly prefix?: readonly TypeSchema[]
@@ -54,10 +53,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.scope.parseTypeNode(element))
 }
 
-export class SequenceNode extends compose(
-	BaseNode<readonly unknown[], SequenceDeclaration>,
-	RefinementTrait<SequenceDeclaration>
-)({}) {
+export class SequenceNode extends RefinementNode<SequenceDeclaration> {
 	static parser: NodeParserImplementation<SequenceDeclaration> = {
 		collapseKey: "element",
 		keys: {

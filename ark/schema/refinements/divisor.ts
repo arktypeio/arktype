@@ -1,5 +1,6 @@
 import { compose } from "@arktype/util"
 import { BaseNode } from "../base.js"
+import type { CompilationContext } from "../scope.js"
 import {
 	PrimitiveNode,
 	type declareNode,
@@ -7,7 +8,7 @@ import {
 } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { RefinementTrait } from "./shared.js"
+import { RefinementTrait } from "./trait.js"
 
 export type DivisorInner = {
 	readonly divisor: number
@@ -40,18 +41,6 @@ export class DivisorNode extends compose(
 	BaseNode<number, DivisorDeclaration>,
 	RefinementTrait<DivisorDeclaration>,
 	PrimitiveNode<DivisorDeclaration>
-)(
-	{
-		traverseAllows: (data: number) => data % this.divisor === 0,
-		condition: `${this.scope.argName} % ${this.divisor} === 0`,
-		negatedCondition: `${this.scope.argName} % ${this.divisor} !== 0`,
-		hasOpenIntersection: false,
-		getCheckedDefinitions: () => ["number"] as const,
-		writeDefaultDescription() {
-			return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
-		}
-	},
-	{}
 ) {
 	static parser: NodeParserImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",
@@ -68,6 +57,20 @@ export class DivisorNode extends compose(
 				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
 			)
 		})
+	}
+
+	readonly hasOpenIntersection = false
+	traverseAllows = (data: number) => data % this.divisor === 0
+
+	condition = `${this.scope.argName} % ${this.divisor} === 0`
+	negatedCondition = `${this.scope.argName} % ${this.divisor} !== 0`
+
+	getCheckedDefinitions() {
+		return ["number"] as const
+	}
+
+	writeDefaultDescription() {
+		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 }
 

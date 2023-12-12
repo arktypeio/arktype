@@ -1,5 +1,6 @@
 import { compose } from "@arktype/util"
 import { BaseNode } from "../base.js"
+import type { CompilationContext } from "../scope.js"
 import {
 	PrimitiveNode,
 	type declareNode,
@@ -7,7 +8,8 @@ import {
 } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { RefinementTrait } from "./shared.js"
+import { RefinementNode } from "./shared.js"
+import { RefinementTrait } from "./trait.js"
 
 export type PatternInner = {
 	readonly source: string

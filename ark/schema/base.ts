@@ -1,5 +1,5 @@
 import {
-	Trait,
+	DynamicTrait,
 	includes,
 	isArray,
 	throwInternalError,
@@ -109,19 +109,10 @@ export type UnknownNodeSubclass = {
 export const isNode = (value: unknown): value is Node =>
 	value instanceof BaseNode
 
-export class BaseNode<
+export abstract class BaseNode<
 	t = unknown,
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends Trait<
-	{
-		hasOpenIntersection: hasOpenIntersection<d>
-		writeDefaultDescription(): string
-		traverseAllows: TraverseAllows<d["checks"]>
-		traverseApply: TraverseApply<d["checks"]>
-		compileBody(ctx: CompilationContext): string
-	},
-	attachmentsOf<d>
-> {
+> extends DynamicTrait<attachmentsOf<d>> {
 	readonly cls: UnknownNodeSubclass = this.constructor as never
 
 	readonly includesMorph: boolean =
@@ -146,6 +137,12 @@ export class BaseNode<
 				: { ...this.referencesById, [this.id]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesById)
 	}
+
+	abstract hasOpenIntersection: hasOpenIntersection<d>
+	abstract writeDefaultDescription(): string
+	abstract traverseAllows: TraverseAllows<d["checks"]>
+	abstract traverseApply: TraverseApply<d["checks"]>
+	abstract compileBody(ctx: CompilationContext): string
 
 	allows = (data: unknown): data is distill<extractIn<t>> => {
 		const ctx = new TraversalContext()
