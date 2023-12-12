@@ -33,25 +33,7 @@ export class PatternNode extends compose(
 	BaseNode<string, PatternDeclaration>,
 	RefinementTrait<PatternDeclaration>,
 	PrimitiveNode<PatternDeclaration>
-)({
-	hasOpenIntersection: true,
-	get regex() {
-		return new RegExp(this.source, this.flags)
-	},
-	traverseAllows() {
-		return this.regex.test
-	},
-	get condition() {
-		return `/${this.source}/${this.flags ?? ""}.test(${this.scope.argName})`
-	},
-	get negatedCondition() {
-		return `!${this.condition}`
-	},
-	getCheckedDefinitions: () => ["string"] as const,
-	writeDefaultDescription() {
-		return `matched by ${this.source}`
-	}
-}) {
+)({}) {
 	static parser: NodeParserImplementation<PatternDeclaration> = {
 		collapseKey: "source",
 		keys: {
@@ -71,5 +53,19 @@ export class PatternNode extends compose(
 	static intersections: NodeIntersections<PatternDeclaration> = {
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
+	}
+
+	readonly hasOpenIntersection = true
+	regex = new RegExp(this.source, this.flags)
+	traverseAllows = this.regex.test
+	condition = `/${this.source}/${this.flags ?? ""}.test(${this.scope.argName})`
+	negatedCondition = `!${this.condition}`
+
+	getCheckedDefinitions() {
+		return ["string"] as const
+	}
+
+	writeDefaultDescription() {
+		return `matched by ${this.source}`
 	}
 }

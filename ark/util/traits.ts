@@ -3,7 +3,7 @@ import type { conform, evaluate } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { filter } from "./lists.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
-import { NoopBase, type Dict, type optionalizeKeys } from "./records.js"
+import { NoopBase, type optionalizeKeys } from "./records.js"
 
 export type TraitComposition = <traits extends readonly TraitConstructor[]>(
 	...traits: traits
@@ -12,12 +12,9 @@ export type TraitComposition = <traits extends readonly TraitConstructor[]>(
 type TraitImplementation<
 	traits extends readonly TraitConstructor[],
 	composed extends ComposedTraits
-> = <implementation extends baseImplementationOf<composed>>(
-	implementation: {
-		[k in keyof implementation]: k extends keyof baseImplementationOf<composed>
-			? baseImplementationOf<composed>[k]
-			: implementation[k]
-	} & ThisType<implementation & composed["implemented"]>,
+> = <implementation>(
+	implementation: conform<implementation, baseImplementationOf<composed>> &
+		ThisType<implementation & composed["implemented"]>,
 	...disambiguation: baseDisambiguationOf<
 		traits,
 		implementation,
@@ -40,7 +37,7 @@ type TraitsBase<
 	>)
 
 type optionalizeSatisfied<base> = optionalizeKeys<
-	base & Dict,
+	base,
 	{
 		[k in keyof base]: undefined extends base[k] ? k : never
 	}[keyof base]
