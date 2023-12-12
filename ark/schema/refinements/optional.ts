@@ -9,7 +9,7 @@ import type { NodeParserImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
-import { RefinementNode, compilePresentProp } from "./shared.js"
+import { RefinementTrait, compilePresentProp } from "./shared.js"
 
 export type OptionalInner = {
 	readonly key: string | symbol
@@ -32,7 +32,7 @@ export type OptionalDeclaration = declareNode<{
 	checks: object
 }>
 
-export class OptionalNode extends RefinementNode<OptionalDeclaration> {
+export class OptionalNode extends RefinementTrait<OptionalDeclaration> {
 	static parser: NodeParserImplementation<OptionalDeclaration> = {
 		keys: {
 			key: {},
