@@ -132,12 +132,6 @@ const collectPrototypeDescriptors = (
 
 export const compose = ((...traits: TraitConstructor[]) =>
 	(implementation: object, disambiguation: Disambiguation = {}) => {
-		if (traits.length === 0) {
-			return Object
-		}
-		if (traits.length === 1) {
-			return traits[0]
-		}
 		const base: any = function (this: any, ...args: any[]) {
 			for (const trait of traits) {
 				const instance = Reflect.construct(trait, args, this.constructor)

@@ -29,10 +29,7 @@ describe("traits", () => {
 			Describable,
 			Boundable<string>
 		)({
-			sizeOf(data: string) {
-				this.check(data)
-				return data.length
-			},
+			sizeOf: (data: string) => data.length,
 			writeDefaultDescription: () => "foo"
 		}) {}
 
@@ -143,12 +140,12 @@ describe("traits", () => {
 
 	it("can disambiguate conflicting implementations", () => {
 		class A1 extends Trait {
-			a(): number {
+			a() {
 				return 1
 			}
 		}
 		class A2 extends Trait {
-			a(): number | boolean {
+			a() {
 				return 2
 			}
 		}
@@ -174,36 +171,9 @@ describe("traits", () => {
 		class A5 extends compose(A1, A2)({}, { a: A1 }) {}
 
 		attest<number>(new A5().a()).equals(1)
+
+		class A6 extends compose(A1, A2)({}, { a: A2 }) {}
+
+		attest<number>(new A6().a()).equals(2)
 	})
-	// it("can disambiguate", () => {
-	// 	abstract class Rhombus extends Trait {
-	// 		constructor(public sideLength: number) {
-	// 			super()
-	// 		}
-
-	// 		abstract area(): number
-	// 	}
-
-	// 	abstract class Rectangle extends Trait {
-	// 		constructor(
-	// 			public width: number,
-	// 			public height: number
-	// 		) {
-	// 			super()
-	// 		}
-
-	// 		abstract area(): number
-	// 	}
-
-	// 	class Square extends compose([Rhombus, Rectangle], { area: Rhombus }) {
-	// 		constructor(sideLength: number) {
-	// 			super(sideLength, sideLength)
-	// 		}
-	// 	}
-	// 	const square = new Square(5)
-	// 	attest(square.area()).equals(25)
-	// 	attest(square instanceof Square).equals(true)
-	// 	attest(square instanceof Rhombus).equals(true)
-	// 	attest(square instanceof Rectangle).equals(true)
-	// })
 })
