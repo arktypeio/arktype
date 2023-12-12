@@ -149,10 +149,9 @@ describe("traits", () => {
 				return 2
 			}
 		}
-
 		// @ts-expect-error
 		attest(class A3 extends compose(A1, A2)({}) {}).type.errors(
-			"Arguments for the rest parameter 'disambiguation' were not provided."
+			"Expected 2 arguments, but got 1."
 		)
 
 		// you can disambiguate by implementing the method yourself

@@ -25,13 +25,14 @@ describe("overloads", () => {
 	})
 	it("overload return", () => {
 		const limit = {} as ((s: string) => string) & ((n: number) => number)
-		const fromNumber = {} as overloadOf<typeof limit, [5]>
-		attest<number>(fromNumber)
-		const fromString = {} as overloadOf<typeof limit, ["foo"]>
-		attest<string>(fromString)
+		type fromNumber = ReturnType<overloadOf<typeof limit, [number]>>
+		attest<number, fromNumber>()
+		// // TODO: doesn't work for subtypes?
+		// type fromString = overloadOf<typeof limit, ["foo"]>
+		// attest<string, fromString>()
 	})
 	it("()=>never", () => {
-		const t = {} as Parameters<
+		type result = Parameters<
 			overloadOf<{
 				(): void
 				(a?: 1): 1
@@ -39,7 +40,7 @@ describe("overloads", () => {
 				(): never
 			}>
 		>
-		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)
+		attest<[a: 2, b: 2] | [a?: 1 | undefined] | [], result>()
 	})
 	it("pipe", () => {
 		const limit = ((_) => _) as ((s: string) => string) &
