@@ -1,8 +1,13 @@
-import { throwParseError, type PartialRecord } from "@arktype/util"
+import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
 import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
 import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { BaseNodeDeclaration, PrimitiveNode } from "../shared/declare.js"
-import type { BasisKind, NodeKind } from "../shared/define.js"
+import type {
+	BasisKind,
+	NodeKind,
+	PrimitiveRefinementKind,
+	RefinementKind
+} from "../shared/define.js"
 import { isDotAccessible } from "../shared/registry.js"
 
 export type NamedPropKind = "required" | "optional"
@@ -34,6 +39,13 @@ export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 
 const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
+export type BaseRefinementDeclaration = extend<
+	BaseNodeDeclaration,
+	{
+		kind: RefinementKind
+	}
+>
+
 export abstract class BaseRefinement<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends BaseNode<any, d> {
@@ -58,7 +70,14 @@ export abstract class BaseRefinement<
 	}
 }
 
-export abstract class BasePrimitiveRefinement<d extends BaseNodeDeclaration>
+export type BasePrimitiveRefinementDeclaration = extend<
+	BaseRefinementDeclaration,
+	{ kind: PrimitiveRefinementKind }
+>
+
+export abstract class BasePrimitiveRefinement<
+		d extends BasePrimitiveRefinementDeclaration
+	>
 	extends BaseRefinement<d>
 	implements PrimitiveNode
 {

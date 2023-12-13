@@ -1,13 +1,13 @@
-import { Trait, type Dict, type evaluate, type extend } from "@arktype/util"
+import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenRefinementKind } from "../kinds.js"
 import type {
-	CompilationContext,
-	ScopeNode,
-	TraverseAllows,
-	TraverseApply
-} from "../scope.js"
-import type { ConstraintKind, NodeKind, PropKind, SetKind } from "./define.js"
+	ConstraintKind,
+	NodeKind,
+	PrimitiveKind,
+	PropKind,
+	SetKind
+} from "./define.js"
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
 
@@ -86,6 +86,7 @@ export type BaseNodeDeclaration = {
 }
 
 export interface PrimitiveNode {
+	readonly kind: PrimitiveKind
 	readonly condition: string
 	readonly negatedCondition: string
 }

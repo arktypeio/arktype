@@ -17,7 +17,13 @@ import type { keywords, schema } from "./keywords/keywords.js"
 import type { Schema, reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { TraversalContext } from "./shared/context.js"
-import type { NodeKind, PropKind, SetKind, TypeKind } from "./shared/define.js"
+import type {
+	NodeKind,
+	PrimitiveKind,
+	PropKind,
+	SetKind,
+	TypeKind
+} from "./shared/define.js"
 import type { ProblemCode } from "./shared/problems.js"
 import { maybeGetBasisKind } from "./types/basis.js"
 import type { Discriminant } from "./types/discriminate.js"
@@ -356,7 +362,3 @@ export type CompilationContext = {
 	discriminants: Discriminant[]
 	compilationKind: TraversalKind
 }
-
-export type CompositeKind = SetKind | PropKind
-
-export type PrimitiveKind = Exclude<NodeKind, CompositeKind>

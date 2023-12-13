@@ -1,6 +1,5 @@
 import { ReadonlyArray, type propwiseXor } from "@arktype/util"
 import type { TraversalContext } from "./context.js"
-import type { BaseNodeDeclaration } from "./declare.js"
 
 export class ArkTypeError extends TypeError {
 	override cause: Problems

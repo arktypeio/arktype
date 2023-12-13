@@ -30,12 +30,17 @@ export const propKinds = ["required", "optional", "index", "sequence"] as const
 
 export type PropKind = (typeof propKinds)[number]
 
-export const refinementKinds = [
+export const primitiveRefinementKinds = [
 	"pattern",
 	"predicate",
 	"divisor",
-	"sequence",
-	...boundKinds,
+	...boundKinds
+] as const
+
+export type PrimitiveRefinementKind = (typeof primitiveRefinementKinds)[number]
+
+export const refinementKinds = [
+	...primitiveRefinementKinds,
 	...propKinds
 ] as const
 
@@ -56,6 +61,13 @@ export type ConstraintKind = (typeof constraintKinds)[number]
 export const nodeKinds = [...setKinds, ...constraintKinds] as const
 
 export type NodeKind = (typeof nodeKinds)[number]
+
+export const primitiveKinds = [
+	...basisKinds,
+	...primitiveRefinementKinds
+] as const
+
+export type PrimitiveKind = (typeof primitiveKinds)[number]
 
 export type OrderedNodeKinds = typeof nodeKinds
 

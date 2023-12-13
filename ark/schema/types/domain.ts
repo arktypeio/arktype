@@ -1,11 +1,9 @@
 import { domainOf, type Domain } from "@arktype/util"
-import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseBasis } from "./basis.js"
-import { BaseType } from "./type.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
