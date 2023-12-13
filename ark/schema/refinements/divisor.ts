@@ -1,7 +1,7 @@
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { PrimitiveRefinementNode, RefinementNode } from "./refinement.js"
+import { BasePrimitiveRefinement, BaseRefinement } from "./refinement.js"
 
 export type DivisorInner = {
 	readonly divisor: number
@@ -30,7 +30,7 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export class DivisorNode extends PrimitiveRefinementNode<DivisorDeclaration> {
+export class DivisorNode extends BasePrimitiveRefinement<DivisorDeclaration> {
 	static parser: NodeParserImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",
 		keys: {

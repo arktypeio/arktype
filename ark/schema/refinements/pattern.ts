@@ -1,7 +1,7 @@
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { PrimitiveRefinementNode } from "./refinement.js"
+import { BasePrimitiveRefinement } from "./refinement.js"
 
 export type PatternInner = {
 	readonly source: string
@@ -23,7 +23,7 @@ export type PatternDeclaration = declareNode<{
 	checks: string
 }>
 
-export class PatternNode extends PrimitiveRefinementNode<PatternDeclaration> {
+export class PatternNode extends BasePrimitiveRefinement<PatternDeclaration> {
 	static parser: NodeParserImplementation<PatternDeclaration> = {
 		collapseKey: "source",
 		keys: {

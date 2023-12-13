@@ -2,16 +2,45 @@ import {
 	printable,
 	throwParseError,
 	type Constructor,
+	type Domain,
+	type extend,
 	type inferDomain,
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
 import { isNode } from "../base.js"
 import type { Schema } from "../kinds.js"
+import type { CompilationContext, TraverseApply } from "../scope.js"
+import type { PrimitiveNode } from "../shared/declare.js"
 import type { BasisKind } from "../shared/define.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
+import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitNode, UnitSchema } from "./unit.js"
+
+export type BaseBasisDeclaration = extend<
+	BaseTypeDeclaration,
+	{ kind: BasisKind }
+>
+
+export abstract class BaseBasis<t, d extends BaseBasisDeclaration>
+	extends BaseType<t, d>
+	implements PrimitiveNode
+{
+	abstract readonly basisName: string
+	abstract readonly condition: string
+	abstract readonly negatedCondition: string
+
+	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.problems.add(this.description)
+		}
+	}
+
+	compileBody(ctx: CompilationContext) {
+		return this.scope.compilePrimitive(this as any, ctx)
+	}
+}
 
 export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	switch (typeof schema) {

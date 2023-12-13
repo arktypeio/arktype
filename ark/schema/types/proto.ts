@@ -12,6 +12,7 @@ import {
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
+import { BaseBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = {
@@ -38,7 +39,7 @@ export type ProtoDeclaration = declareNode<{
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export class ProtoNode<t = unknown> extends BaseType<t, ProtoDeclaration> {
+export class ProtoNode<t = unknown> extends BaseBasis<t, ProtoDeclaration> {
 	static parser: NodeParserImplementation<ProtoDeclaration> = {
 		collapseKey: "proto",
 		keys: {
@@ -71,15 +72,6 @@ export class ProtoNode<t = unknown> extends BaseType<t, ProtoDeclaration> {
 	readonly condition = `${this.scope.argName} instanceof ${this.serializedConstructor}`
 	readonly negatedCondition = `!(${this.condition})`
 	traverseAllows = (data: unknown) => data instanceof this.proto
-	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.traverseAllows(data)) {
-			ctx.problems.add(this.description)
-		}
-	}
-
-	compileBody(ctx: CompilationContext): string {
-		return this.scope.compilePrimitive(this, ctx)
-	}
 
 	writeDefaultDescription() {
 		const knownObjectKind = getExactBuiltinConstructorName(this.proto)

@@ -11,7 +11,7 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import {
-	RefinementNode,
+	BaseRefinement,
 	compilePresentProp,
 	type NamedPropKind
 } from "./refinement.js"
@@ -56,7 +56,7 @@ const intersectNamed = (
 	}
 }
 
-export class RequiredNode extends RefinementNode<RequiredDeclaration> {
+export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
 	static parser: NodeParserImplementation<RequiredDeclaration> = {
 		keys: {
 			key: {},

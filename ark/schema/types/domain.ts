@@ -4,6 +4,7 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
+import { BaseBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
 export type DomainInner<
@@ -33,7 +34,7 @@ export type DomainDeclaration = declareNode<{
 	}
 }>
 
-export class DomainNode<t = unknown> extends BaseType<t, DomainDeclaration> {
+export class DomainNode<t = unknown> extends BaseBasis<t, DomainDeclaration> {
 	static parser: NodeParserImplementation<DomainDeclaration> = {
 		collapseKey: "domain",
 		keys: {
@@ -60,15 +61,6 @@ export class DomainNode<t = unknown> extends BaseType<t, DomainDeclaration> {
 			: `typeof ${this.scope.argName} !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
-	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.traverseAllows(data)) {
-			ctx.problems.add(this.description)
-		}
-	}
-
-	compileBody(ctx: CompilationContext): string {
-		return this.scope.compilePrimitive(this, ctx)
-	}
 
 	writeDefaultDescription() {
 		return domainDescriptions[this.domain]

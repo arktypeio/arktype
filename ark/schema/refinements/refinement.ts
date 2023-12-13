@@ -34,7 +34,7 @@ export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 
 const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
-export abstract class RefinementNode<
+export abstract class BaseRefinement<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends BaseNode<any, d> {
 	abstract getCheckedDefinitions(): readonly TypeSchema[]
@@ -58,8 +58,8 @@ export abstract class RefinementNode<
 	}
 }
 
-export abstract class PrimitiveRefinementNode<d extends BaseNodeDeclaration>
-	extends RefinementNode<d>
+export abstract class BasePrimitiveRefinement<d extends BaseNodeDeclaration>
+	extends BaseRefinement<d>
 	implements PrimitiveNode
 {
 	abstract readonly condition: string

@@ -5,6 +5,7 @@ import type { NodeParserImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
+import { BaseBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
 export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
@@ -24,7 +25,7 @@ export type UnitDeclaration = declareNode<{
 	}
 }>
 
-export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
+export class UnitNode<t = unknown> extends BaseBasis<t, UnitDeclaration> {
 	static parser: NodeParserImplementation<UnitDeclaration> = {
 		keys: {
 			unit: {
@@ -42,11 +43,7 @@ export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
 
 	serializedValue = compileSerializedValue(this.unit)
 	traverseAllows = (data: unknown) => data === this.unit
-	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.traverseAllows(data)) {
-			ctx.problems.add(this.description)
-		}
-	}
+
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
 	condition = `${this.scope.argName} === ${this.serializedValue}`
@@ -54,9 +51,5 @@ export class UnitNode<t = unknown> extends BaseType<t, UnitDeclaration> {
 
 	writeDefaultDescription() {
 		return this.basisName
-	}
-
-	compileBody(ctx: CompilationContext): string {
-		return this.scope.compilePrimitive(this, ctx)
 	}
 }

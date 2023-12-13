@@ -5,7 +5,7 @@ import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import type { Problems } from "../shared/problems.js"
 import { compileSerializedValue } from "../shared/registry.js"
-import { PrimitiveRefinementNode } from "./refinement.js"
+import { BasePrimitiveRefinement } from "./refinement.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
 	{
@@ -30,7 +30,7 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends PrimitiveRefinementNode<PredicateDeclaration> {
+export class PredicateNode extends BasePrimitiveRefinement<PredicateDeclaration> {
 	static parser: NodeParserImplementation<PredicateDeclaration> = {
 		collapseKey: "predicate",
 		keys: {
