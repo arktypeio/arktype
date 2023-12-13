@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { Trait, compose } from "../trait2.js"
+import { Trait, compose } from "@arktype/util"
 
 export class Describable extends Trait<{ writeDefaultDescription(): string }> {
 	description: string
@@ -131,7 +131,6 @@ describe("traits", () => {
 	it("requires abstract properties be implemented", () => {
 		class A extends Trait<{ a(): number }> {}
 		class B extends Trait<{ b(): number }> {}
-
 		// @ts-expect-error
 		attest(class C extends compose(A, B)({}) {}).type.errors(
 			"Type '{}' is missing the following properties from type '{ a: () => number; b: () => number; }': a, b"
