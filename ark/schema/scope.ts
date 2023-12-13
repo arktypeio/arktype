@@ -15,6 +15,15 @@ import type {
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
 import type { Schema, reducibleKindOf } from "./kinds.js"
+import { maybeGetBasisKind } from "./nodes/basis.js"
+import type { Discriminant } from "./nodes/discriminate.js"
+import { BaseType } from "./nodes/type.js"
+import type {
+	BranchKind,
+	NormalizedUnionSchema,
+	UnionNode
+} from "./nodes/union.js"
+import type { UnitNode } from "./nodes/unit.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { TraversalContext } from "./shared/context.js"
 import type {
@@ -25,15 +34,6 @@ import type {
 	TypeKind
 } from "./shared/define.js"
 import type { ProblemCode } from "./shared/problems.js"
-import { maybeGetBasisKind } from "./types/basis.js"
-import type { Discriminant } from "./types/discriminate.js"
-import { BaseType } from "./types/type.js"
-import type {
-	BranchKind,
-	NormalizedUnionSchema,
-	UnionNode
-} from "./types/union.js"
-import type { UnitNode } from "./types/unit.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 

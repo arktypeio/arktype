@@ -8,10 +8,9 @@ import type {
 import type { Node, TypeNode } from "./base.js"
 import type { isSchemaCast, schema } from "./keywords/keywords.js"
 import type { Declaration, Schema } from "./kinds.js"
-import type { BasisKind, RefinementKind } from "./shared/define.js"
-import type { instantiateBasis } from "./types/basis.js"
-import type { NonEnumerableDomain } from "./types/domain.js"
-import type { IntersectionSchema } from "./types/intersection.js"
+import type { instantiateBasis } from "./nodes/basis.js"
+import type { NonEnumerableDomain } from "./nodes/domain.js"
+import type { IntersectionSchema } from "./nodes/intersection.js"
 import type {
 	Morph,
 	MorphSchema,
@@ -19,8 +18,9 @@ import type {
 	ValidatorDefinition,
 	ValidatorKind,
 	inferMorphOut
-} from "./types/morph.js"
-import type { BranchNode, NormalizedUnionSchema } from "./types/union.js"
+} from "./nodes/morph.js"
+import type { BranchNode, NormalizedUnionSchema } from "./nodes/union.js"
+import type { BasisKind, RefinementKind } from "./shared/define.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]
