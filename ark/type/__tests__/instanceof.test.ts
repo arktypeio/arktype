@@ -13,7 +13,7 @@ describe("instanceof", () => {
 			attest(t.json).equals(schema(Error).json)
 			const e = new Error()
 			attest(t(e).out).equals(e)
-			attest(t({}).problems?.summary).snap("Must be an Error (was Object)")
+			attest(t({}).errors?.summary).snap("Must be an Error (was Object)")
 		})
 		it("inherited", () => {
 			const t = type(["instanceof", TypeError])
@@ -22,7 +22,7 @@ describe("instanceof", () => {
 			// inferred as Error? Disabling this check for now, seems like an anomaly.
 			// attest<TypeError>(t.infer)
 			attest(t(e).out).equals(e)
-			attest(t(new Error()).problems?.summary).snap(
+			attest(t(new Error()).errors?.summary).snap(
 				"Must be an instance of TypeError (was Error)"
 			)
 		})
@@ -59,7 +59,7 @@ describe("instanceof", () => {
 			attest(ark.in.infer).type.toString("ArkClass")
 			const a = new ArkClass()
 			attest(ark(a).out).equals(a)
-			attest(ark({}).problems?.summary).snap(
+			attest(ark({}).errors?.summary).snap(
 				"Must be an instance of ArkClass (was Object)"
 			)
 		})

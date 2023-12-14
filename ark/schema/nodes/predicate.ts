@@ -2,8 +2,8 @@ import type { CompilationContext } from "../scope.js"
 import type { TraversalContext } from "../shared/context.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
+import type { ArkErrors } from "../shared/errors.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import type { Problems } from "../shared/problems.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import { BasePrimitiveRefinement } from "./refinement.js"
 
@@ -73,7 +73,7 @@ export type Predicate<data = unknown> = (
 
 export type PredicateCast<input = never, narrowed extends input = input> = (
 	input: input,
-	problems: Problems
+	problems: ArkErrors
 ) => input is narrowed
 
 export type inferNarrow<In, predicate> = predicate extends (

@@ -67,12 +67,12 @@ import {
 	type UnknownNodeParser
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
+import type { ArkResult } from "./shared/errors.js"
 import {
 	leftOperandOf,
 	type NodeIntersections,
 	type intersectionOf
 } from "./shared/intersect.js"
-import type { CheckResult } from "./shared/problems.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -149,13 +149,13 @@ export abstract class BaseNode<
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	apply(data: unknown): CheckResult<distill<extractOut<t>>> {
+	apply(data: unknown): ArkResult<distill<extractOut<t>>> {
 		const ctx = new TraversalContext()
 		this.traverseApply(data as never, ctx)
 		if (ctx.problems.length === 0) {
 			return { out: data } as any
 		}
-		return { problems: ctx.problems }
+		return { errors: ctx.problems }
 	}
 
 	private inCache?: BaseNode;

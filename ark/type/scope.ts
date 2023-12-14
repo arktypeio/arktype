@@ -1,8 +1,8 @@
 import {
 	BaseType,
 	keywords,
+	type ErrorCode,
 	type KeyCheckKind,
-	type ProblemCode,
 	type TypeNode,
 	type extractIn,
 	type extractOut
@@ -75,7 +75,7 @@ export type ScopeParser<parent, ambient> = {
 
 export type ScopeConfig = {
 	ambient?: Scope | null
-	codes?: Record<ProblemCode, { mustBe?: string }>
+	codes?: Record<ErrorCode, { mustBe?: string }>
 	keys?: KeyCheckKind
 }
 

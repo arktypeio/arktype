@@ -14,7 +14,7 @@ describe("literal", () => {
 			const t = type(["===", s])
 			attest<symbol>(t.infer)
 			attest(t(s).out).equals(s)
-			attest(t("test").problems?.summary).snap(
+			attest(t("test").errors?.summary).snap(
 				'Must be (symbol anonymous) (was "test")'
 			)
 		})

@@ -14,7 +14,7 @@ describe("key traversal", () => {
 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
 			keys: "strict"
 		})
-		attest(o({ a: 2 }).problems?.summary).snap(
+		attest(o({ a: 2 }).errors?.summary).snap(
 			'a must be a string or removed (was {"a":2})'
 		)
 	})
@@ -32,11 +32,11 @@ describe("key traversal", () => {
 		attest(o({ a: ["shawn@arktype.io"] }).out).snap({
 			a: ["shawn@arktype.io"]
 		})
-		attest(o({ a: ["notAnEmail"] }).problems?.summary).snap(
+		attest(o({ a: ["notAnEmail"] }).errors?.summary).snap(
 			"a/0 must be a valid email (was 'notAnEmail')"
 		)
 		// can handle missing keys
-		attest(o({ b: ["shawn"] }).problems?.summary).snap("a must be defined")
+		attest(o({ b: ["shawn"] }).errors?.summary).snap("a must be defined")
 	})
 	it("distilled union", () => {
 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
@@ -47,7 +47,7 @@ describe("key traversal", () => {
 		// can distill to second branch
 		attest(o({ b: true, c: false }).out).snap({ b: true })
 		// can handle missing keys
-		attest(o({ a: 2 }).problems?.summary).snap(
+		attest(o({ a: 2 }).errors?.summary).snap(
 			'a must be a string or b must be defined (was {"a":2})'
 		)
 	})
@@ -56,17 +56,17 @@ describe("key traversal", () => {
 			a: "string"
 		}).configure({ keys: "strict" })
 		attest(t({ a: "ok" }).out).equals({ a: "ok" })
-		attest(t(getExtraneousB()).problems?.summary).snap("b must be removed")
+		attest(t(getExtraneousB()).errors?.summary).snap("b must be removed")
 	})
 	it("strict array", () => {
 		const o = type({ a: "string[]" }).configure({
 			keys: "strict"
 		})
 		attest(o({ a: ["shawn"] }).out).snap({ a: ["shawn"] })
-		attest(o({ a: [2] }).problems?.summary).snap(
+		attest(o({ a: [2] }).errors?.summary).snap(
 			"a/0 must be a string (was number)"
 		)
-		attest(o({ b: ["shawn"] }).problems?.summary).snap(
+		attest(o({ b: ["shawn"] }).errors?.summary).snap(
 			"b must be removed\na must be defined"
 		)
 	})

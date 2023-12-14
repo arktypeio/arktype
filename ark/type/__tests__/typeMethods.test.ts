@@ -7,7 +7,7 @@ import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclo
 describe("type methods", () => {
 	it("root discriminates", () => {
 		const t = type("string")
-		const { out, problems } = t("")
+		const { out, errors: problems } = t("")
 		if (problems) {
 			problems.throw()
 		} else {
@@ -28,7 +28,7 @@ describe("type methods", () => {
 	it("problems can be thrown", () => {
 		const t = type("number")
 		try {
-			attest(t("invalid").problems?.throw())
+			attest(t("invalid").errors?.throw())
 		} catch (e) {
 			attest(e instanceof ArkTypeError).equals(true)
 			return

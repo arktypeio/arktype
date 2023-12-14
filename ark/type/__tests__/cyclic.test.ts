@@ -85,7 +85,7 @@ describe("cyclic", () => {
 		const types = getCyclicScope().export()
 		const data = getCyclicData()
 		data.contributors[0].email = "ssalbdivad"
-		attest(types.package(data).problems?.summary).snap(
+		attest(types.package(data).errors?.summary).snap(
 			"dependencies/1/contributors/0/email must be a valid email (was 'ssalbdivad')\ncontributors/0/email must be a valid email (was 'ssalbdivad')"
 		)
 	})
@@ -96,7 +96,7 @@ describe("cyclic", () => {
 			":",
 			(p) => !p.dependencies?.some((d) => d.name === p.name)
 		])
-		attest(nonSelfDependent(data).problems?.summary).snap(
+		attest(nonSelfDependent(data).errors?.summary).snap(
 			'Must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 		)
 	})

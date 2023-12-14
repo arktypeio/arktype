@@ -1,8 +1,8 @@
-import { Problems } from "./problems.js"
+import { ArkErrors } from "./errors.js"
 
 export class TraversalContext {
 	path = []
-	problemsStack: Problems[] = [new Problems(this)]
+	problemsStack: ArkErrors[] = [new ArkErrors(this)]
 	// TODO: add morphs here
 	entriesToPrune: [data: Record<string, unknown>, key: string][] = []
 
@@ -16,7 +16,7 @@ export class TraversalContext {
 	}
 
 	pushUnion() {
-		this.problemsStack.push(new Problems(this))
+		this.problemsStack.push(new ArkErrors(this))
 	}
 
 	popUnion(branchCount: number, data: unknown, path: string[]) {

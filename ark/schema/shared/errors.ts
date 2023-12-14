@@ -1,40 +1,40 @@
 import { ReadonlyArray, type propwiseXor } from "@arktype/util"
 import type { TraversalContext } from "./context.js"
+import type { PrimitiveKind } from "./define.js"
 
-export class ArkTypeError extends TypeError {
-	override cause: Problems
+export class ArkError extends TypeError {}
 
-	constructor(problems: Problems) {
-		super(`${problems}`)
-		this.cause = problems
-	}
-}
-
-export class Problem {
+export class ArkTypeError<code extends ErrorCode = ErrorCode> extends ArkError {
 	public message: string
+	declare requirement: string
+	declare contextualMessage: string
 
 	constructor(
 		public path: string[],
 		public rule: string
 	) {
-		this.message = path.length
+		const message = path.length
 			? `${path.join(".")} must be ${rule}`
 			: `Must be ${rule}`
+		super(message)
+		this.message = message
 	}
 
 	toString() {
-		return this.message
+		return this.contextualMessage
+	}
+
+	throw(): never {
+		throw this
 	}
 }
 
-export class Problems extends ReadonlyArray<Problem> {
-	// TODO: add at custom path
-
+export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	constructor(protected context: TraversalContext) {
 		super()
 	}
 
-	byPath: Record<string, Problem> = {}
+	byPath: Record<string, ArkTypeError> = {}
 	count = 0
 
 	// mustBe(mustBe: string, data: unknown, path: Path) {
@@ -53,7 +53,7 @@ export class Problems extends ReadonlyArray<Problem> {
 	// }
 
 	add(description: string) {
-		const problem = new Problem([...this.context.path], description)
+		const problem = new ArkTypeError([...this.context.path], description)
 		const pathKey = this.context.path.join(".")
 		const existing = this.byPath[pathKey]
 		if (existing) {
@@ -90,13 +90,15 @@ export class Problems extends ReadonlyArray<Problem> {
 	}
 
 	throw(): never {
-		throw new ArkTypeError(this)
+		throw new ArkError(`${this}`, { cause: this })
 	}
 }
 
-export type ProblemCode = string
+export type PrimitiveErrorCode = PrimitiveKind | "missingKey" | "extraneousKey"
 
-export type CheckResult<out = unknown> = propwiseXor<
+export type ErrorCode = PrimitiveErrorCode | "union" | "intersection"
+
+export type ArkResult<out = unknown> = propwiseXor<
 	{ out: out },
-	{ problems: Problems }
+	{ errors: ArkErrors }
 >

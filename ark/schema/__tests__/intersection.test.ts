@@ -187,7 +187,7 @@ describe("intersections", () => {
 			min: 5
 		})
 		attest(n.apply(6)).snap({ out: 6 })
-		attest(n.apply(7).problems?.summary).snap("Must be a multiple of 3")
+		attest(n.apply(7).errors?.summary).snap("Must be a multiple of 3")
 	})
 	it("compiles path problems", () => {
 		const n = schema({
@@ -202,10 +202,8 @@ describe("intersections", () => {
 			}
 		})
 		attest(n.apply({ a: 6 })).snap({ out: { a: 6 } })
-		attest(n.apply({ b: 6 }).problems?.summary).snap("Must be provided")
-		attest(n.apply({ a: 7 }).problems?.summary).snap(
-			"a must be a multiple of 3"
-		)
+		attest(n.apply({ b: 6 }).errors?.summary).snap("Must be provided")
+		attest(n.apply({ a: 7 }).errors?.summary).snap("a must be a multiple of 3")
 	})
 	it("runtime benchmark", () => {
 		const validInput = {

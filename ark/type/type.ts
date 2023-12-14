@@ -1,8 +1,8 @@
 import {
 	inferred,
 	keywords,
+	type ArkResult,
 	type BaseAttributes,
-	type CheckResult,
 	type KeyCheckKind,
 	type Morph,
 	type Out,
@@ -126,7 +126,7 @@ export type TypeConfig = {
 }
 
 export class Type<t = unknown, $ = any> extends CastableBase<
-	(data: unknown) => CheckResult<distill<t>>
+	(data: unknown) => ArkResult<distill<t>>
 > {
 	declare [inferred]: t
 	// TODO: in/out?
@@ -223,7 +223,7 @@ export class Type<t = unknown, $ = any> extends CastableBase<
 
 	assert(data: unknown): this["infer"] {
 		const result = this.call(null, data)
-		return result.problems ? result.problems.throw() : result.out
+		return result.errors ? result.errors.throw() : result.out
 	}
 
 	equals<def>(

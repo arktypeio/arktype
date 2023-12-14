@@ -273,9 +273,7 @@ describe("object literal", () => {
 		const o = type({ "a?": "string" }).configure({ keys: "strict" })
 		attest(o({ a: "a" }).out).snap({ a: "a" })
 		attest(o({}).out).snap({})
-		attest(o({ a: 1 }).problems?.summary).snap(
-			"a must be a string (was number)"
-		)
+		attest(o({ a: 1 }).errors?.summary).snap("a must be a string (was number)")
 	})
 	it("intersection", () => {
 		const t = type({ a: "number" }).and({ b: "boolean" })
@@ -295,7 +293,7 @@ describe("object literal", () => {
 		const t = type({ a: "string", b: "boolean" }).configure({
 			keys: "strict"
 		})
-		attest(t({ a: 1, b: 2 }).problems?.summary).snap(
+		attest(t({ a: 1, b: 2 }).errors?.summary).snap(
 			"a must be a string (was number)\nb must be boolean (was number)"
 		)
 	})

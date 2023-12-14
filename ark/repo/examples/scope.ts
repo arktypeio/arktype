@@ -25,4 +25,4 @@ const packageData: Package = {
 }
 packageData.dependencies![0].dependencies = [packageData]
 
-export const { out, problems } = types.package(packageData)
+export const { out, errors: problems } = types.package(packageData)

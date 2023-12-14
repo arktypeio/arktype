@@ -11,5 +11,5 @@ const boxType = createBox(type("string"))
 // @ts-expect-error
 const badBox = createBox(type("number"))
 
-console.log(boxType({ box: 5 }).problems?.summary)
+console.log(boxType({ box: 5 }).errors?.summary)
 console.log(boxType({ box: "foo" }).out)

@@ -10,8 +10,8 @@ import {
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type {
-	ArkConfig,
 	CompilationContext,
+	StaticArkConfig,
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
@@ -23,8 +23,8 @@ import {
 	type NodeParserImplementation
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkResult, ArkTypeError } from "../shared/errors.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import type { CheckResult, Problem } from "../shared/problems.js"
 import type { is } from "../shared/utils.js"
 import { BaseType } from "./type.js"
 
@@ -149,12 +149,12 @@ export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
 	}
 }
 
-export type inferMorphOut<out> = out extends CheckResult<infer t>
+export type inferMorphOut<out> = out extends ArkResult<infer t>
 	? out extends null
 		? // avoid treating any/never as CheckResult
 		  out
 		: t
-	: Exclude<out, Problem>
+	: Exclude<out, ArkTypeError>
 
 export type distill<t> = includesMorphs<t> extends true
 	? distillRecurse<t, "out", "base">
@@ -200,5 +200,5 @@ type distillRecurse<
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
-	| ReturnType<ArkConfig["preserve"]>
+	| ReturnType<StaticArkConfig["preserve"]>
 	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array">]

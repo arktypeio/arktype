@@ -10,13 +10,13 @@ describe("narrow", () => {
 		attest<number>(odd.infer)
 		// attest(odd.node).equals({ number: { narrow: isOdd as any } })
 		attest(odd(1).out).equals(1)
-		attest(odd(2).problems?.summary).snap(
+		attest(odd(2).errors?.summary).snap(
 			"Must be valid according to isOdd (was 2)"
 		)
 	})
 	it("implicit problem anonymous", () => {
 		const even = type(["number", ":", (n) => n % 2 === 0])
-		attest(even(1).problems?.summary).snap("Must be valid (was 1)")
+		attest(even(1).errors?.summary).snap("Must be valid (was 1)")
 	})
 	it("explicit problem", () => {
 		const even = type([
@@ -24,7 +24,7 @@ describe("narrow", () => {
 			":",
 			(n, ctx) => n % 3 === 0 || !ctx.problems.add("divisible by 3")
 		])
-		attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
+		attest(even(1).errors?.summary).snap("Must be divisible by 3 (was 1)")
 	})
 	it("problem at path", () => {
 		type([{ s: "string" }])
@@ -46,7 +46,7 @@ describe("narrow", () => {
 			}
 		])
 		attest(abEqual({ a: 1, b: 1 }).out).equals({ a: 1, b: 1 })
-		attest(abEqual({ a: 1, b: 2 }).problems?.summary).snap(
+		attest(abEqual({ a: 1, b: 2 }).errors?.summary).snap(
 			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
 		)
 	})
@@ -82,7 +82,7 @@ describe("narrow", () => {
 		])
 		attest<Type<string>>(palindrome)
 		attest(palindrome("dad").out).snap("dad")
-		attest(palindrome("david").problems?.summary).snap(
+		attest(palindrome("david").errors?.summary).snap(
 			"Must be a palindrome (was 'david')"
 		)
 	})

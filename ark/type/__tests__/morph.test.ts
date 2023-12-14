@@ -1,8 +1,8 @@
 import { attest } from "@arktype/attest"
 import {
 	writeUndiscriminableMorphUnionMessage,
-	type Out,
-	type Problem
+	type ArkTypeError,
+	type Out
 } from "@arktype/schema"
 import { scope, type, type Ark, type Type } from "arktype"
 
@@ -13,19 +13,19 @@ describe("morph", () => {
 		attest<string>(t.infer)
 		attest<boolean>(t.in.infer)
 		const result = t(true)
-		if (result.problems) {
-			return result.problems.throw()
+		if (result.errors) {
+			return result.errors.throw()
 		}
 		attest<string>(result.out).equals("true")
-		attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
+		attest(t("foo").errors?.summary).snap("Must be boolean (was string)")
 		attest(t.root).equals(type(["boolean", "=>", (data) => `${data}`]).root)
 	})
 	it("endomorph", () => {
 		const t = type(["boolean", "=>", (data) => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
 		const result = t(true)
-		if (result.problems) {
-			return result.problems.throw()
+		if (result.errors) {
+			return result.errors.throw()
 		}
 		attest<boolean>(result.out).equals(false)
 	})
@@ -82,19 +82,19 @@ describe("morph", () => {
 				} else {
 					// problems.mustBe("non-zero")
 					// problems.byPath = {}
-					return (problems as unknown as Problem[]).pop()
+					return (problems as unknown as ArkTypeError[]).pop()
 				}
 			}
 		])
-		attest(divide100By(0).problems?.summary).snap("Must be non-zero (was 0)")
+		attest(divide100By(0).errors?.summary).snap("Must be non-zero (was 0)")
 	})
 	it("at path", () => {
 		const t = type({ a: ["string", "=>", (data) => data.length] })
 		attest<Type<{ a: (In: string) => Out<number> }>>(t)
 
 		const result = t({ a: "four" })
-		if (result.problems) {
-			return result.problems.throw()
+		if (result.errors) {
+			return result.errors.throw()
 		}
 		attest<{ a: number }>(result.out).equals({ a: 4 })
 	})
@@ -105,8 +105,8 @@ describe("morph", () => {
 		}).export()
 		attest<Type<((In: string) => Out<number>)[]>>(types.mapToLengths)
 		const result = types.mapToLengths(["1", "22", "333"])
-		if (result.problems) {
-			return result.problems.throw()
+		if (result.errors) {
+			return result.errors.throw()
 		}
 		attest<number[]>(result.out).equals([1, 2, 3])
 	})
