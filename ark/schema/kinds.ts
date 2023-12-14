@@ -52,7 +52,7 @@ export type NodeDeclarationsByKind = extend<
 	}
 >
 
-export const NodeImplementationByKind = {
+export const NodesByKind = {
 	...BoundNodes,
 	domain: DomainNode,
 	unit: UnitNode,
@@ -69,14 +69,16 @@ export const NodeImplementationByKind = {
 	sequence: SequenceNode
 } as const satisfies Dict<NodeKind>
 
-export type NodeImplementationByKind = typeof NodeImplementationByKind
+export type NodesByKind = typeof NodesByKind
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
-export type Implementation<kind extends NodeKind> =
-	NodeImplementationByKind[kind]
+export type Implementation<kind extends NodeKind> = NodesByKind[kind]
 
 export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
+
+export type NormalizedSchema<kind extends NodeKind> =
+	Declaration<kind>["normalizedSchema"]
 
 export type ChildrenByKind = {
 	[k in NodeKind]: k extends "union"

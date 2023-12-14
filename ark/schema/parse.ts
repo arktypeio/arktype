@@ -9,11 +9,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
-import {
-	NodeImplementationByKind,
-	type Schema,
-	type reducibleKindOf
-} from "./kinds.js"
+import { NodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import {
@@ -62,7 +58,7 @@ export function parse(
 	schema: unknown,
 	ctx: SchemaParseContext
 ): Node {
-	const cls = NodeImplementationByKind[kind]
+	const cls = NodesByKind[kind]
 	const impl = cls.parser as UnknownNodeParser
 	if (schema instanceof BaseNode) {
 		return schema.kind === kind

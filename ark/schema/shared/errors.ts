@@ -1,5 +1,5 @@
-import { ReadonlyArray, type propwiseXor } from "@arktype/util"
-import type { Declaration, Inner } from "../kinds.js"
+import { ReadonlyArray, type extend, type propwiseXor } from "@arktype/util"
+import type { Declaration, Inner, NormalizedSchema, Schema } from "../kinds.js"
 import type { TraversalContext } from "./context.js"
 import type { PrimitiveKind } from "./define.js"
 
@@ -95,11 +95,31 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
-type PrimitiveNodeInputs = {
-	[k in PrimitiveKind]: Inner<k> | Declaration<k>
-}
+type RequirementInputsByCode = extend<
+	{
+		[code in PrimitiveKind]: Schema<code>
+	},
+	{
+		missingKey: string | symbol
+		extraneousKey: string | symbol
+	}
+>
 
-export type PrimitiveErrorCode = PrimitiveKind | "missingKey" | "extraneousKey"
+type RequirementsByCode = extend<
+	{
+		[code in PrimitiveKind]: NormalizedSchema<code>
+	},
+	{
+		missingKey: {
+			key: string | symbol
+		}
+		extraneousKey: {
+			key: string | symbol
+		}
+	}
+>
+
+export type PrimitiveErrorCode = keyof RequirementsByCode
 
 export type ErrorCode = PrimitiveErrorCode | "union" | "intersection"
 
