@@ -1,7 +1,7 @@
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeParserImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { BasePrimitiveRefinement, BaseRefinement } from "./refinement.js"
+import { BasePrimitiveRefinement } from "./refinement.js"
 
 export type DivisorInner = {
 	readonly divisor: number

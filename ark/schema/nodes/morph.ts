@@ -11,7 +11,7 @@ import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type {
 	CompilationContext,
-	StaticArkConfig,
+	StaticArkOption,
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
@@ -200,5 +200,5 @@ type distillRecurse<
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
-	| ReturnType<StaticArkConfig["preserve"]>
+	| StaticArkOption<"preserve">
 	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array">]

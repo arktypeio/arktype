@@ -27,20 +27,27 @@ import type { UnitNode } from "./nodes/unit.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { TraversalContext } from "./shared/context.js"
 import type { NodeKind, PrimitiveKind, TypeKind } from "./shared/define.js"
-import type { ErrorCode } from "./shared/errors.js"
+import type { ArkErrorCode } from "./shared/errors.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 
 export type BaseResolutions = Record<string, TypeNode>
 
-export interface StaticArkConfig {
-	preserve(): never
+declare global {
+	export interface StaticArkConfig {
+		preserve(): never
+		errors(): {}
+	}
 }
+
+export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
+	StaticArkConfig[k]
+>
 
 export type KeyCheckKind = "distilled" | "strict" | "loose"
 
 export type ScopeOptions = {
-	codes?: Record<ErrorCode, { mustBe?: string }>
+	codes?: Record<ArkErrorCode, { mustBe?: string }>
 	keys?: KeyCheckKind
 }
 

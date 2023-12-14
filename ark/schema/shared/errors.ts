@@ -1,22 +1,29 @@
-import { ReadonlyArray, type extend, type propwiseXor } from "@arktype/util"
-import type { Declaration, Inner, NormalizedSchema, Schema } from "../kinds.js"
+import {
+	ReadonlyArray,
+	type Dict,
+	type evaluate,
+	type extend,
+	type propwiseXor
+} from "@arktype/util"
+import type { NormalizedSchema, Prerequisite, Schema } from "../kinds.js"
+import type { StaticArkOption } from "../scope.js"
 import type { TraversalContext } from "./context.js"
 import type { PrimitiveKind } from "./define.js"
 
 export class ArkError extends TypeError {}
 
-export class ArkTypeError<code extends ErrorCode = ErrorCode> extends ArkError {
+export class ArkTypeError<
+	code extends ArkErrorCode = ArkErrorCode
+> extends ArkError {
 	public message: string
 	declare requirement: string
 	declare contextualMessage: string
 
-	constructor(
-		public path: string[],
-		public rule: string
-	) {
-		const message = path.length
-			? `${path.join(".")} must be ${rule}`
-			: `Must be ${rule}`
+	constructor(public context: ArkErrorContext<code>) {
+		const message = ""
+		// context.path.length
+		// 	? `${context.path.join(".")} must be ${rule}`
+		// 	: `Must be ${rule}`
 		super(message)
 		this.message = message
 	}
@@ -54,7 +61,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	// }
 
 	add(description: string) {
-		const problem = new ArkTypeError([...this.context.path], description)
+		const problem = {} as any // new ArkTypeError([...this.context.path], description)
 		const pathKey = this.context.path.join(".")
 		const existing = this.byPath[pathKey]
 		if (existing) {
@@ -95,33 +102,71 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
-type RequirementInputsByCode = extend<
-	{
-		[code in PrimitiveKind]: Schema<code>
-	},
-	{
-		missingKey: string | symbol
-		extraneousKey: string | symbol
+export interface KeyErrorDeclaration {
+	requirement: {
+		key: string | symbol
 	}
+	schema: this["requirement"] | this["requirement"]["key"]
+	data: object
+}
+
+export interface CompositeErrorDeclaration {
+	requirement: {
+		errors: readonly ArkError[]
+	}
+	schema: this["requirement"] | this["requirement"]["errors"]
+	data: unknown
+}
+
+type ArkErrorDeclarationsByCode = evaluate<
+	{
+		[code in PrimitiveKind]: {
+			schema: Schema<code>
+			requirement: NormalizedSchema<code>
+			data: Prerequisite<code>
+		}
+	} & {
+		missingKey: KeyErrorDeclaration
+		extraneousKey: KeyErrorDeclaration
+		intersection: CompositeErrorDeclaration
+		union: CompositeErrorDeclaration
+	} & StaticArkOption<"errors">
 >
 
-type RequirementsByCode = extend<
+export type ArkErrorCode = keyof ArkErrorDeclarationsByCode
+
+export type ArkErrorSchema<code extends ArkErrorCode> =
+	ArkErrorDeclarationsByCode[code]["schema"]
+
+export type ArkErrorRequirement<code extends ArkErrorCode> =
+	ArkErrorDeclarationsByCode[code]["requirement"]
+
+export type ArkErrorData<code extends ArkErrorCode> =
+	ArkErrorDeclarationsByCode[code]["data"]
+
+export type ArkErrorInput<code extends ArkErrorCode = ArkErrorCode> = extend<
 	{
-		[code in PrimitiveKind]: NormalizedSchema<code>
+		code: code
+		path?: readonly (string | symbol)[]
+		data: ArkErrorData<code>
 	},
-	{
-		missingKey: {
-			key: string | symbol
-		}
-		extraneousKey: {
-			key: string | symbol
-		}
-	}
+	ArkErrorRequirement<code>
 >
 
-export type PrimitiveErrorCode = keyof RequirementsByCode
+export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> = extend<
+	{
+		code: code
+		path: readonly (string | symbol)[]
+		data: ArkErrorData<code>
+	},
+	ArkErrorRequirement<code>
+>
 
-export type ErrorCode = PrimitiveErrorCode | "union" | "intersection"
+export type ArkErrorDeclaration = {
+	schema: unknown
+	requirement: Dict
+	data: unknown
+}
 
 export type ArkResult<out = unknown> = propwiseXor<
 	{ out: out },
