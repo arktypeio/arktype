@@ -68,7 +68,7 @@ We also have some unique casing rules for our TypeScript types to making writing
   - Generic types with verb names like `inferDomain<t>`. Types named this way should always have at least one required parameter.
   - Parameter names, e.g. `t` in `Array<t>`
 
-7. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any problems:
+7. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any errors:
 
 ```sh
 pnpm prChecks

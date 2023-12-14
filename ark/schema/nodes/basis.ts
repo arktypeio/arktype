@@ -31,9 +31,9 @@ export abstract class BaseBasis<t, d extends BaseBasisDeclaration>
 	abstract readonly condition: string
 	abstract readonly negatedCondition: string
 
-	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
+	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.problems.add(this.description)
+			ctx.errors.add(this.description)
 		}
 	}
 

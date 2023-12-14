@@ -140,8 +140,8 @@ export abstract class BaseNode<
 
 	abstract hasOpenIntersection: hasOpenIntersection<d>
 	abstract writeDefaultDescription(): string
-	abstract traverseAllows: TraverseAllows<d["checks"]>
-	abstract traverseApply: TraverseApply<d["checks"]>
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract compileBody(ctx: CompilationContext): string
 
 	allows = (data: unknown): data is distill<extractIn<t>> => {
@@ -152,10 +152,10 @@ export abstract class BaseNode<
 	apply(data: unknown): ArkResult<distill<extractOut<t>>> {
 		const ctx = new TraversalContext()
 		this.traverseApply(data as never, ctx)
-		if (ctx.problems.length === 0) {
+		if (ctx.errors.length === 0) {
 			return { out: data } as any
 		}
-		return { errors: ctx.problems }
+		return { errors: ctx.errors }
 	}
 
 	private inCache?: BaseNode;

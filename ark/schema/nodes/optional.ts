@@ -29,7 +29,7 @@ export type OptionalDeclaration = declareNode<{
 	intersections: {
 		optional: "optional" | null
 	}
-	checks: object
+	prerequisite: object
 }>
 
 export class OptionalNode extends BaseRefinement<OptionalDeclaration> {

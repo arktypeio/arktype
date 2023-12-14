@@ -33,7 +33,7 @@ describe("morph", () => {
 	// 	const t = type(["string>5", "=>", arktypes.parse.date])
 	// 	attest<Type<(In: string) => Out<Date>>>(t)
 	// 	attest(t("5/21/1993").out?.getDate()).equals(21)
-	// 	attest(t("foobar").problems?.summary).snap(
+	// 	attest(t("foobar").errors?.summary).snap(
 	// 		"Must be a valid date (was 'foobar')"
 	// 	)
 	// })
@@ -66,23 +66,23 @@ describe("morph", () => {
 	// 	const divide100By = type([
 	// 		"number",
 	// 		"=>",
-	// 		(n, problems) => (n === 0 ? problems.mustBe("non-zero", n, []) : 100 / n)
+	// 		(n, errors) => (n === 0 ? errors.mustBe("non-zero", n, []) : 100 / n)
 	// 	])
 	// 	attest<Type<(In: number) => Out<number>>>(divide100By)
 	// 	attest(divide100By(5).out).equals(20)
-	// 	attest(divide100By(0).problems?.summary).snap("Must be non-zero (was 0)")
+	// 	attest(divide100By(0).errors?.summary).snap("Must be non-zero (was 0)")
 	// })
 	it("adds a problem if one is returned without being added", () => {
 		const divide100By = type([
 			"number",
 			"=>",
-			(n, problems) => {
+			(n, errors) => {
 				if (n !== 0) {
 					return 100 / n
 				} else {
-					// problems.mustBe("non-zero")
-					// problems.byPath = {}
-					return (problems as unknown as ArkTypeError[]).pop()
+					// errors.mustBe("non-zero")
+					// errors.byPath = {}
+					return (errors as unknown as ArkTypeError[]).pop()
 				}
 			}
 		])
@@ -372,17 +372,17 @@ describe("morph", () => {
 	// 	const parsedInt = type([
 	// 		"string",
 	// 		"=>",
-	// 		(s, problems) => {
+	// 		(s, errors) => {
 	// 			const result = parseInt(s)
 	// 			if (Number.isNaN(result)) {
-	// 				return problems.mustBe("an integer string", s, [])
+	// 				return errors.mustBe("an integer string", s, [])
 	// 			}
 	// 			return result
 	// 		}
 	// 	])
 	// 	attest<Type<(In: string) => Out<number>>>(parsedInt)
 	// 	attest(parsedInt("5").out).snap(5)
-	// 	attest(parsedInt("five").problems?.summary).snap(
+	// 	attest(parsedInt("five").errors?.summary).snap(
 	// 		"Must be an integer string (was 'five')"
 	// 	)
 	// })

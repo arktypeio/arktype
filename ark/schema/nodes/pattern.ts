@@ -20,7 +20,7 @@ export type PatternDeclaration = declareNode<{
 	intersections: {
 		pattern: "pattern" | null
 	}
-	checks: string
+	prerequisite: string
 }>
 
 export class PatternNode extends BasePrimitiveRefinement<PatternDeclaration> {

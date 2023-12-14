@@ -6,7 +6,7 @@ describe("snippets", () => {
 	// 		version: string
 	// 		contributors?: string[]
 	// 	}
-	// 	attest(typeSnippet.problems?.summary).snap(
+	// 	attest(typeSnippet.errors?.summary).snap(
 	// 		"contributors must be more than 1 items long (was 1)"
 	// 	)
 	// })
@@ -19,7 +19,7 @@ describe("snippets", () => {
 	// 			version?: number
 	// 		}
 	// 	}
-	// 	attest(typeSnippet.problems?.summary).snap(
+	// 	attest(typeSnippet.errors?.summary).snap(
 	// 		"device/platform must be 'android' or 'ios' (was 'enigma')"
 	// 	)
 	// })
@@ -34,7 +34,7 @@ describe("snippets", () => {
 	// //             packages?: any[]
 	// //         }[]
 	// //     }
-	// //     attest(scopeSnippet.problems?.summary).snap(
+	// //     attest(scopeSnippet.errors?.summary).snap(
 	// //         "dependencies/0/dependencies/0/contributors/0/email must be a valid email (was 'david@sharktypeio')\ncontributors/0/email must be a valid email (was 'david@sharktypeio')"
 	// //     )
 	// // })

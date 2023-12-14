@@ -17,7 +17,7 @@ describe("config traversal", () => {
 	//     //         }
 	//     //     ]
 	//     // ])
-	//     attest(types.a(1).problems?.summary).snap(
+	//     attest(types.a(1).errors?.summary).snap(
 	//         "Must be a series of characters (was number)"
 	//     )
 	//     attest<{ a: string }>(types.b.infer)
@@ -39,7 +39,7 @@ describe("config traversal", () => {
 	//     //         ]
 	//     //     ]
 	//     // ])
-	//     attest(types.b({ a: true }).problems?.summary).snap(
+	//     attest(types.b({ a: true }).errors?.summary).snap(
 	//         "a must be a series of characters (was boolean)"
 	//     )
 	// })
@@ -89,7 +89,7 @@ describe("config traversal", () => {
 	//     //         ]
 	//     //     ]
 	//     // ])
-	//     attest(t({ monster: 196882 }).problems?.summary).snap(
+	//     attest(t({ monster: 196882 }).errors?.summary).snap(
 	//         "monster must be the number of dimensions in the monster group (was 196882)"
 	//     )
 	// })
@@ -102,7 +102,7 @@ describe("config traversal", () => {
 	//     //         { config: [["mustBe", "unfalse"]], node: [["value", true]] }
 	//     //     ]
 	//     // ])
-	//     attest(t(false).problems?.summary).snap("Must be unfalse (was false)")
+	//     attest(t(false).errors?.summary).snap("Must be unfalse (was false)")
 	// })
 	// it("anonymous type config at path", () => {
 	//     const unfalse = type("true", { mustBe: "unfalse" })
@@ -125,11 +125,11 @@ describe("config traversal", () => {
 	//     //         ]
 	//     //     ]
 	//     // ])
-	//     attest(t({ myKey: "500" }).problems?.summary).snap(
+	//     attest(t({ myKey: "500" }).errors?.summary).snap(
 	//         "myKey must be unfalse (was '500')"
 	//     )
 	//     // config only applies within myKey
-	//     attest(t({ yourKey: "500" }).problems?.summary).snap(
+	//     attest(t({ yourKey: "500" }).errors?.summary).snap(
 	//         "myKey must be defined"
 	//     )
 	// })

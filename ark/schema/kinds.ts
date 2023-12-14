@@ -113,8 +113,8 @@ export type OpenRefinementKind = {
 
 export type ClosedRefinementKind = Exclude<RefinementKind, OpenRefinementKind>
 
-export type RefinementOperand<kind extends RefinementKind> =
-	Declaration<kind>["checks"]
+export type Prerequisite<kind extends RefinementKind> =
+	Declaration<kind>["prerequisite"]
 
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? TypeKind

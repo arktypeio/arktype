@@ -180,7 +180,7 @@ describe("intersections", () => {
 		attest(n.allows(6)).snap(true)
 		attest(n.allows(7)).snap(false)
 	})
-	it("compiles problems", () => {
+	it("compiles errors", () => {
 		const n = schema({
 			basis: "number",
 			divisor: 3,
@@ -189,7 +189,7 @@ describe("intersections", () => {
 		attest(n.apply(6)).snap({ out: 6 })
 		attest(n.apply(7).errors?.summary).snap("Must be a multiple of 3")
 	})
-	it("compiles path problems", () => {
+	it("compiles path errors", () => {
 		const n = schema({
 			basis: "object",
 			required: {

@@ -26,11 +26,11 @@ export const compilePresentProp = (
 			node.compiledKey
 		)})`
 	}
-	return `problems.currentPath.push(${node.serializedKey})
+	return `errors.currentPath.push(${node.serializedKey})
 	this.${node.value.id}(${ctx.argName}${compilePropAccess(
 		node.compiledKey
-	)}, problems)
-	problems.currentPath.pop()
+	)}, errors)
+	errors.currentPath.pop()
 	`
 }
 
@@ -84,9 +84,9 @@ export abstract class BasePrimitiveRefinement<
 	abstract readonly condition: string
 	abstract readonly negatedCondition: string
 
-	traverseApply: TraverseApply<d["checks"]> = (data, ctx) => {
+	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.problems.add(this.description)
+			ctx.errors.add(this.description)
 		}
 	}
 

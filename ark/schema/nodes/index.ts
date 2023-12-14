@@ -28,7 +28,7 @@ export type IndexDeclaration = declareNode<{
 	intersections: {
 		index: "index" | Disjoint | null
 	}
-	checks: object
+	prerequisite: object
 }>
 
 export class IndexNode extends BaseRefinement<IndexDeclaration> {

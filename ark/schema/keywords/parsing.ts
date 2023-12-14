@@ -23,12 +23,12 @@ const integer = rootSchema({
 	},
 	morph: (s: string) => {
 		// if (!isWellFormedInteger(s)) {
-		// 	return problems.mustBe("a well-formed integer string")
+		// 	return errors.mustBe("a well-formed integer string")
 		// }
 		// const parsed = parseInt(s)
 		// return Number.isSafeInteger(parsed)
 		// 	? parsed
-		// 	: problems.mustBe(
+		// 	: errors.mustBe(
 		// 			"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
 		// 	  )
 		return parseInt(s)

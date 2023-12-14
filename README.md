@@ -31,10 +31,10 @@ export const user = type({
 })
 
 // Validators return typed data or clear, customizable errors.
-export const { out, problems } = user({
+export const { out, errors } = user({
 	name: "Alan Turing",
 	device: {
-		// problems.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
+		// errors.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
 		platform: "enigma"
 	}
 })
@@ -90,7 +90,7 @@ const packageData: Package = {
 }
 packageData.dependencies![0].dependencies = [packageData]
 
-export const { out, problems } = types.package(packageData)
+export const { out, errors } = types.package(packageData)
 ```
 
 ## Syntax
@@ -148,7 +148,7 @@ export const parseBigintLiteral = type({ value: "string" })
 	)
 	.morph((data) => BigInt(data.value.slice(-1)))
 
-export const { out, problems } = parseBigintLiteral("999n")
+export const { out, errors } = parseBigintLiteral("999n")
 //             ^ bigint | undefined
 ```
 

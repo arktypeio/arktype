@@ -157,7 +157,7 @@ export type MinDeclaration = declareNode<{
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
 	inner: BoundInner
-	checks: number
+	prerequisite: number
 	intersections: {
 		min: "min"
 		max: Disjoint | null
@@ -185,7 +185,7 @@ export type MaxDeclaration = declareNode<{
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
 	inner: BoundInner
-	checks: number
+	prerequisite: number
 	intersections: {
 		// TODO: Fix rightOf
 		max: "max"
@@ -213,7 +213,7 @@ export type MinLengthDeclaration = declareNode<{
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
 	inner: BoundInner
-	checks: string | readonly unknown[]
+	prerequisite: string | readonly unknown[]
 	intersections: {
 		minLength: "minLength"
 		maxLength: Disjoint | null
@@ -247,7 +247,7 @@ export type MaxLengthDeclaration = declareNode<{
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
 	inner: BoundInner
-	checks: string | readonly unknown[]
+	prerequisite: string | readonly unknown[]
 	intersections: {
 		maxLength: "maxLength"
 	}
@@ -276,7 +276,7 @@ export type AfterDeclaration = declareNode<{
 	schema: BoundSchema<string | number>
 	normalizedSchema: NormalizedBoundSchema<string | number>
 	inner: BoundInner
-	checks: Date
+	prerequisite: Date
 	intersections: {
 		after: "after"
 	}
@@ -303,7 +303,7 @@ export type BeforeDeclaration = declareNode<{
 	schema: BoundSchema<string | number>
 	normalizedSchema: NormalizedBoundSchema<string | number>
 	inner: BoundInner
-	checks: Date
+	prerequisite: Date
 	intersections: {
 		before: "before"
 		after: Disjoint | null

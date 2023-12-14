@@ -222,7 +222,7 @@ export class ScopeNode<r extends object = any> {
 		kind: kind
 	): Record<string, TraversalMethodsByKind[kind]> {
 		const compiledArgs =
-			kind === "allows" ? this.argName : `${this.argName}, problems`
+			kind === "allows" ? this.argName : `${this.argName}, errors`
 		const body = `return {
 	${references
 		.map(
@@ -273,7 +273,7 @@ ${reference.compileBody({
 	}
 
 	compilePrimitiveProblem(node: Node<PrimitiveKind>) {
-		return `problems.add(${JSON.stringify(node.description)})`
+		return `errors.add(${JSON.stringify(node.description)})`
 	}
 
 	readonly schema: SchemaParser<r> = Object.assign(

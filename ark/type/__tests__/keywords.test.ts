@@ -65,17 +65,17 @@ describe("keywords", () => {
 	// it("integer", () => {
 	//     const integer = type("integer")
 	//     attest(integer(123).out).equals(123)
-	//     attest(integer("123").problems?.summary).equals(
+	//     attest(integer("123").errors?.summary).equals(
 	//         "Must be a number (was string)"
 	//     )
-	//     attest(integer(12.12).problems?.summary).equals(
+	//     attest(integer(12.12).errors?.summary).equals(
 	//         "Must be an integer (was 12.12)"
 	//     )
 	// })
 	// it("alpha", () => {
 	//     const alpha = type("alpha")
 	//     attest(alpha("user").out).equals("user")
-	//     attest(alpha("user123").problems?.summary).equals(
+	//     attest(alpha("user123").errors?.summary).equals(
 	//         "Must be only letters (was 'user123')"
 	//     )
 	// })
@@ -84,31 +84,31 @@ describe("keywords", () => {
 	//     attest(alphanumeric("user123").out).equals("user123")
 	//     attest(alphanumeric("user").out).equals("user")
 	//     attest(alphanumeric("123").out).equals("123")
-	//     attest(alphanumeric("abc@123").problems?.summary).equals(
+	//     attest(alphanumeric("abc@123").errors?.summary).equals(
 	//         "Must be only letters and digits (was 'abc@123')"
 	//     )
 	// })
 	// it("lowercase", () => {
 	//     const lowercase = type("lowercase")
 	//     attest(lowercase("var").out).equals("var")
-	//     attest(lowercase("newVar").problems?.summary).equals(
+	//     attest(lowercase("newVar").errors?.summary).equals(
 	//         "Must be only lowercase letters (was 'newVar')"
 	//     )
 	// })
 	// it("uppercase", () => {
 	//     const uppercase = type("uppercase")
 	//     attest(uppercase("VAR").out).equals("VAR")
-	//     attest(uppercase("CONST_VAR").problems?.summary).equals(
+	//     attest(uppercase("CONST_VAR").errors?.summary).equals(
 	//         "Must be only uppercase letters (was 'CONST_VAR')"
 	//     )
-	//     attest(uppercase("myVar").problems?.summary).equals(
+	//     attest(uppercase("myVar").errors?.summary).equals(
 	//         "Must be only uppercase letters (was 'myVar')"
 	//     )
 	// })
 	// it("email", () => {
 	//     const email = type("email")
 	//     attest(email("shawn@mail.com").out).equals("shawn@mail.com")
-	//     attest(email("shawn@email").problems?.summary).equals(
+	//     attest(email("shawn@email").errors?.summary).equals(
 	//         "Must be a valid email (was 'shawn@email')"
 	//     )
 	// })
@@ -117,7 +117,7 @@ describe("keywords", () => {
 	//     attest(uuid("f70b8242-dd57-4e6b-b0b7-649d997140a0").out).equals(
 	//         "f70b8242-dd57-4e6b-b0b7-649d997140a0"
 	//     )
-	//     attest(uuid("1234").problems?.summary).equals(
+	//     attest(uuid("1234").errors?.summary).equals(
 	//         "Must be a valid UUID (was '1234')"
 	//     )
 	// })
@@ -125,23 +125,23 @@ describe("keywords", () => {
 	//     const parsedNumber = type("parsedNumber")
 	//     attest(parsedNumber("5").out).equals(5)
 	//     attest(parsedNumber("5.5").out).equals(5.5)
-	//     attest(parsedNumber("five").problems?.summary).equals(
+	//     attest(parsedNumber("five").errors?.summary).equals(
 	//         "Must be a well-formed numeric string (was 'five')"
 	//     )
 	// })
 	// it("parsedInteger", () => {
 	//     const parsedInteger = type("parsedInteger")
 	//     attest(parsedInteger("5").out).equals(5)
-	//     attest(parsedInteger("5.5").problems?.summary).equals(
+	//     attest(parsedInteger("5.5").errors?.summary).equals(
 	//         "Must be a well-formed integer string (was '5.5')"
 	//     )
-	//     attest(parsedInteger("five").problems?.summary).equals(
+	//     attest(parsedInteger("five").errors?.summary).equals(
 	//         "Must be a well-formed integer string (was 'five')"
 	//     )
-	//     attest(parsedInteger(5).problems?.summary).equals(
+	//     attest(parsedInteger(5).errors?.summary).equals(
 	//         "Must be a string (was number)"
 	//     )
-	//     attest(parsedInteger("9007199254740992").problems?.summary).equals(
+	//     attest(parsedInteger("9007199254740992").errors?.summary).equals(
 	//         "Must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was '9007199254740992')"
 	//     )
 	// })
@@ -150,17 +150,17 @@ describe("keywords", () => {
 	//     attest(parsedDate("5/21/1993").out?.toDateString()).equals(
 	//         "Fri May 21 1993"
 	//     )
-	//     attest(parsedDate("foo").problems?.summary).equals(
+	//     attest(parsedDate("foo").errors?.summary).equals(
 	//         "Must be a valid date (was 'foo')"
 	//     )
-	//     attest(parsedDate(5).problems?.summary).equals(
+	//     attest(parsedDate(5).errors?.summary).equals(
 	//         "Must be a string (was number)"
 	//     )
 	// })
 	// it("json", () => {
 	//     const json = type("json")
 	//     attest(json('{"a": "hello"}').out).equals({ a: "hello" })
-	//     attest(json(123).problems?.summary).equals(
+	//     attest(json(123).errors?.summary).equals(
 	//         "Must be a JSON-parsable string (was number)"
 	//     )
 	// })
@@ -168,19 +168,19 @@ describe("keywords", () => {
 	//     const validCC = "5489582921773376"
 	//     attest(ark.creditCard(validCC).out).equals(validCC)
 	//     // Regex validation
-	//     attest(ark.creditCard("0".repeat(16)).problems?.summary).equals(
+	//     attest(ark.creditCard("0".repeat(16)).errors?.summary).equals(
 	//         "Must be a valid credit card number (was '0000000000000000')"
 	//     )
 	//     // Luhn validation
 	//     attest(
-	//         ark.creditCard(validCC.slice(0, -1) + "0").problems?.summary
+	//         ark.creditCard(validCC.slice(0, -1) + "0").errors?.summary
 	//     ).equals(
 	//         "Must be a valid credit card number (was '5489582921773370')"
 	//     )
 	// })
 	// it("semver", () => {
 	//     attest(ark.semver("1.0.0").out).equals("1.0.0")
-	//     attest(ark.semver("-1.0.0").problems?.summary).equals(
+	//     attest(ark.semver("-1.0.0").errors?.summary).equals(
 	//         "Must be a valid semantic version (see https://semver.org/) (was '-1.0.0')"
 	//     )
 	// })

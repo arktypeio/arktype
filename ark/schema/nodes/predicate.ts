@@ -24,7 +24,7 @@ export type PredicateDeclaration = declareNode<{
 	intersections: {
 		predicate: "predicate" | null
 	}
-	checks: unknown
+	data: unknown
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
@@ -73,7 +73,7 @@ export type Predicate<data = unknown> = (
 
 export type PredicateCast<input = never, narrowed extends input = input> = (
 	input: input,
-	problems: ArkErrors
+	errors: ArkErrors
 ) => input is narrowed
 
 export type inferNarrow<In, predicate> = predicate extends (

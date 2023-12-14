@@ -1,4 +1,5 @@
 import { ReadonlyArray, type propwiseXor } from "@arktype/util"
+import type { Declaration, Inner } from "../kinds.js"
 import type { TraversalContext } from "./context.js"
 import type { PrimitiveKind } from "./define.js"
 
@@ -46,10 +47,10 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	// 	...args: ProblemParameters<code>
 	// ) {
 	// 	// TODO: fix
-	// 	const problem = new problemsByCode[code](
+	// 	const problem = new errorsByCode[code](
 	// 		...(args as never[])
 	// 	) as any as Problem
-	// 	return this.problems.add(problem)
+	// 	return this.errors.add(problem)
 	// }
 
 	add(description: string) {
@@ -92,6 +93,10 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	throw(): never {
 		throw new ArkError(`${this}`, { cause: this })
 	}
+}
+
+type PrimitiveNodeInputs = {
+	[k in PrimitiveKind]: Inner<k> | Declaration<k>
 }
 
 export type PrimitiveErrorCode = PrimitiveKind | "missingKey" | "extraneousKey"

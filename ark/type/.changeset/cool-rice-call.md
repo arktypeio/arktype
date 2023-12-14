@@ -6,7 +6,7 @@ add a "this" keyword resolvable from types without an associated scope alias
 
 ```ts
 const disappointingGift = type({ label: "string", "box?": "this" })
-const { out, problems } = disappointingGift(fetchGift())
+const { out, errors } = disappointingGift(fetchGift())
 
 // inferred as string | undefined
 const chainable = out?.box?.box?.label

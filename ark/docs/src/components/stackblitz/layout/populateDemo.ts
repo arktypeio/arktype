@@ -5,17 +5,17 @@ import "./demo.css"
 type PopulateDemoArgs = {
 	type: Type
 	data: unknown
-	problems: Problems
+	errors: Problems
 }
 
-export const populateDemo = ({ data, type, problems }: PopulateDemoArgs) => {
+export const populateDemo = ({ data, type, errors }: PopulateDemoArgs) => {
 	const defElement = document.querySelector("#definition")!
 	defElement.textContent = stringify(type.definition, 2)
 	defElement.innerHTML = recolor(defElement.innerHTML)
 
 	const resultElement = document.querySelector("#output")!
-	if (problems) {
-		resultElement.textContent = `❌ problems:\n\n${problems}`
+	if (errors) {
+		resultElement.textContent = `❌ errors:\n\n${errors}`
 	} else {
 		resultElement.textContent = `✅ out:\n\n${stringify(data, 2)}`
 		resultElement.innerHTML = recolor(resultElement.innerHTML)

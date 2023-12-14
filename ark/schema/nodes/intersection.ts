@@ -9,7 +9,7 @@ import type {
 	ClosedRefinementKind,
 	Declaration,
 	OpenRefinementKind,
-	RefinementOperand,
+	Prerequisite,
 	Schema,
 	hasOpenIntersection,
 	reducibleKindOf
@@ -229,7 +229,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		const constraintInvocations = this.constraints.map(
 			(constraint) =>
 				`this.${constraint.id}(${ctx.argName}${
-					ctx.compilationKind === "allows" ? "" : ", problems"
+					ctx.compilationKind === "allows" ? "" : ", errors"
 				})`
 		)
 		return ctx.compilationKind === "allows"
@@ -256,7 +256,7 @@ export type RefinementIntersectionInput<
 > = RefinementIntersectionInputsByKind[kind]
 
 export type refinementKindOf<t> = {
-	[k in RefinementKind]: t extends RefinementOperand<k> ? k : never
+	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
 }[RefinementKind]
 
 export type refinementInputsByKind<t> = {

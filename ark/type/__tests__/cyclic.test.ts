@@ -81,7 +81,7 @@ describe("cyclic", () => {
 			contributors: [{ email: "david@arktype.io" }]
 		})
 	})
-	it("adds problems on invalid", () => {
+	it("adds errors on invalid", () => {
 		const types = getCyclicScope().export()
 		const data = getCyclicData()
 		data.contributors[0].email = "ssalbdivad"

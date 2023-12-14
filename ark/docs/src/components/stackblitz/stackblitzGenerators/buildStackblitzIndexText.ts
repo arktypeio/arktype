@@ -16,7 +16,7 @@ export const buildStackblitzIndexText = (embedId: EmbedId) => {
                 definition: ""
             },
             data: "",
-            problems: "ParseError: " + e.originalErr.message
+            errors: "ParseError: " + e.originalErr.message
           } as any)
     }
 })()`
@@ -26,15 +26,15 @@ type DemoAdapter = [importFromDemo: string, dataFromImports: string]
 
 const demoAdapters: Record<EmbedId, DemoAdapter> = {
 	type: [
-		`const { user, out, problems } = await import("./type")`,
-		`{ type: user, out, problems }`
+		`const { user, out, errors } = await import("./type")`,
+		`{ type: user, out, errors }`
 	],
 	scope: [
-		`const { types, out, problems } = await import("./scope")`,
-		"{ type: types.package, out, problems }"
+		`const { types, out, errors } = await import("./scope")`,
+		"{ type: types.package, out, errors }"
 	],
 	demo: [
-		`const { pkg, out, problems } = await import("./demo")`,
-		`{ type: pkg, out, problems }`
+		`const { pkg, out, errors } = await import("./demo")`,
+		`{ type: pkg, out, errors }`
 	]
 }

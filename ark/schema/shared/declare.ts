@@ -43,7 +43,7 @@ export type DeclarationInput = {
 	normalizedSchema: BaseAttributes
 	inner: Dict
 	meta?: Dict
-	checks?: unknown
+	prerequisite?: unknown
 	childKind?: NodeKind
 	intersections: UnknownIntersections
 }
@@ -62,7 +62,7 @@ export type declareNode<d extends DeclarationInput> = extend<
 		meta: "meta" extends keyof d
 			? extend<BaseAttributes, d["meta"]>
 			: BaseAttributes
-		checks: "checks" extends keyof d ? d["checks"] : unknown
+		prerequisite: "prerequisite" extends keyof d ? d["prerequisite"] : unknown
 		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
 	}
@@ -77,7 +77,7 @@ export type BaseNodeDeclaration = {
 	normalizedSchema: Dict & BaseAttributes
 	meta: Dict & BaseAttributes
 	inner: Dict
-	checks: any
+	prerequisite: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
 	intersections: {

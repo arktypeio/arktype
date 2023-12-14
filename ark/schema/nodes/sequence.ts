@@ -38,7 +38,7 @@ export type SequenceDeclaration = declareNode<{
 	intersections: {
 		sequence: "sequence" | Disjoint
 	}
-	checks: readonly unknown[]
+	prerequisite: readonly unknown[]
 }>
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
@@ -134,7 +134,7 @@ export class SequenceNode extends BaseRefinement<SequenceDeclaration> {
 	traverseApply: TraverseApply<readonly unknown[]> = (data, ctx) => {
 		if (data.length < this.minLength) {
 			// TODO: possible to unify with minLength?
-			ctx.problems.add(`at least length ${this.minLength}`)
+			ctx.errors.add(`at least length ${this.minLength}`)
 			return
 		}
 
@@ -166,20 +166,20 @@ export class SequenceNode extends BaseRefinement<SequenceDeclaration> {
 }\n`
 		this.prefix?.forEach((prefixEl, i) => {
 			body += `if(!${prefixEl.compileBody(ctx)}) {
-	this.${prefixEl.id}(${ctx.argName}[${i}], problems)
+	this.${prefixEl.id}(${ctx.argName}[${i}], errors)
 }\n`
 		})
 		body += `const lastVariadicIndex = ${ctx.argName}.length${
 			this.postfix ? `- ${this.postfixLength}` : ""
 		}
 for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
-	if(!this.${this.element.id}(${ctx.argName}[i], problems)){
+	if(!this.${this.element.id}(${ctx.argName}[i], errors)){
 		return false
 	}	
 }\n`
 		this.postfix?.forEach((postfixEl, i) => {
 			body += `if(!${postfixEl.compileBody(ctx)}) {
-this.${postfixEl.id}(${ctx.argName}[${i}], problems)
+this.${postfixEl.id}(${ctx.argName}[${i}], errors)
 }\n`
 		})
 		body += "return true"

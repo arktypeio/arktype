@@ -19,7 +19,7 @@ export type DivisorDeclaration = declareNode<{
 	intersections: {
 		divisor: "divisor"
 	}
-	checks: number
+	prerequisite: number
 }>
 
 export const writeIndivisibleMessage = <root extends string>(

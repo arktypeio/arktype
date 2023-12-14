@@ -35,7 +35,7 @@ export type RequiredDeclaration = declareNode<{
 		required: "required" | Disjoint | null
 		optional: "required" | Disjoint | null
 	}
-	checks: object
+	prerequisite: object
 }>
 
 const intersectNamed = (
@@ -84,7 +84,7 @@ export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
 		if (this.key in data) {
 			this.value.traverseApply((data as any)[this.key], ctx)
 		} else {
-			ctx.problems.add("provided")
+			ctx.errors.add("provided")
 		}
 	}
 
@@ -94,11 +94,7 @@ export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
 		return `if(${this.serializedKey} in ${ctx.argName}) {
 			${compilePresentProp(this, ctx)}
 		} else {
-			${
-				ctx.compilationKind === "allows"
-					? "return false"
-					: `problems.add("provided")`
-			}
+			${ctx.compilationKind === "allows" ? "return false" : `errors.add("provided")`}
 		}`
 	}
 
