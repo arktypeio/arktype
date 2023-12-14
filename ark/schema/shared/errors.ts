@@ -12,15 +12,30 @@ import type { PrimitiveKind } from "./define.js"
 
 export class ArkError extends TypeError {}
 
+export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> = extend<
+	{
+		code: code
+		path: readonly (string | symbol)[]
+		data: ArkErrorData<code>
+	},
+	ArkErrorSchema<code>
+>
+
+export type ArkErrorParts = {
+	expected: string
+	actual: string
+	location: string
+}
+
 export class ArkTypeError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends ArkError {
-	public message: string
-	declare schema: string
-	declare contextualMessage: string
-
-	constructor(public context: ArkErrorContext<code>) {
-		const message = ""
+	constructor(
+		public code: code,
+		public context: ArkErrorContext<code>,
+		public parts: ArkErrorParts,
+		public message: string
+	) {
 		// context.path.length
 		// 	? `${context.path.join(".")} must be ${rule}`
 		// 	: `Must be ${rule}`
@@ -29,7 +44,7 @@ export class ArkTypeError<
 	}
 
 	toString() {
-		return this.contextualMessage
+		return this.message
 	}
 
 	throw(): never {
@@ -44,16 +59,6 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 
 	byPath: Record<string, ArkTypeError> = {}
 	count = 0
-
-	// export type ArkErrorInput<code extends ArkErrorCode = ArkErrorCode> =
-	// | ArkErrorSchema<code>
-	// | extend<
-	// 		{
-	// 			code: code
-	// 			path?: readonly (string | symbol)[]
-	// 		},
-	// 		ArkErrorRequirement<code>
-	//   >
 
 	add<code extends ArkErrorCode>(
 		code: code,
@@ -102,39 +107,31 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
-type BaseErrorSchema = {
-	path?: readonly (string | symbol)[]
-	description?: string
-	message?: string
-}
-
-type defineErrorSchema<from> = extend<BaseErrorSchema, from>
-
 export interface CustomErrorDeclaration {
-	schema: defineErrorSchema<{
+	schema: {
 		description: string
-	}>
+	}
 	data: unknown
 }
 
 export interface KeyErrorDeclaration {
-	schema: defineErrorSchema<{
+	schema: {
 		key: string | symbol
-	}>
+	}
 	data: object
 }
 
 export interface CompositeErrorDeclaration {
-	schema: defineErrorSchema<{
+	schema: {
 		errors: readonly ArkError[]
-	}>
+	}
 	data: unknown
 }
 
 type ArkErrorDeclarationsByCode = evaluate<
 	{
 		[code in PrimitiveKind]: {
-			schema: defineErrorSchema<NormalizedSchema<code>>
+			schema: NormalizedSchema<code>
 			data: Prerequisite<code>
 		}
 	} & {
@@ -152,15 +149,6 @@ export type ArkErrorSchema<code extends ArkErrorCode = ArkErrorCode> =
 
 export type ArkErrorData<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorDeclarationsByCode[code]["data"]
-
-export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> = extend<
-	{
-		code: code
-		path: readonly (string | symbol)[]
-		data: ArkErrorData<code>
-	},
-	ArkErrorSchema<code>
->
 
 export type ArkErrorDeclaration = {
 	schema: Dict
