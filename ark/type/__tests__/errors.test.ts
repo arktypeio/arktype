@@ -7,8 +7,7 @@ declare global {
 			special: satisfy<
 				ArkErrorDeclaration,
 				{
-					schema: true
-					requirement: {
+					schema: {
 						isSpecial: true
 					}
 					data: unknown
