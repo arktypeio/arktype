@@ -89,6 +89,13 @@ export class SequenceNode extends BaseRefinement<SequenceDeclaration> {
 		}
 	}
 
+	static writeDefaultDescription(node: SequenceNode) {
+		const parts = node.prefix?.map(String) ?? []
+		parts.push(`zero or more elements containing ${node.element}`)
+		node.postfix?.forEach((node) => parts.push(String(node)))
+		return `an array of ${parts.join(" followed by ")}`
+	}
+
 	static intersections: NodeIntersections<SequenceDeclaration> = {
 		sequence: (l) => l
 	}
@@ -188,13 +195,6 @@ this.${postfixEl.id}(${ctx.argName}[${i}], errors)
 
 	getCheckedDefinitions() {
 		return [Array] as const
-	}
-
-	writeDefaultDescription() {
-		const parts = this.prefix?.map(String) ?? []
-		parts.push(`zero or more elements containing ${this.element}`)
-		this.postfix?.forEach((node) => parts.push(String(node)))
-		return `an array of ${parts.join(" followed by ")}`
 	}
 }
 

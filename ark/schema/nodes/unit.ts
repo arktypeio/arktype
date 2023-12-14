@@ -41,6 +41,10 @@ export class UnitNode<t = unknown> extends BaseBasis<t, UnitDeclaration> {
 			r.allows(l.unit as never) ? l : Disjoint.from("assignability", l.unit, r)
 	}
 
+	static writeDefaultDescription(node: UnitNode) {
+		return node.basisName
+	}
+
 	serializedValue = compileSerializedValue(this.unit)
 	traverseAllows = (data: unknown) => data === this.unit
 
@@ -48,8 +52,4 @@ export class UnitNode<t = unknown> extends BaseBasis<t, UnitDeclaration> {
 	domain = domainOf(this.unit)
 	condition = `${this.scope.argName} === ${this.serializedValue}`
 	negatedCondition = `${this.scope.argName} !== ${this.serializedValue}`
-
-	writeDefaultDescription() {
-		return this.basisName
-	}
 }

@@ -85,6 +85,10 @@ export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
 		normalize: (schema) => schema
 	}
 
+	static writeDefaultDescription(node: MorphNode) {
+		return `a morph from ${node.in} to ${node.out}`
+	}
+
 	static intersections: NodeIntersections<MorphDeclaration> = {
 		morph: (l, r) => {
 			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
@@ -138,10 +142,6 @@ export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
 
 	override get out(): Node<ValidatorKind, extractOut<t>> {
 		return this.inner.out ?? this.scope.builtin.unknown
-	}
-
-	writeDefaultDescription() {
-		return `a morph from ${this.in} to ${this.out}`
 	}
 
 	compileBody(ctx: CompilationContext): string {

@@ -98,12 +98,14 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
+// TODO: add validation for each class
 export type UnknownNodeSubclass = {
 	readonly parser: UnknownNodeParser
 	readonly intersections: Record<
 		string,
 		(l: any, r: any) => {} | Disjoint | null
 	>
+	readonly writeDefaultDescription: (node: BaseNode) => string
 }
 
 export const isNode = (value: unknown): value is Node =>
@@ -139,7 +141,6 @@ export abstract class BaseNode<
 	}
 
 	abstract hasOpenIntersection: hasOpenIntersection<d>
-	abstract writeDefaultDescription(): string
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract compileBody(ctx: CompilationContext): string
@@ -173,7 +174,7 @@ export abstract class BaseNode<
 	private descriptionCache?: string
 	get description() {
 		this.descriptionCache ??=
-			this.meta.description ?? this.writeDefaultDescription()
+			this.meta.description ?? this.cls.writeDefaultDescription(this as never)
 		return this.descriptionCache
 	}
 

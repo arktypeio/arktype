@@ -46,6 +46,10 @@ export class IndexNode extends BaseRefinement<IndexDeclaration> {
 		normalize: (schema) => schema
 	}
 
+	static writeDefaultDescription(node: IndexNode) {
+		return `[${node.key}]: ${node.value}`
+	}
+
 	static intersections: NodeIntersections<IndexDeclaration> = {
 		index: (l) => l
 	}
@@ -68,10 +72,6 @@ export class IndexNode extends BaseRefinement<IndexDeclaration> {
 
 	getCheckedDefinitions() {
 		return ["object"] as const
-	}
-
-	writeDefaultDescription() {
-		return `[${this.key}]: ${this.value}`
 	}
 
 	compileBody(ctx: CompilationContext): string {

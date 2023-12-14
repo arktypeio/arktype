@@ -40,6 +40,10 @@ export class PatternNode extends BasePrimitiveRefinement<PatternDeclaration> {
 				  : schema
 	}
 
+	static writeDefaultDescription(node: PatternNode) {
+		return `matched by ${node.source}`
+	}
+
 	static intersections: NodeIntersections<PatternDeclaration> = {
 		// For now, non-equal regex are naively intersected
 		pattern: () => null
@@ -53,9 +57,5 @@ export class PatternNode extends BasePrimitiveRefinement<PatternDeclaration> {
 
 	getCheckedDefinitions() {
 		return ["string"] as const
-	}
-
-	writeDefaultDescription() {
-		return `matched by ${this.source}`
 	}
 }

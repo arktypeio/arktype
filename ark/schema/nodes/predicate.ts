@@ -40,6 +40,10 @@ export class PredicateNode extends BasePrimitiveRefinement<PredicateDeclaration>
 			typeof schema === "function" ? { predicate: schema } : schema
 	}
 
+	static writeDefaultDescription(node: PredicateNode) {
+		return `valid according to ${node.predicate.name}`
+	}
+
 	static intersections: NodeIntersections<PredicateDeclaration> = {
 		// TODO: allow changed order to be the same type
 		// as long as the narrows in l and r are individually safe to check
@@ -59,10 +63,6 @@ export class PredicateNode extends BasePrimitiveRefinement<PredicateDeclaration>
 
 	compileBody(ctx: CompilationContext) {
 		return this.scope.compilePrimitive(this, ctx)
-	}
-
-	writeDefaultDescription() {
-		return `valid according to ${this.predicate.name}`
 	}
 }
 

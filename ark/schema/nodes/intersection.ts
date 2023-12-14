@@ -194,6 +194,12 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		}
 	}
 
+	static writeDefaultDescription(node: IntersectionNode) {
+		return node.constraints.length === 0
+			? "an unknown value"
+			: node.constraints.join(" and ")
+	}
+
 	static intersections: NodeIntersections<IntersectionDeclaration> = {
 		intersection: (l, r) => {
 			let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
@@ -218,12 +224,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.constraints.forEach((c) => c.traverseApply(data as never, ctx))
-
-	writeDefaultDescription() {
-		return this.constraints.length === 0
-			? "an unknown value"
-			: this.constraints.join(" and ")
-	}
 
 	compileBody(ctx: CompilationContext) {
 		const constraintInvocations = this.constraints.map(

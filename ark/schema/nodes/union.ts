@@ -101,6 +101,10 @@ export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
 		}
 	}
 
+	static writeDefaultDescription(node: UnionNode) {
+		return node.branches.length === 0 ? "never" : node.branches.join(" or ")
+	}
+
 	static intersections: NodeIntersections<UnionDeclaration> = {
 		union: (l, r) => {
 			if (
@@ -164,10 +168,6 @@ export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
 
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.branches.forEach((b) => b.traverseApply(data, ctx))
-
-	writeDefaultDescription() {
-		return this.branches.length === 0 ? "never" : this.branches.join(" or ")
-	}
 
 	compileBody(ctx: CompilationContext) {
 		const branchInvocations = this.branches.map(

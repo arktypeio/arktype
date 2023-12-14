@@ -68,6 +68,10 @@ export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
 		normalize: (schema) => schema
 	}
 
+	static writeDefaultDescription(node: RequiredNode) {
+		return `${String(node.compiledKey)}: ${node.value}`
+	}
+
 	static intersections: NodeIntersections<RequiredDeclaration> = {
 		required: intersectNamed,
 		optional: intersectNamed
@@ -100,9 +104,5 @@ export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
 
 	getCheckedDefinitions() {
 		return ["object"] as const
-	}
-
-	writeDefaultDescription() {
-		return `${String(this.compiledKey)}: ${this.value}`
 	}
 }

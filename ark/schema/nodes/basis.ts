@@ -2,7 +2,6 @@ import {
 	printable,
 	throwParseError,
 	type Constructor,
-	type Domain,
 	type extend,
 	type inferDomain,
 	type instanceOf,

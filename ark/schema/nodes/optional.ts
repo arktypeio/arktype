@@ -44,6 +44,10 @@ export class OptionalNode extends BaseRefinement<OptionalDeclaration> {
 		normalize: (schema) => schema
 	}
 
+	static writeDefaultDescription(node: OptionalNode) {
+		return `${String(node.compiledKey)}?: ${node.value}`
+	}
+
 	static intersections: NodeIntersections<OptionalDeclaration> = {
 		optional: (l, r) => {
 			if (l.key !== r.key) {
@@ -82,9 +86,5 @@ export class OptionalNode extends BaseRefinement<OptionalDeclaration> {
 
 	getCheckedDefinitions() {
 		return ["object"] as const
-	}
-
-	writeDefaultDescription() {
-		return `${String(this.compiledKey)}?: ${this.value}`
 	}
 }

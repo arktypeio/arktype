@@ -40,6 +40,10 @@ export class DivisorNode extends BasePrimitiveRefinement<DivisorDeclaration> {
 			typeof schema === "number" ? { divisor: schema } : schema
 	}
 
+	static writeDefaultDescription(node: DivisorNode) {
+		return node.divisor === 1 ? "an integer" : `a multiple of ${node.divisor}`
+	}
+
 	static intersections: NodeIntersections<DivisorDeclaration> = {
 		divisor: (l, r) => ({
 			divisor: Math.abs(
@@ -56,10 +60,6 @@ export class DivisorNode extends BasePrimitiveRefinement<DivisorDeclaration> {
 
 	getCheckedDefinitions() {
 		return ["number"] as const
-	}
-
-	writeDefaultDescription() {
-		return this.divisor === 1 ? "an integer" : `a multiple of ${this.divisor}`
 	}
 }
 

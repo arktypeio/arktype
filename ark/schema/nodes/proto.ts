@@ -4,7 +4,6 @@ import {
 	objectKindDescriptions,
 	type Constructor
 } from "@arktype/util"
-import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	defaultValueSerializer,
@@ -13,7 +12,6 @@ import {
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseBasis } from "./basis.js"
-import { BaseType } from "./type.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = {
 	readonly proto: proto
@@ -53,6 +51,13 @@ export class ProtoNode<t = unknown> extends BaseBasis<t, ProtoDeclaration> {
 			typeof input === "function" ? { proto: input } : input
 	}
 
+	static writeDefaultDescription(node: ProtoNode) {
+		const knownObjectKind = getExactBuiltinConstructorName(node.proto)
+		return knownObjectKind
+			? objectKindDescriptions[knownObjectKind]
+			: `an instance of ${node.proto.name}`
+	}
+
 	static intersections: NodeIntersections<ProtoDeclaration> = {
 		proto: (l, r) =>
 			constructorExtends(l.proto, r.proto)
@@ -72,11 +77,4 @@ export class ProtoNode<t = unknown> extends BaseBasis<t, ProtoDeclaration> {
 	readonly condition = `${this.scope.argName} instanceof ${this.serializedConstructor}`
 	readonly negatedCondition = `!(${this.condition})`
 	traverseAllows = (data: unknown) => data instanceof this.proto
-
-	writeDefaultDescription() {
-		const knownObjectKind = getExactBuiltinConstructorName(this.proto)
-		return knownObjectKind
-			? objectKindDescriptions[knownObjectKind]
-			: `an instance of ${this.proto.name}`
-	}
 }

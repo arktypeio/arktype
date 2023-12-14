@@ -14,7 +14,6 @@ export class ArkError extends TypeError {}
 
 export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> = extend<
 	{
-		code: code
 		path: readonly (string | symbol)[]
 		data: ArkErrorData<code>
 	},

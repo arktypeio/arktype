@@ -42,6 +42,10 @@ export class DomainNode<t = unknown> extends BaseBasis<t, DomainDeclaration> {
 			typeof input === "string" ? { domain: input } : input
 	}
 
+	static writeDefaultDescription(node: DomainNode) {
+		return domainDescriptions[node.domain]
+	}
+
 	static intersections: NodeIntersections<DomainDeclaration> = {
 		domain: (l, r) => Disjoint.from("domain", l, r)
 	}
@@ -59,10 +63,6 @@ export class DomainNode<t = unknown> extends BaseBasis<t, DomainDeclaration> {
 			: `typeof ${this.scope.argName} !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
-
-	writeDefaultDescription() {
-		return domainDescriptions[this.domain]
-	}
 }
 
 const enumerableDomainDescriptions = {

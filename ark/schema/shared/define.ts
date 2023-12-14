@@ -128,9 +128,9 @@ export type NodeKeyImplementation<
 
 export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 	keys: KeyDefinitions<d>
+	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void
-	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	reduce?: (
 		inner: d["inner"],
 		meta: d["meta"],
