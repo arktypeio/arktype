@@ -106,6 +106,8 @@ export type UnknownNodeSubclass = {
 		(l: any, r: any) => {} | Disjoint | null
 	>
 	readonly writeDefaultDescription: (node: BaseNode) => string
+	// TODO: Next
+	// readonly writeDefaultActual: (node: BaseNode) => string
 }
 
 export const isNode = (value: unknown): value is Node =>

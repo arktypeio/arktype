@@ -5,7 +5,7 @@ import {
 	type extend,
 	type propwiseXor
 } from "@arktype/util"
-import type { NormalizedSchema, Prerequisite, Schema } from "../kinds.js"
+import type { NormalizedSchema, Prerequisite } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { TraversalContext } from "./context.js"
 import type { PrimitiveKind } from "./define.js"
