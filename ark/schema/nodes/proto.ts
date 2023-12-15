@@ -7,7 +7,7 @@ import {
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	defaultValueSerializer,
-	type NodeParserImplementation
+	type NodeImplementation
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -38,7 +38,7 @@ export type ProtoDeclaration = declareNode<{
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
 export class ProtoNode<t = unknown> extends BaseBasis<t, ProtoDeclaration> {
-	static parser: NodeParserImplementation<ProtoDeclaration> = {
+	static implementation: NodeImplementation<ProtoDeclaration> = {
 		collapseKey: "proto",
 		keys: {
 			proto: {
@@ -48,27 +48,25 @@ export class ProtoNode<t = unknown> extends BaseBasis<t, ProtoDeclaration> {
 			}
 		},
 		normalize: (input) =>
-			typeof input === "function" ? { proto: input } : input
-	}
-
-	static writeDefaultDescription(node: ProtoNode) {
-		const knownObjectKind = getExactBuiltinConstructorName(node.proto)
-		return knownObjectKind
-			? objectKindDescriptions[knownObjectKind]
-			: `an instance of ${node.proto.name}`
-	}
-
-	static intersections: NodeIntersections<ProtoDeclaration> = {
-		proto: (l, r) =>
-			constructorExtends(l.proto, r.proto)
-				? l
-				: constructorExtends(r.proto, l.proto)
-				  ? r
-				  : Disjoint.from("proto", l, r),
-		domain: (l, r) =>
-			r.domain === "object"
-				? l
-				: Disjoint.from("domain", l.scope.builtin.object, r)
+			typeof input === "function" ? { proto: input } : input,
+		describeExpected(node) {
+			const knownObjectKind = getExactBuiltinConstructorName(node.proto)
+			return knownObjectKind
+				? objectKindDescriptions[knownObjectKind]
+				: `an instance of ${node.proto.name}`
+		},
+		intersections: {
+			proto: (l, r) =>
+				constructorExtends(l.proto, r.proto)
+					? l
+					: constructorExtends(r.proto, l.proto)
+					  ? r
+					  : Disjoint.from("proto", l, r),
+			domain: (l, r) =>
+				r.domain === "object"
+					? l
+					: Disjoint.from("domain", l.scope.builtin.object, r)
+		}
 	}
 
 	readonly basisName = `${this.proto.name}`

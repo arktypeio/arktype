@@ -60,11 +60,11 @@ import {
 	typeKinds,
 	type BasisKind,
 	type ConstraintKind,
+	type NodeImplementation,
 	type NodeKind,
 	type RefinementKind,
 	type SetKind,
-	type TypeKind,
-	type UnknownNodeParser
+	type TypeKind
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { ArkResult } from "./shared/errors.js"
@@ -98,26 +98,26 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
-// TODO: add validation for each class
-export type UnknownNodeSubclass = {
-	readonly parser: UnknownNodeParser
-	readonly intersections: Record<
-		string,
-		(l: any, r: any) => {} | Disjoint | null
-	>
-	readonly writeDefaultDescription: (node: BaseNode) => string
-	// TODO: Next
-	// readonly writeDefaultActual: (node: BaseNode) => string
+export type NodeDescriptions<node extends Node = Node> = {
+	readonly expected: (node: node) => string
+	readonly actual: (data: Parameters<node["allows"]>[0]) => string
 }
+
+export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
+	{
+		readonly implementation: NodeImplementation<d>
+	}
 
 export const isNode = (value: unknown): value is Node =>
 	value instanceof BaseNode
 
 export abstract class BaseNode<
 	t = unknown,
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
+	d extends BaseNodeDeclaration = BaseNodeDeclaration,
+	subclass extends NodeSubclass<d> = NodeSubclass<d>
 > extends DynamicBase<attachmentsOf<d>> {
-	readonly cls: UnknownNodeSubclass = this.constructor as never
+	readonly cls: subclass = this.constructor as never
+	readonly impl: NodeImplementation = this.cls.implementation as never
 
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
@@ -176,7 +176,7 @@ export abstract class BaseNode<
 	private descriptionCache?: string
 	get description() {
 		this.descriptionCache ??=
-			this.meta.description ?? this.cls.writeDefaultDescription(this as never)
+			this.meta.description ?? this.impl.describeExpected(this as never)
 		return this.descriptionCache
 	}
 
@@ -186,7 +186,7 @@ export abstract class BaseNode<
 		}
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries as readonly Entry<string>[]) {
-			const keyDefinition = this.cls.parser.keys[k]
+			const keyDefinition = this.impl.keys[k]
 			if (keyDefinition.meta) {
 				continue
 			}
@@ -293,8 +293,7 @@ export abstract class BaseNode<
 		const l = leftOperandOf(this as never, other)
 		const thisIsLeft = l === (this as never)
 		const r: Node = thisIsLeft ? other : (this as never)
-		const intersections = l.cls
-			.intersections as NodeIntersections<BaseNodeDeclaration>
+		const intersections = l.impl.intersections
 		const intersector = intersections[r.kind] ?? intersections.default
 		const result = intersector?.(l, r as never)
 		if (result) {

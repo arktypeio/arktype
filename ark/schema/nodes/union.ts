@@ -7,9 +7,8 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import { basisKinds, type NodeParserImplementation } from "../shared/define.js"
+import { basisKinds, type NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
 import { BaseType } from "./type.js"
@@ -61,7 +60,7 @@ const intersectBranch = (
 }
 
 export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
-	static parser: NodeParserImplementation<UnionDeclaration> = {
+	static implementation: NodeImplementation<UnionDeclaration> = {
 		collapseKey: "branches",
 		keys: {
 			ordered: {},
@@ -98,66 +97,64 @@ export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
 				...inner,
 				branches: reducedBranches
 			})
-		}
-	}
-
-	static writeDefaultDescription(node: UnionNode) {
-		return node.branches.length === 0 ? "never" : node.branches.join(" or ")
-	}
-
-	static intersections: NodeIntersections<UnionDeclaration> = {
-		union: (l, r) => {
-			if (
-				(l.branches.length === 0 || r.branches.length === 0) &&
-				l.branches.length !== r.branches.length
-			) {
-				// if exactly one operand is never, we can use it to discriminate based on presence
-				return Disjoint.from(
-					"presence",
-					l.branches.length !== 0,
-					r.branches.length !== 0
-				)
-			}
-			let resultBranches: readonly BranchNode[] | Disjoint
-			if (l.ordered) {
-				if (r.ordered) {
-					return Disjoint.from("indiscriminableMorphs", l, r)
-				}
-				resultBranches = intersectBranches(r.branches, l.branches)
-				if (resultBranches instanceof Disjoint) {
-					resultBranches.invert()
-				}
-			} else {
-				resultBranches = intersectBranches(l.branches, r.branches)
-			}
-			if (resultBranches instanceof Disjoint) {
-				return resultBranches
-			}
-			return l.ordered || r.ordered
-				? {
-						branches: resultBranches,
-						ordered: true
-				  }
-				: { branches: resultBranches }
 		},
-		morph: intersectBranch,
-		intersection: intersectBranch,
-		default: (l, r) => {
-			const branches: BranchNode[] = []
-			for (const branch of l.branches) {
-				const branchResult = branch.intersect(r)
-				if (!(branchResult instanceof Disjoint)) {
-					branches.push(branchResult)
+		intersections: {
+			union: (l, r) => {
+				if (
+					(l.branches.length === 0 || r.branches.length === 0) &&
+					l.branches.length !== r.branches.length
+				) {
+					// if exactly one operand is never, we can use it to discriminate based on presence
+					return Disjoint.from(
+						"presence",
+						l.branches.length !== 0,
+						r.branches.length !== 0
+					)
 				}
-			}
-			return branches.length === 0
-				? Disjoint.from("union", l.branches, [r])
-				: l.ordered
-				  ? {
-							branches,
+				let resultBranches: readonly BranchNode[] | Disjoint
+				if (l.ordered) {
+					if (r.ordered) {
+						return Disjoint.from("indiscriminableMorphs", l, r)
+					}
+					resultBranches = intersectBranches(r.branches, l.branches)
+					if (resultBranches instanceof Disjoint) {
+						resultBranches.invert()
+					}
+				} else {
+					resultBranches = intersectBranches(l.branches, r.branches)
+				}
+				if (resultBranches instanceof Disjoint) {
+					return resultBranches
+				}
+				return l.ordered || r.ordered
+					? {
+							branches: resultBranches,
 							ordered: true
-				    }
-				  : { branches }
+					  }
+					: { branches: resultBranches }
+			},
+			morph: intersectBranch,
+			intersection: intersectBranch,
+			default: (l, r) => {
+				const branches: BranchNode[] = []
+				for (const branch of l.branches) {
+					const branchResult = branch.intersect(r)
+					if (!(branchResult instanceof Disjoint)) {
+						branches.push(branchResult)
+					}
+				}
+				return branches.length === 0
+					? Disjoint.from("union", l.branches, [r])
+					: l.ordered
+					  ? {
+								branches,
+								ordered: true
+					    }
+					  : { branches }
+			}
+		},
+		describeExpected(node) {
+			return node.branches.length === 0 ? "never" : node.branches.join(" or ")
 		}
 	}
 

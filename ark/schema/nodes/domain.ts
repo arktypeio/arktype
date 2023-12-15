@@ -1,8 +1,7 @@
 import { domainOf, type Domain } from "@arktype/util"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { NodeParserImplementation } from "../shared/define.js"
+import type { NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseBasis } from "./basis.js"
 
 export type DomainInner<
@@ -33,21 +32,19 @@ export type DomainDeclaration = declareNode<{
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<t, DomainDeclaration> {
-	static parser: NodeParserImplementation<DomainDeclaration> = {
+	static implementation: NodeImplementation<DomainDeclaration> = {
 		collapseKey: "domain",
 		keys: {
 			domain: {}
 		},
 		normalize: (input) =>
-			typeof input === "string" ? { domain: input } : input
-	}
-
-	static writeDefaultDescription(node: DomainNode) {
-		return domainDescriptions[node.domain]
-	}
-
-	static intersections: NodeIntersections<DomainDeclaration> = {
-		domain: (l, r) => Disjoint.from("domain", l, r)
+			typeof input === "string" ? { domain: input } : input,
+		describeExpected(node) {
+			return domainDescriptions[node.domain]
+		},
+		intersections: {
+			domain: (l, r) => Disjoint.from("domain", l, r)
+		}
 	}
 
 	basisName = this.domain

@@ -5,7 +5,7 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { NodeParserImplementation } from "../shared/define.js"
+import type { NodeImplementation } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseRefinement } from "./refinement.js"
@@ -32,7 +32,7 @@ export type IndexDeclaration = declareNode<{
 }>
 
 export class IndexNode extends BaseRefinement<IndexDeclaration> {
-	static parser: NodeParserImplementation<IndexDeclaration> = {
+	static implementation: NodeImplementation<IndexDeclaration> = {
 		keys: {
 			key: {
 				child: true,
@@ -43,15 +43,13 @@ export class IndexNode extends BaseRefinement<IndexDeclaration> {
 				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
 			}
 		},
-		normalize: (schema) => schema
-	}
-
-	static writeDefaultDescription(node: IndexNode) {
-		return `[${node.key}]: ${node.value}`
-	}
-
-	static intersections: NodeIntersections<IndexDeclaration> = {
-		index: (l) => l
+		normalize: (schema) => schema,
+		intersections: {
+			index: (l) => l
+		},
+		describeExpected(node) {
+			return `[${node.key}]: ${node.value}`
+		}
 	}
 
 	readonly hasOpenIntersection = true

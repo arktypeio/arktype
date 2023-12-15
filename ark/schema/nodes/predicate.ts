@@ -1,9 +1,8 @@
 import type { CompilationContext } from "../scope.js"
 import type { TraversalContext } from "../shared/context.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { NodeParserImplementation } from "../shared/define.js"
+import type { NodeImplementation } from "../shared/define.js"
 import type { ArkErrors } from "../shared/errors.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import { BasePrimitiveRefinement } from "./refinement.js"
 
@@ -31,25 +30,23 @@ export type PredicateDeclaration = declareNode<{
 // to wrap it with traversal state for allows
 
 export class PredicateNode extends BasePrimitiveRefinement<PredicateDeclaration> {
-	static parser: NodeParserImplementation<PredicateDeclaration> = {
+	static implementation: NodeImplementation<PredicateDeclaration> = {
 		collapseKey: "predicate",
 		keys: {
 			predicate: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "function" ? { predicate: schema } : schema
-	}
-
-	static writeDefaultDescription(node: PredicateNode) {
-		return `valid according to ${node.predicate.name}`
-	}
-
-	static intersections: NodeIntersections<PredicateDeclaration> = {
-		// TODO: allow changed order to be the same type
-		// as long as the narrows in l and r are individually safe to check
-		// in the order they're specified, checking them in the order
-		// resulting from this intersection should also be safe.
-		predicate: () => null
+			typeof schema === "function" ? { predicate: schema } : schema,
+		intersections: {
+			// TODO: allow changed order to be the same type
+			// as long as the narrows in l and r are individually safe to check
+			// in the order they're specified, checking them in the order
+			// resulting from this intersection should also be safe.
+			predicate: () => null
+		},
+		describeExpected(node) {
+			return `valid according to ${node.predicate.name}`
+		}
 	}
 
 	readonly hasOpenIntersection = true

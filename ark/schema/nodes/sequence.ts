@@ -6,8 +6,8 @@ import type {
 } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type {
-	NodeKeyImplementation,
-	NodeParserImplementation
+	NodeImplementation,
+	NodeKeyImplementation
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -54,7 +54,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 }
 
 export class SequenceNode extends BaseRefinement<SequenceDeclaration> {
-	static parser: NodeParserImplementation<SequenceDeclaration> = {
+	static parser: NodeImplementation<SequenceDeclaration> = {
 		collapseKey: "element",
 		keys: {
 			prefix: fixedSequenceKeyDefinition,
@@ -86,18 +86,16 @@ export class SequenceNode extends BaseRefinement<SequenceDeclaration> {
 					postfix
 				})
 			}
+		},
+		intersections: {
+			sequence: (l) => l
+		},
+		describeExpected(node) {
+			const parts = node.prefix?.map(String) ?? []
+			parts.push(`zero or more elements containing ${node.element}`)
+			node.postfix?.forEach((node) => parts.push(String(node)))
+			return `an array of ${parts.join(" followed by ")}`
 		}
-	}
-
-	static writeDefaultDescription(node: SequenceNode) {
-		const parts = node.prefix?.map(String) ?? []
-		parts.push(`zero or more elements containing ${node.element}`)
-		node.postfix?.forEach((node) => parts.push(String(node)))
-		return `an array of ${parts.join(" followed by ")}`
-	}
-
-	static intersections: NodeIntersections<SequenceDeclaration> = {
-		sequence: (l) => l
 	}
 
 	readonly hasOpenIntersection = false

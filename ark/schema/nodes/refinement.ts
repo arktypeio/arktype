@@ -1,5 +1,11 @@
 import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
-import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
+import {
+	BaseNode,
+	type Node,
+	type NodeSubclass,
+	type TypeNode,
+	type TypeSchema
+} from "../base.js"
 import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { BaseNodeDeclaration, PrimitiveNode } from "../shared/declare.js"
 import type {
@@ -47,7 +53,8 @@ export type BaseRefinementDeclaration = extend<
 >
 
 export abstract class BaseRefinement<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
+	d extends BaseNodeDeclaration = BaseNodeDeclaration,
+	subclass extends NodeSubclass<d> = NodeSubclass<d>
 > extends BaseNode<any, d> {
 	abstract getCheckedDefinitions(): readonly TypeSchema[]
 	readonly checks: readonly TypeNode[] =
@@ -76,9 +83,10 @@ export type BasePrimitiveRefinementDeclaration = extend<
 >
 
 export abstract class BasePrimitiveRefinement<
-		d extends BasePrimitiveRefinementDeclaration
+		d extends BasePrimitiveRefinementDeclaration,
+		subclass extends NodeSubclass<d> = NodeSubclass<d>
 	>
-	extends BaseRefinement<d>
+	extends BaseRefinement<d, subclass>
 	implements PrimitiveNode
 {
 	abstract readonly condition: string

@@ -2,6 +2,7 @@ import {
 	isKeyOf,
 	type PartialRecord,
 	type extend,
+	type optionalizeKeys,
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
@@ -12,7 +13,7 @@ import type {
 	declareNode,
 	withAttributes
 } from "../shared/declare.js"
-import type { BoundKind, NodeParserImplementation } from "../shared/define.js"
+import type { BoundKind, NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BasePrimitiveRefinement } from "./refinement.js"
@@ -100,10 +101,13 @@ export type BaseBoundDeclaration = extend<
 	}
 >
 
-export abstract class BaseBound<
-	d extends BaseBoundDeclaration
-> extends BasePrimitiveRefinement<d> {
-	static parser = {
+export const implementBound = <d extends Declaration<BoundKind>>(
+	implementation: optionalizeKeys<
+		NodeImplementation<d>,
+		"collapseKey" | "keys" | "normalize"
+	>
+) =>
+	({
 		collapseKey: "limit",
 		keys: {
 			limit: {
@@ -114,13 +118,16 @@ export abstract class BaseBound<
 				parse: (flag: boolean) => flag || undefined
 			}
 		},
-		normalize: (schema: BoundSchema) =>
-			(typeof schema === "object"
-				? // pretend limit is a number to allow subclasses like min
-				  { ...schema, limit: schema.limit as number }
-				: { limit: schema }) as NormalizedBoundSchema<number>
-	} as const satisfies NodeParserImplementation<Declaration<BoundKind>>
+		normalize: (schema: d["schema"]) =>
+			typeof schema === "object"
+				? { ...schema, limit: schema.limit }
+				: { limit: schema as Extract<d["schema"], LimitSchemaValue> },
+		...implementation
+	}) as const
 
+export abstract class BaseBound<
+	d extends BaseBoundDeclaration
+> extends BasePrimitiveRefinement<d> {
 	readonly hasOpenIntersection = false as hasOpenIntersection<d>
 
 	size = compileSizeOf(this.kind, this.scope.argName)
@@ -165,15 +172,16 @@ export type MinDeclaration = declareNode<{
 }>
 
 export class MinNode extends BaseBound<MinDeclaration> {
-	static intersections = createLowerIntersections("min")
+	static implementation: NodeImplementation<MinDeclaration> = implementBound({
+		intersections: createLowerIntersections("min"),
+		describeExpected(node) {
+			return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
+		}
+	})
 
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.limit
 		: (data: number) => data >= this.limit
-
-	writeDefaultDescription() {
-		return `${this.exclusive ? "more than" : "at least"} ${this.limit}`
-	}
 
 	getCheckedDefinitions() {
 		return ["number"] as const
@@ -193,15 +201,16 @@ export type MaxDeclaration = declareNode<{
 }>
 
 export class MaxNode extends BaseBound<MaxDeclaration> {
-	static intersections = createUpperIntersections("max")
+	static implementation: NodeImplementation<MaxDeclaration> = implementBound({
+		intersections: createUpperIntersections("max"),
+		describeExpected(node) {
+			return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
+		}
+	})
 
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.limit
 		: (data: number) => data <= this.limit
-
-	writeDefaultDescription() {
-		return `${this.exclusive ? "less than" : "at most"} ${this.limit}`
-	}
 
 	getCheckedDefinitions() {
 		return ["number"] as const
@@ -221,21 +230,23 @@ export type MinLengthDeclaration = declareNode<{
 }>
 
 export class MinLengthNode extends BaseBound<MinLengthDeclaration> {
-	static intersections = createLowerIntersections("minLength")
+	static implementation: NodeImplementation<MinLengthDeclaration> =
+		implementBound({
+			intersections: createLowerIntersections("minLength"),
+			describeExpected(node) {
+				return node.exclusive
+					? node.limit === 0
+						? "non-empty"
+						: `more than length ${node.limit}`
+					: node.limit === 1
+					  ? "non-empty"
+					  : `at least length ${node.limit}`
+			}
+		})
 
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length > this.limit
 		: (data: string | readonly unknown[]) => data.length >= this.limit
-
-	writeDefaultDescription() {
-		return this.exclusive
-			? this.limit === 0
-				? "non-empty"
-				: `more than length ${this.limit}`
-			: this.limit === 1
-			  ? "non-empty"
-			  : `at least length ${this.limit}`
-	}
 
 	getCheckedDefinitions() {
 		return ["string", Array] as const
@@ -254,17 +265,19 @@ export type MaxLengthDeclaration = declareNode<{
 }>
 
 export class MaxLengthNode extends BaseBound<MaxLengthDeclaration> {
-	static intersections = createUpperIntersections("maxLength")
+	static implementation: NodeImplementation<MaxLengthDeclaration> =
+		implementBound({
+			intersections: createUpperIntersections("maxLength"),
+			describeExpected(node) {
+				return node.exclusive
+					? `less than length ${node.limit}`
+					: `at most length ${node.limit}`
+			}
+		})
 
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length < this.limit
 		: (data: string | readonly unknown[]) => data.length <= this.limit
-
-	writeDefaultDescription() {
-		return this.exclusive
-			? `less than length ${this.limit}`
-			: `at most length ${this.limit}`
-	}
 
 	getCheckedDefinitions() {
 		return ["string", Array] as const
@@ -285,13 +298,16 @@ export type AfterDeclaration = declareNode<{
 export class AfterNode extends BaseBound<AfterDeclaration> {
 	static intersections = createLowerIntersections("after")
 
+	static implementation: NodeImplementation<AfterDeclaration> = implementBound({
+		intersections: createLowerIntersections("after"),
+		describeExpected(node) {
+			return node.exclusive ? `after ${node.limit}` : `${node.limit} or later`
+		}
+	})
+
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.limit
 		: (data: Date) => +data >= this.limit
-
-	writeDefaultDescription() {
-		return this.exclusive ? `after ${this.limit}` : `${this.limit} or later`
-	}
 
 	getCheckedDefinitions() {
 		return [Date] as const
@@ -311,15 +327,20 @@ export type BeforeDeclaration = declareNode<{
 }>
 
 export class BeforeNode extends BaseBound<BeforeDeclaration> {
-	static intersections = createUpperIntersections("before")
+	static implementation: NodeImplementation<BeforeDeclaration> = implementBound(
+		{
+			intersections: createUpperIntersections("before"),
+			describeExpected(node) {
+				return node.exclusive
+					? `before ${node.limit}`
+					: `${node.limit} or earlier`
+			}
+		}
+	)
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.limit
 		: (data: Date) => +data <= this.limit
-
-	writeDefaultDescription() {
-		return this.exclusive ? `before ${this.limit}` : `${this.limit} or earlier`
-	}
 
 	getCheckedDefinitions() {
 		return [Date] as const

@@ -20,11 +20,10 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
 	type BasisKind,
-	type NodeParserImplementation
+	type NodeImplementation
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult, ArkTypeError } from "../shared/errors.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import type { is } from "../shared/utils.js"
 import { BaseType } from "./type.js"
 
@@ -66,7 +65,7 @@ export type MorphDeclaration = declareNode<{
 
 export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
 	// TODO: recursively extract in?
-	static parser: NodeParserImplementation<MorphDeclaration> = {
+	static implementation: NodeImplementation<MorphDeclaration> = {
 		keys: {
 			in: {
 				child: true,
@@ -82,51 +81,49 @@ export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
 				parse: listFrom
 			}
 		},
-		normalize: (schema) => schema
-	}
-
-	static writeDefaultDescription(node: MorphNode) {
-		return `a morph from ${node.in} to ${node.out}`
-	}
-
-	static intersections: NodeIntersections<MorphDeclaration> = {
-		morph: (l, r) => {
-			if (l.morph.some((morph, i) => morph !== r.morph[i])) {
-				// TODO: is this always a parse error? what about for union reduction etc.
-				// TODO: check in for union reduction
-				return throwParseError(`Invalid intersection of morphs`)
-			}
-			const inTersection = l.in.intersect(r.in)
-			if (inTersection instanceof Disjoint) {
-				return inTersection
-			}
-			const outTersection = l.out.intersect(r.out)
-			if (outTersection instanceof Disjoint) {
-				return outTersection
-			}
-			return {
-				morph: l.morph,
-				in: inTersection,
-				out: outTersection
+		normalize: (schema) => schema,
+		intersections: {
+			morph: (l, r) => {
+				if (l.morph.some((morph, i) => morph !== r.morph[i])) {
+					// TODO: is this always a parse error? what about for union reduction etc.
+					// TODO: check in for union reduction
+					return throwParseError(`Invalid intersection of morphs`)
+				}
+				const inTersection = l.in.intersect(r.in)
+				if (inTersection instanceof Disjoint) {
+					return inTersection
+				}
+				const outTersection = l.out.intersect(r.out)
+				if (outTersection instanceof Disjoint) {
+					return outTersection
+				}
+				return {
+					morph: l.morph,
+					in: inTersection,
+					out: outTersection
+				}
+			},
+			intersection: (l, r) => {
+				const inTersection = l.in.intersect(r)
+				return inTersection instanceof Disjoint
+					? inTersection
+					: {
+							...l.inner,
+							in: inTersection
+					  }
+			},
+			default: (l, r) => {
+				const constrainedInput = l.in.intersect(r)
+				return constrainedInput instanceof Disjoint
+					? constrainedInput
+					: {
+							...l.inner,
+							in: constrainedInput
+					  }
 			}
 		},
-		intersection: (l, r) => {
-			const inTersection = l.in.intersect(r)
-			return inTersection instanceof Disjoint
-				? inTersection
-				: {
-						...l.inner,
-						in: inTersection
-				  }
-		},
-		default: (l, r) => {
-			const constrainedInput = l.in.intersect(r)
-			return constrainedInput instanceof Disjoint
-				? constrainedInput
-				: {
-						...l.inner,
-						in: constrainedInput
-				  }
+		describeExpected(node) {
+			return `a morph from ${node.in} to ${node.out}`
 		}
 	}
 

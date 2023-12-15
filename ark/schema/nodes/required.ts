@@ -6,9 +6,11 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { NodeParserImplementation, TypeKind } from "../shared/define.js"
+import type {
+	NodeImplementation,
+	TypeKind
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import {
 	BaseRefinement,
@@ -57,7 +59,7 @@ const intersectNamed = (
 }
 
 export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
-	static parser: NodeParserImplementation<RequiredDeclaration> = {
+	static parser: NodeImplementation<RequiredDeclaration> = {
 		keys: {
 			key: {},
 			value: {
@@ -65,16 +67,11 @@ export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
 				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
 			}
 		},
-		normalize: (schema) => schema
-	}
-
-	static writeDefaultDescription(node: RequiredNode) {
-		return `${String(node.compiledKey)}: ${node.value}`
-	}
-
-	static intersections: NodeIntersections<RequiredDeclaration> = {
-		required: intersectNamed,
-		optional: intersectNamed
+		normalize: (schema) => schema,
+		intersections: { required: intersectNamed, optional: intersectNamed },
+		describeExpected(node) {
+			return `${String(node.compiledKey)}: ${node.value}`
+		}
 	}
 
 	readonly hasOpenIntersection = true

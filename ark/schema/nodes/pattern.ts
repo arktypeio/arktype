@@ -1,6 +1,5 @@
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { NodeParserImplementation } from "../shared/define.js"
-import type { NodeIntersections } from "../shared/intersect.js"
+import type { NodeImplementation } from "../shared/define.js"
 import { BasePrimitiveRefinement } from "./refinement.js"
 
 export type PatternInner = {
@@ -24,7 +23,7 @@ export type PatternDeclaration = declareNode<{
 }>
 
 export class PatternNode extends BasePrimitiveRefinement<PatternDeclaration> {
-	static parser: NodeParserImplementation<PatternDeclaration> = {
+	static implementation: NodeImplementation<PatternDeclaration> = {
 		collapseKey: "source",
 		keys: {
 			source: {},
@@ -37,16 +36,14 @@ export class PatternNode extends BasePrimitiveRefinement<PatternDeclaration> {
 				  ? schema.flags
 						? { source: schema.source, flags: schema.flags }
 						: { source: schema.source }
-				  : schema
-	}
-
-	static writeDefaultDescription(node: PatternNode) {
-		return `matched by ${node.source}`
-	}
-
-	static intersections: NodeIntersections<PatternDeclaration> = {
-		// For now, non-equal regex are naively intersected
-		pattern: () => null
+				  : schema,
+		intersections: {
+			// For now, non-equal regex are naively intersected
+			pattern: () => null
+		},
+		describeExpected(node) {
+			return `matched by ${node.source}`
+		}
 	}
 
 	readonly hasOpenIntersection = true

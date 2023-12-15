@@ -25,7 +25,7 @@ import {
 	basisKinds,
 	type BasisKind,
 	type ConstraintKind,
-	type NodeParserImplementation,
+	type NodeImplementation,
 	type PropKind,
 	type RefinementKind
 } from "../shared/define.js"
@@ -108,7 +108,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	IntersectionDeclaration
 > {
-	static parser: NodeParserImplementation<IntersectionDeclaration> = {
+	static implementation: NodeImplementation<IntersectionDeclaration> = {
 		normalize: (def) => def,
 		addContext: (ctx) => {
 			const def = ctx.definition as IntersectionSchema
@@ -191,29 +191,31 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				meta
 			)
 			return scope.parsePrereduced("intersection", reducedSchema)
-		}
-	}
-
-	static writeDefaultDescription(node: IntersectionNode) {
-		return node.constraints.length === 0
-			? "an unknown value"
-			: node.constraints.join(" and ")
-	}
-
-	static intersections: NodeIntersections<IntersectionDeclaration> = {
-		intersection: (l, r) => {
-			let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
-			for (const refinement of r.constraints) {
-				if (result instanceof Disjoint) {
-					break
-				}
-				result = addConstraint(result, refinement)
-			}
-			return result instanceof Disjoint ? result : unflattenConstraints(result)
 		},
-		default: (l, r) => {
-			const result = addConstraint(l.constraints, r)
-			return result instanceof Disjoint ? result : unflattenConstraints(result)
+		intersections: {
+			intersection: (l, r) => {
+				let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
+				for (const refinement of r.constraints) {
+					if (result instanceof Disjoint) {
+						break
+					}
+					result = addConstraint(result, refinement)
+				}
+				return result instanceof Disjoint
+					? result
+					: unflattenConstraints(result)
+			},
+			default: (l, r) => {
+				const result = addConstraint(l.constraints, r)
+				return result instanceof Disjoint
+					? result
+					: unflattenConstraints(result)
+			}
+		},
+		describeExpected(node) {
+			return node.constraints.length === 0
+				? "an unknown value"
+				: node.constraints.join(" and ")
 		}
 	}
 

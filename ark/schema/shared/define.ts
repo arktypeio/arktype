@@ -9,6 +9,8 @@ import type { BaseNode, Node } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
+import type { Disjoint } from "./disjoint.js"
+import type { NodeIntersections } from "./intersect.js"
 import { compileSerializedValue } from "./registry.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -126,7 +128,9 @@ export type NodeKeyImplementation<
 	| (k extends keyof d["meta"] ? "meta" : never)
 >
 
-export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
+export type NodeImplementation<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> = {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	collapseKey?: keyof d["inner"] & string
@@ -136,6 +140,13 @@ export type NodeParserImplementation<d extends BaseNodeDeclaration> = {
 		meta: d["meta"],
 		scope: ScopeNode
 	) => Node | undefined
+	intersections: BaseNodeDeclaration extends d
+		? Record<
+				string,
+				// TODO: narrow
+				(l: any, r: any) => {} | Disjoint | null
+		  >
+		: NodeIntersections<d>
+	describeExpected: (node: Node<d["kind"]>) => string
+	describeActual?: (data: d["prerequisite"]) => string
 }
-
-export type UnknownNodeParser = NodeParserImplementation<BaseNodeDeclaration>

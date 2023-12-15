@@ -1,4 +1,5 @@
 import type { Dict, extend } from "@arktype/util"
+import type { NodeSubclass } from "./base.js"
 import { BoundNodes, type BoundDeclarations } from "./nodes/bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./nodes/divisor.js"
 import { DomainNode, type DomainDeclaration } from "./nodes/domain.js"
@@ -67,7 +68,7 @@ export const NodesByKind = {
 	optional: OptionalNode,
 	index: IndexNode,
 	sequence: SequenceNode
-} as const satisfies Dict<NodeKind>
+} as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
 export type NodesByKind = typeof NodesByKind
 

@@ -1,12 +1,9 @@
 import { domainOf, printable } from "@arktype/util"
-import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { NodeParserImplementation } from "../shared/define.js"
+import type { NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import { BaseBasis } from "./basis.js"
-import { BaseType } from "./type.js"
 
 export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
 
@@ -26,23 +23,23 @@ export type UnitDeclaration = declareNode<{
 }>
 
 export class UnitNode<t = unknown> extends BaseBasis<t, UnitDeclaration> {
-	static parser: NodeParserImplementation<UnitDeclaration> = {
+	static implementation: NodeImplementation<UnitDeclaration> = {
 		keys: {
 			unit: {
 				preserveUndefined: true
 			}
 		},
-		normalize: (schema) => schema
-	}
-
-	static intersections: NodeIntersections<UnitDeclaration> = {
-		unit: (l, r) => Disjoint.from("unit", l, r),
-		default: (l, r) =>
-			r.allows(l.unit as never) ? l : Disjoint.from("assignability", l.unit, r)
-	}
-
-	static writeDefaultDescription(node: UnitNode) {
-		return node.basisName
+		normalize: (schema) => schema,
+		intersections: {
+			unit: (l, r) => Disjoint.from("unit", l, r),
+			default: (l, r) =>
+				r.allows(l.unit as never)
+					? l
+					: Disjoint.from("assignability", l.unit, r)
+		},
+		describeExpected(node) {
+			return node.basisName
+		}
 	}
 
 	serializedValue = compileSerializedValue(this.unit)

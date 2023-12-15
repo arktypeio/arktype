@@ -5,7 +5,7 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { NodeParserImplementation, TypeKind } from "../shared/define.js"
+import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../shared/registry.js"
@@ -33,7 +33,7 @@ export type OptionalDeclaration = declareNode<{
 }>
 
 export class OptionalNode extends BaseRefinement<OptionalDeclaration> {
-	static parser: NodeParserImplementation<OptionalDeclaration> = {
+	static parser: NodeImplementation<OptionalDeclaration> = {
 		keys: {
 			key: {},
 			value: {
@@ -41,24 +41,22 @@ export class OptionalNode extends BaseRefinement<OptionalDeclaration> {
 				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
 			}
 		},
-		normalize: (schema) => schema
-	}
-
-	static writeDefaultDescription(node: OptionalNode) {
-		return `${String(node.compiledKey)}?: ${node.value}`
-	}
-
-	static intersections: NodeIntersections<OptionalDeclaration> = {
-		optional: (l, r) => {
-			if (l.key !== r.key) {
-				return null
-			}
-			const optional = l.key
-			const value = l.value.intersect(r.value)
-			return {
-				key: optional,
-				value:
-					value instanceof Disjoint ? (l.scope.builtin.never as never) : value
+		normalize: (schema) => schema,
+		describeExpected(node) {
+			return `${String(node.compiledKey)}?: ${node.value}`
+		},
+		intersections: {
+			optional: (l, r) => {
+				if (l.key !== r.key) {
+					return null
+				}
+				const optional = l.key
+				const value = l.value.intersect(r.value)
+				return {
+					key: optional,
+					value:
+						value instanceof Disjoint ? (l.scope.builtin.never as never) : value
+				}
 			}
 		}
 	}

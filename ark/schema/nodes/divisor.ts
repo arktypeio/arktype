@@ -1,5 +1,5 @@
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type { NodeParserImplementation } from "../shared/define.js"
+import type { NodeImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BasePrimitiveRefinement } from "./refinement.js"
 
@@ -31,25 +31,23 @@ export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
 export class DivisorNode extends BasePrimitiveRefinement<DivisorDeclaration> {
-	static parser: NodeParserImplementation<DivisorDeclaration> = {
+	static implementation: NodeImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",
 		keys: {
 			divisor: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { divisor: schema } : schema
-	}
-
-	static writeDefaultDescription(node: DivisorNode) {
-		return node.divisor === 1 ? "an integer" : `a multiple of ${node.divisor}`
-	}
-
-	static intersections: NodeIntersections<DivisorDeclaration> = {
-		divisor: (l, r) => ({
-			divisor: Math.abs(
-				(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-			)
-		})
+			typeof schema === "number" ? { divisor: schema } : schema,
+		intersections: {
+			divisor: (l, r) => ({
+				divisor: Math.abs(
+					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+				)
+			})
+		},
+		describeExpected(node) {
+			return node.divisor === 1 ? "an integer" : `a multiple of ${node.divisor}`
+		}
 	}
 
 	readonly hasOpenIntersection = false
