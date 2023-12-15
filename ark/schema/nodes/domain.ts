@@ -31,7 +31,11 @@ export type DomainDeclaration = declareNode<{
 	}
 }>
 
-export class DomainNode<t = unknown> extends BaseBasis<t, DomainDeclaration> {
+export class DomainNode<t = unknown> extends BaseBasis<
+	t,
+	DomainDeclaration,
+	typeof DomainNode
+> {
 	static implementation: NodeImplementation<DomainDeclaration> = {
 		collapseKey: "domain",
 		keys: {

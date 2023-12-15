@@ -32,7 +32,10 @@ export type OptionalDeclaration = declareNode<{
 	prerequisite: object
 }>
 
-export class OptionalNode extends BaseRefinement<OptionalDeclaration> {
+export class OptionalNode extends BaseRefinement<
+	OptionalDeclaration,
+	typeof OptionalNode
+> {
 	static implementation: NodeImplementation<OptionalDeclaration> = {
 		keys: {
 			key: {},

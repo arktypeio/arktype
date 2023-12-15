@@ -29,7 +29,10 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends BasePrimitiveRefinement<PredicateDeclaration> {
+export class PredicateNode extends BasePrimitiveRefinement<
+	PredicateDeclaration,
+	typeof PredicateNode
+> {
 	static implementation: NodeImplementation<PredicateDeclaration> = {
 		collapseKey: "predicate",
 		keys: {

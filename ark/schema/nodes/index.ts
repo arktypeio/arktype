@@ -31,7 +31,10 @@ export type IndexDeclaration = declareNode<{
 	prerequisite: object
 }>
 
-export class IndexNode extends BaseRefinement<IndexDeclaration> {
+export class IndexNode extends BaseRefinement<
+	IndexDeclaration,
+	typeof IndexNode
+> {
 	static implementation: NodeImplementation<IndexDeclaration> = {
 		keys: {
 			key: {

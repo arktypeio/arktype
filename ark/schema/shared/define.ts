@@ -5,7 +5,7 @@ import type {
 	requireKeys,
 	satisfy
 } from "@arktype/util"
-import type { BaseNode, Node } from "../base.js"
+import type { BaseNode, Node, UnknownNode } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
@@ -111,7 +111,7 @@ export type NodeKeyImplementation<
 		meta?: true
 		child?: true
 		serialize?: (
-			schema: instantiated extends listable<BaseNode> | undefined
+			schema: instantiated extends listable<UnknownNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
 				: instantiated
 		) => JsonData
@@ -123,7 +123,9 @@ export type NodeKeyImplementation<
 	// require parse if we can't guarantee the schema value will be valid on inner
 	| (d["normalizedSchema"][k] extends instantiated ? never : "parse")
 	// require keys containing children specify it
-	| ([instantiated] extends [listable<BaseNode> | undefined] ? "child" : never)
+	| ([instantiated] extends [listable<UnknownNode> | undefined]
+			? "child"
+			: never)
 	// require meta keys are specified
 	| (k extends keyof d["meta"] ? "meta" : never)
 >

@@ -53,7 +53,10 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.scope.parseTypeNode(element))
 }
 
-export class SequenceNode extends BaseRefinement<SequenceDeclaration> {
+export class SequenceNode extends BaseRefinement<
+	SequenceDeclaration,
+	typeof SequenceNode
+> {
 	static implementation: NodeImplementation<SequenceDeclaration> = {
 		collapseKey: "element",
 		keys: {

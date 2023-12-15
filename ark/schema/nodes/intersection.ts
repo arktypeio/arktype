@@ -106,7 +106,8 @@ export type IntersectionDeclaration = declareNode<{
 
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
-	IntersectionDeclaration
+	IntersectionDeclaration,
+	typeof IntersectionNode
 > {
 	static implementation: NodeImplementation<IntersectionDeclaration> = {
 		normalize: (def) => def,

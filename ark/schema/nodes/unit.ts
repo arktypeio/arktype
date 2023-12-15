@@ -22,7 +22,11 @@ export type UnitDeclaration = declareNode<{
 	}
 }>
 
-export class UnitNode<t = unknown> extends BaseBasis<t, UnitDeclaration> {
+export class UnitNode<t = unknown> extends BaseBasis<
+	t,
+	UnitDeclaration,
+	typeof UnitNode
+> {
 	static implementation: NodeImplementation<UnitDeclaration> = {
 		keys: {
 			unit: {

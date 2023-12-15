@@ -63,7 +63,11 @@ export type MorphDeclaration = declareNode<{
 	}
 }>
 
-export class MorphNode<t = unknown> extends BaseType<t, MorphDeclaration> {
+export class MorphNode<t = unknown> extends BaseType<
+	t,
+	MorphDeclaration,
+	typeof MorphNode
+> {
 	// TODO: recursively extract in?
 	static implementation: NodeImplementation<MorphDeclaration> = {
 		keys: {

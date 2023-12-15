@@ -3,6 +3,7 @@ import {
 	BaseNode,
 	type BaseAttachments,
 	type Node,
+	type NodeSubclass,
 	type TypeNode
 } from "../base.js"
 import type { Schema, hasOpenIntersection } from "../kinds.js"
@@ -21,9 +22,10 @@ export type BaseTypeDeclaration = extend<
 >
 
 export abstract class BaseType<
-	t = unknown,
-	d extends BaseTypeDeclaration = BaseTypeDeclaration
-> extends BaseNode<t, d> {
+	t,
+	d extends BaseTypeDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseNode<t, d, subclass> {
 	declare infer: extractOut<t>;
 	declare [inferred]: t
 

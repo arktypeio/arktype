@@ -68,11 +68,7 @@ import {
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { ArkResult } from "./shared/errors.js"
-import {
-	leftOperandOf,
-	type NodeIntersections,
-	type intersectionOf
-} from "./shared/intersect.js"
+import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -106,12 +102,19 @@ export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 export const isNode = (value: unknown): value is Node =>
 	value instanceof BaseNode
 
+export type UnknownNode = BaseNode<
+	any,
+	BaseNodeDeclaration,
+	NodeSubclass<BaseNodeDeclaration>
+>
+
 export abstract class BaseNode<
-	t = unknown,
-	d extends BaseNodeDeclaration = BaseNodeDeclaration,
-	subclass extends NodeSubclass<d> = NodeSubclass<d>
+	t,
+	d extends BaseNodeDeclaration,
+	subclass extends NodeSubclass<d>
 > extends DynamicBase<attachmentsOf<d>> {
-	readonly impl: NodeImplementation = (this.constructor as any).implementation
+	readonly impl: subclass["implementation"] = (this.constructor as any)
+		.implementation
 
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
@@ -155,13 +158,13 @@ export abstract class BaseNode<
 		return { errors: ctx.errors }
 	}
 
-	private inCache?: BaseNode;
+	private inCache?: UnknownNode;
 	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
 		this.inCache ??= this.getIo("in")
 		return this.inCache as never
 	}
 
-	private outCache?: BaseNode
+	private outCache?: UnknownNode
 	get out(): Node<ioKindOf<d["kind"]>, extractOut<t>> {
 		this.outCache ??= this.getIo("out")
 		return this.outCache as never
@@ -174,7 +177,7 @@ export abstract class BaseNode<
 		return this.descriptionCache
 	}
 
-	private getIo(kind: "in" | "out"): BaseNode {
+	private getIo(kind: "in" | "out"): UnknownNode {
 		if (!this.includesMorph) {
 			return this as never
 		}
@@ -185,7 +188,7 @@ export abstract class BaseNode<
 				continue
 			}
 			if (keyDefinition.child) {
-				const childValue = v as listable<BaseNode>
+				const childValue = v as listable<UnknownNode>
 				ioInner[k] = isArray(childValue)
 					? childValue.map((child) => child[kind])
 					: childValue[kind]
@@ -284,9 +287,9 @@ export abstract class BaseNode<
 			// TODO: meta
 			return this as never
 		}
-		const l = leftOperandOf(this as never, other)
+		const l: UnknownNode = leftOperandOf(this as never, other) as any
 		const thisIsLeft = l === (this as never)
-		const r: Node = thisIsLeft ? other : (this as never)
+		const r: UnknownNode = thisIsLeft ? other : (this as any)
 		const intersections = l.impl.intersections
 		const intersector = intersections[r.kind] ?? intersections.default
 		const result = intersector?.(l, r as never)

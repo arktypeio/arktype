@@ -36,7 +36,11 @@ export type ProtoDeclaration = declareNode<{
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export class ProtoNode<t = unknown> extends BaseBasis<t, ProtoDeclaration> {
+export class ProtoNode<t = unknown> extends BaseBasis<
+	t,
+	ProtoDeclaration,
+	typeof ProtoNode
+> {
 	static implementation: NodeImplementation<ProtoDeclaration> = {
 		collapseKey: "proto",
 		keys: {

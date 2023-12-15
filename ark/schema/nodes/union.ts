@@ -59,7 +59,11 @@ const intersectBranch = (
 	return l.ordered ? { branches, ordered: true } : { branches }
 }
 
-export class UnionNode<t = unknown> extends BaseType<t, UnionDeclaration> {
+export class UnionNode<t = unknown> extends BaseType<
+	t,
+	UnionDeclaration,
+	typeof UnionNode
+> {
 	static implementation: NodeImplementation<UnionDeclaration> = {
 		collapseKey: "branches",
 		keys: {

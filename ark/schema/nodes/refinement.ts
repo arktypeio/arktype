@@ -53,9 +53,9 @@ export type BaseRefinementDeclaration = extend<
 >
 
 export abstract class BaseRefinement<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration,
-	subclass extends NodeSubclass<d> = NodeSubclass<d>
-> extends BaseNode<any, d> {
+	d extends BaseNodeDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseNode<any, d, subclass> {
 	abstract getCheckedDefinitions(): readonly TypeSchema[]
 	readonly checks: readonly TypeNode[] =
 		cache[this.kind] ??
@@ -84,7 +84,7 @@ export type BasePrimitiveRefinementDeclaration = extend<
 
 export abstract class BasePrimitiveRefinement<
 		d extends BasePrimitiveRefinementDeclaration,
-		subclass extends NodeSubclass<d> = NodeSubclass<d>
+		subclass extends NodeSubclass<d>
 	>
 	extends BaseRefinement<d, subclass>
 	implements PrimitiveNode

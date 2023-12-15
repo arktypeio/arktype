@@ -30,7 +30,10 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export class DivisorNode extends BasePrimitiveRefinement<DivisorDeclaration> {
+export class DivisorNode extends BasePrimitiveRefinement<
+	DivisorDeclaration,
+	typeof DivisorNode
+> {
 	static implementation: NodeImplementation<DivisorDeclaration> = {
 		collapseKey: "divisor",
 		keys: {

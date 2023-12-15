@@ -7,7 +7,7 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import { isNode } from "../base.js"
+import { isNode, type NodeSubclass } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { PrimitiveNode } from "../shared/declare.js"
@@ -22,8 +22,12 @@ export type BaseBasisDeclaration = extend<
 	{ kind: BasisKind }
 >
 
-export abstract class BaseBasis<t, d extends BaseBasisDeclaration>
-	extends BaseType<t, d>
+export abstract class BaseBasis<
+		t,
+		d extends BaseBasisDeclaration,
+		subclass extends NodeSubclass<d>
+	>
+	extends BaseType<t, d, subclass>
 	implements PrimitiveNode
 {
 	abstract readonly basisName: string

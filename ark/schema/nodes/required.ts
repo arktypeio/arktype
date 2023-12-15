@@ -55,7 +55,10 @@ const intersectNamed = (
 	}
 }
 
-export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
+export class RequiredNode extends BaseRefinement<
+	RequiredDeclaration,
+	typeof RequiredNode
+> {
 	static implementation: NodeImplementation<RequiredDeclaration> = {
 		keys: {
 			key: {},
