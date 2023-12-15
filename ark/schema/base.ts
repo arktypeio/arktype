@@ -98,11 +98,6 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
-export type NodeDescriptions<node extends Node = Node> = {
-	readonly expected: (node: node) => string
-	readonly actual: (data: Parameters<node["allows"]>[0]) => string
-}
-
 export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 	{
 		readonly implementation: NodeImplementation<d>
@@ -116,8 +111,7 @@ export abstract class BaseNode<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration,
 	subclass extends NodeSubclass<d> = NodeSubclass<d>
 > extends DynamicBase<attachmentsOf<d>> {
-	readonly cls: subclass = this.constructor as never
-	readonly impl: NodeImplementation = this.cls.implementation as never
+	readonly impl: NodeImplementation = (this.constructor as any).implementation
 
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)

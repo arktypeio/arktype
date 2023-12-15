@@ -10,7 +10,6 @@ import {
 	type NodeImplementation
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseBasis } from "./basis.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = {
