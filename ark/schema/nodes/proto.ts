@@ -2,6 +2,7 @@ import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
+	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
 import type { declareNode, withAttributes } from "../shared/declare.js"
@@ -57,6 +58,9 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 			return knownObjectKind
 				? objectKindDescriptions[knownObjectKind]
 				: `an instance of ${node.proto.name}`
+		},
+		describeActual(data) {
+			return objectKindOrDomainOf(data)
 		},
 		intersections: {
 			proto: (l, r) =>

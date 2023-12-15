@@ -46,6 +46,9 @@ export class DomainNode<t = unknown> extends BaseBasis<
 		describeExpected(node) {
 			return domainDescriptions[node.domain]
 		},
+		describeActual(data) {
+			return domainOf(data)
+		},
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r)
 		}
