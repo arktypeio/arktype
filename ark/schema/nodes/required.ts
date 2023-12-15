@@ -6,10 +6,7 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
-import type {
-	NodeImplementation,
-	TypeKind
-} from "../shared/define.js"
+import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../shared/registry.js"
 import {
@@ -59,7 +56,7 @@ const intersectNamed = (
 }
 
 export class RequiredNode extends BaseRefinement<RequiredDeclaration> {
-	static parser: NodeImplementation<RequiredDeclaration> = {
+	static implementation: NodeImplementation<RequiredDeclaration> = {
 		keys: {
 			key: {},
 			value: {

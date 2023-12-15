@@ -54,7 +54,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 }
 
 export class SequenceNode extends BaseRefinement<SequenceDeclaration> {
-	static parser: NodeImplementation<SequenceDeclaration> = {
+	static implementation: NodeImplementation<SequenceDeclaration> = {
 		collapseKey: "element",
 		keys: {
 			prefix: fixedSequenceKeyDefinition,

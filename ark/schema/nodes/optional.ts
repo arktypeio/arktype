@@ -33,7 +33,7 @@ export type OptionalDeclaration = declareNode<{
 }>
 
 export class OptionalNode extends BaseRefinement<OptionalDeclaration> {
-	static parser: NodeImplementation<OptionalDeclaration> = {
+	static implementation: NodeImplementation<OptionalDeclaration> = {
 		keys: {
 			key: {},
 			value: {
