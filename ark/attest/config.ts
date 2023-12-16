@@ -1,10 +1,12 @@
 import { ensureDir, fromCwd } from "@arktype/fs"
+import { tryParseNumber } from "@arktype/util"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 
 type MutableAttestConfig = {
 	tsconfig: string | undefined
 	updateSnapshots: boolean
+	tsVersions: string[]
 	skipTypes: boolean
 	attestAliases: string[]
 	benchPercentThreshold: number
@@ -32,6 +34,7 @@ export const getDefaultAttestConfig = (): AttestConfig => {
 		attestAliases: ["attest", "attestInternal"],
 		updateSnapshots: false,
 		skipTypes: false,
+		tsVersions: ["default"],
 		benchPercentThreshold: 20,
 		benchErrorOnThresholdExceeded: false,
 		cacheDir,
@@ -42,19 +45,28 @@ export const getDefaultAttestConfig = (): AttestConfig => {
 	}
 }
 
-const hasFlag = (flag: string) => process.argv.some((arg) => arg.includes(flag))
+const hasFlag = (flag: keyof AttestConfig) =>
+	process.argv.some((arg) => arg.includes(flag))
 
-const getParamValue = (param: string) => {
+const getParamValue = (param: keyof AttestConfig) => {
 	const paramIndex = process.argv.findIndex((arg) => arg.includes(param))
 	if (paramIndex === -1) {
 		return undefined
 	}
-	const value = process.argv[paramIndex + 1]
-	return value === "true"
-		? true
-		: value === "false"
-		  ? false
-		  : parseFloat(value) ?? value
+	const raw = process.argv[paramIndex + 1]
+	if (raw === "true") {
+		return true
+	}
+	if (raw === "false") {
+		return false
+	}
+	if (param === "benchPercentThreshold") {
+		return tryParseNumber(raw, { errorOnFail: true })
+	}
+	if (param === "tsVersions" || param === "attestAliases") {
+		return raw.split(",")
+	}
+	return raw
 }
 
 const addEnvConfig = (config: MutableAttestConfig) => {
