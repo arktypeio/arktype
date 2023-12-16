@@ -9,7 +9,7 @@ export class TraversalContext {
 	// Qualified
 	seen: { [name in string]?: object[] } = {}
 
-	constructor() {}
+	constructor(public data: unknown) {}
 
 	get errors() {
 		return this.errorsStack.at(-1)!
@@ -26,7 +26,7 @@ export class TraversalContext {
 	popUnion(branchCount: number, data: unknown, path: string[]) {
 		const branchProblems = this.errorsStack.pop()!
 		if (branchProblems.count === branchCount) {
-			this.errors.add("union") //addProblem("union", branchProblems, data, path)
+			this.addError("union", { errors: branchProblems })
 		}
 	}
 }

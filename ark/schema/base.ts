@@ -145,12 +145,12 @@ export abstract class BaseNode<
 	abstract compileBody(ctx: CompilationContext): string
 
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
-		const ctx = new TraversalContext()
+		const ctx = new TraversalContext(data)
 		return this.traverseAllows(data as never, ctx)
 	}
 
 	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
-		const ctx = new TraversalContext()
+		const ctx = new TraversalContext(data)
 		this.traverseApply(data as never, ctx)
 		if (ctx.errors.length === 0) {
 			return { out: data } as any

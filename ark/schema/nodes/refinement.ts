@@ -94,7 +94,7 @@ export abstract class BasePrimitiveRefinement<
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.addError("domain")
+			ctx.addError(this.kind as any, Object.assign(this.inner, { data }))
 			ctx.errors.add(this.description)
 		}
 	}

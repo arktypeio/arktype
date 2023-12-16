@@ -1,6 +1,7 @@
 import {
 	ReadonlyArray,
 	type Dict,
+	type autocomplete,
 	type evaluate,
 	type extend,
 	type propwiseXor
@@ -59,12 +60,12 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	byPath: Record<string, ArkTypeError> = {}
 	count = 0
 
-	add<code extends ArkErrorCode>(
-		code: code,
-		schema: ArkErrorSchema<code>
-	): ArkError
-	add(description: string): ArkError
-	add(codeOrDescription: string, schema?: ArkErrorSchema) {
+	add<codeOrDescription extends autocomplete<ArkErrorCode>>(
+		codeOrDescription: codeOrDescription,
+		...schema: codeOrDescription extends ArkErrorCode
+			? [schema: ArkErrorSchema<codeOrDescription>]
+			: []
+	) {
 		const problem = {} as any // new ArkTypeError([...this.context.path], description)
 		const pathKey = this.context.path.join(".")
 		const existing = this.byPath[pathKey]
