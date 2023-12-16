@@ -176,7 +176,6 @@ export class ChainableAssertions implements AssertionRecord {
 			return chainableNoOpProxy
 		}
 		// We need to bind this to return an object with getters
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const self = this
 		return {
 			get toString() {

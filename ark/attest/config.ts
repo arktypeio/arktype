@@ -6,15 +6,12 @@ import { join, resolve } from "node:path"
 type MutableAttestConfig = {
 	tsconfig: string | undefined
 	updateSnapshots: boolean
-	tsVersions: string[]
+	tsVersions: string[] | undefined
 	skipTypes: boolean
 	attestAliases: string[]
 	benchPercentThreshold: number
 	benchErrorOnThresholdExceeded: boolean
 	cacheDir: string
-	assertionCacheFile: string
-	snapCacheDir: string
-	benchSnapCacheDir: string
 	filter: string | undefined
 }
 
@@ -22,11 +19,11 @@ export type AttestConfig = Readonly<MutableAttestConfig>
 
 export type AttestOptions = Partial<AttestConfig>
 
-export const getDefaultAttestConfig = (): AttestConfig => {
+export const getDefaultAttestConfig = (): EnhancedAttestConfig => {
 	const cacheDir = resolve(".attest")
 	const snapCacheDir = join(cacheDir, "snaps")
 	const benchSnapCacheDir = join(cacheDir, "benchSnaps")
-	const assertionCacheFile = join(cacheDir, "assertions.json")
+	const assertionCacheDir = join(cacheDir, "assertions")
 	return {
 		tsconfig: existsSync(fromCwd("tsconfig.json"))
 			? fromCwd("tsconfig.json")
@@ -40,7 +37,7 @@ export const getDefaultAttestConfig = (): AttestConfig => {
 		cacheDir,
 		snapCacheDir,
 		benchSnapCacheDir,
-		assertionCacheFile,
+		assertionCacheDir,
 		filter: undefined
 	}
 }
@@ -87,12 +84,21 @@ const addEnvConfig = (config: MutableAttestConfig) => {
 	return config
 }
 
-const cachedConfig = addEnvConfig(getDefaultAttestConfig())
+const cachedConfig = addEnvConfig(
+	getDefaultAttestConfig()
+) as EnhancedAttestConfig
 
-export const getConfig = (): AttestConfig => cachedConfig
+export interface EnhancedAttestConfig extends AttestConfig {
+	snapCacheDir: string
+	benchSnapCacheDir: string
+	assertionCacheDir: string
+}
+
+export const getConfig = (): EnhancedAttestConfig => cachedConfig
 
 export const ensureCacheDirs = () => {
 	ensureDir(cachedConfig.cacheDir)
 	ensureDir(cachedConfig.snapCacheDir)
 	ensureDir(cachedConfig.benchSnapCacheDir)
+	ensureDir(cachedConfig.assertionCacheDir)
 }
