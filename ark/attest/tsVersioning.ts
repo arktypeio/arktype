@@ -1,4 +1,4 @@
-import { findPackageRoot, readJson } from "@arktype/fs"
+import { findPackageRoot, readJson, readPackageJson } from "@arktype/fs"
 import { map, type Digit } from "@arktype/util"
 import { existsSync, renameSync, symlinkSync, unlinkSync } from "fs"
 import { join } from "path/posix"
@@ -12,12 +12,10 @@ export type AttestTypeScriptVersionOptions = {
 	 * This supercedes the version discovery process and specified aliases.
 	 */
 	directories?: string[]
-	/** A list of aliases to run. By default all discovered versions will be run.
-	 * 		- The version under "typescript" should be specified as "default"
-	 * 		- Alternate versions beginning with `attest-ts` should be specified with their suffixes.
-	 * 		  For example, a version installed as "attest-ts50" would be "50"
+	/** A list of exact versions to run e.g. "5.3.2". By default, all discovered versions will be run.
+	 * If a version is specified that was not installed, it will throw.
 	 */
-	aliases?: string[]
+	versions?: string[]
 }
 
 /**
@@ -35,7 +33,6 @@ export type AttestTypeScriptVersionOptions = {
  *
  * Throws an error if any version fails during test execution.
  * @param {function} fn - The function to execute for each TypeScript version.
- * It should accept a version string as its only argument.
  * @param {AttestTypeScriptVersionOptions} [opts]
  */
 export const forEachTypeScriptVersion = (
@@ -45,16 +42,16 @@ export const forEachTypeScriptVersion = (
 	let tsDirs = opts?.directories
 	if (!tsDirs) {
 		const versions = findAttestTypeScriptVersions()
-		if (opts?.aliases) {
-			tsDirs = opts.aliases.map((alias) => {
-				if (!versions[alias]) {
+		if (opts?.versions) {
+			tsDirs = opts.versions.map((version) => {
+				if (!versions[version]) {
 					throw new Error(
-						`Specified TypeScript version alias ${alias} does not exist.` +
+						`Specified TypeScript version alias ${version} does not exist.` +
 							` It should probably be specified in package.json like:
-	"attest-ts${alias}": "npm:typescript@5.0"`
+	"attest-ts${version.replace(".", "")}": "npm:typescript@${version}"`
 					)
 				}
-				return versions[alias]
+				return versions[version]
 			})
 		} else {
 			tsDirs = Object.values(versions)
@@ -115,12 +112,9 @@ export const forEachTypeScriptVersion = (
  * ```json
  * "attest-ts50": "npm:typescript@5.0"
  * ```
- * @returns An object where the keys are:
+ * @returns An object with each TypeScript version as a key like "5.3.2" mapped
+ * to the directory in which it is installed, e.g. "/home/ssalb/arktype/node_modules/attest-ts53"
  *
- *      - suffixes of dependencies beginning with "attest-ts", e.g. "50" for "attest-ts50"
- *      - "default" for the version installed as "typescript", if one exists
- *
- *      The corresponding values are the resolved paths corresponding to those TypeScript versions.
  * @throws {Error} If a TypeScript version specified in package.json is not
  * installed at the expected location in node_modules.
  */
@@ -140,11 +134,16 @@ export const findAttestTypeScriptVersions = (): Record<string, string> => {
 					`TypeScript version ${name} specified in package.json must be installed at ${expectedLocation} `
 				)
 			}
-			return [name === "typescript" ? "default" : name, expectedLocation]
+			const version: string = readJson(
+				join(expectedLocation, "package.json")
+			).version
+			return [version, expectedLocation]
 		}
 	)
 }
 
-/** Get the TypeScript version being used by attest as as string like "5.0" */
-export const getTsVersionUnderTest = (): `${Digit}.${Digit}` =>
+/** Get the TypeScript version being used by attest as as string like "5.0"
+ *  Does not include alternate versions that may be referenced by cache files
+ */
+export const getPrimaryTsVersionUnderTest = (): `${Digit}.${Digit}` =>
 	ts.versionMajorMinor

@@ -10,13 +10,14 @@ import {
 } from "../cache/snapshots.js"
 import type { Completions } from "../cache/writeAssertionCache.js"
 import { chainableNoOpProxy } from "../utils.js"
-import { assertEquals } from "./assertEquals.js"
-import type { AssertionContext } from "./attest.js"
 import {
+	TypeAssertionMapping,
 	assertEqualOrMatching,
+	assertEquals,
 	callAssertedFunction,
 	getThrownMessage
-} from "./utils.js"
+} from "./assertions.js"
+import type { AssertionContext } from "./attest.js"
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean
@@ -37,7 +38,11 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	private get serializedActual() {
-		return this.serialize(this.actual)
+		return this.serialize(
+			this.actual instanceof TypeAssertionMapping
+				? this.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)
+				: this.actual
+		)
 	}
 
 	private snapRequiresUpdate(expectedSerialized: unknown) {
@@ -153,7 +158,9 @@ export class ChainableAssertions implements AssertionRecord {
 		if (!this.ctx.cfg.skipTypes) {
 			assertEqualOrMatching(
 				matchValue,
-				this.ctx.assertionData?.errors.join("\n"),
+				new TypeAssertionMapping((data) => ({
+					actual: data.errors.join("\n")
+				})),
 				this.ctx
 			)
 		}
@@ -163,11 +170,11 @@ export class ChainableAssertions implements AssertionRecord {
 		if (this.ctx.cfg.skipTypes) {
 			return chainableNoOpProxy
 		}
-		const completions = this.ctx.assertionData?.completions
-		checkCompletionsForErrors(completions)
-		this.ctx.actual = completions
+		this.ctx.actual = new TypeAssertionMapping((data) => {
+			checkCompletionsForErrors(data.completions)
+			return { actual: data.completions }
+		})
 		this.ctx.lastSnapName = "completions"
-
 		return this.snap
 	}
 
@@ -179,11 +186,15 @@ export class ChainableAssertions implements AssertionRecord {
 		const self = this
 		return {
 			get toString() {
-				self.ctx.actual = self.ctx.assertionData?.args[0].type
+				self.ctx.actual = new TypeAssertionMapping((data) => ({
+					actual: data.args[0].type
+				}))
 				return self.immediateOrChained()
 			},
 			get errors() {
-				self.ctx.actual = self.ctx.assertionData?.errors.join("\n")
+				self.ctx.actual = new TypeAssertionMapping((data) => ({
+					actual: data.errors.join("\n")
+				}))
 				self.ctx.allowRegex = true
 				return self.immediateOrChained()
 			},

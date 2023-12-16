@@ -12,7 +12,7 @@ import {
 	type StringifiableType
 } from "./ts.js"
 
-export type AssertionsByFile = Record<string, SerializedAssertionData[]>
+export type AssertionsByFile = Record<string, TypeAssertionData[]>
 
 export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const config = getConfig()
@@ -38,7 +38,7 @@ export const getAssertionsInFile = (
 	file: ts.SourceFile,
 	diagnosticsByFile: DiagnosticsByFile,
 	attestAliases: string[]
-): SerializedAssertionData[] => {
+): TypeAssertionData[] => {
 	const assertCalls = getExpressionsByName(file, attestAliases)
 	return assertCalls.map((call) => analyzeAssertCall(call, diagnosticsByFile))
 }
@@ -97,7 +97,7 @@ export const getExpressionsByName = (
 export const analyzeAssertCall = (
 	assertCall: ts.CallExpression,
 	diagnosticsByFile: DiagnosticsByFile
-): SerializedAssertionData => {
+): TypeAssertionData => {
 	const types = extractArgumentTypesFromCall(assertCall)
 	const location = getAssertCallLocation(assertCall)
 	const args = types.args.map((arg) => serializeArg(arg, types))
@@ -116,7 +116,7 @@ export const analyzeAssertCall = (
 const serializeArg = (
 	arg: StringifiableType,
 	context: ArgumentTypes
-): SerializedArgAssertion => ({
+): ArgAssertionData => ({
 	type: arg.toString(),
 	relationships: {
 		args: context.args.map((other) => compareTsTypes(arg, other)),
@@ -235,17 +235,17 @@ export type LinePositionRange = {
 	end: LinePosition
 }
 
-export type SerializedArgAssertion = {
+export type ArgAssertionData = {
 	type: string
 	relationships: {
 		args: TypeRelationship[]
 		typeArgs: TypeRelationship[]
 	}
 }
-export type SerializedAssertionData = {
+export type TypeAssertionData = {
 	location: LinePositionRange
-	args: SerializedArgAssertion[]
-	typeArgs: SerializedArgAssertion[]
+	args: ArgAssertionData[]
+	typeArgs: ArgAssertionData[]
 	errors: string[]
 	completions: Completions
 }

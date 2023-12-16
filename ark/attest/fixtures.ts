@@ -15,7 +15,7 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 	}
 	if (config.tsVersions) {
 		forEachTypeScriptVersion((alias) => writeAssertionData(""), {
-			aliases: config.tsVersions
+			versions: config.tsVersions
 		})
 	} else {
 		writeAssertionData("")

@@ -168,16 +168,16 @@ After all versions have run, your original `typescript` version will be restored
 
 ### APIs
 
-The most flexible attest APIs are `getAssertionDataAtPosition` and `caller`.
+The most flexible attest APIs are `getTypeAssertionsAtPosition` and `caller`.
 
 Here's an example of how you might use them in your own API:
 
 ```ts
-import { getAssertionDataAtPosition, caller } from "@arktype/attest"
+import { getTypeAssertionsAtPosition, caller } from "@arktype/attest"
 
 const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 	const position = caller()
-	const types = getAssertionDataAtPosition(position)
+	const types = getTypeAssertionsAtPosition(position)
 	// assert that the type of actualValue is the same as the type of expectedType
 	const relationship = types.args[0].relationships.typeArgs[0]
 	if (relationship === undefined) {

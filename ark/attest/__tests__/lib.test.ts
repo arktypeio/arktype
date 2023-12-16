@@ -1,9 +1,9 @@
-import { attest, caller, getAssertionDataAtPosition } from "@arktype/attest"
+import { attest, caller, getTypeAssertionsAtPosition } from "@arktype/attest"
 
-const attestInternal = () => getAssertionDataAtPosition(caller())
+const attestInternal = () => getTypeAssertionsAtPosition(caller())
 
 describe("lib", () => {
-	it("getAssertionDataAtPosition", () => {
+	it("getTypeAssertionsAtPosition", () => {
 		// Any changes above here could break assertion positions
 		attest(attestInternal()).snap()
 	})

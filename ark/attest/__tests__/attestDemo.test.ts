@@ -1,4 +1,4 @@
-import { attest, getTsVersionUnderTest } from "@arktype/attest"
+import { attest, getPrimaryTsVersionUnderTest } from "@arktype/attest"
 import { type } from "arktype"
 
 // @arktype/attest assertions can be made from any unit test framework with a global setup/teardown
@@ -44,7 +44,7 @@ describe("attest features", () => {
 		const numericArray = arrayOf("number | bigint")
 		// flexibly combine runtime logic with type assertions to customize your
 		// tests beyond what is possible from pure static-analysis based type testing tools
-		if (getTsVersionUnderTest().startsWith("5")) {
+		if (getPrimaryTsVersionUnderTest().startsWith("5")) {
 			// this assertion will only occur when testing TypeScript 5+!
 			attest<(number | bigint)[]>(numericArray.infer)
 		}

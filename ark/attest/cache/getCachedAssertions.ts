@@ -6,15 +6,15 @@ import { getFileKey } from "../utils.js"
 import type {
 	AssertionsByFile,
 	LinePositionRange,
-	SerializedAssertionData
+	TypeAssertionData
 } from "./writeAssertionCache.js"
 
-export type VerionsedAssertionEntry = [
+export type VerionedAssertionsByFile = [
 	tsVersion: string,
 	assertions: AssertionsByFile
 ]
 
-let assertionEntries: VerionsedAssertionEntry[] | undefined
+let assertionEntries: VerionedAssertionsByFile[] | undefined
 export const getCachedAssertionEntries = () => {
 	if (!assertionEntries) {
 		const config = getConfig()
@@ -54,18 +54,20 @@ const isPositionWithinRange = (
 	return true
 }
 
-export type VersionedAssertionEntry = [
+export type VersionedTypeAssertion = [
 	tsVersion: string,
-	assertionData: SerializedAssertionData
+	assertionData: TypeAssertionData
 ]
 
-export const getAssertionDataAtPosition = (
+export const getTypeAssertionsAtPosition = (
 	position: SourcePosition
-): VersionedAssertionEntry[] => {
+): VersionedTypeAssertion[] => {
 	const fileKey = getFileKey(position.file)
 	return getCachedAssertionEntries().map(([version, data]) => {
 		if (!data[fileKey]) {
-			throw new Error(`Found no assertion data for '${fileKey}'.`)
+			throw new Error(
+				`Found no assertion data for '${fileKey}' for TypeScript version ${version}.`
+			)
 		}
 		const matchingAssertion = data[fileKey].find((assertion) => {
 			/**
@@ -86,11 +88,3 @@ export const getAssertionDataAtPosition = (
 		return [version, matchingAssertion]
 	})
 }
-
-export const assertByVersion = (
-	position: SourcePosition,
-	fn: (data: SerializedAssertionData, version: string) => void
-) =>
-	getAssertionDataAtPosition(position).forEach(([version, data]) =>
-		fn(data, version)
-	)
