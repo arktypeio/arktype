@@ -162,7 +162,7 @@ export function parse(
 		children,
 		innerId,
 		typeId,
-		scope: ctx.scope
+		$: ctx.scope
 	} satisfies BaseAttachments as Record<string, any>
 	if (ctx.alias) {
 		attachments.alias = ctx.alias

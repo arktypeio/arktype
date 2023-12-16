@@ -87,6 +87,7 @@ export type BaseNodeDeclaration = {
 
 export interface PrimitiveNode {
 	readonly kind: PrimitiveKind
-	readonly condition: string
-	readonly negatedCondition: string
+	readonly compiledActual?: string
+	readonly compiledCondition: string
+	readonly compiledNegation: string
 }

@@ -54,15 +54,17 @@ export class PredicateNode extends BasePrimitiveRefinement<
 
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
-	condition = `${compileSerializedValue(this.predicate)}(${this.scope.argName})`
-	negatedCondition = `!${this.condition}`
+	compiledCondition = `${compileSerializedValue(this.predicate)}(${
+		this.$.dataName
+	})`
+	compiledNegation = `!${this.compiledCondition}`
 
 	getCheckedDefinitions() {
 		return [{}] as const
 	}
 
 	compileBody(ctx: CompilationContext) {
-		return this.scope.compilePrimitive(this, ctx)
+		return this.$.compilePrimitive(this, ctx)
 	}
 }
 

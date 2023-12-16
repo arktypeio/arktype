@@ -53,8 +53,10 @@ export class PatternNode extends BasePrimitiveRefinement<
 	readonly hasOpenIntersection = true
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
-	condition = `/${this.source}/${this.flags ?? ""}.test(${this.scope.argName})`
-	negatedCondition = `!${this.condition}`
+	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${
+		this.$.dataName
+	})`
+	compiledNegation = `!${this.compiledCondition}`
 
 	getCheckedDefinitions() {
 		return ["string"] as const

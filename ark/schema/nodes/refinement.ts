@@ -60,7 +60,7 @@ export abstract class BaseRefinement<
 	readonly checks: readonly TypeNode[] =
 		cache[this.kind] ??
 		(cache[this.kind] = this.getCheckedDefinitions().map((o) =>
-			this.scope.parseTypeNode(o)
+			this.$.parseTypeNode(o)
 		))
 
 	assertValidBasis(basis: Node<BasisKind> | undefined) {
@@ -89,16 +89,17 @@ export abstract class BasePrimitiveRefinement<
 	extends BaseRefinement<d, subclass>
 	implements PrimitiveNode
 {
-	abstract readonly condition: string
-	abstract readonly negatedCondition: string
+	abstract readonly compiledCondition: string
+	abstract readonly compiledNegation: string
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
+			ctx.addError("domain")
 			ctx.errors.add(this.description)
 		}
 	}
 
 	compileBody(ctx: CompilationContext) {
-		return this.scope.compilePrimitive(this as any, ctx)
+		return this.$.compilePrimitive(this as any, ctx)
 	}
 }

@@ -56,15 +56,17 @@ export class DomainNode<t = unknown> extends BaseBasis<
 
 	basisName = this.domain
 
-	condition =
-		this.domain === "object"
-			? `((typeof ${this.scope.argName} === "object" && ${this.scope.argName} !== null) || typeof ${this.scope.argName} === "function")`
-			: `typeof ${this.scope.argName} === "${this.domain}"`
+	compiledActual = ""
 
-	negatedCondition =
+	compiledCondition =
 		this.domain === "object"
-			? `((typeof ${this.scope.argName} !== "object" || ${this.scope.argName} === null) && typeof ${this.scope.argName} !== "function")`
-			: `typeof ${this.scope.argName} !== "${this.domain}"`
+			? `((typeof ${this.$.dataName} === "object" && ${this.$.dataName} !== null) || typeof ${this.$.dataName} === "function")`
+			: `typeof ${this.$.dataName} === "${this.domain}"`
+
+	compiledNegation =
+		this.domain === "object"
+			? `((typeof ${this.$.dataName} !== "object" || ${this.$.dataName} === null) && typeof ${this.$.dataName} !== "function")`
+			: `typeof ${this.$.dataName} !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
 }

@@ -58,7 +58,7 @@ export class OptionalNode extends BaseRefinement<
 				return {
 					key: optional,
 					value:
-						value instanceof Disjoint ? (l.scope.builtin.never as never) : value
+						value instanceof Disjoint ? (l.$.builtin.never as never) : value
 				}
 			}
 		}

@@ -15,6 +15,10 @@ export class TraversalContext {
 		return this.errorsStack.at(-1)!
 	}
 
+	get addError() {
+		return this.errors.add
+	}
+
 	pushUnion() {
 		this.errorsStack.push(new ArkErrors(this))
 	}

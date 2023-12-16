@@ -31,8 +31,8 @@ export abstract class BaseBasis<
 	implements PrimitiveNode
 {
 	abstract readonly basisName: string
-	abstract readonly condition: string
-	abstract readonly negatedCondition: string
+	abstract readonly compiledCondition: string
+	abstract readonly compiledNegation: string
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
@@ -41,7 +41,7 @@ export abstract class BaseBasis<
 	}
 
 	compileBody(ctx: CompilationContext) {
-		return this.scope.compilePrimitive(this as any, ctx)
+		return this.$.compilePrimitive(this as any, ctx)
 	}
 }
 

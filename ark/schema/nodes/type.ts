@@ -45,7 +45,7 @@ export abstract class BaseType<
 		kind: refinementKind,
 		input: Schema<refinementKind>
 	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
-		const refinement = this.scope.parseNode(kind, input)
+		const refinement = this.$.parseNode(kind, input)
 		return this.and(refinement) as never
 	}
 
@@ -69,7 +69,7 @@ export abstract class BaseType<
 	or<other extends TypeNode>(
 		other: other
 	): TypeNode<t | other["infer"], "union" | d["kind"] | other["kind"]> {
-		return this.scope.parseBranches(
+		return this.$.parseBranches(
 			...this.branches,
 			...(other.branches as any)
 		) as never
@@ -88,7 +88,7 @@ export abstract class BaseType<
 	}
 
 	array(): IntersectionNode<t[]> {
-		return this.scope.parsePrereduced("intersection", {
+		return this.$.parsePrereduced("intersection", {
 			basis: Array,
 			sequence: this
 		})

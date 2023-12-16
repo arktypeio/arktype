@@ -83,7 +83,7 @@ export interface BaseAttachments {
 	readonly children: Node[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly scope: ScopeNode
+	readonly $: ScopeNode
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -144,12 +144,12 @@ export abstract class BaseNode<
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract compileBody(ctx: CompilationContext): string
 
-	allows = (data: unknown): data is distill<extractIn<t>> => {
+	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
 		const ctx = new TraversalContext()
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	apply(data: unknown): ArkResult<distill<extractOut<t>>> {
+	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
 		const ctx = new TraversalContext()
 		this.traverseApply(data as never, ctx)
 		if (ctx.errors.length === 0) {
@@ -196,7 +196,7 @@ export abstract class BaseNode<
 				ioInner[k] = v
 			}
 		}
-		return this.scope.parseNode(this.kind, ioInner) as never
+		return this.$.parseNode(this.kind, ioInner) as never
 	}
 
 	toJSON() {
@@ -275,8 +275,7 @@ export abstract class BaseNode<
 			    ? { predicate: [this, other] }
 			    : null
 		return (
-			intersectionInner &&
-			this.scope.parseNode("intersection", intersectionInner)
+			intersectionInner && this.$.parseNode("intersection", intersectionInner)
 		)
 	}
 
@@ -298,7 +297,7 @@ export abstract class BaseNode<
 				return thisIsLeft ? result : result.invert()
 			}
 			// TODO: meta
-			return this.scope.parseNode(l.kind, result) as never
+			return this.$.parseNode(l.kind, result) as never
 		}
 		return null
 	}

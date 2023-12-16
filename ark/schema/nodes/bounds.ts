@@ -138,7 +138,7 @@ export abstract class BaseBound<
 	)
 
 	compileBody(ctx: CompilationContext) {
-		return this.scope.compilePrimitive(this as never, ctx)
+		return this.$.compilePrimitive(this as never, ctx)
 	}
 }
 
@@ -151,8 +151,9 @@ abstract class BaseNumericBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseBound<d, subclass> {
-	condition = `${this.scope.argName} ${this.comparator} ${this.limit}`
-	negatedCondition = `${this.scope.argName} ${
+	compiledActual = this.$.dataName
+	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
+	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.limit}`
 
@@ -215,8 +216,9 @@ abstract class BaseLengthBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseBound<d, subclass> {
-	condition = `${this.scope.argName}.length ${this.comparator} ${this.limit}`
-	negatedCondition = `${this.scope.argName}.length ${
+	compiledActual = `${this.$.dataName}.length`
+	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
+	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.limit}`
 
@@ -300,8 +302,9 @@ abstract class BaseDateBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseBound<d, subclass> {
-	condition = `${this.scope.argName}.valueOf() ${this.comparator} ${this.limit}`
-	negatedCondition = `${this.scope.argName}.valueOf() ${
+	compiledActual = `${this.$.dataName}.valueOf()`
+	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
+	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.limit}`
 

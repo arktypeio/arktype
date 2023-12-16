@@ -56,8 +56,8 @@ export class DivisorNode extends BasePrimitiveRefinement<
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
 
-	condition = `${this.scope.argName} % ${this.divisor} === 0`
-	negatedCondition = `${this.scope.argName} % ${this.divisor} !== 0`
+	compiledCondition = `${this.$.dataName} % ${this.divisor} === 0`
+	compiledNegation = `${this.$.dataName} % ${this.divisor} !== 0`
 
 	getCheckedDefinitions() {
 		return ["number"] as const

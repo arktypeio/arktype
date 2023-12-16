@@ -142,7 +142,7 @@ export class MorphNode<t = unknown> extends BaseType<
 	}
 
 	override get out(): Node<ValidatorKind, extractOut<t>> {
-		return this.inner.out ?? this.scope.builtin.unknown
+		return this.inner.out ?? this.$.builtin.unknown
 	}
 
 	compileBody(ctx: CompilationContext): string {

@@ -56,7 +56,6 @@ export class ScopeNode<r extends object = any> {
 		[k in keyof r]: r[k] extends schema.cast<infer t> ? t : never
 	}
 	declare static keywords: typeof keywords
-	readonly cls = ScopeNode
 	readonly resolutions = {} as r
 	readonly referencesById: Record<string, Node> = {}
 	readonly references: readonly Node[]
@@ -201,7 +200,8 @@ export class ScopeNode<r extends object = any> {
 		return node as never
 	}
 
-	readonly argName = "$arkRoot"
+	readonly dataName = "data"
+	readonly ctxName = "ctx"
 
 	protected bindCompiledScope(
 		nodesToBind: readonly Node[],
@@ -229,13 +229,13 @@ export class ScopeNode<r extends object = any> {
 		kind: kind
 	): Record<string, TraversalMethodsByKind[kind]> {
 		const compiledArgs =
-			kind === "allows" ? this.argName : `${this.argName}, errors`
+			kind === "allows" ? this.dataName : `${this.dataName}, errors`
 		const body = `return {
 	${references
 		.map(
 			(reference) => `${reference.id}(${compiledArgs}){
 ${reference.compileBody({
-	argName: this.argName,
+	argName: this.dataName,
 	compilationKind: kind,
 	path: [],
 	discriminants: []
@@ -273,14 +273,14 @@ ${reference.compileBody({
 			return ""
 		}
 		return ctx.compilationKind === "allows"
-			? `return ${node.condition}`
-			: `if (${node.negatedCondition}) {
+			? `return ${node.compiledCondition}`
+			: `if (${node.compiledNegation}) {
 	${this.compilePrimitiveProblem(node)}
 }`
 	}
 
 	compilePrimitiveProblem(node: Node<PrimitiveKind>) {
-		return `errors.add(${JSON.stringify(node.description)})`
+		return `${this.ctxName}.addError(${JSON.stringify(node.description)})`
 	}
 
 	readonly schema: SchemaParser<r> = Object.assign(

@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
+import { type } from "arktype"
 import { schema } from "./ark/schema/main.js"
+
+const User = type({
+	id: "string"
+})
+
+type User = typeof User.infer
 
 schema("bigint")
 

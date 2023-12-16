@@ -51,6 +51,6 @@ export class UnitNode<t = unknown> extends BaseBasis<
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
-	condition = `${this.scope.argName} === ${this.serializedValue}`
-	negatedCondition = `${this.scope.argName} !== ${this.serializedValue}`
+	compiledCondition = `${this.$.dataName} === ${this.serializedValue}`
+	compiledNegation = `${this.$.dataName} !== ${this.serializedValue}`
 }
