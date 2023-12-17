@@ -1,4 +1,4 @@
-import { readPackageJson, writeJson } from "@arktype/fs"
+import { fromHere, shell, writeJson } from "@arktype/fs"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
 import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.js"
@@ -14,19 +14,26 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 	if (config.skipTypes) {
 		return
 	}
-	forTypeScriptVersions(
-		(version) =>
-			writeAssertionData(join(config.assertionCacheDir, `${version}.json`)),
-		{
-			versions: config.tsVersions
-		}
-	)
+	if (
+		config.tsVersions.length === 1 &&
+		config.tsVersions[0].alias === "typescript"
+	) {
+		writeAssertionData(join(config.assertionCacheDir, "typescript.json"))
+	} else {
+		forTypeScriptVersions(config.tsVersions, (version) =>
+			shell(
+				`node ${fromHere("attestPrecache.js")} ${join(
+					config.assertionCacheDir,
+					version.alias + ".json"
+				)}`
+			)
+		)
+	}
 }
 
-const writeAssertionData = (toPath: string) => {
-	console.log(
-		"⏳ Waiting for TypeScript to check your project (this may take a while)..."
-	)
+export const writeAssertionData = (toPath: string) => {
+	"⏳ Waiting for TypeScript to check your project (this may take a while)..."
+	console.log()
 	writeJson(toPath, analyzeProjectAssertions())
 }
 

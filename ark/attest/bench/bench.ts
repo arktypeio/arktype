@@ -1,5 +1,10 @@
 import { caller, type SourcePosition } from "@arktype/fs"
-import { ensureCacheDirs, getConfig, type AttestConfig } from "../config.js"
+import {
+	ensureCacheDirs,
+	getConfig,
+	type AttestConfig,
+	type ParsedAttestConfig
+} from "../config.js"
 import { chainableNoOpProxy } from "../utils.js"
 import { BenchAssertions, type TimeAssertionName } from "./call.js"
 import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.js"
@@ -28,7 +33,7 @@ export type BenchContext = {
 	qualifiedPath: string[]
 	qualifiedName: string
 	options: InternalBenchOptions
-	cfg: AttestConfig
+	cfg: ParsedAttestConfig
 	benchCallPosition: SourcePosition
 	lastSnapCallPosition: SourcePosition | undefined
 	isAsync: boolean

@@ -136,35 +136,25 @@ This ensures that type assertions can be made across processes without creating 
 
 ### TS Versions
 
-Attest provides utilities for testing your code against multiple versions of TypeScript. This is particularly useful for library authors who want to ensure compatibility across different TypeScript versions.
+There is a tsVersions setting that allows testing multiple TypeScript aliases at once.
 
-For example, here's the script ArkType uses to ensure consistency across TS versions in CI:
-
-```ts
-import { forEachTypeScriptVersion } from "@arktype/attest"
-import { shell } from "@arktype/fs"
-
-forEachTypeScriptVersion(() => {
-	shell("pnpm test")
-})
-```
-
-By default, `forEachTypeScriptVersion` will look for TypeScript versions in `node_modules` with the prefix `typescript-`. This way, you can maintain a list of versions you'd like to support that will be installed alongside your other dev dependencies and referenced only during these tests:
-
-```json
-"devDependencies": {
-	"typescript": "5.3.2",
-	"typescript-50": "npm:typescript@5.0",
-	"typescript-51": "npm:typescript@5.1",
-	"typescript-52": "npm:typescript@5.2",
-	"typescript-53": "npm:typescript@5.3",
-	"typescript-54": "npm:typescript@next"
-}
-```
-
-If you prefer, you can pass a custom list of directories containing TS installations to `forEachTypeScriptVersion`'s optional second parameter.
-
-After all versions have run, your original `typescript` version will be restored, regardless of the results.
+````ts globalSetup.ts
+import { setup } from "@arktype/attest"
+/** A string or list of strings representing the TypeScript version aliases to run.
+ *
+ * Aliases must be specified as a package.json dependency or devDependency beginning with "typescript".
+ * Alternate aliases can be specified using the "npm:" prefix:
+ * ```json
+ * 		"typescript": "latest",
+ * 		"typescript-next: "npm:typescript@next",
+ * 		"typescript-1": "npm:typescript@5.2"
+ * 		"typescript-2": "npm:typescript@5.1"
+ * ```
+ *
+ * "*" can be pased to run all discovered versions beginning with "typescript".
+ */
+setup({ tsVersions: "*" })
+````
 
 ### APIs
 

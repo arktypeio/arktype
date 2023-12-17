@@ -35,7 +35,8 @@
 		"@typescript/vfs": "1.5.0"
 	},
 	"devDependencies": {
-		"typescript": "5.3.3"
+		"typescript": "5.3.3",
+		"typescript-next": "npm:typescript@next"
 	},
 	"peerDependencies": {
 		"typescript": "*"

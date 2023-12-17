@@ -9,9 +9,8 @@ export type {
 	TypeRelationship
 } from "./cache/writeAssertionCache.js"
 export { getDefaultAttestConfig, type AttestConfig } from "./config.js"
-export { cleanup, setup } from "./fixtures.js"
+export { cleanup, setup, writeAssertionData } from "./fixtures.js"
 export {
 	findAttestTypeScriptVersions,
-	forTypeScriptVersions as forEachTypeScriptVersion,
 	getPrimaryTsVersionUnderTest
 } from "./tsVersioning.js"
