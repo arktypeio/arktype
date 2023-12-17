@@ -149,16 +149,16 @@ forEachTypeScriptVersion(() => {
 })
 ```
 
-By default, `forEachTypeScriptVersion` will look for TypeScript versions in `node_modules` with the prefix `attest-ts`. This way, you can maintain a list of versions you'd like to support that will be installed alongside your other dev dependencies and referenced only during these tests:
+By default, `forEachTypeScriptVersion` will look for TypeScript versions in `node_modules` with the prefix `typescript-`. This way, you can maintain a list of versions you'd like to support that will be installed alongside your other dev dependencies and referenced only during these tests:
 
 ```json
 "devDependencies": {
 	"typescript": "5.3.2",
-	"attest-ts50": "npm:typescript@5.0",
-	"attest-ts51": "npm:typescript@5.1",
-	"attest-ts52": "npm:typescript@5.2",
-	"attest-ts53": "npm:typescript@5.3",
-	"attest-ts54": "npm:typescript@next"
+	"typescript-50": "npm:typescript@5.0",
+	"typescript-51": "npm:typescript@5.1",
+	"typescript-52": "npm:typescript@5.2",
+	"typescript-53": "npm:typescript@5.3",
+	"typescript-54": "npm:typescript@next"
 }
 ```
 

@@ -6,8 +6,8 @@ import ts from "typescript"
 
 export type AttestTypeScriptVersionOptions = {
 	/** The list of directories containing TypeScript versions.
-	 * Defaults to versions in node_modules prefixed with `attest-ts`,
-	 * which can be specified like "attest-ts50": "npm:typescript@5.0"
+	 * Defaults to versions in node_modules prefixed with `typescript-`,
+	 * which can be specified like "typescript-50": "npm:typescript@5.0"
 	 *
 	 * This supercedes the version discovery process and specified aliases.
 	 */
@@ -24,11 +24,11 @@ export type AttestTypeScriptVersionOptions = {
 
 /**
  * Executes a provided function for a set of installed TypeScript versions as
- * specified in package.json under "typescript" or with a prefix "attest-ts",
+ * specified in package.json under "typescript" or with a prefix "typescript-",
  * which can be specified as follows:
  *
  * ```json
- * "attest-ts50": "npm:typescript@5.0"
+ * "typescript-50": "npm:typescript@5.0"
  * ```
  *
  * Your primary TypeScript version at node_modules/typescript will be
@@ -74,7 +74,7 @@ export const forTypeScriptVersions = (
 						throw new Error(
 							`Specified TypeScript version ${version} does not exist.` +
 								` It should probably be specified in package.json like:
-			"attest-ts${version.replace(".", "")}": "npm:typescript@${version}"`
+			"typescript-${version.replace(".", "")}": "npm:typescript@${version}"`
 						)
 					}
 					return versions[version]
@@ -123,15 +123,15 @@ export const forTypeScriptVersions = (
 /**
  * Find and return the paths of all installed TypeScript versions, including the
  * primary version installed as "typescript" and all dependencies begininng with
- * "attest-ts".
+ * "typescript-".
  *
  * Alternate versions can be installed using a package.json dependency like:
  *
  * ```json
- * "attest-ts50": "npm:typescript@5.0"
+ * "typescript-50": "npm:typescript@5.0"
  * ```
  * @returns An object with each TypeScript version as a key like "5.3.2" mapped
- * to the directory in which it is installed, e.g. "/home/ssalb/arktype/node_modules/attest-ts53"
+ * to the directory in which it is installed, e.g. "/home/ssalb/arktype/node_modules/typescript-53"
  *
  * @throws {Error} If a TypeScript version specified in package.json is not
  * installed at the expected location in node_modules.
@@ -143,7 +143,7 @@ export const findAttestTypeScriptVersions = (): Record<string, string> => {
 	return map(
 		{ ...packageJson.dependencies, ...packageJson.devDependencies },
 		(name: string) => {
-			if (name !== "typescript" && !name.startsWith("attest-ts")) {
+			if (!name.startsWith("typescript")) {
 				return []
 			}
 			const expectedLocation = join(nodeModules, name)
