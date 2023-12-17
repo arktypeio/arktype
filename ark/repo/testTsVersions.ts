@@ -1,6 +1,7 @@
-import { forEachTypeScriptVersion } from "@arktype/attest"
+import type { AttestConfig } from "@arktype/attest"
 import { shell } from "@arktype/fs"
 
-forEachTypeScriptVersion(() => {
-	shell("pnpm test")
-})
+process.env.ATTEST_CONFIG = JSON.stringify({
+	tsVersions: "*"
+} satisfies AttestConfig)
+shell("pnpm test")
