@@ -1,9 +1,10 @@
-import { writeJson } from "@arktype/fs"
+import { readPackageJson, writeJson } from "@arktype/fs"
 import { rmSync } from "node:fs"
+import { join } from "node:path"
 import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.js"
 import { analyzeProjectAssertions } from "./cache/writeAssertionCache.js"
 import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.js"
-import { forEachTypeScriptVersion } from "./tsVersioning.js"
+import { forTypeScriptVersions } from "./tsVersioning.js"
 
 export const setup = (options: Partial<AttestConfig> = {}) => {
 	const config = getConfig()
@@ -13,13 +14,13 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 	if (config.skipTypes) {
 		return
 	}
-	if (config.tsVersions) {
-		forEachTypeScriptVersion((alias) => writeAssertionData(""), {
+	forTypeScriptVersions(
+		(version) =>
+			writeAssertionData(join(config.assertionCacheDir, `${version}.json`)),
+		{
 			versions: config.tsVersions
-		})
-	} else {
-		writeAssertionData("")
-	}
+		}
+	)
 }
 
 const writeAssertionData = (toPath: string) => {

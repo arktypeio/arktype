@@ -12,6 +12,6 @@ export { getDefaultAttestConfig, type AttestConfig } from "./config.js"
 export { cleanup, setup } from "./fixtures.js"
 export {
 	findAttestTypeScriptVersions,
-	forEachTypeScriptVersion,
+	forTypeScriptVersions as forEachTypeScriptVersion,
 	getPrimaryTsVersionUnderTest
 } from "./tsVersioning.js"

@@ -1,12 +1,14 @@
 import { ensureDir, fromCwd } from "@arktype/fs"
-import { tryParseNumber } from "@arktype/util"
+import { tryParseNumber, type autocomplete } from "@arktype/util"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
+
+export type TsVersionSpecifier = autocomplete<"*" | "default"> | string[]
 
 type MutableAttestConfig = {
 	tsconfig: string | undefined
 	updateSnapshots: boolean
-	tsVersions: string[] | undefined
+	tsVersions: TsVersionSpecifier
 	skipTypes: boolean
 	attestAliases: string[]
 	benchPercentThreshold: number
@@ -31,7 +33,7 @@ export const getDefaultAttestConfig = (): EnhancedAttestConfig => {
 		attestAliases: ["attest", "attestInternal"],
 		updateSnapshots: false,
 		skipTypes: false,
-		tsVersions: ["default"],
+		tsVersions: "default",
 		benchPercentThreshold: 20,
 		benchErrorOnThresholdExceeded: false,
 		cacheDir,

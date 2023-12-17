@@ -34,15 +34,14 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	private get actual() {
-		return this.ctx.actual
+		return this.ctx.actual instanceof TypeAssertionMapping
+			? this.ctx.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)!
+					.actual
+			: this.ctx.actual
 	}
 
 	private get serializedActual() {
-		return this.serialize(
-			this.actual instanceof TypeAssertionMapping
-				? this.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)
-				: this.actual
-		)
+		return this.serialize(this.actual)
 	}
 
 	private snapRequiresUpdate(expectedSerialized: unknown) {

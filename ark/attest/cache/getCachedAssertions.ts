@@ -1,6 +1,6 @@
 import { readJson, type LinePosition, type SourcePosition } from "@arktype/fs"
 import { existsSync, readdirSync } from "node:fs"
-import { basename } from "node:path"
+import { basename, join } from "node:path"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
 import type {
@@ -22,10 +22,10 @@ export const getCachedAssertionEntries = () => {
 			throwMissingAssertionDataError(config.assertionCacheDir)
 		}
 		const assertionFiles = readdirSync(config.assertionCacheDir)
-		assertionEntries = assertionFiles.map((path) => [
+		assertionEntries = assertionFiles.map((file) => [
 			// remove .json extension
-			basename(path).slice(0, -5),
-			readJson(path)
+			file.slice(0, -5),
+			readJson(join(config.assertionCacheDir, file))
 		])
 	}
 	return assertionEntries!

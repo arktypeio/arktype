@@ -1,5 +1,5 @@
-import { findPackageRoot, readJson, readPackageJson } from "@arktype/fs"
-import { map, type Digit } from "@arktype/util"
+import { findPackageRoot, readJson } from "@arktype/fs"
+import { listFrom, map, type Digit, type autocomplete } from "@arktype/util"
 import { existsSync, renameSync, symlinkSync, unlinkSync } from "fs"
 import { join } from "path/posix"
 import ts from "typescript"
@@ -12,14 +12,18 @@ export type AttestTypeScriptVersionOptions = {
 	 * This supercedes the version discovery process and specified aliases.
 	 */
 	directories?: string[]
-	/** A list of exact versions to run e.g. "5.3.2". By default, all discovered versions will be run.
-	 * If a version is specified that was not installed, it will throw.
+	/** A string or list of string representing exact versions to run e.g. "5.3.2".
+	 * "*" will run all discovered versions.
+	 * "default" will run only the version installed under the primary "typescript" alias
+	 * If a version is specified that was not installed, an error will be thrown.
+	 *
+	 * @default "default"
 	 */
-	versions?: string[]
+	versions?: autocomplete<"*" | "default"> | string[]
 }
 
 /**
- * Executes a provided function for each installed TypeScript version as
+ * Executes a provided function for a set of installed TypeScript versions as
  * specified in package.json under "typescript" or with a prefix "attest-ts",
  * which can be specified as follows:
  *
@@ -31,32 +35,16 @@ export type AttestTypeScriptVersionOptions = {
  * temporarily renamed to node_modules/typescript-temp, and reset after each
  * version has been executed, regardless of failures.
  *
- * Throws an error if any version fails during test execution.
+ *
+ * Throws an error if any version fails when the associated function is executed.
  * @param {function} fn - The function to execute for each TypeScript version.
  * @param {AttestTypeScriptVersionOptions} [opts]
  */
-export const forEachTypeScriptVersion = (
+export const forTypeScriptVersions = (
 	fn: (version: string) => void,
 	opts?: AttestTypeScriptVersionOptions
 ) => {
-	let tsDirs = opts?.directories
-	if (!tsDirs) {
-		const versions = findAttestTypeScriptVersions()
-		if (opts?.versions) {
-			tsDirs = opts.versions.map((version) => {
-				if (!versions[version]) {
-					throw new Error(
-						`Specified TypeScript version alias ${version} does not exist.` +
-							` It should probably be specified in package.json like:
-	"attest-ts${version.replace(".", "")}": "npm:typescript@${version}"`
-					)
-				}
-				return versions[version]
-			})
-		} else {
-			tsDirs = Object.values(versions)
-		}
-	}
+	const versionsSpecifier = opts?.versions ?? "default"
 	const passedVersions: string[] = []
 	const failedVersions: string[] = []
 	const nodeModules = join(findPackageRoot(process.cwd()), "node_modules")
@@ -67,39 +55,69 @@ export const forEachTypeScriptVersion = (
 		originalTsVersion = readJson(join(tsPrimaryPath, "package.json")).version
 		renameSync(tsPrimaryPath, tsTemporaryPath)
 	}
-	for (const path of tsDirs) {
-		const tsPackageJson = readJson(join(path, "package.json"))
-		if (tsPackageJson.name !== "typescript") {
-			throw new Error(`Expected to find a TypeScript version at ${path}`)
-		}
-		const version: string = tsPackageJson.version
-		console.log(`⛵ Switching to TypeScript version ${version}...`)
-		try {
-			if (existsSync(tsPrimaryPath)) {
-				unlinkSync(tsPrimaryPath)
+	try {
+		let tsDirs = opts?.directories
+		if (!tsDirs) {
+			if (versionsSpecifier === "default") {
+				if (!originalTsVersion) {
+					throw new Error(
+						`TypeScript must be installed at ${tsPrimaryPath} to use the default version`
+					)
+				}
+				tsDirs = [tsTemporaryPath]
+			} else if (versionsSpecifier === "*") {
+				tsDirs = Object.values(findAttestTypeScriptVersions())
+			} else {
+				const versions = findAttestTypeScriptVersions()
+				tsDirs = listFrom(versionsSpecifier).map((version) => {
+					if (!versions[version]) {
+						throw new Error(
+							`Specified TypeScript version ${version} does not exist.` +
+								` It should probably be specified in package.json like:
+			"attest-ts${version.replace(".", "")}": "npm:typescript@${version}"`
+						)
+					}
+					return versions[version]
+				})
 			}
-			symlinkSync(path, tsPrimaryPath)
-			fn(version)
-			passedVersions.push(version)
-		} catch {
-			failedVersions.push(version)
+		}
+		for (const path of tsDirs) {
+			const tsPackageJson = readJson(join(path, "package.json"))
+			if (tsPackageJson.name !== "typescript") {
+				throw new Error(`Expected to find a TypeScript version at ${path}`)
+			}
+			const version: string = tsPackageJson.version
+			console.log(`⛵ Switching to TypeScript version ${version}...`)
+			try {
+				if (existsSync(tsPrimaryPath)) {
+					unlinkSync(tsPrimaryPath)
+				}
+				symlinkSync(path, tsPrimaryPath)
+				fn(version)
+				passedVersions.push(version)
+			} catch {
+				failedVersions.push(version)
+			}
+		}
+
+		if (failedVersions.length !== 0) {
+			throw new Error(
+				`❌ The following TypeScript versions threw: ${failedVersions.join(
+					", "
+				)}`
+			)
+		}
+		console.log(
+			`✅ Successfully ran TypeScript versions ${passedVersions.join(", ")}`
+		)
+	} finally {
+		if (originalTsVersion) {
+			console.log(
+				`⏮️ Restoring original TypeScript version ${originalTsVersion}...`
+			)
+			renameSync(tsTemporaryPath, tsPrimaryPath)
 		}
 	}
-	if (originalTsVersion) {
-		console.log(
-			`⏮️ Restoring original TypeScript version ${originalTsVersion}...`
-		)
-		renameSync(tsTemporaryPath, tsPrimaryPath)
-	}
-
-	if (failedVersions.length !== 0) {
-		throw new Error(
-			`❌ The following TypeScript versions threw: ${failedVersions.join(", ")}`
-		)
-	}
-	console.log(
-		`✅ Successfully ran TypeScript versions ${passedVersions.join(", ")}`
-	)
 }
 
 /**
