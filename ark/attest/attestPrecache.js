@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // @ts-check
 import { fileName } from "@arktype/fs"
 import { writeAssertionData } from "./out/main.js"

@@ -22,10 +22,10 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 	} else {
 		forTypeScriptVersions(config.tsVersions, (version) =>
 			shell(
-				`node ${fromHere("attestPrecache.js")} ${join(
+				`npm exec -c "attestPrecache ${join(
 					config.assertionCacheDir,
 					version.alias + ".json"
-				)}`
+				)}"`
 			)
 		)
 	}

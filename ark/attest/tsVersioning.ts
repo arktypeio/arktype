@@ -48,7 +48,7 @@ export const forTypeScriptVersions = (
 				if (existsSync(tsPrimaryPath)) {
 					unlinkSync(tsPrimaryPath)
 				}
-				symlinkSync(version.path, tsPrimaryPath)
+				symlinkSync(targetPath, tsPrimaryPath)
 				fn(version)
 				passedVersions.push(version)
 			} catch (e) {

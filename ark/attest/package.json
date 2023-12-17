@@ -23,6 +23,9 @@
 		"!__tests__",
 		"**/*.ts"
 	],
+	"bin": {
+		"attestPrecache": "./attestPrecache.js"
+	},
 	"scripts": {
 		"build": "tsx ../repo/build.ts",
 		"test": "tsx ../repo/testPackage.ts",
