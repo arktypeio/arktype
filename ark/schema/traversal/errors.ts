@@ -1,5 +1,6 @@
 import {
 	ReadonlyArray,
+	type ErrorMessage,
 	type autocomplete,
 	type evaluate,
 	type extend,
@@ -7,7 +8,7 @@ import {
 	type propwiseXor,
 	type require
 } from "@arktype/util"
-import type { NormalizedSchema, Prerequisite } from "../kinds.js"
+import type { Inner, Prerequisite } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { PrimitiveKind } from "../shared/define.js"
 import type { TraversalContext, TraversalPath } from "./context.js"
@@ -55,7 +56,6 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 				"custom",
 				{
 					path: [...this.context.path],
-					description: codeOrDescription,
 					data: this.context.data,
 					expected: codeOrDescription
 				},
@@ -138,7 +138,7 @@ export const arkErrorCodes = {
 } satisfies Record<BaseArkErrorCode, true>
 
 export interface CustomErrorContext extends DerivableErrorContext {
-	description: string
+	expected: string
 }
 
 export interface KeyErrorContext extends DerivableErrorContext<object> {
@@ -159,7 +159,7 @@ type BaseArkErrorContextsByCode = evaluate<
 	{
 		[k in PrimitiveKind]: extend<
 			DerivableErrorContext<Prerequisite<k>>,
-			Omit<NormalizedSchema<k>, "description">
+			Omit<Inner<k>, "description">
 		>
 	} & {
 		custom: CustomErrorContext
@@ -190,13 +190,28 @@ type ArkErrorInputByCode = {
 export type ArkErrorInput<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorInputByCode[code]
 
-export type ErrorsConfig = { [code in ArkErrorCode]?: ArkErrorWriter<code> }
+export type ArkExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
+	input: ArkErrorInput<code>
+) => string
 
-export type ParsedErrorsConfig = require<ErrorsConfig>
-
-export type ArkErrorWriter<code extends ArkErrorCode = ArkErrorCode> = (
+export type ArkMessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	context: ArkErrorContext<code>
 ) => string
+
+export type ErrorsConfig = {
+	[code in ArkErrorCode]?: code extends PrimitiveKind
+		? {
+				/** Use description instead of expected to configure a Node */
+				expected?: never
+				message?: ArkMessageWriter<code>
+		  }
+		: {
+				expected?: ArkExpectedWriter<code>
+				message?: ArkMessageWriter<code>
+		  }
+}
+
+export type ParsedErrorsConfig = require<ErrorsConfig>
 
 export type ArkResult<out = unknown> = propwiseXor<
 	{ out: out },

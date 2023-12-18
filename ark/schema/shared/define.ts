@@ -153,5 +153,5 @@ export type NodeImplementation<
 }
 
 export type NodeDescriptionWriter<kind extends NodeKind = NodeKind> = (
-	node: Inner<kind>
+	inner: Inner<kind>
 ) => string

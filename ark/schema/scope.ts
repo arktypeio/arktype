@@ -3,7 +3,6 @@ import {
 	entriesOf,
 	includes,
 	isArray,
-	map,
 	printable,
 	throwInternalError,
 	throwParseError,
@@ -29,7 +28,7 @@ import {
 } from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
 import type {
-	ArkErrorCode,
+	ArkMessageWriter,
 	ErrorsConfig,
 	ParsedErrorsConfig
 } from "./traversal/errors.js"
@@ -61,21 +60,21 @@ export type DescriptionsConfig = {
 export type ParsedDescriptionsConfig = require<DescriptionsConfig>
 
 const defaultDescriptionWriters = {} as ParsedDescriptionsConfig
-const defaultErrorWriters = {} as ParsedErrorsConfig
+const defaultErrorsConfig = {} as ParsedErrorsConfig
 
 for (const [kind, subclass] of entriesOf(nodesByKind)) {
-	const writer: NodeDescriptionWriter<any> =
-		subclass.implementation.describeExpected
+	const writer = subclass.implementation.describeExpected as never
 	defaultDescriptionWriters[kind] = writer
 	if (includes(primitiveKinds, kind)) {
-		defaultErrorWriters[kind] = writer
+		defaultErrorsConfig[kind].expected = writer
+		defaultErrorsConfig[kind].message = ((ctx) => ``) satisfies ArkMessageWriter
 	}
 }
 
 export const configure = (config: ArkConfig): ParsedArkConfig => {
 	return {
 		descriptions: defaultDescriptionWriters,
-		codes: defaultErrorWriters,
+		codes: defaultErrorsConfig,
 		keys: "loose"
 	}
 }
