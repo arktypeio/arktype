@@ -9,23 +9,9 @@ import {
 import type { NormalizedSchema, Prerequisite } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { PrimitiveKind } from "../shared/define.js"
-import type { TraversalContext } from "./context.js"
+import type { TraversalContext, TraversalPath } from "./context.js"
 
 export class ArkError extends TypeError {}
-
-export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> = extend<
-	{
-		path: readonly (string | symbol)[]
-		data: ArkErrorData<code>
-	},
-	ArkErrorSchema<code>
->
-
-export type ArkErrorParts = {
-	expected: string
-	actual: string
-	location: string
-}
 
 export class ArkTypeError<
 	code extends ArkErrorCode = ArkErrorCode
@@ -33,7 +19,6 @@ export class ArkTypeError<
 	constructor(
 		public code: code,
 		public context: ArkErrorContext<code>,
-		public parts: ArkErrorParts,
 		public message: string
 	) {
 		// context.path.length
@@ -63,7 +48,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	add<codeOrDescription extends autocomplete<ArkErrorCode>>(
 		codeOrDescription: codeOrDescription,
 		...schema: codeOrDescription extends ArkErrorCode
-			? [schema: ArkErrorSchema<codeOrDescription>]
+			? [schema: ArkErrorContext<codeOrDescription>]
 			: []
 	) {
 		const problem = {} as any // new ArkTypeError([...this.context.path], description)
@@ -108,32 +93,33 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 }
 
 export interface CustomErrorDeclaration {
-	schema: {
-		description: string
-	}
+	description: string
 	data: unknown
 }
 
 export interface KeyErrorDeclaration {
-	schema: {
-		key: string | symbol
-	}
+	key: string | symbol
 	data: object
 }
 
 export interface CompositeErrorDeclaration {
-	schema: {
-		errors: readonly ArkError[]
-	}
+	errors: readonly ArkError[]
 	data: unknown
 }
 
-type ArkErrorDeclarationsByCode = evaluate<
+type deriveErrorSchema<k extends PrimitiveKind> = extend<
 	{
-		[code in PrimitiveKind]: {
-			schema: NormalizedSchema<code>
-			data: Prerequisite<code>
-		}
+		expected: string
+		actual: string
+		data: Prerequisite<k>
+		path: TraversalPath
+	},
+	Omit<NormalizedSchema<k>, "description">
+>
+
+type ArkErrorContextByCode = evaluate<
+	{
+		[k in PrimitiveKind]: deriveErrorSchema<k>
 	} & {
 		missingKey: KeyErrorDeclaration
 		extraneousKey: KeyErrorDeclaration
@@ -142,18 +128,21 @@ type ArkErrorDeclarationsByCode = evaluate<
 	} & StaticArkOption<"errors">
 >
 
-export type ArkErrorCode = keyof ArkErrorDeclarationsByCode
+export type ArkErrorCode = keyof ArkErrorContextByCode
 
-export type ArkErrorSchema<code extends ArkErrorCode = ArkErrorCode> =
-	ArkErrorDeclarationsByCode[code]["schema"]
-
-export type ArkErrorData<code extends ArkErrorCode = ArkErrorCode> =
-	ArkErrorDeclarationsByCode[code]["data"]
+export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
+	ArkErrorContextByCode[code]
 
 export type ArkErrorDeclaration = {
 	schema: Dict
 	data: unknown
 }
+
+export type ErrorsConfig = { [code in ArkErrorCode]: ErrorWriter<code> }
+
+export type ErrorWriter<code extends ArkErrorCode = ArkErrorCode> = (
+	context: ArkErrorContext<code>
+) => string
 
 export type ArkResult<out = unknown> = propwiseXor<
 	{ out: out },

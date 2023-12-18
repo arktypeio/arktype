@@ -1,9 +1,9 @@
-import { ArkErrors } from "./errors.js"
+import { ArkErrors, type ArkErrorCode, type ArkErrorContext } from "./errors.js"
 
-export interface TraversalConfig {}
+export type TraversalPath = (string | symbol)[]
 
 export class TraversalContext {
-	path = []
+	path: TraversalPath = []
 	errorsStack: ArkErrors[] = [new ArkErrors(this)]
 	// TODO: add morphs here
 	entriesToPrune: [data: Record<string, unknown>, key: string][] = []
@@ -28,7 +28,7 @@ export class TraversalContext {
 	popUnion(branchCount: number, data: unknown, path: string[]) {
 		const branchProblems = this.errorsStack.pop()!
 		if (branchProblems.count === branchCount) {
-			this.addError("union", { errors: branchProblems })
+			this.addError("union", { data: this.data, errors: branchProblems })
 		}
 	}
 }
