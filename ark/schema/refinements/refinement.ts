@@ -6,14 +6,10 @@ import {
 	type TypeNode,
 	type TypeSchema
 } from "../base.js"
+import type { Prerequisite } from "../kinds.js"
 import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { BaseNodeDeclaration, PrimitiveNode } from "../shared/declare.js"
-import type {
-	BasisKind,
-	NodeKind,
-	PrimitiveRefinementKind,
-	RefinementKind
-} from "../shared/define.js"
+import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
 import { isDotAccessible } from "../traversal/registry.js"
 
 export type NamedPropKind = "required" | "optional"
@@ -47,15 +43,19 @@ const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
 export type BaseRefinementDeclaration = extend<
 	BaseNodeDeclaration,
-	{
-		kind: RefinementKind
-	}
+	{ kind: RefinementKind }
 >
 
 export abstract class BaseRefinement<
-	d extends BaseNodeDeclaration,
-	subclass extends NodeSubclass<d>
-> extends BaseNode<any, d, subclass> {
+		d extends BaseRefinementDeclaration,
+		subclass extends NodeSubclass<d>
+	>
+	extends BaseNode<d["prerequisite"], d, subclass>
+	implements PrimitiveNode
+{
+	abstract readonly compiledCondition: string
+	abstract readonly compiledNegation: string
+
 	abstract getCheckedDefinitions(): readonly TypeSchema[]
 	readonly checks: readonly TypeNode[] =
 		cache[this.kind] ??
@@ -75,22 +75,6 @@ export abstract class BaseRefinement<
 			)
 		}
 	}
-}
-
-export type BasePrimitiveRefinementDeclaration = extend<
-	BaseRefinementDeclaration,
-	{ kind: PrimitiveRefinementKind }
->
-
-export abstract class BasePrimitiveRefinement<
-		d extends BasePrimitiveRefinementDeclaration,
-		subclass extends NodeSubclass<d>
-	>
-	extends BaseRefinement<d, subclass>
-	implements PrimitiveNode
-{
-	abstract readonly compiledCondition: string
-	abstract readonly compiledNegation: string
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

@@ -16,7 +16,7 @@ import type {
 import type { BoundKind, NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
-import { BasePrimitiveRefinement } from "./refinement.js"
+import { BaseRefinement } from "./refinement.js"
 
 export type BoundInner<limit extends LimitSchemaValue = LimitSchemaValue> = {
 	readonly limit: limit
@@ -128,7 +128,7 @@ export const implementBound = <d extends Declaration<BoundKind>>(
 export abstract class BaseBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
-> extends BasePrimitiveRefinement<d, subclass> {
+> extends BaseRefinement<d, subclass> {
 	readonly hasOpenIntersection = false as hasOpenIntersection<d>
 
 	comparator = compileComparator(

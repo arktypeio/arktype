@@ -1,27 +1,19 @@
 import type { Dict, extend } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
+import { IndexNode, type IndexDeclaration } from "./props/index.js"
+import { OptionalNode, type OptionalDeclaration } from "./props/optional.js"
+import { RequiredNode, type RequiredDeclaration } from "./props/required.js"
+import { SequenceNode, type SequenceDeclaration } from "./props/sequence.js"
 import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
-import { IndexNode, type IndexDeclaration } from "./refinements/index.js"
-import {
-	OptionalNode,
-	type OptionalDeclaration
-} from "./refinements/optional.js"
 import { PatternNode, type PatternDeclaration } from "./refinements/pattern.js"
 import {
 	PredicateNode,
 	type PredicateDeclaration
 } from "./refinements/predicate.js"
-import {
-	RequiredNode,
-	type RequiredDeclaration
-} from "./refinements/required.js"
-import {
-	SequenceNode,
-	type SequenceDeclaration
-} from "./refinements/sequence.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type {
+	ComponentKind,
 	ConstraintKind,
 	NodeKind,
 	PropKind,
@@ -122,11 +114,11 @@ export type ioKindOf<kind extends NodeKind> = kind extends "morph"
 export type hasOpenIntersection<d extends BaseNodeDeclaration> =
 	null extends d["intersections"][d["kind"]] ? true : false
 
-export type OpenRefinementKind = {
+export type OpenComponentKind = {
 	[k in NodeKind]: hasOpenIntersection<Declaration<k>> extends true ? k : never
 }[NodeKind]
 
-export type ClosedRefinementKind = Exclude<RefinementKind, OpenRefinementKind>
+export type ClosedComponentKind = Exclude<ComponentKind, OpenComponentKind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]

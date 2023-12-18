@@ -7,8 +7,7 @@ import type {
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
-import { BaseRefinement } from "./refinement.js"
+import { BaseProp } from "./prop.js"
 
 export type IndexSchema = withAttributes<{
 	readonly key: TypeSchema
@@ -31,10 +30,7 @@ export type IndexDeclaration = declareNode<{
 	prerequisite: object
 }>
 
-export class IndexNode extends BaseRefinement<
-	IndexDeclaration,
-	typeof IndexNode
-> {
+export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 	static implementation: NodeImplementation<IndexDeclaration> = {
 		keys: {
 			key: {

@@ -1,5 +1,7 @@
 import { ArkErrors } from "./errors.js"
 
+export interface TraversalConfig {}
+
 export class TraversalContext {
 	path = []
 	errorsStack: ArkErrors[] = [new ArkErrors(this)]

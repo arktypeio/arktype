@@ -11,6 +11,10 @@ import {
 	type listable
 } from "@arktype/util"
 import type { Schema, hasOpenIntersection, ioKindOf } from "./kinds.js"
+import type { IndexNode } from "./props/index.js"
+import type { OptionalNode } from "./props/optional.js"
+import type { RequiredNode } from "./props/required.js"
+import type { SequenceNode } from "./props/sequence.js"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -20,12 +24,8 @@ import type {
 	MinNode
 } from "./refinements/bounds.js"
 import type { DivisorNode } from "./refinements/divisor.js"
-import type { IndexNode } from "./refinements/index.js"
-import type { OptionalNode } from "./refinements/optional.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
-import type { RequiredNode } from "./refinements/required.js"
-import type { SequenceNode } from "./refinements/sequence.js"
 import type {
 	CompilationContext,
 	ScopeNode,

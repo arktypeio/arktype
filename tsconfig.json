@@ -26,5 +26,5 @@
 			"@arktype/attest": ["./ark/attest/main.ts"]
 		}
 	},
-	"exclude": ["./ark/docs"]
+	"exclude": ["out", "./ark/docs"]
 }

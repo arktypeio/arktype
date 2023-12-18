@@ -4,7 +4,7 @@ import type { NodeImplementation } from "../shared/define.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import { BasePrimitiveRefinement } from "./refinement.js"
+import { BaseRefinement } from "./refinement.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
 	{
@@ -29,7 +29,7 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends BasePrimitiveRefinement<
+export class PredicateNode extends BaseRefinement<
 	PredicateDeclaration,
 	typeof PredicateNode
 > {

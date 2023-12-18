@@ -1,5 +1,9 @@
 import type { Node, TypeSchema } from "../base.js"
 import type { Inner } from "../kinds.js"
+import {
+	compilePresentProp,
+	type NamedPropKind
+} from "../refinements/refinement.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
@@ -9,11 +13,7 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import {
-	BaseRefinement,
-	compilePresentProp,
-	type NamedPropKind
-} from "./refinement.js"
+import { BaseProp } from "./prop.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
@@ -55,7 +55,7 @@ const intersectNamed = (
 	}
 }
 
-export class RequiredNode extends BaseRefinement<
+export class RequiredNode extends BaseProp<
 	RequiredDeclaration,
 	typeof RequiredNode
 > {

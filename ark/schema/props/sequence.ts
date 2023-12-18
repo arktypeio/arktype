@@ -10,8 +10,7 @@ import type {
 	NodeKeyImplementation
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
-import { BaseRefinement } from "./refinement.js"
+import { BaseProp } from "./prop.js"
 
 export type NormalizedSequenceSchema = withAttributes<{
 	readonly prefix?: readonly TypeSchema[]
@@ -53,7 +52,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.scope.parseTypeNode(element))
 }
 
-export class SequenceNode extends BaseRefinement<
+export class SequenceNode extends BaseProp<
 	SequenceDeclaration,
 	typeof SequenceNode
 > {

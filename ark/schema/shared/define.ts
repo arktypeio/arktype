@@ -32,21 +32,18 @@ export const propKinds = ["required", "optional", "index", "sequence"] as const
 
 export type PropKind = (typeof propKinds)[number]
 
-export const primitiveRefinementKinds = [
+export const refinementKinds = [
 	"pattern",
 	"predicate",
 	"divisor",
 	...boundKinds
 ] as const
 
-export type PrimitiveRefinementKind = (typeof primitiveRefinementKinds)[number]
-
-export const refinementKinds = [
-	...primitiveRefinementKinds,
-	...propKinds
-] as const
-
 export type RefinementKind = (typeof refinementKinds)[number]
+
+export const componentKinds = [...refinementKinds, ...propKinds] as const
+
+export type ComponentKind = (typeof componentKinds)[number]
 
 export const setKinds = ["union", "morph", "intersection"] as const
 
@@ -56,7 +53,11 @@ export const typeKinds = [...setKinds, ...basisKinds] as const
 
 export type TypeKind = (typeof typeKinds)[number]
 
-export const constraintKinds = [...basisKinds, ...refinementKinds] as const
+export const constraintKinds = [
+	...basisKinds,
+	...refinementKinds,
+	...propKinds
+] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
@@ -64,10 +65,7 @@ export const nodeKinds = [...setKinds, ...constraintKinds] as const
 
 export type NodeKind = (typeof nodeKinds)[number]
 
-export const primitiveKinds = [
-	...basisKinds,
-	...primitiveRefinementKinds
-] as const
+export const primitiveKinds = [...basisKinds, ...refinementKinds] as const
 
 export type PrimitiveKind = (typeof primitiveKinds)[number]
 

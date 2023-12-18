@@ -1,6 +1,6 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
-import type { Declaration, OpenRefinementKind } from "../kinds.js"
+import type { Declaration, OpenComponentKind } from "../kinds.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -23,7 +23,7 @@ export type BaseIntersectionMap = {
 			[requiredKey in lKey]:
 				| lKey
 				| Disjoint
-				| (lKey extends OpenRefinementKind ? null : never)
+				| (lKey extends OpenComponentKind ? null : never)
 		} & {
 			[rKey in rightOf<lKey> | "default"]?:
 				| lKey

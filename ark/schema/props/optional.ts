@@ -1,4 +1,5 @@
 import type { Node, TypeSchema } from "../base.js"
+import { compilePresentProp } from "../refinements/refinement.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
@@ -7,9 +8,8 @@ import type {
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import { BaseRefinement, compilePresentProp } from "./refinement.js"
+import { BaseProp } from "./prop.js"
 
 export type OptionalInner = {
 	readonly key: string | symbol
@@ -32,7 +32,7 @@ export type OptionalDeclaration = declareNode<{
 	prerequisite: object
 }>
 
-export class OptionalNode extends BaseRefinement<
+export class OptionalNode extends BaseProp<
 	OptionalDeclaration,
 	typeof OptionalNode
 > {

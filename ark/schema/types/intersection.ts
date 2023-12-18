@@ -6,9 +6,9 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type {
-	ClosedRefinementKind,
+	ClosedComponentKind,
 	Declaration,
-	OpenRefinementKind,
+	OpenComponentKind,
 	Prerequisite,
 	Schema,
 	hasOpenIntersection,
@@ -24,18 +24,16 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
 	type BasisKind,
+	type ComponentKind,
 	type ConstraintKind,
-	type NodeImplementation,
-	type PropKind,
-	type RefinementKind
+	type NodeImplementation
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
 export type IntersectionInner = { basis?: Node<BasisKind> } & {
-	[k in RefinementKind | PropKind]?: k extends OpenRefinementKind
+	[k in ComponentKind]?: k extends OpenComponentKind
 		? readonly Node<k>[]
 		: Node<k>
 }
@@ -45,7 +43,7 @@ export type IntersectionSchema<
 > = withAttributes<
 	{
 		basis?: basis
-	} & refinementInputsByKind<
+	} & componentInputsByKind<
 		basis extends Schema<BasisKind> ? instantiateBasis<basis>["infer"] : unknown
 	>
 >
@@ -54,7 +52,7 @@ export type ConstraintSet = readonly Node<ConstraintKind>[]
 
 export type IntersectionAttachments = {
 	constraints: ConstraintSet
-	refinements: readonly Node<RefinementKind>[]
+	refinements: readonly Node<ComponentKind>[]
 }
 
 export type IntersectionDeclaration = declareNode<{
@@ -123,55 +121,55 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			divisor: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("divisor", def, ctx)
+				parse: (def, ctx) => parseClosedComponent("divisor", def, ctx)
 			},
 			max: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("max", def, ctx)
+				parse: (def, ctx) => parseClosedComponent("max", def, ctx)
 			},
 			min: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("min", def, ctx)
+				parse: (def, ctx) => parseClosedComponent("min", def, ctx)
 			},
 			maxLength: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("maxLength", def, ctx)
+				parse: (def, ctx) => parseClosedComponent("maxLength", def, ctx)
 			},
 			minLength: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("minLength", def, ctx)
+				parse: (def, ctx) => parseClosedComponent("minLength", def, ctx)
 			},
 			before: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("before", def, ctx)
+				parse: (def, ctx) => parseClosedComponent("before", def, ctx)
 			},
 			after: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("after", def, ctx)
+				parse: (def, ctx) => parseClosedComponent("after", def, ctx)
 			},
 			pattern: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("pattern", def, ctx)
+				parse: (def, ctx) => parseOpenComponent("pattern", def, ctx)
 			},
 			predicate: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("predicate", def, ctx)
+				parse: (def, ctx) => parseOpenComponent("predicate", def, ctx)
 			},
 			optional: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("optional", def, ctx)
+				parse: (def, ctx) => parseOpenComponent("optional", def, ctx)
 			},
 			required: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
+				parse: (def, ctx) => parseOpenComponent("required", def, ctx)
 			},
 			index: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("index", def, ctx)
+				parse: (def, ctx) => parseOpenComponent("index", def, ctx)
 			},
 			sequence: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("sequence", def, ctx)
+				parse: (def, ctx) => parseClosedComponent("sequence", def, ctx)
 			}
 		},
 		reduce: (inner, meta, scope) => {
@@ -248,35 +246,35 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
-export type RefinementIntersectionInputsByKind = {
-	[k in RefinementKind]: hasOpenIntersection<Declaration<k>> extends true
+export type ComponentIntersectionInputsByKind = {
+	[k in ComponentKind]: hasOpenIntersection<Declaration<k>> extends true
 		? listable<Schema<k>>
 		: Schema<k>
 }
 
-export type RefinementIntersectionInput<
-	kind extends RefinementKind = RefinementKind
-> = RefinementIntersectionInputsByKind[kind]
+export type componentKindOf<t> = {
+	[k in ComponentKind]: t extends Prerequisite<k> ? k : never
+}[ComponentKind]
 
-export type refinementKindOf<t> = {
-	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
-}[RefinementKind]
+export type ComponentIntersectionInput<
+	kind extends ComponentKind = ComponentKind
+> = ComponentIntersectionInputsByKind[kind]
 
-export type refinementInputsByKind<t> = {
-	[k in refinementKindOf<t>]?: RefinementIntersectionInput<k>
+export type componentInputsByKind<t> = {
+	[k in componentKindOf<t>]?: ComponentIntersectionInput<k>
 }
 
-export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
+export const parseClosedComponent = <kind extends ClosedComponentKind>(
 	kind: kind,
 	input: Schema<kind>,
 	ctx: SchemaParseContext
 ): Node<kind> => {
-	const refinement = ctx.scope.parseNode(kind, input) as Node<RefinementKind>
+	const refinement = ctx.scope.parseNode(kind, input) as Node<ComponentKind>
 	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }
 
-export const parseOpenRefinement = <kind extends OpenRefinementKind>(
+export const parseOpenComponent = <kind extends OpenComponentKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
 	ctx: SchemaParseContext
@@ -341,23 +339,23 @@ export const addConstraint = (
 	constraint: Node<ConstraintKind>
 ): Node<ConstraintKind>[] | Disjoint => {
 	const result: Node<ConstraintKind>[] = []
-	let includesRefinement = false
+	let includesComponent = false
 	for (let i = 0; i < base.length; i++) {
 		const elementResult = constraint.intersectClosed(base[i])
 		if (elementResult === null) {
 			result.push(base[i])
 		} else if (elementResult instanceof Disjoint) {
 			return elementResult
-		} else if (!includesRefinement) {
+		} else if (!includesComponent) {
 			result.push(elementResult)
-			includesRefinement = true
+			includesComponent = true
 		} else if (!result.includes(elementResult)) {
 			return throwInternalError(
 				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
 			)
 		}
 	}
-	if (!includesRefinement) {
+	if (!includesComponent) {
 		result.push(constraint)
 	}
 	return result

@@ -1,7 +1,6 @@
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
-import type { OptionalNode } from "./optional.js"
-import { BasePrimitiveRefinement } from "./refinement.js"
+import { BaseRefinement } from "./refinement.js"
 
 export type PatternInner = {
 	readonly source: string
@@ -23,7 +22,7 @@ export type PatternDeclaration = declareNode<{
 	prerequisite: string
 }>
 
-export class PatternNode extends BasePrimitiveRefinement<
+export class PatternNode extends BaseRefinement<
 	PatternDeclaration,
 	typeof PatternNode
 > {
