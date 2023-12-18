@@ -131,10 +131,11 @@ module.exports = defineConfig({
 			}
 		},
 		{
-			files: ["**/*.bench.ts"],
+			files: ["**/*.bench.ts", "**/*.test.ts"],
 			rules: {
 				// Assignment to a variable is required to ensure types are parsed
-				"@typescript-eslint/no-unused-vars": "off"
+				"@typescript-eslint/no-unused-vars": "off",
+				"@typescript-eslint/ban-ts-comment": "off"
 			}
 		}
 	]

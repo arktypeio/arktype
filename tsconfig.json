@@ -16,7 +16,7 @@
 		"noFallthroughCasesInSwitch": true,
 		"noErrorTruncation": true,
 		"stripInternal": true,
-		"lib": ["ESNext"],
+		"lib": ["ESNext", "DOM"],
 		"jsx": "react",
 		"paths": {
 			"arktype": ["./ark/type/main.ts"],
