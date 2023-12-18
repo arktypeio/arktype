@@ -28,7 +28,7 @@ export class TraversalContext {
 	popUnion(branchCount: number, data: unknown, path: string[]) {
 		const branchProblems = this.errorsStack.pop()!
 		if (branchProblems.count === branchCount) {
-			this.addError("union", { data: this.data, errors: branchProblems })
+			// this.addError("union", { data: this.data, errors: branchProblems })
 		}
 	}
 }

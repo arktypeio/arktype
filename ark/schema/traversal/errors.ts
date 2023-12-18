@@ -92,39 +92,36 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
-export interface CustomErrorDeclaration {
+export interface CustomErrorContext extends BaseErrorContext {
 	description: string
-	data: unknown
 }
 
-export interface KeyErrorDeclaration {
+export interface KeyErrorContext extends BaseErrorContext<object> {
 	key: string | symbol
-	data: object
 }
 
-export interface CompositeErrorDeclaration {
+export interface CompositeErrorContext extends BaseErrorContext {
 	errors: readonly ArkError[]
-	data: unknown
 }
 
-type deriveErrorSchema<k extends PrimitiveKind> = extend<
-	{
-		expected: string
-		actual: string
-		data: Prerequisite<k>
-		path: TraversalPath
-	},
-	Omit<NormalizedSchema<k>, "description">
->
+export interface BaseErrorContext<data = unknown> {
+	expected: string
+	actual: string
+	data: data
+	path: TraversalPath
+}
 
 type ArkErrorContextByCode = evaluate<
 	{
-		[k in PrimitiveKind]: deriveErrorSchema<k>
+		[k in PrimitiveKind]: extend<
+			BaseErrorContext<Prerequisite<k>>,
+			Omit<NormalizedSchema<k>, "description">
+		>
 	} & {
-		missingKey: KeyErrorDeclaration
-		extraneousKey: KeyErrorDeclaration
-		intersection: CompositeErrorDeclaration
-		union: CompositeErrorDeclaration
+		missingKey: KeyErrorContext
+		extraneousKey: KeyErrorContext
+		intersection: CompositeErrorContext
+		union: CompositeErrorContext
 	} & StaticArkOption<"errors">
 >
 
