@@ -11,17 +11,17 @@
 	},
 	"dependencies": {
 		"@arktype/util": "workspace:*",
-		"@astrojs/starlight": "0.11.1",
-		"@astrojs/react": "3.0.3",
+		"@astrojs/starlight": "0.15.0",
+		"@astrojs/react": "3.0.7",
 		"@stackblitz/sdk": "1.9.0",
-		"astro": "3.3.1",
-		"sharp": "0.32.6",
+		"astro": "4.0.6",
+		"sharp": "0.33.1",
 		"react": "18.2.0",
 		"react-dom": "18.2.0",
-		"framer-motion": "10.16.4"
+		"framer-motion": "10.16.16"
 	},
 	"devDependencies": {
-		"@types/react": "18.2.21",
-		"@types/react-dom": "18.2.7"
+		"@types/react": "18.2.45",
+		"@types/react-dom": "18.2.18"
 	}
 }

@@ -1,4 +1,4 @@
-import { stringify } from "@arktype/util"
+import { printable } from "@arktype/util"
 import type { Problems, Type } from "arktype"
 import "./demo.css"
 
@@ -10,14 +10,14 @@ type PopulateDemoArgs = {
 
 export const populateDemo = ({ data, type, errors }: PopulateDemoArgs) => {
 	const defElement = document.querySelector("#definition")!
-	defElement.textContent = stringify(type.definition, 2)
+	defElement.textContent = printable(type.definition, 2)
 	defElement.innerHTML = recolor(defElement.innerHTML)
 
 	const resultElement = document.querySelector("#output")!
 	if (errors) {
 		resultElement.textContent = `❌ errors:\n\n${errors}`
 	} else {
-		resultElement.textContent = `✅ out:\n\n${stringify(data, 2)}`
+		resultElement.textContent = `✅ out:\n\n${printable(data, 2)}`
 		resultElement.innerHTML = recolor(resultElement.innerHTML)
 	}
 }
