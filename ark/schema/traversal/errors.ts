@@ -40,39 +40,68 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 
 	byPath: Record<string, ArkTypeError> = {}
 	count = 0
+	private mutable: ArkTypeError[] = this as never
 
 	add<codeOrDescription extends autocomplete<ArkErrorCode>>(
 		codeOrDescription: codeOrDescription,
-		...context: codeOrDescription extends ArkErrorCode
-			? [context: ArkErrorInput<codeOrDescription>]
+		...rest: codeOrDescription extends ArkErrorCode
+			? [input: ArkErrorInput<codeOrDescription>]
 			: []
 	) {
-		const problem = {} as any // new ArkTypeError([...this.context.path], description)
-		const pathKey = this.context.path.join(".")
-		const existing = this.byPath[pathKey]
-		if (existing) {
-			// if (existing.hasCode("intersection")) {
-			// 	existing.rule.push(problem)
-			// } else {
-			// 	const problemIntersection = new ProblemIntersection(
-			// 		[existing, problem],
-			// 		problem.data,
-			// 		problem.path
-			// 	)
-			// 	const existingIndex = this.indexOf(existing)
-			// 	// If existing is found (which it always should be unless this was externally mutated),
-			// 	// replace it with the new problem intersection. In case it isn't for whatever reason,
-			// 	// just append the intersection.
-			// 	this[existingIndex === -1 ? this.length : existingIndex] =
-			// 		problemIntersection
-			// 	this.byPath[pathKey] = problemIntersection
-			// }
-		} else {
-			this.byPath[pathKey] = problem
-			;(this as any).push(problem)
+		if (!(codeOrDescription in arkErrorCodes)) {
+			// treat as the description of a custom error
+			this.mutable.push(
+				new ArkTypeError(
+					"custom",
+					{
+						path: [...this.context.path],
+						description: codeOrDescription,
+						data: this.context.data,
+						expected: codeOrDescription
+					},
+					""
+				)
+			)
+			return
 		}
+		const input: ArkErrorInput = rest[0]!
+		const context: DerivableErrorContext = {
+			path: input.path ?? [...this.context.path],
+			// check for presence explicitly in case data is nullish
+			data: "data" in input ? input.data : this.context.data,
+			// write default for code
+			expected: ""
+		}
+		const pathKey = this.context.path.join(".")
+		// const existing = this.byPath[pathKey]
+		// if (existing) {
+		// 	// if (existing.hasCode("intersection")) {
+		// 	// 	existing.rule.push(problem)
+		// 	// } else {
+		// 	// 	const problemIntersection = new ProblemIntersection(
+		// 	// 		[existing, problem],
+		// 	// 		problem.data,
+		// 	// 		problem.path
+		// 	// 	)
+		// 	// 	const existingIndex = this.indexOf(existing)
+		// 	// 	// If existing is found (which it always should be unless this was externally mutated),
+		// 	// 	// replace it with the new problem intersection. In case it isn't for whatever reason,
+		// 	// 	// just append the intersection.
+		// 	// 	this[existingIndex === -1 ? this.length : existingIndex] =
+		// 	// 		problemIntersection
+		// 	// 	this.byPath[pathKey] = problemIntersection
+		// 	// }
+		// } else {
+		const error = new ArkTypeError(
+			codeOrDescription as ArkErrorCode,
+			context as any,
+			""
+		)
+		this.byPath[pathKey] = error
+		this.mutable.push(error)
+		//}
 		this.count++
-		return problem
+		return error as never
 	}
 
 	get summary() {
@@ -88,6 +117,26 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
+export const arkErrorCodes = {
+	unit: true,
+	proto: true,
+	domain: true,
+	pattern: true,
+	predicate: true,
+	divisor: true,
+	min: true,
+	max: true,
+	minLength: true,
+	maxLength: true,
+	after: true,
+	before: true,
+	union: true,
+	intersection: true,
+	missingKey: true,
+	extraneousKey: true,
+	custom: true
+} satisfies Record<BaseArkErrorCode, true>
+
 export interface CustomErrorContext extends DerivableErrorContext {
 	description: string
 }
@@ -102,33 +151,38 @@ export interface CompositeErrorContext extends DerivableErrorContext {
 
 export interface DerivableErrorContext<data = unknown> {
 	expected: string
-	actual: string
 	data: data
 	path: TraversalPath
 }
 
-type ArkErrorContextByCode = evaluate<
+type BaseArkErrorContextsByCode = evaluate<
 	{
 		[k in PrimitiveKind]: extend<
 			DerivableErrorContext<Prerequisite<k>>,
 			Omit<NormalizedSchema<k>, "description">
 		>
 	} & {
+		custom: CustomErrorContext
 		missingKey: KeyErrorContext
 		extraneousKey: KeyErrorContext
 		intersection: CompositeErrorContext
 		union: CompositeErrorContext
-	} & StaticArkOption<"errors">
+	}
 >
 
-export type ArkErrorCode = keyof ArkErrorContextByCode
+export type BaseArkErrorCode = keyof BaseArkErrorContextsByCode
+
+export type ArkErrorContextsByCode = BaseArkErrorContextsByCode &
+	StaticArkOption<"errors">
+
+export type ArkErrorCode = keyof ArkErrorContextsByCode
 
 export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
-	ArkErrorContextByCode[code]
+	ArkErrorContextsByCode[code]
 
 type ArkErrorInputByCode = {
 	[code in ArkErrorCode]: optionalizeKeys<
-		ArkErrorContextByCode[code],
+		ArkErrorContextsByCode[code],
 		keyof DerivableErrorContext
 	>
 }
