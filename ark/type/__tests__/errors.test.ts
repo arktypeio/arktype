@@ -1,6 +1,6 @@
-import type { BaseErrorContext } from "@arktype/schema"
+import type { DerivableErrorContext } from "@arktype/schema"
 
-interface SpecialErrorContext extends BaseErrorContext {
+interface SpecialErrorContext extends DerivableErrorContext {
 	isSpecial: true
 }
 

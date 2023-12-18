@@ -1,9 +1,9 @@
 import {
 	ReadonlyArray,
-	type Dict,
 	type autocomplete,
 	type evaluate,
 	type extend,
+	type optionalizeKeys,
 	type propwiseXor
 } from "@arktype/util"
 import type { NormalizedSchema, Prerequisite } from "../kinds.js"
@@ -19,13 +19,9 @@ export class ArkTypeError<
 	constructor(
 		public code: code,
 		public context: ArkErrorContext<code>,
-		public message: string
+		message: string
 	) {
-		// context.path.length
-		// 	? `${context.path.join(".")} must be ${rule}`
-		// 	: `Must be ${rule}`
 		super(message)
-		this.message = message
 	}
 
 	toString() {
@@ -47,8 +43,8 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 
 	add<codeOrDescription extends autocomplete<ArkErrorCode>>(
 		codeOrDescription: codeOrDescription,
-		...schema: codeOrDescription extends ArkErrorCode
-			? [schema: ArkErrorContext<codeOrDescription>]
+		...context: codeOrDescription extends ArkErrorCode
+			? [context: ArkErrorInput<codeOrDescription>]
 			: []
 	) {
 		const problem = {} as any // new ArkTypeError([...this.context.path], description)
@@ -92,19 +88,19 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
-export interface CustomErrorContext extends BaseErrorContext {
+export interface CustomErrorContext extends DerivableErrorContext {
 	description: string
 }
 
-export interface KeyErrorContext extends BaseErrorContext<object> {
+export interface KeyErrorContext extends DerivableErrorContext<object> {
 	key: string | symbol
 }
 
-export interface CompositeErrorContext extends BaseErrorContext {
+export interface CompositeErrorContext extends DerivableErrorContext {
 	errors: readonly ArkError[]
 }
 
-export interface BaseErrorContext<data = unknown> {
+export interface DerivableErrorContext<data = unknown> {
 	expected: string
 	actual: string
 	data: data
@@ -114,7 +110,7 @@ export interface BaseErrorContext<data = unknown> {
 type ArkErrorContextByCode = evaluate<
 	{
 		[k in PrimitiveKind]: extend<
-			BaseErrorContext<Prerequisite<k>>,
+			DerivableErrorContext<Prerequisite<k>>,
 			Omit<NormalizedSchema<k>, "description">
 		>
 	} & {
@@ -129,6 +125,16 @@ export type ArkErrorCode = keyof ArkErrorContextByCode
 
 export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorContextByCode[code]
+
+type ArkErrorInputByCode = {
+	[code in ArkErrorCode]: optionalizeKeys<
+		ArkErrorContextByCode[code],
+		keyof DerivableErrorContext
+	>
+}
+
+export type ArkErrorInput<code extends ArkErrorCode = ArkErrorCode> =
+	ArkErrorInputByCode[code]
 
 export type ErrorsConfig = { [code in ArkErrorCode]: ErrorWriter<code> }
 
