@@ -1,4 +1,4 @@
-import { ArkErrors, type ArkErrorCode, type ArkErrorContext } from "./errors.js"
+import { ArkErrors } from "./errors.js"
 
 export type TraversalPath = (string | symbol)[]
 

@@ -95,7 +95,6 @@ module.exports = defineConfig({
 		/**
 		 * Allow more flexible typing
 		 */
-		"@typescript-eslint/ban-ts-comment": "off",
 		"@typescript-eslint/ban-types": "off",
 		"@typescript-eslint/no-explicit-any": "off",
 		"@typescript-eslint/no-non-null-assertion": "off",
@@ -119,7 +118,10 @@ module.exports = defineConfig({
 				 * In tests and scripts, we can safely import from the monorepo's root devDependencies,
 				 * so no need to worry about checking imports beyond what TypeScript does by default.
 				 **/
-				"import/no-extraneous-dependencies": "warn"
+				"import/no-extraneous-dependencies": "warn",
+				/** In tests we use expect-error constantly, but in src if we
+				 * ever have to there should be an explanation */
+				"@typescript-eslint/ban-ts-comment": "warn"
 			}
 		},
 		{

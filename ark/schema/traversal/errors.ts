@@ -130,11 +130,6 @@ export type ArkErrorCode = keyof ArkErrorContextByCode
 export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorContextByCode[code]
 
-export type ArkErrorDeclaration = {
-	schema: Dict
-	data: unknown
-}
-
 export type ErrorsConfig = { [code in ArkErrorCode]: ErrorWriter<code> }
 
 export type ErrorWriter<code extends ArkErrorCode = ArkErrorCode> = (

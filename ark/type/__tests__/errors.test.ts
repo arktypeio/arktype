@@ -1,18 +1,13 @@
-import type { ArkErrorDeclaration } from "@arktype/schema"
-import type { satisfy } from "@arktype/util"
+import type { BaseErrorContext } from "@arktype/schema"
+
+interface SpecialErrorContext extends BaseErrorContext {
+	isSpecial: true
+}
 
 declare global {
 	export interface StaticArkConfig {
 		errors(): {
-			special: satisfy<
-				ArkErrorDeclaration,
-				{
-					schema: {
-						isSpecial: true
-					}
-					data: unknown
-				}
-			>
+			special: SpecialErrorContext
 		}
 	}
 }
