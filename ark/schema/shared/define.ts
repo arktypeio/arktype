@@ -5,13 +5,13 @@ import type {
 	requireKeys,
 	satisfy
 } from "@arktype/util"
-import type { BaseNode, Node, UnknownNode } from "../base.js"
+import type { Node, UnknownNode } from "../base.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
+import { compileSerializedValue } from "../traversal/registry.js"
 import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NodeIntersections } from "./intersect.js"
-import { compileSerializedValue } from "./registry.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 

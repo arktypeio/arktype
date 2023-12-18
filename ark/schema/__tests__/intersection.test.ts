@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { rootNode, schema, type Disjoint, type TypeNode } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
-import type { IntersectionNode } from "../nodes/intersection.js"
+import type { IntersectionNode } from "../types/intersection.js"
 
 describe("intersections", () => {
 	it("parse pattern", () => {

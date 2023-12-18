@@ -14,7 +14,7 @@ import type {
 	PrimitiveRefinementKind,
 	RefinementKind
 } from "../shared/define.js"
-import { isDotAccessible } from "../shared/registry.js"
+import { isDotAccessible } from "../traversal/registry.js"
 
 export type NamedPropKind = "required" | "optional"
 

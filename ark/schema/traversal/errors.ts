@@ -8,8 +8,8 @@ import {
 } from "@arktype/util"
 import type { NormalizedSchema, Prerequisite } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
+import type { PrimitiveKind } from "../shared/define.js"
 import type { TraversalContext } from "./context.js"
-import type { PrimitiveKind } from "./define.js"
 
 export class ArkError extends TypeError {}
 

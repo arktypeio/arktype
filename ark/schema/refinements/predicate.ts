@@ -1,9 +1,9 @@
 import type { CompilationContext } from "../scope.js"
-import type { TraversalContext } from "../shared/context.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
-import type { ArkErrors } from "../shared/errors.js"
-import { compileSerializedValue } from "../shared/registry.js"
+import type { TraversalContext } from "../traversal/context.js"
+import type { ArkErrors } from "../traversal/errors.js"
+import { compileSerializedValue } from "../traversal/registry.js"
 import { BasePrimitiveRefinement } from "./refinement.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =

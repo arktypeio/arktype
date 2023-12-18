@@ -1,5 +1,5 @@
 import type { evaluate } from "@arktype/util"
-import type { LimitSchemaValue } from "../nodes/bounds.js"
+import type { LimitSchemaValue } from "../refinements/bounds.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 

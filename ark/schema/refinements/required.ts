@@ -8,7 +8,7 @@ import type {
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { compileSerializedValue } from "../shared/registry.js"
+import { compileSerializedValue } from "../traversal/registry.js"
 import {
 	BaseRefinement,
 	compilePresentProp,

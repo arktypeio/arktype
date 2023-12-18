@@ -15,7 +15,6 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { TraversalContext } from "../shared/context.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -23,8 +22,9 @@ import {
 	type NodeImplementation
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkResult, ArkTypeError } from "../shared/errors.js"
 import type { is } from "../shared/utils.js"
+import type { TraversalContext } from "../traversal/context.js"
+import type { ArkResult, ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "./type.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
