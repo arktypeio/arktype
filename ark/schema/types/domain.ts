@@ -43,8 +43,8 @@ export class DomainNode<t = unknown> extends BaseBasis<
 		},
 		normalize: (input) =>
 			typeof input === "string" ? { domain: input } : input,
-		describeExpected(node) {
-			return domainDescriptions[node.domain]
+		describeExpected(inner) {
+			return domainDescriptions[inner.domain]
 		},
 		describeActual(data) {
 			return domainOf(data)

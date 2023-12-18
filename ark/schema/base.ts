@@ -152,10 +152,10 @@ export abstract class BaseNode<
 	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
 		const ctx = new TraversalContext(data)
 		this.traverseApply(data as never, ctx)
-		if (ctx.errors.length === 0) {
+		if (ctx.currentErrors.length === 0) {
 			return { out: data } as any
 		}
-		return { errors: ctx.errors }
+		return { errors: ctx.currentErrors }
 	}
 
 	private inCache?: UnknownNode;

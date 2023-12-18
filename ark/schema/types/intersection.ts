@@ -111,7 +111,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		normalize: (def) => def,
 		addContext: (ctx) => {
 			const def = ctx.definition as IntersectionSchema
-			ctx.basis = def.basis && ctx.scope.parseTypeNode(def.basis, basisKinds)
+			ctx.basis = def.basis && ctx.$.parseTypeNode(def.basis, basisKinds)
 		},
 		keys: {
 			basis: {
@@ -211,10 +211,11 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					: unflattenConstraints(result)
 			}
 		},
-		describeExpected(node) {
-			return node.constraints.length === 0
+		describeExpected(inner) {
+			const constraints = Object.values(inner)
+			return constraints.length === 0
 				? "an unknown value"
-				: node.constraints.join(" and ")
+				: constraints.join(" and ")
 		}
 	}
 
@@ -269,7 +270,7 @@ export const parseClosedComponent = <kind extends ClosedComponentKind>(
 	input: Schema<kind>,
 	ctx: SchemaParseContext
 ): Node<kind> => {
-	const refinement = ctx.scope.parseNode(kind, input) as Node<ComponentKind>
+	const refinement = ctx.$.parseNode(kind, input) as Node<ComponentKind>
 	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }
@@ -285,7 +286,7 @@ export const parseOpenComponent = <kind extends OpenComponentKind>(
 			return
 		}
 		const refinements = input
-			.map((refinement) => ctx.scope.parseNode(kind, refinement))
+			.map((refinement) => ctx.$.parseNode(kind, refinement))
 			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
 		// we should only need to assert validity for one, as all listed
 		// refinements should be of the same kind and therefore have the same
@@ -293,7 +294,7 @@ export const parseOpenComponent = <kind extends OpenComponentKind>(
 		refinements[0].assertValidBasis(ctx.basis)
 		return refinements
 	}
-	const refinement = ctx.scope.parseNode(kind, input)
+	const refinement = ctx.$.parseNode(kind, input)
 	refinement.assertValidBasis(ctx.basis)
 	return [refinement]
 }

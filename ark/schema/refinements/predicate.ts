@@ -2,7 +2,7 @@ import type { CompilationContext } from "../scope.js"
 import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import type { TraversalContext } from "../traversal/context.js"
-import type { ArkErrors } from "../traversal/errors.js"
+import type { ArkErrors, ArkTypeError } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseRefinement } from "./refinement.js"
 
@@ -47,8 +47,8 @@ export class PredicateNode extends BaseRefinement<
 			// resulting from this intersection should also be safe.
 			predicate: () => null
 		},
-		describeExpected(node) {
-			return `valid according to ${node.predicate.name}`
+		describeExpected(inner) {
+			return `valid according to ${inner.predicate.name}`
 		}
 	}
 
@@ -61,10 +61,6 @@ export class PredicateNode extends BaseRefinement<
 
 	getCheckedDefinitions() {
 		return [{}] as const
-	}
-
-	compileBody(ctx: CompilationContext) {
-		return this.$.compilePrimitive(this, ctx)
 	}
 }
 

@@ -1,9 +1,5 @@
 import type { Node, TypeSchema } from "../base.js"
 import type { Inner } from "../kinds.js"
-import {
-	compilePresentProp,
-	type NamedPropKind
-} from "../refinements/refinement.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
@@ -13,7 +9,12 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import { BaseProp } from "./prop.js"
+import {
+	BaseProp,
+	compileKey,
+	compilePresentProp,
+	type NamedPropKind
+} from "./prop.js"
 
 export type RequiredSchema = withAttributes<{
 	readonly key: string | symbol
@@ -64,13 +65,13 @@ export class RequiredNode extends BaseProp<
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
+				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 			}
 		},
 		normalize: (schema) => schema,
 		intersections: { required: intersectNamed, optional: intersectNamed },
-		describeExpected(node) {
-			return `${String(node.compiledKey)}: ${node.value}`
+		describeExpected(inner) {
+			return `${compileKey(inner.key)}: ${inner.value}`
 		}
 	}
 
@@ -85,11 +86,11 @@ export class RequiredNode extends BaseProp<
 		if (this.key in data) {
 			this.value.traverseApply((data as any)[this.key], ctx)
 		} else {
-			ctx.errors.add("provided")
+			ctx.currentErrors.add("provided")
 		}
 	}
 
-	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
+	compiledKey = compileKey(this.key)
 
 	compileBody(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${ctx.argName}) {

@@ -49,7 +49,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 		schema.length === 0
 			? // omit empty affixes
 			  undefined
-			: schema.map((element) => ctx.scope.parseTypeNode(element))
+			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
 
 export class SequenceNode extends BaseProp<
@@ -62,7 +62,7 @@ export class SequenceNode extends BaseProp<
 			prefix: fixedSequenceKeyDefinition,
 			element: {
 				child: true,
-				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
+				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 			},
 			postfix: fixedSequenceKeyDefinition
 		},
@@ -92,10 +92,10 @@ export class SequenceNode extends BaseProp<
 		intersections: {
 			sequence: (l) => l
 		},
-		describeExpected(node) {
-			const parts = node.prefix?.map(String) ?? []
-			parts.push(`zero or more elements containing ${node.element}`)
-			node.postfix?.forEach((node) => parts.push(String(node)))
+		describeExpected(inner) {
+			const parts = inner.prefix?.map(String) ?? []
+			parts.push(`zero or more elements containing ${inner.element}`)
+			inner.postfix?.forEach((node) => parts.push(String(node)))
 			return `an array of ${parts.join(" followed by ")}`
 		}
 	}
@@ -141,7 +141,7 @@ export class SequenceNode extends BaseProp<
 	traverseApply: TraverseApply<readonly unknown[]> = (data, ctx) => {
 		if (data.length < this.minLength) {
 			// TODO: possible to unify with minLength?
-			ctx.errors.add(`at least length ${this.minLength}`)
+			ctx.currentErrors.add(`at least length ${this.minLength}`)
 			return
 		}
 

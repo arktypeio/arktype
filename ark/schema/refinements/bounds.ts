@@ -320,6 +320,9 @@ abstract class BaseDateBound<
 	}
 }
 
+const dateLimitToString = (limit: LimitSchemaValue) =>
+	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
+
 export type AfterDeclaration = declareNode<{
 	kind: "after"
 	schema: BoundSchema<string | number>
@@ -340,10 +343,11 @@ export class AfterNode extends BaseDateBound<
 		describeActual(data) {
 			return data.toLocaleString()
 		},
-		describeExpected(node) {
-			return node.exclusive
-				? `after ${node.limitString}`
-				: `${node.limitString} or later`
+		describeExpected(inner) {
+			const limitString = dateLimitToString(inner.limit)
+			return inner.exclusive
+				? `after ${limitString}`
+				: `${limitString} or later`
 		}
 	})
 
@@ -374,10 +378,11 @@ export class BeforeNode extends BaseDateBound<
 			describeActual(data) {
 				return data.toLocaleString()
 			},
-			describeExpected(node) {
-				return node.exclusive
-					? `before ${node.limitString}`
-					: `${node.limitString} or earlier`
+			describeExpected(inner) {
+				const limitString = dateLimitToString(inner.limit)
+				return inner.exclusive
+					? `before ${limitString}`
+					: `${limitString} or earlier`
 			}
 		}
 	)

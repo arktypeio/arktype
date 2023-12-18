@@ -6,6 +6,7 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
+import type { Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -147,6 +148,10 @@ export type NodeImplementation<
 				(l: any, r: any) => {} | Disjoint | null
 		  >
 		: NodeIntersections<d>
-	describeExpected: (node: Node<d["kind"]>) => string
+	describeExpected: NodeDescriptionWriter<d["kind"]>
 	describeActual?: (data: d["prerequisite"]) => string
 }
+
+export type NodeDescriptionWriter<kind extends NodeKind = NodeKind> = (
+	node: Inner<kind>
+) => string

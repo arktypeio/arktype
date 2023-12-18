@@ -57,7 +57,7 @@ export type NodeDeclarationsByKind = extend<
 	}
 >
 
-export const NodesByKind = {
+export const nodesByKind = {
 	...BoundNodes,
 	domain: DomainNode,
 	unit: UnitNode,
@@ -74,7 +74,7 @@ export const NodesByKind = {
 	sequence: SequenceNode
 } as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
-export type NodesByKind = typeof NodesByKind
+export type NodesByKind = typeof nodesByKind
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 

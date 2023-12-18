@@ -6,35 +6,9 @@ import {
 	type TypeNode,
 	type TypeSchema
 } from "../base.js"
-import type { Prerequisite } from "../kinds.js"
 import type { CompilationContext, TraverseApply } from "../scope.js"
 import type { BaseNodeDeclaration, PrimitiveNode } from "../shared/declare.js"
 import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
-import { isDotAccessible } from "../traversal/registry.js"
-
-export type NamedPropKind = "required" | "optional"
-
-export const compilePropAccess = (name: string, optional = false) =>
-	isDotAccessible(name)
-		? `${optional ? "?" : ""}.${name}`
-		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
-
-export const compilePresentProp = (
-	node: Node<NamedPropKind>,
-	ctx: CompilationContext
-) => {
-	if (ctx.compilationKind === "allows") {
-		return `return this.${node.value.id}(${ctx.argName}${compilePropAccess(
-			node.compiledKey
-		)})`
-	}
-	return `errors.currentPath.push(${node.serializedKey})
-	this.${node.value.id}(${ctx.argName}${compilePropAccess(
-		node.compiledKey
-	)}, errors)
-	errors.currentPath.pop()
-	`
-}
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
@@ -78,8 +52,8 @@ export abstract class BaseRefinement<
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.addError(this.kind as any, Object.assign(this.inner, { data }))
-			ctx.errors.add(this.description)
+			ctx.error(this.kind as any, Object.assign(this.inner, { data }))
+			ctx.currentErrors.add(this.description)
 		}
 	}
 

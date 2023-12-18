@@ -74,12 +74,12 @@ export class MorphNode<t = unknown> extends BaseType<
 			in: {
 				child: true,
 				parse: (schema, ctx) =>
-					ctx.scope.parseTypeNode(schema, ["intersection", ...basisKinds])
+					ctx.$.parseTypeNode(schema, ["intersection", ...basisKinds])
 			},
 			out: {
 				child: true,
 				parse: (schema, ctx) =>
-					ctx.scope.parseTypeNode(schema, ["intersection", ...basisKinds])
+					ctx.$.parseTypeNode(schema, ["intersection", ...basisKinds])
 			},
 			morph: {
 				parse: listFrom
@@ -126,8 +126,8 @@ export class MorphNode<t = unknown> extends BaseType<
 					  }
 			}
 		},
-		describeExpected(node) {
-			return `a morph from ${node.in} to ${node.out}`
+		describeExpected(inner) {
+			return `a morph from ${inner.in} to ${inner.out}`
 		}
 	}
 

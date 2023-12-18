@@ -9,7 +9,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
-import { NodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
+import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import {
@@ -35,7 +35,7 @@ export type SchemaParseOptions = {
 export type SchemaParseContext = extend<
 	SchemaParseOptions,
 	{
-		scope: ScopeNode
+		$: ScopeNode
 		definition: unknown
 	}
 >
@@ -58,7 +58,7 @@ export function parse(
 	schema: unknown,
 	ctx: SchemaParseContext
 ): Node {
-	const cls = NodesByKind[kind]
+	const cls = nodesByKind[kind]
 	const impl = cls.implementation as NodeImplementation
 	if (schema instanceof BaseNode) {
 		return schema.kind === kind
@@ -133,7 +133,7 @@ export function parse(
 		return globalResolutions[innerId]
 	}
 	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, meta, ctx.scope)
+		const reduced = impl.reduce(inner, meta, ctx.$)
 		if (reduced) {
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
@@ -162,7 +162,7 @@ export function parse(
 		children,
 		innerId,
 		typeId,
-		$: ctx.scope
+		$: ctx.$
 	} satisfies BaseAttachments as Record<string, any>
 	if (ctx.alias) {
 		attachments.alias = ctx.alias

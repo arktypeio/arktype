@@ -4,7 +4,8 @@ import {
 	type evaluate,
 	type extend,
 	type optionalizeKeys,
-	type propwiseXor
+	type propwiseXor,
+	type require
 } from "@arktype/util"
 import type { NormalizedSchema, Prerequisite } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
@@ -47,22 +48,21 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		...rest: codeOrDescription extends ArkErrorCode
 			? [input: ArkErrorInput<codeOrDescription>]
 			: []
-	) {
+	): ArkTypeError {
 		if (!(codeOrDescription in arkErrorCodes)) {
 			// treat as the description of a custom error
-			this.mutable.push(
-				new ArkTypeError(
-					"custom",
-					{
-						path: [...this.context.path],
-						description: codeOrDescription,
-						data: this.context.data,
-						expected: codeOrDescription
-					},
-					""
-				)
+			const error = new ArkTypeError(
+				"custom",
+				{
+					path: [...this.context.path],
+					description: codeOrDescription,
+					data: this.context.data,
+					expected: codeOrDescription
+				},
+				""
 			)
-			return
+			this.mutable.push(error)
+			return error
 		}
 		const input: ArkErrorInput = rest[0]!
 		const context: DerivableErrorContext = {
@@ -190,9 +190,11 @@ type ArkErrorInputByCode = {
 export type ArkErrorInput<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorInputByCode[code]
 
-export type ErrorsConfig = { [code in ArkErrorCode]: ErrorWriter<code> }
+export type ErrorsConfig = { [code in ArkErrorCode]?: ArkErrorWriter<code> }
 
-export type ErrorWriter<code extends ArkErrorCode = ArkErrorCode> = (
+export type ParsedErrorsConfig = require<ErrorsConfig>
+
+export type ArkErrorWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	context: ArkErrorContext<code>
 ) => string
 

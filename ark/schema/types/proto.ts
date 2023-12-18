@@ -53,11 +53,11 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 		},
 		normalize: (input) =>
 			typeof input === "function" ? { proto: input } : input,
-		describeExpected(node) {
-			const knownObjectKind = getExactBuiltinConstructorName(node.proto)
+		describeExpected(inner) {
+			const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
 			return knownObjectKind
 				? objectKindDescriptions[knownObjectKind]
-				: `an instance of ${node.proto.name}`
+				: `an instance of ${inner.proto.name}`
 		},
 		describeActual(data) {
 			return objectKindOrDomainOf(data)

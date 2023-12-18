@@ -36,7 +36,7 @@ export abstract class BaseBasis<
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.errors.add(this.description)
+			ctx.currentErrors.add(this.description)
 		}
 	}
 

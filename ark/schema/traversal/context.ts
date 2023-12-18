@@ -1,4 +1,5 @@
-import { ArkErrors } from "./errors.js"
+import type { autocomplete } from "@arktype/util"
+import { ArkErrors, type ArkErrorCode, type ArkErrorInput } from "./errors.js"
 
 export type TraversalPath = (string | symbol)[]
 
@@ -13,12 +14,22 @@ export class TraversalContext {
 
 	constructor(public data: unknown) {}
 
-	get errors() {
+	get currentErrors() {
 		return this.errorsStack.at(-1)!
 	}
 
-	get addError() {
-		return this.errors.add
+	get error() {
+		return this.currentErrors.add
+	}
+
+	falsify<codeOrDescription extends autocomplete<ArkErrorCode>>(
+		codeOrDescription: codeOrDescription,
+		...rest: codeOrDescription extends ArkErrorCode
+			? [input: ArkErrorInput<codeOrDescription>]
+			: []
+	): false {
+		this.error(codeOrDescription, ...rest)
+		return false
 	}
 
 	pushUnion() {

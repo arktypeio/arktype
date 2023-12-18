@@ -7,8 +7,13 @@ import {
 	type TypeSchema
 } from "../base.js"
 import { getBasisName } from "../refinements/refinement.js"
+import type { CompilationContext } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { BasisKind, NodeKind, PropKind } from "../shared/define.js"
+import {
+	compileSerializedValue,
+	isDotAccessible
+} from "../traversal/registry.js"
 
 export type BasePropDeclaration = extend<
 	BaseNodeDeclaration,
@@ -16,6 +21,33 @@ export type BasePropDeclaration = extend<
 >
 
 const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
+
+export type NamedPropKind = "required" | "optional"
+
+export const compilePropAccess = (name: string, optional = false) =>
+	isDotAccessible(name)
+		? `${optional ? "?" : ""}.${name}`
+		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
+
+export const compilePresentProp = (
+	node: Node<NamedPropKind>,
+	ctx: CompilationContext
+) => {
+	if (ctx.compilationKind === "allows") {
+		return `return this.${node.value.id}(${ctx.argName}${compilePropAccess(
+			node.compiledKey
+		)})`
+	}
+	return `errors.currentPath.push(${node.serializedKey})
+	this.${node.value.id}(${ctx.argName}${compilePropAccess(
+		node.compiledKey
+	)}, errors)
+	errors.currentPath.pop()
+	`
+}
+
+export const compileKey = (k: string | symbol) =>
+	typeof k === "string" ? k : compileSerializedValue(k)
 
 export abstract class BaseProp<
 	d extends BasePropDeclaration,

@@ -72,7 +72,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				child: true,
 				parse: (schema, ctx) => {
 					const branches = schema.map((branch) =>
-						ctx.scope.parseTypeNode(branch, [
+						ctx.$.parseTypeNode(branch, [
 							"morph",
 							"intersection",
 							...basisKinds
@@ -157,8 +157,8 @@ export class UnionNode<t = unknown> extends BaseType<
 					  : { branches }
 			}
 		},
-		describeExpected(node) {
-			return node.branches.length === 0 ? "never" : node.branches.join(" or ")
+		describeExpected(inner) {
+			return inner.branches.length === 0 ? "never" : inner.branches.join(" or ")
 		}
 	}
 

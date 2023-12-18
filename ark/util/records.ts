@@ -18,6 +18,26 @@ export type requireKeys<o, key extends keyof o> = o & {
 	[requiredKey in key]-?: defined<o[requiredKey]>
 }
 
+export type require<o, maxDepth extends number = 1> = requireRecurse<
+	o,
+	[],
+	maxDepth
+>
+
+type requireRecurse<
+	o,
+	depth extends 1[],
+	maxDepth extends number
+> = depth["length"] extends maxDepth
+	? o
+	: o extends object
+	  ? o extends Fn
+			? o
+			: {
+					[k in keyof o]-?: requireRecurse<o[k], [...depth, 1], maxDepth>
+			  }
+	  : o
+
 export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 	[_ in k]?: v
 }
@@ -116,7 +136,7 @@ export class DynamicBase<t extends object> extends ShallowClone<t> {}
 
 export const NoopBase = class {} as new <t extends object>() => t
 
-/** @ts-expect-error **/
+/** @ts-expect-error (see DynamicBase) **/
 export class CastableBase<t extends object> extends NoopBase<t> {}
 
 export const shallowClone = <input extends object>(input: input): input =>

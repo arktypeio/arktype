@@ -35,19 +35,19 @@ export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 		keys: {
 			key: {
 				child: true,
-				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
+				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 			},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
+				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 			}
 		},
 		normalize: (schema) => schema,
 		intersections: {
 			index: (l) => l
 		},
-		describeExpected(node) {
-			return `[${node.key}]: ${node.value}`
+		describeExpected(inner) {
+			return `[${inner.key}]: ${inner.value}`
 		}
 	}
 

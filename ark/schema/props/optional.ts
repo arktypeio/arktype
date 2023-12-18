@@ -1,5 +1,4 @@
 import type { Node, TypeSchema } from "../base.js"
-import { compilePresentProp } from "../refinements/refinement.js"
 import type {
 	CompilationContext,
 	TraverseAllows,
@@ -9,7 +8,7 @@ import type { declareNode, withAttributes } from "../shared/declare.js"
 import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import { BaseProp } from "./prop.js"
+import { BaseProp, compileKey, compilePresentProp } from "./prop.js"
 
 export type OptionalInner = {
 	readonly key: string | symbol
@@ -41,12 +40,12 @@ export class OptionalNode extends BaseProp<
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.scope.parseTypeNode(schema)
+				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 			}
 		},
 		normalize: (schema) => schema,
-		describeExpected(node) {
-			return `${String(node.compiledKey)}?: ${node.value}`
+		describeExpected(inner) {
+			return `${compileKey(inner.key)}?: ${inner.value}`
 		},
 		intersections: {
 			optional: (l, r) => {
@@ -83,7 +82,7 @@ export class OptionalNode extends BaseProp<
 		}`
 	}
 
-	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
+	compiledKey = compileKey(this.key)
 
 	getCheckedDefinitions() {
 		return ["object"] as const

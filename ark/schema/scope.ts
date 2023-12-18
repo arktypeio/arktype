@@ -1,10 +1,14 @@
 import {
 	CompiledFunction,
+	entriesOf,
+	includes,
 	isArray,
+	map,
 	printable,
 	throwInternalError,
 	throwParseError,
-	type Dict
+	type Dict,
+	type require
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import type {
@@ -14,11 +18,21 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
-import type { Schema, reducibleKindOf } from "./kinds.js"
+import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type { NodeKind, PrimitiveKind, TypeKind } from "./shared/define.js"
+import {
+	primitiveKinds,
+	type NodeDescriptionWriter,
+	type NodeKind,
+	type PrimitiveKind,
+	type TypeKind
+} from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
-import type { ArkErrorCode } from "./traversal/errors.js"
+import type {
+	ArkErrorCode,
+	ErrorsConfig,
+	ParsedErrorsConfig
+} from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
 import type { Discriminant } from "./types/discriminate.js"
 import { BaseType } from "./types/type.js"
@@ -40,16 +54,45 @@ declare global {
 	}
 }
 
+export type DescriptionsConfig = {
+	[kind in NodeKind]: NodeDescriptionWriter<kind>
+}
+
+export type ParsedDescriptionsConfig = require<DescriptionsConfig>
+
+const defaultDescriptionWriters = {} as ParsedDescriptionsConfig
+const defaultErrorWriters = {} as ParsedErrorsConfig
+
+for (const [kind, subclass] of entriesOf(nodesByKind)) {
+	const writer: NodeDescriptionWriter<any> =
+		subclass.implementation.describeExpected
+	defaultDescriptionWriters[kind] = writer
+	if (includes(primitiveKinds, kind)) {
+		defaultErrorWriters[kind] = writer
+	}
+}
+
+export const configure = (config: ArkConfig): ParsedArkConfig => {
+	return {
+		descriptions: defaultDescriptionWriters,
+		codes: defaultErrorWriters,
+		keys: "loose"
+	}
+}
+
 export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]
 >
 
 export type KeyCheckKind = "distilled" | "strict" | "loose"
 
-export type ScopeOptions = {
-	codes?: Record<ArkErrorCode, { mustBe?: string }>
+export type ArkConfig = {
+	descriptions?: DescriptionsConfig
+	codes?: ErrorsConfig
 	keys?: KeyCheckKind
 }
+
+export type ParsedArkConfig = require<ArkConfig, 2>
 
 export class ScopeNode<r extends object = any> {
 	declare infer: {
@@ -63,7 +106,7 @@ export class ScopeNode<r extends object = any> {
 
 	constructor(
 		public def: Dict<string, unknown>,
-		public opts: ScopeOptions = {}
+		public opts: ArkConfig = {}
 	) {
 		for (const k in this.def) {
 			;(this.resolutions as BaseResolutions)[k] = this.parseNode(
@@ -185,7 +228,7 @@ export class ScopeNode<r extends object = any> {
 		}
 		const node = parse(kind, def, {
 			...opts,
-			scope: this,
+			$: this,
 			definition: def
 		})
 		if (this.resolved) {
