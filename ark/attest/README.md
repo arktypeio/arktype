@@ -146,7 +146,7 @@ import { setup } from "@arktype/attest"
  * Alternate aliases can be specified using the "npm:" prefix:
  * ```json
  * 		"typescript": "latest",
- * 		"typescript-next: "npm:typescript@next",
+ * 		"typescript-next": "npm:typescript@next",
  * 		"typescript-1": "npm:typescript@5.2"
  * 		"typescript-2": "npm:typescript@5.1"
  * ```
@@ -169,7 +169,7 @@ const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 	const position = caller()
 	const types = getTypeAssertionsAtPosition(position)
 	// assert that the type of actualValue is the same as the type of expectedType
-	const relationship = types.args[0].relationships.typeArgs[0]
+	const relationship = types[0].args[0].relationships.typeArgs[0]
 	if (relationship === undefined) {
 		throw new Error(
 			`yourCustomAssert requires a type arg representing the expected type, e.g. 'yourCustomAssert<"foo">("foo")'`

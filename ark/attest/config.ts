@@ -48,7 +48,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => {
 		attestAliases: ["attest", "attestInternal"],
 		updateSnapshots: false,
 		skipTypes: false,
-		tsVersions: "*",
+		tsVersions: "typescript",
 		benchPercentThreshold: 20,
 		benchErrorOnThresholdExceeded: false,
 		filter: undefined
