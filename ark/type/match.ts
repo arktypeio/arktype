@@ -38,14 +38,15 @@ type errorCases<cases, ctx extends MatchContext> = {
 		  : validateTypeRoot<k, ctx["$"]>
 }
 
-export type CaseMatchParser<ctx extends MatchContext> = <cases>(
-	def: cases extends validateCases<cases, ctx>
-		? cases
-		: errorCases<cases, ctx> & PartialRecord<keyof ctx["$"] | "default">
-) => ChainableMatchParser<
-	replaceKey<ctx, "thens", [...ctx["thens"], ...unionToTuple<valueOf<cases>>]>
->
-
+export type CaseMatchParser<ctx extends MatchContext> = {
+	<cases>(
+		def: cases extends validateCases<cases, ctx>
+			? cases
+			: errorCases<cases, ctx> & PartialRecord<keyof ctx["$"] | "default">
+	): ChainableMatchParser<
+		replaceKey<ctx, "thens", [...ctx["thens"], ...unionToTuple<valueOf<cases>>]>
+	>
+}
 // {
 // 	<In = unknown, Out = unknown>(): ChainableMatchParser<{
 // 		inConstraint: In
