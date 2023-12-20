@@ -16,8 +16,7 @@
 		"noFallthroughCasesInSwitch": true,
 		"noErrorTruncation": true,
 		"stripInternal": true,
-		"lib": ["ESNext", "DOM"],
-		"jsx": "react",
+		"lib": ["ESNext"],
 		"paths": {
 			"arktype": ["./ark/type/main.ts"],
 			"@arktype/util": ["./ark/util/main.ts"],
@@ -26,5 +25,5 @@
 			"@arktype/attest": ["./ark/attest/main.ts"]
 		}
 	},
-	"exclude": ["out"]
+	"exclude": ["out", "node_modules", "./ark/docs"]
 }

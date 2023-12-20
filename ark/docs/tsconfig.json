@@ -1,8 +1,6 @@
 {
 	"extends": ["astro/tsconfigs/strict"],
 	"compilerOptions": {
-		"declaration": false,
-		"declarationMap": false,
 		"jsx": "react"
 	}
 }
