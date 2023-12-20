@@ -1,7 +1,6 @@
 import type { Morph } from "@arktype/schema"
 import type {
 	Fn,
-	PartialRecord,
 	isDisjoint,
 	replaceKey,
 	returnOf,
@@ -36,13 +35,19 @@ type errorCases<cases, ctx extends MatchContext> = {
 					In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
 		    ) => ctx["outConstraint"]
 		  : validateTypeRoot<k, ctx["$"]>
+} & {
+	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
+		In: ctx["inConstraint"] & ctx["$"][k]
+	) => ctx["outConstraint"]
+} & {
+	default?: (In: ctx["inConstraint"]) => ctx["outConstraint"]
 }
 
 export type CaseMatchParser<ctx extends MatchContext> = {
 	<cases>(
 		def: cases extends validateCases<cases, ctx>
 			? cases
-			: errorCases<cases, ctx> & PartialRecord<keyof ctx["$"] | "default">
+			: errorCases<cases, ctx>
 	): ChainableMatchParser<
 		replaceKey<ctx, "thens", [...ctx["thens"], ...unionToTuple<valueOf<cases>>]>
 	>

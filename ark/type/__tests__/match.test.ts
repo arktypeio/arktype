@@ -15,7 +15,7 @@ const greeting = match({
 
 const result = greeting(5)
 
-const base = matcher({} as unknown) //({}) //=>?
+const base = matcher({} as unknown) //=>?
 
 const oneResult = matcher({} as object) //=>?
 
