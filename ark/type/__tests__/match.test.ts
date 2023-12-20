@@ -1,10 +1,6 @@
-// import { match, when } from "arktype"
+// import { match } from "arktype"
 
 // const matcher = match({
-// 	[when({
-// 		a: "string",
-// 		b: "(number|bigint)[]"
-// 	})]: (data) => data.b,
 // 	boolean: (b) => !b,
 // 	semver: (s) => s.length
 // }).when({ condition: "true" }, (data) => {
@@ -24,11 +20,6 @@
 // const oneResult = matcher({} as object) //=>?
 
 // const twoResults = matcher({} as boolean | string) //=>?
-
-// const keyValue = when({
-// 	a: "string",
-// 	b: "(number|bigint)[]"
-// })
 
 // const validMatcher = match({
 // 	//    ^?

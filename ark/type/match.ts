@@ -1,12 +1,7 @@
 import type { Morph } from "@arktype/schema"
 import type {
-	conform,
-	entryOf,
-	ErrorMessage,
-	evaluate,
 	Fn,
 	isDisjoint,
-	join,
 	replaceKey,
 	returnOf,
 	unionToTuple,
@@ -14,41 +9,6 @@ import type {
 } from "@arktype/util"
 import type { Scope } from "./scope.js"
 import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.js"
-
-type cedille = "¸"
-
-type serializedWhentry<
-	k extends string,
-	v extends string
-> = `[${k}${cedille}${v}]`
-
-type parseWhentryKey<
-	s extends string,
-	$,
-	result = {}
-> = s extends `${serializedWhentry<infer k, infer v>}${cedille}${infer tail}`
-	? validateTypeRoot<v, $> extends ErrorMessage<infer message>
-		? ErrorMessage<message>
-		: parseWhentryKey<tail, $, result & { [_ in k]: inferTypeRoot<v, $> }>
-	: s extends serializedWhentry<infer k, infer v>
-	  ? validateTypeRoot<v, $> extends ErrorMessage<infer message>
-			? ErrorMessage<message>
-			: evaluate<result & { [_ in k]: inferTypeRoot<v, $> }>
-	  : validateTypeRoot<s, $> extends ErrorMessage<infer message>
-	    ? ErrorMessage<message>
-	    : never
-
-export type WhenParser<$> = <const def>(
-	def: validateTypeRoot<def, $>
-) => join<
-	unionToTuple<`[${join<conform<entryOf<def>, [string, string]>, cedille>}]`>,
-	cedille
->
-
-export const createWhenParser = <$>(scope: Scope): WhenParser<$> => {
-	const parser = (def: unknown) => new Type(def, scope).root.alias
-	return parser as never
-}
 
 type MatchContext = {
 	inConstraint: unknown
@@ -59,18 +19,20 @@ type MatchContext = {
 
 type validateCases<cases, ctx extends MatchContext> = {
 	// adding keyof $ explicitly provides key completions for aliases
-	[k in keyof cases | keyof ctx["$"] | "default"]?: k extends "default"
-		? (In: ctx["inConstraint"]) => ctx["outConstraint"]
-		: k extends validateTypeRoot<k, ctx["$"]>
-		  ? (
-					In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
-		    ) => ctx["outConstraint"]
-		  : parseWhentryKey<k & string, ctx["$"]> extends ErrorMessage<
-						infer message
-		      >
-		    ? ErrorMessage<message>
-		    : (In: parseWhentryKey<k & string, ctx["$"]>) => ctx["outConstraint"]
+	[k in keyof cases]?: k extends validateTypeRoot<k, ctx["$"]>
+		? (
+				In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
+		  ) => ctx["outConstraint"]
+		: validateTypeRoot<k, ctx["$"]>
 }
+
+// 	& {
+// 	[k in keyof ctx["$"]]: (
+// 		In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
+// 	) => ctx["outConstraint"]
+// } & {
+// 	[k in "default"]: (In: ctx["inConstraint"]) => ctx["outConstraint"]
+// }
 
 export type MatchParser<$> = {
 	<In = unknown, Out = unknown>(): ChainableMatchParser<{
@@ -87,7 +49,7 @@ export type MatchParser<$> = {
 }>
 
 export type CaseMatchParser<ctx extends MatchContext> = <cases>(
-	def: conform<cases, validateCases<cases, ctx>>
+	def: validateCases<cases, ctx>
 ) => ChainableMatchParser<
 	replaceKey<ctx, "thens", [...ctx["thens"], ...unionToTuple<valueOf<cases>>]>
 >

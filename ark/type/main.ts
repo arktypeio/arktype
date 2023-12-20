@@ -11,7 +11,6 @@ export {
 	match,
 	scope,
 	type,
-	when,
 	type Ark
 } from "./ark.js"
 export type { Module, Scope } from "./scope.js"

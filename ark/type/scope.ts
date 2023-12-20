@@ -19,12 +19,7 @@ import {
 	type nominal
 } from "@arktype/util"
 import type { type } from "./ark.js"
-import {
-	createMatchParser,
-	createWhenParser,
-	type MatchParser,
-	type WhenParser
-} from "./match.js"
+import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
@@ -272,8 +267,6 @@ export class Scope<r extends Resolutions = any> {
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
 	match: MatchParser<$<r>> = createMatchParser(this as never) as never
-
-	when: WhenParser<$<r>> = createWhenParser(this as never) as never
 
 	// TODO: decide if this API will be used for non-validated types
 	declare: DeclarationParser<$<r>> = () => ({ type: this.type }) as never

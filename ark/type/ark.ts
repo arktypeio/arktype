@@ -5,7 +5,7 @@ import {
 	Validation,
 	type inferred
 } from "@arktype/schema"
-import type { MatchParser, WhenParser } from "./match.js"
+import type { MatchParser } from "./match.js"
 import { Scope, type Module, type ScopeParser } from "./scope.js"
 import type {
 	DeclarationParser,
@@ -79,8 +79,6 @@ export const type: TypeParser<Ark> = ark.type
 
 // TODO: cast needed?
 export const match: MatchParser<Ark> = ark.match as never
-
-export const when: WhenParser<Ark> = ark.when
 
 export namespace type {
 	export type cast<to> = {
