@@ -199,16 +199,10 @@ export type ArkMessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
 ) => string
 
 export type ErrorsConfig = {
-	[code in ArkErrorCode]?: code extends PrimitiveKind
-		? {
-				/** Use description instead of expected to configure a Node */
-				expected?: never
-				message?: ArkMessageWriter<code>
-		  }
-		: {
-				expected?: ArkExpectedWriter<code>
-				message?: ArkMessageWriter<code>
-		  }
+	[code in ArkErrorCode]?: {
+		expected?: ArkExpectedWriter<code>
+		message?: ArkMessageWriter<code>
+	}
 }
 
 export type ParsedErrorsConfig = require<ErrorsConfig>
