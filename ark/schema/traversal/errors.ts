@@ -180,6 +180,11 @@ export type ArkErrorCode = keyof ArkErrorContextsByCode
 export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorContextsByCode[code]
 
+export type ArkExpectedContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
+	ArkErrorContext<code>,
+	"expected"
+>
+
 type ArkErrorInputByCode = {
 	[code in ArkErrorCode]: optionalizeKeys<
 		ArkErrorContextsByCode[code],
@@ -191,7 +196,7 @@ export type ArkErrorInput<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorInputByCode[code]
 
 export type ArkExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	input: ArkErrorInput<code>
+	context: ArkExpectedContext<code>
 ) => string
 
 export type ArkMessageWriter<code extends ArkErrorCode = ArkErrorCode> = (

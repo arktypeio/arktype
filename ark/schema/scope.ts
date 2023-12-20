@@ -54,7 +54,7 @@ declare global {
 }
 
 export type DescriptionsConfig = {
-	[kind in NodeKind]: NodeDescriptionWriter<kind>
+	[kind in NodeKind]?: NodeDescriptionWriter<kind>
 }
 
 export type ParsedDescriptionsConfig = require<DescriptionsConfig>
@@ -89,6 +89,15 @@ export type ArkConfig = {
 	descriptions?: DescriptionsConfig
 	codes?: ErrorsConfig
 	keys?: KeyCheckKind
+}
+
+const config: ArkConfig = {
+	codes: {
+		divisor: {
+			expected: (ctx) => `divisible by ${ctx.divisor}`,
+			message: (ctx) => `Must be ${ctx.expected} (was ${ctx.data})`
+		}
+	}
 }
 
 export type ParsedArkConfig = require<ArkConfig, 2>
