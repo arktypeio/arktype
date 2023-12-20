@@ -1,6 +1,7 @@
 import type { Morph } from "@arktype/schema"
 import type {
 	Fn,
+	PartialRecord,
 	isDisjoint,
 	replaceKey,
 	returnOf,
@@ -18,41 +19,48 @@ type MatchContext = {
 }
 
 type validateCases<cases, ctx extends MatchContext> = {
-	// adding keyof $ explicitly provides key completions for aliases
-	[k in keyof cases]?: k extends validateTypeRoot<k, ctx["$"]>
-		? (
-				In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
-		  ) => ctx["outConstraint"]
-		: validateTypeRoot<k, ctx["$"]>
+	[k in keyof cases | keyof ctx["$"] | "default"]?: k extends "default"
+		? (In: ctx["inConstraint"]) => ctx["outConstraint"]
+		: k extends validateTypeRoot<k, ctx["$"]>
+		  ? (
+					In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
+		    ) => ctx["outConstraint"]
+		  : validateTypeRoot<k, ctx["$"]>
 }
 
-// 	& {
-// 	[k in keyof ctx["$"]]: (
-// 		In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
-// 	) => ctx["outConstraint"]
-// } & {
-// 	[k in "default"]: (In: ctx["inConstraint"]) => ctx["outConstraint"]
-// }
+type errorCases<cases, ctx extends MatchContext> = {
+	[k in keyof cases]?: k extends "default"
+		? (In: ctx["inConstraint"]) => ctx["outConstraint"]
+		: k extends validateTypeRoot<k, ctx["$"]>
+		  ? (
+					In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
+		    ) => ctx["outConstraint"]
+		  : validateTypeRoot<k, ctx["$"]>
+}
 
-export type MatchParser<$> = {
-	<In = unknown, Out = unknown>(): ChainableMatchParser<{
-		inConstraint: In
-		outConstraint: Out
-		thens: []
-		$: $
-	}>
-} & CaseMatchParser<{
+export type CaseMatchParser<ctx extends MatchContext> = <cases>(
+	def: cases extends validateCases<cases, ctx>
+		? cases
+		: errorCases<cases, ctx> & PartialRecord<keyof ctx["$"] | "default">
+) => ChainableMatchParser<
+	replaceKey<ctx, "thens", [...ctx["thens"], ...unionToTuple<valueOf<cases>>]>
+>
+
+// {
+// 	<In = unknown, Out = unknown>(): ChainableMatchParser<{
+// 		inConstraint: In
+// 		outConstraint: Out
+// 		thens: []
+// 		$: $
+// 	}>
+// } &
+
+export type MatchParser<$> = CaseMatchParser<{
 	inConstraint: unknown
 	outConstraint: unknown
 	thens: []
 	$: $
 }>
-
-export type CaseMatchParser<ctx extends MatchContext> = <cases>(
-	def: validateCases<cases, ctx>
-) => ChainableMatchParser<
-	replaceKey<ctx, "thens", [...ctx["thens"], ...unionToTuple<valueOf<cases>>]>
->
 
 export type WhenMatchParser<ctx extends MatchContext> = <
 	def,
@@ -86,7 +94,6 @@ export type ChainableMatchParser<ctx extends MatchContext> =
 	}
 
 export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
-	// TODO: move to match node, discrimination
 	const parser = (cases: Record<string, Morph>) => {
 		const caseArray = Object.entries(cases).map(([def, morph]) => ({
 			when: new Type(def, scope).allows,

@@ -1,5 +1,7 @@
 import {
 	CompiledFunction,
+	entriesOf,
+	includes,
 	isArray,
 	printable,
 	throwInternalError,
@@ -15,16 +17,21 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
-import type { Schema, reducibleKindOf } from "./kinds.js"
+import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type {
-	NodeDescriptionWriter,
-	NodeKind,
-	PrimitiveKind,
-	TypeKind
+import {
+	primitiveKinds,
+	type NodeDescriptionWriter,
+	type NodeKind,
+	type PrimitiveKind,
+	type TypeKind
 } from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
-import type { ErrorsConfig } from "./traversal/errors.js"
+import type {
+	ArkMessageWriter,
+	ErrorsConfig,
+	ParsedErrorsConfig
+} from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
 import type { Discriminant } from "./types/discriminate.js"
 import { BaseType } from "./types/type.js"
@@ -52,25 +59,25 @@ export type DescriptionsConfig = {
 
 export type ParsedDescriptionsConfig = require<DescriptionsConfig>
 
-// const defaultDescriptionWriters = {} as ParsedDescriptionsConfig
-// const defaultErrorsConfig = {} as ParsedErrorsConfig
+const defaultDescriptionWriters = {} as ParsedDescriptionsConfig
+const defaultErrorsConfig = {} as ParsedErrorsConfig
 
-// for (const [kind, subclass] of entriesOf(nodesByKind)) {
-// 	const writer = subclass.implementation.describeExpected as never
-// 	defaultDescriptionWriters[kind] = writer
-// 	if (includes(primitiveKinds, kind)) {
-// 		defaultErrorsConfig[kind].expected = writer
-// 		defaultErrorsConfig[kind].message = ((ctx) => ``) satisfies ArkMessageWriter
-// 	}
-// }
+for (const [kind, subclass] of entriesOf(nodesByKind)) {
+	const writer = subclass.implementation.describeExpected as never
+	defaultDescriptionWriters[kind] = writer
+	if (includes(primitiveKinds, kind)) {
+		defaultErrorsConfig[kind].expected = writer
+		defaultErrorsConfig[kind].message = ((ctx) => ``) satisfies ArkMessageWriter
+	}
+}
 
-// export const configure = (config: ArkConfig): ParsedArkConfig => {
-// 	return {
-// 		descriptions: defaultDescriptionWriters,
-// 		codes: defaultErrorsConfig,
-// 		keys: "loose"
-// 	}
-// }
+export const configure = (config: ArkConfig): ParsedArkConfig => {
+	return {
+		descriptions: defaultDescriptionWriters,
+		codes: defaultErrorsConfig,
+		keys: "loose"
+	}
+}
 
 export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]
