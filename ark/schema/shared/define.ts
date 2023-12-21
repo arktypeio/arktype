@@ -8,7 +8,7 @@ import type {
 import type { Node, UnknownNode } from "../base.js"
 import type { Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { ScopeNode } from "../scope.js"
+import type { NodeConfigDefaults, ScopeNode } from "../scope.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
@@ -148,8 +148,7 @@ export type NodeImplementation<
 				(l: any, r: any) => {} | Disjoint | null
 		  >
 		: NodeIntersections<d>
-	describeExpected: NodeDescriptionWriter<d["kind"]>
-	describeActual?: (data: d["prerequisite"]) => string
+	defaults: NodeConfigDefaults<d["kind"]>
 }
 
 export type NodeDescriptionWriter<kind extends NodeKind = NodeKind> = (

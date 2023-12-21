@@ -46,8 +46,10 @@ export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 		intersections: {
 			index: (l) => l
 		},
-		describeExpected(inner) {
-			return `[${inner.key}]: ${inner.value}`
+		defaults: {
+			describe(inner) {
+				return `[${inner.key}]: ${inner.value}`
+			}
 		}
 	}
 

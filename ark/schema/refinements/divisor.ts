@@ -48,10 +48,12 @@ export class DivisorNode extends BaseRefinement<
 				)
 			})
 		},
-		describeExpected(inner) {
-			return inner.divisor === 1
-				? "an integer"
-				: `a multiple of ${inner.divisor}`
+		defaults: {
+			describe(inner) {
+				return inner.divisor === 1
+					? "an integer"
+					: `a multiple of ${inner.divisor}`
+			}
 		}
 	}
 

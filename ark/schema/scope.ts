@@ -1,13 +1,13 @@
 import {
 	CompiledFunction,
-	entriesOf,
-	includes,
 	isArray,
 	printable,
 	throwInternalError,
 	throwParseError,
 	type Dict,
-	type require
+	type evaluate,
+	type require,
+	type requireKeys
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import type {
@@ -17,20 +17,19 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
-import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
+import type { Schema, reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import {
-	primitiveKinds,
-	type NodeDescriptionWriter,
-	type NodeKind,
-	type PrimitiveKind,
-	type TypeKind
+import type {
+	NodeDescriptionWriter,
+	NodeKind,
+	PrimitiveKind,
+	TypeKind
 } from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
 import type {
 	ArkMessageWriter,
-	ErrorsConfig,
-	ParsedErrorsConfig
+	AssociatedErrorCode,
+	NodeKindWithError
 } from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
 import type { Discriminant } from "./types/discriminate.js"
@@ -53,16 +52,28 @@ declare global {
 	}
 }
 
-export type NodeConfigs = {
-	[kind in NodeKind]?: NodeDescriptionWriter<kind>
+type NodeConfigsByKind = {
+	[kind in NodeKind]?: evaluate<
+		BaseConfigOptions<kind> & ErrorConfigOptions<kind>
+	>
 }
 
-export type NodeConfig = {}
+type BaseConfigOptions<kind extends NodeKind> = {
+	describe?: NodeDescriptionWriter<kind>
+}
 
-export type ParsedDescriptionsConfig = require<NodeConfigs>
+type ErrorConfigOptions<kind extends NodeKind> = kind extends NodeKindWithError
+	? {
+			error?: ArkMessageWriter<AssociatedErrorCode<kind>>
+	  }
+	: {}
 
-const defaultDescriptionWriters = {} as ParsedDescriptionsConfig
-const defaultErrorsConfig = {} as ParsedErrorsConfig
+export type NodeConfig<kind extends NodeKind = NodeKind> =
+	NodeConfigsByKind[kind]
+
+export type NodeConfigDefaults<kind extends NodeKind = NodeKind> = evaluate<
+	Required<BaseConfigOptions<kind>> & ErrorConfigOptions<kind>
+>
 
 // for (const [kind, subclass] of entriesOf(nodesByKind)) {
 // 	const writer = subclass.implementation.describeExpected as never
@@ -73,13 +84,13 @@ const defaultErrorsConfig = {} as ParsedErrorsConfig
 // 	}
 // }
 
-export const configure = (config: ArkConfig): ParsedArkConfig => {
-	return {
-		descriptions: defaultDescriptionWriters,
-		codes: defaultErrorsConfig,
-		keys: "loose"
-	}
-}
+// export const configure = (config: ArkConfig): ParsedArkConfig => {
+// 	return {
+// 		descriptions: defaultDescriptionWriters,
+// 		codes: defaultErrorsConfig,
+// 		keys: "loose"
+// 	}
+// }
 
 export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]
@@ -88,19 +99,18 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 export type KeyCheckKind = "distilled" | "strict" | "loose"
 
 export type ArkConfig = {
-	descriptions?: NodeConfigs
-	codes?: ErrorsConfig
+	descriptions?: NodeConfigsByKind
 	keys?: KeyCheckKind
 }
 
-const config: ArkConfig = {
-	codes: {
-		divisor: {
-			expected: (ctx) => `divisible by ${ctx.divisor}`,
-			message: (ctx) => `Must be ${ctx.expected} (was ${ctx.data})`
-		}
-	}
-}
+// const config: ArkConfig = {
+// 	codes: {
+// 		divisor: {
+// 			expected: (ctx) => `divisible by ${ctx.divisor}`,
+// 			message: (ctx) => `Must be ${ctx.expected} (was ${ctx.data})`
+// 		}
+// 	}
+// }
 
 export type ParsedArkConfig = require<ArkConfig, 2>
 

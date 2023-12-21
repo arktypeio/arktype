@@ -92,11 +92,13 @@ export class SequenceNode extends BaseProp<
 		intersections: {
 			sequence: (l) => l
 		},
-		describeExpected(inner) {
-			const parts = inner.prefix?.map(String) ?? []
-			parts.push(`zero or more elements containing ${inner.element}`)
-			inner.postfix?.forEach((node) => parts.push(String(node)))
-			return `an array of ${parts.join(" followed by ")}`
+		defaults: {
+			describe(inner) {
+				const parts = inner.prefix?.map(String) ?? []
+				parts.push(`zero or more elements containing ${inner.element}`)
+				inner.postfix?.forEach((node) => parts.push(String(node)))
+				return `an array of ${parts.join(" followed by ")}`
+			}
 		}
 	}
 

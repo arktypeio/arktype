@@ -43,8 +43,6 @@
 	},
 	"testExplorer.useNativeTesting": true,
 	"editor.unicodeHighlight.allowedCharacters": {
-		// Cedille: used as a sentinel for match expressions
-		"¸": true,
 		// Hair Space: used as a sentinel for error messages
 		" ": true
 	},

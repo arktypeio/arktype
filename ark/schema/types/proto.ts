@@ -54,14 +54,16 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 		},
 		normalize: (input) =>
 			typeof input === "function" ? { proto: input } : input,
-		describeExpected(inner) {
-			const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
-			return knownObjectKind
-				? objectKindDescriptions[knownObjectKind]
-				: `an instance of ${inner.proto.name}`
-		},
-		describeActual(data) {
-			return objectKindOrDomainOf(data)
+		defaults: {
+			describe(inner) {
+				const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
+				return knownObjectKind
+					? objectKindDescriptions[knownObjectKind]
+					: `an instance of ${inner.proto.name}`
+			}
+			// describeActual(data) {
+			// 	return objectKindOrDomainOf(data)
+			// },
 		},
 		intersections: {
 			proto: (l, r) =>

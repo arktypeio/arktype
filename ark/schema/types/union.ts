@@ -1,4 +1,4 @@
-import { isArray, type extend } from "@arktype/util"
+import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type {
@@ -9,7 +9,7 @@ import type {
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import { basisKinds, type NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError, BaseArkErrorContext } from "../traversal/errors.js"
+import type { ArkError } from "../traversal/errors.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
 import { BaseType } from "./type.js"
@@ -164,8 +164,12 @@ export class UnionNode<t = unknown> extends BaseType<
 					  : { branches }
 			}
 		},
-		describeExpected(inner) {
-			return inner.branches.length === 0 ? "never" : inner.branches.join(" or ")
+		defaults: {
+			describe(inner) {
+				return inner.branches.length === 0
+					? "never"
+					: inner.branches.join(" or ")
+			}
 		}
 	}
 

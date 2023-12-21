@@ -52,8 +52,10 @@ export class PredicateNode extends BaseRefinement<
 			// resulting from this intersection should also be safe.
 			predicate: () => null
 		},
-		describeExpected(inner) {
-			return `valid according to ${inner.predicate.name}`
+		defaults: {
+			describe(inner) {
+				return `valid according to ${inner.predicate.name}`
+			}
 		}
 	}
 

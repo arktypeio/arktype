@@ -1,7 +1,6 @@
 import {
 	isArray,
 	throwInternalError,
-	type extend,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -30,7 +29,7 @@ import {
 	type NodeImplementation
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError, BaseArkErrorContext } from "../traversal/errors.js"
+import type { ArkError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
@@ -219,11 +218,13 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					: unflattenConstraints(result)
 			}
 		},
-		describeExpected(inner) {
-			const constraints = Object.values(inner)
-			return constraints.length === 0
-				? "an unknown value"
-				: constraints.join(" and ")
+		defaults: {
+			describe(inner) {
+				const constraints = Object.values(inner)
+				return constraints.length === 0
+					? "an unknown value"
+					: constraints.join(" and ")
+			}
 		}
 	}
 

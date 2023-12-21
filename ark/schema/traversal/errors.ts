@@ -63,7 +63,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			return error
 		}
 		const input: ArkErrorInput = rest[0]!
-		const context: BaseArkErrorContext = {
+		const context: DerivableErrorContext = {
 			path: input.path ?? [...this.context.path],
 			// check for presence explicitly in case data is nullish
 			data: "data" in input ? input.data : this.context.data,
@@ -134,11 +134,25 @@ export const builtinArkErrorCodes = {
 	// extraneousKey: true,
 } satisfies Record<Exclude<ArkErrorCode, keyof StaticArkOption<"errors">>, true>
 
-export interface BaseArkErrorContext<data = unknown> {
+export interface DerivableErrorContext<data = unknown> {
 	expected: string
 	data: data
 	path: TraversalPath
 }
+
+export type hasAssociatedError<kind extends NodeKind> =
+	"error" extends keyof Declaration<kind> ? true : false
+
+export type NodeKindWithError = {
+	[kind in NodeKind]: Declaration<kind>["error"] extends never ? never : kind
+}[NodeKind]
+
+export type ErrorCodesByNodeKind = {
+	[kind in NodeKindWithError]: Declaration<kind>["error"]["code"]
+}
+
+export type AssociatedErrorCode<kind extends NodeKindWithError> =
+	ErrorCodesByNodeKind[kind]
 
 export type ArkErrorContextsByCode = extend<
 	{
@@ -160,7 +174,7 @@ export type ArkExpectedContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 type ArkErrorInputByCode = {
 	[code in ArkErrorCode]: optionalizeKeys<
 		ArkErrorContextsByCode[code],
-		keyof BaseArkErrorContext
+		keyof DerivableErrorContext
 	>
 }
 
@@ -174,15 +188,6 @@ export type ArkExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
 export type ArkMessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	context: ArkErrorContext<code>
 ) => string
-
-export type ErrorsConfig = {
-	[code in ArkErrorCode]?: {
-		expected?: ArkExpectedWriter<code>
-		message?: ArkMessageWriter<code>
-	}
-}
-
-export type ParsedErrorsConfig = require<ErrorsConfig>
 
 export type ArkResult<out = unknown> = propwiseXor<
 	{ out: out },

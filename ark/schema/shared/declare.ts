@@ -1,7 +1,10 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
-import type { ArkErrorCode, BaseArkErrorContext } from "../traversal/errors.js"
+import type {
+	ArkErrorCode,
+	DerivableErrorContext
+} from "../traversal/errors.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -38,8 +41,8 @@ export type UnknownIntersections = {
 	[rKey in NodeKind | "default"]?: NodeKind | Disjoint | null
 }
 
-export type DeclarationInput = {
-	kind: NodeKind
+export type DeclarationInput<kind extends NodeKind = NodeKind> = {
+	kind: kind
 	schema: unknown
 	intersections: UnknownIntersections
 	normalizedSchema: BaseMeta
@@ -75,7 +78,7 @@ export type declareNode<d extends DeclarationInput> = extend<
 						? code
 						: d["kind"]
 					context: extend<
-						BaseArkErrorContext<prerequisiteOf<d>>,
+						DerivableErrorContext<prerequisiteOf<d>>,
 						d["error"]["context"] extends infer context extends {}
 							? context
 							: d["inner"]
@@ -91,7 +94,7 @@ type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 
 export type BaseErrorDeclaration = {
 	code: ArkErrorCode
-	context: BaseArkErrorContext
+	context: DerivableErrorContext
 }
 
 export type attachmentsOf<d extends BaseNodeDeclaration> =

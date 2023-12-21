@@ -45,8 +45,10 @@ export class PatternNode extends BaseRefinement<
 			// For now, non-equal regex are naively intersected
 			pattern: () => null
 		},
-		describeExpected(inner) {
-			return `matched by ${inner.source}`
+		defaults: {
+			describe(inner) {
+				return `matched by ${inner.source}`
+			}
 		}
 	}
 

@@ -44,11 +44,13 @@ export class DomainNode<t = unknown> extends BaseBasis<
 		},
 		normalize: (input) =>
 			typeof input === "string" ? { domain: input } : input,
-		describeExpected(inner) {
-			return domainDescriptions[inner.domain]
-		},
-		describeActual(data) {
-			return domainOf(data)
+		defaults: {
+			describe(inner) {
+				return domainDescriptions[inner.domain]
+			}
+			// describeActual(data) {
+			// 	return domainOf(data)
+			// }
 		},
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r)

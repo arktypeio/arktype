@@ -178,8 +178,10 @@ export type MinDeclaration = declareNode<{
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 	static implementation: NodeImplementation<MinDeclaration> = implementBound({
 		intersections: createLowerIntersections("min"),
-		describeExpected(node) {
-			return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
+		defaults: {
+			describe(node) {
+				return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
+			}
 		}
 	})
 
@@ -204,8 +206,10 @@ export type MaxDeclaration = declareNode<{
 export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 	static implementation: NodeImplementation<MaxDeclaration> = implementBound({
 		intersections: createUpperIntersections("max"),
-		describeExpected(node) {
-			return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
+		defaults: {
+			describe(node) {
+				return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
+			}
 		}
 	})
 
@@ -249,17 +253,19 @@ export class MinLengthNode extends BaseLengthBound<
 	static implementation: NodeImplementation<MinLengthDeclaration> =
 		implementBound({
 			intersections: createLowerIntersections("minLength"),
-			describeActual(data) {
-				return `${data.length}`
-			},
-			describeExpected(node) {
-				return node.exclusive
-					? node.limit === 0
-						? "non-empty"
-						: `more than length ${node.limit}`
-					: node.limit === 1
-					  ? "non-empty"
-					  : `at least length ${node.limit}`
+			defaults: {
+				describe(node) {
+					return node.exclusive
+						? node.limit === 0
+							? "non-empty"
+							: `more than length ${node.limit}`
+						: node.limit === 1
+						  ? "non-empty"
+						  : `at least length ${node.limit}`
+				}
+				// describeActual(data) {
+				// 	return `${data.length}`
+				// }
 			}
 		})
 
@@ -287,13 +293,15 @@ export class MaxLengthNode extends BaseLengthBound<
 	static implementation: NodeImplementation<MaxLengthDeclaration> =
 		implementBound({
 			intersections: createUpperIntersections("maxLength"),
-			describeActual(data) {
-				return `${data.length}`
-			},
-			describeExpected(node) {
-				return node.exclusive
-					? `less than length ${node.limit}`
-					: `at most length ${node.limit}`
+			defaults: {
+				describe(node) {
+					return node.exclusive
+						? `less than length ${node.limit}`
+						: `at most length ${node.limit}`
+				}
+				// describeActual(data) {
+				// 	return `${data.length}`
+				// }
 			}
 		})
 
@@ -345,14 +353,16 @@ export class AfterNode extends BaseDateBound<
 > {
 	static implementation: NodeImplementation<AfterDeclaration> = implementBound({
 		intersections: createLowerIntersections("after"),
-		describeActual(data) {
-			return data.toLocaleString()
-		},
-		describeExpected(inner) {
-			const limitString = dateLimitToString(inner.limit)
-			return inner.exclusive
-				? `after ${limitString}`
-				: `${limitString} or later`
+		defaults: {
+			describe(inner) {
+				const limitString = dateLimitToString(inner.limit)
+				return inner.exclusive
+					? `after ${limitString}`
+					: `${limitString} or later`
+			}
+			// describeActual(data) {
+			// 	return data.toLocaleString()
+			// }
 		}
 	})
 
@@ -381,14 +391,16 @@ export class BeforeNode extends BaseDateBound<
 	static implementation: NodeImplementation<BeforeDeclaration> = implementBound(
 		{
 			intersections: createUpperIntersections("before"),
-			describeActual(data) {
-				return data.toLocaleString()
-			},
-			describeExpected(inner) {
-				const limitString = dateLimitToString(inner.limit)
-				return inner.exclusive
-					? `before ${limitString}`
-					: `${limitString} or earlier`
+			defaults: {
+				describe(inner) {
+					const limitString = dateLimitToString(inner.limit)
+					return inner.exclusive
+						? `before ${limitString}`
+						: `${limitString} or earlier`
+				}
+				// describeActual(data) {
+				// 	return data.toLocaleString()
+				// }
 			}
 		}
 	)

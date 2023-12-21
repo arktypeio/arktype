@@ -44,8 +44,10 @@ export class OptionalNode extends BaseProp<
 			}
 		},
 		normalize: (schema) => schema,
-		describeExpected(inner) {
-			return `${compileKey(inner.key)}?: ${inner.value}`
+		defaults: {
+			describe(inner) {
+				return `${compileKey(inner.key)}?: ${inner.value}`
+			}
 		},
 		intersections: {
 			optional: (l, r) => {
