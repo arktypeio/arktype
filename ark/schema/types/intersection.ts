@@ -68,12 +68,9 @@ export type IntersectionDeclaration = declareNode<{
 	}
 	error: {
 		code: "intersection"
-		context: extend<
-			BaseArkErrorContext,
-			{
-				errors: readonly ArkError[]
-			}
-		>
+		context: {
+			errors: readonly ArkError[]
+		}
 	}
 }>
 

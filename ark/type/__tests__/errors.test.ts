@@ -1,8 +1,8 @@
 import { attest } from "@arktype/attest"
-import type { DerivableErrorContext } from "@arktype/schema"
+import type { BaseArkErrorContext } from "@arktype/schema"
 import { type } from "arktype"
 
-interface SpecialErrorContext extends DerivableErrorContext {
+interface SpecialErrorContext extends BaseArkErrorContext {
 	reversesTo: string
 }
 

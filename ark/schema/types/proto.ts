@@ -5,7 +5,7 @@ import {
 	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
-import type { declarePrimitive, withBaseMeta } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	defaultValueSerializer,
 	type NodeImplementation
@@ -24,7 +24,7 @@ export type ProtoSchema<proto extends Constructor = Constructor> =
 	| proto
 	| NormalizedProtoSchema<proto>
 
-export type ProtoDeclaration = declarePrimitive<{
+export type ProtoDeclaration = declareNode<{
 	kind: "proto"
 	schema: ProtoSchema
 	normalizedSchema: NormalizedProtoSchema
@@ -33,6 +33,7 @@ export type ProtoDeclaration = declarePrimitive<{
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
+	error: {}
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)

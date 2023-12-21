@@ -1,4 +1,4 @@
-import type { declarePrimitive, withBaseMeta } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
@@ -14,7 +14,7 @@ export type NormalizedPredicateSchema = withBaseMeta<PredicateInner>
 
 export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
-export type PredicateDeclaration = declarePrimitive<{
+export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
 	schema: PredicateSchema
 	normalizedSchema: NormalizedPredicateSchema
@@ -23,6 +23,12 @@ export type PredicateDeclaration = declarePrimitive<{
 		predicate: "predicate" | null
 	}
 	data: unknown
+	error: {
+		code: "custom"
+		context: {
+			expected: string
+		}
+	}
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need

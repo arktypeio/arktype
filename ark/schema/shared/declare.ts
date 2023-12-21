@@ -1,11 +1,7 @@
-import type { Dict, evaluate, extend, merge } from "@arktype/util"
+import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
-import type {
-	ArkErrorCode,
-	BaseArkErrorContext,
-	DerivableErrorContext
-} from "../traversal/errors.js"
+import type { ArkErrorCode, BaseArkErrorContext } from "../traversal/errors.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -49,8 +45,8 @@ export type DeclarationInput = {
 	normalizedSchema: BaseMeta
 	inner: Dict
 	error?: {
-		code: ArkErrorCode
-		context: Dict
+		code?: ArkErrorCode
+		context?: Dict
 	}
 	meta?: Dict
 	prerequisite?: unknown
@@ -66,42 +62,32 @@ type ParentsByKind = {
 type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type declareNode<d extends DeclarationInput> = extend<
-	d,
+	// include this below so intersections can be reduced
+	Omit<d, "error">,
 	{
 		meta: "meta" extends keyof d ? extend<BaseMeta, d["meta"]> : BaseMeta
 		prerequisite: prerequisiteOf<d>
 		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
-		error: d["kind"] extends PrimitiveKind
+		error: d["error"] extends {}
 			? {
-					code: d["kind"]
-					context: extend<BaseArkErrorContext<prerequisiteOf<d>>, d["inner"]>
+					code: d["error"]["code"] extends infer code extends string
+						? code
+						: d["kind"]
+					context: extend<
+						BaseArkErrorContext<prerequisiteOf<d>>,
+						d["error"]["context"] extends infer context extends {}
+							? context
+							: d["inner"]
+					>
 			  }
-			: d["error"] extends {}
-			  ? {
-						code: d["error"]["code"]
-						context: extend<
-							BaseArkErrorContext<prerequisiteOf<d>>,
-							d["error"]["context"]
-						>
-			    }
-			  : undefined
+			: never
 	}
 >
 
 type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 	? d["prerequisite"]
 	: unknown
-
-export type declarePrimitive<d extends DeclarationInput> = extend<
-	declareNode<d>,
-	{
-		error: {
-			code: d["kind"]
-			context: extend<BaseArkErrorContext<prerequisiteOf<d>>, d["inner"]>
-		}
-	}
->
 
 export type BaseErrorDeclaration = {
 	code: ArkErrorCode
@@ -120,7 +106,7 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
-	error: BaseErrorDeclaration | undefined
+	error: BaseErrorDeclaration | null
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}

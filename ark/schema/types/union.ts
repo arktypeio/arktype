@@ -49,12 +49,9 @@ export type UnionDeclaration = declareNode<{
 	}
 	error: {
 		code: "union"
-		context: extend<
-			BaseArkErrorContext,
-			{
-				errors: readonly ArkError[]
-			}
-		>
+		context: {
+			errors: readonly ArkError[]
+		}
 	}
 }>
 

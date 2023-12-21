@@ -1,16 +1,14 @@
 import {
 	ReadonlyArray,
-	type ErrorMessage,
 	type autocomplete,
-	type evaluate,
 	type extend,
 	type optionalizeKeys,
 	type propwiseXor,
 	type require
 } from "@arktype/util"
-import type { Inner, Prerequisite } from "../kinds.js"
+import type { Declaration } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
-import type { PrimitiveKind } from "../shared/define.js"
+import type { NodeKind } from "../shared/define.js"
 import type { TraversalContext, TraversalPath } from "./context.js"
 
 export class ArkError extends TypeError {}
@@ -50,7 +48,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			? [input: ArkErrorInput<codeOrDescription>]
 			: []
 	): ArkTypeError {
-		if (!(codeOrDescription in arkErrorCodes)) {
+		if (!(codeOrDescription in builtinArkErrorCodes)) {
 			// treat as the description of a custom error
 			const error = new ArkTypeError(
 				"custom",
@@ -65,7 +63,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			return error
 		}
 		const input: ArkErrorInput = rest[0]!
-		const context: DerivableErrorContext = {
+		const context: BaseArkErrorContext = {
 			path: input.path ?? [...this.context.path],
 			// check for presence explicitly in case data is nullish
 			data: "data" in input ? input.data : this.context.data,
@@ -117,12 +115,12 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
-export const arkErrorCodes = {
+export const builtinArkErrorCodes = {
 	unit: true,
 	proto: true,
 	domain: true,
 	pattern: true,
-	predicate: true,
+	custom: true,
 	divisor: true,
 	min: true,
 	max: true,
@@ -132,53 +130,22 @@ export const arkErrorCodes = {
 	before: true,
 	union: true,
 	intersection: true,
-	missingKey: true,
-	extraneousKey: true,
-	custom: true
-} satisfies Record<BaseArkErrorCode, true>
-
-export interface CustomErrorContext extends DerivableErrorContext {
-	expected: string
-}
-
-export interface KeyErrorContext extends DerivableErrorContext<object> {
-	key: string | symbol
-}
-
-export interface CompositeErrorContext extends DerivableErrorContext {
-	errors: readonly ArkError[]
-}
-
-export interface DerivableErrorContext<data = unknown> {
-	expected: string
-	data: data
-	path: TraversalPath
-}
+	missingKey: true
+	// extraneousKey: true,
+} satisfies Record<Exclude<ArkErrorCode, keyof StaticArkOption<"errors">>, true>
 
 export interface BaseArkErrorContext<data = unknown> {
+	expected: string
 	data: data
 	path: TraversalPath
 }
 
-type BaseArkErrorContextsByCode = evaluate<
+export type ArkErrorContextsByCode = extend<
 	{
-		[k in PrimitiveKind]: extend<
-			DerivableErrorContext<Prerequisite<k>>,
-			Omit<Inner<k>, "description">
-		>
-	} & {
-		custom: CustomErrorContext
-		missingKey: KeyErrorContext
-		extraneousKey: KeyErrorContext
-		intersection: CompositeErrorContext
-		union: CompositeErrorContext
-	}
->
-
-export type BaseArkErrorCode = keyof BaseArkErrorContextsByCode
-
-export type ArkErrorContextsByCode = BaseArkErrorContextsByCode &
+		[k in NodeKind as Declaration<k>["error"]["code"]]: Declaration<k>["error"]["context"]
+	},
 	StaticArkOption<"errors">
+>
 
 export type ArkErrorCode = keyof ArkErrorContextsByCode
 
@@ -193,7 +160,7 @@ export type ArkExpectedContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 type ArkErrorInputByCode = {
 	[code in ArkErrorCode]: optionalizeKeys<
 		ArkErrorContextsByCode[code],
-		keyof DerivableErrorContext
+		keyof BaseArkErrorContext
 	>
 }
 

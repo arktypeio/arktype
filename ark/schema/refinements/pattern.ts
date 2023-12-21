@@ -1,4 +1,4 @@
-import type { declarePrimitive, withBaseMeta } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import { BaseRefinement } from "./refinement.js"
 
@@ -11,7 +11,7 @@ export type NormalizedPatternSchema = withBaseMeta<PatternInner>
 
 export type PatternSchema = NormalizedPatternSchema | string | RegExp
 
-export type PatternDeclaration = declarePrimitive<{
+export type PatternDeclaration = declareNode<{
 	kind: "pattern"
 	schema: PatternSchema
 	normalizedSchema: NormalizedPatternSchema
@@ -20,6 +20,7 @@ export type PatternDeclaration = declarePrimitive<{
 		pattern: "pattern" | null
 	}
 	prerequisite: string
+	error: {}
 }>
 
 export class PatternNode extends BaseRefinement<

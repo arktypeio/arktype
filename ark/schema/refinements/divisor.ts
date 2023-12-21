@@ -1,4 +1,4 @@
-import type { declarePrimitive, withBaseMeta } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import { BaseRefinement } from "./refinement.js"
 
@@ -10,7 +10,7 @@ export type NormalizedDivisorSchema = withBaseMeta<DivisorInner>
 
 export type DivisorSchema = NormalizedDivisorSchema | number
 
-export type DivisorDeclaration = declarePrimitive<{
+export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
 	schema: DivisorSchema
 	normalizedSchema: NormalizedDivisorSchema
@@ -19,6 +19,7 @@ export type DivisorDeclaration = declarePrimitive<{
 		divisor: "divisor"
 	}
 	prerequisite: number
+	error: {}
 }>
 
 export const writeIndivisibleMessage = <root extends string>(

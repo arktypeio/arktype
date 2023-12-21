@@ -1,5 +1,5 @@
 import { domainOf, type Domain } from "@arktype/util"
-import type { declarePrimitive, withBaseMeta } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
@@ -21,7 +21,7 @@ export type NormalizedDomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > = DomainInner<domain>
 
-export type DomainDeclaration = declarePrimitive<{
+export type DomainDeclaration = declareNode<{
 	kind: "domain"
 	schema: DomainSchema
 	normalizedSchema: NormalizedDomainSchema
@@ -29,6 +29,7 @@ export type DomainDeclaration = declarePrimitive<{
 	intersections: {
 		domain: "domain" | Disjoint
 	}
+	error: {}
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<

@@ -64,14 +64,14 @@ export type ParsedDescriptionsConfig = require<NodeConfigs>
 const defaultDescriptionWriters = {} as ParsedDescriptionsConfig
 const defaultErrorsConfig = {} as ParsedErrorsConfig
 
-for (const [kind, subclass] of entriesOf(nodesByKind)) {
-	const writer = subclass.implementation.describeExpected as never
-	defaultDescriptionWriters[kind] = writer
-	if (includes(primitiveKinds, kind)) {
-		defaultErrorsConfig[kind].expected = writer
-		defaultErrorsConfig[kind].message = ((ctx) => ``) satisfies ArkMessageWriter
-	}
-}
+// for (const [kind, subclass] of entriesOf(nodesByKind)) {
+// 	const writer = subclass.implementation.describeExpected as never
+// 	defaultDescriptionWriters[kind] = writer
+// 	if (includes(primitiveKinds, kind)) {
+// 		defaultErrorsConfig[kind].expected = writer
+// 		defaultErrorsConfig[kind].message = ((ctx) => ``) satisfies ArkMessageWriter
+// 	}
+// }
 
 export const configure = (config: ArkConfig): ParsedArkConfig => {
 	return {
