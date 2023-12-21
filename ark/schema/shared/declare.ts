@@ -1,6 +1,11 @@
-import type { Dict, evaluate, extend } from "@arktype/util"
+import type { Dict, evaluate, extend, merge } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
+import type {
+	ArkErrorCode,
+	BaseArkErrorContext,
+	DerivableErrorContext
+} from "../traversal/errors.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -43,6 +48,10 @@ export type DeclarationInput = {
 	intersections: UnknownIntersections
 	normalizedSchema: BaseMeta
 	inner: Dict
+	error?: {
+		code: ArkErrorCode
+		context: Dict
+	}
 	meta?: Dict
 	prerequisite?: unknown
 	childKind?: NodeKind
@@ -60,11 +69,44 @@ export type declareNode<d extends DeclarationInput> = extend<
 	d,
 	{
 		meta: "meta" extends keyof d ? extend<BaseMeta, d["meta"]> : BaseMeta
-		prerequisite: "prerequisite" extends keyof d ? d["prerequisite"] : unknown
+		prerequisite: prerequisiteOf<d>
 		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
+		error: d["kind"] extends PrimitiveKind
+			? {
+					code: d["kind"]
+					context: extend<BaseArkErrorContext<prerequisiteOf<d>>, d["inner"]>
+			  }
+			: d["error"] extends {}
+			  ? {
+						code: d["error"]["code"]
+						context: extend<
+							BaseArkErrorContext<prerequisiteOf<d>>,
+							d["error"]["context"]
+						>
+			    }
+			  : undefined
 	}
 >
+
+type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
+	? d["prerequisite"]
+	: unknown
+
+export type declarePrimitive<d extends DeclarationInput> = extend<
+	declareNode<d>,
+	{
+		error: {
+			code: d["kind"]
+			context: extend<BaseArkErrorContext<prerequisiteOf<d>>, d["inner"]>
+		}
+	}
+>
+
+export type BaseErrorDeclaration = {
+	code: ArkErrorCode
+	context: BaseArkErrorContext
+}
 
 export type attachmentsOf<d extends BaseNodeDeclaration> =
 	NarrowedAttachments<d> & d["inner"]
@@ -78,6 +120,7 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
+	error: BaseErrorDeclaration | undefined
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}

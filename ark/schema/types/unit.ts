@@ -1,5 +1,5 @@
 import { domainOf, printable } from "@arktype/util"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { declarePrimitive, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -11,7 +11,7 @@ export type UnitInner<value = unknown> = {
 	readonly unit: value
 }
 
-export type UnitDeclaration = declareNode<{
+export type UnitDeclaration = declarePrimitive<{
 	kind: "unit"
 	schema: UnitSchema
 	normalizedSchema: UnitSchema

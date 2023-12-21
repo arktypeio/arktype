@@ -1,8 +1,7 @@
-import type { CompilationContext } from "../scope.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { declarePrimitive, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import type { TraversalContext } from "../traversal/context.js"
-import type { ArkErrors, ArkTypeError } from "../traversal/errors.js"
+import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseRefinement } from "./refinement.js"
 
@@ -15,7 +14,7 @@ export type NormalizedPredicateSchema = withBaseMeta<PredicateInner>
 
 export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
-export type PredicateDeclaration = declareNode<{
+export type PredicateDeclaration = declarePrimitive<{
 	kind: "predicate"
 	schema: PredicateSchema
 	normalizedSchema: NormalizedPredicateSchema

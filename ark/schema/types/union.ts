@@ -1,4 +1,4 @@
-import { isArray } from "@arktype/util"
+import { isArray, type extend } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type {
@@ -9,6 +9,7 @@ import type {
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import { basisKinds, type NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkError, BaseArkErrorContext } from "../traversal/errors.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
 import { BaseType } from "./type.js"
@@ -45,6 +46,15 @@ export type UnionDeclaration = declareNode<{
 		morph: "union" | Disjoint
 		intersection: "union" | Disjoint
 		default: "union" | Disjoint
+	}
+	error: {
+		code: "union"
+		context: extend<
+			BaseArkErrorContext,
+			{
+				errors: readonly ArkError[]
+			}
+		>
 	}
 }>
 

@@ -1,6 +1,7 @@
 import {
 	isArray,
 	throwInternalError,
+	type extend,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -29,6 +30,7 @@ import {
 	type NodeImplementation
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkError, BaseArkErrorContext } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
@@ -63,6 +65,15 @@ export type IntersectionDeclaration = declareNode<{
 	intersections: {
 		intersection: "intersection" | Disjoint
 		default: "intersection" | Disjoint
+	}
+	error: {
+		code: "intersection"
+		context: extend<
+			BaseArkErrorContext,
+			{
+				errors: readonly ArkError[]
+			}
+		>
 	}
 }>
 

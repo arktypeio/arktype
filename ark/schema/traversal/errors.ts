@@ -155,6 +155,11 @@ export interface DerivableErrorContext<data = unknown> {
 	path: TraversalPath
 }
 
+export interface BaseArkErrorContext<data = unknown> {
+	data: data
+	path: TraversalPath
+}
+
 type BaseArkErrorContextsByCode = evaluate<
 	{
 		[k in PrimitiveKind]: extend<

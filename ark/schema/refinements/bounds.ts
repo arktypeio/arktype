@@ -10,7 +10,7 @@ import type { Declaration, hasOpenIntersection } from "../kinds.js"
 import type { CompilationContext } from "../scope.js"
 import type {
 	BaseNodeDeclaration,
-	declareNode,
+	declarePrimitive,
 	withBaseMeta
 } from "../shared/declare.js"
 import type { BoundKind, NodeImplementation } from "../shared/define.js"
@@ -162,7 +162,7 @@ abstract class BaseNumericBound<
 	}
 }
 
-export type MinDeclaration = declareNode<{
+export type MinDeclaration = declarePrimitive<{
 	kind: "min"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -187,7 +187,7 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 		: (data: number) => data >= this.limit
 }
 
-export type MaxDeclaration = declareNode<{
+export type MaxDeclaration = declarePrimitive<{
 	kind: "max"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -227,7 +227,7 @@ abstract class BaseLengthBound<
 	}
 }
 
-export type MinLengthDeclaration = declareNode<{
+export type MinLengthDeclaration = declarePrimitive<{
 	kind: "minLength"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -265,7 +265,7 @@ export class MinLengthNode extends BaseLengthBound<
 		: (data: string | readonly unknown[]) => data.length >= this.limit
 }
 
-export type MaxLengthDeclaration = declareNode<{
+export type MaxLengthDeclaration = declarePrimitive<{
 	kind: "maxLength"
 	schema: BoundSchema<number>
 	normalizedSchema: NormalizedBoundSchema<number>
@@ -323,7 +323,7 @@ abstract class BaseDateBound<
 const dateLimitToString = (limit: LimitSchemaValue) =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
 
-export type AfterDeclaration = declareNode<{
+export type AfterDeclaration = declarePrimitive<{
 	kind: "after"
 	schema: BoundSchema<string | number>
 	normalizedSchema: NormalizedBoundSchema<string | number>
@@ -356,7 +356,7 @@ export class AfterNode extends BaseDateBound<
 		: (data: Date) => +data >= this.numericLimit
 }
 
-export type BeforeDeclaration = declareNode<{
+export type BeforeDeclaration = declarePrimitive<{
 	kind: "before"
 	schema: BoundSchema<string | number>
 	normalizedSchema: NormalizedBoundSchema<string | number>

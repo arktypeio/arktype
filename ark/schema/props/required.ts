@@ -1,3 +1,4 @@
+import type { extend } from "@arktype/util"
 import type { Node, TypeSchema } from "../base.js"
 import type { Inner } from "../kinds.js"
 import type {
@@ -8,6 +9,7 @@ import type {
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { BaseArkErrorContext } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
 	BaseProp,
@@ -34,6 +36,15 @@ export type RequiredDeclaration = declareNode<{
 	intersections: {
 		required: "required" | Disjoint | null
 		optional: "required" | Disjoint | null
+	}
+	error: {
+		code: "missingKey"
+		context: extend<
+			BaseArkErrorContext,
+			{
+				key: string | symbol
+			}
+		>
 	}
 	prerequisite: object
 }>
