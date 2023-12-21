@@ -4,7 +4,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type {
 	NodeImplementation,
 	NodeKeyImplementation
@@ -12,7 +12,7 @@ import type {
 import type { Disjoint } from "../shared/disjoint.js"
 import { BaseProp } from "./prop.js"
 
-export type NormalizedSequenceSchema = withAttributes<{
+export type NormalizedSequenceSchema = withBaseMeta<{
 	readonly prefix?: readonly TypeSchema[]
 	readonly element: TypeSchema
 	readonly postfix?: readonly TypeSchema[]

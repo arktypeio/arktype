@@ -5,7 +5,7 @@ import {
 	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	defaultValueSerializer,
 	type NodeImplementation
@@ -18,7 +18,7 @@ export type ProtoInner<proto extends Constructor = Constructor> = {
 }
 
 export type NormalizedProtoSchema<proto extends Constructor = Constructor> =
-	withAttributes<ProtoInner<proto>>
+	withBaseMeta<ProtoInner<proto>>
 
 export type ProtoSchema<proto extends Constructor = Constructor> =
 	| proto

@@ -2,7 +2,7 @@ import {
 	inferred,
 	keywords,
 	type ArkResult,
-	type BaseAttributes,
+	type BaseMeta,
 	type KeyCheckKind,
 	type Morph,
 	type Out,
@@ -66,7 +66,7 @@ export type TypeParser<$> = {
 						  ? // TODO: centralize
 						    [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
 						  : one extends "@"
-						    ? [string | BaseAttributes]
+						    ? [string | BaseMeta]
 						    : [validateTypeRoot<rest[0], $>]
 			    : []
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>

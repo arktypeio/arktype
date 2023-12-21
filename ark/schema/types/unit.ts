@@ -1,11 +1,11 @@
 import { domainOf, printable } from "@arktype/util"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseBasis } from "./basis.js"
 
-export type UnitSchema<value = unknown> = withAttributes<UnitInner<value>>
+export type UnitSchema<value = unknown> = withBaseMeta<UnitInner<value>>
 
 export type UnitInner<value = unknown> = {
 	readonly unit: value

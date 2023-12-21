@@ -6,7 +6,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import { basisKinds, type NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { Discriminant } from "./discriminate.js"
@@ -25,7 +25,7 @@ export type UnionSchema<
 
 export type NormalizedUnionSchema<
 	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
-> = withAttributes<{
+> = withBaseMeta<{
 	readonly branches: branches
 	readonly ordered?: true
 }>

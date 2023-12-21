@@ -1,4 +1,4 @@
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseRefinement } from "./refinement.js"
@@ -7,7 +7,7 @@ export type DivisorInner = {
 	readonly divisor: number
 }
 
-export type NormalizedDivisorSchema = withAttributes<DivisorInner>
+export type NormalizedDivisorSchema = withBaseMeta<DivisorInner>
 
 export type DivisorSchema = NormalizedDivisorSchema | number
 

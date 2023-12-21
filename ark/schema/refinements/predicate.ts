@@ -1,5 +1,5 @@
 import type { CompilationContext } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors, ArkTypeError } from "../traversal/errors.js"
@@ -11,7 +11,7 @@ export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
 		readonly predicate: predicate
 	}
 
-export type NormalizedPredicateSchema = withAttributes<PredicateInner>
+export type NormalizedPredicateSchema = withBaseMeta<PredicateInner>
 
 export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 

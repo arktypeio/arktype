@@ -4,7 +4,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation, TypeKind } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -15,7 +15,7 @@ export type OptionalInner = {
 	readonly value: Node<TypeKind>
 }
 
-export type OptionalSchema = withAttributes<{
+export type OptionalSchema = withBaseMeta<{
 	readonly key: string | symbol
 	readonly value: TypeSchema
 }>

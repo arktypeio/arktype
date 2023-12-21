@@ -53,11 +53,13 @@ declare global {
 	}
 }
 
-export type DescriptionsConfig = {
+export type NodeConfigs = {
 	[kind in NodeKind]?: NodeDescriptionWriter<kind>
 }
 
-export type ParsedDescriptionsConfig = require<DescriptionsConfig>
+export type NodeConfig = {}
+
+export type ParsedDescriptionsConfig = require<NodeConfigs>
 
 const defaultDescriptionWriters = {} as ParsedDescriptionsConfig
 const defaultErrorsConfig = {} as ParsedErrorsConfig
@@ -86,7 +88,7 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 export type KeyCheckKind = "distilled" | "strict" | "loose"
 
 export type ArkConfig = {
-	descriptions?: DescriptionsConfig
+	descriptions?: NodeConfigs
 	codes?: ErrorsConfig
 	keys?: KeyCheckKind
 }

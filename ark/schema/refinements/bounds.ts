@@ -11,7 +11,7 @@ import type { CompilationContext } from "../scope.js"
 import type {
 	BaseNodeDeclaration,
 	declareNode,
-	withAttributes
+	withBaseMeta
 } from "../shared/declare.js"
 import type { BoundKind, NodeImplementation } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -27,7 +27,7 @@ export type LimitSchemaValue = number | string
 
 export type NormalizedBoundSchema<
 	limit extends LimitSchemaValue = LimitSchemaValue
-> = withAttributes<{
+> = withBaseMeta<{
 	readonly limit: limit
 	readonly exclusive?: boolean
 }>

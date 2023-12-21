@@ -11,11 +11,11 @@ import type {
 import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
 
-export type BaseAttributes = {
+export type BaseMeta = {
 	readonly description?: string
 }
 
-export type withAttributes<o extends object> = extend<BaseAttributes, o>
+export type withBaseMeta<o extends object> = extend<BaseMeta, o>
 
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: evaluate<
@@ -40,12 +40,12 @@ export type UnknownIntersections = {
 export type DeclarationInput = {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: BaseAttributes
+	intersections: UnknownIntersections
+	normalizedSchema: BaseMeta
 	inner: Dict
 	meta?: Dict
 	prerequisite?: unknown
 	childKind?: NodeKind
-	intersections: UnknownIntersections
 }
 
 type ParentsByKind = {
@@ -59,9 +59,7 @@ type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 export type declareNode<d extends DeclarationInput> = extend<
 	d,
 	{
-		meta: "meta" extends keyof d
-			? extend<BaseAttributes, d["meta"]>
-			: BaseAttributes
+		meta: "meta" extends keyof d ? extend<BaseMeta, d["meta"]> : BaseMeta
 		prerequisite: "prerequisite" extends keyof d ? d["prerequisite"] : unknown
 		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
@@ -74,8 +72,8 @@ export type attachmentsOf<d extends BaseNodeDeclaration> =
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: Dict & BaseAttributes
-	meta: Dict & BaseAttributes
+	normalizedSchema: Dict & BaseMeta
+	meta: Dict & BaseMeta
 	inner: Dict
 	prerequisite: any
 	childKind: NodeKind

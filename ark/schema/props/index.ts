@@ -4,12 +4,12 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import { BaseProp } from "./prop.js"
 
-export type IndexSchema = withAttributes<{
+export type IndexSchema = withBaseMeta<{
 	readonly key: TypeSchema
 	readonly value: TypeSchema
 }>

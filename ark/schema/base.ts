@@ -33,7 +33,7 @@ import type {
 	TraverseApply
 } from "./scope.js"
 import type {
-	BaseAttributes,
+	BaseMeta,
 	BaseNodeDeclaration,
 	attachmentsOf
 } from "./shared/declare.js"
@@ -75,7 +75,7 @@ export interface BaseAttachments {
 	readonly kind: NodeKind
 	readonly id: string
 	readonly inner: Dict
-	readonly meta: BaseAttributes & Dict
+	readonly meta: BaseMeta & Dict
 	readonly entries: readonly Entry[]
 	readonly json: Json
 	readonly typeJson: Json

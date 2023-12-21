@@ -1,4 +1,4 @@
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { NodeImplementation } from "../shared/define.js"
 import { BaseRefinement } from "./refinement.js"
 
@@ -7,7 +7,7 @@ export type PatternInner = {
 	readonly flags?: string
 }
 
-export type NormalizedPatternSchema = withAttributes<PatternInner>
+export type NormalizedPatternSchema = withBaseMeta<PatternInner>
 
 export type PatternSchema = NormalizedPatternSchema | string | RegExp
 

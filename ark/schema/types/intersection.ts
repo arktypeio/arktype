@@ -20,7 +20,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
 	type BasisKind,
@@ -40,7 +40,7 @@ export type IntersectionInner = { basis?: Node<BasisKind> } & {
 
 export type IntersectionSchema<
 	basis extends Schema<BasisKind> | undefined = any
-> = withAttributes<
+> = withBaseMeta<
 	{
 		basis?: basis
 	} & componentInputsByKind<

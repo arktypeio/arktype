@@ -1,7 +1,7 @@
 import {
 	keywords,
 	schema,
-	type BaseAttributes,
+	type BaseMeta,
 	type Morph,
 	type Out,
 	type Predicate,
@@ -326,7 +326,7 @@ export type validateInfixExpression<
 				    : def[1] extends "=>"
 				      ? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
 				      : def[1] extends "@"
-				        ? BaseAttributes | string
+				        ? BaseMeta | string
 				        : validateDefinition<def[2], $, args>
 	  ]
 

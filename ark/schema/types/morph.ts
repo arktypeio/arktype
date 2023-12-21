@@ -15,7 +15,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withAttributes } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
 	type BasisKind,
@@ -45,7 +45,7 @@ export type MorphInner = {
 	readonly morph: readonly Morph[]
 }
 
-export type MorphSchema = withAttributes<{
+export type MorphSchema = withBaseMeta<{
 	readonly in: ValidatorDefinition
 	readonly out?: ValidatorDefinition
 	readonly morph: listable<Morph>

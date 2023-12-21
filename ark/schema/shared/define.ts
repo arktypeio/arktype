@@ -10,7 +10,7 @@ import type { Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { ScopeNode } from "../scope.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import type { BaseAttributes, BaseNodeDeclaration } from "./declare.js"
+import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NodeIntersections } from "./intersect.js"
 
@@ -81,7 +81,7 @@ export type KeyDefinitions<d extends BaseNodeDeclaration> = {
 
 type undefinedKey<d extends BaseNodeDeclaration> = Exclude<
 	keyof d["normalizedSchema"],
-	keyof BaseAttributes
+	keyof BaseMeta
 >
 
 export const defaultValueSerializer = (v: unknown) => {
