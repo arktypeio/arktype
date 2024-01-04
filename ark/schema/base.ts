@@ -132,7 +132,7 @@ export abstract class BaseNode<
 		this: self,
 		implementation: NodeImplementationInput<declarationOf<self>>
 	): NodeImplementation<kindOf<self>> {
-		return {} as never
+		return implementation as never
 	}
 
 	readonly impl: subclass["implementation"] = (this.constructor as any)
