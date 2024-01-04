@@ -127,7 +127,7 @@ export class MorphNode<t = unknown> extends BaseType<
 			}
 		},
 		defaults: {
-			describe(inner) {
+			description(inner) {
 				return `a morph from ${inner.in} to ${inner.out}`
 			}
 		}

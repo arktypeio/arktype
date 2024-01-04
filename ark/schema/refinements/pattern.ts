@@ -46,7 +46,7 @@ export class PatternNode extends BaseRefinement<
 			pattern: () => null
 		},
 		defaults: {
-			describe(inner) {
+			description(inner) {
 				return `matched by ${inner.source}`
 			}
 		}

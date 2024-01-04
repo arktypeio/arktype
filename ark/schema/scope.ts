@@ -7,8 +7,7 @@ import {
 	throwParseError,
 	type Dict,
 	type evaluate,
-	type require,
-	type requireKeys
+	type require
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import type {
@@ -60,7 +59,7 @@ type NodeConfigsByKind = {
 }
 
 type BaseConfigOptions<kind extends NodeKind> = {
-	describe?: NodeDescriptionWriter<kind>
+	description?: NodeDescriptionWriter<kind>
 }
 
 type ErrorConfigOptions<kind extends NodeKind> = kind extends NodeKindWithError
@@ -77,6 +76,7 @@ export type NodeConfigDefaults<kind extends NodeKind = NodeKind> = evaluate<
 >
 
 for (const [kind, subclass] of entriesOf(nodesByKind)) {
+	subclass
 }
 
 // export const configure = (config: ArkConfig): ParsedArkConfig => {

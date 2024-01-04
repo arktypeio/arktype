@@ -45,7 +45,7 @@ export class DomainNode<t = unknown> extends BaseBasis<
 		normalize: (input) =>
 			typeof input === "string" ? { domain: input } : input,
 		defaults: {
-			describe(inner) {
+			description(inner) {
 				return domainDescriptions[inner.domain]
 			}
 			// describeActual(data) {

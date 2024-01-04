@@ -165,7 +165,7 @@ export class UnionNode<t = unknown> extends BaseType<
 			}
 		},
 		defaults: {
-			describe(inner) {
+			description(inner) {
 				return inner.branches.length === 0
 					? "never"
 					: inner.branches.join(" or ")

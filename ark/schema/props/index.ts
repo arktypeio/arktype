@@ -47,7 +47,7 @@ export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 			index: (l) => l
 		},
 		defaults: {
-			describe(inner) {
+			description(inner) {
 				return `[${inner.key}]: ${inner.value}`
 			}
 		}

@@ -173,7 +173,7 @@ export abstract class BaseNode<
 	private descriptionCache?: string
 	get description() {
 		this.descriptionCache ??=
-			this.meta.description ?? this.impl.defaults.describe(this as never)
+			this.meta.description ?? this.impl.defaults.description(this as never)
 		return this.descriptionCache
 	}
 

@@ -53,7 +53,7 @@ export class PredicateNode extends BaseRefinement<
 			predicate: () => null
 		},
 		defaults: {
-			describe(inner) {
+			description(inner) {
 				return `valid according to ${inner.predicate.name}`
 			}
 		}
