@@ -3,8 +3,7 @@ import {
 	type autocomplete,
 	type extend,
 	type optionalizeKeys,
-	type propwiseXor,
-	type require
+	type propwiseXor
 } from "@arktype/util"
 import type { Declaration } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"

@@ -1,5 +1,6 @@
 import {
 	CompiledFunction,
+	entriesOf,
 	isArray,
 	printable,
 	throwInternalError,
@@ -17,7 +18,7 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
-import type { Schema, reducibleKindOf } from "./kinds.js"
+import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type {
 	NodeDescriptionWriter,
@@ -75,14 +76,8 @@ export type NodeConfigDefaults<kind extends NodeKind = NodeKind> = evaluate<
 	Required<BaseConfigOptions<kind>> & ErrorConfigOptions<kind>
 >
 
-// for (const [kind, subclass] of entriesOf(nodesByKind)) {
-// 	const writer = subclass.implementation.describeExpected as never
-// 	defaultDescriptionWriters[kind] = writer
-// 	if (includes(primitiveKinds, kind)) {
-// 		defaultErrorsConfig[kind].expected = writer
-// 		defaultErrorsConfig[kind].message = ((ctx) => ``) satisfies ArkMessageWriter
-// 	}
-// }
+for (const [kind, subclass] of entriesOf(nodesByKind)) {
+}
 
 // export const configure = (config: ArkConfig): ParsedArkConfig => {
 // 	return {
@@ -92,17 +87,6 @@ export type NodeConfigDefaults<kind extends NodeKind = NodeKind> = evaluate<
 // 	}
 // }
 
-export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
-	StaticArkConfig[k]
->
-
-export type KeyCheckKind = "distilled" | "strict" | "loose"
-
-export type ArkConfig = {
-	descriptions?: NodeConfigsByKind
-	keys?: KeyCheckKind
-}
-
 // const config: ArkConfig = {
 // 	codes: {
 // 		divisor: {
@@ -111,6 +95,14 @@ export type ArkConfig = {
 // 		}
 // 	}
 // }
+
+export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
+	StaticArkConfig[k]
+>
+
+export type KeyCheckKind = "distilled" | "strict" | "loose"
+
+export type ArkConfig = NodeConfigsByKind
 
 export type ParsedArkConfig = require<ArkConfig, 2>
 
