@@ -108,8 +108,8 @@ export type tryParseInteger<
 	? bigint extends value
 		? writeMalformedNumericLiteralMessage<token, "integer">
 		: `${value}` extends NumberLiteral<infer valueAsNumber>
-		  ? valueAsNumber
-		  : never
+			? valueAsNumber
+			: never
 	: messageOnFail
 
 export type NumericParseOptions<errorOnFail extends boolean | string> = {
@@ -139,7 +139,7 @@ const parseNumeric = <errorOnFail extends boolean | string>(
 					options?.errorOnFail === true
 						? `Failed to parse ${numericLiteralDescriptions[kind]} from '${token}'`
 						: options?.errorOnFail
-			  )
+				)
 			: undefined
 	) as never
 }

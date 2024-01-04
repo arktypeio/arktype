@@ -39,8 +39,8 @@ const parseGenericParamsRecurse = (scanner: Scanner): string[] => {
 	return nextNonWhitespace === ""
 		? [param]
 		: nextNonWhitespace === ","
-		  ? [param, ...parseGenericParamsRecurse(scanner)]
-		  : throwParseError(writeUnexpectedCharacterMessage(nextNonWhitespace, ","))
+			? [param, ...parseGenericParamsRecurse(scanner)]
+			: throwParseError(writeUnexpectedCharacterMessage(nextNonWhitespace, ","))
 }
 
 type parseParamsRecurse<
@@ -51,18 +51,18 @@ type parseParamsRecurse<
 	? lookahead extends ","
 		? parseParamsRecurse<nextUnscanned, "", [...result, param]>
 		: lookahead extends Scanner.WhiteSpaceToken
-		  ? param extends ""
+			? param extends ""
 				? // if the next char is whitespace and we aren't in the middle of a param, skip to the next one
-				  parseParamsRecurse<Scanner.skipWhitespace<nextUnscanned>, "", result>
+					parseParamsRecurse<Scanner.skipWhitespace<nextUnscanned>, "", result>
 				: Scanner.skipWhitespace<nextUnscanned> extends `${infer nextNonWhitespace}${infer rest}`
-				  ? nextNonWhitespace extends ","
+					? nextNonWhitespace extends ","
 						? parseParamsRecurse<rest, "", [...result, param]>
 						: GenericParamsParseError<
 								writeUnexpectedCharacterMessage<nextNonWhitespace, ",">
-						  >
-				  : // params end with a single whitespace character, add the current token
-				    [...result, param]
-		  : parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
+							>
+					: // params end with a single whitespace character, add the current token
+						[...result, param]
+			: parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
 	: param extends ""
-	  ? result
-	  : [...result, param]
+		? result
+		: [...result, param]

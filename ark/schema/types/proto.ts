@@ -70,8 +70,8 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 				constructorExtends(l.proto, r.proto)
 					? l
 					: constructorExtends(r.proto, l.proto)
-					  ? r
-					  : Disjoint.from("proto", l, r),
+						? r
+						: Disjoint.from("proto", l, r),
 			domain: (l, r) =>
 				r.domain === "object"
 					? l

@@ -163,7 +163,7 @@ export class BenchAssertions<
 			baseline
 				? Object.entries(baseline)
 				: // If nothing was passed, gather all available baselines by setting their values to undefined.
-				  Object.entries(stats).map(([kind]) => [kind, undefined])
+					Object.entries(stats).map(([kind]) => [kind, undefined])
 		) as any
 		const markResults = Object.fromEntries(
 			markEntries.map(([kind, kindBaseline]) => {

@@ -12,12 +12,12 @@ type astToStringRecurse<ast> = ast extends PostfixExpression<
 		? `${groupAst<operand>}[]`
 		: never
 	: ast extends InfixExpression<infer operator, infer l, infer r>
-	  ? operator extends "&" | "|" | "%" | Comparator
+		? operator extends "&" | "|" | "%" | Comparator
 			? `${groupAst<l>}${operator}${groupAst<r>}`
 			: never
-	  : ast extends Stringifiable
-	    ? `${ast extends bigint ? `${ast}n` : ast}`
-	    : "..."
+		: ast extends Stringifiable
+			? `${ast extends bigint ? `${ast}n` : ast}`
+			: "..."
 
 type groupAst<ast> = ast extends List
 	? ast[1] extends "[]"

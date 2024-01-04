@@ -37,10 +37,10 @@ export class PatternNode extends BaseRefinement<
 			typeof schema === "string"
 				? { source: schema }
 				: schema instanceof RegExp
-				  ? schema.flags
+					? schema.flags
 						? { source: schema.source, flags: schema.flags }
 						: { source: schema.source }
-				  : schema,
+					: schema,
 		intersections: {
 			// For now, non-equal regex are naively intersected
 			pattern: () => null

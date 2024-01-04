@@ -141,7 +141,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					? {
 							branches: resultBranches,
 							ordered: true
-					  }
+						}
 					: { branches: resultBranches }
 			},
 			morph: intersectBranch,
@@ -157,11 +157,11 @@ export class UnionNode<t = unknown> extends BaseType<
 				return branches.length === 0
 					? Disjoint.from("union", l.branches, [r])
 					: l.ordered
-					  ? {
+						? {
 								branches,
 								ordered: true
-					    }
-					  : { branches }
+							}
+						: { branches }
 			}
 		},
 		defaults: {

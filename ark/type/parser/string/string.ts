@@ -20,13 +20,13 @@ import {
  */
 export type parseString<def extends string, $, args> = def extends keyof $
 	? // def could also be a generic reference here, in which case it will
-	  // fail semantic validation because it has no args
-	  def
+		// fail semantic validation because it has no args
+		def
 	: def extends `${infer child}[]`
-	  ? child extends keyof $
+		? child extends keyof $
 			? [child, "[]"]
 			: fullStringParse<state.initialize<def>, $, args>
-	  : fullStringParse<state.initialize<def>, $, args>
+		: fullStringParse<state.initialize<def>, $, args>
 
 export type inferString<def extends string, $, args> = inferAstRoot<
 	parseString<def, $, args>,
@@ -86,5 +86,5 @@ export type extractFinalizedResult<s extends StaticState> =
 	s["finalizer"] extends ErrorMessage
 		? s["finalizer"]
 		: s["finalizer"] extends ""
-		  ? s["root"]
-		  : state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
+			? s["root"]
+			: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>

@@ -8,7 +8,7 @@ describe("map", () => {
 				? ([
 						[k, v],
 						["c", "d"]
-				  ] as const)
+					] as const)
 				: (["e", "f"] as const)
 		)
 		attest<{
@@ -34,7 +34,7 @@ describe("map", () => {
 				? ([
 						[k, v],
 						["c", "d"]
-				  ] as const)
+					] as const)
 				: ([`${i}`, "f"] as const)
 		)
 

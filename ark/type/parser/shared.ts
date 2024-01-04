@@ -83,10 +83,10 @@ export const parseEntry = ([key, value]: DefinitionEntry): EntryParseResult => {
 				? { innerKey: `${key.slice(0, -2)}?`, kind: "required" }
 				: { innerKey: key.slice(0, -1), kind: "optional" }
 			: key === "..."
-			  ? { innerKey: "...", kind: "spread" }
-			  : key === "\\..."
-			    ? { innerKey: "...", kind: "required" }
-			    : { innerKey: key, kind: "required" }
+				? { innerKey: "...", kind: "spread" }
+				: key === "\\..."
+					? { innerKey: "...", kind: "required" }
+					: { innerKey: key, kind: "required" }
 	const valueParseResult = getInnerValue(value)
 	return {
 		innerKey: keyParseResult.innerKey,
@@ -95,8 +95,8 @@ export const parseEntry = ([key, value]: DefinitionEntry): EntryParseResult => {
 			keyParseResult.kind === "indexed"
 				? "indexed"
 				: valueParseResult.kind === "optional"
-				  ? "optional"
-				  : keyParseResult.kind
+					? "optional"
+					: keyParseResult.kind
 	}
 }
 
@@ -113,12 +113,12 @@ export type parseEntry<
 				>
 					? innerStringValue
 					: innerValue
-		  }>
+			}>
 		: parsedEntry<{
 				kind: keyParseResult["kind"]
 				innerKey: keyParseResult["innerKey"]
 				innerValue: valueDef
-		  }>
+			}>
 	: never
 
 type parseKey<k> = k extends OptionalStringDefinition<infer inner>
@@ -126,27 +126,27 @@ type parseKey<k> = k extends OptionalStringDefinition<infer inner>
 		? parsedKey<{
 				kind: "required"
 				innerKey: OptionalStringDefinition<baseName>
-		  }>
+			}>
 		: parsedKey<{
 				kind: "optional"
 				innerKey: inner
-		  }>
+			}>
 	: k extends "..."
-	  ? parsedKey<{ kind: "spread"; innerKey: "..." }>
-	  : k extends "\\..."
-	    ? parsedKey<{ kind: "required"; innerKey: "..." }>
-	    : k extends IndexedKey<infer def>
-	      ? parsedKey<{
+		? parsedKey<{ kind: "spread"; innerKey: "..." }>
+		: k extends "\\..."
+			? parsedKey<{ kind: "required"; innerKey: "..." }>
+			: k extends IndexedKey<infer def>
+				? parsedKey<{
 						kind: "indexed"
 						innerKey: def
-	        }>
-	      : k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
+					}>
+				: k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
 							IndexedKey}`
-	        ? parsedKey<{
+					? parsedKey<{
 							kind: "required"
 							innerKey: escapedIndexKey
-	          }>
-	        : parsedKey<{
+						}>
+					: parsedKey<{
 							kind: "required"
 							innerKey: k & (string | symbol)
-	          }>
+						}>

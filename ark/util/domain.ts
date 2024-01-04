@@ -33,22 +33,22 @@ export type Primitive = inferDomain<PrimitiveDomain>
 export type domainOf<data> = unknown extends data
 	? Domain
 	: data extends object
-	  ? "object"
-	  : data extends string
-	    ? "string"
-	    : data extends number
-	      ? "number"
-	      : data extends boolean
-	        ? "boolean"
-	        : data extends undefined
-	          ? "undefined"
-	          : data extends null
-	            ? "null"
-	            : data extends bigint
-	              ? "bigint"
-	              : data extends symbol
-	                ? "symbol"
-	                : never
+		? "object"
+		: data extends string
+			? "string"
+			: data extends number
+				? "number"
+				: data extends boolean
+					? "boolean"
+					: data extends undefined
+						? "undefined"
+						: data extends null
+							? "null"
+							: data extends bigint
+								? "bigint"
+								: data extends symbol
+									? "symbol"
+									: never
 
 export const domainOf = <data>(data: data) => {
 	const builtinType = typeof data
@@ -58,7 +58,7 @@ export const domainOf = <data>(data: data) => {
 				? "null"
 				: "object"
 			: builtinType === "function"
-			  ? "object"
-			  : builtinType
+				? "object"
+				: builtinType
 	) as domainOf<data>
 }

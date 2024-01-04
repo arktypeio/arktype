@@ -83,7 +83,7 @@ export type declareNode<d extends DeclarationInput> = extend<
 							? context
 							: d["inner"]
 					>
-			  }
+				}
 			: never
 	}
 >

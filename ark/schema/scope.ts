@@ -65,7 +65,7 @@ type BaseConfigOptions<kind extends NodeKind> = {
 type ErrorConfigOptions<kind extends NodeKind> = kind extends NodeKindWithError
 	? {
 			error?: ArkMessageWriter<AssociatedErrorCode<kind>>
-	  }
+		}
 	: {}
 
 export type NodeConfig<kind extends NodeKind = NodeKind> =

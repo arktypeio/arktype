@@ -21,12 +21,12 @@ type arrayFromListableEntriesRecurse<
 	? result
 	: Extract<transformed, Entry<result["length"]>> extends infer next extends
 				Entry
-	  ? Exclude<transformed, next> extends infer remaining extends Entry
+		? Exclude<transformed, next> extends infer remaining extends Entry
 			? [transformed] extends [remaining]
 				? [...result, ...transformed[1][]]
 				: arrayFromListableEntriesRecurse<remaining, [...result, next[1]]>
 			: never
-	  : [...result, ...transformed[1][]]
+		: [...result, ...transformed[1][]]
 
 type extractEntrySets<e extends listable<Entry>> = e extends readonly Entry[]
 	? e
@@ -47,7 +47,7 @@ type numericArrayEntry<a extends readonly unknown[]> =
 				[i in keyof a]: i extends `${infer n extends number}`
 					? [n, a[i]]
 					: never
-		  }[number]
+			}[number]
 
 export function map<
 	const o extends readonly unknown[],
@@ -96,11 +96,11 @@ export function map(
 		const entrySet =
 			Array.isArray(result[0]) || result.length === 0
 				? // if we have an empty array (for filtering) or an array with
-				  // another array as its first element, treat it as a list of
-				  (result as Entry[])
+					// another array as its first element, treat it as a list of
+					(result as Entry[])
 				: // otherwise, it should be a single entry, so nest it in a tuple
-				  // so it doesn't get spread when the result is flattened
-				  [result as Entry]
+					// so it doesn't get spread when the result is flattened
+					[result as Entry]
 		return entrySet
 	})
 	const objectResult = Object.fromEntries(entries)

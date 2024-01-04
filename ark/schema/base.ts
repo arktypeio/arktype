@@ -265,15 +265,15 @@ export abstract class BaseNode<
 			? {
 					basis: this,
 					[other.kind]: other.hasOpenIntersection ? [other] : other
-			  }
+				}
 			: other.isBasis()
-			  ? {
+				? {
 						basis: other,
 						[this.kind]: this.hasOpenIntersection ? [this] : this
-			    }
-			  : this.hasKind("predicate") && other.hasKind("predicate")
-			    ? { predicate: [this, other] }
-			    : null
+					}
+				: this.hasKind("predicate") && other.hasKind("predicate")
+					? { predicate: [this, other] }
+					: null
 		return (
 			intersectionInner && this.$.parseNode("intersection", intersectionInner)
 		)
