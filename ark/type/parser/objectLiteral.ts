@@ -1,4 +1,4 @@
-import { keywords, schema, type Inner } from "@arktype/schema"
+import { keywords, schema, type Inner, type TypeNode } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -7,6 +7,7 @@ import {
 	type evaluate,
 	type merge
 } from "@arktype/util"
+
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
@@ -24,7 +25,7 @@ const stringAndSymbolicEntriesOf = (o: Record<string | symbol, unknown>) => [
 	...Object.getOwnPropertySymbols(o).map((k) => [k, o[k]] as const)
 ]
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext) => {
+export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 	const required: Inner<"required">[] = []
 	const optional: Inner<"optional">[] = []
 
@@ -134,7 +135,7 @@ export type inferObjectLiteral<def extends object, $, args> = evaluate<
 		? merge<
 				inferDefinition<def["..."], $, args>,
 				inferObjectLiteralInner<def, $, args>
-		  >
+			>
 		: inferObjectLiteralInner<def, $, args>
 >
 
@@ -142,17 +143,17 @@ export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexedKey<infer indexDef>
 		? validateString<indexDef, $, args> extends ErrorMessage<infer message>
 			? // add a nominal type here to avoid allowing the error message as input
-			  indexParseError<message>
+				indexParseError<message>
 			: inferDefinition<indexDef, $, args> extends PropertyKey
-			  ? // if the indexDef is syntactically and semantically valid,
-			    // move on to the validating the value definition
-			    validateDefinition<def[k], $, args>
-			  : indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
+				? // if the indexDef is syntactically and semantically valid,
+					// move on to the validating the value definition
+					validateDefinition<def[k], $, args>
+				: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
 		: k extends "..."
-		  ? inferDefinition<def[k], $, args> extends object
+			? inferDefinition<def[k], $, args> extends object
 				? validateDefinition<def[k], $, args>
 				: indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
-		  : validateObjectValue<def[k], $, args>
+			: validateObjectValue<def[k], $, args>
 }
 
 type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
@@ -162,8 +163,8 @@ type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
 	? result["kind"] extends "required"
 		? result["innerKey"]
 		: result["kind"] extends "indexed"
-		  ? inferDefinition<result["innerKey"], $, args> & PropertyKey
-		  : never
+			? inferDefinition<result["innerKey"], $, args> & PropertyKey
+			: never
 	: never
 
 type optionalKeyFrom<k extends PropertyKey, valueDef> = parseEntry<

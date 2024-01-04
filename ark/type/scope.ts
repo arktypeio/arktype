@@ -77,14 +77,14 @@ export type ScopeConfig = {
 type validateScope<def, $> = {
 	[k in keyof def]: parseScopeKey<k>["params"] extends []
 		? // Not including Type here directly breaks inference
-		  def[k] extends Type | PreparsedResolution
+			def[k] extends Type | PreparsedResolution
 			? def[k]
 			: validateDefinition<def[k], $ & bootstrap<def>, {}>
 		: parseScopeKey<k>["params"] extends GenericParamsParseError
-		  ? // use the full nominal type here to avoid an overlap between the
-		    // error message and a possible value for the property
-		    parseScopeKey<k>["params"][0]
-		  : validateDefinition<
+			? // use the full nominal type here to avoid an overlap between the
+				// error message and a possible value for the property
+				parseScopeKey<k>["params"][0]
+			: validateDefinition<
 					def[k],
 					$ & bootstrap<def>,
 					{
@@ -92,7 +92,7 @@ type validateScope<def, $> = {
 						// the base type here: https://github.com/arktypeio/arktype/issues/796
 						[param in parseScopeKey<k>["params"][number]]: unknown
 					}
-		    >
+				>
 }
 
 export type bindThis<def> = { this: Def<def> }
@@ -126,8 +126,8 @@ type bootstrapAliases<def> = {
 	>]: def[k] extends PreparsedResolution
 		? def[k]
 		: def[k] extends (() => infer thunkReturn extends PreparsedResolution)
-		  ? thunkReturn
-		  : Def<def[k]>
+			? thunkReturn
+			: Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: Generic<
 		parseGenericParams<extractGenericParameters<k>>,
@@ -140,10 +140,10 @@ type inferBootstrapped<r extends Resolutions> = evaluate<{
 	[name in keyof r["exports"]]: r["exports"][name] extends Def<infer def>
 		? inferDefinition<def, $<r>, {}>
 		: r["exports"][name] extends GenericProps<infer params, infer def>
-		  ? // add the scope in which the generic was defined here
-		    Generic<params, def, $<r>>
-		  : // otherwise should be a submodule
-		    r["exports"][name]
+			? // add the scope in which the generic was defined here
+				Generic<params, def, $<r>>
+			: // otherwise should be a submodule
+				r["exports"][name]
 }>
 
 type extractGenericName<k> = k extends GenericDeclaration<infer name>
@@ -169,10 +169,10 @@ export type resolve<reference extends keyof $ | keyof args, $, args> = (
 	? [resolution] extends [never]
 		? never
 		: isAny<resolution> extends true
-		  ? any
-		  : resolution extends Def<infer def>
-		    ? inferDefinition<def, $, args>
-		    : resolution
+			? any
+			: resolution extends Def<infer def>
+				? inferDefinition<def, $, args>
+				: resolution
 	: never
 
 export type moduleKeyOf<$> = {
@@ -198,13 +198,13 @@ export type Module<r extends Resolutions = any> = {
 		? [r["exports"][k]] extends [never]
 			? Type<never, $<r>>
 			: isAny<r["exports"][k]> extends true
-			  ? Type<any, $<r>>
-			  : r["exports"][k] extends PreparsedResolution
-			    ? r["exports"][k]
-			    : Type<r["exports"][k], $<r>>
+				? Type<any, $<r>>
+				: r["exports"][k] extends PreparsedResolution
+					? r["exports"][k]
+					: Type<r["exports"][k], $<r>>
 		: // set the nominal symbol's value to something validation won't care about
-		  // since the inferred type will be omitted anyways
-		  type.cast<"module">
+			// since the inferred type will be omitted anyways
+			type.cast<"module">
 }
 
 export type Resolutions = {
@@ -357,11 +357,11 @@ export class Scope<r extends Resolutions = any> {
 		const resolution = hasArkKind(def, "generic")
 			? validateUninstantiatedGeneric(def)
 			: hasArkKind(def, "module")
-			  ? throwParseError(writeMissingSubmoduleAccessMessage(name))
-			  : this.parseDefinition(
+				? throwParseError(writeMissingSubmoduleAccessMessage(name))
+				: this.parseDefinition(
 						def,
 						this.createRootContext({ baseName: name, args: {} })
-			    )
+					)
 		this.resolutions[name] = resolution
 		return resolution
 	}
@@ -566,9 +566,9 @@ type parsePossibleGenericDeclaration<
 			isLocal: isLocal
 			name: name
 			params: parseGenericParams<paramString>
-	  }
+		}
 	: {
 			isLocal: isLocal
 			name: k
 			params: []
-	  }
+		}

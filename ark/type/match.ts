@@ -21,20 +21,20 @@ type validateCases<cases, ctx extends MatchContext> = {
 	[k in keyof cases | keyof ctx["$"] | "default"]?: k extends "default"
 		? (In: ctx["inConstraint"]) => ctx["outConstraint"]
 		: k extends validateTypeRoot<k, ctx["$"]>
-		  ? (
+			? (
 					In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
-		    ) => ctx["outConstraint"]
-		  : validateTypeRoot<k, ctx["$"]>
+				) => ctx["outConstraint"]
+			: validateTypeRoot<k, ctx["$"]>
 }
 
 type errorCases<cases, ctx extends MatchContext> = {
 	[k in keyof cases]?: k extends "default"
 		? (In: ctx["inConstraint"]) => ctx["outConstraint"]
 		: k extends validateTypeRoot<k, ctx["$"]>
-		  ? (
+			? (
 					In: ctx["inConstraint"] & inferTypeRoot<k, ctx["$"]>
-		    ) => ctx["outConstraint"]
-		  : validateTypeRoot<k, ctx["$"]>
+				) => ctx["outConstraint"]
+			: validateTypeRoot<k, ctx["$"]>
 } & {
 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
 		In: ctx["inConstraint"] & ctx["$"][k]
