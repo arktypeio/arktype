@@ -5,7 +5,10 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementation } from "../shared/define.js"
+import type {
+	NodeImplementation,
+	NodeImplementationInput
+} from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import { BaseProp } from "./prop.js"
 
@@ -31,7 +34,7 @@ export type IndexDeclaration = declareNode<{
 }>
 
 export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
-	static implementation: NodeImplementation<IndexDeclaration> = {
+	static implementation: NodeImplementation<"index"> = this.implement({
 		keys: {
 			key: {
 				child: true,
@@ -51,7 +54,7 @@ export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 				return `[${inner.key}]: ${inner.value}`
 			}
 		}
-	}
+	})
 
 	readonly hasOpenIntersection = true
 

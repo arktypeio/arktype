@@ -1,6 +1,6 @@
 import { domainOf, type Domain } from "@arktype/util"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementation } from "../shared/define.js"
+import type { NodeImplementationInput } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
 
@@ -37,7 +37,7 @@ export class DomainNode<t = unknown> extends BaseBasis<
 	DomainDeclaration,
 	typeof DomainNode
 > {
-	static implementation: NodeImplementation<DomainDeclaration> = {
+	static implementation = this.implement({
 		collapseKey: "domain",
 		keys: {
 			domain: {}
@@ -55,7 +55,7 @@ export class DomainNode<t = unknown> extends BaseBasis<
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r)
 		}
-	}
+	})
 
 	basisName = this.domain
 

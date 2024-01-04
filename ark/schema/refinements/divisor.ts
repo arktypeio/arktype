@@ -1,5 +1,4 @@
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementation } from "../shared/define.js"
 import { BaseRefinement } from "./refinement.js"
 
 export type DivisorInner = {
@@ -34,7 +33,7 @@ export class DivisorNode extends BaseRefinement<
 	DivisorDeclaration,
 	typeof DivisorNode
 > {
-	static implementation: NodeImplementation<DivisorDeclaration> = {
+	static implementation = this.implement({
 		collapseKey: "divisor",
 		keys: {
 			divisor: {}
@@ -55,7 +54,7 @@ export class DivisorNode extends BaseRefinement<
 					: `a multiple of ${inner.divisor}`
 			}
 		}
-	}
+	})
 
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0

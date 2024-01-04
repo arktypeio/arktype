@@ -8,7 +8,7 @@ import {
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	defaultValueSerializer,
-	type NodeImplementation
+	type NodeImplementationInput
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
@@ -43,7 +43,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 	ProtoDeclaration,
 	typeof ProtoNode
 > {
-	static implementation: NodeImplementation<ProtoDeclaration> = {
+	static implementation = this.implement({
 		collapseKey: "proto",
 		keys: {
 			proto: {
@@ -77,7 +77,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 					? l
 					: Disjoint.from("domain", l.$.builtin.object, r)
 		}
-	}
+	})
 
 	readonly basisName = `${this.proto.name}`
 	readonly serializedConstructor = (this.json as { proto: string }).proto

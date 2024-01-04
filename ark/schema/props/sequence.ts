@@ -7,6 +7,7 @@ import type {
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type {
 	NodeImplementation,
+	NodeImplementationInput,
 	NodeKeyImplementation
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
@@ -56,7 +57,7 @@ export class SequenceNode extends BaseProp<
 	SequenceDeclaration,
 	typeof SequenceNode
 > {
-	static implementation: NodeImplementation<SequenceDeclaration> = {
+	static implementation: NodeImplementation<"sequence"> = this.implement({
 		collapseKey: "element",
 		keys: {
 			prefix: fixedSequenceKeyDefinition,
@@ -100,7 +101,7 @@ export class SequenceNode extends BaseProp<
 				return `an array of ${parts.join(" followed by ")}`
 			}
 		}
-	}
+	})
 
 	readonly hasOpenIntersection = false
 	prefixLength = this.prefix?.length ?? 0

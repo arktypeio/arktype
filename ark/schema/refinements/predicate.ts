@@ -1,5 +1,5 @@
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementation } from "../shared/define.js"
+import type { NodeImplementationInput } from "../shared/define.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -38,7 +38,7 @@ export class PredicateNode extends BaseRefinement<
 	PredicateDeclaration,
 	typeof PredicateNode
 > {
-	static implementation: NodeImplementation<PredicateDeclaration> = {
+	static implementation = this.implement({
 		collapseKey: "predicate",
 		keys: {
 			predicate: {}
@@ -57,7 +57,7 @@ export class PredicateNode extends BaseRefinement<
 				return `valid according to ${inner.predicate.name}`
 			}
 		}
-	}
+	})
 
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate

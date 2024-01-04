@@ -1,6 +1,6 @@
 import { domainOf, printable } from "@arktype/util"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementation } from "../shared/define.js"
+import type { NodeImplementationInput } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseBasis } from "./basis.js"
@@ -28,7 +28,7 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	UnitDeclaration,
 	typeof UnitNode
 > {
-	static implementation: NodeImplementation<UnitDeclaration> = {
+	static implementation = this.implement({
 		keys: {
 			unit: {
 				preserveUndefined: true
@@ -47,7 +47,7 @@ export class UnitNode<t = unknown> extends BaseBasis<
 				return printable(inner.unit)
 			}
 		}
-	}
+	})
 
 	serializedValue = compileSerializedValue(this.unit)
 	traverseAllows = (data: unknown) => data === this.unit

@@ -3,6 +3,7 @@ import {
 	includes,
 	isArray,
 	throwInternalError,
+	type Constructor,
 	type Dict,
 	type Entry,
 	type Json,
@@ -10,7 +11,12 @@ import {
 	type entriesOf,
 	type listable
 } from "@arktype/util"
-import type { Schema, hasOpenIntersection, ioKindOf } from "./kinds.js"
+import type {
+	Declaration,
+	Schema,
+	hasOpenIntersection,
+	ioKindOf
+} from "./kinds.js"
 import type { IndexNode } from "./props/index.js"
 import type { OptionalNode } from "./props/optional.js"
 import type { RequiredNode } from "./props/required.js"
@@ -46,6 +52,7 @@ import {
 	type BasisKind,
 	type ConstraintKind,
 	type NodeImplementation,
+	type NodeImplementationInput,
 	type NodeKind,
 	type RefinementKind,
 	type SetKind,
@@ -96,7 +103,7 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 
 export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 	{
-		readonly implementation: NodeImplementation<d>
+		readonly implementation: NodeImplementationInput<d>
 	}
 
 export const isNode = (value: unknown): value is Node =>
@@ -108,11 +115,26 @@ export type UnknownNode = BaseNode<
 	NodeSubclass<BaseNodeDeclaration>
 >
 
+type kindOf<self> = self extends Constructor<{
+	kind: infer kind extends NodeKind
+}>
+	? kind
+	: never
+
+type declarationOf<self> = Declaration<kindOf<self>>
+
 export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration,
 	subclass extends NodeSubclass<d>
 > extends DynamicBase<attachmentsOf<d>> {
+	static implement<self>(
+		this: self,
+		implementation: NodeImplementationInput<declarationOf<self>>
+	): NodeImplementation<kindOf<self>> {
+		return {} as never
+	}
+
 	readonly impl: subclass["implementation"] = (this.constructor as any)
 		.implementation
 

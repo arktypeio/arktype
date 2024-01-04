@@ -27,7 +27,7 @@ import type {
 } from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
 import type {
-	ArkMessageWriter,
+	ArkErrorWriter,
 	AssociatedErrorCode,
 	NodeKindWithError
 } from "./traversal/errors.js"
@@ -64,7 +64,7 @@ type BaseConfigOptions<kind extends NodeKind> = {
 
 type ErrorConfigOptions<kind extends NodeKind> = kind extends NodeKindWithError
 	? {
-			error?: ArkMessageWriter<AssociatedErrorCode<kind>>
+			error?: ArkErrorWriter<AssociatedErrorCode<kind>>
 		}
 	: {}
 

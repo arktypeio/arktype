@@ -19,7 +19,8 @@ import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
 	type BasisKind,
-	type NodeImplementation
+	type NodeImplementation,
+	type NodeImplementationInput
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { is } from "../shared/utils.js"
@@ -69,7 +70,7 @@ export class MorphNode<t = unknown> extends BaseType<
 	typeof MorphNode
 > {
 	// TODO: recursively extract in?
-	static implementation: NodeImplementation<MorphDeclaration> = {
+	static implementation: NodeImplementation<"morph"> = this.implement({
 		keys: {
 			in: {
 				child: true,
@@ -131,7 +132,7 @@ export class MorphNode<t = unknown> extends BaseType<
 				return `a morph from ${inner.in} to ${inner.out}`
 			}
 		}
-	}
+	})
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.in.traverseAllows(data, ctx)

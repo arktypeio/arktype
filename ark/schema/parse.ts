@@ -16,7 +16,7 @@ import {
 	defaultValueSerializer,
 	type BasisKind,
 	type KeyDefinitions,
-	type NodeImplementation,
+	type NodeImplementationInput,
 	type NodeKind
 } from "./shared/define.js"
 
@@ -59,7 +59,7 @@ export function parse(
 	ctx: SchemaParseContext
 ): Node {
 	const cls = nodesByKind[kind]
-	const impl = cls.implementation as NodeImplementation
+	const impl = cls.implementation as NodeImplementationInput
 	if (schema instanceof BaseNode) {
 		return schema.kind === kind
 			? (schema as never)

@@ -6,7 +6,11 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementation, TypeKind } from "../shared/define.js"
+import type {
+	NodeImplementation,
+	NodeImplementationInput,
+	TypeKind
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
@@ -66,7 +70,7 @@ export class RequiredNode extends BaseProp<
 	RequiredDeclaration,
 	typeof RequiredNode
 > {
-	static implementation: NodeImplementation<RequiredDeclaration> = {
+	static implementation: NodeImplementation<"required"> = this.implement({
 		keys: {
 			key: {},
 			value: {
@@ -81,7 +85,7 @@ export class RequiredNode extends BaseProp<
 				return `${compileKey(inner.key)}: ${inner.value}`
 			}
 		}
-	}
+	})
 
 	readonly hasOpenIntersection = true
 

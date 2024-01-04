@@ -26,7 +26,8 @@ import {
 	type BasisKind,
 	type ComponentKind,
 	type ConstraintKind,
-	type NodeImplementation
+	type NodeImplementation,
+	type NodeImplementationInput
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../traversal/errors.js"
@@ -114,7 +115,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	IntersectionDeclaration,
 	typeof IntersectionNode
 > {
-	static implementation: NodeImplementation<IntersectionDeclaration> = {
+	static implementation: NodeImplementation<"intersection"> = this.implement({
 		normalize: (def) => def,
 		addContext: (ctx) => {
 			const def = ctx.definition as IntersectionSchema
@@ -226,7 +227,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					: constraints.join(" and ")
 			}
 		}
-	}
+	})
 
 	readonly constraints: ConstraintSet = Object.values(this.inner).flat()
 

@@ -180,13 +180,13 @@ type ArkErrorInputByCode = {
 export type ArkErrorInput<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorInputByCode[code]
 
-export type ArkExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	context: ArkExpectedContext<code>
-) => string
-
-export type ArkMessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
+export type ArkErrorWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	context: ArkErrorContext<code>
 ) => string
+
+export type ArkErrorWritersByCode = {
+	[code in ArkErrorCode]: ArkErrorWriter<code>
+}
 
 export type ArkResult<out = unknown> = propwiseXor<
 	{ out: out },

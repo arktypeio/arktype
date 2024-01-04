@@ -1,5 +1,5 @@
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementation } from "../shared/define.js"
+import type { NodeImplementationInput } from "../shared/define.js"
 import { BaseRefinement } from "./refinement.js"
 
 export type PatternInner = {
@@ -27,7 +27,7 @@ export class PatternNode extends BaseRefinement<
 	PatternDeclaration,
 	typeof PatternNode
 > {
-	static implementation: NodeImplementation<PatternDeclaration> = {
+	static implementation = this.implement({
 		collapseKey: "source",
 		keys: {
 			source: {},
@@ -50,7 +50,7 @@ export class PatternNode extends BaseRefinement<
 				return `matched by ${inner.source}`
 			}
 		}
-	}
+	})
 
 	readonly hasOpenIntersection = true
 	regex = new RegExp(this.source, this.flags)

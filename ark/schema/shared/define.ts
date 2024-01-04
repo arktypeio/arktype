@@ -6,7 +6,7 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { Inner } from "../kinds.js"
+import type { Declaration, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { NodeConfigDefaults, ScopeNode } from "../scope.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -129,7 +129,7 @@ export type NodeKeyImplementation<
 	| (k extends keyof d["meta"] ? "meta" : never)
 >
 
-export type NodeImplementation<
+export type NodeImplementationInput<
 	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > = {
 	keys: KeyDefinitions<d>
@@ -150,6 +150,14 @@ export type NodeImplementation<
 		: NodeIntersections<d>
 	defaults: NodeConfigDefaults<d["kind"]>
 }
+
+export type ParsedNodeConfigDefaults<kind extends NodeKind = NodeKind> =
+	Required<NodeConfigDefaults<kind>>
+
+export type NodeImplementation<kind extends NodeKind = NodeKind> =
+	NodeImplementationInput<Declaration<kind>> & {
+		defaults: ParsedNodeConfigDefaults<kind>
+	}
 
 export type NodeDescriptionWriter<kind extends NodeKind = NodeKind> = (
 	inner: Inner<kind>
