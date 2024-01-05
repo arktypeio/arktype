@@ -126,34 +126,25 @@ type kindOf<self> = self extends Constructor<{
 
 type declarationOf<self> = Declaration<kindOf<self>>
 
-type ImplementationInputWithAssociatedError = BaseNodeImplementationInput & {
-	defaults: requireKeys<BaseNodeConfig, "error">
-}
-
-const implementationHasAssociatedError = (
-	implementation: BaseNodeImplementationInput
-): implementation is ImplementationInputWithAssociatedError =>
-	"error" in implementation.defaults
-
 export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration,
+	// subclass doesn't affect the class's type, but rather is used to validate
+	// the correct implementation of the static implementation
 	subclass extends NodeSubclass<d>
 > extends DynamicBase<attachmentsOf<d>> {
-	static implement<self>(
+	protected static implement<self>(
 		this: self,
 		implementation: nodeImplementationInputOf<declarationOf<self>>
 	): nodeImplementationOf<kindOf<self>>
 	// typing the parameter as any is required for signature compatibility
-	static implement(implementation: any) {
-		const impl: BaseNodeImplementationInput = implementation
-		if (implementationHasAssociatedError(implementation)) {
-			implementation.defaults.error
-		}
-		return implementation as never
+	protected static implement(_: any): any {
+		const implementation: BaseNodeImplementationInput = _
+		// if (implementation.defaults.error) {
+		// }
+		return implementation
 	}
 
-	// TODO: should be implementation
 	private readonly impl: BaseNodeImplementationInput = (this.constructor as any)
 		.implementation
 

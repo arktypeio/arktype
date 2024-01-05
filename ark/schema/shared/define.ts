@@ -156,6 +156,8 @@ export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
 	defaults: NodeConfig<d["kind"]>
 }
 
+export type BaseNodeImplementation = BaseNodeImplementationInput
+
 export type nodeImplementationOf<kind extends NodeKind> =
 	nodeImplementationInputOf<Declaration<kind>> & {
 		defaults: parsedNodeConfigOf<kind>
