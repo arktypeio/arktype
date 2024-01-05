@@ -6,9 +6,8 @@ import type {
 } from "../scope.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type {
-	NodeImplementation,
-	NodeImplementationInput,
-	NodeKeyImplementation
+	NodeKeyImplementation,
+	nodeImplementationOf
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import { BaseProp } from "./prop.js"
@@ -57,7 +56,7 @@ export class SequenceNode extends BaseProp<
 	SequenceDeclaration,
 	typeof SequenceNode
 > {
-	static implementation: NodeImplementation<"sequence"> = this.implement({
+	static implementation: nodeImplementationOf<"sequence"> = this.implement({
 		collapseKey: "element",
 		keys: {
 			prefix: fixedSequenceKeyDefinition,

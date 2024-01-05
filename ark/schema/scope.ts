@@ -53,7 +53,7 @@ declare global {
 }
 
 type NodeConfigsByKind = {
-	[kind in NodeKind]?: evaluate<
+	[kind in NodeKind]: evaluate<
 		BaseConfigOptions<kind> & ErrorConfigOptions<kind>
 	>
 }
@@ -71,9 +71,10 @@ type ErrorConfigOptions<kind extends NodeKind> = kind extends NodeKindWithError
 export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]
 
-export type NodeConfigDefaults<kind extends NodeKind = NodeKind> = evaluate<
-	Required<BaseConfigOptions<kind>> & ErrorConfigOptions<kind>
->
+export type BaseNodeConfig = {
+	description: NodeDescriptionWriter
+	error?: ArkErrorWriter
+}
 
 for (const [kind, subclass] of entriesOf(nodesByKind)) {
 	subclass
@@ -102,7 +103,7 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 
 export type KeyCheckKind = "distilled" | "strict" | "loose"
 
-export type ArkConfig = NodeConfigsByKind
+export type ArkConfig = Partial<NodeConfigsByKind>
 
 export type ParsedArkConfig = require<ArkConfig, 2>
 

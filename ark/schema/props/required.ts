@@ -6,11 +6,7 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type {
-	NodeImplementation,
-	NodeImplementationInput,
-	TypeKind
-} from "../shared/define.js"
+import type { TypeKind, nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
@@ -70,7 +66,7 @@ export class RequiredNode extends BaseProp<
 	RequiredDeclaration,
 	typeof RequiredNode
 > {
-	static implementation: NodeImplementation<"required"> = this.implement({
+	static implementation: nodeImplementationOf<"required"> = this.implement({
 		keys: {
 			key: {},
 			value: {

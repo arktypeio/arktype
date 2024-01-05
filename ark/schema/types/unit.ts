@@ -1,6 +1,5 @@
 import { domainOf, printable } from "@arktype/util"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementationInput } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseBasis } from "./basis.js"

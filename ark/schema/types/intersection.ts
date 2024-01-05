@@ -26,8 +26,7 @@ import {
 	type BasisKind,
 	type ComponentKind,
 	type ConstraintKind,
-	type NodeImplementation,
-	type NodeImplementationInput
+	type nodeImplementationOf
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../traversal/errors.js"
@@ -115,7 +114,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	IntersectionDeclaration,
 	typeof IntersectionNode
 > {
-	static implementation: NodeImplementation<"intersection"> = this.implement({
+	static implementation: nodeImplementationOf<"intersection"> = this.implement({
 		normalize: (def) => def,
 		addContext: (ctx) => {
 			const def = ctx.definition as IntersectionSchema

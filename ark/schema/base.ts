@@ -9,7 +9,8 @@ import {
 	type Json,
 	type JsonData,
 	type entriesOf,
-	type listable
+	type listable,
+	type requireKeys
 } from "@arktype/util"
 import type {
 	Declaration,
@@ -33,6 +34,7 @@ import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
 import type {
+	BaseNodeConfig,
 	CompilationContext,
 	ScopeNode,
 	TraverseAllows,
@@ -49,14 +51,15 @@ import {
 	refinementKinds,
 	setKinds,
 	typeKinds,
+	type BaseNodeImplementationInput,
 	type BasisKind,
 	type ConstraintKind,
-	type NodeImplementation,
-	type NodeImplementationInput,
 	type NodeKind,
 	type RefinementKind,
 	type SetKind,
-	type TypeKind
+	type TypeKind,
+	type nodeImplementationInputOf,
+	type nodeImplementationOf
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
@@ -103,7 +106,7 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 
 export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 	{
-		readonly implementation: NodeImplementationInput<d>
+		readonly implementation: nodeImplementationInputOf<d>
 	}
 
 export const isNode = (value: unknown): value is Node =>
@@ -123,6 +126,15 @@ type kindOf<self> = self extends Constructor<{
 
 type declarationOf<self> = Declaration<kindOf<self>>
 
+type ImplementationInputWithAssociatedError = BaseNodeImplementationInput & {
+	defaults: requireKeys<BaseNodeConfig, "error">
+}
+
+const implementationHasAssociatedError = (
+	implementation: BaseNodeImplementationInput
+): implementation is ImplementationInputWithAssociatedError =>
+	"error" in implementation.defaults
+
 export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration,
@@ -130,12 +142,19 @@ export abstract class BaseNode<
 > extends DynamicBase<attachmentsOf<d>> {
 	static implement<self>(
 		this: self,
-		implementation: NodeImplementationInput<declarationOf<self>>
-	): NodeImplementation<kindOf<self>> {
+		implementation: nodeImplementationInputOf<declarationOf<self>>
+	): nodeImplementationOf<kindOf<self>>
+	// typing the parameter as any is required for signature compatibility
+	static implement(implementation: any) {
+		const impl: BaseNodeImplementationInput = implementation
+		if (implementationHasAssociatedError(implementation)) {
+			implementation.defaults.error
+		}
 		return implementation as never
 	}
 
-	readonly impl: subclass["implementation"] = (this.constructor as any)
+	// TODO: should be implementation
+	private readonly impl: BaseNodeImplementationInput = (this.constructor as any)
 		.implementation
 
 	readonly includesMorph: boolean =

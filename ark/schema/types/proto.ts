@@ -2,14 +2,10 @@ import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
-	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import {
-	defaultValueSerializer,
-	type NodeImplementationInput
-} from "../shared/define.js"
+import { defaultValueSerializer } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
 

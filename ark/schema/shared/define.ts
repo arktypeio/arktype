@@ -8,7 +8,7 @@ import type {
 import type { Node, UnknownNode } from "../base.js"
 import type { Declaration, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { NodeConfigDefaults, ScopeNode } from "../scope.js"
+import type { BaseNodeConfig, NodeConfig, ScopeNode } from "../scope.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
@@ -129,9 +129,7 @@ export type NodeKeyImplementation<
 	| (k extends keyof d["meta"] ? "meta" : never)
 >
 
-export type NodeImplementationInput<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> = {
+interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	collapseKey?: keyof d["inner"] & string
@@ -141,24 +139,32 @@ export type NodeImplementationInput<
 		meta: d["meta"],
 		scope: ScopeNode
 	) => Node | undefined
-	intersections: BaseNodeDeclaration extends d
-		? Record<
-				string,
-				// TODO: narrow
-				(l: any, r: any) => {} | Disjoint | null
-			>
-		: NodeIntersections<d>
-	defaults: NodeConfigDefaults<d["kind"]>
 }
 
-export type ParsedNodeConfigDefaults<kind extends NodeKind = NodeKind> =
-	Required<NodeConfigDefaults<kind>>
+export interface BaseNodeImplementationInput
+	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
+	intersections: Record<
+		string,
+		(l: any, r: any) => Inner<any> | Disjoint | null
+	>
+	defaults: BaseNodeConfig
+}
 
-export type NodeImplementation<kind extends NodeKind = NodeKind> =
-	NodeImplementationInput<Declaration<kind>> & {
-		defaults: ParsedNodeConfigDefaults<kind>
+export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
+	extends CommonNodeImplementationInput<d> {
+	intersections: NodeIntersections<d>
+	defaults: NodeConfig<d["kind"]>
+}
+
+export type nodeImplementationOf<kind extends NodeKind> =
+	nodeImplementationInputOf<Declaration<kind>> & {
+		defaults: parsedNodeConfigOf<kind>
 	}
 
+export type parsedNodeConfigOf<kind extends NodeKind> = Required<
+	NodeConfig<kind>
+>
+
 export type NodeDescriptionWriter<kind extends NodeKind = NodeKind> = (
-	inner: Inner<kind>
+	inner: NodeKind extends kind ? any : Inner<kind>
 ) => string

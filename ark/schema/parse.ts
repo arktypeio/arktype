@@ -14,9 +14,9 @@ import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import {
 	defaultValueSerializer,
+	type BaseNodeImplementationInput,
 	type BasisKind,
 	type KeyDefinitions,
-	type NodeImplementationInput,
 	type NodeKind
 } from "./shared/define.js"
 
@@ -59,7 +59,7 @@ export function parse(
 	ctx: SchemaParseContext
 ): Node {
 	const cls = nodesByKind[kind]
-	const impl = cls.implementation as NodeImplementationInput
+	const impl = cls.implementation as BaseNodeImplementationInput
 	if (schema instanceof BaseNode) {
 		return schema.kind === kind
 			? (schema as never)

@@ -15,8 +15,8 @@ import type {
 } from "../shared/declare.js"
 import type {
 	BoundKind,
-	NodeImplementation,
-	NodeImplementationInput
+	nodeImplementationInputOf,
+	nodeImplementationOf
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
@@ -113,10 +113,10 @@ export abstract class BaseBound<
 
 	static implementBound<d extends Declaration<BoundKind>>(
 		implementation: optionalizeKeys<
-			NodeImplementationInput<d>,
+			nodeImplementationInputOf<d>,
 			"collapseKey" | "keys" | "normalize"
 		>
-	): NodeImplementation<d["kind"]> {
+	): nodeImplementationOf<d["kind"]> {
 		return {
 			collapseKey: "limit",
 			keys: {
@@ -181,7 +181,7 @@ export type MinDeclaration = declareNode<{
 }>
 
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
-	static implementation: NodeImplementation<"min"> = this.implementBound({
+	static implementation: nodeImplementationOf<"min"> = this.implementBound({
 		intersections: createLowerIntersections("min"),
 		defaults: {
 			description(node) {
@@ -209,7 +209,7 @@ export type MaxDeclaration = declareNode<{
 }>
 
 export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
-	static implementation: NodeImplementation<"max"> = this.implementBound({
+	static implementation: nodeImplementationOf<"max"> = this.implementBound({
 		intersections: createUpperIntersections("max"),
 		defaults: {
 			description(node) {
@@ -255,23 +255,24 @@ export class MinLengthNode extends BaseLengthBound<
 	MinLengthDeclaration,
 	typeof MinLengthNode
 > {
-	static implementation: NodeImplementation<"minLength"> = this.implementBound({
-		intersections: createLowerIntersections("minLength"),
-		defaults: {
-			description(node) {
-				return node.exclusive
-					? node.limit === 0
-						? "non-empty"
-						: `more than length ${node.limit}`
-					: node.limit === 1
-						? "non-empty"
-						: `at least length ${node.limit}`
+	static implementation: nodeImplementationOf<"minLength"> =
+		this.implementBound({
+			intersections: createLowerIntersections("minLength"),
+			defaults: {
+				description(node) {
+					return node.exclusive
+						? node.limit === 0
+							? "non-empty"
+							: `more than length ${node.limit}`
+						: node.limit === 1
+							? "non-empty"
+							: `at least length ${node.limit}`
+				}
+				// describeActual(data) {
+				// 	return `${data.length}`
+				// }
 			}
-			// describeActual(data) {
-			// 	return `${data.length}`
-			// }
-		}
-	})
+		})
 
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length > this.limit
@@ -294,19 +295,20 @@ export class MaxLengthNode extends BaseLengthBound<
 	MaxLengthDeclaration,
 	typeof MaxLengthNode
 > {
-	static implementation: NodeImplementation<"maxLength"> = this.implementBound({
-		intersections: createUpperIntersections("maxLength"),
-		defaults: {
-			description(node) {
-				return node.exclusive
-					? `less than length ${node.limit}`
-					: `at most length ${node.limit}`
+	static implementation: nodeImplementationOf<"maxLength"> =
+		this.implementBound({
+			intersections: createUpperIntersections("maxLength"),
+			defaults: {
+				description(node) {
+					return node.exclusive
+						? `less than length ${node.limit}`
+						: `at most length ${node.limit}`
+				}
+				// describeActual(data) {
+				// 	return `${data.length}`
+				// }
 			}
-			// describeActual(data) {
-			// 	return `${data.length}`
-			// }
-		}
-	})
+		})
 
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length < this.limit
@@ -354,7 +356,7 @@ export class AfterNode extends BaseDateBound<
 	AfterDeclaration,
 	typeof AfterNode
 > {
-	static implementation: NodeImplementation<"after"> = this.implementBound({
+	static implementation: nodeImplementationOf<"after"> = this.implementBound({
 		intersections: createLowerIntersections("after"),
 		defaults: {
 			description(inner) {
@@ -391,7 +393,7 @@ export class BeforeNode extends BaseDateBound<
 	BeforeDeclaration,
 	typeof BeforeNode
 > {
-	static implementation: NodeImplementation<"before"> = this.implementBound({
+	static implementation: nodeImplementationOf<"before"> = this.implementBound({
 		intersections: createUpperIntersections("before"),
 		defaults: {
 			description(inner) {

@@ -1,5 +1,4 @@
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementationInput } from "../shared/define.js"
 import { BaseRefinement } from "./refinement.js"
 
 export type PatternInner = {

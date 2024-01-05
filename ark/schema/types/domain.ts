@@ -1,6 +1,5 @@
 import { domainOf, type Domain } from "@arktype/util"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementationInput } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
 

@@ -5,10 +5,7 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type {
-	NodeImplementation,
-	NodeImplementationInput
-} from "../shared/define.js"
+import type { nodeImplementationOf } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import { BaseProp } from "./prop.js"
 
@@ -34,7 +31,7 @@ export type IndexDeclaration = declareNode<{
 }>
 
 export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
-	static implementation: NodeImplementation<"index"> = this.implement({
+	static implementation: nodeImplementationOf<"index"> = this.implement({
 		keys: {
 			key: {
 				child: true,

@@ -1,5 +1,4 @@
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { NodeImplementationInput } from "../shared/define.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"

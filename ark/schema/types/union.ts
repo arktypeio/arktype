@@ -7,11 +7,7 @@ import type {
 	TraverseApply
 } from "../scope.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import {
-	basisKinds,
-	type NodeImplementation,
-	type NodeImplementationInput
-} from "../shared/define.js"
+import { basisKinds, type nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../traversal/errors.js"
 import type { Discriminant } from "./discriminate.js"
@@ -75,7 +71,7 @@ export class UnionNode<t = unknown> extends BaseType<
 	UnionDeclaration,
 	typeof UnionNode
 > {
-	static implementation: NodeImplementation<"union"> = this.implement({
+	static implementation: nodeImplementationOf<"union"> = this.implement({
 		collapseKey: "branches",
 		keys: {
 			ordered: {},
@@ -144,7 +140,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				return l.ordered || r.ordered
 					? {
 							branches: resultBranches,
-							ordered: true
+							ordered: true as const
 						}
 					: { branches: resultBranches }
 			},
@@ -163,7 +159,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					: l.ordered
 						? {
 								branches,
-								ordered: true
+								ordered: true as const
 							}
 						: { branches }
 			}

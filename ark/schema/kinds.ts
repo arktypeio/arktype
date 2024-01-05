@@ -1,4 +1,4 @@
-import type { Dict, extend } from "@arktype/util"
+import type { extend } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
 import { IndexNode, type IndexDeclaration } from "./props/index.js"
 import { OptionalNode, type OptionalDeclaration } from "./props/optional.js"
@@ -17,7 +17,6 @@ import type {
 	ConstraintKind,
 	NodeKind,
 	PropKind,
-	RefinementKind,
 	TypeKind
 } from "./shared/define.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
