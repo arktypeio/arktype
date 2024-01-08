@@ -138,10 +138,9 @@ export abstract class BaseNode<
 		implementation: nodeImplementationInputOf<declarationOf<self>>
 	): nodeImplementationOf<kindOf<self>>
 	// typing the parameter as any is required for signature compatibility
-	protected static implement(_: any): any {
+	protected static implement(_: never): any {
 		const implementation: BaseNodeImplementationInput = _
-		// if (implementation.defaults.error) {
-		// }
+		implementation.defaults.error ??= (ctx) => `must be ${ctx.expected}`
 		return implementation
 	}
 

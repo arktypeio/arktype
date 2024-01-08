@@ -177,7 +177,7 @@ export type MinDeclaration = declareNode<{
 		min: "min"
 		max: Disjoint | null
 	}
-	error: {}
+	errorContext: BoundInner<number>
 }>
 
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
@@ -205,7 +205,7 @@ export type MaxDeclaration = declareNode<{
 		// TODO: Fix rightOf
 		max: "max"
 	}
-	error: {}
+	errorContext: BoundInner<number>
 }>
 
 export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
@@ -248,7 +248,7 @@ export type MinLengthDeclaration = declareNode<{
 		minLength: "minLength"
 		maxLength: Disjoint | null
 	}
-	error: {}
+	errorContext: BoundInner<number>
 }>
 
 export class MinLengthNode extends BaseLengthBound<
@@ -288,7 +288,7 @@ export type MaxLengthDeclaration = declareNode<{
 	intersections: {
 		maxLength: "maxLength"
 	}
-	error: {}
+	errorContext: BoundInner<number>
 }>
 
 export class MaxLengthNode extends BaseLengthBound<
@@ -349,7 +349,7 @@ export type AfterDeclaration = declareNode<{
 	intersections: {
 		after: "after"
 	}
-	error: {}
+	errorContext: BoundInner<string | number>
 }>
 
 export class AfterNode extends BaseDateBound<
@@ -386,7 +386,7 @@ export type BeforeDeclaration = declareNode<{
 		before: "before"
 		after: Disjoint | null
 	}
-	error: {}
+	errorContext: BoundInner<string | number>
 }>
 
 export class BeforeNode extends BaseDateBound<

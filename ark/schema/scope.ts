@@ -26,11 +26,7 @@ import type {
 	TypeKind
 } from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
-import type {
-	ArkErrorWriter,
-	AssociatedErrorCode,
-	NodeKindWithError
-} from "./traversal/errors.js"
+import type { ArkErrorWriter, NodeKindWithError } from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
 import type { Discriminant } from "./types/discriminate.js"
 import { BaseType } from "./types/type.js"
@@ -64,7 +60,7 @@ type BaseConfigOptions<kind extends NodeKind> = {
 
 type ErrorConfigOptions<kind extends NodeKind> = kind extends NodeKindWithError
 	? {
-			error?: ArkErrorWriter<AssociatedErrorCode<kind>>
+			error?: ArkErrorWriter<kind>
 		}
 	: {}
 

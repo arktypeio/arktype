@@ -2,6 +2,7 @@ import {
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
+	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
@@ -29,7 +30,7 @@ export type ProtoDeclaration = declareNode<{
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
-	error: {}
+	errorContext: ProtoInner
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -56,10 +57,10 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 				return knownObjectKind
 					? objectKindDescriptions[knownObjectKind]
 					: `an instance of ${inner.proto.name}`
+			},
+			error(ctx) {
+				return `must be ${ctx.expected} (was ${objectKindOrDomainOf(ctx.data)})`
 			}
-			// describeActual(data) {
-			// 	return objectKindOrDomainOf(data)
-			// },
 		},
 		intersections: {
 			proto: (l, r) =>

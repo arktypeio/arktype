@@ -18,7 +18,7 @@ export type DivisorDeclaration = declareNode<{
 		divisor: "divisor"
 	}
 	prerequisite: number
-	error: {}
+	errorContext: DivisorInner
 }>
 
 export const writeIndivisibleMessage = <root extends string>(

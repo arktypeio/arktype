@@ -22,12 +22,7 @@ export type PredicateDeclaration = declareNode<{
 		predicate: "predicate" | null
 	}
 	data: unknown
-	error: {
-		code: "custom"
-		context: {
-			expected: string
-		}
-	}
+	errorContext: {}
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need

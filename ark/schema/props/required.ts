@@ -35,11 +35,8 @@ export type RequiredDeclaration = declareNode<{
 		required: "required" | Disjoint | null
 		optional: "required" | Disjoint | null
 	}
-	error: {
-		code: "missingKey"
-		context: {
-			key: string | symbol
-		}
+	errorContext: {
+		key: string | symbol
 	}
 	prerequisite: object
 }>

@@ -1,10 +1,7 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
-import type {
-	ArkErrorCode,
-	DerivableErrorContext
-} from "../traversal/errors.js"
+import type { DerivableErrorContext } from "../traversal/errors.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -47,10 +44,7 @@ export type DeclarationInput<kind extends NodeKind = NodeKind> = {
 	intersections: UnknownIntersections
 	normalizedSchema: BaseMeta
 	inner: Dict
-	error?: {
-		code?: ArkErrorCode
-		context?: Dict
-	}
+	errorContext?: Dict
 	meta?: Dict
 	prerequisite?: unknown
 	childKind?: NodeKind
@@ -65,37 +59,21 @@ type ParentsByKind = {
 type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type declareNode<d extends DeclarationInput> = extend<
-	// include this below so intersections can be reduced
-	Omit<d, "error">,
+	d,
 	{
-		meta: "meta" extends keyof d ? extend<BaseMeta, d["meta"]> : BaseMeta
+		meta: d["meta"] extends {} ? extend<BaseMeta, d["meta"]> : BaseMeta
 		prerequisite: prerequisiteOf<d>
-		childKind: "childKind" extends keyof d ? d["childKind"] : never
+		childKind: d["childKind"] extends string ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
-		error: d["error"] extends {}
-			? {
-					code: d["error"]["code"] extends infer code extends string
-						? code
-						: d["kind"]
-					context: extend<
-						DerivableErrorContext<prerequisiteOf<d>>,
-						d["error"]["context"] extends infer context extends {}
-							? context
-							: d["inner"]
-					>
-				}
-			: never
+		errorContext: d["errorContext"] extends {}
+			? DerivableErrorContext<prerequisiteOf<d>>
+			: null
 	}
 >
 
 type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 	? d["prerequisite"]
 	: unknown
-
-export type BaseErrorDeclaration = {
-	code: ArkErrorCode
-	context: DerivableErrorContext
-}
 
 export type attachmentsOf<d extends BaseNodeDeclaration> =
 	NarrowedAttachments<d> & d["inner"]
@@ -109,7 +87,7 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
-	error: BaseErrorDeclaration | null
+	errorContext: DerivableErrorContext | null
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}

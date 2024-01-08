@@ -48,10 +48,7 @@ export type UnionDeclaration = declareNode<{
 		default: "union" | Disjoint
 	}
 	error: {
-		code: "union"
-		context: {
-			errors: readonly ArkError[]
-		}
+		errors: readonly ArkError[]
 	}
 }>
 

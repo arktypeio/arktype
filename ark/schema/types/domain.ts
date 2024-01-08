@@ -28,7 +28,7 @@ export type DomainDeclaration = declareNode<{
 	intersections: {
 		domain: "domain" | Disjoint
 	}
-	error: {}
+	errorContext: DomainInner
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<
@@ -46,10 +46,10 @@ export class DomainNode<t = unknown> extends BaseBasis<
 		defaults: {
 			description(inner) {
 				return domainDescriptions[inner.domain]
+			},
+			error(ctx) {
+				return `must be ${ctx.expected} (was ${domainOf(ctx.data)})`
 			}
-			// describeActual(data) {
-			// 	return domainOf(data)
-			// }
 		},
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r)
