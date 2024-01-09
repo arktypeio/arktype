@@ -1,6 +1,6 @@
 import {
-	DynamicBase,
 	ReadonlyArray,
+	capitalize,
 	includes,
 	printable,
 	type autocomplete,
@@ -13,19 +13,7 @@ import type { StaticArkOption } from "../scope.js"
 import { nodeKinds, type NodeKind } from "../shared/define.js"
 import type { TraversalContext, TraversalPath } from "./context.js"
 
-export class ArkError extends TypeError {}
-
-export class ArkTypeError<
-	code extends ArkErrorCode = ArkErrorCode
-> extends ArkError {
-	constructor(
-		public code: code,
-		public context: ArkErrorContext<code>,
-		message: string
-	) {
-		super(message)
-	}
-
+export class ArkError extends TypeError {
 	toString() {
 		return this.message
 	}
@@ -35,11 +23,42 @@ export class ArkTypeError<
 	}
 }
 
-export class ArkErrorContext<
+export class ArkTypeError<
 	code extends ArkErrorCode = ArkErrorCode
-> extends DynamicBase<ArkErrorContextsByCode[code]> {
-	// constructor(input: ArkErrorInput<code>) {
-	// }
+> extends ArkError {
+	constructor(
+		public code: code,
+		public context: ArkErrorContext<code>
+	) {
+		super()
+	}
+
+	get message() {
+		return this.context.path.length === 0
+			? capitalize(this.expected)
+			: this.context.path.length === 1 &&
+				  typeof this.context.path[0] === "number"
+				? `Item at index ${this.context.path[0]} ${this.expected}`
+				: `${this.context.path} ${this.expected}`
+	}
+
+	get problem() {
+		return `must be ${this.expected}${
+			this.actual ? ` (was ${this.actual})` : ""
+		}`
+	}
+
+	get expected() {
+		return this.context.expected
+	}
+
+	get actual() {
+		return printable(this.context.data)
+	}
+
+	hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
+		return this.code === (code as never)
+	}
 }
 
 export class ArkErrors extends ReadonlyArray<ArkTypeError> {
@@ -60,18 +79,14 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		const data = this.context.data
 		if (!includes(nodeKinds, codeOrDescription)) {
 			// treat as the description of a custom error
-			const error = new ArkTypeError(
-				"predicate",
-				{
-					path: [...this.context.path],
-					data,
-					expected: codeOrDescription,
-					get actual() {
-						return printable(data)
-					}
-				},
-				""
-			)
+			const error = new ArkTypeError("predicate", {
+				path: [...this.context.path],
+				data,
+				expected: codeOrDescription,
+				get actual() {
+					return printable(data)
+				}
+			})
 			this.mutable.push(error)
 			return error
 		}
@@ -108,8 +123,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		// } else {
 		const error = new ArkTypeError(
 			codeOrDescription as ArkErrorCode,
-			context as any,
-			""
+			context as any
 		)
 		this.byPath[pathKey] = error
 		this.mutable.push(error)
@@ -153,6 +167,9 @@ export type ArkErrorContextsByCode = extend<
 	},
 	StaticArkOption<"errors">
 >
+
+export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
+	ArkErrorContextsByCode[code]
 
 export type ArkErrorCode = keyof ArkErrorContextsByCode
 
