@@ -5,9 +5,9 @@ import { BaseBasis } from "./basis.js"
 
 export type DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = withBaseMeta<{
+> = {
 	readonly domain: domain
-}>
+}
 
 // only domains with an infinite number of values are allowed as bases
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
@@ -18,7 +18,7 @@ export type DomainSchema<
 
 export type NormalizedDomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = DomainInner<domain>
+> = withBaseMeta<DomainInner<domain>>
 
 export type DomainDeclaration = declareNode<{
 	kind: "domain"

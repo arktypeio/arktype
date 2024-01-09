@@ -8,7 +8,7 @@ import {
 	type optionalizeKeys,
 	type propwiseXor
 } from "@arktype/util"
-import type { Declaration } from "../kinds.js"
+import type { Declaration, Prerequisite } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import { nodeKinds, type NodeKind } from "../shared/define.js"
 import type { TraversalContext, TraversalPath } from "./context.js"
@@ -192,9 +192,12 @@ export type ArkErrorWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	context: ArkErrorContext<code>
 ) => string
 
-export type ArkErrorWritersByCode = {
-	[code in ArkErrorCode]: ArkErrorWriter<code>
-}
+export type getAssociatedDataForError<code extends ArkErrorCode> =
+	code extends NodeKind ? Prerequisite<code> : unknown
+
+export type ArkActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
+	data: getAssociatedDataForError<code>
+) => string
 
 export type ArkResult<out = unknown> = propwiseXor<
 	{ out: out },
