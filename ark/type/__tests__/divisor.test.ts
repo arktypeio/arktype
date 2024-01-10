@@ -18,7 +18,7 @@ describe("divisibility", () => {
 		it("with bound", () => {
 			const t = type("number%8<3")
 			attest(t.json).equals(type("number%8").and("number<3").json)
-			attest(t.root.description).snap(
+			attest(t.root.expected).snap(
 				"a number and a multiple of 8 and less than 3"
 			)
 		})

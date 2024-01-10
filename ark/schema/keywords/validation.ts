@@ -14,7 +14,7 @@ const url = rootSchema({
 		}
 		return true
 	},
-	description: "a valid URL"
+	expected: "a valid URL"
 })
 
 // https://www.regular-expressions.info/email.html
@@ -23,7 +23,7 @@ const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 const email = rootSchema({
 	basis: "string",
 	pattern: emailMatcher,
-	description: "a valid email"
+	expected: "a valid email"
 })
 
 const uuidMatcher =
@@ -33,7 +33,7 @@ const uuidMatcher =
 const uuid = rootSchema({
 	basis: "string",
 	pattern: uuidMatcher,
-	description: "a valid UUID"
+	expected: "a valid UUID"
 })
 
 const semverMatcher =
@@ -43,7 +43,7 @@ const semverMatcher =
 const semver = rootSchema({
 	basis: "string",
 	pattern: semverMatcher,
-	description: "a valid semantic version (see https://semver.org/)"
+	expected: "a valid semantic version (see https://semver.org/)"
 })
 
 export namespace Validation {
@@ -67,22 +67,22 @@ export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from({
 	alpha: {
 		basis: "string",
 		pattern: /^[A-Za-z]*$/,
-		description: "only letters"
+		expected: "only letters"
 	},
 	alphanumeric: {
 		basis: "string",
 		pattern: /^[A-Za-z\d]*$/,
-		description: "only letters and digits"
+		expected: "only letters and digits"
 	},
 	lowercase: {
 		basis: "string",
 		pattern: /^[a-z]*$/,
-		description: "only lowercase letters"
+		expected: "only lowercase letters"
 	},
 	uppercase: {
 		basis: "string",
 		pattern: /^[A-Za-z]*$/,
-		description: "only uppercase letters"
+		expected: "only uppercase letters"
 	},
 	creditCard,
 	email,
@@ -92,6 +92,6 @@ export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from({
 	integer: {
 		basis: "number",
 		divisor: 1,
-		description: "an integer"
+		expected: "an integer"
 	}
 })

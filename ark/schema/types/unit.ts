@@ -42,7 +42,7 @@ export class UnitNode<t = unknown> extends BaseBasis<
 					: Disjoint.from("assignability", l.unit, r)
 		},
 		defaults: {
-			description(inner) {
+			expected(inner) {
 				return printable(inner.unit)
 			}
 		}

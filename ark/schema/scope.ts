@@ -59,8 +59,7 @@ type NodeConfigsByKind = {
 }
 
 type BaseConfigOptions<kind extends NodeKind> = {
-	// TODO: expected
-	description?: NodeDescriptionWriter<kind>
+	expected?: NodeDescriptionWriter<kind>
 }
 
 type ErrorConfigOptions<kind extends NodeKind> = kind extends NodeKindWithError
@@ -74,7 +73,7 @@ export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]
 
 export type BaseNodeConfig = {
-	description: NodeDescriptionWriter
+	expected: NodeDescriptionWriter
 	error?: ArkErrorWriter
 	actual?: ArkActualWriter
 }
@@ -340,7 +339,7 @@ ${reference.compileBody({
 	}
 
 	compilePrimitiveProblem(node: Node<PrimitiveKind>) {
-		return `${this.ctxName}.addError(${JSON.stringify(node.description)})`
+		return `${this.ctxName}.addError(${JSON.stringify(node.expected)})`
 	}
 
 	readonly schema: SchemaParser<r> = Object.assign(

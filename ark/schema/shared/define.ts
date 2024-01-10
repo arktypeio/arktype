@@ -153,7 +153,7 @@ export interface BaseNodeImplementationInput
 export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
 	extends CommonNodeImplementationInput<d> {
 	intersections: NodeIntersections<d>
-	defaults: requireKeys<NodeConfig<d["kind"]>, "description">
+	defaults: requireKeys<NodeConfig<d["kind"]>, "expected">
 }
 
 export type BaseNodeImplementation = BaseNodeImplementationInput

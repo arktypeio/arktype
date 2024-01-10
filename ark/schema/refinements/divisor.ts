@@ -48,7 +48,7 @@ export class DivisorNode extends BaseRefinement<
 			})
 		},
 		defaults: {
-			description(inner) {
+			expected(inner) {
 				return inner.divisor === 1
 					? "an integer"
 					: `a multiple of ${inner.divisor}`

@@ -9,8 +9,7 @@ import {
 	type Json,
 	type JsonData,
 	type entriesOf,
-	type listable,
-	type requireKeys
+	type listable
 } from "@arktype/util"
 import type {
 	Declaration,
@@ -34,7 +33,6 @@ import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
 import type {
-	BaseNodeConfig,
 	CompilationContext,
 	ScopeNode,
 	TraverseAllows,
@@ -202,9 +200,9 @@ export abstract class BaseNode<
 	}
 
 	private descriptionCache?: string
-	get description() {
+	get expected() {
 		this.descriptionCache ??=
-			this.meta.description ?? this.impl.defaults.description(this as never)
+			this.meta.expected ?? this.impl.defaults.expected(this as never)
 		return this.descriptionCache
 	}
 
@@ -263,7 +261,7 @@ export abstract class BaseNode<
 	}
 
 	toString() {
-		return this.description
+		return this.expected
 	}
 
 	private static intersectionCache: Record<string, Node | Disjoint> = {}

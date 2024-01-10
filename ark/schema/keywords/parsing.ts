@@ -11,7 +11,7 @@ const number = rootSchema({
 	in: {
 		basis: "string",
 		pattern: wellFormedNumberMatcher,
-		description: "a well-formed numeric string"
+		expected: "a well-formed numeric string"
 	},
 	morph: (s: string) => parseFloat(s)
 })
@@ -38,7 +38,7 @@ const integer = rootSchema({
 const url = rootSchema({
 	in: {
 		basis: "string",
-		description: "a valid URL"
+		expected: "a valid URL"
 	},
 	morph: (s: string) => {
 		return new URL(s)
@@ -53,7 +53,7 @@ const url = rootSchema({
 const json = rootSchema({
 	in: {
 		basis: "string",
-		description: "a JSON-parsable string"
+		expected: "a JSON-parsable string"
 	},
 	morph: (s: string): unknown => JSON.parse(s)
 })

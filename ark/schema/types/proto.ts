@@ -52,7 +52,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 		normalize: (input) =>
 			typeof input === "function" ? { proto: input } : input,
 		defaults: {
-			description(inner) {
+			expected(inner) {
 				const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
 				return knownObjectKind
 					? objectKindDescriptions[knownObjectKind]

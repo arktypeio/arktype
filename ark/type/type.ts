@@ -135,7 +135,7 @@ export class Type<t = unknown, $ = any> extends CastableBase<
 	config: TypeConfig
 	root: TypeNode<t>
 	allows: this["root"]["allows"]
-	description: string
+	expected: string
 	json: Json
 
 	constructor(
@@ -148,7 +148,7 @@ export class Type<t = unknown, $ = any> extends CastableBase<
 		this.allows = root.allows
 		this.config = scope.config
 		this.json = root.json
-		this.description = this.root.description
+		this.expected = this.root.expected
 	}
 
 	configure(config: TypeConfig) {

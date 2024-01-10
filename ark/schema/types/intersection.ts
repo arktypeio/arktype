@@ -216,7 +216,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		},
 		defaults: {
-			description(inner) {
+			expected(inner) {
 				const constraints = Object.values(inner)
 				return constraints.length === 0
 					? "an unknown value"

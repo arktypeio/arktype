@@ -53,14 +53,14 @@ describe("intersections", () => {
 			in: {
 				basis: "string",
 				pattern: wellFormedNumberMatcher,
-				description: "a well-formed numeric string"
+				expected: "a well-formed numeric string"
 			},
 			morph: (s: string) => parseFloat(s)
 		})
 		attest(parseNumber.in.json).snap({
 			basis: "string",
 			pattern: ["^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"],
-			description: "a well-formed numeric string"
+			expected: "a well-formed numeric string"
 		})
 		attest(parseNumber.out.json).snap({})
 	})
@@ -79,9 +79,12 @@ describe("intersections", () => {
 		attest(n.in.json).snap(["number", "string"])
 		attest(n.out.json).snap({})
 	})
+	// it("errors on all unknown keys", () => {
+	// 	attest(() => schema({ foo: "bar", bar: "baz" }))
+	// })
 	it("errors on unknown intersection key", () => {
 		// @ts-expect-error
-		attest(() => schema({ foo: "bar", description: "baz" }))
+		attest(() => schema({ foo: "bar", expected: "baz" }))
 			.throws.snap("Error: Key foo is not valid on intersection schema")
 			.type.errors.snap("Type 'string' is not assignable to type 'never'.")
 	})

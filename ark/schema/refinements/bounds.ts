@@ -184,7 +184,7 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 	static implementation: nodeImplementationOf<"min"> = this.implementBound({
 		intersections: createLowerIntersections("min"),
 		defaults: {
-			description(node) {
+			expected(node) {
 				return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
 			}
 		}
@@ -212,7 +212,7 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 	static implementation: nodeImplementationOf<"max"> = this.implementBound({
 		intersections: createUpperIntersections("max"),
 		defaults: {
-			description(node) {
+			expected(node) {
 				return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
 			}
 		}
@@ -259,7 +259,7 @@ export class MinLengthNode extends BaseLengthBound<
 		this.implementBound({
 			intersections: createLowerIntersections("minLength"),
 			defaults: {
-				description(node) {
+				expected(node) {
 					return node.exclusive
 						? node.limit === 0
 							? "non-empty"
@@ -299,7 +299,7 @@ export class MaxLengthNode extends BaseLengthBound<
 		this.implementBound({
 			intersections: createUpperIntersections("maxLength"),
 			defaults: {
-				description(node) {
+				expected(node) {
 					return node.exclusive
 						? `less than length ${node.limit}`
 						: `at most length ${node.limit}`
@@ -359,7 +359,7 @@ export class AfterNode extends BaseDateBound<
 	static implementation: nodeImplementationOf<"after"> = this.implementBound({
 		intersections: createLowerIntersections("after"),
 		defaults: {
-			description(inner) {
+			expected(inner) {
 				const limitString = dateLimitToString(inner.limit)
 				return inner.exclusive
 					? `after ${limitString}`
@@ -396,7 +396,7 @@ export class BeforeNode extends BaseDateBound<
 	static implementation: nodeImplementationOf<"before"> = this.implementBound({
 		intersections: createUpperIntersections("before"),
 		defaults: {
-			description(inner) {
+			expected(inner) {
 				const limitString = dateLimitToString(inner.limit)
 				return inner.exclusive
 					? `before ${limitString}`
