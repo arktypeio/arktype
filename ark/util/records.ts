@@ -111,12 +111,25 @@ export const isKeyOf = <k extends string | number | symbol, o extends object>(
 /** Coalesce keys that exist on one or more branches of a union */
 export type unionKeyOf<t> = keyof intersectUnion<t>
 
-// Here's an example of how you might use it in a utility for discriminating
-// a union based on key presence if you know no extra properties will be present.
+export type extractKeyed<o extends object, k extends unionKeyOf<o>> = Extract<
+	o,
+	{ [_ in k]?: unknown }
+>
+
 export const hasKey = <o extends object, k extends unionKeyOf<o>>(
 	o: o,
 	k: k
-): o is Extract<o, { [_ in k]: unknown }> => k in o
+): o is extractKeyed<o, k> => k in o
+
+export type extractDefinedKey<
+	o extends object,
+	k extends unionKeyOf<o>
+> = evaluate<extractKeyed<o, k> & { [_ in k]: {} | null }>
+
+export const hasDefinedKey = <o extends object, k extends unionKeyOf<o>>(
+	o: o,
+	k: k
+): o is extractDefinedKey<o, k> => (o as any)[k] !== undefined
 
 export type requiredKeyOf<o> = {
 	[k in keyof o]-?: o extends { [_ in k]-?: o[k] } ? k : never

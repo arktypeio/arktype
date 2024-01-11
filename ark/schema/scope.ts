@@ -64,7 +64,7 @@ type nodeConfigForKind<kind extends NodeKind> = evaluate<
 	} & (kind extends NodeKindWithError
 		? {
 				problem?: ArkProblemWriter<kind>
-				actual?: "omit" | ArkActualWriter<kind>
+				actual?: ArkActualWriter<kind> | null
 			}
 		: {})
 >
@@ -75,7 +75,7 @@ export type NodeConfig<kind extends NodeKind = NodeKind> =
 type UnknownNodeConfig = {
 	expected?: NodeExpectedWriter
 	problem?: ArkProblemWriter
-	actual?: "omit" | ArkActualWriter
+	actual?: ArkActualWriter | null
 }
 
 export type ParsedUnknownNodeConfig = requireKeys<UnknownNodeConfig, "expected">
