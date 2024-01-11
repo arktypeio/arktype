@@ -1,5 +1,6 @@
 import type { Fn } from "./functions.js"
 import type { defined, evaluate } from "./generics.js"
+import type { intersectUnion } from "./unionToTuple.js"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -102,10 +103,20 @@ export type keysOf<o> = o extends readonly unknown[]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>[]
 
-export const isKeyOf = <k extends string | number | symbol, obj extends object>(
+export const isKeyOf = <k extends string | number | symbol, o extends object>(
 	k: k,
-	obj: obj
-): k is Extract<keyof obj, k> => k in obj
+	o: o
+): k is Extract<keyof o, k> => k in o
+
+/** Coalesce keys that exist on one or more branches of a union */
+export type unionKeyOf<t> = keyof intersectUnion<t>
+
+// Here's an example of how you might use it in a utility for discriminating
+// a union based on key presence if you know no extra properties will be present.
+export const hasKey = <o extends object, k extends unionKeyOf<o>>(
+	o: o,
+	k: k
+): o is Extract<o, { [_ in k]: unknown }> => k in o
 
 export type requiredKeyOf<o> = {
 	[k in keyof o]-?: o extends { [_ in k]-?: o[k] } ? k : never

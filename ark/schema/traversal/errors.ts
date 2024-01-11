@@ -1,6 +1,7 @@
 import {
 	ReadonlyArray,
 	capitalize,
+	hasKey,
 	includes,
 	printable,
 	type autocomplete,
@@ -62,7 +63,7 @@ export class ArkTypeError<
 }
 
 export class ArkErrors extends ReadonlyArray<ArkTypeError> {
-	constructor(protected context: TraversalContext) {
+	constructor(protected ctx: TraversalContext) {
 		super()
 	}
 
@@ -76,11 +77,11 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			? [input: ArkErrorInput<codeOrDescription>]
 			: []
 	): ArkTypeError {
-		const data = this.context.data
+		const data = this.ctx.data
 		if (!includes(nodeKinds, codeOrDescription)) {
 			// treat as the description of a custom error
 			const error = new ArkTypeError("predicate", {
-				path: [...this.context.path],
+				path: [...this.ctx.path],
 				data,
 				expected: codeOrDescription,
 				get actual() {
@@ -91,17 +92,20 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			return error
 		}
 		const input: ArkErrorInput = rest[0]!
-		const context: DerivableErrorContext = {
-			path: input.path ?? [...this.context.path],
-			// check for presence explicitly in case data is nullish
-			data: "data" in input ? input.data : this.context.data,
-			// TODO: write defaults for code
-			expected: "",
-			get actual() {
-				return input.actual ?? printable(data)
-			}
-		}
-		const pathKey = this.context.path.join(".")
+		const ctx = {
+			path: [...this.ctx.path],
+			data: this.ctx.data,
+			...input
+			// ensure we have at least everything we need to call an ArkExpectedWriter
+		} satisfies ArkExpectedContext
+
+		ctx.expected = hasKey(input, "expected")
+		"expected" in input
+			? input.expected
+			: this.ctx.config[codeOrDescription].expected(ctx as never)
+		ctx.actual
+
+		const pathKey = this.ctx.path.join(".")
 		// const existing = this.byPath[pathKey]
 		// if (existing) {
 		// if (existing.hasCode("intersection")) {
@@ -123,7 +127,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		// } else {
 		const error = new ArkTypeError(
 			codeOrDescription as ArkErrorCode,
-			context as any
+			ctx as any
 		)
 		this.byPath[pathKey] = error
 		this.mutable.push(error)
@@ -148,6 +152,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 export interface DerivableErrorContext<data = unknown> {
 	expected: string
 	actual: string
+	problem: string
 	data: data
 	path: TraversalPath
 }
@@ -173,14 +178,14 @@ export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
 
 export type ArkErrorCode = keyof ArkErrorContextsByCode
 
-export type ArkExpectedContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
-	ArkErrorContext<code>,
-	"expected"
->
-
 export type ArkProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	ArkErrorContext<code>,
 	"problem"
+>
+
+export type ArkExpectedContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
+	ArkProblemContext<code>,
+	"actual" | "expected"
 >
 
 type ArkErrorInputByCode = {

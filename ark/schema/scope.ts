@@ -6,9 +6,10 @@ import {
 	throwParseError,
 	type Dict,
 	type evaluate,
-	type require
+	type require,
+	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode } from "./base.js"
+import type { Node, TypeNode, UnknownNode } from "./base.js"
 import type {
 	instantiateAliases,
 	instantiateSchemaBranches,
@@ -16,13 +17,15 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
-import type { Schema, reducibleKindOf } from "./kinds.js"
+import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type {
-	NodeExpectedWriter,
-	NodeKind,
-	PrimitiveKind,
-	TypeKind
+import {
+	nodeKinds,
+	type NodeExpectedWriter,
+	type NodeKind,
+	type PrimitiveKind,
+	type TypeKind,
+	type UnknownNodeImplementation
 } from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
 import type {
@@ -69,11 +72,13 @@ type nodeConfigForKind<kind extends NodeKind> = evaluate<
 export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]
 
-export type ParsedUnknownNodeConfig = {
-	expected: NodeExpectedWriter
+type UnknownNodeConfig = {
+	expected?: NodeExpectedWriter
 	problem?: ArkProblemWriter
 	actual?: "omit" | ArkActualWriter
 }
+
+export type ParsedUnknownNodeConfig = requireKeys<UnknownNodeConfig, "expected">
 
 export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]
@@ -85,11 +90,34 @@ export type ArkConfig = Partial<NodeConfigsByKind>
 
 export type ParsedArkConfig = require<ArkConfig, 2>
 
+let parsedDefaultsCache: ParsedArkConfig | undefined
+
+const parseConfig = (config: ArkConfig | undefined): ParsedArkConfig => {
+	if (config === undefined && parsedDefaultsCache) {
+		return parsedDefaultsCache
+	}
+	const parsedConfig: ParsedArkConfig = {} as never
+	for (const kind of nodeKinds) {
+		const providedKindConfig = parsedConfig[kind] as
+			| UnknownNodeConfig
+			| undefined
+		parsedConfig[kind] = providedKindConfig
+			? { ...nodesByKind[kind].implementation.defaults, ...providedKindConfig }
+			: (nodesByKind[kind].implementation.defaults as any)
+	}
+	if (config === undefined) {
+		parsedDefaultsCache = parsedConfig
+	}
+	return parsedConfig
+}
+
 export class ScopeNode<r extends object = any> {
 	declare infer: {
 		[k in keyof r]: r[k] extends schema.cast<infer t> ? t : never
 	}
 	declare static keywords: typeof keywords
+
+	readonly config: ParsedArkConfig
 	readonly resolutions = {} as r
 	readonly referencesById: Record<string, Node> = {}
 	readonly references: readonly Node[]
@@ -97,8 +125,9 @@ export class ScopeNode<r extends object = any> {
 
 	constructor(
 		public def: Dict<string, unknown>,
-		public opts: ArkConfig = {}
+		config?: ArkConfig
 	) {
+		this.config = parseConfig(config)
 		for (const k in this.def) {
 			;(this.resolutions as BaseResolutions)[k] = this.parseNode(
 				assertTypeKind(this.def[k]),
