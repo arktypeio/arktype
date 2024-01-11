@@ -63,22 +63,23 @@ export class RequiredNode extends BaseProp<
 	RequiredDeclaration,
 	typeof RequiredNode
 > {
-	static implementation: nodeImplementationOf<"required"> = this.implement({
-		keys: {
-			key: {},
-			value: {
-				child: true,
-				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+	static implementation: nodeImplementationOf<RequiredDeclaration> =
+		this.implement({
+			keys: {
+				key: {},
+				value: {
+					child: true,
+					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+				}
+			},
+			normalize: (schema) => schema,
+			intersections: { required: intersectNamed, optional: intersectNamed },
+			defaults: {
+				expected(inner) {
+					return `${compileKey(inner.key)}: ${inner.value}`
+				}
 			}
-		},
-		normalize: (schema) => schema,
-		intersections: { required: intersectNamed, optional: intersectNamed },
-		defaults: {
-			expected(inner) {
-				return `${compileKey(inner.key)}: ${inner.value}`
-			}
-		}
-	})
+		})
 
 	readonly hasOpenIntersection = true
 

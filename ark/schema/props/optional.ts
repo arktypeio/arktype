@@ -35,35 +35,36 @@ export class OptionalNode extends BaseProp<
 	OptionalDeclaration,
 	typeof OptionalNode
 > {
-	static implementation: nodeImplementationOf<"optional"> = this.implement({
-		keys: {
-			key: {},
-			value: {
-				child: true,
-				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
-			}
-		},
-		normalize: (schema) => schema,
-		defaults: {
-			expected(inner) {
-				return `${compileKey(inner.key)}?: ${inner.value}`
-			}
-		},
-		intersections: {
-			optional: (l, r) => {
-				if (l.key !== r.key) {
-					return null
+	static implementation: nodeImplementationOf<OptionalDeclaration> =
+		this.implement({
+			keys: {
+				key: {},
+				value: {
+					child: true,
+					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 				}
-				const optional = l.key
-				const value = l.value.intersect(r.value)
-				return {
-					key: optional,
-					value:
-						value instanceof Disjoint ? (l.$.builtin.never as never) : value
+			},
+			normalize: (schema) => schema,
+			defaults: {
+				expected(inner) {
+					return `${compileKey(inner.key)}?: ${inner.value}`
+				}
+			},
+			intersections: {
+				optional: (l, r) => {
+					if (l.key !== r.key) {
+						return null
+					}
+					const optional = l.key
+					const value = l.value.intersect(r.value)
+					return {
+						key: optional,
+						value:
+							value instanceof Disjoint ? (l.$.builtin.never as never) : value
+					}
 				}
 			}
-		}
-	})
+		})
 
 	readonly hasOpenIntersection = true
 	serializedKey = compileSerializedValue(this.key)

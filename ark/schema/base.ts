@@ -49,14 +49,13 @@ import {
 	refinementKinds,
 	setKinds,
 	typeKinds,
-	type BaseNodeImplementationInput,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
 	type RefinementKind,
 	type SetKind,
 	type TypeKind,
-	type nodeImplementationInputOf,
+	type UnknownNodeImplementation,
 	type nodeImplementationOf
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -104,7 +103,7 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 
 export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 	{
-		readonly implementation: nodeImplementationInputOf<d>
+		readonly implementation: nodeImplementationOf<d>
 	}
 
 export const isNode = (value: unknown): value is Node =>
@@ -133,16 +132,16 @@ export abstract class BaseNode<
 > extends DynamicBase<attachmentsOf<d>> {
 	protected static implement<self>(
 		this: self,
-		implementation: nodeImplementationInputOf<declarationOf<self>>
-	): nodeImplementationOf<kindOf<self>>
+		implementation: nodeImplementationOf<declarationOf<self>>
+	): nodeImplementationOf<declarationOf<self>>
 	// typing the parameter as any is required for signature compatibility
 	protected static implement(_: never): any {
-		const implementation: BaseNodeImplementationInput = _
+		const implementation: UnknownNodeImplementation = _
 		implementation.defaults.error ??= (ctx) => `must be ${ctx.expected}`
 		return implementation
 	}
 
-	private readonly impl: BaseNodeImplementationInput = (this.constructor as any)
+	private readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation
 
 	readonly includesMorph: boolean =

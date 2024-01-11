@@ -8,7 +8,11 @@ import type {
 import type { Node, UnknownNode } from "../base.js"
 import type { Declaration, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { BaseNodeConfig, NodeConfig, ScopeNode } from "../scope.js"
+import type {
+	NodeConfig,
+	ParsedUnknownNodeConfig,
+	ScopeNode
+} from "../scope.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
@@ -141,32 +145,25 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	) => Node | undefined
 }
 
-export interface BaseNodeImplementationInput
+export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	intersections: Record<
 		string,
 		(l: any, r: any) => Inner<any> | Disjoint | null
 	>
-	defaults: BaseNodeConfig
+	defaults: ParsedUnknownNodeConfig
 }
 
-export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
+export interface nodeImplementationOf<d extends BaseNodeDeclaration>
 	extends CommonNodeImplementationInput<d> {
 	intersections: NodeIntersections<d>
-	defaults: requireKeys<NodeConfig<d["kind"]>, "expected">
+	defaults: NodeConfig<d["kind"]>
 }
 
-export type BaseNodeImplementation = BaseNodeImplementationInput
-
-export type nodeImplementationOf<kind extends NodeKind> =
-	nodeImplementationInputOf<Declaration<kind>> & {
-		defaults: parsedNodeConfigOf<kind>
-	}
-
-export type parsedNodeConfigOf<kind extends NodeKind> = Required<
+export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 	NodeConfig<kind>
 >
 
-export type NodeDescriptionWriter<kind extends NodeKind = NodeKind> = (
+export type NodeExpectedWriter<kind extends NodeKind = NodeKind> = (
 	inner: NodeKind extends kind ? any : Inner<kind>
 ) => string

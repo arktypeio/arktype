@@ -13,11 +13,7 @@ import type {
 	declareNode,
 	withBaseMeta
 } from "../shared/declare.js"
-import type {
-	BoundKind,
-	nodeImplementationInputOf,
-	nodeImplementationOf
-} from "../shared/define.js"
+import type { BoundKind, nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseRefinement } from "./refinement.js"
@@ -113,10 +109,10 @@ export abstract class BaseBound<
 
 	static implementBound<d extends Declaration<BoundKind>>(
 		implementation: optionalizeKeys<
-			nodeImplementationInputOf<d>,
+			nodeImplementationOf<d>,
 			"collapseKey" | "keys" | "normalize"
 		>
-	): nodeImplementationOf<d["kind"]> {
+	): nodeImplementationOf<d> {
 		return {
 			collapseKey: "limit",
 			keys: {
@@ -181,14 +177,15 @@ export type MinDeclaration = declareNode<{
 }>
 
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
-	static implementation: nodeImplementationOf<"min"> = this.implementBound({
-		intersections: createLowerIntersections("min"),
-		defaults: {
-			expected(node) {
-				return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
+	static implementation: nodeImplementationOf<MinDeclaration> =
+		this.implementBound({
+			intersections: createLowerIntersections("min"),
+			defaults: {
+				expected(node) {
+					return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
+				}
 			}
-		}
-	})
+		})
 
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.limit
@@ -209,14 +206,15 @@ export type MaxDeclaration = declareNode<{
 }>
 
 export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
-	static implementation: nodeImplementationOf<"max"> = this.implementBound({
-		intersections: createUpperIntersections("max"),
-		defaults: {
-			expected(node) {
-				return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
+	static implementation: nodeImplementationOf<MaxDeclaration> =
+		this.implementBound({
+			intersections: createUpperIntersections("max"),
+			defaults: {
+				expected(node) {
+					return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
+				}
 			}
-		}
-	})
+		})
 
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.limit
@@ -255,7 +253,7 @@ export class MinLengthNode extends BaseLengthBound<
 	MinLengthDeclaration,
 	typeof MinLengthNode
 > {
-	static implementation: nodeImplementationOf<"minLength"> =
+	static implementation: nodeImplementationOf<MinLengthDeclaration> =
 		this.implementBound({
 			intersections: createLowerIntersections("minLength"),
 			defaults: {
@@ -295,7 +293,7 @@ export class MaxLengthNode extends BaseLengthBound<
 	MaxLengthDeclaration,
 	typeof MaxLengthNode
 > {
-	static implementation: nodeImplementationOf<"maxLength"> =
+	static implementation: nodeImplementationOf<MaxLengthDeclaration> =
 		this.implementBound({
 			intersections: createUpperIntersections("maxLength"),
 			defaults: {
@@ -356,20 +354,21 @@ export class AfterNode extends BaseDateBound<
 	AfterDeclaration,
 	typeof AfterNode
 > {
-	static implementation: nodeImplementationOf<"after"> = this.implementBound({
-		intersections: createLowerIntersections("after"),
-		defaults: {
-			expected(inner) {
-				const limitString = dateLimitToString(inner.limit)
-				return inner.exclusive
-					? `after ${limitString}`
-					: `${limitString} or later`
+	static implementation: nodeImplementationOf<AfterDeclaration> =
+		this.implementBound({
+			intersections: createLowerIntersections("after"),
+			defaults: {
+				expected(inner) {
+					const limitString = dateLimitToString(inner.limit)
+					return inner.exclusive
+						? `after ${limitString}`
+						: `${limitString} or later`
+				}
+				// describeActual(data) {
+				// 	return data.toLocaleString()
+				// }
 			}
-			// describeActual(data) {
-			// 	return data.toLocaleString()
-			// }
-		}
-	})
+		})
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.numericLimit
@@ -393,20 +392,21 @@ export class BeforeNode extends BaseDateBound<
 	BeforeDeclaration,
 	typeof BeforeNode
 > {
-	static implementation: nodeImplementationOf<"before"> = this.implementBound({
-		intersections: createUpperIntersections("before"),
-		defaults: {
-			expected(inner) {
-				const limitString = dateLimitToString(inner.limit)
-				return inner.exclusive
-					? `before ${limitString}`
-					: `${limitString} or earlier`
+	static implementation: nodeImplementationOf<BeforeDeclaration> =
+		this.implementBound({
+			intersections: createUpperIntersections("before"),
+			defaults: {
+				expected(inner) {
+					const limitString = dateLimitToString(inner.limit)
+					return inner.exclusive
+						? `before ${limitString}`
+						: `${limitString} or earlier`
+				}
+				// describeActual(data) {
+				// 	return data.toLocaleString()
+				// }
 			}
-			// describeActual(data) {
-			// 	return data.toLocaleString()
-			// }
-		}
-	})
+		})
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.numericLimit

@@ -56,51 +56,52 @@ export class SequenceNode extends BaseProp<
 	SequenceDeclaration,
 	typeof SequenceNode
 > {
-	static implementation: nodeImplementationOf<"sequence"> = this.implement({
-		collapseKey: "element",
-		keys: {
-			prefix: fixedSequenceKeyDefinition,
-			element: {
-				child: true,
-				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+	static implementation: nodeImplementationOf<SequenceDeclaration> =
+		this.implement({
+			collapseKey: "element",
+			keys: {
+				prefix: fixedSequenceKeyDefinition,
+				element: {
+					child: true,
+					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+				},
+				postfix: fixedSequenceKeyDefinition
 			},
-			postfix: fixedSequenceKeyDefinition
-		},
-		normalize: (schema) =>
-			typeof schema === "object" && "element" in schema
-				? schema
-				: { element: schema },
-		reduce: (inner, meta, scope) => {
-			if (!inner.postfix) {
-				return
+			normalize: (schema) =>
+				typeof schema === "object" && "element" in schema
+					? schema
+					: { element: schema },
+			reduce: (inner, meta, scope) => {
+				if (!inner.postfix) {
+					return
+				}
+				const postfix = inner.postfix.slice()
+				const prefix = inner.prefix?.slice() ?? []
+				while (postfix[0]?.equals(inner.element)) {
+					prefix.push(postfix.shift()!)
+				}
+				if (postfix.length < inner.postfix.length) {
+					return scope.parsePrereduced("sequence", {
+						...meta,
+						...inner,
+						// empty lists will be omitted during normalization
+						prefix,
+						postfix
+					})
+				}
+			},
+			intersections: {
+				sequence: (l) => l
+			},
+			defaults: {
+				expected(inner) {
+					const parts = inner.prefix?.map(String) ?? []
+					parts.push(`zero or more elements containing ${inner.element}`)
+					inner.postfix?.forEach((node) => parts.push(String(node)))
+					return `an array of ${parts.join(" followed by ")}`
+				}
 			}
-			const postfix = inner.postfix.slice()
-			const prefix = inner.prefix?.slice() ?? []
-			while (postfix[0]?.equals(inner.element)) {
-				prefix.push(postfix.shift()!)
-			}
-			if (postfix.length < inner.postfix.length) {
-				return scope.parsePrereduced("sequence", {
-					...meta,
-					...inner,
-					// empty lists will be omitted during normalization
-					prefix,
-					postfix
-				})
-			}
-		},
-		intersections: {
-			sequence: (l) => l
-		},
-		defaults: {
-			expected(inner) {
-				const parts = inner.prefix?.map(String) ?? []
-				parts.push(`zero or more elements containing ${inner.element}`)
-				inner.postfix?.forEach((node) => parts.push(String(node)))
-				return `an array of ${parts.join(" followed by ")}`
-			}
-		}
-	})
+		})
 
 	readonly hasOpenIntersection = false
 	prefixLength = this.prefix?.length ?? 0

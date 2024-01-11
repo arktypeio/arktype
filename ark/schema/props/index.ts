@@ -31,27 +31,28 @@ export type IndexDeclaration = declareNode<{
 }>
 
 export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
-	static implementation: nodeImplementationOf<"index"> = this.implement({
-		keys: {
-			key: {
-				child: true,
-				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+	static implementation: nodeImplementationOf<IndexDeclaration> =
+		this.implement({
+			keys: {
+				key: {
+					child: true,
+					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+				},
+				value: {
+					child: true,
+					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+				}
 			},
-			value: {
-				child: true,
-				parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+			normalize: (schema) => schema,
+			intersections: {
+				index: (l) => l
+			},
+			defaults: {
+				expected(inner) {
+					return `[${inner.key}]: ${inner.value}`
+				}
 			}
-		},
-		normalize: (schema) => schema,
-		intersections: {
-			index: (l) => l
-		},
-		defaults: {
-			expected(inner) {
-				return `[${inner.key}]: ${inner.value}`
-			}
-		}
-	})
+		})
 
 	readonly hasOpenIntersection = true
 

@@ -20,7 +20,7 @@ import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type {
-	NodeDescriptionWriter,
+	NodeExpectedWriter,
 	NodeKind,
 	PrimitiveKind,
 	TypeKind
@@ -53,27 +53,25 @@ declare global {
 }
 
 type NodeConfigsByKind = {
-	[kind in NodeKind]: evaluate<
-		BaseConfigOptions<kind> & ErrorConfigOptions<kind>
-	>
+	[kind in NodeKind]: nodeConfigForKind<kind>
 }
 
-type BaseConfigOptions<kind extends NodeKind> = {
-	expected?: NodeDescriptionWriter<kind>
-}
-
-type ErrorConfigOptions<kind extends NodeKind> = kind extends NodeKindWithError
-	? {
-			error?: ArkErrorWriter<kind>
-			actual?: ArkActualWriter<kind>
-		}
-	: {}
+type nodeConfigForKind<kind extends NodeKind> = evaluate<
+	{
+		expected?: NodeExpectedWriter<kind>
+	} & (kind extends NodeKindWithError
+		? {
+				error?: ArkErrorWriter<kind>
+				actual?: ArkActualWriter<kind>
+			}
+		: {})
+>
 
 export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]
 
-export type BaseNodeConfig = {
-	expected: NodeDescriptionWriter
+export type ParsedUnknownNodeConfig = {
+	expected: NodeExpectedWriter
 	error?: ArkErrorWriter
 	actual?: ArkActualWriter
 }

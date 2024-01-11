@@ -68,107 +68,108 @@ export class UnionNode<t = unknown> extends BaseType<
 	UnionDeclaration,
 	typeof UnionNode
 > {
-	static implementation: nodeImplementationOf<"union"> = this.implement({
-		collapseKey: "branches",
-		keys: {
-			ordered: {},
-			branches: {
-				child: true,
-				parse: (schema, ctx) => {
-					const branches = schema.map((branch) =>
-						ctx.$.parseTypeNode(branch, [
-							"morph",
-							"intersection",
-							...basisKinds
-						])
-					)
-					const def = ctx.definition as UnionSchema
-					if (isArray(def) || def.ordered !== true) {
-						branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
-					}
-					return branches
-				}
-			}
-		},
-		normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
-		reduce: (inner, meta, scope) => {
-			const reducedBranches = reduceBranches(inner)
-			if (reducedBranches.length === 1) {
-				// TODO: description?
-				return reducedBranches[0]
-			}
-			if (reducedBranches.length === inner.branches.length) {
-				return
-			}
-			return scope.parsePrereduced("union", {
-				...meta,
-				...inner,
-				branches: reducedBranches
-			})
-		},
-		intersections: {
-			union: (l, r) => {
-				if (
-					(l.branches.length === 0 || r.branches.length === 0) &&
-					l.branches.length !== r.branches.length
-				) {
-					// if exactly one operand is never, we can use it to discriminate based on presence
-					return Disjoint.from(
-						"presence",
-						l.branches.length !== 0,
-						r.branches.length !== 0
-					)
-				}
-				let resultBranches: readonly BranchNode[] | Disjoint
-				if (l.ordered) {
-					if (r.ordered) {
-						return Disjoint.from("indiscriminableMorphs", l, r)
-					}
-					resultBranches = intersectBranches(r.branches, l.branches)
-					if (resultBranches instanceof Disjoint) {
-						resultBranches.invert()
-					}
-				} else {
-					resultBranches = intersectBranches(l.branches, r.branches)
-				}
-				if (resultBranches instanceof Disjoint) {
-					return resultBranches
-				}
-				return l.ordered || r.ordered
-					? {
-							branches: resultBranches,
-							ordered: true as const
+	static implementation: nodeImplementationOf<UnionDeclaration> =
+		this.implement({
+			collapseKey: "branches",
+			keys: {
+				ordered: {},
+				branches: {
+					child: true,
+					parse: (schema, ctx) => {
+						const branches = schema.map((branch) =>
+							ctx.$.parseTypeNode(branch, [
+								"morph",
+								"intersection",
+								...basisKinds
+							])
+						)
+						const def = ctx.definition as UnionSchema
+						if (isArray(def) || def.ordered !== true) {
+							branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
 						}
-					: { branches: resultBranches }
-			},
-			morph: intersectBranch,
-			intersection: intersectBranch,
-			default: (l, r) => {
-				const branches: BranchNode[] = []
-				for (const branch of l.branches) {
-					const branchResult = branch.intersect(r)
-					if (!(branchResult instanceof Disjoint)) {
-						branches.push(branchResult)
+						return branches
 					}
 				}
-				return branches.length === 0
-					? Disjoint.from("union", l.branches, [r])
-					: l.ordered
+			},
+			normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
+			reduce: (inner, meta, scope) => {
+				const reducedBranches = reduceBranches(inner)
+				if (reducedBranches.length === 1) {
+					// TODO: description?
+					return reducedBranches[0]
+				}
+				if (reducedBranches.length === inner.branches.length) {
+					return
+				}
+				return scope.parsePrereduced("union", {
+					...meta,
+					...inner,
+					branches: reducedBranches
+				})
+			},
+			intersections: {
+				union: (l, r) => {
+					if (
+						(l.branches.length === 0 || r.branches.length === 0) &&
+						l.branches.length !== r.branches.length
+					) {
+						// if exactly one operand is never, we can use it to discriminate based on presence
+						return Disjoint.from(
+							"presence",
+							l.branches.length !== 0,
+							r.branches.length !== 0
+						)
+					}
+					let resultBranches: readonly BranchNode[] | Disjoint
+					if (l.ordered) {
+						if (r.ordered) {
+							return Disjoint.from("indiscriminableMorphs", l, r)
+						}
+						resultBranches = intersectBranches(r.branches, l.branches)
+						if (resultBranches instanceof Disjoint) {
+							resultBranches.invert()
+						}
+					} else {
+						resultBranches = intersectBranches(l.branches, r.branches)
+					}
+					if (resultBranches instanceof Disjoint) {
+						return resultBranches
+					}
+					return l.ordered || r.ordered
 						? {
-								branches,
+								branches: resultBranches,
 								ordered: true as const
 							}
-						: { branches }
+						: { branches: resultBranches }
+				},
+				morph: intersectBranch,
+				intersection: intersectBranch,
+				default: (l, r) => {
+					const branches: BranchNode[] = []
+					for (const branch of l.branches) {
+						const branchResult = branch.intersect(r)
+						if (!(branchResult instanceof Disjoint)) {
+							branches.push(branchResult)
+						}
+					}
+					return branches.length === 0
+						? Disjoint.from("union", l.branches, [r])
+						: l.ordered
+							? {
+									branches,
+									ordered: true as const
+								}
+							: { branches }
+				}
+			},
+			defaults: {
+				expected(inner) {
+					return inner.branches.length === 0
+						? "never"
+						: inner.branches.join(" or ")
+				}
 			}
-		},
-		defaults: {
-			expected(inner) {
-				return inner.branches.length === 0
-					? "never"
-					: inner.branches.join(" or ")
-			}
-		}
-	})
+		})
 
 	discriminant: Discriminant | null = null //discriminate(inner.branches)
 

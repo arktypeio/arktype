@@ -111,119 +111,123 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	IntersectionDeclaration,
 	typeof IntersectionNode
 > {
-	static implementation: nodeImplementationOf<"intersection"> = this.implement({
-		normalize: (def) => def,
-		addContext: (ctx) => {
-			const def = ctx.definition as IntersectionSchema
-			ctx.basis = def.basis && ctx.$.parseTypeNode(def.basis, basisKinds)
-		},
-		keys: {
-			basis: {
-				child: true,
-				// the basis has already been preparsed and added to context
-				parse: (_, ctx) => ctx.basis
+	static implementation: nodeImplementationOf<IntersectionDeclaration> =
+		this.implement({
+			normalize: (def) => def,
+			addContext: (ctx) => {
+				const def = ctx.definition as IntersectionSchema
+				ctx.basis = def.basis && ctx.$.parseTypeNode(def.basis, basisKinds)
 			},
-			divisor: {
-				child: true,
-				parse: (def, ctx) => parseClosedComponent("divisor", def, ctx)
-			},
-			max: {
-				child: true,
-				parse: (def, ctx) => parseClosedComponent("max", def, ctx)
-			},
-			min: {
-				child: true,
-				parse: (def, ctx) => parseClosedComponent("min", def, ctx)
-			},
-			maxLength: {
-				child: true,
-				parse: (def, ctx) => parseClosedComponent("maxLength", def, ctx)
-			},
-			minLength: {
-				child: true,
-				parse: (def, ctx) => parseClosedComponent("minLength", def, ctx)
-			},
-			before: {
-				child: true,
-				parse: (def, ctx) => parseClosedComponent("before", def, ctx)
-			},
-			after: {
-				child: true,
-				parse: (def, ctx) => parseClosedComponent("after", def, ctx)
-			},
-			pattern: {
-				child: true,
-				parse: (def, ctx) => parseOpenComponent("pattern", def, ctx)
-			},
-			predicate: {
-				child: true,
-				parse: (def, ctx) => parseOpenComponent("predicate", def, ctx)
-			},
-			optional: {
-				child: true,
-				parse: (def, ctx) => parseOpenComponent("optional", def, ctx)
-			},
-			required: {
-				child: true,
-				parse: (def, ctx) => parseOpenComponent("required", def, ctx)
-			},
-			index: {
-				child: true,
-				parse: (def, ctx) => parseOpenComponent("index", def, ctx)
-			},
-			sequence: {
-				child: true,
-				parse: (def, ctx) => parseClosedComponent("sequence", def, ctx)
-			}
-		},
-		reduce: (inner, meta, scope) => {
-			const inputConstraints = Object.values(inner).flat() as ConstraintSet
-			const reducedConstraints = reduceConstraints([], inputConstraints)
-			if (reducedConstraints instanceof Disjoint) {
-				return reducedConstraints.throw()
-			}
-			if (reducedConstraints.length === 1 && reducedConstraints[0].isBasis()) {
-				// TODO: description?
-				return reducedConstraints[0]
-			}
-			if (reducedConstraints.length === inputConstraints.length) {
-				return
-			}
-			const reducedSchema = Object.assign(
-				unflattenConstraints(reducedConstraints),
-				meta
-			)
-			return scope.parsePrereduced("intersection", reducedSchema)
-		},
-		intersections: {
-			intersection: (l, r) => {
-				let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
-				for (const refinement of r.constraints) {
-					if (result instanceof Disjoint) {
-						break
-					}
-					result = addConstraint(result, refinement)
+			keys: {
+				basis: {
+					child: true,
+					// the basis has already been preparsed and added to context
+					parse: (_, ctx) => ctx.basis
+				},
+				divisor: {
+					child: true,
+					parse: (def, ctx) => parseClosedComponent("divisor", def, ctx)
+				},
+				max: {
+					child: true,
+					parse: (def, ctx) => parseClosedComponent("max", def, ctx)
+				},
+				min: {
+					child: true,
+					parse: (def, ctx) => parseClosedComponent("min", def, ctx)
+				},
+				maxLength: {
+					child: true,
+					parse: (def, ctx) => parseClosedComponent("maxLength", def, ctx)
+				},
+				minLength: {
+					child: true,
+					parse: (def, ctx) => parseClosedComponent("minLength", def, ctx)
+				},
+				before: {
+					child: true,
+					parse: (def, ctx) => parseClosedComponent("before", def, ctx)
+				},
+				after: {
+					child: true,
+					parse: (def, ctx) => parseClosedComponent("after", def, ctx)
+				},
+				pattern: {
+					child: true,
+					parse: (def, ctx) => parseOpenComponent("pattern", def, ctx)
+				},
+				predicate: {
+					child: true,
+					parse: (def, ctx) => parseOpenComponent("predicate", def, ctx)
+				},
+				optional: {
+					child: true,
+					parse: (def, ctx) => parseOpenComponent("optional", def, ctx)
+				},
+				required: {
+					child: true,
+					parse: (def, ctx) => parseOpenComponent("required", def, ctx)
+				},
+				index: {
+					child: true,
+					parse: (def, ctx) => parseOpenComponent("index", def, ctx)
+				},
+				sequence: {
+					child: true,
+					parse: (def, ctx) => parseClosedComponent("sequence", def, ctx)
 				}
-				return result instanceof Disjoint
-					? result
-					: unflattenConstraints(result)
 			},
-			default: (l, r) => {
-				const result = addConstraint(l.constraints, r)
-				return result instanceof Disjoint
-					? result
-					: unflattenConstraints(result)
+			reduce: (inner, meta, scope) => {
+				const inputConstraints = Object.values(inner).flat() as ConstraintSet
+				const reducedConstraints = reduceConstraints([], inputConstraints)
+				if (reducedConstraints instanceof Disjoint) {
+					return reducedConstraints.throw()
+				}
+				if (
+					reducedConstraints.length === 1 &&
+					reducedConstraints[0].isBasis()
+				) {
+					// TODO: description?
+					return reducedConstraints[0]
+				}
+				if (reducedConstraints.length === inputConstraints.length) {
+					return
+				}
+				const reducedSchema = Object.assign(
+					unflattenConstraints(reducedConstraints),
+					meta
+				)
+				return scope.parsePrereduced("intersection", reducedSchema)
+			},
+			intersections: {
+				intersection: (l, r) => {
+					let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
+					for (const refinement of r.constraints) {
+						if (result instanceof Disjoint) {
+							break
+						}
+						result = addConstraint(result, refinement)
+					}
+					return result instanceof Disjoint
+						? result
+						: unflattenConstraints(result)
+				},
+				default: (l, r) => {
+					const result = addConstraint(l.constraints, r)
+					return result instanceof Disjoint
+						? result
+						: unflattenConstraints(result)
+				}
+			},
+			defaults: {
+				expected(inner) {
+					const constraints = Object.values(inner)
+					return constraints.length === 0
+						? "an unknown value"
+						: constraints.join(" and ")
+				}
 			}
-		},
-		defaults: {
-			expected(inner) {
-				const constraints = Object.values(inner)
-				return constraints.length === 0
-					? "an unknown value"
-					: constraints.join(" and ")
-			}
-		}
-	})
+		})
 
 	readonly constraints: ConstraintSet = Object.values(this.inner).flat()
 
