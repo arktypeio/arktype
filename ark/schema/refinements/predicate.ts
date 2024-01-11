@@ -49,7 +49,9 @@ export class PredicateNode extends BaseRefinement<
 		defaults: {
 			expected(inner) {
 				return `valid according to ${inner.predicate.name}`
-			}
+			},
+			actual: this.defaultActual,
+			problem: this.defaultProblem
 		}
 	})
 

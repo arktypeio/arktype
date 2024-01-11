@@ -52,7 +52,9 @@ export class DivisorNode extends BaseRefinement<
 				return inner.divisor === 1
 					? "an integer"
 					: `a multiple of ${inner.divisor}`
-			}
+			},
+			actual: this.defaultActual,
+			problem: this.defaultProblem
 		}
 	})
 

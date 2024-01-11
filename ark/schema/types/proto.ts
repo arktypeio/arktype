@@ -58,9 +58,10 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 					? objectKindDescriptions[knownObjectKind]
 					: `an instance of ${inner.proto.name}`
 			},
-			error(ctx) {
-				return `must be ${ctx.expected} (was ${objectKindOrDomainOf(ctx.data)})`
-			}
+			actual(data) {
+				return objectKindOrDomainOf(data)
+			},
+			problem: this.defaultProblem
 		},
 		intersections: {
 			proto: (l, r) =>

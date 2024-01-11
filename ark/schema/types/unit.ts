@@ -44,7 +44,9 @@ export class UnitNode<t = unknown> extends BaseBasis<
 		defaults: {
 			expected(inner) {
 				return printable(inner.unit)
-			}
+			},
+			actual: this.defaultActual,
+			problem: this.defaultProblem
 		}
 	})
 

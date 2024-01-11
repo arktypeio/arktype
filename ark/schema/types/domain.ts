@@ -47,9 +47,10 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			expected(inner) {
 				return domainDescriptions[inner.domain]
 			},
-			error(ctx) {
-				return `must be ${ctx.expected} (was ${domainOf(ctx.data)})`
-			}
+			actual(data) {
+				return domainOf(data)
+			},
+			problem: this.defaultProblem
 		},
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r)

@@ -77,7 +77,9 @@ export class RequiredNode extends BaseProp<
 			defaults: {
 				expected(inner) {
 					return `${compileKey(inner.key)}: ${inner.value}`
-				}
+				},
+				actual: "omit",
+				problem: this.defaultProblem
 			}
 		})
 

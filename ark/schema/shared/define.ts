@@ -157,7 +157,7 @@ export interface UnknownNodeImplementation
 export interface nodeImplementationOf<d extends BaseNodeDeclaration>
 	extends CommonNodeImplementationInput<d> {
 	intersections: NodeIntersections<d>
-	defaults: NodeConfig<d["kind"]>
+	defaults: nodeDefaultsImplementationFor<d["kind"]>
 }
 
 export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<

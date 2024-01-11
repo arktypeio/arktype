@@ -1,6 +1,5 @@
 import {
 	CompiledFunction,
-	entriesOf,
 	isArray,
 	printable,
 	throwInternalError,
@@ -17,7 +16,7 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
-import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
+import type { Schema, reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type {
 	NodeExpectedWriter,
@@ -28,7 +27,7 @@ import type {
 import type { TraversalContext } from "./traversal/context.js"
 import type {
 	ArkActualWriter,
-	ArkErrorWriter,
+	ArkProblemWriter,
 	NodeKindWithError
 } from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
@@ -61,8 +60,8 @@ type nodeConfigForKind<kind extends NodeKind> = evaluate<
 		expected?: NodeExpectedWriter<kind>
 	} & (kind extends NodeKindWithError
 		? {
-				error?: ArkErrorWriter<kind>
-				actual?: ArkActualWriter<kind>
+				problem?: ArkProblemWriter<kind>
+				actual?: "omit" | ArkActualWriter<kind>
 			}
 		: {})
 >
@@ -72,31 +71,9 @@ export type NodeConfig<kind extends NodeKind = NodeKind> =
 
 export type ParsedUnknownNodeConfig = {
 	expected: NodeExpectedWriter
-	error?: ArkErrorWriter
-	actual?: ArkActualWriter
+	problem?: ArkProblemWriter
+	actual?: "omit" | ArkActualWriter
 }
-
-for (const [kind, subclass] of entriesOf(nodesByKind)) {
-	// TODO: nullish assign default to actual and error
-	subclass
-}
-
-// export const configure = (config: ArkConfig): ParsedArkConfig => {
-// 	return {
-// 		descriptions: defaultDescriptionWriters,
-// 		codes: defaultErrorsConfig,
-// 		keys: "loose"
-// 	}
-// }
-
-// const config: ArkConfig = {
-// 	codes: {
-// 		divisor: {
-// 			expected: (ctx) => `divisible by ${ctx.divisor}`,
-// 			message: (ctx) => `Must be ${ctx.expected} (was ${ctx.data})`
-// 		}
-// 	}
-// }
 
 export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]

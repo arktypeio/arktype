@@ -2,6 +2,7 @@ import {
 	DynamicBase,
 	includes,
 	isArray,
+	printable,
 	throwInternalError,
 	type Constructor,
 	type Dict,
@@ -61,7 +62,11 @@ import {
 import { Disjoint } from "./shared/disjoint.js"
 import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
 import { TraversalContext } from "./traversal/context.js"
-import type { ArkResult } from "./traversal/errors.js"
+import type {
+	ArkActualWriter,
+	ArkProblemWriter,
+	ArkResult
+} from "./traversal/errors.js"
 import type { DomainNode } from "./types/domain.js"
 import type {
 	IntersectionInner,
@@ -134,12 +139,15 @@ export abstract class BaseNode<
 		this: self,
 		implementation: nodeImplementationOf<declarationOf<self>>
 	): nodeImplementationOf<declarationOf<self>>
-	// typing the parameter as any is required for signature compatibility
-	protected static implement(_: never): any {
-		const implementation: UnknownNodeImplementation = _
-		implementation.defaults.error ??= (ctx) => `must be ${ctx.expected}`
+	// typing the parameter as never is required for signature compatibility
+	protected static implement(implementation: never) {
 		return implementation
 	}
+
+	protected static defaultProblem: ArkProblemWriter = (ctx) =>
+		`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+
+	protected static defaultActual: ArkActualWriter = (data) => printable(data)
 
 	private readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation

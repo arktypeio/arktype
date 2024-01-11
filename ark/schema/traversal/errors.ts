@@ -178,6 +178,11 @@ export type ArkExpectedContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	"expected"
 >
 
+export type ArkProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
+	ArkErrorContext<code>,
+	"problem"
+>
+
 type ArkErrorInputByCode = {
 	[code in ArkErrorCode]: optionalizeKeys<
 		ArkErrorContextsByCode[code],
@@ -188,7 +193,7 @@ type ArkErrorInputByCode = {
 export type ArkErrorInput<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorInputByCode[code]
 
-export type ArkErrorWriter<code extends ArkErrorCode = ArkErrorCode> = (
+export type ArkProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	context: ArkErrorContext<code>
 ) => string
 

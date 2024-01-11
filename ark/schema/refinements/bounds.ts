@@ -183,7 +183,9 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 			defaults: {
 				expected(node) {
 					return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
-				}
+				},
+				actual: this.defaultActual,
+				problem: this.defaultProblem
 			}
 		})
 
@@ -212,7 +214,9 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 			defaults: {
 				expected(node) {
 					return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
-				}
+				},
+				actual: this.defaultActual,
+				problem: this.defaultProblem
 			}
 		})
 
@@ -265,10 +269,9 @@ export class MinLengthNode extends BaseLengthBound<
 						: node.limit === 1
 							? "non-empty"
 							: `at least length ${node.limit}`
-				}
-				// describeActual(data) {
-				// 	return `${data.length}`
-				// }
+				},
+				actual: (data) => `${data.length}`,
+				problem: this.defaultProblem
 			}
 		})
 
@@ -301,10 +304,9 @@ export class MaxLengthNode extends BaseLengthBound<
 					return node.exclusive
 						? `less than length ${node.limit}`
 						: `at most length ${node.limit}`
-				}
-				// describeActual(data) {
-				// 	return `${data.length}`
-				// }
+				},
+				actual: (data) => `${data.length}`,
+				problem: this.defaultProblem
 			}
 		})
 
@@ -363,10 +365,9 @@ export class AfterNode extends BaseDateBound<
 					return inner.exclusive
 						? `after ${limitString}`
 						: `${limitString} or later`
-				}
-				// describeActual(data) {
-				// 	return data.toLocaleString()
-				// }
+				},
+				actual: (data) => data.toLocaleString(),
+				problem: this.defaultProblem
 			}
 		})
 
@@ -401,10 +402,9 @@ export class BeforeNode extends BaseDateBound<
 					return inner.exclusive
 						? `before ${limitString}`
 						: `${limitString} or earlier`
-				}
-				// describeActual(data) {
-				// 	return data.toLocaleString()
-				// }
+				},
+				actual: (data) => data.toLocaleString(),
+				problem: this.defaultProblem
 			}
 		})
 
