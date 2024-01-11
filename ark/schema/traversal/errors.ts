@@ -80,13 +80,16 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	): ArkTypeError {
 		const data = this.ctx.data
 		if (!includes(nodeKinds, codeOrExpected)) {
-			// treat as the description of a custom error
+			// treat as the "expected" of a custom error
 			const error = new ArkTypeError("predicate", {
 				path: [...this.ctx.path],
 				data,
 				expected: codeOrExpected,
 				get actual() {
 					return printable(data)
+				},
+				get problem() {
+					return `${codeOrExpected} ${this.actual}`
 				}
 			})
 			this.mutable.push(error)
