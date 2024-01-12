@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.29-alpha
+
+### Patch Changes
+
+-   fix: don't freeze definitions for compatibility with sass
+
 ## 1.0.28-alpha
 
 ### Patch Changes
