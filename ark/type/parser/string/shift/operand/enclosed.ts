@@ -35,7 +35,7 @@ export const parseEnclosed = (
 		s.root = schema({ unit: enclosed })
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = schema({ unit: date, expected: token })
+		s.root = schema({ unit: date, description: token })
 	}
 }
 

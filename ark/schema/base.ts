@@ -58,16 +58,18 @@ import {
 	type SetKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
+	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
 import { TraversalContext } from "./traversal/context.js"
 import type {
-	ArkActualWriter,
-	ArkMessageWriter,
-	ArkProblemWriter,
-	ArkResult
+	ActualWriter,
+	ArkResult,
+	ExpectedWriter,
+	MessageWriter,
+	ProblemWriter
 } from "./traversal/errors.js"
 import type { DomainNode } from "./types/domain.js"
 import type {
@@ -139,24 +141,21 @@ export abstract class BaseNode<
 > extends DynamicBase<attachmentsOf<d>> {
 	protected static implement<self>(
 		this: self,
-		implementation: nodeImplementationOf<declarationOf<self>>
+		implementation: nodeImplementationInputOf<declarationOf<self>>
 	): nodeImplementationOf<declarationOf<self>>
-	// typing the parameter as never is required for signature compatibility
-	protected static implement(implementation: never) {
+	protected static implement(_: never): any {
+		const implementation: UnknownNodeImplementation = _
+		implementation.defaults.actual ??= (data) => printable(data)
+		implementation.defaults.problem ??= (ctx) =>
+			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+		implementation.defaults.message ??= (ctx) =>
+			ctx.path.length === 0
+				? capitalize(ctx.problem)
+				: ctx.path.length === 1 && typeof ctx.path[0] === "number"
+				? `Item at index ${ctx.path[0]} ${ctx.problem}`
+				: `${ctx.path} ${ctx.problem}`
 		return implementation
 	}
-
-	protected static defaultActual: ArkActualWriter = (data) => printable(data)
-
-	protected static defaultProblem: ArkProblemWriter = (ctx) =>
-		`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-
-	protected static defaultMessage: ArkMessageWriter = (ctx) =>
-		ctx.path.length === 0
-			? capitalize(ctx.problem)
-			: ctx.path.length === 1 && typeof ctx.path[0] === "number"
-			? `Item at index ${ctx.path[0]} ${ctx.problem}`
-			: `${ctx.path} ${ctx.problem}`
 
 	private readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation
@@ -218,7 +217,7 @@ export abstract class BaseNode<
 	private descriptionCache?: string
 	get expected() {
 		this.descriptionCache ??=
-			this.meta.expected ?? this.impl.defaults.expected(this as never)
+			this.meta.description ?? this.impl.defaults.description(this as never)
 		return this.descriptionCache
 	}
 

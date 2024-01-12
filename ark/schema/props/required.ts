@@ -75,12 +75,10 @@ export class RequiredNode extends BaseProp<
 			normalize: (schema) => schema,
 			intersections: { required: intersectNamed, optional: intersectNamed },
 			defaults: {
-				expected(inner) {
+				description(inner) {
 					return `${compileKey(inner.key)}: ${inner.value}`
 				},
-				actual: () => null,
-				problem: this.defaultProblem,
-				message: this.defaultMessage
+				actual: () => null
 			}
 		})
 

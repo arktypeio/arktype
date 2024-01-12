@@ -154,16 +154,26 @@ export interface UnknownNodeImplementation
 	defaults: ParsedUnknownNodeConfig
 }
 
-export interface nodeImplementationOf<d extends BaseNodeDeclaration>
+export type nodeImplementationOf<d extends BaseNodeDeclaration> =
+	nodeImplementationInputOf<d> & {
+		defaults: nodeDefaultsImplementationFor<d["kind"]>
+	}
+
+export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
 	extends CommonNodeImplementationInput<d> {
 	intersections: NodeIntersections<d>
-	defaults: nodeDefaultsImplementationFor<d["kind"]>
+	defaults: nodeDefaultsImplementationInputFor<d["kind"]>
 }
+
+type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
+	NodeConfig<kind>,
+	"description"
+>
 
 export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 	NodeConfig<kind>
 >
 
-export type NodeExpectedWriter<kind extends NodeKind = NodeKind> = (
+export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	inner: NodeKind extends kind ? any : Inner<kind>
 ) => string

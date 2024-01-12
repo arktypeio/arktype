@@ -33,5 +33,5 @@ export const creditCard = rootSchema({
 	basis: "string",
 	pattern: creditCardMatcher,
 	predicate: isLuhnValid,
-	expected: "a valid credit card number"
+	description: "a valid credit card number"
 })

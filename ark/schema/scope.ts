@@ -21,7 +21,7 @@ import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import {
 	nodeKinds,
-	type NodeExpectedWriter,
+	type DescriptionWriter,
 	type NodeKind,
 	type PrimitiveKind,
 	type TypeKind,
@@ -29,10 +29,11 @@ import {
 } from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
 import type {
-	ArkActualWriter,
+	ActualWriter,
 	ArkErrorCode,
-	ArkMessageWriter,
-	ArkProblemWriter
+	ExpectedWriter,
+	MessageWriter,
+	ProblemWriter
 } from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
 import type { Discriminant } from "./types/discriminate.js"
@@ -56,12 +57,13 @@ declare global {
 
 type nodeConfigForKind<kind extends NodeKind> = evaluate<
 	{
-		expected?: NodeExpectedWriter<kind>
+		description?: DescriptionWriter<kind>
 	} & (kind extends ArkErrorCode
 		? {
-				actual?: ArkActualWriter<kind>
-				problem?: ArkProblemWriter<kind>
-				message?: ArkMessageWriter<kind>
+				expected?: ExpectedWriter<kind>
+				actual?: ActualWriter<kind>
+				problem?: ProblemWriter<kind>
+				message?: MessageWriter<kind>
 		  }
 		: {})
 >
@@ -74,12 +76,17 @@ export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]
 
 type UnknownNodeConfig = {
-	expected?: NodeExpectedWriter
-	problem?: ArkProblemWriter
-	actual?: ArkActualWriter
+	description?: DescriptionWriter
+	expected?: ExpectedWriter
+	actual?: ActualWriter
+	problem?: ProblemWriter
+	message?: MessageWriter
 }
 
-export type ParsedUnknownNodeConfig = requireKeys<UnknownNodeConfig, "expected">
+export type ParsedUnknownNodeConfig = requireKeys<
+	UnknownNodeConfig,
+	"description"
+>
 
 export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]

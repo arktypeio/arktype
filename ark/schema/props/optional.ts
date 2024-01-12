@@ -46,7 +46,7 @@ export class OptionalNode extends BaseProp<
 			},
 			normalize: (schema) => schema,
 			defaults: {
-				expected(inner) {
+				description(inner) {
 					return `${compileKey(inner.key)}?: ${inner.value}`
 				}
 			},

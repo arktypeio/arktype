@@ -94,7 +94,7 @@ export class SequenceNode extends BaseProp<
 				sequence: (l) => l
 			},
 			defaults: {
-				expected(inner) {
+				description(inner) {
 					const parts = inner.prefix?.map(String) ?? []
 					parts.push(`zero or more elements containing ${inner.element}`)
 					inner.postfix?.forEach((node) => parts.push(String(node)))

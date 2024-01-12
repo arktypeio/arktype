@@ -13,7 +13,7 @@ import type { Disjoint } from "./disjoint.js"
 import type { rightOf } from "./intersect.js"
 
 export type BaseMeta = {
-	readonly expected?: string
+	readonly description?: string
 }
 
 export type withBaseMeta<o extends object> = extend<BaseMeta, o>

@@ -22,51 +22,17 @@ export class ArkError extends TypeError {
 	}
 }
 
-export const ContextualArkError = <context extends ArkErrorContext>(
+export const ArkTypeError = <context extends ArkErrorContext>(
 	context: context
 ) => Object.assign(new ArkError(context.message), context)
 
-export interface ContextualArkError<code extends ArkErrorCode = ArkErrorCode>
+// hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
+// 	return this.code === (code as never)
+// }
+
+export interface ArkTypeError<code extends ArkErrorCode = ArkErrorCode>
 	extends ArkError,
 		DynamicBase<ArkErrorContext<code>> {}
-
-export class ArkTypeError<
-	code extends ArkErrorCode = ArkErrorCode
-> extends ArkError {
-	constructor(
-		public code: code,
-		public context: ArkErrorContext<code>
-	) {
-		super()
-	}
-
-	get message() {
-		return this.context.path.length === 0
-			? capitalize(this.expected)
-			: this.context.path.length === 1 &&
-			  typeof this.context.path[0] === "number"
-			? `Item at index ${this.context.path[0]} ${this.expected}`
-			: `${this.context.path} ${this.expected}`
-	}
-
-	get problem() {
-		return `must be ${this.expected}${
-			this.actual ? ` (was ${this.actual})` : ""
-		}`
-	}
-
-	get expected() {
-		return this.context.expected
-	}
-
-	get actual() {
-		return printable(this.context.data)
-	}
-
-	hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
-		return this.code === (code as never)
-	}
-}
 
 export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	constructor(protected ctx: TraversalContext) {
@@ -93,7 +59,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 				data,
 				actual: nodeConfig.actual(data),
 				expected: input
-			} satisfies ArkProblemContext as any
+			} satisfies ProblemContext as any
 			ctx.problem = nodeConfig.problem(ctx as never)
 			ctx.message = nodeConfig.message(ctx as never)
 		} else {
@@ -110,8 +76,8 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 					input.actual !== undefined
 						? input.actual
 						: nodeConfig.actual?.(data as never),
-				expected: input.expected ?? nodeConfig.expected?.(input as never)
-			} satisfies ArkProblemContext as any
+				expected: input.expected ?? nodeConfig.description?.(input as never)
+			} satisfies ProblemContext as any
 			ctx.problem = hasDefinedKey(input, "problem")
 				? input.problem
 				: nodeConfig.problem(ctx as never)
@@ -140,7 +106,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		// 	this.byPath[pathKey] = problemIntersection
 		// }
 		// } else {
-		const error = ContextualArkError(ctx as never)
+		const error = ArkTypeError(ctx as never)
 		this.byPath[pathKey] = error
 		this.mutable.push(error)
 		//}
@@ -176,26 +142,26 @@ export type ArkErrorCode = {
 		: kind
 }[NodeKind]
 
-export type ArkErrorContextsByCode = {
+type ErrorContextsByCode = {
 	[kind in ArkErrorCode]: Declaration<kind>["errorContext"]
 }
 
 export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
-	ArkErrorContextsByCode[code]
+	ErrorContextsByCode[code]
 
-export type ArkMessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
+export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	ArkErrorContext<code>,
 	"message"
 >
 
-export type ArkProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
-	ArkMessageContext<code>,
+export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
+	MessageContext<code>,
 	"problem"
 >
 
-type ArkErrorInputByCode = {
+type ErrorInputByCode = {
 	[code in ArkErrorCode]: optionalizeKeys<
-		ArkErrorContextsByCode[code],
+		ErrorContextsByCode[code],
 		keyof DerivableErrorContext
 	>
 }
@@ -207,21 +173,30 @@ export type CustomErrorInput = evaluate<
 
 export type ArkErrorInput =
 	| string
-	| ArkErrorInputByCode[ArkErrorCode]
+	| ErrorInputByCode[ArkErrorCode]
 	| CustomErrorInput
 
-export type ArkProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	context: ArkProblemContext<code>
+export type ProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
+	context: ProblemContext<code>
 ) => string
 
-export type ArkMessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	context: ArkMessageContext<code>
+export type MessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
+	context: MessageContext<code>
 ) => string
 
 export type getAssociatedDataForError<code extends ArkErrorCode> =
 	code extends NodeKind ? Prerequisite<code> : unknown
 
-export type ArkActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
+export type expectedWriterContextFor<code extends ArkErrorCode> = Omit<
+	ArkErrorContext<code>,
+	keyof DerivableErrorContext
+>
+
+export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
+	source: expectedWriterContextFor<code>
+) => string
+
+export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	data: getAssociatedDataForError<code>
 ) => string | null
 

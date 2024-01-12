@@ -13,7 +13,11 @@ import type {
 	declareNode,
 	withBaseMeta
 } from "../shared/declare.js"
-import type { BoundKind, nodeImplementationOf } from "../shared/define.js"
+import type {
+	BoundKind,
+	nodeImplementationInputOf,
+	nodeImplementationOf
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseRefinement } from "./refinement.js"
@@ -109,7 +113,7 @@ export abstract class BaseBound<
 
 	static implementBound<d extends Declaration<BoundKind>>(
 		implementation: optionalizeKeys<
-			nodeImplementationOf<d>,
+			nodeImplementationInputOf<d>,
 			"collapseKey" | "keys" | "normalize"
 		>
 	): nodeImplementationOf<d> {
@@ -181,12 +185,9 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 		this.implementBound({
 			intersections: createLowerIntersections("min"),
 			defaults: {
-				expected(node) {
-					return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
-				},
-				actual: this.defaultActual,
-				problem: this.defaultProblem,
-				message: this.defaultMessage
+				description(inner) {
+					return `${inner.exclusive ? "more than" : "at least"} ${inner.limit}`
+				}
 			}
 		})
 
@@ -213,12 +214,9 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 		this.implementBound({
 			intersections: createUpperIntersections("max"),
 			defaults: {
-				expected(node) {
-					return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
-				},
-				actual: this.defaultActual,
-				problem: this.defaultProblem,
-				message: this.defaultMessage
+				description(inner) {
+					return `${inner.exclusive ? "less than" : "at most"} ${inner.limit}`
+				}
 			}
 		})
 
@@ -263,18 +261,16 @@ export class MinLengthNode extends BaseLengthBound<
 		this.implementBound({
 			intersections: createLowerIntersections("minLength"),
 			defaults: {
-				expected(node) {
-					return node.exclusive
-						? node.limit === 0
+				description(inner) {
+					return inner.exclusive
+						? inner.limit === 0
 							? "non-empty"
-							: `more than length ${node.limit}`
-						: node.limit === 1
+							: `more than length ${inner.limit}`
+						: inner.limit === 1
 						? "non-empty"
-						: `at least length ${node.limit}`
+						: `at least length ${inner.limit}`
 				},
-				actual: (data) => `${data.length}`,
-				problem: this.defaultProblem,
-				message: this.defaultMessage
+				actual: (data) => `${data.length}`
 			}
 		})
 
@@ -303,14 +299,12 @@ export class MaxLengthNode extends BaseLengthBound<
 		this.implementBound({
 			intersections: createUpperIntersections("maxLength"),
 			defaults: {
-				expected(node) {
-					return node.exclusive
-						? `less than length ${node.limit}`
-						: `at most length ${node.limit}`
+				description(inner) {
+					return inner.exclusive
+						? `less than length ${inner.limit}`
+						: `at most length ${inner.limit}`
 				},
-				actual: (data) => `${data.length}`,
-				problem: this.defaultProblem,
-				message: this.defaultMessage
+				actual: (data) => `${data.length}`
 			}
 		})
 
@@ -364,15 +358,13 @@ export class AfterNode extends BaseDateBound<
 		this.implementBound({
 			intersections: createLowerIntersections("after"),
 			defaults: {
-				expected(inner) {
+				description(inner) {
 					const limitString = dateLimitToString(inner.limit)
 					return inner.exclusive
 						? `after ${limitString}`
 						: `${limitString} or later`
 				},
-				actual: (data) => data.toLocaleString(),
-				problem: this.defaultProblem,
-				message: this.defaultMessage
+				actual: (data) => data.toLocaleString()
 			}
 		})
 
@@ -402,15 +394,13 @@ export class BeforeNode extends BaseDateBound<
 		this.implementBound({
 			intersections: createUpperIntersections("before"),
 			defaults: {
-				expected(inner) {
+				description(inner) {
 					const limitString = dateLimitToString(inner.limit)
 					return inner.exclusive
 						? `before ${limitString}`
 						: `${limitString} or earlier`
 				},
-				actual: (data) => data.toLocaleString(),
-				problem: this.defaultProblem,
-				message: this.defaultMessage
+				actual: (data) => data.toLocaleString()
 			}
 		})
 

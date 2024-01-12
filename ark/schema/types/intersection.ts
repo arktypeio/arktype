@@ -65,7 +65,7 @@ export type IntersectionDeclaration = declareNode<{
 		intersection: "intersection" | Disjoint
 		default: "intersection" | Disjoint
 	}
-	error: {
+	errorContext: {
 		errors: readonly ArkError[]
 	}
 }>
@@ -220,7 +220,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			},
 			defaults: {
-				expected(inner) {
+				description(inner) {
 					const constraints = Object.values(inner)
 					return constraints.length === 0
 						? "an unknown value"

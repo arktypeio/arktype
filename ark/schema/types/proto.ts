@@ -52,7 +52,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 		normalize: (input) =>
 			typeof input === "function" ? { proto: input } : input,
 		defaults: {
-			expected(inner) {
+			description(inner) {
 				const knownObjectKind = getExactBuiltinConstructorName(inner.proto)
 				return knownObjectKind
 					? objectKindDescriptions[knownObjectKind]
@@ -60,9 +60,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 			},
 			actual(data) {
 				return objectKindOrDomainOf(data)
-			},
-			problem: this.defaultProblem,
-			message: this.defaultMessage
+			}
 		},
 		intersections: {
 			proto: (l, r) =>

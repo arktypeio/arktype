@@ -47,7 +47,7 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		default: "union" | Disjoint
 	}
-	error: {
+	errorContext: {
 		errors: readonly ArkError[]
 	}
 }>
@@ -163,11 +163,12 @@ export class UnionNode<t = unknown> extends BaseType<
 				}
 			},
 			defaults: {
-				expected(inner) {
+				description(inner) {
 					return inner.branches.length === 0
 						? "never"
 						: inner.branches.join(" or ")
-				}
+				},
+				actual: () => null
 			}
 		})
 
@@ -190,6 +191,24 @@ export class UnionNode<t = unknown> extends BaseType<
 			? `return ${branchInvocations.join(" || ")}`
 			: branchInvocations.join("\n")
 	}
+}
+
+export const describeBranches = (descriptions: string[]) => {
+	if (descriptions.length === 0) {
+		return "never"
+	}
+	if (descriptions.length === 1) {
+		return descriptions[0]
+	}
+	let description = ""
+	for (let i = 0; i < descriptions.length - 1; i++) {
+		description += descriptions[i]
+		if (i < descriptions.length - 2) {
+			description += ", "
+		}
+	}
+	description += ` or ${descriptions[descriptions.length - 1]}`
+	return description
 }
 
 // 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {

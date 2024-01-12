@@ -45,12 +45,9 @@ export class PatternNode extends BaseRefinement<
 			pattern: () => null
 		},
 		defaults: {
-			expected(inner) {
+			description(inner) {
 				return `matched by ${inner.source}`
-			},
-			actual: this.defaultActual,
-			problem: this.defaultProblem,
-			message: this.defaultMessage
+			}
 		}
 	})
 
