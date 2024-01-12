@@ -69,6 +69,18 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	count = 0
 	private mutable: ArkTypeError[] = this as never
 
+	expected(expected: string) {
+		return this.add("predicate", { expected })
+	}
+
+	problem(problem: string) {
+		return this.add("predicate", { problem })
+	}
+
+	message(problem: string) {
+		return this.add("predicate", { problem })
+	}
+
 	// TODO: custom kind
 	add<code extends NodeKindWithError>(
 		code: code,
