@@ -144,7 +144,7 @@ export class SequenceNode extends BaseProp<
 	traverseApply: TraverseApply<readonly unknown[]> = (data, ctx) => {
 		if (data.length < this.minLength) {
 			// TODO: possible to unify with minLength?
-			ctx.currentErrors.add(`at least length ${this.minLength}`)
+			ctx.error(`at least length ${this.minLength}`)
 			return
 		}
 

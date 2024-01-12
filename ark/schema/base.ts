@@ -1,5 +1,6 @@
 import {
 	DynamicBase,
+	capitalize,
 	includes,
 	isArray,
 	printable,
@@ -64,6 +65,7 @@ import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
 import { TraversalContext } from "./traversal/context.js"
 import type {
 	ArkActualWriter,
+	ArkMessageWriter,
 	ArkProblemWriter,
 	ArkResult
 } from "./traversal/errors.js"
@@ -144,10 +146,17 @@ export abstract class BaseNode<
 		return implementation
 	}
 
+	protected static defaultActual: ArkActualWriter = (data) => printable(data)
+
 	protected static defaultProblem: ArkProblemWriter = (ctx) =>
 		`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
 
-	protected static defaultActual: ArkActualWriter = (data) => printable(data)
+	protected static defaultMessage: ArkMessageWriter = (ctx) =>
+		ctx.path.length === 0
+			? capitalize(ctx.problem)
+			: ctx.path.length === 1 && typeof ctx.path[0] === "number"
+			? `Item at index ${ctx.path[0]} ${ctx.problem}`
+			: `${ctx.path} ${ctx.problem}`
 
 	private readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation

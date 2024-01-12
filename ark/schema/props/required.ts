@@ -78,8 +78,9 @@ export class RequiredNode extends BaseProp<
 				expected(inner) {
 					return `${compileKey(inner.key)}: ${inner.value}`
 				},
-				actual: null,
-				problem: this.defaultProblem
+				actual: () => null,
+				problem: this.defaultProblem,
+				message: this.defaultMessage
 			}
 		})
 
@@ -94,7 +95,7 @@ export class RequiredNode extends BaseProp<
 		if (this.key in data) {
 			this.value.traverseApply((data as any)[this.key], ctx)
 		} else {
-			ctx.currentErrors.add("provided")
+			ctx.error("provided")
 		}
 	}
 

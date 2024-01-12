@@ -49,7 +49,8 @@ export class PatternNode extends BaseRefinement<
 				return `matched by ${inner.source}`
 			},
 			actual: this.defaultActual,
-			problem: this.defaultProblem
+			problem: this.defaultProblem,
+			message: this.defaultMessage
 		}
 	})
 

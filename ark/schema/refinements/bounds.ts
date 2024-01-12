@@ -185,7 +185,8 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 					return `${node.exclusive ? "more than" : "at least"} ${node.limit}`
 				},
 				actual: this.defaultActual,
-				problem: this.defaultProblem
+				problem: this.defaultProblem,
+				message: this.defaultMessage
 			}
 		})
 
@@ -216,7 +217,8 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 					return `${node.exclusive ? "less than" : "at most"} ${node.limit}`
 				},
 				actual: this.defaultActual,
-				problem: this.defaultProblem
+				problem: this.defaultProblem,
+				message: this.defaultMessage
 			}
 		})
 
@@ -271,7 +273,8 @@ export class MinLengthNode extends BaseLengthBound<
 						: `at least length ${node.limit}`
 				},
 				actual: (data) => `${data.length}`,
-				problem: this.defaultProblem
+				problem: this.defaultProblem,
+				message: this.defaultMessage
 			}
 		})
 
@@ -306,7 +309,8 @@ export class MaxLengthNode extends BaseLengthBound<
 						: `at most length ${node.limit}`
 				},
 				actual: (data) => `${data.length}`,
-				problem: this.defaultProblem
+				problem: this.defaultProblem,
+				message: this.defaultMessage
 			}
 		})
 
@@ -367,7 +371,8 @@ export class AfterNode extends BaseDateBound<
 						: `${limitString} or later`
 				},
 				actual: (data) => data.toLocaleString(),
-				problem: this.defaultProblem
+				problem: this.defaultProblem,
+				message: this.defaultMessage
 			}
 		})
 
@@ -404,7 +409,8 @@ export class BeforeNode extends BaseDateBound<
 						: `${limitString} or earlier`
 				},
 				actual: (data) => data.toLocaleString(),
-				problem: this.defaultProblem
+				problem: this.defaultProblem,
+				message: this.defaultMessage
 			}
 		})
 

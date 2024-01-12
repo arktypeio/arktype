@@ -26,7 +26,7 @@ export class TraversalContext {
 		return this.currentErrors.add
 	}
 
-	falsify(input: ArkErrorInput): false {
+	invalid(input: ArkErrorInput): false {
 		this.error(input)
 		return false
 	}

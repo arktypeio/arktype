@@ -51,7 +51,8 @@ export class PredicateNode extends BaseRefinement<
 				return `valid according to ${inner.predicate.name}`
 			},
 			actual: this.defaultActual,
-			problem: this.defaultProblem
+			problem: this.defaultProblem,
+			message: this.defaultMessage
 		}
 	})
 

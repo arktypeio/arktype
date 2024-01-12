@@ -36,7 +36,7 @@ export abstract class BaseBasis<
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.currentErrors.add(this.expected)
+			ctx.error(this.expected)
 		}
 	}
 
@@ -75,16 +75,16 @@ export type instantiateBasis<def extends Schema<BasisKind>> =
 	isAny<def> extends true
 		? any
 		: def extends NonEnumerableDomain
-			? DomainNode<inferDomain<def>>
-			: def extends Constructor<infer instance>
-				? ProtoNode<instance>
-				: def extends DomainSchema<infer domain>
-					? DomainNode<inferDomain<domain>>
-					: def extends ProtoSchema<infer proto>
-						? ProtoNode<instanceOf<proto>>
-						: def extends UnitSchema<infer is>
-							? UnitNode<is>
-							: never
+		? DomainNode<inferDomain<def>>
+		: def extends Constructor<infer instance>
+		? ProtoNode<instance>
+		: def extends DomainSchema<infer domain>
+		? DomainNode<inferDomain<domain>>
+		: def extends ProtoSchema<infer proto>
+		? ProtoNode<instanceOf<proto>>
+		: def extends UnitSchema<infer is>
+		? UnitNode<is>
+		: never
 
 export const assertBasisKind = (schema: unknown) => {
 	const basisKind = maybeGetBasisKind(schema)

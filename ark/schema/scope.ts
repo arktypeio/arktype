@@ -31,6 +31,7 @@ import type { TraversalContext } from "./traversal/context.js"
 import type {
 	ArkActualWriter,
 	ArkErrorCode,
+	ArkMessageWriter,
 	ArkProblemWriter
 } from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
@@ -53,20 +54,21 @@ declare global {
 	}
 }
 
-type NodeConfigsByKind = {
-	[kind in NodeKind]: nodeConfigForKind<kind>
-}
-
 type nodeConfigForKind<kind extends NodeKind> = evaluate<
 	{
 		expected?: NodeExpectedWriter<kind>
 	} & (kind extends ArkErrorCode
 		? {
-				problem?: ArkProblemWriter<kind>
 				actual?: ArkActualWriter<kind>
-			}
+				problem?: ArkProblemWriter<kind>
+				message?: ArkMessageWriter<kind>
+		  }
 		: {})
 >
+
+type NodeConfigsByKind = {
+	[kind in NodeKind]: nodeConfigForKind<kind>
+}
 
 export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]

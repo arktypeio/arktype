@@ -80,38 +80,46 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	add<input extends ArkErrorInput>(
 		input: input
 	): ArkTypeError<
-		input["code"] extends ArkErrorCode ? input["code"] : "predicate"
+		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	>
 	add(input: ArkErrorInput) {
+		let ctx: ArkErrorContext
 		const data = this.ctx.data
-		const code = input.code ?? "predicate"
-		const nodeConfig = this.ctx.config[code]
-
-		const ctx = {
-			...input,
-			// prioritize these over the raw user provided values so we can
-			// check for keys with values like undefined
-			code,
-			path: input.path ?? [...this.ctx.path],
-			data: "data" in input ? input.data : this.ctx.data,
-			actual:
-				input.actual !== undefined
-					? input.actual
-					: nodeConfig.actual?.(data as never),
-			expected:
-				input.expected !== undefined
-					? input.expected
-					: nodeConfig.actual && nodeConfig.actual?.(data as never)
+		const nodeConfig = this.ctx.config.predicate
+		if (typeof input === "string") {
+			ctx = {
+				code: "predicate",
+				path: [...this.ctx.path],
+				data,
+				actual: nodeConfig.actual(data),
+				expected: input
+			} satisfies ArkProblemContext as any
+			ctx.problem = nodeConfig.problem(ctx as never)
+			ctx.message = nodeConfig.message(ctx as never)
+		} else {
+			const code = input.code ?? "predicate"
+			const nodeConfig = this.ctx.config[code]
+			ctx = {
+				...input,
+				// prioritize these over the raw user provided values so we can
+				// check for keys with values like undefined
+				code,
+				path: input.path ?? [...this.ctx.path],
+				data: "data" in input ? input.data : data,
+				actual:
+					input.actual !== undefined
+						? input.actual
+						: nodeConfig.actual?.(data as never),
+				expected: input.expected ?? nodeConfig.expected?.(input as never)
+			} satisfies ArkProblemContext as any
+			ctx.problem = hasDefinedKey(input, "problem")
+				? input.problem
+				: nodeConfig.problem(ctx as never)
+			ctx.message = hasDefinedKey(input, "message")
+				? input.message
+				: nodeConfig.message(ctx as never)
 		}
-		ctx.expected = hasDefinedKey(input, "expected")
-			? input.expected
-			: nodeConfig.expected(ctx as never)
-		ctx.problem = hasDefinedKey(input, "problem")
-			? input.problem
-			: nodeConfig.problem(ctx as never)
-		ctx.message = hasDefinedKey(input, "message")
-			? input.message
-			: nodeConfig.problem(ctx as never)
+
 		const pathKey = this.ctx.path.join(".")
 		// const existing = this.byPath[pathKey]
 		// if (existing) {
@@ -197,7 +205,10 @@ export type CustomErrorInput = evaluate<
 	{ code?: undefined } & Partial<DerivableErrorContext>
 >
 
-export type ArkErrorInput = ArkErrorInputByCode[ArkErrorCode] | CustomErrorInput
+export type ArkErrorInput =
+	| string
+	| ArkErrorInputByCode[ArkErrorCode]
+	| CustomErrorInput
 
 export type ArkProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	context: ArkProblemContext<code>

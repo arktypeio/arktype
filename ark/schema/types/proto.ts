@@ -61,7 +61,8 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return objectKindOrDomainOf(data)
 			},
-			problem: this.defaultProblem
+			problem: this.defaultProblem,
+			message: this.defaultMessage
 		},
 		intersections: {
 			proto: (l, r) =>

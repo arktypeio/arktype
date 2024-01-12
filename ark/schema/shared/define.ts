@@ -106,8 +106,8 @@ export type NodeKeyImplementation<
 	instantiated = k extends keyof d["inner"]
 		? d["inner"][k]
 		: k extends keyof d["meta"]
-			? d["meta"][k]
-			: never
+		? d["meta"][k]
+		: never
 > = requireKeys<
 	{
 		preserveUndefined?: true

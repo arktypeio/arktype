@@ -54,7 +54,8 @@ export class DivisorNode extends BaseRefinement<
 					: `a multiple of ${inner.divisor}`
 			},
 			actual: this.defaultActual,
-			problem: this.defaultProblem
+			problem: this.defaultProblem,
+			message: this.defaultMessage
 		}
 	})
 

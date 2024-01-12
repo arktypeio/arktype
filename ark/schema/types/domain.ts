@@ -50,7 +50,8 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return domainOf(data)
 			},
-			problem: this.defaultProblem
+			problem: this.defaultProblem,
+			message: this.defaultMessage
 		},
 		intersections: {
 			domain: (l, r) => Disjoint.from("domain", l, r)

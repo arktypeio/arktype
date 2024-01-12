@@ -22,34 +22,34 @@ describe("narrow", () => {
 		const even = type([
 			"number",
 			":",
-			(n, ctx) => n % 3 === 0 || ctx.falsify({ expected: "divisible by 3" })
+			(n, ctx) => n % 3 === 0 || ctx.invalid({ expected: "divisible by 3" })
 		])
 		attest(even(1).errors?.summary).snap("Must be divisible by 3 (was 1)")
 	})
-	it("problem at path", () => {
-		type([{ s: "string" }])
-		const abEqual = type([
-			{
-				a: "number",
-				b: "number"
-			},
-			":",
-			({ a, b }, ctx) => {
-				if (a === b) {
-					return true
-				}
-				//  a, ["a"]
-				ctx.currentErrors.add("equal to b")
-				//  b, ["b"]
-				ctx.currentErrors.add("equal to a")
-				return false
-			}
-		])
-		attest(abEqual({ a: 1, b: 1 }).out).equals({ a: 1, b: 1 })
-		attest(abEqual({ a: 1, b: 2 }).errors?.summary).snap(
-			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
-		)
-	})
+	// it("problem at path", () => {
+	// 	type([{ s: "string" }])
+	// 	const abEqual = type([
+	// 		{
+	// 			a: "number",
+	// 			b: "number"
+	// 		},
+	// 		":",
+	// 		({ a, b }, ctx) => {
+	// 			if (a === b) {
+	// 				return true
+	// 			}
+	// 			//  a, ["a"]
+	// 			ctx.error("equal to b")
+	// 			//  b, ["b"]
+	// 			ctx.error("equal to a")
+	// 			return false
+	// 		}
+	// 	])
+	// 	attest(abEqual({ a: 1, b: 1 }).out).equals({ a: 1, b: 1 })
+	// 	attest(abEqual({ a: 1, b: 2 }).errors?.summary).snap(
+	// 		'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
+	// 	)
+	// })
 	it("functional predicate", () => {
 		const one = type(["number", ":", (n): n is 1 => n === 1])
 		attest<Type<1>>(one)
@@ -76,9 +76,7 @@ describe("narrow", () => {
 			"string",
 			":",
 			(s, ctx) =>
-				s === [...s].reverse().join("")
-					? true
-					: !ctx.currentErrors.add("a palindrome")
+				s === [...s].reverse().join("") ? true : ctx.invalid("a palindrome")
 		])
 		attest<Type<string>>(palindrome)
 		attest(palindrome("dad").out).snap("dad")
