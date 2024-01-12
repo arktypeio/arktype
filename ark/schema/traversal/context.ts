@@ -26,13 +26,8 @@ export class TraversalContext {
 		return this.currentErrors.add
 	}
 
-	falsify<codeOrDescription extends autocomplete<ArkErrorCode>>(
-		codeOrDescription: codeOrDescription,
-		...rest: codeOrDescription extends ArkErrorCode
-			? [input: ArkErrorInput<codeOrDescription>]
-			: []
-	): false {
-		this.error(codeOrDescription, ...rest)
+	falsify(input: ArkErrorInput): false {
+		this.error(input)
 		return false
 	}
 

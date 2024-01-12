@@ -22,7 +22,7 @@ describe("narrow", () => {
 		const even = type([
 			"number",
 			":",
-			(n, ctx) => n % 3 === 0 || !ctx.currentErrors.add("divisible by 3")
+			(n, ctx) => n % 3 === 0 || ctx.falsify({ expected: "divisible by 3" })
 		])
 		attest(even(1).errors?.summary).snap("Must be divisible by 3 (was 1)")
 	})

@@ -30,8 +30,8 @@ import {
 import type { TraversalContext } from "./traversal/context.js"
 import type {
 	ArkActualWriter,
-	ArkProblemWriter,
-	NodeKindWithError
+	ArkErrorCode,
+	ArkProblemWriter
 } from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
 import type { Discriminant } from "./types/discriminate.js"
@@ -50,7 +50,6 @@ export type BaseResolutions = Record<string, TypeNode>
 declare global {
 	export interface StaticArkConfig {
 		preserve(): never
-		errors(): {}
 	}
 }
 
@@ -61,11 +60,11 @@ type NodeConfigsByKind = {
 type nodeConfigForKind<kind extends NodeKind> = evaluate<
 	{
 		expected?: NodeExpectedWriter<kind>
-	} & (kind extends NodeKindWithError
+	} & (kind extends ArkErrorCode
 		? {
 				problem?: ArkProblemWriter<kind>
-				actual?: ArkActualWriter<kind> | null
-		  }
+				actual?: ArkActualWriter<kind>
+			}
 		: {})
 >
 
@@ -75,7 +74,7 @@ export type NodeConfig<kind extends NodeKind = NodeKind> =
 type UnknownNodeConfig = {
 	expected?: NodeExpectedWriter
 	problem?: ArkProblemWriter
-	actual?: ArkActualWriter | null
+	actual?: ArkActualWriter
 }
 
 export type ParsedUnknownNodeConfig = requireKeys<UnknownNodeConfig, "expected">

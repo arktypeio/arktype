@@ -66,7 +66,7 @@ export type declareNode<d extends DeclarationInput> = extend<
 		childKind: d["childKind"] extends string ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
 		errorContext: d["errorContext"] extends {}
-			? DerivableErrorContext<prerequisiteOf<d>>
+			? { code: d["kind"] } & DerivableErrorContext<prerequisiteOf<d>>
 			: null
 	}
 >
