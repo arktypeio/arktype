@@ -15,7 +15,6 @@ import type {
 import { compileProblemWriters } from "../traverse/problems.js"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
-import { deepFreeze } from "../utils/freeze.js"
 import type {
     Dict,
     error,
@@ -28,7 +27,7 @@ import { hasKeys } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
 import type { stringifyUnion } from "../utils/unionToTuple.js"
 import type { PrecompiledDefaults } from "./ark.js"
-import { Cache, FreezingCache } from "./cache.js"
+import { Cache } from "./cache.js"
 import type { Expressions } from "./expressions.js"
 import type {
     AnonymousTypeName,
@@ -182,7 +181,7 @@ export const isConfigTuple = (def: unknown): def is ConfigTuple =>
 export class Scope<context extends ScopeContext = any> {
     name: string
     config: ScopeConfig
-    parseCache = new FreezingCache<Node>()
+    parseCache = new Cache<Node>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
 
@@ -307,8 +306,8 @@ export class Scope<context extends ScopeContext = any> {
             seen.push(node)
             node = this.#resolveRecurse(node, "throw", seen).node
         }
-        t.node = deepFreeze(node)
-        t.flat = deepFreeze(flattenType(t))
+        t.node = node
+        t.flat = flattenType(t)
         return t
     }
 
@@ -360,12 +359,10 @@ export class Scope<context extends ScopeContext = any> {
             const t = initializeType("λtype", def, config, this)
             const ctx = this.#initializeContext(t)
             const root = parseDefinition(def, ctx)
-            t.node = deepFreeze(
-                hasKeys(config)
-                    ? { config, node: this.resolveTypeNode(root) }
-                    : root
-            )
-            t.flat = deepFreeze(flattenType(t))
+            t.node = hasKeys(config)
+                ? { config, node: this.resolveTypeNode(root) }
+                : root
+            t.flat = flattenType(t)
             return t
         },
         { from: this.expressions.node }

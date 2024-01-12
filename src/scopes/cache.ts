@@ -1,5 +1,3 @@
-import { deepFreeze } from "../utils/freeze.js"
-
 export class Cache<item = unknown> {
     protected cache: { [name in string]?: item } = {}
 
@@ -17,13 +15,6 @@ export class Cache<item = unknown> {
 
     set(name: string, item: item) {
         this.cache[name] = item
-        return item
-    }
-}
-
-export class FreezingCache<item = unknown> extends Cache<item> {
-    override set(name: string, item: item) {
-        this.cache[name] = deepFreeze(item) as item
         return item
     }
 }
