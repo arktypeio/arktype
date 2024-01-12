@@ -101,8 +101,8 @@ export const parsedDate = rootSchema({
 		const result = tryParseDatePattern(s)
 		return typeof result === "string"
 			? // TODO: Fix
-				throwInternalError("Unsupported")
+			  throwInternalError("Unsupported")
 			: //state.mustBe(result, s, state.basePath)
-				result
+			  result
 	}
 })

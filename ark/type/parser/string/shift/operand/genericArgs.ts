@@ -77,28 +77,28 @@ type parseGenericArgsRecurse<
 			]
 			asts: [...argAsts, finalArgState["root"]]
 			unscanned: finalArgState["unscanned"]
-		} extends {
+	  } extends {
 			defs: infer nextDefs extends string[]
 			asts: infer nextAsts extends unknown[]
 			unscanned: infer nextUnscanned extends string
-		}
+	  }
 		? finalArgState["finalizer"] extends ">"
 			? nextAsts["length"] extends params["length"]
 				? ParsedArgs<nextAsts, nextUnscanned>
 				: state.error<writeInvalidGenericArgsMessage<name, params, nextDefs>>
 			: finalArgState["finalizer"] extends ","
-				? parseGenericArgsRecurse<
-						name,
-						params,
-						nextUnscanned,
-						$,
-						args,
-						nextDefs,
-						nextAsts
-					>
-				: finalArgState["finalizer"] extends ErrorMessage
-					? finalArgState
-					: state.error<writeUnclosedGroupMessage<">">>
+			? parseGenericArgsRecurse<
+					name,
+					params,
+					nextUnscanned,
+					$,
+					args,
+					nextDefs,
+					nextAsts
+			  >
+			: finalArgState["finalizer"] extends ErrorMessage
+			? finalArgState
+			: state.error<writeUnclosedGroupMessage<">">>
 		: never
 	: never
 

@@ -45,11 +45,11 @@ export type NodeIntersections<d extends BaseNodeDeclaration> = {
 		? (
 				l: Node<d["kind"]>,
 				r: Node<Exclude<rightOf<d["kind"]>, keyof d["intersections"]>>
-			) => reifyIntersectionResult<d["intersections"][rKind]>
+		  ) => reifyIntersectionResult<d["intersections"][rKind]>
 		: (
 				l: Node<d["kind"]>,
 				r: Node<rKind & NodeKind>
-			) => reifyIntersectionResult<d["intersections"][rKind]>
+		  ) => reifyIntersectionResult<d["intersections"][rKind]>
 }
 
 export type reifyIntersections<
@@ -61,12 +61,12 @@ export type reifyIntersections<
 				? (
 						l: Node<lKind>,
 						r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
-					) => reifyIntersectionResult<intersectionMap[rKind]>
+				  ) => reifyIntersectionResult<intersectionMap[rKind]>
 				: (
 						l: Node<lKind>,
 						r: Node<rKind & NodeKind>
-					) => reifyIntersectionResult<intersectionMap[rKind]>
-		}
+				  ) => reifyIntersectionResult<intersectionMap[rKind]>
+	  }
 	: never
 
 type reifyIntersectionResult<result> = result extends NodeKind
@@ -95,10 +95,10 @@ type asymmetricIntersectionOf<
 		? r extends keyof IntersectionMaps[l]
 			? instantiateIntersection<IntersectionMaps[l][r]>
 			: "default" extends keyof IntersectionMaps[l]
-				? instantiateIntersection<IntersectionMaps[l]["default"]>
-				: [l, r] extends [RefinementKind, RefinementKind]
-					? null
-					: never
+			? instantiateIntersection<IntersectionMaps[l]["default"]>
+			: [l, r] extends [RefinementKind, RefinementKind]
+			? null
+			: never
 		: never
 	: never
 

@@ -204,8 +204,8 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
 				l.position.line > r.position.line
 					? 1
 					: r.position.line > l.position.line
-						? -1
-						: l.position.char - r.position.char
+					? -1
+					: l.position.char - r.position.char
 			)
 		)
 	}

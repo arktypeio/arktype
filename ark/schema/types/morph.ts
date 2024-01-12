@@ -115,7 +115,7 @@ export class MorphNode<t = unknown> extends BaseType<
 						: {
 								...l.inner,
 								in: inTersection
-							}
+						  }
 				},
 				default: (l, r) => {
 					const constrainedInput = l.in.intersect(r)
@@ -124,7 +124,7 @@ export class MorphNode<t = unknown> extends BaseType<
 						: {
 								...l.inner,
 								in: constrainedInput
-							}
+						  }
 				}
 			},
 			defaults: {
@@ -156,7 +156,7 @@ export class MorphNode<t = unknown> extends BaseType<
 export type inferMorphOut<out> = out extends ArkResult<infer t>
 	? out extends null
 		? // avoid treating any/never as CheckResult
-			out
+		  out
 		: t
 	: Exclude<out, ArkTypeError>
 
@@ -195,12 +195,12 @@ type distillRecurse<
 		? i
 		: o
 	: t extends is<infer base>
-		? refinements extends "base"
-			? distillRecurse<base, io, refinements>
-			: t
-		: t extends TerminallyInferredObjectKind | Primitive
-			? t
-			: { [k in keyof t]: distillRecurse<t[k], io, refinements> }
+	? refinements extends "base"
+		? distillRecurse<base, io, refinements>
+		: t
+	: t extends TerminallyInferredObjectKind | Primitive
+	? t
+	: { [k in keyof t]: distillRecurse<t[k], io, refinements> }
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

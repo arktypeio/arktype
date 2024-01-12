@@ -49,6 +49,6 @@ const maybeParseDate = <errorOnFail extends boolean | string>(
 	return errorOnFail
 		? throwParseError(
 				errorOnFail === true ? writeInvalidDateMessage(source) : errorOnFail
-			)
+		  )
 		: (undefined as never)
 }

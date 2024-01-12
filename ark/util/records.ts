@@ -32,12 +32,12 @@ type requireRecurse<
 > = depth["length"] extends maxDepth
 	? o
 	: o extends object
-		? o extends Fn
-			? o
-			: {
-					[k in keyof o]-?: requireRecurse<o[k], [...depth, 1], maxDepth>
-				}
-		: o
+	? o extends Fn
+		? o
+		: {
+				[k in keyof o]-?: requireRecurse<o[k], [...depth, 1], maxDepth>
+		  }
+	: o
 
 export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 	[_ in k]?: v
@@ -58,16 +58,12 @@ type mutableRecurse<
 > = depth["length"] extends maxDepth
 	? o
 	: o extends object
-		? o extends Fn
-			? o
-			: {
-					-readonly [k in keyof o]: mutableRecurse<
-						o[k],
-						[...depth, 1],
-						maxDepth
-					>
-				}
-		: o
+	? o extends Fn
+		? o
+		: {
+				-readonly [k in keyof o]: mutableRecurse<o[k], [...depth, 1], maxDepth>
+		  }
+	: o
 
 export type entryOf<o> = {
 	[k in keyof o]-?: [k, o[k] & ({} | null)]
@@ -99,7 +95,7 @@ export type keysOf<o> = o extends readonly unknown[]
 		: keyof o & `${number}`
 	: {
 			[K in keyof o]: K extends string ? K : K extends number ? `${K}` : never
-		}[keyof o]
+	  }[keyof o]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>[]
 

@@ -88,12 +88,12 @@ export type ChildrenByKind = {
 	[k in NodeKind]: k extends "union"
 		? BranchKind
 		: k extends "morph"
-			? ValidatorKind
-			: k extends "intersection"
-				? ConstraintKind
-				: k extends PropKind
-					? TypeKind
-					: never
+		? ValidatorKind
+		: k extends "intersection"
+		? ConstraintKind
+		: k extends PropKind
+		? TypeKind
+		: never
 }
 
 export type childKindOf<kind extends NodeKind> = ChildrenByKind[kind]
@@ -125,7 +125,7 @@ export type Prerequisite<kind extends NodeKind> =
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? TypeKind
 	: kind extends "intersection"
-		? ValidatorKind
-		: kind
+	? ValidatorKind
+	: kind
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]

@@ -36,9 +36,9 @@ export class ArkTypeError<
 		return this.context.path.length === 0
 			? capitalize(this.expected)
 			: this.context.path.length === 1 &&
-				  typeof this.context.path[0] === "number"
-				? `Item at index ${this.context.path[0]} ${this.expected}`
-				: `${this.context.path} ${this.expected}`
+			  typeof this.context.path[0] === "number"
+			? `Item at index ${this.context.path[0]} ${this.expected}`
+			: `${this.context.path} ${this.expected}`
 	}
 
 	get problem() {

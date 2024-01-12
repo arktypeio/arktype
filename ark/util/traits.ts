@@ -66,13 +66,13 @@ type baseDisambiguationOf<
 	[k in keyof composed["implemented"]]: k extends keyof implementation
 		? undefined
 		: k extends keyof Trait
+		? undefined
+		: traitsImplementingKey<traits, k> extends infer implementations extends
+				TraitConstructor[]
+		? implementations["length"] extends 1
 			? undefined
-			: traitsImplementingKey<traits, k> extends infer implementations extends
-						TraitConstructor[]
-				? implementations["length"] extends 1
-					? undefined
-					: implementations[number]
-				: never
+			: implementations[number]
+		: never
 }>
 
 type traitsImplementingKey<
@@ -89,7 +89,7 @@ type traitsImplementingKey<
 			k extends Exclude<keyof instance, keyof abstracts>
 				? [...result, traits[0]]
 				: result
-		>
+	  >
 	: result
 
 // even though the value we attach will be identical, we use this so classes
@@ -218,7 +218,7 @@ type intersectImplementations<l, r> = {
 		? l[k] extends (...args: infer lArgs) => infer lReturn
 			? r[k] extends (...args: infer rArgs) => infer rReturn
 				? // ensure function intersections aren't handled as overloads which leads to unsafe behavior
-					(...args: intersectParameters<lArgs, rArgs>) => lReturn & rReturn
+				  (...args: intersectParameters<lArgs, rArgs>) => lReturn & rReturn
 				: l[k] & r[k]
 			: l[k] & r[k]
 		: l[k]
@@ -248,10 +248,10 @@ type composeRecurse<
 			>,
 			intersectImplementations<abstracted, nextAbstracted>,
 			intersectImplementations<statics, nextStatics>
-		>
+	  >
 	: {
 			params: params
 			implemented: evaluate<implemented>
 			abstracted: evaluate<abstracted>
 			statics: evaluate<Omit<statics, keyof typeof Trait>>
-		}
+	  }

@@ -48,7 +48,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	parse: (schema, ctx) =>
 		schema.length === 0
 			? // omit empty affixes
-				undefined
+			  undefined
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
 

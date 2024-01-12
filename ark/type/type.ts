@@ -51,24 +51,24 @@ export type TypeParser<$> = {
 		_1: zero extends "keyof"
 			? validateTypeRoot<one, $>
 			: zero extends "instanceof"
-				? conform<one, Constructor>
-				: zero extends "==="
-					? conform<one, unknown>
-					: conform<one, IndexOneOperator>,
+			? conform<one, Constructor>
+			: zero extends "==="
+			? conform<one, unknown>
+			: conform<one, IndexOneOperator>,
 		..._2: zero extends "==="
 			? rest
 			: zero extends "instanceof"
-				? conform<rest, readonly Constructor[]>
-				: one extends TupleInfixOperator
-					? one extends ":"
-						? [Predicate<extractIn<inferTypeRoot<zero, $>>>]
-						: one extends "=>"
-							? // TODO: centralize
-								[Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
-							: one extends "@"
-								? [string | BaseMeta]
-								: [validateTypeRoot<rest[0], $>]
-					: []
+			? conform<rest, readonly Constructor[]>
+			: one extends TupleInfixOperator
+			? one extends ":"
+				? [Predicate<extractIn<inferTypeRoot<zero, $>>>]
+				: one extends "=>"
+				? // TODO: centralize
+				  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
+				: one extends "@"
+				? [string | BaseMeta]
+				: [validateTypeRoot<rest[0], $>]
+			: []
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>
 
 	<params extends string, const def>(

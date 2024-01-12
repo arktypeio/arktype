@@ -26,26 +26,26 @@ export const snapshot = <t>(
 export type snapshot<t, depth extends 1[] = []> = unknown extends t
 	? unknown
 	: t extends Primitive
-		? snapshotPrimitive<t>
-		: t extends Function
-			? `(function${string})`
-			: t extends Date
-				? string
-				: depth["length"] extends 10
-					? unknown
-					: t extends List<infer item>
-						? List<snapshot<item, [...depth, 1]>>
-						: {
-								[k in keyof t]: snapshot<t[k], [...depth, 1]>
-							}
+	? snapshotPrimitive<t>
+	: t extends Function
+	? `(function${string})`
+	: t extends Date
+	? string
+	: depth["length"] extends 10
+	? unknown
+	: t extends List<infer item>
+	? List<snapshot<item, [...depth, 1]>>
+	: {
+			[k in keyof t]: snapshot<t[k], [...depth, 1]>
+	  }
 
 type snapshotPrimitive<t> = t extends undefined
 	? "(undefined)"
 	: t extends bigint
-		? `${t}n`
-		: t extends symbol
-			? `(symbol${string})`
-			: t
+	? `${t}n`
+	: t extends symbol
+	? `(symbol${string})`
+	: t
 
 export const print = (data: unknown, indent?: number) =>
 	console.log(printable(data, indent))
@@ -59,7 +59,7 @@ export const printable = (data: unknown, indent?: number) => {
 						serializeRecurse(data, printableOpts, []),
 						null,
 						indent
-					)
+				  )
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		default:
@@ -131,12 +131,12 @@ export const serializePrimitive = <value extends SerializablePrimitive>(
 	(typeof value === "string"
 		? JSON.stringify(value)
 		: typeof value === "bigint"
-			? `${value}n`
-			: `${value}`) as serializePrimitive<value>
+		? `${value}n`
+		: `${value}`) as serializePrimitive<value>
 
 export type serializePrimitive<value extends SerializablePrimitive> =
 	value extends string
 		? `"${value}"`
 		: value extends bigint
-			? `${value}n`
-			: `${value}`
+		? `${value}n`
+		: `${value}`

@@ -46,25 +46,25 @@ type intersectParametersRecurse<
 				],
 				intersector,
 				mode
-			>
+		  >
 		: // once both arrays have reached their fixed end or a variadic element, return the final result
-			[
+		  [
 				...prefix,
 				...(lState["tail"] extends readonly []
 					? rState["tail"] extends readonly []
 						? []
 						: // if done and non-empty, we've reached a variadic element
-							// (or it's just a normal array, since number[] === [...number[]])
-							mode extends "parameters"
-							? rState["tail"]
-							: []
+						// (or it's just a normal array, since number[] === [...number[]])
+						mode extends "parameters"
+						? rState["tail"]
+						: []
 					: rState["tail"] extends readonly []
-						? mode extends "parameters"
-							? lState["tail"]
-							: []
-						: // if we've reached a variadic element in both arrays, intersect them
-							Hkt.apply<intersector, [lState["head"], rState["head"]]>[])
-			]
+					? mode extends "parameters"
+						? lState["tail"]
+						: []
+					: // if we've reached a variadic element in both arrays, intersect them
+					  Hkt.apply<intersector, [lState["head"], rState["head"]]>[])
+		  ]
 	: never
 
 type shouldRecurse<
@@ -74,13 +74,13 @@ type shouldRecurse<
 > = [lState["done"], rState["done"]] extends [true, true]
 	? false
 	: mode extends "parameters"
-		? true
-		: // for values, we should stop recursing immediately if we reach the end of a fixed-length array
-			[true, readonly []] extends
-					| [lState["done"], lState["tail"]]
-					| [rState["done"], rState["tail"]]
-			? false
-			: true
+	? true
+	: // for values, we should stop recursing immediately if we reach the end of a fixed-length array
+	[true, readonly []] extends
+			| [lState["done"], lState["tail"]]
+			| [rState["done"], rState["tail"]]
+	? false
+	: true
 
 type ElementParseResult = {
 	head: unknown
@@ -100,37 +100,37 @@ type parseNextElement<
 			optional: true
 			tail: []
 			done: true
-		}
+	  }
 	: params extends readonly [(infer head)?, ...infer tail]
-		? [tail, params] extends [params, tail]
-			? {
-					head: head
-					optional: true
-					tail: tail
-					done: true
-				}
-			: {
-					// Inferring parms often results in optional adding `|undefined`,
-					// so the goal here is to counteract that. If this
-					// causes problems, it should be removed.
-					head: [] extends params ? Exclude<head, undefined> : head
-					optional: [] extends params ? true : false
-					tail: tail
-					done: false
-				}
-		: never
+	? [tail, params] extends [params, tail]
+		? {
+				head: head
+				optional: true
+				tail: tail
+				done: true
+		  }
+		: {
+				// Inferring parms often results in optional adding `|undefined`,
+				// so the goal here is to counteract that. If this
+				// causes problems, it should be removed.
+				head: [] extends params ? Exclude<head, undefined> : head
+				optional: [] extends params ? true : false
+				tail: tail
+				done: false
+		  }
+	: never
 
 export type isDisjoint<l, r> = l & r extends never
 	? true
 	: domainOf<l> & domainOf<r> extends never
+	? true
+	: [l, r] extends [object, object]
+	? true extends valueOf<{
+			[k in Extract<
+				keyof l & keyof r,
+				requiredKeyOf<l> | requiredKeyOf<r>
+			>]: isDisjoint<l[k], r[k]>
+	  }>
 		? true
-		: [l, r] extends [object, object]
-			? true extends valueOf<{
-					[k in Extract<
-						keyof l & keyof r,
-						requiredKeyOf<l> | requiredKeyOf<r>
-					>]: isDisjoint<l[k], r[k]>
-				}>
-				? true
-				: false
-			: false
+		: false
+	: false

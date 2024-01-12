@@ -267,8 +267,8 @@ export class MinLengthNode extends BaseLengthBound<
 							? "non-empty"
 							: `more than length ${node.limit}`
 						: node.limit === 1
-							? "non-empty"
-							: `at least length ${node.limit}`
+						? "non-empty"
+						: `at least length ${node.limit}`
 				},
 				actual: (data) => `${data.length}`,
 				problem: this.defaultProblem

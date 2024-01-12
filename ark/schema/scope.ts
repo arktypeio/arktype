@@ -65,7 +65,7 @@ type nodeConfigForKind<kind extends NodeKind> = evaluate<
 		? {
 				problem?: ArkProblemWriter<kind>
 				actual?: ArkActualWriter<kind> | null
-			}
+		  }
 		: {})
 >
 

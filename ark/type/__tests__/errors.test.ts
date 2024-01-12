@@ -21,7 +21,7 @@ describe("errors", () => {
 				? true
 				: ctx.falsify("nonPalindrome", {
 						reversesTo: [...s].reverse().join("")
-					})
+				  })
 		)
 	})
 	it("infers context parameter", () => {

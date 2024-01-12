@@ -120,8 +120,8 @@ const parseConfig = (): ParsedAttestConfig => {
 		tsVersions: baseConfig.skipTypes
 			? []
 			: isTsVersionAliases(baseConfig.tsVersions)
-				? parseTsVersions(baseConfig.tsVersions)
-				: baseConfig.tsVersions
+			? parseTsVersions(baseConfig.tsVersions)
+			: baseConfig.tsVersions
 	})
 }
 

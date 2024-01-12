@@ -55,10 +55,10 @@ export type inferExpression<
 			ast[0]["definition"],
 			ast[0]["$"] extends UnparsedScope
 				? // If the generic was defined in the current scope, its definition can be
-					// resolved using the same scope as that of the input args.
-					$
+				  // resolved using the same scope as that of the input args.
+				  $
 				: // Otherwise, use the scope that was explicitly associated with it.
-					ast[0]["$"],
+				  ast[0]["$"],
 			{
 				// Using keyof g["parameters"] & number here results in the element types
 				// being mixed- another reason TS should not have separate `${number}` and number keys!
@@ -70,37 +70,32 @@ export type inferExpression<
 					refinements
 				>
 			}
-		>
+	  >
 	: ast[1] extends "[]"
-		? inferAst<ast[0], $, args, refinements>[]
-		: ast[1] extends "|"
-			?
-					| inferAst<ast[0], $, args, refinements>
-					| inferAst<ast[2], $, args, refinements>
-			: ast[1] extends "&"
-				? inferIntersection<
-						inferAst<ast[0], $, args, refinements>,
-						inferAst<ast[2], $, args, refinements>
-					>
-				: ast[1] extends Comparator
-					? ast[0] extends LimitLiteral
-						? inferAst<
-								ast[2],
-								$,
-								args,
-								refinements & { [_ in InvertedComparators[ast[1]]]: ast[0] }
-							>
-						: inferAst<ast[0], $, args, refinements & { [_ in ast[1]]: ast[2] }>
-					: ast[1] extends "%"
-						? inferAst<
-								ast[0],
-								$,
-								args,
-								refinements & { [k in `%${ast[2] & string}`]: 0 }
-							>
-						: ast[0] extends "keyof"
-							? keyof inferAst<ast[1], $, args, refinements>
-							: never
+	? inferAst<ast[0], $, args, refinements>[]
+	: ast[1] extends "|"
+	?
+			| inferAst<ast[0], $, args, refinements>
+			| inferAst<ast[2], $, args, refinements>
+	: ast[1] extends "&"
+	? inferIntersection<
+			inferAst<ast[0], $, args, refinements>,
+			inferAst<ast[2], $, args, refinements>
+	  >
+	: ast[1] extends Comparator
+	? ast[0] extends LimitLiteral
+		? inferAst<
+				ast[2],
+				$,
+				args,
+				refinements & { [_ in InvertedComparators[ast[1]]]: ast[0] }
+		  >
+		: inferAst<ast[0], $, args, refinements & { [_ in ast[1]]: ast[2] }>
+	: ast[1] extends "%"
+	? inferAst<ast[0], $, args, refinements & { [k in `%${ast[2] & string}`]: 0 }>
+	: ast[0] extends "keyof"
+	? keyof inferAst<ast[1], $, args, refinements>
+	: never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
 
@@ -134,16 +129,16 @@ export type inferTerminal<
 		? resolve<token, $, args>
 		: is<resolve<token, $, args>, evaluate<refinements>>
 	: token extends StringLiteral<infer text>
-		? text
-		: token extends RegexLiteral
-			? is<string, extend<refinements, { [_ in token]: true }>>
-			: token extends DateLiteral
-				? is<Date, extend<refinements, { [_ in token]: true }>>
-				: token extends NumberLiteral<infer value>
-					? value
-					: token extends BigintLiteral<infer value>
-						? value
-						: // TODO: refinements
-							// doing this last allows us to infer never if it isn't valid rather than check
-							// if it's a valid submodule reference ahead of time
-							tryInferSubmoduleReference<$, token>
+	? text
+	: token extends RegexLiteral
+	? is<string, extend<refinements, { [_ in token]: true }>>
+	: token extends DateLiteral
+	? is<Date, extend<refinements, { [_ in token]: true }>>
+	: token extends NumberLiteral<infer value>
+	? value
+	: token extends BigintLiteral<infer value>
+	? value
+	: // TODO: refinements
+	  // doing this last allows us to infer never if it isn't valid rather than check
+	  // if it's a valid submodule reference ahead of time
+	  tryInferSubmoduleReference<$, token>

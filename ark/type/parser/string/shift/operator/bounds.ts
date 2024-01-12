@@ -60,7 +60,7 @@ export type parseBound<
 	? shiftResultOrError extends Scanner.shiftResult<
 			infer comparator extends Comparator,
 			infer nextUnscanned
-		>
+	  >
 		? s["root"] extends `${infer limit extends LimitLiteral}`
 			? state.reduceLeftBound<s, limit, comparator, nextUnscanned>
 			: parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
@@ -91,8 +91,8 @@ const shiftComparator = (
 	s.scanner.lookaheadIs("=")
 		? `${start}${s.scanner.shift()}`
 		: isKeyOf(start, oneCharComparators)
-			? start
-			: s.error(singleEqualsMessage)
+		? start
+		: s.error(singleEqualsMessage)
 
 type shiftComparator<
 	start extends ComparatorStartChar,
@@ -100,8 +100,8 @@ type shiftComparator<
 > = unscanned extends `=${infer nextUnscanned}`
 	? [`${start}=`, nextUnscanned]
 	: start extends OneCharComparator
-		? [start, unscanned]
-		: state.error<singleEqualsMessage>
+	? [start, unscanned]
+	: state.error<singleEqualsMessage>
 
 export const writeUnboundableMessage = <root extends string>(
 	root: root
@@ -131,8 +131,8 @@ export const getBoundKinds = (
 		return comparator === "=="
 			? ["min", "max"]
 			: comparator[0] === ">"
-				? ["min"]
-				: ["max"]
+			? ["min"]
+			: ["max"]
 	}
 	if (root.extends(keywords.string) || root.extends(keywords.Array)) {
 		if (typeof limit !== "number") {
@@ -141,16 +141,16 @@ export const getBoundKinds = (
 		return comparator === "=="
 			? ["minLength", "maxLength"]
 			: comparator[0] === ">"
-				? ["minLength"]
-				: ["maxLength"]
+			? ["minLength"]
+			: ["maxLength"]
 	}
 	if (root.extends(keywords.Date)) {
 		// allow either numeric or date limits
 		return comparator === "=="
 			? ["after", "before"]
 			: comparator[0] === ">"
-				? ["after"]
-				: ["before"]
+			? ["after"]
+			: ["before"]
 	}
 	return throwParseError(writeUnboundableMessage(root.toString()))
 }
@@ -228,7 +228,7 @@ export type parseRightBound<
 						comparator,
 						limit,
 						nextState["unscanned"]
-					>
+				  >
 				: state.error<writeUnpairableComparatorMessage<comparator>>
 			: state.reduceSingleBound<s, comparator, limit, nextState["unscanned"]>
 		: state.error<
@@ -237,7 +237,7 @@ export type parseRightBound<
 					astToString<nextState["root"]>,
 					"right"
 				>
-			>
+		  >
 	: never
 
 export const writeInvalidLimitMessage = <

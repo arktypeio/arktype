@@ -244,7 +244,7 @@ export type functionAssertions<kind extends AssertionKind> = {
 } & ("type" extends kind
 	? {
 			throwsAndHasTypeError: (message: string | RegExp) => undefined
-		}
+	  }
 	: {})
 
 export type valueFromTypeAssertion<

@@ -11,22 +11,22 @@ import {
 export type inferIntersection<l, r> = [l] extends [never]
 	? never
 	: [r] extends [never]
+	? never
+	: [l & r] extends [never]
+	? never
+	: isAny<l | r> extends true
+	? any
+	: l extends MorphAst<infer lIn, infer lOut>
+	? r extends MorphAst
 		? never
-		: [l & r] extends [never]
-			? never
-			: isAny<l | r> extends true
-				? any
-				: l extends MorphAst<infer lIn, infer lOut>
-					? r extends MorphAst
-						? never
-						: (In: evaluate<lIn & r>) => Out<lOut>
-					: r extends MorphAst<infer rIn, infer rOut>
-						? (In: evaluate<rIn & l>) => Out<rOut>
-						: [l, r] extends [object, object]
-							? intersectObjects<l, r> extends infer result
-								? result
-								: never
-							: l & r
+		: (In: evaluate<lIn & r>) => Out<lOut>
+	: r extends MorphAst<infer rIn, infer rOut>
+	? (In: evaluate<rIn & l>) => Out<rOut>
+	: [l, r] extends [object, object]
+	? intersectObjects<l, r> extends infer result
+		? result
+		: never
+	: l & r
 
 declare class MorphableIntersection extends Hkt.Kind {
 	f: (
@@ -43,4 +43,4 @@ type intersectObjects<l, r> = [l, r] extends [
 			{
 				[k in keyof l]: k extends keyof r ? inferIntersection<l[k], r[k]> : l[k]
 			} & Omit<r, keyof l>
-		>
+	  >

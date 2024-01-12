@@ -135,7 +135,7 @@ export type inferObjectLiteral<def extends object, $, args> = evaluate<
 		? merge<
 				inferDefinition<def["..."], $, args>,
 				inferObjectLiteralInner<def, $, args>
-			>
+		  >
 		: inferObjectLiteralInner<def, $, args>
 >
 
@@ -143,17 +143,17 @@ export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexedKey<infer indexDef>
 		? validateString<indexDef, $, args> extends ErrorMessage<infer message>
 			? // add a nominal type here to avoid allowing the error message as input
-				indexParseError<message>
+			  indexParseError<message>
 			: inferDefinition<indexDef, $, args> extends PropertyKey
-				? // if the indexDef is syntactically and semantically valid,
-					// move on to the validating the value definition
-					validateDefinition<def[k], $, args>
-				: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
+			? // if the indexDef is syntactically and semantically valid,
+			  // move on to the validating the value definition
+			  validateDefinition<def[k], $, args>
+			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
 		: k extends "..."
-			? inferDefinition<def[k], $, args> extends object
-				? validateDefinition<def[k], $, args>
-				: indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
-			: validateObjectValue<def[k], $, args>
+		? inferDefinition<def[k], $, args> extends object
+			? validateDefinition<def[k], $, args>
+			: indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
+		: validateObjectValue<def[k], $, args>
 }
 
 type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
@@ -163,8 +163,8 @@ type nonOptionalKeyFrom<k extends PropertyKey, valueDef, $, args> = parseEntry<
 	? result["kind"] extends "required"
 		? result["innerKey"]
 		: result["kind"] extends "indexed"
-			? inferDefinition<result["innerKey"], $, args> & PropertyKey
-			: never
+		? inferDefinition<result["innerKey"], $, args> & PropertyKey
+		: never
 	: never
 
 type optionalKeyFrom<k extends PropertyKey, valueDef> = parseEntry<
