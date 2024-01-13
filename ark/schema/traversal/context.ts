@@ -1,6 +1,5 @@
-import type { autocomplete } from "@arktype/util"
 import type { ParsedArkConfig } from "../scope.js"
-import { ArkErrors, type ArkErrorCode, type ArkErrorInput } from "./errors.js"
+import { ArkErrors, type ArkErrorInput } from "./errors.js"
 
 export type TraversalPath = (string | symbol)[]
 
@@ -14,7 +13,7 @@ export class TraversalContext {
 	seen: { [name in string]?: object[] } = {}
 
 	constructor(
-		public data: unknown,
+		public root: unknown,
 		public config: ParsedArkConfig
 	) {
 		this.errorsStack = [new ArkErrors(this)]
@@ -26,6 +25,14 @@ export class TraversalContext {
 
 	get error() {
 		return this.currentErrors.add.bind(this.currentErrors)
+	}
+
+	get data(): unknown {
+		let result: any = this.root
+		for (const segment of this.path) {
+			result = result?.[segment]
+		}
+		return result
 	}
 
 	invalid(input: ArkErrorInput): false {

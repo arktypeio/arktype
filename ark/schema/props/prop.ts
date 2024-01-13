@@ -38,11 +38,11 @@ export const compilePresentProp = (
 			node.compiledKey
 		)})`
 	}
-	return `${ctx.ctxArg}.currentPath.push(${node.serializedKey})
+	return `${ctx.ctxArg}.path.push(${node.serializedKey})
 	this.${node.value.id}(${ctx.dataArg}${compilePropAccess(node.compiledKey)}, ${
 		ctx.ctxArg
 	})
-	${ctx.ctxArg}.currentPath.pop()
+	${ctx.ctxArg}.path.pop()
 	`
 }
 

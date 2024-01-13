@@ -64,13 +64,7 @@ import {
 import { Disjoint } from "./shared/disjoint.js"
 import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
 import { TraversalContext } from "./traversal/context.js"
-import type {
-	ActualWriter,
-	ArkResult,
-	ExpectedWriter,
-	MessageWriter,
-	ProblemWriter
-} from "./traversal/errors.js"
+import type { ArkResult } from "./traversal/errors.js"
 import type { DomainNode } from "./types/domain.js"
 import type {
 	IntersectionInner,
@@ -145,6 +139,9 @@ export abstract class BaseNode<
 	): nodeImplementationOf<declarationOf<self>>
 	protected static implement(_: never): any {
 		const implementation: UnknownNodeImplementation = _
+		// TODO: nodes with errors kinds?
+		// TODO: ensure implemented for custom error contexts
+		implementation.defaults.expected ??= implementation.defaults.description
 		implementation.defaults.actual ??= (data) => printable(data)
 		implementation.defaults.problem ??= (ctx) =>
 			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`

@@ -9,7 +9,7 @@ import {
 	type require,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, UnknownNode } from "./base.js"
+import type { Node, TypeNode } from "./base.js"
 import type {
 	instantiateAliases,
 	instantiateSchemaBranches,
@@ -24,8 +24,7 @@ import {
 	type DescriptionWriter,
 	type NodeKind,
 	type PrimitiveKind,
-	type TypeKind,
-	type UnknownNodeImplementation
+	type TypeKind
 } from "./shared/define.js"
 import type { TraversalContext } from "./traversal/context.js"
 import type {

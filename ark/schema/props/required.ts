@@ -8,6 +8,7 @@ import type {
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkErrorInput } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
 	BaseProp,
@@ -99,6 +100,9 @@ export class RequiredNode extends BaseProp<
 
 	compiledKey = compileKey(this.key)
 
+	// TODO: fix base
+	readonly baseRequiredErrorContext = { code: "required", key: this.key }
+
 	compileBody(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${ctx.dataArg}) {
 			${compilePresentProp(this, ctx)}
@@ -106,7 +110,9 @@ export class RequiredNode extends BaseProp<
 			${
 				ctx.compilationKind === "allows"
 					? "return false"
-					: `${ctx.ctxArg}.add("provided")`
+					: `${ctx.ctxArg}.error(${JSON.stringify(
+							this.baseRequiredErrorContext
+					  )})`
 			}
 		}`
 	}
