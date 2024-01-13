@@ -130,3 +130,6 @@ export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	: kind
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
+
+export type errorContextFromNode<kind extends NodeKind> =
+	Declaration<kind>["errorContext"]

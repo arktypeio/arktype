@@ -65,9 +65,7 @@ export type declareNode<d extends DeclarationInput> = extend<
 		prerequisite: prerequisiteOf<d>
 		childKind: d["childKind"] extends string ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
-		errorContext: d["errorContext"] extends {}
-			? { code: d["kind"] } & DerivableErrorContext<prerequisiteOf<d>>
-			: null
+		errorContext: d["errorContext"] extends {} ? {} : null
 	}
 >
 
@@ -87,7 +85,7 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
-	errorContext: DerivableErrorContext | null
+	errorContext: Dict | null
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}

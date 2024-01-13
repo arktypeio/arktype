@@ -6,7 +6,7 @@ import {
 	type optionalizeKeys,
 	type propwiseXor
 } from "@arktype/util"
-import type { Declaration, Prerequisite } from "../kinds.js"
+import type { Prerequisite, errorContextFromNode } from "../kinds.js"
 import type { NodeKind } from "../shared/define.js"
 import type { TraversalContext, TraversalPath } from "./context.js"
 
@@ -145,17 +145,13 @@ export interface DerivableErrorContext<data = unknown> {
 }
 
 export type ArkErrorCode = {
-	[kind in NodeKind]: Declaration<kind>["errorContext"] extends null
-		? never
-		: kind
+	[kind in NodeKind]: errorContextFromNode<kind> extends null ? never : kind
 }[NodeKind]
 
-type ErrorContextsByCode = {
-	[kind in ArkErrorCode]: Declaration<kind>["errorContext"]
-}
-
 export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
-	ErrorContextsByCode[code]
+	errorContextFromNode<code> & {
+		code: code
+	} & DerivableErrorContext<Prerequisite<code>>
 
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	ArkErrorContext<code>,
@@ -169,7 +165,7 @@ export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 
 type ErrorInputByCode = {
 	[code in ArkErrorCode]: optionalizeKeys<
-		ErrorContextsByCode[code],
+		ArkErrorContext<code>,
 		keyof DerivableErrorContext
 	>
 }
@@ -195,13 +191,8 @@ export type MessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
 export type getAssociatedDataForError<code extends ArkErrorCode> =
 	code extends NodeKind ? Prerequisite<code> : unknown
 
-export type expectedWriterContextFor<code extends ArkErrorCode> = Omit<
-	ArkErrorContext<code>,
-	keyof DerivableErrorContext
->
-
 export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	source: expectedWriterContextFor<code>
+	source: errorContextFromNode<code>
 ) => string
 
 export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
