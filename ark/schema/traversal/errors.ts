@@ -22,7 +22,16 @@ export class ArkError extends TypeError {
 
 export const ArkTypeError = <context extends ArkErrorContext>(
 	context: context
-) => Object.assign(new ArkError(context.message), context)
+): ArkTypeError & context => {
+	const e = new ArkError(context.message)
+	e.name = "ArkTypeError"
+	return Object.assign(e, context) as never
+}
+
+Object.defineProperty(ArkTypeError, Symbol.hasInstance, {
+	value: (instance: unknown) =>
+		instance instanceof ArkError && instance.name === "ArkTypeError"
+})
 
 // hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
 // 	return this.code === (code as never)
@@ -42,6 +51,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	private mutable: ArkTypeError[] = this as never
 
 	add<input extends ArkErrorInput>(
+		this: ArkErrors,
 		input: input
 	): ArkTypeError<
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
