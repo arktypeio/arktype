@@ -31,10 +31,10 @@ export type NormalizedUnionSchema<
 	readonly ordered?: true
 }>
 
-export type UnionInner = {
+export type UnionInner = withBaseMeta<{
 	readonly branches: readonly BranchNode[]
 	readonly ordered?: true
-}
+}>
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
@@ -70,6 +70,7 @@ export class UnionNode<t = unknown> extends BaseType<
 > {
 	static implementation: nodeImplementationOf<UnionDeclaration> =
 		this.implement({
+			hasAssociatedError: true,
 			collapseKey: "branches",
 			keys: {
 				ordered: {},

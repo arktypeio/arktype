@@ -5,11 +5,11 @@ import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseRefinement } from "./refinement.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
-	{
+	withBaseMeta<{
 		readonly predicate: predicate
-	}
+	}>
 
-export type NormalizedPredicateSchema = withBaseMeta<PredicateInner>
+export type NormalizedPredicateSchema = PredicateInner
 
 export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
@@ -22,7 +22,7 @@ export type PredicateDeclaration = declareNode<{
 		predicate: "predicate" | null
 	}
 	data: unknown
-	errorContext: {}
+	errorContext: { [k in keyof PredicateInner]?: PredicateInner[k] }
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
@@ -33,6 +33,7 @@ export class PredicateNode extends BaseRefinement<
 	typeof PredicateNode
 > {
 	static implementation = this.implement({
+		hasAssociatedError: true,
 		collapseKey: "predicate",
 		keys: {
 			predicate: {}
@@ -49,6 +50,9 @@ export class PredicateNode extends BaseRefinement<
 		defaults: {
 			description(inner) {
 				return `valid according to ${inner.predicate.name}`
+			},
+			expected(source) {
+				return `valid`
 			}
 		}
 	})

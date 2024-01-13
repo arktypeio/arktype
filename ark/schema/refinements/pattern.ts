@@ -1,12 +1,12 @@
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import { BaseRefinement } from "./refinement.js"
 
-export type PatternInner = {
+export type PatternInner = withBaseMeta<{
 	readonly source: string
 	readonly flags?: string
-}
+}>
 
-export type NormalizedPatternSchema = withBaseMeta<PatternInner>
+export type NormalizedPatternSchema = PatternInner
 
 export type PatternSchema = NormalizedPatternSchema | string | RegExp
 
@@ -44,6 +44,7 @@ export class PatternNode extends BaseRefinement<
 			// For now, non-equal regex are naively intersected
 			pattern: () => null
 		},
+		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
 				return `matched by ${inner.source}`

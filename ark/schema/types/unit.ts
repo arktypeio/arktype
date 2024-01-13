@@ -4,11 +4,11 @@ import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseBasis } from "./basis.js"
 
-export type UnitSchema<value = unknown> = withBaseMeta<UnitInner<value>>
+export type UnitSchema<value = unknown> = UnitInner<value>
 
-export type UnitInner<value = unknown> = {
+export type UnitInner<value = unknown> = withBaseMeta<{
 	readonly unit: value
-}
+}>
 
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
@@ -28,6 +28,7 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	typeof UnitNode
 > {
 	static implementation = this.implement({
+		hasAssociatedError: true,
 		keys: {
 			unit: {
 				preserveUndefined: true

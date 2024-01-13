@@ -22,10 +22,11 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseRefinement } from "./refinement.js"
 
-export type BoundInner<limit extends LimitSchemaValue = LimitSchemaValue> = {
-	readonly limit: limit
-	readonly exclusive?: true
-}
+export type BoundInner<limit extends LimitSchemaValue = LimitSchemaValue> =
+	withBaseMeta<{
+		readonly limit: limit
+		readonly exclusive?: true
+	}>
 
 export type LimitSchemaValue = number | string
 
@@ -114,11 +115,12 @@ export abstract class BaseBound<
 	static implementBound<d extends Declaration<BoundKind>>(
 		implementation: optionalizeKeys<
 			nodeImplementationInputOf<d>,
-			"collapseKey" | "keys" | "normalize"
+			"collapseKey" | "keys" | "normalize" | "hasAssociatedError"
 		>
 	): nodeImplementationOf<d> {
 		return {
 			collapseKey: "limit",
+			hasAssociatedError: true,
 			keys: {
 				limit: {
 					parse: normalizeLimit

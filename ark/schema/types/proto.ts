@@ -10,12 +10,12 @@ import { defaultValueSerializer } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
 
-export type ProtoInner<proto extends Constructor = Constructor> = {
+export type ProtoInner<proto extends Constructor = Constructor> = withBaseMeta<{
 	readonly proto: proto
-}
+}>
 
 export type NormalizedProtoSchema<proto extends Constructor = Constructor> =
-	withBaseMeta<ProtoInner<proto>>
+	ProtoInner<proto>
 
 export type ProtoSchema<proto extends Constructor = Constructor> =
 	| proto
@@ -41,6 +41,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 	typeof ProtoNode
 > {
 	static implementation = this.implement({
+		hasAssociatedError: true,
 		collapseKey: "proto",
 		keys: {
 			proto: {

@@ -138,18 +138,18 @@ export abstract class BaseNode<
 	): nodeImplementationOf<declarationOf<self>>
 	protected static implement(_: never): any {
 		const implementation: UnknownNodeImplementation = _
-		// TODO: only add this properties for nodes with associated errors
-		// TODO: ensure expected is implemented for custom error contexts
-		implementation.defaults.expected ??= implementation.defaults.description
-		implementation.defaults.actual ??= (data) => printable(data)
-		implementation.defaults.problem ??= (ctx) =>
-			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-		implementation.defaults.message ??= (ctx) =>
-			ctx.path.length === 0
-				? capitalize(ctx.problem)
-				: ctx.path.length === 1 && typeof ctx.path[0] === "number"
-				? `Item at index ${ctx.path[0]} ${ctx.problem}`
-				: `${ctx.path} ${ctx.problem}`
+		if (implementation.hasAssociatedError) {
+			implementation.defaults.expected ??= implementation.defaults.description
+			implementation.defaults.actual ??= (data) => printable(data)
+			implementation.defaults.problem ??= (ctx) =>
+				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+			implementation.defaults.message ??= (ctx) =>
+				ctx.path.length === 0
+					? capitalize(ctx.problem)
+					: ctx.path.length === 1 && typeof ctx.path[0] === "number"
+					? `Item at index ${ctx.path[0]} ${ctx.problem}`
+					: `${ctx.path} ${ctx.problem}`
+		}
 		return implementation
 	}
 

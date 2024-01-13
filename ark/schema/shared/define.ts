@@ -6,7 +6,7 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { Declaration, Inner } from "../kinds.js"
+import type { Declaration, Inner, errorContextFromNode } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -130,6 +130,7 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
+	hasAssociatedError: boolean
 	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void
 	reduce?: (inner: d["inner"], scope: ScopeNode) => Node | undefined
@@ -157,7 +158,13 @@ export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,
-	"description"
+	| "description"
+	// if the node's error context is distinct from its inner definition, ensure it is implemented.
+	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
+	// but rather a single failed condition for each branch.
+	| (errorContextFromNode<kind> extends Inner<kind>
+			? never
+			: "expected" & keyof NodeConfig<kind>)
 >
 
 export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<

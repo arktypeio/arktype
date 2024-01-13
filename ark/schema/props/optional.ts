@@ -10,10 +10,10 @@ import { Disjoint } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseProp, compileKey, compilePresentProp } from "./prop.js"
 
-export type OptionalInner = {
+export type OptionalInner = withBaseMeta<{
 	readonly key: string | symbol
 	readonly value: Node<TypeKind>
-}
+}>
 
 export type OptionalSchema = withBaseMeta<{
 	readonly key: string | symbol
@@ -44,6 +44,7 @@ export class OptionalNode extends BaseProp<
 					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 				}
 			},
+			hasAssociatedError: false,
 			normalize: (schema) => schema,
 			defaults: {
 				description(inner) {

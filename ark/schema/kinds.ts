@@ -19,7 +19,6 @@ import type {
 	PropKind,
 	TypeKind
 } from "./shared/define.js"
-import type { ArkErrorCode } from "./traversal/errors.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
 import {
 	IntersectionNode,

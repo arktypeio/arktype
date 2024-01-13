@@ -39,11 +39,11 @@ export type Out<o = any> = ["=>", o]
 
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
-export type MorphInner = {
+export type MorphInner = withBaseMeta<{
 	readonly in: ValidatorNode
 	readonly out: ValidatorNode
 	readonly morph: readonly Morph[]
-}
+}>
 
 export type MorphSchema = withBaseMeta<{
 	readonly in: ValidatorDefinition
@@ -71,6 +71,7 @@ export class MorphNode<t = unknown> extends BaseType<
 	// TODO: recursively extract in?
 	static implementation: nodeImplementationOf<MorphDeclaration> =
 		this.implement({
+			hasAssociatedError: true,
 			keys: {
 				in: {
 					child: true,

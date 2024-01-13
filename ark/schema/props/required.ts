@@ -8,7 +8,6 @@ import type {
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkErrorInput } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
 	BaseProp,
@@ -22,10 +21,10 @@ export type RequiredSchema = withBaseMeta<{
 	readonly value: TypeSchema
 }>
 
-export type RequiredInner = {
+export type RequiredInner = withBaseMeta<{
 	readonly key: string | symbol
 	readonly value: Node<TypeKind>
-}
+}>
 
 export type RequiredDeclaration = declareNode<{
 	kind: "required"
@@ -66,6 +65,7 @@ export class RequiredNode extends BaseProp<
 > {
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
+			hasAssociatedError: true,
 			keys: {
 				key: {},
 				value: {

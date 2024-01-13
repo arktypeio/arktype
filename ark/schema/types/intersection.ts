@@ -33,11 +33,13 @@ import type { ArkError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
-export type IntersectionInner = { basis?: Node<BasisKind> } & {
-	[k in ComponentKind]?: k extends OpenComponentKind
-		? readonly Node<k>[]
-		: Node<k>
-}
+export type IntersectionInner = withBaseMeta<
+	{ basis?: Node<BasisKind> } & {
+		[k in ComponentKind]?: k extends OpenComponentKind
+			? readonly Node<k>[]
+			: Node<k>
+	}
+>
 
 export type IntersectionSchema<
 	basis extends Schema<BasisKind> | undefined = any
@@ -113,6 +115,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 > {
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
 		this.implement({
+			hasAssociatedError: true,
 			normalize: (def) => def,
 			addContext: (ctx) => {
 				const def = ctx.definition as IntersectionSchema

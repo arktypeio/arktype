@@ -1,11 +1,11 @@
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import { BaseRefinement } from "./refinement.js"
 
-export type DivisorInner = {
+export type DivisorInner = withBaseMeta<{
 	readonly divisor: number
-}
+}>
 
-export type NormalizedDivisorSchema = withBaseMeta<DivisorInner>
+export type NormalizedDivisorSchema = DivisorInner
 
 export type DivisorSchema = NormalizedDivisorSchema | number
 
@@ -47,6 +47,7 @@ export class DivisorNode extends BaseRefinement<
 				)
 			})
 		},
+		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
 				return inner.divisor === 1

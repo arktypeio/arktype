@@ -20,14 +20,14 @@ export type NormalizedSequenceSchema = withBaseMeta<{
 
 export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
-export type SequenceInner = {
+export type SequenceInner = withBaseMeta<{
 	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
 	readonly prefix?: readonly TypeNode[]
 	// the variadic element
 	readonly element: TypeNode
 	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
 	readonly postfix?: readonly TypeNode[]
-}
+}>
 
 export type SequenceDeclaration = declareNode<{
 	kind: "sequence"
@@ -58,6 +58,7 @@ export class SequenceNode extends BaseProp<
 > {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
+			hasAssociatedError: false,
 			collapseKey: "element",
 			keys: {
 				prefix: fixedSequenceKeyDefinition,

@@ -14,10 +14,10 @@ export type IndexSchema = withBaseMeta<{
 	readonly value: TypeSchema
 }>
 
-export type IndexInner = {
+export type IndexInner = withBaseMeta<{
 	readonly key: TypeNode<string | symbol>
 	readonly value: TypeNode
-}
+}>
 
 export type IndexDeclaration = declareNode<{
 	kind: "index"
@@ -33,6 +33,7 @@ export type IndexDeclaration = declareNode<{
 export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
+			hasAssociatedError: false,
 			keys: {
 				key: {
 					child: true,
