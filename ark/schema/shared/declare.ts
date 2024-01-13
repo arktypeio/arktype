@@ -45,7 +45,6 @@ export type DeclarationInput<kind extends NodeKind = NodeKind> = {
 	normalizedSchema: BaseMeta
 	inner: Dict
 	errorContext?: Dict
-	meta?: Dict
 	prerequisite?: unknown
 	childKind?: NodeKind
 }
@@ -61,7 +60,6 @@ type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 export type declareNode<d extends DeclarationInput> = extend<
 	d,
 	{
-		meta: d["meta"] extends {} ? extend<BaseMeta, d["meta"]> : BaseMeta
 		prerequisite: prerequisiteOf<d>
 		childKind: d["childKind"] extends string ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
@@ -80,7 +78,6 @@ export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
 	normalizedSchema: Dict & BaseMeta
-	meta: Dict & BaseMeta
 	inner: Dict
 	prerequisite: any
 	childKind: NodeKind

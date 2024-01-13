@@ -71,7 +71,7 @@ export class SequenceNode extends BaseProp<
 				typeof schema === "object" && "element" in schema
 					? schema
 					: { element: schema },
-			reduce: (inner, meta, scope) => {
+			reduce: (inner, scope) => {
 				if (!inner.postfix) {
 					return
 				}
@@ -82,7 +82,6 @@ export class SequenceNode extends BaseProp<
 				}
 				if (postfix.length < inner.postfix.length) {
 					return scope.parsePrereduced("sequence", {
-						...meta,
 						...inner,
 						// empty lists will be omitted during normalization
 						prefix,

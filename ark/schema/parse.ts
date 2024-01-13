@@ -74,7 +74,6 @@ export function parse(
 			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
 	}
 	const inner: Record<string, unknown> = {}
-	const meta: Record<string, unknown> = {}
 	impl.addContext?.(ctx)
 	const schemaEntries = entriesOf(normalizedDefinition).sort((l, r) =>
 		l[0] < r[0] ? -1 : 1
@@ -108,10 +107,8 @@ export function parse(
 				? keyImpl.serialize(v)
 				: defaultValueSerializer(v)
 		}
-		if (keyImpl.meta) {
-			meta[k] = v
-		} else {
-			inner[k] = v
+		inner[k] = v
+		if (!keyImpl.meta) {
 			typeJson[k] = json[k]
 		}
 	}
@@ -133,7 +130,7 @@ export function parse(
 		return globalResolutions[innerId]
 	}
 	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, meta, ctx.$)
+		const reduced = impl.reduce(inner, ctx.$)
 		if (reduced) {
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
@@ -154,7 +151,6 @@ export function parse(
 		id,
 		kind,
 		inner,
-		meta,
 		entries,
 		json: json as Json,
 		typeJson: typeJson as Json,

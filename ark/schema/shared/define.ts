@@ -103,11 +103,7 @@ export const defaultValueSerializer = (v: unknown) => {
 export type NodeKeyImplementation<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["normalizedSchema"],
-	instantiated = k extends keyof d["inner"]
-		? d["inner"][k]
-		: k extends keyof d["meta"]
-		? d["meta"][k]
-		: never
+	instantiated = k extends keyof d["inner"] ? d["inner"][k] : never
 > = requireKeys<
 	{
 		preserveUndefined?: true
@@ -129,8 +125,6 @@ export type NodeKeyImplementation<
 	| ([instantiated] extends [listable<UnknownNode> | undefined]
 			? "child"
 			: never)
-	// require meta keys are specified
-	| (k extends keyof d["meta"] ? "meta" : never)
 >
 
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
@@ -138,11 +132,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	collapseKey?: keyof d["inner"] & string
 	addContext?: (ctx: SchemaParseContext) => void
-	reduce?: (
-		inner: d["inner"],
-		meta: d["meta"],
-		scope: ScopeNode
-	) => Node | undefined
+	reduce?: (inner: d["inner"], scope: ScopeNode) => Node | undefined
 }
 
 export interface UnknownNodeImplementation

@@ -85,7 +85,6 @@ export interface BaseAttachments {
 	readonly kind: NodeKind
 	readonly id: string
 	readonly inner: Dict
-	readonly meta: BaseMeta & Dict
 	readonly entries: readonly Entry[]
 	readonly json: Json
 	readonly typeJson: Json
@@ -215,7 +214,8 @@ export abstract class BaseNode<
 	private descriptionCache?: string
 	get description() {
 		this.descriptionCache ??=
-			this.meta.description ?? this.impl.defaults.description(this as never)
+			(this.inner as BaseMeta).description ??
+			this.impl.defaults.description(this as never)
 		return this.descriptionCache
 	}
 

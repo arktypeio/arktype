@@ -177,7 +177,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					parse: (def, ctx) => parseClosedComponent("sequence", def, ctx)
 				}
 			},
-			reduce: (inner, meta, scope) => {
+			reduce: (inner, scope) => {
 				const inputConstraints = Object.values(inner).flat() as ConstraintSet
 				const reducedConstraints = reduceConstraints([], inputConstraints)
 				if (reducedConstraints instanceof Disjoint) {
@@ -193,11 +193,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				if (reducedConstraints.length === inputConstraints.length) {
 					return
 				}
-				const reducedSchema = Object.assign(
-					unflattenConstraints(reducedConstraints),
-					meta
+				return scope.parsePrereduced(
+					"intersection",
+					unflattenConstraints(reducedConstraints)
 				)
-				return scope.parsePrereduced("intersection", reducedSchema)
 			},
 			intersections: {
 				intersection: (l, r) => {
