@@ -331,6 +331,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 	</tr>
 	<tr>
     	<th>Timeraa</th>
+		<th>marcagba</th>
     </tr>
     <tr>
     	<td>
@@ -338,6 +339,13 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
     			><img
     				height="64px"
     				src="https://avatars.githubusercontent.com/u/29104008"
+    		/></a>
+    	</td>
+		<td>
+    		<a href="https://github.com/marcagba"
+    			><img
+    				height="64px"
+    				src="https://avatars.githubusercontent.com/u/14045559"
     		/></a>
     	</td>
     </tr>
