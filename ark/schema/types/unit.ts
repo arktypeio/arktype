@@ -53,6 +53,6 @@ export class UnitNode<t = unknown> extends BaseBasis<
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
-	compiledCondition = `${this.$.dataName} === ${this.serializedValue}`
-	compiledNegation = `${this.$.dataName} !== ${this.serializedValue}`
+	compiledCondition = `${this.$.dataArg} === ${this.serializedValue}`
+	compiledNegation = `${this.$.dataArg} !== ${this.serializedValue}`
 }

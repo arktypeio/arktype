@@ -80,7 +80,7 @@ export class OptionalNode extends BaseProp<
 	}
 
 	compileBody(ctx: CompilationContext): string {
-		return `if(${this.serializedKey} in ${ctx.argName}) {
+		return `if(${this.serializedKey} in ${ctx.dataArg}) {
 			${compilePresentProp(this, ctx)}
 		}`
 	}

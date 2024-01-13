@@ -59,8 +59,8 @@ export class DivisorNode extends BaseRefinement<
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
 
-	compiledCondition = `${this.$.dataName} % ${this.divisor} === 0`
-	compiledNegation = `${this.$.dataName} % ${this.divisor} !== 0`
+	compiledCondition = `${this.$.dataArg} % ${this.divisor} === 0`
+	compiledNegation = `${this.$.dataArg} % ${this.divisor} !== 0`
 
 	getCheckedDefinitions() {
 		return ["number"] as const

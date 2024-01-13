@@ -240,8 +240,8 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	compileBody(ctx: CompilationContext) {
 		const constraintInvocations = this.constraints.map(
 			(constraint) =>
-				`this.${constraint.id}(${ctx.argName}${
-					ctx.compilationKind === "allows" ? "" : ", errors"
+				`this.${constraint.id}(${ctx.dataArg}${
+					ctx.compilationKind === "allows" ? "" : ", ctx"
 				})`
 		)
 		return ctx.compilationKind === "allows"

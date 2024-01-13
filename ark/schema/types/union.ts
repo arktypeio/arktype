@@ -183,8 +183,8 @@ export class UnionNode<t = unknown> extends BaseType<
 	compileBody(ctx: CompilationContext) {
 		const branchInvocations = this.branches.map(
 			(branch) =>
-				`this.${branch.id}(${ctx.argName}${
-					ctx.compilationKind === "allows" ? "" : ", errors"
+				`this.${branch.id}(${ctx.dataArg}${
+					ctx.compilationKind === "allows" ? "" : `, ${ctx.dataArg}`
 				})`
 		)
 		return ctx.compilationKind === "allows"

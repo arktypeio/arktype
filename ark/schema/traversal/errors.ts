@@ -1,8 +1,6 @@
 import {
 	ReadonlyArray,
-	capitalize,
 	hasDefinedKey,
-	printable,
 	type DynamicBase,
 	type evaluate,
 	type optionalizeKeys,
@@ -106,7 +104,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		// 	this.byPath[pathKey] = problemIntersection
 		// }
 		// } else {
-		const error = ArkTypeError(ctx as never)
+		const error = ArkTypeError(ctx)
 		this.byPath[pathKey] = error
 		this.mutable.push(error)
 		//}

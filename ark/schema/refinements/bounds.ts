@@ -156,7 +156,7 @@ abstract class BaseNumericBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseBound<d, subclass> {
-	compiledActual = this.$.dataName
+	compiledActual = this.$.dataArg
 	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
 	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
@@ -229,7 +229,7 @@ abstract class BaseLengthBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseBound<d, subclass> {
-	compiledActual = `${this.$.dataName}.length`
+	compiledActual = `${this.$.dataArg}.length`
 	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
 	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
@@ -317,7 +317,7 @@ abstract class BaseDateBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseBound<d, subclass> {
-	compiledActual = `${this.$.dataName}.valueOf()`
+	compiledActual = `${this.$.dataArg}.valueOf()`
 	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
 	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]

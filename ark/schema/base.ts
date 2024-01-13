@@ -173,6 +173,7 @@ export abstract class BaseNode<
 	readonly references: readonly Node[] = Object.values(this.referencesById)
 	readonly contributesReferencesById: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
+	readonly baseErrorContext = { code: this.kind, ...this.inner }
 
 	constructor(baseAttachments: BaseAttachments) {
 		super(baseAttachments as never)

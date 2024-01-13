@@ -52,7 +52,7 @@ export abstract class BaseRefinement<
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.error(Object.assign(this.inner, { code: this.kind, data }))
+			ctx.error(this.baseErrorContext)
 		}
 	}
 

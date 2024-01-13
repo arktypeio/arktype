@@ -271,8 +271,8 @@ export class ScopeNode<r extends object = any> {
 		return node as never
 	}
 
-	readonly dataName = "data"
-	readonly ctxName = "ctx"
+	readonly dataArg = "data"
+	readonly ctxArg = "ctx"
 
 	protected bindCompiledScope(
 		nodesToBind: readonly Node[],
@@ -300,13 +300,14 @@ export class ScopeNode<r extends object = any> {
 		kind: kind
 	): Record<string, TraversalMethodsByKind[kind]> {
 		const compiledArgs =
-			kind === "allows" ? this.dataName : `${this.dataName}, errors`
+			kind === "allows" ? this.dataArg : `${this.dataArg}, ctx`
 		const body = `return {
 	${references
 		.map(
 			(reference) => `${reference.id}(${compiledArgs}){
 ${reference.compileBody({
-	argName: this.dataName,
+	dataArg: this.dataArg,
+	ctxArg: this.ctxArg,
 	compilationKind: kind,
 	path: [],
 	discriminants: []
@@ -351,7 +352,7 @@ ${reference.compileBody({
 	}
 
 	compilePrimitiveProblem(node: Node<PrimitiveKind>) {
-		return `${this.ctxName}.addError(${JSON.stringify(node.expected)})`
+		return `${this.ctxArg}.error(${JSON.stringify(node.baseErrorContext)})`
 	}
 
 	readonly schema: SchemaParser<r> = Object.assign(
@@ -429,7 +430,8 @@ export type TraverseApply<data = unknown> = (
 ) => void
 
 export type CompilationContext = {
-	argName: string
+	dataArg: string
+	ctxArg: string
 	path: string[]
 	discriminants: Discriminant[]
 	compilationKind: TraversalKind

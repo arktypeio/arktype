@@ -56,7 +56,7 @@ export class PredicateNode extends BaseRefinement<
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
 	compiledCondition = `${compileSerializedValue(this.predicate)}(${
-		this.$.dataName
+		this.$.dataArg
 	})`
 	compiledNegation = `!${this.compiledCondition}`
 

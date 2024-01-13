@@ -55,7 +55,7 @@ export class PatternNode extends BaseRefinement<
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
 	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${
-		this.$.dataName
+		this.$.dataArg
 	})`
 	compiledNegation = `!${this.compiledCondition}`
 

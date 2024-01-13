@@ -62,13 +62,13 @@ export class DomainNode<t = unknown> extends BaseBasis<
 
 	compiledCondition =
 		this.domain === "object"
-			? `((typeof ${this.$.dataName} === "object" && ${this.$.dataName} !== null) || typeof ${this.$.dataName} === "function")`
-			: `typeof ${this.$.dataName} === "${this.domain}"`
+			? `((typeof ${this.$.dataArg} === "object" && ${this.$.dataArg} !== null) || typeof ${this.$.dataArg} === "function")`
+			: `typeof ${this.$.dataArg} === "${this.domain}"`
 
 	compiledNegation =
 		this.domain === "object"
-			? `((typeof ${this.$.dataName} !== "object" || ${this.$.dataName} === null) && typeof ${this.$.dataName} !== "function")`
-			: `typeof ${this.$.dataName} !== "${this.domain}"`
+			? `((typeof ${this.$.dataArg} !== "object" || ${this.$.dataArg} === null) && typeof ${this.$.dataArg} !== "function")`
+			: `typeof ${this.$.dataArg} !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
 }

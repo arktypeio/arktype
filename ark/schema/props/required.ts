@@ -100,10 +100,14 @@ export class RequiredNode extends BaseProp<
 	compiledKey = compileKey(this.key)
 
 	compileBody(ctx: CompilationContext): string {
-		return `if(${this.serializedKey} in ${ctx.argName}) {
+		return `if(${this.serializedKey} in ${ctx.dataArg}) {
 			${compilePresentProp(this, ctx)}
 		} else {
-			${ctx.compilationKind === "allows" ? "return false" : `errors.add("provided")`}
+			${
+				ctx.compilationKind === "allows"
+					? "return false"
+					: `${ctx.ctxArg}.add("provided")`
+			}
 		}`
 	}
 

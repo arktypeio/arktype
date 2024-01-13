@@ -1,6 +1,6 @@
 export {
-	ArkErrors as Problems,
-	type ArkTypeError as Problem
+	ArkErrors as ArkErrors,
+	type ArkTypeError as ArkTypeError
 } from "@arktype/schema"
 export type { Out, is } from "@arktype/schema"
 export {

@@ -34,15 +34,15 @@ export const compilePresentProp = (
 	ctx: CompilationContext
 ) => {
 	if (ctx.compilationKind === "allows") {
-		return `return this.${node.value.id}(${ctx.argName}${compilePropAccess(
+		return `return this.${node.value.id}(${ctx.dataArg}${compilePropAccess(
 			node.compiledKey
 		)})`
 	}
-	return `errors.currentPath.push(${node.serializedKey})
-	this.${node.value.id}(${ctx.argName}${compilePropAccess(
-		node.compiledKey
-	)}, errors)
-	errors.currentPath.pop()
+	return `${ctx.ctxArg}.currentPath.push(${node.serializedKey})
+	this.${node.value.id}(${ctx.dataArg}${compilePropAccess(node.compiledKey)}, ${
+		ctx.ctxArg
+	})
+	${ctx.ctxArg}.currentPath.pop()
 	`
 }
 

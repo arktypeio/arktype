@@ -190,7 +190,7 @@ describe("intersections", () => {
 			min: 5
 		})
 		attest(n.apply(6)).snap({ out: 6 })
-		attest(n.apply(7).errors?.summary).snap("Must be a multiple of 3")
+		attest(n.apply(7).errors?.summary).snap("Must be a multiple of 3 (was 7)")
 	})
 	it("compiles path errors", () => {
 		const n = schema({

@@ -171,25 +171,25 @@ export class SequenceNode extends BaseProp<
 
 	compileBody(ctx: CompilationContext): string {
 		// TODO: traversal?
-		let body = `if(${ctx.argName}.length < ${this.minLength}) {
+		let body = `if(${ctx.dataArg}.length < ${this.minLength}) {
 	return false
 }\n`
 		this.prefix?.forEach((prefixEl, i) => {
 			body += `if(!${prefixEl.compileBody(ctx)}) {
-	this.${prefixEl.id}(${ctx.argName}[${i}], errors)
+	this.${prefixEl.id}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
 }\n`
 		})
-		body += `const lastVariadicIndex = ${ctx.argName}.length${
+		body += `const lastVariadicIndex = ${ctx.dataArg}.length${
 			this.postfix ? `- ${this.postfixLength}` : ""
 		}
 for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
-	if(!this.${this.element.id}(${ctx.argName}[i], errors)){
+	if(!this.${this.element.id}(${ctx.dataArg}[i], ${ctx.ctxArg})){
 		return false
 	}	
 }\n`
 		this.postfix?.forEach((postfixEl, i) => {
 			body += `if(!${postfixEl.compileBody(ctx)}) {
-this.${postfixEl.id}(${ctx.argName}[${i}], errors)
+this.${postfixEl.id}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
 }\n`
 		})
 		body += "return true"

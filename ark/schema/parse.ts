@@ -44,7 +44,7 @@ const globalResolutions: Record<string, Node> = {}
 const typeCountsByPrefix: PartialRecord<string, number> = {}
 
 const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
-	expected: { meta: true }
+	description: { meta: true }
 } satisfies KeyDefinitions<BaseNodeDeclaration> as never
 
 export function parse<defKind extends NodeKind>(

@@ -6,7 +6,7 @@ export type TraversalPath = (string | symbol)[]
 
 export class TraversalContext {
 	path: TraversalPath = []
-	errorsStack: ArkErrors[] = [new ArkErrors(this)]
+	errorsStack: ArkErrors[]
 	// TODO: add morphs here
 	entriesToPrune: [data: Record<string, unknown>, key: string][] = []
 
@@ -16,14 +16,16 @@ export class TraversalContext {
 	constructor(
 		public data: unknown,
 		public config: ParsedArkConfig
-	) {}
+	) {
+		this.errorsStack = [new ArkErrors(this)]
+	}
 
 	get currentErrors() {
 		return this.errorsStack.at(-1)!
 	}
 
 	get error() {
-		return this.currentErrors.add
+		return this.currentErrors.add.bind(this.currentErrors)
 	}
 
 	invalid(input: ArkErrorInput): false {
