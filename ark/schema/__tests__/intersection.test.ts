@@ -193,10 +193,10 @@ describe("intersections", () => {
 		attest(n.apply(7).errors?.summary).snap("Must be a multiple of 3 (was 7)")
 	})
 	it("compiles path errors", () => {
-		const n = schema({
+		const o = schema({
 			basis: "object",
 			required: {
-				key: "a",
+				key: "foo",
 				value: {
 					basis: "number",
 					divisor: 3,
@@ -204,10 +204,9 @@ describe("intersections", () => {
 				}
 			}
 		})
-		attest(n.apply({ a: 6 })).snap({ out: { a: 6 } })
-		// attest(n.apply({ b: 6 }).errors?.summary).snap("Must be provided")
-		attest(n.apply({ a: 7 }).errors?.summary).snap(
-			"a must be a multiple of 3 (was 7)"
+		attest(o.apply({ foo: 6 })).snap({ out: { foo: 6 } })
+		attest(o.apply({ foo: 7 }).errors?.summary).snap(
+			"foo must be a multiple of 3 (was 7)"
 		)
 	})
 	it("runtime benchmark", () => {
