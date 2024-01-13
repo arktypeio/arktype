@@ -282,8 +282,9 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 			/></a>
 		</td>
 	</tr>
+</table>
 
-## Sponsors 🥰
+### Sponsors 🥰
 
 <table>
 	<tr>
