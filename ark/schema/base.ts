@@ -139,8 +139,8 @@ export abstract class BaseNode<
 	): nodeImplementationOf<declarationOf<self>>
 	protected static implement(_: never): any {
 		const implementation: UnknownNodeImplementation = _
-		// TODO: nodes with errors kinds?
-		// TODO: ensure implemented for custom error contexts
+		// TODO: only add this properties for nodes with associated errors
+		// TODO: ensure expected is implemented for custom error contexts
 		implementation.defaults.expected ??= implementation.defaults.description
 		implementation.defaults.actual ??= (data) => printable(data)
 		implementation.defaults.problem ??= (ctx) =>
@@ -213,7 +213,7 @@ export abstract class BaseNode<
 	}
 
 	private descriptionCache?: string
-	get expected() {
+	get description() {
 		this.descriptionCache ??=
 			this.meta.description ?? this.impl.defaults.description(this as never)
 		return this.descriptionCache
@@ -274,7 +274,7 @@ export abstract class BaseNode<
 	}
 
 	toString() {
-		return this.expected
+		return this.description
 	}
 
 	private static intersectionCache: Record<string, Node | Disjoint> = {}

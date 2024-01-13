@@ -84,7 +84,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 					input.actual !== undefined
 						? input.actual
 						: nodeConfig.actual?.(data as never),
-				expected: input.expected ?? nodeConfig.description?.(input as never)
+				expected: input.expected ?? nodeConfig.expected?.(input as never)
 			} satisfies ProblemContext as any
 			ctx.problem = hasDefinedKey(input, "problem")
 				? input.problem

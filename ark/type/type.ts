@@ -148,7 +148,7 @@ export class Type<t = unknown, $ = any> extends CastableBase<
 		this.allows = root.allows
 		this.config = scope.config
 		this.json = root.json
-		this.expected = this.root.expected
+		this.expected = this.root.description
 	}
 
 	configure(config: TypeConfig) {
