@@ -1,6 +1,7 @@
 import {
 	DynamicBase,
 	capitalize,
+	hasDefinedKey,
 	includes,
 	isArray,
 	printable,
@@ -139,7 +140,10 @@ export abstract class BaseNode<
 	protected static implement(_: never): any {
 		const implementation: UnknownNodeImplementation = _
 		if (implementation.hasAssociatedError) {
-			implementation.defaults.expected ??= implementation.defaults.description
+			implementation.defaults.expected ??= (ctx) =>
+				hasDefinedKey(ctx, "description")
+					? ctx.description
+					: implementation.defaults.description(ctx)
 			implementation.defaults.actual ??= (data) => printable(data)
 			implementation.defaults.problem ??= (ctx) =>
 				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`

@@ -182,7 +182,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			},
 			reduce: (inner, scope) => {
-				const inputConstraints = Object.values(inner).flat() as ConstraintSet
+				const inputConstraints = flattenConstraints(inner)
 				const reducedConstraints = reduceConstraints([], inputConstraints)
 				if (reducedConstraints instanceof Disjoint) {
 					return reducedConstraints.throw()
@@ -224,7 +224,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			defaults: {
 				description(inner) {
-					const constraints = Object.values(inner)
+					const constraints = flattenConstraints(inner)
 					return constraints.length === 0
 						? "an unknown value"
 						: constraints.join(" and ")
@@ -238,9 +238,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	readonly constraints: ConstraintSet = this.entries.flatMap(([k, v]) =>
-		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
-	)
+	readonly constraints: ConstraintSet = flattenConstraints(this.inner)
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.constraints.every((c) => c.traverseAllows(data as never, ctx))
@@ -333,6 +331,11 @@ const reduceConstraints = (
 	}
 	return result instanceof Disjoint ? result : result
 }
+
+export const flattenConstraints = (inner: IntersectionInner): ConstraintSet =>
+	Object.entries(inner).flatMap(([k, v]) =>
+		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
+	)
 
 export const unflattenConstraints = (
 	constraints: ConstraintSet
