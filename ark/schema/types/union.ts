@@ -9,7 +9,7 @@ import type {
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import { basisKinds, type nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError } from "../traversal/errors.js"
+import type { ArkTypeError } from "../traversal/errors.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
 import { BaseType } from "./type.js"
@@ -48,7 +48,7 @@ export type UnionDeclaration = declareNode<{
 		default: "union" | Disjoint
 	}
 	errorContext: {
-		errors: readonly ArkError[]
+		errors: readonly ArkTypeError[]
 	}
 }>
 
@@ -168,7 +168,9 @@ export class UnionNode<t = unknown> extends BaseType<
 						? "never"
 						: inner.branches.join(" or ")
 				},
-				actual: () => null
+				expected(source) {
+					return describeBranches(source.errors.map((e) => e.expected))
+				}
 			}
 		})
 

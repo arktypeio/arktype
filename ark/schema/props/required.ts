@@ -79,6 +79,9 @@ export class RequiredNode extends BaseProp<
 				description(inner) {
 					return `${compileKey(inner.key)}: ${inner.value}`
 				},
+				expected() {
+					return "provided"
+				},
 				actual: () => null
 			}
 		})

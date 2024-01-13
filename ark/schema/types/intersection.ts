@@ -1,5 +1,6 @@
 import {
 	isArray,
+	printable,
 	throwInternalError,
 	type listable,
 	type mutable
@@ -20,7 +21,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../scope.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
 	type BasisKind,
@@ -29,7 +30,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError } from "../traversal/errors.js"
+import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
@@ -68,7 +69,7 @@ export type IntersectionDeclaration = declareNode<{
 		default: "intersection" | Disjoint
 	}
 	errorContext: {
-		errors: readonly ArkError[]
+		errors: readonly ArkTypeError[]
 	}
 }>
 
@@ -227,11 +228,19 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					return constraints.length === 0
 						? "an unknown value"
 						: constraints.join(" and ")
+				},
+				expected(source) {
+					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")
+				},
+				problem(ctx) {
+					return `must be...\n${ctx.expected}\n(was ${printable(ctx.data)})`
 				}
 			}
 		})
 
-	readonly constraints: ConstraintSet = Object.values(this.inner).flat()
+	readonly constraints: ConstraintSet = this.entries.flatMap(([k, v]) =>
+		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
+	)
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.constraints.every((c) => c.traverseAllows(data as never, ctx))
