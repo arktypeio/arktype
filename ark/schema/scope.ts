@@ -100,14 +100,15 @@ export type ParsedArkConfig = require<ArkConfig, 2>
 let parsedDefaultsCache: ParsedArkConfig | undefined
 
 const parseConfig = (config: ArkConfig | undefined): ParsedArkConfig => {
-	if (config === undefined && parsedDefaultsCache) {
-		return parsedDefaultsCache
+	if (config === undefined) {
+		if (parsedDefaultsCache) {
+			return parsedDefaultsCache
+		}
+		config = {}
 	}
 	const parsedConfig: ParsedArkConfig = {} as never
 	for (const kind of nodeKinds) {
-		const providedKindConfig = parsedConfig[kind] as
-			| UnknownNodeConfig
-			| undefined
+		const providedKindConfig = config[kind] as UnknownNodeConfig | undefined
 		parsedConfig[kind] = providedKindConfig
 			? { ...nodesByKind[kind].implementation.defaults, ...providedKindConfig }
 			: (nodesByKind[kind].implementation.defaults as any)

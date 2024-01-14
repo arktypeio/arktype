@@ -40,7 +40,6 @@ export type SchemaParseContext = extend<
 	}
 >
 
-const globalResolutions: Record<string, Node> = {}
 const typeCountsByPrefix: PartialRecord<string, number> = {}
 
 const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
@@ -123,11 +122,11 @@ export function parse(
 	}
 	const innerId = JSON.stringify({ kind, ...json })
 	if (ctx.reduceTo) {
-		return (globalResolutions[innerId] = ctx.reduceTo)
+		return (ctx.$.nodeCache[innerId] = ctx.reduceTo)
 	}
 	const typeId = JSON.stringify({ kind, ...typeJson })
-	if (innerId in globalResolutions) {
-		return globalResolutions[innerId]
+	if (innerId in ctx.$.nodeCache) {
+		return ctx.$.nodeCache[innerId]
 	}
 	if (impl.reduce && !ctx.prereduced) {
 		const reduced = impl.reduce(inner, ctx.$)
@@ -141,7 +140,7 @@ export function parse(
 			// if we get a reduced node back, it will already have its own cache
 			// entry however, we also point the unreduced id to that node so we
 			// can bypass that reduction in the future
-			return (globalResolutions[innerId] = reduced)
+			return (ctx.$.nodeCache[innerId] = reduced)
 		}
 	}
 	const prefix = ctx.alias ?? kind
@@ -169,7 +168,7 @@ export function parse(
 			attachments[k] = inner[k]
 		}
 	}
-	return (globalResolutions[innerId] = new cls(attachments as never))
+	return (ctx.$.nodeCache[innerId] = new cls(attachments as never))
 }
 
 const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>

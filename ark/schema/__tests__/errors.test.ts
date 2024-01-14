@@ -51,7 +51,7 @@ describe("errors", () => {
 		)
 		const superSpecialString = $.resolutions.superSpecialString
 		attest(superSpecialString.apply(5).errors?.summary).snap(
-			"Must be a string (was number)"
+			"custom message custom problem custom expected string custom actual 5"
 		)
 	})
 })

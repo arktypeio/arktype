@@ -172,8 +172,8 @@ export abstract class BaseNode<
 	readonly description: string
 	readonly baseErrorContext = { code: this.kind, ...this.inner }
 
-	constructor(baseAttachments: BaseAttachments) {
-		super(baseAttachments as never)
+	constructor(protected attachments: BaseAttachments) {
+		super(attachments as never)
 		this.contributesReferencesByName =
 			this.name in this.referencesByName
 				? this.referencesByName
