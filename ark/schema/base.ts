@@ -93,6 +93,7 @@ export interface BaseAttachments {
 	readonly children: Node[]
 	readonly innerId: string
 	readonly typeId: string
+	readonly description: string
 	readonly $: ScopeNode
 }
 
@@ -213,14 +214,6 @@ export abstract class BaseNode<
 	get out(): Node<ioKindOf<d["kind"]>, extractOut<t>> {
 		this.outCache ??= this.getIo("out")
 		return this.outCache as never
-	}
-
-	private descriptionCache?: string
-	get description() {
-		this.descriptionCache ??=
-			(this.inner as BaseMeta).description ??
-			this.impl.defaults.description(this as never)
-		return this.descriptionCache
 	}
 
 	private getIo(kind: "in" | "out"): UnknownNode {

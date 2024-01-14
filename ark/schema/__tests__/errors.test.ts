@@ -32,6 +32,8 @@ describe("errors", () => {
 			description: "my special string"
 		})
 		attest(s.description).snap("my special string")
-		attest(s.apply(5).errors?.summary).snap("Must be a string (was number)")
+		attest(s.apply(5).errors?.summary).snap(
+			"Must be my special string (was number)"
+		)
 	})
 })

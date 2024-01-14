@@ -158,6 +158,8 @@ export function parse(
 		children,
 		innerId,
 		typeId,
+		description:
+			(inner.description as string) ?? impl.defaults.description(inner),
 		$: ctx.$
 	} satisfies BaseAttachments as Record<string, any>
 	if (ctx.alias) {
