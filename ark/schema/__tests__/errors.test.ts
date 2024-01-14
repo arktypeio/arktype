@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
+import { scopeNode } from "../scope.js"
 
 describe("errors", () => {
 	it("shallow", () => {
@@ -34,6 +35,23 @@ describe("errors", () => {
 		attest(s.description).snap("my special string")
 		attest(s.apply(5).errors?.summary).snap(
 			"Must be my special string (was number)"
+		)
+	})
+	it("can configure errors by kind at a scope level", () => {
+		const $ = scopeNode(
+			{ superSpecialString: "string" },
+			{
+				domain: {
+					expected: (inner) => `custom expected ${inner.domain}`,
+					actual: (data) => `custom actual ${data}`,
+					problem: (ctx) => `custom problem ${ctx.expected} ${ctx.actual}`,
+					message: (ctx) => `custom message ${ctx.problem}`
+				}
+			}
+		)
+		const superSpecialString = $.resolutions.superSpecialString
+		attest(superSpecialString.apply(5).errors?.summary).snap(
+			"Must be a string (was number)"
 		)
 	})
 })

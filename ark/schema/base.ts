@@ -41,11 +41,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "./scope.js"
-import type {
-	BaseMeta,
-	BaseNodeDeclaration,
-	attachmentsOf
-} from "./shared/declare.js"
+import type { BaseNodeDeclaration, attachmentsOf } from "./shared/declare.js"
 import {
 	basisKinds,
 	constraintKinds,

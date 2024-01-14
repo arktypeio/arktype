@@ -174,9 +174,10 @@ export class ScopeNode<r extends object = any> {
 	}
 
 	static from<const aliases>(
-		aliases: validateAliases<aliases>
+		aliases: validateAliases<aliases>,
+		config: ArkConfig = {}
 	): ScopeNode<instantiateAliases<aliases>> {
-		return new ScopeNode(aliases)
+		return new ScopeNode(aliases, config)
 	}
 
 	static root: ScopeNode<{}> = this.from({})
