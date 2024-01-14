@@ -176,20 +176,20 @@ export class SequenceNode extends BaseProp<
 }\n`
 		this.prefix?.forEach((prefixEl, i) => {
 			body += `if(!${prefixEl.compileBody(ctx)}) {
-	this.${prefixEl.id}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
+	this.${prefixEl.name}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
 }\n`
 		})
 		body += `const lastVariadicIndex = ${ctx.dataArg}.length${
 			this.postfix ? `- ${this.postfixLength}` : ""
 		}
 for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
-	if(!this.${this.element.id}(${ctx.dataArg}[i], ${ctx.ctxArg})){
+	if(!this.${this.element.name}(${ctx.dataArg}[i], ${ctx.ctxArg})){
 		return false
 	}	
 }\n`
 		this.postfix?.forEach((postfixEl, i) => {
 			body += `if(!${postfixEl.compileBody(ctx)}) {
-this.${postfixEl.id}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
+this.${postfixEl.name}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
 }\n`
 		})
 		body += "return true"

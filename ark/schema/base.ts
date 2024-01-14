@@ -80,7 +80,7 @@ import type { UnitNode } from "./types/unit.js"
 export interface BaseAttachments {
 	alias?: string
 	readonly kind: NodeKind
-	readonly id: string
+	readonly name: string
 	readonly inner: Dict
 	readonly entries: readonly Entry[]
 	readonly json: Json
@@ -89,7 +89,6 @@ export interface BaseAttachments {
 	readonly children: Node[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly description: string
 	readonly $: ScopeNode
 }
 
@@ -163,22 +162,26 @@ export abstract class BaseNode<
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
-	readonly referencesById: Record<string, Node> = this.children.reduce(
-		(result, child) => Object.assign(result, child.contributesReferencesById),
+	readonly referencesByName: Record<string, Node> = this.children.reduce(
+		(result, child) => Object.assign(result, child.contributesReferencesByName),
 		{}
 	)
-	readonly references: readonly Node[] = Object.values(this.referencesById)
-	readonly contributesReferencesById: Record<string, Node>
+	readonly references: readonly Node[] = Object.values(this.referencesByName)
+	readonly contributesReferencesByName: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
+	readonly description: string
 	readonly baseErrorContext = { code: this.kind, ...this.inner }
 
 	constructor(baseAttachments: BaseAttachments) {
 		super(baseAttachments as never)
-		this.contributesReferencesById =
-			this.id in this.referencesById
-				? this.referencesById
-				: { ...this.referencesById, [this.id]: this as never }
-		this.contributesReferences = Object.values(this.contributesReferencesById)
+		this.contributesReferencesByName =
+			this.name in this.referencesByName
+				? this.referencesByName
+				: { ...this.referencesByName, [this.name]: this as never }
+		this.contributesReferences = Object.values(this.contributesReferencesByName)
+		this.description ??= this.$.config[this.kind].description(
+			this.inner as never
+		)
 	}
 
 	abstract hasOpenIntersection: hasOpenIntersection<d>

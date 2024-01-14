@@ -124,9 +124,10 @@ export class ScopeNode<r extends object = any> {
 	}
 	declare static keywords: typeof keywords
 
+	readonly nodeCache: { [innerId: string]: Node } = {}
 	readonly config: ParsedArkConfig
 	readonly resolutions = {} as r
-	readonly referencesById: Record<string, Node> = {}
+	readonly referencesByName: Record<string, Node> = {}
 	readonly references: readonly Node[]
 	protected resolved = false
 
@@ -144,7 +145,7 @@ export class ScopeNode<r extends object = any> {
 				}
 			)
 		}
-		this.references = Object.values(this.referencesById)
+		this.references = Object.values(this.referencesByName)
 		this.bindCompiledScope(this.references, this.references)
 		this.resolved = true
 		if (ScopeNode.keywords) {
@@ -266,7 +267,7 @@ export class ScopeNode<r extends object = any> {
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
-			this.referencesById[node.id] = node
+			this.referencesByName[node.name] = node
 		}
 		return node as never
 	}
@@ -281,7 +282,7 @@ export class ScopeNode<r extends object = any> {
 		const compiledAllowsTraversals = this.compileScope(references, "allows")
 		const compiledApplyTraversals = this.compileScope(references, "apply")
 		for (const node of nodesToBind) {
-			node.traverseAllows = compiledAllowsTraversals[node.id].bind(
+			node.traverseAllows = compiledAllowsTraversals[node.name].bind(
 				compiledAllowsTraversals
 			)
 			if (node.isType() && !node.includesContextDependentPredicate) {
@@ -289,7 +290,7 @@ export class ScopeNode<r extends object = any> {
 				// it directly to avoid having to initialize it
 				node.allows = node.traverseAllows as never
 			}
-			node.traverseApply = compiledApplyTraversals[node.id].bind(
+			node.traverseApply = compiledApplyTraversals[node.name].bind(
 				compiledApplyTraversals
 			)
 		}
@@ -304,7 +305,7 @@ export class ScopeNode<r extends object = any> {
 		const body = `return {
 	${references
 		.map(
-			(reference) => `${reference.id}(${compiledArgs}){
+			(reference) => `${reference.name}(${compiledArgs}){
 ${reference.compileBody({
 	dataArg: this.dataArg,
 	ctxArg: this.ctxArg,

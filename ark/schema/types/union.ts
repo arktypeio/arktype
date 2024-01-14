@@ -185,7 +185,7 @@ export class UnionNode<t = unknown> extends BaseType<
 	compileBody(ctx: CompilationContext) {
 		const branchInvocations = this.branches.map(
 			(branch) =>
-				`this.${branch.id}(${ctx.dataArg}${
+				`this.${branch.name}(${ctx.dataArg}${
 					ctx.compilationKind === "allows" ? "" : `, ${ctx.dataArg}`
 				})`
 		)

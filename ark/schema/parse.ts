@@ -146,9 +146,9 @@ export function parse(
 	}
 	const prefix = ctx.alias ?? kind
 	typeCountsByPrefix[prefix] ??= 0
-	const id = `${prefix}${++typeCountsByPrefix[prefix]!}`
+	const name = `${prefix}${++typeCountsByPrefix[prefix]!}`
 	const attachments = {
-		id,
+		name,
 		kind,
 		inner,
 		entries,
@@ -158,8 +158,6 @@ export function parse(
 		children,
 		innerId,
 		typeId,
-		description:
-			(inner.description as string) ?? impl.defaults.description(inner),
 		$: ctx.$
 	} satisfies BaseAttachments as Record<string, any>
 	if (ctx.alias) {
