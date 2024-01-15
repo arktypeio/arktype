@@ -30,7 +30,6 @@ export type ProtoDeclaration = declareNode<{
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
-	errorContext: ProtoInner
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)

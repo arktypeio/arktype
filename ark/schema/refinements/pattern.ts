@@ -19,7 +19,6 @@ export type PatternDeclaration = declareNode<{
 		pattern: "pattern" | null
 	}
 	prerequisite: string
-	errorContext: PatternInner
 }>
 
 export class PatternNode extends BaseRefinement<

@@ -17,12 +17,12 @@ export type Stringifiable =
 export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
 export type exact<t extends object, u extends object> = {
-	[k in keyof t]: k extends keyof u ? t[k] : never
+	[k in keyof t]: k extends keyof u ? conform<t[k], u[k]> : never
 }
 
 export type exactMessageOnError<t extends object, u extends object> = {
 	[k in keyof t]: k extends keyof u
-		? t[k]
+		? conform<t[k], u[k]>
 		: ErrorMessage<`'${k & string}' is not a valid key`>
 }
 

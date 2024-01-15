@@ -68,7 +68,7 @@ export type IntersectionDeclaration = declareNode<{
 		intersection: "intersection" | Disjoint
 		default: "intersection" | Disjoint
 	}
-	errorContext: {
+	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
 }>

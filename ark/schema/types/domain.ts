@@ -28,7 +28,6 @@ export type DomainDeclaration = declareNode<{
 	intersections: {
 		domain: "domain" | Disjoint
 	}
-	errorContext: DomainInner
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<
@@ -58,8 +57,6 @@ export class DomainNode<t = unknown> extends BaseBasis<
 	})
 
 	basisName = this.domain
-
-	compiledActual = ""
 
 	compiledCondition =
 		this.domain === "object"

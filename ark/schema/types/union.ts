@@ -47,7 +47,7 @@ export type UnionDeclaration = declareNode<{
 		intersection: "union" | Disjoint
 		default: "union" | Disjoint
 	}
-	errorContext: {
+	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
 }>
@@ -353,37 +353,37 @@ export const intersectBranches = (
 		: resultBranches
 }
 
-export const reduceBranches = ({ branches: union, ordered }: UnionInner) => {
-	if (union.length < 2) {
-		return union
+export const reduceBranches = ({ branches, ordered }: UnionInner) => {
+	if (branches.length < 2) {
+		return branches
 	}
-	const uniquenessByIndex: Record<number, boolean> = union.map(() => true)
-	for (let i = 0; i < union.length; i++) {
+	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
+	for (let i = 0; i < branches.length; i++) {
 		for (
 			let j = i + 1;
-			j < union.length && uniquenessByIndex[i] && uniquenessByIndex[j];
+			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
 			j++
 		) {
-			if (union[i].equals(union[j])) {
+			if (branches[i].equals(branches[j])) {
 				// if the two branches are equal, only "j" is marked as
 				// redundant so at least one copy could still be included in
 				// the final set of branches.
 				uniquenessByIndex[j] = false
 				continue
 			}
-			const intersection = union[i].intersect(union[j])
+			const intersection = branches[i].intersect(branches[j])
 			if (intersection instanceof Disjoint) {
 				continue
 			}
-			if (intersection.equals(union[i])) {
+			if (intersection.equals(branches[i])) {
 				if (!ordered) {
 					// preserve ordered branches that are a subtype of a subsequent branch
 					uniquenessByIndex[i] = false
 				}
-			} else if (intersection.equals(union[j])) {
+			} else if (intersection.equals(branches[j])) {
 				uniquenessByIndex[j] = false
 			}
 		}
 	}
-	return union.filter((_, i) => uniquenessByIndex[i])
+	return branches.filter((_, i) => uniquenessByIndex[i])
 }

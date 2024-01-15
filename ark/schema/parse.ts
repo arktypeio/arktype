@@ -23,6 +23,7 @@ import {
 export type SchemaParseOptions = {
 	alias?: string
 	prereduced?: true
+	// TODO: check if reduceTo works across scopes
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *

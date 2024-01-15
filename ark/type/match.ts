@@ -52,21 +52,20 @@ export type CaseMatchParser<ctx extends MatchContext> = {
 		replaceKey<ctx, "thens", [...ctx["thens"], ...unionToTuple<valueOf<cases>>]>
 	>
 }
-// {
-// 	<In = unknown, Out = unknown>(): ChainableMatchParser<{
-// 		inConstraint: In
-// 		outConstraint: Out
-// 		thens: []
-// 		$: $
-// 	}>
-// } &
 
 export type MatchParser<$> = CaseMatchParser<{
 	inConstraint: unknown
 	outConstraint: unknown
 	thens: []
 	$: $
-}>
+}> & {
+	<In = unknown, Out = unknown>(): ChainableMatchParser<{
+		inConstraint: In
+		outConstraint: Out
+		thens: []
+		$: $
+	}>
+}
 
 export type WhenMatchParser<ctx extends MatchContext> = <
 	def,

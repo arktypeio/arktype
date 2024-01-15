@@ -1,7 +1,10 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
-import type { DerivableErrorContext } from "../traversal/errors.js"
+import type {
+	ArkErrorCode,
+	DerivableErrorContext
+} from "../traversal/errors.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -44,7 +47,7 @@ export type DeclarationInput<kind extends NodeKind = NodeKind> = {
 	intersections: UnknownIntersections
 	normalizedSchema: BaseMeta
 	inner: Dict
-	errorContext?: Dict
+	expectedContext?: Dict
 	prerequisite?: unknown
 	childKind?: NodeKind
 }
@@ -63,7 +66,11 @@ export type declareNode<d extends DeclarationInput> = extend<
 		prerequisite: prerequisiteOf<d>
 		childKind: d["childKind"] extends string ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
-		errorContext: d["errorContext"] extends {} ? {} : null
+		expectedContext: d["expectedContext"] extends {}
+			? {}
+			: d["expectedContext"] extends null
+			? null
+			: evaluate<Omit<d["inner"], "description">>
 	}
 >
 
@@ -82,7 +89,7 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
-	errorContext: Dict | null
+	expectedContext: Dict | null
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}

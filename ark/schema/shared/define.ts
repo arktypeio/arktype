@@ -6,7 +6,7 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { Declaration, Inner, errorContextFromNode } from "../kinds.js"
+import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -162,7 +162,7 @@ type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	// if the node's error context is distinct from its inner definition, ensure it is implemented.
 	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
 	// but rather a single failed condition for each branch.
-	| (errorContextFromNode<kind> extends Inner<kind>
+	| (ExpectedContext<kind> extends Inner<kind>
 			? never
 			: "expected" & keyof NodeConfig<kind>)
 >
@@ -172,5 +172,5 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 >
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
-	inner: NodeKind extends kind ? any : Inner<kind>
+	inner: NodeKind extends kind ? any : Omit<Inner<kind>, "description">
 ) => string

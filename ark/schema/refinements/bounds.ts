@@ -138,11 +138,7 @@ export abstract class BaseBound<
 		} as never
 	}
 
-	comparator = compileComparator(
-		this.kind,
-		this.exclusive
-		// cast to lower bound comparator for internal checking
-	)
+	comparator = compileComparator(this.kind, this.exclusive)
 
 	compileBody(ctx: CompilationContext) {
 		return this.$.compilePrimitive(this as never, ctx)
@@ -179,7 +175,6 @@ export type MinDeclaration = declareNode<{
 		min: "min"
 		max: Disjoint | null
 	}
-	errorContext: BoundInner<number>
 }>
 
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
@@ -208,7 +203,6 @@ export type MaxDeclaration = declareNode<{
 		// TODO: Fix rightOf
 		max: "max"
 	}
-	errorContext: BoundInner<number>
 }>
 
 export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
@@ -252,7 +246,6 @@ export type MinLengthDeclaration = declareNode<{
 		minLength: "minLength"
 		maxLength: Disjoint | null
 	}
-	errorContext: BoundInner<number>
 }>
 
 export class MinLengthNode extends BaseLengthBound<
@@ -290,7 +283,6 @@ export type MaxLengthDeclaration = declareNode<{
 	intersections: {
 		maxLength: "maxLength"
 	}
-	errorContext: BoundInner<number>
 }>
 
 export class MaxLengthNode extends BaseLengthBound<
@@ -349,7 +341,6 @@ export type AfterDeclaration = declareNode<{
 	intersections: {
 		after: "after"
 	}
-	errorContext: BoundInner<string | number>
 }>
 
 export class AfterNode extends BaseDateBound<
@@ -385,7 +376,6 @@ export type BeforeDeclaration = declareNode<{
 		before: "before"
 		after: Disjoint | null
 	}
-	errorContext: BoundInner<string | number>
 }>
 
 export class BeforeNode extends BaseDateBound<

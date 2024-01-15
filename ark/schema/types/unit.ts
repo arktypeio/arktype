@@ -19,7 +19,6 @@ export type UnitDeclaration = declareNode<{
 		unit: "unit" | Disjoint
 		default: "unit" | Disjoint
 	}
-	errorContext: UnitInner
 }>
 
 export class UnitNode<t = unknown> extends BaseBasis<

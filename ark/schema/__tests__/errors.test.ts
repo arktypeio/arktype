@@ -27,14 +27,14 @@ describe("errors", () => {
 			"foo must be a multiple of 3 (was 7)"
 		)
 	})
-	it("uses node description by default", () => {
-		const s = schema({
-			domain: "string",
-			description: "my special string"
+	it("custom description integrated with error", () => {
+		const superSpecialBigint = schema({
+			domain: "bigint",
+			description: "my special bigint"
 		})
-		attest(s.description).snap("my special string")
-		attest(s.apply(5).errors?.summary).snap(
-			"Must be my special string (was number)"
+		attest(superSpecialBigint.description).snap("my special bigint")
+		attest(superSpecialBigint.apply(5).errors?.summary).snap(
+			"Must be my special bigint (was number)"
 		)
 	})
 	it("can configure errors by kind at a scope level", () => {
@@ -52,6 +52,21 @@ describe("errors", () => {
 		const superSpecialString = $.resolutions.superSpecialString
 		attest(superSpecialString.apply(5).errors?.summary).snap(
 			"custom message custom problem custom expected string custom actual 5"
+		)
+	})
+	it("can configure description by kind at scope level", () => {
+		const $ = scopeNode(
+			{ superSpecialNumber: "number" },
+			{
+				domain: {
+					description: (inner) => `my special ${inner.domain}`
+				}
+			}
+		)
+		const superSpecialNumber = $.resolutions.superSpecialNumber
+		attest(superSpecialNumber.description).snap("my special number")
+		attest(superSpecialNumber.apply("five").errors?.summary).snap(
+			"Must be a number (was string)"
 		)
 	})
 })

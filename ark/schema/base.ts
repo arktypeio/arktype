@@ -137,8 +137,8 @@ export abstract class BaseNode<
 		const implementation: UnknownNodeImplementation = _
 		if (implementation.hasAssociatedError) {
 			implementation.defaults.expected ??= (ctx) =>
-				hasDefinedKey(ctx, "description")
-					? ctx.description
+				"description" in ctx
+					? (ctx.description as string)
 					: implementation.defaults.description(ctx)
 			implementation.defaults.actual ??= (data) => printable(data)
 			implementation.defaults.problem ??= (ctx) =>
@@ -169,10 +169,11 @@ export abstract class BaseNode<
 	readonly references: readonly Node[] = Object.values(this.referencesByName)
 	readonly contributesReferencesByName: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
-	readonly description: string
+	// use declare here to ensure description from attachments isn't overwritten
+	declare readonly description: string
 	readonly baseErrorContext = { code: this.kind, ...this.inner }
 
-	constructor(protected attachments: BaseAttachments) {
+	constructor(attachments: BaseAttachments) {
 		super(attachments as never)
 		this.contributesReferencesByName =
 			this.name in this.referencesByName
