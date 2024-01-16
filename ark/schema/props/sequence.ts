@@ -1,15 +1,12 @@
 import type { TypeNode, TypeSchema } from "../base.js"
-import type {
-	CompilationContext,
-	TraverseAllows,
-	TraverseApply
-} from "../scope.js"
+import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type {
 	NodeKeyImplementation,
 	nodeImplementationOf
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
+import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { BaseProp } from "./prop.js"
 
 export type NormalizedSequenceSchema = withBaseMeta<{

@@ -128,7 +128,8 @@ export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? ValidatorKind
 	: kind
 
-export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
+export type Inner<kind extends NodeKind> = Readonly<Declaration<kind>["inner"]>
 
-export type ExpectedContext<kind extends NodeKind> =
+export type ExpectedContext<kind extends NodeKind> = Readonly<
 	Declaration<kind>["expectedContext"]
+>

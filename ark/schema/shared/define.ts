@@ -6,7 +6,7 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
+import type { ExpectedContext, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -132,7 +132,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: boolean
 	collapseKey?: keyof d["inner"] & string
-	addContext?: (ctx: SchemaParseContext) => void
+	addParseContext?: (ctx: SchemaParseContext) => void
 	reduce?: (inner: d["inner"], scope: ScopeNode) => Node | undefined
 }
 

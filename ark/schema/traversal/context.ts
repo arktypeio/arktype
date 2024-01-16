@@ -51,3 +51,17 @@ export class TraversalContext {
 		}
 	}
 }
+
+export type TraversalMethodsByKind<input = unknown> = {
+	allows: TraverseAllows<input>
+	apply: TraverseApply<input>
+}
+
+export type TraverseAllows<data = unknown> = (
+	data: data,
+	ctx: TraversalContext
+) => boolean
+export type TraverseApply<data = unknown> = (
+	data: data,
+	ctx: TraversalContext
+) => void

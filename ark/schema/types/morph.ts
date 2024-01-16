@@ -9,12 +9,8 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
-import type {
-	CompilationContext,
-	StaticArkOption,
-	TraverseAllows,
-	TraverseApply
-} from "../scope.js"
+import type { StaticArkOption } from "../scope.js"
+import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -23,7 +19,11 @@ import {
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { is } from "../shared/utils.js"
-import type { TraversalContext } from "../traversal/context.js"
+import type {
+	TraversalContext,
+	TraverseAllows,
+	TraverseApply
+} from "../traversal/context.js"
 import type { ArkResult, ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "./type.js"
 

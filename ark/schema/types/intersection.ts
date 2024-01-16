@@ -16,11 +16,7 @@ import type {
 	reducibleKindOf
 } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type {
-	CompilationContext,
-	TraverseAllows,
-	TraverseApply
-} from "../scope.js"
+import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -30,6 +26,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
@@ -118,7 +115,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		this.implement({
 			hasAssociatedError: true,
 			normalize: (def) => def,
-			addContext: (ctx) => {
+			addParseContext: (ctx) => {
 				const def = ctx.definition as IntersectionSchema
 				ctx.basis = def.basis && ctx.$.parseTypeNode(def.basis, basisKinds)
 			},

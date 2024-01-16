@@ -74,7 +74,7 @@ export function parse(
 			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
 	}
 	const inner: Record<string, unknown> = {}
-	impl.addContext?.(ctx)
+	impl.addParseContext?.(ctx)
 	const schemaEntries = entriesOf(normalizedDefinition).sort((l, r) =>
 		l[0] < r[0] ? -1 : 1
 	)

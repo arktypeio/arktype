@@ -8,10 +8,15 @@ import {
 	type isAny
 } from "@arktype/util"
 import { isNode, type NodeSubclass } from "../base.js"
-import type { Schema } from "../kinds.js"
-import type { CompilationContext, TraverseApply } from "../scope.js"
+import type { ExpectedContext, Schema } from "../kinds.js"
+import {
+	compilePrimitive,
+	createPrimitiveExpectedContext,
+	type CompilationContext
+} from "../shared/compile.js"
 import type { PrimitiveNode } from "../shared/declare.js"
 import type { BasisKind } from "../shared/define.js"
+import type { TraverseApply } from "../traversal/context.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
 import { BaseType, type BaseTypeDeclaration } from "./type.js"
@@ -40,8 +45,14 @@ export abstract class BaseBasis<
 		}
 	}
 
+	private expectedContextCache?: ExpectedContext<d["kind"]>
+	get expectedContext(): ExpectedContext<d["kind"]> {
+		this.expectedContextCache ??= createPrimitiveExpectedContext(this as never)
+		return this.expectedContextCache
+	}
+
 	compileBody(ctx: CompilationContext) {
-		return this.$.compilePrimitive(this as any, ctx)
+		return compilePrimitive(this as any, ctx)
 	}
 }
 

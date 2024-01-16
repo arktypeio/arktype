@@ -35,12 +35,8 @@ import type {
 import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
-import type {
-	CompilationContext,
-	ScopeNode,
-	TraverseAllows,
-	TraverseApply
-} from "./scope.js"
+import type { ScopeNode } from "./scope.js"
+import type { CompilationContext } from "./shared/compile.js"
 import type { BaseNodeDeclaration, attachmentsOf } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -60,7 +56,11 @@ import {
 } from "./shared/define.js"
 import { Disjoint } from "./shared/disjoint.js"
 import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
-import { TraversalContext } from "./traversal/context.js"
+import {
+	TraversalContext,
+	type TraverseAllows,
+	type TraverseApply
+} from "./traversal/context.js"
 import type { ArkResult } from "./traversal/errors.js"
 import type { DomainNode } from "./types/domain.js"
 import type {
@@ -171,7 +171,6 @@ export abstract class BaseNode<
 	readonly contributesReferences: readonly Node[]
 	// use declare here to ensure description from attachments isn't overwritten
 	declare readonly description: string
-	readonly baseErrorContext = { code: this.kind, ...this.inner }
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments as never)

@@ -1,10 +1,6 @@
-import type { Dict, evaluate, extend } from "@arktype/util"
+import type { Dict, evaluate, extend, requireKeys } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
-import type {
-	ArkErrorCode,
-	DerivableErrorContext
-} from "../traversal/errors.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -70,7 +66,7 @@ export type declareNode<d extends DeclarationInput> = extend<
 			? {}
 			: d["expectedContext"] extends null
 			? null
-			: evaluate<Omit<d["inner"], "description">>
+			: d["inner"]
 	}
 >
 
@@ -97,7 +93,6 @@ export type BaseNodeDeclaration = {
 
 export interface PrimitiveNode {
 	readonly kind: PrimitiveKind
-	readonly compiledActual?: string
 	readonly compiledCondition: string
 	readonly compiledNegation: string
 }

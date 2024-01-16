@@ -6,9 +6,15 @@ import {
 	type TypeNode,
 	type TypeSchema
 } from "../base.js"
-import type { CompilationContext, TraverseApply } from "../scope.js"
+import type { ExpectedContext } from "../kinds.js"
+import {
+	compilePrimitive,
+	createPrimitiveExpectedContext,
+	type CompilationContext
+} from "../shared/compile.js"
 import type { BaseNodeDeclaration, PrimitiveNode } from "../shared/declare.js"
 import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
+import type { TraverseApply } from "../traversal/context.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
@@ -37,6 +43,12 @@ export abstract class BaseRefinement<
 			this.$.parseTypeNode(o)
 		))
 
+	private expectedContextCache?: ExpectedContext<d["kind"]>
+	get expectedContext(): ExpectedContext<d["kind"]> {
+		this.expectedContextCache ??= createPrimitiveExpectedContext(this as never)
+		return this.expectedContextCache
+	}
+
 	assertValidBasis(basis: Node<BasisKind> | undefined) {
 		if (this.checks.length === 1 && this.checks[0].isUnknown()) {
 			return
@@ -52,11 +64,11 @@ export abstract class BaseRefinement<
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.error(this.baseErrorContext)
+			ctx.error(this.expectedContext)
 		}
 	}
 
 	compileBody(ctx: CompilationContext) {
-		return this.$.compilePrimitive(this as any, ctx)
+		return compilePrimitive(this as any, ctx)
 	}
 }

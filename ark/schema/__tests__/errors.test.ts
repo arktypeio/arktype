@@ -66,7 +66,7 @@ describe("errors", () => {
 		const superSpecialNumber = $.resolutions.superSpecialNumber
 		attest(superSpecialNumber.description).snap("my special number")
 		attest(superSpecialNumber.apply("five").errors?.summary).snap(
-			"Must be a number (was string)"
+			"Must be my special number (was string)"
 		)
 	})
 })

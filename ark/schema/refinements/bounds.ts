@@ -7,7 +7,7 @@ import {
 } from "@arktype/util"
 import type { Node, NodeSubclass } from "../base.js"
 import type { Declaration, hasOpenIntersection } from "../kinds.js"
-import type { CompilationContext } from "../scope.js"
+import { compilePrimitive, type CompilationContext } from "../shared/compile.js"
 import type {
 	BaseNodeDeclaration,
 	declareNode,
@@ -141,7 +141,7 @@ export abstract class BaseBound<
 	comparator = compileComparator(this.kind, this.exclusive)
 
 	compileBody(ctx: CompilationContext) {
-		return this.$.compilePrimitive(this as never, ctx)
+		return compilePrimitive(this as never, ctx)
 	}
 }
 

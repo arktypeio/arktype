@@ -19,14 +19,14 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
+import type { TraversalKind } from "./shared/compile.js"
 import {
 	nodeKinds,
 	type DescriptionWriter,
 	type NodeKind,
-	type PrimitiveKind,
 	type TypeKind
 } from "./shared/define.js"
-import type { TraversalContext } from "./traversal/context.js"
+import type { TraversalMethodsByKind } from "./traversal/context.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -35,7 +35,6 @@ import type {
 	ProblemWriter
 } from "./traversal/errors.js"
 import { maybeGetBasisKind } from "./types/basis.js"
-import type { Discriminant } from "./types/discriminate.js"
 import { BaseType } from "./types/type.js"
 import type {
 	BranchKind,
@@ -321,42 +320,6 @@ ${reference.compileBody({
 		return new CompiledFunction(body)() as never
 	}
 
-	compilePrimitive(node: Node<PrimitiveKind>, ctx: CompilationContext) {
-		const pathString = ctx.path.join()
-		if (
-			node.kind === "domain" &&
-			node.domain === "object" &&
-			ctx.discriminants.some((d) => d.path.join().startsWith(pathString))
-		) {
-			// if we've already checked a path at least as long as the current one,
-			// we don't need to revalidate that we're in an object
-			return ""
-		}
-		if (
-			(node.kind === "domain" || node.kind === "unit") &&
-			ctx.discriminants.some(
-				(d) =>
-					d.path.join() === pathString &&
-					(node.kind === "domain"
-						? d.kind === "domain" || d.kind === "value"
-						: d.kind === "value")
-			)
-		) {
-			// if the discriminant has already checked the domain at the current path
-			// (or an exact value, implying a domain), we don't need to recheck it
-			return ""
-		}
-		return ctx.compilationKind === "allows"
-			? `return ${node.compiledCondition}`
-			: `if (${node.compiledNegation}) {
-	${this.compilePrimitiveProblem(node)}
-}`
-	}
-
-	compilePrimitiveProblem(node: Node<PrimitiveKind>) {
-		return `${this.ctxArg}.error(${JSON.stringify(node.baseErrorContext)})`
-	}
-
 	readonly schema: SchemaParser<r> = Object.assign(
 		this.parseBranches.bind(this),
 		{
@@ -412,29 +375,4 @@ const assertTypeKind = (input: unknown): TypeKind => {
 		}
 	}
 	return throwParseError(`${printable(input)} is not a valid type schema`)
-}
-
-export type TraversalKind = keyof TraversalMethodsByKind
-
-type TraversalMethodsByKind<input = unknown> = {
-	allows: TraverseAllows<input>
-	apply: TraverseApply<input>
-}
-
-export type TraverseAllows<data = unknown> = (
-	data: data,
-	ctx: TraversalContext
-) => boolean
-
-export type TraverseApply<data = unknown> = (
-	data: data,
-	ctx: TraversalContext
-) => void
-
-export type CompilationContext = {
-	dataArg: string
-	ctxArg: string
-	path: string[]
-	discriminants: Discriminant[]
-	compilationKind: TraversalKind
 }
