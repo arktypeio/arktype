@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
+import { configure, defaultConfig } from "../config.js"
 import { scopeNode } from "../scope.js"
 
 describe("errors", () => {
@@ -67,6 +68,24 @@ describe("errors", () => {
 		attest(superSpecialNumber.description).snap("my special number")
 		attest(superSpecialNumber.apply("five").errors?.summary).snap(
 			"Must be my special number (was string)"
+		)
+	})
+	it("can apply a global config", () => {
+		configure({
+			domain: {
+				description: (inner) => `my special ${inner.domain}`
+			}
+		})
+		const mySpecialSymbol = scopeNode({}).schema("symbol")
+		attest(mySpecialSymbol.apply("foo").errors?.summary).snap(
+			"Must be my special symbol (was string)"
+		)
+		configure({
+			domain: defaultConfig.domain
+		})
+		const myBoringSymbol = scopeNode({}).schema("symbol")
+		attest(myBoringSymbol.apply("foo").errors?.summary).snap(
+			"Must be a symbol (was string)"
 		)
 	})
 })

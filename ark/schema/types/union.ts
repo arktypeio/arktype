@@ -1,4 +1,4 @@
-import { isArray } from "@arktype/util"
+import { domainOf, isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"

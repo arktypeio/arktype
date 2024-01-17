@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
-import { type } from "arktype"
+import "./arkConfig.js"
 
-const User = type({
-	id: "string"
-})
+import { keywords } from "@arktype/schema"
 
-type User = typeof User.infer
+console.log(keywords.string.apply(5).errors?.summary)
+
+// user //?
+
+// type User = typeof user.infer

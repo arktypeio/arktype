@@ -10,6 +10,7 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
+import { globalConfig } from "./config.js"
 import type {
 	instantiateAliases,
 	instantiateSchemaBranches,
@@ -96,24 +97,17 @@ export type ArkConfig = Partial<NodeConfigsByKind>
 
 export type ParsedArkConfig = require<ArkConfig, 2>
 
-let parsedDefaultsCache: ParsedArkConfig | undefined
-
-const parseConfig = (config: ArkConfig | undefined): ParsedArkConfig => {
-	if (config === undefined) {
-		if (parsedDefaultsCache) {
-			return parsedDefaultsCache
-		}
-		config = {}
+const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
+	if (!scopeConfig) {
+		return globalConfig
 	}
-	const parsedConfig: ParsedArkConfig = {} as never
-	for (const kind of nodeKinds) {
-		const providedKindConfig = config[kind] as UnknownNodeConfig | undefined
-		parsedConfig[kind] = providedKindConfig
-			? { ...nodesByKind[kind].implementation.defaults, ...providedKindConfig }
-			: (nodesByKind[kind].implementation.defaults as any)
-	}
-	if (config === undefined) {
-		parsedDefaultsCache = parsedConfig
+	const parsedConfig = { ...globalConfig }
+	let kind: keyof ArkConfig
+	for (kind in scopeConfig) {
+		parsedConfig[kind] = {
+			...nodesByKind[kind].implementation.defaults,
+			...scopeConfig[kind]
+		} as never
 	}
 	return parsedConfig
 }
@@ -127,13 +121,13 @@ export class ScopeNode<r extends object = any> {
 	readonly nodeCache: { [innerId: string]: Node } = {}
 	readonly config: ParsedArkConfig
 	readonly resolutions = {} as r
-	readonly referencesByName: Record<string, Node> = {}
+	readonly referencesByName: { [name: string]: Node } = {}
 	readonly references: readonly Node[]
 	protected resolved = false
 
 	constructor(
-		public def: Dict<string, unknown>,
-		config?: ArkConfig
+		public def: Dict,
+		config: ArkConfig = {}
 	) {
 		this.config = parseConfig(config)
 		for (const k in this.def) {

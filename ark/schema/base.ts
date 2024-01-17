@@ -1,7 +1,6 @@
 import {
 	DynamicBase,
 	capitalize,
-	hasDefinedKey,
 	includes,
 	isArray,
 	printable,

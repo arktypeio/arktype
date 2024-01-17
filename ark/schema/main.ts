@@ -1,4 +1,5 @@
 export * from "./base.js"
+export * from "./config.js"
 export * from "./keywords/jsObjects.js"
 export * from "./keywords/keywords.js"
 export * from "./keywords/parsing.js"
