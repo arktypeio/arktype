@@ -191,7 +191,9 @@ type distillRecurse<
 	t,
 	io extends "in" | "out",
 	refinements extends "base" | "refined"
-> = t extends MorphAst<infer i, infer o>
+> = unknown extends t
+	? unknown
+	: t extends MorphAst<infer i, infer o>
 	? io extends "in"
 		? i
 		: o
