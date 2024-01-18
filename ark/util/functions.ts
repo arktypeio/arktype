@@ -58,15 +58,15 @@ export type CompiledFunction = new <f extends (...args: never[]) => unknown>(
 }
 
 export const Callable: Callable = class {
-	constructor(defaultFn: Function, thisArg?: object) {
-		thisArg ??= this
-		return Object.setPrototypeOf((...args: any[]) => {
-			return defaultFn.call(thisArg, ...args)
-		}, this.constructor.prototype)
+	constructor(f: Function, thisArg?: object) {
+		return Object.setPrototypeOf(
+			f.bind(thisArg ?? this),
+			this.constructor.prototype
+		)
 	}
 } as never
 
 export type Callable = new <f extends (...args: never[]) => unknown>(
 	f: f,
-	proto?: object
+	thisArg?: object
 ) => f
