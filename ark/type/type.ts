@@ -16,6 +16,7 @@ import {
 	type inferNarrow
 } from "@arktype/schema"
 import {
+	Callable,
 	CastableBase,
 	map,
 	type Constructor,
@@ -125,12 +126,12 @@ export type TypeConfig = {
 	mustBe?: string
 }
 
-export class Type<t = unknown, $ = any> extends CastableBase<
-	(data: unknown) => ArkResult<distill<t>>
+export class Type<t = unknown, $ = any> extends Callable<
+	(data: unknown) => ArkResult<distill<extractOut<t>>>
 > {
 	declare [inferred]: t
 	// TODO: in/out?
-	declare infer: distill<t>
+	declare infer: distill<extractOut<t>>
 
 	config: TypeConfig
 	root: TypeNode<t>
@@ -143,7 +144,7 @@ export class Type<t = unknown, $ = any> extends CastableBase<
 		public scope: Scope
 	) {
 		const root = parseTypeRoot(definition, scope) as TypeNode<t>
-		super()
+		super(root.apply)
 		this.root = root
 		this.allows = root.allows
 		this.config = scope.config

@@ -17,7 +17,7 @@ import type {
 } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { BaseMeta, declareNode, withBaseMeta } from "../shared/declare.js"
+import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
 	type BasisKind,

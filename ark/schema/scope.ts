@@ -21,12 +21,7 @@ import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
 import type { TraversalKind } from "./shared/compile.js"
-import {
-	nodeKinds,
-	type DescriptionWriter,
-	type NodeKind,
-	type TypeKind
-} from "./shared/define.js"
+import type { DescriptionWriter, NodeKind, TypeKind } from "./shared/define.js"
 import type { TraversalMethodsByKind } from "./traversal/context.js"
 import type {
 	ActualWriter,
