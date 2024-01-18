@@ -107,6 +107,26 @@ const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
 	return parsedConfig
 }
 
+const assertTypeKind = (input: unknown): TypeKind => {
+	const basisKind = maybeGetBasisKind(input)
+	if (basisKind) {
+		return basisKind
+	}
+	if (typeof input === "object" && input !== null) {
+		if (input instanceof BaseType) {
+			return input.kind
+			// otherwise, error at end of function
+		} else if ("morph" in input) {
+			return "morph"
+		} else if ("branches" in input || isArray(input)) {
+			return "union"
+		} else {
+			return "intersection"
+		}
+	}
+	return throwParseError(`${printable(input)} is not a valid type schema`)
+}
+
 export class ScopeNode<r extends object = any> {
 	declare infer: {
 		[k in keyof r]: r[k] extends schema.cast<infer t> ? t : never
@@ -137,26 +157,23 @@ export class ScopeNode<r extends object = any> {
 		this.references = Object.values(this.referencesByName)
 		this.bindCompiledScope(this.references, this.references)
 		this.resolved = true
-		if (ScopeNode.keywords) {
-			// ensure root has been set before parsing this to avoid a circularity
-			this.parseNode(
-				"union",
-				{
-					branches: [
-						"string",
-						"number",
-						"object",
-						"bigint",
-						"symbol",
-						{ unit: true },
-						{ unit: false },
-						{ unit: null },
-						{ unit: undefined }
-					]
-				},
-				{ reduceTo: ScopeNode.keywords.unknown }
-			)
-		}
+		this.parseNode(
+			"union",
+			{
+				branches: [
+					"string",
+					"number",
+					"object",
+					"bigint",
+					"symbol",
+					{ unit: true },
+					{ unit: false },
+					{ unit: null },
+					{ unit: undefined }
+				]
+			},
+			{ reduceTo: this.parseNode("intersection", {}) }
+		)
 	}
 
 	get builtin() {
@@ -345,23 +362,3 @@ export const scopeNode = ScopeNode.from
 export const rootSchema = ScopeNode.root.schema.bind(ScopeNode.root)
 
 export const rootNode = ScopeNode.root.parseNode.bind(ScopeNode.root)
-
-const assertTypeKind = (input: unknown): TypeKind => {
-	const basisKind = maybeGetBasisKind(input)
-	if (basisKind) {
-		return basisKind
-	}
-	if (typeof input === "object" && input !== null) {
-		if (input instanceof BaseType) {
-			return input.kind
-			// otherwise, error at end of function
-		} else if ("morph" in input) {
-			return "morph"
-		} else if ("branches" in input || isArray(input)) {
-			return "union"
-		} else {
-			return "intersection"
-		}
-	}
-	return throwParseError(`${printable(input)} is not a valid type schema`)
-}
