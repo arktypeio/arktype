@@ -56,7 +56,7 @@ module.exports = defineConfig({
 			{
 				ignoreRestSiblings: true,
 				argsIgnorePattern: "^_",
-				varsIgnorePattern: "^_",
+				varsIgnorePattern: "^_"
 			}
 		],
 		"@typescript-eslint/default-param-last": "warn",
