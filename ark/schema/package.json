@@ -40,8 +40,5 @@
 	},
 	"dependencies": {
 		"@arktype/util": "workspace:*"
-	},
-	"devDependencies": {
-		"typescript": "5.3.3"
 	}
 }

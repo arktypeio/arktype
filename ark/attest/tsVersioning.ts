@@ -1,6 +1,7 @@
-import { findPackageRoot, readJson } from "@arktype/fs"
+import { findPackageRoot, fsRoot, readJson } from "@arktype/fs"
 import type { Digit } from "@arktype/util"
 import { existsSync, renameSync, symlinkSync, unlinkSync } from "fs"
+import { dirname } from "path"
 import { join } from "path/posix"
 import ts from "typescript"
 
@@ -88,6 +89,9 @@ export type TsVersionData = {
  * primary version installed as "typescript" and all dependencies beginning with
  * "typescript-".
  *
+ * Starts checking from the current directory and looks for node_modules in parent
+ * directories up to the file system root.
+ *
  * Alternate versions can be installed using a package.json dependency like:
  *
  * ```json
@@ -100,30 +104,40 @@ export type TsVersionData = {
  * installed at the expected location in node_modules.
  */
 export const findAttestTypeScriptVersions = (): TsVersionData[] => {
-	const root = findPackageRoot(process.cwd())
-	const packageJson = readJson(join(root, "package.json"))
-	const nodeModules = join(root, "node_modules")
-	const dependencies: Record<string, string> = {
-		...packageJson.dependencies,
-		...packageJson.devDependencies
+	let currentDir = process.cwd()
+	const versions: TsVersionData[] = []
+	while (currentDir !== fsRoot) {
+		const packageJsonPath = join(currentDir, "package.json")
+		if (!existsSync(packageJsonPath)) {
+			currentDir = dirname(currentDir)
+			continue
+		}
+		const nodeModulesPath = join(currentDir, "node_modules")
+		const packageJson = readJson(packageJsonPath)
+		const dependencies: Record<string, string> = {
+			...packageJson.dependencies,
+			...packageJson.devDependencies
+		}
+		for (const alias in dependencies) {
+			if (!alias.startsWith("typescript")) {
+				continue
+			}
+			const path = join(nodeModulesPath, alias)
+			if (!existsSync(path)) {
+				throw Error(
+					`TypeScript version ${alias} specified in ${packageJsonPath} must be installed at ${path} `
+				)
+			}
+			const version: string = readJson(join(path, "package.json")).version
+			versions.push({
+				alias,
+				version,
+				path
+			})
+		}
+		currentDir = dirname(currentDir)
 	}
-	return Object.keys(dependencies).flatMap((alias) => {
-		if (!alias.startsWith("typescript")) {
-			return []
-		}
-		const path = join(nodeModules, alias)
-		if (!existsSync(path)) {
-			throw Error(
-				`TypeScript version ${alias} specified in package.json must be installed at ${path} `
-			)
-		}
-		const version: string = readJson(join(path, "package.json")).version
-		return {
-			alias,
-			version,
-			path
-		}
-	})
+	return versions
 }
 
 /** Get the TypeScript version being used by attest as as string like "5.0"
