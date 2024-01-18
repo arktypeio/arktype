@@ -44,7 +44,7 @@ export type instantiateAliases<aliases> = {
 		: instantiateSchemaBranch<aliases[k]>
 } & unknown
 
-export type validateSchemaBranch<def, $> = isSchemaCast<def> extends true
+export type validateSchemaBranch<def, _$> = isSchemaCast<def> extends true
 	? def
 	: keyof def & ("morph" | "in" | "out") extends never
 	? validateMorphChild<def>

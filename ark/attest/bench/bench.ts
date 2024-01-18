@@ -2,7 +2,6 @@ import { caller, type SourcePosition } from "@arktype/fs"
 import {
 	ensureCacheDirs,
 	getConfig,
-	type AttestConfig,
 	type ParsedAttestConfig
 } from "../config.js"
 import { chainableNoOpProxy } from "../utils.js"

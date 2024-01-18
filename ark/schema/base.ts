@@ -126,7 +126,7 @@ export abstract class BaseNode<
 	d extends BaseNodeDeclaration,
 	// subclass doesn't affect the class's type, but rather is used to validate
 	// the correct implementation of the static implementation
-	subclass extends NodeSubclass<d>
+	_subclass extends NodeSubclass<d>
 > extends DynamicBase<attachmentsOf<d>> {
 	protected static implement<self>(
 		this: self,

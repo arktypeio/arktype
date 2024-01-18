@@ -61,7 +61,7 @@ export const getFramesFromError = (error: Error): string[] => {
 		stack = error.stack
 	} catch (error1) {
 		try {
-			// @ts-expect-error
+			// @ts-expect-error intentional TS error used for stack trace
 			const previous = err.__previous__ || err.__previous
 			stack = previous && previous.stack
 		} catch (error2) {

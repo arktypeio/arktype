@@ -8,10 +8,10 @@ attest(5).snap(5)
 
 attest({ re: "do" }).snap({ re: `do` })
 
-// @ts-ignore (using internal updateSnapshots hook)
+// @ts-expect-error (using internal updateSnapshots hook)
 attest({ re: "dew" }, { updateSnapshots: true }).snap({ re: `dew` })
 
-// @ts-ignore (using internal updateSnapshots hook)
+// @ts-expect-error (using internal updateSnapshots hook)
 attest(5, { updateSnapshots: true }).snap(5)
 
 attest(undefined).snap(`(undefined)`)

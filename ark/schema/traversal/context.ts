@@ -44,7 +44,7 @@ export class TraversalContext {
 		this.errorsStack.push(new ArkErrors(this))
 	}
 
-	popUnion(branchCount: number, data: unknown, path: string[]) {
+	popUnion(branchCount: number, _data: unknown, _path: string[]) {
 		const branchProblems = this.errorsStack.pop()!
 		if (branchProblems.count === branchCount) {
 			// this.addError("union", { data: this.data, errors: branchProblems })

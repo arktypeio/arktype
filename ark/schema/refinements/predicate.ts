@@ -51,7 +51,7 @@ export class PredicateNode extends BaseRefinement<
 			description(inner) {
 				return `valid according to ${inner.predicate.name}`
 			},
-			expected(source) {
+			expected(_source) {
 				return `valid`
 			}
 		}

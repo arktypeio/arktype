@@ -17,7 +17,6 @@ import {
 } from "@arktype/schema"
 import {
 	Callable,
-	CastableBase,
 	map,
 	type Constructor,
 	type Json,

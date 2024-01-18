@@ -72,7 +72,7 @@ export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 		return ["object"] as const
 	}
 
-	compileBody(ctx: CompilationContext): string {
+	compileBody(_ctx: CompilationContext): string {
 		return ""
 	}
 }

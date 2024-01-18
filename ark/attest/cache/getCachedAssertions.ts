@@ -1,6 +1,5 @@
 import { readJson, type LinePosition, type SourcePosition } from "@arktype/fs"
 import { existsSync, readdirSync } from "node:fs"
-import { basename, join } from "node:path"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
 import type {
@@ -8,6 +7,7 @@ import type {
 	LinePositionRange,
 	TypeAssertionData
 } from "./writeAssertionCache.js"
+import { join } from "node:path"
 
 export type VerionedAssertionsByFile = [
 	tsVersion: string,
