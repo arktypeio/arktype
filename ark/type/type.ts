@@ -144,7 +144,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		public scope: Scope
 	) {
 		const root = parseTypeRoot(definition, scope) as TypeNode<t>
-		super(root.apply)
+		super(root.apply, root)
 		this.root = root
 		this.allows = root.allows
 		this.config = scope.config
