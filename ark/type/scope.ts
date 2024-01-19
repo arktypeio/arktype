@@ -1,8 +1,7 @@
 import {
 	BaseType,
 	keywords,
-	type ArkErrorCode,
-	type KeyCheckKind,
+	type ArkConfig,
 	type TypeNode,
 	type extractIn,
 	type extractOut
@@ -47,7 +46,6 @@ import {
 	type DefinitionParser,
 	type Generic,
 	type GenericProps,
-	type TypeConfig,
 	type TypeParser
 } from "./type.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
@@ -68,10 +66,8 @@ export type ScopeParser<parent, ambient> = {
 	}>
 }
 
-export type ScopeConfig = {
+export interface ArkScopeConfig extends ArkConfig {
 	ambient?: Scope | null
-	codes?: Record<ArkErrorCode, { mustBe?: string }>
-	keys?: KeyCheckKind
 }
 
 type validateScope<def, $> = {
@@ -228,7 +224,7 @@ export class Scope<r extends Resolutions = any> {
 	declare infer: extractOut<r["exports"]>
 	declare inferIn: extractIn<r["exports"]>
 
-	config: TypeConfig
+	config: ArkScopeConfig
 
 	private parseCache: Record<string, TypeNode> = {}
 	private resolutions: MergedResolutions
@@ -239,7 +235,7 @@ export class Scope<r extends Resolutions = any> {
 	private exportedNames: exportedName<r>[] = []
 	private ambient: Scope | null
 
-	constructor(def: Dict, config: ScopeConfig) {
+	constructor(def: Dict, config: ArkScopeConfig) {
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
 			this.aliases[parsedKey.name] = parsedKey.params.length
@@ -273,7 +269,7 @@ export class Scope<r extends Resolutions = any> {
 
 	scope: ScopeParser<r["exports"], r["ambient"]> = ((
 		def: Dict,
-		config: TypeConfig = {}
+		config: ArkScopeConfig = {}
 	) => {
 		return new Scope(def, {
 			ambient: this.ambient,

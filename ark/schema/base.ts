@@ -36,7 +36,11 @@ import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
 import type { ScopeNode } from "./scope.js"
 import type { CompilationContext } from "./shared/compile.js"
-import type { BaseNodeDeclaration, attachmentsOf } from "./shared/declare.js"
+import type {
+	BaseMeta,
+	BaseNodeDeclaration,
+	attachmentsOf
+} from "./shared/declare.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -270,6 +274,10 @@ export abstract class BaseNode<
 
 	toString() {
 		return this.description
+	}
+
+	configure(config: BaseMeta): Node<this["kind"], t> {
+		return this.$.parseNode(this.kind, { ...this.inner, ...config })
 	}
 
 	private static intersectionCache: Record<string, Node | Disjoint> = {}

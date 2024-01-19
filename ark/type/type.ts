@@ -121,11 +121,6 @@ export type DefinitionParser<$> = <def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
 
-export type TypeConfig = {
-	keys?: KeyCheckKind
-	mustBe?: string
-}
-
 export class Type<t = unknown, $ = any> extends Callable<
 	(data: unknown) => ArkResult<distill<extractOut<t>>>
 > {
@@ -133,10 +128,9 @@ export class Type<t = unknown, $ = any> extends Callable<
 	// TODO: in/out?
 	declare infer: distill<extractOut<t>>
 
-	config: TypeConfig
 	root: TypeNode<t>
 	allows: this["root"]["allows"]
-	expected: string
+	description: string
 	json: Json
 
 	constructor(
@@ -147,14 +141,12 @@ export class Type<t = unknown, $ = any> extends Callable<
 		super(root.apply, root)
 		this.root = root
 		this.allows = root.allows
-		this.config = scope.config
 		this.json = root.json
-		this.expected = this.root.description
+		this.description = this.root.description
 	}
 
-	configure(config: TypeConfig) {
-		this.config = { ...this.config, ...config }
-		return this
+	configure(config: BaseMeta): this {
+		return new Type(this.root.configure(config), this.scope) as never
 	}
 
 	// TODO: should return out
@@ -251,6 +243,10 @@ export class Type<t = unknown, $ = any> extends Callable<
 	get out() {
 		this.outCache ??= new Type(this.root.out, this.scope) as never
 		return this.outCache
+	}
+
+	toString() {
+		return this.description
 	}
 }
 

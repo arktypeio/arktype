@@ -418,7 +418,9 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 }
 
 const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) => {
-	return ctx.scope.parse(def[0], ctx)
+	const config: BaseMeta =
+		typeof def[2] === "string" ? { description: def[2] } : (def[2] as never)
+	return ctx.scope.parse(def[0], ctx).configure(config)
 }
 
 const indexOneParsers: {
