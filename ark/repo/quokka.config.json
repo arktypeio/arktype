@@ -1,8 +1,0 @@
-{
-	"showValueOnSelection": false,
-	"env": {
-		"params": {
-			"import": "tsx"
-		}
-	}
-}
