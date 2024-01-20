@@ -276,8 +276,13 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	configure(config: BaseMeta): Node<this["kind"], t> {
-		return this.$.parseNode(this.kind, { ...this.inner, ...config })
+	configure(config: BaseMeta): this {
+		return this.$.parseNode(this.kind, { ...this.inner, ...config }) as never
+	}
+
+	// TODO: should this apply recursively?
+	describe(description: string): this {
+		return this.$.parseNode(this.kind, { ...this.inner, description }) as never
 	}
 
 	private static intersectionCache: Record<string, Node | Disjoint> = {}

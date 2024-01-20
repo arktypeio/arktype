@@ -149,6 +149,10 @@ export class Type<t = unknown, $ = any> extends Callable<
 		return new Type(this.root.configure(config), this.scope) as never
 	}
 
+	describe(description: string): this {
+		return new Type(this.root.describe(description), this.scope) as never
+	}
+
 	// TODO: should return out
 	from(literal: this["in"]["infer"]) {
 		return literal
