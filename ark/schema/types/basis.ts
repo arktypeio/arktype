@@ -12,9 +12,10 @@ import type { ExpectedContext, Schema } from "../kinds.js"
 import {
 	compilePrimitive,
 	createPrimitiveExpectedContext,
-	type CompilationContext
+	type CompilationContext,
+	type ConstraintGroup
 } from "../shared/compile.js"
-import type { PrimitiveNode } from "../shared/declare.js"
+import type { BaseConstraint, BasePrimitive } from "../shared/declare.js"
 import type { BasisKind } from "../shared/define.js"
 import type { TraverseApply } from "../traversal/context.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
@@ -33,11 +34,13 @@ export abstract class BaseBasis<
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseType<t, d, subclass>
-	implements PrimitiveNode
+	implements BasePrimitive, BaseConstraint
 {
 	abstract readonly basisName: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
+
+	readonly constraintGroup = "basis"
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

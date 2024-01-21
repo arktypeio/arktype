@@ -51,6 +51,7 @@ export class PatternNode extends BaseRefinement<
 		}
 	})
 
+	readonly constraintGroup = "shallow"
 	readonly hasOpenIntersection = true
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test

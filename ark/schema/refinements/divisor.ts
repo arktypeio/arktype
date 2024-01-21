@@ -56,6 +56,7 @@ export class DivisorNode extends BaseRefinement<
 		}
 	})
 
+	readonly constraintGroup = "shallow"
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
 

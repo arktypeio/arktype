@@ -72,6 +72,6 @@ describe("config traversal", () => {
 		).snap("age must be a number (was boolean)")
 
 		// should give the shallow custom error
-		attest(user(null).errors?.summary).snap()
+		attest(user(null).errors?.summary).snap("Must be a valid user (was null)")
 	})
 })

@@ -4,6 +4,15 @@ import type { TraversalMethodsByKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
 import type { PrimitiveKind } from "./define.js"
 
+export type ConstraintGroup = "basis" | "shallow" | "deep" | "predicate"
+
+export const precedenceByConstraintGroup: Record<ConstraintGroup, number> = {
+	basis: 0,
+	shallow: 1,
+	deep: 2,
+	predicate: 3
+}
+
 export const compilePrimitive = (
 	node: Node<PrimitiveKind>,
 	ctx: CompilationContext

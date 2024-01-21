@@ -16,7 +16,10 @@ import type {
 	reducibleKindOf
 } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { CompilationContext } from "../shared/compile.js"
+import {
+	precedenceByConstraintGroup,
+	type CompilationContext
+} from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -50,11 +53,6 @@ export type IntersectionSchema<
 >
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
-
-export type IntersectionAttachments = {
-	constraints: ConstraintSet
-	refinements: readonly Node<ComponentKind>[]
-}
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
@@ -240,8 +238,29 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.constraints.every((c) => c.traverseAllows(data as never, ctx))
 
-	traverseApply: TraverseApply = (data, ctx) =>
-		this.constraints.forEach((c) => c.traverseApply(data as never, ctx))
+	protected readonly constraintGroupEndIndices = this.constraints.reduce<
+		Record<number, true>
+	>((result, c, i) => {
+		if (
+			i !== this.constraints.length - 1 &&
+			this.constraints[i + 1].constraintGroup !== c.constraintGroup
+		) {
+			result[i] = true
+		}
+		return result
+	}, {})
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		for (let i = 0; i < this.constraints.length; i++) {
+			this.constraints[i].traverseApply(data as never, ctx)
+			if (
+				i in this.constraintGroupEndIndices &&
+				ctx.currentErrors.length !== 0
+			) {
+				return
+			}
+		}
+	}
 
 	compileBody(ctx: CompilationContext) {
 		const constraintInvocations = this.constraints.map(
@@ -250,16 +269,21 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					ctx.compilationKind === "allows" ? "" : ", ctx"
 				})`
 		)
-		return ctx.compilationKind === "allows"
-			? constraintInvocations
-					.map(
-						(call) => `if(!${call}) return false
+		if (ctx.compilationKind === "allows") {
+			constraintInvocations
+				.map(
+					(call) => `if(!${call}) return false
 	`
-					)
-					.join("\n") +
-					"\n" +
-					"return true"
-			: constraintInvocations.join("\n")
+				)
+				.join("\n") + "\nreturn true"
+		}
+		return this.constraints.reduce((body, constraint, i) => {
+			body += constraintInvocations[i] + "\n"
+			if (i in this.constraintGroupEndIndices) {
+				body += `if(${ctx.ctxArg}.currentErrors.length !== 0) return\n`
+			}
+			return body
+		}, "")
 	}
 }
 
@@ -330,9 +354,23 @@ const reduceConstraints = (
 }
 
 export const flattenConstraints = (inner: IntersectionInner): ConstraintSet =>
-	Object.entries(inner).flatMap(([k, v]) =>
-		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
-	)
+	Object.entries(inner)
+		.flatMap(([k, v]) =>
+			k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
+		)
+		.sort((l, r) => {
+			// order by precedence group, then node kind alphabetically, then name alphabetically
+			const precedenceDiff =
+				precedenceByConstraintGroup[l.constraintGroup] -
+				precedenceByConstraintGroup[r.constraintGroup]
+			if (precedenceDiff !== 0) {
+				return precedenceDiff
+			}
+			if (l.kind !== r.kind) {
+				return l.kind < r.kind ? -1 : 1
+			}
+			return l.name < r.name ? -1 : 1
+		})
 
 export const unflattenConstraints = (
 	constraints: ConstraintSet

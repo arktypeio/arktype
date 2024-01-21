@@ -10,9 +10,14 @@ import type { ExpectedContext } from "../kinds.js"
 import {
 	compilePrimitive,
 	createPrimitiveExpectedContext,
-	type CompilationContext
+	type CompilationContext,
+	type ConstraintGroup
 } from "../shared/compile.js"
-import type { BaseNodeDeclaration, PrimitiveNode } from "../shared/declare.js"
+import type {
+	BaseConstraint,
+	BaseNodeDeclaration,
+	BasePrimitive
+} from "../shared/declare.js"
 import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
 import type { TraverseApply } from "../traversal/context.js"
 
@@ -31,10 +36,11 @@ export abstract class BaseRefinement<
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseNode<d["prerequisite"], d, subclass>
-	implements PrimitiveNode
+	implements BasePrimitive, BaseConstraint
 {
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
+	abstract readonly constraintGroup: ConstraintGroup
 
 	abstract getCheckedDefinitions(): readonly TypeSchema[]
 	readonly checks: readonly TypeNode[] =

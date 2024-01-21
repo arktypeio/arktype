@@ -138,6 +138,8 @@ export abstract class BaseBound<
 		} as never
 	}
 
+	readonly constraintGroup = "shallow"
+
 	comparator = compileComparator(this.kind, this.exclusive)
 
 	compileBody(ctx: CompilationContext) {

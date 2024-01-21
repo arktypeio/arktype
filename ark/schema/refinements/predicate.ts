@@ -57,6 +57,7 @@ export class PredicateNode extends BaseRefinement<
 		}
 	})
 
+	readonly constraintGroup = "predicate"
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
 	compiledCondition = `${compileSerializedValue(this.predicate)}(${
