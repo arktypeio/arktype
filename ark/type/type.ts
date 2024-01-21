@@ -146,11 +146,18 @@ export class Type<t = unknown, $ = any> extends Callable<
 	}
 
 	configure(config: BaseMeta): this {
-		return new Type(this.root.configure(config), this.scope) as never
+		return new Type(
+			this.root.transform(
+				(kind, inner) => ({ ...inner, ...config }),
+				// TODO: change to props
+				(node) => node.kind !== "required"
+			),
+			this.scope
+		) as never
 	}
 
 	describe(description: string): this {
-		return new Type(this.root.describe(description), this.scope) as never
+		return this.configure({ description })
 	}
 
 	// TODO: should return out

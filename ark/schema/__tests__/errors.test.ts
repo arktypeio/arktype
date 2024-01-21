@@ -38,6 +38,26 @@ describe("errors", () => {
 			"Must be my special bigint (was number)"
 		)
 	})
+	it("custom description on parent doesn't affect children", () => {
+		const evenNumber = schema({
+			basis: "number",
+			divisor: 2,
+			description: "an even number"
+		})
+		attest(evenNumber.description).snap("an even number")
+		// since the error is from the divisor constraint which didn't have a
+		// description, it is unchanged
+		attest(evenNumber.apply(5).errors?.summary).snap(
+			"Must be a multiple of 2 (was 5)"
+		)
+	})
+	it("custom configured description", () => {
+		const evenNumber = schema({
+			basis: "number",
+			divisor: 2
+		}).describe("an even number")
+		//?
+	})
 	it("can configure errors by kind at a scope level", () => {
 		const $ = scopeNode(
 			{ superSpecialString: "string" },

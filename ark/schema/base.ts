@@ -3,6 +3,7 @@ import {
 	capitalize,
 	includes,
 	isArray,
+	map,
 	printable,
 	throwInternalError,
 	type Constructor,
@@ -15,9 +16,11 @@ import {
 } from "@arktype/util"
 import type {
 	Declaration,
+	Inner,
 	Schema,
 	hasOpenIntersection,
-	ioKindOf
+	ioKindOf,
+	reducibleKindOf
 } from "./kinds.js"
 import type { IndexNode } from "./props/index.js"
 import type { OptionalNode } from "./props/optional.js"
@@ -351,7 +354,33 @@ export abstract class BaseNode<
 		}
 		return null
 	}
+
+	transform(
+		mapper: DeepNodeTransformation,
+		shouldTransform: (node: Node) => boolean
+	): Node<reducibleKindOf<this["kind"]>> {
+		if (!shouldTransform(this as never)) {
+			return this as never
+		}
+		const innerWithTransformedChildren = map(this.inner as Dict, (k, v) => [
+			k,
+			this.impl.keys[k].child
+				? isArray(v)
+					? v.map((node) => (node as Node).transform(mapper, shouldTransform))
+					: (v as Node).transform(mapper, shouldTransform)
+				: v
+		])
+		return this.$.parseNode(
+			this.kind,
+			mapper(this.kind, innerWithTransformedChildren as never) as never
+		)
+	}
 }
+
+export type DeepNodeTransformation = <kind extends NodeKind>(
+	kind: kind,
+	inner: Inner<kind>
+) => Inner<kind>
 
 interface NodesByKind<t = any> {
 	union: UnionNode<t>

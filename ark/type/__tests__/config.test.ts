@@ -57,4 +57,21 @@ describe("config traversal", () => {
 			"myKey must be untrue (was true)"
 		)
 	})
+	it("applies config to shallow descendants", () => {
+		const user = type({
+			name: "string",
+			age: "number"
+		}).describe("a valid user")
+
+		// should give the original error at a path
+		attest(
+			user({
+				name: "david",
+				age: true
+			}).errors?.summary
+		).snap("age must be a number (was boolean)")
+
+		// should give the shallow custom error
+		attest(user(null).errors?.summary).snap()
+	})
 })
