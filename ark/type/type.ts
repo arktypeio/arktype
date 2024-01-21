@@ -3,7 +3,6 @@ import {
 	keywords,
 	type ArkResult,
 	type BaseMeta,
-	type KeyCheckKind,
 	type Morph,
 	type Out,
 	type Predicate,
@@ -17,7 +16,6 @@ import {
 } from "@arktype/schema"
 import {
 	Callable,
-	CastableBase,
 	map,
 	type Constructor,
 	type Json,
@@ -33,6 +31,7 @@ import {
 	type GenericParamsParseError
 } from "./parser/generic.js"
 import type { inferIntersection } from "./parser/semantic/intersections.js"
+import { configureShallowDescendants } from "./parser/shared.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
@@ -145,19 +144,15 @@ export class Type<t = unknown, $ = any> extends Callable<
 		this.description = this.root.description
 	}
 
-	configure(config: BaseMeta): this {
+	configure(configOrDescription: BaseMeta | string): this {
 		return new Type(
-			this.root.transform(
-				(kind, inner) => ({ ...inner, ...config }),
-				// TODO: change to props
-				(node) => node.kind !== "required"
-			),
+			configureShallowDescendants(this.root, configOrDescription),
 			this.scope
 		) as never
 	}
 
 	describe(description: string): this {
-		return this.configure({ description })
+		return this.configure(description)
 	}
 
 	// TODO: should return out

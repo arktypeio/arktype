@@ -32,6 +32,7 @@ import type { inferIntersection } from "./semantic/intersections.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/semantic.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import {
+	configureShallowDescendants,
 	parseEntry,
 	type EntryParseResult,
 	type validateObjectValue
@@ -417,11 +418,8 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 		.constrain("predicate", def[2] as Predicate)
 }
 
-const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) => {
-	const config: BaseMeta =
-		typeof def[2] === "string" ? { description: def[2] } : (def[2] as never)
-	return ctx.scope.parse(def[0], ctx).configure(config)
-}
+const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) =>
+	configureShallowDescendants(ctx.scope.parse(def[0], ctx), def[2] as never)
 
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>

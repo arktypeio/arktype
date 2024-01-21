@@ -1,3 +1,4 @@
+import type { BaseMeta, Node } from "@arktype/schema"
 import type { extend } from "@arktype/util"
 import type { validateDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
@@ -150,3 +151,18 @@ type parseKey<k> = k extends OptionalStringDefinition<infer inner>
 			kind: "required"
 			innerKey: k & (string | symbol)
 	  }>
+
+export const configureShallowDescendants = <node extends Node>(
+	node: node,
+	configOrDescription: BaseMeta | string
+): node => {
+	const config: BaseMeta =
+		typeof configOrDescription === "string"
+			? { description: configOrDescription }
+			: (configOrDescription as never)
+	return node.transform(
+		(kind, inner) => ({ ...inner, ...config }),
+		// TODO: change to props
+		(node) => node.kind !== "required" && node.kind !== "optional"
+	) as never
+}

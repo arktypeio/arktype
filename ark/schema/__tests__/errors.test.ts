@@ -51,13 +51,6 @@ describe("errors", () => {
 			"Must be a multiple of 2 (was 5)"
 		)
 	})
-	it("custom configured description", () => {
-		const evenNumber = schema({
-			basis: "number",
-			divisor: 2
-		}).describe("an even number")
-		//?
-	})
 	it("can configure errors by kind at a scope level", () => {
 		const $ = scopeNode(
 			{ superSpecialString: "string" },
