@@ -10,9 +10,7 @@ import type { ExpectedContext } from "../kinds.js"
 import {
 	compilePrimitive,
 	createPrimitiveExpectedContext,
-	type CompilationContext,
-	type ConstraintGroup,
-	type ConstraintKindsByGroup
+	type CompilationContext
 } from "../shared/compile.js"
 import type {
 	BaseConstraint,
@@ -21,6 +19,7 @@ import type {
 } from "../shared/declare.js"
 import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
 import type { TraverseApply } from "../traversal/context.js"
+import type { ConstraintGroup, ConstraintKindsByGroup } from "../types/group.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"

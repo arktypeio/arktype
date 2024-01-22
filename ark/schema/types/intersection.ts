@@ -16,12 +16,7 @@ import type {
 	reducibleKindOf
 } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import {
-	precedenceByConstraintGroup,
-	type CompilationContext,
-	type ConstraintGroup,
-	type ConstraintKindsByGroup
-} from "../shared/compile.js"
+import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
@@ -34,6 +29,11 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
+import {
+	precedenceByConstraintGroup,
+	type ConstraintGroup,
+	type ConstraintKindsByGroup
+} from "./group.js"
 import { BaseType } from "./type.js"
 
 export type IntersectionInner = withBaseMeta<
