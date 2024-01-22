@@ -2,9 +2,16 @@ import type { Node } from "../base.js"
 import type { ExpectedContext } from "../kinds.js"
 import type { TraversalMethodsByKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
-import type { PrimitiveKind } from "./define.js"
+import type { BasisKind, PrimitiveKind, PropKind } from "./define.js"
 
-export type ConstraintGroup = "basis" | "shallow" | "deep" | "predicate"
+export type ConstraintKindsByGroup = {
+	basis: BasisKind
+	shallow: Exclude<PrimitiveKind, "predicate">
+	deep: PropKind
+	predicate: "predicate"
+}
+
+export type ConstraintGroup = keyof ConstraintKindsByGroup
 
 export const precedenceByConstraintGroup: Record<ConstraintGroup, number> = {
 	basis: 0,

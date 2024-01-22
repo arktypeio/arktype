@@ -18,7 +18,9 @@ import type {
 import type { SchemaParseContext } from "../parse.js"
 import {
 	precedenceByConstraintGroup,
-	type CompilationContext
+	type CompilationContext,
+	type ConstraintGroup,
+	type ConstraintKindsByGroup
 } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
@@ -54,6 +56,10 @@ export type IntersectionSchema<
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
 
+export type GroupedConstraints = {
+	[k in ConstraintGroup]?: Node<ConstraintKindsByGroup[k]>[]
+}
+
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
@@ -83,25 +89,6 @@ export type IntersectionDeclaration = declareNode<{
 // 	return typeof key === "string"
 // 		? this.named.find((entry) => entry.value.branches)?.value
 // 		: this.indexed.find((entry) => entry.key.equals(key))?.value
-// }
-
-// compile(ctx: CompilationContext) {
-// 	if (this.indexed.length === 0) {
-// 		return compileNamedProps(this.named, ctx)
-// 	}
-// 	if (this.indexed.length === 1) {
-// 		// if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
-// 		const indexMatcher = extractArrayIndexRegex(this.indexed[0].key)
-// 		if (indexMatcher) {
-// 			return compileArray(
-// 				indexMatcher,
-// 				this.indexed[0].value,
-// 				this.named,
-// 				ctx
-// 			)
-// 		}
-// 	}
-// 	return compileIndexed(this.named, this.indexed, ctx)
 // }
 
 export class IntersectionNode<t = unknown> extends BaseType<
@@ -233,57 +220,48 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		})
 
+	/** The list of intersected constraints ordered by group (basis=>shallow=>deep=>predicate) */
 	readonly constraints: ConstraintSet = flattenConstraints(this.inner)
+	groupedConstraints: GroupedConstraints =
+		this.constraints.reduce<GroupedConstraints>((result, c) => {
+			result[c.constraintGroup] ??= []
+			result[c.constraintGroup]!.push(c as never)
+			return result
+		}, {})
+	groupedConstraintLists: Node<ConstraintKind>[][] = Object.values(
+		this.groupedConstraints
+	)
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.constraints.every((c) => c.traverseAllows(data as never, ctx))
 
-	protected readonly constraintGroupEndIndices = this.constraints.reduce<
-		Record<number, true>
-	>((result, c, i) => {
-		if (
-			i !== this.constraints.length - 1 &&
-			this.constraints[i + 1].constraintGroup !== c.constraintGroup
-		) {
-			result[i] = true
-		}
-		return result
-	}, {})
-
 	traverseApply: TraverseApply = (data, ctx) => {
-		for (let i = 0; i < this.constraints.length; i++) {
-			this.constraints[i].traverseApply(data as never, ctx)
-			if (
-				i in this.constraintGroupEndIndices &&
-				ctx.currentErrors.length !== 0
-			) {
+		for (const group of this.groupedConstraintLists) {
+			for (const constraint of group) {
+				constraint.traverseApply(data as never, ctx)
+			}
+			if (ctx.currentErrors.length !== 0) {
 				return
 			}
 		}
 	}
 
 	compileBody(ctx: CompilationContext) {
-		const constraintInvocations = this.constraints.map(
-			(constraint) =>
-				`this.${constraint.name}(${ctx.dataArg}${
-					ctx.compilationKind === "allows" ? "" : ", ctx"
-				})`
-		)
 		if (ctx.compilationKind === "allows") {
-			constraintInvocations
-				.map(
-					(call) => `if(!${call}) return false
-	`
-				)
-				.join("\n") + "\nreturn true"
+			return (
+				this.constraints
+					.map(
+						(constraint) =>
+							`if(!${constraint.compileInvocation(ctx)}) return false`
+					)
+					.join("\n") + "return true"
+			)
 		}
-		return this.constraints.reduce((body, constraint, i) => {
-			body += constraintInvocations[i] + "\n"
-			if (i in this.constraintGroupEndIndices) {
-				body += `if(${ctx.ctxArg}.currentErrors.length !== 0) return\n`
-			}
-			return body
-		}, "")
+		return this.groupedConstraintLists
+			.map((group) =>
+				group.map((constraint) => constraint.compileInvocation(ctx)).join("\n")
+			)
+			.join(`if(${ctx.ctxArg}.currentErrors.length !== 0) return\n`)
 	}
 }
 

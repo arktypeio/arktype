@@ -366,6 +366,12 @@ export abstract class BaseNode<
 			mapper(this.kind, innerWithTransformedChildren as never) as never
 		)
 	}
+
+	compileInvocation(ctx: CompilationContext) {
+		return `this.${this.name}(${ctx.dataArg}${
+			ctx.compilationKind === "allows" ? "" : `, ${ctx.ctxArg}`
+		})`
+	}
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(

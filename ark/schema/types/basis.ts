@@ -13,7 +13,7 @@ import {
 	compilePrimitive,
 	createPrimitiveExpectedContext,
 	type CompilationContext,
-	type ConstraintGroup
+	type ConstraintKindsByGroup
 } from "../shared/compile.js"
 import type { BaseConstraint, BasePrimitive } from "../shared/declare.js"
 import type { BasisKind } from "../shared/define.js"

@@ -7,7 +7,7 @@ import {
 	type TypeSchema
 } from "../base.js"
 import { getBasisName } from "../refinements/refinement.js"
-import type { CompilationContext, ConstraintGroup } from "../shared/compile.js"
+import type { CompilationContext } from "../shared/compile.js"
 import type { BaseConstraint, BaseNodeDeclaration } from "../shared/declare.js"
 import type { BasisKind, NodeKind, PropKind } from "../shared/define.js"
 import {

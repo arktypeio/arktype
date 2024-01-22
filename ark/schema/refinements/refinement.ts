@@ -11,7 +11,8 @@ import {
 	compilePrimitive,
 	createPrimitiveExpectedContext,
 	type CompilationContext,
-	type ConstraintGroup
+	type ConstraintGroup,
+	type ConstraintKindsByGroup
 } from "../shared/compile.js"
 import type {
 	BaseConstraint,
