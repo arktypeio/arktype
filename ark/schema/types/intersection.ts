@@ -254,14 +254,14 @@ export class IntersectionNode<t = unknown> extends BaseType<
 						(constraint) =>
 							`if(!${constraint.compileInvocation(ctx)}) return false`
 					)
-					.join("\n") + "return true"
+					.join("\n") + "\nreturn true"
 			)
 		}
 		return this.groupedConstraintLists
 			.map((group) =>
 				group.map((constraint) => constraint.compileInvocation(ctx)).join("\n")
 			)
-			.join(`if(${ctx.ctxArg}.currentErrors.length !== 0) return\n`)
+			.join(`\nif(${ctx.ctxArg}.currentErrors.length !== 0) return\n`)
 	}
 }
 
