@@ -1,9 +1,7 @@
 import type { Morph } from "@arktype/schema"
 import type {
-	Fn,
 	isDisjoint,
 	replaceKey,
-	returnOf,
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
@@ -13,7 +11,7 @@ import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.js"
 type MatchContext = {
 	inConstraint: unknown
 	outConstraint: unknown
-	thens: readonly Fn[]
+	thens: readonly ((In: unknown) => unknown)[]
 	$: unknown
 }
 
@@ -82,14 +80,12 @@ export type MatchInvocation<ctx extends MatchContext> = <
 >(
 	data: data
 ) => {
-	[i in Extract<keyof ctx["thens"], `${number}`>]: ctx["thens"][i] extends Fn<
-		[infer In],
-		infer Out
-	>
-		? isDisjoint<data, In> extends true
-			? never
-			: Out
-		: returnOf<ctx["thens"][i]>
+	[i in Extract<keyof ctx["thens"], `${number}`>]: isDisjoint<
+		data,
+		Parameters<ctx["thens"][i]>[0]
+	> extends true
+		? never
+		: ReturnType<ctx["thens"][i]>
 }[Extract<keyof ctx["thens"], `${number}`>]
 
 export type ChainableMatchParser<ctx extends MatchContext> =
