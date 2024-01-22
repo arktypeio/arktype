@@ -1,4 +1,3 @@
-import type { Fn } from "./functions.js"
 import type { conform } from "./generics.js"
 
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */
@@ -6,7 +5,9 @@ export namespace Hkt {
 	export declare const key: unique symbol
 	export type key = typeof key
 
-	export abstract class Kind<f extends Fn = Fn> {
+	export abstract class Kind<
+		f extends (...args: any[]) => unknown = (...args: any[]) => unknown
+	> {
 		declare readonly [key]: unknown
 		abstract readonly f: f
 	}
