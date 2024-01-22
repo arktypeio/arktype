@@ -1,4 +1,3 @@
-import type { Fn } from "./functions.js"
 import type { defined, evaluate } from "./generics.js"
 import type { intersectUnion } from "./unionToTuple.js"
 
@@ -32,7 +31,7 @@ type requireRecurse<
 > = depth["length"] extends maxDepth
 	? o
 	: o extends object
-	? o extends Fn
+	? o extends (...args: never[]) => unknown
 		? o
 		: {
 				[k in keyof o]-?: requireRecurse<o[k], [...depth, 1], maxDepth>
@@ -58,7 +57,7 @@ type mutableRecurse<
 > = depth["length"] extends maxDepth
 	? o
 	: o extends object
-	? o extends Fn
+	? o extends (...args: never[]) => unknown
 		? o
 		: {
 				-readonly [k in keyof o]: mutableRecurse<o[k], [...depth, 1], maxDepth>

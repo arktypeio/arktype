@@ -1,4 +1,3 @@
-import type { Fn } from "./functions.js"
 import type { conform } from "./generics.js"
 import type { join } from "./lists.js"
 
@@ -31,7 +30,7 @@ export type intersectUnion<t> = (
 
 // Based on: https://tsplay.dev/WvydBm
 export type overloadOf<
-	f extends Fn,
+	f extends (...args: never[]) => unknown,
 	givenArgs extends readonly unknown[] = readonly unknown[]
 > = Exclude<
 	collectSignatures<
