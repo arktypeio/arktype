@@ -104,7 +104,7 @@ export const isKeyOf = <k extends string | number | symbol, o extends object>(
 ): k is Extract<keyof o, k> => k in o
 
 /** Coalesce keys that exist on one or more branches of a union */
-export type unionKeyOf<t> = keyof intersectUnion<t>
+export type unionKeyOf<t> = t extends unknown ? keyof t : never
 
 export type extractKeyed<o extends object, k extends unionKeyOf<o>> = Extract<
 	o,
