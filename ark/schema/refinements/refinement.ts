@@ -7,7 +7,6 @@ import {
 	type TypeSchema
 } from "../base.js"
 import type { ExpectedContext } from "../kinds.js"
-import type { ConstraintGroup, ConstraintKindsByGroup } from "../sets/group.js"
 import {
 	compilePrimitive,
 	createPrimitiveExpectedContext,
@@ -19,6 +18,10 @@ import type {
 	BasePrimitive
 } from "../shared/declare.js"
 import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
+import type {
+	ConstraintGroupName,
+	ConstraintKindsByGroup
+} from "../shared/group.js"
 import type { TraverseApply } from "../traversal/context.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
@@ -40,7 +43,7 @@ export abstract class BaseRefinement<
 {
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
-	abstract readonly constraintGroup: ConstraintGroup
+	abstract readonly constraintGroup: ConstraintGroupName
 
 	abstract getCheckedDefinitions(): readonly TypeSchema[]
 	readonly checks: readonly TypeNode[] =

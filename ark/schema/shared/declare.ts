@@ -1,7 +1,6 @@
 import type { Dict, evaluate, extend } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
-import type { ConstraintGroup } from "../sets/group.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -10,6 +9,7 @@ import type {
 	SetKind
 } from "./define.js"
 import type { Disjoint } from "./disjoint.js"
+import type { ConstraintGroupName } from "./group.js"
 import type { rightOf } from "./intersect.js"
 
 export type BaseMeta = {
@@ -99,5 +99,5 @@ export interface BasePrimitive {
 }
 
 export interface BaseConstraint {
-	readonly constraintGroup: ConstraintGroup
+	readonly constraintGroup: ConstraintGroupName
 }
