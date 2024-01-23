@@ -29,8 +29,7 @@ import {
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	precedenceByConstraintGroup,
-	type ConstraintGroupName,
-	type ConstraintKindsByGroup
+	type GroupedConstraints
 } from "../shared/group.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
@@ -55,10 +54,6 @@ export type IntersectionSchema<
 >
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
-
-export type GroupedConstraints = {
-	[k in ConstraintGroupName]?: Node<ConstraintKindsByGroup[k]>[]
-}
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"

@@ -1,3 +1,4 @@
+import type { Node } from "../base.js"
 import type { BasisKind, PrimitiveKind, PropKind } from "./define.js"
 
 export type ConstraintKindsByGroup = {
@@ -7,6 +8,12 @@ export type ConstraintKindsByGroup = {
 	predicate: "predicate"
 }
 
+export type GroupedConstraints = {
+	[k in ConstraintGroupName]?: Node<ConstraintKindsByGroup[k]>[]
+}
+
+export type ConstraintGroupName = keyof ConstraintKindsByGroup
+
 export const precedenceByConstraintGroup: Record<ConstraintGroupName, number> =
 	{
 		basis: 0,
@@ -14,7 +21,3 @@ export const precedenceByConstraintGroup: Record<ConstraintGroupName, number> =
 		deep: 2,
 		predicate: 3
 	}
-
-export type ConstraintGroupName = keyof ConstraintKindsByGroup
-
-export class ConstraintGroup {}
