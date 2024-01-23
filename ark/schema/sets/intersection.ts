@@ -6,6 +6,7 @@ import {
 	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { instantiateBasis } from "../bases/basis.js"
 import type {
 	ClosedComponentKind,
 	Declaration,
@@ -28,13 +29,12 @@ import {
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
-import type { instantiateBasis } from "./basis.js"
+import { BaseType } from "../type.js"
 import {
 	precedenceByConstraintGroup,
 	type ConstraintGroup,
 	type ConstraintKindsByGroup
 } from "./group.js"
-import { BaseType } from "./type.js"
 
 export type IntersectionInner = withBaseMeta<
 	{ basis?: Node<BasisKind> } & {

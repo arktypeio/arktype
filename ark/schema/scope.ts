@@ -10,6 +10,8 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
+import { maybeGetBasisKind } from "./bases/basis.js"
+import type { UnitNode } from "./bases/unit.js"
 import { globalConfig } from "./config.js"
 import type {
 	instantiateAliases,
@@ -20,6 +22,11 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
+import type {
+	BranchKind,
+	NormalizedUnionSchema,
+	UnionNode
+} from "./sets/union.js"
 import type { TraversalKind } from "./shared/compile.js"
 import type { DescriptionWriter, NodeKind, TypeKind } from "./shared/define.js"
 import type { TraversalMethodsByKind } from "./traversal/context.js"
@@ -30,14 +37,7 @@ import type {
 	MessageWriter,
 	ProblemWriter
 } from "./traversal/errors.js"
-import { maybeGetBasisKind } from "./types/basis.js"
-import { BaseType } from "./types/type.js"
-import type {
-	BranchKind,
-	NormalizedUnionSchema,
-	UnionNode
-} from "./types/union.js"
-import type { UnitNode } from "./types/unit.js"
+import { BaseType } from "./type.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 

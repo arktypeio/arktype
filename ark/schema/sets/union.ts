@@ -1,4 +1,4 @@
-import { domainOf, isArray } from "@arktype/util"
+import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
@@ -7,9 +7,9 @@ import { basisKinds, type nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
+import { BaseType } from "../type.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
-import { BaseType } from "./type.js"
 
 export type BranchKind = "morph" | ValidatorKind
 

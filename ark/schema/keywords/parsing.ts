@@ -4,7 +4,7 @@ import {
 } from "@arktype/util"
 import type { TypeNode } from "../base.js"
 import { ScopeNode, rootSchema } from "../scope.js"
-import type { Out } from "../types/morph.js"
+import type { Out } from "../sets/morph.js"
 import { parsedDate } from "./utils/date.js"
 
 const number = rootSchema({

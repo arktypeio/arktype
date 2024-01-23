@@ -17,9 +17,9 @@ import {
 import type { BaseConstraint, BasePrimitive } from "../shared/declare.js"
 import type { BasisKind } from "../shared/define.js"
 import type { TraverseApply } from "../traversal/context.js"
+import { BaseType, type BaseTypeDeclaration } from "../type.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
-import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitNode, UnitSchema } from "./unit.js"
 
 export type BaseBasisDeclaration = extend<

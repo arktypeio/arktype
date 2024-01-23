@@ -5,16 +5,16 @@ import {
 	type Node,
 	type NodeSubclass,
 	type TypeNode
-} from "../base.js"
-import type { Schema, hasOpenIntersection } from "../kinds.js"
-import type { BaseNodeDeclaration } from "../shared/declare.js"
-import type { RefinementKind, TypeKind } from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
-import type { intersectionOf } from "../shared/intersect.js"
-import { inferred } from "../shared/utils.js"
-import type { IntersectionNode } from "./intersection.js"
-import type { extractOut } from "./morph.js"
-import type { BranchKind, UnionNode } from "./union.js"
+} from "./base.js"
+import type { Schema, hasOpenIntersection } from "./kinds.js"
+import type { IntersectionNode } from "./sets/intersection.js"
+import type { extractOut } from "./sets/morph.js"
+import type { BranchKind, UnionNode } from "./sets/union.js"
+import type { BaseNodeDeclaration } from "./shared/declare.js"
+import type { RefinementKind, TypeKind } from "./shared/define.js"
+import { Disjoint } from "./shared/disjoint.js"
+import type { intersectionOf } from "./shared/intersect.js"
+import { inferred } from "./shared/utils.js"
 
 export type BaseTypeDeclaration = extend<
 	BaseNodeDeclaration,

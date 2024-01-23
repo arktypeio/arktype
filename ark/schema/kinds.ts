@@ -1,5 +1,8 @@
 import type { extend } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
+import { DomainNode, type DomainDeclaration } from "./bases/domain.js"
+import { ProtoNode, type ProtoDeclaration } from "./bases/proto.js"
+import { UnitNode, type UnitDeclaration } from "./bases/unit.js"
 import { IndexNode, type IndexDeclaration } from "./props/index.js"
 import { OptionalNode, type OptionalDeclaration } from "./props/optional.js"
 import { RequiredNode, type RequiredDeclaration } from "./props/required.js"
@@ -11,6 +14,20 @@ import {
 	PredicateNode,
 	type PredicateDeclaration
 } from "./refinements/predicate.js"
+import {
+	IntersectionNode,
+	type IntersectionDeclaration
+} from "./sets/intersection.js"
+import {
+	MorphNode,
+	type MorphDeclaration,
+	type ValidatorKind
+} from "./sets/morph.js"
+import {
+	UnionNode,
+	type BranchKind,
+	type UnionDeclaration
+} from "./sets/union.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type {
 	ComponentKind,
@@ -19,23 +36,6 @@ import type {
 	PropKind,
 	TypeKind
 } from "./shared/define.js"
-import { DomainNode, type DomainDeclaration } from "./types/domain.js"
-import {
-	IntersectionNode,
-	type IntersectionDeclaration
-} from "./types/intersection.js"
-import {
-	MorphNode,
-	type MorphDeclaration,
-	type ValidatorKind
-} from "./types/morph.js"
-import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
-import {
-	UnionNode,
-	type BranchKind,
-	type UnionDeclaration
-} from "./types/union.js"
-import { UnitNode, type UnitDeclaration } from "./types/unit.js"
 
 export type NodeDeclarationsByKind = extend<
 	BoundDeclarations,
