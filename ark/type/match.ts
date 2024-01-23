@@ -111,24 +111,24 @@ type MatchParserDefaultInvocation<ctx extends MatchParserContext> = {
 
 type validateCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default"
-		? (In: getUnhandledBranches<ctx>) => unknown
+		? (In: distill<getUnhandledBranches<ctx>>) => unknown
 		: def extends validateWhenDefinition<def, ctx>
-		? (In: inferMatchBranch<def, ctx>) => unknown
+		? (In: distill<inferMatchBranch<def, ctx>>) => unknown
 		: validateWhenDefinition<def, ctx>
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default"
-		? (In: getUnhandledBranches<ctx>) => unknown
+		? (In: distill<getUnhandledBranches<ctx>>) => unknown
 		: def extends validateWhenDefinition<def, ctx>
-		? (In: inferMatchBranch<def, ctx>) => unknown
+		? (In: distill<inferMatchBranch<def, ctx>>) => unknown
 		: validateWhenDefinition<def, ctx>
 } & {
 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
-		In: intersectConstrainables<getUnhandledBranches<ctx>, ctx["$"][k]>
+		In: distill<intersectConstrainables<getUnhandledBranches<ctx>, ctx["$"][k]>>
 	) => unknown
 } & {
-	default?: (In: getUnhandledBranches<ctx>) => unknown
+	default?: (In: distill<getUnhandledBranches<ctx>>) => unknown
 }
 
 export type CaseMatchParser<ctx extends MatchParserContext> = {
