@@ -21,17 +21,18 @@ export type DateRefinements = {
 	[k in DateLiteral]: true
 }
 
+export type AnonymousRefinements =
+	| "anonymousDate"
+	| "anonymousBounds"
+	| "anonymousDivisor"
+	| "anonymousPattern"
+	| "anonymousPredicate"
+
 export type Refinements = evaluate<
 	BoundRefinements &
 		DivisorRefinements &
 		PatternRefinements &
-		DateRefinements & {
-			anonymousDate?: true
-			anonymousBounds?: true
-			anonymousDivisor?: true
-			anonymousPattern?: true
-			anonymousPredicate?: true
-		}
+		DateRefinements & { [k in AnonymousRefinements]?: true }
 >
 
 export type is<t = unknown, refinements = Refinements> = {
