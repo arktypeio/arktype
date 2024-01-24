@@ -21,7 +21,7 @@ export type DateRefinements = {
 	[k in DateLiteral]: true
 }
 
-export type AnonymousRefinements =
+export type AnonymousRefinementKey =
 	| "anonymousDate"
 	| "anonymousBounds"
 	| "anonymousDivisor"
@@ -32,7 +32,7 @@ export type Refinements = evaluate<
 	BoundRefinements &
 		DivisorRefinements &
 		PatternRefinements &
-		DateRefinements & { [k in AnonymousRefinements]?: true }
+		DateRefinements & { [k in AnonymousRefinementKey]?: true }
 >
 
 export type is<t = unknown, refinements = Refinements> = {

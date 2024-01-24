@@ -1,6 +1,6 @@
 import {
 	schema,
-	type AnonymousRefinements,
+	type AnonymousRefinementKey,
 	type Morph,
 	type distill,
 	type intersectConstrainables,
@@ -49,12 +49,12 @@ export type MatchParser<$> = CaseMatchParser<{
 type matcherInputs<ctx extends MatchParserContext> = Parameters<
 	ctx["thens"][number]
 >[0]
+type AnonymouslyRefined = {
+	[k in AnonymousRefinementKey]: { [_ in k]: true }
+}[AnonymousRefinementKey]
 type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 	matcherInputs<ctx>,
-	is<
-		unknown,
-		{ [k in AnonymousRefinements]: { [_ in k]: true } }[AnonymousRefinements]
-	>
+	is<unknown, AnonymouslyRefined>
 >
 type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
 	ctx["exhaustiveOver"],
