@@ -66,9 +66,9 @@ export type nominal<t, id extends string> = t & {
 	readonly [id]: id
 }
 
-export type satisfy<t, u extends { [k in keyof t]: t[k] }> = u
+export type satisfy<t, u extends t> = u
 
-export type extend<t, u> = evaluate<t & u>
+export type and<t, u> = evaluate<t & u>
 
 export type defined<t> = t & ({} | null)
 

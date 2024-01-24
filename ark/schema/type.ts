@@ -1,4 +1,4 @@
-import type { extend } from "@arktype/util"
+import type { and } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseAttachments,
@@ -16,10 +16,7 @@ import { Disjoint } from "./shared/disjoint.js"
 import type { intersectionOf } from "./shared/intersect.js"
 import { inferred } from "./shared/utils.js"
 
-export type BaseTypeDeclaration = extend<
-	BaseNodeDeclaration,
-	{ kind: TypeKind }
->
+export type BaseTypeDeclaration = and<BaseNodeDeclaration, { kind: TypeKind }>
 
 export abstract class BaseType<
 	t,

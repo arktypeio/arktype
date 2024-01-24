@@ -166,13 +166,16 @@ export class SequenceNode extends BaseProp<
 		}
 	}
 
-	compileBody(ctx: CompilationContext): string {
-		// TODO: traversal?
+	compileApply(ctx: CompilationContext): string {
+		return ""
+	}
+
+	compileAllows(ctx: CompilationContext): string {
 		let body = `if(${ctx.dataArg}.length < ${this.minLength}) {
 	return false
 }\n`
 		this.prefix?.forEach((prefixEl, i) => {
-			body += `if(!${prefixEl.compileBody(ctx)}) {
+			body += `if(!${prefixEl.compileApply(ctx)}) {
 	this.${prefixEl.name}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
 }\n`
 		})
@@ -185,7 +188,7 @@ for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
 	}	
 }\n`
 		this.postfix?.forEach((postfixEl, i) => {
-			body += `if(!${postfixEl.compileBody(ctx)}) {
+			body += `if(!${postfixEl.compileApply(ctx)}) {
 this.${postfixEl.name}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
 }\n`
 		})

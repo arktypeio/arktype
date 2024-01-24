@@ -179,16 +179,16 @@ export class UnionNode<t = unknown> extends BaseType<
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.branches.forEach((b) => b.traverseApply(data, ctx))
 
-	compileBody(ctx: CompilationContext) {
-		const branchInvocations = this.branches.map(
-			(branch) =>
-				`this.${branch.name}(${ctx.dataArg}${
-					ctx.compilationKind === "allows" ? "" : `, ${ctx.dataArg}`
-				})`
-		)
-		return ctx.compilationKind === "allows"
-			? `return ${branchInvocations.join(" || ")}`
-			: branchInvocations.join("\n")
+	compileApply(ctx: CompilationContext) {
+		return this.branches
+			.map((branch) => `this.${branch.name}(${ctx.dataArg}, ${ctx.dataArg})`)
+			.join("\n")
+	}
+
+	compileAllows(ctx: CompilationContext) {
+		return `return ${this.branches
+			.map((branch) => `this.${branch.name}(${ctx.dataArg})`)
+			.join(" || ")}`
 	}
 }
 

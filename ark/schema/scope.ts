@@ -27,7 +27,7 @@ import type {
 	NormalizedUnionSchema,
 	UnionNode
 } from "./sets/union.js"
-import type { TraversalKind } from "./shared/compile.js"
+import type { CompilationContext, TraversalKind } from "./shared/compile.js"
 import type { DescriptionWriter, NodeKind, TypeKind } from "./shared/define.js"
 import type { TraversalMethodsByKind } from "./traversal/context.js"
 import type {
@@ -310,17 +310,21 @@ export class ScopeNode<r extends object = any> {
 			kind === "allows" ? this.dataArg : `${this.dataArg}, ctx`
 		const body = `return {
 	${references
-		.map(
-			(reference) => `${reference.name}(${compiledArgs}){
-${reference.compileBody({
-	dataArg: this.dataArg,
-	ctxArg: this.ctxArg,
-	compilationKind: kind,
-	path: [],
-	discriminants: []
-})}
-}`
-		)
+		.map((reference) => {
+			const ctx: CompilationContext = {
+				dataArg: this.dataArg,
+				ctxArg: this.ctxArg,
+				path: [],
+				discriminants: []
+			}
+			return `	${reference.name}(${compiledArgs}){
+					${
+						kind === "allows"
+							? reference.compileAllows(ctx)
+							: reference.compileApply(ctx)
+					}
+	}`
+		})
 		.join(",\n")}
 }`
 		return new CompiledFunction(body)() as never

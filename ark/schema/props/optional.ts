@@ -5,7 +5,7 @@ import type { TypeKind, nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import { BaseProp, compileKey, compilePresentProp } from "./prop.js"
+import { BaseProp, compileKey, compilePresentPropAllows, compilePresentPropApply } from "./prop.js"
 
 export type OptionalInner = withBaseMeta<{
 	readonly key: string | symbol
@@ -77,11 +77,19 @@ export class OptionalNode extends BaseProp<
 		}
 	}
 
-	compileBody(ctx: CompilationContext): string {
+	compileApply(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${ctx.dataArg}) {
-			${compilePresentProp(this, ctx)}
+			${compilePresentPropApply(this, ctx)}
 		}`
 	}
+
+	
+	compileAllows(ctx: CompilationContext): string {
+		return `if(${this.serializedKey} in ${ctx.dataArg}) {
+			${compilePresentPropAllows(this, ctx)}
+		}`
+	}
+
 
 	compiledKey = compileKey(this.key)
 

@@ -241,22 +241,25 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		}
 	}
 
-	compileBody(ctx: CompilationContext) {
-		if (ctx.compilationKind === "allows") {
-			return (
-				this.constraints
-					.map(
-						(constraint) =>
-							`if(!${constraint.compileInvocation(ctx)}) return false`
-					)
-					.join("\n") + "\nreturn true"
-			)
-		}
+	compileApply(ctx: CompilationContext) {
 		return this.groupedConstraintLists
 			.map((group) =>
-				group.map((constraint) => constraint.compileInvocation(ctx)).join("\n")
+				group
+					.map((constraint) => constraint.compileApplyInvocation(ctx))
+					.join("\n")
 			)
 			.join(`\nif(${ctx.ctxArg}.currentErrors.length !== 0) return\n`)
+	}
+
+	compileAllows(ctx: CompilationContext) {
+		return (
+			this.constraints
+				.map(
+					(constraint) =>
+						`if(!${constraint.compileAllowsInvocation(ctx)}) return false`
+				)
+				.join("\n") + "\nreturn true"
+		)
 	}
 }
 

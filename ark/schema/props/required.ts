@@ -9,7 +9,7 @@ import { compileSerializedValue } from "../traversal/registry.js"
 import {
 	BaseProp,
 	compileKey,
-	compilePresentProp,
+	compilePresentPropApply,
 	type NamedPropKind
 } from "./prop.js"
 
@@ -103,17 +103,19 @@ export class RequiredNode extends BaseProp<
 	// TODO: fix base
 	readonly baseRequiredErrorContext = { code: "required", key: this.key }
 
-	compileBody(ctx: CompilationContext): string {
+	compileApply(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${ctx.dataArg}) {
-			${compilePresentProp(this, ctx)}
+			${compilePresentPropApply(this, ctx)}
 		} else {
-			${
-				ctx.compilationKind === "allows"
-					? "return false"
-					: `${ctx.ctxArg}.error(${JSON.stringify(
-							this.baseRequiredErrorContext
-					  )})`
-			}
+			${ctx.ctxArg}.error(${JSON.stringify(this.baseRequiredErrorContext)})
+		}`
+	}
+
+	compileAllows(ctx: CompilationContext): string {
+		return `if(${this.serializedKey} in ${ctx.dataArg}) {
+			${compilePresentPropApply(this, ctx)}
+		} else {
+			return false
 		}`
 	}
 

@@ -149,8 +149,12 @@ export class MorphNode<t = unknown> extends BaseType<
 		return this.inner.out ?? this.$.builtin.unknown
 	}
 
-	compileBody(ctx: CompilationContext): string {
-		return this.in.compileBody(ctx)
+	compileApply(ctx: CompilationContext): string {
+		return this.in.compileApply(ctx)
+	}
+
+	compileAllows(ctx: CompilationContext): string {
+		return this.in.compileAllows(ctx)
 	}
 }
 

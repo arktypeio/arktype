@@ -188,7 +188,8 @@ export abstract class BaseNode<
 	abstract hasOpenIntersection: hasOpenIntersection<d>
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
-	abstract compileBody(ctx: CompilationContext): string
+	abstract compileApply(ctx: CompilationContext): string
+	abstract compileAllows(ctx: CompilationContext): string
 
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
 		const ctx = new TraversalContext(data, this.$.config)
@@ -362,10 +363,12 @@ export abstract class BaseNode<
 		)
 	}
 
-	compileInvocation(ctx: CompilationContext) {
-		return `this.${this.name}(${ctx.dataArg}${
-			ctx.compilationKind === "allows" ? "" : `, ${ctx.ctxArg}`
-		})`
+	compileApplyInvocation(ctx: CompilationContext) {
+		return `this.${this.name}(${ctx.dataArg}, ${ctx.ctxArg})`
+	}
+
+	compileAllowsInvocation(ctx: CompilationContext) {
+		return `this.${this.name}(${ctx.dataArg})`
 	}
 }
 

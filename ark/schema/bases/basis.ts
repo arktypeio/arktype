@@ -2,7 +2,7 @@ import {
 	printable,
 	throwParseError,
 	type Constructor,
-	type extend,
+	type and,
 	type inferDomain,
 	type instanceOf,
 	type isAny
@@ -22,10 +22,7 @@ import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
 import type { UnitNode, UnitSchema } from "./unit.js"
 
-export type BaseBasisDeclaration = extend<
-	BaseTypeDeclaration,
-	{ kind: BasisKind }
->
+export type BaseBasisDeclaration = and<BaseTypeDeclaration, { kind: BasisKind }>
 
 export abstract class BaseBasis<
 		t,
@@ -53,8 +50,12 @@ export abstract class BaseBasis<
 		return this.expectedContextCache
 	}
 
-	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this as any, ctx)
+	compileApply(ctx: CompilationContext) {
+		return compilePrimitive("apply", this as any, ctx)
+	}
+
+	compileAllows(ctx: CompilationContext) {
+		return compilePrimitive("allows", this as any, ctx)
 	}
 }
 

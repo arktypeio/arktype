@@ -1,4 +1,4 @@
-import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
+import { throwParseError, type PartialRecord, type and } from "@arktype/util"
 import {
 	BaseNode,
 	type Node,
@@ -15,10 +15,7 @@ import {
 	isDotAccessible
 } from "../traversal/registry.js"
 
-export type BasePropDeclaration = extend<
-	BaseNodeDeclaration,
-	{ kind: PropKind }
->
+export type BasePropDeclaration = and<BaseNodeDeclaration, { kind: PropKind }>
 
 const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
@@ -29,15 +26,10 @@ export const compilePropAccess = (name: string, optional = false) =>
 		? `${optional ? "?" : ""}.${name}`
 		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
 
-export const compilePresentProp = (
+export const compilePresentPropApply = (
 	node: Node<NamedPropKind>,
 	ctx: CompilationContext
 ) => {
-	if (ctx.compilationKind === "allows") {
-		return `return this.${node.value.name}(${ctx.dataArg}${compilePropAccess(
-			node.compiledKey
-		)})`
-	}
 	return `${ctx.ctxArg}.path.push(${node.serializedKey})
 	this.${node.value.name}(${ctx.dataArg}${compilePropAccess(node.compiledKey)}, ${
 		ctx.ctxArg
@@ -45,6 +37,14 @@ export const compilePresentProp = (
 	${ctx.ctxArg}.path.pop()
 	`
 }
+
+export const compilePresentPropAllows = (
+	node: Node<NamedPropKind>,
+	ctx: CompilationContext
+) =>
+	`return this.${node.value.name}(${ctx.dataArg}${compilePropAccess(
+		node.compiledKey
+	)})`
 
 export const compileKey = (k: string | symbol) =>
 	typeof k === "string" ? k : compileSerializedValue(k)

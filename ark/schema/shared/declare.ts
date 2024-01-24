@@ -1,4 +1,4 @@
-import type { Dict, evaluate, extend } from "@arktype/util"
+import type { Dict, and, evaluate } from "@arktype/util"
 import type { NarrowedAttachments } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
 import type {
@@ -16,7 +16,7 @@ export type BaseMeta = {
 	readonly description?: string
 }
 
-export type withBaseMeta<o extends object> = extend<BaseMeta, o>
+export type withBaseMeta<o extends object> = and<BaseMeta, o>
 
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: evaluate<
@@ -57,7 +57,7 @@ type ParentsByKind = {
 
 type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
-export type declareNode<d extends DeclarationInput> = extend<
+export type declareNode<d extends DeclarationInput> = and<
 	d,
 	{
 		prerequisite: prerequisiteOf<d>

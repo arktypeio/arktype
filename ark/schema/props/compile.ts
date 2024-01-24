@@ -19,6 +19,6 @@ const compileLooseNamedProps = (
 ) => {
 	let body = ""
 	props.required?.forEach((prop) => {
-		body += prop.compileBody(ctx)
+		body += prop.compileApply(ctx)
 	})
 }

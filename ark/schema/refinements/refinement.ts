@@ -1,4 +1,4 @@
-import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
+import { throwParseError, type PartialRecord, type and } from "@arktype/util"
 import {
 	BaseNode,
 	type Node,
@@ -18,10 +18,7 @@ import type {
 	BasePrimitive
 } from "../shared/declare.js"
 import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
-import type {
-	ConstraintGroupName,
-	ConstraintKindsByGroup
-} from "../shared/group.js"
+import type { ConstraintGroupName } from "../shared/group.js"
 import type { TraverseApply } from "../traversal/context.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
@@ -29,7 +26,7 @@ export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 
 const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
-export type BaseRefinementDeclaration = extend<
+export type BaseRefinementDeclaration = and<
 	BaseNodeDeclaration,
 	{ kind: RefinementKind }
 >
@@ -77,7 +74,11 @@ export abstract class BaseRefinement<
 		}
 	}
 
-	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this as any, ctx)
+	compileApply(ctx: CompilationContext) {
+		return compilePrimitive("apply", this as any, ctx)
+	}
+
+	compileAllows(ctx: CompilationContext) {
+		return compilePrimitive("allows", this as never, ctx)
 	}
 }

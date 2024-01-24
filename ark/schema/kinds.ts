@@ -1,4 +1,4 @@
-import type { extend } from "@arktype/util"
+import type { and } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
 import { DomainNode, type DomainDeclaration } from "./bases/domain.js"
 import { ProtoNode, type ProtoDeclaration } from "./bases/proto.js"
@@ -37,7 +37,7 @@ import type {
 	TypeKind
 } from "./shared/define.js"
 
-export type NodeDeclarationsByKind = extend<
+export type NodeDeclarationsByKind = and<
 	BoundDeclarations,
 	{
 		domain: DomainDeclaration

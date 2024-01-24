@@ -1,7 +1,7 @@
 import {
 	isKeyOf,
 	type PartialRecord,
-	type extend,
+	type and,
 	type optionalizeKeys,
 	type valueOf
 } from "@arktype/util"
@@ -98,7 +98,7 @@ const createUpperIntersections = <kind extends UpperBoundKind>(kind: kind) =>
 			l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
 	}) as {} as NodeIntersections<Declaration<kind>>
 
-export type BaseBoundDeclaration = extend<
+export type BaseBoundDeclaration = and<
 	BaseNodeDeclaration,
 	{
 		kind: BoundKind
@@ -141,10 +141,6 @@ export abstract class BaseBound<
 	readonly constraintGroup = "shallow"
 
 	comparator = compileComparator(this.kind, this.exclusive)
-
-	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this as never, ctx)
-	}
 }
 
 const compileComparator = (kind: BoundKind, exclusive: true | undefined) =>

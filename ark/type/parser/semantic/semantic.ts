@@ -9,8 +9,8 @@ import type {
 	BigintLiteral,
 	List,
 	NumberLiteral,
-	evaluate,
-	extend
+	and,
+	evaluate
 } from "@arktype/util"
 import type {
 	UnparsedScope,
@@ -131,9 +131,9 @@ export type inferTerminal<
 	: token extends StringLiteral<infer text>
 	? text
 	: token extends RegexLiteral
-	? is<string, extend<refinements, { [_ in token]: true }>>
+	? is<string, and<refinements, { [_ in token]: true }>>
 	: token extends DateLiteral
-	? is<Date, extend<refinements, { [_ in token]: true }>>
+	? is<Date, and<refinements, { [_ in token]: true }>>
 	: token extends NumberLiteral<infer value>
 	? value
 	: token extends BigintLiteral<infer value>

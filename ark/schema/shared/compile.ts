@@ -5,6 +5,7 @@ import type { TraversalMethodsByKind } from "../traversal/context.js"
 import type { PrimitiveKind } from "./define.js"
 
 export const compilePrimitive = (
+	traversalKind: TraversalKind,
 	node: Node<PrimitiveKind>,
 	ctx: CompilationContext
 ) => {
@@ -32,7 +33,7 @@ export const compilePrimitive = (
 		// (or an exact value, implying a domain), we don't need to recheck it
 		return ""
 	}
-	return ctx.compilationKind === "allows"
+	return traversalKind === "allows"
 		? `return ${node.compiledCondition}`
 		: `if (${node.compiledNegation}) {
 ${compilePrimitiveProblem(node, ctx)}
@@ -59,7 +60,6 @@ export type CompilationContext = {
 	ctxArg: string
 	path: string[]
 	discriminants: Discriminant[]
-	compilationKind: TraversalKind
 }
 
 export type TraversalKind = keyof TraversalMethodsByKind
