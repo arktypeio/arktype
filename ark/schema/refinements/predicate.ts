@@ -1,4 +1,5 @@
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { is } from "../shared/utils.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -84,5 +85,5 @@ export type inferNarrow<In, predicate> = predicate extends (
 	data: any,
 	...args: any[]
 ) => data is infer narrowed
-	? narrowed
+	? is<narrowed, { anonymousPredicate: true }>
 	: In

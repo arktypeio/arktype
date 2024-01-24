@@ -45,12 +45,13 @@ export type MatchParser<$> = CaseMatchParser<{
 	}>
 }
 
-type getHandledBranches<ctx extends MatchParserContext> = Parameters<
-	ctx["thens"][number]
->[0]
+type getHandledBranches<ctx extends MatchParserContext> = Exclude<
+	Parameters<ctx["thens"][number]>[0],
+	is<unknown, { anonymousPattern: true } | { anonymousPredicate: true }>
+>
 type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
 	ctx["exhaustiveOver"],
-	Exclude<getHandledBranches<ctx>, is<string, { anonymousPattern: true }>>
+	getHandledBranches<ctx>
 >
 type addBranches<
 	ctx extends MatchParserContext,
