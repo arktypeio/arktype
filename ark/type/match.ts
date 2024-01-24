@@ -50,7 +50,7 @@ type getHandledBranches<ctx extends MatchParserContext> = Parameters<
 >[0]
 type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
 	ctx["exhaustiveOver"],
-	getHandledBranches<ctx>
+	Exclude<getHandledBranches<ctx>, is<string, { anonymousPattern: true }>>
 >
 type addBranches<
 	ctx extends MatchParserContext,
