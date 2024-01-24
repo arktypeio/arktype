@@ -1,5 +1,7 @@
 import {
+	includes,
 	isArray,
+	map,
 	printable,
 	throwInternalError,
 	type listable,
@@ -10,6 +12,7 @@ import type { instantiateBasis } from "../bases/basis.js"
 import type {
 	ClosedComponentKind,
 	Declaration,
+	Inner,
 	OpenComponentKind,
 	Prerequisite,
 	Schema,
@@ -21,9 +24,12 @@ import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
+	propKinds,
 	type BasisKind,
 	type ComponentKind,
 	type ConstraintKind,
+	type PrimitiveKind,
+	type PropKind,
 	type nodeImplementationOf
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -217,6 +223,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	/** The list of intersected constraints ordered by group (basis=>shallow=>deep=>predicate) */
 	readonly constraints: ConstraintSet = flattenConstraints(this.inner)
+
 	groupedConstraints: GroupedConstraints =
 		this.constraints.reduce<GroupedConstraints>((result, c) => {
 			result[c.constraintGroup] ??= []
@@ -329,8 +336,19 @@ const reduceConstraints = (
 	return result instanceof Disjoint ? result : result
 }
 
-export const flattenConstraints = (inner: IntersectionInner): ConstraintSet =>
-	Object.entries(inner)
+type ShallowKind = Exclude<PrimitiveKind, BasisKind | "predicate">
+
+type ShallowGroup = { [k in ShallowKind]?: IntersectionInner[k] }
+
+type DeepGroup = { [k in PropKind]?: IntersectionInner[k] }
+
+const flattenConstraintsCache = new Map<IntersectionInner, ConstraintSet>()
+export const flattenConstraints = (inner: IntersectionInner): ConstraintSet => {
+	const cachedResult = flattenConstraintsCache.get(inner)
+	if (cachedResult) {
+		return cachedResult
+	}
+	const result = Object.entries(inner)
 		.flatMap(([k, v]) =>
 			k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
 		)
@@ -347,6 +365,9 @@ export const flattenConstraints = (inner: IntersectionInner): ConstraintSet =>
 			}
 			return l.name < r.name ? -1 : 1
 		})
+	flattenConstraintsCache.set(inner, result)
+	return result
+}
 
 export const unflattenConstraints = (
 	constraints: ConstraintSet
