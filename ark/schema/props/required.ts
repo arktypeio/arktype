@@ -9,6 +9,7 @@ import { compileSerializedValue } from "../traversal/registry.js"
 import {
 	BaseProp,
 	compileKey,
+	compilePresentPropAllows,
 	compilePresentPropApply,
 	type NamedPropKind
 } from "./prop.js"
@@ -113,7 +114,7 @@ export class RequiredNode extends BaseProp<
 
 	compileAllows(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${ctx.dataArg}) {
-			${compilePresentPropApply(this, ctx)}
+			${compilePresentPropAllows(this, ctx)}
 		} else {
 			return false
 		}`
