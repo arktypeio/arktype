@@ -37,12 +37,11 @@ export const propKinds = ["required", "optional", "index", "sequence"] as const
 
 export type PropKind = (typeof propKinds)[number]
 
-export const refinementKinds = [
-	"pattern",
-	"predicate",
-	"divisor",
-	...boundKinds
-] as const
+export const shallowKinds = ["pattern", "divisor", ...boundKinds] as const
+
+export type ShallowKind = (typeof shallowKinds)[number]
+
+export const refinementKinds = [...shallowKinds, "predicate"] as const
 
 export type RefinementKind = (typeof refinementKinds)[number]
 

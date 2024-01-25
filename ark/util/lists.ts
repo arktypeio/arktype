@@ -110,3 +110,43 @@ export const includes = <array extends readonly unknown[]>(
 
 export const range = (length: number): number[] =>
 	[...new Array(length)].map((_, i) => i)
+
+/**
+ * Appends a value to an array, returning the array
+ * (based on the implementation from TypeScript's codebase)
+ *
+ * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
+ * is created if `value` was appended.
+ * @param value The value to append to the array. If `value` is `undefined`, nothing is
+ * appended.
+ */
+export const append = <
+	to extends element[] | undefined,
+	element extends {},
+	value extends element | undefined
+>(
+	to: to,
+	value: value
+): to | Extract<value, undefined> => {
+	if (value === undefined) {
+		return to
+	}
+	if (to === undefined) {
+		return [value] as never
+	}
+	to.push(value)
+	return to
+}
+
+export const groupBy = <t, k extends string>(
+	array: readonly t[],
+	getKey: (t: t) => k
+) =>
+	array.reduce<Record<string, t[]>>((result, item) => {
+		const key = getKey(item)
+		if (!result[key]) {
+			result[key] = []
+		}
+		result[key].push(item)
+		return result
+	}, {})

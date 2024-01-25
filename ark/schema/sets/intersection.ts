@@ -1,7 +1,7 @@
 import {
-	includes,
+	append,
+	groupBy,
 	isArray,
-	map,
 	printable,
 	throwInternalError,
 	type listable,
@@ -12,7 +12,6 @@ import type { instantiateBasis } from "../bases/basis.js"
 import type {
 	ClosedComponentKind,
 	Declaration,
-	Inner,
 	OpenComponentKind,
 	Prerequisite,
 	Schema,
@@ -24,19 +23,13 @@ import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
-	propKinds,
 	type BasisKind,
 	type ComponentKind,
 	type ConstraintKind,
-	type PrimitiveKind,
-	type PropKind,
 	type nodeImplementationOf
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import {
-	precedenceByConstraintGroup,
-	type GroupedConstraints
-} from "../shared/group.js"
+import type { GroupedConstraints } from "../shared/group.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
@@ -221,51 +214,78 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	/** The list of intersected constraints ordered by group (basis=>shallow=>deep=>predicate) */
 	readonly constraints: ConstraintSet = flattenConstraints(this.inner)
-
-	groupedConstraints: GroupedConstraints =
-		this.constraints.reduce<GroupedConstraints>((result, c) => {
-			result[c.constraintGroup] ??= []
-			result[c.constraintGroup]!.push(c as never)
-			return result
-		}, {})
-	groupedConstraintLists: Node<ConstraintKind>[][] = Object.values(
-		this.groupedConstraints
+	readonly groups: GroupedConstraints = groupBy(
+		this.constraints,
+		(node) => node.constraintGroup
 	)
+	readonly props = this.groups.deep
+	readonly shallow = this.groups.shallow
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.constraints.every((c) => c.traverseAllows(data as never, ctx))
+	traverseAllows: TraverseAllows = (data, ctx) => {
+		const rejectsData = (constraint: Node<ConstraintKind> | undefined) =>
+			constraint?.traverseAllows(data as never, ctx) === false
 
-	traverseApply: TraverseApply = (data, ctx) => {
-		for (const group of this.groupedConstraintLists) {
-			for (const constraint of group) {
-				constraint.traverseApply(data as never, ctx)
-			}
-			if (ctx.currentErrors.length !== 0) {
-				return
-			}
-		}
-	}
-
-	compileApply(ctx: CompilationContext) {
-		return this.groupedConstraintLists
-			.map((group) =>
-				group
-					.map((constraint) => constraint.compileApplyInvocation(ctx))
-					.join("\n")
-			)
-			.join(`\nif(${ctx.ctxArg}.currentErrors.length !== 0) return\n`)
+		if (rejectsData(this.basis)) return false
+		if (this.shallow?.some(rejectsData)) return false
+		if (this.props?.some(rejectsData)) return false
+		if (this.predicate?.some(rejectsData)) return false
+		return true
 	}
 
 	compileAllows(ctx: CompilationContext) {
-		return (
-			this.constraints
-				.map(
-					(constraint) =>
-						`if(!${constraint.compileAllowsInvocation(ctx)}) return false`
-				)
-				.join("\n") + "\nreturn true"
+		let body = ""
+		const compileAndAppend = (constraint: Node<ConstraintKind> | undefined) =>
+			constraint &&
+			(body += `if(!${constraint.compileAllowsInvocation(ctx)}) return false\n`)
+
+		compileAndAppend(this.basis)
+		this.shallow?.forEach(compileAndAppend)
+		this.props?.forEach(compileAndAppend)
+		this.predicate?.forEach(compileAndAppend)
+		body += "return true\n"
+		return body
+	}
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		const groupRejectsData = (
+			group: readonly Node<ConstraintKind>[] | undefined
+		) => {
+			if (group === undefined) {
+				return
+			}
+			for (const node of group) {
+				node.traverseApply(data as never, ctx)
+			}
+			return ctx.currentErrors.length !== 0
+		}
+		if (groupRejectsData(this.groups.basis)) return
+		if (groupRejectsData(this.shallow)) return
+		if (groupRejectsData(this.props)) return
+		return groupRejectsData(this.predicate)
+	}
+
+	// TODO: combine deep/shallow?
+	compileApply(ctx: CompilationContext) {
+		const compiledGroups: string[] = []
+		const compileAndAppendGroup = (
+			group: readonly Node<ConstraintKind>[] | undefined
+		) => {
+			if (group === undefined) {
+				return
+			}
+			let compiled = ""
+			for (const node of group) {
+				compiled += `${node.compileApplyInvocation(ctx)}\n`
+			}
+			compiledGroups.push(compiled)
+		}
+		compileAndAppendGroup(this.groups.basis)
+		compileAndAppendGroup(this.shallow)
+		compileAndAppendGroup(this.props)
+		compileAndAppendGroup(this.predicate)
+		return compiledGroups.join(
+			`\nif(${ctx.ctxArg}.currentErrors.length !== 0) return\n`
 		)
 	}
 }
@@ -336,40 +356,20 @@ const reduceConstraints = (
 	return result instanceof Disjoint ? result : result
 }
 
-type ShallowKind = Exclude<PrimitiveKind, BasisKind | "predicate">
-
-type ShallowGroup = { [k in ShallowKind]?: IntersectionInner[k] }
-
-type DeepGroup = { [k in PropKind]?: IntersectionInner[k] }
-
-const flattenConstraintsCache = new Map<IntersectionInner, ConstraintSet>()
-export const flattenConstraints = (inner: IntersectionInner): ConstraintSet => {
-	const cachedResult = flattenConstraintsCache.get(inner)
+const flattenedConstraintCache = new Map<IntersectionInner, ConstraintSet>()
+const flattenConstraints = (inner: IntersectionInner): ConstraintSet => {
+	const cachedResult = flattenedConstraintCache.get(inner)
 	if (cachedResult) {
 		return cachedResult
 	}
-	const result = Object.entries(inner)
-		.flatMap(([k, v]) =>
-			k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
-		)
-		.sort((l, r) => {
-			// order by precedence group, then node kind alphabetically, then name alphabetically
-			const precedenceDiff =
-				precedenceByConstraintGroup[l.constraintGroup] -
-				precedenceByConstraintGroup[r.constraintGroup]
-			if (precedenceDiff !== 0) {
-				return precedenceDiff
-			}
-			if (l.kind !== r.kind) {
-				return l.kind < r.kind ? -1 : 1
-			}
-			return l.name < r.name ? -1 : 1
-		})
-	flattenConstraintsCache.set(inner, result)
+	const result = Object.entries(inner).flatMap(([k, v]) =>
+		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
+	)
+	flattenedConstraintCache.set(inner, result)
 	return result
 }
 
-export const unflattenConstraints = (
+const unflattenConstraints = (
 	constraints: ConstraintSet
 ): IntersectionInner => {
 	const inner: mutable<IntersectionInner> = {}
@@ -377,8 +377,7 @@ export const unflattenConstraints = (
 		if (constraint.isBasis()) {
 			inner.basis = constraint
 		} else if (constraint.hasOpenIntersection) {
-			inner[constraint.kind] ??= [] as any
-			;(inner as any)[constraint.kind].push(constraint)
+			append((inner as any)[constraint.kind], constraint)
 		} else {
 			if (inner[constraint.kind]) {
 				return throwInternalError(

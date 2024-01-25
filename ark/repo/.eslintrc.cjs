@@ -39,7 +39,6 @@ module.exports = defineConfig({
 		/**
 		 * General restrictions
 		 */
-		curly: "warn",
 		eqeqeq: "warn",
 		"object-shorthand": "warn",
 		/**
