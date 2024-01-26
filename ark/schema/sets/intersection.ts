@@ -46,21 +46,15 @@ export type IntersectionInner = withBaseMeta<
 	}
 >
 
-export type BasisSchema = propwiseXor<
-	propwiseXor<{ domain: Schema<"domain"> }, { proto: Schema<"proto"> }>,
-	{ unit: Schema<"unit"> }
->
-
-export type IntersectionSchema<basis extends BasisSchema | undefined = any> =
-	withBaseMeta<
-		{
-			basis?: basis
-		} & componentInputsByKind<
-			basis extends Schema<BasisKind>
-				? instantiateBasis<basis>["infer"]
-				: unknown
-		>
+export type IntersectionSchema<
+	basis extends Schema<BasisKind> | undefined = any
+> = withBaseMeta<
+	{
+		basis?: basis
+	} & componentInputsByKind<
+		basis extends Schema<BasisKind> ? instantiateBasis<basis>["infer"] : unknown
 	>
+>
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
 

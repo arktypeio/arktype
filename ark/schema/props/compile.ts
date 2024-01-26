@@ -5,8 +5,8 @@ import type { PropKind } from "../shared/define.js"
 export type PropsInner = Pick<IntersectionInner, PropKind>
 
 export const compileProps = (props: PropsInner, ctx: CompilationContext) => {
-	if (props.sequence || props.index) {
-	}
+	// if (props.sequence || props.index) {
+	// }
 }
 
 type NamedPropsInner = Pick<PropsInner, "required" | "optional">

@@ -4,7 +4,7 @@ import { schema } from "@arktype/schema"
 describe("allows", () => {
 	it("multiple constraints", () => {
 		const n = schema({
-			domain: "number",
+			basis: "number",
 			divisor: 3,
 			min: 5
 		})
