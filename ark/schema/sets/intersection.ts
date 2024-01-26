@@ -10,9 +10,7 @@ import {
 import type { Node } from "../base.js"
 import type { instantiateBasis } from "../bases/basis.js"
 import type {
-	ClosedComponentKind,
 	Declaration,
-	OpenComponentKind,
 	Prerequisite,
 	Schema,
 	hasOpenIntersection,
@@ -24,9 +22,12 @@ import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import {
 	basisKinds,
 	type BasisKind,
-	type ComponentKind,
+	type ClosedIntersectionKind,
 	type ConstraintKind,
 	type GroupedConstraints,
+	type OpenIntersectionKind,
+	type PropKind,
+	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -34,9 +35,11 @@ import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
 
+export type NonBasisConstraintKind = PropKind | RefinementKind
+
 export type IntersectionInner = withBaseMeta<
 	{ basis?: Node<BasisKind> } & {
-		[k in ComponentKind]?: k extends OpenComponentKind
+		[k in NonBasisConstraintKind]?: k extends OpenIntersectionKind
 			? readonly Node<k>[]
 			: Node<k>
 	}
@@ -290,34 +293,39 @@ export class IntersectionNode<t = unknown> extends BaseType<
 }
 
 export type ComponentIntersectionInputsByKind = {
-	[k in ComponentKind]: hasOpenIntersection<Declaration<k>> extends true
+	[k in NonBasisConstraintKind]: hasOpenIntersection<
+		Declaration<k>
+	> extends true
 		? listable<Schema<k>>
 		: Schema<k>
 }
 
 export type componentKindOf<t> = {
-	[k in ComponentKind]: t extends Prerequisite<k> ? k : never
-}[ComponentKind]
+	[k in NonBasisConstraintKind]: t extends Prerequisite<k> ? k : never
+}[NonBasisConstraintKind]
 
 export type ComponentIntersectionInput<
-	kind extends ComponentKind = ComponentKind
+	kind extends NonBasisConstraintKind = NonBasisConstraintKind
 > = ComponentIntersectionInputsByKind[kind]
 
 export type componentInputsByKind<t> = {
 	[k in componentKindOf<t>]?: ComponentIntersectionInput<k>
 }
 
-export const parseClosedComponent = <kind extends ClosedComponentKind>(
+export const parseClosedComponent = <kind extends ClosedIntersectionKind>(
 	kind: kind,
 	input: Schema<kind>,
 	ctx: SchemaParseContext
 ): Node<kind> => {
-	const refinement = ctx.$.parseNode(kind, input) as Node<ComponentKind>
+	const refinement = ctx.$.parseNode(
+		kind,
+		input
+	) as Node<NonBasisConstraintKind>
 	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }
 
-export const parseOpenComponent = <kind extends OpenComponentKind>(
+export const parseOpenComponent = <kind extends OpenIntersectionKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
 	ctx: SchemaParseContext

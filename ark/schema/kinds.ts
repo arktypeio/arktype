@@ -30,7 +30,6 @@ import {
 } from "./sets/union.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type {
-	ComponentKind,
 	ConstraintKind,
 	NodeKind,
 	PropKind,
@@ -117,7 +116,7 @@ export type OpenComponentKind = {
 	[k in NodeKind]: hasOpenIntersection<Declaration<k>> extends true ? k : never
 }[NodeKind]
 
-export type ClosedComponentKind = Exclude<ComponentKind, OpenComponentKind>
+export type ClosedComponentKind = Exclude<NodeKind, OpenComponentKind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]

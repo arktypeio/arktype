@@ -6,7 +6,12 @@ import type {
 	satisfy
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { ExpectedContext, Inner } from "../kinds.js"
+import type {
+	Declaration,
+	ExpectedContext,
+	Inner,
+	hasOpenIntersection
+} from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -45,10 +50,6 @@ export const refinementKinds = [...shallowKinds, "predicate"] as const
 
 export type RefinementKind = (typeof refinementKinds)[number]
 
-export const componentKinds = [...refinementKinds, ...propKinds] as const
-
-export type ComponentKind = (typeof componentKinds)[number]
-
 export const setKinds = ["union", "morph", "intersection"] as const
 
 export type SetKind = (typeof setKinds)[number]
@@ -68,6 +69,12 @@ export type ConstraintKind = (typeof constraintKinds)[number]
 export const nodeKinds = [...setKinds, ...constraintKinds] as const
 
 export type NodeKind = (typeof nodeKinds)[number]
+
+export type OpenIntersectionKind = {
+	[k in NodeKind]: hasOpenIntersection<Declaration<k>> extends true ? k : never
+}[NodeKind]
+
+export type ClosedIntersectionKind = Exclude<NodeKind, OpenIntersectionKind>
 
 export const primitiveKinds = [...basisKinds, ...refinementKinds] as const
 
