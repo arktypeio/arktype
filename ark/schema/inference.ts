@@ -10,7 +10,7 @@ import type { instantiateBasis } from "./bases/basis.js"
 import type { NonEnumerableDomain } from "./bases/domain.js"
 import type { isSchemaCast, schema } from "./keywords/keywords.js"
 import type { Declaration, Schema } from "./kinds.js"
-import type { IntersectionSchema } from "./sets/intersection.js"
+import type { BasisSchema, IntersectionSchema } from "./sets/intersection.js"
 import type {
 	Morph,
 	MorphSchema,
@@ -124,11 +124,12 @@ type exactBasisMessageOnError<def, expected> = {
 export type validateIntersectionSchema<def> = exactBasisMessageOnError<
 	def,
 	IntersectionSchema<
-		"basis" extends keyof def
-			? def["basis"] extends Schema<BasisKind>
-				? def["basis"]
-				: undefined
-			: undefined
+		def extends BasisSchema ? def : undefined
+		// "basis" extends keyof def
+		// 	? def["basis"] extends Schema<BasisKind>
+		// 		? def["basis"]
+		// 		: undefined
+		// 	: undefined
 	>
 >
 

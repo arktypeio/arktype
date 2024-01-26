@@ -5,7 +5,8 @@ import {
 	printable,
 	throwInternalError,
 	type listable,
-	type mutable
+	type mutable,
+	type propwiseXor
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { instantiateBasis } from "../bases/basis.js"
@@ -45,15 +46,21 @@ export type IntersectionInner = withBaseMeta<
 	}
 >
 
-export type IntersectionSchema<
-	basis extends Schema<BasisKind> | undefined = any
-> = withBaseMeta<
-	{
-		basis?: basis
-	} & componentInputsByKind<
-		basis extends Schema<BasisKind> ? instantiateBasis<basis>["infer"] : unknown
-	>
+export type BasisSchema = propwiseXor<
+	propwiseXor<{ domain: Schema<"domain"> }, { proto: Schema<"proto"> }>,
+	{ unit: Schema<"unit"> }
 >
+
+export type IntersectionSchema<basis extends BasisSchema | undefined = any> =
+	withBaseMeta<
+		{
+			basis?: basis
+		} & componentInputsByKind<
+			basis extends Schema<BasisKind>
+				? instantiateBasis<basis>["infer"]
+				: unknown
+		>
+	>
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]
 
