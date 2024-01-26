@@ -17,8 +17,6 @@ import {
 
 export type BasePropDeclaration = and<BaseNodeDeclaration, { kind: PropKind }>
 
-const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
-
 export type NamedPropKind = "required" | "optional"
 
 export const compilePropAccess = (name: string, optional = false) =>
@@ -48,6 +46,8 @@ export const compilePresentPropAllows = (
 
 export const compileKey = (k: string | symbol) =>
 	typeof k === "string" ? k : compileSerializedValue(k)
+
+const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
 export abstract class BaseProp<
 		d extends BasePropDeclaration,
