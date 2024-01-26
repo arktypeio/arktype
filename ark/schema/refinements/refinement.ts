@@ -17,8 +17,12 @@ import type {
 	BaseNodeDeclaration,
 	BasePrimitive
 } from "../shared/declare.js"
-import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
-import type { ConstraintGroupName } from "../shared/group.js"
+import type {
+	BasisKind,
+	ConstraintGroupName,
+	NodeKind,
+	RefinementKind
+} from "../shared/define.js"
 import type { TraverseApply } from "../traversal/context.js"
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>

@@ -63,7 +63,7 @@ export abstract class BaseProp<
 			this.$.parseTypeNode(o)
 		))
 
-	readonly constraintGroup = "deep"
+	readonly constraintGroup = "props"
 
 	assertValidBasis(basis: Node<BasisKind> | undefined) {
 		if (this.checks.length === 1 && this.checks[0].isUnknown()) {

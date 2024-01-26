@@ -26,10 +26,10 @@ import {
 	type BasisKind,
 	type ComponentKind,
 	type ConstraintKind,
+	type GroupedConstraints,
 	type nodeImplementationOf
 } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { GroupedConstraints } from "../shared/group.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
@@ -219,7 +219,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		this.constraints,
 		(node) => node.constraintGroup
 	)
-	readonly props = this.groups.deep
+	readonly props = this.groups.props
 	readonly shallow = this.groups.shallow
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
@@ -265,7 +265,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		return groupRejectsData(this.predicate)
 	}
 
-	// TODO: combine deep/shallow?
 	compileApply(ctx: CompilationContext) {
 		const compiledGroups: string[] = []
 		const compileAndAppendGroup = (

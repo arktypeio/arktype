@@ -173,3 +173,16 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	inner: NodeKind extends kind ? any : Omit<Inner<kind>, "description">
 ) => string
+
+export type ConstraintGroupName = keyof ConstraintKindsByGroup
+
+export type GroupedConstraints = {
+	[k in ConstraintGroupName]?: Node<ConstraintKindsByGroup[k]>[]
+}
+
+export type ConstraintKindsByGroup = {
+	basis: BasisKind
+	shallow: ShallowKind
+	props: PropKind
+	predicate: "predicate"
+}
