@@ -60,7 +60,7 @@ export class PatternNode extends BaseRefinement<
 	})`
 	compiledNegation = `!${this.compiledCondition}`
 
-	getCheckedDefinitions() {
+	get prerequisiteSchemas() {
 		return ["string"] as const
 	}
 }

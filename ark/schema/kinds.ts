@@ -3,10 +3,6 @@ import type { NodeSubclass } from "./base.js"
 import { DomainNode, type DomainDeclaration } from "./bases/domain.js"
 import { ProtoNode, type ProtoDeclaration } from "./bases/proto.js"
 import { UnitNode, type UnitDeclaration } from "./bases/unit.js"
-import {
-	PredicateNode,
-	type PredicateDeclaration
-} from "./predicates/predicate.js"
 import { IndexNode, type IndexDeclaration } from "./props/index.js"
 import { OptionalNode, type OptionalDeclaration } from "./props/optional.js"
 import { RequiredNode, type RequiredDeclaration } from "./props/required.js"
@@ -14,6 +10,10 @@ import { SequenceNode, type SequenceDeclaration } from "./props/sequence.js"
 import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
 import { PatternNode, type PatternDeclaration } from "./refinements/pattern.js"
+import {
+	PredicateNode,
+	type PredicateDeclaration
+} from "./refinements/predicate.js"
 import {
 	IntersectionNode,
 	type IntersectionDeclaration

@@ -1,13 +1,17 @@
-import type { TypeNode, TypeSchema } from "../base.js"
+import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type {
-	NodeKeyImplementation,
-	nodeImplementationOf
+	BaseComponent,
+	declareNode,
+	withBaseMeta
+} from "../shared/declare.js"
+import {
+	createBasisAssertion,
+	type NodeKeyImplementation,
+	type nodeImplementationOf
 } from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import { BaseProp } from "./prop.js"
 
 export type NormalizedSequenceSchema = withBaseMeta<{
 	readonly prefix?: readonly TypeSchema[]
@@ -49,10 +53,10 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
 
-export class SequenceNode extends BaseProp<
-	SequenceDeclaration,
-	typeof SequenceNode
-> {
+export class SequenceNode
+	extends BaseNode<readonly unknown[], SequenceDeclaration, typeof SequenceNode>
+	implements BaseComponent
+{
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
@@ -101,6 +105,14 @@ export class SequenceNode extends BaseProp<
 		})
 
 	readonly hasOpenIntersection = false
+	readonly constraintGroup = "props"
+
+	get prerequisiteSchemas() {
+		return [Array] as const
+	}
+
+	assertValidBasis = createBasisAssertion(this as never)
+
 	prefixLength = this.prefix?.length ?? 0
 	postfixLength = this.postfix?.length ?? 0
 	protected minLength = this.prefixLength + this.postfixLength

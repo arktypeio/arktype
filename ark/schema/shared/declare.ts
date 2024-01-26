@@ -1,5 +1,5 @@
 import type { Dict, and, evaluate } from "@arktype/util"
-import type { NarrowedAttachments } from "../base.js"
+import type { NarrowedAttachments, TypeSchema } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
 import type {
 	ConstraintGroupName,
@@ -98,6 +98,7 @@ export interface BasePrimitive {
 	readonly compiledNegation: string
 }
 
-export interface BaseConstraint {
+export interface BaseComponent {
 	readonly constraintGroup: ConstraintGroupName
+	readonly prerequisiteSchemas: readonly TypeSchema[]
 }

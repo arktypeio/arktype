@@ -1,11 +1,13 @@
-import type {
-	ErrorMessage,
-	JsonData,
-	listable,
-	requireKeys,
-	satisfy
+import {
+	throwParseError,
+	type ErrorMessage,
+	type JsonData,
+	type PartialRecord,
+	type listable,
+	type requireKeys,
+	type satisfy
 } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { Node, TypeNode, TypeSchema, UnknownNode } from "../base.js"
 import type {
 	Declaration,
 	ExpectedContext,
@@ -18,6 +20,7 @@ import type {
 	ParsedUnknownNodeConfig,
 	ScopeNode
 } from "../scope.js"
+import type { ConditionalConstraintKind } from "../sets/intersection.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
@@ -192,4 +195,29 @@ export type ConstraintKindsByGroup = {
 	shallow: ShallowKind
 	props: PropKind
 	predicate: "predicate"
+}
+
+export const getBasisName = (basis: Node<BasisKind> | undefined) =>
+	basis?.basisName ?? "unknown"
+
+const prerequisiteCache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
+
+export const createBasisAssertion = (node: Node<ConditionalConstraintKind>) => {
+	const prerequisites: readonly TypeNode[] =
+		prerequisiteCache[node.kind] ??
+		(prerequisiteCache[node.kind] = node.prerequisiteSchemas.map((schema) =>
+			node.$.parseTypeNode(schema)
+		))
+	return (basis: Node<BasisKind> | undefined) => {
+		if (prerequisites.length === 1 && prerequisites[0].isUnknown()) {
+			return
+		}
+		if (!prerequisites.some((prerequisite) => basis?.extends(prerequisite))) {
+			throwParseError(
+				`${node.kind} operand must be of type ${prerequisites.join(
+					" or "
+				)} (was ${getBasisName(basis)})`
+			)
+		}
+	}
 }

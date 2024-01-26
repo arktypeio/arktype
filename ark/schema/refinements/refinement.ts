@@ -1,9 +1,8 @@
-import { throwParseError, type PartialRecord, type and } from "@arktype/util"
+import type { and } from "@arktype/util"
 import {
 	BaseNode,
 	type Node,
 	type NodeSubclass,
-	type TypeNode,
 	type TypeSchema
 } from "../base.js"
 import type { ExpectedContext } from "../kinds.js"
@@ -13,22 +12,17 @@ import {
 	type CompilationContext
 } from "../shared/compile.js"
 import type {
-	BaseConstraint,
+	BaseComponent,
 	BaseNodeDeclaration,
 	BasePrimitive
 } from "../shared/declare.js"
-import type {
-	BasisKind,
-	ConstraintGroupName,
-	NodeKind,
-	RefinementKind
+import {
+	createBasisAssertion,
+	type BasisKind,
+	type ConstraintGroupName,
+	type RefinementKind
 } from "../shared/define.js"
 import type { TraverseApply } from "../traversal/context.js"
-
-export const getBasisName = (basis: Node<BasisKind> | undefined) =>
-	basis?.basisName ?? "unknown"
-
-const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
 
 export type BaseRefinementDeclaration = and<
 	BaseNodeDeclaration,
@@ -40,18 +34,12 @@ export abstract class BaseRefinement<
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseNode<d["prerequisite"], d, subclass>
-	implements BasePrimitive, BaseConstraint
+	implements BasePrimitive, BaseComponent
 {
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly constraintGroup: ConstraintGroupName
-
-	abstract getCheckedDefinitions(): readonly TypeSchema[]
-	readonly checks: readonly TypeNode[] =
-		cache[this.kind] ??
-		(cache[this.kind] = this.getCheckedDefinitions().map((o) =>
-			this.$.parseTypeNode(o)
-		))
+	abstract get prerequisiteSchemas(): readonly TypeSchema[]
 
 	private expectedContextCache?: ExpectedContext<d["kind"]>
 	get expectedContext(): ExpectedContext<d["kind"]> {
@@ -59,18 +47,7 @@ export abstract class BaseRefinement<
 		return this.expectedContextCache
 	}
 
-	assertValidBasis(basis: Node<BasisKind> | undefined) {
-		if (this.checks.length === 1 && this.checks[0].isUnknown()) {
-			return
-		}
-		if (!this.checks.some((o) => basis?.extends(o))) {
-			throwParseError(
-				`${this.kind} operand must be of type ${this.checks.join(
-					" or "
-				)} (was ${getBasisName(basis)})`
-			)
-		}
-	}
+	assertValidBasis = createBasisAssertion(this as never)
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

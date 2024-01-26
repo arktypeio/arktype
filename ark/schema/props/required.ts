@@ -1,13 +1,20 @@
-import type { Node, TypeSchema } from "../base.js"
+import { BaseNode, type Node, type TypeSchema } from "../base.js"
 import type { Inner } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { TypeKind, nodeImplementationOf } from "../shared/define.js"
+import type {
+	BaseComponent,
+	declareNode,
+	withBaseMeta
+} from "../shared/declare.js"
+import {
+	createBasisAssertion,
+	type TypeKind,
+	type nodeImplementationOf
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
-	BaseProp,
 	compileKey,
 	compilePresentPropAllows,
 	compilePresentPropApply,
@@ -57,10 +64,10 @@ const intersectNamed = (
 	}
 }
 
-export class RequiredNode extends BaseProp<
-	RequiredDeclaration,
-	typeof RequiredNode
-> {
+export class RequiredNode
+	extends BaseNode<object, RequiredDeclaration, typeof RequiredNode>
+	implements BaseComponent
+{
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
@@ -85,6 +92,13 @@ export class RequiredNode extends BaseProp<
 		})
 
 	readonly hasOpenIntersection = true
+	readonly constraintGroup = "props"
+
+	get prerequisiteSchemas() {
+		return ["object"] as const
+	}
+
+	assertValidBasis = createBasisAssertion(this as never)
 
 	serializedKey = compileSerializedValue(this.key)
 

@@ -14,7 +14,7 @@
 		"resolveJsonModule": true,
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
-		"noErrorTruncation": true,
+		// "noErrorTruncation": true,
 		"stripInternal": true,
 		"lib": ["ESNext"],
 		"paths": {

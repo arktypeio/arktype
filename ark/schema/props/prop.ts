@@ -1,15 +1,8 @@
-import { throwParseError, type PartialRecord, type and } from "@arktype/util"
-import {
-	BaseNode,
-	type Node,
-	type NodeSubclass,
-	type TypeNode,
-	type TypeSchema
-} from "../base.js"
-import { getBasisName } from "../refinements/refinement.js"
+import type { and } from "@arktype/util"
+import type { Node } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { BaseConstraint, BaseNodeDeclaration } from "../shared/declare.js"
-import type { BasisKind, NodeKind, PropKind } from "../shared/define.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
+import type { PropKind } from "../shared/define.js"
 import {
 	compileSerializedValue,
 	isDotAccessible
@@ -46,35 +39,3 @@ export const compilePresentPropAllows = (
 
 export const compileKey = (k: string | symbol) =>
 	typeof k === "string" ? k : compileSerializedValue(k)
-
-const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
-
-export abstract class BaseProp<
-		d extends BasePropDeclaration,
-		subclass extends NodeSubclass<d>
-	>
-	extends BaseNode<d["prerequisite"], d, subclass>
-	implements BaseConstraint
-{
-	abstract getCheckedDefinitions(): readonly TypeSchema[]
-	readonly checks: readonly TypeNode[] =
-		cache[this.kind] ??
-		(cache[this.kind] = this.getCheckedDefinitions().map((o) =>
-			this.$.parseTypeNode(o)
-		))
-
-	readonly constraintGroup = "props"
-
-	assertValidBasis(basis: Node<BasisKind> | undefined) {
-		if (this.checks.length === 1 && this.checks[0].isUnknown()) {
-			return
-		}
-		if (!this.checks.some((o) => basis?.extends(o))) {
-			throwParseError(
-				`${this.kind} operand must be of type ${this.checks.join(
-					" or "
-				)} (was ${getBasisName(basis)})`
-			)
-		}
-	}
-}

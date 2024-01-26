@@ -1,10 +1,16 @@
-import type { TypeNode, TypeSchema } from "../base.js"
+import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { nodeImplementationOf } from "../shared/define.js"
+import type {
+	BaseComponent,
+	declareNode,
+	withBaseMeta
+} from "../shared/declare.js"
+import {
+	createBasisAssertion,
+	type nodeImplementationOf
+} from "../shared/define.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import { BaseProp } from "./prop.js"
 
 export type IndexSchema = withBaseMeta<{
 	readonly key: TypeSchema
@@ -27,7 +33,10 @@ export type IndexDeclaration = declareNode<{
 	prerequisite: object
 }>
 
-export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
+export class IndexNode
+	extends BaseNode<object, IndexDeclaration, typeof IndexNode>
+	implements BaseComponent
+{
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
@@ -53,6 +62,14 @@ export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 		})
 
 	readonly hasOpenIntersection = true
+
+	readonly constraintGroup = "props"
+
+	get prerequisiteSchemas() {
+		return ["object"] as const
+	}
+
+	assertValidBasis = createBasisAssertion(this as never)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(

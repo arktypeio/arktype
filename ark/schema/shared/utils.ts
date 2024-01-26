@@ -1,5 +1,12 @@
-import type { evaluate } from "@arktype/util"
+import {
+	throwParseError,
+	type PartialRecord,
+	type evaluate
+} from "@arktype/util"
+import type { Node, TypeNode } from "../base.js"
 import type { LimitSchemaValue } from "../refinements/bounds.js"
+import type { ConditionalConstraintKind } from "../sets/intersection.js"
+import type { BasisKind, NodeKind } from "./define.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 

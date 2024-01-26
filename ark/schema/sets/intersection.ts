@@ -5,18 +5,11 @@ import {
 	printable,
 	throwInternalError,
 	type listable,
-	type mutable,
-	type propwiseXor
+	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { instantiateBasis } from "../bases/basis.js"
-import type {
-	Declaration,
-	Prerequisite,
-	Schema,
-	hasOpenIntersection,
-	reducibleKindOf
-} from "../kinds.js"
+import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
@@ -36,11 +29,9 @@ import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
 
-export type NonBasisConstraintKind = PropKind | RefinementKind
-
 export type IntersectionInner = withBaseMeta<
 	{ basis?: Node<BasisKind> } & {
-		[k in NonBasisConstraintKind]?: k extends OpenIntersectionKind
+		[k in ConditionalConstraintKind]?: k extends OpenIntersectionKind
 			? readonly Node<k>[]
 			: Node<k>
 	}
@@ -51,7 +42,7 @@ export type IntersectionSchema<
 > = withBaseMeta<
 	{
 		basis?: basis
-	} & componentInputsByKind<
+	} & conditionalConstraintsOfType<
 		basis extends Schema<BasisKind> ? instantiateBasis<basis>["infer"] : unknown
 	>
 >
@@ -293,24 +284,19 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
-export type ComponentIntersectionInputsByKind = {
-	[k in NonBasisConstraintKind]: hasOpenIntersection<
-		Declaration<k>
-	> extends true
-		? listable<Schema<k>>
-		: Schema<k>
-}
+export type ConditionalConstraintKind = PropKind | RefinementKind
 
-export type componentKindOf<t> = {
-	[k in NonBasisConstraintKind]: t extends Prerequisite<k> ? k : never
-}[NonBasisConstraintKind]
+export type ExtraneousKeyBehavior = "throw" | "prune"
 
-export type ComponentIntersectionInput<
-	kind extends NonBasisConstraintKind = NonBasisConstraintKind
-> = ComponentIntersectionInputsByKind[kind]
+type conditionalChildKindOf<t> = {
+	[k in ConditionalConstraintKind]: t extends Prerequisite<k> ? k : never
+}[ConditionalConstraintKind]
 
-export type componentInputsByKind<t> = {
-	[k in componentKindOf<t>]?: ComponentIntersectionInput<k>
+type conditionalValueOfKey<k extends ConditionalConstraintKind> =
+	k extends OpenIntersectionKind ? listable<Schema<k>> : Schema<k>
+
+export type conditionalConstraintsOfType<t> = {
+	[k in conditionalChildKindOf<t>]?: conditionalValueOfKey<k>
 }
 
 export const parseClosedComponent = <kind extends ClosedIntersectionKind>(
@@ -321,7 +307,7 @@ export const parseClosedComponent = <kind extends ClosedIntersectionKind>(
 	const refinement = ctx.$.parseNode(
 		kind,
 		input
-	) as Node<NonBasisConstraintKind>
+	) as Node<ConditionalConstraintKind>
 	refinement.assertValidBasis(ctx.basis)
 	return refinement as never
 }

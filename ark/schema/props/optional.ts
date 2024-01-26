@@ -1,11 +1,23 @@
-import type { Node, TypeSchema } from "../base.js"
+import { BaseNode, type Node, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { TypeKind, nodeImplementationOf } from "../shared/define.js"
+import type {
+	BaseComponent,
+	declareNode,
+	withBaseMeta
+} from "../shared/declare.js"
+import {
+	createBasisAssertion,
+	type TypeKind,
+	type nodeImplementationOf
+} from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import { BaseProp, compileKey, compilePresentPropAllows, compilePresentPropApply } from "./prop.js"
+import {
+	compileKey,
+	compilePresentPropAllows,
+	compilePresentPropApply
+} from "./prop.js"
 
 export type OptionalInner = withBaseMeta<{
 	readonly key: string | symbol
@@ -28,10 +40,10 @@ export type OptionalDeclaration = declareNode<{
 	prerequisite: object
 }>
 
-export class OptionalNode extends BaseProp<
-	OptionalDeclaration,
-	typeof OptionalNode
-> {
+export class OptionalNode
+	extends BaseNode<object, OptionalDeclaration, typeof OptionalNode>
+	implements BaseComponent
+{
 	static implementation: nodeImplementationOf<OptionalDeclaration> =
 		this.implement({
 			keys: {
@@ -65,6 +77,15 @@ export class OptionalNode extends BaseProp<
 		})
 
 	readonly hasOpenIntersection = true
+
+	readonly constraintGroup = "props"
+
+	get prerequisiteSchemas() {
+		return ["object"] as const
+	}
+
+	assertValidBasis = createBasisAssertion(this as never)
+
 	serializedKey = compileSerializedValue(this.key)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
@@ -83,17 +104,11 @@ export class OptionalNode extends BaseProp<
 		}`
 	}
 
-	
 	compileAllows(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${ctx.dataArg}) {
 			${compilePresentPropAllows(this, ctx)}
 		}`
 	}
 
-
 	compiledKey = compileKey(this.key)
-
-	getCheckedDefinitions() {
-		return ["object"] as const
-	}
 }

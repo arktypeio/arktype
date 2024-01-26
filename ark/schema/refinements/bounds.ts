@@ -158,7 +158,7 @@ abstract class BaseNumericBound<
 		negatedComparators[this.comparator]
 	} ${this.limit}`
 
-	getCheckedDefinitions() {
+	get prerequisiteSchemas() {
 		return ["number"] as const
 	}
 }
@@ -229,7 +229,7 @@ abstract class BaseLengthBound<
 		negatedComparators[this.comparator]
 	} ${this.limit}`
 
-	getCheckedDefinitions() {
+	get prerequisiteSchemas() {
 		return ["string", Array] as const
 	}
 }
@@ -322,7 +322,7 @@ abstract class BaseDateBound<
 			? this.limit
 			: this.dateLimit.toLocaleString()
 
-	getCheckedDefinitions() {
+	get prerequisiteSchemas() {
 		return [Date] as const
 	}
 }

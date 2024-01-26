@@ -63,7 +63,7 @@ export class DivisorNode extends BaseRefinement<
 	compiledCondition = `${this.$.dataArg} % ${this.divisor} === 0`
 	compiledNegation = `${this.$.dataArg} % ${this.divisor} !== 0`
 
-	getCheckedDefinitions() {
+	get prerequisiteSchemas() {
 		return ["number"] as const
 	}
 }

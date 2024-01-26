@@ -14,7 +14,7 @@ import {
 	createPrimitiveExpectedContext,
 	type CompilationContext
 } from "../shared/compile.js"
-import type { BaseConstraint, BasePrimitive } from "../shared/declare.js"
+import type { BaseComponent, BasePrimitive } from "../shared/declare.js"
 import type { BasisKind } from "../shared/define.js"
 import type { TraverseApply } from "../traversal/context.js"
 import { BaseType, type BaseTypeDeclaration } from "../type.js"
@@ -30,7 +30,7 @@ export abstract class BaseBasis<
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseType<t, d, subclass>
-	implements BasePrimitive, BaseConstraint
+	implements BasePrimitive
 {
 	abstract readonly basisName: string
 	abstract readonly compiledCondition: string

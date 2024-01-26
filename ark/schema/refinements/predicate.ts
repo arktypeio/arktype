@@ -1,8 +1,8 @@
-import { BaseRefinement } from "../refinements/refinement.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
+import { BaseRefinement } from "./refinement.js"
 
 export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
 	withBaseMeta<{
@@ -65,7 +65,7 @@ export class PredicateNode extends BaseRefinement<
 	})`
 	compiledNegation = `!${this.compiledCondition}`
 
-	getCheckedDefinitions() {
+	get prerequisiteSchemas() {
 		return [{}] as const
 	}
 }

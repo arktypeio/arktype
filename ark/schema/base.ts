@@ -25,7 +25,6 @@ import type {
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
-import type { PredicateNode } from "./predicates/predicate.js"
 import type { IndexNode } from "./props/index.js"
 import type { OptionalNode } from "./props/optional.js"
 import type { RequiredNode } from "./props/required.js"
@@ -40,6 +39,7 @@ import type {
 } from "./refinements/bounds.js"
 import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
+import type { PredicateNode } from "./refinements/predicate.js"
 import type { ScopeNode } from "./scope.js"
 import type {
 	IntersectionInner,
