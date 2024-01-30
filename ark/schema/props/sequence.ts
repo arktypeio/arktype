@@ -111,7 +111,7 @@ export class SequenceNode
 		return [Array] as const
 	}
 
-	assertValidBasis = createBasisAssertion(this as never)
+	assertValidBasis = createBasisAssertion(this)
 
 	prefixLength = this.prefix?.length ?? 0
 	postfixLength = this.postfix?.length ?? 0

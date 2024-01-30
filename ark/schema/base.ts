@@ -25,6 +25,7 @@ import type {
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
+import type { ExactNode } from "./props/exact.js"
 import type { IndexNode } from "./props/index.js"
 import type { OptionalNode } from "./props/optional.js"
 import type { RequiredNode } from "./props/required.js"
@@ -397,6 +398,7 @@ interface NodesByKind<t = any> {
 	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
+	exact: ExactNode
 }
 
 export type Node<

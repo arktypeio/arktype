@@ -7,7 +7,7 @@ import {
 	type requireKeys,
 	type satisfy
 } from "@arktype/util"
-import type { Node, TypeNode, TypeSchema, UnknownNode } from "../base.js"
+import type { Node, TypeNode, UnknownNode } from "../base.js"
 import type {
 	Declaration,
 	ExpectedContext,
@@ -41,7 +41,13 @@ export const boundKinds = [
 
 export type BoundKind = (typeof boundKinds)[number]
 
-export const propKinds = ["required", "optional", "index", "sequence"] as const
+export const propKinds = [
+	"required",
+	"optional",
+	"index",
+	"sequence",
+	"exact"
+] as const
 
 export type PropKind = (typeof propKinds)[number]
 

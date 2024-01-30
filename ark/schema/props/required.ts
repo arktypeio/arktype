@@ -98,7 +98,7 @@ export class RequiredNode
 		return ["object"] as const
 	}
 
-	assertValidBasis = createBasisAssertion(this as never)
+	assertValidBasis = createBasisAssertion(this)
 
 	serializedKey = compileSerializedValue(this.key)
 

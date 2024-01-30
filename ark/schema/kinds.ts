@@ -3,6 +3,7 @@ import type { NodeSubclass } from "./base.js"
 import { DomainNode, type DomainDeclaration } from "./bases/domain.js"
 import { ProtoNode, type ProtoDeclaration } from "./bases/proto.js"
 import { UnitNode, type UnitDeclaration } from "./bases/unit.js"
+import { ExactNode, type ExactDeclaration } from "./props/exact.js"
 import { IndexNode, type IndexDeclaration } from "./props/index.js"
 import { OptionalNode, type OptionalDeclaration } from "./props/optional.js"
 import { RequiredNode, type RequiredDeclaration } from "./props/required.js"
@@ -52,6 +53,7 @@ export type NodeDeclarationsByKind = and<
 		index: IndexDeclaration
 		pattern: PatternDeclaration
 		predicate: PredicateDeclaration
+		exact: ExactDeclaration
 	}
 >
 
@@ -69,7 +71,8 @@ export const nodesByKind = {
 	required: RequiredNode,
 	optional: OptionalNode,
 	index: IndexNode,
-	sequence: SequenceNode
+	sequence: SequenceNode,
+	exact: ExactNode
 } as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
 export type NodesByKind = typeof nodesByKind
