@@ -84,7 +84,7 @@ export class OptionalNode
 		return ["object"] as const
 	}
 
-	assertValidBasis = createBasisAssertion(this)
+	assertValidBasis = createBasisAssertion(this as never)
 
 	serializedKey = compileSerializedValue(this.key)
 

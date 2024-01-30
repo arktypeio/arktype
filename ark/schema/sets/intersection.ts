@@ -101,59 +101,55 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				},
 				divisor: {
 					child: true,
-					parse: (def, ctx) => parseClosedChild("divisor", def, ctx)
+					parse: (def, ctx) => parseClosedComponent("divisor", def, ctx)
 				},
 				max: {
 					child: true,
-					parse: (def, ctx) => parseClosedChild("max", def, ctx)
+					parse: (def, ctx) => parseClosedComponent("max", def, ctx)
 				},
 				min: {
 					child: true,
-					parse: (def, ctx) => parseClosedChild("min", def, ctx)
+					parse: (def, ctx) => parseClosedComponent("min", def, ctx)
 				},
 				maxLength: {
 					child: true,
-					parse: (def, ctx) => parseClosedChild("maxLength", def, ctx)
+					parse: (def, ctx) => parseClosedComponent("maxLength", def, ctx)
 				},
 				minLength: {
 					child: true,
-					parse: (def, ctx) => parseClosedChild("minLength", def, ctx)
+					parse: (def, ctx) => parseClosedComponent("minLength", def, ctx)
 				},
 				before: {
 					child: true,
-					parse: (def, ctx) => parseClosedChild("before", def, ctx)
+					parse: (def, ctx) => parseClosedComponent("before", def, ctx)
 				},
 				after: {
 					child: true,
-					parse: (def, ctx) => parseClosedChild("after", def, ctx)
+					parse: (def, ctx) => parseClosedComponent("after", def, ctx)
 				},
 				pattern: {
 					child: true,
-					parse: (def, ctx) => parseOpenChild("pattern", def, ctx)
+					parse: (def, ctx) => parseOpenComponent("pattern", def, ctx)
 				},
 				predicate: {
 					child: true,
-					parse: (def, ctx) => parseOpenChild("predicate", def, ctx)
+					parse: (def, ctx) => parseOpenComponent("predicate", def, ctx)
 				},
 				optional: {
 					child: true,
-					parse: (def, ctx) => parseOpenChild("optional", def, ctx)
+					parse: (def, ctx) => parseOpenComponent("optional", def, ctx)
 				},
 				required: {
 					child: true,
-					parse: (def, ctx) => parseOpenChild("required", def, ctx)
+					parse: (def, ctx) => parseOpenComponent("required", def, ctx)
 				},
 				index: {
 					child: true,
-					parse: (def, ctx) => parseOpenChild("index", def, ctx)
+					parse: (def, ctx) => parseOpenComponent("index", def, ctx)
 				},
 				sequence: {
 					child: true,
-					parse: (def, ctx) => parseClosedChild("sequence", def, ctx)
-				},
-				exact: {
-					child: true,
-					parse: (def, ctx) => parseClosedChild("exact", def, ctx)
+					parse: (def, ctx) => parseClosedComponent("sequence", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
@@ -290,6 +286,8 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 export type ConditionalConstraintKind = PropKind | RefinementKind
 
+export type ExtraneousKeyBehavior = "throw" | "prune"
+
 type conditionalChildKindOf<t> = {
 	[k in ConditionalConstraintKind]: t extends Prerequisite<k> ? k : never
 }[ConditionalConstraintKind]
@@ -301,7 +299,7 @@ export type conditionalConstraintsOfType<t> = {
 	[k in conditionalChildKindOf<t>]?: conditionalValueOfKey<k>
 }
 
-const parseClosedChild = <kind extends ClosedIntersectionKind>(
+export const parseClosedComponent = <kind extends ClosedIntersectionKind>(
 	kind: kind,
 	input: Schema<kind>,
 	ctx: SchemaParseContext
@@ -314,7 +312,7 @@ const parseClosedChild = <kind extends ClosedIntersectionKind>(
 	return refinement as never
 }
 
-const parseOpenChild = <kind extends OpenIntersectionKind>(
+export const parseOpenComponent = <kind extends OpenIntersectionKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
 	ctx: SchemaParseContext

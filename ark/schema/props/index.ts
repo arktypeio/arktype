@@ -69,7 +69,7 @@ export class IndexNode
 		return ["object"] as const
 	}
 
-	assertValidBasis = createBasisAssertion(this)
+	assertValidBasis = createBasisAssertion(this as never)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(
