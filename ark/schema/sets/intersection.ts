@@ -212,7 +212,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	readonly constraints: ConstraintSet = flattenConstraints(this.inner)
 	readonly groups: GroupedConstraints = groupBy(
 		this.constraints,
-		(node) => node.constraintGroup
+		"constraintGroup"
 	)
 	readonly props = this.groups.props
 	readonly shallow = this.groups.shallow

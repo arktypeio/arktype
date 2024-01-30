@@ -138,15 +138,24 @@ export const append = <
 	return to
 }
 
-export const groupBy = <t, k extends string>(
-	array: readonly t[],
-	getKey: (t: t) => k
-) =>
-	array.reduce<Record<string, t[]>>((result, item) => {
-		const key = getKey(item)
-		if (!result[key]) {
-			result[key] = []
-		}
+export type groupableKeyOf<t> = {
+	[k in keyof t]: t[k] extends PropertyKey ? k : never
+}[keyof t]
+
+export type groupBy<element, discriminator extends groupableKeyOf<element>> = {
+	[k in element[discriminator] & PropertyKey]?: Extract<
+		element,
+		{ [_ in discriminator]: k }
+	>[]
+} & {}
+
+export const groupBy = <element, discriminator extends groupableKeyOf<element>>(
+	array: readonly element[],
+	discriminator: discriminator
+): groupBy<element, discriminator> =>
+	array.reduce<Record<PropertyKey, any>>((result, item) => {
+		const key = item[discriminator] as never
+		result[key] ??= []
 		result[key].push(item)
 		return result
 	}, {})
