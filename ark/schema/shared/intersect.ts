@@ -73,13 +73,6 @@ type reifyIntersectionResult<result> = result extends NodeKind
 	? Inner<result>
 	: result
 
-export type intersectionOf2<l extends NodeKind, r extends NodeKind> = [
-	l,
-	r
-] extends [r, l]
-	? instantiateIntersection<l>
-	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
-
 export type intersectionOf<l extends NodeKind, r extends NodeKind> = [
 	l,
 	r
