@@ -31,9 +31,7 @@ import { BaseType } from "../type.js"
 
 export type IntersectionInner = withBaseMeta<
 	{ basis?: Node<BasisKind> } & {
-		[k in ConditionalConstraintKind]?: k extends OpenIntersectionKind
-			? readonly Node<k>[]
-			: Node<k>
+		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
 	}
 >
 
@@ -286,17 +284,46 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 export type ConditionalConstraintKind = PropKind | RefinementKind
 
-export type ExtraneousKeyBehavior = "throw" | "prune"
+export type KeyBehavior = "loose" | "strict" | "prune"
+
+export type ConditionalTerminalIntersectionInner = {
+	// TODO: don't serialize loose
+	keys?: KeyBehavior
+}
+
+type ConditionalTerminalIntersectionKey =
+	keyof ConditionalTerminalIntersectionInner
 
 type conditionalChildKindOf<t> = {
 	[k in ConditionalConstraintKind]: t extends Prerequisite<k> ? k : never
 }[ConditionalConstraintKind]
 
-type conditionalValueOfKey<k extends ConditionalConstraintKind> =
-	k extends OpenIntersectionKind ? listable<Schema<k>> : Schema<k>
+export type ConditionalIntersectionKey =
+	| ConditionalConstraintKind
+	| keyof ConditionalTerminalIntersectionInner
+
+export type conditionalIntersectionKeyOf<t> =
+	| conditionalChildKindOf<t>
+	| (t extends object ? "keys" : never)
+
+type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
+	k extends OpenIntersectionKind
+		? listable<Schema<k>>
+		: k extends ClosedIntersectionKind
+		? Schema<k>
+		: ConditionalTerminalIntersectionInner[k &
+				ConditionalTerminalIntersectionKey]
+
+type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
+	k extends OpenIntersectionKind
+		? readonly Node<k>[]
+		: k extends ClosedIntersectionKind
+		? Node<k>
+		: ConditionalTerminalIntersectionInner[k &
+				ConditionalTerminalIntersectionKey]
 
 export type conditionalSchemaValuesOf<t> = {
-	[k in conditionalChildKindOf<t>]?: conditionalValueOfKey<k>
+	[k in conditionalChildKindOf<t>]?: conditionalSchemaValueOfKey<k>
 }
 
 export const parseClosedComponent = <kind extends ClosedIntersectionKind>(
