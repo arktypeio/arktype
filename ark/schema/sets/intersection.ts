@@ -42,7 +42,7 @@ export type IntersectionSchema<
 > = withBaseMeta<
 	{
 		basis?: basis
-	} & conditionalConstraintsOfType<
+	} & conditionalSchemaValuesOf<
 		basis extends Schema<BasisKind> ? instantiateBasis<basis>["infer"] : unknown
 	>
 >
@@ -295,7 +295,7 @@ type conditionalChildKindOf<t> = {
 type conditionalValueOfKey<k extends ConditionalConstraintKind> =
 	k extends OpenIntersectionKind ? listable<Schema<k>> : Schema<k>
 
-export type conditionalConstraintsOfType<t> = {
+export type conditionalSchemaValuesOf<t> = {
 	[k in conditionalChildKindOf<t>]?: conditionalValueOfKey<k>
 }
 
