@@ -56,6 +56,7 @@ import type {
 import {
 	basisKinds,
 	constraintKinds,
+	precedenceOfKind,
 	refinementKinds,
 	setKinds,
 	typeKinds,
@@ -170,6 +171,7 @@ export abstract class BaseNode<
 	readonly references: readonly Node[] = Object.values(this.referencesByName)
 	readonly contributesReferencesByName: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
+	readonly precedence = precedenceOfKind(this.kind)
 	// use declare here to ensure description from attachments isn't overwritten
 	declare readonly description: string
 

@@ -66,4 +66,12 @@ describe("map", () => {
 		)
 		attest<[5, ...(1 | 2 | 3)[]]>(result).equals([5, 1, 2, 3])
 	})
+	it("maps from array to object", () => {
+		const result = map(["a", "b", "c"], (i, v) => [v, i])
+		attest<{
+			a: 0 | 2 | 1
+			b: 0 | 2 | 1
+			c: 0 | 2 | 1
+		}>(result).equals({ a: 0, b: 1, c: 2 })
+	})
 })

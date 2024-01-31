@@ -1,9 +1,13 @@
 import {
+	map,
 	throwParseError,
 	type ErrorMessage,
 	type JsonData,
+	type NumberLiteral,
 	type PartialRecord,
+	type entryOf,
 	type listable,
+	type parseNonNegativeInteger,
 	type requireKeys,
 	type satisfy
 } from "@arktype/util"
@@ -85,8 +89,23 @@ export type PrimitiveKind = (typeof primitiveKinds)[number]
 
 export type OrderedNodeKinds = typeof nodeKinds
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type assertNoExtraKinds = satisfy<NodeKind, OrderedNodeKinds[number]>
+type indexOf<array extends readonly unknown[]> = keyof array extends infer k
+	? parseNonNegativeInteger<k & string>
+	: never
+
+type PrecedenceByKind = {
+	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
+}
+
+const precedenceByKind = map(
+	nodeKinds,
+	(i, kind) => [kind, i] as entryOf<PrecedenceByKind>
+)
+
+export type precedenceOfKind<kind extends NodeKind> = PrecedenceByKind[kind]
+
+export const precedenceOfKind = <kind extends NodeKind>(kind: kind) =>
+	precedenceByKind[kind]
 
 export type KeyDefinitions<d extends BaseNodeDeclaration> = {
 	[k in undefinedKey<d>]: NodeKeyImplementation<d, k>
