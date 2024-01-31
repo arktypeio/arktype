@@ -39,7 +39,7 @@ export class DivisorNode extends BaseRefinement<
 		},
 		normalize: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,
-		intersections: {
+		intersect: {
 			divisor: (l, r) => ({
 				divisor: Math.abs(
 					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)

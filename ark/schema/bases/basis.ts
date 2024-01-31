@@ -15,7 +15,7 @@ import {
 	type CompilationContext
 } from "../shared/compile.js"
 import type { BaseComponent, BasePrimitive } from "../shared/declare.js"
-import type { BasisKind } from "../shared/define.js"
+import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../traversal/context.js"
 import { BaseType, type BaseTypeDeclaration } from "../type.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"

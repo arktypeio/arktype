@@ -20,7 +20,7 @@ import type {
 	inferMorphOut
 } from "./sets/morph.js"
 import type { BranchNode, NormalizedUnionSchema } from "./sets/union.js"
-import type { BasisKind, RefinementKind } from "./shared/define.js"
+import type { BasisKind, RefinementKind } from "./shared/implement.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]

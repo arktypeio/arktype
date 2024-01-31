@@ -5,12 +5,12 @@ import type {
 	declareNode,
 	withBaseMeta
 } from "../shared/declare.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
 	type NodeKeyImplementation,
 	type nodeImplementationOf
-} from "../shared/define.js"
-import type { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 
 export type NormalizedSequenceSchema = withBaseMeta<{
@@ -91,7 +91,7 @@ export class SequenceNode
 					})
 				}
 			},
-			intersections: {
+			intersect: {
 				sequence: (l) => l
 			},
 			defaults: {

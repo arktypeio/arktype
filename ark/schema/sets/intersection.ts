@@ -13,6 +13,7 @@ import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
 	type BasisKind,
@@ -23,8 +24,7 @@ import {
 	type PropKind,
 	type RefinementKind,
 	type nodeImplementationOf
-} from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
@@ -171,7 +171,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					unflattenConstraints(reducedConstraints)
 				)
 			},
-			intersections: {
+			intersect: {
 				intersection: (l, r) => {
 					let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
 					for (const refinement of r.constraints) {

@@ -40,7 +40,7 @@ export class PredicateNode extends BaseRefinement<
 		},
 		normalize: (schema) =>
 			typeof schema === "function" ? { predicate: schema } : schema,
-		intersections: {
+		intersect: {
 			// TODO: allow changed order to be the same type
 			// as long as the narrows in l and r are individually safe to check
 			// in the order they're specified, checking them in the order

@@ -6,8 +6,9 @@ import {
 	nodeKinds,
 	type NodeKind,
 	type OrderedNodeKinds,
-	type RefinementKind
-} from "./define.js"
+	type RefinementKind,
+	type TypeKind
+} from "./implement.js"
 
 export const leftOperandOf = (l: Node, r: Node) => {
 	for (const kind of nodeKinds) {
@@ -24,7 +25,12 @@ export const leftOperandOf = (l: Node, r: Node) => {
 
 type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
-export type rightOf<kind extends NodeKind> = RightsByKind[kind]
+export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
+
+export type typeKindRightOf<kind extends TypeKind> = Extract<
+	RightsByKind[kind],
+	TypeKind
+>
 
 type accumulateRightKinds<
 	remaining extends readonly NodeKind[],
@@ -44,7 +50,7 @@ export type NodeIntersections<d extends BaseNodeDeclaration> = {
 	[rKind in keyof d["intersections"]]: rKind extends "default"
 		? (
 				l: Node<d["kind"]>,
-				r: Node<Exclude<rightOf<d["kind"]>, keyof d["intersections"]>>
+				r: Node<Exclude<kindRightOf<d["kind"]>, keyof d["intersections"]>>
 		  ) => reifyIntersectionResult<d["intersections"][rKind]>
 		: (
 				l: Node<d["kind"]>,
@@ -60,7 +66,7 @@ export type reifyIntersections<
 			[rKind in keyof intersectionMap]: rKind extends "default"
 				? (
 						l: Node<lKind>,
-						r: Node<Exclude<rightOf<lKind>, keyof intersectionMap>>
+						r: Node<Exclude<kindRightOf<lKind>, keyof intersectionMap>>
 				  ) => reifyIntersectionResult<intersectionMap[rKind]>
 				: (
 						l: Node<lKind>,
@@ -84,7 +90,7 @@ type asymmetricIntersectionOf<
 	l extends NodeKind,
 	r extends NodeKind
 > = l extends unknown
-	? r extends rightOf<l>
+	? r extends kindRightOf<l>
 		? r extends keyof IntersectionMaps[l]
 			? instantiateIntersection<IntersectionMaps[l][r]>
 			: "default" extends keyof IntersectionMaps[l]

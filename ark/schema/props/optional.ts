@@ -5,12 +5,12 @@ import type {
 	declareNode,
 	withBaseMeta
 } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
 	type TypeKind,
 	type nodeImplementationOf
-} from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
@@ -60,7 +60,7 @@ export class OptionalNode
 					return `${compileKey(inner.key)}?: ${inner.value}`
 				}
 			},
-			intersections: {
+			intersect: {
 				optional: (l, r) => {
 					if (l.key !== r.key) {
 						return null

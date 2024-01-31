@@ -12,12 +12,12 @@ import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
 	type BasisKind,
 	type nodeImplementationOf
-} from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { is } from "../shared/utils.js"
 import type {
 	TraversalContext,
@@ -88,7 +88,7 @@ export class MorphNode<t = unknown> extends BaseType<
 				}
 			},
 			normalize: (schema) => schema,
-			intersections: {
+			intersect: {
 				morph: (l, r) => {
 					if (l.morph.some((morph, i) => morph !== r.morph[i])) {
 						// TODO: is this always a parse error? what about for union reduction etc.

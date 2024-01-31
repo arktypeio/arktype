@@ -3,8 +3,8 @@ import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import { basisKinds, type nodeImplementationOf } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
@@ -104,7 +104,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					branches: reducedBranches
 				})
 			},
-			intersections: {
+			intersect: {
 				union: (l, r) => {
 					if (
 						(l.branches.length === 0 || r.branches.length === 0) &&

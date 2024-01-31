@@ -2,7 +2,7 @@ import type { Node } from "../base.js"
 import type { ExpectedContext } from "../kinds.js"
 import type { Discriminant } from "../sets/discriminate.js"
 import type { TraversalMethodsByKind } from "../traversal/context.js"
-import type { PrimitiveKind } from "./define.js"
+import type { PrimitiveKind } from "./implement.js"
 
 export const compilePrimitive = (
 	traversalKind: TraversalKind,

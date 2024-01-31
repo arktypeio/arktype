@@ -34,7 +34,7 @@ import type {
 	NodeKind,
 	PropKind,
 	TypeKind
-} from "./shared/define.js"
+} from "./shared/implement.js"
 
 export type NodeDeclarationsByKind = and<
 	BoundDeclarations,

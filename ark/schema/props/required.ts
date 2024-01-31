@@ -6,12 +6,12 @@ import type {
 	declareNode,
 	withBaseMeta
 } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
 	type TypeKind,
 	type nodeImplementationOf
-} from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
@@ -79,7 +79,7 @@ export class RequiredNode
 				}
 			},
 			normalize: (schema) => schema,
-			intersections: { required: intersectNamed, optional: intersectNamed },
+			intersect: { required: intersectNamed, optional: intersectNamed },
 			defaults: {
 				description(inner) {
 					return `${compileKey(inner.key)}: ${inner.value}`

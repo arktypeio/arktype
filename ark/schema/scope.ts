@@ -28,7 +28,11 @@ import type {
 	UnionNode
 } from "./sets/union.js"
 import type { CompilationContext, TraversalKind } from "./shared/compile.js"
-import type { DescriptionWriter, NodeKind, TypeKind } from "./shared/define.js"
+import type {
+	DescriptionWriter,
+	NodeKind,
+	TypeKind
+} from "./shared/implement.js"
 import type { TraversalMethodsByKind } from "./traversal/context.js"
 import type {
 	ActualWriter,

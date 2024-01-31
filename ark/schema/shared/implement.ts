@@ -3,15 +3,13 @@ import {
 	throwParseError,
 	type ErrorMessage,
 	type JsonData,
-	type NumberLiteral,
 	type PartialRecord,
 	type entryOf,
 	type listable,
 	type parseNonNegativeInteger,
-	type requireKeys,
-	type satisfy
+	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, TypeSchema, UnknownNode } from "../base.js"
+import type { Node, TypeNode, UnknownNode } from "../base.js"
 import type {
 	Declaration,
 	ExpectedContext,
@@ -166,10 +164,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
-	intersections: Record<
-		string,
-		(l: any, r: any) => Inner<any> | Disjoint | null
-	>
+	intersect: Record<string, (l: any, r: any) => Inner<any> | Disjoint | null>
 	defaults: ParsedUnknownNodeConfig
 }
 
@@ -180,7 +175,7 @@ export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 
 export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
 	extends CommonNodeImplementationInput<d> {
-	intersections: NodeIntersections<d>
+	intersect: NodeIntersections<d>
 	defaults: nodeDefaultsImplementationInputFor<d["kind"]>
 }
 

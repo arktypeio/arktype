@@ -18,7 +18,7 @@ import {
 	type KeyDefinitions,
 	type NodeKind,
 	type UnknownNodeImplementation
-} from "./shared/define.js"
+} from "./shared/implement.js"
 
 export type SchemaParseOptions = {
 	alias?: string

@@ -5,11 +5,11 @@ import type {
 	declareNode,
 	withBaseMeta
 } from "../shared/declare.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
 	type nodeImplementationOf
-} from "../shared/define.js"
-import type { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 
 export type IndexSchema = withBaseMeta<{
@@ -51,7 +51,7 @@ export class IndexNode
 				}
 			},
 			normalize: (schema) => schema,
-			intersections: {
+			intersect: {
 				index: (l) => l
 			},
 			defaults: {

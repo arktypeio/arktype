@@ -21,7 +21,7 @@ import {
 	type BasisKind,
 	type ConstraintGroupName,
 	type RefinementKind
-} from "../shared/define.js"
+} from "../shared/implement.js"
 import type { TraverseApply } from "../traversal/context.js"
 
 export type BaseRefinementDeclaration = and<

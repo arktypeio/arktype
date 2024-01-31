@@ -1,6 +1,7 @@
 import type { Dict, and, evaluate } from "@arktype/util"
 import type { NarrowedAttachments, TypeSchema } from "../base.js"
 import type { Declaration, OpenComponentKind } from "../kinds.js"
+import type { Disjoint } from "./disjoint.js"
 import type {
 	ConstraintGroupName,
 	ConstraintKind,
@@ -8,9 +9,8 @@ import type {
 	PrimitiveKind,
 	PropKind,
 	SetKind
-} from "./define.js"
-import type { Disjoint } from "./disjoint.js"
-import type { rightOf } from "./intersect.js"
+} from "./implement.js"
+import type { kindRightOf } from "./intersect.js"
 
 export type BaseMeta = {
 	readonly description?: string
@@ -26,7 +26,7 @@ export type BaseIntersectionMap = {
 				| Disjoint
 				| (lKey extends OpenComponentKind ? null : never)
 		} & {
-			[rKey in rightOf<lKey> | "default"]?:
+			[rKey in kindRightOf<lKey> | "default"]?:
 				| lKey
 				| Disjoint
 				| (lKey extends ConstraintKind ? null : never)

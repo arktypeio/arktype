@@ -53,6 +53,7 @@ import type {
 	BaseNodeDeclaration,
 	attachmentsOf
 } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -69,8 +70,7 @@ import {
 	type UnknownNodeImplementation,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
-} from "./shared/define.js"
-import { Disjoint } from "./shared/disjoint.js"
+} from "./shared/implement.js"
 import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
 import {
 	TraversalContext,
@@ -331,7 +331,7 @@ export abstract class BaseNode<
 		const l: UnknownNode = leftOperandOf(this as never, other) as any
 		const thisIsLeft = l === (this as never)
 		const r: UnknownNode = thisIsLeft ? other : (this as any)
-		const intersections = l.impl.intersections
+		const intersections = l.impl.intersect
 		const intersector = intersections[r.kind] ?? intersections.default
 		const result = intersector?.(l, r as never)
 		if (result) {

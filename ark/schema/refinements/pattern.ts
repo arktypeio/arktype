@@ -39,7 +39,7 @@ export class PatternNode extends BaseRefinement<
 					? { source: schema.source, flags: schema.flags }
 					: { source: schema.source }
 				: schema,
-		intersections: {
+		intersect: {
 			// For now, non-equal regex are naively intersected
 			pattern: () => null
 		},

@@ -13,12 +13,12 @@ import type {
 	declareNode,
 	withBaseMeta
 } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import type {
 	BoundKind,
 	nodeImplementationInputOf,
 	nodeImplementationOf
-} from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseRefinement } from "./refinement.js"
 
@@ -178,7 +178,7 @@ export type MinDeclaration = declareNode<{
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 	static implementation: nodeImplementationOf<MinDeclaration> =
 		this.implementBound({
-			intersections: createLowerIntersections("min"),
+			intersect: createLowerIntersections("min"),
 			defaults: {
 				description(inner) {
 					return `${inner.exclusive ? "more than" : "at least"} ${inner.limit}`
@@ -206,7 +206,7 @@ export type MaxDeclaration = declareNode<{
 export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 	static implementation: nodeImplementationOf<MaxDeclaration> =
 		this.implementBound({
-			intersections: createUpperIntersections("max"),
+			intersect: createUpperIntersections("max"),
 			defaults: {
 				description(inner) {
 					return `${inner.exclusive ? "less than" : "at most"} ${inner.limit}`
@@ -252,7 +252,7 @@ export class MinLengthNode extends BaseLengthBound<
 > {
 	static implementation: nodeImplementationOf<MinLengthDeclaration> =
 		this.implementBound({
-			intersections: createLowerIntersections("minLength"),
+			intersect: createLowerIntersections("minLength"),
 			defaults: {
 				description(inner) {
 					return inner.exclusive
@@ -289,7 +289,7 @@ export class MaxLengthNode extends BaseLengthBound<
 > {
 	static implementation: nodeImplementationOf<MaxLengthDeclaration> =
 		this.implementBound({
-			intersections: createUpperIntersections("maxLength"),
+			intersect: createUpperIntersections("maxLength"),
 			defaults: {
 				description(inner) {
 					return inner.exclusive
@@ -347,7 +347,7 @@ export class AfterNode extends BaseDateBound<
 > {
 	static implementation: nodeImplementationOf<AfterDeclaration> =
 		this.implementBound({
-			intersections: createLowerIntersections("after"),
+			intersect: createLowerIntersections("after"),
 			defaults: {
 				description(inner) {
 					const limitString = dateLimitToString(inner.limit)
@@ -382,7 +382,7 @@ export class BeforeNode extends BaseDateBound<
 > {
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
 		this.implementBound({
-			intersections: createUpperIntersections("before"),
+			intersect: createUpperIntersections("before"),
 			defaults: {
 				description(inner) {
 					const limitString = dateLimitToString(inner.limit)

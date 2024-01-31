@@ -34,7 +34,7 @@ export class UnitNode<t = unknown> extends BaseBasis<
 			}
 		},
 		normalize: (schema) => schema,
-		intersections: {
+		intersect: {
 			unit: (l, r) => Disjoint.from("unit", l, r),
 			default: (l, r) =>
 				r.allows(l.unit as never)

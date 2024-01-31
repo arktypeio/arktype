@@ -6,8 +6,8 @@ import {
 	type Constructor
 } from "@arktype/util"
 import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import { defaultValueSerializer } from "../shared/define.js"
 import { Disjoint } from "../shared/disjoint.js"
+import { defaultValueSerializer } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
 
 export type ProtoInner<proto extends Constructor = Constructor> = withBaseMeta<{
@@ -62,7 +62,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 				return objectKindOrDomainOf(data)
 			}
 		},
-		intersections: {
+		intersect: {
 			proto: (l, r) =>
 				constructorExtends(l.proto, r.proto)
 					? l
