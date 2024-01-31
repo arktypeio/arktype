@@ -18,7 +18,7 @@ import {
 	type BasisKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { kindOrRightward } from "../shared/intersect.js"
+import type { kindOrRightward, kindRightOf } from "../shared/intersect.js"
 import type { is } from "../shared/utils.js"
 import type {
 	TraversalContext,
@@ -141,9 +141,46 @@ export class MorphNode<t = unknown> extends BaseType<
 
 	traverseApply: TraverseApply = (data, ctx) => this.in.traverseApply(data, ctx)
 
-	intersectRightward(
-		other: Node<kindOrRightward<"morph">>
-	): MorphInner | Disjoint {}
+	intersectRightward(r: Node<kindOrRightward<"morph">>): MorphInner | Disjoint {
+		let inTersection: ValidatorNode | Disjoint
+		switch (r.kind) {
+			case "morph":
+				if (this.morph.some((morph, i) => morph !== r.morph[i])) {
+					// TODO: is this always a parse error? what about for union reduction etc.
+					// TODO: check in for union reduction
+					return throwParseError(`Invalid intersection of morphs`)
+				}
+				inTersection = this.in.intersect(r.in)
+				if (inTersection instanceof Disjoint) {
+					return inTersection
+				}
+				const outTersection = this.out.intersect(r.out)
+				if (outTersection instanceof Disjoint) {
+					return outTersection
+				}
+				return {
+					morph: this.morph,
+					in: inTersection,
+					out: outTersection
+				}
+			case "intersection":
+				inTersection = this.in.intersect(r)
+				return inTersection instanceof Disjoint
+					? inTersection
+					: {
+							...this.inner,
+							in: inTersection
+					  }
+			default:
+				const constrainedInput = this.in.intersect(r)
+				return constrainedInput instanceof Disjoint
+					? constrainedInput
+					: {
+							...this.inner,
+							in: constrainedInput
+					  }
+		}
+	}
 
 	override get in(): Node<ValidatorKind, extractIn<t>> {
 		return this.inner.in

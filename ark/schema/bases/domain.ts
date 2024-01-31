@@ -1,6 +1,8 @@
 import { domainOf, type Domain } from "@arktype/util"
+import type { Node } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { kindOrRightward } from "../shared/intersect.js"
 import { BaseBasis } from "./basis.js"
 
 export interface DomainInner<

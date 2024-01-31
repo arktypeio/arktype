@@ -26,6 +26,7 @@ import {
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import type { kindOrRightward } from "../shared/intersect.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
@@ -217,6 +218,23 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	)
 	readonly props = this.groups.props
 	readonly shallow = this.groups.shallow
+
+	intersectRightward(
+		r: Node<kindOrRightward<"intersection">>
+	): IntersectionInner | Disjoint {
+		if (r.kind !== "intersection") {
+			const result = addConstraint(this.constraints, r)
+			return result instanceof Disjoint ? result : unflattenConstraints(result)
+		}
+		let result: readonly Node<ConstraintKind>[] | Disjoint = this.constraints
+		for (const refinement of r.constraints) {
+			if (result instanceof Disjoint) {
+				break
+			}
+			result = addConstraint(result, refinement)
+		}
+		return result instanceof Disjoint ? result : unflattenConstraints(result)
+	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
 		const rejectsData = (constraint: Node<ConstraintKind> | undefined) =>
