@@ -1,13 +1,14 @@
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import { BaseRefinement } from "./refinement.js"
 
-export type PredicateInner<predicate extends Predicate<any> = Predicate<any>> =
-	withBaseMeta<{
-		readonly predicate: predicate
-	}>
+export interface PredicateInner<
+	predicate extends Predicate<any> = Predicate<any>
+> extends BaseMeta {
+	readonly predicate: predicate
+}
 
 export type NormalizedPredicateSchema = PredicateInner
 

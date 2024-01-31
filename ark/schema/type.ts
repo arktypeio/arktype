@@ -6,14 +6,18 @@ import {
 	type NodeSubclass,
 	type TypeNode
 } from "./base.js"
-import type { Schema, hasOpenIntersection } from "./kinds.js"
+import type { Inner, Schema, hasOpenIntersection } from "./kinds.js"
 import type { IntersectionNode } from "./sets/intersection.js"
 import type { extractOut } from "./sets/morph.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { RefinementKind, TypeKind } from "./shared/implement.js"
-import type { intersectionOf } from "./shared/intersect.js"
+import type {
+	intersectionOf,
+	kindOrRightward,
+	kindRightOf
+} from "./shared/intersect.js"
 import { inferred } from "./shared/utils.js"
 
 export type BaseTypeDeclaration = and<BaseNodeDeclaration, { kind: TypeKind }>
@@ -37,6 +41,10 @@ export abstract class BaseType<
 		// otherwise, initialize it to a singleton array containing the current branch node
 		this.branches ??= [this as never]
 	}
+
+	abstract intersectRightward(
+		other: Node<kindOrRightward<d["kind"]>>
+	): Inner<d["kind"]> | Disjoint
 
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,

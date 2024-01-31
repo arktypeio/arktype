@@ -1,10 +1,6 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type {
-	BaseComponent,
-	declareNode,
-	withBaseMeta
-} from "../shared/declare.js"
+import type { BaseComponent, BaseMeta, declareNode } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
@@ -13,22 +9,22 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 
-export type NormalizedSequenceSchema = withBaseMeta<{
+export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
 	readonly element: TypeSchema
 	readonly postfix?: readonly TypeSchema[]
-}>
+}
 
 export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
-export type SequenceInner = withBaseMeta<{
+export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
 	readonly prefix?: readonly TypeNode[]
 	// the variadic element
 	readonly element: TypeNode
 	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
 	readonly postfix?: readonly TypeNode[]
-}>
+}
 
 export type SequenceDeclaration = declareNode<{
 	kind: "sequence"

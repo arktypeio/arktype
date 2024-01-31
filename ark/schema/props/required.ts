@@ -1,11 +1,7 @@
 import { BaseNode, type Node, type TypeSchema } from "../base.js"
 import type { Inner } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type {
-	BaseComponent,
-	declareNode,
-	withBaseMeta
-} from "../shared/declare.js"
+import type { BaseComponent, BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
@@ -21,15 +17,15 @@ import {
 	type NamedPropKind
 } from "./prop.js"
 
-export type RequiredSchema = withBaseMeta<{
+export interface RequiredSchema extends BaseMeta {
 	readonly key: string | symbol
 	readonly value: TypeSchema
-}>
+}
 
-export type RequiredInner = withBaseMeta<{
+export interface RequiredInner extends BaseMeta {
 	readonly key: string | symbol
 	readonly value: Node<TypeKind>
-}>
+}
 
 export type RequiredDeclaration = declareNode<{
 	kind: "required"

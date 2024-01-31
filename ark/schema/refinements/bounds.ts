@@ -7,11 +7,10 @@ import {
 } from "@arktype/util"
 import type { Node, NodeSubclass } from "../base.js"
 import type { Declaration, hasOpenIntersection } from "../kinds.js"
-import { compilePrimitive, type CompilationContext } from "../shared/compile.js"
 import type {
+	BaseMeta,
 	BaseNodeDeclaration,
-	declareNode,
-	withBaseMeta
+	declareNode
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -22,20 +21,20 @@ import type {
 import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseRefinement } from "./refinement.js"
 
-export type BoundInner<limit extends LimitSchemaValue = LimitSchemaValue> =
-	withBaseMeta<{
-		readonly limit: limit
-		readonly exclusive?: true
-	}>
+export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
+	extends BaseMeta {
+	readonly limit: limit
+	readonly exclusive?: true
+}
 
 export type LimitSchemaValue = number | string
 
-export type NormalizedBoundSchema<
+export interface NormalizedBoundSchema<
 	limit extends LimitSchemaValue = LimitSchemaValue
-> = withBaseMeta<{
+> extends BaseMeta {
 	readonly limit: limit
 	readonly exclusive?: boolean
-}>
+}
 
 export type BoundSchema<limit extends LimitSchemaValue = LimitSchemaValue> =
 	| limit

@@ -5,14 +5,15 @@ import {
 	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
 
-export type ProtoInner<proto extends Constructor = Constructor> = withBaseMeta<{
+export interface ProtoInner<proto extends Constructor = Constructor>
+	extends BaseMeta {
 	readonly proto: proto
-}>
+}
 
 export type NormalizedProtoSchema<proto extends Constructor = Constructor> =
 	ProtoInner<proto>

@@ -1,9 +1,9 @@
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { BaseRefinement } from "./refinement.js"
 
-export type DivisorInner = withBaseMeta<{
+export interface DivisorInner extends BaseMeta {
 	readonly divisor: number
-}>
+}
 
 export type NormalizedDivisorSchema = DivisorInner
 

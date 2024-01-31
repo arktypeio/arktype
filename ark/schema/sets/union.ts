@@ -2,9 +2,10 @@ import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
+import type { kindOrRightward } from "../shared/intersect.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
@@ -21,17 +22,17 @@ export type UnionSchema<
 	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
 > = NormalizedUnionSchema<branches> | branches
 
-export type NormalizedUnionSchema<
+export interface NormalizedUnionSchema<
 	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
-> = withBaseMeta<{
+> extends BaseMeta {
 	readonly branches: branches
 	readonly ordered?: true
-}>
+}
 
-export type UnionInner = withBaseMeta<{
+export interface UnionInner extends BaseMeta {
 	readonly branches: readonly BranchNode[]
 	readonly ordered?: true
-}>
+}
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
@@ -178,6 +179,66 @@ export class UnionNode<t = unknown> extends BaseType<
 
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.branches.forEach((b) => b.traverseApply(data, ctx))
+
+	intersectRightward(
+		r: Node<kindOrRightward<this["kind"]>>
+	): UnionInner | Disjoint {
+		switch (r.kind) {
+			case "union":
+				if (
+					(this.branches.length === 0 || r.branches.length === 0) &&
+					this.branches.length !== r.branches.length
+				) {
+					// if exactly one operand is never, we can use it to discriminate based on presence
+					return Disjoint.from(
+						"presence",
+						this.branches.length !== 0,
+						r.branches.length !== 0
+					)
+				}
+				let resultBranches: readonly BranchNode[] | Disjoint
+				if (this.ordered) {
+					if (r.ordered) {
+						return Disjoint.from("indiscriminableMorphs", this, r)
+					}
+					resultBranches = intersectBranches(r.branches, this.branches)
+					if (resultBranches instanceof Disjoint) {
+						resultBranches.invert()
+					}
+				} else {
+					resultBranches = intersectBranches(this.branches, r.branches)
+				}
+				if (resultBranches instanceof Disjoint) {
+					return resultBranches
+				}
+				return this.ordered || r.ordered
+					? {
+							branches: resultBranches,
+							ordered: true as const
+					  }
+					: { branches: resultBranches }
+			case "morph":
+				return intersectBranch(this, r)
+			case "intersection":
+				return intersectBranch(this, r)
+			default:
+				const branches: BranchNode[] = []
+				for (const branch of this.branches) {
+					const branchResult = branch.intersect(r)
+					if (!(branchResult instanceof Disjoint)) {
+						branches.push(branchResult)
+					}
+				}
+				return branches.length === 0
+					? Disjoint.from("union", this.branches, [r])
+					: this.ordered
+					? {
+							branches,
+							ordered: true as const
+					  }
+					: { branches }
+		}
+	}
 
 	compileApply(ctx: CompilationContext) {
 		return this.branches

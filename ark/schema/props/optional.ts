@@ -1,10 +1,6 @@
 import { BaseNode, type Node, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type {
-	BaseComponent,
-	declareNode,
-	withBaseMeta
-} from "../shared/declare.js"
+import type { BaseComponent, BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
@@ -19,15 +15,15 @@ import {
 	compilePresentPropApply
 } from "./prop.js"
 
-export type OptionalInner = withBaseMeta<{
+export interface OptionalInner extends BaseMeta {
 	readonly key: string | symbol
 	readonly value: Node<TypeKind>
-}>
+}
 
-export type OptionalSchema = withBaseMeta<{
+export interface OptionalSchema extends BaseMeta {
 	readonly key: string | symbol
 	readonly value: TypeSchema
-}>
+}
 
 export type OptionalDeclaration = declareNode<{
 	kind: "optional"

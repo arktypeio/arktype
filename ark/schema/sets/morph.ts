@@ -11,13 +11,14 @@ import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
 	type BasisKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import type { kindOrRightward } from "../shared/intersect.js"
 import type { is } from "../shared/utils.js"
 import type {
 	TraversalContext,
@@ -39,17 +40,17 @@ export type Out<o = any> = ["=>", o]
 
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
-export type MorphInner = withBaseMeta<{
+export interface MorphInner extends BaseMeta {
 	readonly in: ValidatorNode
 	readonly out: ValidatorNode
 	readonly morph: readonly Morph[]
-}>
+}
 
-export type MorphSchema = withBaseMeta<{
+export interface MorphSchema extends BaseMeta {
 	readonly in: ValidatorDefinition
 	readonly out?: ValidatorDefinition
 	readonly morph: listable<Morph>
-}>
+}
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
@@ -138,8 +139,11 @@ export class MorphNode<t = unknown> extends BaseType<
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.in.traverseAllows(data, ctx)
 
-	traverseApply: TraverseApply = (data, ctx) =>
-		this.in.traverseApply(data, ctx);
+	traverseApply: TraverseApply = (data, ctx) => this.in.traverseApply(data, ctx)
+
+	intersectRightward(
+		other: Node<kindOrRightward<"morph">>
+	): MorphInner | Disjoint {}
 
 	override get in(): Node<ValidatorKind, extractIn<t>> {
 		return this.inner.in

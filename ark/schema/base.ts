@@ -83,7 +83,7 @@ export interface BaseAttachments {
 	alias?: string
 	readonly kind: NodeKind
 	readonly name: string
-	readonly inner: Dict
+	readonly inner: Record<string, any>
 	readonly entries: readonly Entry[]
 	readonly json: Json
 	readonly typeJson: Json

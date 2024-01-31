@@ -1,10 +1,6 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type {
-	BaseComponent,
-	declareNode,
-	withBaseMeta
-} from "../shared/declare.js"
+import type { BaseComponent, BaseMeta, declareNode } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
@@ -12,15 +8,15 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 
-export type IndexSchema = withBaseMeta<{
+export interface IndexSchema extends BaseMeta {
 	readonly key: TypeSchema
 	readonly value: TypeSchema
-}>
+}
 
-export type IndexInner = withBaseMeta<{
+export interface IndexInner extends BaseMeta {
 	readonly key: TypeNode<string | symbol>
 	readonly value: TypeNode
-}>
+}
 
 export type IndexDeclaration = declareNode<{
 	kind: "index"

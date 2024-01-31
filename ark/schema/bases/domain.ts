@@ -1,13 +1,13 @@
 import { domainOf, type Domain } from "@arktype/util"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
 
-export type DomainInner<
+export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = withBaseMeta<{
+> extends BaseMeta {
 	readonly domain: domain
-}>
+}
 
 // only domains with an infinite number of values are allowed as bases
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions

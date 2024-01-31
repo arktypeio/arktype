@@ -1,10 +1,10 @@
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { BaseRefinement } from "./refinement.js"
 
-export type PatternInner = withBaseMeta<{
+export interface PatternInner extends BaseMeta {
 	readonly source: string
 	readonly flags?: string
-}>
+}
 
 export type NormalizedPatternSchema = PatternInner
 

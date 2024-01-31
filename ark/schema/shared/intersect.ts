@@ -2,6 +2,7 @@ import { throwInternalError } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Inner, NodeDeclarationsByKind } from "../kinds.js"
 import type { BaseNodeDeclaration } from "./declare.js"
+import type { Disjoint } from "./disjoint.js"
 import {
 	nodeKinds,
 	type NodeKind,
@@ -27,10 +28,7 @@ type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
 export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
 
-export type typeKindRightOf<kind extends TypeKind> = Extract<
-	RightsByKind[kind],
-	TypeKind
->
+export type kindOrRightward<kind extends TypeKind> = kind | kindRightOf<kind>
 
 type accumulateRightKinds<
 	remaining extends readonly NodeKind[],

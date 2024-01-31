@@ -166,6 +166,7 @@ export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	intersect: Record<string, (l: any, r: any) => Inner<any> | Disjoint | null>
 	defaults: ParsedUnknownNodeConfig
+	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =

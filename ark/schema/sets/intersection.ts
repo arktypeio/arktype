@@ -4,6 +4,7 @@ import {
 	isArray,
 	printable,
 	throwInternalError,
+	type evaluate,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -12,7 +13,7 @@ import type { instantiateBasis } from "../bases/basis.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
@@ -29,20 +30,22 @@ import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
 
-export type IntersectionInner = withBaseMeta<
-	{ basis?: Node<BasisKind> } & {
+export type IntersectionInner = evaluate<
+	BaseMeta & { basis?: Node<BasisKind> } & {
 		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
 	}
 >
 
 export type IntersectionSchema<
 	basis extends Schema<BasisKind> | undefined = any
-> = withBaseMeta<
-	{
+> = evaluate<
+	BaseMeta & {
 		basis?: basis
 	} & conditionalSchemaValuesOf<
-		basis extends Schema<BasisKind> ? instantiateBasis<basis>["infer"] : unknown
-	>
+			basis extends Schema<BasisKind>
+				? instantiateBasis<basis>["infer"]
+				: unknown
+		>
 >
 
 export type ConstraintSet = readonly Node<ConstraintKind>[]

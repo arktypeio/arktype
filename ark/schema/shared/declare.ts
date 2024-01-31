@@ -12,11 +12,9 @@ import type {
 } from "./implement.js"
 import type { kindRightOf } from "./intersect.js"
 
-export type BaseMeta = {
+export interface BaseMeta {
 	readonly description?: string
 }
-
-export type withBaseMeta<o extends object> = and<BaseMeta, o>
 
 export type BaseIntersectionMap = {
 	[lKey in NodeKind]: evaluate<
@@ -43,7 +41,7 @@ export type DeclarationInput<kind extends NodeKind = NodeKind> = {
 	schema: unknown
 	intersections: UnknownIntersections
 	normalizedSchema: BaseMeta
-	inner: Dict
+	inner: BaseMeta
 	expectedContext?: Dict
 	prerequisite?: unknown
 	childKind?: NodeKind
@@ -81,12 +79,12 @@ export type attachmentsOf<d extends BaseNodeDeclaration> =
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: Dict & BaseMeta
-	inner: Dict
+	normalizedSchema: BaseMeta
+	inner: BaseMeta
 	prerequisite: any
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
-	expectedContext: Dict | null
+	expectedContext: unknown
 	intersections: {
 		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
 	}
