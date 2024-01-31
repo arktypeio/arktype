@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 // @ts-check
-import { fileName } from "@arktype/fs"
+import { ensureDir, fileName } from "@arktype/fs"
+import { basename, join } from "path"
 import { writeAssertionData } from "./out/main.js"
 
-const args = process.argv.slice(process.argv.indexOf(fileName()) + 1)
+const baseFileName = basename(fileName())
 
-if (!args.at(-1)) {
-	throw new Error(
-		`Expected an argument for the cache file like "attestPrecache .attest/assertions/typescript.json"`
-	)
+const thisFileIndex = process.argv.findIndex((s) => s.endsWith(baseFileName))
+
+if (thisFileIndex === -1) {
+	throw new Error(`Expected to find an argument ending with "${baseFileName}"`)
 }
 
-writeAssertionData(args.at(-1))
+const args = process.argv.slice(thisFileIndex + 1)
+
+let cacheFileToWrite = args.at(-1)
+
+if (!cacheFileToWrite) {
+	cacheFileToWrite = join(ensureDir(".attest"), "typescript.json")
+}
+
+writeAssertionData(cacheFileToWrite)
