@@ -25,9 +25,6 @@ export type DomainDeclaration = declareNode<{
 	schema: DomainSchema
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
-	intersections: {
-		domain: "domain" | Disjoint
-	}
 	disjoinable: true
 	primitive: true
 }>

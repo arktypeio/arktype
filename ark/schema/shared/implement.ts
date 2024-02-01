@@ -1,5 +1,6 @@
 import {
 	map,
+	throwInternalError,
 	throwParseError,
 	type ErrorMessage,
 	type JsonData,
@@ -10,12 +11,7 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, TypeNode, UnknownNode } from "../base.js"
-import type {
-	Declaration,
-	ExpectedContext,
-	Inner,
-	hasOpenIntersection
-} from "../kinds.js"
+import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -23,10 +19,10 @@ import type {
 	ScopeNode
 } from "../scope.js"
 import type { ConditionalConstraintKind } from "../sets/intersection.js"
+import type { TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
+import type { CompilationContext } from "./compile.js"
 import type { BaseMeta, BaseNodeDeclaration, attachmentsOf } from "./declare.js"
-import type { Disjoint } from "./disjoint.js"
-import type { NodeIntersections } from "./intersect.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -76,7 +72,7 @@ export const nodeKinds = [...setKinds, ...constraintKinds] as const
 export type NodeKind = (typeof nodeKinds)[number]
 
 export type OpenIntersectionKind = {
-	[k in NodeKind]: hasOpenIntersection<Declaration<k>> extends true ? k : never
+	[k in NodeKind]: Declaration<k>["open"] extends true ? k : never
 }[NodeKind]
 
 export type ClosedIntersectionKind = Exclude<NodeKind, OpenIntersectionKind>
@@ -86,6 +82,35 @@ export const primitiveKinds = [...basisKinds, ...refinementKinds] as const
 export type PrimitiveKind = (typeof primitiveKinds)[number]
 
 export type OrderedNodeKinds = typeof nodeKinds
+
+export const leftOperandOf = (l: Node, r: Node) => {
+	for (const kind of nodeKinds) {
+		if (l.kind === kind) {
+			return l
+		} else if (r.kind === kind) {
+			return r
+		}
+	}
+	return throwInternalError(
+		`Unable to order unknown node kinds '${l.kind}' and '${r.kind}'.`
+	)
+}
+
+type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
+
+export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
+
+export type kindOrRightward<kind extends NodeKind> = kind | kindRightOf<kind>
+
+type accumulateRightKinds<
+	remaining extends readonly NodeKind[],
+	result
+> = remaining extends readonly [
+	infer head extends NodeKind,
+	...infer tail extends NodeKind[]
+]
+	? accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
+	: result
 
 type indexOf<array extends readonly unknown[]> = keyof array extends infer k
 	? parseNonNegativeInteger<k & string>
@@ -243,4 +268,11 @@ export const createBasisAssertion = (node: Node<ConditionalConstraintKind>) => {
 			)
 		}
 	}
+}
+
+export interface PrimitiveAttachments<d extends BaseNodeDeclaration> {
+	traverseApply: TraverseApply<d["prerequisite"]>
+	compileApply(ctx: CompilationContext): string
+	compileAllows(ctx: CompilationContext): string
+	expectedContext: ExpectedContext<d["kind"]>
 }

@@ -4,8 +4,11 @@ import type { Schema } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
-import type { kindOrRightward } from "../shared/intersect.js"
+import {
+	basisKinds,
+	type kindOrRightward,
+	type nodeImplementationOf
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
@@ -39,12 +42,6 @@ export type UnionDeclaration = declareNode<{
 	schema: UnionSchema
 	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
-	intersections: {
-		union: "union" | Disjoint
-		morph: "union" | Disjoint
-		intersection: "union" | Disjoint
-		default: "union" | Disjoint
-	}
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}

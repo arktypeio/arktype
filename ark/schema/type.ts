@@ -6,18 +6,13 @@ import {
 	type NodeSubclass,
 	type TypeNode
 } from "./base.js"
-import type { Inner, Schema, hasOpenIntersection } from "./kinds.js"
+import type { Schema, reducibleKindOf } from "./kinds.js"
 import type { IntersectionNode } from "./sets/intersection.js"
 import type { extractOut } from "./sets/morph.js"
 import type { BranchKind, UnionNode } from "./sets/union.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { RefinementKind, TypeKind } from "./shared/implement.js"
-import type {
-	intersectionOf,
-	kindOrRightward,
-	kindRightOf
-} from "./shared/intersect.js"
 import { inferred } from "./shared/utils.js"
 
 export type BaseTypeDeclaration = and<BaseNodeDeclaration, { kind: TypeKind }>
@@ -33,7 +28,7 @@ export abstract class BaseType<
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
 
-	hasOpenIntersection = false as hasOpenIntersection<d>
+	hasOpenIntersection = false
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)
@@ -45,7 +40,7 @@ export abstract class BaseType<
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,
 		input: Schema<refinementKind>
-	): Exclude<intersectionOf<this["kind"], refinementKind>, Disjoint> {
+	): Node<reducibleKindOf<this["kind"]>> {
 		const refinement = this.$.parseNode(kind, input)
 		return this.and(refinement) as never
 	}
@@ -61,7 +56,8 @@ export abstract class BaseType<
 	// TODO: inferIntersection
 	and<other extends Node>(
 		other: other
-	): Exclude<intersectionOf<d["kind"], other["kind"]>, Disjoint> {
+		// TODO: FIX
+	): d["kind"] | other["kind"] {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}

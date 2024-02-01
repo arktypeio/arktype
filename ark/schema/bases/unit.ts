@@ -14,10 +14,6 @@ export type UnitDeclaration = declareNode<{
 	schema: UnitSchema
 	normalizedSchema: UnitSchema
 	inner: UnitInner
-	intersections: {
-		unit: "unit" | Disjoint
-		default: "unit" | Disjoint
-	}
 	disjoinable: true
 	primitive: true
 }>

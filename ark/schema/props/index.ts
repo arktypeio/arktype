@@ -27,9 +27,6 @@ export type IndexDeclaration = declareNode<{
 	schema: IndexSchema
 	normalizedSchema: IndexSchema
 	inner: IndexInner
-	intersections: {
-		index: "index" | Disjoint | null
-	}
 	prerequisite: object
 }>
 

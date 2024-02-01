@@ -1,58 +1,32 @@
-import type { Dict, and, evaluate, mutable } from "@arktype/util"
+import type { Dict, and, mutable } from "@arktype/util"
 import type { NarrowedAttachments, Node, TypeSchema } from "../base.js"
-import type {
-	Declaration,
-	OpenComponentKind,
-	reducibleKindOf
-} from "../kinds.js"
-import type { PrimitiveAttachments } from "../refinements/refinement.js"
+import type { Declaration, reducibleKindOf } from "../kinds.js"
 import type { IntersectionInner } from "../sets/intersection.js"
 import type { Disjoint } from "./disjoint.js"
 import type {
 	ConstraintGroupName,
-	ConstraintKind,
 	NodeKind,
+	PrimitiveAttachments,
 	PrimitiveKind,
 	PropKind,
 	RefinementKind,
-	SetKind
+	SetKind,
+	kindRightOf
 } from "./implement.js"
-import type { kindRightOf } from "./intersect.js"
 
 export interface BaseMeta {
 	readonly description?: string
 }
 
-export type BaseIntersectionMap = {
-	[lKey in NodeKind]: evaluate<
-		{
-			[requiredKey in lKey]:
-				| lKey
-				| Disjoint
-				| (lKey extends OpenComponentKind ? null : never)
-		} & {
-			[rKey in kindRightOf<lKey> | "default"]?:
-				| lKey
-				| Disjoint
-				| (lKey extends ConstraintKind ? null : never)
-		}
-	>
-}
-
-export type UnknownIntersections = {
-	[rKey in NodeKind | "default"]?: NodeKind | Disjoint | null
-}
-
 export type DeclarationInput<kind extends NodeKind = NodeKind> = {
 	kind: kind
 	schema: unknown
-	intersections: UnknownIntersections
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
 	disjoinable?: true
 	open?: true
 	primitive?: true
-	expectedContext?: Dict
+	expectedContext?: unknown
 	prerequisite?: unknown
 	childKind?: NodeKind
 }
@@ -103,9 +77,6 @@ export type BaseNodeDeclaration = {
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
 	expectedContext: unknown
-	intersections: {
-		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
-	}
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =
@@ -115,12 +86,6 @@ export type ownIntersectionResult<d extends BaseNodeDeclaration> =
 export type ownIntersectionAlternateResult<d extends BaseNodeDeclaration> =
 	| (d["open"] extends true ? null : never)
 	| (d["disjoinable"] extends true ? Disjoint : never)
-
-export interface BasePrimitive {
-	readonly kind: PrimitiveKind
-	readonly compiledCondition: string
-	readonly compiledNegation: string
-}
 
 export type FoldInput<kind extends RefinementKind> = {
 	-readonly [k in Exclude<

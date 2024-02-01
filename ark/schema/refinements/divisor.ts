@@ -1,6 +1,5 @@
 import { BaseNode } from "../base.js"
 import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
-import { BaseRefinement } from "./refinement.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly divisor: number
@@ -15,9 +14,6 @@ export type DivisorDeclaration = declareNode<{
 	schema: DivisorSchema
 	normalizedSchema: NormalizedDivisorSchema
 	inner: DivisorInner
-	intersections: {
-		divisor: "divisor"
-	}
 	prerequisite: number
 	primitive: true
 }>

@@ -35,9 +35,6 @@ export type SequenceDeclaration = declareNode<{
 	schema: SequenceSchema
 	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
-	intersections: {
-		sequence: "sequence" | Disjoint
-	}
 	prerequisite: readonly unknown[]
 }>
 

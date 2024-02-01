@@ -34,9 +34,6 @@ export type OptionalDeclaration = declareNode<{
 	schema: OptionalSchema
 	normalizedSchema: OptionalSchema
 	inner: OptionalInner
-	intersections: {
-		optional: "optional" | null
-	}
 	prerequisite: object
 	open: true
 }>

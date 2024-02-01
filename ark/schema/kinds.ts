@@ -28,7 +28,6 @@ import {
 	type BranchKind,
 	type UnionDeclaration
 } from "./sets/union.js"
-import type { BaseNodeDeclaration } from "./shared/declare.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -108,15 +107,6 @@ export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 export type ioKindOf<kind extends NodeKind> = kind extends "morph"
 	? ValidatorKind
 	: reducibleKindOf<kind>
-
-export type hasOpenIntersection<d extends BaseNodeDeclaration> =
-	null extends d["intersections"][d["kind"]] ? true : false
-
-export type OpenComponentKind = {
-	[k in NodeKind]: hasOpenIntersection<Declaration<k>> extends true ? k : never
-}[NodeKind]
-
-export type ClosedComponentKind = Exclude<NodeKind, OpenComponentKind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]

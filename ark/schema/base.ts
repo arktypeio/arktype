@@ -21,7 +21,6 @@ import type {
 	Declaration,
 	Inner,
 	Schema,
-	hasOpenIntersection,
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
@@ -58,6 +57,7 @@ import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
+	leftOperandOf,
 	precedenceOfKind,
 	refinementKinds,
 	setKinds,
@@ -72,12 +72,7 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
-import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
-import {
-	TraversalContext,
-	type TraverseAllows,
-	type TraverseApply
-} from "./traversal/context.js"
+import { TraversalContext } from "./traversal/context.js"
 import type { ArkResult } from "./traversal/errors.js"
 
 export interface BaseAttachments {
@@ -297,7 +292,7 @@ export abstract class BaseNode<
 	private static intersectionCache: Record<string, Node | Disjoint> = {}
 	intersect<other extends Node>(
 		other: other
-	): intersectionOf<this["kind"], other["kind"]>
+	): this["kind"] | other["kind"] | Disjoint
 	intersect(other: Node): Node | Disjoint | null {
 		const cacheKey = `${this.typeId}&${other.typeId}`
 		if (BaseNode.intersectionCache[cacheKey] !== undefined) {

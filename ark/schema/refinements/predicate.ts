@@ -4,7 +4,6 @@ import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import { BaseRefinement } from "./refinement.js"
 
 export interface PredicateInner<
 	predicate extends Predicate<any> = Predicate<any>
@@ -21,9 +20,6 @@ export type PredicateDeclaration = declareNode<{
 	schema: PredicateSchema
 	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
-	intersections: {
-		predicate: "predicate" | null
-	}
 	open: true
 	expectedContext: { expected: string }
 	primitive: true

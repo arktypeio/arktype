@@ -24,9 +24,9 @@ import {
 	type OpenIntersectionKind,
 	type PropKind,
 	type RefinementKind,
+	type kindOrRightward,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { kindOrRightward } from "../shared/intersect.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "../type.js"
@@ -56,10 +56,6 @@ export type IntersectionDeclaration = declareNode<{
 	schema: IntersectionSchema
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
-	intersections: {
-		intersection: "intersection" | Disjoint
-		default: "intersection" | Disjoint
-	}
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}

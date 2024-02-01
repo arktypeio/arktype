@@ -16,9 +16,9 @@ import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
 	type BasisKind,
+	type kindOrRightward,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { kindOrRightward, kindRightOf } from "../shared/intersect.js"
 import type { is } from "../shared/utils.js"
 import type {
 	TraversalContext,
@@ -57,11 +57,6 @@ export type MorphDeclaration = declareNode<{
 	schema: MorphSchema
 	normalizedSchema: MorphSchema
 	inner: MorphInner
-	intersections: {
-		morph: "morph" | Disjoint
-		intersection: "morph" | Disjoint
-		default: "morph" | Disjoint
-	}
 }>
 
 export class MorphNode<t = unknown> extends BaseType<

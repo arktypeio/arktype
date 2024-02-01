@@ -1,6 +1,6 @@
 import { appendUnique } from "@arktype/util"
+import { BaseNode } from "../base.js"
 import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
-import { BaseRefinement } from "./refinement.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -16,15 +16,13 @@ export type PatternDeclaration = declareNode<{
 	schema: PatternSchema
 	normalizedSchema: NormalizedPatternSchema
 	inner: PatternInner
-	intersections: {
-		pattern: "pattern" | null
-	}
 	open: true
 	prerequisite: string
 	primitive: true
 }>
 
-export class PatternNode extends BaseRefinement<
+export class PatternNode extends BaseNode<
+	string,
 	PatternDeclaration,
 	typeof PatternNode
 > {

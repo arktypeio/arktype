@@ -36,10 +36,6 @@ export type RequiredDeclaration = declareNode<{
 	schema: RequiredSchema
 	normalizedSchema: RequiredSchema
 	inner: RequiredInner
-	intersections: {
-		required: "required" | Disjoint | null
-		optional: "required" | Disjoint | null
-	}
 	expectedContext: {
 		key: string | symbol
 	}

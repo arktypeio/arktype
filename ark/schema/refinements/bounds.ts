@@ -5,8 +5,8 @@ import {
 	type optionalizeKeys,
 	type valueOf
 } from "@arktype/util"
-import type { Node, NodeSubclass } from "../base.js"
-import type { Declaration, hasOpenIntersection } from "../kinds.js"
+import { BaseNode, type Node, type NodeSubclass } from "../base.js"
+import type { Declaration } from "../kinds.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
@@ -17,10 +17,10 @@ import type {
 import { Disjoint } from "../shared/disjoint.js"
 import type {
 	BoundKind,
+	PrimitiveImplementation,
 	nodeImplementationInputOf,
 	nodeImplementationOf
 } from "../shared/implement.js"
-import { BaseRefinement } from "./refinement.js"
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
 	extends BaseMeta {
@@ -98,8 +98,8 @@ export type BaseBoundDeclaration = and<
 export abstract class BaseBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
-> extends BaseRefinement<d, subclass> {
-	readonly hasOpenIntersection = false as hasOpenIntersection<d>
+> extends BaseNode<d["prerequisite"], d, subclass> {
+	readonly hasOpenIntersection = false
 
 	static implementBound<d extends Declaration<BoundKind>>(
 		implementation: optionalizeKeys<
@@ -170,18 +170,35 @@ abstract class BaseNumericBound<
 	}
 }
 
-export type MinDeclaration = declareNode<{
-	kind: "min"
-	schema: BoundSchema<number>
-	normalizedSchema: NormalizedBoundSchema<number>
-	inner: BoundInner<number>
-	prerequisite: number
-	intersections: {
-		min: "min"
-		max: Disjoint | null
-	}
+const numericBoundPrimitive: PrimitiveImplementation<
+	NumericBoundDeclaration
+> = (node) => ({})
+
+type BoundDeclarationInput = {
+	kind: BoundKind
+	limit: LimitSchemaValue
+	prerequisite: unknown
+}
+
+type declareBound<input extends BoundDeclarationInput> = declareNode<{
+	kind: input["kind"]
+	schema: BoundSchema<input["limit"]>
+	normalizedSchema: NormalizedBoundSchema<input["limit"]>
+	inner: BoundInner<input["limit"]>
+	prerequisite: input["prerequisite"]
 	primitive: true
 }>
+
+export type NumericBoundKind = "min" | "max"
+
+type NumericBoundDeclaration<kind extends NumericBoundKind = NumericBoundKind> =
+	declareBound<{
+		kind: kind
+		limit: number
+		prerequisite: number
+	}>
+
+export type MinDeclaration = NumericBoundDeclaration<"min">
 
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 	static implementation: nodeImplementationOf<MinDeclaration> =
@@ -203,17 +220,7 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 		: (data: number) => data >= this.limit
 }
 
-export type MaxDeclaration = declareNode<{
-	kind: "max"
-	schema: BoundSchema<number>
-	normalizedSchema: NormalizedBoundSchema<number>
-	inner: BoundInner<number>
-	prerequisite: number
-	intersections: {
-		// TODO: Fix rightOf
-		max: "max"
-	}
-}>
+export type MaxDeclaration = NumericBoundDeclaration<"max">
 
 export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 	static implementation: nodeImplementationOf<MaxDeclaration> =
@@ -253,17 +260,16 @@ abstract class BaseLengthBound<
 	}
 }
 
-export type MinLengthDeclaration = declareNode<{
-	kind: "minLength"
-	schema: BoundSchema<number>
-	normalizedSchema: NormalizedBoundSchema<number>
-	inner: BoundInner<number>
-	prerequisite: string | readonly unknown[]
-	intersections: {
-		minLength: "minLength"
-		maxLength: Disjoint | null
-	}
-}>
+export type LengthBoundKind = "minLength" | "maxLength"
+
+type LengthBoundDeclaration<kind extends LengthBoundKind = LengthBoundKind> =
+	declareBound<{
+		kind: kind
+		limit: number
+		prerequisite: string | readonly unknown[]
+	}>
+
+export type MinLengthDeclaration = LengthBoundDeclaration<"minLength">
 
 export class MinLengthNode extends BaseLengthBound<
 	MinLengthDeclaration,
@@ -295,16 +301,7 @@ export class MinLengthNode extends BaseLengthBound<
 	}
 }
 
-export type MaxLengthDeclaration = declareNode<{
-	kind: "maxLength"
-	schema: BoundSchema<number>
-	normalizedSchema: NormalizedBoundSchema<number>
-	inner: BoundInner<number>
-	prerequisite: string | readonly unknown[]
-	intersections: {
-		maxLength: "maxLength"
-	}
-}>
+export type MaxLengthDeclaration = LengthBoundDeclaration<"maxLength">
 
 export class MaxLengthNode extends BaseLengthBound<
 	MaxLengthDeclaration,
@@ -335,6 +332,15 @@ export class MaxLengthNode extends BaseLengthBound<
 	}
 }
 
+export type DateBoundKind = "before" | "after"
+
+type DateBoundDeclaration<kind extends DateBoundKind = DateBoundKind> =
+	declareBound<{
+		kind: kind
+		limit: string | number
+		prerequisite: Date
+	}>
+
 abstract class BaseDateBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
@@ -360,16 +366,7 @@ abstract class BaseDateBound<
 const dateLimitToString = (limit: LimitSchemaValue) =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
 
-export type AfterDeclaration = declareNode<{
-	kind: "after"
-	schema: BoundSchema<string | number>
-	normalizedSchema: NormalizedBoundSchema<string | number>
-	inner: BoundInner<string | number>
-	prerequisite: Date
-	intersections: {
-		after: "after"
-	}
-}>
+export type AfterDeclaration = DateBoundDeclaration<"after">
 
 export class AfterNode extends BaseDateBound<
 	AfterDeclaration,
@@ -398,17 +395,7 @@ export class AfterNode extends BaseDateBound<
 	}
 }
 
-export type BeforeDeclaration = declareNode<{
-	kind: "before"
-	schema: BoundSchema<string | number>
-	normalizedSchema: NormalizedBoundSchema<string | number>
-	inner: BoundInner<string | number>
-	prerequisite: Date
-	intersections: {
-		before: "before"
-		after: Disjoint | null
-	}
-}>
+export type BeforeDeclaration = DateBoundDeclaration<"before">
 
 export class BeforeNode extends BaseDateBound<
 	BeforeDeclaration,

@@ -27,10 +27,6 @@ export type ProtoDeclaration = declareNode<{
 	schema: ProtoSchema
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
-	intersections: {
-		proto: "proto" | Disjoint
-		domain: "proto" | Disjoint
-	}
 	disjoinable: true
 	primitive: true
 }>
