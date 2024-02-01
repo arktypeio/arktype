@@ -19,6 +19,7 @@ export type UnitDeclaration = declareNode<{
 		unit: "unit" | Disjoint
 		default: "unit" | Disjoint
 	}
+	disjoinable: true
 }>
 
 export class UnitNode<t = unknown> extends BaseBasis<
@@ -34,13 +35,6 @@ export class UnitNode<t = unknown> extends BaseBasis<
 			}
 		},
 		normalize: (schema) => schema,
-		intersect: {
-			unit: (l, r) => Disjoint.from("unit", l, r),
-			default: (l, r) =>
-				r.allows(l.unit as never)
-					? l
-					: Disjoint.from("assignability", l.unit, r)
-		},
 		defaults: {
 			description(inner) {
 				return printable(inner.unit)
@@ -55,4 +49,14 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	domain = domainOf(this.unit)
 	compiledCondition = `${this.$.dataArg} === ${this.serializedValue}`
 	compiledNegation = `${this.$.dataArg} !== ${this.serializedValue}`
+
+	// TODO:
+	// default: (l, r) =>
+	// r.allows(l.unit as never)
+	// 	? l
+	// 	: Disjoint.from("assignability", l.unit, r)
+
+	protected intersectOwnInner(r: UnitNode) {
+		return Disjoint.from("unit", this, r)
+	}
 }

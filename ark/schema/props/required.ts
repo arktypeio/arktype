@@ -53,13 +53,13 @@ const intersectNamed = (
 	if (l.key !== r.key) {
 		return null
 	}
-	const required = l.key
+	const key = l.key
 	const value = l.value.intersect(r.value)
 	if (value instanceof Disjoint) {
 		return value
 	}
 	return {
-		key: required,
+		key,
 		value
 	}
 }
@@ -79,7 +79,6 @@ export class RequiredNode
 				}
 			},
 			normalize: (schema) => schema,
-			intersect: { required: intersectNamed, optional: intersectNamed },
 			defaults: {
 				description(inner) {
 					return `${compileKey(inner.key)}: ${inner.value}`

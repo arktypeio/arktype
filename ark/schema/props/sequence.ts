@@ -91,9 +91,6 @@ export class SequenceNode
 					})
 				}
 			},
-			intersect: {
-				sequence: (l) => l
-			},
 			defaults: {
 				description(inner) {
 					const parts = inner.prefix?.map(String) ?? []
@@ -210,6 +207,10 @@ this.${postfixEl.name}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
 
 	getCheckedDefinitions() {
 		return [Array] as const
+	}
+
+	protected intersectOwnInner(r: SequenceNode) {
+		return this
 	}
 }
 

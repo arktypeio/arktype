@@ -51,9 +51,6 @@ export class IndexNode
 				}
 			},
 			normalize: (schema) => schema,
-			intersect: {
-				index: (l) => l
-			},
 			defaults: {
 				description(inner) {
 					return `[${inner.key}]: ${inner.value}`
@@ -95,5 +92,9 @@ export class IndexNode
 
 	compileAllows(ctx: CompilationContext): string {
 		return ""
+	}
+
+	protected intersectOwnInner(r: IndexNode): IndexInner {
+		return this
 	}
 }

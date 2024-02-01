@@ -31,6 +31,7 @@ export type ProtoDeclaration = declareNode<{
 		proto: "proto" | Disjoint
 		domain: "proto" | Disjoint
 	}
+	disjoinable: true
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -62,18 +63,6 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return objectKindOrDomainOf(data)
 			}
-		},
-		intersect: {
-			proto: (l, r) =>
-				constructorExtends(l.proto, r.proto)
-					? l
-					: constructorExtends(r.proto, l.proto)
-					? r
-					: Disjoint.from("proto", l, r),
-			domain: (l, r) =>
-				r.domain === "object"
-					? l
-					: Disjoint.from("domain", l.$.builtin.object, r)
 		}
 	})
 
@@ -83,4 +72,18 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 	readonly compiledCondition = `${this.$.dataArg} instanceof ${this.serializedConstructor}`
 	readonly compiledNegation = `!(${this.compiledCondition})`
 	traverseAllows = (data: unknown) => data instanceof this.proto
+
+	// TODO:
+	// domain: (l, r) =>
+	// r.domain === "object"
+	// 	? l
+	// 	: Disjoint.from("domain", l.$.builtin.object, r)
+
+	protected intersectOwnInner(r: ProtoNode) {
+		return constructorExtends(this.proto, r.proto)
+			? this
+			: constructorExtends(r.proto, this.proto)
+			? r
+			: Disjoint.from("proto", this, r)
+	}
 }

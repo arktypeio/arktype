@@ -12,8 +12,7 @@ import type {
 	BaseNodeDeclaration,
 	FoldInput,
 	FoldOutput,
-	declareNode,
-	ownIntersectionAlternateResult
+	declareNode
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -88,21 +87,6 @@ export type Boundable = NumericallyBoundable | Date
 
 const normalizeLimit = (limit: LimitSchemaValue): number =>
 	typeof limit === "string" ? new Date(limit).valueOf() : limit
-
-const createLowerIntersections = <kind extends LowerBoundKind>(kind: kind) =>
-	({
-		// symmetric lower bound intersection
-		[kind]: (l: LowerNode, r: LowerNode): LowerNode =>
-			l.limit > r.limit || (l.limit === r.limit && l.exclusive) ? l : r,
-		// asymmetric bound intersections are handled by the lower bound
-		[boundKindPairsByLower[kind]]: (
-			l: LowerNode,
-			r: UpperNode
-		): Disjoint | null =>
-			l.limit > r.limit || (l.limit === r.limit && (l.exclusive || r.exclusive))
-				? Disjoint.from("bound", l, r)
-				: null
-	}) as {} as NodeIntersections<Declaration<kind>>
 
 export type BaseBoundDeclaration = and<
 	BaseNodeDeclaration,

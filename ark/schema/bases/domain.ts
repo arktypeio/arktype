@@ -28,6 +28,7 @@ export type DomainDeclaration = declareNode<{
 	intersections: {
 		domain: "domain" | Disjoint
 	}
+	disjoinable: true
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<
@@ -50,9 +51,6 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return domainOf(data)
 			}
-		},
-		intersect: {
-			domain: (l, r) => Disjoint.from("domain", l, r)
 		}
 	})
 
@@ -69,6 +67,10 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			: `typeof ${this.$.dataArg} !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
+
+	protected intersectOwnInner(r: DomainNode) {
+		return Disjoint.from("domain", this, r)
+	}
 }
 
 const enumerableDomainDescriptions = {

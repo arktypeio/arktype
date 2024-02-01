@@ -38,6 +38,7 @@ export type OptionalDeclaration = declareNode<{
 		optional: "optional" | null
 	}
 	prerequisite: object
+	open: true
 }>
 
 export class OptionalNode
@@ -58,20 +59,6 @@ export class OptionalNode
 			defaults: {
 				description(inner) {
 					return `${compileKey(inner.key)}?: ${inner.value}`
-				}
-			},
-			intersect: {
-				optional: (l, r) => {
-					if (l.key !== r.key) {
-						return null
-					}
-					const optional = l.key
-					const value = l.value.intersect(r.value)
-					return {
-						key: optional,
-						value:
-							value instanceof Disjoint ? (l.$.builtin.never as never) : value
-					}
 				}
 			}
 		})
@@ -111,4 +98,16 @@ export class OptionalNode
 	}
 
 	compiledKey = compileKey(this.key)
+
+	protected intersectOwnInner(r: OptionalNode) {
+		if (this.key !== r.key) {
+			return null
+		}
+		const key = this.key
+		const value = this.value.intersect(r.value)
+		return {
+			key,
+			value: value instanceof Disjoint ? (this.$.builtin.never as never) : value
+		}
+	}
 }
