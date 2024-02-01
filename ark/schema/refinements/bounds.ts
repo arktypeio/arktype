@@ -2,11 +2,15 @@ import {
 	isKeyOf,
 	type PartialRecord,
 	type and,
-	type optionalizeKeys,
 	type valueOf
 } from "@arktype/util"
-import { BaseNode, type Node, type NodeSubclass } from "../base.js"
-import type { Declaration, Inner } from "../kinds.js"
+import {
+	BaseNode,
+	type Node,
+	type NodeSubclass,
+	type TypeSchema
+} from "../base.js"
+import type { Declaration } from "../kinds.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
@@ -16,9 +20,8 @@ import type {
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type {
-	AttachImplementation,
-	BasePrimitiveAttachmentsInput,
 	BoundKind,
+	PrimitiveAttachmentsInput,
 	nodeImplementationInputOf,
 	nodeImplementationOf
 } from "../shared/implement.js"
@@ -93,6 +96,7 @@ export type BaseBoundDeclaration = and<
 	{
 		kind: BoundKind
 		inner: BoundInner
+		attachments: BoundAttachmentsInput
 	}
 >
 
@@ -103,12 +107,9 @@ export abstract class BaseBound<
 	readonly hasOpenIntersection = false
 
 	static implementBound<d extends Declaration<BoundKind>>(
-		implementation: optionalizeKeys<
-			nodeImplementationInputOf<d>,
-			"collapseKey" | "keys" | "normalize" | "hasAssociatedError"
-		>
+		implementation: Pick<nodeImplementationInputOf<d>, "defaults">
 	): nodeImplementationOf<d> {
-		return {
+		return this.implement({
 			collapseKey: "limit",
 			hasAssociatedError: true,
 			keys: {
@@ -124,13 +125,35 @@ export abstract class BaseBound<
 				typeof schema === "object"
 					? { ...schema, limit: schema.limit }
 					: { limit: schema as Extract<d["schema"], LimitSchemaValue> },
-			...implementation
-		} as never
+			defaults: implementation.defaults as never,
+			attachments: (base): BoundAttachmentsInput => {
+				const boundOperandKind: BoundOperandKind =
+					base.kind === "min" || base.kind === "max"
+						? "value"
+						: base.kind === "minLength" || base.kind === "maxLength"
+						? "length"
+						: "date"
+				const compiledActual =
+					boundOperandKind === "value"
+						? `${base.$.dataArg}`
+						: boundOperandKind === "length"
+						? `${base.$.dataArg}.length`
+						: `${base.$.dataArg}.valueOf()`
+				const comparator = compileComparator(base.kind, base.exclusive)
+				const numericLimit = normalizeLimit(base.limit)
+				return {
+					boundOperandKind,
+					compiledActual,
+					comparator,
+					numericLimit,
+					compiledCondition: `${compiledActual} ${comparator} ${numericLimit}`,
+					compiledNegation: `${compiledActual} ${negatedComparators[comparator]} ${numericLimit}`
+				}
+			}
+		}) as never
 	}
 
 	readonly constraintGroup = "shallow"
-
-	comparator = compileComparator(this.kind, this.exclusive)
 
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
@@ -149,6 +172,10 @@ export abstract class BaseBound<
 	protected intersectOwnInner(r: Node<d["kind"]>) {
 		return this.isStricterThan(r) ? this : r
 	}
+
+	get prerequisiteSchemas() {
+		return boundPrerequisitesByOperandKind[this.boundOperandKind]
+	}
 }
 
 const compileComparator = (kind: BoundKind, exclusive: true | undefined) =>
@@ -165,10 +192,6 @@ abstract class BaseNumericBound<
 	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.limit}`
-
-	get prerequisiteSchemas() {
-		return ["number"] as const
-	}
 }
 
 type BoundDeclarationInput = {
@@ -177,15 +200,11 @@ type BoundDeclarationInput = {
 	prerequisite: unknown
 }
 
-export interface BoundPrimitiveInputAttachments<
-	kind extends BoundKind = BoundKind
-> extends BasePrimitiveAttachmentsInput {
+export interface BoundAttachmentsInput extends PrimitiveAttachmentsInput {
+	compiledActual: string
 	comparator: RelativeComparator
-	limitKind: LimitKind
-	isStricterThan(
-		r: Node<kind> | Node<pairedBoundKind<kind>> | undefined
-	): boolean
-	intersectOwnInner(r: Node<kind>): Node<kind>
+	numericLimit: number
+	boundOperandKind: BoundOperandKind
 }
 
 type declareBound<input extends BoundDeclarationInput> = declareNode<{
@@ -194,8 +213,16 @@ type declareBound<input extends BoundDeclarationInput> = declareNode<{
 	normalizedSchema: NormalizedBoundSchema<input["limit"]>
 	inner: BoundInner<input["limit"]>
 	prerequisite: input["prerequisite"]
-	attachments: BoundPrimitiveInputAttachments<input["kind"]>
+	attachments: BoundAttachmentsInput
 }>
+
+export type BoundOperandKind = "value" | "length" | "date"
+
+const boundPrerequisitesByOperandKind = {
+	value: ["number"],
+	length: ["string", Array],
+	date: [Date]
+} as const satisfies Record<BoundOperandKind, readonly TypeSchema[]>
 
 export type NumericBoundKind = "min" | "max"
 
@@ -253,21 +280,6 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 	}
 }
 
-abstract class BaseLengthBound<
-	d extends BaseBoundDeclaration,
-	subclass extends NodeSubclass<d>
-> extends BaseBound<d, subclass> {
-	compiledActual = `${this.$.dataArg}.length`
-	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
-	compiledNegation = `${this.compiledActual} ${
-		negatedComparators[this.comparator]
-	} ${this.limit}`
-
-	get prerequisiteSchemas() {
-		return ["string", Array] as const
-	}
-}
-
 export type LengthBoundKind = "minLength" | "maxLength"
 
 type LengthBoundDeclaration<kind extends LengthBoundKind = LengthBoundKind> =
@@ -279,7 +291,7 @@ type LengthBoundDeclaration<kind extends LengthBoundKind = LengthBoundKind> =
 
 export type MinLengthDeclaration = LengthBoundDeclaration<"minLength">
 
-export class MinLengthNode extends BaseLengthBound<
+export class MinLengthNode extends BaseBound<
 	MinLengthDeclaration,
 	typeof MinLengthNode
 > {
@@ -311,7 +323,7 @@ export class MinLengthNode extends BaseLengthBound<
 
 export type MaxLengthDeclaration = LengthBoundDeclaration<"maxLength">
 
-export class MaxLengthNode extends BaseLengthBound<
+export class MaxLengthNode extends BaseBound<
 	MaxLengthDeclaration,
 	typeof MaxLengthNode
 > {
@@ -349,37 +361,21 @@ type DateBoundDeclaration<kind extends DateBoundKind = DateBoundKind> =
 		prerequisite: Date
 	}>
 
-abstract class BaseDateBound<
-	d extends BaseBoundDeclaration,
-	subclass extends NodeSubclass<d>
-> extends BaseBound<d, subclass> {
-	compiledActual = `${this.$.dataArg}.valueOf()`
-	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
-	compiledNegation = `${this.compiledActual} ${
-		negatedComparators[this.comparator]
-	} ${this.limit}`
-
-	dateLimit = new Date(this.limit)
-	numericLimit = +this.dateLimit
-	limitString =
-		typeof this.limit === "string"
-			? this.limit
-			: this.dateLimit.toLocaleString()
-
-	get prerequisiteSchemas() {
-		return [Date] as const
-	}
-}
-
 const dateLimitToString = (limit: LimitSchemaValue) =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
 
 export type AfterDeclaration = DateBoundDeclaration<"after">
 
-export class AfterNode extends BaseDateBound<
-	AfterDeclaration,
-	typeof AfterNode
-> {
+interface DateBoundExtras {
+	dateLimit: Date
+	numericLimit: number
+	stringLimit: string
+}
+
+export class AfterNode
+	extends BaseBound<AfterDeclaration, typeof AfterNode>
+	implements DateBoundExtras
+{
 	static implementation: nodeImplementationOf<AfterDeclaration> =
 		this.implementBound({
 			defaults: {
@@ -393,6 +389,10 @@ export class AfterNode extends BaseDateBound<
 			}
 		})
 
+	dateLimit = new Date(this.limit)
+	numericLimit = +this.dateLimit
+	stringLimit = dateLimitToString(this.limit)
+
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.numericLimit
 		: (data: Date) => +data >= this.numericLimit
@@ -405,10 +405,10 @@ export class AfterNode extends BaseDateBound<
 
 export type BeforeDeclaration = DateBoundDeclaration<"before">
 
-export class BeforeNode extends BaseDateBound<
-	BeforeDeclaration,
-	typeof BeforeNode
-> {
+export class BeforeNode
+	extends BaseBound<BeforeDeclaration, typeof BeforeNode>
+	implements DateBoundExtras
+{
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
 		this.implementBound({
 			defaults: {
@@ -421,6 +421,10 @@ export class BeforeNode extends BaseDateBound<
 				actual: (data) => data.toLocaleString()
 			}
 		})
+
+	dateLimit = new Date(this.limit)
+	numericLimit = +this.dateLimit
+	stringLimit = dateLimitToString(this.limit)
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.numericLimit
