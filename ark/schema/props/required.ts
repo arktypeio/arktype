@@ -1,11 +1,7 @@
 import { BaseNode, type Node, type TypeSchema } from "../base.js"
 import type { Inner } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type {
-	BaseConstraint,
-	BaseMeta,
-	declareNode
-} from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
@@ -40,6 +36,7 @@ export type RequiredDeclaration = declareNode<{
 		key: string | symbol
 	}
 	prerequisite: object
+	open: true
 }>
 
 const intersectNamed = (
@@ -60,10 +57,11 @@ const intersectNamed = (
 	}
 }
 
-export class RequiredNode
-	extends BaseNode<object, RequiredDeclaration, typeof RequiredNode>
-	implements BaseConstraint
-{
+export class RequiredNode extends BaseNode<
+	object,
+	RequiredDeclaration,
+	typeof RequiredNode
+> {
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,

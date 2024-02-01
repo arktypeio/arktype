@@ -1,11 +1,6 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type {
-	BaseConstraint,
-	BaseMeta,
-	declareNode
-} from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	createBasisAssertion,
 	type NodeKeyImplementation,
@@ -50,10 +45,11 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
 
-export class SequenceNode
-	extends BaseNode<readonly unknown[], SequenceDeclaration, typeof SequenceNode>
-	implements BaseConstraint
-{
+export class SequenceNode extends BaseNode<
+	readonly unknown[],
+	SequenceDeclaration,
+	typeof SequenceNode
+> {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
 			hasAssociatedError: false,

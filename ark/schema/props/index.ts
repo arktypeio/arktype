@@ -28,12 +28,14 @@ export type IndexDeclaration = declareNode<{
 	normalizedSchema: IndexSchema
 	inner: IndexInner
 	prerequisite: object
+	open: true
 }>
 
-export class IndexNode
-	extends BaseNode<object, IndexDeclaration, typeof IndexNode>
-	implements BaseConstraint
-{
+export class IndexNode extends BaseNode<
+	object,
+	IndexDeclaration,
+	typeof IndexNode
+> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
 			hasAssociatedError: false,

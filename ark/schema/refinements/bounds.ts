@@ -6,7 +6,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
-import type { Declaration } from "../kinds.js"
+import type { Declaration, Inner } from "../kinds.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
@@ -16,8 +16,9 @@ import type {
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type {
+	AttachImplementation,
+	BasePrimitiveAttachmentsInput,
 	BoundKind,
-	PrimitiveImplementation,
 	nodeImplementationInputOf,
 	nodeImplementationOf
 } from "../shared/implement.js"
@@ -170,14 +171,21 @@ abstract class BaseNumericBound<
 	}
 }
 
-const numericBoundPrimitive: PrimitiveImplementation<
-	NumericBoundDeclaration
-> = (node) => ({})
-
 type BoundDeclarationInput = {
 	kind: BoundKind
 	limit: LimitSchemaValue
 	prerequisite: unknown
+}
+
+export interface BoundPrimitiveInputAttachments<
+	kind extends BoundKind = BoundKind
+> extends BasePrimitiveAttachmentsInput {
+	comparator: RelativeComparator
+	limitKind: LimitKind
+	isStricterThan(
+		r: Node<kind> | Node<pairedBoundKind<kind>> | undefined
+	): boolean
+	intersectOwnInner(r: Node<kind>): Node<kind>
 }
 
 type declareBound<input extends BoundDeclarationInput> = declareNode<{
@@ -186,7 +194,7 @@ type declareBound<input extends BoundDeclarationInput> = declareNode<{
 	normalizedSchema: NormalizedBoundSchema<input["limit"]>
 	inner: BoundInner<input["limit"]>
 	prerequisite: input["prerequisite"]
-	primitive: true
+	attachments: BoundPrimitiveInputAttachments<input["kind"]>
 }>
 
 export type NumericBoundKind = "min" | "max"

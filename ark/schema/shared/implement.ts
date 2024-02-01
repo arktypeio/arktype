@@ -19,10 +19,13 @@ import type {
 	ScopeNode
 } from "../scope.js"
 import type { ConditionalConstraintKind } from "../sets/intersection.js"
-import type { TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import type { CompilationContext } from "./compile.js"
-import type { BaseMeta, BaseNodeDeclaration, attachmentsOf } from "./declare.js"
+import type {
+	BaseMeta,
+	BaseNodeDeclaration,
+	attachmentsOf,
+	baseAttachmentsOf
+} from "./declare.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -185,11 +188,14 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapseKey?: keyof d["inner"] & string
 	addParseContext?: (ctx: SchemaParseContext) => void
 	reduce?: (inner: d["inner"], $: ScopeNode) => Node | undefined
+	attachments?: AttachImplementation<d>
 }
 
-export type PrimitiveImplementation<d extends BaseNodeDeclaration> = (
-	attachments: attachmentsOf<d>
-) => {
+export type AttachImplementation<d extends BaseNodeDeclaration> = (
+	base: baseAttachmentsOf<d>
+) => PrimitiveAttachmentsInput
+
+export interface PrimitiveAttachmentsInput {
 	compiledCondition: string
 	compiledNegation: string
 }
@@ -198,7 +204,6 @@ export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
 	keys: Record<string, NodeKeyImplementation<any, any>>
-	primitive?: PrimitiveImplementation<BaseNodeDeclaration>
 }
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
@@ -207,11 +212,12 @@ export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
-	CommonNodeImplementationInput<d> & {
-		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
-	} & (d["primitive"] extends true
-			? { primitive: PrimitiveImplementation<d> }
-			: {})
+	requireKeys<
+		CommonNodeImplementationInput<d> & {
+			defaults: nodeDefaultsImplementationInputFor<d["kind"]>
+		},
+		{} extends d["attachments"] ? never : "attachments"
+	>
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,
@@ -268,11 +274,4 @@ export const createBasisAssertion = (node: Node<ConditionalConstraintKind>) => {
 			)
 		}
 	}
-}
-
-export interface PrimitiveAttachments<d extends BaseNodeDeclaration> {
-	traverseApply: TraverseApply<d["prerequisite"]>
-	compileApply(ctx: CompilationContext): string
-	compileAllows(ctx: CompilationContext): string
-	expectedContext: ExpectedContext<d["kind"]>
 }

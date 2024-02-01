@@ -1,6 +1,7 @@
 import { appendUnique } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
+import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -22,7 +23,7 @@ export type PredicateDeclaration = declareNode<{
 	inner: PredicateInner
 	open: true
 	expectedContext: { expected: string }
-	primitive: true
+	attachments: PrimitiveAttachmentsInput
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
@@ -49,9 +50,9 @@ export class PredicateNode extends BaseNode<
 				return `valid`
 			}
 		},
-		primitive: (node) => {
-			const compiledCondition = `${compileSerializedValue(node.predicate)}(${
-				node.$.dataArg
+		attachments: (base) => {
+			const compiledCondition = `${compileSerializedValue(base.predicate)}(${
+				base.$.dataArg
 			})`
 			return {
 				compiledCondition,

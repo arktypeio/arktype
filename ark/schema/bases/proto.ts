@@ -7,7 +7,10 @@ import {
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { defaultValueSerializer } from "../shared/implement.js"
+import {
+	defaultValueSerializer,
+	type PrimitiveAttachmentsInput
+} from "../shared/implement.js"
 import { BaseType } from "../type.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
@@ -28,7 +31,7 @@ export type ProtoDeclaration = declareNode<{
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
 	disjoinable: true
-	primitive: true
+	attachments: PrimitiveAttachmentsInput
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -61,9 +64,9 @@ export class ProtoNode<t = unknown> extends BaseType<
 				return objectKindOrDomainOf(data)
 			}
 		},
-		primitive: (node) => {
-			const compiledCondition = `${node.$.dataArg} instanceof ${
-				(node.json as any).proto
+		attachments: (base) => {
+			const compiledCondition = `${base.$.dataArg} instanceof ${
+				(base.json as any).proto
 			}`
 			return {
 				compiledCondition,

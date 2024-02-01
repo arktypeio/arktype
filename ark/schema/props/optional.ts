@@ -1,10 +1,6 @@
 import { BaseNode, type Node, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type {
-	BaseConstraint,
-	BaseMeta,
-	declareNode
-} from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
@@ -38,10 +34,11 @@ export type OptionalDeclaration = declareNode<{
 	open: true
 }>
 
-export class OptionalNode
-	extends BaseNode<object, OptionalDeclaration, typeof OptionalNode>
-	implements BaseConstraint
-{
+export class OptionalNode extends BaseNode<
+	object,
+	OptionalDeclaration,
+	typeof OptionalNode
+> {
 	static implementation: nodeImplementationOf<OptionalDeclaration> =
 		this.implement({
 			keys: {

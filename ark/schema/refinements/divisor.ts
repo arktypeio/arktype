@@ -1,5 +1,6 @@
 import { BaseNode } from "../base.js"
 import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
+import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly divisor: number
@@ -15,7 +16,7 @@ export type DivisorDeclaration = declareNode<{
 	normalizedSchema: NormalizedDivisorSchema
 	inner: DivisorInner
 	prerequisite: number
-	primitive: true
+	attachments: PrimitiveAttachmentsInput
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -46,9 +47,9 @@ export class DivisorNode extends BaseNode<
 					: `a multiple of ${inner.divisor}`
 			}
 		},
-		primitive: (node) => ({
-			compiledCondition: `${node.$.dataArg} % ${node.divisor} === 0`,
-			compiledNegation: `${node.$.dataArg} % ${node.divisor} !== 0`
+		attachments: (base) => ({
+			compiledCondition: `${base.$.dataArg} % ${base.divisor} === 0`,
+			compiledNegation: `${base.$.dataArg} % ${base.divisor} !== 0`
 		})
 	})
 

@@ -1,6 +1,7 @@
 import { appendUnique } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
+import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -18,7 +19,7 @@ export type PatternDeclaration = declareNode<{
 	inner: PatternInner
 	open: true
 	prerequisite: string
-	primitive: true
+	attachments: PrimitiveAttachmentsInput
 }>
 
 export class PatternNode extends BaseNode<
@@ -46,9 +47,9 @@ export class PatternNode extends BaseNode<
 				return `matched by ${inner.source}`
 			}
 		},
-		primitive: (node) => {
-			const compiledCondition = `/${node.source}/${node.flags ?? ""}.test(${
-				node.$.dataArg
+		attachments: (base) => {
+			const compiledCondition = `/${base.source}/${base.flags ?? ""}.test(${
+				base.$.dataArg
 			})`
 			return {
 				compiledCondition,

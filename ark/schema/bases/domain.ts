@@ -1,6 +1,7 @@
 import { domainOf, type Domain } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 import { BaseType } from "../type.js"
 
 export interface DomainInner<
@@ -26,7 +27,7 @@ export type DomainDeclaration = declareNode<{
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
 	disjoinable: true
-	primitive: true
+	attachments: PrimitiveAttachmentsInput
 }>
 
 export class DomainNode<t = unknown> extends BaseType<
@@ -50,15 +51,15 @@ export class DomainNode<t = unknown> extends BaseType<
 				return domainOf(data)
 			}
 		},
-		primitive: (node) => ({
+		attachments: (base) => ({
 			compiledCondition:
-				node.domain === "object"
-					? `((typeof ${node.$.dataArg} === "object" && ${node.$.dataArg} !== null) || typeof ${node.$.dataArg} === "function")`
-					: `typeof ${node.$.dataArg} === "${node.domain}"`,
+				base.domain === "object"
+					? `((typeof ${base.$.dataArg} === "object" && ${base.$.dataArg} !== null) || typeof ${base.$.dataArg} === "function")`
+					: `typeof ${base.$.dataArg} === "${base.domain}"`,
 			compiledNegation:
-				node.domain === "object"
-					? `((typeof ${node.$.dataArg} !== "object" || ${node.$.dataArg} === null) && typeof ${node.$.dataArg} !== "function")`
-					: `typeof ${node.$.dataArg} !== "${node.domain}"`
+				base.domain === "object"
+					? `((typeof ${base.$.dataArg} !== "object" || ${base.$.dataArg} === null) && typeof ${base.$.dataArg} !== "function")`
+					: `typeof ${base.$.dataArg} !== "${base.domain}"`
 		})
 	})
 

@@ -1,6 +1,7 @@
 import { domainOf, printable } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 import { BaseType } from "../type.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
@@ -15,7 +16,7 @@ export type UnitDeclaration = declareNode<{
 	normalizedSchema: UnitSchema
 	inner: UnitInner
 	disjoinable: true
-	primitive: true
+	attachments: PrimitiveAttachmentsInput
 }>
 
 export class UnitNode<t = unknown> extends BaseType<
@@ -36,11 +37,11 @@ export class UnitNode<t = unknown> extends BaseType<
 				return printable(inner.unit)
 			}
 		},
-		primitive: (node) => {
-			const serializedValue = (node.json as any).unit
+		attachments: (base) => {
+			const serializedValue = (base.json as any).unit
 			return {
-				compiledCondition: `${node.$.dataArg} === ${serializedValue}`,
-				compiledNegation: `${node.$.dataArg} !== ${serializedValue}`
+				compiledCondition: `${base.$.dataArg} === ${serializedValue}`,
+				compiledNegation: `${base.$.dataArg} !== ${serializedValue}`
 			}
 		}
 	})
