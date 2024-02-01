@@ -1,5 +1,4 @@
-import { append, appendUnique } from "@arktype/util"
-import type { IntersectionInner } from "../sets/intersection.js"
+import { appendUnique } from "@arktype/util"
 import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
 import { BaseRefinement } from "./refinement.js"
 
@@ -22,6 +21,7 @@ export type PatternDeclaration = declareNode<{
 	}
 	open: true
 	prerequisite: string
+	primitive: true
 }>
 
 export class PatternNode extends BaseRefinement<
@@ -47,6 +47,15 @@ export class PatternNode extends BaseRefinement<
 			description(inner) {
 				return `matched by ${inner.source}`
 			}
+		},
+		primitive: (node) => {
+			const compiledCondition = `/${node.source}/${node.flags ?? ""}.test(${
+				node.$.dataArg
+			})`
+			return {
+				compiledCondition,
+				compiledNegation: `!${compiledCondition}`
+			}
 		}
 	})
 
@@ -54,10 +63,6 @@ export class PatternNode extends BaseRefinement<
 	readonly hasOpenIntersection = true
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
-	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${
-		this.$.dataArg
-	})`
-	compiledNegation = `!${this.compiledCondition}`
 
 	get prerequisiteSchemas() {
 		return ["string"] as const

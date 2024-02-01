@@ -1,4 +1,5 @@
 import { appendUnique } from "@arktype/util"
+import { BaseNode } from "../base.js"
 import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
@@ -24,14 +25,15 @@ export type PredicateDeclaration = declareNode<{
 		predicate: "predicate" | null
 	}
 	open: true
-	data: unknown
 	expectedContext: { expected: string }
+	primitive: true
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends BaseRefinement<
+export class PredicateNode extends BaseNode<
+	unknown,
 	PredicateDeclaration,
 	typeof PredicateNode
 > {
@@ -50,16 +52,21 @@ export class PredicateNode extends BaseRefinement<
 			expected(source) {
 				return `valid`
 			}
+		},
+		primitive: (node) => {
+			const compiledCondition = `${compileSerializedValue(node.predicate)}(${
+				node.$.dataArg
+			})`
+			return {
+				compiledCondition,
+				compiledNegation: `!${compiledCondition}`
+			}
 		}
 	})
 
 	readonly constraintGroup = "predicate"
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
-	compiledCondition = `${compileSerializedValue(this.predicate)}(${
-		this.$.dataArg
-	})`
-	compiledNegation = `!${this.compiledCondition}`
 
 	get prerequisiteSchemas() {
 		return [{}] as const

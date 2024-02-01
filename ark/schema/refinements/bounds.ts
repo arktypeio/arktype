@@ -20,7 +20,6 @@ import type {
 	nodeImplementationInputOf,
 	nodeImplementationOf
 } from "../shared/implement.js"
-import type { NodeIntersections } from "../shared/intersect.js"
 import { BaseRefinement } from "./refinement.js"
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
@@ -181,6 +180,7 @@ export type MinDeclaration = declareNode<{
 		min: "min"
 		max: Disjoint | null
 	}
+	primitive: true
 }>
 
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
