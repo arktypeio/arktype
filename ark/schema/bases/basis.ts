@@ -14,7 +14,7 @@ import {
 	createPrimitiveExpectedContext,
 	type CompilationContext
 } from "../shared/compile.js"
-import type { BaseConstraint, BasePrimitive } from "../shared/declare.js"
+import type { BasePrimitive } from "../shared/declare.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../traversal/context.js"
 import { BaseType, type BaseTypeDeclaration } from "../type.js"

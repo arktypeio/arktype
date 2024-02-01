@@ -13,7 +13,6 @@ import type {
 	FoldInput,
 	FoldOutput
 } from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
 	type ConstraintGroupName,

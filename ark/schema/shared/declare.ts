@@ -1,11 +1,25 @@
-import type { Dict, and, evaluate, mutable, requireKeys } from "@arktype/util"
+import {
+	Trait,
+	type Dict,
+	type and,
+	type evaluate,
+	type mutable,
+	type requireKeys
+} from "@arktype/util"
 import type { NarrowedAttachments, Node, TypeSchema } from "../base.js"
 import type {
 	Declaration,
+	ExpectedContext,
 	OpenComponentKind,
 	reducibleKindOf
 } from "../kinds.js"
 import type { IntersectionInner } from "../sets/intersection.js"
+import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
+import {
+	compilePrimitive,
+	createPrimitiveExpectedContext,
+	type CompilationContext
+} from "./compile.js"
 import type { Disjoint } from "./disjoint.js"
 import type {
 	ConstraintGroupName,
@@ -114,6 +128,34 @@ export interface BasePrimitive {
 	readonly kind: PrimitiveKind
 	readonly compiledCondition: string
 	readonly compiledNegation: string
+}
+
+export class Primitive<d extends BaseNodeDeclaration> extends Trait<{
+	readonly kind: PrimitiveKind
+	readonly compiledCondition: string
+	readonly compiledNegation: string
+	readonly description: string
+	readonly traverseAllows: TraverseAllows<d["prerequisite"]>
+}> {
+	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.error(this.description)
+		}
+	}
+
+	private expectedContextCache?: ExpectedContext<d["kind"]>
+	get expectedContext(): ExpectedContext<d["kind"]> {
+		this.expectedContextCache ??= createPrimitiveExpectedContext(this as never)
+		return this.expectedContextCache
+	}
+
+	compileApply(ctx: CompilationContext): string {
+		return compilePrimitive("apply", this as any, ctx)
+	}
+
+	compileAllows(ctx: CompilationContext): string {
+		return compilePrimitive("allows", this as any, ctx)
+	}
 }
 
 export type FoldInput<kind extends RefinementKind> = {
