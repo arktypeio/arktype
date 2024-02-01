@@ -1,5 +1,6 @@
 import { fromCwd, type SourcePosition } from "@arktype/fs"
 import * as tsvfs from "@typescript/vfs"
+import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import ts from "typescript"
 
@@ -16,15 +17,11 @@ export class TsServer {
 		if (TsServer.#instance) {
 			return TsServer.#instance
 		}
-		const tsLibPaths = getTsLibFiles(tsConfigInfo.compilerOptions)
+		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
 
-		this.rootFiles = ts
-			.parseJsonConfigFileContent(
-				this.tsConfigInfo.compilerOptions,
-				ts.sys,
-				dirname(this.tsConfigInfo.path)
-			)
-			.fileNames.filter((path) => path.startsWith(fromCwd()))
+		this.rootFiles = tsConfigInfo.parsed.fileNames.filter((path) =>
+			path.startsWith(fromCwd())
+		)
 
 		const system = tsvfs.createFSBackedSystem(
 			tsLibPaths.defaultMapFromNodeModules,
@@ -36,7 +33,7 @@ export class TsServer {
 			system,
 			this.rootFiles,
 			ts,
-			this.tsConfigInfo.compilerOptions
+			this.tsConfigInfo.parsed.options
 		)
 
 		TsServer.#instance = this
@@ -98,19 +95,66 @@ export const getAbsolutePosition = (
 
 export type TsconfigInfo = {
 	path: string
-	compilerOptions: ts.CompilerOptions
+	parsed: ts.ParsedCommandLine
 }
 
-export const getTsConfigInfoOrThrow = () => {
-	const path = ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
-	if (!path) {
-		throw new Error(`Could not find tsconfig.json.`)
+// export const getTsConfigInfoOrThrow = () => {
+// 	const path = ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
+// 	if (!path) {
+// 		throw new Error(`Could not find tsconfig.json.`)
+// 	}
+// 	const compilerOptions = ts.convertCompilerOptionsFromJson(
+// 		ts.readConfigFile(path, ts.sys.readFile).config.compilerOptions,
+// 		path
+// 	).options
+// 	return { path, compilerOptions }
+// }
+
+export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
+	const configFilePath = ts.findConfigFile(
+		"./",
+		ts.sys.fileExists,
+		"tsconfig.json"
+	)
+	if (!configFilePath) {
+		throw new Error(`File ${join(fromCwd(), "tsconfig.json")} must exist.`)
 	}
-	const compilerOptions = ts.convertCompilerOptionsFromJson(
-		ts.readConfigFile(path, ts.sys.readFile).config.compilerOptions,
-		path
-	).options
-	return { path, compilerOptions }
+
+	const configFileText = readFileSync(configFilePath).toString()
+	const result = ts.parseConfigFileTextToJson(configFilePath, configFileText)
+	if (result.error) {
+		throw new Error(
+			ts.formatDiagnostics([result.error], {
+				getCanonicalFileName: (fileName) => fileName,
+				getCurrentDirectory: process.cwd,
+				getNewLine: () => ts.sys.newLine
+			})
+		)
+	}
+
+	const configObject = result.config
+	const configParseResult = ts.parseJsonConfigFileContent(
+		configObject,
+		ts.sys,
+		dirname(configFilePath),
+		{},
+		configFilePath
+	)
+
+	if (configParseResult.errors.length > 0) {
+		throw new Error(
+			ts.formatDiagnostics(configParseResult.errors, {
+				getCanonicalFileName: (fileName) => fileName,
+				getCurrentDirectory: process.cwd,
+				getNewLine: () => ts.sys.newLine
+			})
+		)
+	}
+
+	return {
+		path: configFilePath,
+		parsed: configParseResult
+	}
 }
 
 export const getTsLibFiles = (tsconfigOptions: ts.CompilerOptions) => {

@@ -28,7 +28,7 @@ export type BenchTypeAssertions = {
 
 const getIsolatedEnv = () => {
 	const tsconfigInfo = getTsConfigInfoOrThrow()
-	const libFiles = getTsLibFiles(tsconfigInfo.compilerOptions)
+	const libFiles = getTsLibFiles(tsconfigInfo.parsed.options)
 	const projectRoot = process.cwd()
 	const system = tsvfs.createFSBackedSystem(
 		libFiles.defaultMapFromNodeModules,
@@ -39,7 +39,7 @@ const getIsolatedEnv = () => {
 		system,
 		[],
 		ts,
-		tsconfigInfo.compilerOptions
+		tsconfigInfo.parsed.options
 	)
 }
 
