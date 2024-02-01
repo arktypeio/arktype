@@ -13,16 +13,16 @@ type TraitImplementation<
 	composed extends ComposedTraits
 > = <implementation>(
 	implementation: conform<implementation, baseImplementationOf<composed>> &
-		ThisType<implementation & composed["implemented"]>
-	// ...disambiguation: baseDisambiguationOf<
-	// 	traits,
-	// 	implementation,
-	// 	composed
-	// > extends infer disambiguation
-	// 	? {} extends disambiguation
-	// 		? []
-	// 		: [disambiguation]
-	// 	: never
+		ThisType<implementation & composed["implemented"]>,
+	...disambiguation: baseDisambiguationOf<
+		traits,
+		implementation,
+		composed
+	> extends infer disambiguation
+		? {} extends disambiguation
+			? []
+			: [disambiguation]
+		: never
 ) => TraitsBase<composed, implementation>
 
 type TraitsBase<

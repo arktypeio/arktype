@@ -1,6 +1,5 @@
 import {
 	DynamicBase,
-	Trait,
 	capitalize,
 	includes,
 	isArray,
@@ -126,25 +125,13 @@ type kindOf<self> = self extends Constructor<{
 
 type declarationOf<self> = Declaration<kindOf<self>>
 
-export class BaseNode<
+export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration,
 	// subclass doesn't affect the class's type, but rather is used to validate
 	// the correct implementation of the static implementation
-	subclass = unknown //extends NodeSubclass<d>
-> extends Trait<
-	{
-		hasOpenIntersection: hasOpenIntersection<d>
-		traverseAllows: TraverseAllows<d["prerequisite"]>
-		traverseApply: TraverseApply<d["prerequisite"]>
-		compileApply(ctx: CompilationContext): string
-		compileAllows(ctx: CompilationContext): string
-		intersectOwnInner(
-			r: d["inner"]
-		): d["inner"] | ownIntersectionAlternateResult<d>
-	},
-	attachmentsOf<d>
-> {
+	subclass extends NodeSubclass<d>
+> extends DynamicBase<attachmentsOf<d>> {
 	protected static implement<self>(
 		this: self,
 		implementation: nodeImplementationInputOf<declarationOf<self>>
@@ -190,8 +177,7 @@ export class BaseNode<
 	declare readonly description: string
 
 	constructor(attachments: BaseAttachments) {
-		super()
-		Object.assign(this, attachments)
+		super(attachments as never)
 		this.contributesReferencesByName =
 			this.name in this.referencesByName
 				? this.referencesByName
@@ -201,6 +187,12 @@ export class BaseNode<
 			this.inner as never
 		)
 	}
+
+	abstract hasOpenIntersection: hasOpenIntersection<d>
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract traverseApply: TraverseApply<d["prerequisite"]>
+	abstract compileApply(ctx: CompilationContext): string
+	abstract compileAllows(ctx: CompilationContext): string
 
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
 		const ctx = new TraversalContext(data, this.$.config)
@@ -285,6 +277,10 @@ export class BaseNode<
 	toString() {
 		return this.description
 	}
+
+	protected abstract intersectOwnInner(
+		r: Node<d["kind"]>
+	): d["inner"] | ownIntersectionAlternateResult<d>
 
 	intersectOwnKind(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
 		if (r === undefined) {
