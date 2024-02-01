@@ -1,4 +1,6 @@
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { append, appendUnique } from "@arktype/util"
+import type { IntersectionInner } from "../sets/intersection.js"
+import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
 import { BaseRefinement } from "./refinement.js"
 
 export interface PatternInner extends BaseMeta {
@@ -18,6 +20,7 @@ export type PatternDeclaration = declareNode<{
 	intersections: {
 		pattern: "pattern" | null
 	}
+	open: true
 	prerequisite: string
 }>
 
@@ -39,10 +42,6 @@ export class PatternNode extends BaseRefinement<
 					? { source: schema.source, flags: schema.flags }
 					: { source: schema.source }
 				: schema,
-		intersect: {
-			// For now, non-equal regex are naively intersected
-			pattern: () => null
-		},
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
@@ -62,5 +61,15 @@ export class PatternNode extends BaseRefinement<
 
 	get prerequisiteSchemas() {
 		return ["string"] as const
+	}
+
+	intersectOwnInner(r: PatternNode) {
+		// For now, non-equal regex are naively intersected
+		return null
+	}
+
+	foldIntersection(into: FoldInput<"pattern">) {
+		into.pattern = appendUnique(into.pattern, this)
+		return into
 	}
 }

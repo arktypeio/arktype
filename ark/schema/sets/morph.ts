@@ -89,46 +89,6 @@ export class MorphNode<t = unknown> extends BaseType<
 				}
 			},
 			normalize: (schema) => schema,
-			intersect: {
-				morph: (l, r) => {
-					if (l.morph.some((morph, i) => morph !== r.morph[i])) {
-						// TODO: is this always a parse error? what about for union reduction etc.
-						// TODO: check in for union reduction
-						return throwParseError(`Invalid intersection of morphs`)
-					}
-					const inTersection = l.in.intersect(r.in)
-					if (inTersection instanceof Disjoint) {
-						return inTersection
-					}
-					const outTersection = l.out.intersect(r.out)
-					if (outTersection instanceof Disjoint) {
-						return outTersection
-					}
-					return {
-						morph: l.morph,
-						in: inTersection,
-						out: outTersection
-					}
-				},
-				intersection: (l, r) => {
-					const inTersection = l.in.intersect(r)
-					return inTersection instanceof Disjoint
-						? inTersection
-						: {
-								...l.inner,
-								in: inTersection
-						  }
-				},
-				default: (l, r) => {
-					const constrainedInput = l.in.intersect(r)
-					return constrainedInput instanceof Disjoint
-						? constrainedInput
-						: {
-								...l.inner,
-								in: constrainedInput
-						  }
-				}
-			},
 			defaults: {
 				description(inner) {
 					return `a morph from ${inner.in} to ${inner.out}`

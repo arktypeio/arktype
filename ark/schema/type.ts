@@ -42,10 +42,6 @@ export abstract class BaseType<
 		this.branches ??= [this as never]
 	}
 
-	abstract intersectRightward(
-		other: Node<kindOrRightward<d["kind"]>>
-	): Inner<d["kind"]> | Disjoint
-
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,
 		input: Schema<refinementKind>

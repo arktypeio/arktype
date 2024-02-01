@@ -51,7 +51,11 @@ export const shallowKinds = ["pattern", "divisor", ...boundKinds] as const
 
 export type ShallowKind = (typeof shallowKinds)[number]
 
-export const refinementKinds = [...shallowKinds, "predicate"] as const
+export const refinementKinds = [
+	...propKinds,
+	...shallowKinds,
+	"predicate"
+] as const
 
 export type RefinementKind = (typeof refinementKinds)[number]
 
@@ -63,11 +67,7 @@ export const typeKinds = [...setKinds, ...basisKinds] as const
 
 export type TypeKind = (typeof typeKinds)[number]
 
-export const constraintKinds = [
-	...basisKinds,
-	...refinementKinds,
-	...propKinds
-] as const
+export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
@@ -164,7 +164,6 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
-	intersect: Record<string, (l: any, r: any) => Inner<any> | Disjoint | null>
 	defaults: ParsedUnknownNodeConfig
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
@@ -176,7 +175,6 @@ export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 
 export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
 	extends CommonNodeImplementationInput<d> {
-	intersect: NodeIntersections<d>
 	defaults: nodeDefaultsImplementationInputFor<d["kind"]>
 }
 

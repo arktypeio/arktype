@@ -1,4 +1,6 @@
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { IntersectionInner } from "../sets/intersection.js"
+import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import { BaseRefinement } from "./refinement.js"
 
 export interface DivisorInner extends BaseMeta {
@@ -39,13 +41,6 @@ export class DivisorNode extends BaseRefinement<
 		},
 		normalize: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,
-		intersect: {
-			divisor: (l, r) => ({
-				divisor: Math.abs(
-					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-				)
-			})
-		},
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
@@ -65,6 +60,24 @@ export class DivisorNode extends BaseRefinement<
 
 	get prerequisiteSchemas() {
 		return ["number"] as const
+	}
+
+	intersectOwnInner(r: DivisorNode) {
+		return {
+			divisor: Math.abs(
+				(this.divisor * r.divisor) /
+					greatestCommonDivisor(this.divisor, r.divisor)
+			)
+		}
+	}
+
+	foldIntersection(into: FoldInput<"divisor">) {
+		if (into.divisor === undefined) {
+			into.divisor = this
+			return into
+		}
+		into.divisor = this.intersectOwnKind(into.divisor)
+		return into
 	}
 }
 

@@ -1,10 +1,5 @@
 import type { and } from "@arktype/util"
-import {
-	BaseNode,
-	type Node,
-	type NodeSubclass,
-	type TypeSchema
-} from "../base.js"
+import { BaseNode, type NodeSubclass, type TypeSchema } from "../base.js"
 import type { ExpectedContext } from "../kinds.js"
 import {
 	compilePrimitive,
@@ -12,13 +7,15 @@ import {
 	type CompilationContext
 } from "../shared/compile.js"
 import type {
-	BaseComponent,
+	BaseConstraint,
 	BaseNodeDeclaration,
-	BasePrimitive
+	BasePrimitive,
+	FoldInput,
+	FoldOutput
 } from "../shared/declare.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
-	type BasisKind,
 	type ConstraintGroupName,
 	type RefinementKind
 } from "../shared/implement.js"
@@ -34,8 +31,10 @@ export abstract class BaseRefinement<
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseNode<d["prerequisite"], d, subclass>
-	implements BasePrimitive, BaseComponent
+	implements BasePrimitive, BaseConstraint<d["kind"]>
 {
+	abstract foldIntersection(into: FoldInput<d["kind"]>): FoldOutput<d["kind"]>
+
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly constraintGroup: ConstraintGroupName
@@ -56,7 +55,7 @@ export abstract class BaseRefinement<
 	}
 
 	compileApply(ctx: CompilationContext) {
-		return compilePrimitive("apply", this as any, ctx)
+		return compilePrimitive("apply", this as never, ctx)
 	}
 
 	compileAllows(ctx: CompilationContext) {

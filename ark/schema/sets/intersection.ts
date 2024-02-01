@@ -175,26 +175,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					unflattenConstraints(reducedConstraints)
 				)
 			},
-			intersect: {
-				intersection: (l, r) => {
-					let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
-					for (const refinement of r.constraints) {
-						if (result instanceof Disjoint) {
-							break
-						}
-						result = addConstraint(result, refinement)
-					}
-					return result instanceof Disjoint
-						? result
-						: unflattenConstraints(result)
-				},
-				default: (l, r) => {
-					const result = addConstraint(l.constraints, r)
-					return result instanceof Disjoint
-						? result
-						: unflattenConstraints(result)
-				}
-			},
 			defaults: {
 				description(inner) {
 					const constraints = flattenConstraints(inner)

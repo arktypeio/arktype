@@ -49,9 +49,10 @@ import type { MorphNode, distill, extractIn, extractOut } from "./sets/morph.js"
 import type { UnionNode } from "./sets/union.js"
 import type { CompilationContext } from "./shared/compile.js"
 import type {
-	BaseMeta,
 	BaseNodeDeclaration,
-	attachmentsOf
+	attachmentsOf,
+	ownIntersectionAlternateResult,
+	ownIntersectionResult
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
@@ -275,6 +276,19 @@ export abstract class BaseNode<
 
 	toString() {
 		return this.description
+	}
+
+	protected abstract intersectOwnInner(
+		r: Node<d["kind"]>
+	): d["inner"] | ownIntersectionAlternateResult<d>
+
+	intersectOwnKind(r: Node<d["kind"]>): ownIntersectionResult<d> {
+		// TODO: check equality
+		const innerResult = this.intersectOwnInner(r)
+		if (innerResult === null || innerResult instanceof Disjoint) {
+			return innerResult
+		}
+		return this.$.parseNode(this.kind, innerResult as never)
 	}
 
 	private static intersectionCache: Record<string, Node | Disjoint> = {}

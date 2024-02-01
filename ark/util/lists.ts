@@ -138,6 +138,26 @@ export const append = <
 	return to
 }
 
+/**
+ * Appends a value to an array if it is not already included, returning the array
+ *
+ * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
+ * is created including only `value`.
+ * @param value The value to append to the array. If `to` includes `value`, nothing is appended.
+ */
+export const appendUnique = <to extends unknown[]>(
+	to: to | undefined,
+	value: to[number]
+) => {
+	if (to === undefined) {
+		return [value] as never
+	}
+	if (!to.includes(value)) {
+		to.push(value)
+	}
+	return to
+}
+
 export type groupableKeyOf<t> = {
 	[k in keyof t]: t[k] extends PropertyKey ? k : never
 }[keyof t]
