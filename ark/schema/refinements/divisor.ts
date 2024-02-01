@@ -72,10 +72,6 @@ export class DivisorNode extends BaseRefinement<
 	}
 
 	foldIntersection(into: FoldInput<"divisor">) {
-		if (into.divisor === undefined) {
-			into.divisor = this
-			return into
-		}
 		into.divisor = this.intersectOwnKind(into.divisor)
 		return into
 	}

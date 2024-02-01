@@ -10,7 +10,10 @@ import type { Declaration, hasOpenIntersection } from "../kinds.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
-	declareNode
+	FoldInput,
+	FoldOutput,
+	declareNode,
+	ownIntersectionAlternateResult
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -60,6 +63,17 @@ export const boundKindPairsByLower = {
 	after: "before"
 } as const satisfies PartialRecord<BoundKind, BoundKind>
 
+type BoundKindPairsByLower = typeof boundKindPairsByLower
+
+export type pairedBoundKind<kind extends BoundKind> =
+	kind extends LowerBoundKind
+		? BoundKindPairsByLower[kind]
+		: {
+				[lowerKind in LowerBoundKind]: kind extends BoundKindPairsByLower[lowerKind]
+					? lowerKind
+					: never
+		  }[LowerBoundKind]
+
 export type LowerBoundKind = keyof typeof boundKindPairsByLower
 
 export type LowerNode = Node<LowerBoundKind>
@@ -88,13 +102,6 @@ const createLowerIntersections = <kind extends LowerBoundKind>(kind: kind) =>
 			l.limit > r.limit || (l.limit === r.limit && (l.exclusive || r.exclusive))
 				? Disjoint.from("bound", l, r)
 				: null
-	}) as {} as NodeIntersections<Declaration<kind>>
-
-const createUpperIntersections = <kind extends UpperBoundKind>(kind: kind) =>
-	({
-		// symmetric upper bound intersection
-		[kind]: (l: UpperNode, r: UpperNode): Node<UpperBoundKind> =>
-			l.limit < r.limit || (l.limit === r.limit && l.exclusive) ? l : r
 	}) as {} as NodeIntersections<Declaration<kind>>
 
 export type BaseBoundDeclaration = and<
@@ -140,6 +147,24 @@ export abstract class BaseBound<
 	readonly constraintGroup = "shallow"
 
 	comparator = compileComparator(this.kind, this.exclusive)
+
+	readonly limitKind: LimitKind =
+		this.comparator["0"] === "<" ? "upper" : "lower"
+
+	isStricterThan(
+		r: Node<d["kind"]> | Node<pairedBoundKind<d["kind"]>> | undefined
+	) {
+		if (r === undefined) {
+			return true
+		}
+		const thisLimitIsStricter =
+			this.limitKind === "upper" ? this.limit < r.limit : this.limit > r.limit
+		return thisLimitIsStricter || (this.limit === r.limit && r.exclusive)
+	}
+
+	protected intersectOwnInner(r: Node<d["kind"]>) {
+		return this.isStricterThan(r) ? this : r
+	}
 }
 
 const compileComparator = (kind: BoundKind, exclusive: true | undefined) =>
@@ -177,13 +202,17 @@ export type MinDeclaration = declareNode<{
 export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 	static implementation: nodeImplementationOf<MinDeclaration> =
 		this.implementBound({
-			intersect: createLowerIntersections("min"),
 			defaults: {
 				description(inner) {
 					return `${inner.exclusive ? "more than" : "at least"} ${inner.limit}`
 				}
 			}
 		})
+
+	foldIntersection(into: FoldInput<"min">) {
+		into.min = this.intersectOwnKind(into.min)
+		return into
+	}
 
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.limit
@@ -205,7 +234,6 @@ export type MaxDeclaration = declareNode<{
 export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 	static implementation: nodeImplementationOf<MaxDeclaration> =
 		this.implementBound({
-			intersect: createUpperIntersections("max"),
 			defaults: {
 				description(inner) {
 					return `${inner.exclusive ? "less than" : "at most"} ${inner.limit}`
@@ -216,6 +244,14 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.limit
 		: (data: number) => data <= this.limit
+
+	foldIntersection(into: FoldInput<"max">): FoldOutput<"max"> {
+		into.max = this.intersectOwnKind(into.max)
+		if (into.min?.isStricterThan(this)) {
+			return Disjoint.from("bound", this, into.min)
+		}
+		return into
+	}
 }
 
 abstract class BaseLengthBound<
@@ -251,7 +287,6 @@ export class MinLengthNode extends BaseLengthBound<
 > {
 	static implementation: nodeImplementationOf<MinLengthDeclaration> =
 		this.implementBound({
-			intersect: createLowerIntersections("minLength"),
 			defaults: {
 				description(inner) {
 					return inner.exclusive
@@ -269,6 +304,11 @@ export class MinLengthNode extends BaseLengthBound<
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length > this.limit
 		: (data: string | readonly unknown[]) => data.length >= this.limit
+
+	foldIntersection(into: FoldInput<"minLength">) {
+		into.minLength = this.intersectOwnKind(into.minLength)
+		return into
+	}
 }
 
 export type MaxLengthDeclaration = declareNode<{
@@ -288,7 +328,6 @@ export class MaxLengthNode extends BaseLengthBound<
 > {
 	static implementation: nodeImplementationOf<MaxLengthDeclaration> =
 		this.implementBound({
-			intersect: createUpperIntersections("maxLength"),
 			defaults: {
 				description(inner) {
 					return inner.exclusive
@@ -302,6 +341,14 @@ export class MaxLengthNode extends BaseLengthBound<
 	traverseAllows = this.exclusive
 		? (data: string | readonly unknown[]) => data.length < this.limit
 		: (data: string | readonly unknown[]) => data.length <= this.limit
+
+	foldIntersection(into: FoldInput<"maxLength">): FoldOutput<"maxLength"> {
+		into.maxLength = this.intersectOwnKind(into.maxLength)
+		if (into.minLength?.isStricterThan(this)) {
+			return Disjoint.from("bound", this, into.minLength)
+		}
+		return into
+	}
 }
 
 abstract class BaseDateBound<
@@ -346,7 +393,6 @@ export class AfterNode extends BaseDateBound<
 > {
 	static implementation: nodeImplementationOf<AfterDeclaration> =
 		this.implementBound({
-			intersect: createLowerIntersections("after"),
 			defaults: {
 				description(inner) {
 					const limitString = dateLimitToString(inner.limit)
@@ -361,6 +407,11 @@ export class AfterNode extends BaseDateBound<
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.numericLimit
 		: (data: Date) => +data >= this.numericLimit
+
+	foldIntersection(into: FoldInput<"after">) {
+		into.after = this.intersectOwnKind(into.after)
+		return into
+	}
 }
 
 export type BeforeDeclaration = declareNode<{
@@ -381,7 +432,6 @@ export class BeforeNode extends BaseDateBound<
 > {
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
 		this.implementBound({
-			intersect: createUpperIntersections("before"),
 			defaults: {
 				description(inner) {
 					const limitString = dateLimitToString(inner.limit)
@@ -396,6 +446,14 @@ export class BeforeNode extends BaseDateBound<
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.numericLimit
 		: (data: Date) => +data <= this.numericLimit
+
+	foldIntersection(into: FoldInput<"before">): FoldOutput<"before"> {
+		into.before = this.intersectOwnKind(into.before)
+		if (into.after?.isStricterThan(this)) {
+			return Disjoint.from("bound", this, into.after)
+		}
+		return into
+	}
 }
 
 export type BoundDeclarations = {

@@ -1,4 +1,5 @@
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { appendUnique } from "@arktype/util"
+import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -22,6 +23,7 @@ export type PredicateDeclaration = declareNode<{
 	intersections: {
 		predicate: "predicate" | null
 	}
+	open: true
 	data: unknown
 	expectedContext: { expected: string }
 }>
@@ -41,13 +43,6 @@ export class PredicateNode extends BaseRefinement<
 		},
 		normalize: (schema) =>
 			typeof schema === "function" ? { predicate: schema } : schema,
-		intersect: {
-			// TODO: allow changed order to be the same type
-			// as long as the narrows in l and r are individually safe to check
-			// in the order they're specified, checking them in the order
-			// resulting from this intersection should also be safe.
-			predicate: () => null
-		},
 		defaults: {
 			description(inner) {
 				return `valid according to ${inner.predicate.name}`
@@ -68,6 +63,19 @@ export class PredicateNode extends BaseRefinement<
 
 	get prerequisiteSchemas() {
 		return [{}] as const
+	}
+
+	intersectOwnInner(r: PredicateNode) {
+		// TODO: allow changed order to be the same type
+		// as long as the narrows in l and r are individually safe to check
+		// in the order they're specified, checking them in the order
+		// resulting from this intersection should also be safe.
+		return null
+	}
+
+	foldIntersection(into: FoldInput<"predicate">) {
+		into.predicate = appendUnique(into.predicate, this)
+		return into
 	}
 }
 

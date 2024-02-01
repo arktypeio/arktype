@@ -282,7 +282,10 @@ export abstract class BaseNode<
 		r: Node<d["kind"]>
 	): d["inner"] | ownIntersectionAlternateResult<d>
 
-	intersectOwnKind(r: Node<d["kind"]>): ownIntersectionResult<d> {
+	intersectOwnKind(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
+		if (r === undefined) {
+			return this as never
+		}
 		// TODO: check equality
 		const innerResult = this.intersectOwnInner(r)
 		if (innerResult === null || innerResult instanceof Disjoint) {
