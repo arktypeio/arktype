@@ -24,7 +24,7 @@ import type {
 } from "../scope.js"
 import type { ConditionalConstraintKind } from "../sets/intersection.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
+import type { BaseMeta, BaseNodeDeclaration, attachmentsOf } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NodeIntersections } from "./intersect.js"
 
@@ -159,13 +159,21 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	hasAssociatedError: boolean
 	collapseKey?: keyof d["inner"] & string
 	addParseContext?: (ctx: SchemaParseContext) => void
-	reduce?: (inner: d["inner"], scope: ScopeNode) => Node | undefined
+	reduce?: (inner: d["inner"], $: ScopeNode) => Node | undefined
+}
+
+export type PrimitiveImplementation<d extends BaseNodeDeclaration> = (
+	attachments: attachmentsOf<d>
+) => {
+	compiledCondition: string
+	compiledNegation: string
 }
 
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
 	keys: Record<string, NodeKeyImplementation<any, any>>
+	primitive?: PrimitiveImplementation<BaseNodeDeclaration>
 }
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
@@ -173,10 +181,12 @@ export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 		defaults: nodeDefaultsImplementationFor<d["kind"]>
 	}
 
-export interface nodeImplementationInputOf<d extends BaseNodeDeclaration>
-	extends CommonNodeImplementationInput<d> {
-	defaults: nodeDefaultsImplementationInputFor<d["kind"]>
-}
+export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
+	CommonNodeImplementationInput<d> & {
+		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
+	} & (d["primitive"] extends true
+			? { primitive: PrimitiveImplementation<d> }
+			: {})
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,

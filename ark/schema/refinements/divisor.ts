@@ -1,6 +1,5 @@
-import type { IntersectionInner } from "../sets/intersection.js"
+import { BaseNode } from "../base.js"
 import type { BaseMeta, FoldInput, declareNode } from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
 import { BaseRefinement } from "./refinement.js"
 
 export interface DivisorInner extends BaseMeta {
@@ -20,6 +19,7 @@ export type DivisorDeclaration = declareNode<{
 		divisor: "divisor"
 	}
 	prerequisite: number
+	primitive: true
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -30,7 +30,8 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export class DivisorNode extends BaseRefinement<
+export class DivisorNode extends BaseNode<
+	number,
 	DivisorDeclaration,
 	typeof DivisorNode
 > {
@@ -48,15 +49,16 @@ export class DivisorNode extends BaseRefinement<
 					? "an integer"
 					: `a multiple of ${inner.divisor}`
 			}
-		}
+		},
+		primitive: (node) => ({
+			compiledCondition: `${node.$.dataArg} % ${node.divisor} === 0`,
+			compiledNegation: `${node.$.dataArg} % ${node.divisor} !== 0`
+		})
 	})
 
 	readonly constraintGroup = "shallow"
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
-
-	compiledCondition = `${this.$.dataArg} % ${this.divisor} === 0`
-	compiledNegation = `${this.$.dataArg} % ${this.divisor} !== 0`
 
 	get prerequisiteSchemas() {
 		return ["number"] as const

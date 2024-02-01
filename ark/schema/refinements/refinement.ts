@@ -13,7 +13,6 @@ import type {
 	FoldInput,
 	FoldOutput
 } from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
 	type ConstraintGroupName,
@@ -61,4 +60,11 @@ export abstract class BaseRefinement<
 	compileAllows(ctx: CompilationContext) {
 		return compilePrimitive("allows", this as never, ctx)
 	}
+}
+
+export interface PrimitiveAttachments<d extends BaseNodeDeclaration> {
+	traverseApply: TraverseApply<d["prerequisite"]>
+	compileApply(ctx: CompilationContext): string
+	compileAllows(ctx: CompilationContext): string
+	expectedContext: ExpectedContext<d["kind"]>
 }

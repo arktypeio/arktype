@@ -1,8 +1,7 @@
 import { domainOf, printable } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { compileSerializedValue } from "../traversal/registry.js"
-import { BaseBasis } from "./basis.js"
+import { BaseType } from "../type.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 
@@ -20,9 +19,10 @@ export type UnitDeclaration = declareNode<{
 		default: "unit" | Disjoint
 	}
 	disjoinable: true
+	primitive: true
 }>
 
-export class UnitNode<t = unknown> extends BaseBasis<
+export class UnitNode<t = unknown> extends BaseType<
 	t,
 	UnitDeclaration,
 	typeof UnitNode
@@ -39,16 +39,21 @@ export class UnitNode<t = unknown> extends BaseBasis<
 			description(inner) {
 				return printable(inner.unit)
 			}
+		},
+		primitive: (node) => {
+			const serializedValue = (node.json as any).unit
+			return {
+				compiledCondition: `${node.$.dataArg} === ${serializedValue}`,
+				compiledNegation: `${node.$.dataArg} !== ${serializedValue}`
+			}
 		}
 	})
 
-	serializedValue = compileSerializedValue(this.unit)
+	serializedValue: string = (this.json as any).unit
 	traverseAllows = (data: unknown) => data === this.unit
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
-	compiledCondition = `${this.$.dataArg} === ${this.serializedValue}`
-	compiledNegation = `${this.$.dataArg} !== ${this.serializedValue}`
 
 	// TODO:
 	// default: (l, r) =>

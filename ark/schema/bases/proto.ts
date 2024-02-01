@@ -8,7 +8,7 @@ import {
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
-import { BaseBasis } from "./basis.js"
+import { BaseType } from "../type.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -32,11 +32,12 @@ export type ProtoDeclaration = declareNode<{
 		domain: "proto" | Disjoint
 	}
 	disjoinable: true
+	primitive: true
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export class ProtoNode<t = unknown> extends BaseBasis<
+export class ProtoNode<t = unknown> extends BaseType<
 	t,
 	ProtoDeclaration,
 	typeof ProtoNode
@@ -63,14 +64,21 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return objectKindOrDomainOf(data)
 			}
+		},
+		primitive: (node) => {
+			const compiledCondition = `${node.$.dataArg} instanceof ${
+				(node.json as any).proto
+			}`
+			return {
+				compiledCondition,
+				compiledNegation: `!(${compiledCondition})`
+			}
 		}
 	})
 
 	readonly basisName = `${this.proto.name}`
 	readonly serializedConstructor = (this.json as { proto: string }).proto
 	readonly domain = "object"
-	readonly compiledCondition = `${this.$.dataArg} instanceof ${this.serializedConstructor}`
-	readonly compiledNegation = `!(${this.compiledCondition})`
 	traverseAllows = (data: unknown) => data instanceof this.proto
 
 	// TODO:

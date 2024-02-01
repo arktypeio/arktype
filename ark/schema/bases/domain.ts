@@ -1,7 +1,7 @@
 import { domainOf, type Domain } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { BaseBasis } from "./basis.js"
+import { BaseType } from "../type.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -29,9 +29,10 @@ export type DomainDeclaration = declareNode<{
 		domain: "domain" | Disjoint
 	}
 	disjoinable: true
+	primitive: true
 }>
 
-export class DomainNode<t = unknown> extends BaseBasis<
+export class DomainNode<t = unknown> extends BaseType<
 	t,
 	DomainDeclaration,
 	typeof DomainNode
@@ -51,20 +52,20 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return domainOf(data)
 			}
-		}
+		},
+		primitive: (node) => ({
+			compiledCondition:
+				node.domain === "object"
+					? `((typeof ${node.$.dataArg} === "object" && ${node.$.dataArg} !== null) || typeof ${node.$.dataArg} === "function")`
+					: `typeof ${node.$.dataArg} === "${node.domain}"`,
+			compiledNegation:
+				node.domain === "object"
+					? `((typeof ${node.$.dataArg} !== "object" || ${node.$.dataArg} === null) && typeof ${node.$.dataArg} !== "function")`
+					: `typeof ${node.$.dataArg} !== "${node.domain}"`
+		})
 	})
 
 	basisName = this.domain
-
-	compiledCondition =
-		this.domain === "object"
-			? `((typeof ${this.$.dataArg} === "object" && ${this.$.dataArg} !== null) || typeof ${this.$.dataArg} === "function")`
-			: `typeof ${this.$.dataArg} === "${this.domain}"`
-
-	compiledNegation =
-		this.domain === "object"
-			? `((typeof ${this.$.dataArg} !== "object" || ${this.$.dataArg} === null) && typeof ${this.$.dataArg} !== "function")`
-			: `typeof ${this.$.dataArg} !== "${this.domain}"`
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
 

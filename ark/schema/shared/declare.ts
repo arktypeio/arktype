@@ -1,10 +1,11 @@
-import type { Dict, and, evaluate, mutable, requireKeys } from "@arktype/util"
+import type { Dict, and, evaluate, mutable } from "@arktype/util"
 import type { NarrowedAttachments, Node, TypeSchema } from "../base.js"
 import type {
 	Declaration,
 	OpenComponentKind,
 	reducibleKindOf
 } from "../kinds.js"
+import type { PrimitiveAttachments } from "../refinements/refinement.js"
 import type { IntersectionInner } from "../sets/intersection.js"
 import type { Disjoint } from "./disjoint.js"
 import type {
@@ -16,7 +17,7 @@ import type {
 	RefinementKind,
 	SetKind
 } from "./implement.js"
-import type { kindOrRightward, kindRightOf } from "./intersect.js"
+import type { kindRightOf } from "./intersect.js"
 
 export interface BaseMeta {
 	readonly description?: string
@@ -50,6 +51,7 @@ export type DeclarationInput<kind extends NodeKind = NodeKind> = {
 	inner: BaseMeta
 	disjoinable?: true
 	open?: true
+	primitive?: true
 	expectedContext?: Dict
 	prerequisite?: unknown
 	childKind?: NodeKind
@@ -68,6 +70,7 @@ export type declareNode<d extends DeclarationInput> = and<
 	{
 		disjoinable: d["disjoinable"] extends true ? true : false
 		open: d["open"] extends true ? true : false
+		primitive: d["primitive"] extends true ? true : false
 		prerequisite: prerequisiteOf<d>
 		childKind: d["childKind"] extends string ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
@@ -84,7 +87,9 @@ type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 	: unknown
 
 export type attachmentsOf<d extends BaseNodeDeclaration> =
-	NarrowedAttachments<d> & d["inner"]
+	NarrowedAttachments<d> &
+		d["inner"] &
+		(d["primitive"] extends true ? PrimitiveAttachments<d> : {})
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind
@@ -94,6 +99,7 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	disjoinable: boolean
 	open: boolean
+	primitive: boolean
 	childKind: NodeKind
 	parentKind: SetKind | PropKind
 	expectedContext: unknown
