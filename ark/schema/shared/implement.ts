@@ -23,7 +23,6 @@ import { compileSerializedValue } from "../traversal/registry.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
-	attachmentsOf,
 	baseAttachmentsOf
 } from "./declare.js"
 
@@ -193,7 +192,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 
 export type AttachImplementation<d extends BaseNodeDeclaration> = (
 	base: baseAttachmentsOf<d>
-) => PrimitiveAttachmentsInput
+) => d["attachments"]
 
 export interface PrimitiveAttachmentsInput {
 	compiledCondition: string

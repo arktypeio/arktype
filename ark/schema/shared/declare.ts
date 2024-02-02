@@ -68,10 +68,10 @@ export type attachmentsOf<d extends BaseNodeDeclaration> =
 	baseAttachmentsOf<d> &
 		d["attachments"] &
 		(d["attachments"] extends PrimitiveAttachmentsInput
-			? PrimitiveAttachments<d>
+			? DerivablePrimitiveAttachments<d>
 			: {})
 
-export interface PrimitiveAttachments<d extends BaseNodeDeclaration> {
+export interface DerivablePrimitiveAttachments<d extends BaseNodeDeclaration> {
 	traverseApply: TraverseApply<d["prerequisite"]>
 	compileApply(ctx: CompilationContext): string
 	compileAllows(ctx: CompilationContext): string

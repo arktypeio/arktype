@@ -1,4 +1,4 @@
-import {
+]import {
 	DynamicBase,
 	capitalize,
 	includes,
@@ -72,7 +72,11 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
-import { TraversalContext } from "./traversal/context.js"
+import {
+	TraversalContext,
+	type TraverseAllows,
+	type TraverseApply
+} from "./traversal/context.js"
 import type { ArkResult } from "./traversal/errors.js"
 
 export interface BaseAttachments {
@@ -100,8 +104,19 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 
 export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 	{
+		new (attachments: never): BaseNode<any, d, any> & BaseAbstracts<d>
 		readonly implementation: nodeImplementationOf<d>
 	}
+
+export interface BaseAbstracts<
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
+> {
+	hasOpenIntersection: d["open"]
+	traverseAllows: TraverseAllows<d["prerequisite"]>
+	traverseApply: TraverseApply<d["prerequisite"]>
+	compileApply(ctx: CompilationContext): string
+	compileAllows(ctx: CompilationContext): string
+}
 
 export const isNode = (value: unknown): value is Node =>
 	value instanceof BaseNode
@@ -153,7 +168,6 @@ export abstract class BaseNode<
 
 	private readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation
-
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
@@ -168,6 +182,7 @@ export abstract class BaseNode<
 	readonly contributesReferencesByName: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
 	readonly precedence = precedenceOfKind(this.kind)
+	protected readonly abstracts: BaseAbstracts = this as never
 	// use declare here to ensure description from attachments isn't overwritten
 	declare readonly description: string
 
@@ -183,20 +198,14 @@ export abstract class BaseNode<
 		)
 	}
 
-	// abstract hasOpenIntersection: hasOpenIntersection<d>
-	// abstract traverseAllows: TraverseAllows<d["prerequisite"]>
-	// abstract traverseApply: TraverseApply<d["prerequisite"]>
-	// abstract compileApply(ctx: CompilationContext): string
-	// abstract compileAllows(ctx: CompilationContext): string
-
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
 		const ctx = new TraversalContext(data, this.$.config)
-		return this.traverseAllows(data as never, ctx)
+		return this.abstracts.traverseAllows(data as never, ctx)
 	}
 
 	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
 		const ctx = new TraversalContext(data, this.$.config)
-		this.traverseApply(data as never, ctx)
+		this.abstracts.traverseApply(data, ctx)
 		if (ctx.currentErrors.length === 0) {
 			return { out: data } as any
 		}
@@ -323,7 +332,7 @@ export abstract class BaseNode<
 			: other.isBasis()
 			? {
 					basis: other,
-					[this.kind]: this.hasOpenIntersection ? [this] : this
+					[this.kind]: this.abstracts.hasOpenIntersection ? [this] : this
 			  }
 			: this.hasKind("predicate") && other.hasKind("predicate")
 			? { predicate: [this, other] }
@@ -343,7 +352,7 @@ export abstract class BaseNode<
 		const l: UnknownNode = leftOperandOf(this as never, other) as any
 		const thisIsLeft = l === (this as never)
 		const r: UnknownNode = thisIsLeft ? other : (this as any)
-		const intersections = l.impl.intersect
+		const intersections = l.impl as any
 		const intersector = intersections[r.kind] ?? intersections.default
 		const result = intersector?.(l, r as never)
 		if (result) {

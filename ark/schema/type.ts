@@ -28,7 +28,7 @@ export abstract class BaseType<
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<BranchKind>[]
 
-	hasOpenIntersection = false
+	hasOpenIntersection = false as d["open"]
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)
