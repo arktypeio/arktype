@@ -61,6 +61,7 @@ export type IntersectionDeclaration = declareNode<{
 		errors: readonly ArkTypeError[]
 	}
 	disjoinable: true
+	childKind: ConstraintKind
 }>
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)

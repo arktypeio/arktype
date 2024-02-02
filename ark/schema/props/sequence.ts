@@ -4,6 +4,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	createBasisAssertion,
 	type NodeKeyImplementation,
+	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -32,6 +33,7 @@ export type SequenceDeclaration = declareNode<{
 	inner: SequenceInner
 	composition: "composite"
 	prerequisite: readonly unknown[]
+	childKind: TypeKind
 }>
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<

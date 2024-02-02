@@ -8,6 +8,7 @@ import type {
 import type { Disjoint } from "../shared/disjoint.js"
 import {
 	createBasisAssertion,
+	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -30,6 +31,7 @@ export type IndexDeclaration = declareNode<{
 	composition: "composite"
 	prerequisite: object
 	open: true
+	childKind: TypeKind
 }>
 
 export class IndexNode extends BaseNode<

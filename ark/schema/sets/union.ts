@@ -47,6 +47,7 @@ export type UnionDeclaration = declareNode<{
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
+	childKind: BranchKind
 }>
 
 const intersectBranch = (

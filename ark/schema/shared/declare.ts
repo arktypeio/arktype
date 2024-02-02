@@ -19,21 +19,30 @@ export interface BaseMeta {
 	readonly description?: string
 }
 
-export type NodeComposition = "primitive" | "composite"
+export type NodeCompositionKind = "primitive" | "composite"
 
-export type DeclarationInput<kind extends NodeKind = NodeKind> = {
-	kind: kind
+interface BaseDeclarationInput {
+	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
-	composition: NodeComposition
 	disjoinable?: true
 	open?: true
 	attachments?: object
 	expectedContext?: unknown
 	prerequisite?: unknown
-	childKind?: NodeKind
 }
+
+interface CompositeDeclarationInput extends BaseDeclarationInput {
+	composition: "composite"
+	childKind: NodeKind
+}
+
+interface PrimitiveDeclarationInput extends BaseDeclarationInput {
+	composition: "primitive"
+}
+
+type DeclarationInput = CompositeDeclarationInput | PrimitiveDeclarationInput
 
 type ParentsByKind = {
 	[k in NodeKind]: {
@@ -50,13 +59,9 @@ export type declareNode<d extends DeclarationInput> = and<
 		open: d["open"] extends true ? true : false
 		attachments: d["attachments"] extends object ? d["attachments"] : {}
 		prerequisite: prerequisiteOf<d>
-		childKind: d["childKind"] extends string ? d["childKind"] : never
+		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
-		expectedContext: d["expectedContext"] extends {}
-			? {}
-			: d["expectedContext"] extends null
-			? null
-			: d["inner"]
+		expectedContext: d["expectedContext"] extends {} ? {} : d["inner"]
 	}
 >
 

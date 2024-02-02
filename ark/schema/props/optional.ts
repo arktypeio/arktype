@@ -33,6 +33,7 @@ export type OptionalDeclaration = declareNode<{
 	composition: "composite"
 	prerequisite: object
 	open: true
+	childKind: TypeKind
 }>
 
 export class OptionalNode extends BaseNode<

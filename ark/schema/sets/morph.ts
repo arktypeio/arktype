@@ -59,6 +59,7 @@ export type MorphDeclaration = declareNode<{
 	inner: MorphInner
 	composition: "composite"
 	disjoinable: true
+	childKind: ValidatorKind
 }>
 
 export class MorphNode<t = unknown> extends BaseType<

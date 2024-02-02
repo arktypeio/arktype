@@ -38,6 +38,7 @@ export type RequiredDeclaration = declareNode<{
 	prerequisite: object
 	open: true
 	disjoinable: true
+	childKind: TypeKind
 }>
 
 export class RequiredNode extends BaseNode<
