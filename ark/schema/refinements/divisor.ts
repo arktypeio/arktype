@@ -15,6 +15,7 @@ export type DivisorDeclaration = declareNode<{
 	schema: DivisorSchema
 	normalizedSchema: NormalizedDivisorSchema
 	inner: DivisorInner
+	composition: "primitive"
 	prerequisite: number
 	attachments: PrimitiveAttachmentsInput
 }>
@@ -48,6 +49,7 @@ export class DivisorNode extends BaseNode<
 			}
 		},
 		attachments: (base) => ({
+			primitive: true,
 			compiledCondition: `${base.$.dataArg} % ${base.divisor} === 0`,
 			compiledNegation: `${base.$.dataArg} % ${base.divisor} !== 0`
 		})

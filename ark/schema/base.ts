@@ -1,4 +1,4 @@
-]import {
+import {
 	DynamicBase,
 	capitalize,
 	includes,
@@ -301,7 +301,7 @@ export abstract class BaseNode<
 	private static intersectionCache: Record<string, Node | Disjoint> = {}
 	intersect<other extends Node>(
 		other: other
-	): this["kind"] | other["kind"] | Disjoint
+	): Node<this["kind"] | other["kind"]> | Disjoint
 	intersect(other: Node): Node | Disjoint | null {
 		const cacheKey = `${this.typeId}&${other.typeId}`
 		if (BaseNode.intersectionCache[cacheKey] !== undefined) {

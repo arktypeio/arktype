@@ -42,6 +42,8 @@ export type UnionDeclaration = declareNode<{
 	schema: UnionSchema
 	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
+	composition: "composite"
+	disjoinable: true
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
@@ -122,43 +124,47 @@ export class UnionNode<t = unknown> extends BaseType<
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.branches.forEach((b) => b.traverseApply(data, ctx))
 
+	protected intersectOwnInner(r: UnionNode) {
+		if (
+			(this.branches.length === 0 || r.branches.length === 0) &&
+			this.branches.length !== r.branches.length
+		) {
+			// if exactly one operand is never, we can use it to discriminate based on presence
+			return Disjoint.from(
+				"presence",
+				this.branches.length !== 0,
+				r.branches.length !== 0
+			)
+		}
+		let resultBranches: readonly BranchNode[] | Disjoint
+		if (this.ordered) {
+			if (r.ordered) {
+				return Disjoint.from("indiscriminableMorphs", this, r)
+			}
+			resultBranches = intersectBranches(r.branches, this.branches)
+			if (resultBranches instanceof Disjoint) {
+				resultBranches.invert()
+			}
+		} else {
+			resultBranches = intersectBranches(this.branches, r.branches)
+		}
+		if (resultBranches instanceof Disjoint) {
+			return resultBranches
+		}
+		return this.ordered || r.ordered
+			? {
+					branches: resultBranches,
+					ordered: true as const
+			  }
+			: { branches: resultBranches }
+	}
+
 	intersectRightward(
 		r: Node<kindOrRightward<this["kind"]>>
 	): UnionInner | Disjoint {
 		switch (r.kind) {
 			case "union":
-				if (
-					(this.branches.length === 0 || r.branches.length === 0) &&
-					this.branches.length !== r.branches.length
-				) {
-					// if exactly one operand is never, we can use it to discriminate based on presence
-					return Disjoint.from(
-						"presence",
-						this.branches.length !== 0,
-						r.branches.length !== 0
-					)
-				}
-				let resultBranches: readonly BranchNode[] | Disjoint
-				if (this.ordered) {
-					if (r.ordered) {
-						return Disjoint.from("indiscriminableMorphs", this, r)
-					}
-					resultBranches = intersectBranches(r.branches, this.branches)
-					if (resultBranches instanceof Disjoint) {
-						resultBranches.invert()
-					}
-				} else {
-					resultBranches = intersectBranches(this.branches, r.branches)
-				}
-				if (resultBranches instanceof Disjoint) {
-					return resultBranches
-				}
-				return this.ordered || r.ordered
-					? {
-							branches: resultBranches,
-							ordered: true as const
-					  }
-					: { branches: resultBranches }
+				return this.intersectOwnInner(r)
 			case "morph":
 				return intersectBranch(this, r)
 			case "intersection":

@@ -13,8 +13,7 @@ import { compileSerializedValue } from "../traversal/registry.js"
 import {
 	compileKey,
 	compilePresentPropAllows,
-	compilePresentPropApply,
-	type NamedPropKind
+	compilePresentPropApply
 } from "./prop.js"
 
 export interface RequiredSchema extends BaseMeta {
@@ -35,27 +34,11 @@ export type RequiredDeclaration = declareNode<{
 	expectedContext: {
 		key: string | symbol
 	}
+	composition: "composite"
 	prerequisite: object
 	open: true
+	disjoinable: true
 }>
-
-const intersectNamed = (
-	l: Node<NamedPropKind>,
-	r: Node<NamedPropKind>
-): Inner<NamedPropKind> | Disjoint | null => {
-	if (l.key !== r.key) {
-		return null
-	}
-	const key = l.key
-	const value = l.value.intersect(r.value)
-	if (value instanceof Disjoint) {
-		return value
-	}
-	return {
-		key,
-		value
-	}
-}
 
 export class RequiredNode extends BaseNode<
 	object,
@@ -129,5 +112,20 @@ export class RequiredNode extends BaseNode<
 
 	getCheckedDefinitions() {
 		return ["object"] as const
+	}
+
+	protected intersectOwnInner(r: Inner<"required" | "optional">) {
+		if (this.key !== r.key) {
+			return null
+		}
+		const key = this.key
+		const value = this.value.intersect(r.value)
+		if (value instanceof Disjoint) {
+			return value
+		}
+		return {
+			key,
+			value
+		}
 	}
 }

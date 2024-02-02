@@ -59,7 +59,7 @@ export function parse(
 	ctx: SchemaParseContext
 ): Node {
 	const cls = nodesByKind[kind]
-	const impl = cls.implementation as UnknownNodeImplementation
+	const impl: UnknownNodeImplementation = cls.implementation as never
 	if (schema instanceof BaseNode) {
 		return schema.kind === kind
 			? (schema as never)

@@ -17,6 +17,7 @@ export type PatternDeclaration = declareNode<{
 	schema: PatternSchema
 	normalizedSchema: NormalizedPatternSchema
 	inner: PatternInner
+	composition: "primitive"
 	open: true
 	prerequisite: string
 	attachments: PrimitiveAttachmentsInput
@@ -52,6 +53,7 @@ export class PatternNode extends BaseNode<
 				base.$.dataArg
 			})`
 			return {
+				primitive: true,
 				compiledCondition,
 				compiledNegation: `!${compiledCondition}`
 			}

@@ -195,6 +195,7 @@ export type AttachImplementation<d extends BaseNodeDeclaration> = (
 ) => d["attachments"]
 
 export interface PrimitiveAttachmentsInput {
+	primitive: true
 	compiledCondition: string
 	compiledNegation: string
 }

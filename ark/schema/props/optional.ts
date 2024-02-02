@@ -30,6 +30,7 @@ export type OptionalDeclaration = declareNode<{
 	schema: OptionalSchema
 	normalizedSchema: OptionalSchema
 	inner: OptionalInner
+	composition: "composite"
 	prerequisite: object
 	open: true
 }>

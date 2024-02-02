@@ -142,6 +142,7 @@ export abstract class BaseBound<
 				const comparator = compileComparator(base.kind, base.exclusive)
 				const numericLimit = normalizeLimit(base.limit)
 				return {
+					primitive: true,
 					boundOperandKind,
 					compiledActual,
 					comparator,
@@ -212,6 +213,7 @@ type declareBound<input extends BoundDeclarationInput> = declareNode<{
 	schema: BoundSchema<input["limit"]>
 	normalizedSchema: NormalizedBoundSchema<input["limit"]>
 	inner: BoundInner<input["limit"]>
+	composition: "primitive"
 	prerequisite: input["prerequisite"]
 	attachments: BoundAttachmentsInput
 }>

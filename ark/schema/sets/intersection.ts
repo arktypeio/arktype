@@ -56,9 +56,11 @@ export type IntersectionDeclaration = declareNode<{
 	schema: IntersectionSchema
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
+	composition: "composite"
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
+	disjoinable: true
 }>
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
@@ -195,13 +197,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	readonly props = this.groups.props
 	readonly shallow = this.groups.shallow
 
-	intersectRightward(
-		r: Node<kindOrRightward<"intersection">>
-	): IntersectionInner | Disjoint {
-		if (r.kind !== "intersection") {
-			const result = addConstraint(this.constraints, r)
-			return result instanceof Disjoint ? result : unflattenConstraints(result)
-		}
+	protected intersectOwnInner(r: IntersectionNode) {
 		let result: readonly Node<ConstraintKind>[] | Disjoint = this.constraints
 		for (const refinement of r.constraints) {
 			if (result instanceof Disjoint) {
@@ -210,6 +206,16 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			result = addConstraint(result, refinement)
 		}
 		return result instanceof Disjoint ? result : unflattenConstraints(result)
+	}
+
+	intersectRightward(
+		r: Node<kindOrRightward<"intersection">>
+	): IntersectionInner | Disjoint {
+		if (r.kind !== "intersection") {
+			const result = addConstraint(this.constraints, r)
+			return result instanceof Disjoint ? result : unflattenConstraints(result)
+		}
+		return this.intersectRightward(r)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

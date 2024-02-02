@@ -19,11 +19,14 @@ export interface BaseMeta {
 	readonly description?: string
 }
 
+export type NodeComposition = "primitive" | "composite"
+
 export type DeclarationInput<kind extends NodeKind = NodeKind> = {
 	kind: kind
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
+	composition: NodeComposition
 	disjoinable?: true
 	open?: true
 	attachments?: object

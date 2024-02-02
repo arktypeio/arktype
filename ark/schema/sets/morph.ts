@@ -57,6 +57,8 @@ export type MorphDeclaration = declareNode<{
 	schema: MorphSchema
 	normalizedSchema: MorphSchema
 	inner: MorphInner
+	composition: "composite"
+	disjoinable: true
 }>
 
 export class MorphNode<t = unknown> extends BaseType<

@@ -55,6 +55,7 @@ export const compilePrimitiveProblem = (
 ) => {
 	return `${ctx.ctxArg}.error(${JSON.stringify(node.expectedContext)})`
 }
+
 export type CompilationContext = {
 	dataArg: string
 	ctxArg: string

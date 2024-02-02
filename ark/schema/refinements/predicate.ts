@@ -21,6 +21,7 @@ export type PredicateDeclaration = declareNode<{
 	schema: PredicateSchema
 	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
+	composition: "primitive"
 	open: true
 	expectedContext: { expected: string }
 	attachments: PrimitiveAttachmentsInput
@@ -55,6 +56,7 @@ export class PredicateNode extends BaseNode<
 				base.$.dataArg
 			})`
 			return {
+				primitive: true,
 				compiledCondition,
 				compiledNegation: `!${compiledCondition}`
 			}

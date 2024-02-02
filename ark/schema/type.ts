@@ -57,7 +57,7 @@ export abstract class BaseType<
 	and<other extends Node>(
 		other: other
 		// TODO: FIX
-	): d["kind"] | other["kind"] {
+	): TypeNode<d["kind"] | other["kind"]> {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
