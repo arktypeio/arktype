@@ -79,7 +79,11 @@ export type OpenIntersectionKind = {
 
 export type ClosedIntersectionKind = Exclude<NodeKind, OpenIntersectionKind>
 
-export const primitiveKinds = [...basisKinds, ...refinementKinds] as const
+export const primitiveKinds = [
+	...basisKinds,
+	...shallowKinds,
+	"predicate"
+] as const
 
 export type PrimitiveKind = (typeof primitiveKinds)[number]
 

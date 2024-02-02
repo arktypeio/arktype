@@ -15,6 +15,7 @@ export type UnitDeclaration = declareNode<{
 	schema: UnitSchema
 	normalizedSchema: UnitSchema
 	inner: UnitInner
+	composition: "primitive"
 	disjoinable: true
 	attachments: PrimitiveAttachmentsInput
 }>
@@ -40,6 +41,7 @@ export class UnitNode<t = unknown> extends BaseType<
 		attachments: (base) => {
 			const serializedValue = (base.json as any).unit
 			return {
+				primitive: true,
 				compiledCondition: `${base.$.dataArg} === ${serializedValue}`,
 				compiledNegation: `${base.$.dataArg} !== ${serializedValue}`
 			}

@@ -1,8 +1,8 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type {
-	BaseConstraint,
 	BaseMeta,
+	BaseRefinement,
 	declareNode
 } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"

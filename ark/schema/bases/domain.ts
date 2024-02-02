@@ -26,6 +26,7 @@ export type DomainDeclaration = declareNode<{
 	schema: DomainSchema
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
+	composition: "primitive"
 	disjoinable: true
 	attachments: PrimitiveAttachmentsInput
 }>
@@ -52,6 +53,7 @@ export class DomainNode<t = unknown> extends BaseType<
 			}
 		},
 		attachments: (base) => ({
+			primitive: true,
 			compiledCondition:
 				base.domain === "object"
 					? `((typeof ${base.$.dataArg} === "object" && ${base.$.dataArg} !== null) || typeof ${base.$.dataArg} === "function")`

@@ -114,7 +114,7 @@ export type FoldInput<kind extends RefinementKind> = {
 
 export type FoldOutput<kind extends RefinementKind> = FoldInput<kind> | Disjoint
 
-export interface BaseConstraint<kind extends RefinementKind> {
+export interface BaseRefinement<kind extends RefinementKind> {
 	foldIntersection(into: FoldInput<kind>): FoldOutput<kind>
 	// TODO: update
 	readonly constraintGroup: ConstraintGroupName

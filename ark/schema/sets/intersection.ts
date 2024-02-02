@@ -215,7 +215,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			const result = addConstraint(this.constraints, r)
 			return result instanceof Disjoint ? result : unflattenConstraints(result)
 		}
-		return this.intersectRightward(r)
+		return this.intersectOwnInner(r)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

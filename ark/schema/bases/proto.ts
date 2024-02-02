@@ -30,6 +30,7 @@ export type ProtoDeclaration = declareNode<{
 	schema: ProtoSchema
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
+	composition: "primitive"
 	disjoinable: true
 	attachments: PrimitiveAttachmentsInput
 }>
@@ -69,6 +70,7 @@ export class ProtoNode<t = unknown> extends BaseType<
 				(base.json as any).proto
 			}`
 			return {
+				primitive: true,
 				compiledCondition,
 				compiledNegation: `!(${compiledCondition})`
 			}
