@@ -1,17 +1,9 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
-import type {
-	BaseMeta,
-	BaseRefinement,
-	declareNode
-} from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
-import {
-	createBasisAssertion,
-	type TypeKind,
-	type nodeImplementationOf
-} from "../shared/implement.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
+import { createBasisAssertion } from "./refinement.js"
 
 export interface IndexSchema extends BaseMeta {
 	readonly key: TypeSchema

@@ -1,18 +1,13 @@
-import type { and, mutable } from "@arktype/util"
-import type { NarrowedAttachments, Node, TypeSchema } from "../base.js"
+import type { and } from "@arktype/util"
+import type { NarrowedAttachments, Node } from "../base.js"
 import type { Declaration, ExpectedContext, reducibleKindOf } from "../kinds.js"
 import type { TraverseApply } from "../traversal/context.js"
-import type { IntersectionInner } from "../types/intersection.js"
 import type { CompilationContext } from "./compile.js"
 import type { Disjoint } from "./disjoint.js"
 import type {
-	ConstraintGroupName,
+	CompositeKind,
 	NodeKind,
-	PrimitiveAttachmentsInput,
-	PropKind,
-	RefinementKind,
-	SetKind,
-	kindRightOf
+	PrimitiveAttachmentsInput
 } from "./implement.js"
 
 export interface BaseMeta {
@@ -96,7 +91,7 @@ export type BaseNodeDeclaration = {
 	open: boolean
 	attachments: object
 	childKind: NodeKind
-	parentKind: SetKind | PropKind
+	parentKind: CompositeKind
 	expectedContext: unknown
 }
 
@@ -107,21 +102,3 @@ export type ownIntersectionResult<d extends BaseNodeDeclaration> =
 export type ownIntersectionAlternateResult<d extends BaseNodeDeclaration> =
 	| (d["open"] extends true ? null : never)
 	| (d["disjoinable"] extends true ? Disjoint : never)
-
-export type FoldInput<kind extends RefinementKind> = {
-	-readonly [k in Exclude<
-		keyof IntersectionInner,
-		kindRightOf<kind>
-	>]: IntersectionInner[k] extends readonly unknown[] | undefined
-		? mutable<IntersectionInner[k]>
-		: IntersectionInner[k]
-}
-
-export type FoldOutput<kind extends RefinementKind> = FoldInput<kind> | Disjoint
-
-export interface BaseRefinement<kind extends RefinementKind> {
-	foldIntersection(into: FoldInput<kind>): FoldOutput<kind>
-	// TODO: update
-	readonly constraintGroup: ConstraintGroupName
-	readonly prerequisiteSchemas: readonly TypeSchema[]
-}

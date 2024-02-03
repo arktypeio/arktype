@@ -1,29 +1,29 @@
 import type { and } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
-import { BoundNodes, type BoundDeclarations } from "./constraints/bounds.js"
-import { DivisorNode, type DivisorDeclaration } from "./constraints/divisor.js"
-import { IndexNode, type IndexDeclaration } from "./constraints/index.js"
+import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
+import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
+import { IndexNode, type IndexDeclaration } from "./refinements/index.js"
 import {
 	OptionalNode,
 	type OptionalDeclaration
-} from "./constraints/optional.js"
-import { PatternNode, type PatternDeclaration } from "./constraints/pattern.js"
+} from "./refinements/optional.js"
+import { PatternNode, type PatternDeclaration } from "./refinements/pattern.js"
 import {
 	PredicateNode,
 	type PredicateDeclaration
-} from "./constraints/predicate.js"
+} from "./refinements/predicate.js"
 import {
 	RequiredNode,
 	type RequiredDeclaration
-} from "./constraints/required.js"
+} from "./refinements/required.js"
 import {
 	SequenceNode,
 	type SequenceDeclaration
-} from "./constraints/sequence.js"
+} from "./refinements/sequence.js"
 import type {
 	ConstraintKind,
 	NodeKind,
-	PropKind,
+	PropRefinementKind,
 	TypeKind
 } from "./shared/implement.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
@@ -98,7 +98,7 @@ export type ChildrenByKind = {
 		? ValidatorKind
 		: k extends "intersection"
 		? ConstraintKind
-		: k extends PropKind
+		: k extends PropRefinementKind
 		? TypeKind
 		: never
 }

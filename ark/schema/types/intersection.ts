@@ -19,9 +19,8 @@ import {
 	type BasisKind,
 	type ClosedIntersectionKind,
 	type ConstraintKind,
-	type GroupedConstraints,
 	type OpenIntersectionKind,
-	type PropKind,
+	type PropRefinementKind,
 	type RefinementKind,
 	type kindOrRightward,
 	type nodeImplementationOf
@@ -30,6 +29,7 @@ import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
+import type { GroupedConstraints } from "../refinements/refinement.js"
 
 export type IntersectionInner = evaluate<
 	BaseMeta & { basis?: Node<BasisKind> } & {
@@ -286,7 +286,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
-export type ConditionalConstraintKind = PropKind | RefinementKind
+export type ConditionalConstraintKind = PropRefinementKind | RefinementKind
 
 export type KeyBehavior = "loose" | "strict" | "prune"
 

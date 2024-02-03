@@ -2,13 +2,16 @@ import type { and } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
-import type { PropKind } from "../shared/implement.js"
+import type { PropRefinementKind } from "../shared/implement.js"
 import {
 	compileSerializedValue,
 	isDotAccessible
 } from "../traversal/registry.js"
 
-export type BasePropDeclaration = and<BaseNodeDeclaration, { kind: PropKind }>
+export type BasePropDeclaration = and<
+	BaseNodeDeclaration,
+	{ kind: PropRefinementKind }
+>
 
 export type NamedPropKind = "required" | "optional"
 

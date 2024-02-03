@@ -14,8 +14,6 @@ import type { Declaration } from "../kinds.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
-	FoldInput,
-	FoldOutput,
 	declareNode
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -25,6 +23,7 @@ import type {
 	nodeImplementationInputOf,
 	nodeImplementationOf
 } from "../shared/implement.js"
+import type { FoldInput, FoldOutput } from "./refinement.js"
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
 	extends BaseMeta {

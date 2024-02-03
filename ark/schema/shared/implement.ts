@@ -1,16 +1,14 @@
 import {
 	map,
 	throwInternalError,
-	throwParseError,
 	type ErrorMessage,
 	type JsonData,
-	type PartialRecord,
 	type entryOf,
 	type listable,
 	type parseNonNegativeInteger,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, UnknownNode } from "../base.js"
+import type { Node, UnknownNode } from "../base.js"
 import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
@@ -19,7 +17,6 @@ import type {
 	ScopeNode
 } from "../scope.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import type { ConditionalConstraintKind } from "../types/intersection.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
@@ -41,17 +38,26 @@ export const boundKinds = [
 
 export type BoundKind = (typeof boundKinds)[number]
 
-export const propKinds = ["required", "optional", "index", "sequence"] as const
+export const propRefinementKinds = [
+	"required",
+	"optional",
+	"index",
+	"sequence"
+] as const
 
-export type PropKind = (typeof propKinds)[number]
+export type PropRefinementKind = (typeof propRefinementKinds)[number]
 
-export const shallowKinds = ["pattern", "divisor", ...boundKinds] as const
+export const shallowRefinementKinds = [
+	"pattern",
+	"divisor",
+	...boundKinds
+] as const
 
-export type ShallowKind = (typeof shallowKinds)[number]
+export type ShallowRefinementKind = (typeof shallowRefinementKinds)[number]
 
 export const refinementKinds = [
-	...propKinds,
-	...shallowKinds,
+	...propRefinementKinds,
+	...shallowRefinementKinds,
 	"predicate"
 ] as const
 
@@ -81,11 +87,13 @@ export type ClosedIntersectionKind = Exclude<NodeKind, OpenIntersectionKind>
 
 export const primitiveKinds = [
 	...basisKinds,
-	...shallowKinds,
+	...shallowRefinementKinds,
 	"predicate"
 ] as const
 
 export type PrimitiveKind = (typeof primitiveKinds)[number]
+
+export type CompositeKind = Exclude<NodeKind, PrimitiveKind>
 
 export type OrderedNodeKinds = typeof nodeKinds
 
@@ -241,41 +249,3 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	inner: NodeKind extends kind ? any : Omit<Inner<kind>, "description">
 ) => string
-
-export type ConstraintGroupName = keyof ConstraintKindsByGroup
-
-export type GroupedConstraints = {
-	[k in ConstraintGroupName]?: Node<ConstraintKindsByGroup[k]>[]
-}
-
-export type ConstraintKindsByGroup = {
-	basis: BasisKind
-	shallow: ShallowKind
-	props: PropKind
-	predicate: "predicate"
-}
-
-export const getBasisName = (basis: Node<BasisKind> | undefined) =>
-	basis?.basisName ?? "unknown"
-
-const prerequisiteCache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
-
-export const createBasisAssertion = (node: Node<ConditionalConstraintKind>) => {
-	const prerequisites: readonly TypeNode[] =
-		prerequisiteCache[node.kind] ??
-		(prerequisiteCache[node.kind] = node.prerequisiteSchemas.map((schema) =>
-			node.$.parseTypeNode(schema)
-		))
-	return (basis: Node<BasisKind> | undefined) => {
-		if (prerequisites.length === 1 && prerequisites[0].isUnknown()) {
-			return
-		}
-		if (!prerequisites.some((prerequisite) => basis?.extends(prerequisite))) {
-			throwParseError(
-				`${node.kind} operand must be of type ${prerequisites.join(
-					" or "
-				)} (was ${getBasisName(basis)})`
-			)
-		}
-	}
-}

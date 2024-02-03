@@ -1,12 +1,9 @@
 import { BaseNode, type Node, type TypeSchema } from "../base.js"
+import type { Inner } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import {
-	createBasisAssertion,
-	type TypeKind,
-	type nodeImplementationOf
-} from "../shared/implement.js"
+import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import {
@@ -14,35 +11,41 @@ import {
 	compilePresentPropAllows,
 	compilePresentPropApply
 } from "./prop.js"
+import { createBasisAssertion } from "./refinement.js"
 
-export interface OptionalInner extends BaseMeta {
-	readonly key: string | symbol
-	readonly value: Node<TypeKind>
-}
-
-export interface OptionalSchema extends BaseMeta {
+export interface RequiredSchema extends BaseMeta {
 	readonly key: string | symbol
 	readonly value: TypeSchema
 }
 
-export type OptionalDeclaration = declareNode<{
-	kind: "optional"
-	schema: OptionalSchema
-	normalizedSchema: OptionalSchema
-	inner: OptionalInner
+export interface RequiredInner extends BaseMeta {
+	readonly key: string | symbol
+	readonly value: Node<TypeKind>
+}
+
+export type RequiredDeclaration = declareNode<{
+	kind: "required"
+	schema: RequiredSchema
+	normalizedSchema: RequiredSchema
+	inner: RequiredInner
+	expectedContext: {
+		key: string | symbol
+	}
 	composition: "composite"
 	prerequisite: object
 	open: true
+	disjoinable: true
 	childKind: TypeKind
 }>
 
-export class OptionalNode extends BaseNode<
+export class RequiredNode extends BaseNode<
 	object,
-	OptionalDeclaration,
-	typeof OptionalNode
+	RequiredDeclaration,
+	typeof RequiredNode
 > {
-	static implementation: nodeImplementationOf<OptionalDeclaration> =
+	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
+			hasAssociatedError: true,
 			keys: {
 				key: {},
 				value: {
@@ -50,17 +53,19 @@ export class OptionalNode extends BaseNode<
 					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 				}
 			},
-			hasAssociatedError: false,
 			normalize: (schema) => schema,
 			defaults: {
 				description(inner) {
-					return `${compileKey(inner.key)}?: ${inner.value}`
-				}
+					return `${compileKey(inner.key)}: ${inner.value}`
+				},
+				expected() {
+					return "provided"
+				},
+				actual: () => null
 			}
 		})
 
 	readonly hasOpenIntersection = true
-
 	readonly constraintGroup = "props"
 
 	get prerequisiteSchemas() {
@@ -72,38 +77,53 @@ export class OptionalNode extends BaseNode<
 	serializedKey = compileSerializedValue(this.key)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		!(this.key in data) ||
-		this.value.traverseAllows((data as any)[this.key], ctx)
+		this.key in data && this.value.traverseAllows((data as any)[this.key], ctx)
 
-	traverseApply: TraverseApply<object> = (data: object, ctx) => {
+	traverseApply: TraverseApply<object> = (data, ctx) => {
 		if (this.key in data) {
 			this.value.traverseApply((data as any)[this.key], ctx)
+		} else {
+			ctx.error("provided")
 		}
 	}
+
+	compiledKey = compileKey(this.key)
+
+	// TODO: fix base
+	readonly baseRequiredErrorContext = { code: "required", key: this.key }
 
 	compileApply(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${ctx.dataArg}) {
 			${compilePresentPropApply(this, ctx)}
+		} else {
+			${ctx.ctxArg}.error(${JSON.stringify(this.baseRequiredErrorContext)})
 		}`
 	}
 
 	compileAllows(ctx: CompilationContext): string {
 		return `if(${this.serializedKey} in ${ctx.dataArg}) {
 			${compilePresentPropAllows(this, ctx)}
+		} else {
+			return false
 		}`
 	}
 
-	compiledKey = compileKey(this.key)
+	getCheckedDefinitions() {
+		return ["object"] as const
+	}
 
-	protected intersectOwnInner(r: OptionalNode) {
+	protected intersectOwnInner(r: Inner<"required" | "optional">) {
 		if (this.key !== r.key) {
 			return null
 		}
 		const key = this.key
 		const value = this.value.intersect(r.value)
+		if (value instanceof Disjoint) {
+			return value
+		}
 		return {
 			key,
-			value: value instanceof Disjoint ? (this.$.builtin.never as never) : value
+			value
 		}
 	}
 }

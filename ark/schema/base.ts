@@ -15,27 +15,27 @@ import {
 	type listable
 } from "@arktype/util"
 import type {
-	AfterNode,
-	BeforeNode,
-	MaxLengthNode,
-	MaxNode,
-	MinLengthNode,
-	MinNode
-} from "./constraints/bounds.js"
-import type { DivisorNode } from "./constraints/divisor.js"
-import type { IndexNode } from "./constraints/index.js"
-import type { OptionalNode } from "./constraints/optional.js"
-import type { PatternNode } from "./constraints/pattern.js"
-import type { PredicateNode } from "./constraints/predicate.js"
-import type { RequiredNode } from "./constraints/required.js"
-import type { SequenceNode } from "./constraints/sequence.js"
-import type {
 	Declaration,
 	Inner,
 	Schema,
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
+import type {
+	AfterNode,
+	BeforeNode,
+	MaxLengthNode,
+	MaxNode,
+	MinLengthNode,
+	MinNode
+} from "./refinements/bounds.js"
+import type { DivisorNode } from "./refinements/divisor.js"
+import type { IndexNode } from "./refinements/index.js"
+import type { OptionalNode } from "./refinements/optional.js"
+import type { PatternNode } from "./refinements/pattern.js"
+import type { PredicateNode } from "./refinements/predicate.js"
+import type { RequiredNode } from "./refinements/required.js"
+import type { SequenceNode } from "./refinements/sequence.js"
 import type { ScopeNode } from "./scope.js"
 import type { CompilationContext } from "./shared/compile.js"
 import type {
@@ -50,12 +50,14 @@ import {
 	constraintKinds,
 	leftOperandOf,
 	precedenceOfKind,
+	propRefinementKinds,
 	refinementKinds,
 	setKinds,
 	typeKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
+	type PropRefinementKind,
 	type RefinementKind,
 	type SetKind,
 	type TypeKind,
@@ -269,6 +271,10 @@ export abstract class BaseNode<
 
 	isRefinement(): this is Node<RefinementKind> {
 		return includes(refinementKinds, this.kind)
+	}
+
+	isProp(): this is Node<PropRefinementKind> {
+		return includes(propRefinementKinds, this.kind)
 	}
 
 	isType(): this is TypeNode {
