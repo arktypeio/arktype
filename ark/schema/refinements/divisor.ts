@@ -1,7 +1,7 @@
 import { BaseNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import type { FoldInput } from "./refinement.js"
+import { BaseRefinement, type FoldInput } from "./refinement.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly divisor: number
@@ -29,8 +29,7 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export class DivisorNode extends BaseNode<
-	number,
+export class DivisorNode extends BaseRefinement<
 	DivisorDeclaration,
 	typeof DivisorNode
 > {

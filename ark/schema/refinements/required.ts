@@ -11,7 +11,7 @@ import {
 	compilePresentPropAllows,
 	compilePresentPropApply
 } from "./prop.js"
-import { createBasisAssertion } from "./refinement.js"
+import { BaseRefinement, createBasisAssertion } from "./refinement.js"
 
 export interface RequiredSchema extends BaseMeta {
 	readonly key: string | symbol
@@ -38,8 +38,7 @@ export type RequiredDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class RequiredNode extends BaseNode<
-	object,
+export class RequiredNode extends BaseRefinement<
 	RequiredDeclaration,
 	typeof RequiredNode
 > {

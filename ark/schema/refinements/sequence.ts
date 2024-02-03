@@ -7,7 +7,7 @@ import type {
 	nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import { createBasisAssertion } from "./refinement.js"
+import { BaseRefinement, createBasisAssertion } from "./refinement.js"
 
 export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -48,8 +48,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
 
-export class SequenceNode extends BaseNode<
-	readonly unknown[],
+export class SequenceNode extends BaseRefinement<
 	SequenceDeclaration,
 	typeof SequenceNode
 > {

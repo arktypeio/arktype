@@ -5,7 +5,7 @@ import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import type { FoldInput } from "./refinement.js"
+import { BaseRefinement, type FoldInput } from "./refinement.js"
 
 export interface PredicateInner<
 	predicate extends Predicate<any> = Predicate<any>
@@ -31,8 +31,7 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends BaseNode<
-	unknown,
+export class PredicateNode extends BaseRefinement<
 	PredicateDeclaration,
 	typeof PredicateNode
 > {

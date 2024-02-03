@@ -23,7 +23,11 @@ import type {
 	nodeImplementationInputOf,
 	nodeImplementationOf
 } from "../shared/implement.js"
-import type { FoldInput, FoldOutput } from "./refinement.js"
+import {
+	BaseRefinement,
+	type FoldInput,
+	type FoldOutput
+} from "./refinement.js"
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
 	extends BaseMeta {
@@ -102,7 +106,7 @@ export type BaseBoundDeclaration = and<
 export abstract class BaseBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
-> extends BaseNode<d["prerequisite"], d, subclass> {
+> extends BaseRefinement<d, subclass> {
 	readonly hasOpenIntersection = false
 
 	static implementBound<d extends Declaration<BoundKind>>(

@@ -3,7 +3,7 @@ import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import { createBasisAssertion } from "./refinement.js"
+import { BaseRefinement, createBasisAssertion } from "./refinement.js"
 
 export interface IndexSchema extends BaseMeta {
 	readonly key: TypeSchema
@@ -26,8 +26,7 @@ export type IndexDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class IndexNode extends BaseNode<
-	object,
+export class IndexNode extends BaseRefinement<
 	IndexDeclaration,
 	typeof IndexNode
 > {

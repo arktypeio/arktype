@@ -3,7 +3,14 @@ import {
 	type PartialRecord,
 	type mutable
 } from "@arktype/util"
-import type { Node, TypeNode, TypeSchema } from "../base.js"
+import {
+	BaseNode,
+	type Node,
+	type NodeSubclass,
+	type TypeNode,
+	type TypeSchema
+} from "../base.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
@@ -17,6 +24,7 @@ import type {
 	ConditionalConstraintKind,
 	IntersectionInner
 } from "../types/intersection.js"
+import type { BaseTypeDeclaration } from "../types/type.js"
 
 export type ConstraintGroupName = keyof ConstraintKindsByGroup
 
@@ -42,11 +50,17 @@ export type FoldInput<kind extends RefinementKind> = {
 
 export type FoldOutput<kind extends RefinementKind> = FoldInput<kind> | Disjoint
 
-export interface BaseRefinement<kind extends RefinementKind> {
-	foldIntersection(into: FoldInput<kind>): FoldOutput<kind>
-	// TODO: update
-	readonly constraintGroup: ConstraintGroupName
-	readonly prerequisiteSchemas: readonly TypeSchema[]
+export interface BaseRefinementDeclaration extends BaseNodeDeclaration {
+	kind: RefinementKind
+}
+
+export abstract class BaseRefinement<
+	d extends BaseRefinementDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseNode<d["prerequisite"], d, subclass> {
+	abstract constraintGroup: ConstraintGroupName
+
+	abstract foldIntersection(into: FoldInput<d["kind"]>): FoldOutput<d["kind"]>
 }
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>

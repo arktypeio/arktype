@@ -10,7 +10,7 @@ import {
 	compilePresentPropAllows,
 	compilePresentPropApply
 } from "./prop.js"
-import { createBasisAssertion } from "./refinement.js"
+import { BaseRefinement, createBasisAssertion } from "./refinement.js"
 
 export interface OptionalInner extends BaseMeta {
 	readonly key: string | symbol
@@ -33,8 +33,7 @@ export type OptionalDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class OptionalNode extends BaseNode<
-	object,
+export class OptionalNode extends BaseRefinement<
 	OptionalDeclaration,
 	typeof OptionalNode
 > {

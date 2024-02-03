@@ -2,7 +2,7 @@ import { appendUnique } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import type { FoldInput } from "./refinement.js"
+import { BaseRefinement, type FoldInput } from "./refinement.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -24,8 +24,7 @@ export type PatternDeclaration = declareNode<{
 	attachments: PrimitiveAttachmentsInput
 }>
 
-export class PatternNode extends BaseNode<
-	string,
+export class PatternNode extends BaseRefinement<
 	PatternDeclaration,
 	typeof PatternNode
 > {
