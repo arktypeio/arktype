@@ -2,7 +2,7 @@ import { domainOf, type Domain } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import { BaseType } from "./type.js"
+import { BaseType, type BaseBasis } from "./type.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -31,11 +31,10 @@ export type DomainDeclaration = declareNode<{
 	attachments: PrimitiveAttachmentsInput
 }>
 
-export class DomainNode<t = unknown> extends BaseType<
-	t,
-	DomainDeclaration,
-	typeof DomainNode
-> {
+export class DomainNode<t = unknown>
+	extends BaseType<t, DomainDeclaration, typeof DomainNode>
+	implements BaseBasis
+{
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		collapseKey: "domain",
@@ -65,6 +64,7 @@ export class DomainNode<t = unknown> extends BaseType<
 		})
 	})
 
+	readonly constraintGroup = "basis"
 	basisName = this.domain
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain

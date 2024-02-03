@@ -1,4 +1,4 @@
-import type { and } from "@arktype/util"
+import type { Constructor, Domain, and } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseAttachments,
@@ -97,4 +97,9 @@ export abstract class BaseType<
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
 	}
+}
+
+export interface BaseBasis {
+	basisName: string
+	domain: Domain
 }

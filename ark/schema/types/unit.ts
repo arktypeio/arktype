@@ -1,8 +1,8 @@
-import { domainOf, printable } from "@arktype/util"
+import { domainOf, printable, type Constructor } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import { BaseType } from "./type.js"
+import { BaseType, type BaseBasis } from "./type.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 
@@ -20,11 +20,10 @@ export type UnitDeclaration = declareNode<{
 	attachments: PrimitiveAttachmentsInput
 }>
 
-export class UnitNode<t = unknown> extends BaseType<
-	t,
-	UnitDeclaration,
-	typeof UnitNode
-> {
+export class UnitNode<t = unknown>
+	extends BaseType<t, UnitDeclaration, typeof UnitNode>
+	implements BaseBasis
+{
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		keys: {
@@ -47,6 +46,8 @@ export class UnitNode<t = unknown> extends BaseType<
 			}
 		}
 	})
+
+	readonly constraintGroup = "basis"
 
 	serializedValue: string = (this.json as any).unit
 	traverseAllows = (data: unknown) => data === this.unit

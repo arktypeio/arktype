@@ -7,6 +7,7 @@ import {
 	compileSerializedValue,
 	isDotAccessible
 } from "../traversal/registry.js"
+import type { IntersectionInner } from "../types/intersection.js"
 
 export type BasePropDeclaration = and<
 	BaseNodeDeclaration,
@@ -42,3 +43,22 @@ export const compilePresentPropAllows = (
 
 export const compileKey = (k: string | symbol) =>
 	typeof k === "string" ? k : compileSerializedValue(k)
+
+export type PropsInner = Pick<IntersectionInner, PropRefinementKind>
+
+export const compileProps = (props: PropsInner, ctx: CompilationContext) => {
+	// if (props.sequence || props.index) {
+	// }
+}
+
+type NamedPropsInner = Pick<PropsInner, "required" | "optional">
+
+const compileLooseNamedProps = (
+	props: NamedPropsInner,
+	ctx: CompilationContext
+) => {
+	let body = ""
+	props.required?.forEach((prop) => {
+		body += prop.compileApply(ctx)
+	})
+}

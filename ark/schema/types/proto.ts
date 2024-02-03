@@ -11,7 +11,7 @@ import {
 	defaultValueSerializer,
 	type PrimitiveAttachmentsInput
 } from "../shared/implement.js"
-import { BaseType } from "./type.js"
+import { BaseType, type BaseBasis } from "./type.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -37,11 +37,10 @@ export type ProtoDeclaration = declareNode<{
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export class ProtoNode<t = unknown> extends BaseType<
-	t,
-	ProtoDeclaration,
-	typeof ProtoNode
-> {
+export class ProtoNode<t = unknown>
+	extends BaseType<t, ProtoDeclaration, typeof ProtoNode>
+	implements BaseBasis
+{
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		collapseKey: "proto",
@@ -77,6 +76,7 @@ export class ProtoNode<t = unknown> extends BaseType<
 		}
 	})
 
+	readonly constraintGroup = "basis"
 	readonly basisName = `${this.proto.name}`
 	readonly serializedConstructor = (this.json as { proto: string }).proto
 	readonly domain = "object"

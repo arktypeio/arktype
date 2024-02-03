@@ -1,4 +1,4 @@
-import { BaseNode, type Node, type TypeSchema } from "../base.js"
+import type { Node, TypeSchema } from "../base.js"
 import type { Inner } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -11,7 +11,7 @@ import {
 	compilePresentPropAllows,
 	compilePresentPropApply
 } from "./prop.js"
-import { BaseRefinement, createBasisAssertion } from "./refinement.js"
+import { BaseRefinement } from "./refinement.js"
 
 export interface RequiredSchema extends BaseMeta {
 	readonly key: string | symbol
@@ -70,8 +70,6 @@ export class RequiredNode extends BaseRefinement<
 	get prerequisiteSchemas() {
 		return ["object"] as const
 	}
-
-	assertValidBasis = createBasisAssertion(this as never)
 
 	serializedKey = compileSerializedValue(this.key)
 

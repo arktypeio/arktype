@@ -1,7 +1,8 @@
+import { throwParseError } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import { BaseRefinement, type FoldInput } from "./refinement.js"
+import { BaseRefinement, getBasisName, type FoldInput } from "./refinement.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly divisor: number
@@ -59,10 +60,6 @@ export class DivisorNode extends BaseRefinement<
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
 
-	get prerequisiteSchemas() {
-		return ["number"] as const
-	}
-
 	intersectOwnInner(r: DivisorNode) {
 		return {
 			divisor: Math.abs(
@@ -73,6 +70,9 @@ export class DivisorNode extends BaseRefinement<
 	}
 
 	foldIntersection(into: FoldInput<"divisor">) {
+		if (into.basis?.domain !== "number") {
+			throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
+		}
 		into.divisor = this.intersectOwnKind(into.divisor)
 		return into
 	}

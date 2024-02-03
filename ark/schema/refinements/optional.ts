@@ -1,4 +1,4 @@
-import { BaseNode, type Node, type TypeSchema } from "../base.js"
+import type { Node, TypeSchema } from "../base.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -10,7 +10,7 @@ import {
 	compilePresentPropAllows,
 	compilePresentPropApply
 } from "./prop.js"
-import { BaseRefinement, createBasisAssertion } from "./refinement.js"
+import { BaseRefinement } from "./refinement.js"
 
 export interface OptionalInner extends BaseMeta {
 	readonly key: string | symbol
@@ -58,12 +58,6 @@ export class OptionalNode extends BaseRefinement<
 	readonly hasOpenIntersection = true
 
 	readonly constraintGroup = "props"
-
-	get prerequisiteSchemas() {
-		return ["object"] as const
-	}
-
-	assertValidBasis = createBasisAssertion(this as never)
 
 	serializedKey = compileSerializedValue(this.key)
 

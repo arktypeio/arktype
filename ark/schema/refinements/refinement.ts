@@ -1,30 +1,15 @@
-import {
-	throwParseError,
-	type PartialRecord,
-	type mutable
-} from "@arktype/util"
-import {
-	BaseNode,
-	type Node,
-	type NodeSubclass,
-	type TypeNode,
-	type TypeSchema
-} from "../base.js"
+import type { mutable } from "@arktype/util"
+import { BaseNode, type Node, type NodeSubclass } from "../base.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
-	NodeKind,
 	PropRefinementKind,
 	RefinementKind,
 	ShallowRefinementKind,
 	kindRightOf
 } from "../shared/implement.js"
-import type {
-	ConditionalConstraintKind,
-	IntersectionInner
-} from "../types/intersection.js"
-import type { BaseTypeDeclaration } from "../types/type.js"
+import type { IntersectionInner } from "../types/intersection.js"
 
 export type ConstraintGroupName = keyof ConstraintKindsByGroup
 
@@ -65,25 +50,3 @@ export abstract class BaseRefinement<
 
 export const getBasisName = (basis: Node<BasisKind> | undefined) =>
 	basis?.basisName ?? "unknown"
-
-const prerequisiteCache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
-
-export const createBasisAssertion = (node: Node<ConditionalConstraintKind>) => {
-	const prerequisites: readonly TypeNode[] =
-		prerequisiteCache[node.kind] ??
-		(prerequisiteCache[node.kind] = node.prerequisiteSchemas.map((schema) =>
-			node.$.parseTypeNode(schema)
-		))
-	return (basis: Node<BasisKind> | undefined) => {
-		if (prerequisites.length === 1 && prerequisites[0].isUnknown()) {
-			return
-		}
-		if (!prerequisites.some((prerequisite) => basis?.extends(prerequisite))) {
-			throwParseError(
-				`${node.kind} operand must be of type ${prerequisites.join(
-					" or "
-				)} (was ${getBasisName(basis)})`
-			)
-		}
-	}
-}

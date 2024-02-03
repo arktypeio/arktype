@@ -1,15 +1,12 @@
 import {
+	constructorExtends,
 	isKeyOf,
+	throwParseError,
 	type PartialRecord,
 	type and,
 	type valueOf
 } from "@arktype/util"
-import {
-	BaseNode,
-	type Node,
-	type NodeSubclass,
-	type TypeSchema
-} from "../base.js"
+import type { Node, NodeSubclass } from "../base.js"
 import type { Declaration } from "../kinds.js"
 import type {
 	BaseMeta,
@@ -18,6 +15,7 @@ import type {
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type {
+	BasisKind,
 	BoundKind,
 	PrimitiveAttachmentsInput,
 	nodeImplementationInputOf,
@@ -25,6 +23,7 @@ import type {
 } from "../shared/implement.js"
 import {
 	BaseRefinement,
+	getBasisName,
 	type FoldInput,
 	type FoldOutput
 } from "./refinement.js"
@@ -130,12 +129,7 @@ export abstract class BaseBound<
 					: { limit: schema as Extract<d["schema"], LimitSchemaValue> },
 			defaults: implementation.defaults as never,
 			attachments: (base): BoundAttachmentsInput => {
-				const boundOperandKind: BoundOperandKind =
-					base.kind === "min" || base.kind === "max"
-						? "value"
-						: base.kind === "minLength" || base.kind === "maxLength"
-						? "length"
-						: "date"
+				const boundOperandKind = operandKindsByBoundKind[base.kind]
 				const compiledActual =
 					boundOperandKind === "value"
 						? `${base.$.dataArg}`
@@ -177,10 +171,23 @@ export abstract class BaseBound<
 		return this.isStricterThan(r) ? this : r
 	}
 
-	get prerequisiteSchemas() {
-		return boundPrerequisitesByOperandKind[this.boundOperandKind]
+	protected throwInvalidBoundOperandError(basis: Node<BasisKind> | undefined) {
+		return throwParseError(
+			`${this.kind} operand must be ${
+				prerequisiteDescriptionsByOperandKind[this.boundOperandKind]
+			} (was ${getBasisName(basis)})`
+		)
 	}
 }
+
+const operandKindsByBoundKind = {
+	min: "value",
+	max: "value",
+	minLength: "length",
+	maxLength: "length",
+	after: "date",
+	before: "date"
+} as const satisfies Record<BoundKind, BoundOperandKind>
 
 const compileComparator = (kind: BoundKind, exclusive: true | undefined) =>
 	`${isKeyOf(kind, boundKindPairsByLower) ? ">" : "<"}${
@@ -223,11 +230,11 @@ type declareBound<input extends BoundDeclarationInput> = declareNode<{
 
 export type BoundOperandKind = "value" | "length" | "date"
 
-const boundPrerequisitesByOperandKind = {
-	value: ["number"],
-	length: ["string", Array],
-	date: [Date]
-} as const satisfies Record<BoundOperandKind, readonly TypeSchema[]>
+const prerequisiteDescriptionsByOperandKind = {
+	value: "a number",
+	length: "a string or Array",
+	date: "a Date"
+} as const satisfies Record<BoundOperandKind, string>
 
 export type NumericBoundKind = "min" | "max"
 
@@ -251,6 +258,9 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 		})
 
 	foldIntersection(into: FoldInput<"min">) {
+		if (into.basis?.domain !== "number") {
+			this.throwInvalidBoundOperandError(into.basis)
+		}
 		into.min = this.intersectOwnKind(into.min)
 		return into
 	}
@@ -277,6 +287,9 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 		: (data: number) => data <= this.limit
 
 	foldIntersection(into: FoldInput<"max">): FoldOutput<"max"> {
+		if (into.basis?.domain !== "number") {
+			this.throwInvalidBoundOperandError(into.basis)
+		}
 		into.max = this.intersectOwnKind(into.max)
 		if (into.min?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.min)
@@ -321,6 +334,12 @@ export class MinLengthNode extends BaseBound<
 		: (data: string | readonly unknown[]) => data.length >= this.limit
 
 	foldIntersection(into: FoldInput<"minLength">) {
+		if (
+			into.basis?.domain !== "string" &&
+			!into.basis?.extends(this.$.builtin.Array)
+		) {
+			this.throwInvalidBoundOperandError(into.basis)
+		}
 		into.minLength = this.intersectOwnKind(into.minLength)
 		return into
 	}
@@ -349,6 +368,12 @@ export class MaxLengthNode extends BaseBound<
 		: (data: string | readonly unknown[]) => data.length <= this.limit
 
 	foldIntersection(into: FoldInput<"maxLength">): FoldOutput<"maxLength"> {
+		if (
+			into.basis?.domain !== "string" &&
+			!into.basis?.extends(this.$.builtin.Array)
+		) {
+			this.throwInvalidBoundOperandError(into.basis)
+		}
 		into.maxLength = this.intersectOwnKind(into.maxLength)
 		if (into.minLength?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.minLength)
@@ -403,6 +428,9 @@ export class AfterNode
 		: (data: Date) => +data >= this.numericLimit
 
 	foldIntersection(into: FoldInput<"after">) {
+		if (!into.basis?.extends(this.$.builtin.Date)) {
+			this.throwInvalidBoundOperandError(into.basis)
+		}
 		into.after = this.intersectOwnKind(into.after)
 		return into
 	}
@@ -436,6 +464,9 @@ export class BeforeNode
 		: (data: Date) => +data <= this.numericLimit
 
 	foldIntersection(into: FoldInput<"before">): FoldOutput<"before"> {
+		if (!into.basis?.extends(this.$.builtin.Date)) {
+			this.throwInvalidBoundOperandError(into.basis)
+		}
 		into.before = this.intersectOwnKind(into.before)
 		if (into.after?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.after)

@@ -1,8 +1,8 @@
-import { appendUnique } from "@arktype/util"
+import { appendUnique, throwParseError } from "@arktype/util"
 import { BaseNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import { BaseRefinement, type FoldInput } from "./refinement.js"
+import { BaseRefinement, getBasisName, type FoldInput } from "./refinement.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -23,6 +23,14 @@ export type PatternDeclaration = declareNode<{
 	prerequisite: string
 	attachments: PrimitiveAttachmentsInput
 }>
+
+export const writeNonStringPatternMessage = <root extends string>(
+	root: root
+): writeNonStringPatternMessage<root> =>
+	`Pattern operand ${root} must be a string`
+
+export type writeNonStringPatternMessage<root extends string> =
+	`Pattern operand ${root} must be a string`
 
 export class PatternNode extends BaseRefinement<
 	PatternDeclaration,
@@ -65,16 +73,15 @@ export class PatternNode extends BaseRefinement<
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
 
-	get prerequisiteSchemas() {
-		return ["string"] as const
-	}
-
 	intersectOwnInner(r: PatternNode) {
 		// For now, non-equal regex are naively intersected
 		return null
 	}
 
 	foldIntersection(into: FoldInput<"pattern">) {
+		if (into.basis?.domain !== "string") {
+			throwParseError(writeNonStringPatternMessage(getBasisName(into.basis)))
+		}
 		into.pattern = appendUnique(into.pattern, this)
 		return into
 	}

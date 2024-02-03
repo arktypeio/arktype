@@ -7,7 +7,7 @@ import type {
 	nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import { BaseRefinement, createBasisAssertion } from "./refinement.js"
+import { BaseRefinement } from "./refinement.js"
 
 export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -98,12 +98,6 @@ export class SequenceNode extends BaseRefinement<
 
 	readonly hasOpenIntersection = false
 	readonly constraintGroup = "props"
-
-	get prerequisiteSchemas() {
-		return [Array] as const
-	}
-
-	assertValidBasis = createBasisAssertion(this as never)
 
 	prefixLength = this.prefix?.length ?? 0
 	postfixLength = this.postfix?.length ?? 0
