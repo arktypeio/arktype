@@ -2,7 +2,7 @@ import { domainOf, printable } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import { BaseType } from "../type.js"
+import { BaseType } from "./type.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 

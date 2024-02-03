@@ -18,8 +18,8 @@ import type {
 	ParsedUnknownNodeConfig,
 	ScopeNode
 } from "../scope.js"
-import type { ConditionalConstraintKind } from "../sets/intersection.js"
 import { compileSerializedValue } from "../traversal/registry.js"
+import type { ConditionalConstraintKind } from "../types/intersection.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,

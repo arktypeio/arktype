@@ -5,15 +5,15 @@ import {
 	type Node,
 	type NodeSubclass,
 	type TypeNode
-} from "./base.js"
-import type { Schema, reducibleKindOf } from "./kinds.js"
-import type { IntersectionNode } from "./sets/intersection.js"
-import type { extractOut } from "./sets/morph.js"
-import type { BranchKind, UnionNode } from "./sets/union.js"
-import type { BaseNodeDeclaration } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
-import type { RefinementKind, TypeKind } from "./shared/implement.js"
-import { inferred } from "./shared/utils.js"
+} from "../base.js"
+import type { Schema, reducibleKindOf } from "../kinds.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
+import type { RefinementKind, TypeKind } from "../shared/implement.js"
+import { inferred } from "../shared/utils.js"
+import type { IntersectionNode } from "./intersection.js"
+import type { extractOut } from "./morph.js"
+import type { BranchKind, UnionNode } from "./union.js"
 
 export type BaseTypeDeclaration = and<BaseNodeDeclaration, { kind: TypeKind }>
 

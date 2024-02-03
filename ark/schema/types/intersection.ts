@@ -9,7 +9,6 @@ import {
 	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { instantiateBasis } from "../bases/basis.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { CompilationContext } from "../shared/compile.js"
@@ -29,7 +28,8 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
-import { BaseType } from "../type.js"
+import type { instantiateBasis } from "./basis.js"
+import { BaseType } from "./type.js"
 
 export type IntersectionInner = evaluate<
 	BaseMeta & { basis?: Node<BasisKind> } & {

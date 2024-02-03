@@ -11,7 +11,7 @@ import {
 	defaultValueSerializer,
 	type PrimitiveAttachmentsInput
 } from "../shared/implement.js"
-import { BaseType } from "../type.js"
+import { BaseType } from "./type.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {

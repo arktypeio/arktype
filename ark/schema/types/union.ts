@@ -11,9 +11,9 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
-import { BaseType } from "../type.js"
 import type { Discriminant } from "./discriminate.js"
 import type { ValidatorKind } from "./morph.js"
+import { BaseType } from "./type.js"
 
 export type BranchKind = "morph" | ValidatorKind
 

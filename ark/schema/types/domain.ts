@@ -2,7 +2,7 @@ import { domainOf, type Domain } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import { BaseType } from "../type.js"
+import { BaseType } from "./type.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain

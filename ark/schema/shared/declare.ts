@@ -1,8 +1,8 @@
 import type { and, mutable } from "@arktype/util"
 import type { NarrowedAttachments, Node, TypeSchema } from "../base.js"
 import type { Declaration, ExpectedContext, reducibleKindOf } from "../kinds.js"
-import type { IntersectionInner } from "../sets/intersection.js"
 import type { TraverseApply } from "../traversal/context.js"
+import type { IntersectionInner } from "../types/intersection.js"
 import type { CompilationContext } from "./compile.js"
 import type { Disjoint } from "./disjoint.js"
 import type {

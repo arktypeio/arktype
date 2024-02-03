@@ -26,7 +26,7 @@ import type {
 	TraverseApply
 } from "../traversal/context.js"
 import type { ArkResult, ArkTypeError } from "../traversal/errors.js"
-import { BaseType } from "../type.js"
+import { BaseType } from "./type.js"
 
 export type ValidatorKind = evaluate<"intersection" | BasisKind>
 

@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
-import type { IntersectionNode } from "../sets/intersection.js"
+import type { IntersectionNode } from "../types/intersection.js"
 
 describe("parse", () => {
 	it("single constraint", () => {

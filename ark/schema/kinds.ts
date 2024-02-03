@@ -1,39 +1,48 @@
 import type { and } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
-import { DomainNode, type DomainDeclaration } from "./bases/domain.js"
-import { ProtoNode, type ProtoDeclaration } from "./bases/proto.js"
-import { UnitNode, type UnitDeclaration } from "./bases/unit.js"
-import { IndexNode, type IndexDeclaration } from "./props/index.js"
-import { OptionalNode, type OptionalDeclaration } from "./props/optional.js"
-import { RequiredNode, type RequiredDeclaration } from "./props/required.js"
-import { SequenceNode, type SequenceDeclaration } from "./props/sequence.js"
-import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
-import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
-import { PatternNode, type PatternDeclaration } from "./refinements/pattern.js"
+import { BoundNodes, type BoundDeclarations } from "./constraints/bounds.js"
+import { DivisorNode, type DivisorDeclaration } from "./constraints/divisor.js"
+import { IndexNode, type IndexDeclaration } from "./constraints/index.js"
+import {
+	OptionalNode,
+	type OptionalDeclaration
+} from "./constraints/optional.js"
+import { PatternNode, type PatternDeclaration } from "./constraints/pattern.js"
 import {
 	PredicateNode,
 	type PredicateDeclaration
-} from "./refinements/predicate.js"
+} from "./constraints/predicate.js"
 import {
-	IntersectionNode,
-	type IntersectionDeclaration
-} from "./sets/intersection.js"
+	RequiredNode,
+	type RequiredDeclaration
+} from "./constraints/required.js"
 import {
-	MorphNode,
-	type MorphDeclaration,
-	type ValidatorKind
-} from "./sets/morph.js"
-import {
-	UnionNode,
-	type BranchKind,
-	type UnionDeclaration
-} from "./sets/union.js"
+	SequenceNode,
+	type SequenceDeclaration
+} from "./constraints/sequence.js"
 import type {
 	ConstraintKind,
 	NodeKind,
 	PropKind,
 	TypeKind
 } from "./shared/implement.js"
+import { DomainNode, type DomainDeclaration } from "./types/domain.js"
+import {
+	IntersectionNode,
+	type IntersectionDeclaration
+} from "./types/intersection.js"
+import {
+	MorphNode,
+	type MorphDeclaration,
+	type ValidatorKind
+} from "./types/morph.js"
+import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
+import {
+	UnionNode,
+	type BranchKind,
+	type UnionDeclaration
+} from "./types/union.js"
+import { UnitNode, type UnitDeclaration } from "./types/unit.js"
 
 export type NodeDeclarationsByKind = and<
 	BoundDeclarations,

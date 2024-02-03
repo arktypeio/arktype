@@ -14,20 +14,6 @@ import {
 	type entriesOf,
 	type listable
 } from "@arktype/util"
-import type { DomainNode } from "./bases/domain.js"
-import type { ProtoNode } from "./bases/proto.js"
-import type { UnitNode } from "./bases/unit.js"
-import type {
-	Declaration,
-	Inner,
-	Schema,
-	ioKindOf,
-	reducibleKindOf
-} from "./kinds.js"
-import type { IndexNode } from "./props/index.js"
-import type { OptionalNode } from "./props/optional.js"
-import type { RequiredNode } from "./props/required.js"
-import type { SequenceNode } from "./props/sequence.js"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -35,17 +21,22 @@ import type {
 	MaxNode,
 	MinLengthNode,
 	MinNode
-} from "./refinements/bounds.js"
-import type { DivisorNode } from "./refinements/divisor.js"
-import type { PatternNode } from "./refinements/pattern.js"
-import type { PredicateNode } from "./refinements/predicate.js"
-import type { ScopeNode } from "./scope.js"
+} from "./constraints/bounds.js"
+import type { DivisorNode } from "./constraints/divisor.js"
+import type { IndexNode } from "./constraints/index.js"
+import type { OptionalNode } from "./constraints/optional.js"
+import type { PatternNode } from "./constraints/pattern.js"
+import type { PredicateNode } from "./constraints/predicate.js"
+import type { RequiredNode } from "./constraints/required.js"
+import type { SequenceNode } from "./constraints/sequence.js"
 import type {
-	IntersectionInner,
-	IntersectionNode
-} from "./sets/intersection.js"
-import type { MorphNode, distill, extractIn, extractOut } from "./sets/morph.js"
-import type { UnionNode } from "./sets/union.js"
+	Declaration,
+	Inner,
+	Schema,
+	ioKindOf,
+	reducibleKindOf
+} from "./kinds.js"
+import type { ScopeNode } from "./scope.js"
 import type { CompilationContext } from "./shared/compile.js"
 import type {
 	BaseNodeDeclaration,
@@ -78,6 +69,20 @@ import {
 	type TraverseApply
 } from "./traversal/context.js"
 import type { ArkResult } from "./traversal/errors.js"
+import type { DomainNode } from "./types/domain.js"
+import type {
+	IntersectionInner,
+	IntersectionNode
+} from "./types/intersection.js"
+import type {
+	MorphNode,
+	distill,
+	extractIn,
+	extractOut
+} from "./types/morph.js"
+import type { ProtoNode } from "./types/proto.js"
+import type { UnionNode } from "./types/union.js"
+import type { UnitNode } from "./types/unit.js"
 
 export interface BaseAttachments {
 	alias?: string

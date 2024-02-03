@@ -1,6 +1,6 @@
-import type { IntersectionInner } from "../sets/intersection.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { PropKind } from "../shared/implement.js"
+import type { IntersectionInner } from "../types/intersection.js"
 
 export type PropsInner = Pick<IntersectionInner, PropKind>
 
