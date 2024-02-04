@@ -216,7 +216,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		return result
 	}
 
-	protected intersectRightwardInner(
+	intersectRightwardInner(
 		r: Node<IntersectionBasisKind>
 	): IntersectionInner | Disjoint {
 		const basis = this.basis?.intersect(r) ?? r

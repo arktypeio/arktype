@@ -75,9 +75,17 @@ export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
-export const nodeKinds = [...setKinds, ...constraintKinds] as const
+export type NodeKind = SetKind | ConstraintKind
 
-export type NodeKind = (typeof nodeKinds)[number]
+export const nodeKinds = [
+	"union",
+	"morph",
+	"unit",
+	"intersection",
+	"proto",
+	"domain",
+	...refinementKinds
+] as const satisfies NodeKind[]
 
 export type OpenRefinementKind = {
 	[k in RefinementKind]: Declaration<k>["open"] extends true ? k : never
@@ -96,19 +104,6 @@ export type PrimitiveKind = (typeof primitiveKinds)[number]
 export type CompositeKind = Exclude<NodeKind, PrimitiveKind>
 
 export type OrderedNodeKinds = typeof nodeKinds
-
-export const leftOperandOf = (l: Node, r: Node) => {
-	for (const kind of nodeKinds) {
-		if (l.kind === kind) {
-			return l
-		} else if (r.kind === kind) {
-			return r
-		}
-	}
-	return throwInternalError(
-		`Unable to order unknown node kinds '${l.kind}' and '${r.kind}'.`
-	)
-}
 
 type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 

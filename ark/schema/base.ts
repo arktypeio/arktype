@@ -5,7 +5,6 @@ import {
 	isArray,
 	map,
 	printable,
-	throwInternalError,
 	type Constructor,
 	type Dict,
 	type Entry,
@@ -48,7 +47,6 @@ import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
-	leftOperandOf,
 	precedenceOfKind,
 	propRefinementKinds,
 	refinementKinds,
@@ -72,10 +70,7 @@ import {
 } from "./traversal/context.js"
 import type { ArkResult } from "./traversal/errors.js"
 import type { DomainNode } from "./types/domain.js"
-import type {
-	IntersectionInner,
-	IntersectionNode
-} from "./types/intersection.js"
+import type { IntersectionNode } from "./types/intersection.js"
 import type {
 	MorphNode,
 	distill,

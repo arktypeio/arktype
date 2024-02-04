@@ -74,7 +74,7 @@ export class DomainNode<t = unknown>
 		return Disjoint.from("domain", this, r)
 	}
 
-	protected intersectRightwardInner(r: UnknownNode) {
+	intersectRightwardInner(r: UnknownNode) {
 		return throwInternalError(
 			`Unexpected attempt to intersect node of kind ${r.kind} from domain.`
 		)

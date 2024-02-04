@@ -69,7 +69,7 @@ export class UnitNode<t = unknown>
 		return Disjoint.from("unit", this, r)
 	}
 
-	protected intersectRightwardInner(
+	intersectRightwardInner(
 		r: Node<"intersection" | BasisKind>
 	): UnitInner | Disjoint {
 		return r.allows(this.unit)

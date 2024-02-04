@@ -91,7 +91,7 @@ export class ProtoNode<t = unknown>
 			: Disjoint.from("proto", this, r)
 	}
 
-	protected intersectRightwardInner(r: DomainNode): ProtoInner | Disjoint {
+	intersectRightwardInner(r: DomainNode): ProtoInner | Disjoint {
 		return r.domain === "object"
 			? this
 			: Disjoint.from("domain", this.$.builtin.object, r)
