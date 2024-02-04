@@ -1,5 +1,4 @@
 import type { defined, evaluate } from "./generics.js"
-import type { intersectUnion } from "./unionToTuple.js"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -43,6 +42,8 @@ export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 }
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
+
+export type keySetOf<o extends object> = keySet<Extract<keyof o, string>>
 
 export type mutable<o, maxDepth extends number = 1> = mutableRecurse<
 	o,
@@ -163,3 +164,20 @@ export const shallowClone = <input extends object>(input: input): input =>
 		Object.getPrototypeOf(input),
 		Object.getOwnPropertyDescriptors(input)
 	)
+
+export const splitByKeys = <o extends object, leftKey extends keyof o & string>(
+	o: o,
+	leftKeys: keySet<leftKey>
+): [evaluate<Pick<o, leftKey>>, evaluate<Omit<o, leftKey>>] => {
+	const l: any = {}
+	const r: any = {}
+	let k: keyof o
+	for (k in o) {
+		if (k in leftKeys) {
+			l[k] = o[k]
+		} else {
+			r[k] = o[k]
+		}
+	}
+	return [l, r]
+}

@@ -3,6 +3,7 @@ import {
 	isArray,
 	map,
 	printable,
+	splitByKeys,
 	type evaluate,
 	type last,
 	type listable
@@ -19,6 +20,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
+	refinementKinds,
 	type BasisKind,
 	type ClosedRefinementKind,
 	type ConstraintKind,
@@ -36,7 +38,9 @@ import { BaseType } from "./type.js"
 export type IntersectionBasisKind = "domain" | "proto"
 
 export type IntersectionInner = evaluate<
-	BaseMeta & { basis?: Node<IntersectionBasisKind> } & {
+	BaseMeta & {
+		basis?: Node<IntersectionBasisKind>
+	} & {
 		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
 	}
 >
@@ -67,6 +71,8 @@ export type IntersectionDeclaration = declareNode<{
 	disjoinable: true
 	childKind: ConstraintKind
 }>
+
+const refinementKeys = map(refinementKinds, (i, kind) => [kind, 1] as const)
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
 // 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
@@ -158,10 +164,18 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			},
 			reduce: (inner, scope) => {
-				const inputConstraints = flattenConstraints(inner)
-				const reducedConstraints = reduceConstraints([], inputConstraints)
-				if (reducedConstraints instanceof Disjoint) {
-					return reducedConstraints.throw()
+				const [refinements, base] = splitByKeys(inner, refinementKeys)
+				let result: FoldInput<last<OrderedNodeKinds>> | Disjoint = base
+				const flatRefinements = Object.values(refinements).flat()
+				// TODO: are these ordered?
+				for (const refinement of flatRefinements) {
+					if (result instanceof Disjoint) {
+						break
+					}
+					result = refinement.foldIntersection(result)
+				}
+				if (result instanceof Disjoint) {
+					return result.throw()
 				}
 				if (
 					reducedConstraints.length === 1 &&
