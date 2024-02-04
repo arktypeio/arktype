@@ -1,17 +1,19 @@
 import {
-	append,
 	groupBy,
 	isArray,
+	map,
 	printable,
-	throwInternalError,
 	type evaluate,
-	type listable,
-	type mutable
+	type last,
+	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Prerequisite, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { GroupedConstraints } from "../refinements/refinement.js"
+import type {
+	FoldInput,
+	GroupedConstraints
+} from "../refinements/refinement.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -21,6 +23,7 @@ import {
 	type ClosedRefinementKind,
 	type ConstraintKind,
 	type OpenRefinementKind,
+	type OrderedNodeKinds,
 	type PropRefinementKind,
 	type RefinementKind,
 	type nodeImplementationOf
@@ -30,14 +33,16 @@ import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
+export type IntersectionBasisKind = "domain" | "proto"
+
 export type IntersectionInner = evaluate<
-	BaseMeta & { basis?: Node<BasisKind> } & {
+	BaseMeta & { basis?: Node<IntersectionBasisKind> } & {
 		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
 	}
 >
 
 export type IntersectionSchema<
-	basis extends Schema<BasisKind> | undefined = any
+	basis extends Schema<IntersectionBasisKind> | undefined = any
 > = evaluate<
 	BaseMeta & {
 		basis?: basis
@@ -198,19 +203,30 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	readonly shallow = this.groups.shallow
 
 	protected intersectOwnInner(r: IntersectionNode) {
-		let result: readonly Node<ConstraintKind>[] | Disjoint = this.constraints
-		for (const refinement of r.constraints) {
+		// ensure we can safely mutate inner as well as its shallow open intersections
+		let result = map(this.inner, (k, v) => [k, isArray(v) ? [...v] : v]) as
+			| FoldInput<last<OrderedNodeKinds>>
+			| Disjoint
+		for (const constraint of r.constraints as Node<RefinementKind>[]) {
 			if (result instanceof Disjoint) {
 				break
 			}
-			result = addConstraint(result, refinement)
+			result = constraint.foldIntersection(result)
 		}
-		return result instanceof Disjoint ? result : unflattenConstraints(result)
+		return result
 	}
 
-	intersectRightwardInner(r: Node<BasisKind>): IntersectionInner | Disjoint {
-		const result = addConstraint(this.constraints, r)
-		return result instanceof Disjoint ? result : unflattenConstraints(result)
+	protected intersectRightwardInner(
+		r: Node<IntersectionBasisKind>
+	): IntersectionInner | Disjoint {
+		const basis = this.basis?.intersect(r) ?? r
+		// TODO: meta should not be included here?
+		return basis instanceof Disjoint
+			? basis
+			: {
+					...this.inner,
+					basis
+			  }
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
@@ -347,79 +363,4 @@ export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 	}
 	return [ctx.$.parseNode(kind, input)] as never
-}
-
-const reduceConstraints = (
-	l: readonly Node<ConstraintKind>[],
-	r: readonly Node<ConstraintKind>[]
-) => {
-	let result: readonly Node<ConstraintKind>[] | Disjoint = l
-	for (const constraint of r) {
-		if (result instanceof Disjoint) {
-			break
-		}
-		result = addConstraint(result, constraint)
-	}
-	return result instanceof Disjoint ? result : result
-}
-
-const flattenedConstraintCache = new Map<IntersectionInner, ConstraintSet>()
-const flattenConstraints = (inner: IntersectionInner): ConstraintSet => {
-	const cachedResult = flattenedConstraintCache.get(inner)
-	if (cachedResult) {
-		return cachedResult
-	}
-	const result = Object.entries(inner).flatMap(([k, v]) =>
-		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
-	)
-	flattenedConstraintCache.set(inner, result)
-	return result
-}
-
-const unflattenConstraints = (
-	constraints: ConstraintSet
-): IntersectionInner => {
-	const inner: mutable<IntersectionInner> = {}
-	for (const constraint of constraints) {
-		if (constraint.isBasis()) {
-			inner.basis = constraint
-		} else if (constraint.hasOpenIntersection) {
-			append((inner as any)[constraint.kind], constraint)
-		} else {
-			if (inner[constraint.kind]) {
-				return throwInternalError(
-					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
-				)
-			}
-			inner[constraint.kind] = constraint as never
-		}
-	}
-	return inner
-}
-
-export const addConstraint = (
-	base: readonly Node<ConstraintKind>[],
-	constraint: Node<ConstraintKind>
-): Node<ConstraintKind>[] | Disjoint => {
-	const result: Node<ConstraintKind>[] = []
-	let includesComponent = false
-	for (let i = 0; i < base.length; i++) {
-		const elementResult = constraint.intersectClosed(base[i])
-		if (elementResult === null) {
-			result.push(base[i])
-		} else if (elementResult instanceof Disjoint) {
-			return elementResult
-		} else if (!includesComponent) {
-			result.push(elementResult)
-			includesComponent = true
-		} else if (!result.includes(elementResult)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
-			)
-		}
-	}
-	if (!includesComponent) {
-		result.push(constraint)
-	}
-	return result
 }

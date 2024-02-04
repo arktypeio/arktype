@@ -11,7 +11,10 @@ import type { Declaration, Schema } from "./kinds.js"
 import type { BasisKind, RefinementKind } from "./shared/implement.js"
 import type { instantiateBasis } from "./types/basis.js"
 import type { NonEnumerableDomain } from "./types/domain.js"
-import type { IntersectionSchema } from "./types/intersection.js"
+import type {
+	IntersectionBasisKind,
+	IntersectionSchema
+} from "./types/intersection.js"
 import type {
 	Morph,
 	MorphChildDefinition,
@@ -125,7 +128,7 @@ export type validateIntersectionSchema<def> = exactBasisMessageOnError<
 	def,
 	IntersectionSchema<
 		"basis" extends keyof def
-			? def["basis"] extends Schema<BasisKind>
+			? def["basis"] extends Schema<IntersectionBasisKind>
 				? def["basis"]
 				: undefined
 			: undefined

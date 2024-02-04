@@ -14,11 +14,11 @@ import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import {
 	defaultValueSerializer,
-	type BasisKind,
 	type KeyDefinitions,
 	type NodeKind,
 	type UnknownNodeImplementation
 } from "./shared/implement.js"
+import type { IntersectionBasisKind } from "./types/intersection.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -30,7 +30,7 @@ export type SchemaParseOptions = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
-	basis?: Node<BasisKind> | undefined
+	basis?: Node<IntersectionBasisKind> | undefined
 }
 
 export type SchemaParseContext = and<

@@ -73,6 +73,27 @@ export type CollapsingList<t = unknown> =
 	| t
 	| readonly [t, t, ...t[]]
 
+export type tail<t extends readonly unknown[]> = t extends readonly [
+	unknown,
+	...infer tail
+]
+	? tail
+	: never
+
+export type head<t extends readonly unknown[]> = t extends readonly [
+	infer head,
+	...unknown[]
+]
+	? head
+	: never
+
+export type last<t extends readonly unknown[]> = t extends readonly [
+	...unknown[],
+	infer last
+]
+	? last
+	: never
+
 export const listFrom = <t>(data: t) =>
 	(Array.isArray(data) ? data : [data]) as t extends readonly unknown[]
 		? [t] extends [null]
