@@ -41,7 +41,7 @@ export type IntersectionInner = evaluate<
 	BaseMeta & {
 		basis?: Node<IntersectionBasisKind>
 	} & {
-		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
+		[k in RefinementKind]?: innerRefinementValue<k>
 	}
 >
 
@@ -50,7 +50,7 @@ export type IntersectionSchema<
 > = evaluate<
 	BaseMeta & {
 		basis?: basis
-	} & conditionalSchemaValuesOf<
+	} & schemaRefinementsOf<
 			basis extends Schema<BasisKind>
 				? instantiateBasis<basis>["infer"]
 				: unknown
@@ -161,12 +161,19 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				sequence: {
 					child: true,
 					parse: (def, ctx) => parseClosedRefinement("sequence", def, ctx)
+				},
+				keys: {
+					child: true,
+					parse: (def, ctx) => parseClosedRefinement("keys", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
 				const [refinements, base] = splitByKeys(inner, refinementKeys)
 				let result: FoldInput<last<OrderedNodeKinds>> | Disjoint = base
 				const flatRefinements = Object.values(refinements).flat()
+				if (flatRefinements.length === 0 && base.basis) {
+					return base.basis
+				}
 				// TODO: are these ordered?
 				for (const refinement of flatRefinements) {
 					if (result instanceof Disjoint) {
@@ -177,27 +184,14 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				if (result instanceof Disjoint) {
 					return result.throw()
 				}
-				if (
-					reducedConstraints.length === 1 &&
-					reducedConstraints[0].isBasis()
-				) {
-					// TODO: description?
-					return reducedConstraints[0]
-				}
-				if (reducedConstraints.length === inputConstraints.length) {
-					return
-				}
-				return scope.parsePrereduced(
-					"intersection",
-					unflattenConstraints(reducedConstraints)
-				)
+				return scope.parsePrereduced("intersection", result)
 			},
 			defaults: {
-				description(inner) {
-					const constraints = flattenConstraints(inner)
-					return constraints.length === 0
+				description(constraints) {
+					const flatConstraints = Object.values(constraints).flat()
+					return flatConstraints.length === 0
 						? "an unknown value"
-						: constraints.join(" and ")
+						: flatConstraints.join(" and ")
 				},
 				expected(source) {
 					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")
@@ -208,20 +202,23 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	readonly constraints: ConstraintSet = flattenConstraints(this.inner)
 	readonly groups: GroupedConstraints = groupBy(
-		this.constraints,
+		this.children,
 		"constraintGroup"
 	)
 	readonly props = this.groups.props
 	readonly shallow = this.groups.shallow
+	readonly refinements = this.entries.flatMap(([k, v]) =>
+		k in refinementKinds ? (v as listable<Node<RefinementKind>>) : []
+	)
 
 	protected intersectOwnInner(r: IntersectionNode) {
 		// ensure we can safely mutate inner as well as its shallow open intersections
 		let result = map(this.inner, (k, v) => [k, isArray(v) ? [...v] : v]) as
 			| FoldInput<last<OrderedNodeKinds>>
 			| Disjoint
-		for (const constraint of r.constraints as Node<RefinementKind>[]) {
+
+		for (const constraint of r.refinements) {
 			if (result instanceof Disjoint) {
 				break
 			}
@@ -310,48 +307,18 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
-export type ConditionalConstraintKind = PropRefinementKind | RefinementKind
+type refinementKindOf<t> = {
+	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
+}[RefinementKind]
 
-export type KeyBehavior = "loose" | "strict" | "prune"
+type schemaRefinementValue<k extends RefinementKind> =
+	k extends OpenRefinementKind ? listable<Schema<k>> : Schema<k>
 
-export type ConditionalTerminalIntersectionInner = {
-	// TODO: don't serialize loose
-	keys?: KeyBehavior
-}
+type innerRefinementValue<k extends RefinementKind> =
+	k extends OpenRefinementKind ? readonly Node<k>[] : Node<k>
 
-type ConditionalTerminalIntersectionKey =
-	keyof ConditionalTerminalIntersectionInner
-
-type conditionalChildKindOf<t> = {
-	[k in ConditionalConstraintKind]: t extends Prerequisite<k> ? k : never
-}[ConditionalConstraintKind]
-
-export type ConditionalIntersectionKey =
-	| ConditionalConstraintKind
-	| keyof ConditionalTerminalIntersectionInner
-
-export type conditionalIntersectionKeyOf<t> =
-	| conditionalChildKindOf<t>
-	| (t extends object ? "keys" : never)
-
-type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends OpenRefinementKind
-		? listable<Schema<k>>
-		: k extends ClosedRefinementKind
-		? Schema<k>
-		: ConditionalTerminalIntersectionInner[k &
-				ConditionalTerminalIntersectionKey]
-
-type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends OpenRefinementKind
-		? readonly Node<k>[]
-		: k extends ClosedRefinementKind
-		? Node<k>
-		: ConditionalTerminalIntersectionInner[k &
-				ConditionalTerminalIntersectionKey]
-
-export type conditionalSchemaValuesOf<t> = {
-	[k in conditionalChildKindOf<t>]?: conditionalSchemaValueOfKey<k>
+export type schemaRefinementsOf<t> = {
+	[k in refinementKindOf<t>]?: schemaRefinementValue<k>
 }
 
 export const parseClosedRefinement = <kind extends ClosedRefinementKind>(

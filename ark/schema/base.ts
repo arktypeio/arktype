@@ -30,6 +30,7 @@ import type {
 } from "./refinements/bounds.js"
 import type { DivisorNode } from "./refinements/divisor.js"
 import type { IndexNode } from "./refinements/index.js"
+import type { KeysNode } from "./refinements/keys.js"
 import type { OptionalNode } from "./refinements/optional.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
@@ -359,6 +360,7 @@ interface NodesByKind<t = any> {
 	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
+	keys: KeysNode
 }
 
 export type Node<

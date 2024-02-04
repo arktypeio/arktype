@@ -3,6 +3,7 @@ import type { NodeSubclass } from "./base.js"
 import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
 import { IndexNode, type IndexDeclaration } from "./refinements/index.js"
+import { KeysNode, type KeysDeclaration } from "./refinements/keys.js"
 import {
 	OptionalNode,
 	type OptionalDeclaration
@@ -60,6 +61,7 @@ export type NodeDeclarationsByKind = and<
 		index: IndexDeclaration
 		pattern: PatternDeclaration
 		predicate: PredicateDeclaration
+		keys: KeysDeclaration
 	}
 >
 
@@ -77,7 +79,8 @@ export const nodesByKind = {
 	required: RequiredNode,
 	optional: OptionalNode,
 	index: IndexNode,
-	sequence: SequenceNode
+	sequence: SequenceNode,
+	keys: KeysNode
 } as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
 export type NodesByKind = typeof nodesByKind

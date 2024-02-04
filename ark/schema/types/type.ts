@@ -127,7 +127,7 @@ export abstract class BaseType<
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {
-		return this.hasKind("intersection") && this.constraints.length === 0
+		return this.hasKind("intersection") && this.children.length === 0
 	}
 
 	isNever(): this is UnionNode<never> {
