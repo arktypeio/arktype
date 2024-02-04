@@ -1,4 +1,5 @@
-import { domainOf, type Domain } from "@arktype/util"
+import { domainOf, throwInternalError, type Domain } from "@arktype/util"
+import type { UnknownNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
@@ -71,6 +72,12 @@ export class DomainNode<t = unknown>
 
 	protected intersectOwnInner(r: DomainNode) {
 		return Disjoint.from("domain", this, r)
+	}
+
+	protected intersectRightwardInner(r: UnknownNode) {
+		return throwInternalError(
+			`Unexpected attempt to intersect node of kind ${r.kind} from domain.`
+		)
 	}
 }
 

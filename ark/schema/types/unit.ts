@@ -1,7 +1,11 @@
 import { domainOf, printable, type Constructor } from "@arktype/util"
+import type { Node, TypeNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
+import type {
+	BasisKind,
+	PrimitiveAttachmentsInput
+} from "../shared/implement.js"
 import { BaseType, type BaseBasis } from "./type.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
@@ -63,5 +67,13 @@ export class UnitNode<t = unknown>
 
 	protected intersectOwnInner(r: UnitNode) {
 		return Disjoint.from("unit", this, r)
+	}
+
+	protected intersectRightwardInner(
+		r: Node<"intersection" | BasisKind>
+	): UnitInner | Disjoint {
+		return r.allows(this.unit)
+			? this
+			: Disjoint.from("assignability", this.unit, r)
 	}
 }

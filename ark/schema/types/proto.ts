@@ -11,6 +11,7 @@ import {
 	defaultValueSerializer,
 	type PrimitiveAttachmentsInput
 } from "../shared/implement.js"
+import type { DomainNode } from "./domain.js"
 import { BaseType, type BaseBasis } from "./type.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
@@ -82,17 +83,17 @@ export class ProtoNode<t = unknown>
 	readonly domain = "object"
 	traverseAllows = (data: unknown) => data instanceof this.proto
 
-	// TODO:
-	// domain: (l, r) =>
-	// r.domain === "object"
-	// 	? l
-	// 	: Disjoint.from("domain", l.$.builtin.object, r)
-
 	protected intersectOwnInner(r: ProtoNode) {
 		return constructorExtends(this.proto, r.proto)
 			? this
 			: constructorExtends(r.proto, this.proto)
 			? r
 			: Disjoint.from("proto", this, r)
+	}
+
+	protected intersectRightwardInner(r: DomainNode): ProtoInner | Disjoint {
+		return r.domain === "object"
+			? this
+			: Disjoint.from("domain", this.$.builtin.object, r)
 	}
 }

@@ -9,7 +9,7 @@ import {
 	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
+import type { Prerequisite, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { GroupedConstraints } from "../refinements/refinement.js"
 import type { CompilationContext } from "../shared/compile.js"
@@ -18,9 +18,9 @@ import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
 	type BasisKind,
-	type ClosedIntersectionKind,
+	type ClosedRefinementKind,
 	type ConstraintKind,
-	type OpenIntersectionKind,
+	type OpenRefinementKind,
 	type PropRefinementKind,
 	type RefinementKind,
 	type nodeImplementationOf
@@ -101,55 +101,55 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				},
 				divisor: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("divisor", def, ctx)
+					parse: (def, ctx) => parseClosedRefinement("divisor", def, ctx)
 				},
 				max: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("max", def, ctx)
+					parse: (def, ctx) => parseClosedRefinement("max", def, ctx)
 				},
 				min: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("min", def, ctx)
+					parse: (def, ctx) => parseClosedRefinement("min", def, ctx)
 				},
 				maxLength: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("maxLength", def, ctx)
+					parse: (def, ctx) => parseClosedRefinement("maxLength", def, ctx)
 				},
 				minLength: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("minLength", def, ctx)
+					parse: (def, ctx) => parseClosedRefinement("minLength", def, ctx)
 				},
 				before: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("before", def, ctx)
+					parse: (def, ctx) => parseClosedRefinement("before", def, ctx)
 				},
 				after: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("after", def, ctx)
+					parse: (def, ctx) => parseClosedRefinement("after", def, ctx)
 				},
 				pattern: {
 					child: true,
-					parse: (def, ctx) => parseOpenComponent("pattern", def, ctx)
+					parse: (def, ctx) => parseOpenRefinement("pattern", def, ctx)
 				},
 				predicate: {
 					child: true,
-					parse: (def, ctx) => parseOpenComponent("predicate", def, ctx)
+					parse: (def, ctx) => parseOpenRefinement("predicate", def, ctx)
 				},
 				optional: {
 					child: true,
-					parse: (def, ctx) => parseOpenComponent("optional", def, ctx)
+					parse: (def, ctx) => parseOpenRefinement("optional", def, ctx)
 				},
 				required: {
 					child: true,
-					parse: (def, ctx) => parseOpenComponent("required", def, ctx)
+					parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
 				},
 				index: {
 					child: true,
-					parse: (def, ctx) => parseOpenComponent("index", def, ctx)
+					parse: (def, ctx) => parseOpenRefinement("index", def, ctx)
 				},
 				sequence: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("sequence", def, ctx)
+					parse: (def, ctx) => parseClosedRefinement("sequence", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
@@ -305,17 +305,17 @@ export type conditionalIntersectionKeyOf<t> =
 	| (t extends object ? "keys" : never)
 
 type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends OpenIntersectionKind
+	k extends OpenRefinementKind
 		? listable<Schema<k>>
-		: k extends ClosedIntersectionKind
+		: k extends ClosedRefinementKind
 		? Schema<k>
 		: ConditionalTerminalIntersectionInner[k &
 				ConditionalTerminalIntersectionKey]
 
 type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends OpenIntersectionKind
+	k extends OpenRefinementKind
 		? readonly Node<k>[]
-		: k extends ClosedIntersectionKind
+		: k extends ClosedRefinementKind
 		? Node<k>
 		: ConditionalTerminalIntersectionInner[k &
 				ConditionalTerminalIntersectionKey]
@@ -324,41 +324,29 @@ export type conditionalSchemaValuesOf<t> = {
 	[k in conditionalChildKindOf<t>]?: conditionalSchemaValueOfKey<k>
 }
 
-export const parseClosedComponent = <kind extends ClosedIntersectionKind>(
+export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
 	kind: kind,
 	input: Schema<kind>,
 	ctx: SchemaParseContext
 ): Node<kind> => {
-	const refinement = ctx.$.parseNode(
-		kind,
-		input
-	) as Node<ConditionalConstraintKind>
-	refinement.assertValidBasis(ctx.basis)
-	return refinement as never
+	return ctx.$.parseNode(kind, input) as never
 }
 
-export const parseOpenComponent = <kind extends OpenIntersectionKind>(
+export const parseOpenRefinement = <kind extends OpenRefinementKind>(
 	kind: kind,
 	input: listable<Schema<kind>>,
 	ctx: SchemaParseContext
-): readonly Node<reducibleKindOf<kind>>[] | undefined => {
+): readonly Node<kind>[] | undefined => {
 	if (isArray(input)) {
 		if (input.length === 0) {
 			// Omit empty lists as input
 			return
 		}
-		const refinements = input
+		return input
 			.map((refinement) => ctx.$.parseNode(kind, refinement))
-			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
-		// we should only need to assert validity for one, as all listed
-		// refinements should be of the same kind and therefore have the same
-		// operand requirements
-		refinements[0].assertValidBasis(ctx.basis)
-		return refinements
+			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 	}
-	const refinement = ctx.$.parseNode(kind, input)
-	refinement.assertValidBasis(ctx.basis)
-	return [refinement]
+	return [ctx.$.parseNode(kind, input)] as never
 }
 
 const reduceConstraints = (
@@ -366,11 +354,11 @@ const reduceConstraints = (
 	r: readonly Node<ConstraintKind>[]
 ) => {
 	let result: readonly Node<ConstraintKind>[] | Disjoint = l
-	for (const refinement of r) {
+	for (const constraint of r) {
 		if (result instanceof Disjoint) {
 			break
 		}
-		result = addConstraint(result, refinement)
+		result = addConstraint(result, constraint)
 	}
 	return result instanceof Disjoint ? result : result
 }

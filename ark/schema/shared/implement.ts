@@ -79,11 +79,11 @@ export const nodeKinds = [...setKinds, ...constraintKinds] as const
 
 export type NodeKind = (typeof nodeKinds)[number]
 
-export type OpenIntersectionKind = {
-	[k in NodeKind]: Declaration<k>["open"] extends true ? k : never
-}[NodeKind]
+export type OpenRefinementKind = {
+	[k in RefinementKind]: Declaration<k>["open"] extends true ? k : never
+}[RefinementKind]
 
-export type ClosedIntersectionKind = Exclude<NodeKind, OpenIntersectionKind>
+export type ClosedRefinementKind = Exclude<RefinementKind, OpenRefinementKind>
 
 export const primitiveKinds = [
 	...basisKinds,
