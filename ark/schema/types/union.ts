@@ -6,6 +6,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
+	type TypeKind,
 	type kindOrRightward,
 	type nodeImplementationOf
 } from "../shared/implement.js"
@@ -160,33 +161,12 @@ export class UnionNode<t = unknown> extends BaseType<
 			: { branches: resultBranches }
 	}
 
-	intersectRightward(
-		r: Node<kindOrRightward<this["kind"]>>
-	): UnionInner | Disjoint {
-		switch (r.kind) {
-			case "union":
-				return this.intersectOwnInner(r)
-			case "morph":
-				return intersectBranch(this, r)
-			case "intersection":
-				return intersectBranch(this, r)
-			default:
-				const branches: BranchNode[] = []
-				for (const branch of this.branches) {
-					const branchResult = branch.intersect(r)
-					if (!(branchResult instanceof Disjoint)) {
-						branches.push(branchResult)
-					}
-				}
-				return branches.length === 0
-					? Disjoint.from("union", this.branches, [r])
-					: this.ordered
-					? {
-							branches,
-							ordered: true as const
-					  }
-					: { branches }
+	intersectRightwardInner(r: Node<BranchKind>): UnionInner | Disjoint {
+		const branches = intersectBranches(this.branches, [r])
+		if (branches instanceof Disjoint) {
+			return branches
 		}
+		return this.ordered ? { branches, ordered: true } : { branches }
 	}
 
 	compileApply(ctx: CompilationContext) {

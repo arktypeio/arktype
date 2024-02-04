@@ -11,6 +11,7 @@ import {
 import type { Node } from "../base.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
+import type { GroupedConstraints } from "../refinements/refinement.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -29,7 +30,6 @@ import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
-import type { GroupedConstraints } from "../refinements/refinement.js"
 
 export type IntersectionInner = evaluate<
 	BaseMeta & { basis?: Node<BasisKind> } & {
@@ -209,7 +209,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		return result instanceof Disjoint ? result : unflattenConstraints(result)
 	}
 
-	intersectRightward(
+	intersectRightwardInner(
 		r: Node<kindOrRightward<"intersection">>
 	): IntersectionInner | Disjoint {
 		if (r.kind !== "intersection") {

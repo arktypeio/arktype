@@ -120,7 +120,9 @@ export class MorphNode<t = unknown> extends BaseType<
 		}
 	}
 
-	intersectRightward(r: Node<kindOrRightward<"morph">>): MorphInner | Disjoint {
+	intersectRightwardInner(
+		r: Node<kindOrRightward<"morph">>
+	): MorphInner | Disjoint {
 		switch (r.kind) {
 			case "morph":
 				return this.intersectOwnInner(r)

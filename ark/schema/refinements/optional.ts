@@ -10,7 +10,7 @@ import {
 	compilePresentPropAllows,
 	compilePresentPropApply
 } from "./prop.js"
-import { BaseRefinement } from "./refinement.js"
+import { BaseRefinement, type FoldInput } from "./refinement.js"
 
 export interface OptionalInner extends BaseMeta {
 	readonly key: string | symbol
@@ -95,5 +95,9 @@ export class OptionalNode extends BaseRefinement<
 			key,
 			value: value instanceof Disjoint ? (this.$.builtin.never as never) : value
 		}
+	}
+
+	foldIntersection(into: FoldInput<"optional">) {
+		return {}
 	}
 }

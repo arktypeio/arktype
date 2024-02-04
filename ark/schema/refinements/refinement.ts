@@ -28,7 +28,7 @@ export type FoldInput<kind extends RefinementKind> = {
 	-readonly [k in Exclude<
 		keyof IntersectionInner,
 		kindRightOf<kind>
-	>]: IntersectionInner[k] extends readonly unknown[] | undefined
+	>]?: IntersectionInner[k] extends readonly unknown[] | undefined
 		? mutable<IntersectionInner[k]>
 		: IntersectionInner[k]
 }

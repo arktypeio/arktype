@@ -67,10 +67,6 @@ export class PredicateNode extends BaseRefinement<
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
 
-	get prerequisiteSchemas() {
-		return [{}] as const
-	}
-
 	intersectOwnInner(r: PredicateNode) {
 		// TODO: allow changed order to be the same type
 		// as long as the narrows in l and r are individually safe to check

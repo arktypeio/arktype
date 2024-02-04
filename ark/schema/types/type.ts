@@ -1,17 +1,29 @@
-import type { Constructor, Domain, and } from "@arktype/util"
+import {
+	throwInternalError,
+	type Constructor,
+	type Domain,
+	type and
+} from "@arktype/util"
 import {
 	BaseNode,
 	type BaseAttachments,
 	type Node,
 	type NodeSubclass,
-	type TypeNode
+	type TypeNode,
+	type UnknownNode
 } from "../base.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { RefinementKind, TypeKind } from "../shared/implement.js"
+import {
+	leftOperandOf,
+	type RefinementKind,
+	type TypeKind,
+	type kindOrRightward,
+	type kindRightOf
+} from "../shared/implement.js"
 import { inferred } from "../shared/utils.js"
-import type { IntersectionNode } from "./intersection.js"
+import type { IntersectionInner, IntersectionNode } from "./intersection.js"
 import type { extractOut } from "./morph.js"
 import type { BranchKind, UnionNode } from "./union.js"
 
@@ -37,12 +49,85 @@ export abstract class BaseType<
 		this.branches ??= [this as never]
 	}
 
+	protected abstract intersectRightwardInner(
+		r: Node<kindRightOf<d["kind"]>>
+	): d["inner"] | Disjoint
+
+	private static intersectionCache: Record<string, Node | Disjoint> = {}
+	intersect<other extends TypeNode>(
+		other: other
+	): Node<this["kind"] | other["kind"]> | Disjoint
+	intersect(other: Node): Node | Disjoint | null {
+		const cacheKey = `${this.typeId}&${other.typeId}`
+		if (BaseType.intersectionCache[cacheKey] !== undefined) {
+			return BaseType.intersectionCache[cacheKey]
+		}
+		const closedResult = this.intersectClosed(other as never)
+		if (closedResult !== null) {
+			BaseType.intersectionCache[cacheKey] = closedResult
+			BaseType.intersectionCache[`${other.typeId}&${this.typeId}`] =
+				// also cache the result with other's condition as the key.
+				// if it was a Disjoint, it has to be inverted so that l,r
+				// still line up correctly
+				closedResult instanceof Disjoint ? closedResult.invert() : closedResult
+			return closedResult
+		}
+		if (this.isSet() || other.isSet()) {
+			return throwInternalError(
+				`Unexpected null intersection between non-constraints ${this.kind} and ${other.kind}`
+			)
+		}
+		// if either constraint is a basis or both don't require a basis (i.e.
+		// are predicates), it can form an intersection
+		const intersectionInner: IntersectionInner | null = this.isBasis()
+			? {
+					basis: this,
+					[other.kind]: other.hasOpenIntersection ? [other] : other
+			  }
+			: other.isBasis()
+			? {
+					basis: other,
+					[this.kind]: this.abstracts.hasOpenIntersection ? [this] : this
+			  }
+			: this.hasKind("predicate") && other.hasKind("predicate")
+			? { predicate: [this, other] }
+			: null
+		return (
+			intersectionInner && this.$.parseNode("intersection", intersectionInner)
+		)
+	}
+
+	intersectClosed<other extends Node>(
+		other: other
+	): Node<d["kind"] | other["kind"]> | Disjoint | null {
+		if (this.equals(other)) {
+			// TODO: meta
+			return this as never
+		}
+		const l: UnknownNode = leftOperandOf(this as never, other) as any
+		const thisIsLeft = l === (this as never)
+		const r: UnknownNode = thisIsLeft ? other : (this as any)
+		// TODO: l.impl
+		const intersections = {} as any
+		const intersector = intersections[r.kind] ?? intersections.default
+		const result = intersector?.(l, r as never)
+		if (result) {
+			if (result instanceof Disjoint) {
+				return thisIsLeft ? result : result.invert()
+			}
+			// TODO: meta
+			return this.$.parseNode(l.kind, result) as never
+		}
+		return null
+	}
+
 	constrain<refinementKind extends RefinementKind>(
 		kind: refinementKind,
 		input: Schema<refinementKind>
 	): Node<reducibleKindOf<this["kind"]>> {
-		const refinement = this.$.parseNode(kind, input)
-		return this.and(refinement) as never
+		return this as never
+		// const refinement = this.$.parseNode(kind, input)
+		// return this.and(refinement) as never
 	}
 
 	keyof() {
@@ -54,7 +139,7 @@ export abstract class BaseType<
 	}
 
 	// TODO: inferIntersection
-	and<other extends Node>(
+	and<other extends TypeNode>(
 		other: other
 		// TODO: FIX
 	): TypeNode<d["kind"] | other["kind"]> {

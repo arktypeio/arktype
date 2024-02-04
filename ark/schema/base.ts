@@ -173,7 +173,7 @@ export abstract class BaseNode<
 		return implementation
 	}
 
-	private readonly impl: UnknownNodeImplementation = (this.constructor as any)
+	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
@@ -307,73 +307,6 @@ export abstract class BaseNode<
 			return innerResult
 		}
 		return this.$.parseNode(this.kind, innerResult as never)
-	}
-
-	private static intersectionCache: Record<string, Node | Disjoint> = {}
-	intersect<other extends Node>(
-		other: other
-	): Node<this["kind"] | other["kind"]> | Disjoint
-	intersect(other: Node): Node | Disjoint | null {
-		const cacheKey = `${this.typeId}&${other.typeId}`
-		if (BaseNode.intersectionCache[cacheKey] !== undefined) {
-			return BaseNode.intersectionCache[cacheKey]
-		}
-		const closedResult = this.intersectClosed(other as never)
-		if (closedResult !== null) {
-			BaseNode.intersectionCache[cacheKey] = closedResult
-			BaseNode.intersectionCache[`${other.typeId}&${this.typeId}`] =
-				// also cache the result with other's condition as the key.
-				// if it was a Disjoint, it has to be inverted so that l,r
-				// still line up correctly
-				closedResult instanceof Disjoint ? closedResult.invert() : closedResult
-			return closedResult
-		}
-		if (this.isSet() || other.isSet()) {
-			return throwInternalError(
-				`Unexpected null intersection between non-constraints ${this.kind} and ${other.kind}`
-			)
-		}
-		// if either constraint is a basis or both don't require a basis (i.e.
-		// are predicates), it can form an intersection
-		const intersectionInner: IntersectionInner | null = this.isBasis()
-			? {
-					basis: this,
-					[other.kind]: other.hasOpenIntersection ? [other] : other
-			  }
-			: other.isBasis()
-			? {
-					basis: other,
-					[this.kind]: this.abstracts.hasOpenIntersection ? [this] : this
-			  }
-			: this.hasKind("predicate") && other.hasKind("predicate")
-			? { predicate: [this, other] }
-			: null
-		return (
-			intersectionInner && this.$.parseNode("intersection", intersectionInner)
-		)
-	}
-
-	intersectClosed<other extends Node>(
-		other: other
-	): Node<d["kind"] | other["kind"]> | Disjoint | null {
-		if (this.equals(other)) {
-			// TODO: meta
-			return this as never
-		}
-		const l: UnknownNode = leftOperandOf(this as never, other) as any
-		const thisIsLeft = l === (this as never)
-		const r: UnknownNode = thisIsLeft ? other : (this as any)
-		const intersections = l.impl as any
-		const intersector = intersections[r.kind] ?? intersections.default
-		const result = intersector?.(l, r as never)
-		if (result) {
-			if (result instanceof Disjoint) {
-				return thisIsLeft ? result : result.invert()
-			}
-			// TODO: meta
-			return this.$.parseNode(l.kind, result) as never
-		}
-		return null
 	}
 
 	transform(

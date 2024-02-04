@@ -7,7 +7,11 @@ import type {
 	nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import { BaseRefinement } from "./refinement.js"
+import {
+	BaseRefinement,
+	type FoldInput,
+	type FoldOutput
+} from "./refinement.js"
 
 export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -194,12 +198,12 @@ this.${postfixEl.name}(${ctx.dataArg}[${i}], ${ctx.ctxArg})
 		return body
 	}
 
-	getCheckedDefinitions() {
-		return [Array] as const
-	}
-
 	protected intersectOwnInner(r: SequenceNode) {
 		return this
+	}
+
+	foldIntersection(into: FoldInput<"sequence">) {
+		return {}
 	}
 }
 

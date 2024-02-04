@@ -11,7 +11,7 @@ import {
 	compilePresentPropAllows,
 	compilePresentPropApply
 } from "./prop.js"
-import { BaseRefinement } from "./refinement.js"
+import { BaseRefinement, type FoldInput } from "./refinement.js"
 
 export interface RequiredSchema extends BaseMeta {
 	readonly key: string | symbol
@@ -67,10 +67,6 @@ export class RequiredNode extends BaseRefinement<
 	readonly hasOpenIntersection = true
 	readonly constraintGroup = "props"
 
-	get prerequisiteSchemas() {
-		return ["object"] as const
-	}
-
 	serializedKey = compileSerializedValue(this.key)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
@@ -105,10 +101,6 @@ export class RequiredNode extends BaseRefinement<
 		}`
 	}
 
-	getCheckedDefinitions() {
-		return ["object"] as const
-	}
-
 	protected intersectOwnInner(r: Inner<"required" | "optional">) {
 		if (this.key !== r.key) {
 			return null
@@ -122,5 +114,9 @@ export class RequiredNode extends BaseRefinement<
 			key,
 			value
 		}
+	}
+
+	foldIntersection(into: FoldInput<"required">) {
+		return {}
 	}
 }
