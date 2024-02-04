@@ -16,7 +16,6 @@ import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
 	type BasisKind,
-	type kindOrRightward,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { is } from "../shared/utils.js"
@@ -28,11 +27,11 @@ import type {
 import type { ArkResult, ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "./type.js"
 
-export type ValidatorKind = evaluate<"intersection" | BasisKind>
+export type MorphChildKind = evaluate<"intersection" | BasisKind>
 
-export type ValidatorNode = Node<ValidatorKind>
+export type MorphChildNode = Node<MorphChildKind>
 
-export type ValidatorDefinition = Schema<ValidatorKind>
+export type MorphChildDefinition = Schema<MorphChildKind>
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
@@ -41,14 +40,14 @@ export type Out<o = any> = ["=>", o]
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
-	readonly in: ValidatorNode
-	readonly out: ValidatorNode
+	readonly in: MorphChildNode
+	readonly out: MorphChildNode
 	readonly morph: readonly Morph[]
 }
 
 export interface MorphSchema extends BaseMeta {
-	readonly in: ValidatorDefinition
-	readonly out?: ValidatorDefinition
+	readonly in: MorphChildDefinition
+	readonly out?: MorphChildDefinition
 	readonly morph: listable<Morph>
 }
 
@@ -59,7 +58,7 @@ export type MorphDeclaration = declareNode<{
 	inner: MorphInner
 	composition: "composite"
 	disjoinable: true
-	childKind: ValidatorKind
+	childKind: MorphChildKind
 }>
 
 export class MorphNode<t = unknown> extends BaseType<
@@ -120,36 +119,21 @@ export class MorphNode<t = unknown> extends BaseType<
 		}
 	}
 
-	intersectRightwardInner(
-		r: Node<kindOrRightward<"morph">>
-	): MorphInner | Disjoint {
-		switch (r.kind) {
-			case "morph":
-				return this.intersectOwnInner(r)
-			case "intersection":
-				const inTersection = this.in.intersect(r)
-				return inTersection instanceof Disjoint
-					? inTersection
-					: {
-							...this.inner,
-							in: inTersection
-					  }
-			default:
-				const constrainedInput = this.in.intersect(r)
-				return constrainedInput instanceof Disjoint
-					? constrainedInput
-					: {
-							...this.inner,
-							in: constrainedInput
-					  }
-		}
+	intersectRightwardInner(r: Node<MorphChildKind>): MorphInner | Disjoint {
+		const inTersection = this.in.intersect(r)
+		return inTersection instanceof Disjoint
+			? inTersection
+			: {
+					...this.inner,
+					in: inTersection
+			  }
 	}
 
-	override get in(): Node<ValidatorKind, extractIn<t>> {
+	override get in(): Node<MorphChildKind, extractIn<t>> {
 		return this.inner.in
 	}
 
-	override get out(): Node<ValidatorKind, extractOut<t>> {
+	override get out(): Node<MorphChildKind, extractOut<t>> {
 		return this.inner.out ?? this.$.builtin.unknown
 	}
 

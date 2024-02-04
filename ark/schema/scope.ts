@@ -37,8 +37,8 @@ import type {
 import { maybeGetBasisKind } from "./types/basis.js"
 import { BaseType } from "./types/type.js"
 import type {
-	BranchKind,
 	NormalizedUnionSchema,
+	UnionChildKind,
 	UnionNode
 } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
@@ -193,7 +193,7 @@ export class ScopeNode<r extends object = any> {
 
 	static root: ScopeNode<{}> = this.from({})
 
-	parseUnion<const branches extends readonly Schema<BranchKind>[]>(
+	parseUnion<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], r>
@@ -203,7 +203,7 @@ export class ScopeNode<r extends object = any> {
 		return this.parseNode("union", input) as never
 	}
 
-	parseBranches<const branches extends readonly Schema<BranchKind>[]>(
+	parseBranches<const branches extends readonly Schema<UnionChildKind>[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
@@ -344,13 +344,13 @@ export class ScopeNode<r extends object = any> {
 }
 
 export type SchemaParser<r extends object> = {
-	<const branches extends readonly Schema<BranchKind>[]>(
+	<const branches extends readonly Schema<UnionChildKind>[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
 	): instantiateSchemaBranches<branches>
 
-	union<const branches extends readonly Schema<BranchKind>[]>(
+	union<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], r>

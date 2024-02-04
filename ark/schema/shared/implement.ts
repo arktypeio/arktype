@@ -114,8 +114,6 @@ type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
 export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
 
-export type kindOrRightward<kind extends NodeKind> = kind | kindRightOf<kind>
-
 type accumulateRightKinds<
 	remaining extends readonly NodeKind[],
 	result

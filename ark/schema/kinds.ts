@@ -33,13 +33,13 @@ import {
 } from "./types/intersection.js"
 import {
 	MorphNode,
-	type MorphDeclaration,
-	type ValidatorKind
+	type MorphChildKind,
+	type MorphDeclaration
 } from "./types/morph.js"
 import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
 import {
 	UnionNode,
-	type BranchKind,
+	type UnionChildKind,
 	type UnionDeclaration
 } from "./types/union.js"
 import { UnitNode, type UnitDeclaration } from "./types/unit.js"
@@ -93,9 +93,9 @@ export type NormalizedSchema<kind extends NodeKind> =
 
 export type ChildrenByKind = {
 	[k in NodeKind]: k extends "union"
-		? BranchKind
+		? UnionChildKind
 		: k extends "morph"
-		? ValidatorKind
+		? MorphChildKind
 		: k extends "intersection"
 		? ConstraintKind
 		: k extends PropRefinementKind
@@ -114,7 +114,7 @@ export type ParentsByKind = {
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type ioKindOf<kind extends NodeKind> = kind extends "morph"
-	? ValidatorKind
+	? MorphChildKind
 	: reducibleKindOf<kind>
 
 export type Prerequisite<kind extends NodeKind> =
@@ -123,7 +123,7 @@ export type Prerequisite<kind extends NodeKind> =
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? TypeKind
 	: kind extends "intersection"
-	? ValidatorKind
+	? MorphChildKind
 	: kind
 
 export type Inner<kind extends NodeKind> = Readonly<Declaration<kind>["inner"]>

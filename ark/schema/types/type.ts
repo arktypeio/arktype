@@ -1,9 +1,4 @@
-import {
-	throwInternalError,
-	type Constructor,
-	type Domain,
-	type and
-} from "@arktype/util"
+import { throwInternalError, type Domain, type and } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseAttachments,
@@ -19,13 +14,12 @@ import {
 	leftOperandOf,
 	type RefinementKind,
 	type TypeKind,
-	type kindOrRightward,
 	type kindRightOf
 } from "../shared/implement.js"
 import { inferred } from "../shared/utils.js"
 import type { IntersectionInner, IntersectionNode } from "./intersection.js"
 import type { extractOut } from "./morph.js"
-import type { BranchKind, UnionNode } from "./union.js"
+import type { UnionChildKind, UnionNode } from "./union.js"
 
 export type BaseTypeDeclaration = and<BaseNodeDeclaration, { kind: TypeKind }>
 
@@ -38,7 +32,7 @@ export abstract class BaseType<
 	declare [inferred]: t
 
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
-	declare readonly branches: readonly Node<BranchKind>[]
+	declare readonly branches: readonly Node<UnionChildKind>[]
 
 	hasOpenIntersection = false as d["open"]
 
@@ -50,7 +44,7 @@ export abstract class BaseType<
 	}
 
 	protected abstract intersectRightwardInner(
-		r: Node<kindRightOf<d["kind"]>>
+		r: Node<typeKindRightOf<d["kind"]>>
 	): d["inner"] | Disjoint
 
 	private static intersectionCache: Record<string, Node | Disjoint> = {}
@@ -188,3 +182,8 @@ export interface BaseBasis {
 	basisName: string
 	domain: Domain
 }
+
+export type typeKindRightOf<kind extends TypeKind> = Extract<
+	kindRightOf<kind>,
+	TypeKind
+>

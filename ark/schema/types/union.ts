@@ -4,37 +4,32 @@ import type { Schema } from "../kinds.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import {
-	basisKinds,
-	type TypeKind,
-	type kindOrRightward,
-	type nodeImplementationOf
-} from "../shared/implement.js"
+import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import type { Discriminant } from "./discriminate.js"
-import type { ValidatorKind } from "./morph.js"
+import type { MorphChildKind } from "./morph.js"
 import { BaseType } from "./type.js"
 
-export type BranchKind = "morph" | ValidatorKind
+export type UnionChildKind = "morph" | MorphChildKind
 
-export type BranchDefinition = Schema<BranchKind>
+export type UnionChildSchema = Schema<UnionChildKind>
 
-export type BranchNode = Node<BranchKind>
+export type UnionChildNode = Node<UnionChildKind>
 
 export type UnionSchema<
-	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
+	branches extends readonly UnionChildSchema[] = readonly UnionChildSchema[]
 > = NormalizedUnionSchema<branches> | branches
 
 export interface NormalizedUnionSchema<
-	branches extends readonly BranchDefinition[] = readonly BranchDefinition[]
+	branches extends readonly UnionChildSchema[] = readonly UnionChildSchema[]
 > extends BaseMeta {
 	readonly branches: branches
 	readonly ordered?: true
 }
 
 export interface UnionInner extends BaseMeta {
-	readonly branches: readonly BranchNode[]
+	readonly branches: readonly UnionChildNode[]
 	readonly ordered?: true
 }
 
@@ -48,12 +43,12 @@ export type UnionDeclaration = declareNode<{
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
-	childKind: BranchKind
+	childKind: UnionChildKind
 }>
 
 const intersectBranch = (
 	l: Node<"union">,
-	r: BranchNode
+	r: UnionChildNode
 ): Disjoint | UnionInner => {
 	const branches = intersectBranches(l.branches, [r])
 	if (branches instanceof Disjoint) {
@@ -138,7 +133,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				r.branches.length !== 0
 			)
 		}
-		let resultBranches: readonly BranchNode[] | Disjoint
+		let resultBranches: readonly UnionChildNode[] | Disjoint
 		if (this.ordered) {
 			if (r.ordered) {
 				return Disjoint.from("indiscriminableMorphs", this, r)
@@ -161,7 +156,7 @@ export class UnionNode<t = unknown> extends BaseType<
 			: { branches: resultBranches }
 	}
 
-	intersectRightwardInner(r: Node<BranchKind>): UnionInner | Disjoint {
+	intersectRightwardInner(r: Node<UnionChildKind>): UnionInner | Disjoint {
 		const branches = intersectBranches(this.branches, [r])
 		if (branches instanceof Disjoint) {
 			return branches
@@ -279,15 +274,15 @@ export const describeBranches = (descriptions: string[]) => {
 // 	}
 
 export const intersectBranches = (
-	l: readonly BranchNode[],
-	r: readonly BranchNode[]
-): readonly BranchNode[] | Disjoint => {
+	l: readonly UnionChildNode[],
+	r: readonly UnionChildNode[]
+): readonly UnionChildNode[] | Disjoint => {
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (BranchNode[] | null)[] = r.map(() => [])
+	const batchesByR: (UnionChildNode[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: BranchNode } = {}
+		let candidatesByR: { [rIndex: number]: UnionChildNode } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			if (batchesByR[rIndex] === null) {
 				// rBranch is a subtype of an lBranch and

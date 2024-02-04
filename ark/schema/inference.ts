@@ -14,13 +14,13 @@ import type { NonEnumerableDomain } from "./types/domain.js"
 import type { IntersectionSchema } from "./types/intersection.js"
 import type {
 	Morph,
+	MorphChildDefinition,
+	MorphChildKind,
 	MorphSchema,
 	Out,
-	ValidatorDefinition,
-	ValidatorKind,
 	inferMorphOut
 } from "./types/morph.js"
-import type { BranchNode, NormalizedUnionSchema } from "./types/union.js"
+import type { NormalizedUnionSchema, UnionChildNode } from "./types/union.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]
@@ -63,9 +63,9 @@ export type instantiateSchemaBranch<def> = isSchemaCast<def> extends true
 		: never
 	: def extends MorphSchema
 	? instantiateMorphSchema<def>
-	: def extends ValidatorDefinition
+	: def extends MorphChildDefinition
 	? instantiateMorphChild<def>
-	: BranchNode
+	: UnionChildNode
 
 export type validateMorphChild<def> = [def] extends [
 	NonEnumerableDomain | Constructor
@@ -82,7 +82,7 @@ export type instantiateMorphChild<def> = def extends Schema<BasisKind>
 	? instantiateBasis<def>
 	: def extends IntersectionSchema
 	? instantiateIntersectionSchema<def>
-	: Node<ValidatorKind>
+	: Node<MorphChildKind>
 
 export type validateMorphSchema<def> = {
 	[k in keyof def]: k extends "in" | "out"

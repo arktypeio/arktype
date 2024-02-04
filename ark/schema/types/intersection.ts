@@ -23,7 +23,6 @@ import {
 	type OpenIntersectionKind,
 	type PropRefinementKind,
 	type RefinementKind,
-	type kindOrRightward,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -209,14 +208,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		return result instanceof Disjoint ? result : unflattenConstraints(result)
 	}
 
-	intersectRightwardInner(
-		r: Node<kindOrRightward<"intersection">>
-	): IntersectionInner | Disjoint {
-		if (r.kind !== "intersection") {
-			const result = addConstraint(this.constraints, r)
-			return result instanceof Disjoint ? result : unflattenConstraints(result)
-		}
-		return this.intersectOwnInner(r)
+	intersectRightwardInner(r: Node<BasisKind>): IntersectionInner | Disjoint {
+		const result = addConstraint(this.constraints, r)
+		return result instanceof Disjoint ? result : unflattenConstraints(result)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

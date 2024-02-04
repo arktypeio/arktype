@@ -10,7 +10,7 @@ import {
 } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import type { BranchNode } from "./union.js"
+import type { UnionChildNode } from "./union.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -27,13 +27,13 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> =
 export type DiscriminatedCases<
 	kind extends DiscriminantKind = DiscriminantKind
 > = Readonly<{
-	[caseKey in CaseKey<kind>]: Discriminant | BranchNode[]
+	[caseKey in CaseKey<kind>]: Discriminant | UnionChildNode[]
 }>
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
 
 type CasesBySpecifier = {
-	[k in DiscriminantKey]?: Record<string, BranchNode[]>
+	[k in DiscriminantKey]?: Record<string, UnionChildNode[]>
 }
 
 export type DiscriminantKinds = {
@@ -56,10 +56,13 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
 	] as [path: string[], kind: DiscriminantKind]
 }
 
-const discriminantCache = new Map<readonly BranchNode[], Discriminant | null>()
+const discriminantCache = new Map<
+	readonly UnionChildNode[],
+	Discriminant | null
+>()
 
 export const discriminate = (
-	branches: readonly BranchNode[]
+	branches: readonly UnionChildNode[]
 ): Discriminant | null => {
 	if (branches.length < 2) {
 		return null
