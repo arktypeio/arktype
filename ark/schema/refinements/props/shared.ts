@@ -2,17 +2,14 @@ import type { and } from "@arktype/util"
 import type { Node } from "../../base.js"
 import type { CompilationContext } from "../../shared/compile.js"
 import type { BaseNodeDeclaration } from "../../shared/declare.js"
-import type { PropRefinementKind } from "../../shared/implement.js"
+import type { PropKind } from "../../shared/implement.js"
 import {
 	compileSerializedValue,
 	isDotAccessible
 } from "../../traversal/registry.js"
 import type { IntersectionInner } from "../../types/intersection.js"
 
-export type BasePropDeclaration = and<
-	BaseNodeDeclaration,
-	{ kind: PropRefinementKind }
->
+export type BasePropDeclaration = and<BaseNodeDeclaration, { kind: PropKind }>
 
 export type NamedPropKind = "required" | "optional"
 
@@ -44,7 +41,7 @@ export const compilePresentPropAllows = (
 export const compileKey = (k: string | symbol) =>
 	typeof k === "string" ? k : compileSerializedValue(k)
 
-export type PropsInner = Pick<IntersectionInner, PropRefinementKind>
+export type PropsInner = Pick<IntersectionInner, PropKind>
 
 export const compileProps = (props: PropsInner, ctx: CompilationContext) => {
 	// if (props.sequence || props.index) {

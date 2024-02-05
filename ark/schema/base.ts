@@ -33,6 +33,7 @@ import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
 import type { IndexNode } from "./refinements/props/index.js"
 import type { OptionalNode } from "./refinements/props/optional.js"
+import type { PropsNode } from "./refinements/props/props.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
@@ -48,14 +49,14 @@ import {
 	basisKinds,
 	constraintKinds,
 	precedenceOfKind,
-	propRefinementKinds,
+	propKinds,
 	refinementKinds,
 	setKinds,
 	typeKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
-	type PropRefinementKind,
+	type PropKind,
 	type RefinementKind,
 	type SetKind,
 	type TypeKind,
@@ -268,8 +269,8 @@ export abstract class BaseNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isProp(): this is Node<PropRefinementKind> {
-		return includes(propRefinementKinds, this.kind)
+	isProp(): this is Node<PropKind> {
+		return includes(propKinds, this.kind)
 	}
 
 	isType(): this is TypeNode {
@@ -359,6 +360,7 @@ interface NodesByKind<t = any> {
 	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
+	props: PropsNode
 }
 
 export type Node<

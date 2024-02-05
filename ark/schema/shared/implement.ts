@@ -38,14 +38,9 @@ export const boundKinds = [
 
 export type BoundKind = (typeof boundKinds)[number]
 
-export const propRefinementKinds = [
-	"required",
-	"optional",
-	"index",
-	"sequence"
-] as const
+export const propKinds = ["required", "optional", "index", "sequence"] as const
 
-export type PropRefinementKind = (typeof propRefinementKinds)[number]
+export type PropKind = (typeof propKinds)[number]
 
 export const shallowRefinementKinds = [
 	"pattern",
@@ -56,8 +51,8 @@ export const shallowRefinementKinds = [
 export type ShallowRefinementKind = (typeof shallowRefinementKinds)[number]
 
 export const refinementKinds = [
-	...propRefinementKinds,
 	...shallowRefinementKinds,
+	"props",
 	"predicate"
 ] as const
 
@@ -75,7 +70,7 @@ export const constraintKinds = [...basisKinds, ...refinementKinds] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
-export type NodeKind = SetKind | ConstraintKind
+export type NodeKind = SetKind | ConstraintKind | PropKind
 
 export const nodeKinds = [
 	"union",
@@ -84,7 +79,8 @@ export const nodeKinds = [
 	"intersection",
 	"proto",
 	"domain",
-	...refinementKinds
+	...refinementKinds,
+	...propKinds
 ] as const satisfies NodeKind[]
 
 export type OpenRefinementKind = {

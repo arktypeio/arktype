@@ -4,7 +4,7 @@ import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
-	PropRefinementKind,
+	PropKind,
 	RefinementKind,
 	ShallowRefinementKind,
 	kindRightOf
@@ -20,7 +20,7 @@ export type GroupedConstraints = {
 export type ConstraintKindsByGroup = {
 	basis: BasisKind
 	shallow: ShallowRefinementKind
-	props: PropRefinementKind
+	props: PropKind
 	predicate: "predicate"
 }
 

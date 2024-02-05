@@ -12,6 +12,7 @@ import {
 	OptionalNode,
 	type OptionalDeclaration
 } from "./refinements/props/optional.js"
+import { PropsNode, type PropsDeclaration } from "./refinements/props/props.js"
 import {
 	RequiredNode,
 	type RequiredDeclaration
@@ -23,7 +24,7 @@ import {
 import type {
 	ConstraintKind,
 	NodeKind,
-	PropRefinementKind,
+	PropKind,
 	TypeKind
 } from "./shared/implement.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
@@ -60,6 +61,7 @@ export type NodeDeclarationsByKind = and<
 		index: IndexDeclaration
 		pattern: PatternDeclaration
 		predicate: PredicateDeclaration
+		props: PropsDeclaration
 	}
 >
 
@@ -77,7 +79,8 @@ export const nodesByKind = {
 	required: RequiredNode,
 	optional: OptionalNode,
 	index: IndexNode,
-	sequence: SequenceNode
+	sequence: SequenceNode,
+	props: PropsNode
 } as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
 export type NodesByKind = typeof nodesByKind
@@ -98,7 +101,7 @@ export type ChildrenByKind = {
 		? MorphChildKind
 		: k extends "intersection"
 		? ConstraintKind
-		: k extends PropRefinementKind
+		: k extends PropKind
 		? TypeKind
 		: never
 }

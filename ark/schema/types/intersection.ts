@@ -26,7 +26,6 @@ import {
 	type ConstraintKind,
 	type OpenRefinementKind,
 	type OrderedNodeKinds,
-	type PropRefinementKind,
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
