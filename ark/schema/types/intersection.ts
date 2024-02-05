@@ -3,12 +3,19 @@ import {
 	map,
 	printable,
 	splitByKeys,
+	type and,
 	type evaluate,
 	type last,
-	type listable
+	type listable,
+	type propwiseXor
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Prerequisite, Schema } from "../kinds.js"
+import type {
+	ArrayPropsSchema,
+	BasePropsSchema,
+	PropsSchema
+} from "../refinements/props/props.js"
 import type { FoldInput } from "../refinements/refinement.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -22,6 +29,7 @@ import {
 	type NodeKind,
 	type OpenNodeKind,
 	type OrderedNodeKinds,
+	type PropKind,
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
@@ -52,12 +60,19 @@ export type IntersectionSchema<
 		>
 >
 
-export type ConstraintSet = readonly Node<ConstraintKind>[]
+export type NormalizedIntersectionSchema = Extract<
+	IntersectionSchema,
+	{ props?: PropsSchema }
+>
+
+// evaluate<
+// BaseMeta & {basis?: Schema<IntersectionBasisKind>}
+// >
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
-	normalizedSchema: IntersectionSchema
+	normalizedSchema: NormalizedIntersectionSchema
 	inner: IntersectionInner
 	composition: "composite"
 	expectedContext: {
@@ -140,6 +155,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				predicate: {
 					child: true,
 					parse: (def, ctx) => parseOpen("predicate", def, ctx)
+				},
+				props: {
+					child: true,
+					parse: (def, ctx) => ctx.$.parseNode("props", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
@@ -272,9 +291,11 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
-type refinementKindOf<t> = {
-	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
-}[RefinementKind]
+type PrimitiveRefinementKind = Exclude<RefinementKind, "props">
+
+type primitiveRefinementKindOf<t> = {
+	[k in PrimitiveRefinementKind]: t extends Prerequisite<k> ? k : never
+}[PrimitiveRefinementKind]
 
 type schemaRefinementValue<k extends NodeKind> = k extends OpenNodeKind
 	? listable<Schema<k>>
@@ -284,6 +305,20 @@ type innerRefinementValue<k extends NodeKind> = k extends OpenNodeKind
 	? readonly Node<k>[]
 	: Node<k>
 
-export type schemaRefinementsOf<t> = {
-	[k in refinementKindOf<t>]?: schemaRefinementValue<k>
+type primitiveRefinementsOf<t> = {
+	[k in primitiveRefinementKindOf<t>]?: schemaRefinementValue<k>
 }
+
+type propKeyOf<t extends object> = Exclude<
+	t extends readonly unknown[] ? keyof ArrayPropsSchema : keyof BasePropsSchema,
+	keyof BaseMeta
+>
+
+type propRefinementsOf<t> = t extends object
+	?
+			| ({ props?: PropsSchema<t> } & { [k in propKeyOf<t>]?: undefined })
+			| ({ props?: undefined } & PropsSchema<t>)
+	: {}
+
+export type schemaRefinementsOf<t> = primitiveRefinementsOf<t> &
+	propRefinementsOf<t>

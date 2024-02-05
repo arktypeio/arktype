@@ -26,18 +26,25 @@ export interface PropsInner extends BaseMeta {
 	readonly sequence?: SequenceNode
 }
 
-export interface PropsSchema extends BaseMeta {
+export interface BasePropsSchema extends BaseMeta {
 	readonly keys?: KeyCheckKind
 	readonly required?: readonly RequiredSchema[]
 	readonly optional?: readonly OptionalSchema[]
 	readonly index?: readonly IndexSchema[]
+}
+
+export interface ArrayPropsSchema extends BasePropsSchema {
 	readonly sequence?: SequenceSchema
 }
+
+export type PropsSchema<base extends object = object> =
+	base extends readonly unknown[] ? ArrayPropsSchema : BasePropsSchema
 
 export type PropsDeclaration = declareNode<{
 	kind: "props"
 	schema: PropsSchema
-	normalizedSchema: PropsSchema
+	// ensure sequence is included as a parsed key
+	normalizedSchema: ArrayPropsSchema
 	inner: PropsInner
 	composition: "composite"
 	prerequisite: object
@@ -88,6 +95,18 @@ export class PropsNode
 	}
 
 	compileApply(ctx: CompilationContext) {
+		// type NamedPropsInner = Pick<PropsInner, "required" | "optional">
+
+		// const compileLooseNamedProps = (
+		// 	props: NamedPropsInner,
+		// 	ctx: CompilationContext
+		// ) => {
+		// 	let body = ""
+		// 	props.required?.forEach((prop) => {
+		// 		body += prop.compileApply(ctx)
+		// 	})
+		// }
+
 		return ""
 	}
 
