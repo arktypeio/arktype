@@ -28,10 +28,11 @@ export type exactMessageOnError<t extends object, u extends object> = {
 
 export type defer<t> = [t][t extends any ? 0 : never]
 
-export type merge<base, merged> = {
-	[k in Exclude<keyof base, keyof merged>]: base[k]
-} & merged &
-	unknown
+export type merge<base, merged> = evaluate<
+	{
+		[k in Exclude<keyof base, keyof merged>]: base[k]
+	} & merged
+>
 
 /**
  * Interesection (`&`) that avoids evaluating `unknown` to `{}`
