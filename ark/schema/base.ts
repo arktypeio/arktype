@@ -29,13 +29,12 @@ import type {
 	MinNode
 } from "./refinements/bounds.js"
 import type { DivisorNode } from "./refinements/divisor.js"
-import type { IndexNode } from "./refinements/index.js"
-import type { KeysNode } from "./refinements/keys.js"
-import type { OptionalNode } from "./refinements/optional.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
-import type { RequiredNode } from "./refinements/required.js"
-import type { SequenceNode } from "./refinements/sequence.js"
+import type { IndexNode } from "./refinements/props/index.js"
+import type { OptionalNode } from "./refinements/props/optional.js"
+import type { RequiredNode } from "./refinements/props/required.js"
+import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
 import type { CompilationContext } from "./shared/compile.js"
 import type {
@@ -360,7 +359,6 @@ interface NodesByKind<t = any> {
 	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
-	keys: KeysNode
 }
 
 export type Node<

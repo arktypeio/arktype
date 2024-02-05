@@ -2,25 +2,24 @@ import type { and } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
 import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
-import { IndexNode, type IndexDeclaration } from "./refinements/index.js"
-import { KeysNode, type KeysDeclaration } from "./refinements/keys.js"
-import {
-	OptionalNode,
-	type OptionalDeclaration
-} from "./refinements/optional.js"
 import { PatternNode, type PatternDeclaration } from "./refinements/pattern.js"
 import {
 	PredicateNode,
 	type PredicateDeclaration
 } from "./refinements/predicate.js"
+import { IndexNode, type IndexDeclaration } from "./refinements/props/index.js"
+import {
+	OptionalNode,
+	type OptionalDeclaration
+} from "./refinements/props/optional.js"
 import {
 	RequiredNode,
 	type RequiredDeclaration
-} from "./refinements/required.js"
+} from "./refinements/props/required.js"
 import {
 	SequenceNode,
 	type SequenceDeclaration
-} from "./refinements/sequence.js"
+} from "./refinements/props/sequence.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -61,7 +60,6 @@ export type NodeDeclarationsByKind = and<
 		index: IndexDeclaration
 		pattern: PatternDeclaration
 		predicate: PredicateDeclaration
-		keys: KeysDeclaration
 	}
 >
 
@@ -79,8 +77,7 @@ export const nodesByKind = {
 	required: RequiredNode,
 	optional: OptionalNode,
 	index: IndexNode,
-	sequence: SequenceNode,
-	keys: KeysNode
+	sequence: SequenceNode
 } as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
 export type NodesByKind = typeof nodesByKind

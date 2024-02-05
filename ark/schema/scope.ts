@@ -90,8 +90,6 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]
 >
 
-export type KeyCheckKind = "distilled" | "strict" | "loose"
-
 export type ArkConfig = Partial<NodeConfigsByKind>
 
 export type ParsedArkConfig = require<ArkConfig, 2>

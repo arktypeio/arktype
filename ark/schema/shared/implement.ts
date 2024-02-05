@@ -39,7 +39,6 @@ export const boundKinds = [
 export type BoundKind = (typeof boundKinds)[number]
 
 export const propRefinementKinds = [
-	"keys",
 	"required",
 	"optional",
 	"index",
@@ -97,8 +96,7 @@ export type ClosedRefinementKind = Exclude<RefinementKind, OpenRefinementKind>
 export const primitiveKinds = [
 	...basisKinds,
 	...shallowRefinementKinds,
-	"predicate",
-	"keys"
+	"predicate"
 ] as const
 
 export type PrimitiveKind = (typeof primitiveKinds)[number]

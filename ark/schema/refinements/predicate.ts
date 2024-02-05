@@ -1,5 +1,4 @@
 import { appendUnique } from "@arktype/util"
-import { BaseNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 import type { TraversalContext } from "../traversal/context.js"

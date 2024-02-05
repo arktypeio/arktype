@@ -1,13 +1,13 @@
 import type { and } from "@arktype/util"
-import type { Node } from "../base.js"
-import type { CompilationContext } from "../shared/compile.js"
-import type { BaseNodeDeclaration } from "../shared/declare.js"
-import type { PropRefinementKind } from "../shared/implement.js"
+import type { Node } from "../../base.js"
+import type { CompilationContext } from "../../shared/compile.js"
+import type { BaseNodeDeclaration } from "../../shared/declare.js"
+import type { PropRefinementKind } from "../../shared/implement.js"
 import {
 	compileSerializedValue,
 	isDotAccessible
-} from "../traversal/registry.js"
-import type { IntersectionInner } from "../types/intersection.js"
+} from "../../traversal/registry.js"
+import type { IntersectionInner } from "../../types/intersection.js"
 
 export type BasePropDeclaration = and<
 	BaseNodeDeclaration,
