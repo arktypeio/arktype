@@ -21,7 +21,7 @@ import type {
 	nodeImplementationOf
 } from "../shared/implement.js"
 import {
-	BaseRefinement,
+	BasePrimitiveRefinement,
 	getBasisName,
 	type FoldInput,
 	type FoldOutput
@@ -103,7 +103,7 @@ export type BaseBoundDeclaration = and<
 export abstract class BaseBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
-> extends BaseRefinement<d, subclass> {
+> extends BasePrimitiveRefinement<d, subclass> {
 	readonly hasOpenIntersection = false
 
 	static implementBound<d extends Declaration<BoundKind>>(

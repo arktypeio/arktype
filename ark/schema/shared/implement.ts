@@ -9,14 +9,22 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
+import type {
+	Declaration,
+	ExpectedContext,
+	Inner,
+	Prerequisite,
+	Schema
+} from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
 	ParsedUnknownNodeConfig,
 	ScopeNode
 } from "../scope.js"
+import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
+import type { CompilationContext } from "./compile.js"
 import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -220,6 +228,13 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	inner: NodeKind extends kind ? any : Omit<Inner<kind>, "description">
 ) => string
+
+export interface TraversableNode<prerequisite = unknown> {
+	traverseAllows: TraverseAllows<prerequisite>
+	traverseApply: TraverseApply<prerequisite>
+	compileApply(ctx: CompilationContext): string
+	compileAllows(ctx: CompilationContext): string
+}
 
 export const parseOpen = <kind extends OpenNodeKind>(
 	kind: kind,

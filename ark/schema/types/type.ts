@@ -13,28 +13,41 @@ import type {
 	ownIntersectionAlternateResult
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeKind, TypeKind, kindRightOf } from "../shared/implement.js"
+import type {
+	NodeKind,
+	TraversableNode,
+	TypeKind,
+	kindRightOf
+} from "../shared/implement.js"
 import { inferred } from "../shared/utils.js"
-import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
+import {
+	TraversalContext,
+	type TraverseAllows,
+	type TraverseApply
+} from "../traversal/context.js"
+import type { ArkResult } from "../traversal/errors.js"
 import type { IntersectionNode } from "./intersection.js"
-import type { extractOut } from "./morph.js"
+import type { distill, extractIn, extractOut } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
 export type BaseTypeDeclaration = and<BaseNodeDeclaration, { kind: TypeKind }>
 
 export abstract class BaseType<
-	t,
-	d extends BaseTypeDeclaration,
-	subclass extends NodeSubclass<d>
-> extends BaseNode<t, d, subclass> {
+		t,
+		d extends BaseTypeDeclaration,
+		subclass extends NodeSubclass<d>
+	>
+	extends BaseNode<t, d, subclass>
+	implements TraversableNode
+{
 	declare infer: extractOut<t>;
 	declare [inferred]: t
 
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<UnionChildKind>[]
 
-	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
-	abstract traverseApply: TraverseApply<d["prerequisite"]>
+	abstract traverseAllows: TraverseAllows
+	abstract traverseApply: TraverseApply
 	abstract compileApply(ctx: CompilationContext): string
 	abstract compileAllows(ctx: CompilationContext): string
 
@@ -43,6 +56,20 @@ export abstract class BaseType<
 		// in a union, branches will have already been assigned from inner
 		// otherwise, initialize it to a singleton array containing the current branch node
 		this.branches ??= [this as never]
+	}
+
+	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
+		const ctx = new TraversalContext(data, this.$.config)
+		return this.traverseAllows(data as never, ctx)
+	}
+
+	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
+		const ctx = new TraversalContext(data, this.$.config)
+		this.traverseApply(data, ctx)
+		if (ctx.currentErrors.length === 0) {
+			return { out: data } as any
+		}
+		return { errors: ctx.currentErrors }
 	}
 
 	abstract intersectRightwardInner(

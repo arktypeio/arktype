@@ -32,8 +32,6 @@ export abstract class BaseBasis<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 
-	readonly constraintGroup = "basis"
-
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
 			ctx.error(this.description)

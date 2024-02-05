@@ -189,20 +189,6 @@ export abstract class BaseNode<
 		)
 	}
 
-	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
-		const ctx = new TraversalContext(data, this.$.config)
-		return this.abstracts.traverseAllows(data as never, ctx)
-	}
-
-	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
-		const ctx = new TraversalContext(data, this.$.config)
-		this.abstracts.traverseApply(data, ctx)
-		if (ctx.currentErrors.length === 0) {
-			return { out: data } as any
-		}
-		return { errors: ctx.currentErrors }
-	}
-
 	private inCache?: UnknownNode;
 	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
 		this.inCache ??= this.getIo("in")

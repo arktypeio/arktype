@@ -22,6 +22,7 @@ import {
 	type NodeKind,
 	type OpenNodeKind,
 	type OrderedNodeKinds,
+	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -35,7 +36,7 @@ export type IntersectionInner = evaluate<
 	BaseMeta & {
 		basis?: Node<IntersectionBasisKind>
 	} & {
-		[k in NodeKind]?: innerRefinementValue<k>
+		[k in RefinementKind]?: innerRefinementValue<k>
 	}
 >
 
@@ -272,8 +273,8 @@ export class IntersectionNode<t = unknown> extends BaseType<
 }
 
 type refinementKindOf<t> = {
-	[k in NodeKind]: t extends Prerequisite<k> ? k : never
-}[NodeKind]
+	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
+}[RefinementKind]
 
 type schemaRefinementValue<k extends NodeKind> = k extends OpenNodeKind
 	? listable<Schema<k>>

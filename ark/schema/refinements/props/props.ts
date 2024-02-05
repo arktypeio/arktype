@@ -1,7 +1,14 @@
 import { throwParseError } from "@arktype/util"
+import { BaseNode } from "../../base.js"
+import type { CompilationContext } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import { parseOpen, type PropKind } from "../../shared/implement.js"
-import { BaseRefinement, type FoldInput } from "../refinement.js"
+import {
+	parseOpen,
+	type PropKind,
+	type TraversableNode
+} from "../../shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
+import { BasePrimitiveRefinement, type FoldInput } from "../refinement.js"
 import type { IndexNode, IndexSchema } from "./index.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
@@ -37,10 +44,10 @@ export type PropsDeclaration = declareNode<{
 	childKind: PropKind
 }>
 
-export class PropsNode extends BaseRefinement<
-	PropsDeclaration,
-	typeof PropsNode
-> {
+export class PropsNode
+	extends BaseNode<object, PropsDeclaration, typeof PropsNode>
+	implements TraversableNode<object>
+{
 	static implementation = this.implement({
 		keys: {
 			keys: {
@@ -73,7 +80,16 @@ export class PropsNode extends BaseRefinement<
 	})
 
 	readonly hasOpenIntersection = false
-	traverseAllows = () => true
+	traverseAllows: TraverseAllows<object> = () => true
+	traverseApply: TraverseApply<object> = () => {}
+
+	compileAllows(ctx: CompilationContext) {
+		return ""
+	}
+
+	compileApply(ctx: CompilationContext) {
+		return ""
+	}
 
 	intersectOwnInner(r: PropsNode) {
 		return this

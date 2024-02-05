@@ -8,7 +8,7 @@ import type {
 } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import {
-	BaseRefinement,
+	BasePrimitiveRefinement,
 	type FoldInput,
 	type FoldOutput
 } from "../refinement.js"
@@ -52,7 +52,8 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
 
-export class SequenceNode extends BaseRefinement<
+export class SequenceNode extends BaseNode<
+	readonly unknown[],
 	SequenceDeclaration,
 	typeof SequenceNode
 > {

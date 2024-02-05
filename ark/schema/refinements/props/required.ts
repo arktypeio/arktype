@@ -1,4 +1,4 @@
-import type { Node, TypeSchema } from "../../base.js"
+import { BaseNode, type Node, type TypeSchema } from "../../base.js"
 import type { Inner } from "../../kinds.js"
 import type { CompilationContext } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -6,7 +6,7 @@ import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import { compileSerializedValue } from "../../traversal/registry.js"
-import { BaseRefinement, type FoldInput } from "../refinement.js"
+import { BasePrimitiveRefinement, type FoldInput } from "../refinement.js"
 import {
 	compileKey,
 	compilePresentPropAllows,
@@ -38,7 +38,8 @@ export type RequiredDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class RequiredNode extends BaseRefinement<
+export class RequiredNode extends BaseNode<
+	object,
 	RequiredDeclaration,
 	typeof RequiredNode
 > {

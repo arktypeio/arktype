@@ -1,6 +1,10 @@
 import { appendUnique, throwParseError } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { BaseRefinement, getBasisName, type FoldInput } from "./refinement.js"
+import {
+	BasePrimitiveRefinement,
+	getBasisName,
+	type FoldInput
+} from "./refinement.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -29,7 +33,7 @@ export const writeNonStringPatternMessage = <root extends string>(
 export type writeNonStringPatternMessage<root extends string> =
 	`Pattern operand ${root} must be a string`
 
-export class PatternNode extends BaseRefinement<
+export class PatternNode extends BasePrimitiveRefinement<
 	PatternDeclaration,
 	typeof PatternNode
 > {
