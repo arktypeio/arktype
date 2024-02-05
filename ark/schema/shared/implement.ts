@@ -9,13 +9,7 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type {
-	Declaration,
-	ExpectedContext,
-	Inner,
-	Prerequisite,
-	Schema
-} from "../kinds.js"
+import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -138,10 +132,10 @@ export const precedenceOfKind = <kind extends NodeKind>(kind: kind) =>
 	precedenceByKind[kind]
 
 export type KeyDefinitions<d extends BaseNodeDeclaration> = {
-	[k in undefinedKey<d>]: NodeKeyImplementation<d, k>
+	[k in keyRequiringDefinition<d>]: NodeKeyImplementation<d, k>
 }
 
-type undefinedKey<d extends BaseNodeDeclaration> = Exclude<
+type keyRequiringDefinition<d extends BaseNodeDeclaration> = Exclude<
 	keyof d["normalizedSchema"],
 	keyof BaseMeta
 >

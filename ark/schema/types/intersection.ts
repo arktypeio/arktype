@@ -60,14 +60,14 @@ export type IntersectionSchema<
 		>
 >
 
-export type NormalizedIntersectionSchema = Extract<
-	IntersectionSchema,
-	{ props?: PropsSchema }
+// ensure spread prop keys like 'required' in this example:
+// `{ basis: "object", required: [...]}`
+// are nested in the 'props' key like:
+// `{ basis: "object", props: {required: [...]}}`
+export type NormalizedIntersectionSchema = Omit<
+	Extract<IntersectionSchema, { props?: PropsSchema }>,
+	propKeyOf<any>
 >
-
-// evaluate<
-// BaseMeta & {basis?: Schema<IntersectionBasisKind>}
-// >
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
