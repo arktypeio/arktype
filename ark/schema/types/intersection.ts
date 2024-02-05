@@ -144,22 +144,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				predicate: {
 					child: true,
 					parse: (def, ctx) => parseOpenRefinement("predicate", def, ctx)
-				},
-				optional: {
-					child: true,
-					parse: (def, ctx) => parseOpenRefinement("optional", def, ctx)
-				},
-				required: {
-					child: true,
-					parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
-				},
-				index: {
-					child: true,
-					parse: (def, ctx) => parseOpenRefinement("index", def, ctx)
-				},
-				sequence: {
-					child: true,
-					parse: (def, ctx) => parseClosedRefinement("sequence", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
