@@ -1,5 +1,4 @@
 import {
-	groupBy,
 	isArray,
 	map,
 	printable,
@@ -10,23 +9,19 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Prerequisite, Schema } from "../kinds.js"
-import type { SchemaParseContext } from "../parse.js"
-import type {
-	FoldInput,
-	GroupedConstraints
-} from "../refinements/refinement.js"
+import type { FoldInput } from "../refinements/refinement.js"
 import type { CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
+	parseOpen,
 	refinementKinds,
 	type BasisKind,
-	type ClosedRefinementKind,
 	type ConstraintKind,
-	type OpenRefinementKind,
+	type NodeKind,
+	type OpenNodeKind,
 	type OrderedNodeKinds,
-	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -40,7 +35,7 @@ export type IntersectionInner = evaluate<
 	BaseMeta & {
 		basis?: Node<IntersectionBasisKind>
 	} & {
-		[k in RefinementKind]?: innerRefinementValue<k>
+		[k in NodeKind]?: innerRefinementValue<k>
 	}
 >
 
@@ -111,44 +106,44 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				},
 				divisor: {
 					child: true,
-					parse: (def, ctx) => parseClosedRefinement("divisor", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("divisor", def, ctx)
 				},
 				max: {
 					child: true,
-					parse: (def, ctx) => parseClosedRefinement("max", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("max", def, ctx)
 				},
 				min: {
 					child: true,
-					parse: (def, ctx) => parseClosedRefinement("min", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("min", def, ctx)
 				},
 				maxLength: {
 					child: true,
-					parse: (def, ctx) => parseClosedRefinement("maxLength", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("maxLength", def, ctx)
 				},
 				minLength: {
 					child: true,
-					parse: (def, ctx) => parseClosedRefinement("minLength", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("minLength", def, ctx)
 				},
 				before: {
 					child: true,
-					parse: (def, ctx) => parseClosedRefinement("before", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("before", def, ctx)
 				},
 				after: {
 					child: true,
-					parse: (def, ctx) => parseClosedRefinement("after", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("after", def, ctx)
 				},
 				pattern: {
 					child: true,
-					parse: (def, ctx) => parseOpenRefinement("pattern", def, ctx)
+					parse: (def, ctx) => parseOpen("pattern", def, ctx)
 				},
 				predicate: {
 					child: true,
-					parse: (def, ctx) => parseOpenRefinement("predicate", def, ctx)
+					parse: (def, ctx) => parseOpen("predicate", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
 				const [refinements, base] = splitByKeys(inner, refinementKeys)
-				let result: FoldInput<last<OrderedNodeKinds>> | Disjoint = base
+				let result: FoldInput<"predicate"> | Disjoint = base
 				const flatRefinements = Object.values(refinements).flat()
 				if (flatRefinements.length === 0 && base.basis) {
 					return base.basis
@@ -180,16 +175,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			}
 		})
-
-	readonly groups: GroupedConstraints = groupBy(
-		this.children,
-		"constraintGroup"
-	)
-	readonly props = this.groups.props
-	readonly shallow = this.groups.shallow
-	readonly refinements = this.entries.flatMap(([k, v]) =>
-		k in refinementKinds ? (v as listable<Node<RefinementKind>>) : []
-	)
 
 	protected intersectOwnInner(r: IntersectionNode) {
 		// ensure we can safely mutate inner as well as its shallow open intersections
@@ -287,40 +272,17 @@ export class IntersectionNode<t = unknown> extends BaseType<
 }
 
 type refinementKindOf<t> = {
-	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
-}[RefinementKind]
+	[k in NodeKind]: t extends Prerequisite<k> ? k : never
+}[NodeKind]
 
-type schemaRefinementValue<k extends RefinementKind> =
-	k extends OpenRefinementKind ? listable<Schema<k>> : Schema<k>
+type schemaRefinementValue<k extends NodeKind> = k extends OpenNodeKind
+	? listable<Schema<k>>
+	: Schema<k>
 
-type innerRefinementValue<k extends RefinementKind> =
-	k extends OpenRefinementKind ? readonly Node<k>[] : Node<k>
+type innerRefinementValue<k extends NodeKind> = k extends OpenNodeKind
+	? readonly Node<k>[]
+	: Node<k>
 
 export type schemaRefinementsOf<t> = {
 	[k in refinementKindOf<t>]?: schemaRefinementValue<k>
-}
-
-export const parseClosedRefinement = <kind extends ClosedRefinementKind>(
-	kind: kind,
-	input: Schema<kind>,
-	ctx: SchemaParseContext
-): Node<kind> => {
-	return ctx.$.parseNode(kind, input) as never
-}
-
-export const parseOpenRefinement = <kind extends OpenRefinementKind>(
-	kind: kind,
-	input: listable<Schema<kind>>,
-	ctx: SchemaParseContext
-): readonly Node<kind>[] | undefined => {
-	if (isArray(input)) {
-		if (input.length === 0) {
-			// Omit empty lists as input
-			return
-		}
-		return input
-			.map((refinement) => ctx.$.parseNode(kind, refinement))
-			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
-	}
-	return [ctx.$.parseNode(kind, input)] as never
 }

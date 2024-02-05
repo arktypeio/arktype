@@ -1,6 +1,5 @@
 import { appendUnique, throwParseError } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 import { BaseRefinement, getBasisName, type FoldInput } from "./refinement.js"
 
 export interface PatternInner extends BaseMeta {
@@ -20,7 +19,6 @@ export type PatternDeclaration = declareNode<{
 	composition: "primitive"
 	open: true
 	prerequisite: string
-	attachments: PrimitiveAttachmentsInput
 }>
 
 export const writeNonStringPatternMessage = <root extends string>(
@@ -54,23 +52,17 @@ export class PatternNode extends BaseRefinement<
 			description(inner) {
 				return `matched by ${inner.source}`
 			}
-		},
-		attachments: (base) => {
-			const compiledCondition = `/${base.source}/${base.flags ?? ""}.test(${
-				base.$.dataArg
-			})`
-			return {
-				primitive: true,
-				compiledCondition,
-				compiledNegation: `!${compiledCondition}`
-			}
 		}
 	})
 
-	readonly constraintGroup = "shallow"
 	readonly hasOpenIntersection = true
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
+
+	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${
+		this.$.dataArg
+	})`
+	compiledNegation = `!${this.compiledCondition}`
 
 	intersectOwnInner(r: PatternNode) {
 		// For now, non-equal regex are naively intersected

@@ -7,17 +7,15 @@ import {
 	type TypeNode
 } from "../base.js"
 import type { Inner, Schema, reducibleKindOf } from "../kinds.js"
+import type { CompilationContext } from "../shared/compile.js"
 import type {
 	BaseNodeDeclaration,
 	ownIntersectionAlternateResult
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type {
-	RefinementKind,
-	TypeKind,
-	kindRightOf
-} from "../shared/implement.js"
+import type { NodeKind, TypeKind, kindRightOf } from "../shared/implement.js"
 import { inferred } from "../shared/utils.js"
+import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { IntersectionNode } from "./intersection.js"
 import type { extractOut } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
@@ -35,7 +33,10 @@ export abstract class BaseType<
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<UnionChildKind>[]
 
-	hasOpenIntersection = false as d["open"]
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract traverseApply: TraverseApply<d["prerequisite"]>
+	abstract compileApply(ctx: CompilationContext): string
+	abstract compileAllows(ctx: CompilationContext): string
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)
@@ -90,7 +91,7 @@ export abstract class BaseType<
 		return nodeResult
 	}
 
-	constrain<refinementKind extends RefinementKind>(
+	constrain<refinementKind extends NodeKind>(
 		kind: refinementKind,
 		input: Schema<refinementKind>
 	): Node<reducibleKindOf<this["kind"]>> {

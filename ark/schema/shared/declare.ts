@@ -4,11 +4,7 @@ import type { Declaration, ExpectedContext, reducibleKindOf } from "../kinds.js"
 import type { TraverseApply } from "../traversal/context.js"
 import type { CompilationContext } from "./compile.js"
 import type { Disjoint } from "./disjoint.js"
-import type {
-	CompositeKind,
-	NodeKind,
-	PrimitiveAttachmentsInput
-} from "./implement.js"
+import type { CompositeKind, NodeKind } from "./implement.js"
 
 export interface BaseMeta {
 	readonly description?: string
@@ -23,7 +19,6 @@ interface BaseDeclarationInput {
 	inner: BaseMeta
 	disjoinable?: true
 	open?: true
-	attachments?: object
 	expectedContext?: unknown
 	prerequisite?: unknown
 }
@@ -52,7 +47,6 @@ export type declareNode<d extends DeclarationInput> = and<
 	{
 		disjoinable: d["disjoinable"] extends true ? true : false
 		open: d["open"] extends true ? true : false
-		attachments: d["attachments"] extends object ? d["attachments"] : {}
 		prerequisite: prerequisiteOf<d>
 		childKind: "childKind" extends keyof d ? d["childKind"] : never
 		parentKind: parentKindOf<d["kind"]>
@@ -64,15 +58,8 @@ type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 	? d["prerequisite"]
 	: unknown
 
-export type baseAttachmentsOf<d extends BaseNodeDeclaration> =
-	NarrowedAttachments<d> & d["inner"]
-
 export type attachmentsOf<d extends BaseNodeDeclaration> =
-	baseAttachmentsOf<d> &
-		d["attachments"] &
-		(d["attachments"] extends PrimitiveAttachmentsInput
-			? DerivablePrimitiveAttachments<d>
-			: {})
+	NarrowedAttachments<d> & d["inner"]
 
 export interface DerivablePrimitiveAttachments<d extends BaseNodeDeclaration> {
 	traverseApply: TraverseApply<d["prerequisite"]>
@@ -89,7 +76,6 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	disjoinable: boolean
 	open: boolean
-	attachments: object
 	childKind: NodeKind
 	parentKind: CompositeKind
 	expectedContext: unknown

@@ -1,10 +1,7 @@
 import { throwParseError } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import type {
-	PrimitiveAttachmentsInput,
-	PropKind
-} from "../../shared/implement.js"
-import { BaseRefinement, getBasisName, type FoldInput } from "../refinement.js"
+import { parseOpen, type PropKind } from "../../shared/implement.js"
+import { BaseRefinement, type FoldInput } from "../refinement.js"
 import type { IndexNode, IndexSchema } from "./index.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
@@ -37,7 +34,6 @@ export type PropsDeclaration = declareNode<{
 	inner: PropsInner
 	composition: "composite"
 	prerequisite: object
-	attachments: PrimitiveAttachmentsInput
 	childKind: PropKind
 }>
 
@@ -47,36 +43,37 @@ export class PropsNode extends BaseRefinement<
 > {
 	static implementation = this.implement({
 		keys: {
-			keys: {},
+			keys: {
+				parse: (def, ctx) => (def === "loose" ? undefined : def)
+			},
 			optional: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("optional", def, ctx)
+				parse: (def, ctx) => parseOpen("optional", def, ctx)
 			},
 			required: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("required", def, ctx)
+				parse: (def, ctx) => parseOpen("required", def, ctx)
 			},
 			index: {
 				child: true,
-				parse: (def, ctx) => parseOpenRefinement("index", def, ctx)
+				parse: (def, ctx) => parseOpen("index", def, ctx)
 			},
 			sequence: {
 				child: true,
-				parse: (def, ctx) => parseClosedRefinement("sequence", def, ctx)
+				parse: (def, ctx) => ctx.$.parseNode("sequence", def, ctx)
 			}
 		},
 		normalize: (schema) => schema,
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
-				return inner.props === 1 ? "an integer" : `a multiple of ${inner.props}`
+				return ""
 			}
 		}
 	})
 
-	readonly constraintGroup = "shallow"
 	readonly hasOpenIntersection = false
-	traverseAllows = (data: number) => data % this.props === 0
+	traverseAllows = () => true
 
 	intersectOwnInner(r: PropsNode) {
 		return this

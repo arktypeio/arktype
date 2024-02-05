@@ -2,16 +2,58 @@ import {
 	printable,
 	throwParseError,
 	type Constructor,
+	type and,
 	type inferDomain,
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import { isNode } from "../base.js"
-import type { Schema } from "../kinds.js"
+import { isNode, type NodeSubclass } from "../base.js"
+import type { ExpectedContext, Schema } from "../kinds.js"
+import {
+	compilePrimitive,
+	createPrimitiveExpectedContext,
+	type CompilationContext
+} from "../shared/compile.js"
 import type { BasisKind } from "../shared/implement.js"
+import type { TraverseApply } from "../traversal/context.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
+import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitNode, UnitSchema } from "./unit.js"
+
+export type BaseBasisDeclaration = and<BaseTypeDeclaration, { kind: BasisKind }>
+
+export abstract class BaseBasis<
+	t,
+	d extends BaseBasisDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseType<t, d, subclass> {
+	abstract readonly basisName: string
+	abstract readonly compiledCondition: string
+	abstract readonly compiledNegation: string
+
+	readonly constraintGroup = "basis"
+
+	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.error(this.description)
+		}
+	}
+
+	private expectedContextCache?: ExpectedContext<d["kind"]>
+	get expectedContext(): ExpectedContext<d["kind"]> {
+		this.expectedContextCache ??= createPrimitiveExpectedContext(this as never)
+		return this.expectedContextCache
+	}
+
+	compileApply(ctx: CompilationContext) {
+		return compilePrimitive("apply", this as any, ctx)
+	}
+
+	compileAllows(ctx: CompilationContext) {
+		return compilePrimitive("allows", this as any, ctx)
+	}
+}
 
 export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 	switch (typeof schema) {

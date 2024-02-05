@@ -4,8 +4,8 @@ import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
+	NodeKind,
 	PropKind,
-	RefinementKind,
 	ShallowRefinementKind,
 	kindRightOf
 } from "../shared/implement.js"
@@ -24,7 +24,7 @@ export type ConstraintKindsByGroup = {
 	predicate: "predicate"
 }
 
-export type FoldInput<kind extends RefinementKind> = {
+export type FoldInput<kind extends NodeKind> = {
 	-readonly [k in Exclude<
 		keyof IntersectionInner,
 		kindRightOf<kind>
@@ -33,18 +33,16 @@ export type FoldInput<kind extends RefinementKind> = {
 		: IntersectionInner[k]
 }
 
-export type FoldOutput<kind extends RefinementKind> = FoldInput<kind> | Disjoint
+export type FoldOutput<kind extends NodeKind> = FoldInput<kind> | Disjoint
 
 export interface BaseRefinementDeclaration extends BaseNodeDeclaration {
-	kind: RefinementKind
+	kind: NodeKind
 }
 
 export abstract class BaseRefinement<
 	d extends BaseRefinementDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
-	abstract constraintGroup: ConstraintGroupName
-
 	abstract foldIntersection(into: FoldInput<d["kind"]>): FoldOutput<d["kind"]>
 }
 

@@ -7,12 +7,9 @@ import {
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import {
-	defaultValueSerializer,
-	type PrimitiveAttachmentsInput
-} from "../shared/implement.js"
+import { defaultValueSerializer } from "../shared/implement.js"
+import { BaseBasis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
-import { BaseType, type BaseBasis } from "./type.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -33,15 +30,15 @@ export type ProtoDeclaration = declareNode<{
 	inner: ProtoInner
 	composition: "primitive"
 	disjoinable: true
-	attachments: PrimitiveAttachmentsInput
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export class ProtoNode<t = unknown>
-	extends BaseType<t, ProtoDeclaration, typeof ProtoNode>
-	implements BaseBasis
-{
+export class ProtoNode<t = unknown> extends BaseBasis<
+	t,
+	ProtoDeclaration,
+	typeof ProtoNode
+> {
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		collapseKey: "proto",
@@ -64,24 +61,16 @@ export class ProtoNode<t = unknown>
 			actual(data) {
 				return objectKindOrDomainOf(data)
 			}
-		},
-		attachments: (base) => {
-			const compiledCondition = `${base.$.dataArg} instanceof ${
-				(base.json as any).proto
-			}`
-			return {
-				primitive: true,
-				compiledCondition,
-				compiledNegation: `!(${compiledCondition})`
-			}
 		}
 	})
 
-	readonly constraintGroup = "basis"
 	readonly basisName = `${this.proto.name}`
 	readonly serializedConstructor = (this.json as { proto: string }).proto
 	readonly domain = "object"
 	traverseAllows = (data: unknown) => data instanceof this.proto
+
+	compiledCondition = `${this.$.dataArg} instanceof ${this.serializedConstructor}`
+	compiledNegation = `!(${this.compiledCondition})`
 
 	protected intersectOwnInner(r: ProtoNode) {
 		return constructorExtends(this.proto, r.proto)

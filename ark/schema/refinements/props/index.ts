@@ -53,8 +53,6 @@ export class IndexNode extends BaseRefinement<
 
 	readonly hasOpenIntersection = true
 
-	readonly constraintGroup = "props"
-
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(
 			(entry) =>

@@ -57,7 +57,6 @@ import {
 	type ConstraintKind,
 	type NodeKind,
 	type PropKind,
-	type RefinementKind,
 	type SetKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
@@ -107,19 +106,9 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 
 export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 	{
-		new (attachments: never): BaseNode<any, d, any> & BaseAbstracts<d>
+		new (attachments: never): BaseNode<any, d, any>
 		readonly implementation: nodeImplementationOf<d>
 	}
-
-export interface BaseAbstracts<
-	d extends BaseNodeDeclaration = BaseNodeDeclaration
-> {
-	hasOpenIntersection: d["open"]
-	traverseAllows: TraverseAllows<d["prerequisite"]>
-	traverseApply: TraverseApply<d["prerequisite"]>
-	compileApply(ctx: CompilationContext): string
-	compileAllows(ctx: CompilationContext): string
-}
 
 export const isNode = (value: unknown): value is Node =>
 	value instanceof BaseNode
@@ -185,7 +174,6 @@ export abstract class BaseNode<
 	readonly contributesReferencesByName: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
 	readonly precedence = precedenceOfKind(this.kind)
-	protected readonly abstracts: BaseAbstracts = this as never
 	// use declare here to ensure description from attachments isn't overwritten
 	declare readonly description: string
 
@@ -263,10 +251,6 @@ export abstract class BaseNode<
 
 	isBasis(): this is Node<BasisKind> {
 		return includes(basisKinds, this.kind)
-	}
-
-	isRefinement(): this is Node<RefinementKind> {
-		return includes(refinementKinds, this.kind)
 	}
 
 	isProp(): this is Node<PropKind> {

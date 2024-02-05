@@ -101,7 +101,6 @@ export class SequenceNode extends BaseRefinement<
 		})
 
 	readonly hasOpenIntersection = false
-	readonly constraintGroup = "props"
 
 	prefixLength = this.prefix?.length ?? 0
 	postfixLength = this.postfix?.length ?? 0

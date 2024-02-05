@@ -1,12 +1,9 @@
-import { domainOf, printable, type Constructor } from "@arktype/util"
-import type { Node, TypeNode } from "../base.js"
+import { domainOf, printable } from "@arktype/util"
+import type { Node } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type {
-	BasisKind,
-	PrimitiveAttachmentsInput
-} from "../shared/implement.js"
-import { BaseType, type BaseBasis } from "./type.js"
+import type { BasisKind } from "../shared/implement.js"
+import { BaseBasis } from "./basis.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 
@@ -21,13 +18,13 @@ export type UnitDeclaration = declareNode<{
 	inner: UnitInner
 	composition: "primitive"
 	disjoinable: true
-	attachments: PrimitiveAttachmentsInput
 }>
 
-export class UnitNode<t = unknown>
-	extends BaseType<t, UnitDeclaration, typeof UnitNode>
-	implements BaseBasis
-{
+export class UnitNode<t = unknown> extends BaseBasis<
+	t,
+	UnitDeclaration,
+	typeof UnitNode
+> {
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		keys: {
@@ -40,30 +37,16 @@ export class UnitNode<t = unknown>
 			description(inner) {
 				return printable(inner.unit)
 			}
-		},
-		attachments: (base) => {
-			const serializedValue = (base.json as any).unit
-			return {
-				primitive: true,
-				compiledCondition: `${base.$.dataArg} === ${serializedValue}`,
-				compiledNegation: `${base.$.dataArg} !== ${serializedValue}`
-			}
 		}
 	})
 
-	readonly constraintGroup = "basis"
-
 	serializedValue: string = (this.json as any).unit
 	traverseAllows = (data: unknown) => data === this.unit
+	compiledCondition = `${this.$.dataArg} === ${this.serializedValue}`
+	compiledNegation = `${this.$.dataArg} !== ${this.serializedValue}`
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
-
-	// TODO:
-	// default: (l, r) =>
-	// r.allows(l.unit as never)
-	// 	? l
-	// 	: Disjoint.from("assignability", l.unit, r)
 
 	protected intersectOwnInner(r: UnitNode) {
 		return Disjoint.from("unit", this, r)

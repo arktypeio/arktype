@@ -57,8 +57,6 @@ export class OptionalNode extends BaseRefinement<
 
 	readonly hasOpenIntersection = true
 
-	readonly constraintGroup = "props"
-
 	serializedKey = compileSerializedValue(this.key)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

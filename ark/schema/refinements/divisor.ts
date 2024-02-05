@@ -1,6 +1,5 @@
 import { throwParseError } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 import { BaseRefinement, getBasisName, type FoldInput } from "./refinement.js"
 
 export interface DivisorInner extends BaseMeta {
@@ -18,7 +17,6 @@ export type DivisorDeclaration = declareNode<{
 	inner: DivisorInner
 	composition: "primitive"
 	prerequisite: number
-	attachments: PrimitiveAttachmentsInput
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -47,17 +45,14 @@ export class DivisorNode extends BaseRefinement<
 					? "an integer"
 					: `a multiple of ${inner.divisor}`
 			}
-		},
-		attachments: (base) => ({
-			primitive: true,
-			compiledCondition: `${base.$.dataArg} % ${base.divisor} === 0`,
-			compiledNegation: `${base.$.dataArg} % ${base.divisor} !== 0`
-		})
+		}
 	})
 
-	readonly constraintGroup = "shallow"
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
+
+	compiledCondition = `${this.$.dataArg} % ${this.divisor} === 0`
+	compiledNegation = `${this.$.dataArg} % ${this.divisor} !== 0`
 
 	intersectOwnInner(r: DivisorNode) {
 		return {

@@ -8,7 +8,7 @@ import type {
 import type { Node, TypeNode } from "./base.js"
 import type { isSchemaCast, schema } from "./keywords/keywords.js"
 import type { Declaration, Schema } from "./kinds.js"
-import type { BasisKind, RefinementKind } from "./shared/implement.js"
+import type { BasisKind, NodeKind } from "./shared/implement.js"
 import type { instantiateBasis } from "./types/basis.js"
 import type { NonEnumerableDomain } from "./types/domain.js"
 import type {
@@ -137,7 +137,7 @@ export type validateIntersectionSchema<def> = exactBasisMessageOnError<
 
 export type instantiateIntersectionSchema<def> = "basis" extends keyof def
 	? def["basis"] extends Schema<BasisKind>
-		? keyof def & RefinementKind extends never
+		? keyof def & NodeKind extends never
 			? instantiateBasis<def["basis"]>
 			: TypeNode<instantiateBasis<def["basis"]>["infer"], "intersection">
 		: Node<"intersection">

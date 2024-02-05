@@ -1,6 +1,6 @@
 import {
+	isArray,
 	map,
-	throwInternalError,
 	type ErrorMessage,
 	type JsonData,
 	type entryOf,
@@ -9,7 +9,7 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
+import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -17,11 +17,7 @@ import type {
 	ScopeNode
 } from "../scope.js"
 import { compileSerializedValue } from "../traversal/registry.js"
-import type {
-	BaseMeta,
-	BaseNodeDeclaration,
-	baseAttachmentsOf
-} from "./declare.js"
+import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -83,11 +79,11 @@ export const nodeKinds = [
 	...propKinds
 ] as const satisfies NodeKind[]
 
-export type OpenRefinementKind = {
-	[k in RefinementKind]: Declaration<k>["open"] extends true ? k : never
-}[RefinementKind]
+export type OpenNodeKind = {
+	[k in NodeKind]: Declaration<k>["open"] extends true ? k : never
+}[NodeKind]
 
-export type ClosedRefinementKind = Exclude<RefinementKind, OpenRefinementKind>
+export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
 
 export const primitiveKinds = [
 	...basisKinds,
@@ -188,17 +184,6 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapseKey?: keyof d["inner"] & string
 	addParseContext?: (ctx: SchemaParseContext) => void
 	reduce?: (inner: d["inner"], $: ScopeNode) => Node | undefined
-	attachments?: AttachImplementation<d>
-}
-
-export type AttachImplementation<d extends BaseNodeDeclaration> = (
-	base: baseAttachmentsOf<d>
-) => d["attachments"]
-
-export interface PrimitiveAttachmentsInput {
-	primitive: true
-	compiledCondition: string
-	compiledNegation: string
 }
 
 export interface UnknownNodeImplementation
@@ -213,12 +198,9 @@ export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
-	requireKeys<
-		CommonNodeImplementationInput<d> & {
-			defaults: nodeDefaultsImplementationInputFor<d["kind"]>
-		},
-		{} extends d["attachments"] ? never : "attachments"
-	>
+	CommonNodeImplementationInput<d> & {
+		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
+	}
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,
@@ -238,3 +220,20 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	inner: NodeKind extends kind ? any : Omit<Inner<kind>, "description">
 ) => string
+
+export const parseOpen = <kind extends OpenNodeKind>(
+	kind: kind,
+	input: listable<Schema<kind>>,
+	ctx: SchemaParseContext
+): readonly Node<kind>[] | undefined => {
+	if (isArray(input)) {
+		if (input.length === 0) {
+			// Omit empty lists as input
+			return
+		}
+		return input
+			.map((refinement) => ctx.$.parseNode(kind, refinement))
+			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
+	}
+	return [ctx.$.parseNode(kind, input)] as never
+}

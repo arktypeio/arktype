@@ -65,7 +65,6 @@ export class RequiredNode extends BaseRefinement<
 		})
 
 	readonly hasOpenIntersection = true
-	readonly constraintGroup = "props"
 
 	serializedKey = compileSerializedValue(this.key)
 

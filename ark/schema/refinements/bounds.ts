@@ -17,7 +17,6 @@ import { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
 	BoundKind,
-	PrimitiveAttachmentsInput,
 	nodeImplementationInputOf,
 	nodeImplementationOf
 } from "../shared/implement.js"
@@ -98,7 +97,6 @@ export type BaseBoundDeclaration = and<
 	{
 		kind: BoundKind
 		inner: BoundInner
-		attachments: BoundAttachmentsInput
 	}
 >
 
@@ -127,31 +125,23 @@ export abstract class BaseBound<
 				typeof schema === "object"
 					? { ...schema, limit: schema.limit }
 					: { limit: schema as Extract<d["schema"], LimitSchemaValue> },
-			defaults: implementation.defaults as never,
-			attachments: (base): BoundAttachmentsInput => {
-				const boundOperandKind = operandKindsByBoundKind[base.kind]
-				const compiledActual =
-					boundOperandKind === "value"
-						? `${base.$.dataArg}`
-						: boundOperandKind === "length"
-						? `${base.$.dataArg}.length`
-						: `${base.$.dataArg}.valueOf()`
-				const comparator = compileComparator(base.kind, base.exclusive)
-				const numericLimit = normalizeLimit(base.limit)
-				return {
-					primitive: true,
-					boundOperandKind,
-					compiledActual,
-					comparator,
-					numericLimit,
-					compiledCondition: `${compiledActual} ${comparator} ${numericLimit}`,
-					compiledNegation: `${compiledActual} ${negatedComparators[comparator]} ${numericLimit}`
-				}
-			}
+			defaults: implementation.defaults as never
 		}) as never
 	}
 
-	readonly constraintGroup = "shallow"
+	boundOperandKind = operandKindsByBoundKind[this.kind]
+	compiledActual =
+		this.boundOperandKind === "value"
+			? `${this.$.dataArg}`
+			: this.boundOperandKind === "length"
+			? `${this.$.dataArg}.length`
+			: `${this.$.dataArg}.valueOf()`
+	comparator = compileComparator(this.kind, this.exclusive)
+	numericLimit = normalizeLimit(this.limit)
+	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
+	compiledNegation = `${this.compiledActual} ${
+		negatedComparators[this.comparator]
+	} ${this.numericLimit}`
 
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
@@ -211,13 +201,6 @@ type BoundDeclarationInput = {
 	prerequisite: unknown
 }
 
-export interface BoundAttachmentsInput extends PrimitiveAttachmentsInput {
-	compiledActual: string
-	comparator: RelativeComparator
-	numericLimit: number
-	boundOperandKind: BoundOperandKind
-}
-
 type declareBound<input extends BoundDeclarationInput> = declareNode<{
 	kind: input["kind"]
 	schema: BoundSchema<input["limit"]>
@@ -225,7 +208,6 @@ type declareBound<input extends BoundDeclarationInput> = declareNode<{
 	inner: BoundInner<input["limit"]>
 	composition: "primitive"
 	prerequisite: input["prerequisite"]
-	attachments: BoundAttachmentsInput
 }>
 
 export type BoundOperandKind = "value" | "length" | "date"

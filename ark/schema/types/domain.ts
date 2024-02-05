@@ -1,9 +1,8 @@
 import { domainOf, throwInternalError, type Domain } from "@arktype/util"
-import type { UnknownNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
-import { BaseType, type BaseBasis } from "./type.js"
+import { BaseBasis } from "./basis.js"
+import type { UnknownNode } from "../base.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -29,13 +28,13 @@ export type DomainDeclaration = declareNode<{
 	inner: DomainInner
 	composition: "primitive"
 	disjoinable: true
-	attachments: PrimitiveAttachmentsInput
 }>
 
-export class DomainNode<t = unknown>
-	extends BaseType<t, DomainDeclaration, typeof DomainNode>
-	implements BaseBasis
-{
+export class DomainNode<t = unknown> extends BaseBasis<
+	t,
+	DomainDeclaration,
+	typeof DomainNode
+> {
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		collapseKey: "domain",
@@ -51,24 +50,21 @@ export class DomainNode<t = unknown>
 			actual(data) {
 				return domainOf(data)
 			}
-		},
-		attachments: (base) => ({
-			primitive: true,
-			compiledCondition:
-				base.domain === "object"
-					? `((typeof ${base.$.dataArg} === "object" && ${base.$.dataArg} !== null) || typeof ${base.$.dataArg} === "function")`
-					: `typeof ${base.$.dataArg} === "${base.domain}"`,
-			compiledNegation:
-				base.domain === "object"
-					? `((typeof ${base.$.dataArg} !== "object" || ${base.$.dataArg} === null) && typeof ${base.$.dataArg} !== "function")`
-					: `typeof ${base.$.dataArg} !== "${base.domain}"`
-		})
+		}
 	})
 
-	readonly constraintGroup = "basis"
 	basisName = this.domain
 
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
+	compiledCondition =
+		this.domain === "object"
+			? `((typeof ${this.$.dataArg} === "object" && ${this.$.dataArg} !== null) || typeof ${this.$.dataArg} === "function")`
+			: `typeof ${this.$.dataArg} === "${this.domain}"`
+
+	compiledNegation =
+		this.domain === "object"
+			? `((typeof ${this.$.dataArg} !== "object" || ${this.$.dataArg} === null) && typeof ${this.$.dataArg} !== "function")`
+			: `typeof ${this.$.dataArg} !== "${this.domain}"`
 
 	protected intersectOwnInner(r: DomainNode) {
 		return Disjoint.from("domain", this, r)

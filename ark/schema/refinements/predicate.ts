@@ -1,6 +1,5 @@
 import { appendUnique } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import type { PrimitiveAttachmentsInput } from "../shared/implement.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { compileSerializedValue } from "../traversal/registry.js"
@@ -24,7 +23,6 @@ export type PredicateDeclaration = declareNode<{
 	composition: "primitive"
 	open: true
 	expectedContext: { expected: string }
-	attachments: PrimitiveAttachmentsInput
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
@@ -49,22 +47,15 @@ export class PredicateNode extends BaseRefinement<
 			expected(source) {
 				return `valid`
 			}
-		},
-		attachments: (base) => {
-			const compiledCondition = `${compileSerializedValue(base.predicate)}(${
-				base.$.dataArg
-			})`
-			return {
-				primitive: true,
-				compiledCondition,
-				compiledNegation: `!${compiledCondition}`
-			}
 		}
 	})
 
-	readonly constraintGroup = "predicate"
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
+	compiledCondition = `${compileSerializedValue(this.predicate)}(${
+		this.$.dataArg
+	})`
+	compiledNegation = `!${this.compiledCondition}`
 
 	intersectOwnInner(r: PredicateNode) {
 		// TODO: allow changed order to be the same type
