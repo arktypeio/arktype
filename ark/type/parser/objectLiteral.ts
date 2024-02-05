@@ -62,13 +62,13 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 			// For each key on spreadNode, add it to our object.
 			// We filter out keys from the spreadNode that will be defined later on this same object
 			// because the currently parsed definition will overwrite them.
-			const requiredEntriesFromSpread = (spreadNode.required ?? []).filter(
-				(e) => !entries.some(([k]) => k === e.key)
-			)
+			const requiredEntriesFromSpread = (
+				spreadNode.props?.required ?? []
+			).filter((e) => !entries.some(([k]) => k === e.key))
 
-			const optionalEntriesFromSpread = (spreadNode.optional ?? []).filter(
-				(e) => !entries.some(([k]) => k === e.key)
-			)
+			const optionalEntriesFromSpread = (
+				spreadNode.props?.optional ?? []
+			).filter((e) => !entries.some(([k]) => k === e.key))
 
 			required.push(...requiredEntriesFromSpread)
 			optional.push(...optionalEntriesFromSpread)

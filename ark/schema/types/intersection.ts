@@ -1,13 +1,13 @@
 import {
 	isArray,
+	isEmptyObject,
 	map,
 	printable,
 	splitByKeys,
-	type and,
+	throwParseError,
 	type evaluate,
 	type last,
-	type listable,
-	type propwiseXor
+	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Prerequisite, Schema } from "../kinds.js"
@@ -23,13 +23,13 @@ import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
 	parseOpen,
+	propKinds,
 	refinementKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
 	type OpenNodeKind,
 	type OrderedNodeKinds,
-	type PropKind,
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
@@ -60,10 +60,10 @@ export type IntersectionSchema<
 		>
 >
 
-// ensure spread prop keys like 'required' in this example:
-// `{ basis: "object", required: [...]}`
-// are nested in the 'props' key like:
-// `{ basis: "object", props: {required: [...]}}`
+/** ensure spread prop keys like 'required' in this example:
+ 		`{ basis: "object", required: [...]}`
+ 	are nested in the 'props' key like:
+ 		`{ basis: "object", props: {required: [...]}}` */
 export type NormalizedIntersectionSchema = Omit<
 	Extract<IntersectionSchema, { props?: PropsSchema }>,
 	propKeyOf<any>
@@ -101,6 +101,8 @@ const refinementKeys = map(refinementKinds, (i, kind) => [kind, 1] as const)
 // 		: this.indexed.find((entry) => entry.key.equals(key))?.value
 // }
 
+const propKeys = map([...propKinds, "keys"], (i, k) => [k, 1] as const)
+
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	IntersectionDeclaration,
@@ -109,7 +111,21 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
-			normalize: (def) => def,
+			normalize: (def) => {
+				const [propsSchema, intersectionSchema] = splitByKeys(def, propKeys)
+				if (isEmptyObject(propsSchema)) {
+					return intersectionSchema
+				}
+				if (intersectionSchema.props) {
+					return throwParseError(
+						`An intersection schema cannot have both a 'props' key and its flattened values (found ${Object.keys(
+							propsSchema
+						).join(", ")})`
+					)
+				}
+				intersectionSchema.props = propsSchema
+				return intersectionSchema
+			},
 			addParseContext: (ctx) => {
 				const def = ctx.definition as IntersectionSchema
 				ctx.basis = def.basis && ctx.$.parseTypeNode(def.basis, basisKinds)
@@ -224,72 +240,58 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			  }
 	}
 
-	traverseAllows: TraverseAllows = (data, ctx) => {
-		const rejectsData = (constraint: Node<ConstraintKind> | undefined) =>
-			constraint?.traverseAllows(data as never, ctx) === false
+	readonly refinements = this.children.filter(
+		(child): child is Node<RefinementKind> => child.isRefinement()
+	)
 
-		if (rejectsData(this.basis)) return false
-		if (this.shallow?.some(rejectsData)) return false
-		if (this.props?.some(rejectsData)) return false
-		if (this.predicate?.some(rejectsData)) return false
-		return true
+	// TODO: check order
+	traverseAllows: TraverseAllows = (data, ctx) => {
+		return this.children.every((child) => child.traverseAllows(data, ctx))
 	}
 
 	compileAllows(ctx: CompilationContext) {
-		let body = ""
-		const compileAndAppend = (constraint: Node<ConstraintKind> | undefined) =>
-			constraint &&
-			(body += `if(!${constraint.compileAllowsInvocation(ctx)}) return false\n`)
-
-		compileAndAppend(this.basis)
-		this.shallow?.forEach(compileAndAppend)
-		this.props?.forEach(compileAndAppend)
-		this.predicate?.forEach(compileAndAppend)
-		body += "return true\n"
-		return body
+		return this.children.reduceRight(
+			(body, node) =>
+				`if(!${node.compileAllowsInvocation(ctx)}) return false\n` + body,
+			"return true\n"
+		)
 	}
 
+	readonly prepredicates = this.refinements.filter(
+		(node): node is Node<PrepredicateKind> => node.kind !== "predicate"
+	)
+
 	traverseApply: TraverseApply = (data, ctx) => {
-		const groupRejectsData = (
-			group: readonly Node<ConstraintKind>[] | undefined
-		) => {
-			if (group === undefined) {
-				return
-			}
-			for (const node of group) {
-				node.traverseApply(data as never, ctx)
-			}
-			return ctx.currentErrors.length !== 0
-		}
-		if (groupRejectsData(this.groups.basis)) return
-		if (groupRejectsData(this.shallow)) return
-		if (groupRejectsData(this.props)) return
-		return groupRejectsData(this.predicate)
+		this.basis?.traverseApply(data, ctx)
+		if (ctx.currentErrors.length !== 0) return
+		this.prepredicates.forEach((node) => node.traverseApply(data as never, ctx))
+		if (ctx.currentErrors.length !== 0) return
+		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}
 
 	compileApply(ctx: CompilationContext) {
-		const compiledGroups: string[] = []
-		const compileAndAppendGroup = (
-			group: readonly Node<ConstraintKind>[] | undefined
-		) => {
-			if (group === undefined) {
-				return
-			}
-			let compiled = ""
-			for (const node of group) {
-				compiled += `${node.compileApplyInvocation(ctx)}\n`
-			}
-			compiledGroups.push(compiled)
+		let body = ""
+		const compiledReturnIfError = `if(${ctx.ctxArg}.currentErrors.length !== 0) return\n`
+		if (this.basis) {
+			body = `${this.compileApplyInvocation(ctx)}\n${compiledReturnIfError}`
 		}
-		compileAndAppendGroup(this.groups.basis)
-		compileAndAppendGroup(this.shallow)
-		compileAndAppendGroup(this.props)
-		compileAndAppendGroup(this.predicate)
-		return compiledGroups.join(
-			`\nif(${ctx.ctxArg}.currentErrors.length !== 0) return\n`
-		)
+		if (this.prepredicates.length) {
+			body += this.prepredicates.reduceRight(
+				(result, node) => `${node.compileApplyInvocation(ctx)}\n${result}`,
+				compiledReturnIfError
+			)
+		}
+		if (this.predicate) {
+			body += this.predicate.reduceRight(
+				(result, node) => `${node.compileApplyInvocation(ctx)}\n${result}`,
+				compiledReturnIfError
+			)
+		}
+		return body
 	}
 }
+
+type PrepredicateKind = Exclude<RefinementKind, "predicate">
 
 type PrimitiveRefinementKind = Exclude<RefinementKind, "props">
 
@@ -314,10 +316,10 @@ type propKeyOf<t extends object> = Exclude<
 	keyof BaseMeta
 >
 
-type propRefinementsOf<t> = t extends object
+type propRefinementsOf<t> = [t] extends [object]
 	?
-			| ({ props?: PropsSchema<t> } & { [k in propKeyOf<t>]?: undefined })
-			| ({ props?: undefined } & PropsSchema<t>)
+			| ({ props?: PropsSchema<t> } & { [k in propKeyOf<t>]?: never })
+			| ({ props?: never } & PropsSchema<t>)
 	: {}
 
 export type schemaRefinementsOf<t> = primitiveRefinementsOf<t> &

@@ -21,12 +21,7 @@ import {
 	SequenceNode,
 	type SequenceDeclaration
 } from "./refinements/props/sequence.js"
-import type {
-	ConstraintKind,
-	NodeKind,
-	PropKind,
-	TypeKind
-} from "./shared/implement.js"
+import type { NodeKind, TypeKind } from "./shared/implement.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
 import {
 	IntersectionNode,
@@ -38,11 +33,7 @@ import {
 	type MorphDeclaration
 } from "./types/morph.js"
 import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
-import {
-	UnionNode,
-	type UnionChildKind,
-	type UnionDeclaration
-} from "./types/union.js"
+import { UnionNode, type UnionDeclaration } from "./types/union.js"
 import { UnitNode, type UnitDeclaration } from "./types/unit.js"
 
 export type NodeDeclarationsByKind = and<
@@ -94,21 +85,9 @@ export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
 export type NormalizedSchema<kind extends NodeKind> =
 	Declaration<kind>["normalizedSchema"]
 
-export type ChildrenByKind = {
-	[k in NodeKind]: k extends "union"
-		? UnionChildKind
-		: k extends "morph"
-		? MorphChildKind
-		: k extends "intersection"
-		? ConstraintKind
-		: k extends PropKind
-		? TypeKind
-		: never
-}
+export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
 
-export type childKindOf<kind extends NodeKind> = ChildrenByKind[kind]
-
-export type ParentsByKind = {
+type ParentsByKind = {
 	[k in NodeKind]: {
 		[pKind in NodeKind]: k extends childKindOf<pKind> ? pKind : never
 	}[NodeKind]

@@ -11,26 +11,11 @@ import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
 	NodeKind,
-	PropKind,
-	ShallowRefinementKind,
 	TraversableNode,
 	kindRightOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { IntersectionInner } from "../types/intersection.js"
-
-export type ConstraintGroupName = keyof ConstraintKindsByGroup
-
-export type GroupedConstraints = {
-	[k in ConstraintGroupName]?: Node<ConstraintKindsByGroup[k]>[]
-}
-
-export type ConstraintKindsByGroup = {
-	basis: BasisKind
-	shallow: ShallowRefinementKind
-	props: PropKind
-	predicate: "predicate"
-}
 
 export type FoldInput<kind extends NodeKind> = {
 	-readonly [k in Exclude<
@@ -43,12 +28,8 @@ export type FoldInput<kind extends NodeKind> = {
 
 export type FoldOutput<kind extends NodeKind> = FoldInput<kind> | Disjoint
 
-export interface BaseRefinementDeclaration extends BaseNodeDeclaration {
-	kind: NodeKind
-}
-
 export abstract class BasePrimitiveRefinement<
-		d extends BaseRefinementDeclaration,
+		d extends BaseNodeDeclaration,
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseNode<d["prerequisite"], d, subclass>

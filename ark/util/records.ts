@@ -165,10 +165,13 @@ export const shallowClone = <input extends object>(input: input): input =>
 		Object.getOwnPropertyDescriptors(input)
 	)
 
-export const splitByKeys = <o extends object, leftKey extends keyof o & string>(
+export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	o: o,
-	leftKeys: keySet<leftKey>
-): [evaluate<Pick<o, leftKey>>, evaluate<Omit<o, leftKey>>] => {
+	leftKeys: leftKeys
+): [
+	evaluate<Pick<o, keyof leftKeys & keyof o>>,
+	evaluate<Omit<o, keyof leftKeys & keyof o>>
+] => {
 	const l: any = {}
 	const r: any = {}
 	let k: keyof o
@@ -181,3 +184,8 @@ export const splitByKeys = <o extends object, leftKey extends keyof o & string>(
 	}
 	return [l, r]
 }
+
+export type EmptyObject = Record<PropertyKey, never>
+
+export const isEmptyObject = (o: object): o is EmptyObject =>
+	Object.keys(o).length === 0

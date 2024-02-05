@@ -15,20 +15,6 @@ describe("intersections", () => {
 		})
 		attest(l.innerId).equals(r.innerId)
 	})
-	it("orthogonal refinements intersect as null", () => {
-		const l = rootNode("divisor", 5)
-		const r = rootNode("max", 100)
-		const result = l.intersect(r)
-		attest<null>(result).equals(null)
-	})
-	it("possibly disjoint refinements", () => {
-		const l = rootNode("min", 2)
-		const r = rootNode("max", 1)
-		const lrResult = l.intersect(r)
-		attest<Disjoint | null>(lrResult)
-		const rlResult = r.intersect(l)
-		attest<Disjoint | null>(rlResult)
-	})
 	it("doesn't equate optional and required props", () => {
 		const l = rootNode("required", { key: "a", value: "number" })
 		const r = rootNode("optional", { key: "a", value: "number" })

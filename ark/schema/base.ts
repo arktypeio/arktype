@@ -57,6 +57,7 @@ import {
 	type ConstraintKind,
 	type NodeKind,
 	type PropKind,
+	type RefinementKind,
 	type SetKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
@@ -237,6 +238,10 @@ export abstract class BaseNode<
 
 	isBasis(): this is Node<BasisKind> {
 		return includes(basisKinds, this.kind)
+	}
+
+	isRefinement(): this is Node<RefinementKind> {
+		return includes(refinementKinds, this.kind)
 	}
 
 	isProp(): this is Node<PropKind> {
