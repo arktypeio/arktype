@@ -1,6 +1,6 @@
 import { domainOf, throwInternalError, type Domain } from "@arktype/util"
 import type { UnknownNode } from "../base.js"
-import { js } from "../shared/compile.js"
+import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
@@ -60,13 +60,13 @@ export class DomainNode<t = unknown> extends BaseBasis<
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
 	compiledCondition =
 		this.domain === "object"
-			? `((typeof ${js.data} === "object" && ${js.data} !== null) || typeof ${js.data} === "function")`
-			: `typeof ${js.data} === "${this.domain}"`
+			? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
+			: `typeof ${jsData} === "${this.domain}"`
 
 	compiledNegation =
 		this.domain === "object"
-			? `((typeof ${js.data} !== "object" || ${js.data} === null) && typeof ${js.data} !== "function")`
-			: `typeof ${js.data} !== "${this.domain}"`
+			? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
+			: `typeof ${jsData} !== "${this.domain}"`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 

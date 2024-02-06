@@ -37,12 +37,12 @@ export abstract class BaseBasis<
 		}
 	}
 
-	compileApply(f: ApplyCompiler) {
-		return f.traversePrimitive("apply", this as any)
+	compileApply(js: ApplyCompiler) {
+		return js.traversePrimitive(this as never)
 	}
 
-	compileAllows(f: AllowsCompiler) {
-		return f.traversePrimitive("allows", this as any)
+	compileAllows(js: AllowsCompiler) {
+		return js.traversePrimitive(this as never)
 	}
 }
 

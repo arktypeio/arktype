@@ -1,6 +1,6 @@
 import { domainOf, printable } from "@arktype/util"
 import type { Node } from "../base.js"
-import { js } from "../shared/compile.js"
+import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { BasisKind } from "../shared/implement.js"
@@ -44,8 +44,8 @@ export class UnitNode<t = unknown> extends BaseBasis<
 
 	serializedValue: string = (this.json as any).unit
 	traverseAllows = (data: unknown) => data === this.unit
-	compiledCondition = `${js.data} === ${this.serializedValue}`
-	compiledNegation = `${js.data} !== ${this.serializedValue}`
+	compiledCondition = `${jsData} === ${this.serializedValue}`
+	compiledNegation = `${jsData} !== ${this.serializedValue}`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 

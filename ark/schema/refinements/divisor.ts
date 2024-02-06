@@ -1,5 +1,5 @@
 import { throwParseError } from "@arktype/util"
-import { js } from "../shared/compile.js"
+import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	BasePrimitiveRefinement,
@@ -57,8 +57,8 @@ export class DivisorNode extends BasePrimitiveRefinement<
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
 
-	compiledCondition = `${js.data} % ${this.divisor} === 0`
-	compiledNegation = `${js.data} % ${this.divisor} !== 0`
+	compiledCondition = `${jsData} % ${this.divisor} === 0`
+	compiledNegation = `${jsData} % ${this.divisor} !== 0`
 
 	readonly expectedContext = Object.freeze({
 		...this.inner,

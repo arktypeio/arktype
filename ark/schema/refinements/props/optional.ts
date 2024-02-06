@@ -1,5 +1,5 @@
 import { BaseNode, type Node, type TypeSchema } from "../../base.js"
-import { js, type CompilationContext } from "../../shared/compile.js"
+import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
@@ -70,15 +70,15 @@ export class OptionalNode extends BaseNode<
 		}
 	}
 
-	compileApply(ctx: CompilationContext): string {
+	compileApply(js: ApplyCompiler): string {
 		return `if(${this.serializedKey} in ${js.data}) {
-			${compilePresentPropApply(this, ctx)}
+			${compilePresentPropApply(this, js)}
 		}`
 	}
 
-	compileAllows(ctx: CompilationContext): string {
+	compileAllows(js: AllowsCompiler): string {
 		return `if(${this.serializedKey} in ${js.data}) {
-			${compilePresentPropAllows(this, ctx)}
+			${compilePresentPropAllows(this, js)}
 		}`
 	}
 

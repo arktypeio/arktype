@@ -1,6 +1,10 @@
 import { map, throwParseError } from "@arktype/util"
 import { BaseNode, type Node } from "../../base.js"
-import { js, type CompilationContext } from "../../shared/compile.js"
+import {
+	js,
+	type ApplyCompiler,
+	type CompilationContext
+} from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	parseOpen,
@@ -122,10 +126,10 @@ export class PropsNode
 
 	traverseApply: TraverseApply<object> = () => {}
 
-	compileApply(ctx: CompilationContext) {
+	compileApply(js: ApplyCompiler) {
 		return this.exhaustive
-			? this.compileExhaustiveApply(ctx)
-			: this.compileEnumerableApply(ctx)
+			? this.compileExhaustiveApply(js)
+			: this.compileEnumerableApply(js)
 	}
 
 	protected compileEnumerableApply(ctx: CompilationContext) {

@@ -6,7 +6,7 @@ import {
 } from "@arktype/util"
 import type { Node, NodeSubclass } from "../base.js"
 import type { Declaration } from "../kinds.js"
-import { js } from "../shared/compile.js"
+import { jsData } from "../shared/compile.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
@@ -130,10 +130,10 @@ export abstract class BaseBound<
 	boundOperandKind = operandKindsByBoundKind[this.kind]
 	compiledActual =
 		this.boundOperandKind === "value"
-			? `${js.data}`
+			? `${jsData}`
 			: this.boundOperandKind === "length"
-			? `${js.data}.length`
-			: `${js.data}.valueOf()`
+			? `${jsData}.length`
+			: `${jsData}.valueOf()`
 	comparator = compileComparator(this.kind, this.exclusive)
 	numericLimit = normalizeLimit(this.limit)
 	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
@@ -188,7 +188,7 @@ abstract class BaseNumericBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseBound<d, subclass> {
-	compiledActual = js.data
+	compiledActual = jsData
 	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
 	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]

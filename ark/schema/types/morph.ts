@@ -10,7 +10,7 @@ import {
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
-import type { CompilationContext } from "../shared/compile.js"
+import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -137,12 +137,12 @@ export class MorphNode<t = unknown> extends BaseType<
 		return this.inner.out ?? this.$.builtin.unknown
 	}
 
-	compileApply(ctx: CompilationContext): string {
-		return this.in.compileApply(ctx)
+	compileApply(js: ApplyCompiler) {
+		return this.in.compileApply(js)
 	}
 
-	compileAllows(ctx: CompilationContext): string {
-		return this.in.compileAllows(ctx)
+	compileAllows(js: AllowsCompiler) {
+		return this.in.compileAllows(js)
 	}
 }
 

@@ -1,5 +1,5 @@
 import type { evaluate } from "@arktype/util"
-import { js, type CompilationContext } from "../../shared/compile.js"
+import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
 import type { BaseNodeDeclaration } from "../../shared/declare.js"
 import type { PropKind } from "../../shared/implement.js"
 import {
@@ -22,22 +22,15 @@ export const compilePropAccess = (name: string, optional = false) =>
 		? `${optional ? "?" : ""}.${name}`
 		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
 
-export const compilePresentPropApply = (
-	node: NamedProp,
-	ctx: CompilationContext
-) => {
+export const compilePresentPropApply = (node: NamedProp, js: ApplyCompiler) => {
 	return `${js.ctx}.path.push(${node.serializedKey})
 	this.${node.value.name}(${js.data}${compilePropAccess(node.compiledKey)}, ${
 		js.ctx
 	})
-	${js.ctx}.path.pop()
-	`
+	${js.ctx}.path.pop()\n`
 }
 
-export const compilePresentPropAllows = (
-	node: NamedProp,
-	ctx: CompilationContext
-) =>
+export const compilePresentPropAllows = (node: NamedProp, js: AllowsCompiler) =>
 	`return this.${node.value.name}(${js.data}${compilePropAccess(
 		node.compiledKey
 	)})`

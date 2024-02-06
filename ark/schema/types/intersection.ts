@@ -17,7 +17,7 @@ import type {
 	PropsSchema
 } from "../refinements/props/props.js"
 import type { FoldInput } from "../refinements/refinement.js"
-import { js, type CompilationContext } from "../shared/compile.js"
+import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -251,12 +251,13 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		)
 	}
 
-	compileAllows(ctx: CompilationContext) {
-		return this.children.reduceRight(
+	compileAllows(js: AllowsCompiler) {
+		this.children.reduceRight(
 			(body, node) =>
-				`if(!${node.compileAllowsInvocation(ctx)}) return false\n` + body,
+				`if(!${node.compileAllowsInvocation(js)}) return false\n` + body,
 			"return true\n"
 		)
+		return js
 	}
 
 	readonly prepredicates = this.refinements.filter(
@@ -271,27 +272,27 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}
 
-	compileApply(ctx: CompilationContext) {
+	compileApply(js: ApplyCompiler) {
 		let body = ""
 		const compiledReturnIfError = `if(${js.ctx}.currentErrors.length !== 0) return\n`
 		if (this.basis) {
 			body = `${this.basis.compileApplyInvocation(
-				ctx
+				js
 			)}\n${compiledReturnIfError}`
 		}
 		if (this.prepredicates.length) {
 			body += this.prepredicates.reduceRight(
-				(result, node) => `${node.compileApplyInvocation(ctx)}\n${result}`,
+				(result, node) => `${node.compileApplyInvocation(js)}\n${result}`,
 				compiledReturnIfError
 			)
 		}
 		if (this.predicate) {
 			body += this.predicate.reduceRight(
-				(result, node) => `${node.compileApplyInvocation(ctx)}\n${result}`,
+				(result, node) => `${node.compileApplyInvocation(js)}\n${result}`,
 				compiledReturnIfError
 			)
 		}
-		return body
+		return js
 	}
 }
 

@@ -234,8 +234,8 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 export interface TraversableNode<prerequisite = unknown> {
 	traverseAllows: TraverseAllows<prerequisite>
 	traverseApply: TraverseApply<prerequisite>
-	compileApply(f: ApplyCompiler): string
-	compileAllows(f: AllowsCompiler): string
+	compileApply(js: ApplyCompiler): ApplyCompiler
+	compileAllows(js: AllowsCompiler): AllowsCompiler
 }
 
 export const throwInvalidOperandError = (

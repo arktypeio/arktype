@@ -1,16 +1,8 @@
-import { appendUnique, throwParseError } from "@arktype/util"
-import { js } from "../shared/compile.js"
-import type {
-	BaseMeta,
-	declareNode,
-	defaultExpectedContext
-} from "../shared/declare.js"
+import { appendUnique } from "@arktype/util"
+import { jsData } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { throwInvalidOperandError } from "../shared/implement.js"
-import {
-	BasePrimitiveRefinement,
-	getBasisName,
-	type FoldInput
-} from "./refinement.js"
+import { BasePrimitiveRefinement, type FoldInput } from "./refinement.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -62,7 +54,7 @@ export class PatternNode extends BasePrimitiveRefinement<
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
 
-	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${js.data})`
+	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
 
 	readonly expectedContext = Object.freeze({

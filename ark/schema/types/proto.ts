@@ -5,7 +5,7 @@ import {
 	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
-import { js } from "../shared/compile.js"
+import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
@@ -71,7 +71,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 	readonly domain = "object"
 	traverseAllows = (data: unknown) => data instanceof this.proto
 
-	compiledCondition = `${js.data} instanceof ${this.serializedConstructor}`
+	compiledCondition = `${jsData} instanceof ${this.serializedConstructor}`
 	compiledNegation = `!(${this.compiledCondition})`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)

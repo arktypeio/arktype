@@ -1,5 +1,5 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../../base.js"
-import { js, type CompilationContext } from "../../shared/compile.js"
+import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type {
 	NodeKeyImplementation,
@@ -7,11 +7,7 @@ import type {
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
-import {
-	BasePrimitiveRefinement,
-	type FoldInput,
-	type FoldOutput
-} from "../refinement.js"
+import type { FoldInput } from "../refinement.js"
 
 export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -168,16 +164,16 @@ export class SequenceNode extends BaseNode<
 		}
 	}
 
-	compileApply(ctx: CompilationContext): string {
-		return ""
+	compileApply(js: ApplyCompiler) {
+		return js
 	}
 
-	compileAllows(ctx: CompilationContext): string {
+	compileAllows(js: AllowsCompiler): string {
 		let body = `if(${js.data}.length < ${this.minLength}) {
 	return false
 }\n`
 		this.prefix?.forEach((prefixEl, i) => {
-			body += `if(!${prefixEl.compileApply(ctx)}) {
+			body += `if(!${prefixEl.compileAllowsInvocation(js)}) {
 	this.${prefixEl.name}(${js.data}[${i}], ${js.ctx})
 }\n`
 		})
@@ -190,7 +186,7 @@ for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
 	}	
 }\n`
 		this.postfix?.forEach((postfixEl, i) => {
-			body += `if(!${postfixEl.compileApply(ctx)}) {
+			body += `if(!${postfixEl.compileAllowsInvocation(js)}) {
 this.${postfixEl.name}(${js.data}[${i}], ${js.ctx})
 }\n`
 		})
