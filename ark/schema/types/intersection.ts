@@ -246,7 +246,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	// TODO: check order
 	traverseAllows: TraverseAllows = (data, ctx) => {
-		return this.children.every((child) => child.traverseAllows(data, ctx))
+		return this.children.every((child) =>
+			child.traverseAllows(data as never, ctx)
+		)
 	}
 
 	compileAllows(ctx: CompilationContext) {
@@ -273,7 +275,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		let body = ""
 		const compiledReturnIfError = `if(${ctx.ctxArg}.currentErrors.length !== 0) return\n`
 		if (this.basis) {
-			body = `${this.compileApplyInvocation(ctx)}\n${compiledReturnIfError}`
+			body = `${this.basis.compileApplyInvocation(
+				ctx
+			)}\n${compiledReturnIfError}`
 		}
 		if (this.prepredicates.length) {
 			body += this.prepredicates.reduceRight(
