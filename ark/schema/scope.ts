@@ -20,7 +20,11 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type { CompilationContext, TraversalKind } from "./shared/compile.js"
+import {
+	js,
+	type CompilationContext,
+	type TraversalKind
+} from "./shared/compile.js"
 import type {
 	DescriptionWriter,
 	NodeKind,
@@ -280,9 +284,6 @@ export class ScopeNode<r extends object = any> {
 		return node as never
 	}
 
-	readonly dataArg = "data"
-	readonly ctxArg = "ctx"
-
 	protected bindCompiledScope(
 		nodesToBind: readonly Node[],
 		references: readonly Node[]
@@ -308,14 +309,11 @@ export class ScopeNode<r extends object = any> {
 		references: readonly Node[],
 		kind: kind
 	): Record<string, TraversalMethodsByKind[kind]> {
-		const compiledArgs =
-			kind === "allows" ? this.dataArg : `${this.dataArg}, ctx`
+		const compiledArgs = kind === "allows" ? js.data : `${js.data}, ctx`
 		const body = `return {
 	${references
 		.map((reference) => {
 			const ctx: CompilationContext = {
-				dataArg: this.dataArg,
-				ctxArg: this.ctxArg,
 				path: [],
 				discriminants: []
 			}

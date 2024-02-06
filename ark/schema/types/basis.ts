@@ -9,8 +9,7 @@ import {
 } from "@arktype/util"
 import { isNode, type NodeSubclass } from "../base.js"
 import type { Schema } from "../kinds.js"
-import { compilePrimitive, type CompilationContext } from "../shared/compile.js"
-import type { defaultExpectedContext } from "../shared/declare.js"
+import { js, type CompilationContext } from "../shared/compile.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../traversal/context.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
@@ -37,11 +36,11 @@ export abstract class BaseBasis<
 	}
 
 	compileApply(ctx: CompilationContext) {
-		return compilePrimitive("apply", this as any, ctx)
+		return js.traversePrimitive("apply", this as any, ctx)
 	}
 
 	compileAllows(ctx: CompilationContext) {
-		return compilePrimitive("allows", this as any, ctx)
+		return js.traversePrimitive("allows", this as any, ctx)
 	}
 }
 

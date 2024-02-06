@@ -1,6 +1,6 @@
 import { map, throwParseError } from "@arktype/util"
 import { BaseNode, type Node } from "../../base.js"
-import type { CompilationContext } from "../../shared/compile.js"
+import { js, type CompilationContext } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	parseOpen,
@@ -140,13 +140,13 @@ export class PropsNode
 
 		this.named.forEach((prop) => (body += prop.compileApply(ctx) + "\n"))
 		body += this.sequence?.compileApply(ctx) ?? ""
-		body += `for(const k in ${ctx.dataArg}) {\n`
+		body += `for(const k in ${js.data}) {\n`
 		if (this.onExtraneousKey) {
 			body += "let matched = false\n"
 		}
 		this.index?.forEach((node) => {
 			body += `if(${node.key.compileAllowsInvocation(ctx, "k")}) {\n`
-			body += node.value.compileApplyInvocation(ctx, `${ctx.dataArg}[k]`) + "\n"
+			body += node.value.compileApplyInvocation(ctx, `${js.data}[k]`) + "\n"
 			if (this.onExtraneousKey) {
 				body += "matched = true\n"
 			}

@@ -17,7 +17,7 @@ import type {
 	PropsSchema
 } from "../refinements/props/props.js"
 import type { FoldInput } from "../refinements/refinement.js"
-import type { CompilationContext } from "../shared/compile.js"
+import { js, type CompilationContext } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -273,7 +273,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	compileApply(ctx: CompilationContext) {
 		let body = ""
-		const compiledReturnIfError = `if(${ctx.ctxArg}.currentErrors.length !== 0) return\n`
+		const compiledReturnIfError = `if(${js.ctx}.currentErrors.length !== 0) return\n`
 		if (this.basis) {
 			body = `${this.basis.compileApplyInvocation(
 				ctx

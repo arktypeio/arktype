@@ -1,13 +1,12 @@
 import {
-	constructorExtends,
 	isKeyOf,
-	throwParseError,
 	type PartialRecord,
 	type and,
 	type valueOf
 } from "@arktype/util"
 import type { Node, NodeSubclass } from "../base.js"
 import type { Declaration } from "../kinds.js"
+import { js } from "../shared/compile.js"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
@@ -23,7 +22,6 @@ import {
 } from "../shared/implement.js"
 import {
 	BasePrimitiveRefinement,
-	getBasisName,
 	type FoldInput,
 	type FoldOutput
 } from "./refinement.js"
@@ -133,10 +131,10 @@ export abstract class BaseBound<
 	boundOperandKind = operandKindsByBoundKind[this.kind]
 	compiledActual =
 		this.boundOperandKind === "value"
-			? `${this.$.dataArg}`
+			? `${js.data}`
 			: this.boundOperandKind === "length"
-			? `${this.$.dataArg}.length`
-			: `${this.$.dataArg}.valueOf()`
+			? `${js.data}.length`
+			: `${js.data}.valueOf()`
 	comparator = compileComparator(this.kind, this.exclusive)
 	numericLimit = normalizeLimit(this.limit)
 	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
@@ -191,7 +189,7 @@ abstract class BaseNumericBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseBound<d, subclass> {
-	compiledActual = this.$.dataArg
+	compiledActual = js.data
 	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.limit}`
 	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]

@@ -1,4 +1,5 @@
 import { appendUnique } from "@arktype/util"
+import { js } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
@@ -49,9 +50,7 @@ export class PredicateNode extends BasePrimitiveRefinement<
 
 	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
-	compiledCondition = `${compileSerializedValue(this.predicate)}(${
-		this.$.dataArg
-	})`
+	compiledCondition = `${compileSerializedValue(this.predicate)}(${js.data})`
 	compiledNegation = `!${this.compiledCondition}`
 	expectedContext = this.createExpectedContext({ expected: this.description })
 

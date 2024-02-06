@@ -1,4 +1,5 @@
 import { appendUnique, throwParseError } from "@arktype/util"
+import { js } from "../shared/compile.js"
 import type {
 	BaseMeta,
 	declareNode,
@@ -61,9 +62,7 @@ export class PatternNode extends BasePrimitiveRefinement<
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
 
-	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${
-		this.$.dataArg
-	})`
+	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${js.data})`
 	compiledNegation = `!${this.compiledCondition}`
 
 	readonly expectedContext = Object.freeze({

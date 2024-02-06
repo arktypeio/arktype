@@ -1,6 +1,5 @@
 import type { and } from "@arktype/util"
-import type { Node } from "../../base.js"
-import type { CompilationContext } from "../../shared/compile.js"
+import { js, type CompilationContext } from "../../shared/compile.js"
 import type { BaseNodeDeclaration } from "../../shared/declare.js"
 import type { PropKind } from "../../shared/implement.js"
 import {
@@ -25,11 +24,11 @@ export const compilePresentPropApply = (
 	node: NamedProp,
 	ctx: CompilationContext
 ) => {
-	return `${ctx.ctxArg}.path.push(${node.serializedKey})
-	this.${node.value.name}(${ctx.dataArg}${compilePropAccess(node.compiledKey)}, ${
-		ctx.ctxArg
+	return `${js.ctx}.path.push(${node.serializedKey})
+	this.${node.value.name}(${js.data}${compilePropAccess(node.compiledKey)}, ${
+		js.ctx
 	})
-	${ctx.ctxArg}.path.pop()
+	${js.ctx}.path.pop()
 	`
 }
 
@@ -37,7 +36,7 @@ export const compilePresentPropAllows = (
 	node: NamedProp,
 	ctx: CompilationContext
 ) =>
-	`return this.${node.value.name}(${ctx.dataArg}${compilePropAccess(
+	`return this.${node.value.name}(${js.data}${compilePropAccess(
 		node.compiledKey
 	)})`
 
