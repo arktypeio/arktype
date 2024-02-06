@@ -1,5 +1,5 @@
 import {
-	CompiledFunction,
+	DynamicFunction,
 	isArray,
 	printable,
 	throwInternalError,
@@ -20,11 +20,6 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import {
-	js,
-	type CompilationContext,
-	type TraversalKind
-} from "./shared/compile.js"
 import type {
 	DescriptionWriter,
 	NodeKind,
@@ -327,7 +322,7 @@ export class ScopeNode<r extends object = any> {
 		})
 		.join(",\n")}
 }`
-		return new CompiledFunction(body)() as never
+		return new DynamicFunction(body)() as never
 	}
 
 	readonly schema: SchemaParser<r> = Object.assign(

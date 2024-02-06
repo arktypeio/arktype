@@ -274,10 +274,10 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 		if (into.basis?.domain !== "number") {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.max = this.intersectOwnKind(into.max)
 		if (into.min?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.min)
 		}
+		into.max = this.intersectOwnKind(into.max)
 		return into
 	}
 }

@@ -38,12 +38,11 @@ import type { PropsNode } from "./refinements/props/props.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
-import { js, type CompilationContext } from "./shared/compile.js"
+import type { ApplyCompiler } from "./shared/compile.js"
 import type {
 	BaseExpectedContext,
 	BaseNodeDeclaration,
 	attachmentsOf,
-	defaultExpectedContext,
 	ownIntersectionAlternateResult,
 	ownIntersectionResult,
 	requireDescriptionIfPresent
@@ -68,20 +67,9 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
-import {
-	TraversalContext,
-	type TraverseAllows,
-	type TraverseApply
-} from "./traversal/context.js"
-import type { ArkResult } from "./traversal/errors.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
-import type {
-	MorphNode,
-	distill,
-	extractIn,
-	extractOut
-} from "./types/morph.js"
+import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
@@ -317,11 +305,12 @@ export abstract class BaseNode<
 		)
 	}
 
-	compileApplyInvocation(ctx: CompilationContext, argName = js.data) {
-		return `this.${this.name}(${argName}, ${js.ctx})`
+	compileApplyInvocation(f: ApplyCompiler, argName = f.data) {
+		return `this.${this.name}(${argName}, ${f.ctx})`
 	}
 
-	compileAllowsInvocation(ctx: CompilationContext, argName = js.data) {
+	compileAllowsInvocation(f: ApplyCompiler, argName = f.data) {
+		// TODO: Ensure context is passed if needed
 		return `this.${this.name}(${argName})`
 	}
 }

@@ -57,6 +57,8 @@ export type TraversalMethodsByKind<input = unknown> = {
 	apply: TraverseApply<input>
 }
 
+export type TraversalKind = keyof TraversalMethodsByKind
+
 export type TraverseAllows<data = unknown> = (
 	data: data,
 	ctx: TraversalContext

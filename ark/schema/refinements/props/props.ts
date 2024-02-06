@@ -113,7 +113,7 @@ export class PropsNode
 		)
 	}
 
-	protected compileExhasutiveAllows(ctx: CompilationContext) {
+	protected compileExhaustiveAllows(ctx: CompilationContext) {
 		return this.children.reduceRight(
 			(body, node) => node.compileAllows(ctx) + "\n" + body,
 			"return true\n"
