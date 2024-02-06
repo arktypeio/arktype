@@ -45,7 +45,8 @@ import type {
 	attachmentsOf,
 	defaultExpectedContext,
 	ownIntersectionAlternateResult,
-	ownIntersectionResult
+	ownIntersectionResult,
+	requireDescriptionIfPresent
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
@@ -229,7 +230,9 @@ export abstract class BaseNode<
 
 	protected createExpectedContext<from>(
 		from: from
-	): evaluate<BaseExpectedContext<d["kind"]> & from> {
+	): evaluate<
+		BaseExpectedContext<d["kind"]> & requireDescriptionIfPresent<from>
+	> {
 		return Object.freeze({
 			...this.inner,
 			code: this.kind,

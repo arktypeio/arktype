@@ -1,8 +1,8 @@
-import type { and, evaluate, exactMessageOnError, merge } from "@arktype/util"
+import type { evaluate, merge } from "@arktype/util"
 import type { NarrowedAttachments, Node } from "../base.js"
-import type { Declaration, reducibleKindOf } from "../kinds.js"
+import type { reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
-import type { CompositeKind, NodeKind } from "./implement.js"
+import type { NodeKind } from "./implement.js"
 
 export interface BaseMeta {
 	readonly description?: string
@@ -23,7 +23,6 @@ interface BaseDeclarationInput {
 
 export interface BaseExpectedContext<kind extends NodeKind = NodeKind> {
 	code: kind
-	description: string
 }
 
 interface CompositeDeclarationInput extends BaseDeclarationInput {
@@ -42,6 +41,10 @@ export type defaultExpectedContext<d extends DeclarationInput> = evaluate<
 	BaseExpectedContext<d["kind"]> & { description: string } & d["inner"]
 >
 
+export type requireDescriptionIfPresent<t> = "description" extends keyof t
+	? t & { description: string }
+	: t
+
 export type declareNode<
 	d extends {
 		[k in keyof d]: k extends keyof DeclarationInput
@@ -58,7 +61,9 @@ export type declareNode<
 	},
 	d & {
 		expectedContext: d["expectedContext"] extends {}
-			? BaseExpectedContext<d["kind"]>
+			? BaseExpectedContext<d["kind"]> &
+					// description should always be populated if it's part of the context
+					requireDescriptionIfPresent<d["expectedContext"]>
 			: null
 	}
 >

@@ -214,7 +214,10 @@ type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	// if the node's error context is distinct from its inner definition, ensure it is implemented.
 	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
 	// but rather a single failed condition for each branch.
-	| (Inner<kind> extends Omit<ExpectedContext<kind>, keyof BaseExpectedContext>
+	| (Inner<kind> extends Omit<
+			ExpectedContext<kind>,
+			keyof BaseExpectedContext | "description"
+	  >
 			? never
 			: "expected" & keyof NodeConfig<kind>)
 >
