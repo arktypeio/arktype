@@ -14,11 +14,12 @@ import type {
 	declareNode
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type {
-	BasisKind,
-	BoundKind,
-	nodeImplementationInputOf,
-	nodeImplementationOf
+import {
+	throwInvalidOperandError,
+	type BasisKind,
+	type BoundKind,
+	type nodeImplementationInputOf,
+	type nodeImplementationOf
 } from "../shared/implement.js"
 import {
 	BasePrimitiveRefinement,
@@ -164,10 +165,10 @@ export abstract class BaseBound<
 	}
 
 	protected throwInvalidBoundOperandError(basis: Node<BasisKind> | undefined) {
-		return throwParseError(
-			`${this.kind} operand must be ${
-				prerequisiteDescriptionsByOperandKind[this.boundOperandKind]
-			} (was ${getBasisName(basis)})`
+		return throwInvalidOperandError(
+			this.kind,
+			prerequisiteDescriptionsByOperandKind[this.boundOperandKind],
+			basis
 		)
 	}
 }

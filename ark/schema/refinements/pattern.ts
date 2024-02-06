@@ -4,6 +4,7 @@ import type {
 	declareNode,
 	defaultExpectedContext
 } from "../shared/declare.js"
+import { throwInvalidOperandError } from "../shared/implement.js"
 import {
 	BasePrimitiveRefinement,
 	getBasisName,
@@ -29,14 +30,6 @@ export type PatternDeclaration = declareNode<{
 	prerequisite: string
 	expectedContext: PatternInner
 }>
-
-export const writeNonStringPatternMessage = <root extends string>(
-	root: root
-): writeNonStringPatternMessage<root> =>
-	`Pattern operand ${root} must be a string`
-
-export type writeNonStringPatternMessage<root extends string> =
-	`Pattern operand ${root} must be a string`
 
 export class PatternNode extends BasePrimitiveRefinement<
 	PatternDeclaration,
@@ -86,7 +79,7 @@ export class PatternNode extends BasePrimitiveRefinement<
 
 	foldIntersection(into: FoldInput<"pattern">) {
 		if (into.basis?.domain !== "string") {
-			throwParseError(writeNonStringPatternMessage(getBasisName(into.basis)))
+			throwInvalidOperandError("pattern", "a string", into.basis)
 		}
 		into.pattern = appendUnique(into.pattern, this)
 		return into

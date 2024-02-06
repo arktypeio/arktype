@@ -1,6 +1,7 @@
 import {
 	isArray,
 	map,
+	throwParseError,
 	type ErrorMessage,
 	type JsonData,
 	type entryOf,
@@ -236,6 +237,12 @@ export interface TraversableNode<prerequisite = unknown> {
 	compileApply(ctx: CompilationContext): string
 	compileAllows(ctx: CompilationContext): string
 }
+
+export const throwInvalidOperandError = (
+	kind: RefinementKind,
+	expected: string,
+	basis: Node<BasisKind> | undefined
+) => throwParseError(`${kind} operand must be ${expected} (was ${basis})`)
 
 export const parseOpen = <kind extends OpenNodeKind>(
 	kind: kind,
