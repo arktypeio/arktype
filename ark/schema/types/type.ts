@@ -1,4 +1,4 @@
-import type { Domain, and } from "@arktype/util"
+import type { Domain, evaluate } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseAttachments,
@@ -30,7 +30,9 @@ import type { IntersectionNode } from "./intersection.js"
 import type { distill, extractIn, extractOut } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
-export type BaseTypeDeclaration = and<BaseNodeDeclaration, { kind: TypeKind }>
+export type BaseTypeDeclaration = evaluate<
+	BaseNodeDeclaration & { kind: TypeKind }
+>
 
 export abstract class BaseType<
 		t,

@@ -2,7 +2,7 @@ import {
 	printable,
 	throwParseError,
 	type Constructor,
-	type and,
+	type evaluate,
 	type inferDomain,
 	type instanceOf,
 	type isAny
@@ -17,7 +17,9 @@ import type { ProtoNode, ProtoSchema } from "./proto.js"
 import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitNode, UnitSchema } from "./unit.js"
 
-export type BaseBasisDeclaration = and<BaseTypeDeclaration, { kind: BasisKind }>
+export type BaseBasisDeclaration = evaluate<
+	BaseTypeDeclaration & { kind: BasisKind }
+>
 
 export abstract class BaseBasis<
 	t,

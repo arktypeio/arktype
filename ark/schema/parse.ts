@@ -5,7 +5,7 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
-	type and,
+	type evaluate,
 	type valueOf
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
@@ -33,9 +33,8 @@ export type SchemaParseOptions = {
 	basis?: Node<IntersectionBasisKind> | undefined
 }
 
-export type SchemaParseContext = and<
-	SchemaParseOptions,
-	{
+export type SchemaParseContext = evaluate<
+	SchemaParseOptions & {
 		$: ScopeNode
 		definition: unknown
 	}

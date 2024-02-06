@@ -1,5 +1,5 @@
 import type { BaseMeta, Node } from "@arktype/schema"
-import type { and } from "@arktype/util"
+import type { evaluate } from "@arktype/util"
 import type { validateDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
@@ -17,12 +17,12 @@ type ValueParseResult<kind extends ParsedValueKind = ParsedValueKind> = {
 	innerValue: unknown
 }
 
-export type EntryParseResult<kind extends ParsedKeyKind = ParsedKeyKind> = and<
-	KeyParseResult<kind>,
-	{
-		innerValue: unknown
-	}
->
+export type EntryParseResult<kind extends ParsedKeyKind = ParsedKeyKind> =
+	evaluate<
+		KeyParseResult<kind> & {
+			innerValue: unknown
+		}
+	>
 
 type ParsedValueKind = "required" | "optional"
 

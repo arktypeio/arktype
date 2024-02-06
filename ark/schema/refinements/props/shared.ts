@@ -1,4 +1,4 @@
-import type { and } from "@arktype/util"
+import type { evaluate } from "@arktype/util"
 import { js, type CompilationContext } from "../../shared/compile.js"
 import type { BaseNodeDeclaration } from "../../shared/declare.js"
 import type { PropKind } from "../../shared/implement.js"
@@ -9,7 +9,9 @@ import {
 } from "../../traversal/registry.js"
 import type { NamedProp } from "./props.js"
 
-export type BasePropDeclaration = and<BaseNodeDeclaration, { kind: PropKind }>
+export type BasePropDeclaration = evaluate<
+	BaseNodeDeclaration & { kind: PropKind }
+>
 
 export const arrayIndexMatcher = /(?:0|(?:[1-9]\\d*))$/
 

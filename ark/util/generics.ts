@@ -69,8 +69,6 @@ export type nominal<t, id extends string> = t & {
 
 export type satisfy<base, t extends base> = t
 
-export type and<t, u> = evaluate<t & u>
-
 export type defined<t> = t & ({} | null)
 
 export type autocomplete<suggestions extends string> =

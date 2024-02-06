@@ -1,7 +1,7 @@
 import {
 	isKeyOf,
 	type PartialRecord,
-	type and,
+	type evaluate,
 	type valueOf
 } from "@arktype/util"
 import type { Node, NodeSubclass } from "../base.js"
@@ -91,9 +91,8 @@ export type Boundable = NumericallyBoundable | Date
 const normalizeLimit = (limit: LimitSchemaValue): number =>
 	typeof limit === "string" ? new Date(limit).valueOf() : limit
 
-export type BaseBoundDeclaration = and<
-	BaseNodeDeclaration,
-	{
+export type BaseBoundDeclaration = evaluate<
+	BaseNodeDeclaration & {
 		kind: BoundKind
 		inner: BoundInner
 	}
@@ -459,7 +458,7 @@ export class BeforeNode
 	}
 }
 
-export type BoundDeclarations = {
+export interface BoundDeclarations {
 	min: MinDeclaration
 	max: MaxDeclaration
 	minLength: MinLengthDeclaration

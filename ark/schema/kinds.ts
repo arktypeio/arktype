@@ -1,4 +1,3 @@
-import type { and } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
 import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
@@ -36,25 +35,22 @@ import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
 import { UnionNode, type UnionDeclaration } from "./types/union.js"
 import { UnitNode, type UnitDeclaration } from "./types/unit.js"
 
-export type NodeDeclarationsByKind = and<
-	BoundDeclarations,
-	{
-		domain: DomainDeclaration
-		unit: UnitDeclaration
-		proto: ProtoDeclaration
-		union: UnionDeclaration
-		morph: MorphDeclaration
-		intersection: IntersectionDeclaration
-		sequence: SequenceDeclaration
-		divisor: DivisorDeclaration
-		required: RequiredDeclaration
-		optional: OptionalDeclaration
-		index: IndexDeclaration
-		pattern: PatternDeclaration
-		predicate: PredicateDeclaration
-		props: PropsDeclaration
-	}
->
+export interface NodeDeclarationsByKind extends BoundDeclarations {
+	domain: DomainDeclaration
+	unit: UnitDeclaration
+	proto: ProtoDeclaration
+	union: UnionDeclaration
+	morph: MorphDeclaration
+	intersection: IntersectionDeclaration
+	sequence: SequenceDeclaration
+	divisor: DivisorDeclaration
+	required: RequiredDeclaration
+	optional: OptionalDeclaration
+	index: IndexDeclaration
+	pattern: PatternDeclaration
+	predicate: PredicateDeclaration
+	props: PropsDeclaration
+}
 
 export const nodesByKind = {
 	...BoundNodes,
