@@ -1,5 +1,4 @@
 import type { Node } from "../base.js"
-import type { ExpectedContext } from "../kinds.js"
 import type { TraversalMethodsByKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
@@ -39,15 +38,6 @@ export const compilePrimitive = (
 ${compilePrimitiveProblem(node, ctx)}
 }`
 }
-
-export const createPrimitiveExpectedContext = <kind extends PrimitiveKind>(
-	node: Node<kind>
-): ExpectedContext<kind> =>
-	Object.freeze({
-		code: node.kind,
-		description: node.description,
-		...node.inner
-	}) as never
 
 export const compilePrimitiveProblem = (
 	node: Node<PrimitiveKind>,

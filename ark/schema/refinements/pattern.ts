@@ -1,5 +1,9 @@
 import { appendUnique, throwParseError } from "@arktype/util"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type {
+	BaseMeta,
+	declareNode,
+	defaultExpectedContext
+} from "../shared/declare.js"
 import {
 	BasePrimitiveRefinement,
 	getBasisName,
@@ -23,6 +27,7 @@ export type PatternDeclaration = declareNode<{
 	composition: "primitive"
 	open: true
 	prerequisite: string
+	expectedContext: PatternInner
 }>
 
 export const writeNonStringPatternMessage = <root extends string>(
@@ -67,6 +72,12 @@ export class PatternNode extends BasePrimitiveRefinement<
 		this.$.dataArg
 	})`
 	compiledNegation = `!${this.compiledCondition}`
+
+	readonly expectedContext = Object.freeze({
+		...this.inner,
+		code: "pattern",
+		description: this.description
+	})
 
 	intersectOwnInner(r: PatternNode) {
 		// For now, non-equal regex are naively intersected

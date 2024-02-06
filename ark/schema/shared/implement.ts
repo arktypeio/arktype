@@ -19,7 +19,11 @@ import type {
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import { compileSerializedValue } from "../traversal/registry.js"
 import type { CompilationContext } from "./compile.js"
-import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
+import type {
+	BaseExpectedContext,
+	BaseMeta,
+	BaseNodeDeclaration
+} from "./declare.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -182,7 +186,7 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
-	hasAssociatedError: boolean
+	hasAssociatedError: d["expectedContext"] extends null ? false : true
 	collapseKey?: keyof d["inner"] & string
 	addParseContext?: (ctx: SchemaParseContext) => void
 	reduce?: (inner: d["inner"], $: ScopeNode) => Node | undefined
@@ -210,7 +214,7 @@ type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	// if the node's error context is distinct from its inner definition, ensure it is implemented.
 	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
 	// but rather a single failed condition for each branch.
-	| (ExpectedContext<kind> extends Inner<kind>
+	| (Inner<kind> extends Omit<ExpectedContext<kind>, keyof BaseExpectedContext>
 			? never
 			: "expected" & keyof NodeConfig<kind>)
 >

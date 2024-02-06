@@ -29,6 +29,7 @@ export type RequiredDeclaration = declareNode<{
 	normalizedSchema: RequiredSchema
 	inner: RequiredInner
 	expectedContext: {
+		code: "required"
 		key: string | symbol
 	}
 	composition: "composite"

@@ -18,6 +18,7 @@ export type UnitDeclaration = declareNode<{
 	inner: UnitInner
 	composition: "primitive"
 	disjoinable: true
+	expectedContext: UnitInner
 }>
 
 export class UnitNode<t = unknown> extends BaseBasis<
@@ -44,6 +45,8 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	traverseAllows = (data: unknown) => data === this.unit
 	compiledCondition = `${this.$.dataArg} === ${this.serializedValue}`
 	compiledNegation = `${this.$.dataArg} !== ${this.serializedValue}`
+
+	readonly expectedContext = this.createExpectedContext(this.inner)
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)

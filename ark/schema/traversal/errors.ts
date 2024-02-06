@@ -33,10 +33,6 @@ Object.defineProperty(ArkTypeError, Symbol.hasInstance, {
 		instance instanceof ArkError && instance.name === "ArkTypeError"
 })
 
-// hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
-// 	return this.code === (code as never)
-// }
-
 export interface ArkTypeError<code extends ArkErrorCode = ArkErrorCode>
 	extends ArkError,
 		DynamicBase<ArkErrorContext<code>> {}

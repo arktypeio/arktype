@@ -1,8 +1,6 @@
-import type { and } from "@arktype/util"
+import type { and, evaluate, exactMessageOnError, merge } from "@arktype/util"
 import type { NarrowedAttachments, Node } from "../base.js"
-import type { Declaration, ExpectedContext, reducibleKindOf } from "../kinds.js"
-import type { TraverseApply } from "../traversal/context.js"
-import type { CompilationContext } from "./compile.js"
+import type { Declaration, reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { CompositeKind, NodeKind } from "./implement.js"
 
@@ -19,8 +17,13 @@ interface BaseDeclarationInput {
 	inner: BaseMeta
 	disjoinable?: true
 	open?: true
-	expectedContext?: unknown
+	expectedContext?: object
 	prerequisite?: unknown
+}
+
+export interface BaseExpectedContext<kind extends NodeKind = NodeKind> {
+	code: kind
+	description: string
 }
 
 interface CompositeDeclarationInput extends BaseDeclarationInput {
@@ -30,27 +33,33 @@ interface CompositeDeclarationInput extends BaseDeclarationInput {
 
 interface PrimitiveDeclarationInput extends BaseDeclarationInput {
 	composition: "primitive"
+	childKind?: never
 }
 
 type DeclarationInput = CompositeDeclarationInput | PrimitiveDeclarationInput
 
-type ParentsByKind = {
-	[k in NodeKind]: {
-		[pKind in NodeKind]: k extends Declaration<k>["childKind"] ? pKind : never
-	}[NodeKind]
-}
+export type defaultExpectedContext<d extends DeclarationInput> = evaluate<
+	BaseExpectedContext<d["kind"]> & { description: string } & d["inner"]
+>
 
-type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
-
-export type declareNode<d extends DeclarationInput> = and<
-	d,
+export type declareNode<
+	d extends {
+		[k in keyof d]: k extends keyof DeclarationInput
+			? DeclarationInput[k]
+			: never
+	} & DeclarationInput
+> = merge<
 	{
-		disjoinable: d["disjoinable"] extends true ? true : false
-		open: d["open"] extends true ? true : false
+		disjoinable: false
+		open: false
 		prerequisite: prerequisiteOf<d>
-		childKind: "childKind" extends keyof d ? d["childKind"] : never
-		parentKind: parentKindOf<d["kind"]>
-		expectedContext: d["expectedContext"] extends {} ? {} : d["inner"]
+		childKind: never
+		expectedContext: null
+	},
+	d & {
+		expectedContext: d["expectedContext"] extends {}
+			? BaseExpectedContext<d["kind"]>
+			: null
 	}
 >
 
@@ -61,13 +70,6 @@ type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 export type attachmentsOf<d extends BaseNodeDeclaration> =
 	NarrowedAttachments<d> & d["inner"]
 
-export interface DerivablePrimitiveAttachments<d extends BaseNodeDeclaration> {
-	traverseApply: TraverseApply<d["prerequisite"]>
-	compileApply(ctx: CompilationContext): string
-	compileAllows(ctx: CompilationContext): string
-	expectedContext: ExpectedContext<d["kind"]>
-}
-
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
@@ -77,8 +79,7 @@ export type BaseNodeDeclaration = {
 	disjoinable: boolean
 	open: boolean
 	childKind: NodeKind
-	parentKind: CompositeKind
-	expectedContext: unknown
+	expectedContext: BaseExpectedContext | null
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =

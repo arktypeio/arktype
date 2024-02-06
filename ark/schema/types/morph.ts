@@ -69,7 +69,7 @@ export class MorphNode<t = unknown> extends BaseType<
 	// TODO: recursively extract in?
 	static implementation: nodeImplementationOf<MorphDeclaration> =
 		this.implement({
-			hasAssociatedError: true,
+			hasAssociatedError: false,
 			keys: {
 				in: {
 					child: true,

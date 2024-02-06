@@ -30,6 +30,7 @@ export type ProtoDeclaration = declareNode<{
 	inner: ProtoInner
 	composition: "primitive"
 	disjoinable: true
+	expectedContext: ProtoInner
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -71,6 +72,8 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 
 	compiledCondition = `${this.$.dataArg} instanceof ${this.serializedConstructor}`
 	compiledNegation = `!(${this.compiledCondition})`
+
+	readonly expectedContext = this.createExpectedContext(this.inner)
 
 	protected intersectOwnInner(r: ProtoNode) {
 		return constructorExtends(this.proto, r.proto)

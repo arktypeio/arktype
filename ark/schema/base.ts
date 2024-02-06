@@ -11,6 +11,7 @@ import {
 	type Json,
 	type JsonData,
 	type entriesOf,
+	type evaluate,
 	type listable
 } from "@arktype/util"
 import type {
@@ -39,8 +40,10 @@ import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
 import type { CompilationContext } from "./shared/compile.js"
 import type {
+	BaseExpectedContext,
 	BaseNodeDeclaration,
 	attachmentsOf,
+	defaultExpectedContext,
 	ownIntersectionAlternateResult,
 	ownIntersectionResult
 } from "./shared/declare.js"
@@ -222,6 +225,16 @@ export abstract class BaseNode<
 			}
 		}
 		return this.$.parseNode(this.kind, ioInner) as never
+	}
+
+	protected createExpectedContext<from>(
+		from: from
+	): evaluate<BaseExpectedContext<d["kind"]> & from> {
+		return Object.freeze({
+			...this.inner,
+			code: this.kind,
+			description: this.description
+		}) as never
 	}
 
 	toJSON() {

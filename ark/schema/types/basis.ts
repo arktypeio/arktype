@@ -8,12 +8,9 @@ import {
 	type isAny
 } from "@arktype/util"
 import { isNode, type NodeSubclass } from "../base.js"
-import type { ExpectedContext, Schema } from "../kinds.js"
-import {
-	compilePrimitive,
-	createPrimitiveExpectedContext,
-	type CompilationContext
-} from "../shared/compile.js"
+import type { Schema } from "../kinds.js"
+import { compilePrimitive, type CompilationContext } from "../shared/compile.js"
+import type { defaultExpectedContext } from "../shared/declare.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../traversal/context.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
@@ -31,17 +28,12 @@ export abstract class BaseBasis<
 	abstract readonly basisName: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
+	abstract readonly expectedContext: d["expectedContext"]
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
 			ctx.error(this.description)
 		}
-	}
-
-	private expectedContextCache?: ExpectedContext<d["kind"]>
-	get expectedContext(): ExpectedContext<d["kind"]> {
-		this.expectedContextCache ??= createPrimitiveExpectedContext(this as never)
-		return this.expectedContextCache
 	}
 
 	compileApply(ctx: CompilationContext) {

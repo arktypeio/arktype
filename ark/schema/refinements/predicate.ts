@@ -22,7 +22,7 @@ export type PredicateDeclaration = declareNode<{
 	inner: PredicateInner
 	composition: "primitive"
 	open: true
-	expectedContext: { expected: string }
+	expectedContext: {}
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
@@ -43,9 +43,6 @@ export class PredicateNode extends BasePrimitiveRefinement<
 		defaults: {
 			description(inner) {
 				return `valid according to ${inner.predicate.name}`
-			},
-			expected(source) {
-				return `valid`
 			}
 		}
 	})
@@ -56,6 +53,7 @@ export class PredicateNode extends BasePrimitiveRefinement<
 		this.$.dataArg
 	})`
 	compiledNegation = `!${this.compiledCondition}`
+	expectedContext = this.createExpectedContext({ expected: this.description })
 
 	intersectOwnInner(r: PredicateNode) {
 		// TODO: allow changed order to be the same type

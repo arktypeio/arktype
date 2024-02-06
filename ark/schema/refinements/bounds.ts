@@ -143,6 +143,8 @@ export abstract class BaseBound<
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
 
+	readonly expectedContext = this.createExpectedContext({})
+
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
 
@@ -208,6 +210,7 @@ type declareBound<input extends BoundDeclarationInput> = declareNode<{
 	inner: BoundInner<input["limit"]>
 	composition: "primitive"
 	prerequisite: input["prerequisite"]
+	expectedContext: BoundInner<input["limit"]>
 }>
 
 export type BoundOperandKind = "value" | "length" | "date"

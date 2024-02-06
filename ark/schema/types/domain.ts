@@ -1,8 +1,8 @@
 import { domainOf, throwInternalError, type Domain } from "@arktype/util"
+import type { UnknownNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
-import type { UnknownNode } from "../base.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -28,6 +28,7 @@ export type DomainDeclaration = declareNode<{
 	inner: DomainInner
 	composition: "primitive"
 	disjoinable: true
+	expectedContext: DomainInner
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<
@@ -65,6 +66,8 @@ export class DomainNode<t = unknown> extends BaseBasis<
 		this.domain === "object"
 			? `((typeof ${this.$.dataArg} !== "object" || ${this.$.dataArg} === null) && typeof ${this.$.dataArg} !== "function")`
 			: `typeof ${this.$.dataArg} !== "${this.domain}"`
+
+	readonly expectedContext = this.createExpectedContext(this.inner)
 
 	protected intersectOwnInner(r: DomainNode) {
 		return Disjoint.from("domain", this, r)

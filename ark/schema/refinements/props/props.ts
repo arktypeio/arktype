@@ -8,7 +8,7 @@ import {
 	type TraversableNode
 } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
-import { BasePrimitiveRefinement, type FoldInput } from "../refinement.js"
+import type { FoldInput } from "../refinement.js"
 import type { IndexNode, IndexSchema } from "./index.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
@@ -78,7 +78,7 @@ export class PropsNode
 			}
 		},
 		normalize: (schema) => schema,
-		hasAssociatedError: true,
+		hasAssociatedError: false,
 		defaults: {
 			description(inner) {
 				return ""

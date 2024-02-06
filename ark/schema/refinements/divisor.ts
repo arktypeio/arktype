@@ -21,6 +21,7 @@ export type DivisorDeclaration = declareNode<{
 	inner: DivisorInner
 	composition: "primitive"
 	prerequisite: number
+	expectedContext: DivisorInner
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -57,6 +58,12 @@ export class DivisorNode extends BasePrimitiveRefinement<
 
 	compiledCondition = `${this.$.dataArg} % ${this.divisor} === 0`
 	compiledNegation = `${this.$.dataArg} % ${this.divisor} !== 0`
+
+	readonly expectedContext = Object.freeze({
+		...this.inner,
+		code: "divisor",
+		description: this.description
+	})
 
 	intersectOwnInner(r: DivisorNode) {
 		return {

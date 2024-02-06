@@ -1,16 +1,16 @@
 import type { mutable } from "@arktype/util"
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
-import type { ExpectedContext } from "../kinds.js"
-import {
-	compilePrimitive,
-	createPrimitiveExpectedContext,
-	type CompilationContext
-} from "../shared/compile.js"
-import type { BaseNodeDeclaration } from "../shared/declare.js"
+import { compilePrimitive, type CompilationContext } from "../shared/compile.js"
+import type {
+	BaseNodeDeclaration,
+	defaultExpectedContext
+} from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
 	NodeKind,
+	PrimitiveKind,
+	RefinementKind,
 	TraversableNode,
 	kindRightOf
 } from "../shared/implement.js"
@@ -28,8 +28,13 @@ export type FoldInput<kind extends NodeKind> = {
 
 export type FoldOutput<kind extends NodeKind> = FoldInput<kind> | Disjoint
 
+export interface BasePrimitiveRefinementDeclaration
+	extends BaseNodeDeclaration {
+	kind: PrimitiveKind & RefinementKind
+}
+
 export abstract class BasePrimitiveRefinement<
-		d extends BaseNodeDeclaration,
+		d extends BasePrimitiveRefinementDeclaration,
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseNode<d["prerequisite"], d, subclass>
@@ -40,17 +45,12 @@ export abstract class BasePrimitiveRefinement<
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
+	abstract readonly expectedContext: d["expectedContext"]
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
 			ctx.error(this.description)
 		}
-	}
-
-	private expectedContextCache?: ExpectedContext<d["kind"]>
-	get expectedContext(): ExpectedContext<d["kind"]> {
-		this.expectedContextCache ??= createPrimitiveExpectedContext(this as never)
-		return this.expectedContextCache
 	}
 
 	compileApply(ctx: CompilationContext) {
