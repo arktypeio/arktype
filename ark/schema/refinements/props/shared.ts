@@ -5,12 +5,16 @@ import type { BaseNodeDeclaration } from "../../shared/declare.js"
 import type { PropKind } from "../../shared/implement.js"
 import {
 	compileSerializedValue,
-	isDotAccessible
+	isDotAccessible,
+	registry
 } from "../../traversal/registry.js"
+import type { NamedProp } from "./props.js"
 
 export type BasePropDeclaration = and<BaseNodeDeclaration, { kind: PropKind }>
 
-export type NamedPropKind = "required" | "optional"
+export const arrayIndexMatcher = /(?:0|(?:[1-9]\\d*))$/
+
+export const arrayIndexMatcherReference = registry.register(arrayIndexMatcher)
 
 export const compilePropAccess = (name: string, optional = false) =>
 	isDotAccessible(name)
@@ -18,7 +22,7 @@ export const compilePropAccess = (name: string, optional = false) =>
 		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
 
 export const compilePresentPropApply = (
-	node: Node<NamedPropKind>,
+	node: NamedProp,
 	ctx: CompilationContext
 ) => {
 	return `${ctx.ctxArg}.path.push(${node.serializedKey})
@@ -30,7 +34,7 @@ export const compilePresentPropApply = (
 }
 
 export const compilePresentPropAllows = (
-	node: Node<NamedPropKind>,
+	node: NamedProp,
 	ctx: CompilationContext
 ) =>
 	`return this.${node.value.name}(${ctx.dataArg}${compilePropAccess(

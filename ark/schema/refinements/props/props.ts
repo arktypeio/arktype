@@ -1,5 +1,5 @@
-import { throwParseError } from "@arktype/util"
-import { BaseNode } from "../../base.js"
+import { map, throwParseError } from "@arktype/util"
+import { BaseNode, type Node } from "../../base.js"
 import type { CompilationContext } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
@@ -8,18 +8,20 @@ import {
 	type TraversableNode
 } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
+import { registry } from "../../traversal/registry.js"
 import type { FoldInput } from "../refinement.js"
 import type { IndexNode, IndexSchema } from "./index.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
+import { arrayIndexMatcherReference } from "./shared.js"
 
-export type KeyCheckKind = "loose" | "strict" | "prune"
+export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
-export type KeyRestrictionKind = "strict" | "prune"
+export type ExtraneousKeyRestriction = "throw" | "prune"
 
 export interface PropsInner extends BaseMeta {
-	readonly keys?: KeyRestrictionKind
+	readonly onExtraneousKey?: ExtraneousKeyRestriction
 	readonly required?: readonly RequiredNode[]
 	readonly optional?: readonly OptionalNode[]
 	readonly index?: readonly IndexNode[]
@@ -27,7 +29,7 @@ export interface PropsInner extends BaseMeta {
 }
 
 export interface BasePropsSchema extends BaseMeta {
-	readonly keys?: KeyCheckKind
+	readonly onExtraneousKey?: ExtraneousKeyBehavior
 	readonly required?: readonly RequiredSchema[]
 	readonly optional?: readonly OptionalSchema[]
 	readonly index?: readonly IndexSchema[]
@@ -51,14 +53,16 @@ export type PropsDeclaration = declareNode<{
 	childKind: PropKind
 }>
 
+export type NamedProp = RequiredNode | OptionalNode
+
 export class PropsNode
 	extends BaseNode<object, PropsDeclaration, typeof PropsNode>
 	implements TraversableNode<object>
 {
 	static implementation = this.implement({
 		keys: {
-			keys: {
-				parse: (def, ctx) => (def === "loose" ? undefined : def)
+			onExtraneousKey: {
+				parse: (def) => (def === "ignore" ? undefined : def)
 			},
 			optional: {
 				child: true,
@@ -87,27 +91,82 @@ export class PropsNode
 	})
 
 	readonly hasOpenIntersection = false
+	readonly exhaustive = !this.onExtraneousKey && !this.index
+	readonly named: readonly NamedProp[] = this.required
+		? this.optional
+			? [...this.required, ...this.optional]
+			: this.required
+		: this.optional ?? []
+	readonly nameSet = map(this.named, (i, node) => [node.key, 1] as const)
+	readonly nameSetReference = registry.register(this.nameSet)
+
 	traverseAllows: TraverseAllows<object> = () => true
-	traverseApply: TraverseApply<object> = () => {}
 
 	compileAllows(ctx: CompilationContext) {
 		return ""
 	}
 
+	protected compileEnumerableAllows(ctx: CompilationContext) {
+		return this.children.reduceRight(
+			(body, node) => node.compileAllows(ctx) + "\n" + body,
+			"return true\n"
+		)
+	}
+
+	protected compileExhasutiveAllows(ctx: CompilationContext) {
+		return this.children.reduceRight(
+			(body, node) => node.compileAllows(ctx) + "\n" + body,
+			"return true\n"
+		)
+	}
+
+	traverseApply: TraverseApply<object> = () => {}
+
 	compileApply(ctx: CompilationContext) {
-		// type NamedPropsInner = Pick<PropsInner, "required" | "optional">
+		return this.exhaustive
+			? this.compileExhaustiveApply(ctx)
+			: this.compileEnumerableApply(ctx)
+	}
 
-		// const compileLooseNamedProps = (
-		// 	props: NamedPropsInner,
-		// 	ctx: CompilationContext
-		// ) => {
-		// 	let body = ""
-		// 	props.required?.forEach((prop) => {
-		// 		body += prop.compileApply(ctx)
-		// 	})
-		// }
+	protected compileEnumerableApply(ctx: CompilationContext) {
+		return this.children.reduce(
+			(body, node) => body + node.compileApply(ctx) + "\n",
+			""
+		)
+	}
 
-		return ""
+	protected compileExhaustiveApply(ctx: CompilationContext) {
+		let body = ""
+
+		this.named.forEach((prop) => (body += prop.compileApply(ctx) + "\n"))
+		body += this.sequence?.compileApply(ctx) ?? ""
+		body += `for(const k in ${ctx.dataArg}) {\n`
+		if (this.onExtraneousKey) {
+			body += "let matched = false\n"
+		}
+		this.index?.forEach((node) => {
+			body += `if(${node.key.compileAllowsInvocation(ctx, "k")}) {\n`
+			body += node.value.compileApplyInvocation(ctx, `${ctx.dataArg}[k]`) + "\n"
+			if (this.onExtraneousKey) {
+				body += "matched = true\n"
+			}
+			body += "}\n"
+		})
+		if (this.onExtraneousKey) {
+			if (this.named.length !== 0) {
+				body += `matched ||= k in ${this.nameSetReference}\n`
+			}
+			if (this.sequence) {
+				body += `matched ||= ${arrayIndexMatcherReference}.test(k)\n`
+			}
+			// TODO: replace error
+			body += `if(!matched) {
+	throw new Error("strict")
+}\n`
+		}
+		body += "}\n"
+
+		return body
 	}
 
 	intersectOwnInner(r: PropsNode) {

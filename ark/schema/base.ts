@@ -317,12 +317,12 @@ export abstract class BaseNode<
 		)
 	}
 
-	compileApplyInvocation(ctx: CompilationContext) {
-		return `this.${this.name}(${ctx.dataArg}, ${ctx.ctxArg})`
+	compileApplyInvocation(ctx: CompilationContext, argName = ctx.dataArg) {
+		return `this.${this.name}(${argName}, ${ctx.ctxArg})`
 	}
 
-	compileAllowsInvocation(ctx: CompilationContext) {
-		return `this.${this.name}(${ctx.dataArg})`
+	compileAllowsInvocation(ctx: CompilationContext, argName = ctx.dataArg) {
+		return `this.${this.name}(${argName})`
 	}
 }
 
