@@ -139,7 +139,10 @@ export abstract class BaseType<
 	and<other extends TypeNode>(
 		other: other
 		// TODO: FIX
-	): TypeNode<d["kind"] | other["kind"]> {
+	): Node<
+		intersectTypeKinds<d["kind"], other["kind"]>,
+		this["infer"] & other["infer"]
+	> {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
@@ -180,6 +183,22 @@ export abstract class BaseType<
 		)
 	}
 }
+
+export type intersectTypeKinds<l extends TypeKind, r extends TypeKind> = [
+	l,
+	r
+] extends [r, l]
+	? l
+	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
+
+type asymmetricIntersectionOf<
+	l extends TypeKind,
+	r extends TypeKind
+> = l extends unknown
+	? r extends kindRightOf<l>
+		? l | reducibleKindOf<l>
+		: never
+	: never
 
 export interface BaseBasis {
 	basisName: string
