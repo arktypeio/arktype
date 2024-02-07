@@ -1,10 +1,10 @@
+import { compileSerializedValue } from "@arktype/util"
 import { BaseNode, type Node, type TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
-import { compileSerializedValue } from "../../traversal/registry.js"
 import type { FoldInput } from "../refinement.js"
 import {
 	compileKey,
@@ -70,28 +70,21 @@ export class OptionalNode extends BaseNode<
 		}
 	}
 
-	compile(js: NodeCompiler) {
-		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			compilePresentPropApply(this, js)
-		)
-	}
-
 	compileApply(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			compilePresentPropApply(this, js)
+			js.traverseKey(this.serializedKey, () =>
+				js.line(js.invoke(this.value, js.prop(js.data, this.key)))
+			)
 		)
 	}
 
 	compileAllows(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			compilePresentPropAllows(this, js)
+			js.traverseKey(this.serializedKey, () =>
+				js.line(js.invoke(this.value, js.prop(js.data, this.key)))
+			)
 		)
-		return `if(${this.serializedKey} in ${js.data}) {
-			${compilePresentPropAllows(this, js)}
-		}`
 	}
-
-	compiledKey = compileKey(this.key)
 
 	protected intersectOwnInner(r: OptionalNode) {
 		if (this.key !== r.key) {

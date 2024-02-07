@@ -1,9 +1,8 @@
-import { appendUnique } from "@arktype/util"
+import { appendUnique, compileSerializedValue } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
-import { compileSerializedValue } from "../traversal/registry.js"
 import { BasePrimitiveRefinement, type FoldInput } from "./refinement.js"
 
 export interface PredicateInner<

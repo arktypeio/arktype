@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
-import { registry } from "@arktype/schema"
-import { printable } from "@arktype/util"
+import { printable, reference } from "@arktype/util"
 import { scope, type } from "arktype"
 import {
 	writeInvalidPropertyKeyMessage,
@@ -36,7 +35,7 @@ describe("object literal", () => {
 	})
 	it("symbol key", () => {
 		const s = Symbol()
-		const name = registry.register(s)
+		const name = reference(s)
 		const t = type({
 			[s]: "string"
 		})
@@ -48,7 +47,7 @@ describe("object literal", () => {
 	})
 	it("optional symbol", () => {
 		const s = Symbol()
-		const name = registry.register(s)
+		const name = reference(s)
 		const t = type({
 			[s]: "number?"
 		})

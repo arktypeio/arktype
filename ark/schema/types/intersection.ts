@@ -274,11 +274,15 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		const hasErrors = `${js.ctx}.currentErrors.length !== 0`
 		if (this.basis) {
 			js.line(js.invoke(this.basis))
-			js.if(hasErrors, () => js.return())
+			if (this.prepredicates.length || this.predicate) {
+				js.if(hasErrors, () => js.return())
+			}
 		}
 		if (this.prepredicates.length) {
 			this.prepredicates.forEach((node) => js.line(js.invoke(node)))
-			js.if(hasErrors, () => js.return())
+			if (this.predicate) {
+				js.if(hasErrors, () => js.return())
+			}
 		}
 		this.predicate?.forEach((node) => js.line(js.invoke(node)))
 	}

@@ -1,4 +1,5 @@
 import {
+	compileSerializedValue,
 	entriesOf,
 	isKeyOf,
 	throwInternalError,
@@ -9,7 +10,6 @@ import {
 	type mutable
 } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
-import { compileSerializedValue } from "../traversal/registry.js"
 import type { UnionChildNode } from "./union.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =

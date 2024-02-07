@@ -1,21 +1,13 @@
+import { compileSerializedValue } from "@arktype/util"
 import { BaseNode, type Node, type TypeSchema } from "../../base.js"
 import type { Inner } from "../../kinds.js"
-import type {
-	AllowsCompiler,
-	ApplyCompiler,
-	NodeCompiler
-} from "../../shared/compile.js"
+import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
-import { compileSerializedValue } from "../../traversal/registry.js"
 import type { FoldInput } from "../refinement.js"
-import {
-	compileKey,
-	compilePresentPropAllows,
-	compilePresentPropApply
-} from "./shared.js"
+import { compileKey } from "./shared.js"
 
 export interface RequiredSchema extends BaseMeta {
 	readonly key: string | symbol
@@ -72,38 +64,45 @@ export class RequiredNode extends BaseNode<
 
 	readonly hasOpenIntersection = true
 
-	serializedKey = compileSerializedValue(this.key)
+	readonly serializedKey = compileSerializedValue(this.key)
+	readonly baseRequiredErrorContext = Object.freeze({
+		code: "required",
+		key: this.key
+	})
 
-	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		this.key in data && this.value.traverseAllows((data as any)[this.key], ctx)
+	traverseAllows: TraverseAllows<object> = (data, ctx) => {
+		if (this.key in data) {
+			return this.value.traverseAllows((data as any)[this.key], ctx)
+		}
+		return false
+	}
+
+	compileAllows(js: AllowsCompiler) {
+		js.if(`${this.serializedKey} in ${js.data}`, () =>
+			js.traverseKey(this.serializedKey, () =>
+				js.line(js.invoke(this.value, js.prop(js.data, this.key)))
+			)
+		).return(false)
+	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		if (this.key in data) {
 			this.value.traverseApply((data as any)[this.key], ctx)
 		} else {
-			ctx.error("provided")
+			ctx.error(this.baseRequiredErrorContext)
 		}
 	}
 
-	compiledKey = compileKey(this.key)
-
-	// TODO: fix base
-	readonly baseRequiredErrorContext = { code: "required", key: this.key }
-
 	compileApply(js: ApplyCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			compilePresentPropApply(this, js)
+			js.traverseKey(this.serializedKey, () =>
+				js.line(js.invoke(this.value, js.prop(js.data, this.key)))
+			)
 		).else(() =>
 			js.line(
 				`${js.ctx}.error(${JSON.stringify(this.baseRequiredErrorContext)})`
 			)
 		)
-	}
-
-	compileAllows(js: AllowsCompiler) {
-		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			compilePresentPropAllows(this, js)
-		).else(() => js.return(false))
 	}
 
 	protected intersectOwnInner(r: Inner<"required" | "optional">) {

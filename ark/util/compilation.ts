@@ -1,15 +1,8 @@
 import { DynamicFunction } from "./functions.js"
 import { CastableBase } from "./records.js"
+import { isDotAccessible, reference } from "./registry.js"
 
 export type CoercibleValue = string | number | boolean | null | undefined
-
-export const isDotAccessible = (name: string) =>
-	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
-
-export const compilePropAccess = (name: string, optional = false) =>
-	isDotAccessible(name)
-		? `${optional ? "?" : ""}.${name}`
-		: `${optional ? "?." : ""}[${JSON.stringify(name)}]`
 
 export class CompiledFunction<
 	args extends readonly string[],
@@ -36,15 +29,24 @@ export class CompiledFunction<
 		}
 	}
 
-	protected indentationCount = 0
+	indentationCount = 0
 	protected get indent() {
 		return " ".repeat(this.indentationCount)
 	}
 
-	prop(root: string, key: string, optional = false) {
-		return isDotAccessible(key)
-			? `${root}${optional ? "?" : ""}.${key}`
-			: `${root}${optional ? "?." : ""}[${JSON.stringify(key)}]`
+	prop(root: string, key: PropertyKey, optional = false) {
+		if (typeof key === "string" && isDotAccessible(key)) {
+			return `${root}${optional ? "?" : ""}.${key}`
+		}
+		return this.index(
+			root,
+			typeof key === "symbol" ? reference(key) : JSON.stringify(key),
+			optional
+		)
+	}
+
+	index(root: string, key: string, optional = false) {
+		return `${root}${optional ? "?." : ""}[${key}]`
 	}
 
 	line(statement: string) {
@@ -65,29 +67,29 @@ export class CompiledFunction<
 		return this.line(`${identifier} = ${expression}`)
 	}
 
-	if(condition: string, then: () => void) {
+	if(condition: string, then: () => this) {
 		return this.block(`if (${condition})`, then)
 	}
 
-	elseIf(condition: string, then: () => void) {
+	elseIf(condition: string, then: () => this) {
 		return this.block(`else if (${condition})`, then)
 	}
 
-	else(then: () => void) {
+	else(then: () => this) {
 		return this.block("else", then)
 	}
 
 	/** Current index is "i" */
-	for(until: string, body: () => void) {
+	for(until: string, body: () => this) {
 		return this.block(`for (let i = 0; ${until}; i++)`, body)
 	}
 
 	/** Current key is "k" */
-	forIn(object: string, body: () => void) {
+	forIn(object: string, body: () => this) {
 		return this.block(`for (const k in ${object})`, body)
 	}
 
-	block(prefix: string, contents: () => void) {
+	block(prefix: string, contents: () => this) {
 		this.line(`${prefix} {`)
 		this.indentationCount += 4
 		contents()

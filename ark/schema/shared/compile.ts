@@ -1,4 +1,4 @@
-import { CompiledFunction } from "@arktype/util"
+import { CompiledFunction, compileSerializedValue } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { TraversalContext, TraversalKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
@@ -25,6 +25,12 @@ export class NodeCompiler<
 	invoke(node: Node, argName: string = this.data) {
 		// TODO: only context if needed
 		return `this.${node.name}(${argName}, ${this.ctx})`
+	}
+
+	traverseKey(serializedKey: string, block: () => this) {
+		this.line(`${this.ctx}.path.push(${serializedKey})`)
+		block()
+		return this.line(`${this.ctx}.path.pop()`)
 	}
 
 	compilePrimitive(

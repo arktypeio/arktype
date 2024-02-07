@@ -1,4 +1,4 @@
-import { map, throwParseError } from "@arktype/util"
+import { map, reference, throwParseError } from "@arktype/util"
 import { BaseNode } from "../../base.js"
 import type {
 	AllowsCompiler,
@@ -12,7 +12,6 @@ import {
 	type TraversableNode
 } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
-import { registry } from "../../traversal/registry.js"
 import type { FoldInput } from "../refinement.js"
 import type { IndexNode, IndexSchema } from "./index.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
@@ -95,14 +94,14 @@ export class PropsNode
 	})
 
 	readonly hasOpenIntersection = false
-	readonly exhaustive = !this.onExtraneousKey && !this.index
+	readonly exhaustive = this.onExtraneousKey || this.index
 	readonly named: readonly NamedProp[] = this.required
 		? this.optional
 			? [...this.required, ...this.optional]
 			: this.required
 		: this.optional ?? []
 	readonly nameSet = map(this.named, (i, node) => [node.key, 1] as const)
-	readonly nameSetReference = registry.register(this.nameSet)
+	readonly nameSetReference = reference(this.nameSet)
 
 	traverseAllows: TraverseAllows<object> = () => true
 
@@ -127,13 +126,15 @@ export class PropsNode
 	traverseApply: TraverseApply<object> = () => {}
 
 	compileApply(js: ApplyCompiler) {
-		this.exhaustive
-			? this.compileExhaustiveApply(js)
-			: this.compileEnumerableApply(js)
+		if (this.exhaustive) {
+			this.compileExhaustiveApply(js)
+		} else {
+			this.compileEnumerableApply(js)
+		}
 	}
 
 	protected compileEnumerableApply(js: ApplyCompiler) {
-		this.children.forEach((node) => node.compileApply(js))
+		this.children.forEach((node) => js.line(js.invoke(node)))
 	}
 
 	protected compileExhaustiveApply(js: ApplyCompiler) {
@@ -150,6 +151,7 @@ export class PropsNode
 					if (this.onExtraneousKey) {
 						js.set("matched", true)
 					}
+					return js
 				})
 			})
 			if (this.onExtraneousKey) {
@@ -160,10 +162,9 @@ export class PropsNode
 					js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
 				}
 				// TODO: replace error
-				js.if("!matched", () => {
-					js.line(`throw new Error("strict")`)
-				})
+				js.if("!matched", () => js.line(`throw new Error("strict")`))
 			}
+			return js
 		})
 	}
 

@@ -20,7 +20,7 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import { NodeCompiler, jsData } from "./shared/compile.js"
+import { NodeCompiler, jsCtx, jsData } from "./shared/compile.js"
 import type {
 	DescriptionWriter,
 	NodeKind,
@@ -304,24 +304,24 @@ export class ScopeNode<r extends object = any> {
 		}
 	}
 
+	// TODO: runs for internal types?
 	protected compileScope<kind extends TraversalKind>(
 		references: readonly Node[],
 		kind: kind
 	): Record<string, TraversalMethodsByKind[kind]> {
 		// TODO: ensure ctx passed when needed
-		const compiledArgs = kind === "allows" ? jsData : `${jsData}, ctx`
+		const compiledArgs = kind === "allows" ? jsData : `${jsData}, ${jsCtx}`
 		const body = `return {
 	${references
 		.map((reference) => {
 			const js = new NodeCompiler<kind>(kind)
-			return `	${reference.name}(${compiledArgs}){
-					${
-						kind === "allows"
-							? // TODO: casts needed?
-							  reference.compileAllows(js as never)
-							: reference.compileApply(js as never)
-					}
-	}`
+			js.indentationCount = 8
+			if (kind === "allows") {
+				reference.compileAllows(js as never)
+			} else {
+				reference.compileApply(js as never)
+			}
+			return `	${reference.name}(${compiledArgs}){\n${js.body}\n    }`
 		})
 		.join(",\n")}
 }`

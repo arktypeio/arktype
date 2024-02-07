@@ -1,4 +1,5 @@
 import {
+	compileSerializedValue,
 	isArray,
 	map,
 	throwParseError,
@@ -18,7 +19,6 @@ import type {
 	ScopeNode
 } from "../scope.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import { compileSerializedValue } from "../traversal/registry.js"
 import type { AllowsCompiler, ApplyCompiler } from "./compile.js"
 import type {
 	BaseExpectedContext,
