@@ -1,5 +1,6 @@
 import { appendUnique, compileSerializedValue } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
+import type { is } from "../shared/utils.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
@@ -81,5 +82,5 @@ export type inferNarrow<In, predicate> = predicate extends (
 	data: any,
 	...args: any[]
 ) => data is infer narrowed
-	? narrowed
+	? is<narrowed, { anonymousPredicate: true }>
 	: In

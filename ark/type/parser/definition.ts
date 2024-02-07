@@ -1,20 +1,20 @@
-import { isNode, schema, type TypeNode } from "@arktype/schema"
+import { isNode, schema, type TypeNode, type is } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
 	printable,
 	throwParseError,
-	type defined,
 	type Dict,
-	type equals,
 	type ErrorMessage,
+	type List,
+	type Primitive,
+	type defined,
+	type equals,
 	type evaluate,
 	type isAny,
 	type isUnknown,
-	type List,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
-	type Primitive,
 	type requiredKeyOf
 } from "@arktype/util"
 import type { type } from "../ark.js"
@@ -29,8 +29,8 @@ import type { validateString } from "./semantic/validate.js"
 import type { BaseCompletions, inferString } from "./string/string.js"
 import {
 	parseTuple,
-	type inferTuple,
 	type TupleExpression,
+	type inferTuple,
 	type validateTuple
 } from "./tuple.js"
 
@@ -71,7 +71,7 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
 	: def extends readonly unknown[]
 	? inferTuple<def, $, args>
 	: def extends RegExp
-	? string
+	? is<string, { anonymousPattern: true }>
 	: def extends object
 	? inferObjectLiteral<def, $, args>
 	: never

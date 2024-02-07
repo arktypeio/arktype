@@ -21,20 +21,35 @@ export type DateRefinements = {
 	[k in DateLiteral]: true
 }
 
+export type AnonymousRefinementKey =
+	| "anonymousDate"
+	| "anonymousBounds"
+	| "anonymousDivisor"
+	| "anonymousPattern"
+	| "anonymousPredicate"
+
 export type Refinements = evaluate<
 	BoundRefinements &
 		DivisorRefinements &
 		PatternRefinements &
-		DateRefinements & {
-			anonymousDate?: true
-			anonymousBounds?: true
-			anonymousDivisor?: true
-			anonymousPattern?: true
-			anonymousPredicate?: true
-		}
+		DateRefinements & { [k in AnonymousRefinementKey]?: true }
 >
 
-export type is<t = unknown, refinements = Refinements> = [t, ":?>", refinements]
+export type is<t = unknown, refinements = Refinements> = {
+	inferred: t
+	refinements: refinements
+}
+
+export type intersectConstrainables<l, r> = [l, r] extends [
+	is<infer lInner, infer lRefinements>,
+	is<infer rInner, infer rRefinements>
+]
+	? is<lInner & rInner, lRefinements & rRefinements>
+	: l extends is<infer lInner, infer lRefinements>
+	? is<lInner & r, lRefinements>
+	: r extends is<infer rInner, infer rRefinements>
+	? is<l & rInner, rRefinements>
+	: l & r
 
 export type cast<to> = {
 	[inferred]?: to
