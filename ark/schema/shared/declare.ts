@@ -1,73 +1,70 @@
-import type { Dict, evaluate, extend } from "@arktype/util"
-import type { NarrowedAttachments } from "../base.js"
-import type { Declaration, OpenComponentKind } from "../kinds.js"
-import type { ConstraintGroup } from "./compile.js"
-import type {
-	ConstraintKind,
-	NodeKind,
-	PrimitiveKind,
-	PropKind,
-	SetKind
-} from "./define.js"
+import type { evaluate, merge } from "@arktype/util"
+import type { NarrowedAttachments, Node } from "../base.js"
+import type { reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
-import type { rightOf } from "./intersect.js"
+import type { NodeKind } from "./implement.js"
 
-export type BaseMeta = {
+export interface BaseMeta {
 	readonly description?: string
 }
 
-export type withBaseMeta<o extends object> = extend<BaseMeta, o>
+export type NodeCompositionKind = "primitive" | "composite"
 
-export type BaseIntersectionMap = {
-	[lKey in NodeKind]: evaluate<
-		{
-			[requiredKey in lKey]:
-				| lKey
-				| Disjoint
-				| (lKey extends OpenComponentKind ? null : never)
-		} & {
-			[rKey in rightOf<lKey> | "default"]?:
-				| lKey
-				| Disjoint
-				| (lKey extends ConstraintKind ? null : never)
-		}
-	>
-}
-
-export type UnknownIntersections = {
-	[rKey in NodeKind | "default"]?: NodeKind | Disjoint | null
-}
-
-export type DeclarationInput<kind extends NodeKind = NodeKind> = {
-	kind: kind
+interface BaseDeclarationInput {
+	kind: NodeKind
 	schema: unknown
-	intersections: UnknownIntersections
 	normalizedSchema: BaseMeta
-	inner: Dict
-	expectedContext?: Dict
+	inner: BaseMeta
+	disjoinable?: true
+	open?: true
+	expectedContext?: object
 	prerequisite?: unknown
-	childKind?: NodeKind
 }
 
-type ParentsByKind = {
-	[k in NodeKind]: {
-		[pKind in NodeKind]: k extends Declaration<k>["childKind"] ? pKind : never
-	}[NodeKind]
+export interface BaseExpectedContext<kind extends NodeKind = NodeKind> {
+	code: kind
 }
 
-type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
+interface CompositeDeclarationInput extends BaseDeclarationInput {
+	composition: "composite"
+	childKind: NodeKind
+}
 
-export type declareNode<d extends DeclarationInput> = extend<
-	d,
+interface PrimitiveDeclarationInput extends BaseDeclarationInput {
+	composition: "primitive"
+	childKind?: never
+}
+
+type DeclarationInput = CompositeDeclarationInput | PrimitiveDeclarationInput
+
+export type defaultExpectedContext<d extends DeclarationInput> = evaluate<
+	BaseExpectedContext<d["kind"]> & { description: string } & d["inner"]
+>
+
+export type requireDescriptionIfPresent<t> = "description" extends keyof t
+	? t & { description: string }
+	: t
+
+export type declareNode<
+	d extends {
+		[k in keyof d]: k extends keyof DeclarationInput
+			? DeclarationInput[k]
+			: never
+	} & DeclarationInput
+> = merge<
 	{
+		disjoinable: false
+		open: false
 		prerequisite: prerequisiteOf<d>
-		childKind: d["childKind"] extends string ? d["childKind"] : never
-		parentKind: parentKindOf<d["kind"]>
+		childKind: never
+		expectedContext: null
+	},
+	d & {
 		expectedContext: d["expectedContext"] extends {}
-			? {}
-			: d["expectedContext"] extends null
-			? null
-			: d["inner"]
+			? BaseExpectedContext<d["kind"]> &
+					// description should always be populated if it's part of the context
+					requireDescriptionIfPresent<d["expectedContext"]>
+			: null
 	}
 >
 
@@ -81,23 +78,19 @@ export type attachmentsOf<d extends BaseNodeDeclaration> =
 export type BaseNodeDeclaration = {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: Dict & BaseMeta
-	inner: Dict
+	normalizedSchema: BaseMeta
+	inner: BaseMeta
 	prerequisite: any
+	disjoinable: boolean
+	open: boolean
 	childKind: NodeKind
-	parentKind: SetKind | PropKind
-	expectedContext: Dict | null
-	intersections: {
-		[k in NodeKind | "default"]?: NodeKind | Disjoint | null
-	}
+	expectedContext: BaseExpectedContext | null
 }
 
-export interface BasePrimitive {
-	readonly kind: PrimitiveKind
-	readonly compiledCondition: string
-	readonly compiledNegation: string
-}
+export type ownIntersectionResult<d extends BaseNodeDeclaration> =
+	| Node<reducibleKindOf<d["kind"]>>
+	| ownIntersectionAlternateResult<d>
 
-export interface BaseConstraint {
-	readonly constraintGroup: ConstraintGroup
-}
+export type ownIntersectionAlternateResult<d extends BaseNodeDeclaration> =
+	| (d["open"] extends true ? null : never)
+	| (d["disjoinable"] extends true ? Disjoint : never)

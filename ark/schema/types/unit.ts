@@ -1,24 +1,25 @@
 import { domainOf, printable } from "@arktype/util"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import type { Node } from "../base.js"
+import { jsData } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { compileSerializedValue } from "../traversal/registry.js"
+import type { BasisKind } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 
-export type UnitInner<value = unknown> = withBaseMeta<{
+export interface UnitInner<value = unknown> extends BaseMeta {
 	readonly unit: value
-}>
+}
 
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
 	schema: UnitSchema
 	normalizedSchema: UnitSchema
 	inner: UnitInner
-	intersections: {
-		unit: "unit" | Disjoint
-		default: "unit" | Disjoint
-	}
+	composition: "primitive"
+	disjoinable: true
+	expectedContext: UnitInner
 }>
 
 export class UnitNode<t = unknown> extends BaseBasis<
@@ -34,13 +35,6 @@ export class UnitNode<t = unknown> extends BaseBasis<
 			}
 		},
 		normalize: (schema) => schema,
-		intersections: {
-			unit: (l, r) => Disjoint.from("unit", l, r),
-			default: (l, r) =>
-				r.allows(l.unit as never)
-					? l
-					: Disjoint.from("assignability", l.unit, r)
-		},
 		defaults: {
 			description(inner) {
 				return printable(inner.unit)
@@ -48,11 +42,25 @@ export class UnitNode<t = unknown> extends BaseBasis<
 		}
 	})
 
-	serializedValue = compileSerializedValue(this.unit)
+	serializedValue: string = (this.json as any).unit
 	traverseAllows = (data: unknown) => data === this.unit
+	compiledCondition = `${jsData} === ${this.serializedValue}`
+	compiledNegation = `${jsData} !== ${this.serializedValue}`
+
+	readonly expectedContext = this.createExpectedContext(this.inner)
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
-	compiledCondition = `${this.$.dataArg} === ${this.serializedValue}`
-	compiledNegation = `${this.$.dataArg} !== ${this.serializedValue}`
+
+	protected intersectOwnInner(r: UnitNode) {
+		return Disjoint.from("unit", this, r)
+	}
+
+	intersectRightwardInner(
+		r: Node<"intersection" | BasisKind>
+	): UnitInner | Disjoint {
+		return r.allows(this.unit)
+			? this
+			: Disjoint.from("assignability", this.unit, r)
+	}
 }

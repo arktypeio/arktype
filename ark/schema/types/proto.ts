@@ -5,14 +5,17 @@ import {
 	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import { defaultValueSerializer } from "../shared/define.js"
+import { jsData } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import { defaultValueSerializer } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
+import type { DomainNode } from "./domain.js"
 
-export type ProtoInner<proto extends Constructor = Constructor> = withBaseMeta<{
+export interface ProtoInner<proto extends Constructor = Constructor>
+	extends BaseMeta {
 	readonly proto: proto
-}>
+}
 
 export type NormalizedProtoSchema<proto extends Constructor = Constructor> =
 	ProtoInner<proto>
@@ -26,10 +29,9 @@ export type ProtoDeclaration = declareNode<{
 	schema: ProtoSchema
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
-	intersections: {
-		proto: "proto" | Disjoint
-		domain: "proto" | Disjoint
-	}
+	composition: "primitive"
+	disjoinable: true
+	expectedContext: ProtoInner
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -61,25 +63,30 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return objectKindOrDomainOf(data)
 			}
-		},
-		intersections: {
-			proto: (l, r) =>
-				constructorExtends(l.proto, r.proto)
-					? l
-					: constructorExtends(r.proto, l.proto)
-					? r
-					: Disjoint.from("proto", l, r),
-			domain: (l, r) =>
-				r.domain === "object"
-					? l
-					: Disjoint.from("domain", l.$.builtin.object, r)
 		}
 	})
 
 	readonly basisName = `${this.proto.name}`
 	readonly serializedConstructor = (this.json as { proto: string }).proto
 	readonly domain = "object"
-	readonly compiledCondition = `${this.$.dataArg} instanceof ${this.serializedConstructor}`
-	readonly compiledNegation = `!(${this.compiledCondition})`
 	traverseAllows = (data: unknown) => data instanceof this.proto
+
+	compiledCondition = `${jsData} instanceof ${this.serializedConstructor}`
+	compiledNegation = `!(${this.compiledCondition})`
+
+	readonly expectedContext = this.createExpectedContext(this.inner)
+
+	protected intersectOwnInner(r: ProtoNode) {
+		return constructorExtends(this.proto, r.proto)
+			? this
+			: constructorExtends(r.proto, this.proto)
+			? r
+			: Disjoint.from("proto", this, r)
+	}
+
+	intersectRightwardInner(r: DomainNode): ProtoInner | Disjoint {
+		return r.domain === "object"
+			? this
+			: Disjoint.from("domain", this.$.builtin.object, r)
+	}
 }

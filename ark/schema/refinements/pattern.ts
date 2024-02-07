@@ -1,10 +1,13 @@
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import { BaseRefinement } from "./refinement.js"
+import { appendUnique } from "@arktype/util"
+import { jsData } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { throwInvalidOperandError } from "../shared/implement.js"
+import { BasePrimitiveRefinement, type FoldInput } from "./refinement.js"
 
-export type PatternInner = withBaseMeta<{
+export interface PatternInner extends BaseMeta {
 	readonly source: string
 	readonly flags?: string
-}>
+}
 
 export type NormalizedPatternSchema = PatternInner
 
@@ -15,13 +18,13 @@ export type PatternDeclaration = declareNode<{
 	schema: PatternSchema
 	normalizedSchema: NormalizedPatternSchema
 	inner: PatternInner
-	intersections: {
-		pattern: "pattern" | null
-	}
+	composition: "primitive"
+	open: true
 	prerequisite: string
+	expectedContext: PatternInner
 }>
 
-export class PatternNode extends BaseRefinement<
+export class PatternNode extends BasePrimitiveRefinement<
 	PatternDeclaration,
 	typeof PatternNode
 > {
@@ -39,10 +42,6 @@ export class PatternNode extends BaseRefinement<
 					? { source: schema.source, flags: schema.flags }
 					: { source: schema.source }
 				: schema,
-		intersections: {
-			// For now, non-equal regex are naively intersected
-			pattern: () => null
-		},
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
@@ -51,16 +50,29 @@ export class PatternNode extends BaseRefinement<
 		}
 	})
 
-	readonly constraintGroup = "shallow"
 	readonly hasOpenIntersection = true
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
-	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${
-		this.$.dataArg
-	})`
+
+	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
 
-	getCheckedDefinitions() {
-		return ["string"] as const
+	readonly expectedContext = Object.freeze({
+		...this.inner,
+		code: "pattern",
+		description: this.description
+	})
+
+	intersectOwnInner(r: PatternNode) {
+		// For now, non-equal regex are naively intersected
+		return null
+	}
+
+	foldIntersection(into: FoldInput<"pattern">) {
+		if (into.basis?.domain !== "string") {
+			throwInvalidOperandError("pattern", "a string", into.basis)
+		}
+		into.pattern = appendUnique(into.pattern, this)
+		return into
 	}
 }

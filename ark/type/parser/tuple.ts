@@ -3,11 +3,11 @@ import {
 	schema,
 	type BaseMeta,
 	type Morph,
+	type MorphChildKind,
 	type Out,
 	type Predicate,
 	type Schema,
 	type TypeNode,
-	type ValidatorKind,
 	type extractIn,
 	type extractOut,
 	type inferMorphOut,
@@ -388,7 +388,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 	}
 	// TODO: nested morphs?
 	return schema({
-		in: ctx.scope.parse(def[0], ctx) as Schema<ValidatorKind>,
+		in: ctx.scope.parse(def[0], ctx) as Schema<MorphChildKind>,
 		morph: def[2] as Morph
 	})
 }

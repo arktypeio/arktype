@@ -8,8 +8,7 @@ import {
 	type entryOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { BoundKind, ConstraintKind } from "./define.js"
-import type { rightOf } from "./intersect.js"
+import type { BoundKind, ConstraintKind, kindRightOf } from "./implement.js"
 
 type DisjointKinds = {
 	domain?: {
@@ -48,8 +47,8 @@ type DisjointKinds = {
 				r: unknown
 		  }
 	union?: {
-		l: readonly Node<rightOf<"union">>[]
-		r: readonly Node<rightOf<"union">>[]
+		l: readonly Node<kindRightOf<"union">>[]
+		r: readonly Node<kindRightOf<"union">>[]
 	}
 	indiscriminableMorphs?: {
 		l: Node<"union">

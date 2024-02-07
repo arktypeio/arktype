@@ -57,6 +57,13 @@ export function map<
 	flatMapEntry: (...args: numericArrayEntry<o>) => transformed
 ): arrayFromListableEntries<extractEntries<transformed>>
 export function map<
+	const o extends readonly unknown[],
+	transformed extends listable<Entry<string | symbol>>
+>(
+	o: o,
+	flatMapEntry: (...args: numericArrayEntry<o>) => transformed
+): objectFromListableEntries<extractEntrySets<transformed>>
+export function map<
 	const o extends object,
 	transformed extends listable<Entry<number>>
 >(
@@ -89,8 +96,9 @@ export function map(
 	o: object,
 	flatMapEntry: (...args: any[]) => listable<Entry>
 ): any {
+	const inputIsArray = Array.isArray(o)
 	const entries: Entry[] = Object.entries(o).flatMap((entry, i) => {
-		const result = Array.isArray(o)
+		const result = inputIsArray
 			? flatMapEntry(i, entry[1])
 			: flatMapEntry(...entry, i)
 		const entrySet =

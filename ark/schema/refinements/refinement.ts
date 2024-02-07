@@ -1,81 +1,63 @@
-import { throwParseError, type PartialRecord, type extend } from "@arktype/util"
-import {
-	BaseNode,
-	type Node,
-	type NodeSubclass,
-	type TypeNode,
-	type TypeSchema
-} from "../base.js"
-import type { ExpectedContext } from "../kinds.js"
-import {
-	compilePrimitive,
-	createPrimitiveExpectedContext,
-	type CompilationContext,
-	type ConstraintGroup,
-	type ConstraintKindsByGroup
-} from "../shared/compile.js"
+import type { mutable } from "@arktype/util"
+import { BaseNode, type Node, type NodeSubclass } from "../base.js"
+import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import type {
-	BaseConstraint,
-	BaseNodeDeclaration,
-	BasePrimitive
-} from "../shared/declare.js"
-import type { BasisKind, NodeKind, RefinementKind } from "../shared/define.js"
-import type { TraverseApply } from "../traversal/context.js"
+	BasisKind,
+	NodeKind,
+	PrimitiveKind,
+	RefinementKind,
+	TraversableNode,
+	kindRightOf
+} from "../shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
+import type { IntersectionInner } from "../types/intersection.js"
 
-export const getBasisName = (basis: Node<BasisKind> | undefined) =>
-	basis?.basisName ?? "unknown"
+export type FoldInput<kind extends NodeKind> = {
+	-readonly [k in Exclude<
+		keyof IntersectionInner,
+		kindRightOf<kind>
+	>]?: IntersectionInner[k] extends readonly unknown[] | undefined
+		? mutable<IntersectionInner[k]>
+		: IntersectionInner[k]
+}
 
-const cache = {} as PartialRecord<NodeKind, readonly TypeNode[]>
+export type FoldOutput<kind extends NodeKind> = FoldInput<kind> | Disjoint
 
-export type BaseRefinementDeclaration = extend<
-	BaseNodeDeclaration,
-	{ kind: RefinementKind }
->
+export interface BasePrimitiveRefinementDeclaration
+	extends BaseNodeDeclaration {
+	kind: PrimitiveKind & RefinementKind
+}
 
-export abstract class BaseRefinement<
-		d extends BaseRefinementDeclaration,
+export abstract class BasePrimitiveRefinement<
+		d extends BasePrimitiveRefinementDeclaration,
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseNode<d["prerequisite"], d, subclass>
-	implements BasePrimitive, BaseConstraint
+	implements TraversableNode<d["prerequisite"]>
 {
+	abstract foldIntersection(into: FoldInput<d["kind"]>): FoldOutput<d["kind"]>
+
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
-	abstract readonly constraintGroup: ConstraintGroup
-
-	abstract getCheckedDefinitions(): readonly TypeSchema[]
-	readonly checks: readonly TypeNode[] =
-		cache[this.kind] ??
-		(cache[this.kind] = this.getCheckedDefinitions().map((o) =>
-			this.$.parseTypeNode(o)
-		))
-
-	private expectedContextCache?: ExpectedContext<d["kind"]>
-	get expectedContext(): ExpectedContext<d["kind"]> {
-		this.expectedContextCache ??= createPrimitiveExpectedContext(this as never)
-		return this.expectedContextCache
-	}
-
-	assertValidBasis(basis: Node<BasisKind> | undefined) {
-		if (this.checks.length === 1 && this.checks[0].isUnknown()) {
-			return
-		}
-		if (!this.checks.some((o) => basis?.extends(o))) {
-			throwParseError(
-				`${this.kind} operand must be of type ${this.checks.join(
-					" or "
-				)} (was ${getBasisName(basis)})`
-			)
-		}
-	}
+	abstract readonly expectedContext: d["expectedContext"]
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
-			ctx.error(this.expectedContext)
+			ctx.error(this.description)
 		}
 	}
 
-	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this as any, ctx)
+	compileApply(js: ApplyCompiler) {
+		js.compilePrimitive(this as never)
+	}
+
+	compileAllows(js: AllowsCompiler) {
+		js.compilePrimitive(this as never)
 	}
 }
+
+export const getBasisName = (basis: Node<BasisKind> | undefined) =>
+	basis?.basisName ?? "unknown"

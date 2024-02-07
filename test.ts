@@ -1,7 +1,6 @@
-import "./arkConfig.js"
-
 import { bench } from "@arktype/attest"
 import { type } from "arktype"
+import "./arkConfig.js"
 
 export const validData = Object.freeze({
 	number: 1,
@@ -32,9 +31,9 @@ const t = type({
 	}
 })
 
-bench("allows", () => {
-	t.allows(validData)
-}).median([6.95, "ns"])
+// bench("allows", () => {
+// 	t.allows(validData)
+// }).median([6.95, "ns"])
 
 // bench("apply", () => {
 // 	t(validData)

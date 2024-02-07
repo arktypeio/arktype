@@ -5,27 +5,22 @@ import {
 	isArray,
 	map,
 	printable,
-	throwInternalError,
 	type Constructor,
 	type Dict,
 	type Entry,
 	type Json,
 	type JsonData,
 	type entriesOf,
+	type evaluate,
 	type listable
 } from "@arktype/util"
 import type {
 	Declaration,
 	Inner,
 	Schema,
-	hasOpenIntersection,
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
-import type { IndexNode } from "./props/index.js"
-import type { OptionalNode } from "./props/optional.js"
-import type { RequiredNode } from "./props/required.js"
-import type { SequenceNode } from "./props/sequence.js"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -37,48 +32,43 @@ import type {
 import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
 import type { PredicateNode } from "./refinements/predicate.js"
+import type { IndexNode } from "./refinements/props/index.js"
+import type { OptionalNode } from "./refinements/props/optional.js"
+import type { PropsNode } from "./refinements/props/props.js"
+import type { RequiredNode } from "./refinements/props/required.js"
+import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
-import type { CompilationContext } from "./shared/compile.js"
 import type {
-	BaseMeta,
+	BaseExpectedContext,
 	BaseNodeDeclaration,
-	attachmentsOf
+	attachmentsOf,
+	ownIntersectionAlternateResult,
+	ownIntersectionResult,
+	requireDescriptionIfPresent
 } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
+	precedenceOfKind,
+	propKinds,
 	refinementKinds,
 	setKinds,
 	typeKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
+	type PropKind,
 	type RefinementKind,
 	type SetKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
-} from "./shared/define.js"
-import { Disjoint } from "./shared/disjoint.js"
-import { leftOperandOf, type intersectionOf } from "./shared/intersect.js"
-import {
-	TraversalContext,
-	type TraverseAllows,
-	type TraverseApply
-} from "./traversal/context.js"
-import type { ArkResult } from "./traversal/errors.js"
+} from "./shared/implement.js"
 import type { DomainNode } from "./types/domain.js"
-import type {
-	IntersectionInner,
-	IntersectionNode
-} from "./types/intersection.js"
-import type {
-	MorphNode,
-	distill,
-	extractIn,
-	extractOut
-} from "./types/morph.js"
+import type { IntersectionNode } from "./types/intersection.js"
+import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
@@ -87,7 +77,7 @@ export interface BaseAttachments {
 	alias?: string
 	readonly kind: NodeKind
 	readonly name: string
-	readonly inner: Dict
+	readonly inner: Record<string, any>
 	readonly entries: readonly Entry[]
 	readonly json: Json
 	readonly typeJson: Json
@@ -108,6 +98,7 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 
 export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 	{
+		new (attachments: never): BaseNode<any, d, any>
 		readonly implementation: nodeImplementationOf<d>
 	}
 
@@ -159,9 +150,8 @@ export abstract class BaseNode<
 		return implementation
 	}
 
-	private readonly impl: UnknownNodeImplementation = (this.constructor as any)
+	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation
-
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
@@ -175,6 +165,7 @@ export abstract class BaseNode<
 	readonly references: readonly Node[] = Object.values(this.referencesByName)
 	readonly contributesReferencesByName: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
+	readonly precedence = precedenceOfKind(this.kind)
 	// use declare here to ensure description from attachments isn't overwritten
 	declare readonly description: string
 
@@ -188,25 +179,6 @@ export abstract class BaseNode<
 		this.description ??= this.$.config[this.kind].description(
 			this.inner as never
 		)
-	}
-
-	abstract hasOpenIntersection: hasOpenIntersection<d>
-	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
-	abstract traverseApply: TraverseApply<d["prerequisite"]>
-	abstract compileBody(ctx: CompilationContext): string
-
-	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
-		const ctx = new TraversalContext(data, this.$.config)
-		return this.traverseAllows(data as never, ctx)
-	}
-
-	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
-		const ctx = new TraversalContext(data, this.$.config)
-		this.traverseApply(data as never, ctx)
-		if (ctx.currentErrors.length === 0) {
-			return { out: data } as any
-		}
-		return { errors: ctx.currentErrors }
 	}
 
 	private inCache?: UnknownNode;
@@ -243,6 +215,18 @@ export abstract class BaseNode<
 		return this.$.parseNode(this.kind, ioInner) as never
 	}
 
+	protected createExpectedContext<from>(
+		from: from
+	): evaluate<
+		BaseExpectedContext<d["kind"]> & requireDescriptionIfPresent<from>
+	> {
+		return Object.freeze({
+			...from,
+			code: this.kind,
+			description: this.description
+		}) as never
+	}
+
 	toJSON() {
 		return this.json
 	}
@@ -263,6 +247,10 @@ export abstract class BaseNode<
 		return includes(refinementKinds, this.kind)
 	}
 
+	isProp(): this is Node<PropKind> {
+		return includes(propKinds, this.kind)
+	}
+
 	isType(): this is TypeNode {
 		return includes(typeKinds, this.kind)
 	}
@@ -279,71 +267,20 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	private static intersectionCache: Record<string, Node | Disjoint> = {}
-	intersect<other extends Node>(
-		other: other
-	): intersectionOf<this["kind"], other["kind"]>
-	intersect(other: Node): Node | Disjoint | null {
-		const cacheKey = `${this.typeId}&${other.typeId}`
-		if (BaseNode.intersectionCache[cacheKey] !== undefined) {
-			return BaseNode.intersectionCache[cacheKey]
-		}
-		const closedResult = this.intersectClosed(other as never)
-		if (closedResult !== null) {
-			BaseNode.intersectionCache[cacheKey] = closedResult
-			BaseNode.intersectionCache[`${other.typeId}&${this.typeId}`] =
-				// also cache the result with other's condition as the key.
-				// if it was a Disjoint, it has to be inverted so that l,r
-				// still line up correctly
-				closedResult instanceof Disjoint ? closedResult.invert() : closedResult
-			return closedResult
-		}
-		if (this.isSet() || other.isSet()) {
-			return throwInternalError(
-				`Unexpected null intersection between non-constraints ${this.kind} and ${other.kind}`
-			)
-		}
-		// if either constraint is a basis or both don't require a basis (i.e.
-		// are predicates), it can form an intersection
-		const intersectionInner: IntersectionInner | null = this.isBasis()
-			? {
-					basis: this,
-					[other.kind]: other.hasOpenIntersection ? [other] : other
-			  }
-			: other.isBasis()
-			? {
-					basis: other,
-					[this.kind]: this.hasOpenIntersection ? [this] : this
-			  }
-			: this.hasKind("predicate") && other.hasKind("predicate")
-			? { predicate: [this, other] }
-			: null
-		return (
-			intersectionInner && this.$.parseNode("intersection", intersectionInner)
-		)
-	}
+	protected abstract intersectOwnInner(
+		r: Node<d["kind"]>
+	): d["inner"] | ownIntersectionAlternateResult<d>
 
-	intersectClosed<other extends Node>(
-		other: other
-	): Node<d["kind"] | other["kind"]> | Disjoint | null {
-		if (this.equals(other)) {
-			// TODO: meta
+	intersectOwnKind(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
+		if (r === undefined) {
 			return this as never
 		}
-		const l: UnknownNode = leftOperandOf(this as never, other) as any
-		const thisIsLeft = l === (this as never)
-		const r: UnknownNode = thisIsLeft ? other : (this as any)
-		const intersections = l.impl.intersections
-		const intersector = intersections[r.kind] ?? intersections.default
-		const result = intersector?.(l, r as never)
-		if (result) {
-			if (result instanceof Disjoint) {
-				return thisIsLeft ? result : result.invert()
-			}
-			// TODO: meta
-			return this.$.parseNode(l.kind, result) as never
+		// TODO: check equality
+		const innerResult = this.intersectOwnInner(r)
+		if (innerResult === null || innerResult instanceof Disjoint) {
+			return innerResult
 		}
-		return null
+		return this.$.parseNode(this.kind, innerResult as never)
 	}
 
 	transform(
@@ -365,12 +302,6 @@ export abstract class BaseNode<
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
 		)
-	}
-
-	compileInvocation(ctx: CompilationContext) {
-		return `this.${this.name}(${ctx.dataArg}${
-			ctx.compilationKind === "allows" ? "" : `, ${ctx.ctxArg}`
-		})`
 	}
 }
 
@@ -399,6 +330,7 @@ interface NodesByKind<t = any> {
 	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
+	props: PropsNode
 }
 
 export type Node<

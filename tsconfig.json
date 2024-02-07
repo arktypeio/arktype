@@ -3,6 +3,7 @@
 		"module": "NodeNext",
 		"target": "ES2022",
 		"moduleResolution": "NodeNext",
+		"lib": ["ESNext"],
 		"noEmit": true,
 		"skipLibCheck": true,
 		"strict": true,
@@ -14,9 +15,8 @@
 		"resolveJsonModule": true,
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
-		"noErrorTruncation": true,
 		"stripInternal": true,
-		"lib": ["ESNext"],
+		// "noErrorTruncation": true,
 		"paths": {
 			"arktype": ["./ark/type/main.ts"],
 			"@arktype/util": ["./ark/util/main.ts"],

@@ -1,43 +1,34 @@
-import {
-	domainOf,
-	hasDomain,
-	objectKindOf,
-	serializePrimitive,
-	throwInternalError,
-	type SerializablePrimitive
-} from "@arktype/util"
+import { domainOf, hasDomain } from "./domain.js"
+import { throwInternalError } from "./errors.js"
+import { objectKindOf } from "./objectKinds.js"
+import { serializePrimitive, type SerializablePrimitive } from "./serialize.js"
 
-class Registry {
-	[k: string]: unknown
+export const registry: Record<string, unknown> = {}
+;(globalThis as any).$ark = registry
 
-	constructor() {
-		const global = globalThis as any
-		if (global.$ark) {
-			return global.$ark as Registry
-		}
-		global.$ark = this
+const namesByResolution = new WeakMap<object | symbol, string>()
+const nameCounts: Record<string, number | undefined> = {}
+
+export const reference = (value: object | symbol) => {
+	const existingName = namesByResolution.get(value)
+	if (existingName) {
+		return existingName
 	}
 
-	register(value: object | symbol) {
-		const baseName = baseNameFor(value)
-		let variableName = baseName
-		let suffix = 2
-		while (variableName in this && this[variableName] !== value) {
-			variableName = `${baseName}${suffix++}`
-		}
-		this[variableName] = value
-		return variableName
-	}
+	const baseName = baseNameFor(value)
+	nameCounts[baseName] ??= 1
+	const uniqueName = `${baseName}${nameCounts[baseName]!++}`
+	registry[uniqueName] = value
+	namesByResolution.set(value, uniqueName)
+	return uniqueName
 }
-
-export const registry = new Registry()
 
 export const isDotAccessible = (name: string) =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
 
 export const compileSerializedValue = (value: unknown) => {
 	return hasDomain(value, "object") || typeof value === "symbol"
-		? registry.register(value)
+		? reference(value)
 		: serializePrimitive(value as SerializablePrimitive)
 }
 

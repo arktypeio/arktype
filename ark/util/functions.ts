@@ -1,13 +1,5 @@
 import { throwInternalError } from "./errors.js"
-
-export type Fn<
-	args extends readonly unknown[] = readonly any[],
-	returns = unknown
-> = (...args: args) => returns
-
-export type paramsOf<t> = t extends Fn<infer p> ? p : never
-
-export type returnOf<t> = t extends Fn<never, infer r> ? r : never
+import { CastableBase } from "./records.js"
 
 export const cached = <T>(thunk: () => T) => {
 	let isCached = false
@@ -31,7 +23,7 @@ export type Thunk<ret = unknown> = () => ret
 
 export type thunkable<t> = t | Thunk<t>
 
-export const CompiledFunction = class extends Function {
+export const DynamicFunction = class extends Function {
 	constructor(...args: [string, ...string[]]) {
 		const params = args.slice(0, -1)
 		const body = args.at(-1)!
@@ -47,9 +39,9 @@ export const CompiledFunction = class extends Function {
 			)
 		}
 	}
-} as CompiledFunction
+} as DynamicFunction
 
-export type CompiledFunction = new <f extends (...args: never[]) => unknown>(
+export type DynamicFunction = new <f extends (...args: never[]) => unknown>(
 	...args: ConstructorParameters<typeof Function>
 ) => f & {
 	apply(thisArg: null, args: Parameters<f>): ReturnType<f>

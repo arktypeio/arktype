@@ -1,33 +1,36 @@
-import type { TypeNode, TypeSchema } from "../base.js"
-import type { CompilationContext } from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import type { nodeImplementationOf } from "../shared/define.js"
-import type { Disjoint } from "../shared/disjoint.js"
-import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import { BaseProp } from "./prop.js"
+import { BaseNode, type TypeNode, type TypeSchema } from "../../base.js"
+import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
+import type { FoldInput } from "../refinement.js"
 
-export type IndexSchema = withBaseMeta<{
+export interface IndexSchema extends BaseMeta {
 	readonly key: TypeSchema
 	readonly value: TypeSchema
-}>
+}
 
-export type IndexInner = withBaseMeta<{
+export interface IndexInner extends BaseMeta {
 	readonly key: TypeNode<string | symbol>
 	readonly value: TypeNode
-}>
+}
 
 export type IndexDeclaration = declareNode<{
 	kind: "index"
 	schema: IndexSchema
 	normalizedSchema: IndexSchema
 	inner: IndexInner
-	intersections: {
-		index: "index" | Disjoint | null
-	}
+	composition: "composite"
 	prerequisite: object
+	open: true
+	childKind: TypeKind
 }>
 
-export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
+export class IndexNode extends BaseNode<
+	object,
+	IndexDeclaration,
+	typeof IndexNode
+> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
@@ -42,9 +45,6 @@ export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 				}
 			},
 			normalize: (schema) => schema,
-			intersections: {
-				index: (l) => l
-			},
 			defaults: {
 				description(inner) {
 					return `[${inner.key}]: ${inner.value}`
@@ -68,11 +68,15 @@ export class IndexNode extends BaseProp<IndexDeclaration, typeof IndexNode> {
 			}
 		})
 
-	getCheckedDefinitions() {
-		return ["object"] as const
+	compileApply(js: ApplyCompiler) {}
+
+	compileAllows(js: AllowsCompiler) {}
+
+	protected intersectOwnInner(r: IndexNode): IndexInner {
+		return this
 	}
 
-	compileBody(ctx: CompilationContext): string {
-		return ""
+	foldIntersection(into: FoldInput<"index">) {
+		return {}
 	}
 }

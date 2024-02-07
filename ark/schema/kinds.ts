@@ -1,9 +1,4 @@
-import type { extend } from "@arktype/util"
 import type { NodeSubclass } from "./base.js"
-import { IndexNode, type IndexDeclaration } from "./props/index.js"
-import { OptionalNode, type OptionalDeclaration } from "./props/optional.js"
-import { RequiredNode, type RequiredDeclaration } from "./props/required.js"
-import { SequenceNode, type SequenceDeclaration } from "./props/sequence.js"
 import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
 import { PatternNode, type PatternDeclaration } from "./refinements/pattern.js"
@@ -11,14 +6,21 @@ import {
 	PredicateNode,
 	type PredicateDeclaration
 } from "./refinements/predicate.js"
-import type { BaseNodeDeclaration } from "./shared/declare.js"
-import type {
-	ComponentKind,
-	ConstraintKind,
-	NodeKind,
-	PropKind,
-	TypeKind
-} from "./shared/define.js"
+import { IndexNode, type IndexDeclaration } from "./refinements/props/index.js"
+import {
+	OptionalNode,
+	type OptionalDeclaration
+} from "./refinements/props/optional.js"
+import { PropsNode, type PropsDeclaration } from "./refinements/props/props.js"
+import {
+	RequiredNode,
+	type RequiredDeclaration
+} from "./refinements/props/required.js"
+import {
+	SequenceNode,
+	type SequenceDeclaration
+} from "./refinements/props/sequence.js"
+import type { NodeKind, TypeKind } from "./shared/implement.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
 import {
 	IntersectionNode,
@@ -26,35 +28,29 @@ import {
 } from "./types/intersection.js"
 import {
 	MorphNode,
-	type MorphDeclaration,
-	type ValidatorKind
+	type MorphChildKind,
+	type MorphDeclaration
 } from "./types/morph.js"
 import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
-import {
-	UnionNode,
-	type BranchKind,
-	type UnionDeclaration
-} from "./types/union.js"
+import { UnionNode, type UnionDeclaration } from "./types/union.js"
 import { UnitNode, type UnitDeclaration } from "./types/unit.js"
 
-export type NodeDeclarationsByKind = extend<
-	BoundDeclarations,
-	{
-		domain: DomainDeclaration
-		unit: UnitDeclaration
-		proto: ProtoDeclaration
-		union: UnionDeclaration
-		morph: MorphDeclaration
-		intersection: IntersectionDeclaration
-		sequence: SequenceDeclaration
-		divisor: DivisorDeclaration
-		required: RequiredDeclaration
-		optional: OptionalDeclaration
-		index: IndexDeclaration
-		pattern: PatternDeclaration
-		predicate: PredicateDeclaration
-	}
->
+export interface NodeDeclarationsByKind extends BoundDeclarations {
+	domain: DomainDeclaration
+	unit: UnitDeclaration
+	proto: ProtoDeclaration
+	union: UnionDeclaration
+	morph: MorphDeclaration
+	intersection: IntersectionDeclaration
+	sequence: SequenceDeclaration
+	divisor: DivisorDeclaration
+	required: RequiredDeclaration
+	optional: OptionalDeclaration
+	index: IndexDeclaration
+	pattern: PatternDeclaration
+	predicate: PredicateDeclaration
+	props: PropsDeclaration
+}
 
 export const nodesByKind = {
 	...BoundNodes,
@@ -70,7 +66,8 @@ export const nodesByKind = {
 	required: RequiredNode,
 	optional: OptionalNode,
 	index: IndexNode,
-	sequence: SequenceNode
+	sequence: SequenceNode,
+	props: PropsNode
 } as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
 export type NodesByKind = typeof nodesByKind
@@ -84,21 +81,9 @@ export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
 export type NormalizedSchema<kind extends NodeKind> =
 	Declaration<kind>["normalizedSchema"]
 
-export type ChildrenByKind = {
-	[k in NodeKind]: k extends "union"
-		? BranchKind
-		: k extends "morph"
-		? ValidatorKind
-		: k extends "intersection"
-		? ConstraintKind
-		: k extends PropKind
-		? TypeKind
-		: never
-}
+export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
 
-export type childKindOf<kind extends NodeKind> = ChildrenByKind[kind]
-
-export type ParentsByKind = {
+type ParentsByKind = {
 	[k in NodeKind]: {
 		[pKind in NodeKind]: k extends childKindOf<pKind> ? pKind : never
 	}[NodeKind]
@@ -107,17 +92,8 @@ export type ParentsByKind = {
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type ioKindOf<kind extends NodeKind> = kind extends "morph"
-	? ValidatorKind
+	? MorphChildKind
 	: reducibleKindOf<kind>
-
-export type hasOpenIntersection<d extends BaseNodeDeclaration> =
-	null extends d["intersections"][d["kind"]] ? true : false
-
-export type OpenComponentKind = {
-	[k in NodeKind]: hasOpenIntersection<Declaration<k>> extends true ? k : never
-}[NodeKind]
-
-export type ClosedComponentKind = Exclude<ComponentKind, OpenComponentKind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]
@@ -125,7 +101,7 @@ export type Prerequisite<kind extends NodeKind> =
 export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	? TypeKind
 	: kind extends "intersection"
-	? ValidatorKind
+	? MorphChildKind
 	: kind
 
 export type Inner<kind extends NodeKind> = Readonly<Declaration<kind>["inner"]>

@@ -93,6 +93,12 @@ export type tryParseNumber<
 		: value
 	: messageOnFail
 
+export type parseNumber<token extends string> = token extends NumberLiteral<
+	infer value
+>
+	? value
+	: never
+
 export const tryParseInteger = <errorOnFail extends boolean | string>(
 	token: string,
 	options?: NumericParseOptions<errorOnFail>
@@ -111,6 +117,17 @@ export type tryParseInteger<
 		? valueAsNumber
 		: never
 	: messageOnFail
+
+export type parseInteger<token extends string> = token extends IntegerLiteral<
+	infer value
+>
+	? `${value}` extends NumberLiteral<infer valueAsNumber>
+		? valueAsNumber
+		: never
+	: never
+
+export type parseNonNegativeInteger<token extends string> =
+	token extends `-${string}` ? never : parseInteger<token>
 
 export type NumericParseOptions<errorOnFail extends boolean | string> = {
 	errorOnFail?: errorOnFail

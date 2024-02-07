@@ -1,6 +1,6 @@
 {
 	"name": "@arktype/attest",
-	"version": "0.5.0",
+	"version": "0.5.4",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -24,7 +24,7 @@
 		"**/*.ts"
 	],
 	"bin": {
-		"attestPrecache": "./attestPrecache.js"
+		"attestPrecache": "attestPrecache.js"
 	},
 	"scripts": {
 		"build": "tsx ../repo/build.ts",

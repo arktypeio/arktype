@@ -1,9 +1,15 @@
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
-import { BaseRefinement } from "./refinement.js"
+import { throwParseError } from "@arktype/util"
+import { jsData } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import {
+	BasePrimitiveRefinement,
+	getBasisName,
+	type FoldInput
+} from "./refinement.js"
 
-export type DivisorInner = withBaseMeta<{
+export interface DivisorInner extends BaseMeta {
 	readonly divisor: number
-}>
+}
 
 export type NormalizedDivisorSchema = DivisorInner
 
@@ -14,10 +20,9 @@ export type DivisorDeclaration = declareNode<{
 	schema: DivisorSchema
 	normalizedSchema: NormalizedDivisorSchema
 	inner: DivisorInner
-	intersections: {
-		divisor: "divisor"
-	}
+	composition: "primitive"
 	prerequisite: number
+	expectedContext: DivisorInner
 }>
 
 export const writeIndivisibleMessage = <root extends string>(
@@ -28,7 +33,7 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export class DivisorNode extends BaseRefinement<
+export class DivisorNode extends BasePrimitiveRefinement<
 	DivisorDeclaration,
 	typeof DivisorNode
 > {
@@ -39,13 +44,6 @@ export class DivisorNode extends BaseRefinement<
 		},
 		normalize: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,
-		intersections: {
-			divisor: (l, r) => ({
-				divisor: Math.abs(
-					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
-				)
-			})
-		},
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
@@ -56,15 +54,33 @@ export class DivisorNode extends BaseRefinement<
 		}
 	})
 
-	readonly constraintGroup = "shallow"
 	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
 
-	compiledCondition = `${this.$.dataArg} % ${this.divisor} === 0`
-	compiledNegation = `${this.$.dataArg} % ${this.divisor} !== 0`
+	compiledCondition = `${jsData} % ${this.divisor} === 0`
+	compiledNegation = `${jsData} % ${this.divisor} !== 0`
 
-	getCheckedDefinitions() {
-		return ["number"] as const
+	readonly expectedContext = Object.freeze({
+		...this.inner,
+		code: "divisor",
+		description: this.description
+	})
+
+	intersectOwnInner(r: DivisorNode) {
+		return {
+			divisor: Math.abs(
+				(this.divisor * r.divisor) /
+					greatestCommonDivisor(this.divisor, r.divisor)
+			)
+		}
+	}
+
+	foldIntersection(into: FoldInput<"divisor">) {
+		if (into.basis?.domain !== "number") {
+			throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
+		}
+		into.divisor = this.intersectOwnKind(into.divisor)
+		return into
 	}
 }
 

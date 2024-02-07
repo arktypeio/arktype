@@ -1,81 +1,83 @@
+import { CompiledFunction, compileSerializedValue } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { ExpectedContext } from "../kinds.js"
-import type { TraversalMethodsByKind } from "../traversal/context.js"
+import type { TraversalContext, TraversalKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
-import type { BasisKind, PrimitiveKind, PropKind } from "./define.js"
+import type { PrimitiveKind } from "./implement.js"
 
-export type ConstraintKindsByGroup = {
-	basis: BasisKind
-	shallow: Exclude<PrimitiveKind, "predicate">
-	deep: PropKind
-	predicate: "predicate"
-}
+export const jsData = "data"
+export const jsCtx = "ctx"
 
-export type ConstraintGroup = keyof ConstraintKindsByGroup
+export class NodeCompiler<
+	kind extends TraversalKind = TraversalKind,
+	prerequisite = unknown
+> extends CompiledFunction<
+	[typeof jsData, typeof jsCtx],
+	[prerequisite, TraversalContext],
+	kind extends "allows" ? true : void
+> {
+	path: string[] = []
+	discriminants: Discriminant[] = []
 
-export const precedenceByConstraintGroup: Record<ConstraintGroup, number> = {
-	basis: 0,
-	shallow: 1,
-	deep: 2,
-	predicate: 3
-}
-
-export const compilePrimitive = (
-	node: Node<PrimitiveKind>,
-	ctx: CompilationContext
-) => {
-	const pathString = ctx.path.join()
-	if (
-		node.kind === "domain" &&
-		node.domain === "object" &&
-		ctx.discriminants.some((d) => d.path.join().startsWith(pathString))
-	) {
-		// if we've already checked a path at least as long as the current one,
-		// we don't need to revalidate that we're in an object
-		return ""
+	constructor(public traversalKind: kind) {
+		super(jsData, jsCtx)
 	}
-	if (
-		(node.kind === "domain" || node.kind === "unit") &&
-		ctx.discriminants.some(
-			(d) =>
-				d.path.join() === pathString &&
-				(node.kind === "domain"
-					? d.kind === "domain" || d.kind === "value"
-					: d.kind === "value")
+
+	invoke(node: Node, argName: string = this.data) {
+		// TODO: only context if needed
+		return `this.${node.name}(${argName}, ${this.ctx})`
+	}
+
+	traverseKey(serializedKey: string, block: () => this) {
+		this.line(`${this.ctx}.path.push(${serializedKey})`)
+		block()
+		return this.line(`${this.ctx}.path.pop()`)
+	}
+
+	compilePrimitive(
+		node: Node<PrimitiveKind>,
+		// allowed can be invoked from an apply but not the reverse
+		kind = this.traversalKind as kind extends "apply" ? TraversalKind : "allows"
+	) {
+		const pathString = this.path.join()
+		if (
+			node.kind === "domain" &&
+			node.domain === "object" &&
+			this.discriminants.some((d) => d.path.join().startsWith(pathString))
+		) {
+			// if we've already checked a path at least as long as the current one,
+			// we don't need to revalidate that we're in an object
+			return this
+		}
+		if (
+			(node.kind === "domain" || node.kind === "unit") &&
+			this.discriminants.some(
+				(d) =>
+					d.path.join() === pathString &&
+					(node.kind === "domain"
+						? d.kind === "domain" || d.kind === "value"
+						: d.kind === "value")
+			)
+		) {
+			// if the discriminant has already checked the domain at the current path
+			// (or an exact value, implying a domain), we don't need to recheck it
+			return this
+		}
+		return this.if(node.compiledNegation, () =>
+			kind === "allows"
+				? this.return(false)
+				: this.line(
+						`${this.ctx}.error(${JSON.stringify(node.expectedContext)})`
+				  )
 		)
-	) {
-		// if the discriminant has already checked the domain at the current path
-		// (or an exact value, implying a domain), we don't need to recheck it
-		return ""
 	}
-	return ctx.compilationKind === "allows"
-		? `return ${node.compiledCondition}`
-		: `if (${node.compiledNegation}) {
-${compilePrimitiveProblem(node, ctx)}
-}`
 }
 
-export const createPrimitiveExpectedContext = <kind extends PrimitiveKind>(
-	node: Node<kind>
-): ExpectedContext<kind> =>
-	Object.freeze({
-		code: node.kind,
-		description: node.description,
-		...node.inner
-	}) as never
+export type AllowsCompiler<prerequisite = unknown> = NodeCompiler<
+	"allows",
+	prerequisite
+>
 
-export const compilePrimitiveProblem = (
-	node: Node<PrimitiveKind>,
-	ctx: CompilationContext
-) => {
-	return `${ctx.ctxArg}.error(${JSON.stringify(node.expectedContext)})`
-}
-export type CompilationContext = {
-	dataArg: string
-	ctxArg: string
-	path: string[]
-	discriminants: Discriminant[]
-	compilationKind: TraversalKind
-}
-
-export type TraversalKind = keyof TraversalMethodsByKind
+export type ApplyCompiler<prerequisite = unknown> = NodeCompiler<
+	"apply",
+	prerequisite
+>

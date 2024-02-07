@@ -1,5 +1,5 @@
 import {
-	CompiledFunction,
+	DynamicFunction,
 	isArray,
 	printable,
 	throwInternalError,
@@ -20,9 +20,16 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import type { TraversalKind } from "./shared/compile.js"
-import type { DescriptionWriter, NodeKind, TypeKind } from "./shared/define.js"
-import type { TraversalMethodsByKind } from "./traversal/context.js"
+import { NodeCompiler, jsCtx, jsData } from "./shared/compile.js"
+import type {
+	DescriptionWriter,
+	NodeKind,
+	TypeKind
+} from "./shared/implement.js"
+import type {
+	TraversalKind,
+	TraversalMethodsByKind
+} from "./traversal/context.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -33,8 +40,8 @@ import type {
 import { maybeGetBasisKind } from "./types/basis.js"
 import { BaseType } from "./types/type.js"
 import type {
-	BranchKind,
 	NormalizedUnionSchema,
+	UnionChildKind,
 	UnionNode
 } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
@@ -85,8 +92,6 @@ export type ParsedUnknownNodeConfig = requireKeys<
 export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]
 >
-
-export type KeyCheckKind = "distilled" | "strict" | "loose"
 
 export type ArkConfig = Partial<NodeConfigsByKind>
 
@@ -189,7 +194,7 @@ export class ScopeNode<r extends object = any> {
 
 	static root: ScopeNode<{}> = this.from({})
 
-	parseUnion<const branches extends readonly Schema<BranchKind>[]>(
+	parseUnion<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], r>
@@ -199,7 +204,7 @@ export class ScopeNode<r extends object = any> {
 		return this.parseNode("union", input) as never
 	}
 
-	parseBranches<const branches extends readonly Schema<BranchKind>[]>(
+	parseBranches<const branches extends readonly Schema<UnionChildKind>[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
@@ -278,9 +283,6 @@ export class ScopeNode<r extends object = any> {
 		return node as never
 	}
 
-	readonly dataArg = "data"
-	readonly ctxArg = "ctx"
-
 	protected bindCompiledScope(
 		nodesToBind: readonly Node[],
 		references: readonly Node[]
@@ -302,28 +304,28 @@ export class ScopeNode<r extends object = any> {
 		}
 	}
 
+	// TODO: runs for internal types?
 	protected compileScope<kind extends TraversalKind>(
 		references: readonly Node[],
 		kind: kind
 	): Record<string, TraversalMethodsByKind[kind]> {
-		const compiledArgs =
-			kind === "allows" ? this.dataArg : `${this.dataArg}, ctx`
+		// TODO: ensure ctx passed when needed
+		const compiledArgs = kind === "allows" ? jsData : `${jsData}, ${jsCtx}`
 		const body = `return {
 	${references
-		.map(
-			(reference) => `${reference.name}(${compiledArgs}){
-${reference.compileBody({
-	dataArg: this.dataArg,
-	ctxArg: this.ctxArg,
-	compilationKind: kind,
-	path: [],
-	discriminants: []
-})}
-}`
-		)
+		.map((reference) => {
+			const js = new NodeCompiler<kind>(kind)
+			js.indentationCount = 8
+			if (kind === "allows") {
+				reference.compileAllows(js as never)
+			} else {
+				reference.compileApply(js as never)
+			}
+			return `	${reference.name}(${compiledArgs}){\n${js.body}\n    }`
+		})
 		.join(",\n")}
 }`
-		return new CompiledFunction(body)() as never
+		return new DynamicFunction(body)() as never
 	}
 
 	readonly schema: SchemaParser<r> = Object.assign(
@@ -336,13 +338,13 @@ ${reference.compileBody({
 }
 
 export type SchemaParser<r extends object> = {
-	<const branches extends readonly Schema<BranchKind>[]>(
+	<const branches extends readonly Schema<UnionChildKind>[]>(
 		...branches: {
 			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
 	): instantiateSchemaBranches<branches>
 
-	union<const branches extends readonly Schema<BranchKind>[]>(
+	union<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
 			branches: {
 				[i in keyof branches]: validateSchemaBranch<branches[i], r>

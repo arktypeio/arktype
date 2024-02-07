@@ -1,78 +1,88 @@
 import {
 	isArray,
+	isEmptyObject,
+	map,
 	printable,
-	throwInternalError,
-	type listable,
-	type mutable
+	splitByKeys,
+	throwParseError,
+	type evaluate,
+	type last,
+	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { Prerequisite, Schema } from "../kinds.js"
 import type {
-	ClosedComponentKind,
-	Declaration,
-	OpenComponentKind,
-	Prerequisite,
-	Schema,
-	hasOpenIntersection,
-	reducibleKindOf
-} from "../kinds.js"
-import type { SchemaParseContext } from "../parse.js"
-import {
-	precedenceByConstraintGroup,
-	type CompilationContext,
-	type ConstraintGroup,
-	type ConstraintKindsByGroup
-} from "../shared/compile.js"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+	ArrayPropsSchema,
+	BasePropsSchema,
+	PropsSchema
+} from "../refinements/props/props.js"
+import type { FoldInput } from "../refinements/refinement.js"
+import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
+	parseOpen,
+	propKinds,
+	refinementKinds,
 	type BasisKind,
-	type ComponentKind,
 	type ConstraintKind,
+	type NodeKind,
+	type OpenNodeKind,
+	type OrderedNodeKinds,
+	type RefinementKind,
 	type nodeImplementationOf
-} from "../shared/define.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 
-export type IntersectionInner = withBaseMeta<
-	{ basis?: Node<BasisKind> } & {
-		[k in ComponentKind]?: k extends OpenComponentKind
-			? readonly Node<k>[]
-			: Node<k>
+export type IntersectionBasisKind = "domain" | "proto"
+
+export type IntersectionInner = evaluate<
+	BaseMeta & {
+		basis?: Node<IntersectionBasisKind>
+	} & {
+		[k in RefinementKind]?: innerRefinementValue<k>
 	}
 >
 
 export type IntersectionSchema<
-	basis extends Schema<BasisKind> | undefined = any
-> = withBaseMeta<
-	{
+	basis extends Schema<IntersectionBasisKind> | undefined = any
+> = evaluate<
+	BaseMeta & {
 		basis?: basis
-	} & componentInputsByKind<
-		basis extends Schema<BasisKind> ? instantiateBasis<basis>["infer"] : unknown
-	>
+	} & schemaRefinementsOf<
+			basis extends Schema<BasisKind>
+				? instantiateBasis<basis>["infer"]
+				: unknown
+		>
 >
 
-export type ConstraintSet = readonly Node<ConstraintKind>[]
-
-export type GroupedConstraints = {
-	[k in ConstraintGroup]?: Node<ConstraintKindsByGroup[k]>[]
-}
+/** ensure spread prop keys like 'required' in this example:
+ 		`{ basis: "object", required: [...]}`
+ 	are nested in the 'props' key like:
+ 		`{ basis: "object", props: {required: [...]}}` */
+export type NormalizedIntersectionSchema = Omit<
+	Extract<IntersectionSchema, { props?: PropsSchema }>,
+	propKeyOf<any>
+>
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
-	normalizedSchema: IntersectionSchema
+	normalizedSchema: NormalizedIntersectionSchema
 	inner: IntersectionInner
-	intersections: {
-		intersection: "intersection" | Disjoint
-		default: "intersection" | Disjoint
-	}
+	composition: "composite"
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
+	disjoinable: true
+	childKind: ConstraintKind
 }>
+
+const refinementKeys = map(refinementKinds, (i, kind) => [kind, 1] as const)
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
 // 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
@@ -91,6 +101,8 @@ export type IntersectionDeclaration = declareNode<{
 // 		: this.indexed.find((entry) => entry.key.equals(key))?.value
 // }
 
+const propKeys = map([...propKinds, "keys"], (i, k) => [k, 1] as const)
+
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	IntersectionDeclaration,
@@ -99,7 +111,21 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
-			normalize: (def) => def,
+			normalize: (def) => {
+				const [propsSchema, intersectionSchema] = splitByKeys(def, propKeys)
+				if (isEmptyObject(propsSchema)) {
+					return intersectionSchema
+				}
+				if (intersectionSchema.props) {
+					return throwParseError(
+						`An intersection schema cannot have both a 'props' key and its flattened values (found ${Object.keys(
+							propsSchema
+						).join(", ")})`
+					)
+				}
+				intersectionSchema.props = propsSchema
+				return intersectionSchema
+			},
 			addParseContext: (ctx) => {
 				const def = ctx.definition as IntersectionSchema
 				ctx.basis = def.basis && ctx.$.parseTypeNode(def.basis, basisKinds)
@@ -112,104 +138,70 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				},
 				divisor: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("divisor", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("divisor", def, ctx)
 				},
 				max: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("max", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("max", def, ctx)
 				},
 				min: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("min", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("min", def, ctx)
 				},
 				maxLength: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("maxLength", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("maxLength", def, ctx)
 				},
 				minLength: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("minLength", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("minLength", def, ctx)
 				},
 				before: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("before", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("before", def, ctx)
 				},
 				after: {
 					child: true,
-					parse: (def, ctx) => parseClosedComponent("after", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("after", def, ctx)
 				},
 				pattern: {
 					child: true,
-					parse: (def, ctx) => parseOpenComponent("pattern", def, ctx)
+					parse: (def, ctx) => parseOpen("pattern", def, ctx)
 				},
 				predicate: {
 					child: true,
-					parse: (def, ctx) => parseOpenComponent("predicate", def, ctx)
+					parse: (def, ctx) => parseOpen("predicate", def, ctx)
 				},
-				optional: {
+				props: {
 					child: true,
-					parse: (def, ctx) => parseOpenComponent("optional", def, ctx)
-				},
-				required: {
-					child: true,
-					parse: (def, ctx) => parseOpenComponent("required", def, ctx)
-				},
-				index: {
-					child: true,
-					parse: (def, ctx) => parseOpenComponent("index", def, ctx)
-				},
-				sequence: {
-					child: true,
-					parse: (def, ctx) => parseClosedComponent("sequence", def, ctx)
+					parse: (def, ctx) => ctx.$.parseNode("props", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
-				const inputConstraints = flattenConstraints(inner)
-				const reducedConstraints = reduceConstraints([], inputConstraints)
-				if (reducedConstraints instanceof Disjoint) {
-					return reducedConstraints.throw()
+				const [refinements, base] = splitByKeys(inner, refinementKeys)
+				let result: FoldInput<"predicate"> | Disjoint = base
+				const flatRefinements = Object.values(refinements).flat()
+				if (flatRefinements.length === 0 && base.basis) {
+					return base.basis
 				}
-				if (
-					reducedConstraints.length === 1 &&
-					reducedConstraints[0].isBasis()
-				) {
-					// TODO: description?
-					return reducedConstraints[0]
-				}
-				if (reducedConstraints.length === inputConstraints.length) {
-					return
-				}
-				return scope.parsePrereduced(
-					"intersection",
-					unflattenConstraints(reducedConstraints)
-				)
-			},
-			intersections: {
-				intersection: (l, r) => {
-					let result: readonly Node<ConstraintKind>[] | Disjoint = l.constraints
-					for (const refinement of r.constraints) {
-						if (result instanceof Disjoint) {
-							break
-						}
-						result = addConstraint(result, refinement)
+				// TODO: are these ordered?
+				for (const refinement of flatRefinements) {
+					if (result instanceof Disjoint) {
+						break
 					}
-					return result instanceof Disjoint
-						? result
-						: unflattenConstraints(result)
-				},
-				default: (l, r) => {
-					const result = addConstraint(l.constraints, r)
-					return result instanceof Disjoint
-						? result
-						: unflattenConstraints(result)
+					result = refinement.foldIntersection(result)
 				}
+				if (result instanceof Disjoint) {
+					return result.throw()
+				}
+				return scope.parsePrereduced("intersection", result)
 			},
 			defaults: {
-				description(inner) {
-					const constraints = flattenConstraints(inner)
-					return constraints.length === 0
+				description(constraints) {
+					const flatConstraints = Object.values(constraints).flat()
+					return flatConstraints.length === 0
 						? "an unknown value"
-						: constraints.join(" and ")
+						: flatConstraints.join(" and ")
 				},
 				expected(source) {
 					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")
@@ -220,181 +212,112 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	/** The list of intersected constraints ordered by group (basis=>shallow=>deep=>predicate) */
-	readonly constraints: ConstraintSet = flattenConstraints(this.inner)
-	groupedConstraints: GroupedConstraints =
-		this.constraints.reduce<GroupedConstraints>((result, c) => {
-			result[c.constraintGroup] ??= []
-			result[c.constraintGroup]!.push(c as never)
-			return result
-		}, {})
-	groupedConstraintLists: Node<ConstraintKind>[][] = Object.values(
-		this.groupedConstraints
+	protected intersectOwnInner(r: IntersectionNode) {
+		// ensure we can safely mutate inner as well as its shallow open intersections
+		let result = map(this.inner, (k, v) => [k, isArray(v) ? [...v] : v]) as
+			| FoldInput<last<OrderedNodeKinds>>
+			| Disjoint
+
+		for (const constraint of r.refinements) {
+			if (result instanceof Disjoint) {
+				break
+			}
+			result = constraint.foldIntersection(result)
+		}
+		return result
+	}
+
+	intersectRightwardInner(
+		r: Node<IntersectionBasisKind>
+	): IntersectionInner | Disjoint {
+		const basis = this.basis?.intersect(r) ?? r
+		// TODO: meta should not be included here?
+		return basis instanceof Disjoint
+			? basis
+			: {
+					...this.inner,
+					basis
+			  }
+	}
+
+	readonly refinements = this.children.filter(
+		(child): child is Node<RefinementKind> => child.isRefinement()
 	)
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.constraints.every((c) => c.traverseAllows(data as never, ctx))
+	// TODO: check order
+	traverseAllows: TraverseAllows = (data, ctx) => {
+		return this.children.every((child) =>
+			child.traverseAllows(data as never, ctx)
+		)
+	}
+
+	compileAllows(js: AllowsCompiler) {
+		this.children.forEach((node) =>
+			js.if(`!${js.invoke(node)}`, () => js.return(false))
+		)
+		js.return(true)
+	}
+
+	readonly prepredicates = this.refinements.filter(
+		(node): node is Node<PrepredicateKind> => node.kind !== "predicate"
+	)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		for (const group of this.groupedConstraintLists) {
-			for (const constraint of group) {
-				constraint.traverseApply(data as never, ctx)
+		this.basis?.traverseApply(data, ctx)
+		if (ctx.currentErrors.length !== 0) return
+		this.prepredicates.forEach((node) => node.traverseApply(data as never, ctx))
+		if (ctx.currentErrors.length !== 0) return
+		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
+	}
+
+	compileApply(js: ApplyCompiler) {
+		const hasErrors = `${js.ctx}.currentErrors.length !== 0`
+		if (this.basis) {
+			js.line(js.invoke(this.basis))
+			if (this.prepredicates.length || this.predicate) {
+				js.if(hasErrors, () => js.return())
 			}
-			if (ctx.currentErrors.length !== 0) {
-				return
+		}
+		if (this.prepredicates.length) {
+			this.prepredicates.forEach((node) => js.line(js.invoke(node)))
+			if (this.predicate) {
+				js.if(hasErrors, () => js.return())
 			}
 		}
-	}
-
-	compileBody(ctx: CompilationContext) {
-		if (ctx.compilationKind === "allows") {
-			return (
-				this.constraints
-					.map(
-						(constraint) =>
-							`if(!${constraint.compileInvocation(ctx)}) return false`
-					)
-					.join("\n") + "\nreturn true"
-			)
-		}
-		return this.groupedConstraintLists
-			.map((group) =>
-				group.map((constraint) => constraint.compileInvocation(ctx)).join("\n")
-			)
-			.join(`\nif(${ctx.ctxArg}.currentErrors.length !== 0) return\n`)
+		this.predicate?.forEach((node) => js.line(js.invoke(node)))
 	}
 }
 
-export type ComponentIntersectionInputsByKind = {
-	[k in ComponentKind]: hasOpenIntersection<Declaration<k>> extends true
-		? listable<Schema<k>>
-		: Schema<k>
+type PrepredicateKind = Exclude<RefinementKind, "predicate">
+
+type PrimitiveRefinementKind = Exclude<RefinementKind, "props">
+
+type primitiveRefinementKindOf<t> = {
+	[k in PrimitiveRefinementKind]: t extends Prerequisite<k> ? k : never
+}[PrimitiveRefinementKind]
+
+type schemaRefinementValue<k extends NodeKind> = k extends OpenNodeKind
+	? listable<Schema<k>>
+	: Schema<k>
+
+type innerRefinementValue<k extends NodeKind> = k extends OpenNodeKind
+	? readonly Node<k>[]
+	: Node<k>
+
+type primitiveRefinementsOf<t> = {
+	[k in primitiveRefinementKindOf<t>]?: schemaRefinementValue<k>
 }
 
-export type componentKindOf<t> = {
-	[k in ComponentKind]: t extends Prerequisite<k> ? k : never
-}[ComponentKind]
+type propKeyOf<t extends object> = Exclude<
+	t extends readonly unknown[] ? keyof ArrayPropsSchema : keyof BasePropsSchema,
+	keyof BaseMeta
+>
 
-export type ComponentIntersectionInput<
-	kind extends ComponentKind = ComponentKind
-> = ComponentIntersectionInputsByKind[kind]
+type propRefinementsOf<t> = [t] extends [object]
+	?
+			| ({ props?: PropsSchema<t> } & { [k in propKeyOf<t>]?: never })
+			| ({ props?: never } & PropsSchema<t>)
+	: {}
 
-export type componentInputsByKind<t> = {
-	[k in componentKindOf<t>]?: ComponentIntersectionInput<k>
-}
-
-export const parseClosedComponent = <kind extends ClosedComponentKind>(
-	kind: kind,
-	input: Schema<kind>,
-	ctx: SchemaParseContext
-): Node<kind> => {
-	const refinement = ctx.$.parseNode(kind, input) as Node<ComponentKind>
-	refinement.assertValidBasis(ctx.basis)
-	return refinement as never
-}
-
-export const parseOpenComponent = <kind extends OpenComponentKind>(
-	kind: kind,
-	input: listable<Schema<kind>>,
-	ctx: SchemaParseContext
-): readonly Node<reducibleKindOf<kind>>[] | undefined => {
-	if (isArray(input)) {
-		if (input.length === 0) {
-			// Omit empty lists as input
-			return
-		}
-		const refinements = input
-			.map((refinement) => ctx.$.parseNode(kind, refinement))
-			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
-		// we should only need to assert validity for one, as all listed
-		// refinements should be of the same kind and therefore have the same
-		// operand requirements
-		refinements[0].assertValidBasis(ctx.basis)
-		return refinements
-	}
-	const refinement = ctx.$.parseNode(kind, input)
-	refinement.assertValidBasis(ctx.basis)
-	return [refinement]
-}
-
-const reduceConstraints = (
-	l: readonly Node<ConstraintKind>[],
-	r: readonly Node<ConstraintKind>[]
-) => {
-	let result: readonly Node<ConstraintKind>[] | Disjoint = l
-	for (const refinement of r) {
-		if (result instanceof Disjoint) {
-			break
-		}
-		result = addConstraint(result, refinement)
-	}
-	return result instanceof Disjoint ? result : result
-}
-
-export const flattenConstraints = (inner: IntersectionInner): ConstraintSet =>
-	Object.entries(inner)
-		.flatMap(([k, v]) =>
-			k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
-		)
-		.sort((l, r) => {
-			// order by precedence group, then node kind alphabetically, then name alphabetically
-			const precedenceDiff =
-				precedenceByConstraintGroup[l.constraintGroup] -
-				precedenceByConstraintGroup[r.constraintGroup]
-			if (precedenceDiff !== 0) {
-				return precedenceDiff
-			}
-			if (l.kind !== r.kind) {
-				return l.kind < r.kind ? -1 : 1
-			}
-			return l.name < r.name ? -1 : 1
-		})
-
-export const unflattenConstraints = (
-	constraints: ConstraintSet
-): IntersectionInner => {
-	const inner: mutable<IntersectionInner> = {}
-	for (const constraint of constraints) {
-		if (constraint.isBasis()) {
-			inner.basis = constraint
-		} else if (constraint.hasOpenIntersection) {
-			inner[constraint.kind] ??= [] as any
-			;(inner as any)[constraint.kind].push(constraint)
-		} else {
-			if (inner[constraint.kind]) {
-				return throwInternalError(
-					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
-				)
-			}
-			inner[constraint.kind] = constraint as never
-		}
-	}
-	return inner
-}
-
-export const addConstraint = (
-	base: readonly Node<ConstraintKind>[],
-	constraint: Node<ConstraintKind>
-): Node<ConstraintKind>[] | Disjoint => {
-	const result: Node<ConstraintKind>[] = []
-	let includesComponent = false
-	for (let i = 0; i < base.length; i++) {
-		const elementResult = constraint.intersectClosed(base[i])
-		if (elementResult === null) {
-			result.push(base[i])
-		} else if (elementResult instanceof Disjoint) {
-			return elementResult
-		} else if (!includesComponent) {
-			result.push(elementResult)
-			includesComponent = true
-		} else if (!result.includes(elementResult)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
-			)
-		}
-	}
-	if (!includesComponent) {
-		result.push(constraint)
-	}
-	return result
-}
+export type schemaRefinementsOf<t> = primitiveRefinementsOf<t> &
+	propRefinementsOf<t>

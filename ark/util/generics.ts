@@ -24,14 +24,15 @@ export type exactMessageOnError<t extends object, u extends object> = {
 	[k in keyof t]: k extends keyof u
 		? conform<t[k], u[k]>
 		: ErrorMessage<`'${k & string}' is not a valid key`>
-}
+} & u
 
 export type defer<t> = [t][t extends any ? 0 : never]
 
-export type merge<base, merged> = {
-	[k in Exclude<keyof base, keyof merged>]: base[k]
-} & merged &
-	unknown
+export type merge<base, merged> = evaluate<
+	{
+		[k in Exclude<keyof base, keyof merged>]: base[k]
+	} & merged
+>
 
 /**
  * Interesection (`&`) that avoids evaluating `unknown` to `{}`
@@ -66,9 +67,7 @@ export type nominal<t, id extends string> = t & {
 	readonly [id]: id
 }
 
-export type satisfy<t, u extends { [k in keyof t]: t[k] }> = u
-
-export type extend<t, u> = evaluate<t & u>
+export type satisfy<base, t extends base> = t
 
 export type defined<t> = t & ({} | null)
 

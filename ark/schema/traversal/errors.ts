@@ -7,7 +7,7 @@ import {
 	type propwiseXor
 } from "@arktype/util"
 import type { ExpectedContext, Prerequisite } from "../kinds.js"
-import type { NodeKind } from "../shared/define.js"
+import type { NodeKind } from "../shared/implement.js"
 import type { TraversalContext, TraversalPath } from "./context.js"
 
 export class ArkError extends TypeError {
@@ -32,10 +32,6 @@ Object.defineProperty(ArkTypeError, Symbol.hasInstance, {
 	value: (instance: unknown) =>
 		instance instanceof ArkError && instance.name === "ArkTypeError"
 })
-
-// hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
-// 	return this.code === (code as never)
-// }
 
 export interface ArkTypeError<code extends ArkErrorCode = ArkErrorCode>
 	extends ArkError,

@@ -1,13 +1,15 @@
-import { domainOf, type Domain } from "@arktype/util"
-import type { declareNode, withBaseMeta } from "../shared/declare.js"
+import { domainOf, throwInternalError, type Domain } from "@arktype/util"
+import type { UnknownNode } from "../base.js"
+import { jsData } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
 
-export type DomainInner<
+export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = withBaseMeta<{
+> extends BaseMeta {
 	readonly domain: domain
-}>
+}
 
 // only domains with an infinite number of values are allowed as bases
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
@@ -25,9 +27,9 @@ export type DomainDeclaration = declareNode<{
 	schema: DomainSchema
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
-	intersections: {
-		domain: "domain" | Disjoint
-	}
+	composition: "primitive"
+	disjoinable: true
+	expectedContext: DomainInner
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<
@@ -50,25 +52,33 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return domainOf(data)
 			}
-		},
-		intersections: {
-			domain: (l, r) => Disjoint.from("domain", l, r)
 		}
 	})
 
 	basisName = this.domain
 
+	traverseAllows = (data: unknown) => domainOf(data) === this.domain
 	compiledCondition =
 		this.domain === "object"
-			? `((typeof ${this.$.dataArg} === "object" && ${this.$.dataArg} !== null) || typeof ${this.$.dataArg} === "function")`
-			: `typeof ${this.$.dataArg} === "${this.domain}"`
+			? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
+			: `typeof ${jsData} === "${this.domain}"`
 
 	compiledNegation =
 		this.domain === "object"
-			? `((typeof ${this.$.dataArg} !== "object" || ${this.$.dataArg} === null) && typeof ${this.$.dataArg} !== "function")`
-			: `typeof ${this.$.dataArg} !== "${this.domain}"`
+			? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
+			: `typeof ${jsData} !== "${this.domain}"`
 
-	traverseAllows = (data: unknown) => domainOf(data) === this.domain
+	readonly expectedContext = this.createExpectedContext(this.inner)
+
+	protected intersectOwnInner(r: DomainNode) {
+		return Disjoint.from("domain", this, r)
+	}
+
+	intersectRightwardInner(r: never) {
+		return throwInternalError(
+			`Unexpected attempt to intersect ${r} from domain.`
+		)
+	}
 }
 
 const enumerableDomainDescriptions = {

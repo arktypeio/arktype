@@ -1,6 +1,4 @@
-import type { Fn } from "./functions.js"
 import type { defined, evaluate } from "./generics.js"
-import type { intersectUnion } from "./unionToTuple.js"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -32,7 +30,7 @@ type requireRecurse<
 > = depth["length"] extends maxDepth
 	? o
 	: o extends object
-	? o extends Fn
+	? o extends (...args: never[]) => unknown
 		? o
 		: {
 				[k in keyof o]-?: requireRecurse<o[k], [...depth, 1], maxDepth>
@@ -44,6 +42,8 @@ export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 }
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
+
+export type keySetOf<o extends object> = keySet<Extract<keyof o, string>>
 
 export type mutable<o, maxDepth extends number = 1> = mutableRecurse<
 	o,
@@ -58,7 +58,7 @@ type mutableRecurse<
 > = depth["length"] extends maxDepth
 	? o
 	: o extends object
-	? o extends Fn
+	? o extends (...args: never[]) => unknown
 		? o
 		: {
 				-readonly [k in keyof o]: mutableRecurse<o[k], [...depth, 1], maxDepth>
@@ -105,7 +105,7 @@ export const isKeyOf = <k extends string | number | symbol, o extends object>(
 ): k is Extract<keyof o, k> => k in o
 
 /** Coalesce keys that exist on one or more branches of a union */
-export type unionKeyOf<t> = keyof intersectUnion<t>
+export type unionKeyOf<t> = t extends unknown ? keyof t : never
 
 export type extractKeyed<o extends object, k extends unionKeyOf<o>> = Extract<
 	o,
@@ -164,3 +164,28 @@ export const shallowClone = <input extends object>(input: input): input =>
 		Object.getPrototypeOf(input),
 		Object.getOwnPropertyDescriptors(input)
 	)
+
+export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
+	o: o,
+	leftKeys: leftKeys
+): [
+	evaluate<Pick<o, keyof leftKeys & keyof o>>,
+	evaluate<Omit<o, keyof leftKeys & keyof o>>
+] => {
+	const l: any = {}
+	const r: any = {}
+	let k: keyof o
+	for (k in o) {
+		if (k in leftKeys) {
+			l[k] = o[k]
+		} else {
+			r[k] = o[k]
+		}
+	}
+	return [l, r]
+}
+
+export type EmptyObject = Record<PropertyKey, never>
+
+export const isEmptyObject = (o: object): o is EmptyObject =>
+	Object.keys(o).length === 0

@@ -73,6 +73,27 @@ export type CollapsingList<t = unknown> =
 	| t
 	| readonly [t, t, ...t[]]
 
+export type tail<t extends readonly unknown[]> = t extends readonly [
+	unknown,
+	...infer tail
+]
+	? tail
+	: never
+
+export type head<t extends readonly unknown[]> = t extends readonly [
+	infer head,
+	...unknown[]
+]
+	? head
+	: never
+
+export type last<t extends readonly unknown[]> = t extends readonly [
+	...unknown[],
+	infer last
+]
+	? last
+	: never
+
 export const listFrom = <t>(data: t) =>
 	(Array.isArray(data) ? data : [data]) as t extends readonly unknown[]
 		? [t] extends [null]
@@ -110,3 +131,72 @@ export const includes = <array extends readonly unknown[]>(
 
 export const range = (length: number): number[] =>
 	[...new Array(length)].map((_, i) => i)
+
+/**
+ * Appends a value to an array, returning the array
+ * (based on the implementation from TypeScript's codebase)
+ *
+ * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
+ * is created if `value` was appended.
+ * @param value The value to append to the array. If `value` is `undefined`, nothing is
+ * appended.
+ */
+export const append = <
+	to extends element[] | undefined,
+	element extends {},
+	value extends element | undefined
+>(
+	to: to,
+	value: value
+): to | Extract<value, undefined> => {
+	if (value === undefined) {
+		return to
+	}
+	if (to === undefined) {
+		return [value] as never
+	}
+	to.push(value)
+	return to
+}
+
+/**
+ * Appends a value to an array if it is not already included, returning the array
+ *
+ * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
+ * is created including only `value`.
+ * @param value The value to append to the array. If `to` includes `value`, nothing is appended.
+ */
+export const appendUnique = <to extends unknown[]>(
+	to: to | undefined,
+	value: to[number]
+) => {
+	if (to === undefined) {
+		return [value] as never
+	}
+	if (!to.includes(value)) {
+		to.push(value)
+	}
+	return to
+}
+
+export type groupableKeyOf<t> = {
+	[k in keyof t]: t[k] extends PropertyKey ? k : never
+}[keyof t]
+
+export type groupBy<element, discriminator extends groupableKeyOf<element>> = {
+	[k in element[discriminator] & PropertyKey]?: Extract<
+		element,
+		{ [_ in discriminator]: k }
+	>[]
+} & {}
+
+export const groupBy = <element, discriminator extends groupableKeyOf<element>>(
+	array: readonly element[],
+	discriminator: discriminator
+): groupBy<element, discriminator> =>
+	array.reduce<Record<PropertyKey, any>>((result, item) => {
+		const key = item[discriminator] as never
+		result[key] ??= []
+		result[key].push(item)
+		return result
+	}, {})

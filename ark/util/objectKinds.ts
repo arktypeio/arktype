@@ -1,5 +1,4 @@
 import { domainOf, type Domain } from "./domain.js"
-import type { Fn } from "./functions.js"
 import type { evaluate } from "./generics.js"
 import { isKeyOf } from "./records.js"
 
@@ -36,7 +35,7 @@ export type objectKindOf<
 	kinds extends ObjectKindSet = BuiltinObjectConstructors
 > = object extends data
 	? keyof kinds | undefined
-	: data extends Fn
+	: data extends (...args: any[]) => unknown
 	? "Function"
 	: instantiableObjectKind<data, kinds> extends never
 	? keyof kinds | undefined

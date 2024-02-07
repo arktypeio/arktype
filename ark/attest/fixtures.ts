@@ -32,8 +32,9 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 }
 
 export const writeAssertionData = (toPath: string) => {
-	"⏳ Waiting for TypeScript to check your project (this may take a while)..."
-	console.log()
+	console.log(
+		"⏳ Waiting for TypeScript to check your project (this may take a while)..."
+	)
 	writeJson(toPath, analyzeProjectAssertions())
 }
 

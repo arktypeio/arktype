@@ -12,7 +12,6 @@ import type {
 	conform,
 	isDisjoint,
 	replaceKey,
-	returnOf,
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
@@ -20,7 +19,9 @@ import type { Scope } from "./scope.js"
 import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.js"
 
 type MatchParserContext = {
-	thens: readonly Fn[]
+	inConstraint: unknown
+	outConstraint: unknown
+	thens: readonly ((In: unknown) => unknown)[]
 	$: unknown
 	exhaustiveOver: unknown
 }
@@ -164,14 +165,12 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 >(
 	data: data
 ) => {
-	[i in Extract<keyof ctx["thens"], `${number}`>]: ctx["thens"][i] extends Fn<
-		[infer In],
-		infer Out
-	>
-		? isDisjoint<data, In> extends true
-			? never
-			: Out
-		: returnOf<ctx["thens"][i]>
+	[i in Extract<keyof ctx["thens"], `${number}`>]: isDisjoint<
+		data,
+		Parameters<ctx["thens"][i]>[0]
+	> extends true
+		? never
+		: ReturnType<ctx["thens"][i]>
 }[Extract<keyof ctx["thens"], `${number}`>]
 
 export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {

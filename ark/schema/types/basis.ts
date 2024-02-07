@@ -2,45 +2,34 @@ import {
 	printable,
 	throwParseError,
 	type Constructor,
-	type extend,
+	type evaluate,
 	type inferDomain,
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
 import { isNode, type NodeSubclass } from "../base.js"
-import type { ExpectedContext, Schema } from "../kinds.js"
-import {
-	compilePrimitive,
-	createPrimitiveExpectedContext,
-	type CompilationContext,
-	type ConstraintKindsByGroup
-} from "../shared/compile.js"
-import type { BaseConstraint, BasePrimitive } from "../shared/declare.js"
-import type { BasisKind } from "../shared/define.js"
+import type { Schema } from "../kinds.js"
+import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
+import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../traversal/context.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
 import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitNode, UnitSchema } from "./unit.js"
 
-export type BaseBasisDeclaration = extend<
-	BaseTypeDeclaration,
-	{ kind: BasisKind }
+export type BaseBasisDeclaration = evaluate<
+	BaseTypeDeclaration & { kind: BasisKind }
 >
 
 export abstract class BaseBasis<
-		t,
-		d extends BaseBasisDeclaration,
-		subclass extends NodeSubclass<d>
-	>
-	extends BaseType<t, d, subclass>
-	implements BasePrimitive, BaseConstraint
-{
+	t,
+	d extends BaseBasisDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseType<t, d, subclass> {
 	abstract readonly basisName: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
-
-	readonly constraintGroup = "basis"
+	abstract readonly expectedContext: d["expectedContext"]
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
@@ -48,14 +37,12 @@ export abstract class BaseBasis<
 		}
 	}
 
-	private expectedContextCache?: ExpectedContext<d["kind"]>
-	get expectedContext(): ExpectedContext<d["kind"]> {
-		this.expectedContextCache ??= createPrimitiveExpectedContext(this as never)
-		return this.expectedContextCache
+	compileApply(js: ApplyCompiler) {
+		js.compilePrimitive(this as never)
 	}
 
-	compileBody(ctx: CompilationContext) {
-		return compilePrimitive(this as any, ctx)
+	compileAllows(js: AllowsCompiler) {
+		js.compilePrimitive(this as never)
 	}
 }
 

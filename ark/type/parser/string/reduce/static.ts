@@ -24,14 +24,14 @@ export type StaticState = {
 	unscanned: string
 }
 
-export type AutocompletePrefix = `${StringifiablePrefixOperator} `
-
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound: OpenLeftBound | undefined
 	"&": unknown
 	"|": unknown
 }
+
+export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
 export namespace state {
 	export type initialize<def extends string> = from<{

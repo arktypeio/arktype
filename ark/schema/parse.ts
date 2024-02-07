@@ -5,7 +5,7 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
-	type extend,
+	type evaluate,
 	type valueOf
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
@@ -14,11 +14,11 @@ import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import {
 	defaultValueSerializer,
-	type BasisKind,
 	type KeyDefinitions,
 	type NodeKind,
 	type UnknownNodeImplementation
-} from "./shared/define.js"
+} from "./shared/implement.js"
+import type { IntersectionBasisKind } from "./types/intersection.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -30,12 +30,11 @@ export type SchemaParseOptions = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
-	basis?: Node<BasisKind> | undefined
+	basis?: Node<IntersectionBasisKind> | undefined
 }
 
-export type SchemaParseContext = extend<
-	SchemaParseOptions,
-	{
+export type SchemaParseContext = evaluate<
+	SchemaParseOptions & {
 		$: ScopeNode
 		definition: unknown
 	}
@@ -59,7 +58,7 @@ export function parse(
 	ctx: SchemaParseContext
 ): Node {
 	const cls = nodesByKind[kind]
-	const impl = cls.implementation as UnknownNodeImplementation
+	const impl: UnknownNodeImplementation = cls.implementation as never
 	if (schema instanceof BaseNode) {
 		return schema.kind === kind
 			? (schema as never)
