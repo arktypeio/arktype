@@ -38,7 +38,6 @@ import type { PropsNode } from "./refinements/props/props.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
-import type { AllowsCompiler, ApplyCompiler } from "./shared/compile.js"
 import type {
 	BaseExpectedContext,
 	BaseNodeDeclaration,
@@ -303,15 +302,6 @@ export abstract class BaseNode<
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
 		)
-	}
-
-	compileApplyInvocation(js: ApplyCompiler, argName = js.data) {
-		return `this.${this.name}(${argName}, ${js.ctx})`
-	}
-
-	compileAllowsInvocation(js: AllowsCompiler, argName = js.data) {
-		// TODO: Ensure context is passed if needed
-		return `this.${this.name}(${argName})`
 	}
 }
 

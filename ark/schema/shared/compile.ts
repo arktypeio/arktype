@@ -22,7 +22,16 @@ export class NodeCompiler<
 		super(jsData, jsCtx)
 	}
 
-	traversePrimitive(node: Node<PrimitiveKind>) {
+	invoke(node: Node, argName: string = this.data) {
+		// TODO: only context if needed
+		return `this.${node.name}(${argName}, ${this.ctx})`
+	}
+
+	compilePrimitive(
+		node: Node<PrimitiveKind>,
+		// allowed can be invoked from an apply but not the reverse
+		kind = this.traversalKind as kind extends "apply" ? TraversalKind : "allows"
+	) {
 		const pathString = this.path.join()
 		if (
 			node.kind === "domain" &&
@@ -47,12 +56,13 @@ export class NodeCompiler<
 			// (or an exact value, implying a domain), we don't need to recheck it
 			return this
 		}
-		return this.traversalKind === "allows"
-			? this.return(node.compiledCondition)
-			: this.if(
-					node.compiledNegation,
-					`${this.ctx}.error(${JSON.stringify(node.expectedContext)})`
-			  )
+		return this.if(node.compiledNegation, () =>
+			kind === "allows"
+				? this.return(false)
+				: this.line(
+						`${this.ctx}.error(${JSON.stringify(node.expectedContext)})`
+				  )
+		)
 	}
 }
 

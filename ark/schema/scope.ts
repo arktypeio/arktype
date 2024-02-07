@@ -20,12 +20,16 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
+import { NodeCompiler, jsData } from "./shared/compile.js"
 import type {
 	DescriptionWriter,
 	NodeKind,
 	TypeKind
 } from "./shared/implement.js"
-import type { TraversalMethodsByKind } from "./traversal/context.js"
+import type {
+	TraversalKind,
+	TraversalMethodsByKind
+} from "./traversal/context.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -304,19 +308,18 @@ export class ScopeNode<r extends object = any> {
 		references: readonly Node[],
 		kind: kind
 	): Record<string, TraversalMethodsByKind[kind]> {
-		const compiledArgs = kind === "allows" ? js.data : `${js.data}, ctx`
+		// TODO: ensure ctx passed when needed
+		const compiledArgs = kind === "allows" ? jsData : `${jsData}, ctx`
 		const body = `return {
 	${references
 		.map((reference) => {
-			const ctx: CompilationContext = {
-				path: [],
-				discriminants: []
-			}
+			const js = new NodeCompiler<kind>(kind)
 			return `	${reference.name}(${compiledArgs}){
 					${
 						kind === "allows"
-							? reference.compileAllows(ctx)
-							: reference.compileApply(ctx)
+							? // TODO: casts needed?
+							  reference.compileAllows(js as never)
+							: reference.compileApply(js as never)
 					}
 	}`
 		})

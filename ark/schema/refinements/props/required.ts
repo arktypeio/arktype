@@ -1,6 +1,10 @@
 import { BaseNode, type Node, type TypeSchema } from "../../base.js"
 import type { Inner } from "../../kinds.js"
-import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
+import type {
+	AllowsCompiler,
+	ApplyCompiler,
+	NodeCompiler
+} from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
@@ -87,19 +91,19 @@ export class RequiredNode extends BaseNode<
 	readonly baseRequiredErrorContext = { code: "required", key: this.key }
 
 	compileApply(js: ApplyCompiler) {
-		return `if(${this.serializedKey} in ${js.data}) {
-			${compilePresentPropApply(this, js)}
-		} else {
-			${js.ctx}.error(${JSON.stringify(this.baseRequiredErrorContext)})
-		}`
+		js.if(`${this.serializedKey} in ${js.data}`, () =>
+			compilePresentPropApply(this, js)
+		).else(() =>
+			js.line(
+				`${js.ctx}.error(${JSON.stringify(this.baseRequiredErrorContext)})`
+			)
+		)
 	}
 
 	compileAllows(js: AllowsCompiler) {
-		return `if(${this.serializedKey} in ${js.data}) {
-			${compilePresentPropAllows(this, js)}
-		} else {
-			return false
-		}`
+		js.if(`${this.serializedKey} in ${js.data}`, () =>
+			compilePresentPropAllows(this, js)
+		).else(() => js.return(false))
 	}
 
 	protected intersectOwnInner(r: Inner<"required" | "optional">) {

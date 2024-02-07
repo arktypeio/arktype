@@ -46,17 +46,6 @@ export type UnionDeclaration = declareNode<{
 	childKind: UnionChildKind
 }>
 
-const intersectBranch = (
-	l: Node<"union">,
-	r: UnionChildNode
-): Disjoint | UnionInner => {
-	const branches = intersectBranches(l.branches, [r])
-	if (branches instanceof Disjoint) {
-		return branches
-	}
-	return l.ordered ? { branches, ordered: true } : { branches }
-}
-
 export class UnionNode<t = unknown> extends BaseType<
 	t,
 	UnionDeclaration,
@@ -165,17 +154,14 @@ export class UnionNode<t = unknown> extends BaseType<
 	}
 
 	compileApply(js: ApplyCompiler) {
-		for (const branch of this.branches) {
-			js.line(branch.compileApplyInvocation(js))
-		}
-		return js
+		this.branches.forEach((branch) => js.line(js.invoke(branch)))
 	}
 
 	compileAllows(js: AllowsCompiler) {
-		for (const branch of this.branches) {
-			js.line(branch.compileAllowsInvocation(js))
-		}
-		return js
+		this.branches.forEach((branch) =>
+			js.if(`!${js.invoke(branch)}`, () => js.return(false))
+		)
+		js.return(true)
 	}
 }
 

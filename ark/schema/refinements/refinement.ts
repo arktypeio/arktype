@@ -51,11 +51,11 @@ export abstract class BasePrimitiveRefinement<
 	}
 
 	compileApply(js: ApplyCompiler) {
-		return js.traversePrimitive(this as never)
+		js.compilePrimitive(this as never)
 	}
 
 	compileAllows(js: AllowsCompiler) {
-		return js.traversePrimitive(this as never)
+		js.compilePrimitive(this as never)
 	}
 }
 

@@ -49,6 +49,8 @@ export type DynamicFunction = new <f extends (...args: never[]) => unknown>(
 	call(thisArg: null, ...args: Parameters<f>): ReturnType<f>
 }
 
+export type CoercibleValue = string | number | boolean | null | undefined
+
 export class CompiledFunction<
 	args extends readonly string[],
 	argTypes extends { [i in keyof args]: unknown } = {
@@ -59,7 +61,7 @@ export class CompiledFunction<
 	[k in args[number]]: k
 }> {
 	readonly args: args
-	body = ""
+	readonly body = ""
 
 	constructor(...args: args) {
 		super()
@@ -74,41 +76,61 @@ export class CompiledFunction<
 		}
 	}
 
+	protected indentationCount = 0
+	protected get indent() {
+		return " ".repeat(this.indentationCount)
+	}
+
 	line(statement: string) {
-		this.body += `${statement}\n`
+		;(this.body as any) += `${this.indent}${statement}\n`
 		return this
 	}
 
-	if(condition: string, then: string) {
-		this.body += `if (${condition}) {\n${then}\n}\n`
+	const(identifier: string, expression: CoercibleValue) {
+		this.line(`const ${identifier} = ${expression}`)
 		return this
 	}
 
-	elseIf(condition: string, then: string) {
-		this.body += `else if (${condition}) {\n${then}\n}\n`
-		return this
+	let(identifier: string, expression: CoercibleValue) {
+		return this.line(`let ${identifier} = ${expression}`)
 	}
 
-	else(then: string) {
-		this.body += `else {\n${then}\n}\n`
-		return this
+	set(identifier: string, expression: CoercibleValue) {
+		return this.line(`${identifier} = ${expression}`)
+	}
+
+	if(condition: string, then: () => void) {
+		return this.block(`if (${condition})`, then)
+	}
+
+	elseIf(condition: string, then: () => void) {
+		return this.block(`else if (${condition})`, then)
+	}
+
+	else(then: () => void) {
+		return this.block("else", then)
 	}
 
 	/** Current index is "i" */
-	for(until: string, body: string) {
-		this.body += `for (let i = 0; ${until}; i++) {\n${body}\n}\n`
-		return this
+	for(until: string, body: () => void) {
+		return this.block(`for (let i = 0; ${until}; i++)`, body)
 	}
 
 	/** Current key is "k" */
-	forIn(object: string, body: string) {
-		this.body += `for (const k in ${object}) {\n${body}\n}\n`
-		return this
+	forIn(object: string, body: () => void) {
+		return this.block(`for (const k in ${object})`, body)
 	}
 
-	return(expression: string) {
-		this.body += `return ${expression}\n`
-		return this
+	block(prefix: string, contents: () => void) {
+		this.line(`${prefix} {`)
+		this.indentationCount += 4
+		contents()
+		this.indentationCount -= 4
+		return this.line("}")
+	}
+
+	return(expression: CoercibleValue) {
+		return this.line(`return ${expression}`)
 	}
 
 	compile() {

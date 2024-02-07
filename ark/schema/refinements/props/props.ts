@@ -1,9 +1,9 @@
 import { map, throwParseError } from "@arktype/util"
-import { BaseNode, type Node } from "../../base.js"
-import {
-	js,
-	type ApplyCompiler,
-	type CompilationContext
+import { BaseNode } from "../../base.js"
+import type {
+	AllowsCompiler,
+	ApplyCompiler,
+	NodeCompiler
 } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
@@ -106,20 +106,20 @@ export class PropsNode
 
 	traverseAllows: TraverseAllows<object> = () => true
 
-	compileAllows(ctx: CompilationContext) {
-		return ""
+	compileAllows(js: NodeCompiler) {
+		return js
 	}
 
-	protected compileEnumerableAllows(ctx: CompilationContext) {
+	protected compileEnumerableAllows(js: AllowsCompiler) {
 		return this.children.reduceRight(
-			(body, node) => node.compileAllows(ctx) + "\n" + body,
+			(body, node) => node.compileAllows(js) + "\n" + body,
 			"return true\n"
 		)
 	}
 
-	protected compileExhaustiveAllows(ctx: CompilationContext) {
+	protected compileExhaustiveAllows(js: AllowsCompiler) {
 		return this.children.reduceRight(
-			(body, node) => node.compileAllows(ctx) + "\n" + body,
+			(body, node) => node.compileAllows(js) + "\n" + body,
 			"return true\n"
 		)
 	}
@@ -127,50 +127,44 @@ export class PropsNode
 	traverseApply: TraverseApply<object> = () => {}
 
 	compileApply(js: ApplyCompiler) {
-		return this.exhaustive
+		this.exhaustive
 			? this.compileExhaustiveApply(js)
 			: this.compileEnumerableApply(js)
 	}
 
-	protected compileEnumerableApply(ctx: CompilationContext) {
-		return this.children.reduce(
-			(body, node) => body + node.compileApply(ctx) + "\n",
-			""
-		)
+	protected compileEnumerableApply(js: ApplyCompiler) {
+		this.children.forEach((node) => node.compileApply(js))
 	}
 
-	protected compileExhaustiveApply(ctx: CompilationContext) {
-		let body = ""
-
-		this.named.forEach((prop) => (body += prop.compileApply(ctx) + "\n"))
-		body += this.sequence?.compileApply(ctx) ?? ""
-		body += `for(const k in ${js.data}) {\n`
-		if (this.onExtraneousKey) {
-			body += "let matched = false\n"
-		}
-		this.index?.forEach((node) => {
-			body += `if(${node.key.compileAllowsInvocation(ctx, "k")}) {\n`
-			body += node.value.compileApplyInvocation(ctx, `${js.data}[k]`) + "\n"
+	protected compileExhaustiveApply(js: ApplyCompiler) {
+		this.named.forEach((prop) => prop.compileApply(js))
+		this.sequence?.compileApply(js)
+		js.forIn(js.data, () => {
 			if (this.onExtraneousKey) {
-				body += "matched = true\n"
+				js.let("matched", false)
 			}
-			body += "}\n"
+			this.index?.forEach((node) => {
+				// node.key.compileAllows(js, "k")
+				js.if("false", () => {
+					js.line(js.invoke(node.value, `${js.data}[k]`))
+					if (this.onExtraneousKey) {
+						js.set("matched", true)
+					}
+				})
+			})
+			if (this.onExtraneousKey) {
+				if (this.named.length !== 0) {
+					js.line(`matched ||= k in ${this.nameSetReference}`)
+				}
+				if (this.sequence) {
+					js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
+				}
+				// TODO: replace error
+				js.if("!matched", () => {
+					js.line(`throw new Error("strict")`)
+				})
+			}
 		})
-		if (this.onExtraneousKey) {
-			if (this.named.length !== 0) {
-				body += `matched ||= k in ${this.nameSetReference}\n`
-			}
-			if (this.sequence) {
-				body += `matched ||= ${arrayIndexMatcherReference}.test(k)\n`
-			}
-			// TODO: replace error
-			body += `if(!matched) {
-	throw new Error("strict")
-}\n`
-		}
-		body += "}\n"
-
-		return body
 	}
 
 	intersectOwnInner(r: PropsNode) {

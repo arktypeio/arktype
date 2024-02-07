@@ -138,11 +138,11 @@ export class MorphNode<t = unknown> extends BaseType<
 	}
 
 	compileApply(js: ApplyCompiler) {
-		return this.in.compileApply(js)
+		this.in.compileApply(js)
 	}
 
 	compileAllows(js: AllowsCompiler) {
-		return this.in.compileAllows(js)
+		this.in.compileAllows(js)
 	}
 }
 

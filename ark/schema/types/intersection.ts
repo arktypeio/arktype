@@ -253,11 +253,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	compileAllows(js: AllowsCompiler) {
 		this.children.reduceRight(
-			(body, node) =>
-				`if(!${node.compileAllowsInvocation(js)}) return false\n` + body,
+			(body, node) => `if(!${js.invoke(node)}) return false\n` + body,
 			"return true\n"
 		)
-		return js
 	}
 
 	readonly prepredicates = this.refinements.filter(
@@ -276,23 +274,20 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		let body = ""
 		const compiledReturnIfError = `if(${js.ctx}.currentErrors.length !== 0) return\n`
 		if (this.basis) {
-			body = `${this.basis.compileApplyInvocation(
-				js
-			)}\n${compiledReturnIfError}`
+			body = `${js.invoke(this.basis)}\n${compiledReturnIfError}`
 		}
 		if (this.prepredicates.length) {
 			body += this.prepredicates.reduceRight(
-				(result, node) => `${node.compileApplyInvocation(js)}\n${result}`,
+				(result, node) => `${js.invoke(node)}\n${result}`,
 				compiledReturnIfError
 			)
 		}
 		if (this.predicate) {
 			body += this.predicate.reduceRight(
-				(result, node) => `${node.compileApplyInvocation(js)}\n${result}`,
+				(result, node) => `${js.invoke(node)}\n${result}`,
 				compiledReturnIfError
 			)
 		}
-		return js
 	}
 }
 

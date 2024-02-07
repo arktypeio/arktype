@@ -68,13 +68,9 @@ export class IndexNode extends BaseNode<
 			}
 		})
 
-	compileApply(js: ApplyCompiler) {
-		return ""
-	}
+	compileApply(js: ApplyCompiler) {}
 
-	compileAllows(js: AllowsCompiler) {
-		return ""
-	}
+	compileAllows(js: AllowsCompiler) {}
 
 	protected intersectOwnInner(r: IndexNode): IndexInner {
 		return this

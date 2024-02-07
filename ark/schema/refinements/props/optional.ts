@@ -1,11 +1,11 @@
 import { BaseNode, type Node, type TypeSchema } from "../../base.js"
-import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
+import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import { compileSerializedValue } from "../../traversal/registry.js"
-import { BasePrimitiveRefinement, type FoldInput } from "../refinement.js"
+import type { FoldInput } from "../refinement.js"
 import {
 	compileKey,
 	compilePresentPropAllows,
@@ -70,13 +70,22 @@ export class OptionalNode extends BaseNode<
 		}
 	}
 
-	compileApply(js: ApplyCompiler): string {
-		return `if(${this.serializedKey} in ${js.data}) {
-			${compilePresentPropApply(this, js)}
-		}`
+	compile(js: NodeCompiler) {
+		js.if(`${this.serializedKey} in ${js.data}`, () =>
+			compilePresentPropApply(this, js)
+		)
 	}
 
-	compileAllows(js: AllowsCompiler): string {
+	compileApply(js: NodeCompiler) {
+		js.if(`${this.serializedKey} in ${js.data}`, () =>
+			compilePresentPropApply(this, js)
+		)
+	}
+
+	compileAllows(js: NodeCompiler) {
+		js.if(`${this.serializedKey} in ${js.data}`, () =>
+			compilePresentPropAllows(this, js)
+		)
 		return `if(${this.serializedKey} in ${js.data}) {
 			${compilePresentPropAllows(this, js)}
 		}`

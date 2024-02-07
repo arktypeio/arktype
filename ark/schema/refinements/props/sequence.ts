@@ -1,5 +1,9 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../../base.js"
-import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
+import type {
+	AllowsCompiler,
+	ApplyCompiler,
+	NodeCompiler
+} from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type {
 	NodeKeyImplementation,
@@ -164,17 +168,15 @@ export class SequenceNode extends BaseNode<
 		}
 	}
 
-	compileApply(js: ApplyCompiler) {
-		return js
-	}
+	compileApply(js: ApplyCompiler) {}
 
-	compileAllows(js: AllowsCompiler): string {
+	compileAllows(js: AllowsCompiler) {
 		let body = `if(${js.data}.length < ${this.minLength}) {
 	return false
 }\n`
-		this.prefix?.forEach((prefixEl, i) => {
-			body += `if(!${prefixEl.compileAllowsInvocation(js)}) {
-	this.${prefixEl.name}(${js.data}[${i}], ${js.ctx})
+		this.prefix?.forEach((node, i) => {
+			body += `if(!${js.invoke(node)}) {
+	this.${node.name}(${js.data}[${i}], ${js.ctx})
 }\n`
 		})
 		body += `const lastVariadicIndex = ${js.data}.length${
@@ -185,9 +187,9 @@ for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
 		return false
 	}	
 }\n`
-		this.postfix?.forEach((postfixEl, i) => {
-			body += `if(!${postfixEl.compileAllowsInvocation(js)}) {
-this.${postfixEl.name}(${js.data}[${i}], ${js.ctx})
+		this.postfix?.forEach((node, i) => {
+			body += `if(!${js.invoke(node)}) {
+this.${node.name}(${js.data}[${i}], ${js.ctx})
 }\n`
 		})
 		body += "return true"
