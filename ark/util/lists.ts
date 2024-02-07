@@ -1,3 +1,5 @@
+import type { NumberLiteral } from "./numericLiterals.js"
+
 export type pathToString<
 	segments extends string[],
 	delimiter extends string = "/"
@@ -93,6 +95,11 @@ export type last<t extends readonly unknown[]> = t extends readonly [
 ]
 	? last
 	: never
+
+export type numericStringKeyOf<t extends readonly unknown[]> = Extract<
+	keyof t,
+	NumberLiteral
+>
 
 export const listFrom = <t>(data: t) =>
 	(Array.isArray(data) ? data : [data]) as t extends readonly unknown[]

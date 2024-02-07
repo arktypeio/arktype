@@ -1,16 +1,14 @@
-import {
-	schema,
-	type AnonymousRefinementKey,
-	type Morph,
-	type distill,
-	type intersectConstrainables,
-	type is
+import type {
+	AnonymousRefinementKey,
+	Morph,
+	distill,
+	intersectConstrainables,
+	is
 } from "@arktype/schema"
 import type {
 	ErrorMessage,
-	Fn,
-	conform,
 	isDisjoint,
+	numericStringKeyOf,
 	replaceKey,
 	unionToTuple,
 	valueOf
@@ -19,16 +17,12 @@ import type { Scope } from "./scope.js"
 import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.js"
 
 type MatchParserContext = {
-	inConstraint: unknown
-	outConstraint: unknown
 	thens: readonly ((In: unknown) => unknown)[]
 	$: unknown
 	exhaustiveOver: unknown
 }
 
 export type MatchParser<$> = CaseMatchParser<{
-	// provides `match({...})`
-
 	thens: []
 	// "match()" is the same as "match.only<unknown>()"
 	exhaustiveOver: unknown
@@ -50,9 +44,11 @@ export type MatchParser<$> = CaseMatchParser<{
 type matcherInputs<ctx extends MatchParserContext> = Parameters<
 	ctx["thens"][number]
 >[0]
+
 type AnonymouslyRefined = {
 	[k in AnonymousRefinementKey]: { [_ in k]: true }
 }[AnonymousRefinementKey]
+
 type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 	matcherInputs<ctx>,
 	is<unknown, AnonymouslyRefined>
@@ -86,16 +82,16 @@ type inferMatchBranch<
 >
 
 export type ChainableMatchParser<ctx extends MatchParserContext> = {
+	// chainable methods
 	when: <def, ret>(
 		when: validateWhenDefinition<def, ctx>,
 		then: (In: distill<inferMatchBranch<def, ctx>>) => ret
 	) => ChainableMatchParser<
 		addBranches<ctx, [(In: inferMatchBranch<def, ctx>) => ret]>
 	>
-
 	cases: CaseMatchParser<ctx>
 
-	// finalizations: things that terminate this match parser
+	// finalizing methods
 	orThrow: () => finalizeMatchParser<
 		addBranches<ctx, [(In: getHandledBranches<ctx>) => never]>
 	>
@@ -156,7 +152,7 @@ type finalizeMatchParser<ctx extends MatchParserContext> = MatchInvocation<{
 }>
 
 type MatchInvocationContext = {
-	thens: readonly Fn[]
+	thens: readonly ((...args: never[]) => unknown)[]
 	initialInputs: unknown
 }
 
@@ -165,13 +161,13 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 >(
 	data: data
 ) => {
-	[i in Extract<keyof ctx["thens"], `${number}`>]: isDisjoint<
+	[i in numericStringKeyOf<ctx["thens"]>]: isDisjoint<
 		data,
 		Parameters<ctx["thens"][i]>[0]
 	> extends true
 		? never
 		: ReturnType<ctx["thens"][i]>
-}[Extract<keyof ctx["thens"], `${number}`>]
+}[numericStringKeyOf<ctx["thens"]>]
 
 export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
 	const matchParser = (isRestricted: boolean) => {
@@ -187,39 +183,32 @@ export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
 
 			finalize: () => {
 				// TODO: exhaustiveness checking
-
-				const branches = handledCases.flatMap(({ when, then }) => {
-					if (when.root.kind === "union") {
-						return when.root.branches.map((branch) => ({
-							in: branch,
-							morph: then
-						}))
-					}
-
-					if (when.root.kind === "morph") {
-						return [{ in: when, morph: [when.root.morph, then] }]
-					}
-
-					return [{ in: when.root, morph: then }]
-				})
-				if (defaultCase) {
-					branches.push({ in: new Type("unknown", scope), morph: defaultCase })
-				}
-
-				console.log(branches)
-				const matchers = schema.union({
-					branches,
-					ordered: true
-				})
-
-				return (data: unknown) => {
-					const result = matchers.apply(data)
-
-					if (result.errors) {
-						throw result.errors
-					}
-					return result.out
-				}
+				// const branches = handledCases.flatMap(({ when, then }) => {
+				// 	if (when.root.kind === "union") {
+				// 		return when.root.branches.map((branch) => ({
+				// 			in: branch,
+				// 			morph: then
+				// 		}))
+				// 	}
+				// 	if (when.root.kind === "morph") {
+				// 		return [{ in: when, morph: [when.root.morph, then] }]
+				// 	}
+				// 	return [{ in: when.root, morph: then }]
+				// })
+				// if (defaultCase) {
+				// 	branches.push({ in: new Type("unknown", scope), morph: defaultCase })
+				// }
+				// const matchers = schema.union({
+				// 	branches,
+				// 	ordered: true
+				// })
+				// return (data: unknown) => {
+				// 	const result = matchers.apply(data)
+				// 	if (result.errors) {
+				// 		throw result.errors
+				// 	}
+				// 	return result.out
+				// }
 			},
 
 			orThrow: () => {

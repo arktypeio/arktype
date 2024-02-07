@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import type { Out } from "@arktype/schema"
+import type { Out, is } from "@arktype/schema"
 import type { equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 
@@ -52,7 +52,7 @@ describe("narrow", () => {
 	// })
 	it("functional predicate", () => {
 		const one = type(["number", ":", (n): n is 1 => n === 1])
-		attest<Type<1>>(one)
+		attest<1>(one.infer)
 	})
 	it("functional parameter inference", () => {
 		type Expected = number | boolean[]
@@ -88,7 +88,7 @@ describe("narrow", () => {
 		const t = type("string")
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
-		attest<Type<(In: string) => Out<5>>>(t)
+		attest<Type<(In: string) => Out<is<5, { anonymousPredicate: true }>>>>(t)
 		attest(t.json).snap({ domain: "string" })
 	})
 	it("expression", () => {
