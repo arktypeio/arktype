@@ -7,6 +7,7 @@ import type {
 } from "@arktype/schema"
 import type {
 	ErrorMessage,
+	UnknownUnion,
 	isDisjoint,
 	numericStringKeyOf,
 	replaceKey,
@@ -54,7 +55,7 @@ type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 	is<unknown, AnonymouslyRefined>
 >
 type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
-	ctx["exhaustiveOver"],
+	unknown extends ctx["exhaustiveOver"] ? UnknownUnion : ctx["exhaustiveOver"],
 	getHandledBranches<ctx>
 >
 type addBranches<
@@ -106,12 +107,8 @@ export type ChainableMatchParser<ctx extends MatchParserContext> = {
 type MatchParserDefaultInvocation<ctx extends MatchParserContext> = {
 	<f extends (In: getUnhandledBranches<ctx>) => unknown>(
 		f: f
-	): finalizeMatchParser<addBranches<ctx, [f]>>
-	<const value>(
-		value: value
-	): finalizeMatchParser<
-		addBranches<ctx, [(_: getUnhandledBranches<ctx>) => value]>
-	>
+	): finalizeWithDefault<ctx, ReturnType<f>>
+	<const value>(value: value): finalizeWithDefault<ctx, value>
 }
 
 type validateCases<cases, ctx extends MatchParserContext> = {
@@ -141,10 +138,20 @@ export type CaseMatchParser<ctx extends MatchParserContext> = {
 		def: cases extends validateCases<cases, ctx>
 			? cases
 			: errorCases<cases, ctx>
-	): "default" extends keyof cases
-		? finalizeMatchParser<addBranches<ctx, unionToTuple<valueOf<cases>>>>
+	): cases extends { default: (...args: never[]) => infer defaultReturn }
+		? finalizeWithDefault<
+				addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
+				defaultReturn
+		  >
 		: ChainableMatchParser<addBranches<ctx, unionToTuple<valueOf<cases>>>>
 }
+
+type finalizeWithDefault<
+	ctx extends MatchParserContext,
+	defaultReturn
+> = finalizeMatchParser<
+	addBranches<ctx, [(_: getUnhandledBranches<ctx>) => defaultReturn]>
+>
 
 type finalizeMatchParser<ctx extends MatchParserContext> = MatchInvocation<{
 	thens: ctx["thens"]

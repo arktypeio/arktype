@@ -34,6 +34,16 @@ export type merge<base, merged> = evaluate<
 	} & merged
 >
 
+export type UnknownUnion =
+	| string
+	| number
+	| symbol
+	| bigint
+	| boolean
+	| object
+	| null
+	| undefined
+
 /**
  * Interesection (`&`) that avoids evaluating `unknown` to `{}`
  */
