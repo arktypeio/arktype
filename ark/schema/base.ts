@@ -221,7 +221,7 @@ export abstract class BaseNode<
 		BaseExpectedContext<d["kind"]> & requireDescriptionIfPresent<from>
 	> {
 		return Object.freeze({
-			...this.inner,
+			...from,
 			code: this.kind,
 			description: this.description
 		}) as never

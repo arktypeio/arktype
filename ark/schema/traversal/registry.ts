@@ -1,6 +1,7 @@
 import {
 	domainOf,
 	hasDomain,
+	isDotAccessible,
 	objectKindOf,
 	serializePrimitive,
 	throwInternalError,
@@ -31,9 +32,6 @@ class Registry {
 }
 
 export const registry = new Registry()
-
-export const isDotAccessible = (name: string) =>
-	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
 
 export const compileSerializedValue = (value: unknown) => {
 	return hasDomain(value, "object") || typeof value === "symbol"

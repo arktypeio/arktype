@@ -252,10 +252,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 
 	compileAllows(js: AllowsCompiler) {
-		this.children.reduceRight(
-			(body, node) => `if(!${js.invoke(node)}) return false\n` + body,
-			"return true\n"
+		this.children.forEach((node) =>
+			js.if(`!${js.invoke(node)}`, () => js.return(false))
 		)
+		js.return(true)
 	}
 
 	readonly prepredicates = this.refinements.filter(
@@ -271,23 +271,16 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 
 	compileApply(js: ApplyCompiler) {
-		let body = ""
-		const compiledReturnIfError = `if(${js.ctx}.currentErrors.length !== 0) return\n`
+		const hasErrors = `${js.ctx}.currentErrors.length !== 0`
 		if (this.basis) {
-			body = `${js.invoke(this.basis)}\n${compiledReturnIfError}`
+			js.line(js.invoke(this.basis))
+			js.if(hasErrors, () => js.return())
 		}
 		if (this.prepredicates.length) {
-			body += this.prepredicates.reduceRight(
-				(result, node) => `${js.invoke(node)}\n${result}`,
-				compiledReturnIfError
-			)
+			this.prepredicates.forEach((node) => js.line(js.invoke(node)))
+			js.if(hasErrors, () => js.return())
 		}
-		if (this.predicate) {
-			body += this.predicate.reduceRight(
-				(result, node) => `${js.invoke(node)}\n${result}`,
-				compiledReturnIfError
-			)
-		}
+		this.predicate?.forEach((node) => js.line(js.invoke(node)))
 	}
 }
 
