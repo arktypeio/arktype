@@ -123,17 +123,23 @@ export class PropsNode
 
 	compileApply(js: NodeCompiler) {
 		if (this.exhaustive) {
-			this.compileExhaustiveApply(js)
+			this.compileExhaustive(js)
 		} else {
-			this.compileEnumerableApply(js)
+			this.compileEnumerable(js)
 		}
 	}
 
-	protected compileEnumerableApply(js: NodeCompiler) {
-		this.children.forEach((node) => js.line(js.invoke(node)))
+	protected compileEnumerable(js: NodeCompiler) {
+		if (js.traversalKind === "Allows") {
+			this.children.forEach((node) =>
+				js.if(`!${js.invoke(node)}`, () => js.return(false))
+			)
+		} else {
+			this.children.forEach((node) => js.line(js.invoke(node)))
+		}
 	}
 
-	protected compileExhaustiveApply(js: NodeCompiler) {
+	protected compileExhaustive(js: NodeCompiler) {
 		this.named.forEach((prop) => prop.compileApply(js))
 		this.sequence?.compileApply(js)
 		js.forIn(js.data, () => {
@@ -142,7 +148,13 @@ export class PropsNode
 			}
 			this.index?.forEach((node) => {
 				js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
-					js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
+					if (js.traversalKind === "Allows") {
+						js.if(`!${js.invoke(node.value, { arg: `${js.data}[k]` })}`, () =>
+							js.return(false)
+						)
+					} else {
+						js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
+					}
 					if (this.onExtraneousKey) {
 						js.set("matched", true)
 					}
@@ -161,6 +173,9 @@ export class PropsNode
 			}
 			return js
 		})
+		if (js.traversalKind === "Allows") {
+			js.return(true)
+		}
 	}
 
 	intersectOwnInner(r: PropsNode) {
