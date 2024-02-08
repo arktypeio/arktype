@@ -85,10 +85,14 @@ export class UnionNode<t = unknown> extends BaseType<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return scope.parsePrereduced("union", {
-					...inner,
-					branches: reducedBranches
-				})
+				return scope.parse(
+					"union",
+					{
+						...inner,
+						branches: reducedBranches
+					},
+					{ prereduced: true }
+				)
 			},
 			defaults: {
 				description(inner) {

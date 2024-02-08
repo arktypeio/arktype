@@ -46,13 +46,13 @@ const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<BaseNodeDeclaration> as never
 
-export function parse<defKind extends NodeKind>(
+export function parseAttachments<defKind extends NodeKind>(
 	kind: defKind,
 	schema: Schema<defKind>,
 	ctx: SchemaParseContext
 ): Node<reducibleKindOf<defKind>>
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function parse(
+export function parseAttachments(
 	kind: NodeKind,
 	schema: unknown,
 	ctx: SchemaParseContext

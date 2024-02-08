@@ -77,7 +77,7 @@ export class PropsNode
 			},
 			sequence: {
 				child: true,
-				parse: (def, ctx) => ctx.$.parseNode("sequence", def, ctx)
+				parse: (def, ctx) => ctx.$.parse("sequence", def, ctx)
 			}
 		},
 		normalize: (schema) => schema,

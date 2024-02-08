@@ -166,6 +166,7 @@ export abstract class BaseNode<
 	readonly contributesReferencesByName: Record<string, Node>
 	readonly contributesReferences: readonly Node[]
 	readonly precedence = precedenceOfKind(this.kind)
+	jit = false
 	// use declare here to ensure description from attachments isn't overwritten
 	declare readonly description: string
 
@@ -212,7 +213,7 @@ export abstract class BaseNode<
 				ioInner[k] = v
 			}
 		}
-		return this.$.parseNode(this.kind, ioInner) as never
+		return this.$.parse(this.kind, ioInner) as never
 	}
 
 	protected createExpectedContext<from>(
@@ -280,7 +281,7 @@ export abstract class BaseNode<
 		if (innerResult === null || innerResult instanceof Disjoint) {
 			return innerResult
 		}
-		return this.$.parseNode(this.kind, innerResult as never)
+		return this.$.parse(this.kind, innerResult as never)
 	}
 
 	transform(
@@ -298,7 +299,7 @@ export abstract class BaseNode<
 					: (v as Node).transform(mapper, shouldTransform)
 				: v
 		])
-		return this.$.parseNode(
+		return this.$.parse(
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
 		)

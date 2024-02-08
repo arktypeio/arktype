@@ -79,12 +79,16 @@ export class SequenceNode extends BaseNode<
 					prefix.push(postfix.shift()!)
 				}
 				if (postfix.length < inner.postfix.length) {
-					return scope.parsePrereduced("sequence", {
-						...inner,
-						// empty lists will be omitted during normalization
-						prefix,
-						postfix
-					})
+					return scope.parse(
+						"sequence",
+						{
+							...inner,
+							// empty lists will be omitted during normalization
+							prefix,
+							postfix
+						},
+						{ prereduced: true }
+					)
 				}
 			},
 			defaults: {

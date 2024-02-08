@@ -109,7 +109,7 @@ export abstract class BaseType<
 		const nodeResult: TypeNode | Disjoint =
 			innerResult instanceof Disjoint
 				? innerResult
-				: this.$.parseNode(l.kind, innerResult)
+				: this.$.parse(l.kind, innerResult)
 
 		BaseType.intersectionCache[cacheKey] = nodeResult
 		BaseType.intersectionCache[`${other.typeId}&${this.typeId}`] =
@@ -172,10 +172,14 @@ export abstract class BaseType<
 	}
 
 	array(): IntersectionNode<t[]> {
-		return this.$.parsePrereduced("intersection", {
-			basis: Array,
-			sequence: this
-		})
+		return this.$.parse(
+			"intersection",
+			{
+				basis: Array,
+				sequence: this
+			},
+			{ prereduced: true }
+		) as never
 	}
 
 	extends<other extends TypeNode>(other: other) {

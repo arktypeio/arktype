@@ -255,8 +255,8 @@ export const parseOpen = <kind extends OpenNodeKind>(
 			return
 		}
 		return input
-			.map((refinement) => ctx.$.parseNode(kind, refinement))
+			.map((refinement) => ctx.$.parse(kind, refinement))
 			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 	}
-	return [ctx.$.parseNode(kind, input)] as never
+	return [ctx.$.parse(kind, input)] as never
 }

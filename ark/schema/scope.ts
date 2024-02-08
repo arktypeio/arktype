@@ -19,7 +19,7 @@ import type {
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
-import { parse, type SchemaParseOptions } from "./parse.js"
+import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	DescriptionWriter,
@@ -148,7 +148,7 @@ export class ScopeNode<r extends object = any> {
 	) {
 		this.config = parseConfig(config)
 		for (const k in this.def) {
-			;(this.resolutions as BaseResolutions)[k] = this.parseNode(
+			;(this.resolutions as BaseResolutions)[k] = this.parse(
 				assertTypeKind(this.def[k]),
 				this.def[k] as never,
 				{
@@ -159,7 +159,7 @@ export class ScopeNode<r extends object = any> {
 		this.references = Object.values(this.referencesByName)
 		this.bindCompiledScope(this.references, this.references)
 		this.resolved = true
-		this.parseNode(
+		this.parse(
 			"union",
 			{
 				branches: [
@@ -174,7 +174,7 @@ export class ScopeNode<r extends object = any> {
 					{ unit: undefined }
 				]
 			},
-			{ reduceTo: this.parseNode("intersection", {}) }
+			{ reduceTo: this.parse("intersection", {}) }
 		)
 	}
 
@@ -198,7 +198,7 @@ export class ScopeNode<r extends object = any> {
 			}
 		} & NormalizedUnionSchema
 	): instantiateSchemaBranches<branches> {
-		return this.parseNode("union", input) as never
+		return this.parse("union", input) as never
 	}
 
 	parseBranches<const branches extends readonly Schema<UnionChildKind>[]>(
@@ -206,7 +206,7 @@ export class ScopeNode<r extends object = any> {
 			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
 	): instantiateSchemaBranches<branches> {
-		return this.parseNode("union", branches as never) as never
+		return this.parse("union", branches as never) as never
 	}
 
 	parseUnits<const branches extends readonly unknown[]>(
@@ -221,22 +221,13 @@ export class ScopeNode<r extends object = any> {
 			}
 		}
 		const branches = uniqueValues.map((unit) =>
-			this.parsePrereduced("unit", { unit })
+			this.parse("unit", { unit }, { prereduced: true })
 		)
 		if (branches.length === 1) {
 			return branches[0] as never
 		}
-		return this.parsePrereduced("union", {
+		return this.parseRoot("union", {
 			branches
-		}) as never
-	}
-
-	parsePrereduced<kind extends NodeKind>(
-		kind: kind,
-		def: Schema<kind>
-	): Node<kind> {
-		return this.parseNode(kind, def, {
-			prereduced: true
 		}) as never
 	}
 
@@ -250,24 +241,15 @@ export class ScopeNode<r extends object = any> {
 				`Schema of kind ${kind} should be one of ${allowedKinds}`
 			)
 		}
-		return this.parseNode(kind, schema as never) as never
+		return this.parse(kind, schema as never) as never
 	}
 
-	parseNode<kind extends NodeKind>(
+	parseRoot<kind extends NodeKind>(
 		kind: kind,
 		def: Schema<kind>,
 		opts: SchemaParseOptions = {}
 	): Node<reducibleKindOf<kind>> {
-		if (opts.alias && opts.alias in this.resolutions) {
-			return throwInternalError(
-				`Unexpected attempt to recreate existing alias ${opts.alias}`
-			)
-		}
-		const node = parse(kind, def, {
-			...opts,
-			$: this,
-			definition: def
-		})
+		const node = this.parse(kind, def, opts)
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
 			// including only its references
@@ -277,6 +259,24 @@ export class ScopeNode<r extends object = any> {
 			// add the node as a reference
 			this.referencesByName[node.name] = node
 		}
+		return node
+	}
+
+	parse<kind extends NodeKind>(
+		kind: kind,
+		def: Schema<kind>,
+		opts: SchemaParseOptions = {}
+	): Node<reducibleKindOf<kind>> {
+		if (opts.alias && opts.alias in this.resolutions) {
+			return throwInternalError(
+				`Unexpected attempt to recreate existing alias ${opts.alias}`
+			)
+		}
+		const node = parseAttachments(kind, def, {
+			...opts,
+			$: this,
+			definition: def
+		})
 		return node as never
 	}
 
@@ -359,4 +359,4 @@ export const scopeNode = ScopeNode.from
 
 export const rootSchema = ScopeNode.root.schema.bind(ScopeNode.root)
 
-export const rootNode = ScopeNode.root.parseNode.bind(ScopeNode.root)
+export const rootNode = ScopeNode.root.parse.bind(ScopeNode.root)

@@ -98,21 +98,9 @@ export type TsconfigInfo = {
 	parsed: ts.ParsedCommandLine
 }
 
-// export const getTsConfigInfoOrThrow = () => {
-// 	const path = ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
-// 	if (!path) {
-// 		throw new Error(`Could not find tsconfig.json.`)
-// 	}
-// 	const compilerOptions = ts.convertCompilerOptionsFromJson(
-// 		ts.readConfigFile(path, ts.sys.readFile).config.compilerOptions,
-// 		path
-// 	).options
-// 	return { path, compilerOptions }
-// }
-
 export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 	const configFilePath = ts.findConfigFile(
-		"./",
+		fromCwd(),
 		ts.sys.fileExists,
 		"tsconfig.json"
 	)

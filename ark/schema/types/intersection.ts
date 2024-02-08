@@ -138,31 +138,31 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				},
 				divisor: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parseNode("divisor", def, ctx)
+					parse: (def, ctx) => ctx.$.parse("divisor", def, ctx)
 				},
 				max: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parseNode("max", def, ctx)
+					parse: (def, ctx) => ctx.$.parse("max", def, ctx)
 				},
 				min: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parseNode("min", def, ctx)
+					parse: (def, ctx) => ctx.$.parse("min", def, ctx)
 				},
 				maxLength: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parseNode("maxLength", def, ctx)
+					parse: (def, ctx) => ctx.$.parse("maxLength", def, ctx)
 				},
 				minLength: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parseNode("minLength", def, ctx)
+					parse: (def, ctx) => ctx.$.parse("minLength", def, ctx)
 				},
 				before: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parseNode("before", def, ctx)
+					parse: (def, ctx) => ctx.$.parse("before", def, ctx)
 				},
 				after: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parseNode("after", def, ctx)
+					parse: (def, ctx) => ctx.$.parse("after", def, ctx)
 				},
 				pattern: {
 					child: true,
@@ -174,7 +174,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				},
 				props: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parseNode("props", def, ctx)
+					parse: (def, ctx) => ctx.$.parse("props", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
@@ -194,7 +194,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				if (result instanceof Disjoint) {
 					return result.throw()
 				}
-				return scope.parsePrereduced("intersection", result)
+				return scope.parse("intersection", result, { prereduced: true })
 			},
 			defaults: {
 				description(constraints) {
