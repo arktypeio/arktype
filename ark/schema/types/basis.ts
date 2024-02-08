@@ -37,11 +37,7 @@ export abstract class BaseBasis<
 		}
 	}
 
-	compileApply(js: NodeCompiler) {
-		js.compilePrimitive(this as never)
-	}
-
-	compileAllows(js: NodeCompiler) {
+	compile(js: NodeCompiler) {
 		js.compilePrimitive(this as never)
 	}
 }

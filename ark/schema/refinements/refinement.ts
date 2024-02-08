@@ -8,7 +8,6 @@ import type {
 	NodeKind,
 	PrimitiveKind,
 	RefinementKind,
-	TraversableNode,
 	kindRightOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -31,12 +30,9 @@ export interface BasePrimitiveRefinementDeclaration
 }
 
 export abstract class BasePrimitiveRefinement<
-		d extends BasePrimitiveRefinementDeclaration,
-		subclass extends NodeSubclass<d>
-	>
-	extends BaseNode<d["prerequisite"], d, subclass>
-	implements TraversableNode<d["prerequisite"]>
-{
+	d extends BasePrimitiveRefinementDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseNode<d["prerequisite"], d, subclass> {
 	abstract foldIntersection(into: FoldInput<d["kind"]>): FoldOutput<d["kind"]>
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -50,11 +46,7 @@ export abstract class BasePrimitiveRefinement<
 		}
 	}
 
-	compileApply(js: NodeCompiler) {
-		js.compilePrimitive(this as never)
-	}
-
-	compileAllows(js: NodeCompiler) {
+	compile(js: NodeCompiler) {
 		js.compilePrimitive(this as never)
 	}
 }

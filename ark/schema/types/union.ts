@@ -163,15 +163,15 @@ export class UnionNode<t = unknown> extends BaseType<
 		return this.ordered ? { branches, ordered: true } : { branches }
 	}
 
-	compileApply(js: NodeCompiler) {
+	compile(js: NodeCompiler) {
 		this.branches.forEach((branch) => js.line(js.invoke(branch)))
 	}
 
 	compileAllows(js: NodeCompiler) {
 		this.branches.forEach((branch) =>
-			js.if(`!${js.invoke(branch)}`, () => js.return(false))
+			js.if(`${js.invoke(branch)}`, () => js.return(true))
 		)
-		js.return(true)
+		js.return(false)
 	}
 }
 

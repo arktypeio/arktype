@@ -38,6 +38,7 @@ import type { PropsNode } from "./refinements/props/props.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
+import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseExpectedContext,
 	BaseNodeDeclaration,
@@ -66,6 +67,7 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "./traversal/context.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
@@ -181,6 +183,10 @@ export abstract class BaseNode<
 			this.inner as never
 		)
 	}
+
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract traverseApply: TraverseApply<d["prerequisite"]>
+	abstract compile(js: NodeCompiler): void
 
 	private inCache?: UnknownNode;
 	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {

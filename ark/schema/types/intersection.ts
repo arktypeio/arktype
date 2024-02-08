@@ -251,13 +251,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		)
 	}
 
-	compileAllows(js: NodeCompiler) {
-		this.children.forEach((node) =>
-			js.if(`!${js.invoke(node)}`, () => js.return(false))
-		)
-		js.return(true)
-	}
-
 	readonly prepredicates = this.refinements.filter(
 		(node): node is Node<PrepredicateKind> => node.kind !== "predicate"
 	)
@@ -270,7 +263,13 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}
 
-	compileApply(js: NodeCompiler) {
+	compile(js: NodeCompiler) {
+		if (js.traversalKind === "Allows") {
+			this.children.forEach((node) =>
+				js.if(`!${js.invoke(node)}`, () => js.return(false))
+			)
+			return js.return(true)
+		}
 		const hasErrors = `${js.ctx}.currentErrors.length !== 0`
 		if (this.basis) {
 			js.line(js.invoke(this.basis))

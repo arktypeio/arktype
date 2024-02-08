@@ -7,24 +7,14 @@ import {
 	type TypeNode
 } from "../base.js"
 import type { Inner, Schema, reducibleKindOf } from "../kinds.js"
-import type { NodeCompiler } from "../shared/compile.js"
 import type {
 	BaseNodeDeclaration,
 	ownIntersectionAlternateResult
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type {
-	NodeKind,
-	TraversableNode,
-	TypeKind,
-	kindRightOf
-} from "../shared/implement.js"
+import type { NodeKind, TypeKind, kindRightOf } from "../shared/implement.js"
 import { inferred } from "../shared/utils.js"
-import {
-	TraversalContext,
-	type TraverseAllows,
-	type TraverseApply
-} from "../traversal/context.js"
+import { TraversalContext } from "../traversal/context.js"
 import type { ArkResult } from "../traversal/errors.js"
 import type { IntersectionNode } from "./intersection.js"
 import type { distill, extractIn, extractOut } from "./morph.js"
@@ -35,23 +25,15 @@ export type BaseTypeDeclaration = evaluate<
 >
 
 export abstract class BaseType<
-		t,
-		d extends BaseTypeDeclaration,
-		subclass extends NodeSubclass<d>
-	>
-	extends BaseNode<t, d, subclass>
-	implements TraversableNode
-{
+	t,
+	d extends BaseTypeDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseNode<t, d, subclass> {
 	declare infer: extractOut<t>;
 	declare [inferred]: t
 
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
 	declare readonly branches: readonly Node<UnionChildKind>[]
-
-	abstract traverseAllows: TraverseAllows
-	abstract traverseApply: TraverseApply
-	abstract compileApply(js: NodeCompiler): void
-	abstract compileAllows(js: NodeCompiler): void
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)
