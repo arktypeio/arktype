@@ -11,11 +11,13 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Prerequisite, Schema } from "../kinds.js"
+import type { OptionalInner } from "../refinements/props/optional.js"
 import type {
 	ArrayPropsSchema,
 	BasePropsSchema,
 	PropsSchema
 } from "../refinements/props/props.js"
+import type { RequiredInner } from "../refinements/props/required.js"
 import type { FoldInput } from "../refinements/refinement.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -313,9 +315,7 @@ type propKeyOf<t extends object> = Exclude<
 >
 
 type propRefinementsOf<t> = [t] extends [object]
-	?
-			| ({ props?: PropsSchema<t> } & { [k in propKeyOf<t>]?: never })
-			| ({ props?: never } & PropsSchema<t>)
+	? { props?: PropsSchema<t> } & PropsSchema<t>
 	: {}
 
 export type schemaRefinementsOf<t> = primitiveRefinementsOf<t> &

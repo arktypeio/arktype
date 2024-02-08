@@ -23,7 +23,7 @@ describe("errors", () => {
 				}
 			}
 		})
-		attest(o.apply({ foo: 6 })).snap({ out: { foo: 6 } })
+		attest(o.apply({ foo: 6 }).out).snap({ foo: 6 })
 		attest(o.apply({ foo: 7 }).errors?.summary).snap(
 			"foo must be a multiple of 3 (was 7)"
 		)

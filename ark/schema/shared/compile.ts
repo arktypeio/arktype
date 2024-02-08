@@ -70,6 +70,6 @@ export class NodeCompiler extends CompiledFunction<
 	}
 
 	writeMethod(name: string) {
-		return `${name}(${this.args.join(", ")}){\n${this.body}    }\n`
+		return `${name}(${this.argNames.join(", ")}){\n${this.body}    }\n`
 	}
 }

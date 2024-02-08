@@ -9,12 +9,12 @@ export class CompiledFunction<
 > extends CastableBase<{
 	[k in args[number]]: k
 }> {
-	readonly args: args
+	readonly argNames: args
 	readonly body = ""
 
 	constructor(...args: args) {
 		super()
-		this.args = args
+		this.argNames = args
 		for (const arg of args) {
 			if (arg in this) {
 				throw new Error(
@@ -110,6 +110,6 @@ export class CompiledFunction<
 			}
 		) => unknown
 	>() {
-		return new DynamicFunction<f>(...this.args, this.body)
+		return new DynamicFunction<f>(...this.argNames, this.body)
 	}
 }
