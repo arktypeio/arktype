@@ -305,9 +305,9 @@ export class ScopeNode<r extends object = any> {
 			.block(`return`, (js) => {
 				references.forEach((node) => {
 					const allowsCompiler = new NodeCompiler("Allows").indent()
-					node.compileAllows(allowsCompiler)
+					node.compile(allowsCompiler)
 					const applyCompiler = new NodeCompiler("Apply").indent()
-					node.compileApply(applyCompiler)
+					node.compile(applyCompiler)
 					js.line(
 						allowsCompiler.writeMethod(`${node.name}Allows`) +
 							",\n" +

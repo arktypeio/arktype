@@ -77,14 +77,6 @@ export class RequiredNode extends BaseNode<
 		return false
 	}
 
-	compileAllows(js: NodeCompiler) {
-		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.traverseKey(this.serializedKey, () =>
-				js.line(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))
-			)
-		).return(false)
-	}
-
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		if (this.key in data) {
 			this.value.traverseApply((data as any)[this.key], ctx)
@@ -93,16 +85,19 @@ export class RequiredNode extends BaseNode<
 		}
 	}
 
-	compileApply(js: NodeCompiler) {
+	compile(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.traverseKey(this.serializedKey, () =>
 				js.line(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))
 			)
-		).else(() =>
+		)
+		if (js.traversalKind === "Allows") {
+			js.return(false)
+		} else {
 			js.line(
 				`${js.ctx}.error(${JSON.stringify(this.baseRequiredErrorContext)})`
 			)
-		)
+		}
 	}
 
 	protected intersectOwnInner(r: Inner<"required" | "optional">) {

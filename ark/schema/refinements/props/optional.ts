@@ -66,15 +66,7 @@ export class OptionalNode extends BaseNode<
 		}
 	}
 
-	compileApply(js: NodeCompiler) {
-		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.traverseKey(this.serializedKey, () =>
-				js.line(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))
-			)
-		)
-	}
-
-	compileAllows(js: NodeCompiler) {
+	compile(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.traverseKey(this.serializedKey, () =>
 				js.line(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))

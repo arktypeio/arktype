@@ -168,9 +168,7 @@ export class SequenceNode extends BaseNode<
 		}
 	}
 
-	compileApply(js: NodeCompiler) {}
-
-	compileAllows(js: NodeCompiler) {
+	compile(js: NodeCompiler) {
 		let body = `if(${js.data}.length < ${this.minLength}) {
 	return false
 }\n`

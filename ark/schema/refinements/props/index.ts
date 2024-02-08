@@ -64,13 +64,11 @@ export class IndexNode extends BaseNode<
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		Object.entries(data).forEach((entry) => {
 			if (this.key.traverseAllows(entry[0], ctx)) {
-				this.value.traverseAllows(entry[1], ctx)
+				this.value.traverseApply(entry[1], ctx)
 			}
 		})
 
-	compileApply(js: NodeCompiler) {}
-
-	compileAllows(js: NodeCompiler) {}
+	compile(js: NodeCompiler) {}
 
 	protected intersectOwnInner(r: IndexNode): IndexInner {
 		return this

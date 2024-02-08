@@ -2,11 +2,7 @@ import { map, reference, throwParseError } from "@arktype/util"
 import { BaseNode } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import {
-	parseOpen,
-	type PropKind,
-	type TraversableNode
-} from "../../shared/implement.js"
+import { parseOpen, type PropKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import type { FoldInput } from "../refinement.js"
 import type { IndexNode, IndexSchema } from "./index.js"
@@ -54,10 +50,11 @@ export type PropsDeclaration = declareNode<{
 
 export type NamedProp = RequiredNode | OptionalNode
 
-export class PropsNode
-	extends BaseNode<object, PropsDeclaration, typeof PropsNode>
-	implements TraversableNode<object>
-{
+export class PropsNode extends BaseNode<
+	object,
+	PropsDeclaration,
+	typeof PropsNode
+> {
 	static implementation = this.implement({
 		keys: {
 			onExtraneousKey: {
@@ -101,27 +98,9 @@ export class PropsNode
 
 	traverseAllows: TraverseAllows<object> = () => true
 
-	compileAllows(js: NodeCompiler) {
-		return js
-	}
-
-	protected compileEnumerableAllows(js: NodeCompiler) {
-		return this.children.reduceRight(
-			(body, node) => node.compileAllows(js) + "\n" + body,
-			"return true\n"
-		)
-	}
-
-	protected compileExhaustiveAllows(js: NodeCompiler) {
-		return this.children.reduceRight(
-			(body, node) => node.compileAllows(js) + "\n" + body,
-			"return true\n"
-		)
-	}
-
 	traverseApply: TraverseApply<object> = () => {}
 
-	compileApply(js: NodeCompiler) {
+	compile(js: NodeCompiler) {
 		if (this.exhaustive) {
 			this.compileExhaustive(js)
 		} else {
@@ -140,8 +119,8 @@ export class PropsNode
 	}
 
 	protected compileExhaustive(js: NodeCompiler) {
-		this.named.forEach((prop) => prop.compileApply(js))
-		this.sequence?.compileApply(js)
+		this.named.forEach((prop) => prop.compile(js))
+		this.sequence?.compile(js)
 		js.forIn(js.data, () => {
 			if (this.onExtraneousKey) {
 				js.let("matched", false)
