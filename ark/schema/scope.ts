@@ -148,7 +148,7 @@ export class ScopeNode<r extends object = any> {
 	) {
 		this.config = parseConfig(config)
 		for (const k in this.def) {
-			;(this.resolutions as BaseResolutions)[k] = this.parse(
+			;(this.resolutions as BaseResolutions)[k] = this.parseRoot(
 				assertTypeKind(this.def[k]),
 				this.def[k] as never,
 				{
@@ -157,7 +157,7 @@ export class ScopeNode<r extends object = any> {
 			)
 		}
 		this.references = Object.values(this.referencesByName)
-		this.bindCompiledScope(this.references, this.references)
+		this.bindCompiledScope(this.references)
 		this.resolved = true
 		this.parse(
 			"union",
@@ -198,7 +198,7 @@ export class ScopeNode<r extends object = any> {
 			}
 		} & NormalizedUnionSchema
 	): instantiateSchemaBranches<branches> {
-		return this.parse("union", input) as never
+		return this.parseRoot("union", input) as never
 	}
 
 	parseBranches<const branches extends readonly Schema<UnionChildKind>[]>(
@@ -206,7 +206,7 @@ export class ScopeNode<r extends object = any> {
 			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
 	): instantiateSchemaBranches<branches> {
-		return this.parse("union", branches as never) as never
+		return this.parseRoot("union", branches as never) as never
 	}
 
 	parseUnits<const branches extends readonly unknown[]>(
@@ -253,7 +253,7 @@ export class ScopeNode<r extends object = any> {
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
 			// including only its references
-			this.bindCompiledScope([node], node.contributesReferences)
+			this.bindCompiledScope(node.contributesReferences)
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
@@ -280,12 +280,14 @@ export class ScopeNode<r extends object = any> {
 		return node as never
 	}
 
-	protected bindCompiledScope(
-		nodesToBind: readonly Node[],
-		references: readonly Node[]
-	) {
+	protected bindCompiledScope(references: readonly Node[]) {
 		const compiledTraversals = this.compileScope(references)
-		for (const node of nodesToBind) {
+		for (const node of references) {
+			if (node.jit) {
+				// if node has already been bound to another scope or anonymous type, don't rebind it
+				continue
+			}
+			node.jit = true
 			node.traverseAllows =
 				compiledTraversals[`${node.name}Allows`].bind(compiledTraversals)
 			if (node.isType() && !node.includesContextDependentPredicate) {
@@ -298,7 +300,6 @@ export class ScopeNode<r extends object = any> {
 		}
 	}
 
-	// TODO: runs for internal types?
 	protected compileScope(references: readonly Node[]) {
 		return new CompiledFunction()
 			.block(`return`, (js) => {

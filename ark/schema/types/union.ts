@@ -4,7 +4,11 @@ import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
+import {
+	basisKinds,
+	type TypeKind,
+	type nodeImplementationOf
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import type { Discriminant } from "./discriminate.js"
@@ -12,6 +16,12 @@ import type { MorphChildKind } from "./morph.js"
 import { BaseType } from "./type.js"
 
 export type UnionChildKind = "morph" | MorphChildKind
+
+export const unionChildKinds = [
+	"morph",
+	"intersection",
+	...basisKinds
+] as const satisfies readonly TypeKind[]
 
 export type UnionChildSchema = Schema<UnionChildKind>
 
@@ -61,11 +71,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					child: true,
 					parse: (schema, ctx) => {
 						const branches = schema.map((branch) =>
-							ctx.$.parseTypeNode(branch, [
-								"morph",
-								"intersection",
-								...basisKinds
-							])
+							ctx.$.parseTypeNode(branch, unionChildKinds)
 						)
 						const def = ctx.definition as UnionSchema
 						if (isArray(def) || def.ordered !== true) {
