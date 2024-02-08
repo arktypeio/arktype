@@ -1,10 +1,6 @@
 import { map, reference, throwParseError } from "@arktype/util"
 import { BaseNode } from "../../base.js"
-import type {
-	AllowsCompiler,
-	ApplyCompiler,
-	NodeCompiler
-} from "../../shared/compile.js"
+import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	parseOpen,
@@ -109,14 +105,14 @@ export class PropsNode
 		return js
 	}
 
-	protected compileEnumerableAllows(js: AllowsCompiler) {
+	protected compileEnumerableAllows(js: NodeCompiler) {
 		return this.children.reduceRight(
 			(body, node) => node.compileAllows(js) + "\n" + body,
 			"return true\n"
 		)
 	}
 
-	protected compileExhaustiveAllows(js: AllowsCompiler) {
+	protected compileExhaustiveAllows(js: NodeCompiler) {
 		return this.children.reduceRight(
 			(body, node) => node.compileAllows(js) + "\n" + body,
 			"return true\n"
@@ -125,7 +121,7 @@ export class PropsNode
 
 	traverseApply: TraverseApply<object> = () => {}
 
-	compileApply(js: ApplyCompiler) {
+	compileApply(js: NodeCompiler) {
 		if (this.exhaustive) {
 			this.compileExhaustiveApply(js)
 		} else {
@@ -133,11 +129,11 @@ export class PropsNode
 		}
 	}
 
-	protected compileEnumerableApply(js: ApplyCompiler) {
+	protected compileEnumerableApply(js: NodeCompiler) {
 		this.children.forEach((node) => js.line(js.invoke(node)))
 	}
 
-	protected compileExhaustiveApply(js: ApplyCompiler) {
+	protected compileExhaustiveApply(js: NodeCompiler) {
 		this.named.forEach((prop) => prop.compileApply(js))
 		this.sequence?.compileApply(js)
 		js.forIn(js.data, () => {
@@ -145,9 +141,8 @@ export class PropsNode
 				js.let("matched", false)
 			}
 			this.index?.forEach((node) => {
-				// node.key.compileAllows(js, "k")
-				js.if("false", () => {
-					js.line(js.invoke(node.value, `${js.data}[k]`))
+				js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
+					js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
 					if (this.onExtraneousKey) {
 						js.set("matched", true)
 					}

@@ -7,11 +7,7 @@ import {
 	type TypeNode
 } from "../base.js"
 import type { Inner, Schema, reducibleKindOf } from "../kinds.js"
-import type {
-	AllowsCompiler,
-	ApplyCompiler,
-	NodeCompiler
-} from "../shared/compile.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type {
 	BaseNodeDeclaration,
 	ownIntersectionAlternateResult
@@ -54,8 +50,8 @@ export abstract class BaseType<
 
 	abstract traverseAllows: TraverseAllows
 	abstract traverseApply: TraverseApply
-	abstract compileApply(js: ApplyCompiler): void
-	abstract compileAllows(js: AllowsCompiler): void
+	abstract compileApply(js: NodeCompiler): void
+	abstract compileAllows(js: NodeCompiler): void
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments)

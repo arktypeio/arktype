@@ -6,11 +6,7 @@ import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import type { FoldInput } from "../refinement.js"
-import {
-	compileKey,
-	compilePresentPropAllows,
-	compilePresentPropApply
-} from "./shared.js"
+import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
 	readonly key: string | symbol
@@ -73,7 +69,7 @@ export class OptionalNode extends BaseNode<
 	compileApply(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.traverseKey(this.serializedKey, () =>
-				js.line(js.invoke(this.value, js.prop(js.data, this.key)))
+				js.line(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))
 			)
 		)
 	}
@@ -81,7 +77,7 @@ export class OptionalNode extends BaseNode<
 	compileAllows(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.traverseKey(this.serializedKey, () =>
-				js.line(js.invoke(this.value, js.prop(js.data, this.key)))
+				js.line(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))
 			)
 		)
 	}

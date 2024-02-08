@@ -1,7 +1,7 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
-import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
@@ -153,11 +153,11 @@ export class UnionNode<t = unknown> extends BaseType<
 		return this.ordered ? { branches, ordered: true } : { branches }
 	}
 
-	compileApply(js: ApplyCompiler) {
+	compileApply(js: NodeCompiler) {
 		this.branches.forEach((branch) => js.line(js.invoke(branch)))
 	}
 
-	compileAllows(js: AllowsCompiler) {
+	compileAllows(js: NodeCompiler) {
 		this.branches.forEach((branch) =>
 			js.if(`!${js.invoke(branch)}`, () => js.return(false))
 		)

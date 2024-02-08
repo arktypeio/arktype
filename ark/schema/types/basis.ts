@@ -9,7 +9,7 @@ import {
 } from "@arktype/util"
 import { isNode, type NodeSubclass } from "../base.js"
 import type { Schema } from "../kinds.js"
-import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../traversal/context.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
@@ -37,11 +37,11 @@ export abstract class BaseBasis<
 		}
 	}
 
-	compileApply(js: ApplyCompiler) {
+	compileApply(js: NodeCompiler) {
 		js.compilePrimitive(this as never)
 	}
 
-	compileAllows(js: AllowsCompiler) {
+	compileAllows(js: NodeCompiler) {
 		js.compilePrimitive(this as never)
 	}
 }

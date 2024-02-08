@@ -17,7 +17,7 @@ import type {
 	PropsSchema
 } from "../refinements/props/props.js"
 import type { FoldInput } from "../refinements/refinement.js"
-import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -251,7 +251,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		)
 	}
 
-	compileAllows(js: AllowsCompiler) {
+	compileAllows(js: NodeCompiler) {
 		this.children.forEach((node) =>
 			js.if(`!${js.invoke(node)}`, () => js.return(false))
 		)
@@ -270,7 +270,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}
 
-	compileApply(js: ApplyCompiler) {
+	compileApply(js: NodeCompiler) {
 		const hasErrors = `${js.ctx}.currentErrors.length !== 0`
 		if (this.basis) {
 			js.line(js.invoke(this.basis))

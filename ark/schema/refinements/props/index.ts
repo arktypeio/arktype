@@ -1,5 +1,5 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../../base.js"
-import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
+import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
@@ -68,9 +68,9 @@ export class IndexNode extends BaseNode<
 			}
 		})
 
-	compileApply(js: ApplyCompiler) {}
+	compileApply(js: NodeCompiler) {}
 
-	compileAllows(js: AllowsCompiler) {}
+	compileAllows(js: NodeCompiler) {}
 
 	protected intersectOwnInner(r: IndexNode): IndexInner {
 		return this

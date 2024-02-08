@@ -1,7 +1,7 @@
 import { compileSerializedValue } from "@arktype/util"
 import { BaseNode, type Node, type TypeSchema } from "../../base.js"
 import type { Inner } from "../../kinds.js"
-import type { AllowsCompiler, ApplyCompiler } from "../../shared/compile.js"
+import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
@@ -77,10 +77,10 @@ export class RequiredNode extends BaseNode<
 		return false
 	}
 
-	compileAllows(js: AllowsCompiler) {
+	compileAllows(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.traverseKey(this.serializedKey, () =>
-				js.line(js.invoke(this.value, js.prop(js.data, this.key)))
+				js.line(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))
 			)
 		).return(false)
 	}
@@ -93,10 +93,10 @@ export class RequiredNode extends BaseNode<
 		}
 	}
 
-	compileApply(js: ApplyCompiler) {
+	compileApply(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.traverseKey(this.serializedKey, () =>
-				js.line(js.invoke(this.value, js.prop(js.data, this.key)))
+				js.line(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))
 			)
 		).else(() =>
 			js.line(

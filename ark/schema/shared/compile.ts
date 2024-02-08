@@ -1,30 +1,32 @@
-import { CompiledFunction, compileSerializedValue } from "@arktype/util"
+import { CompiledFunction } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { TraversalContext, TraversalKind } from "../traversal/context.js"
+import type { TraversalKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
 
 export const jsData = "data"
 export const jsCtx = "ctx"
 
-export class NodeCompiler<
-	kind extends TraversalKind = TraversalKind,
-	prerequisite = unknown
-> extends CompiledFunction<
-	[typeof jsData, typeof jsCtx],
-	[prerequisite, TraversalContext],
-	kind extends "allows" ? true : void
+export type InvokeOptions = {
+	arg?: string
+	kind?: TraversalKind
+}
+
+export class NodeCompiler extends CompiledFunction<
+	[typeof jsData, typeof jsCtx]
 > {
 	path: string[] = []
 	discriminants: Discriminant[] = []
 
-	constructor(public traversalKind: kind) {
+	constructor(public traversalKind: TraversalKind) {
 		super(jsData, jsCtx)
 	}
 
-	invoke(node: Node, argName: string = this.data) {
+	invoke(node: Node, opts?: InvokeOptions) {
+		const method = `${node.name}${opts?.kind ?? this.traversalKind}`
+		const arg = opts?.arg ?? this.data
 		// TODO: only context if needed
-		return `this.${node.name}(${argName}, ${this.ctx})`
+		return `this.${method}(${arg}, ${this.ctx})`
 	}
 
 	traverseKey(serializedKey: string, block: () => this) {
@@ -33,11 +35,7 @@ export class NodeCompiler<
 		return this.line(`${this.ctx}.path.pop()`)
 	}
 
-	compilePrimitive(
-		node: Node<PrimitiveKind>,
-		// allowed can be invoked from an apply but not the reverse
-		kind = this.traversalKind as kind extends "apply" ? TraversalKind : "allows"
-	) {
+	compilePrimitive(node: Node<PrimitiveKind>) {
 		const pathString = this.path.join()
 		if (
 			node.kind === "domain" &&
@@ -63,21 +61,15 @@ export class NodeCompiler<
 			return this
 		}
 		return this.if(node.compiledNegation, () =>
-			kind === "allows"
+			this.traversalKind === "Allows"
 				? this.return(false)
 				: this.line(
 						`${this.ctx}.error(${JSON.stringify(node.expectedContext)})`
 				  )
 		)
 	}
+
+	writeMethod(name: string) {
+		return `${name}(${this.args.join(", ")}){\n${this.body}    }\n`
+	}
 }
-
-export type AllowsCompiler<prerequisite = unknown> = NodeCompiler<
-	"allows",
-	prerequisite
->
-
-export type ApplyCompiler<prerequisite = unknown> = NodeCompiler<
-	"apply",
-	prerequisite
->

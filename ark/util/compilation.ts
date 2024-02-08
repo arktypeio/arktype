@@ -5,11 +5,7 @@ import { isDotAccessible, reference } from "./registry.js"
 export type CoercibleValue = string | number | boolean | null | undefined
 
 export class CompiledFunction<
-	args extends readonly string[],
-	argTypes extends { [i in keyof args]: unknown } = {
-		[i in keyof args]: never
-	},
-	returns = unknown
+	args extends readonly string[]
 > extends CastableBase<{
 	[k in args[number]]: k
 }> {
@@ -29,9 +25,15 @@ export class CompiledFunction<
 		}
 	}
 
-	indentationCount = 0
-	protected get indent() {
-		return " ".repeat(this.indentationCount)
+	indentation = 0
+	indent() {
+		this.indentation += 4
+		return this
+	}
+
+	dedent() {
+		this.indentation -= 4
+		return this
 	}
 
 	prop(root: string, key: PropertyKey, optional = false) {
@@ -50,7 +52,7 @@ export class CompiledFunction<
 	}
 
 	line(statement: string) {
-		;(this.body as any) += `${this.indent}${statement}\n`
+		;(this.body as any) += `${" ".repeat(this.indentation)}${statement}\n`
 		return this
 	}
 
@@ -67,33 +69,33 @@ export class CompiledFunction<
 		return this.line(`${identifier} = ${expression}`)
 	}
 
-	if(condition: string, then: () => this) {
+	if(condition: string, then: (self: this) => this) {
 		return this.block(`if (${condition})`, then)
 	}
 
-	elseIf(condition: string, then: () => this) {
+	elseIf(condition: string, then: (self: this) => this) {
 		return this.block(`else if (${condition})`, then)
 	}
 
-	else(then: () => this) {
+	else(then: (self: this) => this) {
 		return this.block("else", then)
 	}
 
 	/** Current index is "i" */
-	for(until: string, body: () => this) {
+	for(until: string, body: (self: this) => this) {
 		return this.block(`for (let i = 0; ${until}; i++)`, body)
 	}
 
 	/** Current key is "k" */
-	forIn(object: string, body: () => this) {
+	forIn(object: string, body: (self: this) => this) {
 		return this.block(`for (const k in ${object})`, body)
 	}
 
-	block(prefix: string, contents: () => this) {
+	block(prefix: string, contents: (self: this) => this) {
 		this.line(`${prefix} {`)
-		this.indentationCount += 4
-		contents()
-		this.indentationCount -= 4
+		this.indent()
+		contents(this)
+		this.dedent()
 		return this.line("}")
 	}
 
@@ -101,10 +103,13 @@ export class CompiledFunction<
 		return this.line(`return ${expression}`)
 	}
 
-	compile() {
-		return new DynamicFunction<(...args: argTypes) => returns>(
-			...this.args,
-			this.body
-		)
+	compile<
+		f extends (
+			...args: {
+				[i in keyof args]: never
+			}
+		) => unknown
+	>() {
+		return new DynamicFunction<f>(...this.args, this.body)
 	}
 }

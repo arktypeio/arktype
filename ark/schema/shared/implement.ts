@@ -19,7 +19,7 @@ import type {
 	ScopeNode
 } from "../scope.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import type { AllowsCompiler, ApplyCompiler } from "./compile.js"
+import type { NodeCompiler } from "./compile.js"
 import type {
 	BaseExpectedContext,
 	BaseMeta,
@@ -234,8 +234,8 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 export interface TraversableNode<prerequisite = unknown> {
 	traverseAllows: TraverseAllows<prerequisite>
 	traverseApply: TraverseApply<prerequisite>
-	compileApply(js: ApplyCompiler): void
-	compileAllows(js: AllowsCompiler): void
+	compileApply(js: NodeCompiler): void
+	compileAllows(js: NodeCompiler): void
 }
 
 export const throwInvalidOperandError = (

@@ -53,8 +53,8 @@ export class TraversalContext {
 }
 
 export type TraversalMethodsByKind<input = unknown> = {
-	allows: TraverseAllows<input>
-	apply: TraverseApply<input>
+	Allows: TraverseAllows<input>
+	Apply: TraverseApply<input>
 }
 
 export type TraversalKind = keyof TraversalMethodsByKind

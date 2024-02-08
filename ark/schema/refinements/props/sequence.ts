@@ -1,9 +1,5 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../../base.js"
-import type {
-	AllowsCompiler,
-	ApplyCompiler,
-	NodeCompiler
-} from "../../shared/compile.js"
+import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type {
 	NodeKeyImplementation,
@@ -168,9 +164,9 @@ export class SequenceNode extends BaseNode<
 		}
 	}
 
-	compileApply(js: ApplyCompiler) {}
+	compileApply(js: NodeCompiler) {}
 
-	compileAllows(js: AllowsCompiler) {
+	compileAllows(js: NodeCompiler) {
 		let body = `if(${js.data}.length < ${this.minLength}) {
 	return false
 }\n`

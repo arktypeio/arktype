@@ -1,5 +1,5 @@
 import {
-	DynamicFunction,
+	CompiledFunction,
 	isArray,
 	printable,
 	throwInternalError,
@@ -20,16 +20,13 @@ import type {
 import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parse, type SchemaParseOptions } from "./parse.js"
-import { NodeCompiler, jsCtx, jsData } from "./shared/compile.js"
+import { NodeCompiler } from "./shared/compile.js"
 import type {
 	DescriptionWriter,
 	NodeKind,
 	TypeKind
 } from "./shared/implement.js"
-import type {
-	TraversalKind,
-	TraversalMethodsByKind
-} from "./traversal/context.js"
+import type { TraverseAllows, TraverseApply } from "./traversal/context.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -287,45 +284,44 @@ export class ScopeNode<r extends object = any> {
 		nodesToBind: readonly Node[],
 		references: readonly Node[]
 	) {
-		const compiledAllowsTraversals = this.compileScope(references, "allows")
-		const compiledApplyTraversals = this.compileScope(references, "apply")
+		const compiledTraversals = this.compileScope(references)
 		for (const node of nodesToBind) {
-			node.traverseAllows = compiledAllowsTraversals[node.name].bind(
-				compiledAllowsTraversals
-			)
+			node.traverseAllows =
+				compiledTraversals[`${node.name}Allows`].bind(compiledTraversals)
 			if (node.isType() && !node.includesContextDependentPredicate) {
 				// if the reference doesn't require context, we can assign over
 				// it directly to avoid having to initialize it
 				node.allows = node.traverseAllows as never
 			}
-			node.traverseApply = compiledApplyTraversals[node.name].bind(
-				compiledApplyTraversals
-			)
+			node.traverseApply =
+				compiledTraversals[`${node.name}Apply`].bind(compiledTraversals)
 		}
 	}
 
 	// TODO: runs for internal types?
-	protected compileScope<kind extends TraversalKind>(
-		references: readonly Node[],
-		kind: kind
-	): Record<string, TraversalMethodsByKind[kind]> {
-		// TODO: ensure ctx passed when needed
-		const compiledArgs = kind === "allows" ? jsData : `${jsData}, ${jsCtx}`
-		const body = `return {
-	${references
-		.map((reference) => {
-			const js = new NodeCompiler<kind>(kind)
-			js.indentationCount = 8
-			if (kind === "allows") {
-				reference.compileAllows(js as never)
-			} else {
-				reference.compileApply(js as never)
-			}
-			return `	${reference.name}(${compiledArgs}){\n${js.body}\n    }`
-		})
-		.join(",\n")}
-}`
-		return new DynamicFunction(body)() as never
+	protected compileScope(references: readonly Node[]) {
+		return new CompiledFunction()
+			.block(`return`, (js) => {
+				references.forEach((node) => {
+					const allowsCompiler = new NodeCompiler("Allows").indent()
+					node.compileAllows(allowsCompiler)
+					const applyCompiler = new NodeCompiler("Apply").indent()
+					node.compileApply(applyCompiler)
+					js.line(
+						allowsCompiler.writeMethod(`${node.name}Allows`) +
+							",\n" +
+							applyCompiler.writeMethod(`${node.name}Apply`) +
+							","
+					)
+				})
+				return js
+			})
+			.compile<
+				() => {
+					[k: `${string}Allows`]: TraverseAllows
+					[k: `${string}Apply`]: TraverseApply
+				}
+			>()()
 	}
 
 	readonly schema: SchemaParser<r> = Object.assign(

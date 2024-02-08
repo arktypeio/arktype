@@ -1,6 +1,6 @@
 import type { mutable } from "@arktype/util"
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
-import type { AllowsCompiler, ApplyCompiler } from "../shared/compile.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -50,11 +50,11 @@ export abstract class BasePrimitiveRefinement<
 		}
 	}
 
-	compileApply(js: ApplyCompiler) {
+	compileApply(js: NodeCompiler) {
 		js.compilePrimitive(this as never)
 	}
 
-	compileAllows(js: AllowsCompiler) {
+	compileAllows(js: NodeCompiler) {
 		js.compilePrimitive(this as never)
 	}
 }
