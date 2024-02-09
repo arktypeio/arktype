@@ -267,7 +267,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	compile(js: NodeCompiler) {
 		if (js.traversalKind === "Allows") {
-			this.children.forEach(js.checkData)
+			this.children.forEach((node) => js.check(node))
 			return js.return(true)
 		}
 		const hasErrors = `${js.ctx}.currentErrors.length !== 0`
@@ -279,12 +279,12 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		}
 		if (this.prepredicates.length) {
-			this.prepredicates.forEach(js.checkData)
+			this.prepredicates.forEach((node) => js.check(node))
 			if (this.predicate) {
 				js.if(hasErrors, () => js.return())
 			}
 		}
-		this.predicate?.forEach(js.checkData)
+		this.predicate?.forEach((node) => js.check(node))
 	}
 }
 

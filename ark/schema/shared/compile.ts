@@ -35,10 +35,6 @@ export class NodeCompiler extends CompiledFunction<
 		return this.line(`${this.ctx}.path.pop()`)
 	}
 
-	checkData(node: Node) {
-		return this.check(node)
-	}
-
 	check(node: Node, opts?: InvokeOptions) {
 		return this.traversalKind === "Allows"
 			? this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
@@ -70,12 +66,11 @@ export class NodeCompiler extends CompiledFunction<
 			// (or an exact value, implying a domain), we don't need to recheck it
 			return this
 		}
+		if (this.traversalKind === "Allows") {
+			return this.return(node.compiledCondition)
+		}
 		return this.if(node.compiledNegation, () =>
-			this.traversalKind === "Allows"
-				? this.return(false)
-				: this.line(
-						`${this.ctx}.error(${JSON.stringify(node.expectedContext)})`
-				  )
+			this.line(`${this.ctx}.error(${JSON.stringify(node.expectedContext)})`)
 		)
 	}
 

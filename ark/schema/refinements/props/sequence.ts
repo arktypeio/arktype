@@ -151,33 +151,36 @@ export class SequenceNode extends BaseNode<
 
 		if (this.prefix) {
 			for (i; i < this.prefixLength; i++) {
-				this.prefix[i].traverseAllows(data[i], ctx)
+				this.prefix[i].traverseApply(data[i], ctx)
 			}
 		}
 
 		const postfixStartIndex = data.length - this.postfixLength
 
 		for (i; i++; i < postfixStartIndex) {
-			this.element.traverseAllows(data[i], ctx)
+			this.element.traverseApply(data[i], ctx)
 		}
 
 		if (this.postfix) {
 			for (i; i < data.length; i++) {
-				this.postfix[i].traverseAllows(data[i], ctx)
+				this.postfix[i].traverseApply(data[i], ctx)
 			}
 		}
 	}
 
 	compile(js: NodeCompiler) {
-		js.if(`${js.data}.length < ${this.minLength}`, () =>
-			js.traversalKind === "Allows" ? js.return(false) : js.return()
-		)
+		if (this.minLength !== 0) {
+			js.if(`${js.data}.length < ${this.minLength}`, () =>
+				js.traversalKind === "Allows" ? js.return(false) : js.return()
+			)
+		}
 
-		// i is a literal number representing the index or a string representing the variable tracking it
-		const checkElement = (node: TypeNode, i: number | string) =>
-			js.check(node, { arg: js.index(js.data, `${i}`) })
+		const checkElement = (node: TypeNode, serializedIndex: string) =>
+			js.traverseKey(serializedIndex, () =>
+				js.check(node, { arg: js.index(js.data, serializedIndex) })
+			)
 
-		this.prefix?.forEach(checkElement)
+		this.prefix?.forEach((node, i) => checkElement(node, `${i}`))
 		js.const(
 			"lastVariadicIndex",
 			`${js.data}.length${this.postfix ? `- ${this.postfixLength}` : ""}`
@@ -198,6 +201,6 @@ export class SequenceNode extends BaseNode<
 	}
 
 	foldIntersection(into: FoldInput<"sequence">) {
-		return {}
+		return into
 	}
 }
