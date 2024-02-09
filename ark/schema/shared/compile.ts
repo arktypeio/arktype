@@ -35,6 +35,16 @@ export class NodeCompiler extends CompiledFunction<
 		return this.line(`${this.ctx}.path.pop()`)
 	}
 
+	checkData(node: Node) {
+		return this.check(node)
+	}
+
+	check(node: Node, opts?: InvokeOptions) {
+		return this.traversalKind === "Allows"
+			? this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
+			: this.line(this.invoke(node, opts))
+	}
+
 	compilePrimitive(node: Node<PrimitiveKind>) {
 		const pathString = this.path.join()
 		if (

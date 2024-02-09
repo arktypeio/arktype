@@ -267,25 +267,24 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	compile(js: NodeCompiler) {
 		if (js.traversalKind === "Allows") {
-			this.children.forEach((node) =>
-				js.if(`!${js.invoke(node)}`, () => js.return(false))
-			)
+			this.children.forEach(js.checkData)
 			return js.return(true)
 		}
 		const hasErrors = `${js.ctx}.currentErrors.length !== 0`
 		if (this.basis) {
-			js.line(js.invoke(this.basis))
+			js.check(this.basis)
+			// we only have to return conditionally if this is not the last check
 			if (this.prepredicates.length || this.predicate) {
 				js.if(hasErrors, () => js.return())
 			}
 		}
 		if (this.prepredicates.length) {
-			this.prepredicates.forEach((node) => js.line(js.invoke(node)))
+			this.prepredicates.forEach(js.checkData)
 			if (this.predicate) {
 				js.if(hasErrors, () => js.return())
 			}
 		}
-		this.predicate?.forEach((node) => js.line(js.invoke(node)))
+		this.predicate?.forEach(js.checkData)
 	}
 }
 

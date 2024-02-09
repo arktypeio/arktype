@@ -103,9 +103,9 @@ export class SequenceNode extends BaseNode<
 
 	readonly hasOpenIntersection = false
 
-	prefixLength = this.prefix?.length ?? 0
-	postfixLength = this.postfix?.length ?? 0
-	protected minLength = this.prefixLength + this.postfixLength
+	readonly prefixLength = this.prefix?.length ?? 0
+	readonly postfixLength = this.postfix?.length ?? 0
+	readonly minLength = this.prefixLength + this.postfixLength
 
 	traverseAllows: TraverseAllows<readonly unknown[]> = (data, ctx) => {
 		if (data.length < this.minLength) {
@@ -169,29 +169,28 @@ export class SequenceNode extends BaseNode<
 	}
 
 	compile(js: NodeCompiler) {
-		let body = `if(${js.data}.length < ${this.minLength}) {
-	return false
-}\n`
-		this.prefix?.forEach((node, i) => {
-			body += `if(!${js.invoke(node)}) {
-	this.${node.name}(${js.data}[${i}], ${js.ctx})
-}\n`
-		})
-		body += `const lastVariadicIndex = ${js.data}.length${
-			this.postfix ? `- ${this.postfixLength}` : ""
-		}
-for(let i = ${this.prefixLength}; i < lastVariadicIndex; i++) {
-	if(!this.${this.element.name}(${js.data}[i], ${js.ctx})){
-		return false
-	}	
-}\n`
+		js.if(`${js.data}.length < ${this.minLength}`, () =>
+			js.traversalKind === "Allows" ? js.return(false) : js.return()
+		)
+
+		// i is a literal number representing the index or a string representing the variable tracking it
+		const checkElement = (node: TypeNode, i: number | string) =>
+			js.check(node, { arg: js.index(js.data, `${i}`) })
+
+		this.prefix?.forEach(checkElement)
+		js.const(
+			"lastVariadicIndex",
+			`${js.data}.length${this.postfix ? `- ${this.postfixLength}` : ""}`
+		)
+		js.for("i < lastVariadicIndex", () => checkElement(this.element, "i"))
+
 		this.postfix?.forEach((node, i) => {
-			body += `if(!${js.invoke(node)}) {
-this.${node.name}(${js.data}[${i}], ${js.ctx})
-}\n`
+			checkElement(node, `lastVariadicIndex + ${i + 1}`)
 		})
-		body += "return true"
-		return body
+
+		if (js.traversalKind === "Allows") {
+			js.return(true)
+		}
 	}
 
 	protected intersectOwnInner(r: SequenceNode) {

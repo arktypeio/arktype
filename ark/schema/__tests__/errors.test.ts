@@ -28,6 +28,14 @@ describe("errors", () => {
 			"foo must be a multiple of 3 (was 7)"
 		)
 	})
+	it("array", () => {
+		const t = schema({
+			basis: Array,
+			sequence: "number"
+		})
+		attest(t.apply([5]).out).snap([5])
+		attest(t.apply([5, "five"]).errors?.summary).snap()
+	})
 	it("custom description integrated with error", () => {
 		const superSpecialBigint = schema({
 			domain: "bigint",
