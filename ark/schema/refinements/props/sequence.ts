@@ -11,23 +11,23 @@ import type { FoldInput } from "../refinement.js"
 
 // TODO: element not required, always create sequence node if array with numeric indexs
 export interface NormalizedSequenceSchema extends BaseMeta {
-	readonly prefix?: readonly TypeSchema[]
-	readonly optional?: readonly TypeSchema[]
-	readonly element: TypeSchema
-	readonly postfix?: readonly TypeSchema[]
+	readonly fixed?: readonly TypeSchema[]
+	readonly optionals?: readonly TypeSchema[]
+	readonly variadic?: TypeSchema
+	readonly postfixed?: readonly TypeSchema[]
 }
 
 export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
-	readonly prefix?: readonly TypeNode[]
+	readonly fixed?: readonly TypeNode[]
 	// a list of optional elements following prefix (undefined equivalent to [])
-	readonly optional?: readonly TypeNode[]
+	readonly optionals?: readonly TypeNode[]
 	// the variadic element (only allowed if all optional elements are present)
-	readonly element: TypeNode
+	readonly variadic?: TypeNode
 	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
-	readonly postfix?: readonly TypeNode[]
+	readonly postfixed?: readonly TypeNode[]
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -42,7 +42,7 @@ export type SequenceDeclaration = declareNode<{
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
-	"prefix" | "postfix" | "optional"
+	"fixed" | "postfixed" | "optionals"
 > = {
 	child: true,
 	parse: (schema, ctx) =>
@@ -60,50 +60,63 @@ export class SequenceNode extends BaseNode<
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
-			collapseKey: "element",
+			collapseKey: "variadic",
 			keys: {
-				prefix: fixedSequenceKeyDefinition,
-				optional: fixedSequenceKeyDefinition,
-				element: {
+				fixed: fixedSequenceKeyDefinition,
+				optionals: fixedSequenceKeyDefinition,
+				variadic: {
 					child: true,
 					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 				},
-				postfix: fixedSequenceKeyDefinition
+				postfixed: fixedSequenceKeyDefinition
 			},
 			normalize: (schema) =>
-				typeof schema === "object" && "element" in schema
+				typeof schema === "object" &&
+				("variadic" in schema ||
+					"fixed" in schema ||
+					"optionals" in schema ||
+					"postfixed" in schema)
 					? schema
-					: { element: schema },
+					: { variadic: schema },
 			reduce: (inner, scope) => {
-				if (!inner.element || (!inner.postfix && !inner.optional)) {
+				if (!inner.postfixed && !inner.optionals) {
 					return
 				}
-				const optional = inner.optional?.slice() ?? []
-				while (optional.at(-1)?.equals(inner.element)) {
-					optional.pop()
+				const optional = inner.optionals?.slice() ?? []
+				if (inner.variadic) {
+					// optional elements equivalent to the variadic parameter are redundant
+					while (optional.at(-1)?.equals(inner.variadic)) {
+						optional.pop()
+					}
 				}
-				const postfix = inner.postfix?.slice() ?? []
-				const prefix = inner.prefix?.slice() ?? []
+				const postfix = inner.postfixed?.slice() ?? []
+				const prefix = inner.fixed?.slice() ?? []
 				if (optional.length === 0) {
-					// if optional length is 0, normalize equivalent
-					// prefix/postfix elements to prefix, e.g.:
-					// [...number[], number] => [number, ...number[]]
-					while (postfix[0]?.equals(inner.element)) {
-						prefix.push(postfix.shift()!)
+					if (inner.variadic) {
+						// if optional length is 0, normalize equivalent
+						// prefix/postfix elements to prefix, e.g.:
+						// [...number[], number] => [number, ...number[]]
+						while (postfix[0]?.equals(inner.variadic)) {
+							prefix.push(postfix.shift()!)
+						}
+					} else {
+						// if there's no variadic or optional parameters,
+						// postfixed can just be appended to fixed
+						prefix.push(...postfix.splice(0))
 					}
 				}
 				if (
-					(inner.postfix && postfix.length < inner.postfix.length) ||
-					(inner.optional && optional.length < inner.optional.length)
+					(inner.postfixed && postfix.length < inner.postfixed.length) ||
+					(inner.optionals && optional.length < inner.optionals.length)
 				) {
 					return scope.parse(
 						"sequence",
 						{
 							...inner,
 							// empty lists will be omitted during normalization
-							prefix,
-							postfix,
-							optional
+							fixed: prefix,
+							postfixed: postfix,
+							optionals: optional
 						},
 						{ prereduced: true }
 					)
@@ -111,9 +124,9 @@ export class SequenceNode extends BaseNode<
 			},
 			defaults: {
 				description(inner) {
-					const parts = inner.prefix?.map(String) ?? []
-					parts.push(`zero or more elements containing ${inner.element}`)
-					inner.postfix?.forEach((node) => parts.push(String(node)))
+					const parts = inner.fixed?.map(String) ?? []
+					parts.push(`zero or more elements containing ${inner.variadic}`)
+					inner.postfixed?.forEach((node) => parts.push(String(node)))
 					return `an array of ${parts.join(" followed by ")}`
 				}
 			}
@@ -121,8 +134,8 @@ export class SequenceNode extends BaseNode<
 
 	readonly hasOpenIntersection = false
 
-	readonly prefixLength = this.prefix?.length ?? 0
-	readonly postfixLength = this.postfix?.length ?? 0
+	readonly prefixLength = this.fixed?.length ?? 0
+	readonly postfixLength = this.postfixed?.length ?? 0
 	readonly minLength = this.prefixLength + this.postfixLength
 
 	traverseAllows: TraverseAllows<readonly unknown[]> = (data, ctx) => {
@@ -132,9 +145,9 @@ export class SequenceNode extends BaseNode<
 
 		let i = 0
 
-		if (this.prefix) {
+		if (this.fixed) {
 			for (i; i < this.prefixLength; i++) {
-				if (!this.prefix[i].traverseAllows(data[i], ctx)) {
+				if (!this.fixed[i].traverseAllows(data[i], ctx)) {
 					return false
 				}
 			}
@@ -143,14 +156,14 @@ export class SequenceNode extends BaseNode<
 		const postfixStartIndex = data.length - this.postfixLength
 
 		for (i; i++; i < postfixStartIndex) {
-			if (!this.element.traverseAllows(data[i], ctx)) {
+			if (!this.variadic.traverseAllows(data[i], ctx)) {
 				return false
 			}
 		}
 
-		if (this.postfix) {
+		if (this.postfixed) {
 			for (i; i < data.length; i++) {
-				if (!this.postfix[i].traverseAllows(data[i], ctx)) {
+				if (!this.postfixed[i].traverseAllows(data[i], ctx)) {
 					return false
 				}
 			}
@@ -167,21 +180,21 @@ export class SequenceNode extends BaseNode<
 
 		let i = 0
 
-		if (this.prefix) {
+		if (this.fixed) {
 			for (i; i < this.prefixLength; i++) {
-				this.prefix[i].traverseApply(data[i], ctx)
+				this.fixed[i].traverseApply(data[i], ctx)
 			}
 		}
 
 		const postfixStartIndex = data.length - this.postfixLength
 
 		for (i; i++; i < postfixStartIndex) {
-			this.element.traverseApply(data[i], ctx)
+			this.variadic.traverseApply(data[i], ctx)
 		}
 
-		if (this.postfix) {
+		if (this.postfixed) {
 			for (i; i < data.length; i++) {
-				this.postfix[i].traverseApply(data[i], ctx)
+				this.postfixed[i].traverseApply(data[i], ctx)
 			}
 		}
 	}
@@ -193,14 +206,14 @@ export class SequenceNode extends BaseNode<
 			)
 		}
 
-		this.prefix?.forEach((node, i) => js.checkKey(`${i}`, node, true))
+		this.fixed?.forEach((node, i) => js.checkKey(`${i}`, node, true))
 		js.const(
 			"lastVariadicIndex",
-			`${js.data}.length${this.postfix ? `- ${this.postfixLength}` : ""}`
+			`${js.data}.length${this.postfixed ? `- ${this.postfixLength}` : ""}`
 		)
-		js.for("i < lastVariadicIndex", () => js.checkKey("i", this.element, true))
+		js.for("i < lastVariadicIndex", () => js.checkKey("i", this.variadic, true))
 
-		this.postfix?.forEach((node, i) =>
+		this.postfixed?.forEach((node, i) =>
 			js.checkKey(`lastVariadicIndex + ${i + 1}`, node, true)
 		)
 
