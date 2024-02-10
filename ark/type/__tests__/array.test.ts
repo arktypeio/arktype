@@ -9,21 +9,38 @@ import {
 
 describe("array", () => {
 	describe("base", () => {
-		it("base", () => {
+		it("allows and apply", () => {
 			const t = type("string[]")
 			attest<string[]>(t.infer)
 			attest(t.allows([])).equals(true)
+			attest(t([]).out).snap([])
 			attest(t.allows(["foo", "bar"])).equals(true)
+			attest(t(["foo", "bar"]).out).snap(["foo", "bar"])
 			attest(t.allows(["foo", "bar", 5])).equals(false)
+			attest(t(["foo", "bar", 5]).errors?.summary).snap(
+				"Item at index 2 must be a string (was number)"
+			)
 			attest(t.allows([5, "foo", "bar"])).equals(false)
+			attest(t([5, "foo", "bar"]).errors?.summary).snap(
+				"Item at index 0 must be a string (was number)"
+			)
 		})
+
 		it("nested", () => {
 			const t = type("string[][]")
 			attest<string[][]>(t.infer)
 			attest(t.allows([])).equals(true)
+			attest(t([]).out).snap([])
 			attest(t.allows([["foo"]])).equals(true)
+			attest(t([["foo"]]).out).snap([["foo"]])
 			attest(t.allows(["foo"])).equals(false)
+			attest(t(["foo"]).errors?.summary).snap(
+				"Item at index 0 must be an array (was string)"
+			)
 			attest(t.allows([["foo", 5]])).equals(false)
+			attest(t([["foo", 5]]).errors?.summary).snap(
+				"[0][1] must be a string (was number)"
+			)
 		})
 
 		it("tuple expression", () => {
@@ -31,6 +48,7 @@ describe("array", () => {
 			attest<string[]>(t.infer)
 			attest(t.json).equals(type("string[]").json)
 		})
+
 		describe("optional tuple literals", () => {
 			it("string optional", () => {
 				const t = type(["string?"])
@@ -91,12 +109,17 @@ describe("array", () => {
 			const t = type(["string", "number"])
 			attest<[string, number]>(t.infer)
 			attest(t.allows(["", 0])).equals(true)
+			attest(t(["", 0]).out).snap()
 			attest(t.allows([true, 0])).equals(false)
+			attest(t([true, 0]).errors?.summary).snap()
 			attest(t.allows([0, false])).equals(false)
+			attest(t([0, false]).errors?.summary).snap()
 			// too short
 			attest(t.allows([""])).equals(false)
+			attest(t([""]).errors?.summary).snap()
 			// too long
 			attest(t.allows(["", 0, 1])).equals(false)
+			attest(t(["", 0, 1]).errors?.summary).snap()
 			// non-array
 			attest(
 				t.allows({
@@ -105,7 +128,15 @@ describe("array", () => {
 					1: 0
 				})
 			).equals(false)
+			attest(
+				t({
+					length: 2,
+					0: "",
+					1: 0
+				}).errors?.summary
+			).snap()
 		})
+
 		it("nested", () => {
 			const t = type([["string", "number"], [{ a: "boolean", b: ["null"] }]])
 			attest<
@@ -121,7 +152,14 @@ describe("array", () => {
 			>(t.infer)
 
 			attest(t.allows([["", 0], [{ a: true, b: [null] }]])).equals(true)
+			attest(t([["foo", 1], [{ a: true, b: [null] }]]).out).snap([
+				["foo", 1],
+				[{ a: true, b: [null] }]
+			])
 			attest(t.allows([["", 0], [{ a: true, b: [undefined] }]])).equals(false)
+			attest(
+				t([["foo", 1], [{ a: true, b: [undefined] }]]).errors?.summary
+			).snap("[1][0].b[0] must be null (was undefined)")
 		})
 	})
 	describe("variadic tuple", () => {

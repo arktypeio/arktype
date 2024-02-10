@@ -67,7 +67,11 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "./traversal/context.js"
+import {
+	pathToPropString,
+	type TraverseAllows,
+	type TraverseApply
+} from "./traversal/context.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
@@ -147,7 +151,7 @@ export abstract class BaseNode<
 					? capitalize(ctx.problem)
 					: ctx.path.length === 1 && typeof ctx.path[0] === "number"
 					? `Item at index ${ctx.path[0]} ${ctx.problem}`
-					: `${ctx.path} ${ctx.problem}`
+					: `${pathToPropString(ctx.path)} ${ctx.problem}`
 		}
 		return implementation
 	}

@@ -154,7 +154,7 @@ export abstract class BaseType<
 	}
 
 	array(): IntersectionNode<t[]> {
-		return this.$.parse(
+		return this.$.parseRoot(
 			"intersection",
 			{
 				basis: Array,

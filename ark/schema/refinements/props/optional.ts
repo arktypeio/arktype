@@ -68,9 +68,7 @@ export class OptionalNode extends BaseNode<
 
 	compile(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.traverseKey(this.serializedKey, () =>
-				js.return(js.invoke(this.value, { arg: js.prop(js.data, this.key) }))
-			)
+			js.checkKey(this.serializedKey, this.value, false)
 		)
 	}
 

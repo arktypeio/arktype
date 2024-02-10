@@ -407,28 +407,6 @@ export class Scope<r extends Resolutions = any> {
 		) as never
 	}
 
-	compile() {
-		return ""
-		// 		this.export()
-		// 		const references: Set<Root> = new Set()
-		// 		for (const k in this.exportedResolutions!) {
-		// 			const resolution = this.exportedResolutions[k]
-		// 			if (hasArkKind(resolution, "node") && !references.has(resolution)) {
-		// 				for (const reference of resolution.references) {
-		// 					references.add(reference)
-		// 				}
-		// 			}
-		// 		}
-		// 		return [...references]
-		// 			.map(
-		// 				(ref) => `const ${ref.alias} = (${In}) => {
-		//     ${ref.condition}
-		//     return true
-		// }`
-		// 			)
-		// 			.join("\n")
-	}
-
 	bindThis() {
 		// TODO: fix
 		return { this: keywords.unknown }

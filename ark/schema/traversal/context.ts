@@ -1,7 +1,16 @@
+import { literalPropAccess } from "@arktype/util"
 import type { ParsedArkConfig } from "../scope.js"
 import { ArkErrors, type ArkErrorInput } from "./errors.js"
 
 export type TraversalPath = (string | symbol)[]
+
+export const pathToPropString = (path: TraversalPath) => {
+	const propAccessChain = path.reduce<string>(
+		(s, segment) => s + literalPropAccess(segment),
+		""
+	)
+	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain
+}
 
 export class TraversalContext {
 	path: TraversalPath = []

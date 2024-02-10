@@ -113,6 +113,7 @@ export class PropsNode extends BaseNode<
 			this.children.forEach((node) =>
 				js.if(`!${js.invoke(node)}`, () => js.return(false))
 			)
+			js.return(true)
 		} else {
 			this.children.forEach((node) => js.line(js.invoke(node)))
 		}

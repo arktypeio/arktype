@@ -36,19 +36,12 @@ export class CompiledFunction<
 		return this
 	}
 
-	prop(root: string, key: PropertyKey, optional = false) {
-		if (typeof key === "string" && isDotAccessible(key)) {
-			return `${root}${optional ? "?" : ""}.${key}`
-		}
-		return this.index(
-			root,
-			typeof key === "symbol" ? reference(key) : JSON.stringify(key),
-			optional
-		)
+	prop(key: PropertyKey, optional = false) {
+		return literalPropAccess(key, optional)
 	}
 
-	index(root: string, key: string, optional = false) {
-		return `${root}${optional ? "?." : ""}[${key}]`
+	index(key: string, optional = false) {
+		return indexPropAccess(key, optional)
 	}
 
 	line(statement: string) {
@@ -113,3 +106,16 @@ export class CompiledFunction<
 		return new DynamicFunction<f>(...this.argNames, this.body)
 	}
 }
+
+export const literalPropAccess = (key: PropertyKey, optional = false) => {
+	if (typeof key === "string" && isDotAccessible(key)) {
+		return `${optional ? "?" : ""}.${key}`
+	}
+	return indexPropAccess(
+		typeof key === "symbol" ? reference(key) : JSON.stringify(key),
+		optional
+	)
+}
+
+export const indexPropAccess = (key: string, optional = false) =>
+	`${optional ? "?." : ""}[${key}]`

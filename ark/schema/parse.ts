@@ -59,10 +59,8 @@ export function parseAttachments(
 ): Node {
 	const cls = nodesByKind[kind]
 	const impl: UnknownNodeImplementation = cls.implementation as never
-	if (schema instanceof BaseNode) {
-		return schema.kind === kind
-			? (schema as never)
-			: throwMismatchedNodeSchemaError(kind, schema.kind)
+	if (schema instanceof BaseNode && schema.kind === kind) {
+		return schema as never
 	}
 	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
 	// check again after normalization in case a node is a valid collapsed

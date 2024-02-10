@@ -175,21 +175,16 @@ export class SequenceNode extends BaseNode<
 			)
 		}
 
-		const checkElement = (node: TypeNode, serializedIndex: string) =>
-			js.traverseKey(serializedIndex, () =>
-				js.check(node, { arg: js.index(js.data, serializedIndex) })
-			)
-
-		this.prefix?.forEach((node, i) => checkElement(node, `${i}`))
+		this.prefix?.forEach((node, i) => js.checkKey(`${i}`, node, true))
 		js.const(
 			"lastVariadicIndex",
 			`${js.data}.length${this.postfix ? `- ${this.postfixLength}` : ""}`
 		)
-		js.for("i < lastVariadicIndex", () => checkElement(this.element, "i"))
+		js.for("i < lastVariadicIndex", () => js.checkKey("i", this.element, true))
 
-		this.postfix?.forEach((node, i) => {
-			checkElement(node, `lastVariadicIndex + ${i + 1}`)
-		})
+		this.postfix?.forEach((node, i) =>
+			js.checkKey(`lastVariadicIndex + ${i + 1}`, node, true)
+		)
 
 		if (js.traversalKind === "Allows") {
 			js.return(true)

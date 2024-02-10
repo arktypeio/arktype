@@ -1,5 +1,5 @@
 import { CompiledFunction } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { Node, TypeNode } from "../base.js"
 import type { TraversalKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
@@ -23,16 +23,35 @@ export class NodeCompiler extends CompiledFunction<
 	}
 
 	invoke(node: Node, opts?: InvokeOptions) {
-		const method = `${node.name}${opts?.kind ?? this.traversalKind}`
+		const invokedKind = opts?.kind ?? this.traversalKind
+		const method = `${node.name}${invokedKind}`
 		const arg = opts?.arg ?? this.data
-		// TODO: only context if needed
-		return `this.${method}(${arg}, ${this.ctx})`
+		if (this.requiresContextFor(node)) {
+			return `this.${method}(${arg}, ${this.ctx})`
+		}
+		return `this.${method}(${arg})`
 	}
 
-	traverseKey(serializedKey: string, block: () => this) {
-		this.line(`${this.ctx}.path.push(${serializedKey})`)
-		block()
-		return this.line(`${this.ctx}.path.pop()`)
+	requiresContextFor(node: Node) {
+		return (
+			this.traversalKind === "Apply" || node.includesContextDependentPredicate
+		)
+	}
+
+	checkKey(serializedKey: string, node: TypeNode, alwaysIndex: boolean) {
+		const requiresContext = this.requiresContextFor(node)
+		if (requiresContext) {
+			this.line(`${this.ctx}.path.push(${serializedKey})`)
+		}
+		this.check(node, {
+			arg: `${this.data}${
+				alwaysIndex ? this.index(serializedKey) : this.prop(serializedKey)
+			}`
+		})
+		if (requiresContext) {
+			this.line(`${this.ctx}.path.pop()`)
+		}
+		return this
 	}
 
 	check(node: Node, opts?: InvokeOptions) {
