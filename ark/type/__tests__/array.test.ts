@@ -109,7 +109,7 @@ describe("array", () => {
 			const t = type(["string", "number"])
 			attest<[string, number]>(t.infer)
 			attest(t.allows(["", 0])).equals(true)
-			attest(t(["", 0]).out).snap()
+			attest(t(["", 0]).out).snap(["", 0])
 			attest(t.allows([true, 0])).equals(false)
 			attest(t([true, 0]).errors?.summary).snap()
 			attest(t.allows([0, false])).equals(false)
