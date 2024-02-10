@@ -75,8 +75,12 @@ export class CompiledFunction<
 	}
 
 	/** Current index is "i" */
-	for(until: string, body: (self: this) => this) {
-		return this.block(`for (let i = 0; ${until}; i++)`, body)
+	for(
+		until: string,
+		body: (self: this) => this,
+		initialValue: CoercibleValue = 0
+	) {
+		return this.block(`for (let i = ${initialValue}; ${until}; i++)`, body)
 	}
 
 	/** Current key is "k" */

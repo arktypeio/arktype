@@ -18,6 +18,8 @@ export interface BaseSequenceSchema extends BaseMeta {
 export interface NormalizedPostfixableSequenceSchema
 	extends BaseSequenceSchema {
 	readonly optionals?: undefined
+	// variadic is required for postfixed
+	readonly variadic: TypeSchema
 	readonly postfixed?: readonly TypeSchema[]
 }
 
@@ -94,8 +96,13 @@ export class SequenceNode extends BaseNode<
 					"optionals" in schema ||
 					"postfixed" in schema
 				) {
-					if (schema.optionals?.length && (schema.postfixed as any)?.length) {
-						return throwParseError(invalidPostfixMessage)
+					if (schema.postfixed?.length) {
+						if (!schema.variadic) {
+							return throwParseError(postfixedWithoutVariadicMessage)
+						}
+						if ((schema.optionals as any)?.length) {
+							return throwParseError(postfixedFollowingOptionalMessage)
+						}
 					}
 					return schema
 				}
@@ -148,7 +155,8 @@ export class SequenceNode extends BaseNode<
 			defaults: {
 				description(inner) {
 					const parts = inner.fixed?.map(String) ?? []
-					parts.push(`zero or more elements containing ${inner.variadic}`)
+					inner.optionals?.forEach((node) => parts.push(`an optional ${node}`))
+					parts.push(`zero or more ${inner.variadic} elements`)
 					inner.postfixed?.forEach((node) => parts.push(String(node)))
 					return `an array of ${parts.join(" followed by ")}`
 				}
@@ -180,7 +188,7 @@ export class SequenceNode extends BaseNode<
 
 		if (this.optionals) {
 			for (; i < this.firstVariadicIndex; i++) {
-				if (i === data.length) {
+				if (i >= data.length) {
 					return true
 				}
 				if (
@@ -199,17 +207,17 @@ export class SequenceNode extends BaseNode<
 					return false
 				}
 			}
-		}
-
-		if (this.postfixed) {
-			for (; i < data.length; i++) {
-				if (
-					!this.postfixed[i - postfixStartIndex].traverseAllows(data[i], ctx)
-				) {
-					return false
+			if (this.postfixed) {
+				for (; i < data.length; i++) {
+					if (
+						!this.postfixed[i - postfixStartIndex].traverseAllows(data[i], ctx)
+					) {
+						return false
+					}
 				}
 			}
 		}
+
 		return true
 	}
 
@@ -230,7 +238,7 @@ export class SequenceNode extends BaseNode<
 
 		if (this.optionals) {
 			for (; i < this.firstVariadicIndex; i++) {
-				if (i === data.length) {
+				if (i >= data.length) {
 					return
 				}
 				this.optionals[i - this.fixedLength].traverseApply(data[i], ctx)
@@ -243,11 +251,10 @@ export class SequenceNode extends BaseNode<
 			for (; i < postfixStartIndex; i++) {
 				this.variadic.traverseApply(data[i], ctx)
 			}
-		}
-
-		if (this.postfixed) {
-			for (; i < data.length; i++) {
-				this.postfixed[i - postfixStartIndex].traverseApply(data[i], ctx)
+			if (this.postfixed) {
+				for (; i < data.length; i++) {
+					this.postfixed[i - postfixStartIndex].traverseApply(data[i], ctx)
+				}
 			}
 		}
 	}
@@ -260,18 +267,28 @@ export class SequenceNode extends BaseNode<
 		}
 
 		this.fixed?.forEach((node, i) => js.checkKey(`${i}`, node, true))
-		this.optionals?.forEach((node, i) =>
-			js.checkKey(`${i + this.fixedLength}`, node, true)
-		)
-		js.const(
-			"lastVariadicIndex",
-			`${js.data}.length${this.postfixed ? `- ${this.postfixedLength}` : ""}`
-		)
-		js.for("i < lastVariadicIndex", () => js.checkKey("i", this.variadic, true))
+		this.optionals?.forEach((node, i) => {
+			const dataIndex = `${i + this.fixedLength}`
+			js.if(`${dataIndex} >= ${js.data}.length`, () =>
+				js.traversalKind === "Allows" ? js.return(true) : js.return()
+			)
+			js.checkKey(dataIndex, node, true)
+		})
 
-		this.postfixed?.forEach((node, i) =>
-			js.checkKey(`lastVariadicIndex + ${i + 1}`, node, true)
-		)
+		if (this.variadic) {
+			js.const(
+				"lastVariadicIndex",
+				`${js.data}.length${this.postfixed ? `- ${this.postfixedLength}` : ""}`
+			)
+			js.for(
+				"i < lastVariadicIndex",
+				() => js.checkKey("i", this.variadic!, true),
+				this.firstVariadicIndex
+			)
+			this.postfixed?.forEach((node, i) =>
+				js.checkKey(`lastVariadicIndex + ${i + 1}`, node, true)
+			)
+		}
 
 		if (js.traversalKind === "Allows") {
 			js.return(true)
@@ -287,7 +304,14 @@ export class SequenceNode extends BaseNode<
 	}
 }
 
-export const invalidPostfixMessage =
+export const postfixedFollowingOptionalMessage =
 	"A postfixed required element cannot follow an optional element"
 
-export type invalidPostfixMessage = typeof invalidPostfixMessage
+export type postfixedFollowingOptionalMessage =
+	typeof postfixedFollowingOptionalMessage
+
+export const postfixedWithoutVariadicMessage =
+	"A postfixed element requires a variadic element"
+
+export type postfixedWithoutVariadicMessage =
+	typeof postfixedWithoutVariadicMessage
