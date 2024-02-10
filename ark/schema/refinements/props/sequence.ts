@@ -11,7 +11,8 @@ import type { FoldInput } from "../refinement.js"
 
 export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
-	readonly element: TypeSchema
+	readonly optional?: readonly TypeSchema[]
+	readonly element?: TypeSchema
 	readonly postfix?: readonly TypeSchema[]
 }
 
@@ -20,8 +21,10 @@ export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
 	readonly prefix?: readonly TypeNode[]
-	// the variadic element
-	readonly element: TypeNode
+	// a list of optional elements following prefix (undefined equivalent to [])
+	readonly optional?: readonly TypeNode[]
+	// the variadic element (only allowed if all optional elements are present)
+	readonly element?: TypeNode
 	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
 	readonly postfix?: readonly TypeNode[]
 }
@@ -38,7 +41,7 @@ export type SequenceDeclaration = declareNode<{
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
-	"prefix" | "postfix"
+	"prefix" | "postfix" | "optional"
 > = {
 	child: true,
 	parse: (schema, ctx) =>
@@ -59,6 +62,7 @@ export class SequenceNode extends BaseNode<
 			collapseKey: "element",
 			keys: {
 				prefix: fixedSequenceKeyDefinition,
+				optional: fixedSequenceKeyDefinition,
 				element: {
 					child: true,
 					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
@@ -70,22 +74,30 @@ export class SequenceNode extends BaseNode<
 					? schema
 					: { element: schema },
 			reduce: (inner, scope) => {
-				if (!inner.postfix) {
+				if (!inner.element || (!inner.postfix && !inner.optional)) {
 					return
 				}
-				const postfix = inner.postfix.slice()
+				const optional = inner.optional?.slice() ?? []
+				while (optional.at(-1)?.equals(inner.element)) {
+					optional.pop()
+				}
+				const postfix = inner.postfix?.slice() ?? []
 				const prefix = inner.prefix?.slice() ?? []
 				while (postfix[0]?.equals(inner.element)) {
 					prefix.push(postfix.shift()!)
 				}
-				if (postfix.length < inner.postfix.length) {
+				if (
+					(inner.postfix && postfix.length < inner.postfix.length) ||
+					(inner.optional && optional.length < inner.optional.length)
+				) {
 					return scope.parse(
 						"sequence",
 						{
 							...inner,
 							// empty lists will be omitted during normalization
 							prefix,
-							postfix
+							postfix,
+							optional
 						},
 						{ prereduced: true }
 					)
