@@ -92,11 +92,9 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 				prerequisite: true,
 				optional: false
 			},
-			// , ctx
 			value: schema({ unit: def.length })
 		})
 	}
-	//  props , ctx
 	return schema(Array)
 }
 
