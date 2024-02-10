@@ -45,29 +45,32 @@ export const parseTuple = (def: List, ctx: ParseContext) =>
 
 export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 	const props: unknown[] = []
-	let isVariadic = false
+	let variadicIndex: number | undefined
 	for (let i = 0; i < def.length; i++) {
 		let elementDef = def[i]
 		ctx.path.push(`${i}`)
 		if (typeof elementDef === "string" && elementDef.startsWith("...")) {
 			elementDef = elementDef.slice(3)
-			isVariadic = true
+			if (variadicIndex !== undefined) {
+				return throwParseError(multipleVariadicMesage)
+			}
+			variadicIndex = i
 		} else if (
 			isArray(elementDef) &&
 			elementDef.length === 2 &&
 			elementDef[0] === "..."
 		) {
 			elementDef = elementDef[1]
-			isVariadic = true
+			if (variadicIndex !== undefined) {
+				return throwParseError(multipleVariadicMesage)
+			}
+			variadicIndex = i
 		}
 		const parsedEntry = parseEntry([`${i}`, elementDef])
 		const value = ctx.scope.parse(parsedEntry.innerValue, ctx)
-		if (isVariadic) {
+		if (variadicIndex === i) {
 			if (!value.extends(keywords.Array)) {
 				return throwParseError(writeNonArrayRestMessage(elementDef))
-			}
-			if (i !== def.length - 1) {
-				return throwParseError(prematureRestMessage)
 			}
 			// TODO: Fix builtins.arrayIndexTypeNode()
 			const elementType = value.getPath()
@@ -85,7 +88,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 		}
 		ctx.path.pop()
 	}
-	if (!isVariadic) {
+	if (variadicIndex === undefined) {
 		props.push({
 			key: {
 				name: "length",
@@ -200,9 +203,9 @@ type writeNonArrayRestMessage<operand> = `Rest element ${operand extends string
 	? `'${operand}'`
 	: ""} must be an array`
 
-export const prematureRestMessage = `Rest elements are only allowed at the end of a tuple`
+export const multipleVariadicMesage = `A tuple may have at most one variadic element`
 
-type prematureRestMessage = typeof prematureRestMessage
+type prematureRestMessage = typeof multipleVariadicMesage
 
 type inferTupleLiteral<
 	def extends List,

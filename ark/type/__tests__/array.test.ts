@@ -3,7 +3,7 @@ import { scope, type } from "arktype"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
 import {
-	prematureRestMessage,
+	multipleVariadicMesage,
 	writeNonArrayRestMessage
 } from "../parser/tuple.js"
 
@@ -18,11 +18,11 @@ describe("array", () => {
 			attest(t(["foo", "bar"]).out).snap(["foo", "bar"])
 			attest(t.allows(["foo", "bar", 5])).equals(false)
 			attest(t(["foo", "bar", 5]).errors?.summary).snap(
-				"Item at index 2 must be a string (was number)"
+				"Value at [2] must be a string (was number)"
 			)
 			attest(t.allows([5, "foo", "bar"])).equals(false)
 			attest(t([5, "foo", "bar"]).errors?.summary).snap(
-				"Item at index 0 must be a string (was number)"
+				"Value at [0] must be a string (was number)"
 			)
 		})
 
@@ -35,11 +35,11 @@ describe("array", () => {
 			attest(t([["foo"]]).out).snap([["foo"]])
 			attest(t.allows(["foo"])).equals(false)
 			attest(t(["foo"]).errors?.summary).snap(
-				"Item at index 0 must be an array (was string)"
+				"Value at [0] must be an array (was string)"
 			)
 			attest(t.allows([["foo", 5]])).equals(false)
 			attest(t([["foo", 5]]).errors?.summary).snap(
-				"[0][1] must be a string (was number)"
+				"Value at [0][1] must be a string (was number)"
 			)
 		})
 
@@ -209,11 +209,11 @@ describe("array", () => {
 				attest(() =>
 					// @ts-expect-error
 					type(["...number[]", "string"])
-				).throwsAndHasTypeError(prematureRestMessage)
+				).throwsAndHasTypeError(multipleVariadicMesage)
 				attest(() =>
 					// @ts-expect-error
 					type([["...", "string[]"], "number"])
-				).throwsAndHasTypeError(prematureRestMessage)
+				).throwsAndHasTypeError(multipleVariadicMesage)
 			})
 		})
 	})

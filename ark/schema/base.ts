@@ -146,12 +146,19 @@ export abstract class BaseNode<
 			implementation.defaults.actual ??= (data) => printable(data)
 			implementation.defaults.problem ??= (ctx) =>
 				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-			implementation.defaults.message ??= (ctx) =>
-				ctx.path.length === 0
-					? capitalize(ctx.problem)
-					: ctx.path.length === 1 && typeof ctx.path[0] === "number"
-					? `Item at index ${ctx.path[0]} ${ctx.problem}`
-					: `${pathToPropString(ctx.path)} ${ctx.problem}`
+			implementation.defaults.message ??= (ctx) => {
+				if (ctx.path.length === 0) {
+					return capitalize(ctx.problem)
+				}
+				const problemWithLocation = `${pathToPropString(ctx.path)} ${
+					ctx.problem
+				}`
+				if (problemWithLocation[0] === "[") {
+					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+					return `Value at ${problemWithLocation}`
+				}
+				return problemWithLocation
+			}
 		}
 		return implementation
 	}
