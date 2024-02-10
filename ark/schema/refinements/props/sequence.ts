@@ -9,10 +9,11 @@ import type {
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import type { FoldInput } from "../refinement.js"
 
+// TODO: element not required, always create sequence node if array with numeric indexs
 export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
 	readonly optional?: readonly TypeSchema[]
-	readonly element?: TypeSchema
+	readonly element: TypeSchema
 	readonly postfix?: readonly TypeSchema[]
 }
 
@@ -24,7 +25,7 @@ export interface SequenceInner extends BaseMeta {
 	// a list of optional elements following prefix (undefined equivalent to [])
 	readonly optional?: readonly TypeNode[]
 	// the variadic element (only allowed if all optional elements are present)
-	readonly element?: TypeNode
+	readonly element: TypeNode
 	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
 	readonly postfix?: readonly TypeNode[]
 }
@@ -83,8 +84,13 @@ export class SequenceNode extends BaseNode<
 				}
 				const postfix = inner.postfix?.slice() ?? []
 				const prefix = inner.prefix?.slice() ?? []
-				while (postfix[0]?.equals(inner.element)) {
-					prefix.push(postfix.shift()!)
+				if (optional.length === 0) {
+					// if optional length is 0, normalize equivalent
+					// prefix/postfix elements to prefix, e.g.:
+					// [...number[], number] => [number, ...number[]]
+					while (postfix[0]?.equals(inner.element)) {
+						prefix.push(postfix.shift()!)
+					}
 				}
 				if (
 					(inner.postfix && postfix.length < inner.postfix.length) ||
