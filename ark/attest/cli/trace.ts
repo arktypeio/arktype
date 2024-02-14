@@ -23,6 +23,7 @@ export const trace = (args: string[]) => {
 	}
 
 	try {
+		console.log(`⏳ Gathering type trace data for ${packageDir}...`)
 		// These cache files have to be removed before any analysis is done otherwise
 		// the results will be meaningless.
 
@@ -36,13 +37,14 @@ export const trace = (args: string[]) => {
 				stdio: "inherit"
 			}
 		)
-
+	} catch (e) {
+		console.error(String(e))
+	} finally {
+		console.log(`⏳ Analyzing type trace data for ${packageDir}...`)
 		// TypeScript's analyze-trace tool can be used to automatically detect hot-spots in your code.
 		// It's not a perfect match for what can be optimized, but it can be a helpful place to start
 		execSync(`node ${analyzeTraceBin} ${join(packageDir, ".tstrace")}`, {
 			stdio: "inherit"
 		})
-	} catch (e) {
-		console.error(String(e))
 	}
 }
