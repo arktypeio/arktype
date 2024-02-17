@@ -1,4 +1,4 @@
-import { throwParseError } from "@arktype/util"
+import { throwInternalError, throwParseError } from "@arktype/util"
 import { BaseNode, type TypeNode, type TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -7,7 +7,11 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
+import type {
+	TraversalContext,
+	TraverseAllows,
+	TraverseApply
+} from "../../traversal/context.js"
 import type { FoldInput } from "../refinement.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
@@ -165,59 +169,35 @@ export class SequenceNode extends BaseNode<
 
 	readonly hasOpenIntersection = false
 
-	readonly fixedLength = this.fixed?.length ?? 0
-	readonly optionalsLength = this.optionals?.length ?? 0
-	readonly firstVariadicIndex = this.fixedLength + this.optionalsLength
-	readonly postfixedLength = this.postfixed?.length ?? 0
-	readonly minLength = this.fixedLength + this.postfixedLength
+	readonly fixed = this.inner.fixed ?? []
+	readonly optionals = this.inner.optionals ?? []
+	readonly prevariadic = [...this.fixed, ...this.optionals]
+	readonly postfixed = this.inner.postfixed ?? []
+	readonly minLength = this.fixed.length + this.postfixed.length
+
+	protected childAtIndex(data: readonly unknown[], index: number) {
+		if (index < this.prevariadic.length) return this.prevariadic[index]
+		const postfixStartIndex = data.length - this.postfixed.length
+		if (index >= postfixStartIndex)
+			return this.postfixed[index - postfixStartIndex]
+		return (
+			this.variadic ??
+			throwInternalError(
+				`Unexpected attempt to access index ${index} on ${this}`
+			)
+		)
+	}
 
 	traverseAllows: TraverseAllows<readonly unknown[]> = (data, ctx) => {
 		if (data.length < this.minLength) {
 			return false
 		}
 
-		let i = 0
-
-		if (this.fixed) {
-			for (i; i < this.fixedLength; i++) {
-				if (!this.fixed[i].traverseAllows(data[i], ctx)) {
-					return false
-				}
+		for (let i = 0; i < data.length; i++) {
+			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) {
+				return false
 			}
 		}
-
-		if (this.optionals) {
-			for (; i < this.firstVariadicIndex; i++) {
-				if (i >= data.length) {
-					return true
-				}
-				if (
-					!this.optionals[i - this.fixedLength].traverseAllows(data[i], ctx)
-				) {
-					return false
-				}
-			}
-		}
-
-		const postfixStartIndex = data.length - this.postfixedLength
-
-		if (this.variadic) {
-			for (; i < postfixStartIndex; i++) {
-				if (!this.variadic.traverseAllows(data[i], ctx)) {
-					return false
-				}
-			}
-			if (this.postfixed) {
-				for (; i < data.length; i++) {
-					if (
-						!this.postfixed[i - postfixStartIndex].traverseAllows(data[i], ctx)
-					) {
-						return false
-					}
-				}
-			}
-		}
-
 		return true
 	}
 
@@ -228,34 +208,8 @@ export class SequenceNode extends BaseNode<
 			return
 		}
 
-		let i = 0
-
-		if (this.fixed) {
-			for (; i < this.fixedLength; i++) {
-				this.fixed[i].traverseApply(data[i], ctx)
-			}
-		}
-
-		if (this.optionals) {
-			for (; i < this.firstVariadicIndex; i++) {
-				if (i >= data.length) {
-					return
-				}
-				this.optionals[i - this.fixedLength].traverseApply(data[i], ctx)
-			}
-		}
-
-		const postfixStartIndex = data.length - this.postfixedLength
-
-		if (this.variadic) {
-			for (; i < postfixStartIndex; i++) {
-				this.variadic.traverseApply(data[i], ctx)
-			}
-			if (this.postfixed) {
-				for (; i < data.length; i++) {
-					this.postfixed[i - postfixStartIndex].traverseApply(data[i], ctx)
-				}
-			}
+		for (let i = 0; i < data.length; i++) {
+			this.childAtIndex(data, i).traverseApply(data[i], ctx)
 		}
 	}
 
@@ -266,9 +220,9 @@ export class SequenceNode extends BaseNode<
 			)
 		}
 
-		this.fixed?.forEach((node, i) => js.checkKey(`${i}`, node, true))
-		this.optionals?.forEach((node, i) => {
-			const dataIndex = `${i + this.fixedLength}`
+		this.fixed.forEach((node, i) => js.checkKey(`${i}`, node, true))
+		this.optionals.forEach((node, i) => {
+			const dataIndex = `${i + this.fixed.length}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
@@ -278,14 +232,14 @@ export class SequenceNode extends BaseNode<
 		if (this.variadic) {
 			js.const(
 				"lastVariadicIndex",
-				`${js.data}.length${this.postfixed ? `- ${this.postfixedLength}` : ""}`
+				`${js.data}.length${this.postfixed ? `- ${this.postfixed.length}` : ""}`
 			)
 			js.for(
 				"i < lastVariadicIndex",
 				() => js.checkKey("i", this.variadic!, true),
-				this.firstVariadicIndex
+				this.prevariadic.length
 			)
-			this.postfixed?.forEach((node, i) =>
+			this.postfixed.forEach((node, i) =>
 				js.checkKey(`lastVariadicIndex + ${i + 1}`, node, true)
 			)
 		}
