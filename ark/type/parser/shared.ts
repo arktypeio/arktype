@@ -53,7 +53,7 @@ type DefinitionEntry = readonly [string | symbol, unknown]
 
 const getInnerValue = (value: unknown): ValueParseResult => {
 	if (typeof value === "string") {
-		if (value[value.length - 1] === "?") {
+		if (value.at(-1) === "?" && value.length > 1) {
 			return {
 				kind: "optional",
 				innerValue: value.slice(0, -1)
