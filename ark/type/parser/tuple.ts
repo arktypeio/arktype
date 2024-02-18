@@ -55,10 +55,25 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 	for (let i = 0; i < def.length; i++) {
 		ctx.path.push(`${i}`)
 		const parsedElementDef = parseSpreadable(def[i])
+		const element = ctx.scope.parse(parsedElementDef.innerValue, ctx)
 		if (parsedElementDef.spread) {
-			sequences = appendSpread(sequences, parsedElementDef, ctx)
+			if (parsedElementDef.kind === "optional") {
+				return throwParseError(spreadOptionalMessage)
+			}
+			if (!element.extends(keywords.Array)) {
+				return throwParseError(writeNonArraySpreadMessage(element))
+			}
+			sequences = sequences.flatMap((base) =>
+				element.branches.map((branch) => appendSpreadBranch(base, branch))
+			)
 		} else {
-			sequences = appendElement(sequences, parsedElementDef, ctx)
+			sequences = sequences.map((base) =>
+				appendElement(
+					base,
+					parsedElementDef.kind === "optional" ? "optional" : "required",
+					element
+				)
+			)
 		}
 		ctx.path.pop()
 	}
@@ -69,53 +84,52 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 }
 
 const appendElement = (
-	sequences: SequenceInner[],
-	parsedElementDef: TupleElementParseResult,
-	ctx: ParseContext
-): SequenceInner[] => {
-	const element = ctx.scope.parse(parsedElementDef.innerValue, ctx)
-	return sequences.map((base) => {
-		if (parsedElementDef.kind === "optional") {
-			// e.g. [...string[], number?]
-			if (base.variadic) throwParseError(optionalPostVariadicMessage)
+	base: SequenceInner,
+	kind: "optional" | "required" | "variadic",
+	element: TypeNode
+): SequenceInner => {
+	switch (kind) {
+		case "required":
+			if (base.optionals)
+				// e.g. [string?, number]
+				return throwParseError(requiredPostOptionalMessage)
+			return base.variadic
+				? // e.g. [...string[], number]
+				  {
+						...base,
+						postfixed: conflatenate(base.postfixed, element)
+				  }
+				: // e.g. [string, number]
+				  {
+						...base,
+						fixed: conflatenate(base.fixed, element)
+				  }
+		case "optional":
+			if (base.variadic)
+				// e.g. [...string[], number?]
+				return throwParseError(optionalPostVariadicMessage)
 			// e.g. [string, number?]
 			return {
 				...base,
 				optionals: conflatenate(base.optionals, element)
 			}
-		}
-		// e.g. [string?, number]
-		if (base.optionals) throwParseError(requiredPostOptionalMessage)
-		if (base.variadic) {
-			// e.g. [...string[], number]
-			return {
-				...base,
-				postfixed: conflatenate(base.postfixed, element)
-			}
-		}
-		// e.g. [string, number]
-		return {
-			...base,
-			fixed: conflatenate(base.fixed, element)
-		}
-	})
-}
+		case "variadic":
+			if (base.postfixed)
+				// e.g. [...string[], number, ...string[]]
+				return throwParseError(multipleVariadicMesage)
+			if (base.variadic) {
+				if (!base.variadic.equals(element))
+					// e.g. [...string[], ...number[]]
+					return throwParseError(multipleVariadicMesage)
 
-const appendSpread = (
-	sequences: SequenceInner[],
-	parsedElementDef: TupleElementParseResult,
-	ctx: ParseContext
-): SequenceInner[] => {
-	if (parsedElementDef.kind === "optional") {
-		return throwParseError(spreadOptionalMessage)
+				// e.g. [...string[], ...string[]]
+				// do nothing, second spread doesn't change the type
+				return base
+			} else {
+				// e.g. [string, ...number[]]
+				return { ...base, variadic: element }
+			}
 	}
-	const element = ctx.scope.parse(parsedElementDef.innerValue, ctx)
-	if (!element.extends(keywords.Array)) {
-		return throwParseError(writeNonArraySpreadMessage(element))
-	}
-	return sequences.flatMap((base) =>
-		element.branches.map((branch) => appendSpreadBranch(base, branch))
-	)
 }
 
 const appendSpreadBranch = (
@@ -125,60 +139,24 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		if (base.variadic) {
-			return throwParseError(multipleVariadicMesage)
-		}
-		return {
-			...base,
-			variadic: keywords.unknown
-		}
+		return appendElement(base, "variadic", keywords.unknown)
 	}
-	const result: mutable<SequenceInner> = {}
-	if (spread.fixed.length) {
-		if (base.optionals) {
-			// e.g. [string?, ...[number]]
-			return throwParseError(requiredPostOptionalMessage)
-		}
-		if (base.variadic) {
-			// e.g. [...string[], ...[number]]
-			result.postfixed = conflatenate(base.postfixed, spread.fixed)
-		} else {
-			// e.g. [number, ...[string]]
-			result.fixed = conflatenate(base.fixed, spread.fixed)
-		}
-	}
-	if (spread.optionals.length) {
-		if (result.variadic) {
-			// e.g. [...string[], ...[number?]]
-			return throwParseError(optionalPostVariadicMessage)
-		}
-		result.optionals = conflatenate(base.optionals, spread.optionals)
-	}
+	let result: mutable<SequenceInner> = {}
+	result = spread.fixed.reduce(
+		(result, node) => appendElement(result, "required", node),
+		result
+	)
+	result = spread.optionals.reduce(
+		(result, node) => appendElement(result, "optional", node),
+		result
+	)
 	if (spread.variadic) {
-		if (result.postfixed) {
-			// e.g. [...string[], number, ...string[]]
-			return throwParseError(multipleVariadicMesage)
-		}
-		if (result.variadic) {
-			if (!result.variadic.equals(spread.variadic)) {
-				// e.g. [...string[], ...number[]]
-				return throwParseError(multipleVariadicMesage)
-			}
-			// e.g. [...string[], ...string[]]
-			// (do nothing, second spread doesn't change the type)
-		} else {
-			// e.g. [string, ...number[]]
-			result.variadic = spread.variadic
-		}
+		result = appendElement(result, "variadic", spread.variadic)
 	}
-	if (spread.postfixed) {
-		if (result.optionals) {
-			// e.g. [string?, ...[...number[], string]]
-			return throwParseError(requiredPostOptionalMessage)
-		}
-		// e.g. [number,  ...[...string[], number]]
-		result.postfixed = conflatenate(base.postfixed, spread.postfixed)
-	}
+	result = spread.postfixed.reduce(
+		(result, node) => appendElement(result, "required", node),
+		result
+	)
 	return result
 }
 
