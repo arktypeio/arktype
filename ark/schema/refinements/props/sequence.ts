@@ -36,13 +36,13 @@ export type NormalizedSequenceSchema =
 export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
 export interface SequenceInner extends BaseMeta {
-	// a list of fixed position elements starting at index 0 (undefined equivalent to [])
+	// a list of fixed position elements starting at index 0
 	readonly fixed?: readonly TypeNode[]
-	// a list of optional elements following prefix (undefined equivalent to [])
+	// a list of optional elements following prefix
 	readonly optionals?: readonly TypeNode[]
 	// the variadic element (only allowed if all optional elements are present)
 	readonly variadic?: TypeNode
-	// a list of fixed position elements, the last being the last element of the array (undefined equivalent to [])
+	// a list of fixed position elements, the last being the last element of the array
 	readonly postfixed?: readonly TypeNode[]
 }
 
@@ -170,6 +170,15 @@ export class SequenceNode extends BaseNode<
 	readonly prevariadic = [...this.fixed, ...this.optionals]
 	readonly postfixed = this.inner.postfixed ?? []
 	readonly minLength = this.fixed.length + this.postfixed.length
+	readonly minLengthNode =
+		this.minLength === 0 ? undefined : this.$.parse("minLength", this.minLength)
+	readonly maxLength = this.variadic
+		? undefined
+		: this.minLength + this.optionals.length
+	readonly maxLengthNode =
+		this.maxLength === undefined
+			? undefined
+			: this.$.parse("maxLength", this.maxLength)
 
 	protected childAtIndex(data: readonly unknown[], index: number) {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
@@ -184,11 +193,8 @@ export class SequenceNode extends BaseNode<
 		)
 	}
 
+	// minLength/maxLength should be checked by Intersection before either traversal
 	traverseAllows: TraverseAllows<readonly unknown[]> = (data, ctx) => {
-		if (data.length < this.minLength) {
-			return false
-		}
-
 		for (let i = 0; i < data.length; i++) {
 			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) {
 				return false
@@ -198,24 +204,13 @@ export class SequenceNode extends BaseNode<
 	}
 
 	traverseApply: TraverseApply<readonly unknown[]> = (data, ctx) => {
-		if (data.length < this.minLength) {
-			// TODO: possible to unify with minLength?
-			ctx.error(`at least length ${this.minLength}`)
-			return
-		}
-
 		for (let i = 0; i < data.length; i++) {
 			this.childAtIndex(data, i).traverseApply(data[i], ctx)
 		}
 	}
 
+	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler) {
-		if (this.minLength !== 0) {
-			js.if(`${js.data}.length < ${this.minLength}`, () =>
-				js.traversalKind === "Allows" ? js.return(false) : js.return()
-			)
-		}
-
 		this.fixed.forEach((node, i) => js.checkKey(`${i}`, node, true))
 		this.optionals.forEach((node, i) => {
 			const dataIndex = `${i + this.fixed.length}`
@@ -250,6 +245,14 @@ export class SequenceNode extends BaseNode<
 	}
 
 	foldIntersection(into: FoldInput<"sequence">) {
+		this.minLengthNode?.foldIntersection(into)
+		const possibleLengthDisjoint =
+			this.maxLengthNode?.foldIntersection(into) ??
+			// even if this sequence doesn't contribute maxLength, if there is
+			// an existing maxLength constraint, check that it is compatible
+			// with the minLength constraint we just added
+			into.maxLength?.foldIntersection(into)
+		if (possibleLengthDisjoint) return possibleLengthDisjoint
 		return into
 	}
 }

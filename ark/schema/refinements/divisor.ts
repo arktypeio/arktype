@@ -75,12 +75,11 @@ export class DivisorNode extends BasePrimitiveRefinement<
 		}
 	}
 
-	foldIntersection(into: FoldInput<"divisor">) {
+	foldIntersection(into: FoldInput<"divisor">): undefined {
 		if (into.basis?.domain !== "number") {
 			throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
 		}
 		into.divisor = this.intersectOwnKind(into.divisor)
-		return into
 	}
 }
 

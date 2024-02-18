@@ -74,7 +74,5 @@ export class IndexNode extends BaseNode<
 		return this
 	}
 
-	foldIntersection(into: FoldInput<"index">) {
-		return {}
-	}
+	foldIntersection(into: FoldInput<"index">) {}
 }

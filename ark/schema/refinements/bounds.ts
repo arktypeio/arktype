@@ -20,11 +20,7 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import {
-	BasePrimitiveRefinement,
-	type FoldInput,
-	type FoldOutput
-} from "./refinement.js"
+import { BasePrimitiveRefinement, type FoldInput } from "./refinement.js"
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
 	extends BaseMeta {
@@ -240,12 +236,11 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 			}
 		})
 
-	foldIntersection(into: FoldInput<"min">) {
+	foldIntersection(into: FoldInput<"min">): undefined {
 		if (into.basis?.domain !== "number") {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
 		into.min = this.intersectOwnKind(into.min)
-		return into
 	}
 
 	traverseAllows = this.exclusive
@@ -269,7 +264,7 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 		? (data: number) => data < this.limit
 		: (data: number) => data <= this.limit
 
-	foldIntersection(into: FoldInput<"max">): FoldOutput<"max"> {
+	foldIntersection(into: FoldInput<"max">): Disjoint | undefined {
 		if (into.basis?.domain !== "number") {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
@@ -277,7 +272,6 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 			return Disjoint.from("bound", this, into.min)
 		}
 		into.max = this.intersectOwnKind(into.max)
-		return into
 	}
 }
 
@@ -316,7 +310,7 @@ export class MinLengthNode extends BaseBound<
 		? (data: string | readonly unknown[]) => data.length > this.limit
 		: (data: string | readonly unknown[]) => data.length >= this.limit
 
-	foldIntersection(into: FoldInput<"minLength">) {
+	foldIntersection(into: FoldInput<"minLength">): undefined {
 		if (
 			into.basis?.domain !== "string" &&
 			!into.basis?.extends(this.$.builtin.Array)
@@ -324,7 +318,6 @@ export class MinLengthNode extends BaseBound<
 			this.throwInvalidBoundOperandError(into.basis)
 		}
 		into.minLength = this.intersectOwnKind(into.minLength)
-		return into
 	}
 }
 
@@ -350,7 +343,7 @@ export class MaxLengthNode extends BaseBound<
 		? (data: string | readonly unknown[]) => data.length < this.limit
 		: (data: string | readonly unknown[]) => data.length <= this.limit
 
-	foldIntersection(into: FoldInput<"maxLength">): FoldOutput<"maxLength"> {
+	foldIntersection(into: FoldInput<"maxLength">): Disjoint | undefined {
 		if (
 			into.basis?.domain !== "string" &&
 			!into.basis?.extends(this.$.builtin.Array)
@@ -361,7 +354,6 @@ export class MaxLengthNode extends BaseBound<
 		if (into.minLength?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.minLength)
 		}
-		return into
 	}
 }
 
@@ -410,12 +402,11 @@ export class AfterNode
 		? (data: Date) => +data > this.numericLimit
 		: (data: Date) => +data >= this.numericLimit
 
-	foldIntersection(into: FoldInput<"after">) {
+	foldIntersection(into: FoldInput<"after">): undefined {
 		if (!into.basis?.extends(this.$.builtin.Date)) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
 		into.after = this.intersectOwnKind(into.after)
-		return into
 	}
 }
 
@@ -446,7 +437,7 @@ export class BeforeNode
 		? (data: Date) => +data < this.numericLimit
 		: (data: Date) => +data <= this.numericLimit
 
-	foldIntersection(into: FoldInput<"before">): FoldOutput<"before"> {
+	foldIntersection(into: FoldInput<"before">): Disjoint | undefined {
 		if (!into.basis?.extends(this.$.builtin.Date)) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
@@ -454,7 +445,6 @@ export class BeforeNode
 		if (into.after?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.after)
 		}
-		return into
 	}
 }
 

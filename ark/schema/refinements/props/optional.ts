@@ -84,7 +84,5 @@ export class OptionalNode extends BaseNode<
 		}
 	}
 
-	foldIntersection(into: FoldInput<"optional">) {
-		return {}
-	}
+	foldIntersection(into: FoldInput<"optional">) {}
 }

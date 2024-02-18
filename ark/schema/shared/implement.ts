@@ -1,7 +1,7 @@
 import {
 	compileSerializedValue,
 	isArray,
-	map,
+	remap,
 	throwParseError,
 	type ErrorMessage,
 	type JsonData,
@@ -126,7 +126,7 @@ type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
 }
 
-const precedenceByKind = map(
+const precedenceByKind = remap(
 	nodeKinds,
 	(i, kind) => [kind, i] as entryOf<PrecedenceByKind>
 )

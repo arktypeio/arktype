@@ -49,50 +49,31 @@ type numericArrayEntry<a extends readonly unknown[]> =
 					: never
 		  }[number]
 
-export function map<
+export type MappedEntry = listable<Entry<string | symbol> | Entry<number>>
+
+export type fromMappedEntries<transformed extends MappedEntry> = [
+	transformed
+] extends [listable<Entry<number>>]
+	? arrayFromListableEntries<extractEntries<transformed>>
+	: objectFromListableEntries<extractEntrySets<transformed>>
+
+export function remap<
 	const o extends readonly unknown[],
-	transformed extends listable<Entry<number>>
+	transformed extends MappedEntry
 >(
 	o: o,
 	flatMapEntry: (...args: numericArrayEntry<o>) => transformed
-): arrayFromListableEntries<extractEntries<transformed>>
-export function map<
-	const o extends readonly unknown[],
-	transformed extends listable<Entry<string | symbol>>
->(
-	o: o,
-	flatMapEntry: (...args: numericArrayEntry<o>) => transformed
-): objectFromListableEntries<extractEntrySets<transformed>>
-export function map<
-	const o extends object,
-	transformed extends listable<Entry<number>>
->(
+): fromMappedEntries<transformed>
+export function remap<const o extends object, transformed extends MappedEntry>(
 	o: o,
 	flatMapEntry: (...args: entryOf<o>) => transformed
-): arrayFromListableEntries<extractEntries<transformed>>
-export function map<
-	const o extends object,
-	transformed extends listable<Entry<number>>
->(
+): fromMappedEntries<transformed>
+export function remap<const o extends object, transformed extends MappedEntry>(
 	o: o,
 	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
-): arrayFromListableEntries<extractEntries<transformed>>
-export function map<
-	const o extends object,
-	transformed extends listable<Entry<string | symbol>>
->(
-	o: o,
-	flatMapEntry: (...args: entryOf<o>) => transformed
-): objectFromListableEntries<extractEntrySets<transformed>>
-export function map<
-	const o extends object,
-	transformed extends listable<Entry<string | symbol>>
->(
-	o: o,
-	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
-): objectFromListableEntries<extractEntrySets<transformed>>
+): fromMappedEntries<transformed>
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function map(
+export function remap(
 	o: object,
 	flatMapEntry: (...args: any[]) => listable<Entry>
 ): any {

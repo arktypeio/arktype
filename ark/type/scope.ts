@@ -10,7 +10,7 @@ import {
 	domainOf,
 	hasDomain,
 	isThunk,
-	map,
+	remap,
 	throwParseError,
 	type Dict,
 	type evaluate,
@@ -399,7 +399,7 @@ export class Scope<r extends Resolutions = any> {
 		names extends [] ? keyof r["exports"] & string : names[number]
 	> {
 		return addArkKind(
-			map(this.export(...names) as Dict, (alias, value) => [
+			remap(this.export(...names) as Dict, (alias, value) => [
 				`#${alias}`,
 				value
 			]) as never,
@@ -444,7 +444,10 @@ export class Scope<r extends Resolutions = any> {
 		}
 		const namesToExport = names.length ? names : this.exportedNames
 		return addArkKind(
-			map(namesToExport, (_, name) => [name, this.exportCache![name]]) as never,
+			remap(namesToExport, (_, name) => [
+				name,
+				this.exportCache![name]
+			]) as never,
 			"module"
 		) as never
 	}
@@ -458,7 +461,7 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 		const v = typeSet[k]
 		if (hasArkKind(v, "module")) {
 			const innerResolutions = resolutionsOfModule(v as never)
-			const prefixedResolutions = map(innerResolutions, (innerK, innerV) => [
+			const prefixedResolutions = remap(innerResolutions, (innerK, innerV) => [
 				`${k}.${innerK}`,
 				innerV
 			])

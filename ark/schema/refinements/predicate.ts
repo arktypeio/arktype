@@ -62,9 +62,8 @@ export class PredicateNode extends BasePrimitiveRefinement<
 		return null
 	}
 
-	foldIntersection(into: FoldInput<"predicate">) {
+	foldIntersection(into: FoldInput<"predicate">): undefined {
 		into.predicate = appendUnique(into.predicate, this)
-		return into
 	}
 }
 

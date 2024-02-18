@@ -1,7 +1,8 @@
-import { map, reference, throwParseError } from "@arktype/util"
+import { reference, remap, throwParseError } from "@arktype/util"
 import { BaseNode } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import type { Disjoint } from "../../shared/disjoint.js"
 import { parseOpen, type PropKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import type { FoldInput } from "../refinement.js"
@@ -93,7 +94,7 @@ export class PropsNode extends BaseNode<
 			? [...this.required, ...this.optional]
 			: this.required
 		: this.optional ?? []
-	readonly nameSet = map(this.named, (i, node) => [node.key, 1] as const)
+	readonly nameSet = remap(this.named, (i, node) => [node.key, 1] as const)
 	readonly nameSetReference = reference(this.nameSet)
 
 	traverseAllows: TraverseAllows<object> = () => true
@@ -162,11 +163,11 @@ export class PropsNode extends BaseNode<
 		return this
 	}
 
-	foldIntersection(into: FoldInput<"props">) {
+	foldIntersection(into: FoldInput<"props">): Disjoint | undefined {
 		if (into.basis?.domain !== "object") {
 			throwParseError("")
 		}
 		into.props = this.intersectOwnKind(into.props)
-		return into
+		return
 	}
 }

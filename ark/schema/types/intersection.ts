@@ -1,8 +1,8 @@
 import {
 	isArray,
 	isEmptyObject,
-	map,
 	printable,
+	remap,
 	splitByKeys,
 	throwParseError,
 	type evaluate,
@@ -84,7 +84,7 @@ export type IntersectionDeclaration = declareNode<{
 	childKind: ConstraintKind
 }>
 
-const refinementKeys = map(refinementKinds, (i, kind) => [kind, 1] as const)
+const refinementKeys = remap(refinementKinds, (i, kind) => [kind, 1] as const)
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
 // 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
@@ -103,7 +103,7 @@ const refinementKeys = map(refinementKinds, (i, kind) => [kind, 1] as const)
 // 		: this.indexed.find((entry) => entry.key.equals(key))?.value
 // }
 
-const propKeys = map([...propKinds, "keys"], (i, k) => [k, 1] as const)
+const propKeys = remap([...propKinds, "keys"], (i, k) => [k, 1] as const)
 
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
@@ -181,20 +181,14 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			reduce: (inner, scope) => {
 				const [refinements, base] = splitByKeys(inner, refinementKeys)
-				let result: FoldInput<"predicate"> | Disjoint = base
+				const result: FoldInput<"predicate"> = base
 				const flatRefinements = Object.values(refinements).flat()
 				if (flatRefinements.length === 0 && base.basis) {
 					return base.basis
 				}
 				// TODO: are these ordered?
 				for (const refinement of flatRefinements) {
-					if (result instanceof Disjoint) {
-						break
-					}
-					result = refinement.foldIntersection(result)
-				}
-				if (result instanceof Disjoint) {
-					return result.throw()
+					refinement.foldIntersection(result)?.throw()
 				}
 				return scope.parse("intersection", result, { prereduced: true })
 			},
@@ -216,15 +210,12 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	protected intersectOwnInner(r: IntersectionNode) {
 		// ensure we can safely mutate inner as well as its shallow open intersections
-		let result = map(this.inner, (k, v) => [k, isArray(v) ? [...v] : v]) as
-			| FoldInput<last<OrderedNodeKinds>>
-			| Disjoint
-
+		const result = remap(this.inner, (k, v) => [
+			k,
+			isArray(v) ? [...v] : v
+		]) as FoldInput<last<OrderedNodeKinds>>
 		for (const constraint of r.refinements) {
-			if (result instanceof Disjoint) {
-				break
-			}
-			result = constraint.foldIntersection(result)
+			constraint.foldIntersection(result)?.throw()
 		}
 		return result
 	}

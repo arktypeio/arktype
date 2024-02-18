@@ -1,11 +1,11 @@
-import { map } from "@arktype/util"
+import { remap } from "@arktype/util"
 import { nodesByKind } from "./kinds.js"
 import type { ArkConfig, ParsedArkConfig } from "./scope.js"
 
-export const defaultConfig: ParsedArkConfig = map(nodesByKind, (kind, node) => [
-	kind,
-	node.implementation.defaults
-]) as never
+export const defaultConfig: ParsedArkConfig = remap(
+	nodesByKind,
+	(kind, node) => [kind, node.implementation.defaults]
+) as never
 
 export const globalConfig = { ...defaultConfig }
 

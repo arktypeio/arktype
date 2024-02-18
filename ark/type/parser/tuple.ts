@@ -19,9 +19,9 @@ import {
 import {
 	append,
 	isArray,
-	map,
 	objectKindOrDomainOf,
 	printable,
+	remap,
 	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor,
@@ -105,7 +105,7 @@ type MutableSequenceInner = {
 }
 
 const mutableSequenceInner = (base: SequenceInner) =>
-	map(base, (k, v) => [k, isArray(v) ? [...v] : v]) as MutableSequenceInner
+	remap(base, (k, v) => [k, isArray(v) ? [...v] : v]) as MutableSequenceInner
 
 const appendElement = (
 	base: MutableSequenceInner,

@@ -3,8 +3,8 @@ import {
 	capitalize,
 	includes,
 	isArray,
-	map,
 	printable,
+	remap,
 	throwError,
 	throwInternalError,
 	type Constructor,
@@ -335,7 +335,7 @@ export abstract class BaseNode<
 		if (!shouldTransform(this as never)) {
 			return this as never
 		}
-		const innerWithTransformedChildren = map(this.inner as Dict, (k, v) => [
+		const innerWithTransformedChildren = remap(this.inner as Dict, (k, v) => [
 			k,
 			this.impl.keys[k].child
 				? isArray(v)

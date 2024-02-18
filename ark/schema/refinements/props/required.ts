@@ -112,7 +112,5 @@ export class RequiredNode extends BaseNode<
 		}
 	}
 
-	foldIntersection(into: FoldInput<"required">) {
-		return {}
-	}
+	foldIntersection(into: FoldInput<"required">) {}
 }

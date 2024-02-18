@@ -22,8 +22,6 @@ export type FoldInput<kind extends NodeKind> = {
 		: IntersectionInner[k]
 }
 
-export type FoldOutput<kind extends NodeKind> = FoldInput<kind> | Disjoint
-
 export interface BasePrimitiveRefinementDeclaration
 	extends BaseNodeDeclaration {
 	kind: PrimitiveKind & RefinementKind
@@ -33,7 +31,7 @@ export abstract class BasePrimitiveRefinement<
 	d extends BasePrimitiveRefinementDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
-	abstract foldIntersection(into: FoldInput<d["kind"]>): FoldOutput<d["kind"]>
+	abstract foldIntersection(into: FoldInput<d["kind"]>): Disjoint | undefined
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string

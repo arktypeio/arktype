@@ -68,11 +68,10 @@ export class PatternNode extends BasePrimitiveRefinement<
 		return null
 	}
 
-	foldIntersection(into: FoldInput<"pattern">) {
+	foldIntersection(into: FoldInput<"pattern">): undefined {
 		if (into.basis?.domain !== "string") {
 			throwInvalidOperandError("pattern", "a string", into.basis)
 		}
 		into.pattern = appendUnique(into.pattern, this)
-		return into
 	}
 }
