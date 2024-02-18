@@ -4,16 +4,20 @@ import {
 	type BaseMeta,
 	type Morph,
 	type MorphChildKind,
+	type Node,
 	type Out,
 	type Predicate,
 	type Schema,
+	type SequenceInner,
 	type TypeNode,
+	type UnionChildKind,
 	type extractIn,
 	type extractOut,
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
 import {
+	conflatenate,
 	isArray,
 	objectKindOrDomainOf,
 	printable,
@@ -24,7 +28,8 @@ import {
 	type List,
 	type conform,
 	type evaluate,
-	type isAny
+	type isAny,
+	type mutable
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -33,8 +38,10 @@ import type { InfixOperator, PostfixExpression } from "./semantic/semantic.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import {
 	configureShallowDescendants,
-	parseEntry,
+	parseEntryValue,
 	type EntryParseResult,
+	type EntryValueParseResult,
+	type parseEntry,
 	type validateObjectValue
 } from "./shared.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
@@ -44,64 +51,156 @@ export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
 export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
-	const props: unknown[] = []
-	let variadicIndex: number | undefined
+	let sequences: SequenceInner[] = [{}]
 	for (let i = 0; i < def.length; i++) {
-		let elementDef = def[i]
 		ctx.path.push(`${i}`)
-		if (typeof elementDef === "string" && elementDef.startsWith("...")) {
-			elementDef = elementDef.slice(3)
-			if (variadicIndex !== undefined) {
-				return throwParseError(multipleVariadicMesage)
-			}
-			variadicIndex = i
-		} else if (
-			isArray(elementDef) &&
-			elementDef.length === 2 &&
-			elementDef[0] === "..."
-		) {
-			elementDef = elementDef[1]
-			if (variadicIndex !== undefined) {
-				return throwParseError(multipleVariadicMesage)
-			}
-			variadicIndex = i
-		}
-		const parsedEntry = parseEntry([`${i}`, elementDef])
-		const value = ctx.scope.parse(parsedEntry.innerValue, ctx)
-		if (variadicIndex === i) {
-			if (!value.extends(keywords.Array)) {
-				return throwParseError(writeNonArrayRestMessage(elementDef))
-			}
-			// TODO: Fix builtins.arrayIndexTypeNode()
-			const elementType = value.getPath()
-			// TODO: first variadic i
-			props.push({ key: keywords.number, value: elementType })
+		const parsedElementDef = parseSpreadable(def[i])
+		if (parsedElementDef.spread) {
+			sequences = appendSpread(sequences, parsedElementDef, ctx)
 		} else {
-			props.push({
-				key: {
-					name: `${i}`,
-					prerequisite: false,
-					optional: parsedEntry.kind === "optional"
-				},
-				value
-			})
+			sequences = appendElement(sequences, parsedElementDef, ctx)
 		}
 		ctx.path.pop()
 	}
-	if (variadicIndex === undefined) {
-		props.push({
-			key: {
-				name: "length",
-				prerequisite: true,
-				optional: false
-			},
-			value: schema({ unit: def.length })
-		})
-	}
-	return schema(Array)
+	return schema({
+		basis: Array,
+		sequence: sequences
+	})
 }
 
-export const maybeParseTupleExpression = (
+const appendElement = (
+	sequences: SequenceInner[],
+	parsedElementDef: TupleElementParseResult,
+	ctx: ParseContext
+): SequenceInner[] => {
+	const element = ctx.scope.parse(parsedElementDef.innerValue, ctx)
+	return sequences.map((base) => {
+		if (parsedElementDef.kind === "optional") {
+			// e.g. [...string[], number?]
+			if (base.variadic) throwParseError(optionalPostVariadicMessage)
+			// e.g. [string, number?]
+			return {
+				...base,
+				optionals: conflatenate(base.optionals, element)
+			}
+		}
+		// e.g. [string?, number]
+		if (base.optionals) throwParseError(requiredPostOptionalMessage)
+		if (base.variadic) {
+			// e.g. [...string[], number]
+			return {
+				...base,
+				postfixed: conflatenate(base.postfixed, element)
+			}
+		}
+		// e.g. [string, number]
+		return {
+			...base,
+			fixed: conflatenate(base.fixed, element)
+		}
+	})
+}
+
+const appendSpread = (
+	sequences: SequenceInner[],
+	parsedElementDef: TupleElementParseResult,
+	ctx: ParseContext
+): SequenceInner[] => {
+	if (parsedElementDef.kind === "optional") {
+		return throwParseError(spreadOptionalMessage)
+	}
+	const element = ctx.scope.parse(parsedElementDef.innerValue, ctx)
+	if (!element.extends(keywords.Array)) {
+		return throwParseError(writeNonArraySpreadMessage(element))
+	}
+	return sequences.flatMap((base) =>
+		element.branches.map((branch) => appendSpreadBranch(base, branch))
+	)
+}
+
+const appendSpreadBranch = (
+	base: SequenceInner,
+	branch: Node<UnionChildKind>
+): SequenceInner => {
+	const spread = branch.firstReferenceOfKind("sequence")
+	if (!spread) {
+		// the only array with no sequence reference is unknown[]
+		if (base.variadic) {
+			return throwParseError(multipleVariadicMesage)
+		}
+		return {
+			...base,
+			variadic: keywords.unknown
+		}
+	}
+	const result: mutable<SequenceInner> = {}
+	if (spread.fixed.length) {
+		if (base.optionals) {
+			// e.g. [string?, ...[number]]
+			return throwParseError(requiredPostOptionalMessage)
+		}
+		if (base.variadic) {
+			// e.g. [...string[], ...[number]]
+			result.postfixed = conflatenate(base.postfixed, spread.fixed)
+		} else {
+			// e.g. [number, ...[string]]
+			result.fixed = conflatenate(base.fixed, spread.fixed)
+		}
+	}
+	if (spread.optionals.length) {
+		if (result.variadic) {
+			// e.g. [...string[], ...[number?]]
+			return throwParseError(optionalPostVariadicMessage)
+		}
+		result.optionals = conflatenate(base.optionals, spread.optionals)
+	}
+	if (spread.variadic) {
+		if (result.postfixed) {
+			// e.g. [...string[], number, ...string[]]
+			return throwParseError(multipleVariadicMesage)
+		}
+		if (result.variadic) {
+			if (!result.variadic.equals(spread.variadic)) {
+				// e.g. [...string[], ...number[]]
+				return throwParseError(multipleVariadicMesage)
+			}
+			// e.g. [...string[], ...string[]]
+			// (do nothing, second spread doesn't change the type)
+		} else {
+			// e.g. [string, ...number[]]
+			result.variadic = spread.variadic
+		}
+	}
+	if (spread.postfixed) {
+		if (result.optionals) {
+			// e.g. [string?, ...[...number[], string]]
+			return throwParseError(requiredPostOptionalMessage)
+		}
+		// e.g. [number,  ...[...string[], number]]
+		result.postfixed = conflatenate(base.postfixed, spread.postfixed)
+	}
+	return result
+}
+
+type TupleElementParseResult = EntryValueParseResult & { spread?: true }
+
+const parseSpreadable = (elementDef: unknown): TupleElementParseResult => {
+	if (typeof elementDef === "string" && elementDef.startsWith("...")) {
+		// variadic string definition like "...string[]"
+		return { ...parseEntryValue(elementDef.slice(3)), spread: true }
+	}
+	if (
+		isArray(elementDef) &&
+		elementDef.length === 2 &&
+		elementDef[0] === "..."
+	) {
+		// variadic tuple expression like ["...", { a: "1" }]
+		return { ...parseEntryValue(elementDef[1]), spread: true }
+	}
+	return parseSpreadable(elementDef)
+}
+
+const maybeParseTupleExpression = (
 	def: List,
 	ctx: ParseContext
 ): TypeNode | undefined => {
@@ -173,7 +272,7 @@ type validateTupleElement<head, tail, $, args> =
 					? semanticResult extends operand
 						? tail extends []
 							? head
-							: prematureRestMessage
+							: multipleVariadicMessage
 						: semanticResult
 					: never
 				: syntacticResult
@@ -186,26 +285,39 @@ type semanticallyValidateRestElement<operand, $, args> = inferDefinition<
 	args
 > extends infer result
 	? result extends never
-		? writeNonArrayRestMessage<operand>
+		? writeNonArraySpreadMessage<operand>
 		: isAny<result> extends true
-		? writeNonArrayRestMessage<operand>
+		? writeNonArraySpreadMessage<operand>
 		: result extends readonly unknown[]
 		? operand
-		: writeNonArrayRestMessage<operand>
+		: writeNonArraySpreadMessage<operand>
 	: never
 
-export const writeNonArrayRestMessage = <operand>(operand: operand) =>
-	`Rest element ${
+export const writeNonArraySpreadMessage = <operand>(operand: operand) =>
+	`Spread element ${
 		typeof operand === "string" ? `'${operand}'` : ""
-	} must be an array` as writeNonArrayRestMessage<operand>
+	} must be an array` as writeNonArraySpreadMessage<operand>
 
-type writeNonArrayRestMessage<operand> = `Rest element ${operand extends string
-	? `'${operand}'`
-	: ""} must be an array`
+type writeNonArraySpreadMessage<operand> =
+	`Spread element ${operand extends string
+		? `'${operand}'`
+		: ""} must be an array`
 
 export const multipleVariadicMesage = `A tuple may have at most one variadic element`
 
-type prematureRestMessage = typeof multipleVariadicMesage
+type multipleVariadicMessage = typeof multipleVariadicMesage
+
+export const requiredPostOptionalMessage = `A required element may not follow an optional element`
+
+type requiredPostOptionalMessage = typeof requiredPostOptionalMessage
+
+export const optionalPostVariadicMessage = `An optional element may not follow a variadic element`
+
+type optionalPostVariadicMessage = typeof optionalPostVariadicMessage
+
+export const spreadOptionalMessage = `A spread element cannot be optional`
+
+type spreadOptionalMessage = typeof optionalPostVariadicMessage
 
 type inferTupleLiteral<
 	def extends List,

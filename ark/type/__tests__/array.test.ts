@@ -4,7 +4,7 @@ import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclo
 import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
 import {
 	multipleVariadicMesage,
-	writeNonArrayRestMessage
+	writeNonArraySpreadMessage
 } from "../parser/tuple.js"
 
 describe("array", () => {
@@ -199,11 +199,11 @@ describe("array", () => {
 				attest(() =>
 					// @ts-expect-error
 					type(["email", "...symbol"])
-				).throwsAndHasTypeError(writeNonArrayRestMessage("symbol"))
+				).throwsAndHasTypeError(writeNonArraySpreadMessage("symbol"))
 				attest(() =>
 					// @ts-expect-error
 					type(["number", ["...", "string"]])
-				).throwsAndHasTypeError(writeNonArrayRestMessage("string"))
+				).throwsAndHasTypeError(writeNonArraySpreadMessage("string"))
 			})
 			it("errors on non-last element", () => {
 				attest(() =>

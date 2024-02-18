@@ -1,7 +1,7 @@
 import { appendUnique, compileSerializedValue } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
-import type { is } from "../shared/utils.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { is } from "../shared/utils.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
 import { BasePrimitiveRefinement, type FoldInput } from "./refinement.js"
@@ -75,7 +75,7 @@ export type Predicate<data = unknown> = (
 
 export type PredicateCast<input = never, narrowed extends input = input> = (
 	input: input,
-	errors: ArkErrors
+	ctx: TraversalContext
 ) => input is narrowed
 
 export type inferNarrow<In, predicate> = predicate extends (

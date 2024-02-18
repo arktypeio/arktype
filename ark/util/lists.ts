@@ -1,4 +1,6 @@
 import type { NumberLiteral } from "./numericLiterals.js"
+import { isArray } from "./objectKinds.js"
+import type { mutable } from "./records.js"
 
 export type pathToString<
 	segments extends string[],
@@ -150,20 +152,43 @@ export const range = (length: number): number[] =>
  */
 export const append = <
 	to extends element[] | undefined,
-	element extends {},
+	element extends {} | null,
 	value extends element | undefined
 >(
 	to: to,
 	value: value
-): to | Extract<value, undefined> => {
+): Exclude<to, undefined> | Extract<value & to, undefined> => {
 	if (value === undefined) {
-		return to
+		return to as never
 	}
 	if (to === undefined) {
 		return [value] as never
 	}
 	to.push(value)
-	return to
+	return to as never
+}
+
+/**
+ * Concatenates an element or list with a readonly list
+ *
+ * @param {to} to - The base list.
+ * @param {elementOrList} elementOrList - The element or list to concatenate.
+ */
+export const conflatenate = <
+	to extends readonly element[],
+	element extends {} | null,
+	elementOrList extends element | readonly element[]
+>(
+	to: to | undefined,
+	elementOrList: elementOrList | undefined
+): to => {
+	if (elementOrList === undefined) {
+		return to ?? ([] as never)
+	}
+	if (to === undefined) {
+		return listFrom(elementOrList) as never
+	}
+	return to.concat(elementOrList) as never
 }
 
 /**

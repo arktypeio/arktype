@@ -5,9 +5,12 @@ import {
 	isArray,
 	map,
 	printable,
+	throwError,
+	throwInternalError,
 	type Constructor,
 	type Dict,
 	type Entry,
+	type Guardable,
 	type Json,
 	type JsonData,
 	type entriesOf,
@@ -31,7 +34,7 @@ import type {
 } from "./refinements/bounds.js"
 import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
-import type { PredicateNode } from "./refinements/predicate.js"
+import type { Predicate, PredicateNode } from "./refinements/predicate.js"
 import type { IndexNode } from "./refinements/props/index.js"
 import type { OptionalNode } from "./refinements/props/optional.js"
 import type { PropsNode } from "./refinements/props/props.js"
@@ -273,10 +276,6 @@ export abstract class BaseNode<
 		return includes(typeKinds, this.kind)
 	}
 
-	isSet(): this is Node<SetKind> {
-		return includes(setKinds, this.kind)
-	}
-
 	isConstraint(): this is Node<ConstraintKind> {
 		return includes(constraintKinds, this.kind)
 	}
@@ -299,6 +298,34 @@ export abstract class BaseNode<
 			return innerResult
 		}
 		return this.$.parse(this.kind, innerResult as never)
+	}
+
+	firstReference<narrowed extends Node>(
+		filter: Guardable<Node, narrowed>
+	): narrowed | undefined {
+		return this.references.find(filter as never)
+	}
+
+	firstReferenceOrThrow<narrowed extends Node>(
+		filter: Guardable<Node, narrowed>
+	): narrowed {
+		return (
+			this.firstReference(filter) ??
+			throwError(`${this.name} had no references matching predicate ${filter}`)
+		)
+	}
+
+	firstReferenceOfKind<kind extends NodeKind>(
+		kind: kind
+	): Node<kind> | undefined {
+		return this.firstReference((node) => node.kind === kind)
+	}
+
+	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
+		return (
+			this.firstReference((node) => node.kind === kind) ??
+			throwError(`${this.name} had no ${kind} references`)
+		)
 	}
 
 	transform(

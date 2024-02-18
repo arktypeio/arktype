@@ -12,7 +12,9 @@ type KeyParseResult<kind extends ParsedKeyKind = ParsedKeyKind> = {
 	innerKey: string | symbol
 }
 
-type ValueParseResult<kind extends ParsedValueKind = ParsedValueKind> = {
+export type EntryValueParseResult<
+	kind extends ParsedValueKind = ParsedValueKind
+> = {
 	kind: kind
 	innerValue: unknown
 }
@@ -51,7 +53,7 @@ type validateObjectValueString<def, $, args> =
 
 type DefinitionEntry = readonly [string | symbol, unknown]
 
-const getInnerValue = (value: unknown): ValueParseResult => {
+export const parseEntryValue = (value: unknown): EntryValueParseResult => {
 	if (typeof value === "string") {
 		if (value.at(-1) === "?" && value.length > 1) {
 			return {
@@ -63,7 +65,8 @@ const getInnerValue = (value: unknown): ValueParseResult => {
 		if (value.length === 2 && value[1] === "?") {
 			return {
 				kind: "optional",
-				innerValue: getInnerValue(value[0]).innerValue
+				// allow redundant optionality like ["string?", "?"]
+				innerValue: parseEntryValue(value[0]).innerValue
 			}
 		}
 	}
@@ -87,7 +90,7 @@ export const parseEntry = ([key, value]: DefinitionEntry): EntryParseResult => {
 			: key === "\\..."
 			? { innerKey: "...", kind: "required" }
 			: { innerKey: key, kind: "required" }
-	const valueParseResult = getInnerValue(value)
+	const valueParseResult = parseEntryValue(value)
 	return {
 		innerKey: keyParseResult.innerKey,
 		innerValue: valueParseResult.innerValue,

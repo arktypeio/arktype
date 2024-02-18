@@ -149,8 +149,22 @@ export abstract class BaseType<
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
-	getPath() {
+	get<key extends PropertyKey>(...path: readonly (key | TypeNode<key>)[]) {
 		return this
+	}
+
+	extract(other: TypeNode) {
+		return this.$.parseRoot(
+			"union",
+			this.branches.filter((branch) => branch.extends(other))
+		)
+	}
+
+	exclude(other: TypeNode) {
+		return this.$.parseRoot(
+			"union",
+			this.branches.filter((branch) => !branch.extends(other))
+		)
 	}
 
 	array(): IntersectionNode<t[]> {

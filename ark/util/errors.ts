@@ -1,14 +1,19 @@
 export class InternalArktypeError extends Error {}
 
-export const throwInternalError: (message: string) => never = (message) => {
-	throw new InternalArktypeError(message)
+export const throwInternalError: (message: string) => never = (message) =>
+	throwError(message, InternalArktypeError)
+
+export const throwError: (
+	message: string,
+	constructor?: new (message: string) => Error
+) => never = (message, constructor = Error) => {
+	throw new constructor(message)
 }
 
 export class ParseError extends Error {}
 
-export const throwParseError: (message: string) => never = (message) => {
-	throw new ParseError(message)
-}
+export const throwParseError: (message: string) => never = (message) =>
+	throwError(message, ParseError)
 
 // Using "Hair Space" as a non-rendered sentinel for an error message string:
 // https://www.compart.com/en/unicode/U+200A

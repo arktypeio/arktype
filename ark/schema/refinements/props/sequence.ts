@@ -7,11 +7,7 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
-import type {
-	TraversalContext,
-	TraverseAllows,
-	TraverseApply
-} from "../../traversal/context.js"
+import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import type { FoldInput } from "../refinement.js"
 
 export interface BaseSequenceSchema extends BaseMeta {

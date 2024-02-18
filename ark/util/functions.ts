@@ -62,3 +62,7 @@ export type Callable = new <f extends (...args: never[]) => unknown>(
 	f: f,
 	thisArg?: object
 ) => f
+
+export type Guardable<input = unknown, narrowed extends input = input> =
+	| ((In: input) => In is narrowed)
+	| ((In: input) => boolean)
