@@ -159,12 +159,11 @@ const appendSpreadBranch = (
 		// the only array with no sequence reference is unknown[]
 		return appendElement(base, "variadic", keywords.unknown)
 	}
-	const result: MutableSequenceInner = {}
-	spread.prefix.forEach((node) => appendElement(result, "required", node))
-	spread.optionals.forEach((node) => appendElement(result, "optional", node))
-	spread.variadic && appendElement(result, "variadic", spread.variadic)
-	spread.postfix.forEach((node) => appendElement(result, "required", node))
-	return result
+	spread.prefix.forEach((node) => appendElement(base, "required", node))
+	spread.optionals.forEach((node) => appendElement(base, "optional", node))
+	spread.variadic && appendElement(base, "variadic", spread.variadic)
+	spread.postfix.forEach((node) => appendElement(base, "required", node))
+	return base
 }
 
 type TupleElementParseResult = EntryValueParseResult & { spread?: true }

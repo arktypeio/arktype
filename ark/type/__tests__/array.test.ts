@@ -178,15 +178,14 @@ Value at [1] must be a number (was boolean)`)
 			attest<[number, ...{ a: string }[]]>(wellRestedTuple.infer)
 		})
 		it("spreads array expressions", () => {
-			const greatSpread = type([{ a: "boolean" }, "...(Date|RegExp)[]"])
-			attest<
-				[
-					{
-						a: boolean
-					},
-					...(RegExp | Date)[]
-				]
-			>(greatSpread.infer)
+			const greatSpread = type(["0", "...(Date|RegExp)[]"])
+			attest<[0, ...(RegExp | Date)[]]>(greatSpread.infer)
+		})
+		it("distributes spread unions", () => {
+			const t = type(["1", "...(Date[] | RegExp[])"])
+			attest<[1, ...(Date[] | RegExp[])]>(t.infer)
+			const expected = type(["1", "...Date[]"]).or(["1", "...RegExp[]"])
+			attest(t.json).equals(expected.json)
 		})
 		it("allows array keyword", () => {
 			const types = scope({
