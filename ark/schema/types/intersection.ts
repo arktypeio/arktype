@@ -1,6 +1,7 @@
 import {
 	conflatenateAll,
 	isArray,
+	isEmptyObject,
 	pick,
 	printable,
 	remap,
@@ -9,7 +10,7 @@ import {
 	type last,
 	type listable
 } from "@arktype/util"
-import type { Node } from "../base.js"
+import { BaseNode, type Node } from "../base.js"
 import type { FoldInput } from "../constraints/constraint.js"
 import {
 	PropsGroup,
@@ -31,6 +32,7 @@ import {
 	type IntersectionChildKind,
 	type OpenNodeKind,
 	type OrderedNodeKinds,
+	type PropKind,
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
@@ -230,16 +232,13 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	readonly constraints = this.children.filter(
 		(child): child is Node<ConstraintKind> => child.isConstraint()
 	)
-	readonly shallows = this.constraints.filter(
+	readonly refinements = this.constraints.filter(
 		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
-	readonly props = new PropsGroup({
-		onExtraneousKey: "ignore",
-		...pick(this.inner, propKeys)
-	})
+	readonly props = maybeCreatePropsGroup(this.inner)
 	readonly traversables = conflatenateAll<
-		Node<BasisKind | RefinementKind | "predicate"> | PropsGroup
-	>(this.basis, this.shallows, this.props, this.predicate)
+		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
+	>(this.basis, this.refinements, this.props, this.predicate)
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.traversables.every((traversable) =>
@@ -247,36 +246,50 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		this.basis?.traverseApply(data, ctx)
-		if (ctx.currentErrors.length !== 0) return
-		this.shallows.forEach((node) => node.traverseApply(data as never, ctx))
-		this.props.traverseApply(data as never, ctx)
-		if (ctx.currentErrors.length !== 0) return
+		if (this.basis) {
+			this.basis.traverseApply(data, ctx)
+			if (ctx.currentErrors.length !== 0) return
+		}
+		if (this.refinements.length) {
+			this.refinements.forEach((node) => node.traverseApply(data as never, ctx))
+			if (ctx.currentErrors.length !== 0) return
+		}
+		if (this.props) {
+			this.props.traverseApply(data as never, ctx)
+			if (ctx.currentErrors.length !== 0) return
+		}
 		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}
 
 	compile(js: NodeCompiler) {
 		if (js.traversalKind === "Allows") {
-			this.children.forEach((node) => js.check(node))
+			this.traversables.forEach((traversable) =>
+				traversable instanceof BaseNode
+					? js.check(traversable)
+					: traversable.compile(js)
+			)
 			return js.return(true)
 		}
-		const hasErrors = `${js.ctx}.currentErrors.length !== 0`
 		if (this.basis) {
 			js.check(this.basis)
 			// we only have to return conditionally if this is not the last check
-			if (this.constraints.length) {
-				js.if(hasErrors, () => js.return())
-			}
+			if (this.traversables.length > 1) js.returnIfHasErrors()
 		}
-		if (this.shallows.length) {
-			this.shallows.forEach((node) => js.check(node))
-			if (this.predicate) {
-				js.if(hasErrors, () => js.return())
-			}
+		if (this.refinements.length) {
+			this.refinements.forEach((node) => js.check(node))
+			if (this.props || this.predicate) js.returnIfHasErrors()
 		}
-		this.props.compile(js)
+		if (this.props) {
+			this.props.compile(js)
+			if (this.predicate) js.returnIfHasErrors()
+		}
 		this.predicate?.forEach((node) => js.check(node))
 	}
+}
+
+const maybeCreatePropsGroup = (inner: IntersectionInner) => {
+	const propsInput = pick(inner, propKeys)
+	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
 }
 
 export type ConditionalTerminalIntersectionSchema = {

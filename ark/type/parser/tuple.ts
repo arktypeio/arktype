@@ -119,10 +119,10 @@ const appendElement = (
 				return throwParseError(requiredPostOptionalMessage)
 			if (base.variadic) {
 				// e.g. [...string[], number]
-				base.postfixed = append(base.postfixed, element)
+				base.postfix = append(base.postfix, element)
 			} else {
 				// e.g. [string, number]
-				base.fixed = append(base.fixed, element)
+				base.prefix = append(base.prefix, element)
 			}
 			return base
 		case "optional":
@@ -133,7 +133,7 @@ const appendElement = (
 			base.optionals = append(base.optionals, element)
 			return base
 		case "variadic":
-			if (base.postfixed)
+			if (base.postfix)
 				// e.g. [...string[], number, ...string[]]
 				throwParseError(multipleVariadicMesage)
 			if (base.variadic) {
@@ -160,10 +160,10 @@ const appendSpreadBranch = (
 		return appendElement(base, "variadic", keywords.unknown)
 	}
 	const result: MutableSequenceInner = {}
-	spread.fixed.forEach((node) => appendElement(result, "required", node))
+	spread.prefix.forEach((node) => appendElement(result, "required", node))
 	spread.optionals.forEach((node) => appendElement(result, "optional", node))
 	spread.variadic && appendElement(result, "variadic", spread.variadic)
-	spread.postfixed.forEach((node) => appendElement(result, "required", node))
+	spread.postfix.forEach((node) => appendElement(result, "required", node))
 	return result
 }
 

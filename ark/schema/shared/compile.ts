@@ -38,6 +38,12 @@ export class NodeCompiler extends CompiledFunction<
 		)
 	}
 
+	returnIfHasErrors() {
+		return this.if(`${this.ctx}.currentErrors.length !== 0`, () =>
+			this.return()
+		)
+	}
+
 	checkKey(serializedKey: string, node: TypeNode, alwaysIndex: boolean) {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {

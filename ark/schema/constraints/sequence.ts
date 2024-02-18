@@ -12,22 +12,22 @@ import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { BaseConstraint, FoldInput } from "./constraint.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
-	readonly fixed?: readonly TypeSchema[]
+	readonly prefix?: readonly TypeSchema[]
 	readonly variadic?: TypeSchema
 }
 
 export interface NormalizedPostfixableSequenceSchema
 	extends BaseSequenceSchema {
 	readonly optionals?: undefined
-	// variadic is required for postfixed
+	// variadic is required for postfix
 	readonly variadic: TypeSchema
-	readonly postfixed?: readonly TypeSchema[]
+	readonly postfix?: readonly TypeSchema[]
 }
 
 export interface NormalizedOptionalizableSequenceSchema
 	extends BaseSequenceSchema {
 	readonly optionals?: readonly TypeSchema[]
-	readonly postfixed?: undefined
+	readonly postfix?: undefined
 }
 
 export type NormalizedSequenceSchema =
@@ -38,13 +38,13 @@ export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly fixed?: readonly TypeNode[]
+	readonly prefix?: readonly TypeNode[]
 	// a list of optional elements following prefix
 	readonly optionals?: readonly TypeNode[]
-	// the variadic element (only allowed if all optional elements are present)
+	// the variadic element (only checked if all optional elements are present)
 	readonly variadic?: TypeNode
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfixed?: readonly TypeNode[]
+	readonly postfix?: readonly TypeNode[]
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -60,7 +60,7 @@ export type SequenceDeclaration = declareNode<{
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
-	"fixed" | "postfixed" | "optionals"
+	"prefix" | "postfix" | "optionals"
 > = {
 	child: true,
 	// TODO: figure out fixed []
@@ -80,13 +80,13 @@ export class SequenceNode
 			hasAssociatedError: false,
 			collapseKey: "variadic",
 			keys: {
-				fixed: fixedSequenceKeyDefinition,
+				prefix: fixedSequenceKeyDefinition,
 				optionals: fixedSequenceKeyDefinition,
 				variadic: {
 					child: true,
 					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 				},
-				postfixed: fixedSequenceKeyDefinition
+				postfix: fixedSequenceKeyDefinition
 			},
 			normalize: (schema) => {
 				if (typeof schema === "string") {
@@ -94,16 +94,16 @@ export class SequenceNode
 				}
 				if (
 					"variadic" in schema ||
-					"fixed" in schema ||
+					"prefix" in schema ||
 					"optionals" in schema ||
-					"postfixed" in schema
+					"postfix" in schema
 				) {
-					if (schema.postfixed?.length) {
+					if (schema.postfix?.length) {
 						if (!schema.variadic) {
-							return throwParseError(postfixedWithoutVariadicMessage)
+							return throwParseError(postfixWithoutVariadicMessage)
 						}
 						if ((schema.optionals as any)?.length) {
-							return throwParseError(postfixedFollowingOptionalMessage)
+							return throwParseError(postfixFollowingOptionalMessage)
 						}
 					}
 					return schema
@@ -111,12 +111,12 @@ export class SequenceNode
 				return { variadic: schema }
 			},
 			reduce: (inner, scope) => {
-				if (!inner.postfixed && !inner.optionals) {
+				if (!inner.postfix && !inner.optionals) {
 					return
 				}
-				const fixed = inner.fixed?.slice() ?? []
+				const fixed = inner.prefix?.slice() ?? []
 				const optionals = inner.optionals?.slice() ?? []
-				const postfixed = inner.postfixed?.slice() ?? []
+				const postfix = inner.postfix?.slice() ?? []
 				if (inner.variadic) {
 					// optional elements equivalent to the variadic parameter are redundant
 					while (optionals.at(-1)?.equals(inner.variadic)) {
@@ -128,17 +128,17 @@ export class SequenceNode
 						// if optional length is 0, normalize equivalent
 						// prefix/postfix elements to prefix, e.g.:
 						// [...number[], number] => [number, ...number[]]
-						while (postfixed[0]?.equals(inner.variadic)) {
-							fixed.push(postfixed.shift()!)
+						while (postfix[0]?.equals(inner.variadic)) {
+							fixed.push(postfix.shift()!)
 						}
 					} else {
 						// if there's no variadic or optional parameters,
-						// postfixed can just be appended to fixed
-						fixed.push(...postfixed.splice(0))
+						// postfix can just be appended to fixed
+						fixed.push(...postfix.splice(0))
 					}
 				}
 				if (
-					(inner.postfixed && postfixed.length < inner.postfixed.length) ||
+					(inner.postfix && postfix.length < inner.postfix.length) ||
 					(inner.optionals && optionals.length < inner.optionals.length)
 				) {
 					return scope.parse(
@@ -146,8 +146,8 @@ export class SequenceNode
 						{
 							...inner,
 							// empty lists will be omitted during parsing
-							fixed,
-							postfixed,
+							prefix: fixed,
+							postfix,
 							optionals: optionals as never
 						},
 						{ prereduced: true }
@@ -156,10 +156,10 @@ export class SequenceNode
 			},
 			defaults: {
 				description(inner) {
-					const parts = inner.fixed?.map(String) ?? []
+					const parts = inner.prefix?.map(String) ?? []
 					inner.optionals?.forEach((node) => parts.push(`an optional ${node}`))
 					parts.push(`zero or more ${inner.variadic} elements`)
-					inner.postfixed?.forEach((node) => parts.push(String(node)))
+					inner.postfix?.forEach((node) => parts.push(String(node)))
 					return `an array of ${parts.join(" followed by ")}`
 				}
 			}
@@ -167,11 +167,11 @@ export class SequenceNode
 
 	readonly hasOpenIntersection = false
 
-	readonly fixed = this.inner.fixed ?? []
+	readonly prefix = this.inner.prefix ?? []
 	readonly optionals = this.inner.optionals ?? []
-	readonly prevariadic = [...this.fixed, ...this.optionals]
-	readonly postfixed = this.inner.postfixed ?? []
-	readonly minLength = this.fixed.length + this.postfixed.length
+	readonly prevariadic = [...this.prefix, ...this.optionals]
+	readonly postfix = this.inner.postfix ?? []
+	readonly minLength = this.prefix.length + this.postfix.length
 	readonly minLengthNode =
 		this.minLength === 0 ? undefined : this.$.parse("minLength", this.minLength)
 	readonly maxLength = this.variadic
@@ -184,9 +184,9 @@ export class SequenceNode
 
 	protected childAtIndex(data: readonly unknown[], index: number) {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
-		const postfixStartIndex = data.length - this.postfixed.length
+		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
-			return this.postfixed[index - postfixStartIndex]
+			return this.postfix[index - postfixStartIndex]
 		return (
 			this.variadic ??
 			throwInternalError(
@@ -213,9 +213,9 @@ export class SequenceNode
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler) {
-		this.fixed.forEach((node, i) => js.checkKey(`${i}`, node, true))
+		this.prefix.forEach((node, i) => js.checkKey(`${i}`, node, true))
 		this.optionals.forEach((node, i) => {
-			const dataIndex = `${i + this.fixed.length}`
+			const dataIndex = `${i + this.prefix.length}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
@@ -225,14 +225,14 @@ export class SequenceNode
 		if (this.variadic) {
 			js.const(
 				"lastVariadicIndex",
-				`${js.data}.length${this.postfixed ? `- ${this.postfixed.length}` : ""}`
+				`${js.data}.length${this.postfix ? `- ${this.postfix.length}` : ""}`
 			)
 			js.for(
 				"i < lastVariadicIndex",
 				() => js.checkKey("i", this.variadic!, true),
 				this.prevariadic.length
 			)
-			this.postfixed.forEach((node, i) =>
+			this.postfix.forEach((node, i) =>
 				js.checkKey(`lastVariadicIndex + ${i + 1}`, node, true)
 			)
 		}
@@ -263,14 +263,13 @@ export class SequenceNode
 	}
 }
 
-export const postfixedFollowingOptionalMessage =
-	"A postfixed required element cannot follow an optional element"
+export const postfixFollowingOptionalMessage =
+	"A postfix required element cannot follow an optional element"
 
-export type postfixedFollowingOptionalMessage =
-	typeof postfixedFollowingOptionalMessage
+export type postfixFollowingOptionalMessage =
+	typeof postfixFollowingOptionalMessage
 
-export const postfixedWithoutVariadicMessage =
-	"A postfixed element requires a variadic element"
+export const postfixWithoutVariadicMessage =
+	"A postfix element requires a variadic element"
 
-export type postfixedWithoutVariadicMessage =
-	typeof postfixedWithoutVariadicMessage
+export type postfixWithoutVariadicMessage = typeof postfixWithoutVariadicMessage

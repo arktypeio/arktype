@@ -120,10 +120,12 @@ describe("array", () => {
 Value at [1] must be a number (was boolean)`)
 			// too short
 			attest(t.allows([""])).equals(false)
-			attest(t([""]).errors?.summary).snap("(undefined)")
+			attest(t([""]).errors?.summary).snap("Must be at least length 2 (was 1)")
 			// too long
 			attest(t.allows(["", 0, 1])).equals(false)
-			attest(t(["", 0, 1]).errors?.summary).snap()
+			attest(t(["", 0, 1]).errors?.summary).snap(
+				"Must be at most length 2 (was 3)"
+			)
 			// non-array
 			attest(
 				t.allows({
@@ -138,7 +140,7 @@ Value at [1] must be a number (was boolean)`)
 					0: "",
 					1: 0
 				}).errors?.summary
-			).snap()
+			).snap("Must be an array (was object)")
 		})
 
 		it("nested", () => {
