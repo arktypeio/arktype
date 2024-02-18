@@ -87,10 +87,12 @@ export const parseTupleLiteral = (
 		}
 		ctx.path.pop()
 	}
-	return schema({
-		basis: Array,
-		sequence: sequences
-	})
+	return schema(
+		...sequences.map((sequence) => ({
+			basis: Array,
+			sequence
+		}))
+	)
 }
 
 // make nested arrays mutable while keeping nested nodes immutable
@@ -180,7 +182,7 @@ const parseSpreadable = (elementDef: unknown): TupleElementParseResult => {
 		// variadic tuple expression like ["...", { a: "1" }]
 		return { ...parseEntryValue(elementDef[1]), spread: true }
 	}
-	return parseSpreadable(elementDef)
+	return parseEntryValue(elementDef)
 }
 
 const maybeParseTupleExpression = (

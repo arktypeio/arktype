@@ -111,12 +111,16 @@ describe("array", () => {
 			attest(t.allows(["", 0])).equals(true)
 			attest(t(["", 0]).out).snap(["", 0])
 			attest(t.allows([true, 0])).equals(false)
-			attest(t([true, 0]).errors?.summary).snap()
+			attest(t([true, 0]).errors?.summary).snap(
+				"Value at [0] must be a string (was boolean)"
+			)
 			attest(t.allows([0, false])).equals(false)
-			attest(t([0, false]).errors?.summary).snap()
+			attest(t([0, false]).errors?.summary)
+				.snap(`Value at [0] must be a string (was number)
+Value at [1] must be a number (was boolean)`)
 			// too short
 			attest(t.allows([""])).equals(false)
-			attest(t([""]).errors?.summary).snap()
+			attest(t([""]).errors?.summary).snap("(undefined)")
 			// too long
 			attest(t.allows(["", 0, 1])).equals(false)
 			attest(t(["", 0, 1]).errors?.summary).snap()
