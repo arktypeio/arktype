@@ -1,17 +1,17 @@
 import { reference, remap } from "@arktype/util"
-import { BaseNode } from "../../base.js"
-import type { NodeCompiler } from "../../shared/compile.js"
-import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import type { Disjoint } from "../../shared/disjoint.js"
+import { BaseNode } from "../base.js"
+import type { NodeCompiler } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import {
 	parseOpen,
 	throwInvalidOperandError,
 	type PropKind
-} from "../../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
-import type { FoldInput } from "../refinement.js"
+} from "../shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { IndexNode, IndexSchema } from "./index.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
+import type { FoldInput } from "./refinement.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
