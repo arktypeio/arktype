@@ -1,4 +1,5 @@
 import {
+	conflatenateAll,
 	isArray,
 	pick,
 	printable,
@@ -10,7 +11,11 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Inner, Prerequisite, Schema } from "../kinds.js"
-import { PropsGroup } from "../refinements/props.js"
+import {
+	PropsGroup,
+	type ExtraneousKeyBehavior,
+	type ExtraneousKeyRestriction
+} from "../refinements/props.js"
 import type { FoldInput } from "../refinements/refinement.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -22,7 +27,6 @@ import {
 	structuralRefinementKinds,
 	type BasisKind,
 	type ConstraintKind,
-	type NodeKind,
 	type OpenNodeKind,
 	type OrderedNodeKinds,
 	type RefinementKind,
@@ -40,7 +44,7 @@ export type IntersectionInner = evaluate<
 	BaseMeta & {
 		basis?: Node<IntersectionBasisKind>
 	} & {
-		[k in RefinementKind]?: innerRefinementValue<k>
+		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
 	}
 >
 
@@ -49,7 +53,7 @@ export type IntersectionSchema<
 > = evaluate<
 	BaseMeta & {
 		basis?: basis
-	} & schemaRefinementsOf<
+	} & conditionalSchemaOf<
 			basis extends Schema<BasisKind>
 				? instantiateBasis<basis>["infer"]
 				: unknown
@@ -156,13 +160,16 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					child: true,
 					parse: (def, ctx) => parseOpen("optional", def, ctx)
 				},
+				index: {
+					child: true,
+					parse: (def, ctx) => parseOpen("index", def, ctx)
+				},
 				sequence: {
 					child: true,
 					parse: (def, ctx) => ctx.$.parse("sequence", def, ctx)
 				},
-				index: {
-					child: true,
-					parse: (def, ctx) => parseOpen("index", def, ctx)
+				onExtraneousKey: {
+					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
 			reduce: (inner, scope) => {
@@ -222,14 +229,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	readonly refinements = this.children.filter(
 		(child): child is Node<RefinementKind> => child.isRefinement()
 	)
-
-	// TODO: check order
-	traverseAllows: TraverseAllows = (data, ctx) => {
-		return this.children.every((child) =>
-			child.traverseAllows(data as never, ctx)
-		)
-	}
-
 	readonly shallows = this.refinements.filter(
 		(node): node is Node<ShallowRefinementKind> => node.isShallowRefinement()
 	)
@@ -237,11 +236,20 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		onExtraneousKey: "ignore",
 		...pick(this.inner, structuralKeys)
 	})
+	readonly traversables = conflatenateAll<
+		Node<BasisKind | ShallowRefinementKind | "predicate"> | PropsGroup
+	>(this.basis, this.shallows, this.props, this.predicate)
+
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.traversables.every((traversable) =>
+			traversable.traverseAllows(data as never, ctx)
+		)
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		this.basis?.traverseApply(data, ctx)
 		if (ctx.currentErrors.length !== 0) return
 		this.shallows.forEach((node) => node.traverseApply(data as never, ctx))
+		this.props.traverseApply(data as never, ctx)
 		if (ctx.currentErrors.length !== 0) return
 		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}
@@ -269,19 +277,49 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
+export type ConditionalTerminalIntersectionSchema = {
+	onExtraneousKey?: ExtraneousKeyBehavior
+}
+
+export type ConditionalTerminalIntersectionInner = {
+	onExtraneousKey?: ExtraneousKeyRestriction
+}
+
+type ConditionalTerminalIntersectionKey =
+	keyof ConditionalTerminalIntersectionInner
+
+type ConditionalIntersectionKey =
+	| RefinementKind
+	| keyof ConditionalTerminalIntersectionInner
+
 type refinementKindOf<t> = {
 	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
 }[RefinementKind]
 
-type schemaRefinementValue<k extends RefinementKind> = k extends OpenNodeKind
-	? // TODO: is Inner<k> needed? Should be assignable
-	  listable<Schema<k> | Inner<k>>
-	: Schema<k> | Inner<k>
+type conditionalIntersectionKeyOf<t> =
+	| refinementKindOf<t>
+	| (t extends object ? "onExtraneousKey" : never)
 
-type innerRefinementValue<k extends RefinementKind> = k extends OpenNodeKind
-	? readonly Node<k>[]
-	: Node<k>
+// not sure why explicitly allowing Inner<k> is necessary in these cases,
+// but remove if it can be removed without creating type errors
+type intersectionChildSchemaValueOf<k extends ConstraintKind> =
+	k extends OpenNodeKind ? listable<Schema<k> | Inner<k>> : Schema<k> | Inner<k>
 
-export type schemaRefinementsOf<t> = {
-	[k in refinementKindOf<t>]?: schemaRefinementValue<k>
+type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
+	k extends ConstraintKind
+		? intersectionChildSchemaValueOf<k>
+		: ConditionalTerminalIntersectionSchema[k &
+				ConditionalTerminalIntersectionKey]
+
+type intersectionChildInnerValueOf<k extends ConstraintKind> =
+	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
+
+type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
+	k extends ConstraintKind
+		? intersectionChildInnerValueOf<k>
+		: ConditionalTerminalIntersectionInner[k &
+				ConditionalTerminalIntersectionKey]
+
+export type conditionalSchemaOf<t> = {
+	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>
 }

@@ -29,7 +29,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInner> {
 			? [...this.required, ...this.optional]
 			: this.required
 		: this.optional ?? []
-	readonly all = conflatenateAll<readonly Node<StructuralRefinementKind>[]>(
+	readonly all = conflatenateAll<Node<StructuralRefinementKind>>(
 		this.named,
 		this.index,
 		this.sequence

@@ -174,10 +174,10 @@ export const append = <
  * @param {to} to - The base list.
  * @param {elementOrList} elementOrList - The element or list to concatenate.
  */
-export const conflatenate = <to extends readonly unknown[]>(
-	to: to | undefined,
-	elementOrList: listable<to[number]> | undefined
-): to => {
+export const conflatenate = <element>(
+	to: readonly element[] | undefined,
+	elementOrList: listable<element> | undefined
+): readonly element[] => {
 	if (elementOrList === undefined) {
 		return to ?? ([] as never)
 	}
@@ -193,10 +193,9 @@ export const conflatenate = <to extends readonly unknown[]>(
  * @param {to} to - The base list.
  * @param {elementsOrLists} elementsOrLists - The elements or lists to concatenate.
  */
-export const conflatenateAll = <to extends readonly unknown[]>(
-	to: to | undefined,
-	...elementsOrLists: (listable<to[number]> | undefined)[]
-): to => elementsOrLists.reduce(conflatenate, to ?? ([] as never))
+export const conflatenateAll = <element>(
+	...elementsOrLists: (listable<element> | undefined)[]
+) => elementsOrLists.reduce<readonly element[]>(conflatenate, [])
 
 /**
  * Appends a value to an array if it is not already included, returning the array
