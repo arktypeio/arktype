@@ -16,7 +16,7 @@ import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
-	type PropsGroupInner
+	type PropsGroupInput
 } from "../constraints/props.js"
 import type { Inner, Prerequisite, Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -79,7 +79,7 @@ export type IntersectionDeclaration = declareNode<{
 const constraintKeys = remap(constraintKinds, (i, kind) => [kind, 1] as const)
 
 const propKeys = remap(
-	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInner)[],
+	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
 	(i, k) => [k, 1] as const
 )
 
@@ -108,16 +108,12 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
-			addParseContext: (ctx) => {
-				const def = ctx.definition as IntersectionSchema
-				ctx.basis = def.basis && ctx.$.parseTypeNode(def.basis, basisKinds)
-			},
 			normalize: (schema) => schema,
 			keys: {
 				basis: {
 					child: true,
-					// the basis has already been preparsed and added to context
-					parse: (_, ctx) => ctx.basis
+					parse: (def, ctx) =>
+						ctx.$.parseTypeNode(def, { allowedKinds: ["domain", "proto"] })
 				},
 				divisor: {
 					child: true,
@@ -211,7 +207,8 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			isArray(v) ? [...v] : v
 		]) as FoldInput<last<OrderedNodeKinds>>
 		for (const constraint of r.constraints) {
-			constraint.foldIntersection(result)?.throw()
+			const possibleDisjoint = constraint.foldIntersection(result)
+			if (possibleDisjoint) return possibleDisjoint
 		}
 		return result
 	}

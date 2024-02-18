@@ -30,7 +30,6 @@ export type SchemaParseOptions = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
-	basis?: Node<IntersectionBasisKind> | undefined
 }
 
 export type SchemaParseContext = evaluate<

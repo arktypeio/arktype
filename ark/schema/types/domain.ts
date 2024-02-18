@@ -76,7 +76,7 @@ export class DomainNode<t = unknown> extends BaseBasis<
 
 	intersectRightwardInner(r: never) {
 		return throwInternalError(
-			`Unexpected attempt to intersect ${r} from domain.`
+			`Unexpected attempt to intersect ${r} from domain`
 		)
 	}
 }

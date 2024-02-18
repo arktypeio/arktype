@@ -67,7 +67,11 @@ export class IndexNode
 			}
 		})
 
-	compile(js: NodeCompiler) {}
+	compile(js: NodeCompiler) {
+		if (js.traversalKind === "Allows") {
+			js.return(true)
+		}
+	}
 
 	protected intersectOwnInner(r: IndexNode): IndexInner {
 		return this

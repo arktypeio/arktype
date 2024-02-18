@@ -144,83 +144,76 @@ Value at [1] must be a number (was boolean)`)
 		})
 
 		it("nested", () => {
-			const t = type([["string", "number"], [{ a: "boolean", b: ["null"] }]])
+			const t = type([["string", "number"], [{ a: "bigint", b: ["null"] }]])
 			attest<
 				[
 					[string, number],
 					[
 						{
-							a: boolean
+							a: bigint
 							b: [null]
 						}
 					]
 				]
 			>(t.infer)
-
-			attest(t.allows([["", 0], [{ a: true, b: [null] }]])).equals(true)
-			attest(t([["foo", 1], [{ a: true, b: [null] }]]).out).snap([
-				["foo", 1],
-				[{ a: true, b: [null] }]
-			])
-			attest(t.allows([["", 0], [{ a: true, b: [undefined] }]])).equals(false)
-			attest(
-				t([["foo", 1], [{ a: true, b: [undefined] }]]).errors?.summary
-			).snap("[1][0].b[0] must be null (was undefined)")
+			const valid: typeof t.infer = [["", 0], [{ a: 0n, b: [null] }]]
+			attest(t.allows(valid)).equals(true)
+			attest(t(valid).out).equals(valid)
+			const invalid = [["", 0], [{ a: 0n, b: [undefined] }]]
+			attest(t.allows(invalid)).equals(false)
+			attest(t(invalid).errors?.summary).snap(
+				"Value at [1][0].b[0] must be null (was undefined)"
+			)
 		})
 	})
 	describe("variadic tuple", () => {
-		describe("variadic", () => {
-			it("spreads simple arrays", () => {
-				const wellRested = type(["string", "...number[]"])
-				attest<[string, ...number[]]>(wellRested.infer)
-				attest(wellRested(["foo"]).out).equals(["foo"])
-				attest(wellRested(["foo", 1, 2]).out).equals(["foo", 1, 2])
-			})
-			it("tuple expression", () => {
-				const wellRestedTuple = type([
-					"number",
-					["...", [{ a: "string" }, "[]"]]
-				])
-				attest<[number, ...{ a: string }[]]>(wellRestedTuple.infer)
-			})
-			it("spreads array expressions", () => {
-				const greatSpread = type([{ a: "boolean" }, "...(Date|RegExp)[]"])
-				attest<
-					[
-						{
-							a: boolean
-						},
-						...(RegExp | Date)[]
-					]
-				>(greatSpread.infer)
-			})
-			it("allows array keyword", () => {
-				const types = scope({
-					myArrayKeyword: "boolean[]",
-					myVariadicKeyword: ["string", "...myArrayKeyword"]
-				}).export()
-				attest<[string, ...boolean[]]>(types.myVariadicKeyword.infer)
-			})
-			it("errors on non-array", () => {
-				attest(() =>
-					// @ts-expect-error
-					type(["email", "...symbol"])
-				).throwsAndHasTypeError(writeNonArraySpreadMessage("symbol"))
-				attest(() =>
-					// @ts-expect-error
-					type(["number", ["...", "string"]])
-				).throwsAndHasTypeError(writeNonArraySpreadMessage("string"))
-			})
-			it("errors on non-last element", () => {
-				attest(() =>
-					// @ts-expect-error
-					type(["...number[]", "string"])
-				).throwsAndHasTypeError(multipleVariadicMesage)
-				attest(() =>
-					// @ts-expect-error
-					type([["...", "string[]"], "number"])
-				).throwsAndHasTypeError(multipleVariadicMesage)
-			})
+		it("spreads simple arrays", () => {
+			const wellRested = type(["string", "...number[]"])
+			attest<[string, ...number[]]>(wellRested.infer)
+			attest(wellRested(["foo"]).out).equals(["foo"])
+			attest(wellRested(["foo", 1, 2]).out).equals(["foo", 1, 2])
+		})
+		it("tuple expression", () => {
+			const wellRestedTuple = type(["number", ["...", [{ a: "string" }, "[]"]]])
+			attest<[number, ...{ a: string }[]]>(wellRestedTuple.infer)
+		})
+		it("spreads array expressions", () => {
+			const greatSpread = type([{ a: "boolean" }, "...(Date|RegExp)[]"])
+			attest<
+				[
+					{
+						a: boolean
+					},
+					...(RegExp | Date)[]
+				]
+			>(greatSpread.infer)
+		})
+		it("allows array keyword", () => {
+			const types = scope({
+				myArrayKeyword: "boolean[]",
+				myVariadicKeyword: ["string", "...myArrayKeyword"]
+			}).export()
+			attest<[string, ...boolean[]]>(types.myVariadicKeyword.infer)
+		})
+		it("errors on non-array", () => {
+			attest(() =>
+				// @ts-expect-error
+				type(["email", "...symbol"])
+			).throwsAndHasTypeError(writeNonArraySpreadMessage("symbol"))
+			attest(() =>
+				// @ts-expect-error
+				type(["number", ["...", "string"]])
+			).throwsAndHasTypeError(writeNonArraySpreadMessage("string"))
+		})
+		it("errors on non-last element", () => {
+			attest(() =>
+				// @ts-expect-error
+				type(["...number[]", "string"])
+			).throwsAndHasTypeError(multipleVariadicMesage)
+			attest(() =>
+				// @ts-expect-error
+				type([["...", "string[]"], "number"])
+			).throwsAndHasTypeError(multipleVariadicMesage)
 		})
 	})
 	describe("intersection", () => {

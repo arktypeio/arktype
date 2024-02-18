@@ -158,9 +158,11 @@ export class SequenceNode
 				description(inner) {
 					const parts = inner.prefix?.map(String) ?? []
 					inner.optionals?.forEach((node) => parts.push(`an optional ${node}`))
-					parts.push(`zero or more ${inner.variadic} elements`)
+					if (inner.variadic) {
+						parts.push(`zero or more ${inner.variadic} elements`)
+					}
 					inner.postfix?.forEach((node) => parts.push(String(node)))
-					return `an array of ${parts.join(" followed by ")}`
+					return `comprised of ${parts.join(" followed by ")}`
 				}
 			}
 		})
@@ -213,13 +215,13 @@ export class SequenceNode
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler) {
-		this.prefix.forEach((node, i) => js.checkKey(`${i}`, node, true))
+		this.prefix.forEach((node, i) => js.checkReferenceKey(`${i}`, node))
 		this.optionals.forEach((node, i) => {
 			const dataIndex = `${i + this.prefix.length}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
-			js.checkKey(dataIndex, node, true)
+			js.checkReferenceKey(dataIndex, node)
 		})
 
 		if (this.variadic) {
@@ -229,11 +231,11 @@ export class SequenceNode
 			)
 			js.for(
 				"i < lastVariadicIndex",
-				() => js.checkKey("i", this.variadic!, true),
+				() => js.checkReferenceKey("i", this.variadic!),
 				this.prevariadic.length
 			)
 			this.postfix.forEach((node, i) =>
-				js.checkKey(`lastVariadicIndex + ${i + 1}`, node, true)
+				js.checkReferenceKey(`lastVariadicIndex + ${i + 1}`, node)
 			)
 		}
 

@@ -14,19 +14,14 @@ export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
 export type ExtraneousKeyRestriction = "throw" | "prune"
 
-export interface PropsGroupInner {
-	readonly onExtraneousKey?: ExtraneousKeyBehavior
-	readonly required?: readonly RequiredNode[]
-	readonly optional?: readonly OptionalNode[]
-	readonly index?: readonly IndexNode[]
-	readonly sequence?: SequenceNode
-}
+export type PropsGroupInput = Pick<
+	IntersectionInner,
+	PropKind | "onExtraneousKey"
+>
 
-export type PropsGroupInput = Pick<IntersectionInner, PropKind>
-
-export class PropsGroup extends DynamicBase<PropsGroupInner> {
+export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly exhaustive =
-		this.onExtraneousKey !== "ignore" || this.index !== undefined
+		this.onExtraneousKey !== undefined || this.index !== undefined
 	readonly named: readonly Node<"required" | "optional">[] = this.required
 		? this.optional
 			? [...this.required, ...this.optional]
@@ -57,15 +52,15 @@ export class PropsGroup extends DynamicBase<PropsGroupInner> {
 			this.all.forEach((node) =>
 				js.if(`!${js.invoke(node)}`, () => js.return(false))
 			)
-			js.return(true)
 		} else {
 			this.all.forEach((node) => js.line(js.invoke(node)))
 		}
 	}
 
 	protected compileExhaustive(js: NodeCompiler) {
-		this.named.forEach((prop) => prop.compile(js))
+		this.named.forEach((prop) => js.check(prop))
 		this.sequence?.compile(js)
+		if (this.sequence) js.check(this.sequence)
 		js.forIn(js.data, () => {
 			if (this.onExtraneousKey) {
 				js.let("matched", false)
@@ -97,8 +92,5 @@ export class PropsGroup extends DynamicBase<PropsGroupInner> {
 			}
 			return js
 		})
-		if (js.traversalKind === "Allows") {
-			js.return(true)
-		}
 	}
 }

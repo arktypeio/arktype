@@ -67,8 +67,11 @@ export class OptionalNode
 
 	compile(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.checkKey(this.serializedKey, this.value, false)
+			js.checkLiteralKey(this.key, this.value)
 		)
+		if (js.traversalKind === "Allows") {
+			js.return(true)
+		}
 	}
 
 	protected intersectOwnInner(r: OptionalNode) {

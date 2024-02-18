@@ -4,7 +4,11 @@ import type { Inner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
+import {
+	throwInvalidOperandError,
+	type TypeKind,
+	type nodeImplementationOf
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { BaseConstraint, FoldInput } from "./constraint.js"
 import { compileKey } from "./shared.js"
@@ -86,7 +90,7 @@ export class RequiredNode
 
 	compile(js: NodeCompiler) {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.checkKey(this.serializedKey, this.value, false)
+			js.checkLiteralKey(this.key, this.value)
 		).else(() =>
 			js.traversalKind === "Allows"
 				? js.return(false)
@@ -94,6 +98,9 @@ export class RequiredNode
 						`${js.ctx}.error(${JSON.stringify(this.baseRequiredErrorContext)})`
 				  )
 		)
+		if (js.traversalKind === "Allows") {
+			js.return(true)
+		}
 	}
 
 	protected intersectOwnInner(r: Inner<"required" | "optional">) {
@@ -112,6 +119,23 @@ export class RequiredNode
 	}
 
 	foldIntersection(into: FoldInput<"required">) {
-		return undefined
+		if (into.basis?.domain !== "object") {
+			throwInvalidOperandError("required", "an object", into.basis)
+		}
+
+		if (!into.required) {
+			into.required = [this]
+			return
+		}
+
+		let matchedExisting = false
+		for (let i = 0; i < into.required.length; i++) {
+			const result = this.intersectOwnKind(into.required[i])
+			if (result === null) continue
+			if (result instanceof Disjoint) return result
+			into.required[i] = result
+			matchedExisting = true
+		}
+		if (!matchedExisting) into.required.push(this)
 	}
 }

@@ -115,11 +115,11 @@ export const literalPropAccess = (key: PropertyKey, optional = false) => {
 	if (typeof key === "string" && isDotAccessible(key)) {
 		return `${optional ? "?" : ""}.${key}`
 	}
-	return indexPropAccess(
-		typeof key === "symbol" ? reference(key) : JSON.stringify(key),
-		optional
-	)
+	return indexPropAccess(serializeLiteralKey(key), optional)
 }
+
+export const serializeLiteralKey = (key: PropertyKey) =>
+	typeof key === "symbol" ? reference(key) : JSON.stringify(key)
 
 export const indexPropAccess = (key: string, optional = false) =>
 	`${optional ? "?." : ""}[${key}]`

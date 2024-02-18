@@ -29,6 +29,11 @@ import { BaseType } from "./type.js"
 
 export type MorphChildKind = evaluate<"intersection" | BasisKind>
 
+export const morphChildKinds = [
+	"intersection",
+	...basisKinds
+] as const satisfies readonly MorphChildKind[]
+
 export type MorphChildNode = Node<MorphChildKind>
 
 export type MorphChildDefinition = Schema<MorphChildKind>
@@ -74,12 +79,12 @@ export class MorphNode<t = unknown> extends BaseType<
 				in: {
 					child: true,
 					parse: (schema, ctx) =>
-						ctx.$.parseTypeNode(schema, ["intersection", ...basisKinds])
+						ctx.$.parseTypeNode(schema, { allowedKinds: morphChildKinds })
 				},
 				out: {
 					child: true,
 					parse: (schema, ctx) =>
-						ctx.$.parseTypeNode(schema, ["intersection", ...basisKinds])
+						ctx.$.parseTypeNode(schema, { allowedKinds: morphChildKinds })
 				},
 				morph: {
 					parse: listFrom

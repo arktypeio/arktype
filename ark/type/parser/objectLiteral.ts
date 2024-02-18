@@ -35,70 +35,66 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 	// anywhere except for the beginning.
 	// Discussion in ArkType Discord:
 	// https://discord.com/channels/957797212103016458/1103023445035462678/1182814502471860334
-	let hasSeenFirstKey = false
 
-	const entries = stringAndSymbolicEntriesOf(def)
-	for (const entry of entries) {
-		const result = parseEntry(entry)
+	const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
+	if (parsedEntries[0].kind === "spread") {
+		// remove the spread entry so we can iterate over the remaining entries
+		// expecting non-spread entries
+		const spreadEntry = parsedEntries.shift()!
+		const spreadNode = ctx.scope.parse(spreadEntry.innerValue, ctx)
 
-		if (result.kind === "spread") {
-			if (hasSeenFirstKey) {
-				return throwParseError(
-					"Spread operator may only be used as the first key in an object"
-				)
-			}
-
-			const spreadNode = ctx.scope.parse(result.innerValue, ctx)
-
-			if (
-				spreadNode.kind !== "intersection" ||
-				!spreadNode.extends(keywords.object)
-			) {
-				return throwParseError(
-					writeInvalidSpreadTypeMessage(printable(result.innerValue))
-				)
-			}
-
-			// For each key on spreadNode, add it to our object.
-			// We filter out keys from the spreadNode that will be defined later on this same object
-			// because the currently parsed definition will overwrite them.
-			const requiredEntriesFromSpread = (spreadNode?.required ?? []).filter(
-				(e) => !entries.some(([k]) => k === e.key)
+		if (
+			spreadNode.kind !== "intersection" ||
+			!spreadNode.extends(keywords.object)
+		) {
+			return throwParseError(
+				writeInvalidSpreadTypeMessage(printable(spreadEntry.innerValue))
 			)
+		}
 
-			const optionalEntriesFromSpread = (spreadNode?.optional ?? []).filter(
-				(e) => !entries.some(([k]) => k === e.key)
+		// TODO: move to props group merge in schema
+		// For each key on spreadNode, add it to our object.
+		// We filter out keys from the spreadNode that will be defined later on this same object
+		// because the currently parsed definition will overwrite them.
+		spreadNode.required?.forEach(
+			(spreadRequired) =>
+				!parsedEntries.some(
+					({ innerKey }) => innerKey === spreadRequired.key
+				) && required.push(spreadRequired)
+		)
+
+		spreadNode.optional?.forEach(
+			(spreadOptional) =>
+				!parsedEntries.some(
+					({ innerKey }) => innerKey === spreadOptional.key
+				) && optional.push(spreadOptional)
+		)
+	}
+	for (const entry of parsedEntries) {
+		if (entry.kind === "spread") {
+			return throwParseError(
+				"Spread operator may only be used as the first key in an object"
 			)
-
-			required.push(...requiredEntriesFromSpread)
-			optional.push(...optionalEntriesFromSpread)
-
-			continue
 		}
 
 		ctx.path.push(
 			`${
-				typeof result.innerKey === "symbol"
-					? `[${printable(result.innerKey)}]`
-					: result.innerKey
+				typeof entry.innerKey === "symbol"
+					? `[${printable(entry.innerKey)}]`
+					: entry.innerKey
 			}`
 		)
-		const valueNode = ctx.scope.parse(result.innerValue, ctx)
-
-		if (result.kind === "optional") {
-			optional.push({
-				key: result.innerKey,
-				value: valueNode
-			})
+		const value = ctx.scope.parse(entry.innerValue, ctx)
+		const inner: Inner<"required" | "optional"> = {
+			key: entry.innerKey,
+			value
+		}
+		if (entry.kind === "optional") {
+			optional.push(inner)
 		} else {
-			required.push({
-				key: result.innerKey,
-				value: valueNode
-			})
+			required.push(inner)
 		}
 		ctx.path.pop()
-
-		hasSeenFirstKey ||= true
 	}
 
 	return schema({

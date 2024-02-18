@@ -21,7 +21,7 @@ export const unionChildKinds = [
 	"morph",
 	"intersection",
 	...basisKinds
-] as const satisfies readonly TypeKind[]
+] as const satisfies readonly UnionChildKind[]
 
 export type UnionChildSchema = Schema<UnionChildKind>
 
@@ -71,7 +71,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					child: true,
 					parse: (schema, ctx) => {
 						const branches = schema.map((branch) =>
-							ctx.$.parseTypeNode(branch, unionChildKinds)
+							ctx.$.parseTypeNode(branch, { allowedKinds: unionChildKinds })
 						)
 						const def = ctx.definition as UnionSchema
 						if (isArray(def) || def.ordered !== true) {

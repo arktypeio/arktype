@@ -206,7 +206,9 @@ export class ScopeNode<r extends object = any> {
 			[i in keyof branches]: validateSchemaBranch<branches[i], r>
 		}
 	): instantiateSchemaBranches<branches> {
-		return this.parseRoot("union", branches as never) as never
+		return branches.length === 1
+			? (this.parseTypeNode(branches[0] as never, { root: true }) as never)
+			: (this.parseRoot("union", branches as never) as never)
 	}
 
 	parseUnits<const branches extends readonly unknown[]>(
@@ -233,15 +235,17 @@ export class ScopeNode<r extends object = any> {
 
 	parseTypeNode<defKind extends TypeKind>(
 		schema: Schema<defKind>,
-		allowedKinds?: readonly defKind[]
+		opts: TypeSchemaParseOptions<defKind> = {}
 	): Node<reducibleKindOf<defKind>> {
 		const kind = assertTypeKind(schema)
-		if (allowedKinds && !allowedKinds.includes(kind as never)) {
+		if (opts.allowedKinds && !opts.allowedKinds.includes(kind as never)) {
 			return throwParseError(
-				`Schema of kind ${kind} should be one of ${allowedKinds}`
+				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
 			)
 		}
-		return this.parse(kind, schema as never) as never
+		return opts.root
+			? (this.parseRoot(kind, schema as never, opts) as never)
+			: (this.parse(kind, schema as never, opts) as never)
 	}
 
 	parseRoot<kind extends NodeKind>(
@@ -354,6 +358,12 @@ export type SchemaParser<r extends object> = {
 	): branches["length"] extends 1
 		? UnionNode<branches[0]>
 		: UnionNode<branches[number]> | UnitNode<branches[number]>
+}
+
+export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
+	extends SchemaParseOptions {
+	root?: boolean
+	allowedKinds?: readonly allowedKind[]
 }
 
 export const scopeNode = ScopeNode.from

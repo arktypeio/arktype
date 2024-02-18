@@ -1,4 +1,4 @@
-import { CompiledFunction } from "@arktype/util"
+import { CompiledFunction, serializeLiteralKey } from "@arktype/util"
 import type { Node, TypeNode } from "../base.js"
 import type { TraversalKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
@@ -44,15 +44,27 @@ export class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	checkKey(serializedKey: string, node: TypeNode, alwaysIndex: boolean) {
+	checkLiteralKey(key: PropertyKey, node: TypeNode) {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
-			this.line(`${this.ctx}.path.push(${serializedKey})`)
+			this.line(`${this.ctx}.path.push(${serializeLiteralKey(key)})`)
 		}
 		this.check(node, {
-			arg: `${this.data}${
-				alwaysIndex ? this.index(serializedKey) : this.prop(serializedKey)
-			}`
+			arg: `${this.data}${this.prop(key)}`
+		})
+		if (requiresContext) {
+			this.line(`${this.ctx}.path.pop()`)
+		}
+		return this
+	}
+
+	checkReferenceKey(keyExpression: string, node: TypeNode) {
+		const requiresContext = this.requiresContextFor(node)
+		if (requiresContext) {
+			this.line(`${this.ctx}.path.push(${keyExpression})`)
+		}
+		this.check(node, {
+			arg: `${this.data}${this.index(keyExpression)}`
 		})
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.pop()`)
