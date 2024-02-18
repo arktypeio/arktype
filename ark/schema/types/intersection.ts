@@ -1,21 +1,14 @@
 import {
 	isArray,
-	isEmptyObject,
 	printable,
 	remap,
 	splitByKeys,
-	throwParseError,
 	type evaluate,
 	type last,
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { Prerequisite, Schema } from "../kinds.js"
-import type {
-	ArrayPropsSchema,
-	BasePropsSchema,
-	PropsSchema
-} from "../refinements/props/props.js"
+import type { Inner, Prerequisite, Schema } from "../kinds.js"
 import type { FoldInput } from "../refinements/refinement.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -23,7 +16,6 @@ import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
 	parseOpen,
-	propKinds,
 	refinementKinds,
 	type BasisKind,
 	type ConstraintKind,
@@ -60,19 +52,10 @@ export type IntersectionSchema<
 		>
 >
 
-/** ensure spread prop keys like 'required' in this example:
- 		`{ basis: "object", required: [...]}`
- 	are nested in the 'props' key like:
- 		`{ basis: "object", props: {required: [...]}}` */
-export type NormalizedIntersectionSchema = Omit<
-	Extract<IntersectionSchema, { props?: PropsSchema }>,
-	propKeyOf<any>
->
-
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
-	normalizedSchema: NormalizedIntersectionSchema
+	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
 	composition: "composite"
 	expectedContext: {
@@ -101,8 +84,6 @@ const refinementKeys = remap(refinementKinds, (i, kind) => [kind, 1] as const)
 // 		: this.indexed.find((entry) => entry.key.equals(key))?.value
 // }
 
-const propKeys = remap([...propKinds, "keys"], (i, k) => [k, 1] as const)
-
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	IntersectionDeclaration,
@@ -111,25 +92,11 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
-			normalize: (def) => {
-				const [propsSchema, intersectionSchema] = splitByKeys(def, propKeys)
-				if (isEmptyObject(propsSchema)) {
-					return intersectionSchema
-				}
-				if (intersectionSchema.props) {
-					return throwParseError(
-						`An intersection schema cannot have both a 'props' key and its flattened values (found ${Object.keys(
-							propsSchema
-						).join(", ")})`
-					)
-				}
-				intersectionSchema.props = propsSchema
-				return intersectionSchema
-			},
 			addParseContext: (ctx) => {
 				const def = ctx.definition as IntersectionSchema
 				ctx.basis = def.basis && ctx.$.parseTypeNode(def.basis, basisKinds)
 			},
+			normalize: (schema) => schema,
 			keys: {
 				basis: {
 					child: true,
@@ -172,9 +139,21 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					child: true,
 					parse: (def, ctx) => parseOpen("predicate", def, ctx)
 				},
-				props: {
+				required: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("props", def, ctx)
+					parse: (def, ctx) => parseOpen("required", def, ctx)
+				},
+				optional: {
+					child: true,
+					parse: (def, ctx) => parseOpen("optional", def, ctx)
+				},
+				sequence: {
+					child: true,
+					parse: (def, ctx) => ctx.$.parse("sequence", def, ctx)
+				},
+				index: {
+					child: true,
+					parse: (def, ctx) => parseOpen("index", def, ctx)
 				}
 			},
 			reduce: (inner, scope) => {
@@ -242,9 +221,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		)
 	}
 
-	readonly prepredicates = this.refinements.filter(
-		(node): node is Node<PrepredicateKind> => node.kind !== "predicate"
-	)
+	readonly prepredicates = this.refinements
+	// 	.filter(
+	// 	(node): node is Node<PrepredicateKind> => node.kind !== "predicate"
+	// )
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		this.basis?.traverseApply(data, ctx)
@@ -277,34 +257,19 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
-type PrepredicateKind = Exclude<RefinementKind, "predicate">
-
-type PrimitiveRefinementKind = Exclude<RefinementKind, "props">
-
-type primitiveRefinementKindOf<t> = {
-	[k in PrimitiveRefinementKind]: t extends Prerequisite<k> ? k : never
-}[PrimitiveRefinementKind]
+type refinementKindOf<t> = {
+	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
+}[RefinementKind]
 
 type schemaRefinementValue<k extends NodeKind> = k extends OpenNodeKind
-	? listable<Schema<k>>
-	: Schema<k>
+	? // TODO: is Inner<k> needed? Should be assignable
+	  listable<Schema<k> | Inner<k>>
+	: Schema<k> | Inner<k>
 
 type innerRefinementValue<k extends NodeKind> = k extends OpenNodeKind
 	? readonly Node<k>[]
 	: Node<k>
 
-type primitiveRefinementsOf<t> = {
-	[k in primitiveRefinementKindOf<t>]?: schemaRefinementValue<k>
+export type schemaRefinementsOf<t> = {
+	[k in refinementKindOf<t>]?: schemaRefinementValue<k>
 }
-
-type propKeyOf<t extends object> = Exclude<
-	t extends readonly unknown[] ? keyof ArrayPropsSchema : keyof BasePropsSchema,
-	keyof BaseMeta
->
-
-type propRefinementsOf<t> = [t] extends [object]
-	? { props?: PropsSchema<t> } & PropsSchema<t>
-	: {}
-
-export type schemaRefinementsOf<t> = primitiveRefinementsOf<t> &
-	propRefinementsOf<t>

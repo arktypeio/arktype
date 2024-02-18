@@ -55,7 +55,7 @@ export type ShallowRefinementKind = (typeof shallowRefinementKinds)[number]
 
 export const refinementKinds = [
 	...shallowRefinementKinds,
-	"props",
+	...propKinds,
 	"predicate"
 ] as const
 

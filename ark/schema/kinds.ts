@@ -11,7 +11,6 @@ import {
 	OptionalNode,
 	type OptionalDeclaration
 } from "./refinements/props/optional.js"
-import { PropsNode, type PropsDeclaration } from "./refinements/props/props.js"
 import {
 	RequiredNode,
 	type RequiredDeclaration
@@ -49,7 +48,6 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	index: IndexDeclaration
 	pattern: PatternDeclaration
 	predicate: PredicateDeclaration
-	props: PropsDeclaration
 }
 
 export const nodesByKind = {
@@ -66,8 +64,7 @@ export const nodesByKind = {
 	required: RequiredNode,
 	optional: OptionalNode,
 	index: IndexNode,
-	sequence: SequenceNode,
-	props: PropsNode
+	sequence: SequenceNode
 } as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
 export type NodesByKind = typeof nodesByKind

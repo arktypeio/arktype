@@ -6,7 +6,6 @@ import {
 	printable,
 	remap,
 	throwError,
-	throwInternalError,
 	type Constructor,
 	type Dict,
 	type Entry,
@@ -34,10 +33,9 @@ import type {
 } from "./refinements/bounds.js"
 import type { DivisorNode } from "./refinements/divisor.js"
 import type { PatternNode } from "./refinements/pattern.js"
-import type { Predicate, PredicateNode } from "./refinements/predicate.js"
+import type { PredicateNode } from "./refinements/predicate.js"
 import type { IndexNode } from "./refinements/props/index.js"
 import type { OptionalNode } from "./refinements/props/optional.js"
-import type { PropsNode } from "./refinements/props/props.js"
 import type { RequiredNode } from "./refinements/props/required.js"
 import type { SequenceNode } from "./refinements/props/sequence.js"
 import type { ScopeNode } from "./scope.js"
@@ -57,14 +55,12 @@ import {
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
-	setKinds,
 	typeKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
 	type PropKind,
 	type RefinementKind,
-	type SetKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
 	type nodeImplementationInputOf,
@@ -375,7 +371,6 @@ interface NodesByKind<t = any> {
 	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
-	props: PropsNode
 }
 
 export type Node<
