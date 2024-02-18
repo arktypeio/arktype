@@ -20,7 +20,7 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import { BasePrimitiveRefinement, type FoldInput } from "./refinement.js"
+import { BasePrimitiveConstraint, type FoldInput } from "./constraint.js"
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
 	extends BaseMeta {
@@ -97,7 +97,7 @@ export type BaseBoundDeclaration = evaluate<
 export abstract class BaseBound<
 	d extends BaseBoundDeclaration,
 	subclass extends NodeSubclass<d>
-> extends BasePrimitiveRefinement<d, subclass> {
+> extends BasePrimitiveConstraint<d, subclass> {
 	readonly hasOpenIntersection = false
 
 	static implementBound<d extends Declaration<BoundKind>>(

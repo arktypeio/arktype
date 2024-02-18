@@ -17,27 +17,27 @@ import {
 	type listable
 } from "@arktype/util"
 import type {
-	Declaration,
-	Inner,
-	Schema,
-	ioKindOf,
-	reducibleKindOf
-} from "./kinds.js"
-import type {
 	AfterNode,
 	BeforeNode,
 	MaxLengthNode,
 	MaxNode,
 	MinLengthNode,
 	MinNode
-} from "./refinements/bounds.js"
-import type { DivisorNode } from "./refinements/divisor.js"
-import type { IndexNode } from "./refinements/index.js"
-import type { OptionalNode } from "./refinements/optional.js"
-import type { PatternNode } from "./refinements/pattern.js"
-import type { PredicateNode } from "./refinements/predicate.js"
-import type { RequiredNode } from "./refinements/required.js"
-import type { SequenceNode } from "./refinements/sequence.js"
+} from "./constraints/bounds.js"
+import type { DivisorNode } from "./constraints/divisor.js"
+import type { IndexNode } from "./constraints/index.js"
+import type { OptionalNode } from "./constraints/optional.js"
+import type { PatternNode } from "./constraints/pattern.js"
+import type { PredicateNode } from "./constraints/predicate.js"
+import type { RequiredNode } from "./constraints/required.js"
+import type { SequenceNode } from "./constraints/sequence.js"
+import type {
+	Declaration,
+	Inner,
+	Schema,
+	ioKindOf,
+	reducibleKindOf
+} from "./kinds.js"
 import type { ScopeNode } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -52,17 +52,17 @@ import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
+	intersectionChildKinds,
 	precedenceOfKind,
+	propKinds,
 	refinementKinds,
-	shallowRefinementKinds,
-	structuralRefinementKinds,
 	typeKinds,
 	type BasisKind,
 	type ConstraintKind,
+	type IntersectionChildKind,
 	type NodeKind,
+	type PropKind,
 	type RefinementKind,
-	type ShallowRefinementKind,
-	type StructuralRefinementKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
 	type nodeImplementationInputOf,
@@ -262,24 +262,20 @@ export abstract class BaseNode<
 		return includes(basisKinds, this.kind)
 	}
 
+	isConstraint(): this is Node<ConstraintKind> {
+		return includes(constraintKinds, this.kind)
+	}
+
 	isRefinement(): this is Node<RefinementKind> {
 		return includes(refinementKinds, this.kind)
 	}
 
-	isShallowRefinement(): this is Node<ShallowRefinementKind> {
-		return includes(shallowRefinementKinds, this.kind)
-	}
-
-	isProp(): this is Node<StructuralRefinementKind> {
-		return includes(structuralRefinementKinds, this.kind)
+	isProp(): this is Node<PropKind> {
+		return includes(propKinds, this.kind)
 	}
 
 	isType(): this is TypeNode {
 		return includes(typeKinds, this.kind)
-	}
-
-	isConstraint(): this is Node<ConstraintKind> {
-		return includes(constraintKinds, this.kind)
 	}
 
 	toString() {

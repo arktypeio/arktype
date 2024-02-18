@@ -1,6 +1,6 @@
 import type {
+	Constraints,
 	DateLiteral,
-	Refinements,
 	RegexLiteral,
 	distill,
 	is
@@ -34,7 +34,7 @@ export type inferAst<
 	ast,
 	$,
 	args,
-	refinements extends Refinements
+	refinements extends Constraints
 > = ast extends List
 	? inferExpression<ast, $, args, refinements>
 	: inferTerminal<ast, $, args, refinements>
@@ -48,7 +48,7 @@ export type inferExpression<
 	ast extends List,
 	$,
 	args,
-	refinements extends Refinements
+	refinements extends Constraints
 > = ast extends GenericInstantiationAst
 	? inferDefinition<
 			ast[0]["definition"],
@@ -122,7 +122,7 @@ export type inferTerminal<
 	token,
 	$,
 	args,
-	refinements extends Refinements
+	refinements extends Constraints
 > = token extends keyof args | keyof $
 	? {} extends refinements
 		? resolve<token, $, args>

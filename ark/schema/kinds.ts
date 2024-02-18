@@ -1,24 +1,24 @@
 import type { NodeSubclass } from "./base.js"
-import { BoundNodes, type BoundDeclarations } from "./refinements/bounds.js"
-import { DivisorNode, type DivisorDeclaration } from "./refinements/divisor.js"
-import { IndexNode, type IndexDeclaration } from "./refinements/index.js"
+import { BoundNodes, type BoundDeclarations } from "./constraints/bounds.js"
+import { DivisorNode, type DivisorDeclaration } from "./constraints/divisor.js"
+import { IndexNode, type IndexDeclaration } from "./constraints/index.js"
 import {
 	OptionalNode,
 	type OptionalDeclaration
-} from "./refinements/optional.js"
-import { PatternNode, type PatternDeclaration } from "./refinements/pattern.js"
+} from "./constraints/optional.js"
+import { PatternNode, type PatternDeclaration } from "./constraints/pattern.js"
 import {
 	PredicateNode,
 	type PredicateDeclaration
-} from "./refinements/predicate.js"
+} from "./constraints/predicate.js"
 import {
 	RequiredNode,
 	type RequiredDeclaration
-} from "./refinements/required.js"
+} from "./constraints/required.js"
 import {
 	SequenceNode,
 	type SequenceDeclaration
-} from "./refinements/sequence.js"
+} from "./constraints/sequence.js"
 import type { NodeKind, TypeKind } from "./shared/implement.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
 import {

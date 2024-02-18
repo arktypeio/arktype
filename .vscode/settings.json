@@ -46,5 +46,8 @@
 		// Hair Space: used as a sentinel for error messages
 		" ": true
 	},
-	"astro.language-server.ls-path": "ark/docs/node_modules/astro"
+	"astro.language-server.ls-path": "ark/docs/node_modules/astro",
+	"search.exclude": {
+		"**/out": true
+	}
 }

@@ -68,7 +68,7 @@ export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
 }
 
 export type instantiateBasis<def extends Schema<BasisKind>> =
-	//allow any to be used to access all refinements
+	//allow any to be used to access all constraints
 	isAny<def> extends true
 		? any
 		: def extends NonEnumerableDomain

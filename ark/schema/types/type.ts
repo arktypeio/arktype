@@ -12,7 +12,12 @@ import type {
 	ownIntersectionAlternateResult
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { NodeKind, TypeKind, kindRightOf } from "../shared/implement.js"
+import type {
+	ConstraintKind,
+	NodeKind,
+	TypeKind,
+	kindRightOf
+} from "../shared/implement.js"
 import { inferred } from "../shared/utils.js"
 import { TraversalContext } from "../traversal/context.js"
 import type { ArkResult } from "../traversal/errors.js"
@@ -102,13 +107,12 @@ export abstract class BaseType<
 		return nodeResult
 	}
 
-	constrain<refinementKind extends NodeKind>(
-		kind: refinementKind,
-		input: Schema<refinementKind>
+	constrain<constraintKind extends ConstraintKind>(
+		kind: constraintKind,
+		input: Schema<constraintKind>
 	): Node<reducibleKindOf<this["kind"]>> {
+		const constraint = this.$.parse(kind, input)
 		return this as never
-		// const refinement = this.$.parseNode(kind, input)
-		// return this.and(refinement) as never
 	}
 
 	keyof() {

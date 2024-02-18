@@ -41,45 +41,39 @@ export const boundKinds = [
 
 export type BoundKind = (typeof boundKinds)[number]
 
-export const structuralRefinementKinds = [
-	"required",
-	"optional",
-	"index",
-	"sequence"
-] as const
+export const propKinds = ["required", "optional", "index", "sequence"] as const
 
-export type StructuralRefinementKind =
-	(typeof structuralRefinementKinds)[number]
+export type PropKind = (typeof propKinds)[number]
 
-export const shallowRefinementKinds = [
-	"pattern",
-	"divisor",
-	...boundKinds
-] as const
-
-export type ShallowRefinementKind = (typeof shallowRefinementKinds)[number]
-
-export const refinementKinds = [
-	...shallowRefinementKinds,
-	...structuralRefinementKinds,
-	"predicate"
-] as const
+export const refinementKinds = ["pattern", "divisor", ...boundKinds] as const
 
 export type RefinementKind = (typeof refinementKinds)[number]
 
-export const setKinds = ["union", "morph", "intersection"] as const
-
-export type SetKind = (typeof setKinds)[number]
-
-export const typeKinds = [...setKinds, ...basisKinds] as const
-
-export type TypeKind = (typeof typeKinds)[number]
-
-export const constraintKinds = [...basisKinds, ...refinementKinds] as const
+export const constraintKinds = [
+	...refinementKinds,
+	...propKinds,
+	"predicate"
+] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
-export type NodeKind = SetKind | ConstraintKind | StructuralRefinementKind
+export const typeKinds = [
+	"union",
+	"morph",
+	"intersection",
+	...basisKinds
+] as const
+
+export type TypeKind = (typeof typeKinds)[number]
+
+export const intersectionChildKinds = [
+	...basisKinds,
+	...constraintKinds
+] as const
+
+export type IntersectionChildKind = (typeof intersectionChildKinds)[number]
+
+export type NodeKind = TypeKind | ConstraintKind
 
 export const nodeKinds = [
 	"union",
@@ -88,8 +82,8 @@ export const nodeKinds = [
 	"intersection",
 	"proto",
 	"domain",
-	...refinementKinds,
-	...structuralRefinementKinds
+	...constraintKinds,
+	...propKinds
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
@@ -100,7 +94,7 @@ export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
 
 export const primitiveKinds = [
 	...basisKinds,
-	...shallowRefinementKinds,
+	...refinementKinds,
 	"predicate"
 ] as const
 
@@ -238,7 +232,7 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 ) => string
 
 export const throwInvalidOperandError = (
-	kind: RefinementKind,
+	kind: ConstraintKind,
 	expected: string,
 	basis: Node<BasisKind> | undefined
 ) => throwParseError(`${kind} operand must be ${expected} (was ${basis})`)
@@ -254,7 +248,7 @@ export const parseOpen = <kind extends OpenNodeKind>(
 			return
 		}
 		return input
-			.map((refinement) => ctx.$.parse(kind, refinement))
+			.map((node) => ctx.$.parse(kind, node))
 			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 	}
 	return [ctx.$.parse(kind, input)] as never

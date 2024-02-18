@@ -2,10 +2,10 @@ import { throwParseError } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
-	BasePrimitiveRefinement,
+	BasePrimitiveConstraint,
 	getBasisName,
 	type FoldInput
-} from "./refinement.js"
+} from "./constraint.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly divisor: number
@@ -33,7 +33,7 @@ export const writeIndivisibleMessage = <root extends string>(
 export type writeIndivisibleMessage<root extends string> =
 	`Divisibility operand ${root} must be a number`
 
-export class DivisorNode extends BasePrimitiveRefinement<
+export class DivisorNode extends BasePrimitiveConstraint<
 	DivisorDeclaration,
 	typeof DivisorNode
 > {

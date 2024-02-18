@@ -10,27 +10,28 @@ import {
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { Inner, Prerequisite, Schema } from "../kinds.js"
+import type { FoldInput } from "../constraints/constraint.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
-	type ExtraneousKeyRestriction
-} from "../refinements/props.js"
-import type { FoldInput } from "../refinements/refinement.js"
+	type ExtraneousKeyRestriction,
+	type PropsGroupInner
+} from "../constraints/props.js"
+import type { Inner, Prerequisite, Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	basisKinds,
+	constraintKinds,
 	parseOpen,
-	refinementKinds,
-	structuralRefinementKinds,
+	propKinds,
 	type BasisKind,
 	type ConstraintKind,
+	type IntersectionChildKind,
 	type OpenNodeKind,
 	type OrderedNodeKinds,
 	type RefinementKind,
-	type ShallowRefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -70,13 +71,13 @@ export type IntersectionDeclaration = declareNode<{
 		errors: readonly ArkTypeError[]
 	}
 	disjoinable: true
-	childKind: ConstraintKind
+	childKind: IntersectionChildKind
 }>
 
-const refinementKeys = remap(refinementKinds, (i, kind) => [kind, 1] as const)
+const constraintKeys = remap(constraintKinds, (i, kind) => [kind, 1] as const)
 
-const structuralKeys = remap(
-	[...structuralRefinementKinds, "onExtraneousKey"],
+const propKeys = remap(
+	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInner)[],
 	(i, k) => [k, 1] as const
 )
 
@@ -173,24 +174,24 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			},
 			reduce: (inner, scope) => {
-				const [refinements, base] = splitByKeys(inner, refinementKeys)
+				const [constraints, base] = splitByKeys(inner, constraintKeys)
 				const result: FoldInput<"predicate"> = base
-				const flatRefinements = Object.values(refinements).flat()
-				if (flatRefinements.length === 0 && base.basis) {
+				const flatConstraints = Object.values(constraints).flat()
+				if (flatConstraints.length === 0 && base.basis) {
 					return base.basis
 				}
 				// TODO: are these ordered?
-				for (const refinement of flatRefinements) {
-					refinement.foldIntersection(result)?.throw()
+				for (const constraint of flatConstraints) {
+					constraint.foldIntersection(result)?.throw()
 				}
 				return scope.parse("intersection", result, { prereduced: true })
 			},
 			defaults: {
-				description(constraints) {
-					const flatConstraints = Object.values(constraints).flat()
-					return flatConstraints.length === 0
+				description(inner) {
+					const children = Object.values(inner).flat()
+					return children.length === 0
 						? "an unknown value"
-						: flatConstraints.join(" and ")
+						: children.join(" and ")
 				},
 				expected(source) {
 					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")
@@ -207,7 +208,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			k,
 			isArray(v) ? [...v] : v
 		]) as FoldInput<last<OrderedNodeKinds>>
-		for (const constraint of r.refinements) {
+		for (const constraint of r.constraints) {
 			constraint.foldIntersection(result)?.throw()
 		}
 		return result
@@ -226,18 +227,18 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			  }
 	}
 
-	readonly refinements = this.children.filter(
-		(child): child is Node<RefinementKind> => child.isRefinement()
+	readonly constraints = this.children.filter(
+		(child): child is Node<ConstraintKind> => child.isConstraint()
 	)
-	readonly shallows = this.refinements.filter(
-		(node): node is Node<ShallowRefinementKind> => node.isShallowRefinement()
+	readonly shallows = this.constraints.filter(
+		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
 	readonly props = new PropsGroup({
 		onExtraneousKey: "ignore",
-		...pick(this.inner, structuralKeys)
+		...pick(this.inner, propKeys)
 	})
 	readonly traversables = conflatenateAll<
-		Node<BasisKind | ShallowRefinementKind | "predicate"> | PropsGroup
+		Node<BasisKind | RefinementKind | "predicate"> | PropsGroup
 	>(this.basis, this.shallows, this.props, this.predicate)
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
@@ -263,7 +264,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		if (this.basis) {
 			js.check(this.basis)
 			// we only have to return conditionally if this is not the last check
-			if (this.refinements.length) {
+			if (this.constraints.length) {
 				js.if(hasErrors, () => js.return())
 			}
 		}
@@ -273,6 +274,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				js.if(hasErrors, () => js.return())
 			}
 		}
+		this.props.compile(js)
 		this.predicate?.forEach((node) => js.check(node))
 	}
 }
@@ -289,33 +291,33 @@ type ConditionalTerminalIntersectionKey =
 	keyof ConditionalTerminalIntersectionInner
 
 type ConditionalIntersectionKey =
-	| RefinementKind
+	| ConstraintKind
 	| keyof ConditionalTerminalIntersectionInner
 
-type refinementKindOf<t> = {
-	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
-}[RefinementKind]
+type constraintKindOf<t> = {
+	[k in ConstraintKind]: t extends Prerequisite<k> ? k : never
+}[ConstraintKind]
 
 type conditionalIntersectionKeyOf<t> =
-	| refinementKindOf<t>
+	| constraintKindOf<t>
 	| (t extends object ? "onExtraneousKey" : never)
 
 // not sure why explicitly allowing Inner<k> is necessary in these cases,
 // but remove if it can be removed without creating type errors
-type intersectionChildSchemaValueOf<k extends ConstraintKind> =
+type intersectionChildSchemaValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? listable<Schema<k> | Inner<k>> : Schema<k> | Inner<k>
 
 type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends ConstraintKind
+	k extends IntersectionChildKind
 		? intersectionChildSchemaValueOf<k>
 		: ConditionalTerminalIntersectionSchema[k &
 				ConditionalTerminalIntersectionKey]
 
-type intersectionChildInnerValueOf<k extends ConstraintKind> =
+type intersectionChildInnerValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
 
 type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends ConstraintKind
+	k extends IntersectionChildKind
 		? intersectionChildInnerValueOf<k>
 		: ConditionalTerminalIntersectionInner[k &
 				ConditionalTerminalIntersectionKey]

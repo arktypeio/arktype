@@ -2,7 +2,7 @@ import { appendUnique } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { throwInvalidOperandError } from "../shared/implement.js"
-import { BasePrimitiveRefinement, type FoldInput } from "./refinement.js"
+import { BasePrimitiveConstraint, type FoldInput } from "./constraint.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -24,7 +24,7 @@ export type PatternDeclaration = declareNode<{
 	expectedContext: PatternInner
 }>
 
-export class PatternNode extends BasePrimitiveRefinement<
+export class PatternNode extends BasePrimitiveConstraint<
 	PatternDeclaration,
 	typeof PatternNode
 > {

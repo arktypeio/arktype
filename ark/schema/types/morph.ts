@@ -154,11 +154,11 @@ export type distill<t> = includesMorphs<t> extends true
 	: t
 
 export type extractIn<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "in", "refined">
+	? distillRecurse<t, "in", "constrained">
 	: t
 
 export type extractOut<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "out", "refined">
+	? distillRecurse<t, "out", "constrained">
 	: t
 
 export type includesMorphs<t> = [
@@ -178,7 +178,7 @@ export type includesMorphs<t> = [
 type distillRecurse<
 	t,
 	io extends "in" | "out",
-	refinements extends "base" | "refined"
+	constraints extends "base" | "constrained"
 > = unknown extends t
 	? unknown
 	: t extends MorphAst<infer i, infer o>
@@ -186,12 +186,12 @@ type distillRecurse<
 		? i
 		: o
 	: t extends is<infer base>
-	? refinements extends "base"
-		? distillRecurse<base, io, refinements>
+	? constraints extends "base"
+		? distillRecurse<base, io, constraints>
 		: t
 	: t extends TerminallyInferredObjectKind | Primitive
 	? t
-	: { [k in keyof t]: distillRecurse<t[k], io, refinements> }
+	: { [k in keyof t]: distillRecurse<t[k], io, constraints> }
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

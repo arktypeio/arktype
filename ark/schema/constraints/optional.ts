@@ -5,7 +5,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import type { BaseRefinement, FoldInput } from "./refinement.js"
+import type { BaseConstraint, FoldInput } from "./constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
@@ -31,7 +31,7 @@ export type OptionalDeclaration = declareNode<{
 
 export class OptionalNode
 	extends BaseNode<object, OptionalDeclaration, typeof OptionalNode>
-	implements BaseRefinement<"optional">
+	implements BaseConstraint<"optional">
 {
 	static implementation: nodeImplementationOf<OptionalDeclaration> =
 		this.implement({

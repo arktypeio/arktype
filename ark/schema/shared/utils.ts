@@ -1,15 +1,15 @@
 import type { evaluate } from "@arktype/util"
-import type { LimitSchemaValue } from "../refinements/bounds.js"
+import type { LimitSchemaValue } from "../constraints/bounds.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
-export type BoundRefinements = { [k in Comparator]?: LimitSchemaValue }
+export type BoundConstraints = { [k in Comparator]?: LimitSchemaValue }
 
-export type DivisorRefinements = { [k in `%${number}`]: 0 }
+export type DivisorConstraints = { [k in `%${number}`]: 0 }
 
 export type RegexLiteral<source extends string = string> = `/${source}/`
 
-export type PatternRefinements = {
+export type PatternConstraints = {
 	[k in RegexLiteral]: true
 }
 
@@ -17,38 +17,38 @@ export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
 
-export type DateRefinements = {
+export type DateConstraints = {
 	[k in DateLiteral]: true
 }
 
-export type AnonymousRefinementKey =
+export type AnonymousConstraintKey =
 	| "anonymousDate"
 	| "anonymousBounds"
 	| "anonymousDivisor"
 	| "anonymousPattern"
 	| "anonymousPredicate"
 
-export type Refinements = evaluate<
-	BoundRefinements &
-		DivisorRefinements &
-		PatternRefinements &
-		DateRefinements & { [k in AnonymousRefinementKey]?: true }
+export type Constraints = evaluate<
+	BoundConstraints &
+		DivisorConstraints &
+		PatternConstraints &
+		DateConstraints & { [k in AnonymousConstraintKey]?: true }
 >
 
-export type is<t = unknown, refinements = Refinements> = {
+export type is<t = unknown, constraints = Constraints> = {
 	inferred: t
-	refinements: refinements
+	constraints: constraints
 }
 
 export type intersectConstrainables<l, r> = [l, r] extends [
-	is<infer lInner, infer lRefinements>,
-	is<infer rInner, infer rRefinements>
+	is<infer lInner, infer lConstraints>,
+	is<infer rInner, infer rConstraints>
 ]
-	? is<lInner & rInner, lRefinements & rRefinements>
-	: l extends is<infer lInner, infer lRefinements>
-	? is<lInner & r, lRefinements>
-	: r extends is<infer rInner, infer rRefinements>
-	? is<l & rInner, rRefinements>
+	? is<lInner & rInner, lConstraints & rConstraints>
+	: l extends is<infer lInner, infer lConstraints>
+	? is<lInner & r, lConstraints>
+	: r extends is<infer rInner, infer rConstraints>
+	? is<l & rInner, rConstraints>
 	: l & r
 
 export type cast<to> = {

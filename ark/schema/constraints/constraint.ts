@@ -5,9 +5,9 @@ import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
+	ConstraintKind,
 	NodeKind,
 	PrimitiveKind,
-	RefinementKind,
 	kindRightOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -22,21 +22,21 @@ export type FoldInput<kind extends NodeKind> = {
 		: IntersectionInner[k]
 }
 
-export interface BasePrimitiveRefinementDeclaration
+export interface BasePrimitiveConstraintDeclaration
 	extends BaseNodeDeclaration {
-	kind: PrimitiveKind & RefinementKind
+	kind: PrimitiveKind & ConstraintKind
 }
 
-export interface BaseRefinement<kind extends RefinementKind> {
+export interface BaseConstraint<kind extends ConstraintKind> {
 	foldIntersection(into: FoldInput<kind>): Disjoint | undefined
 }
 
-export abstract class BasePrimitiveRefinement<
-		d extends BasePrimitiveRefinementDeclaration,
+export abstract class BasePrimitiveConstraint<
+		d extends BasePrimitiveConstraintDeclaration,
 		subclass extends NodeSubclass<d>
 	>
 	extends BaseNode<d["prerequisite"], d, subclass>
-	implements BaseRefinement<d["kind"]>
+	implements BaseConstraint<d["kind"]>
 {
 	abstract foldIntersection(into: FoldInput<d["kind"]>): Disjoint | undefined
 

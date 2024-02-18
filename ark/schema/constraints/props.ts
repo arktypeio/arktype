@@ -1,8 +1,9 @@
 import { DynamicBase, conflatenateAll, reference, remap } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { StructuralRefinementKind } from "../shared/implement.js"
+import type { PropKind } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
+import type { IntersectionInner } from "../types/intersection.js"
 import type { IndexNode } from "./index.js"
 import type { OptionalNode } from "./optional.js"
 import type { RequiredNode } from "./required.js"
@@ -14,12 +15,14 @@ export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 export type ExtraneousKeyRestriction = "throw" | "prune"
 
 export interface PropsGroupInner {
-	readonly onExtraneousKey: ExtraneousKeyBehavior
+	readonly onExtraneousKey?: ExtraneousKeyBehavior
 	readonly required?: readonly RequiredNode[]
 	readonly optional?: readonly OptionalNode[]
 	readonly index?: readonly IndexNode[]
 	readonly sequence?: SequenceNode
 }
+
+export type PropsGroupInput = Pick<IntersectionInner, PropKind>
 
 export class PropsGroup extends DynamicBase<PropsGroupInner> {
 	readonly exhaustive =
@@ -29,7 +32,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInner> {
 			? [...this.required, ...this.optional]
 			: this.required
 		: this.optional ?? []
-	readonly all = conflatenateAll<Node<StructuralRefinementKind>>(
+	readonly all = conflatenateAll<Node<PropKind>>(
 		this.named,
 		this.index,
 		this.sequence

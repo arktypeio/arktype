@@ -4,7 +4,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { is } from "../shared/utils.js"
 import type { TraversalContext } from "../traversal/context.js"
 import type { ArkErrors } from "../traversal/errors.js"
-import { BasePrimitiveRefinement, type FoldInput } from "./refinement.js"
+import { BasePrimitiveConstraint, type FoldInput } from "./constraint.js"
 
 export interface PredicateInner<
 	predicate extends Predicate<any> = Predicate<any>
@@ -29,7 +29,7 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends BasePrimitiveRefinement<
+export class PredicateNode extends BasePrimitiveConstraint<
 	PredicateDeclaration,
 	typeof PredicateNode
 > {
