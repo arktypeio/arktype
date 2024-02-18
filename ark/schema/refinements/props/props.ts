@@ -1,16 +1,27 @@
-import { reference, remap, throwParseError } from "@arktype/util"
+import {
+	isArray,
+	reference,
+	remap,
+	throwParseError,
+	type last
+} from "@arktype/util"
 import { BaseNode } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { Disjoint } from "../../shared/disjoint.js"
-import { parseOpen, type PropKind } from "../../shared/implement.js"
+import {
+	parseOpen,
+	throwInvalidOperandError,
+	type OrderedNodeKinds,
+	type PropKind
+} from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../traversal/context.js"
 import type { FoldInput } from "../refinement.js"
 import type { IndexNode, IndexSchema } from "./index.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
-import { arrayIndexMatcherReference } from "./shared.js"
+import { arrayIndexMatcherReference, type PropsFoldInput } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
@@ -165,7 +176,7 @@ export class PropsNode extends BaseNode<
 
 	foldIntersection(into: FoldInput<"props">): Disjoint | undefined {
 		if (into.basis?.domain !== "object") {
-			throwParseError("")
+			throwInvalidOperandError("props", "an object", into.basis)
 		}
 		into.props = this.intersectOwnKind(into.props)
 		return

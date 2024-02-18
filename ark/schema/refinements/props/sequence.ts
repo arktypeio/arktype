@@ -253,7 +253,6 @@ export class SequenceNode extends BaseNode<
 			// with the minLength constraint we just added
 			into.maxLength?.foldIntersection(into)
 		if (possibleLengthDisjoint) return possibleLengthDisjoint
-		return into
 	}
 }
 
