@@ -11,13 +11,11 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Prerequisite, Schema } from "../kinds.js"
-import type { OptionalInner } from "../refinements/props/optional.js"
 import type {
 	ArrayPropsSchema,
 	BasePropsSchema,
 	PropsSchema
 } from "../refinements/props/props.js"
-import type { RequiredInner } from "../refinements/props/required.js"
 import type { FoldInput } from "../refinements/refinement.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"

@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { remap } from "@arktype/util"
 
-describe("map", () => {
+describe("remap", () => {
 	it("object", () => {
 		const result = remap({ a: true, b: false }, (k, v) =>
 			k === "a"
