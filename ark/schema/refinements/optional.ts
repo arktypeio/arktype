@@ -5,7 +5,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import type { FoldInput } from "./refinement.js"
+import type { BaseRefinement, FoldInput } from "./refinement.js"
 import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
@@ -29,11 +29,10 @@ export type OptionalDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class OptionalNode extends BaseNode<
-	object,
-	OptionalDeclaration,
-	typeof OptionalNode
-> {
+export class OptionalNode
+	extends BaseNode<object, OptionalDeclaration, typeof OptionalNode>
+	implements BaseRefinement<"optional">
+{
 	static implementation: nodeImplementationOf<OptionalDeclaration> =
 		this.implement({
 			keys: {
@@ -84,5 +83,7 @@ export class OptionalNode extends BaseNode<
 		}
 	}
 
-	foldIntersection(into: FoldInput<"optional">) {}
+	foldIntersection(into: FoldInput<"optional">) {
+		return undefined
+	}
 }

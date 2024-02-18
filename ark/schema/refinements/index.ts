@@ -3,7 +3,7 @@ import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import type { FoldInput } from "./refinement.js"
+import type { BaseRefinement, FoldInput } from "./refinement.js"
 
 export interface IndexSchema extends BaseMeta {
 	readonly key: TypeSchema
@@ -26,11 +26,10 @@ export type IndexDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class IndexNode extends BaseNode<
-	object,
-	IndexDeclaration,
-	typeof IndexNode
-> {
+export class IndexNode
+	extends BaseNode<object, IndexDeclaration, typeof IndexNode>
+	implements BaseRefinement<"index">
+{
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
@@ -74,5 +73,7 @@ export class IndexNode extends BaseNode<
 		return this
 	}
 
-	foldIntersection(into: FoldInput<"index">) {}
+	foldIntersection(into: FoldInput<"index">) {
+		return undefined
+	}
 }
