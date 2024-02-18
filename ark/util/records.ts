@@ -185,6 +185,16 @@ export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	return [l, r]
 }
 
+export const pick = <o extends object, keys extends keySetOf<o>>(
+	o: o,
+	keys: keys
+) => splitByKeys(o, keys)[0]
+
+export const omit = <o extends object, keys extends keySetOf<o>>(
+	o: o,
+	keys: keys
+) => splitByKeys(o, keys)[1]
+
 export type EmptyObject = Record<PropertyKey, never>
 
 export const isEmptyObject = (o: object): o is EmptyObject =>

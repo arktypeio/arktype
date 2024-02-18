@@ -2,6 +2,7 @@ import { throwInternalError, throwParseError } from "@arktype/util"
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import type {
 	NodeKeyImplementation,
 	TypeKind,
@@ -54,6 +55,7 @@ export type SequenceDeclaration = declareNode<{
 	composition: "composite"
 	prerequisite: readonly unknown[]
 	childKind: TypeKind
+	disjoinable: true
 }>
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
@@ -61,6 +63,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	"fixed" | "postfixed" | "optionals"
 > = {
 	child: true,
+	// TODO: figure out fixed []
 	parse: (schema, ctx) =>
 		schema.length === 0
 			? // omit empty affixes
@@ -252,6 +255,11 @@ export class SequenceNode
 			// with the minLength constraint we just added
 			into.maxLength?.foldIntersection(into)
 		if (possibleLengthDisjoint) return possibleLengthDisjoint
+		const ownResult = this.intersectOwnKind(into.sequence)
+		if (ownResult instanceof Disjoint) {
+			return ownResult
+		}
+		into.sequence = ownResult
 	}
 }
 

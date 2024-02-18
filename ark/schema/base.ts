@@ -53,14 +53,16 @@ import {
 	basisKinds,
 	constraintKinds,
 	precedenceOfKind,
-	propKinds,
 	refinementKinds,
+	shallowRefinementKinds,
+	structuralRefinementKinds,
 	typeKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
-	type PropKind,
 	type RefinementKind,
+	type ShallowRefinementKind,
+	type StructuralRefinementKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
 	type nodeImplementationInputOf,
@@ -264,8 +266,12 @@ export abstract class BaseNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isProp(): this is Node<PropKind> {
-		return includes(propKinds, this.kind)
+	isShallowRefinement(): this is Node<ShallowRefinementKind> {
+		return includes(shallowRefinementKinds, this.kind)
+	}
+
+	isProp(): this is Node<StructuralRefinementKind> {
+		return includes(structuralRefinementKinds, this.kind)
 	}
 
 	isType(): this is TypeNode {

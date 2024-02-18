@@ -1,5 +1,6 @@
 import {
 	isArray,
+	pick,
 	printable,
 	remap,
 	splitByKeys,
@@ -9,6 +10,7 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Inner, Prerequisite, Schema } from "../kinds.js"
+import { PropsGroup } from "../refinements/props.js"
 import type { FoldInput } from "../refinements/refinement.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -17,12 +19,14 @@ import {
 	basisKinds,
 	parseOpen,
 	refinementKinds,
+	structuralRefinementKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
 	type OpenNodeKind,
 	type OrderedNodeKinds,
 	type RefinementKind,
+	type ShallowRefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
@@ -66,6 +70,11 @@ export type IntersectionDeclaration = declareNode<{
 }>
 
 const refinementKeys = remap(refinementKinds, (i, kind) => [kind, 1] as const)
+
+const structuralKeys = remap(
+	[...structuralRefinementKinds, "onExtraneousKey"],
+	(i, k) => [k, 1] as const
+)
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
 // 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
@@ -221,15 +230,18 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		)
 	}
 
-	readonly prepredicates = this.refinements
-	// 	.filter(
-	// 	(node): node is Node<PrepredicateKind> => node.kind !== "predicate"
-	// )
+	readonly shallows = this.refinements.filter(
+		(node): node is Node<ShallowRefinementKind> => node.isShallowRefinement()
+	)
+	readonly props = new PropsGroup({
+		onExtraneousKey: "ignore",
+		...pick(this.inner, structuralKeys)
+	})
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		this.basis?.traverseApply(data, ctx)
 		if (ctx.currentErrors.length !== 0) return
-		this.prepredicates.forEach((node) => node.traverseApply(data as never, ctx))
+		this.shallows.forEach((node) => node.traverseApply(data as never, ctx))
 		if (ctx.currentErrors.length !== 0) return
 		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}
@@ -243,12 +255,12 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		if (this.basis) {
 			js.check(this.basis)
 			// we only have to return conditionally if this is not the last check
-			if (this.prepredicates.length || this.predicate) {
+			if (this.refinements.length) {
 				js.if(hasErrors, () => js.return())
 			}
 		}
-		if (this.prepredicates.length) {
-			this.prepredicates.forEach((node) => js.check(node))
+		if (this.shallows.length) {
+			this.shallows.forEach((node) => js.check(node))
 			if (this.predicate) {
 				js.if(hasErrors, () => js.return())
 			}
@@ -261,12 +273,12 @@ type refinementKindOf<t> = {
 	[k in RefinementKind]: t extends Prerequisite<k> ? k : never
 }[RefinementKind]
 
-type schemaRefinementValue<k extends NodeKind> = k extends OpenNodeKind
+type schemaRefinementValue<k extends RefinementKind> = k extends OpenNodeKind
 	? // TODO: is Inner<k> needed? Should be assignable
 	  listable<Schema<k> | Inner<k>>
 	: Schema<k> | Inner<k>
 
-type innerRefinementValue<k extends NodeKind> = k extends OpenNodeKind
+type innerRefinementValue<k extends RefinementKind> = k extends OpenNodeKind
 	? readonly Node<k>[]
 	: Node<k>
 

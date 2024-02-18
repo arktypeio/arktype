@@ -1,21 +1,12 @@
-import {
-	DynamicBase,
-	conflatenate,
-	conflatenateAll,
-	reference,
-	remap
-} from "@arktype/util"
+import { DynamicBase, conflatenateAll, reference, remap } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta } from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
-import { throwInvalidOperandError, type PropKind } from "../shared/implement.js"
+import type { StructuralRefinementKind } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import type { IndexNode, IndexSchema } from "./index.js"
-import type { OptionalNode, OptionalSchema } from "./optional.js"
-import type { FoldInput } from "./refinement.js"
-import type { RequiredNode, RequiredSchema } from "./required.js"
-import type { SequenceNode, SequenceSchema } from "./sequence.js"
+import type { IndexNode } from "./index.js"
+import type { OptionalNode } from "./optional.js"
+import type { RequiredNode } from "./required.js"
+import type { SequenceNode } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
@@ -30,17 +21,15 @@ export interface PropsGroupInner {
 	readonly sequence?: SequenceNode
 }
 
-export type NamedProp = RequiredNode | OptionalNode
-
 export class PropsGroup extends DynamicBase<PropsGroupInner> {
 	readonly exhaustive =
 		this.onExtraneousKey !== "ignore" || this.index !== undefined
-	readonly named: readonly NamedProp[] = this.required
+	readonly named: readonly Node<"required" | "optional">[] = this.required
 		? this.optional
 			? [...this.required, ...this.optional]
 			: this.required
 		: this.optional ?? []
-	readonly all = conflatenateAll<readonly Node<PropKind>[]>(
+	readonly all = conflatenateAll<readonly Node<StructuralRefinementKind>[]>(
 		this.named,
 		this.index,
 		this.sequence
