@@ -17,8 +17,9 @@ import {
 	type inferNarrow
 } from "@arktype/schema"
 import {
-	conflatenate,
+	append,
 	isArray,
+	map,
 	objectKindOrDomainOf,
 	printable,
 	throwParseError,
@@ -47,11 +48,14 @@ import {
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: List, ctx: ParseContext) =>
+export const parseTuple = (def: readonly unknown[], ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
-	let sequences: SequenceInner[] = [{}]
+export const parseTupleLiteral = (
+	def: readonly unknown[],
+	ctx: ParseContext
+): TypeNode => {
+	let sequences: MutableSequenceInner[] = [{}]
 	for (let i = 0; i < def.length; i++) {
 		ctx.path.push(`${i}`)
 		const parsedElementDef = parseSpreadable(def[i])
@@ -63,8 +67,14 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			if (!element.extends(keywords.Array)) {
 				return throwParseError(writeNonArraySpreadMessage(element))
 			}
+			// a spread must be distributed over branches e.g.:
+			// def: [string, ...(number[] | [true, false])]
+			// nodes: [string, ...number[]] | [string, true, false]
 			sequences = sequences.flatMap((base) =>
-				element.branches.map((branch) => appendSpreadBranch(base, branch))
+				// since appendElement mutates base, we have to shallow-ish clone it for each branch
+				element.branches.map((branch) =>
+					appendSpreadBranch(mutableSequenceInner(base), branch)
+				)
 			)
 		} else {
 			sequences = sequences.map((base) =>
@@ -83,80 +93,75 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 	})
 }
 
+// make nested arrays mutable while keeping nested nodes immutable
+type MutableSequenceInner = {
+	-readonly [k in keyof SequenceInner]: SequenceInner[k] extends
+		| readonly TypeNode[]
+		| undefined
+		? mutable<SequenceInner[k]>
+		: SequenceInner[k]
+}
+
+const mutableSequenceInner = (base: SequenceInner) =>
+	map(base, (k, v) => [k, isArray(v) ? [...v] : v]) as MutableSequenceInner
+
 const appendElement = (
-	base: SequenceInner,
+	base: MutableSequenceInner,
 	kind: "optional" | "required" | "variadic",
 	element: TypeNode
-): SequenceInner => {
+): MutableSequenceInner => {
 	switch (kind) {
 		case "required":
 			if (base.optionals)
 				// e.g. [string?, number]
 				return throwParseError(requiredPostOptionalMessage)
-			return base.variadic
-				? // e.g. [...string[], number]
-				  {
-						...base,
-						postfixed: conflatenate(base.postfixed, element)
-				  }
-				: // e.g. [string, number]
-				  {
-						...base,
-						fixed: conflatenate(base.fixed, element)
-				  }
+			if (base.variadic) {
+				// e.g. [...string[], number]
+				base.postfixed = append(base.postfixed, element)
+			} else {
+				// e.g. [string, number]
+				base.fixed = append(base.fixed, element)
+			}
+			return base
 		case "optional":
 			if (base.variadic)
 				// e.g. [...string[], number?]
 				return throwParseError(optionalPostVariadicMessage)
 			// e.g. [string, number?]
-			return {
-				...base,
-				optionals: conflatenate(base.optionals, element)
-			}
+			base.optionals = append(base.optionals, element)
+			return base
 		case "variadic":
 			if (base.postfixed)
 				// e.g. [...string[], number, ...string[]]
-				return throwParseError(multipleVariadicMesage)
+				throwParseError(multipleVariadicMesage)
 			if (base.variadic) {
 				if (!base.variadic.equals(element))
 					// e.g. [...string[], ...number[]]
-					return throwParseError(multipleVariadicMesage)
-
+					throwParseError(multipleVariadicMesage)
 				// e.g. [...string[], ...string[]]
 				// do nothing, second spread doesn't change the type
-				return base
 			} else {
 				// e.g. [string, ...number[]]
-				return { ...base, variadic: element }
+				base.variadic = element
 			}
+			return base
 	}
 }
 
 const appendSpreadBranch = (
-	base: SequenceInner,
+	base: MutableSequenceInner,
 	branch: Node<UnionChildKind>
-): SequenceInner => {
+): MutableSequenceInner => {
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
 		return appendElement(base, "variadic", keywords.unknown)
 	}
-	let result: mutable<SequenceInner> = {}
-	result = spread.fixed.reduce(
-		(result, node) => appendElement(result, "required", node),
-		result
-	)
-	result = spread.optionals.reduce(
-		(result, node) => appendElement(result, "optional", node),
-		result
-	)
-	if (spread.variadic) {
-		result = appendElement(result, "variadic", spread.variadic)
-	}
-	result = spread.postfixed.reduce(
-		(result, node) => appendElement(result, "required", node),
-		result
-	)
+	const result: MutableSequenceInner = {}
+	spread.fixed.forEach((node) => appendElement(result, "required", node))
+	spread.optionals.forEach((node) => appendElement(result, "optional", node))
+	spread.variadic && appendElement(result, "variadic", spread.variadic)
+	spread.postfixed.forEach((node) => appendElement(result, "required", node))
 	return result
 }
 
