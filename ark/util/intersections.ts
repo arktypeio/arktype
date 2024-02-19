@@ -9,13 +9,13 @@ export interface AndPreserveUnknown extends Hkt.Kind {
 	) => andPreserveUnknown<(typeof args)[0], (typeof args)[1]>
 }
 
-type ArrayIntersectionMode = "values" | "parameters"
+type ArrayIntersectionMode = "array" | "parameters"
 
 export type intersectArrays<
 	l extends readonly unknown[],
 	r extends readonly unknown[],
 	operator extends Hkt.Kind = AndPreserveUnknown
-> = intersectParametersRecurse<l, r, [], operator, "values">
+> = intersectParametersRecurse<l, r, [], operator, "array">
 
 export type intersectParameters<
 	l extends readonly unknown[],
@@ -96,7 +96,7 @@ type parseNextElement<
 	? {
 			// A longer array is assignable to a shorter one when treated as
 			// parameters, but not when treated as values
-			head: mode extends "values" ? never : unknown
+			head: mode extends "array" ? never : unknown
 			optional: true
 			tail: []
 			done: true

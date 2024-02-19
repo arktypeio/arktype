@@ -4,6 +4,7 @@ import {
 	type BaseMeta,
 	type Morph,
 	type MorphChildKind,
+	type MutableInner,
 	type Node,
 	type Out,
 	type Predicate,
@@ -29,8 +30,7 @@ import {
 	type List,
 	type conform,
 	type evaluate,
-	type isAny,
-	type mutable
+	type isAny
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -55,7 +55,7 @@ export const parseTupleLiteral = (
 	def: readonly unknown[],
 	ctx: ParseContext
 ): TypeNode => {
-	let sequences: MutableSequenceInner[] = [{}]
+	let sequences: MutableInner<"sequence">[] = [{}]
 	for (let i = 0; i < def.length; i++) {
 		ctx.path.push(`${i}`)
 		const parsedElementDef = parseSpreadable(def[i])
@@ -95,23 +95,17 @@ export const parseTupleLiteral = (
 	)
 }
 
-// make nested arrays mutable while keeping nested nodes immutable
-type MutableSequenceInner = {
-	-readonly [k in keyof SequenceInner]: SequenceInner[k] extends
-		| readonly TypeNode[]
-		| undefined
-		? mutable<SequenceInner[k]>
-		: SequenceInner[k]
-}
-
 const mutableSequenceInner = (base: SequenceInner) =>
-	morph(base, (k, v) => [k, isArray(v) ? [...v] : v]) as MutableSequenceInner
+	morph(base, (k, v) => [
+		k,
+		isArray(v) ? [...v] : v
+	]) as MutableInner<"sequence">
 
 const appendElement = (
-	base: MutableSequenceInner,
+	base: MutableInner<"sequence">,
 	kind: "optional" | "required" | "variadic",
 	element: TypeNode
-): MutableSequenceInner => {
+): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
 			if (base.optionals)
@@ -151,9 +145,9 @@ const appendElement = (
 }
 
 const appendSpreadBranch = (
-	base: MutableSequenceInner,
+	base: MutableInner<"sequence">,
 	branch: Node<UnionChildKind>
-): MutableSequenceInner => {
+): MutableInner<"sequence"> => {
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]

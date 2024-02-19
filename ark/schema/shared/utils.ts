@@ -1,4 +1,5 @@
-import type { evaluate } from "@arktype/util"
+import type { evaluate, mutable } from "@arktype/util"
+import type { Node } from "../base.js"
 import type { LimitSchemaValue } from "../constraints/bounds.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="

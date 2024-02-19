@@ -4,10 +4,6 @@ import type { NodeCompiler } from "../shared/compile.js"
 import type { PropKind } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { IntersectionInner } from "../types/intersection.js"
-import type { IndexNode } from "./index.js"
-import type { OptionalNode } from "./optional.js"
-import type { RequiredNode } from "./required.js"
-import type { SequenceNode } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction

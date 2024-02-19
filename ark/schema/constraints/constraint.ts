@@ -1,5 +1,6 @@
 import type { mutable } from "@arktype/util"
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
+import type { MutableInner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
@@ -13,14 +14,10 @@ import type {
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { IntersectionInner } from "../types/intersection.js"
 
-export type FoldInput<kind extends NodeKind> = {
-	-readonly [k in Exclude<
-		keyof IntersectionInner,
-		kindRightOf<kind>
-	>]?: IntersectionInner[k] extends readonly unknown[] | undefined
-		? mutable<IntersectionInner[k]>
-		: IntersectionInner[k]
-}
+export type FoldInput<kind extends NodeKind> = Omit<
+	MutableInner<"intersection">,
+	kindRightOf<kind>
+>
 
 export interface BasePrimitiveConstraintDeclaration
 	extends BaseNodeDeclaration {

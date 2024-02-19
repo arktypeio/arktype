@@ -1,5 +1,6 @@
-import { throwInternalError, throwParseError } from "@arktype/util"
+import { append, throwInternalError, throwParseError } from "@arktype/util"
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
+import type { MutableInner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -244,8 +245,71 @@ export class SequenceNode
 		}
 	}
 
+	readonly tuple: readonly SequenceElement[] = [
+		...this.prefix.map((node): SequenceElement => ({ kind: "prefix", node })),
+		...this.optionals.map(
+			(node): SequenceElement => ({ kind: "optionals", node })
+		),
+		...(this.variadic
+			? [{ kind: "variadic", node: this.variadic } satisfies SequenceElement]
+			: []),
+		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
+	]
+
 	protected intersectOwnInner(r: SequenceNode) {
-		return this
+		const result: MutableInner<"sequence"> = {}
+		const disjoints: Disjoint[] = []
+
+		if (this.maxLength && r.minLength > this.maxLength) {
+			disjoints.push(
+				Disjoint.from("bound", this.maxLengthNode!, r.minLengthNode!)
+			)
+		} else if (r.maxLength && this.minLength > r.maxLength) {
+			disjoints.push(
+				Disjoint.from("bound", this.minLengthNode!, r.maxLengthNode!)
+			)
+		}
+
+		const prevariadicLength = Math.max(
+			this.prevariadic.length,
+			r.prevariadic.length
+		)
+		const prefixLength = Math.max(this.prefix.length, r.prefix.length)
+		for (let i = 0; i < prevariadicLength; i++) {
+			const lElement =
+				this.prevariadic.at(i) ??
+				this.variadic ??
+				// have to cast here due to TypeNode<never> not being assignable to
+				// the default TypeNode<any>
+				(this.$.builtin.never as never)
+			const rElement =
+				r.prevariadic.at(i) ?? r.variadic ?? (r.$.builtin.never as never)
+
+			const kind = i < prefixLength ? "prefix" : "optionals"
+			const node = lElement.intersect(rElement)
+			if (node instanceof Disjoint) {
+				disjoints.push(node)
+			} else {
+				result[kind] = append(result[kind], node)
+			}
+		}
+
+		const postfixLength = Math.max(this.postfix.length, r.postfix.length)
+
+		for (let i = postfixLength - 1; i >= 0; i--) {
+			const lElement =
+				this.postfix[i] ?? this.variadic ?? (this.$.builtin.never as never)
+			const rElement =
+				r.postfix[i] ?? r.variadic ?? (r.$.builtin.never as never)
+			const node = lElement.intersect(rElement)
+			if (node instanceof Disjoint) {
+				disjoints.push(node)
+			} else {
+				result.postfix = append(result.postfix, node)
+			}
+		}
+
+		return result
 	}
 
 	foldIntersection(into: FoldInput<"sequence">) {
@@ -275,3 +339,10 @@ export const postfixWithoutVariadicMessage =
 	"A postfix element requires a variadic element"
 
 export type postfixWithoutVariadicMessage = typeof postfixWithoutVariadicMessage
+
+export type SequenceElementKind = Exclude<keyof SequenceInner, keyof BaseMeta>
+
+export type SequenceElement = {
+	kind: SequenceElementKind
+	node: TypeNode
+}
