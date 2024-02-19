@@ -16,7 +16,7 @@ import {
 } from "@arktype/schema"
 import {
 	Callable,
-	remap,
+	morph,
 	type Constructor,
 	type Json,
 	type conform
@@ -280,7 +280,7 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: remap(g.parameters, (_, name) => [name, keywords.unknown])
+			args: morph(g.parameters, (_, name) => [name, keywords.unknown])
 		}
 	)
 	return g
@@ -293,7 +293,7 @@ export const generic = (
 ) => {
 	return Object.assign(
 		(...args: unknown[]) => {
-			const argNodes = remap(parameters, (i, param) => [
+			const argNodes = morph(parameters, (i, param) => [
 				param,
 				parseTypeRoot(args[i], scope)
 			])

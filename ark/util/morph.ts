@@ -57,23 +57,23 @@ export type fromMappedEntries<transformed extends MappedEntry> = [
 	? arrayFromListableEntries<extractEntries<transformed>>
 	: objectFromListableEntries<extractEntrySets<transformed>>
 
-export function remap<
+export function morph<
 	const o extends readonly unknown[],
 	transformed extends MappedEntry
 >(
 	o: o,
 	flatMapEntry: (...args: numericArrayEntry<o>) => transformed
 ): fromMappedEntries<transformed>
-export function remap<const o extends object, transformed extends MappedEntry>(
+export function morph<const o extends object, transformed extends MappedEntry>(
 	o: o,
 	flatMapEntry: (...args: entryOf<o>) => transformed
 ): fromMappedEntries<transformed>
-export function remap<const o extends object, transformed extends MappedEntry>(
+export function morph<const o extends object, transformed extends MappedEntry>(
 	o: o,
 	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
 ): fromMappedEntries<transformed>
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function remap(
+export function morph(
 	o: object,
 	flatMapEntry: (...args: any[]) => listable<Entry>
 ): any {

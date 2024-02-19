@@ -1,4 +1,4 @@
-import { DynamicBase, conflatenateAll, reference, remap } from "@arktype/util"
+import { DynamicBase, conflatenateAll, morph, reference } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { PropKind } from "../shared/implement.js"
@@ -32,7 +32,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		this.index,
 		this.sequence
 	)
-	readonly nameSet = remap(this.named, (i, node) => [node.key, 1] as const)
+	readonly nameSet = morph(this.named, (i, node) => [node.key, 1] as const)
 	readonly nameSetReference = reference(this.nameSet)
 
 	traverseAllows: TraverseAllows<object> = () => true

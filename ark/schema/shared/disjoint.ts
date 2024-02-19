@@ -1,8 +1,8 @@
 import {
 	entriesOf,
 	fromEntries,
+	morph,
 	printable,
-	remap,
 	throwInternalError,
 	throwParseError,
 	type entryOf
@@ -140,7 +140,7 @@ export class Disjoint {
 			([path, disjoints]) =>
 				[
 					path,
-					remap(disjoints, (kind, disjoint) => [
+					morph(disjoints, (kind, disjoint) => [
 						kind,
 						{ l: disjoint.r, r: disjoint.l }
 					])

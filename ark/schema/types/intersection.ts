@@ -2,9 +2,9 @@ import {
 	conflatenateAll,
 	isArray,
 	isEmptyObject,
+	morph,
 	pick,
 	printable,
-	remap,
 	splitByKeys,
 	type evaluate,
 	type last,
@@ -76,9 +76,9 @@ export type IntersectionDeclaration = declareNode<{
 	childKind: IntersectionChildKind
 }>
 
-const constraintKeys = remap(constraintKinds, (i, kind) => [kind, 1] as const)
+const constraintKeys = morph(constraintKinds, (i, kind) => [kind, 1] as const)
 
-const propKeys = remap(
+const propKeys = morph(
 	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
 	(i, k) => [k, 1] as const
 )
@@ -202,7 +202,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 	protected intersectOwnInner(r: IntersectionNode) {
 		// ensure we can safely mutate inner as well as its shallow open intersections
-		const result = remap(this.inner, (k, v) => [
+		const result = morph(this.inner, (k, v) => [
 			k,
 			isArray(v) ? [...v] : v
 		]) as FoldInput<last<OrderedNodeKinds>>

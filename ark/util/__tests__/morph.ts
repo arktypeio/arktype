@@ -1,9 +1,9 @@
 import { attest } from "@arktype/attest"
-import { remap } from "@arktype/util"
+import { morph } from "@arktype/util"
 
 describe("remap", () => {
 	it("object", () => {
-		const result = remap({ a: true, b: false }, (k, v) =>
+		const result = morph({ a: true, b: false }, (k, v) =>
 			k === "a"
 				? ([
 						[k, v],
@@ -19,7 +19,7 @@ describe("remap", () => {
 	})
 
 	it("filters empty result", () => {
-		const result = remap({ a: true, b: false }, (k, v) =>
+		const result = morph({ a: true, b: false }, (k, v) =>
 			k === "a" ? ([k, v] as const) : []
 		)
 		attest<{
@@ -29,7 +29,7 @@ describe("remap", () => {
 
 	it("object with index", () => {
 		// needs to be annotated for now due to a TS bug
-		const result = remap({ a: true, b: false }, (k, v, i: number) =>
+		const result = morph({ a: true, b: false }, (k, v, i: number) =>
 			k === "a"
 				? ([
 						[k, v],
@@ -46,7 +46,7 @@ describe("remap", () => {
 	})
 
 	it("converts numeric keys to array", () => {
-		const result = remap({ a: true, b: false, c: 5 }, (k, v) =>
+		const result = morph({ a: true, b: false, c: 5 }, (k, v) =>
 			k === "a" ? ([0, v] as const) : ([1, v] as const)
 		)
 		attest<[true, false | 5]>(result).equals([true, 5])
@@ -54,24 +54,28 @@ describe("remap", () => {
 
 	it("converts numeric key with index to array", () => {
 		// index needs to be annotated for now due to a TS bug
-		const result = remap({ a: true, b: false, c: 5 }, (k, v, i: number) =>
+		const result = morph({ a: true, b: false, c: 5 }, (k, v, i: number) =>
 			k === "a" ? ([0, v] as const) : ([i, v] as const)
 		)
 		attest<(boolean | 5)[]>(result).equals([true, false, 5])
 	})
 
 	it("maps from array using numeric keys", () => {
-		const result = remap([0, 1, 2, 3], (i, v) =>
+		const result = morph([0, 1, 2, 3], (i, v) =>
 			i === 0 ? ([i, 5] as const) : ([i, v] as const)
 		)
 		attest<[5, ...(1 | 2 | 3)[]]>(result).equals([5, 1, 2, 3])
 	})
 	it("maps from array to object", () => {
-		const result = remap(["a", "b", "c"], (i, v) => [v, i])
+		const result = morph(["a", "b", "c"], (i, v) => [v, i])
 		attest<{
 			a: 0 | 2 | 1
 			b: 0 | 2 | 1
 			c: 0 | 2 | 1
 		}>(result).equals({ a: 0, b: 1, c: 2 })
+	})
+	it("filters array", () => {
+		const result = morph([1, 2, 3] as const, (i, v) => (v === 2 ? [] : [i, v]))
+		attest<(1 | 3)[]>(result).equals([1, 3])
 	})
 })

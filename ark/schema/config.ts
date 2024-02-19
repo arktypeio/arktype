@@ -1,8 +1,8 @@
-import { remap } from "@arktype/util"
+import { morph } from "@arktype/util"
 import { nodesByKind } from "./kinds.js"
 import type { ArkConfig, ParsedArkConfig } from "./scope.js"
 
-export const defaultConfig: ParsedArkConfig = remap(
+export const defaultConfig: ParsedArkConfig = morph(
 	nodesByKind,
 	(kind, node) => [kind, node.implementation.defaults]
 ) as never

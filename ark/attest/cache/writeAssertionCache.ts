@@ -1,5 +1,5 @@
 import type { LinePosition } from "@arktype/fs"
-import { remap } from "@arktype/util"
+import { morph } from "@arktype/util"
 import ts from "typescript"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
@@ -169,7 +169,7 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 		}
 	}
 
-	return remap(completions, (prefix, entries) =>
+	return morph(completions, (prefix, entries) =>
 		entries.length >= 1 ? [prefix, entries] : []
 	)
 }
