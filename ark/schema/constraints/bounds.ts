@@ -12,7 +12,6 @@ import type {
 	BaseNodeDeclaration,
 	declareNode
 } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
 import {
 	throwInvalidOperandError,
 	type BasisKind,
