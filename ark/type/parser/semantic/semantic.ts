@@ -3,6 +3,7 @@ import type {
 	DateLiteral,
 	RegexLiteral,
 	distill,
+	inferIntersection,
 	is
 } from "@arktype/schema"
 import type {
@@ -24,7 +25,6 @@ import type {
 	LimitLiteral
 } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
-import type { inferIntersection } from "./intersections.js"
 
 export type inferAstRoot<ast, $, args> = inferAst<ast, $, args, {}>
 

@@ -10,18 +10,17 @@ import {
 	type Out,
 	type Predicate,
 	type Schema,
-	type SequenceInner,
 	type TypeNode,
 	type UnionChildKind,
 	type extractIn,
 	type extractOut,
+	type inferIntersection,
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
 import {
 	append,
 	isArray,
-	morph,
 	objectKindOrDomainOf,
 	printable,
 	throwParseError,
@@ -36,7 +35,6 @@ import {
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
-import type { inferIntersection } from "./semantic/intersections.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/semantic.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import {

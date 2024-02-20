@@ -7,17 +7,14 @@ import {
 	type TypeNode
 } from "../base.js"
 import type { Inner, Schema, reducibleKindOf } from "../kinds.js"
-import type {
-	BaseNodeDeclaration,
-	ownIntersectionAlternateResult
-} from "../shared/declare.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type {
 	ConstraintKind,
-	NodeKind,
 	TypeKind,
 	kindRightOf
 } from "../shared/implement.js"
+import type { inferIntersection } from "../shared/intersections.js"
 import { inferred } from "../shared/utils.js"
 import { TraversalContext } from "../traversal/context.js"
 import type { ArkResult } from "../traversal/errors.js"
@@ -119,22 +116,19 @@ export abstract class BaseType<
 		// )
 	}
 
-	// TODO: inferIntersection
 	and<other extends TypeNode>(
 		other: other
-		// TODO: FIX
 	): Node<
 		intersectTypeKinds<d["kind"], other["kind"]>,
-		this["infer"] & other["infer"]
+		inferIntersection<this["infer"], other["infer"]>
 	> {
 		const result = this.intersect(other)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	// TODO: limit input types
 	or<other extends TypeNode>(
 		other: other
-	): TypeNode<t | other["infer"], "union" | d["kind"] | other["kind"]> {
+	): Node<"union" | d["kind"] | other["kind"], t | other["infer"]> {
 		return this.$.parseBranches(
 			...this.branches,
 			...(other.branches as any)

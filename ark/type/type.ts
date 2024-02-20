@@ -11,6 +11,7 @@ import {
 	type extractIn,
 	type extractOut,
 	type includesMorphs,
+	type inferIntersection,
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
@@ -30,7 +31,6 @@ import {
 	parseGenericParams,
 	type GenericParamsParseError
 } from "./parser/generic.js"
-import type { inferIntersection } from "./parser/semantic/intersections.js"
 import { configureShallowDescendants } from "./parser/shared.js"
 import type {
 	IndexOneOperator,

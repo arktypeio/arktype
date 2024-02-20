@@ -1,4 +1,3 @@
-import type { MorphAst, Out } from "@arktype/schema"
 import {
 	Hkt,
 	type List,
@@ -7,6 +6,7 @@ import {
 	type intersectArrays,
 	type isAny
 } from "@arktype/util"
+import type { MorphAst, Out } from "../types/morph.js"
 
 export type inferIntersection<l, r> = [l] extends [never]
 	? never
