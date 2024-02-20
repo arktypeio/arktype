@@ -198,11 +198,11 @@ Value at [1] must be a number (was boolean)`)
 			attest(() =>
 				// @ts-expect-error
 				type(["email", "...symbol"])
-			).throwsAndHasTypeError(writeNonArraySpreadMessage("symbol"))
+			).throwsAndHasTypeError(writeNonArraySpreadMessage("a symbol"))
 			attest(() =>
 				// @ts-expect-error
 				type(["number", ["...", "string"]])
-			).throwsAndHasTypeError(writeNonArraySpreadMessage("string"))
+			).throwsAndHasTypeError(writeNonArraySpreadMessage("a string"))
 		})
 		it("errors on multiple variadic", () => {
 			attest(() =>

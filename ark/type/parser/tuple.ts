@@ -1,5 +1,6 @@
 import {
 	keywords,
+	makeRootAndArrayPropertiesMutable,
 	schema,
 	type BaseMeta,
 	type Morph,
@@ -74,7 +75,7 @@ export const parseTupleLiteral = (
 			sequences = sequences.flatMap((base) =>
 				// since appendElement mutates base, we have to shallow-ish clone it for each branch
 				element.branches.map((branch) =>
-					appendSpreadBranch(mutableSequenceInner(base), branch)
+					appendSpreadBranch(makeRootAndArrayPropertiesMutable(base), branch)
 				)
 			)
 		} else {
@@ -95,12 +96,6 @@ export const parseTupleLiteral = (
 		}))
 	)
 }
-
-const mutableSequenceInner = (base: SequenceInner) =>
-	morph(base, (k, v) => [
-		k,
-		isArray(v) ? [...v] : v
-	]) as MutableInner<"sequence">
 
 const appendElement = (
 	base: MutableInner<"sequence">,
@@ -128,13 +123,13 @@ const appendElement = (
 			base.optionals = append(base.optionals, element)
 			return base
 		case "variadic":
-			if (base.postfix)
-				// e.g. [...string[], number, ...string[]]
-				throwParseError(multipleVariadicMesage)
+			// e.g. [...string[], number, ...string[]]
+			if (base.postfix) throwParseError(multipleVariadicMesage)
 			if (base.variadic) {
-				if (!base.variadic.equals(element))
+				if (!base.variadic.equals(element)) {
 					// e.g. [...string[], ...number[]]
 					throwParseError(multipleVariadicMesage)
+				}
 				// e.g. [...string[], ...string[]]
 				// do nothing, second spread doesn't change the type
 			} else {
@@ -276,15 +271,15 @@ type semanticallyValidateRestElement<operand, $, args> = inferDefinition<
 		: writeNonArraySpreadMessage<operand>
 	: never
 
-export const writeNonArraySpreadMessage = <operand>(operand: operand) =>
-	`Spread element ${
-		typeof operand === "string" ? `'${operand}'` : ""
-	} must be an array` as writeNonArraySpreadMessage<operand>
+export const writeNonArraySpreadMessage = <operand extends string | TypeNode>(
+	operand: operand
+) =>
+	`Spread element must be an array (was ${operand})` as writeNonArraySpreadMessage<operand>
 
 type writeNonArraySpreadMessage<operand> =
-	`Spread element ${operand extends string
-		? `'${operand}'`
-		: ""} must be an array`
+	`Spread element must be an array${operand extends string
+		? `(was ${operand})`
+		: ""}`
 
 export const multipleVariadicMesage = `A tuple may have at most one variadic element`
 

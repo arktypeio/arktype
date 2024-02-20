@@ -1,6 +1,19 @@
-import type { evaluate, mutable } from "@arktype/util"
-import type { Node } from "../base.js"
+import { isArray, morph, type evaluate, type mutable } from "@arktype/util"
 import type { LimitSchemaValue } from "../constraints/bounds.js"
+
+export const makeRootAndArrayPropertiesMutable = <o extends object>(o: o) =>
+	// TODO: this cast should not be required, but it seems TS is referencing
+	// the wrong parameters here?
+	morph(o as never, (k, v) => [
+		k,
+		isArray(v) ? [...v] : v
+	]) as makeRootAndArrayPropertiesMutable<o>
+
+export type makeRootAndArrayPropertiesMutable<inner> = {
+	-readonly [k in keyof inner]: inner[k] extends readonly unknown[] | undefined
+		? mutable<inner[k]>
+		: inner[k]
+} & unknown
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 

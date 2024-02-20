@@ -21,6 +21,7 @@ import {
 	type SequenceDeclaration
 } from "./constraints/sequence.js"
 import type { NodeKind, TypeKind } from "./shared/implement.js"
+import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
 import {
 	IntersectionNode,
@@ -103,12 +104,6 @@ export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 	: kind
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
-
-export type makeRootAndArrayPropertiesMutable<inner> = {
-	-readonly [k in keyof inner]: inner[k] extends readonly unknown[] | undefined
-		? mutable<inner[k]>
-		: inner[k]
-} & unknown
 
 /** make nested arrays mutable while keeping nested nodes immutable */
 export type MutableInner<kind extends NodeKind> =
