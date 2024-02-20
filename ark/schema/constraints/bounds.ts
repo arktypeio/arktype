@@ -106,8 +106,7 @@ export abstract class BaseBound<
 		return this.implement({
 			collapseKey: "limit",
 			hasAssociatedError: true,
-			intersectSymmetric: (l, r) =>
-				l.isStricterThan(r as never) ? (this as never) : r,
+			intersectSymmetric: (l, r) => (l.isStricterThan(r as never) ? l : r),
 			keys: {
 				limit: {
 					parse: normalizeLimit

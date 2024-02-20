@@ -10,7 +10,7 @@ import {
 	type lastOf,
 	type listable
 } from "@arktype/util"
-import { BaseNode, type Node } from "../base.js"
+import { BaseNode, type Node, type TypeNode } from "../base.js"
 import type { FoldInput } from "../constraints/constraint.js"
 import {
 	PropsGroup,
@@ -23,7 +23,6 @@ import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
-	basisKinds,
 	constraintKinds,
 	parseOpen,
 	propKinds,
@@ -40,6 +39,7 @@ import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
+import type { UnionNode } from "./union.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -173,16 +173,35 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			reduce: (inner, scope) => {
 				const [constraints, base] = splitByKeys(inner, constraintKeys)
-				const result: FoldInput<"predicate"> = base
+				const foldInput: FoldInput<"predicate"> = base
 				const flatConstraints = Object.values(constraints).flat()
 				if (flatConstraints.length === 0 && base.basis) {
 					return base.basis
 				}
+				const unions: UnionNode[] = []
+				// TODO: deduplicate with intersectSymmetric
 				// TODO: are these ordered?
 				for (const constraint of flatConstraints) {
-					constraint.foldIntersection(result)?.throw()
+					const foldOutput = constraint.foldIntersection(foldInput)
+					if (foldOutput instanceof Disjoint) {
+						foldOutput.throw()
+					}
+					if (foldOutput instanceof BaseNode && foldOutput.kind === "union") {
+						unions.push(foldOutput)
+					}
 				}
-				return scope.parse("intersection", result, { prereduced: true })
+				const intersection = scope.parse("intersection", foldInput, {
+					prereduced: true
+				})
+				if (unions.length === 0) {
+					return intersection
+				}
+				let result: TypeNode | Disjoint = intersection
+				for (const union of unions) {
+					result = result.intersect(union)
+					if (result instanceof Disjoint) return result.throw()
+				}
+				return result
 			},
 			defaults: {
 				description(inner) {
@@ -200,15 +219,30 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			intersectSymmetric: (l, r) => {
 				// ensure we can safely mutate inner as well as its shallow open intersections
-				const result = morph(l.inner, (k, v) => [
+				const foldInput = morph(l.inner, (k, v) => [
 					k,
 					isArray(v) ? [...v] : v
 				]) as FoldInput<lastOf<OrderedNodeKinds>>
+				// this feels fairly hacky, will need to revisit ways to handle cases
+				// that return a union like certain intersections of sequence nodes
+				const unions: UnionNode[] = []
 				for (const constraint of r.constraints) {
-					const possibleDisjoint = constraint.foldIntersection(result)
-					if (possibleDisjoint) return possibleDisjoint
+					const foldOutput = constraint.foldIntersection(foldInput)
+					if (foldOutput instanceof Disjoint) return foldOutput
+					if (foldOutput instanceof BaseNode && foldOutput.kind === "union") {
+						unions.push(foldOutput)
+					}
 				}
-				return l.$.parse("intersection", result)
+				const intersection = l.$.parse("intersection", foldInput)
+				if (unions.length === 0) {
+					return intersection
+				}
+				let result: TypeNode | Disjoint = intersection
+				for (const union of unions) {
+					result = result.intersect(union)
+					if (result instanceof Disjoint) return result
+				}
+				return result
 			}
 		})
 

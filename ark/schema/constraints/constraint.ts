@@ -13,6 +13,7 @@ import type {
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { IntersectionInner } from "../types/intersection.js"
+import type { UnionNode } from "../types/union.js"
 
 export type FoldInput<kind extends NodeKind> = Omit<
 	MutableInner<"intersection">,
@@ -25,7 +26,7 @@ export interface BasePrimitiveConstraintDeclaration
 }
 
 export interface BaseConstraint<kind extends ConstraintKind> {
-	foldIntersection(into: FoldInput<kind>): Disjoint | undefined
+	foldIntersection(into: FoldInput<kind>): UnionNode | Disjoint | undefined
 }
 
 export abstract class BasePrimitiveConstraint<
@@ -35,7 +36,9 @@ export abstract class BasePrimitiveConstraint<
 	extends BaseNode<d["prerequisite"], d, subclass>
 	implements BaseConstraint<d["kind"]>
 {
-	abstract foldIntersection(into: FoldInput<d["kind"]>): Disjoint | undefined
+	abstract foldIntersection(
+		into: FoldInput<d["kind"]>
+	): UnionNode | Disjoint | undefined
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string

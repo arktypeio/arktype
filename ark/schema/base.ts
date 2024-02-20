@@ -285,11 +285,7 @@ export abstract class BaseNode<
 			return this as never
 		}
 		// TODO: check equality
-		const innerResult = this.impl.intersectSymmetric(this as never, r)
-		if (innerResult === null || innerResult instanceof Disjoint) {
-			return innerResult as never
-		}
-		return this.$.parse(this.kind, innerResult as never)
+		return this.impl.intersectSymmetric(this as never, r) as never
 	}
 
 	firstReference<narrowed extends Node>(

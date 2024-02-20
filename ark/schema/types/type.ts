@@ -90,8 +90,8 @@ export abstract class BaseType<
 				: l.intersectRightwardInner(r as never)
 
 		const nodeResult: TypeNode | Disjoint =
-			innerResult instanceof Disjoint
-				? innerResult
+			innerResult instanceof Disjoint || innerResult instanceof BaseType
+				? (innerResult as never)
 				: this.$.parse(l.kind, innerResult)
 
 		BaseType.intersectionCache[cacheKey] = nodeResult

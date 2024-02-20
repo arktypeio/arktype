@@ -1,5 +1,7 @@
 import {
 	append,
+	hasDomain,
+	hasKey,
 	isArray,
 	throwInternalError,
 	throwParseError
@@ -15,6 +17,8 @@ import type {
 	nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
+import type { IntersectionSchema } from "../types/intersection.js"
+import type { UnionNode } from "../types/union.js"
 import type { BaseConstraint, FoldInput } from "./constraint.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
@@ -84,14 +88,23 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 
 export const isSequenceTuple = (
 	schema: unknown
-): schema is SequenceTupleSchema =>
-	isArray(schema) &&
-	(schema.length === 0 ||
-		("kind" in schema &&
-			(schema.kind === "prefix" ||
-				schema.kind === "optionals" ||
-				schema.kind === "variadic" ||
-				schema.kind === "postfix")))
+): schema is SequenceTupleSchema => {
+	if (!isArray(schema)) return false
+
+	if (schema.length === 0) return true
+	const firstElement = schema[0]
+
+	if (!hasDomain(firstElement, "object") || !("kind" in firstElement)) {
+		return false
+	}
+
+	return (
+		firstElement.kind === "prefix" ||
+		firstElement.kind === "optionals" ||
+		firstElement.kind === "variadic" ||
+		firstElement.kind === "postfix"
+	)
+}
 
 export class SequenceNode
 	extends BaseNode<readonly unknown[], SequenceDeclaration, typeof SequenceNode>
@@ -223,8 +236,35 @@ export class SequenceNode
 
 				if (state.fixedVariants.length === 0) {
 					// TODO: propagate disjoints across paths
-					return state.disjoints.length ? state.disjoints[0] : state.result
+					return state.disjoints.length
+						? state.disjoints[0]
+						: l.$.parse("sequence", state.result)
 				}
+
+				const disjoints: Disjoint[] = []
+				const viableBranches: SequenceTupleSchema[] = []
+				const candidateBranches = [state, ...state.fixedVariants]
+
+				candidateBranches.forEach((candidate) =>
+					candidate.disjoints.length === 0
+						? viableBranches.push(candidate.result)
+						: // TODO: propagate disjoints across paths
+						  disjoints.push(candidate.disjoints[0])
+				)
+
+				if (viableBranches.length === 0) {
+					return disjoints[0]
+				}
+
+				return l.$.parse(
+					"union",
+					viableBranches.map(
+						(sequence): IntersectionSchema => ({
+							basis: Array,
+							sequence
+						})
+					)
+				)
 			}
 		})
 
@@ -316,7 +356,9 @@ export class SequenceNode
 		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
 	]
 
-	foldIntersection(into: FoldInput<"sequence">) {
+	foldIntersection(
+		into: FoldInput<"sequence">
+	): UnionNode | Disjoint | undefined {
 		this.minLengthNode?.foldIntersection(into)
 		const possibleLengthDisjoint =
 			this.maxLengthNode?.foldIntersection(into) ??
@@ -329,7 +371,11 @@ export class SequenceNode
 		if (ownResult instanceof Disjoint) {
 			return ownResult
 		}
-		into.sequence = ownResult
+		if (ownResult instanceof SequenceNode) {
+			into.sequence = ownResult
+		} else {
+			return ownResult as UnionNode
+		}
 	}
 }
 
