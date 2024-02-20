@@ -280,18 +280,14 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	protected abstract intersectOwnInner(
-		r: Node<d["kind"]>
-	): d["inner"] | ownIntersectionAlternateResult<d>
-
 	intersectOwnKind(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
 		if (r === undefined) {
 			return this as never
 		}
 		// TODO: check equality
-		const innerResult = this.intersectOwnInner(r)
+		const innerResult = this.impl.intersectSymmetric(this as never, r)
 		if (innerResult === null || innerResult instanceof Disjoint) {
-			return innerResult
+			return innerResult as never
 		}
 		return this.$.parse(this.kind, innerResult as never)
 	}

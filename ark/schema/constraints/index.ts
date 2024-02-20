@@ -48,7 +48,8 @@ export class IndexNode
 				description(inner) {
 					return `[${inner.key}]: ${inner.value}`
 				}
-			}
+			},
+			intersectSymmetric: (l, r) => l
 		})
 
 	readonly hasOpenIntersection = true
@@ -71,10 +72,6 @@ export class IndexNode
 		if (js.traversalKind === "Allows") {
 			js.return(true)
 		}
-	}
-
-	protected intersectOwnInner(r: IndexNode): IndexInner {
-		return this
 	}
 
 	foldIntersection(into: FoldInput<"index">) {

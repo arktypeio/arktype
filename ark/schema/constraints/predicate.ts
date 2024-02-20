@@ -45,7 +45,12 @@ export class PredicateNode extends BasePrimitiveConstraint<
 			description(inner) {
 				return `valid according to ${inner.predicate.name}`
 			}
-		}
+		},
+		// TODO: allow changed order to be the same type
+		// as long as the narrows in l and r are individually safe to check
+		// in the order they're specified, checking them in the order
+		// resulting from this intersection should also be safe.
+		intersectSymmetric: () => null
 	})
 
 	readonly hasOpenIntersection = true
@@ -53,14 +58,6 @@ export class PredicateNode extends BasePrimitiveConstraint<
 	compiledCondition = `${compileSerializedValue(this.predicate)}(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
 	expectedContext = this.createExpectedContext({ expected: this.description })
-
-	intersectOwnInner(r: PredicateNode) {
-		// TODO: allow changed order to be the same type
-		// as long as the narrows in l and r are individually safe to check
-		// in the order they're specified, checking them in the order
-		// resulting from this intersection should also be safe.
-		return null
-	}
 
 	foldIntersection(into: FoldInput<"predicate">): undefined {
 		into.predicate = appendUnique(into.predicate, this)

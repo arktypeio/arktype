@@ -47,7 +47,9 @@ export class PatternNode extends BasePrimitiveConstraint<
 			description(inner) {
 				return `matched by ${inner.source}`
 			}
-		}
+		},
+		// for now, non-equal regex are naively intersected
+		intersectSymmetric: () => null
 	})
 
 	readonly hasOpenIntersection = true
@@ -62,11 +64,6 @@ export class PatternNode extends BasePrimitiveConstraint<
 		code: "pattern",
 		description: this.description
 	})
-
-	intersectOwnInner(r: PatternNode) {
-		// For now, non-equal regex are naively intersected
-		return null
-	}
 
 	foldIntersection(into: FoldInput<"pattern">): undefined {
 		if (into.basis?.domain !== "string") {

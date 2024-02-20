@@ -65,10 +65,6 @@ export abstract class BaseType<
 		r: Node<typeKindRightOf<d["kind"]>>
 	): d["inner"] | Disjoint
 
-	protected abstract intersectOwnInner(
-		r: Node<d["kind"]>
-	): d["inner"] | Exclude<ownIntersectionAlternateResult<d>, null>
-
 	private static intersectionCache: Record<string, TypeNode | Disjoint> = {}
 	intersect<other extends TypeNode>(
 		other: other // TODO: fix
@@ -90,7 +86,7 @@ export abstract class BaseType<
 		const r: TypeNode = thisIsLeft ? other : (this as any)
 		const innerResult: Inner<TypeKind> | Disjoint =
 			l.kind === r.kind
-				? l.intersectOwnKind(r as never)
+				? l.intersectSymmetric(r as never)
 				: l.intersectRightwardInner(r as never)
 
 		const nodeResult: TypeNode | Disjoint =

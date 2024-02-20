@@ -197,21 +197,20 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				problem(ctx) {
 					return `must be...\n${ctx.expected}\n(was ${printable(ctx.data)})`
 				}
+			},
+			intersectSymmetric: (l, r) => {
+				// ensure we can safely mutate inner as well as its shallow open intersections
+				const result = morph(l.inner, (k, v) => [
+					k,
+					isArray(v) ? [...v] : v
+				]) as FoldInput<lastOf<OrderedNodeKinds>>
+				for (const constraint of r.constraints) {
+					const possibleDisjoint = constraint.foldIntersection(result)
+					if (possibleDisjoint) return possibleDisjoint
+				}
+				return l.$.parse("intersection", result)
 			}
 		})
-
-	protected intersectOwnInner(r: IntersectionNode) {
-		// ensure we can safely mutate inner as well as its shallow open intersections
-		const result = morph(this.inner, (k, v) => [
-			k,
-			isArray(v) ? [...v] : v
-		]) as FoldInput<lastOf<OrderedNodeKinds>>
-		for (const constraint of r.constraints) {
-			const possibleDisjoint = constraint.foldIntersection(result)
-			if (possibleDisjoint) return possibleDisjoint
-		}
-		return result
-	}
 
 	intersectRightwardInner(
 		r: Node<IntersectionBasisKind>

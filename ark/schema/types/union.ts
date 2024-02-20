@@ -109,6 +109,43 @@ export class UnionNode<t = unknown> extends BaseType<
 				expected(source) {
 					return describeBranches(source.errors.map((e) => e.expected))
 				}
+			},
+			intersectSymmetric: (l, r) => {
+				if (
+					(l.branches.length === 0 || r.branches.length === 0) &&
+					l.branches.length !== r.branches.length
+				) {
+					// if exactly one operand is never, we can use it to discriminate based on presence
+					return Disjoint.from(
+						"presence",
+						l.branches.length !== 0,
+						r.branches.length !== 0
+					)
+				}
+				let resultBranches: readonly UnionChildNode[] | Disjoint
+				if (l.ordered) {
+					if (r.ordered) {
+						return Disjoint.from("indiscriminableMorphs", l, r)
+					}
+					resultBranches = intersectBranches(r.branches, l.branches)
+					if (resultBranches instanceof Disjoint) {
+						resultBranches.invert()
+					}
+				} else {
+					resultBranches = intersectBranches(l.branches, r.branches)
+				}
+				if (resultBranches instanceof Disjoint) {
+					return resultBranches
+				}
+				return l.$.parse(
+					"union",
+					l.ordered || r.ordered
+						? {
+								branches: resultBranches,
+								ordered: true as const
+						  }
+						: { branches: resultBranches }
+				)
 			}
 		})
 
@@ -119,41 +156,6 @@ export class UnionNode<t = unknown> extends BaseType<
 
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.branches.forEach((b) => b.traverseApply(data, ctx))
-
-	protected intersectOwnInner(r: UnionNode) {
-		if (
-			(this.branches.length === 0 || r.branches.length === 0) &&
-			this.branches.length !== r.branches.length
-		) {
-			// if exactly one operand is never, we can use it to discriminate based on presence
-			return Disjoint.from(
-				"presence",
-				this.branches.length !== 0,
-				r.branches.length !== 0
-			)
-		}
-		let resultBranches: readonly UnionChildNode[] | Disjoint
-		if (this.ordered) {
-			if (r.ordered) {
-				return Disjoint.from("indiscriminableMorphs", this, r)
-			}
-			resultBranches = intersectBranches(r.branches, this.branches)
-			if (resultBranches instanceof Disjoint) {
-				resultBranches.invert()
-			}
-		} else {
-			resultBranches = intersectBranches(this.branches, r.branches)
-		}
-		if (resultBranches instanceof Disjoint) {
-			return resultBranches
-		}
-		return this.ordered || r.ordered
-			? {
-					branches: resultBranches,
-					ordered: true as const
-			  }
-			: { branches: resultBranches }
-	}
 
 	intersectRightwardInner(r: Node<UnionChildKind>): UnionInner | Disjoint {
 		const branches = intersectBranches(this.branches, [r])

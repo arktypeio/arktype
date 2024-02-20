@@ -48,6 +48,18 @@ export class OptionalNode
 				description(inner) {
 					return `${compileKey(inner.key)}?: ${inner.value}`
 				}
+			},
+			intersectSymmetric: (l, r) => {
+				if (l.key !== r.key) {
+					return null
+				}
+				const key = l.key
+				const value = l.value.intersect(r.value)
+				return l.$.parse("optional", {
+					key,
+					value:
+						value instanceof Disjoint ? (l.$.builtin.never as never) : value
+				})
 			}
 		})
 
@@ -71,18 +83,6 @@ export class OptionalNode
 		)
 		if (js.traversalKind === "Allows") {
 			js.return(true)
-		}
-	}
-
-	protected intersectOwnInner(r: OptionalNode) {
-		if (this.key !== r.key) {
-			return null
-		}
-		const key = this.key
-		const value = this.value.intersect(r.value)
-		return {
-			key,
-			value: value instanceof Disjoint ? (this.$.builtin.never as never) : value
 		}
 	}
 

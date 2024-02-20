@@ -44,6 +44,12 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		},
 		normalize: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,
+		intersectSymmetric: (l, r) =>
+			l.$.parse("divisor", {
+				divisor: Math.abs(
+					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+				)
+			}),
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
@@ -65,15 +71,6 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		code: "divisor",
 		description: this.description
 	})
-
-	intersectOwnInner(r: DivisorNode) {
-		return {
-			divisor: Math.abs(
-				(this.divisor * r.divisor) /
-					greatestCommonDivisor(this.divisor, r.divisor)
-			)
-		}
-	}
 
 	foldIntersection(into: FoldInput<"divisor">): undefined {
 		if (into.basis?.domain !== "number") {

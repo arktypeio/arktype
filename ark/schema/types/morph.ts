@@ -95,6 +95,26 @@ export class MorphNode<t = unknown> extends BaseType<
 				description(inner) {
 					return `a morph from ${inner.in} to ${inner.out}`
 				}
+			},
+			intersectSymmetric: (l, r) => {
+				if (l.morph.some((morph, i) => morph !== r.morph[i])) {
+					// TODO: is this always a parse error? what about for union reduction etc.
+					// TODO: check in for union reduction
+					return throwParseError(`Invalid intersection of morphs`)
+				}
+				const inTersection = l.in.intersect(r.in)
+				if (inTersection instanceof Disjoint) {
+					return inTersection
+				}
+				const outTersection = l.out.intersect(r.out)
+				if (outTersection instanceof Disjoint) {
+					return outTersection
+				}
+				return l.$.parse("morph", {
+					morph: l.morph,
+					in: inTersection,
+					out: outTersection
+				})
 			}
 		})
 
@@ -102,27 +122,6 @@ export class MorphNode<t = unknown> extends BaseType<
 		this.in.traverseAllows(data, ctx)
 
 	traverseApply: TraverseApply = (data, ctx) => this.in.traverseApply(data, ctx)
-
-	protected intersectOwnInner(r: MorphNode<any>) {
-		if (this.morph.some((morph, i) => morph !== r.morph[i])) {
-			// TODO: is this always a parse error? what about for union reduction etc.
-			// TODO: check in for union reduction
-			return throwParseError(`Invalid intersection of morphs`)
-		}
-		const inTersection = this.in.intersect(r.in)
-		if (inTersection instanceof Disjoint) {
-			return inTersection
-		}
-		const outTersection = this.out.intersect(r.out)
-		if (outTersection instanceof Disjoint) {
-			return outTersection
-		}
-		return {
-			morph: this.morph,
-			in: inTersection,
-			out: outTersection
-		}
-	}
 
 	intersectRightwardInner(r: Node<MorphChildKind>): MorphInner | Disjoint {
 		const inTersection = this.in.intersect(r)

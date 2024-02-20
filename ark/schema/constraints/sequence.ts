@@ -171,6 +171,27 @@ export class SequenceNode
 					inner.postfix?.forEach((node) => parts.push(String(node)))
 					return `comprised of ${parts.join(" followed by ")}`
 				}
+			},
+			intersectSymmetric: (l, r) => {
+				const state = intersectSequences({
+					l: [...l.tuple],
+					r: [...r.tuple],
+					fixedVariants: [],
+					disjoints: [],
+					result: []
+				})
+
+				if (l.maxLength && r.minLength > l.maxLength) {
+					// state.disjoints = push(
+					// 	Disjoint.from("bound", l.maxLengthNode!, r.minLengthNode!)
+					// )
+				} else if (r.maxLength && l.minLength > r.maxLength) {
+					// state.disjoints.push(
+					// 	Disjoint.from("bound", l.minLengthNode!, r.maxLengthNode!)
+					// )
+				}
+
+				return state.disjoints.length === 0 ? state : state.disjoints
 			}
 		})
 
@@ -261,28 +282,6 @@ export class SequenceNode
 			: []),
 		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
 	]
-
-	protected intersectOwnInner(r: SequenceNode) {
-		const state = intersectSequences({
-			l: [...this.tuple],
-			r: [...r.tuple],
-			fixedVariants: [],
-			disjoints: [],
-			result: []
-		})
-
-		if (this.maxLength && r.minLength > this.maxLength) {
-			// state.disjoints = push(
-			// 	Disjoint.from("bound", l.maxLengthNode!, r.minLengthNode!)
-			// )
-		} else if (r.maxLength && this.minLength > r.maxLength) {
-			// state.disjoints.push(
-			// 	Disjoint.from("bound", l.minLengthNode!, r.maxLengthNode!)
-			// )
-		}
-
-		return state.disjoints.length === 0 ? state : state.disjoints
-	}
 
 	foldIntersection(into: FoldInput<"sequence">) {
 		this.minLengthNode?.foldIntersection(into)

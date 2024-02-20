@@ -62,6 +62,20 @@ export class RequiredNode
 					return "provided"
 				},
 				actual: () => null
+			},
+			intersectSymmetric: (l, r) => {
+				if (l.key !== r.key) {
+					return null
+				}
+				const key = l.key
+				const value = l.value.intersect(r.value)
+				if (value instanceof Disjoint) {
+					return value
+				}
+				return l.$.parse("required", {
+					key,
+					value
+				})
 			}
 		})
 
@@ -100,21 +114,6 @@ export class RequiredNode
 		)
 		if (js.traversalKind === "Allows") {
 			js.return(true)
-		}
-	}
-
-	protected intersectOwnInner(r: Inner<"required" | "optional">) {
-		if (this.key !== r.key) {
-			return null
-		}
-		const key = this.key
-		const value = this.value.intersect(r.value)
-		if (value instanceof Disjoint) {
-			return value
-		}
-		return {
-			key,
-			value
 		}
 	}
 

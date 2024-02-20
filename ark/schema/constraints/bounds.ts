@@ -106,6 +106,8 @@ export abstract class BaseBound<
 		return this.implement({
 			collapseKey: "limit",
 			hasAssociatedError: true,
+			intersectSymmetric: (l, r) =>
+				l.isStricterThan(r as never) ? (this as never) : r,
 			keys: {
 				limit: {
 					parse: normalizeLimit
@@ -153,8 +155,8 @@ export abstract class BaseBound<
 		return thisLimitIsStricter || (this.limit === r.limit && r.exclusive)
 	}
 
-	protected intersectOwnInner(r: Node<d["kind"]>) {
-		return this.isStricterThan(r) ? this : r
+	protected intersectSymmetriks(r: Node<d["kind"]>): Node<d["kind"]> {
+		return this.isStricterThan(r) ? (this as never) : r
 	}
 
 	protected throwInvalidBoundOperandError(basis: Node<BasisKind> | undefined) {

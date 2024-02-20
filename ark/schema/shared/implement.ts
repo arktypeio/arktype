@@ -23,7 +23,8 @@ import type { NodeCompiler } from "./compile.js"
 import type {
 	BaseExpectedContext,
 	BaseMeta,
-	BaseNodeDeclaration
+	BaseNodeDeclaration,
+	ownIntersectionAlternateResult
 } from "./declare.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -188,8 +189,11 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["expectedContext"] extends null ? false : true
+	intersectSymmetric: (
+		l: Node<d["kind"]>,
+		r: Node<d["kind"]>
+	) => Node | ownIntersectionAlternateResult<d>
 	collapseKey?: keyof d["inner"] & string
-	addParseContext?: (ctx: SchemaParseContext) => void
 	reduce?: (inner: d["inner"], $: ScopeNode) => Node | undefined
 }
 

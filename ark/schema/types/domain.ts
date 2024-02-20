@@ -52,7 +52,8 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return domainOf(data)
 			}
-		}
+		},
+		intersectSymmetric: (l, r) => Disjoint.from("domain", l, r)
 	})
 
 	basisName = this.domain
@@ -69,10 +70,6 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			: `typeof ${jsData} !== "${this.domain}"`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
-
-	protected intersectOwnInner(r: DomainNode) {
-		return Disjoint.from("domain", this, r)
-	}
 
 	intersectRightwardInner(r: never) {
 		return throwInternalError(

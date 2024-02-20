@@ -39,7 +39,8 @@ export class UnitNode<t = unknown> extends BaseBasis<
 			description(inner) {
 				return printable(inner.unit)
 			}
-		}
+		},
+		intersectSymmetric: (l, r) => Disjoint.from("unit", l, r)
 	})
 
 	serializedValue: string = (this.json as any).unit
@@ -51,10 +52,6 @@ export class UnitNode<t = unknown> extends BaseBasis<
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
-
-	protected intersectOwnInner(r: UnitNode) {
-		return Disjoint.from("unit", this, r)
-	}
 
 	intersectRightwardInner(
 		r: Node<"intersection" | BasisKind>

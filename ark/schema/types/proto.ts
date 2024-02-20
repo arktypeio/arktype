@@ -63,6 +63,13 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 			actual(data) {
 				return objectKindOrDomainOf(data)
 			}
+		},
+		intersectSymmetric: (l, r) => {
+			return constructorExtends(l.proto, r.proto)
+				? l
+				: constructorExtends(r.proto, l.proto)
+				? r
+				: Disjoint.from("proto", l, r)
 		}
 	})
 
@@ -75,14 +82,6 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 	compiledNegation = `!(${this.compiledCondition})`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
-
-	protected intersectOwnInner(r: ProtoNode) {
-		return constructorExtends(this.proto, r.proto)
-			? this
-			: constructorExtends(r.proto, this.proto)
-			? r
-			: Disjoint.from("proto", this, r)
-	}
 
 	intersectRightwardInner(r: DomainNode): ProtoInner | Disjoint {
 		return r.domain === "object"
