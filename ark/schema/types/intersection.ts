@@ -7,7 +7,7 @@ import {
 	printable,
 	splitByKeys,
 	type evaluate,
-	type last,
+	type lastOf,
 	type listable
 } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
@@ -205,7 +205,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		const result = morph(this.inner, (k, v) => [
 			k,
 			isArray(v) ? [...v] : v
-		]) as FoldInput<last<OrderedNodeKinds>>
+		]) as FoldInput<lastOf<OrderedNodeKinds>>
 		for (const constraint of r.constraints) {
 			const possibleDisjoint = constraint.foldIntersection(result)
 			if (possibleDisjoint) return possibleDisjoint

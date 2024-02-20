@@ -293,6 +293,45 @@ Value at [1] must be a number (was boolean)`)
 			attest<typeof expected.infer>(t.infer)
 			attest(t.json).equals(expected.json)
 		})
+		// based on the equivalent type-level test from @arktype/util
+		it("kitchen sink", () => {
+			const l = type([
+				{ a: "0" },
+				[{ b: "1" }, "?"],
+				[{ c: "2" }, "?"],
+				["...", [{ d: "3" }, "[]"]]
+			])
+			const r = type([
+				[{ e: "4" }, "?"],
+				[{ f: "5" }, "?"],
+				["...", [{ g: "6" }, "[]"]]
+			])
+			const result = l.and(r)
+
+			const expected = type([
+				{ a: "0", e: "4" },
+				[{ b: "1", f: "5" }, "?"],
+				[{ c: "2", g: "6" }, "?"],
+				["...", [{ d: "3", g: "6" }, "[]"]]
+			])
+
+			attest<typeof expected>(result)
+			attest(result.json).equals(expected.json)
+		})
+		it("prefix and postfix", () => {
+			const l = type([["...", [{ a: "0" }, "[]"]], { b: "0" }, { c: "0" }])
+			const r = type([
+				{ x: "0" },
+				[{ y: "0" }, "?"],
+				["...", [{ z: "0" }, "[]"]]
+			])
+
+			// [ax, ay, ...az[], bz, cz]
+			// [ax, by, cz]
+			// [bx, cy]
+			const result = l.and(r)
+			attest(result.json)
+		})
 	})
 	// TODO: reenable
 	// describe("traversal", () => {

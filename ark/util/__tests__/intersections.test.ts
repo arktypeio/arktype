@@ -1,5 +1,9 @@
 import { attest } from "@arktype/attest"
-import type { intersectArrays, intersectParameters } from "@arktype/util"
+import type {
+	initOf,
+	intersectArrays,
+	intersectParameters
+} from "@arktype/util"
 
 describe("intersectParameters", () => {
 	it("both empty", () => {
@@ -143,8 +147,66 @@ describe("intersectArrays", () => {
 		type t = intersectArrays<[], [string]>
 		attest<[never], t>()
 	})
+
 	it("extra variadic args truncated", () => {
 		type t = intersectArrays<["a", "b"], [string, ...string[]]>
 		attest<["a", "b"], t>()
+	})
+
+	it("non-trailing variadic elements", () => {
+		type t = intersectArrays<
+			[...{ a: 0 }[], { f: 6 }, { b: 1 }],
+			[{ c: 2 }, { d: 3 }, ...{ e: 4 }[]]
+		>
+
+		type Z = [...{ a: 0 }[], { c: 2 }, { b: 1 }]
+		type R = initOf<Z>
+		attest<
+			[
+				{
+					a: 0
+					c: 2
+				},
+				{
+					a: 0
+					d: 3
+				},
+				{
+					b: 1
+					e: 4
+				},
+				...{
+					e: 4
+				}[]
+			],
+			t
+		>()
+	})
+
+	it("non-trailing variadic elements with optional", () => {
+		type t = intersectArrays<
+			[...{ a: 0 }[], { b: 1 }?],
+			[{ c: 2 }?, ...{ e: 4 }[]]
+		>
+		attest<
+			[
+				{
+					a: 0
+					c: 2
+				}?,
+				{
+					a: 0
+					e: 4
+				},
+				{
+					b: 1
+					e: 4
+				}?,
+				...{
+					e: 4
+				}[]
+			],
+			t
+		>()
 	})
 })

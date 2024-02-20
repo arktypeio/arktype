@@ -1,3 +1,4 @@
+import type { defer } from "./generics.js"
 import type { NumberLiteral } from "./numericLiterals.js"
 import { isArray } from "./objectKinds.js"
 import type { mutable } from "./records.js"
@@ -77,25 +78,27 @@ export type CollapsingList<t = unknown> =
 	| t
 	| readonly [t, t, ...t[]]
 
-export type tail<t extends readonly unknown[]> = t extends readonly [
+export type headOf<t extends readonly unknown[]> = t[0]
+
+export type tailOf<t extends readonly unknown[]> = t extends readonly [
 	unknown,
 	...infer tail
 ]
 	? tail
 	: never
 
-export type head<t extends readonly unknown[]> = t extends readonly [
-	infer head,
-	...unknown[]
-]
-	? head
-	: never
-
-export type last<t extends readonly unknown[]> = t extends readonly [
+export type lastOf<t extends readonly unknown[]> = t extends readonly [
 	...unknown[],
 	infer last
 ]
 	? last
+	: never
+
+export type initOf<t extends readonly unknown[]> = t extends readonly [
+	...infer init,
+	unknown
+]
+	? init
 	: never
 
 export type numericStringKeyOf<t extends readonly unknown[]> = Extract<
@@ -138,34 +141,40 @@ export const includes = <array extends readonly unknown[]>(
 	element: unknown
 ): element is array[number] => array.includes(element)
 
-export const range = (length: number): number[] =>
-	[...new Array(length)].map((_, i) => i)
+export const range = (length: number, offset = 0): number[] =>
+	[...new Array(length)].map((_, i) => i + offset)
+
+export type AppendOptions = {
+	prepend?: boolean
+}
 
 /**
- * Appends a value to an array, returning the array
+ * Adds a value to an array, returning the array
  * (based on the implementation from TypeScript's codebase)
  *
- * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
- * is created if `value` was appended.
- * @param value The value to append to the array. If `value` is `undefined`, nothing is
- * appended.
+ * @param to The array to which `value` is to be added. If `to` is `undefined`, a new array
+ * is created as `[value]` if value was not undefined, otherwise `[]`.
+ * @param value The value to add to the array. If `value` is `undefined`, does nothing.
+ * @param opts
+ * 		prepend: If true, adds the element to the beginning of the array instead of the end
  */
-export const append = <
-	to extends element[] | undefined,
-	element extends {} | null,
-	value extends element | undefined
->(
-	to: to,
-	value: value
-): Exclude<to, undefined> | Extract<value & to, undefined> => {
+export const append = <to extends unknown[]>(
+	to: to | undefined,
+	value: to[number] | undefined,
+	opts?: AppendOptions
+): to => {
 	if (value === undefined) {
-		return to as never
+		return to ?? ([] as any)
 	}
 	if (to === undefined) {
-		return [value] as never
+		return value === undefined ? [] : ([value] as any)
 	}
-	to.push(value)
-	return to as never
+	if (opts?.prepend) {
+		to.unshift(value)
+	} else {
+		to.push(value)
+	}
+	return to
 }
 
 /**

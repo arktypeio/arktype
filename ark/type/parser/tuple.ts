@@ -27,6 +27,7 @@ import {
 	type BuiltinObjectKind,
 	type Constructor,
 	type Domain,
+	type ErrorMessage,
 	type List,
 	type conform,
 	type evaluate,
@@ -234,28 +235,32 @@ export type validateTupleLiteral<
 			tail,
 			$,
 			args,
-			[...result, validateTupleElement<head, tail, $, args>]
+			[...result, validateTupleElement<head, result, $, args>]
 	  >
 	: result
 
-type validateTupleElement<head, tail, $, args> =
-	head extends variadicExpression<infer operand>
-		? validateDefinition<operand, $, args> extends infer syntacticResult
-			? syntacticResult extends operand
-				? semanticallyValidateRestElement<
-						operand,
-						$,
-						args
-				  > extends infer semanticResult
-					? semanticResult extends operand
-						? tail extends []
-							? head
-							: multipleVariadicMessage
-						: semanticResult
-					: never
-				: syntacticResult
-			: never
-		: validateObjectValue<head, $, args>
+type validateTupleElement<
+	head,
+	result extends unknown[],
+	$,
+	args
+> = head extends variadicExpression<infer operand>
+	? validateDefinition<operand, $, args> extends infer syntacticResult
+		? syntacticResult extends operand
+			? semanticallyValidateRestElement<
+					operand,
+					$,
+					args
+			  > extends infer semanticResult
+				? semanticResult extends operand
+					? number extends result["length"]
+						? ErrorMessage<multipleVariadicMessage>
+						: head
+					: semanticResult
+				: never
+			: syntacticResult
+		: never
+	: validateObjectValue<head, $, args>
 
 type semanticallyValidateRestElement<operand, $, args> = inferDefinition<
 	operand,

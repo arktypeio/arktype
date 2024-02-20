@@ -1,4 +1,10 @@
-import { append, throwInternalError, throwParseError } from "@arktype/util"
+import {
+	append,
+	isArray,
+	range,
+	throwInternalError,
+	throwParseError
+} from "@arktype/util"
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { MutableInner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -270,11 +276,71 @@ export class SequenceNode
 			)
 		}
 
+		const longerPrevariadic =
+			this.prevariadic.length > r.prevariadic.length
+				? this
+				: this.prevariadic.length < r.prevariadic.length
+				? r
+				: undefined
+
+		const longerPostvariadic =
+			this.postfix.length > r.postfix.length
+				? this
+				: this.postfix.length < r.postfix.length
+				? r
+				: undefined
+
+		const fixedVariants: SequenceInner[] = []
+
+		if (
+			longerPrevariadic &&
+			longerPostvariadic &&
+			longerPrevariadic !== longerPostvariadic
+		) {
+			const minDistinctVariadicLength = Math.max(
+				0,
+				longerPrevariadic.prevariadic.length - longerPostvariadic.postfix.length
+			)
+			for (
+				let variadicLength = minDistinctVariadicLength;
+				variadicLength < longerPrevariadic.prevariadic.length;
+				variadicLength++
+			) {
+				const fixedPostvariadic = [
+					...range(variadicLength).map(() => longerPostvariadic.variadic!),
+					...longerPostvariadic.postfix
+				]
+				const fixedPrevariadic = [
+					...longerPrevariadic.prevariadic,
+					...range(
+						fixedPostvariadic.length - longerPrevariadic.prevariadic.length
+					).map(() => longerPrevariadic.variadic!)
+				]
+				let result: TypeNode[] | Disjoint = []
+				for (let i = 0; i < fixedPostvariadic.length && isArray(result); i++) {
+					const fixedResult = fixedPostvariadic[i].intersect(
+						fixedPrevariadic[i]
+					)
+					if (fixedResult instanceof Disjoint) {
+						result = fixedResult
+					} else {
+						result.push(fixedResult)
+					}
+				}
+				if (isArray(result)) {
+					fixedVariants.push({
+						prefix: result
+					})
+				}
+			}
+		}
+
 		const prevariadicLength = Math.max(
 			this.prevariadic.length,
 			r.prevariadic.length
 		)
 		const prefixLength = Math.max(this.prefix.length, r.prefix.length)
+
 		for (let i = 0; i < prevariadicLength; i++) {
 			const lElement =
 				this.prevariadic.at(i) ??
@@ -285,10 +351,23 @@ export class SequenceNode
 			const rElement =
 				r.prevariadic.at(i) ?? r.variadic ?? (r.$.builtin.never as never)
 
-			const kind = i < prefixLength ? "prefix" : "optionals"
+			const kind = // if either operand has postfix elements, the full-length
+				// intersection can't include optional elements (though they may
+				// exist in some of the fixed length variants)
+				i >= prefixLength && this.postfix.length === 0 && r.postfix.length === 0
+					? "optionals"
+					: "prefix"
+
 			const node = lElement.intersect(rElement)
 			if (node instanceof Disjoint) {
-				disjoints.push(node)
+				if (kind === "optionals") {
+					// if the element result is optional and unsatisfiable, the
+					// intersection can still be satisfied as long as the tuple
+					// ends before the disjoint element would occur
+					return result
+				} else {
+					disjoints.push(node)
+				}
 			} else {
 				result[kind] = append(result[kind], node)
 			}
@@ -310,7 +389,7 @@ export class SequenceNode
 			if (node instanceof Disjoint) {
 				disjoints.push(node)
 			} else {
-				result.postfix = append(result.postfix, node)
+				result.postfix = append(result.postfix, node, { prepend: true })
 			}
 		}
 
