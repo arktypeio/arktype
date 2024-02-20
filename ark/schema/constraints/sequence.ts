@@ -294,6 +294,11 @@ export class SequenceNode
 			}
 		}
 
+		if (this.variadic && r.variadic) {
+			// the resulting intersection is variadic iff both operands are
+			result.variadic = this.variadic.and(r.variadic)
+		}
+
 		const postfixLength = Math.max(this.postfix.length, r.postfix.length)
 
 		for (let i = postfixLength - 1; i >= 0; i--) {

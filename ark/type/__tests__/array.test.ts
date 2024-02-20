@@ -217,17 +217,14 @@ Value at [1] must be a number (was boolean)`)
 	})
 	describe("intersection", () => {
 		it("shallow array intersection", () => {
-			const actual = type("string[]&'foo'[]").json
-			const expected = type("'foo'[]").json
-			attest(actual).is(expected)
+			const t = type("string[]&'foo'[]")
+			const expected = type("'foo'[]")
+			attest(t.json).equals(expected.json)
 		})
 		it("deep array intersection", () => {
-			const actual = type([{ a: "string" }, "[]"]).and([
-				{ b: "number" },
-				"[]"
-			]).json
-			const expected = type([{ a: "string", b: "number" }, "[]"]).json
-			attest(actual).is(expected)
+			const t = type([{ a: "string" }, "[]"]).and([{ b: "number" }, "[]"])
+			const expected = type([{ a: "string", b: "number" }, "[]"])
+			attest(t.json).equals(expected.json)
 		})
 		it("tuple intersection", () => {
 			const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
@@ -239,6 +236,7 @@ Value at [1] must be a number (was boolean)`)
 					}
 				]
 			>(t.infer)
+			const expected = type([{ a: "string", b: "boolean" }])
 		})
 		it("tuple and array", () => {
 			const tupleAndArray = type([
@@ -269,9 +267,9 @@ Value at [1] must be a number (was boolean)`)
 				]
 			>(arrayAndTuple.infer)
 
-			const expected = type([{ a: "string", b: "boolean" }]).json
-			attest(tupleAndArray.json).is(expected)
-			attest(arrayAndTuple.json).is(expected)
+			const expected = type([{ a: "string", b: "boolean" }])
+			attest(tupleAndArray.json).equals(expected.json)
+			attest(arrayAndTuple.json).equals(expected.json)
 		})
 		it("variadic and tuple", () => {
 			const b = type([{ b: "boolean" }, "[]"])
