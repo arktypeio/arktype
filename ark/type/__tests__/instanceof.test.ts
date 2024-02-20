@@ -13,7 +13,7 @@ describe("instanceof", () => {
 			attest(t.json).equals(schema(Error).json)
 			const e = new Error()
 			attest(t(e).out).equals(e)
-			attest(t({}).errors?.summary).snap("Must be an Error (was Object)")
+			attest(t({}).errors?.summary).snap("Must be an Error (was object)")
 		})
 		it("inherited", () => {
 			const t = type(["instanceof", TypeError])

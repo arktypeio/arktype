@@ -7,11 +7,10 @@ import {
 	printable,
 	splitByKeys,
 	type evaluate,
-	type lastOf,
 	type listable
 } from "@arktype/util"
 import { BaseNode, type Node, type TypeNode } from "../base.js"
-import type { FoldInput } from "../constraints/constraint.js"
+import { IntersectionState } from "../constraints/constraint.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
@@ -32,11 +31,11 @@ import {
 	type ConstraintKind,
 	type IntersectionChildKind,
 	type OpenNodeKind,
-	type OrderedNodeKinds,
 	type PropKind,
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 import type { UnionNode } from "./union.js"
@@ -171,37 +170,29 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
-			reduce: (inner, scope) => {
+			reduce: (inner, $) => {
 				const [constraints, base] = splitByKeys(inner, constraintKeys)
-				const foldInput: FoldInput<"predicate"> = base
+				const state = new IntersectionState(base)
 				const flatConstraints = Object.values(constraints).flat()
 				if (flatConstraints.length === 0 && base.basis) {
 					return base.basis
 				}
-				const unions: UnionNode[] = []
 				// TODO: deduplicate with intersectSymmetric
 				// TODO: are these ordered?
 				for (const constraint of flatConstraints) {
-					const foldOutput = constraint.foldIntersection(foldInput)
-					if (foldOutput instanceof Disjoint) {
-						foldOutput.throw()
-					}
-					if (foldOutput instanceof BaseNode && foldOutput.kind === "union") {
-						unions.push(foldOutput)
-					}
+					constraint.foldIntersection(state)
+					// TODO: multiple?
+					state.prune()?.at(0)?.throw()
 				}
-				const intersection = scope.parse("intersection", foldInput, {
-					prereduced: true
-				})
-				if (unions.length === 0) {
-					return intersection
+				const branches = state.map((branch) =>
+					$.parse("intersection", branch, {
+						prereduced: true
+					})
+				)
+				if (branches.length === 1) {
+					return branches[0]
 				}
-				let result: TypeNode | Disjoint = intersection
-				for (const union of unions) {
-					result = result.intersect(union)
-					if (result instanceof Disjoint) return result.throw()
-				}
-				return result
+				return $.parse("union", branches)
 			},
 			defaults: {
 				description(inner) {
@@ -219,30 +210,24 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			intersectSymmetric: (l, r) => {
 				// ensure we can safely mutate inner as well as its shallow open intersections
-				const foldInput = morph(l.inner, (k, v) => [
-					k,
-					isArray(v) ? [...v] : v
-				]) as FoldInput<lastOf<OrderedNodeKinds>>
-				// this feels fairly hacky, will need to revisit ways to handle cases
-				// that return a union like certain intersections of sequence nodes
-				const unions: UnionNode[] = []
+				const state = new IntersectionState(
+					makeRootAndArrayPropertiesMutable(l.inner)
+				)
 				for (const constraint of r.constraints) {
-					const foldOutput = constraint.foldIntersection(foldInput)
-					if (foldOutput instanceof Disjoint) return foldOutput
-					if (foldOutput instanceof BaseNode && foldOutput.kind === "union") {
-						unions.push(foldOutput)
+					constraint.foldIntersection(state)
+					const disjoints = state.prune()
+					if (disjoints) {
+						// TODO: multiple
+						return disjoints[0]
 					}
 				}
-				const intersection = l.$.parse("intersection", foldInput)
-				if (unions.length === 0) {
-					return intersection
+				const branches = state.map((branch) =>
+					l.$.parse("intersection", branch)
+				)
+				if (branches.length === 1) {
+					return branches[0]
 				}
-				let result: TypeNode | Disjoint = intersection
-				for (const union of unions) {
-					result = result.intersect(union)
-					if (result instanceof Disjoint) return result
-				}
-				return result
+				return l.$.parse("union", branches)
 			}
 		})
 

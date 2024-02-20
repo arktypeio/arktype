@@ -49,11 +49,9 @@ import type {
 	BaseExpectedContext,
 	BaseNodeDeclaration,
 	attachmentsOf,
-	ownIntersectionAlternateResult,
 	ownIntersectionResult,
 	requireDescriptionIfPresent
 } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,

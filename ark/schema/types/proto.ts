@@ -5,6 +5,7 @@ import {
 	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
+import type { IntersectionState } from "../constraints/constraint.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -82,6 +83,8 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 	compiledNegation = `!(${this.compiledCondition})`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
+
+	foldIntersection(into: IntersectionState): void {}
 
 	intersectRightwardInner(r: DomainNode): ProtoInner | Disjoint {
 		return r.domain === "object"

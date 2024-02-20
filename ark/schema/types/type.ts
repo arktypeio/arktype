@@ -6,7 +6,8 @@ import {
 	type NodeSubclass,
 	type TypeNode
 } from "../base.js"
-import type { Inner, Schema, reducibleKindOf } from "../kinds.js"
+import { IntersectionState } from "../constraints/constraint.js"
+import type { Inner, MutableInner, Schema, reducibleKindOf } from "../kinds.js"
 import { TraversalContext } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -17,7 +18,7 @@ import type {
 	kindRightOf
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
-import { inferred } from "../shared/utils.js"
+import { inferred, makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
 import type { IntersectionNode } from "./intersection.js"
 import type { distill, extractIn, extractOut } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
@@ -105,7 +106,25 @@ export abstract class BaseType<
 		input: Schema<constraintKind>
 	): Node<reducibleKindOf<this["kind"]>> {
 		const constraint = this.$.parse(kind, input)
-		return this as never
+		if (constraint instanceof BaseType) {
+			return this.and(constraint as never) as never
+		}
+		// TODO: fix.......
+		const s = new IntersectionState(
+			...this.branches.map(
+				(branch): MutableInner<"intersection"> =>
+					makeRootAndArrayPropertiesMutable(
+						branch.kind === "morph"
+							? branch.in.inner
+							: branch.kind === "intersection"
+							? branch.inner
+							: // TODO: fix unit node here
+							  { basis: branch as any }
+					)
+			)
+		)
+		constraint.foldIntersection(s)
+		return this.$.parseBranches(s) as never
 	}
 
 	keyof() {

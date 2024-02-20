@@ -20,7 +20,10 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import { BasePrimitiveConstraint, type FoldInput } from "./constraint.js"
+import {
+	BasePrimitiveConstraint,
+	type IntersectionState
+} from "./constraint.js"
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
 	extends BaseMeta {
@@ -237,11 +240,13 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 			}
 		})
 
-	foldIntersection(into: FoldInput<"min">): undefined {
-		if (into.basis?.domain !== "number") {
-			this.throwInvalidBoundOperandError(into.basis)
+	foldIntersection(s: IntersectionState): undefined {
+		for (let i = 0; i < s.length; i++) {
+			if (s[i].basis?.domain !== "number") {
+				this.throwInvalidBoundOperandError(s[i].basis)
+			}
+			s[i].min = this.intersectSymmetric(s[i].min)
 		}
-		into.min = this.intersectSymmetric(into.min)
 	}
 
 	traverseAllows = this.exclusive
@@ -265,14 +270,16 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 		? (data: number) => data < this.limit
 		: (data: number) => data <= this.limit
 
-	foldIntersection(into: FoldInput<"max">): Disjoint | undefined {
-		if (into.basis?.domain !== "number") {
-			this.throwInvalidBoundOperandError(into.basis)
+	foldIntersection(s: IntersectionState) {
+		for (let i = 0; i < s.length; i++) {
+			if (s[i].basis?.domain !== "number") {
+				this.throwInvalidBoundOperandError(s[i].basis)
+			}
+			if (s[i].min?.isStricterThan(this)) {
+				s.disjoint(i, "bound", this, s[i].min!)
+			}
+			s[i].max = this.intersectSymmetric(s[i].max)
 		}
-		if (into.min?.isStricterThan(this)) {
-			return Disjoint.from("bound", this, into.min)
-		}
-		into.max = this.intersectSymmetric(into.max)
 	}
 }
 
@@ -311,14 +318,16 @@ export class MinLengthNode extends BaseBound<
 		? (data: string | readonly unknown[]) => data.length > this.limit
 		: (data: string | readonly unknown[]) => data.length >= this.limit
 
-	foldIntersection(into: FoldInput<"minLength">): undefined {
-		if (
-			into.basis?.domain !== "string" &&
-			!into.basis?.extends(this.$.builtin.Array)
-		) {
-			this.throwInvalidBoundOperandError(into.basis)
+	foldIntersection(s: IntersectionState): undefined {
+		for (let i = 0; i < s.length; i++) {
+			if (
+				s[i].basis?.domain !== "string" &&
+				!s[i].basis?.extends(this.$.builtin.Array)
+			) {
+				this.throwInvalidBoundOperandError(s[i].basis)
+			}
+			s[i].minLength = this.intersectSymmetric(s[i].minLength)
 		}
-		into.minLength = this.intersectSymmetric(into.minLength)
 	}
 }
 
@@ -344,16 +353,20 @@ export class MaxLengthNode extends BaseBound<
 		? (data: string | readonly unknown[]) => data.length < this.limit
 		: (data: string | readonly unknown[]) => data.length <= this.limit
 
-	foldIntersection(into: FoldInput<"maxLength">): Disjoint | undefined {
-		if (
-			into.basis?.domain !== "string" &&
-			!into.basis?.extends(this.$.builtin.Array)
-		) {
-			this.throwInvalidBoundOperandError(into.basis)
-		}
-		into.maxLength = this.intersectSymmetric(into.maxLength)
-		if (into.minLength?.isStricterThan(this)) {
-			return Disjoint.from("bound", this, into.minLength)
+	foldIntersection(s: IntersectionState) {
+		for (let i = 0; i < s.length; i++) {
+			if (
+				s[i].basis?.domain !== "string" &&
+				!s[i].basis?.extends(this.$.builtin.Array)
+			) {
+				this.throwInvalidBoundOperandError(s[i].basis)
+			}
+
+			if (s[i].minLength?.isStricterThan(this)) {
+				s.disjoint(i, "bound", this, s[i].minLength!)
+			}
+
+			s[i].maxLength = this.intersectSymmetric(s[i].maxLength)
 		}
 	}
 }
@@ -403,11 +416,13 @@ export class AfterNode
 		? (data: Date) => +data > this.numericLimit
 		: (data: Date) => +data >= this.numericLimit
 
-	foldIntersection(into: FoldInput<"after">): undefined {
-		if (!into.basis?.extends(this.$.builtin.Date)) {
-			this.throwInvalidBoundOperandError(into.basis)
+	foldIntersection(s: IntersectionState): undefined {
+		for (let i = 0; i < s.length; i++) {
+			if (!s[i].basis?.extends(this.$.builtin.Date)) {
+				this.throwInvalidBoundOperandError(s[i].basis)
+			}
+			s[i].after = this.intersectSymmetric(s[i].after)
 		}
-		into.after = this.intersectSymmetric(into.after)
 	}
 }
 
@@ -438,13 +453,17 @@ export class BeforeNode
 		? (data: Date) => +data < this.numericLimit
 		: (data: Date) => +data <= this.numericLimit
 
-	foldIntersection(into: FoldInput<"before">): Disjoint | undefined {
-		if (!into.basis?.extends(this.$.builtin.Date)) {
-			this.throwInvalidBoundOperandError(into.basis)
-		}
-		into.before = this.intersectSymmetric(into.before)
-		if (into.after?.isStricterThan(this)) {
-			return Disjoint.from("bound", this, into.after)
+	foldIntersection(s: IntersectionState) {
+		for (let i = 0; i < s.length; i++) {
+			if (!s[i].basis?.extends(this.$.builtin.Date)) {
+				this.throwInvalidBoundOperandError(s[i].basis)
+			}
+
+			if (s[i].after?.isStricterThan(this)) {
+				s.disjoint(i, "bound", this, s[i].after)
+			}
+
+			s[i].before = this.intersectSymmetric(s[i].before)
 		}
 	}
 }

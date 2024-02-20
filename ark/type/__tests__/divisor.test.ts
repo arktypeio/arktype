@@ -9,6 +9,10 @@ describe("divisibility", () => {
 			const divisibleByTwo = type("number%2")
 			attest<number>(divisibleByTwo.infer)
 			attest(divisibleByTwo.json).snap({ basis: "number", divisor: 2 })
+			attest(divisibleByTwo(4).out).snap(4)
+			attest(divisibleByTwo(5).errors?.summary).snap(
+				"Must be a multiple of 2 (was 5)"
+			)
 		})
 		it("whitespace after %", () => {
 			const t = type("number % 5")
@@ -82,8 +86,8 @@ describe("divisibility", () => {
 			attest(t.json).equals(type("0").json)
 		})
 		it("invalid literal", () => {
-			attest(() => type("number%3&8")).throws(
-				"Intersection of (a multiple of 3) and 8 results in an unsatisfiable type"
+			attest(() => type("number%3&8")).throws.snap(
+				"Error: Intersection of 8 and a number and a multiple of 3 results in an unsatisfiable type"
 			)
 		})
 	})

@@ -1,5 +1,6 @@
 import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { IntersectionState } from "../constraints/constraint.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -149,7 +150,7 @@ export class UnionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	discriminant: Discriminant | null = null //discriminate(inner.branches)
+	discriminant: Discriminant | null = null
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.branches.some((b) => b.traverseAllows(data, ctx))

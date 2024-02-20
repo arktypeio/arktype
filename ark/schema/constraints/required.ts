@@ -10,7 +10,7 @@ import {
 	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { BaseConstraint, FoldInput } from "./constraint.js"
+import type { IntersectionState } from "./constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface RequiredSchema extends BaseMeta {
@@ -39,10 +39,11 @@ export type RequiredDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class RequiredNode
-	extends BaseNode<object, RequiredDeclaration, typeof RequiredNode>
-	implements BaseConstraint<"required">
-{
+export class RequiredNode extends BaseNode<
+	object,
+	RequiredDeclaration,
+	typeof RequiredNode
+> {
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
@@ -117,24 +118,30 @@ export class RequiredNode
 		}
 	}
 
-	foldIntersection(into: FoldInput<"required">) {
-		if (into.basis?.domain !== "object") {
-			throwInvalidOperandError("required", "an object", into.basis)
-		}
+	foldIntersection(s: IntersectionState) {
+		for (let i = 0; i < s.length; i++) {
+			if (s[i].basis?.domain !== "object") {
+				throwInvalidOperandError("required", "an object", s[i].basis)
+			}
 
-		if (!into.required) {
-			into.required = [this]
-			return
-		}
+			const required = s[i].required
+			if (!required) {
+				s[i].required = [this]
+				continue
+			}
 
-		let matchedExisting = false
-		for (let i = 0; i < into.required.length; i++) {
-			const result = this.intersectSymmetric(into.required[i])
-			if (result === null) continue
-			if (result instanceof Disjoint) return result
-			into.required[i] = result
-			matchedExisting = true
+			let matchedExisting = false
+			for (let j = 0; j < required.length; j++) {
+				const result = this.intersectSymmetric(required[j])
+				if (result === null) continue
+				if (result instanceof Disjoint) {
+					s.disjoint(i, result)
+				} else {
+					required[j] = result
+					matchedExisting = true
+				}
+			}
+			if (!matchedExisting) required.push(this)
 		}
-		if (!matchedExisting) into.required.push(this)
 	}
 }

@@ -19,7 +19,7 @@ import type {
 } from "../shared/implement.js"
 import type { IntersectionSchema } from "../types/intersection.js"
 import type { UnionNode } from "../types/union.js"
-import type { BaseConstraint, FoldInput } from "./constraint.js"
+import type { IntersectionState } from "./constraint.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -106,10 +106,11 @@ export const isSequenceTuple = (
 	)
 }
 
-export class SequenceNode
-	extends BaseNode<readonly unknown[], SequenceDeclaration, typeof SequenceNode>
-	implements BaseConstraint<"sequence">
-{
+export class SequenceNode extends BaseNode<
+	readonly unknown[],
+	SequenceDeclaration,
+	typeof SequenceNode
+> {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
@@ -356,25 +357,25 @@ export class SequenceNode
 		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
 	]
 
-	foldIntersection(
-		into: FoldInput<"sequence">
-	): UnionNode | Disjoint | undefined {
-		this.minLengthNode?.foldIntersection(into)
-		const possibleLengthDisjoint =
-			this.maxLengthNode?.foldIntersection(into) ??
-			// even if this sequence doesn't contribute maxLength, if there is
-			// an existing maxLength constraint, check that it is compatible
-			// with the minLength constraint we just added
-			into.maxLength?.foldIntersection(into)
-		if (possibleLengthDisjoint) return possibleLengthDisjoint
-		const ownResult = this.intersectSymmetric(into.sequence)
-		if (ownResult instanceof Disjoint) {
-			return ownResult
-		}
-		if (ownResult instanceof SequenceNode) {
-			into.sequence = ownResult
-		} else {
-			return ownResult as UnionNode
+	foldIntersection(s: IntersectionState) {
+		for (let i = 0; i < s.length; i++) {
+			const branch = s[i]
+			this.minLengthNode?.foldIntersection(s)
+			this.maxLengthNode?.foldIntersection(s) ??
+				// TODO: remove with dependency ordering?
+				// even if this sequence doesn't contribute maxLength, if there is
+				// an existing maxLength constraint, check that it is compatible
+				// with the minLength constraint we just added
+				s.forEach((branch) => branch.maxLength?.foldIntersection(s))
+
+			const ownResult = this.intersectSymmetric(branch.sequence)
+			if (ownResult instanceof Disjoint) {
+				s.disjoint(i, ownResult)
+			} else if (ownResult instanceof SequenceNode) {
+				branch.sequence = ownResult
+			} else {
+				s.branch(ownResult as UnionNode)
+			}
 		}
 	}
 }

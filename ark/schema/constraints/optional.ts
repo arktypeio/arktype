@@ -5,7 +5,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
-import type { BaseConstraint, FoldInput } from "./constraint.js"
+import type { IntersectionState } from "./constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
@@ -29,10 +29,11 @@ export type OptionalDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class OptionalNode
-	extends BaseNode<object, OptionalDeclaration, typeof OptionalNode>
-	implements BaseConstraint<"optional">
-{
+export class OptionalNode extends BaseNode<
+	object,
+	OptionalDeclaration,
+	typeof OptionalNode
+> {
 	static implementation: nodeImplementationOf<OptionalDeclaration> =
 		this.implement({
 			keys: {
@@ -86,7 +87,7 @@ export class OptionalNode
 		}
 	}
 
-	foldIntersection(into: FoldInput<"optional">) {
+	foldIntersection(into: IntersectionState) {
 		return undefined
 	}
 }
