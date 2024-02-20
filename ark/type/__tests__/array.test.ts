@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
+import { intersectSequences } from "../../schema/constraints/sequence.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
 import {
@@ -320,17 +321,26 @@ Value at [1] must be a number (was boolean)`)
 		})
 		it("prefix and postfix", () => {
 			const l = type([["...", [{ a: "0" }, "[]"]], { b: "0" }, { c: "0" }])
-			const r = type([
-				{ x: "0" },
-				[{ y: "0" }, "?"],
-				["...", [{ z: "0" }, "[]"]]
-			])
+			const r = type([{ x: "0" }, { y: "0" }, ["...", [{ z: "0" }, "[]"]]])
 
-			// [ax, ay, ...az[], bz, cz]
-			// [ax, by, cz]
-			// [bx, cy]
-			const result = l.and(r)
-			attest(result.json)
+			type Expected =
+				| [
+						{ a: 0; x: 0 },
+						{ a: 0; y: 0 },
+						...{ a: 0; z: 0 }[],
+						{ b: 0; z: 0 },
+						{ c: 0; z: 0 }
+				  ]
+				| [{ a: 0; x: 0 }, { b: 0; y: 0 }, { c: 0; z: 0 }]
+				| [{ b: 0; x: 0 }, { c: 0; y: 0 }]
+
+			const result = intersectSequences(
+				l.root.firstReferenceOfKindOrThrow("sequence"),
+				r.root.firstReferenceOfKindOrThrow("sequence")
+			)
+
+			// const result = l.and(r)
+			attest(result).snap()
 		})
 	})
 	// TODO: reenable

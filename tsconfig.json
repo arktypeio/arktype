@@ -16,7 +16,7 @@
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
 		"stripInternal": true,
-		"noErrorTruncation": true,
+		// "noErrorTruncation": true,
 		"paths": {
 			"arktype": ["./ark/type/main.ts"],
 			"@arktype/util": ["./ark/util/main.ts"],
