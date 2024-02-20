@@ -263,137 +263,25 @@ export class SequenceNode
 	]
 
 	protected intersectOwnInner(r: SequenceNode) {
-		const result: MutableInner<"sequence"> = {}
-		const disjoints: Disjoint[] = []
+		const state = intersectSequences({
+			l: [...this.tuple],
+			r: [...r.tuple],
+			fixedVariants: [],
+			disjoints: [],
+			result: []
+		})
 
 		if (this.maxLength && r.minLength > this.maxLength) {
-			disjoints.push(
-				Disjoint.from("bound", this.maxLengthNode!, r.minLengthNode!)
-			)
+			// state.disjoints = push(
+			// 	Disjoint.from("bound", l.maxLengthNode!, r.minLengthNode!)
+			// )
 		} else if (r.maxLength && this.minLength > r.maxLength) {
-			disjoints.push(
-				Disjoint.from("bound", this.minLengthNode!, r.maxLengthNode!)
-			)
+			// state.disjoints.push(
+			// 	Disjoint.from("bound", l.minLengthNode!, r.maxLengthNode!)
+			// )
 		}
 
-		const longerPrevariadic =
-			this.prevariadic.length > r.prevariadic.length
-				? this
-				: this.prevariadic.length < r.prevariadic.length
-				? r
-				: undefined
-
-		const longerPostvariadic =
-			this.postfix.length > r.postfix.length
-				? this
-				: this.postfix.length < r.postfix.length
-				? r
-				: undefined
-
-		const fixedVariants: SequenceInner[] = []
-
-		if (
-			longerPrevariadic &&
-			longerPostvariadic &&
-			longerPrevariadic !== longerPostvariadic
-		) {
-			const minDistinctVariadicLength = Math.max(
-				0,
-				longerPrevariadic.prevariadic.length - longerPostvariadic.postfix.length
-			)
-			for (
-				let variadicLength = minDistinctVariadicLength;
-				variadicLength < longerPrevariadic.prevariadic.length;
-				variadicLength++
-			) {
-				const fixedPostvariadic = [
-					...range(variadicLength).map(() => longerPostvariadic.variadic!),
-					...longerPostvariadic.postfix
-				]
-				const fixedPrevariadic = [
-					...longerPrevariadic.prevariadic,
-					...range(
-						fixedPostvariadic.length - longerPrevariadic.prevariadic.length
-					).map(() => longerPrevariadic.variadic!)
-				]
-				let result: TypeNode[] | Disjoint = []
-				for (let i = 0; i < fixedPostvariadic.length && isArray(result); i++) {
-					const fixedResult = fixedPostvariadic[i].intersect(
-						fixedPrevariadic[i]
-					)
-					if (fixedResult instanceof Disjoint) {
-						result = fixedResult
-					} else {
-						result.push(fixedResult)
-					}
-				}
-				if (isArray(result)) {
-					fixedVariants.push({
-						prefix: result
-					})
-				}
-			}
-		}
-
-		const prevariadicLength = Math.max(
-			this.prevariadic.length,
-			r.prevariadic.length
-		)
-		const prefixLength = Math.max(this.prefix.length, r.prefix.length)
-
-		for (let i = 0; i < prevariadicLength; i++) {
-			const lElement =
-				this.prevariadic.at(i) ??
-				this.variadic ??
-				// have to cast here due to TypeNode<never> not being assignable to
-				// the default TypeNode<any>
-				(this.$.builtin.never as never)
-			const rElement =
-				r.prevariadic.at(i) ?? r.variadic ?? (r.$.builtin.never as never)
-
-			const kind = // if either operand has postfix elements, the full-length
-				// intersection can't include optional elements (though they may
-				// exist in some of the fixed length variants)
-				i >= prefixLength && this.postfix.length === 0 && r.postfix.length === 0
-					? "optionals"
-					: "prefix"
-
-			const node = lElement.intersect(rElement)
-			if (node instanceof Disjoint) {
-				if (kind === "optionals") {
-					// if the element result is optional and unsatisfiable, the
-					// intersection can still be satisfied as long as the tuple
-					// ends before the disjoint element would occur
-					return result
-				} else {
-					disjoints.push(node)
-				}
-			} else {
-				result[kind] = append(result[kind], node)
-			}
-		}
-
-		if (this.variadic && r.variadic) {
-			// the resulting intersection is variadic iff both operands are
-			result.variadic = this.variadic.and(r.variadic)
-		}
-
-		const postfixLength = Math.max(this.postfix.length, r.postfix.length)
-
-		for (let i = postfixLength - 1; i >= 0; i--) {
-			const lElement =
-				this.postfix[i] ?? this.variadic ?? (this.$.builtin.never as never)
-			const rElement =
-				r.postfix[i] ?? r.variadic ?? (r.$.builtin.never as never)
-			const node = lElement.intersect(rElement)
-			if (node instanceof Disjoint) {
-				disjoints.push(node)
-			} else {
-				result.postfix = append(result.postfix, node, { prepend: true })
-			}
-		}
-
-		return result
+		return state.disjoints.length === 0 ? state : state.disjoints
 	}
 
 	foldIntersection(into: FoldInput<"sequence">) {
@@ -431,41 +319,19 @@ export type SequenceElement = {
 	node: TypeNode
 }
 
-export const intersectSequences = (l: SequenceNode, r: SequenceNode) => {
-	const state = intersectSequencesRecurse({
-		lTuple: [...l.tuple],
-		rTuple: [...r.tuple],
-		fixedVariants: [],
-		disjoints: [],
-		result: []
-	})
-
-	if (l.maxLength && r.minLength > l.maxLength) {
-		// state.disjoints = push(
-		// 	Disjoint.from("bound", l.maxLengthNode!, r.minLengthNode!)
-		// )
-	} else if (r.maxLength && l.minLength > r.maxLength) {
-		// state.disjoints.push(
-		// 	Disjoint.from("bound", l.minLengthNode!, r.maxLengthNode!)
-		// )
-	}
-
-	return state.disjoints.length === 0 ? state : state.disjoints
-}
-
 type SequenceIntersectionState = {
-	lTuple: readonly SequenceElement[]
-	rTuple: readonly SequenceElement[]
+	l: readonly SequenceElement[]
+	r: readonly SequenceElement[]
 	disjoints: readonly Disjoint[]
 	result: readonly SequenceElement[]
 	fixedVariants: SequenceIntersectionState[]
 }
 
-const intersectSequencesRecurse = (
+const intersectSequences = (
 	state: SequenceIntersectionState
 ): SequenceIntersectionState => {
-	const [lHead, ...lTail] = state.lTuple
-	const [rHead, ...rTail] = state.rTuple
+	const [lHead, ...lTail] = state.l
+	const [rHead, ...rTail] = state.r
 
 	if (!lHead || !rHead) {
 		return state
@@ -489,10 +355,10 @@ const intersectSequencesRecurse = (
 			: "variadic"
 
 	if (lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix) {
-		const postfixBranchResult = intersectSequencesRecurse({
+		const postfixBranchResult = intersectSequences({
 			...state,
 			fixedVariants: [],
-			rTuple: rTail.map((element) => ({ ...element, kind: "prefix" }))
+			r: rTail.map((element) => ({ ...element, kind: "prefix" }))
 		})
 		state.fixedVariants.push(postfixBranchResult)
 	} else if (
@@ -500,10 +366,10 @@ const intersectSequencesRecurse = (
 		lHead.kind === "variadic" &&
 		lHasPostfix
 	) {
-		const postfixBranchResult = intersectSequencesRecurse({
+		const postfixBranchResult = intersectSequences({
 			...state,
 			fixedVariants: [],
-			lTuple: lTail.map((element) => ({ ...element, kind: "prefix" }))
+			l: lTail.map((element) => ({ ...element, kind: "prefix" }))
 		})
 		state.fixedVariants.push(postfixBranchResult)
 	}
@@ -522,15 +388,15 @@ const intersectSequencesRecurse = (
 		state.result = [...state.result, { kind, node }]
 	}
 
-	const lRemaining = state.lTuple.length
-	const rRemaining = state.rTuple.length
+	const lRemaining = state.l.length
+	const rRemaining = state.r.length
 
 	if (
 		lHead.kind !== "variadic" ||
 		(lRemaining >= rRemaining &&
 			(rHead.kind === "variadic" || rRemaining === 1))
 	) {
-		state.lTuple = lTail
+		state.l = lTail
 	}
 
 	if (
@@ -538,63 +404,8 @@ const intersectSequencesRecurse = (
 		(rRemaining >= lRemaining &&
 			(lHead.kind === "variadic" || lRemaining === 1))
 	) {
-		state.rTuple = rTail
+		state.r = rTail
 	}
 
-	return intersectSequencesRecurse(state)
-
-	// for (let i = 0; i < prevariadicLength; i++) {
-	// 	const lElement =
-	// 		l.prevariadic.at(i) ??
-	// 		l.variadic ??
-	// 		// have to cast here due to TypeNode<never> not being assignable to
-	// 		// the default TypeNode<any>
-	// 		(l.$.builtin.never as never)
-	// 	const rElement =
-	// 		r.prevariadic.at(i) ?? r.variadic ?? (r.$.builtin.never as never)
-
-	// 	const kind =
-	// if either operand has postfix elements, the full-length
-	// 		// intersection can't include optional elements (though they may
-	// 		// exist in some of the fixed length variants)
-	// 		i >= prefixLength && l.postfix.length === 0 && r.postfix.length === 0
-	// 			? "optionals"
-	// 			: "prefix"
-
-	// 	const node = lElement.intersect(rElement)
-	// 	if (node instanceof Disjoint) {
-	// 		if (kind === "optionals") {
-	// 			// if the element result is optional and unsatisfiable, the
-	// 			// intersection can still be satisfied as long as the tuple
-	// 			// ends before the disjoint element would occur
-	// 			return s
-	// 		} else {
-	// 			s.disjoints.push(node)
-	// 		}
-	// 	} else {
-	// 		s.result[kind] = append(s.result[kind], node)
-	// 	}
-	// }
-
-	// if (l.variadic && r.variadic) {
-	// 	// the resulting intersection is variadic iff both operands are
-	// 	s.result.variadic = l.variadic.and(r.variadic)
-	// }
-
-	// const postfixLength = Math.max(l.postfix.length, r.postfix.length)
-
-	// for (let i = postfixLength - 1; i >= 0; i--) {
-	// 	const lElement = l.postfix[i] ?? l.variadic ?? (l.$.builtin.never as never)
-	// 	const rElement = r.postfix[i] ?? r.variadic ?? (r.$.builtin.never as never)
-	// 	const node = lElement.intersect(rElement)
-	// 	if (node instanceof Disjoint) {
-	// 		s.disjoints.push(node)
-	// 	} else {
-	// 		s.result.postfix = append(s.result.postfix, node, {
-	// 			prepend: true
-	// 		})
-	// 	}
-	// }
-
-	// return s
+	return intersectSequences(state)
 }
