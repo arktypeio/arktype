@@ -280,7 +280,7 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	intersectOwnKind(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
+	intersectSymmetric(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
 		if (r === undefined) {
 			return this as never
 		}

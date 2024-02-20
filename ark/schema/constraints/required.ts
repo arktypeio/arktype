@@ -129,7 +129,7 @@ export class RequiredNode
 
 		let matchedExisting = false
 		for (let i = 0; i < into.required.length; i++) {
-			const result = this.intersectOwnKind(into.required[i])
+			const result = this.intersectSymmetric(into.required[i])
 			if (result === null) continue
 			if (result instanceof Disjoint) return result
 			into.required[i] = result

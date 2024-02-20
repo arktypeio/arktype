@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-import { intersectSequences } from "../../schema/constraints/sequence.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
 import {
@@ -205,14 +204,17 @@ Value at [1] must be a number (was boolean)`)
 				type(["number", ["...", "string"]])
 			).throwsAndHasTypeError(writeNonArraySpreadMessage("string"))
 		})
-		it("errors on non-last element", () => {
+		it("errors on multiple variadic", () => {
 			attest(() =>
 				// @ts-expect-error
-				type(["...number[]", "string"])
+				type(["...number[]", "...string[]"])
 			).throwsAndHasTypeError(multipleVariadicMesage)
 			attest(() =>
-				// @ts-expect-error
-				type([["...", "string[]"], "number"])
+				type([
+					["...", "string[]"],
+					// @ts-expect-error
+					["...", "number[]"]
+				])
 			).throwsAndHasTypeError(multipleVariadicMesage)
 		})
 	})
@@ -334,13 +336,8 @@ Value at [1] must be a number (was boolean)`)
 				| [{ a: 0; x: 0 }, { b: 0; y: 0 }, { c: 0; z: 0 }]
 				| [{ b: 0; x: 0 }, { c: 0; y: 0 }]
 
-			const result = intersectSequences(
-				l.root.firstReferenceOfKindOrThrow("sequence"),
-				r.root.firstReferenceOfKindOrThrow("sequence")
-			)
-
 			// const result = l.and(r)
-			attest(result).snap()
+			// attest(result).snap()
 		})
 	})
 	// TODO: reenable

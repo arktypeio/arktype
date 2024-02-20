@@ -104,16 +104,18 @@ export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
-type makeMutableInner<inner> = {
-	-readonly [k in keyof inner]: inner[k] extends readonly Node[] | undefined
+export type makeRootAndArrayPropertiesMutable<inner> = {
+	-readonly [k in keyof inner]: inner[k] extends readonly unknown[] | undefined
 		? mutable<inner[k]>
 		: inner[k]
 } & unknown
 
 /** make nested arrays mutable while keeping nested nodes immutable */
-export type MutableInner<kind extends NodeKind> = makeMutableInner<
-	Declaration<kind>["inner"]
->
+export type MutableInner<kind extends NodeKind> =
+	makeRootAndArrayPropertiesMutable<Inner<kind>>
+
+export type MutableNormalizedSchema<kind extends NodeKind> =
+	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
 
 export type ExpectedContext<kind extends NodeKind> = Readonly<
 	Declaration<kind>["expectedContext"]

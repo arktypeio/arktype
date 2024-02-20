@@ -253,9 +253,9 @@ type validateTupleElement<
 					args
 			  > extends infer semanticResult
 				? semanticResult extends operand
-					? number extends result["length"]
-						? ErrorMessage<multipleVariadicMessage>
-						: head
+					? Extract<result[number], variadicExpression> extends never
+						? head
+						: ErrorMessage<multipleVariadicMessage>
 					: semanticResult
 				: never
 			: syntacticResult

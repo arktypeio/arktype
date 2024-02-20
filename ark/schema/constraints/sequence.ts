@@ -1,12 +1,11 @@
 import {
 	append,
 	isArray,
-	range,
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
-import type { MutableInner } from "../kinds.js"
+import type { MutableNormalizedSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -41,7 +40,12 @@ export type NormalizedSequenceSchema =
 	| NormalizedPostfixableSequenceSchema
 	| NormalizedOptionalizableSequenceSchema
 
-export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
+export type SequenceSchema =
+	| NormalizedSequenceSchema
+	| TypeSchema
+	| SequenceTupleSchema
+
+export type SequenceTupleSchema = readonly SequenceElementSchema[]
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
@@ -78,6 +82,17 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
 
+export const isSequenceTuple = (
+	schema: unknown
+): schema is SequenceTupleSchema =>
+	isArray(schema) &&
+	(schema.length === 0 ||
+		("kind" in schema &&
+			(schema.kind === "prefix" ||
+				schema.kind === "optionals" ||
+				schema.kind === "variadic" ||
+				schema.kind === "postfix")))
+
 export class SequenceNode
 	extends BaseNode<readonly unknown[], SequenceDeclaration, typeof SequenceNode>
 	implements BaseConstraint<"sequence">
@@ -98,6 +113,19 @@ export class SequenceNode
 			normalize: (schema) => {
 				if (typeof schema === "string") {
 					return { variadic: schema }
+				}
+				if (isSequenceTuple(schema)) {
+					return schema.reduce<MutableNormalizedSchema<"sequence">>(
+						(result, el) => {
+							if (el.kind === "variadic") {
+								result.variadic = el.node
+							} else {
+								result[el.kind] = append(result[el.kind], el.node)
+							}
+							return result
+						},
+						{}
+					)
 				}
 				if (
 					"variadic" in schema ||
@@ -182,16 +210,21 @@ export class SequenceNode
 				})
 
 				if (l.maxLength && r.minLength > l.maxLength) {
-					// state.disjoints = push(
-					// 	Disjoint.from("bound", l.maxLengthNode!, r.minLengthNode!)
-					// )
+					state.disjoints = [
+						...state.disjoints,
+						Disjoint.from("bound", l.maxLengthNode!, r.minLengthNode!)
+					]
 				} else if (r.maxLength && l.minLength > r.maxLength) {
-					// state.disjoints.push(
-					// 	Disjoint.from("bound", l.minLengthNode!, r.maxLengthNode!)
-					// )
+					state.disjoints = [
+						...state.disjoints,
+						Disjoint.from("bound", l.minLengthNode!, r.maxLengthNode!)
+					]
 				}
 
-				return state.disjoints.length === 0 ? state : state.disjoints
+				if (state.fixedVariants.length === 0) {
+					// TODO: propagate disjoints across paths
+					return state.disjoints.length ? state.disjoints[0] : state.result
+				}
 			}
 		})
 
@@ -292,7 +325,7 @@ export class SequenceNode
 			// with the minLength constraint we just added
 			into.maxLength?.foldIntersection(into)
 		if (possibleLengthDisjoint) return possibleLengthDisjoint
-		const ownResult = this.intersectOwnKind(into.sequence)
+		const ownResult = this.intersectSymmetric(into.sequence)
 		if (ownResult instanceof Disjoint) {
 			return ownResult
 		}
@@ -316,6 +349,11 @@ export type SequenceElementKind = Exclude<keyof SequenceInner, keyof BaseMeta>
 export type SequenceElement = {
 	kind: SequenceElementKind
 	node: TypeNode
+}
+
+export type SequenceElementSchema = {
+	kind: SequenceElementKind
+	node: TypeSchema
 }
 
 type SequenceIntersectionState = {

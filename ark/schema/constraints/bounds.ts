@@ -242,7 +242,7 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 		if (into.basis?.domain !== "number") {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.min = this.intersectOwnKind(into.min)
+		into.min = this.intersectSymmetric(into.min)
 	}
 
 	traverseAllows = this.exclusive
@@ -273,7 +273,7 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 		if (into.min?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.min)
 		}
-		into.max = this.intersectOwnKind(into.max)
+		into.max = this.intersectSymmetric(into.max)
 	}
 }
 
@@ -319,7 +319,7 @@ export class MinLengthNode extends BaseBound<
 		) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.minLength = this.intersectOwnKind(into.minLength)
+		into.minLength = this.intersectSymmetric(into.minLength)
 	}
 }
 
@@ -352,7 +352,7 @@ export class MaxLengthNode extends BaseBound<
 		) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.maxLength = this.intersectOwnKind(into.maxLength)
+		into.maxLength = this.intersectSymmetric(into.maxLength)
 		if (into.minLength?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.minLength)
 		}
@@ -408,7 +408,7 @@ export class AfterNode
 		if (!into.basis?.extends(this.$.builtin.Date)) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.after = this.intersectOwnKind(into.after)
+		into.after = this.intersectSymmetric(into.after)
 	}
 }
 
@@ -443,7 +443,7 @@ export class BeforeNode
 		if (!into.basis?.extends(this.$.builtin.Date)) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.before = this.intersectOwnKind(into.before)
+		into.before = this.intersectSymmetric(into.before)
 		if (into.after?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.after)
 		}

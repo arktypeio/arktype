@@ -1,7 +1,5 @@
-import type { defer } from "./generics.js"
+import type { isDisjoint } from "./intersections.js"
 import type { NumberLiteral } from "./numericLiterals.js"
-import { isArray } from "./objectKinds.js"
-import type { mutable } from "./records.js"
 
 export type pathToString<
 	segments extends string[],
@@ -158,11 +156,15 @@ export type AppendOptions = {
  * @param opts
  * 		prepend: If true, adds the element to the beginning of the array instead of the end
  */
-export const append = <to extends unknown[]>(
-	to: to | undefined,
-	value: to[number] | undefined,
+export const append = <
+	to extends element[] | undefined,
+	element,
+	value extends element | undefined
+>(
+	to: to,
+	value: value,
 	opts?: AppendOptions
-): to => {
+): Exclude<to, undefined> | Extract<value & to, undefined> => {
 	if (value === undefined) {
 		return to ?? ([] as any)
 	}
@@ -174,7 +176,7 @@ export const append = <to extends unknown[]>(
 	} else {
 		to.push(value)
 	}
-	return to
+	return to as never
 }
 
 /**
@@ -231,11 +233,12 @@ export type groupableKeyOf<t> = {
 }[keyof t]
 
 export type groupBy<element, discriminator extends groupableKeyOf<element>> = {
-	[k in element[discriminator] & PropertyKey]?: Extract<
-		element,
-		{ [_ in discriminator]: k }
-	>[]
-} & {}
+	[k in element[discriminator] & PropertyKey]?: element extends unknown
+		? isDisjoint<element[discriminator], k> extends true
+			? never
+			: element[]
+		: never
+} & unknown
 
 export const groupBy = <element, discriminator extends groupableKeyOf<element>>(
 	array: readonly element[],

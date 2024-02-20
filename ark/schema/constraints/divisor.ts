@@ -76,7 +76,7 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		if (into.basis?.domain !== "number") {
 			throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
 		}
-		into.divisor = this.intersectOwnKind(into.divisor)
+		into.divisor = this.intersectSymmetric(into.divisor)
 	}
 }
 
