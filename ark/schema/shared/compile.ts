@@ -1,7 +1,7 @@
 import { CompiledFunction, serializeLiteralKey } from "@arktype/util"
 import type { Node, TypeNode } from "../base.js"
-import type { TraversalKind } from "../traversal/context.js"
 import type { Discriminant } from "../types/discriminate.js"
+import type { TraversalKind } from "./context.js"
 import type { PrimitiveKind } from "./implement.js"
 
 export const jsData = "data"

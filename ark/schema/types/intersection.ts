@@ -20,8 +20,10 @@ import {
 } from "../constraints/props.js"
 import type { Inner, Prerequisite, Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
+import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkTypeError } from "../shared/errors.js"
 import {
 	constraintKinds,
 	parseOpen,
@@ -35,8 +37,6 @@ import {
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import type { ArkTypeError } from "../traversal/errors.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
 import type { UnionNode } from "./union.js"

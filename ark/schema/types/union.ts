@@ -2,15 +2,15 @@ import { isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
+import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkTypeError } from "../shared/errors.js"
 import {
 	basisKinds,
 	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
-import type { ArkTypeError } from "../traversal/errors.js"
 import type { Discriminant } from "./discriminate.js"
 import type { MorphChildKind } from "./morph.js"
 import { BaseType } from "./type.js"

@@ -1,8 +1,8 @@
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
+import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { BaseConstraint, FoldInput } from "./constraint.js"
 
 export interface IndexSchema extends BaseMeta {

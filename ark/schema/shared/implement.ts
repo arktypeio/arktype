@@ -18,8 +18,8 @@ import type {
 	ParsedUnknownNodeConfig,
 	ScopeNode
 } from "../scope.js"
-import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { NodeCompiler } from "./compile.js"
+import type { TraverseAllows, TraverseApply } from "./context.js"
 import type {
 	BaseExpectedContext,
 	BaseMeta,

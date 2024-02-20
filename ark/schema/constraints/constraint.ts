@@ -2,6 +2,7 @@ import type { mutable } from "@arktype/util"
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
 import type { MutableInner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
+import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -11,7 +12,6 @@ import type {
 	PrimitiveKind,
 	kindRightOf
 } from "../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { IntersectionInner } from "../types/intersection.js"
 import type { UnionNode } from "../types/union.js"
 

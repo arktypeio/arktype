@@ -21,19 +21,19 @@ import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import { NodeCompiler } from "./shared/compile.js"
-import type {
-	DescriptionWriter,
-	NodeKind,
-	TypeKind
-} from "./shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "./traversal/context.js"
+import type { TraverseAllows, TraverseApply } from "./shared/context.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
 	ExpectedWriter,
 	MessageWriter,
 	ProblemWriter
-} from "./traversal/errors.js"
+} from "./shared/errors.js"
+import type {
+	DescriptionWriter,
+	NodeKind,
+	TypeKind
+} from "./shared/implement.js"
 import { maybeGetBasisKind } from "./types/basis.js"
 import { BaseType } from "./types/type.js"
 import type {

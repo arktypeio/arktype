@@ -40,6 +40,11 @@ import type {
 } from "./kinds.js"
 import type { ScopeNode } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
+import {
+	pathToPropString,
+	type TraverseAllows,
+	type TraverseApply
+} from "./shared/context.js"
 import type {
 	BaseExpectedContext,
 	BaseNodeDeclaration,
@@ -66,11 +71,6 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
-import {
-	pathToPropString,
-	type TraverseAllows,
-	type TraverseApply
-} from "./traversal/context.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type { MorphNode, extractIn, extractOut } from "./types/morph.js"

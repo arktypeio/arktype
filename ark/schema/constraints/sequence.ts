@@ -9,6 +9,7 @@ import {
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { MutableNormalizedSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
+import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -16,7 +17,6 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../traversal/context.js"
 import type { IntersectionSchema } from "../types/intersection.js"
 import type { UnionNode } from "../types/union.js"
 import type { BaseConstraint, FoldInput } from "./constraint.js"

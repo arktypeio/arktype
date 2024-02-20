@@ -11,20 +11,20 @@ import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
+import type {
+	TraversalContext,
+	TraverseAllows,
+	TraverseApply
+} from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkResult, ArkTypeError } from "../shared/errors.js"
 import {
 	basisKinds,
 	type BasisKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { is } from "../shared/utils.js"
-import type {
-	TraversalContext,
-	TraverseAllows,
-	TraverseApply
-} from "../traversal/context.js"
-import type { ArkResult, ArkTypeError } from "../traversal/errors.js"
 import { BaseType } from "./type.js"
 
 export type MorphChildKind = evaluate<"intersection" | BasisKind>

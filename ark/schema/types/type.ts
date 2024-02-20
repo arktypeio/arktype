@@ -7,8 +7,10 @@ import {
 	type TypeNode
 } from "../base.js"
 import type { Inner, Schema, reducibleKindOf } from "../kinds.js"
+import { TraversalContext } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkResult } from "../shared/errors.js"
 import type {
 	ConstraintKind,
 	TypeKind,
@@ -16,8 +18,6 @@ import type {
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
 import { inferred } from "../shared/utils.js"
-import { TraversalContext } from "../traversal/context.js"
-import type { ArkResult } from "../traversal/errors.js"
 import type { IntersectionNode } from "./intersection.js"
 import type { distill, extractIn, extractOut } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
