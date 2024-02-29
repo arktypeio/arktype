@@ -223,56 +223,11 @@ export type validateTuple<
 	  ]
 	: validateTupleLiteral<def, $, args>
 
-export type validateTupleLiteral<
-	def extends List,
-	$,
-	args,
-	result extends unknown[] = []
-> = def extends readonly [infer head, ...infer tail]
-	? validateTupleLiteral<
-			tail,
-			$,
-			args,
-			[...result, validateTupleElement<head, result, $, args>]
-	  >
-	: result
-
-type validateTupleElement<
-	head,
-	result extends unknown[],
+export type validateTupleLiteral<def extends List, $, args> = parseSequence<
+	def,
 	$,
 	args
-> = head extends variadicExpression<infer operand>
-	? validateDefinition<operand, $, args> extends infer syntacticResult
-		? syntacticResult extends operand
-			? semanticallyValidateRestElement<
-					operand,
-					$,
-					args
-			  > extends infer semanticResult
-				? semanticResult extends operand
-					? Extract<result[number], variadicExpression> extends never
-						? head
-						: ErrorMessage<multipleVariadicMessage>
-					: semanticResult
-				: never
-			: syntacticResult
-		: never
-	: validateObjectValue<head, $, args>
-
-type semanticallyValidateRestElement<operand, $, args> = inferDefinition<
-	operand,
-	$,
-	args
-> extends infer result
-	? result extends never
-		? writeNonArraySpreadMessage<operand>
-		: isAny<result> extends true
-		? writeNonArraySpreadMessage<operand>
-		: result extends readonly unknown[]
-		? operand
-		: writeNonArraySpreadMessage<operand>
-	: never
+>["validated"]
 
 export const writeNonArraySpreadMessage = <operand extends string | TypeNode>(
 	operand: operand
@@ -300,38 +255,13 @@ export const spreadOptionalMessage = `A spread element cannot be optional`
 
 type spreadOptionalMessage = typeof optionalPostVariadicMessage
 
-type inferTupleLiteral<
-	def extends List,
+type inferTupleLiteral<def extends List, $, args> = parseSequence<
+	def,
 	$,
-	args,
-	result extends unknown[] = []
-> = def extends readonly [infer head, ...infer tail]
-	? parseEntry<
-			result["length"],
-			head extends variadicExpression<infer operand> ? operand : head
-	  > extends infer entryParseResult extends EntryParseResult
-		? inferDefinition<
-				entryParseResult["innerValue"],
-				$,
-				args
-		  > extends infer element
-			? head extends variadicExpression
-				? element extends readonly unknown[]
-					? inferTupleLiteral<tail, $, args, [...result, ...element]>
-					: never
-				: inferTupleLiteral<
-						tail,
-						$,
-						args,
-						entryParseResult["kind"] extends "optional"
-							? [...result, element?]
-							: [...result, element]
-				  >
-			: never
-		: never
-	: result
+	args
+>["inferred"]
 
-type ParsedElement = EntryValueParseResult & { spread: boolean }
+type ParsedElement = EntryValueParseResult & { spread?: boolean }
 
 namespace ParsedElement {
 	export type from<t extends ParsedElement> = t
@@ -344,7 +274,7 @@ type SequenceParseState = {
 	validated: readonly unknown[]
 }
 
-type def = [["...", [{ a: "0" }, "[]"]], { b: "0" }, { c: "5" }, "string?"]
+type def = ["string", "?"]
 
 type M = parseSequence<def, Ark, {}>
 
@@ -431,9 +361,11 @@ type parseNextElement<
 											parsedHead["innerValue"],
 											$,
 											args
-									  > extends infer e extends ErrorMessage
-									? e
-									: head
+									  > extends infer result
+									? result extends parsedHead["innerValue"]
+										? head
+										: result
+									: never
 								: writeNonArraySpreadMessage<parsedHead["innerValue"]>
 							: [parsedHead["kind"], number] extends [
 									"optional",
@@ -444,9 +376,11 @@ type parseNextElement<
 									parsedHead["innerValue"],
 									$,
 									args
-							  > extends infer e extends ErrorMessage
-							? e
-							: head
+							  > extends infer result
+							? result extends parsedHead["innerValue"]
+								? head
+								: result
+							: never
 					]
 				},
 				$,
@@ -465,7 +399,7 @@ export const trailingSpreadMessage =
 
 export type trailingSpreadMessage = typeof trailingSpreadMessage
 
-type parseElement<def> = def extends variadicExpression<infer variadicDef>
+type parseElement<def> = def extends `...${infer variadicDef}`
 	? ParsedElement.from<{ spread: true } & parseNonVariadicElement<variadicDef>>
 	: ParsedElement.from<{ spread: false } & parseNonVariadicElement<def>>
 
@@ -478,18 +412,6 @@ type parseNonVariadicElement<def> = def extends OptionalValue<infer inner>
 			kind: "required"
 			innerValue: def
 	  }
-
-type variadicExpression<operandDef = unknown> =
-	| variadicStringExpression<operandDef & string>
-	| variadicTupleExpression<operandDef>
-
-type variadicStringExpression<operandDef extends string = string> =
-	`...${operandDef}`
-
-type variadicTupleExpression<operandDef = unknown> = readonly [
-	"...",
-	operandDef
-]
 
 export type inferTuple<def extends List, $, args> = def extends TupleExpression
 	? inferTupleExpression<def, $, args>
