@@ -205,26 +205,26 @@ Value at [1] must be a number (was boolean)`)
 				type(["number", "...", "string"])
 			).throwsAndHasTypeError(writeNonArraySpreadMessage("a string"))
 		})
-		// it("allows multiple fixed spreads", () => {
-		// 	const t = type([
-		// 		"string",
-		// 		"...number[]",
-		// 		"...",
-		// 		["boolean", "bigint"],
-		// 		"...",
-		// 		["symbol"]
-		// 	])
-		// 	const expected = type([
-		// 		"string",
-		// 		"...number[]",
-		// 		"boolean",
-		// 		"bigint",
-		// 		"symbol"
-		// 	])
-		// 	attest<[string, ...number[], boolean, bigint, symbol]>(t.infer)
-		// 	attest<typeof expected.infer>(t.infer)
-		// 	attest(t.json).equals(expected.json)
-		// })
+		it("allows multiple fixed spreads", () => {
+			const t = type([
+				"string",
+				"...number[]",
+				"...",
+				["boolean", "bigint"],
+				"...",
+				["symbol"]
+			])
+			const expected = type([
+				"string",
+				"...number[]",
+				"boolean",
+				"bigint",
+				"symbol"
+			])
+			attest<[string, ...number[], boolean, bigint, symbol]>(t.infer)
+			attest<typeof expected.infer>(t.infer)
+			attest(t.json).equals(expected.json)
+		})
 		it("errors on multiple variadic", () => {
 			attest(() =>
 				// @ts-expect-error

@@ -195,7 +195,37 @@ type distillRecurse<
 		: t
 	: t extends TerminallyInferredObjectKind | Primitive
 	? t
+	: t extends readonly unknown[]
+	? distillArray<t, io, constraints, []>
 	: { [k in keyof t]: distillRecurse<t[k], io, constraints> }
+
+type distillArray<
+	t extends readonly unknown[],
+	io extends "in" | "out",
+	constraints extends "base" | "constrained",
+	prefix extends readonly unknown[]
+> = t extends readonly [infer head, ...infer tail]
+	? distillArray<
+			tail,
+			io,
+			constraints,
+			[...prefix, distillRecurse<head, io, constraints>]
+	  >
+	: [...prefix, ...distillPostfix<t, io, constraints>]
+
+type distillPostfix<
+	t extends readonly unknown[],
+	io extends "in" | "out",
+	constraints extends "base" | "constrained",
+	postfix extends readonly unknown[] = []
+> = t extends readonly [...infer init, infer last]
+	? distillPostfix<
+			init,
+			io,
+			constraints,
+			[distillRecurse<last, io, constraints>, ...postfix]
+	  >
+	: [...{ [i in keyof t]: distillRecurse<t[i], io, constraints> }, ...postfix]
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

@@ -30,14 +30,8 @@ import {
 	type ErrorMessage,
 	type List,
 	type conform,
-	type evaluate,
-	type initOf,
-	type isAny,
-	type lastOf,
-	type replaceKey,
-	type tailOf
+	type evaluate
 } from "@arktype/util"
-import type { Ark } from "../ark.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/semantic.js"
@@ -45,12 +39,8 @@ import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import {
 	configureShallowDescendants,
 	parseEntryValue,
-	type EntryParseResult,
 	type EntryValueParseResult,
-	type OptionalValue,
-	type ParsedEntry,
-	type parseEntry,
-	type validateObjectValue
+	type OptionalValue
 } from "./shared.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
@@ -63,11 +53,19 @@ export const parseTupleLiteral = (
 	ctx: ParseContext
 ): TypeNode => {
 	let sequences: MutableInner<"sequence">[] = [{}]
+	let nextElementIsSpread = false
 	for (let i = 0; i < def.length; i++) {
 		ctx.path.push(`${i}`)
+		if (def[i] === "...") {
+			if (nextElementIsSpread) {
+				return throwParseError(consecutiveSpreadMessage)
+			}
+			nextElementIsSpread = true
+			continue
+		}
 		const parsedElementDef = parseSpreadable(def[i])
 		const element = ctx.scope.parse(parsedElementDef.innerValue, ctx)
-		if (parsedElementDef.spread) {
+		if (parsedElementDef.spread || nextElementIsSpread) {
 			if (parsedElementDef.kind === "optional") {
 				return throwParseError(spreadOptionalMessage)
 			}
@@ -92,6 +90,7 @@ export const parseTupleLiteral = (
 				)
 			)
 		}
+		nextElementIsSpread = false
 		ctx.path.pop()
 	}
 	return schema(
@@ -165,14 +164,6 @@ const parseSpreadable = (elementDef: unknown): ParsedElement => {
 	if (typeof elementDef === "string" && elementDef.startsWith("...")) {
 		// variadic string definition like "...string[]"
 		return { ...parseEntryValue(elementDef.slice(3)), spread: true }
-	}
-	if (
-		isArray(elementDef) &&
-		elementDef.length === 2 &&
-		elementDef[0] === "..."
-	) {
-		// variadic tuple expression like ["...", { a: "1" }]
-		return { ...parseEntryValue(elementDef[1]), spread: true }
 	}
 	return parseEntryValue(elementDef)
 }
@@ -273,16 +264,6 @@ type SequenceParseState = {
 	inferred: readonly unknown[]
 	validated: readonly unknown[]
 }
-
-type def = ["string", "?"]
-
-type M = parseSequence<def, Ark, {}>
-
-type F = {
-	a: 0
-}[]
-
-type O = [...F, { b: 0 }]
 
 type parseSequence<def extends readonly unknown[], $, args> = parseNextElement<
 	{
