@@ -26,11 +26,13 @@ export type EntryParseResult<kind extends ParsedKeyKind = ParsedKeyKind> =
 		}
 	>
 
-type ParsedValueKind = "required" | "optional"
+export type ParsedValueKind = "required" | "optional"
 
 type ParsedKeyKind = "required" | "optional" | "indexed" | "spread"
 
-type parsedEntry<result extends EntryParseResult> = result
+export namespace ParsedEntry {
+	export type from<t extends EntryParseResult> = t
+}
 
 export type OptionalValue<value> =
 	| OptionalStringDefinition<value & string>
@@ -108,7 +110,7 @@ export type parseEntry<
 	valueDef
 > = parseKey<keyDef> extends infer keyParseResult extends KeyParseResult
 	? valueDef extends OptionalValue<infer innerValue>
-		? parsedEntry<{
+		? ParsedEntry.from<{
 				kind: "optional"
 				innerKey: keyParseResult["innerKey"]
 				innerValue: innerValue extends OptionalStringDefinition<
@@ -117,7 +119,7 @@ export type parseEntry<
 					? innerStringValue
 					: innerValue
 		  }>
-		: parsedEntry<{
+		: ParsedEntry.from<{
 				kind: keyParseResult["kind"]
 				innerKey: keyParseResult["innerKey"]
 				innerValue: valueDef

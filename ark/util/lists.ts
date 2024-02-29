@@ -85,12 +85,9 @@ export type tailOf<t extends readonly unknown[]> = t extends readonly [
 	? tail
 	: never
 
-export type lastOf<t extends readonly unknown[]> = t extends readonly [
-	...unknown[],
-	infer last
-]
-	? last
-	: never
+export type lastIndexOf<t extends readonly unknown[]> = tailOf<t>["length"]
+
+export type lastOf<t extends readonly unknown[]> = t[lastIndexOf<t>]
 
 export type initOf<t extends readonly unknown[]> = t extends readonly [
 	...infer init,

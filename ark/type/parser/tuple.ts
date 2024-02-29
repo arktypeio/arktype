@@ -31,8 +31,13 @@ import {
 	type List,
 	type conform,
 	type evaluate,
-	type isAny
+	type initOf,
+	type isAny,
+	type lastOf,
+	type replaceKey,
+	type tailOf
 } from "@arktype/util"
+import type { Ark } from "../ark.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/semantic.js"
@@ -42,6 +47,8 @@ import {
 	parseEntryValue,
 	type EntryParseResult,
 	type EntryValueParseResult,
+	type OptionalValue,
+	type ParsedEntry,
 	type parseEntry,
 	type validateObjectValue
 } from "./shared.js"
@@ -154,9 +161,7 @@ const appendSpreadBranch = (
 	return base
 }
 
-type TupleElementParseResult = EntryValueParseResult & { spread?: true }
-
-const parseSpreadable = (elementDef: unknown): TupleElementParseResult => {
+const parseSpreadable = (elementDef: unknown): ParsedElement => {
 	if (typeof elementDef === "string" && elementDef.startsWith("...")) {
 		// variadic string definition like "...string[]"
 		return { ...parseEntryValue(elementDef.slice(3)), spread: true }
@@ -325,6 +330,154 @@ type inferTupleLiteral<
 			: never
 		: never
 	: result
+
+type ParsedElement = EntryValueParseResult & { spread: boolean }
+
+namespace ParsedElement {
+	export type from<t extends ParsedElement> = t
+}
+
+type SequenceParseState = {
+	unscanned: readonly unknown[]
+	nextElementIsSpread: boolean
+	inferred: readonly unknown[]
+	validated: readonly unknown[]
+}
+
+type def = [["...", [{ a: "0" }, "[]"]], { b: "0" }, { c: "5" }, "string?"]
+
+type M = parseSequence<def, Ark, {}>
+
+type F = {
+	a: 0
+}[]
+
+type O = [...F, { b: 0 }]
+
+type parseSequence<def extends readonly unknown[], $, args> = parseNextElement<
+	{
+		unscanned: def
+		nextElementIsSpread: false
+		inferred: []
+		validated: []
+	},
+	$,
+	args
+>
+
+type parseNextElement<
+	s extends SequenceParseState,
+	$,
+	args
+> = s["unscanned"] extends readonly [infer head, ...infer tail]
+	? head extends "..."
+		? parseNextElement<
+				{
+					unscanned: tail
+					nextElementIsSpread: true
+					inferred: s["inferred"]
+					validated: [
+						...s["validated"],
+						s["nextElementIsSpread"] extends true
+							? ErrorMessage<consecutiveSpreadMessage>
+							: tail["length"] extends 0
+							? ErrorMessage<trailingSpreadMessage>
+							: head
+					]
+				},
+				$,
+				args
+		  >
+		: parseElement<head> extends infer parsedHead extends ParsedElement
+		? parseNextElement<
+				{
+					unscanned: tail
+					nextElementIsSpread: false
+					inferred: true extends s["nextElementIsSpread"] | parsedHead["spread"]
+						? [
+								...s["inferred"],
+								...conform<
+									inferDefinition<parsedHead["innerValue"], $, args>,
+									readonly unknown[]
+								>
+						  ]
+						: parsedHead["kind"] extends "optional"
+						? [
+								...s["inferred"],
+								inferDefinition<parsedHead["innerValue"], $, args>?
+						  ]
+						: [
+								...s["inferred"],
+								inferDefinition<parsedHead["innerValue"], $, args>
+						  ]
+					validated: [
+						...s["validated"],
+						true extends s["nextElementIsSpread"] | parsedHead["spread"]
+							? s["nextElementIsSpread"] | parsedHead["spread"] extends true
+								? ErrorMessage<consecutiveSpreadMessage>
+								: parsedHead["kind"] extends "optional"
+								? ErrorMessage<spreadOptionalMessage>
+								: inferDefinition<
+										parsedHead["innerValue"],
+										$,
+										args
+								  > extends infer spreadOperand extends readonly unknown[]
+								? [number, number] extends [
+										s["inferred"]["length"],
+										spreadOperand["length"]
+								  ]
+									? multipleVariadicMessage
+									: validateDefinition<
+											parsedHead["innerValue"],
+											$,
+											args
+									  > extends infer e extends ErrorMessage
+									? e
+									: head
+								: writeNonArraySpreadMessage<parsedHead["innerValue"]>
+							: [parsedHead["kind"], number] extends [
+									"optional",
+									s["inferred"]["length"]
+							  ]
+							? ErrorMessage<optionalPostVariadicMessage>
+							: validateDefinition<
+									parsedHead["innerValue"],
+									$,
+									args
+							  > extends infer e extends ErrorMessage
+							? e
+							: head
+					]
+				},
+				$,
+				args
+		  >
+		: never
+	: s
+
+export const consecutiveSpreadMessage =
+	"A spread operator cannot follow another spread operator"
+
+export type consecutiveSpreadMessage = typeof consecutiveSpreadMessage
+
+export const trailingSpreadMessage =
+	"A spread operator cannot be the last element of a tuple"
+
+export type trailingSpreadMessage = typeof trailingSpreadMessage
+
+type parseElement<def> = def extends variadicExpression<infer variadicDef>
+	? ParsedElement.from<{ spread: true } & parseNonVariadicElement<variadicDef>>
+	: ParsedElement.from<{ spread: false } & parseNonVariadicElement<def>>
+
+type parseNonVariadicElement<def> = def extends OptionalValue<infer inner>
+	? {
+			kind: "optional"
+			innerValue: inner
+	  }
+	: {
+			kind: "required"
+			innerValue: def
+	  }
 
 type variadicExpression<operandDef = unknown> =
 	| variadicStringExpression<operandDef & string>
