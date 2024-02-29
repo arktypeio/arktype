@@ -1,4 +1,5 @@
 import { domainOf, throwInternalError, type Domain } from "@arktype/util"
+import type { UnknownNode } from "../base.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"

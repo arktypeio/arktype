@@ -10,7 +10,7 @@ import {
 	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { IntersectionState } from "./constraint.js"
+import type { BaseConstraint, FoldInput } from "./constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface RequiredSchema extends BaseMeta {
@@ -39,11 +39,10 @@ export type RequiredDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class RequiredNode extends BaseNode<
-	object,
-	RequiredDeclaration,
-	typeof RequiredNode
-> {
+export class RequiredNode
+	extends BaseNode<object, RequiredDeclaration, typeof RequiredNode>
+	implements BaseConstraint<"required">
+{
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
@@ -118,30 +117,24 @@ export class RequiredNode extends BaseNode<
 		}
 	}
 
-	foldIntersection(s: IntersectionState) {
-		for (let i = 0; i < s.length; i++) {
-			if (s[i].basis?.domain !== "object") {
-				throwInvalidOperandError("required", "an object", s[i].basis)
-			}
-
-			const required = s[i].required
-			if (!required) {
-				s[i].required = [this]
-				continue
-			}
-
-			let matchedExisting = false
-			for (let j = 0; j < required.length; j++) {
-				const result = this.intersectSymmetric(required[j])
-				if (result === null) continue
-				if (result instanceof Disjoint) {
-					s.disjoint(i, result)
-				} else {
-					required[j] = result
-					matchedExisting = true
-				}
-			}
-			if (!matchedExisting) required.push(this)
+	foldIntersection(into: FoldInput<"required">) {
+		if (into.basis?.domain !== "object") {
+			throwInvalidOperandError("required", "an object", into.basis)
 		}
+
+		if (!into.required) {
+			into.required = [this]
+			return
+		}
+
+		let matchedExisting = false
+		for (let i = 0; i < into.required.length; i++) {
+			const result = this.intersectSymmetric(into.required[i])
+			if (result === null) continue
+			if (result instanceof Disjoint) return result
+			into.required[i] = result
+			matchedExisting = true
+		}
+		if (!matchedExisting) into.required.push(this)
 	}
 }
