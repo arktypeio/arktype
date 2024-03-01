@@ -221,7 +221,7 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 				const foldInput = morph(l.inner, (k, v) => [
 					k,
 					isArray(v) ? [...v] : v
-				]) as FoldState<lastOf<OrderedNodeKinds>>
+				]) as FoldState
 				// this feels fairly hacky, will need to revisit ways to handle cases
 				// that return a union like certain intersections of sequence nodes
 				const unions: UnionNode[] = []
@@ -245,7 +245,7 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 			}
 		})
 
-	foldIntersection(branches: FoldState<"intersection">) {
+	foldIntersection(s: FoldState<"intersection">) {
 		const basis = this.basis?.intersect(r) ?? r
 		// TODO: meta should not be included here?
 		return basis instanceof Disjoint

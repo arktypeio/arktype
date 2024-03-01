@@ -8,7 +8,7 @@ import type {
 	MinLengthNode,
 	MinNode
 } from "../constraints/bounds.js"
-import type { FoldState } from "../constraints/constraint.js"
+import type { FoldBranch, FoldState } from "../constraints/constraint.js"
 import type { DivisorNode } from "../constraints/divisor.js"
 import type { IndexNode } from "../constraints/index.js"
 import type { OptionalNode } from "../constraints/optional.js"
@@ -76,9 +76,13 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
 
-	foldIntersection(s: FoldState<"unit">) {
+	fold(into: FoldBranch<"unit">) {
 		return r.allows(this.unit)
 			? this
 			: Disjoint.from("assignability", this.unit, r)
+	}
+
+	foldIntersection(s: FoldState<"unit">) {
+		return s.map(this)
 	}
 }

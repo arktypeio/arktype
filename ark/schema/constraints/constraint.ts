@@ -1,4 +1,10 @@
-import { BaseNode, type Node, type NodeSubclass } from "../base.js"
+import type { lastOf } from "@arktype/util"
+import {
+	BaseNode,
+	type Node,
+	type NodeSubclass,
+	type UnknownNode
+} from "../base.js"
 import type { MutableInner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -8,30 +14,40 @@ import type {
 	BasisKind,
 	ConstraintKind,
 	NodeKind,
+	OrderedNodeKinds,
 	PrimitiveKind,
 	kindRightOf
 } from "../shared/implement.js"
 
-export type FoldBranch<kind extends NodeKind> = Omit<
+export type FoldBranch<kind extends NodeKind = lastOf<OrderedNodeKinds>> = Omit<
 	MutableInner<"intersection">,
 	kindRightOf<kind>
 >
 
-export class FoldState<kind extends NodeKind = "union"> {
-	branches: FoldBranch<kind>[] = []
-	disjoints: Disjoint[] = []
+export type FoldMappableNode<kind extends NodeKind> = Node & {
+	fold: (branch: FoldBranch<kind>) => Disjoint | void
+}
 
-	map(fold: (branch: FoldBranch<kind>) => Disjoint | void): void {
+export class FoldState<kind extends NodeKind = lastOf<OrderedNodeKinds>> {
+	branches: FoldBranch<kind>[] = []
+
+	map(node: FoldMappableNode<kind>): Disjoint | void {
 		const nextBranches: FoldBranch<kind>[] = []
+		const disjoints: Disjoint[] = []
 		for (const branch of this.branches) {
-			const result = fold(branch)
+			const result = node.fold(branch)
 			if (result instanceof Disjoint) {
-				this.disjoints.push(result)
+				disjoints.push(result)
 			} else {
 				nextBranches.push(branch)
 			}
 		}
 		this.branches = nextBranches
+		return nextBranches.length
+			? undefined
+			: disjoints.length === 1
+			? disjoints[0]
+			: Disjoint.from("union", [node], this.branches)
 	}
 }
 

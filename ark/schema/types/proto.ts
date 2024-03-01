@@ -84,7 +84,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	foldIntersection(branches: FoldState<"proto">) {
+	foldIntersection(s: FoldState<"proto">) {
 		return r.domain === "object"
 			? this
 			: Disjoint.from("domain", this.$.builtin.object, r)

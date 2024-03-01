@@ -124,7 +124,7 @@ export class MorphNode<t = unknown> extends BaseNode<
 
 	traverseApply: TraverseApply = (data, ctx) => this.in.traverseApply(data, ctx)
 
-	foldIntersection(branches: FoldState<"morph">) {
+	foldIntersection(s: FoldState<"morph">) {
 		const inTersection = this.in.intersect(r)
 		return inTersection instanceof Disjoint
 			? inTersection
