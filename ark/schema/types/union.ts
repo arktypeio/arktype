@@ -1,5 +1,6 @@
 import { isArray } from "@arktype/util"
-import type { Node } from "../base.js"
+import { BaseNode, type Node } from "../base.js"
+import type { FoldState } from "../constraints/constraint.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -9,7 +10,6 @@ import type { ArkTypeError } from "../shared/errors.js"
 import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
 import type { MorphChildKind } from "./morph.js"
-import { BaseType } from "./type.js"
 
 export type UnionChildKind = "morph" | MorphChildKind
 
@@ -52,7 +52,7 @@ export type UnionDeclaration = declareNode<{
 	childKind: UnionChildKind
 }>
 
-export class UnionNode<t = unknown> extends BaseType<
+export class UnionNode<t = unknown> extends BaseNode<
 	t,
 	UnionDeclaration,
 	typeof UnionNode
@@ -153,7 +153,7 @@ export class UnionNode<t = unknown> extends BaseType<
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.branches.forEach((b) => b.traverseApply(data, ctx))
 
-	intersectRightwardInner(r: Node<UnionChildKind>): UnionInner | Disjoint {
+	foldIntersection(s: FoldState<"union">) {
 		const branches = intersectBranches(this.branches, [r])
 		if (branches instanceof Disjoint) {
 			return branches

@@ -24,6 +24,7 @@ import type {
 	MinLengthNode,
 	MinNode
 } from "./constraints/bounds.js"
+import type { FoldState } from "./constraints/constraint.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { IndexNode } from "./constraints/index.js"
 import type { OptionalNode } from "./constraints/optional.js"
@@ -41,6 +42,7 @@ import type {
 import type { ScopeNode } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import {
+	TraversalContext,
 	pathToPropString,
 	type TraverseAllows,
 	type TraverseApply
@@ -53,6 +55,8 @@ import type {
 	requireDescriptionIfPresent,
 	symmetricIntersectionResult
 } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
+import type { ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -67,12 +71,20 @@ import {
 	type RefinementKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
+	type kindRightOf,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
+import type { inferIntersection } from "./shared/intersections.js"
+import { inferred } from "./shared/utils.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
-import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
+import type {
+	MorphNode,
+	distill,
+	extractIn,
+	extractOut
+} from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
@@ -180,9 +192,14 @@ export abstract class BaseNode<
 	jit = false
 	// use declare here to ensure description from attachments isn't overwritten
 	declare readonly description: string
+	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
+	declare readonly branches: readonly Node<kindRightOf<"union">>[]
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments as never)
+		// in a union, branches will have already been assigned from inner
+		// otherwise, initialize it to a singleton array containing the current branch node
+		this.branches ??= [this as never]
 		this.contributesReferencesByName =
 			this.name in this.referencesByName
 				? this.referencesByName
@@ -196,6 +213,154 @@ export abstract class BaseNode<
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract compile(js: NodeCompiler): void
+
+	declare infer: extractOut<t>;
+	declare [inferred]: t
+
+	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
+		const ctx = new TraversalContext(data, this.$.config)
+		return this.traverseAllows(data as never, ctx)
+	}
+
+	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
+		const ctx = new TraversalContext(data, this.$.config)
+		this.traverseApply(data, ctx)
+		if (ctx.currentErrors.length === 0) {
+			return { out: data } as any
+		}
+		return { errors: ctx.currentErrors }
+	}
+
+	closedIntersection(
+		fold: (branch: FoldState<d["kind"]>) => Disjoint | undefined
+	) {
+		return (branches: FoldState<d["kind"]>) => {
+			for (const branch of branches) {
+				const result = fold(branch)
+				if (result instanceof Disjoint) {
+				}
+			}
+		}
+	}
+
+	abstract foldIntersection(branches: FoldState<d["kind"]>): Disjoint | void
+
+	private static intersectionCache: Record<string, TypeNode | Disjoint> = {}
+	intersect<other extends TypeNode>(
+		other: other // TODO: fix
+	): Node<this["kind"] | other["kind"]> | Disjoint
+	intersect(other: Node): Node | Disjoint {
+		const cacheKey = `${this.typeId}&${other.typeId}`
+		if (BaseNode.intersectionCache[cacheKey] !== undefined) {
+			return BaseNode.intersectionCache[cacheKey]
+		}
+
+		if (this.equals(other)) {
+			// TODO: meta
+			return this as never
+		}
+
+		const l: TypeNode =
+			this.precedence <= other.precedence ? this : (other as any)
+		const thisIsLeft = l === (this as never)
+		const r: TypeNode = thisIsLeft ? other : (this as any)
+		const innerResult: Inner<TypeKind> | Disjoint =
+			l.kind === r.kind
+				? l.intersectSymmetric(r as never)
+				: l.intersectRightwardInner(r as never)
+
+		const nodeResult: TypeNode | Disjoint =
+			innerResult instanceof Disjoint || innerResult instanceof BaseNode
+				? (innerResult as never)
+				: this.$.parse(l.kind, innerResult)
+
+		BaseNode.intersectionCache[cacheKey] = nodeResult
+		BaseNode.intersectionCache[`${other.typeId}&${this.typeId}`] =
+			// also cache the result with other's condition as the key.
+			// if it was a Disjoint, it has to be inverted so that l,r
+			// still line up correctly
+			nodeResult instanceof Disjoint ? nodeResult.invert() : nodeResult
+		return nodeResult
+	}
+
+	constrain<constraintKind extends ConstraintKind>(
+		kind: constraintKind,
+		input: Schema<constraintKind>
+	): Node<reducibleKindOf<this["kind"]>> {
+		const constraint = this.$.parse(kind, input)
+		return this as never
+	}
+
+	keyof() {
+		return this
+		// return this.rule.reduce(
+		// 	(result, branch) => result.and(branch.keyof()),
+		// 	builtins.unknown()
+		// )
+	}
+
+	and<other extends TypeNode>(
+		other: other
+	): Node<
+		intersectTypeKinds<d["kind"], other["kind"]>,
+		inferIntersection<this["infer"], other["infer"]>
+	> {
+		const result = this.intersect(other)
+		return result instanceof Disjoint ? result.throw() : (result as never)
+	}
+
+	or<other extends TypeNode>(
+		other: other
+	): Node<"union" | d["kind"] | other["kind"], t | other["infer"]> {
+		return this.$.parseBranches(
+			...this.branches,
+			...(other.branches as any)
+		) as never
+	}
+
+	isUnknown(): this is IntersectionNode<unknown> {
+		return this.hasKind("intersection") && this.children.length === 0
+	}
+
+	isNever(): this is UnionNode<never> {
+		return this.hasKind("union") && this.branches.length === 0
+	}
+
+	get<key extends PropertyKey>(...path: readonly (key | TypeNode<key>)[]) {
+		return this
+	}
+
+	extract(other: TypeNode) {
+		return this.$.parseRoot(
+			"union",
+			this.branches.filter((branch) => branch.extends(other))
+		)
+	}
+
+	exclude(other: TypeNode) {
+		return this.$.parseRoot(
+			"union",
+			this.branches.filter((branch) => !branch.extends(other))
+		)
+	}
+
+	array(): IntersectionNode<t[]> {
+		return this.$.parseRoot(
+			"intersection",
+			{
+				basis: Array,
+				sequence: this
+			},
+			{ prereduced: true }
+		) as never
+	}
+
+	extends<other extends TypeNode>(other: other) {
+		const intersection = this.intersect(other)
+		return (
+			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+		)
+	}
 
 	private inCache?: UnknownNode;
 	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {

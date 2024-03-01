@@ -7,25 +7,25 @@ import {
 	type instanceOf,
 	type isAny
 } from "@arktype/util"
-import { isNode, type NodeSubclass } from "../base.js"
+import { BaseNode, isNode, type NodeSubclass } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseApply } from "../shared/context.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
-import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitNode, UnitSchema } from "./unit.js"
 
 export type BaseBasisDeclaration = evaluate<
-	BaseTypeDeclaration & { kind: BasisKind }
+	BaseNodeDeclaration & { kind: BasisKind }
 >
 
 export abstract class BaseBasis<
 	t,
 	d extends BaseBasisDeclaration,
 	subclass extends NodeSubclass<d>
-> extends BaseType<t, d, subclass> {
+> extends BaseNode<t, d, subclass> {
 	abstract readonly basisName: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
