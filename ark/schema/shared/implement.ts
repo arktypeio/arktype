@@ -19,13 +19,11 @@ import type {
 	ParsedUnknownNodeConfig,
 	ScopeNode
 } from "../scope.js"
-import type { NodeCompiler } from "./compile.js"
-import type { TraverseAllows, TraverseApply } from "./context.js"
 import type {
 	BaseExpectedContext,
 	BaseMeta,
 	BaseNodeDeclaration,
-	ownIntersectionAlternateResult
+	intersectionImplementationResult
 } from "./declare.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -193,7 +191,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	intersectSymmetric: (
 		l: Node<d["kind"]>,
 		r: Node<d["kind"]>
-	) => Node | ownIntersectionAlternateResult<d>
+	) => Node | intersectionImplementationResult<d>
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (inner: d["inner"], $: ScopeNode) => Node | undefined
 }

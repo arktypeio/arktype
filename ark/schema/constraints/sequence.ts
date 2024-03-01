@@ -1,7 +1,6 @@
 import {
 	append,
 	hasDomain,
-	hasKey,
 	isArray,
 	throwInternalError,
 	throwParseError,
@@ -72,6 +71,7 @@ export type SequenceDeclaration = declareNode<{
 	prerequisite: List
 	childKind: TypeKind
 	disjoinable: true
+	branchable: true
 }>
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<

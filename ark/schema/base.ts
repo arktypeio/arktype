@@ -50,11 +50,9 @@ import type {
 	BaseMeta,
 	BaseNodeDeclaration,
 	attachmentsOf,
-	ownIntersectionAlternateResult,
-	ownIntersectionResult,
-	requireDescriptionIfPresent
+	requireDescriptionIfPresent,
+	symmetricIntersectionResult
 } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -281,7 +279,9 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	intersectSymmetric(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
+	intersectSymmetric(
+		r: Node<d["kind"]> | undefined
+	): symmetricIntersectionResult<d> {
 		if (r === undefined) {
 			return this as never
 		}

@@ -6,11 +6,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
-import {
-	basisKinds,
-	type TypeKind,
-	type nodeImplementationOf
-} from "../shared/implement.js"
+import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
 import type { MorphChildKind } from "./morph.js"
 import { BaseType } from "./type.js"
