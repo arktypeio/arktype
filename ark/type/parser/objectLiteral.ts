@@ -8,6 +8,7 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type Key,
+	type evaluate,
 	type merge
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
@@ -117,16 +118,14 @@ type inferObjectLiteralInner<def extends object, $, args> = {
 	>
 }
 
-export type inferObjectLiteral<
-	def extends object,
-	$,
-	args
-> = "..." extends keyof def
-	? merge<
-			inferDefinition<def["..."], $, args>,
-			inferObjectLiteralInner<def, $, args>
-	  >
-	: inferObjectLiteralInner<def, $, args>
+export type inferObjectLiteral<def extends object, $, args> = evaluate<
+	"..." extends keyof def
+		? merge<
+				inferDefinition<def["..."], $, args>,
+				inferObjectLiteralInner<def, $, args>
+		  >
+		: inferObjectLiteralInner<def, $, args>
+>
 
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexKey<infer indexDef>

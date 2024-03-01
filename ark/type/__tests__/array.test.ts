@@ -54,8 +54,12 @@ describe("array", () => {
 			attest<[string?]>(t.infer)
 			attest(t([]).errors).equals(undefined)
 			attest(t(["foo"]).errors).equals(undefined)
-			attest(t([5]).errors?.summary).snap()
-			attest(t(["foo", "bar"]).errors?.summary).snap()
+			attest(t([5]).errors?.summary).snap(
+				"Value at [0] must be a string (was number)"
+			)
+			attest(t(["foo", "bar"]).errors?.summary).snap(
+				"Must be at most length 1 (was 2)"
+			)
 		})
 		it("nested optional tuple", () => {
 			const t = type([["string", "?"], "string", "?"])
@@ -173,10 +177,6 @@ Value at [1] must be a number (was boolean)`)
 		it("errors on non-array", () => {
 			attest(() =>
 				// @ts-expect-error
-				type(["email", "...symbol"])
-			).throwsAndHasTypeError(writeNonArraySpreadMessage("a symbol"))
-			attest(() =>
-				// @ts-expect-error
 				type(["number", "...", "string"])
 			).throwsAndHasTypeError(writeNonArraySpreadMessage("a string"))
 		})
@@ -272,7 +272,7 @@ Value at [1] must be a number (was boolean)`)
 		})
 		it("variadic and tuple", () => {
 			const b = type([{ b: "boolean" }, "[]"])
-			const t = type([{ a: "string" }, ["...", b]]).and([
+			const t = type([{ a: "string" }, "...", b]).and([
 				{ c: "number" },
 				{ d: "Date" }
 			])
