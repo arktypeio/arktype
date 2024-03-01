@@ -1,6 +1,7 @@
 import { execSync } from "child_process"
 import { existsSync } from "fs"
 import { join } from "path"
+import { baseDiagnosticTscCmd } from "./shared.js"
 
 export const trace = async (args: string[]) => {
 	const packageDir = args[0] ?? process.cwd()
@@ -18,13 +19,10 @@ export const trace = async (args: string[]) => {
 		// the .tstrace directory will contain a trace.json file and a types.json file.
 		// the trace.json file can be viewed via a tool like https://ui.perfetto.dev/
 		// the types.json file can be used to associate IDs from the trace file with type aliases
-		execSync(
-			"pnpm tsc --noEmit --extendedDiagnostics --incremental false --generateTrace .tstrace",
-			{
-				cwd: packageDir,
-				stdio: "inherit"
-			}
-		)
+		execSync(`${baseDiagnosticTscCmd} --generateTrace .tstrace`, {
+			cwd: packageDir,
+			stdio: "inherit"
+		})
 	} catch (e) {
 		console.error(String(e))
 	} finally {
