@@ -1,20 +1,21 @@
 import { execSync } from "child_process"
-import { readdirSync, rmSync } from "fs"
+import { rmSync } from "fs"
 import { join } from "path"
 
 export const stats = (args: string[]) => {
-	const packageDirs = args.length
-		? args
-		: readdirSync("packages").map((name) => join("packages", name))
+	const packageDirs = args.length ? args : [process.cwd()]
 	const listedStats = packageDirs.map((packageDir): TypePerfStats => {
 		console.log(`⏳ Gathering type perf data for ${packageDir}...`)
 		let output: string
 		try {
 			rmSync(join(packageDir, "tsconfig.tsbuildinfo"), { force: true })
-			output = execSync("pnpm tsc --noEmit --extendedDiagnostics", {
-				cwd: packageDir,
-				stdio: "pipe"
-			}).toString()
+			output = execSync(
+				"pnpm tsc --noEmit --extendedDiagnostics --incremental false",
+				{
+					cwd: packageDir,
+					stdio: "pipe"
+				}
+			).toString()
 		} catch (e: any) {
 			output = e.stdout?.toString() ?? ""
 			output += e.stderr?.toString() ?? ""

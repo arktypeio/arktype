@@ -3,7 +3,7 @@ import { existsSync } from "fs"
 import { join } from "path"
 
 export const trace = async (args: string[]) => {
-	const packageDir = args[0]
+	const packageDir = args[0] ?? process.cwd()
 
 	if (!existsSync(packageDir)) {
 		throw new Error(
@@ -19,7 +19,7 @@ export const trace = async (args: string[]) => {
 		// the trace.json file can be viewed via a tool like https://ui.perfetto.dev/
 		// the types.json file can be used to associate IDs from the trace file with type aliases
 		execSync(
-			"pnpm tsc --noEmit --extendedDiagnostics --generateTrace .tstrace",
+			"pnpm tsc --noEmit --extendedDiagnostics --incremental false --generateTrace .tstrace",
 			{
 				cwd: packageDir,
 				stdio: "inherit"
