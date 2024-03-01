@@ -1,5 +1,13 @@
-import { isArray, morph, type evaluate, type mutable } from "@arktype/util"
+import {
+	isArray,
+	morph,
+	type List,
+	type evaluate,
+	type mutable
+} from "@arktype/util"
+import type { Node } from "../base.js"
 import type { LimitSchemaValue } from "../constraints/bounds.js"
+import type { BaseMeta } from "./declare.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(o: o) =>
 	// TODO: this cast should not be required, but it seems TS is referencing
@@ -10,7 +18,7 @@ export const makeRootAndArrayPropertiesMutable = <o extends object>(o: o) =>
 	]) as makeRootAndArrayPropertiesMutable<o>
 
 export type makeRootAndArrayPropertiesMutable<inner> = {
-	-readonly [k in keyof inner]: inner[k] extends readonly unknown[] | undefined
+	-readonly [k in keyof inner]: inner[k] extends List | undefined
 		? mutable<inner[k]>
 		: inner[k]
 } & unknown

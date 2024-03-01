@@ -1,6 +1,7 @@
 import { hasDomain } from "./domain.js"
 import type { conform, evaluate } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
+import type { List } from "./lists.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
 import { NoopBase, type optionalizeKeys } from "./records.js"
 
@@ -76,7 +77,7 @@ type baseDisambiguationOf<
 }>
 
 type traitsImplementingKey<
-	traits extends readonly unknown[],
+	traits extends List,
 	k,
 	result extends unknown[] = []
 > = traits extends readonly [
@@ -194,7 +195,7 @@ export const compose = ((...traits: TraitConstructor[]) =>
 	}) as TraitComposition
 
 export type TraitConstructor<
-	params extends readonly unknown[] = any[],
+	params extends List = any[],
 	instance = {},
 	abstracted = {},
 	statics = {}
@@ -204,7 +205,7 @@ export type TraitConstructor<
 	} & instance)
 
 export type ComposedTraits = {
-	params: readonly unknown[]
+	params: List
 	implemented: unknown
 	abstracted: unknown
 	statics: unknown
@@ -225,8 +226,8 @@ type intersectImplementations<l, r> = {
 } & Omit<r, keyof l>
 
 type composeRecurse<
-	traits extends readonly unknown[],
-	params extends readonly unknown[],
+	traits extends List,
+	params extends List,
 	implemented,
 	abstracted,
 	statics

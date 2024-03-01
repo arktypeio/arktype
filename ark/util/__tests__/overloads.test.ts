@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import type { conform } from "../generics.js"
+import type { List } from "../lists.js"
 import type { overloadOf } from "../unionToTuple.js"
 
 declare const f: {
@@ -8,10 +9,7 @@ declare const f: {
 	(a: 2, b: 2): 2
 }
 
-const pipe = <
-	f extends (...args: any[]) => unknown,
-	args extends readonly unknown[]
->(
+const pipe = <f extends (...args: any[]) => unknown, args extends List>(
 	args: conform<args, Parameters<overloadOf<f>>>,
 	f: f
 ): ReturnType<overloadOf<f, args>> => f(...args) as never

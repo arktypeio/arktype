@@ -68,7 +68,7 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
 	? t
 	: def extends string
 	? inferString<def, $, args>
-	: def extends readonly unknown[]
+	: def extends List
 	? inferTuple<def, $, args>
 	: def extends RegExp
 	? is<string, { anonymousPattern: true }>
@@ -86,7 +86,7 @@ export type validateDefinition<def, $, args> = null extends undefined
 		: def
 	: def extends string
 	? validateString<def, $, args>
-	: def extends readonly unknown[]
+	: def extends List
 	? validateTuple<def, $, args>
 	: def extends BadDefinitionType
 	? writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>
@@ -107,8 +107,8 @@ type validateInference<def, declared, $, args> = def extends
 	| ThunkCast
 	| TupleExpression
 	? validateShallowInference<def, declared, $, args>
-	: def extends readonly unknown[]
-	? declared extends readonly unknown[]
+	: def extends List
+	? declared extends List
 		? {
 				[i in keyof declared]: i extends keyof def
 					? validateInference<def[i], declared[i], $, args>

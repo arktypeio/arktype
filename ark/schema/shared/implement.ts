@@ -5,6 +5,7 @@ import {
 	throwParseError,
 	type ErrorMessage,
 	type JsonData,
+	type List,
 	type entryOf,
 	type listable,
 	type parseNonNegativeInteger,
@@ -119,7 +120,7 @@ type accumulateRightKinds<
 	? accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
 	: result
 
-type indexOf<array extends readonly unknown[]> = keyof array extends infer k
+type indexOf<array extends List> = keyof array extends infer k
 	? parseNonNegativeInteger<k & string>
 	: never
 

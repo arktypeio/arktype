@@ -3,6 +3,7 @@ import {
 	throwParseError,
 	type BuiltinObjectKind,
 	type BuiltinObjects,
+	type List,
 	type Primitive,
 	type evaluate,
 	type listable
@@ -195,15 +196,15 @@ type distillRecurse<
 		: t
 	: t extends TerminallyInferredObjectKind | Primitive
 	? t
-	: t extends readonly unknown[]
+	: t extends List
 	? distillArray<t, io, constraints, []>
 	: { [k in keyof t]: distillRecurse<t[k], io, constraints> }
 
 type distillArray<
-	t extends readonly unknown[],
+	t extends List,
 	io extends "in" | "out",
 	constraints extends "base" | "constrained",
-	prefix extends readonly unknown[]
+	prefix extends List
 > = t extends readonly [infer head, ...infer tail]
 	? distillArray<
 			tail,
@@ -214,10 +215,10 @@ type distillArray<
 	: [...prefix, ...distillPostfix<t, io, constraints>]
 
 type distillPostfix<
-	t extends readonly unknown[],
+	t extends List,
 	io extends "in" | "out",
 	constraints extends "base" | "constrained",
-	postfix extends readonly unknown[] = []
+	postfix extends List = []
 > = t extends readonly [...infer init, infer last]
 	? distillPostfix<
 			init,

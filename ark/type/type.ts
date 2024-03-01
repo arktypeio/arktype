@@ -20,6 +20,7 @@ import {
 	morph,
 	type Constructor,
 	type Json,
+	type List,
 	type conform
 } from "@arktype/util"
 import type {
@@ -31,7 +32,6 @@ import {
 	parseGenericParams,
 	type GenericParamsParseError
 } from "./parser/generic.js"
-import { configureShallowDescendants } from "./parser/shared.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
@@ -46,7 +46,7 @@ export type TypeParser<$> = {
 	<const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
 
 	// Spread version of a tuple expression
-	<const zero, const one, const rest extends readonly unknown[]>(
+	<const zero, const one, const rest extends List>(
 		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
 		_1: zero extends "keyof"
 			? validateTypeRoot<one, $>
@@ -146,7 +146,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 
 	configure(configOrDescription: BaseMeta | string): this {
 		return new Type(
-			configureShallowDescendants(this.root, configOrDescription),
+			this.root.configureShallowDescendants(configOrDescription),
 			this.scope
 		) as never
 	}

@@ -47,6 +47,7 @@ import {
 } from "./shared/context.js"
 import type {
 	BaseExpectedContext,
+	BaseMeta,
 	BaseNodeDeclaration,
 	attachmentsOf,
 	ownIntersectionAlternateResult,
@@ -335,6 +336,17 @@ export abstract class BaseNode<
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
 		)
+	}
+
+	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
+		const config: BaseMeta =
+			typeof configOrDescription === "string"
+				? { description: configOrDescription }
+				: (configOrDescription as never)
+		return this.transform(
+			(kind, inner) => ({ ...inner, ...config }),
+			(node) => node.isProp()
+		) as never
 	}
 }
 

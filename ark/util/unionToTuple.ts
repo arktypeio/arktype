@@ -1,5 +1,5 @@
 import type { conform } from "./generics.js"
-import type { join } from "./lists.js"
+import type { List, join } from "./lists.js"
 
 export type stringifyUnion<t extends string> = join<unionToTuple<t>, ", ">
 
@@ -31,7 +31,7 @@ export type intersectUnion<t> = (
 // Based on: https://tsplay.dev/WvydBm
 export type overloadOf<
 	f extends (...args: never[]) => unknown,
-	givenArgs extends readonly unknown[] = readonly unknown[]
+	givenArgs extends List = List
 > = Exclude<
 	collectSignatures<
 		// The "() => never" signature must be hoisted to the "front" of the
@@ -46,11 +46,9 @@ export type overloadOf<
 	f extends () => never ? never : () => never
 >
 
-type collectSignatures<
-	f,
-	givenArgs extends readonly unknown[],
-	result
-> = result & f extends (...args: infer args) => infer returns
+type collectSignatures<f, givenArgs extends List, result> = result & f extends (
+	...args: infer args
+) => infer returns
 	? result extends f
 		? never
 		:

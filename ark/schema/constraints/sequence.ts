@@ -4,7 +4,8 @@ import {
 	hasKey,
 	isArray,
 	throwInternalError,
-	throwParseError
+	throwParseError,
+	type List
 } from "@arktype/util"
 import { BaseNode, type TypeNode, type TypeSchema } from "../base.js"
 import type { MutableNormalizedSchema } from "../kinds.js"
@@ -68,7 +69,7 @@ export type SequenceDeclaration = declareNode<{
 	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
 	composition: "composite"
-	prerequisite: readonly unknown[]
+	prerequisite: List
 	childKind: TypeKind
 	disjoinable: true
 }>
@@ -107,7 +108,7 @@ export const isSequenceTuple = (
 }
 
 export class SequenceNode
-	extends BaseNode<readonly unknown[], SequenceDeclaration, typeof SequenceNode>
+	extends BaseNode<List, SequenceDeclaration, typeof SequenceNode>
 	implements BaseConstraint<"sequence">
 {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
@@ -285,7 +286,7 @@ export class SequenceNode
 			? undefined
 			: this.$.parse("maxLength", this.maxLength)
 
-	protected childAtIndex(data: readonly unknown[], index: number) {
+	protected childAtIndex(data: List, index: number) {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
 		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
@@ -299,7 +300,7 @@ export class SequenceNode
 	}
 
 	// minLength/maxLength should be checked by Intersection before either traversal
-	traverseAllows: TraverseAllows<readonly unknown[]> = (data, ctx) => {
+	traverseAllows: TraverseAllows<List> = (data, ctx) => {
 		for (let i = 0; i < data.length; i++) {
 			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) {
 				return false
@@ -308,7 +309,7 @@ export class SequenceNode
 		return true
 	}
 
-	traverseApply: TraverseApply<readonly unknown[]> = (data, ctx) => {
+	traverseApply: TraverseApply<List> = (data, ctx) => {
 		for (let i = 0; i < data.length; i++) {
 			this.childAtIndex(data, i).traverseApply(data[i], ctx)
 		}

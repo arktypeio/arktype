@@ -1,6 +1,7 @@
 import type {
 	Constructor,
 	ErrorMessage,
+	List,
 	Stringifiable,
 	conform,
 	exactMessageOnError
@@ -53,7 +54,7 @@ export type validateSchemaBranch<def, $> = isSchemaCast<def> extends true
 	? validateMorphChild<def>
 	: validateMorphSchema<def>
 
-export type instantiateSchemaBranches<branches extends readonly unknown[]> =
+export type instantiateSchemaBranches<branches extends List> =
 	branches["length"] extends 0
 		? TypeNode<never, "union">
 		: branches["length"] extends 1

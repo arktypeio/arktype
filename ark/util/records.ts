@@ -1,4 +1,5 @@
 import type { defined, evaluate } from "./generics.js"
+import type { List } from "./lists.js"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -67,7 +68,7 @@ type mutableRecurse<
 
 export type entryOf<o> = {
 	[k in keyof o]-?: [k, o[k] & ({} | null)]
-}[o extends readonly unknown[] ? keyof o & number : keyof o] &
+}[o extends List ? keyof o & number : keyof o] &
 	unknown
 
 export type entriesOf<o extends object> = entryOf<o>[]
@@ -89,7 +90,7 @@ export const fromEntries = <const entries extends readonly Entry[]>(
 ) => Object.fromEntries(entries) as fromEntries<entries>
 
 /** Mimics the result of Object.keys(...) */
-export type keysOf<o> = o extends readonly unknown[]
+export type keysOf<o> = o extends List
 	? number extends o["length"]
 		? `${number}`
 		: keyof o & `${number}`
@@ -199,3 +200,12 @@ export type EmptyObject = Record<PropertyKey, never>
 
 export const isEmptyObject = (o: object): o is EmptyObject =>
 	Object.keys(o).length === 0
+
+export const stringAndSymbolicEntriesOf = (
+	o: Record<string | symbol, unknown>
+) => [
+	...Object.entries(o),
+	...Object.getOwnPropertySymbols(o).map((k) => [k, o[k]] as const)
+]
+
+export type Key = string | symbol

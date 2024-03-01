@@ -54,7 +54,7 @@ export const intersectUniqueLists = <item>(
 }
 
 export type filter<
-	t extends readonly unknown[],
+	t extends List,
 	constraint,
 	result extends unknown[] = []
 > = t extends readonly [infer head, ...infer tail]
@@ -76,33 +76,24 @@ export type CollapsingList<t = unknown> =
 	| t
 	| readonly [t, t, ...t[]]
 
-export type headOf<t extends readonly unknown[]> = t[0]
+export type headOf<t extends List> = t[0]
 
-export type tailOf<t extends readonly unknown[]> = t extends readonly [
-	unknown,
-	...infer tail
-]
+export type tailOf<t extends List> = t extends readonly [unknown, ...infer tail]
 	? tail
 	: never
 
-export type lastIndexOf<t extends readonly unknown[]> = tailOf<t>["length"]
+export type lastIndexOf<t extends List> = tailOf<t>["length"]
 
-export type lastOf<t extends readonly unknown[]> = t[lastIndexOf<t>]
+export type lastOf<t extends List> = t[lastIndexOf<t>]
 
-export type initOf<t extends readonly unknown[]> = t extends readonly [
-	...infer init,
-	unknown
-]
+export type initOf<t extends List> = t extends readonly [...infer init, unknown]
 	? init
 	: never
 
-export type numericStringKeyOf<t extends readonly unknown[]> = Extract<
-	keyof t,
-	NumberLiteral
->
+export type numericStringKeyOf<t extends List> = Extract<keyof t, NumberLiteral>
 
 export const listFrom = <t>(data: t) =>
-	(Array.isArray(data) ? data : [data]) as t extends readonly unknown[]
+	(Array.isArray(data) ? data : [data]) as t extends List
 		? [t] extends [null]
 			? // check for any/never
 			  t[]
@@ -131,7 +122,7 @@ export const ReadonlyArray = Array as unknown as new <T>(
 	...args: ConstructorParameters<typeof Array<T>>
 ) => ReadonlyArray<T>
 
-export const includes = <array extends readonly unknown[]>(
+export const includes = <array extends List>(
 	array: array,
 	element: unknown
 ): element is array[number] => array.includes(element)

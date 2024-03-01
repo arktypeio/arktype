@@ -1,5 +1,6 @@
 import { domainOf, type Domain } from "./domain.js"
 import type { evaluate } from "./generics.js"
+import type { List } from "./lists.js"
 import { isKeyOf } from "./records.js"
 
 // Built-in object constructors based on a subset of:
@@ -103,8 +104,7 @@ export const hasObjectKind = <
 ): data is InstanceType<kinds[kind]> =>
 	objectKindOf(data, kinds) === (kind as never)
 
-export const isArray = (data: unknown): data is readonly unknown[] =>
-	Array.isArray(data)
+export const isArray = (data: unknown): data is List => Array.isArray(data)
 
 /** Each defaultObjectKind's completion for the phrase "Must be _____" */
 export const objectKindDescriptions = {

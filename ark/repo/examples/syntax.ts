@@ -21,7 +21,7 @@ export const currentTsSyntax = type({
 export const upcomingTsSyntax = type({
 	keyof: "keyof bigint",
 	thisKeyword: "this", // recurses to the root of the current type
-	variadicTuples: ["true", "...false[]"]
+	variadicTuples: ["true", "...", "false[]"]
 })
 
 export const validationSyntax = type({

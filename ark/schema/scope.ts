@@ -5,6 +5,7 @@ import {
 	throwInternalError,
 	throwParseError,
 	type Dict,
+	type List,
 	type evaluate,
 	type require,
 	type requireKeys
@@ -211,7 +212,7 @@ export class ScopeNode<r extends object = any> {
 			: (this.parseRoot("union", branches as never) as never)
 	}
 
-	parseUnits<const branches extends readonly unknown[]>(
+	parseUnits<const branches extends List>(
 		...values: branches
 	): branches["length"] extends 1
 		? UnionNode<branches[0]>
@@ -353,7 +354,7 @@ export type SchemaParser<r extends object> = {
 		} & NormalizedUnionSchema
 	): instantiateSchemaBranches<branches>
 
-	units<const branches extends readonly unknown[]>(
+	units<const branches extends List>(
 		...values: branches
 	): branches["length"] extends 1
 		? UnionNode<branches[0]>

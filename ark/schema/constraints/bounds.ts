@@ -1,5 +1,6 @@
 import {
 	isKeyOf,
+	type List,
 	type PartialRecord,
 	type evaluate,
 	type valueOf
@@ -80,7 +81,7 @@ export type UpperBoundKind = valueOf<typeof boundKindPairsByLower>
 
 export type UpperNode = Node<UpperBoundKind>
 
-export type NumericallyBoundable = string | number | readonly unknown[]
+export type NumericallyBoundable = string | number | List
 
 export type Boundable = NumericallyBoundable | Date
 
@@ -282,7 +283,7 @@ type LengthBoundDeclaration<kind extends LengthBoundKind = LengthBoundKind> =
 	declareBound<{
 		kind: kind
 		limit: number
-		prerequisite: string | readonly unknown[]
+		prerequisite: string | List
 	}>
 
 export type MinLengthDeclaration = LengthBoundDeclaration<"minLength">
@@ -308,8 +309,8 @@ export class MinLengthNode extends BaseBound<
 		})
 
 	traverseAllows = this.exclusive
-		? (data: string | readonly unknown[]) => data.length > this.limit
-		: (data: string | readonly unknown[]) => data.length >= this.limit
+		? (data: string | List) => data.length > this.limit
+		: (data: string | List) => data.length >= this.limit
 
 	foldIntersection(into: FoldInput<"minLength">): undefined {
 		if (
@@ -341,8 +342,8 @@ export class MaxLengthNode extends BaseBound<
 		})
 
 	traverseAllows = this.exclusive
-		? (data: string | readonly unknown[]) => data.length < this.limit
-		: (data: string | readonly unknown[]) => data.length <= this.limit
+		? (data: string | List) => data.length < this.limit
+		: (data: string | List) => data.length <= this.limit
 
 	foldIntersection(into: FoldInput<"maxLength">): Disjoint | undefined {
 		if (

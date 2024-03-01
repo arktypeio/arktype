@@ -49,40 +49,19 @@ describe("array", () => {
 			attest(t.json).equals(type("string[]").json)
 		})
 
-		describe("optional tuple literals", () => {
-			it("string optional", () => {
-				const t = type(["string?"])
-				attest<[string?]>(t.infer)
-				attest(t.json).equals(type(["string?"]).json)
-			})
-			it("optional tuple", () => {
-				const t = type([["string", "?"]])
-				attest<[string?]>(t.infer)
-				attest(t.json).equals(type(["string?"]).json)
-			})
-			it("nested optional tuple", () => {
-				const t = type([["string?"], "string?"])
-				attest<[[string?], string?]>(t.infer)
-			})
-			it("multi-optional tuple", () => {
-				// @ts-expect-error
-				attest(() => type([["string?", "?"]])).throwsAndHasTypeError(
-					writeUnresolvableMessage("string?")
-				)
-			})
-			it("shallow optional string", () => {
-				// @ts-expect-error
-				attest(() => type("string?")).throwsAndHasTypeError(
-					writeUnresolvableMessage("string?")
-				)
-			})
-			it("shallow optional tuple", () => {
-				// @ts-expect-error
-				attest(() => type(["string", "?"])).throws(
-					writeUnresolvableMessage("?")
-				)
-			})
+		it("optional tuple", () => {
+			const t = type(["string", "?"])
+			attest<[string?]>(t.infer)
+			attest(t([]).errors).equals(undefined)
+			attest(t(["foo"]).errors).equals(undefined)
+			attest(t([5]).errors?.summary).snap()
+			attest(t(["foo", "bar"]).errors?.summary).snap()
 		})
+		it("nested optional tuple", () => {
+			const t = type([["string", "?"], "string", "?"])
+			attest<[[string?], string?]>(t.infer)
+		})
+
 		it("root expression", () => {
 			const t = type("string", "[]")
 			attest<string[]>(t.infer)
@@ -169,29 +148,25 @@ Value at [1] must be a number (was boolean)`)
 	})
 	describe("variadic tuple", () => {
 		it("spreads simple arrays", () => {
-			const wellRested = type(["string", "...number[]"])
+			const wellRested = type(["string", "...", "number[]"])
 			attest<[string, ...number[]]>(wellRested.infer)
 			attest(wellRested(["foo"]).out).equals(["foo"])
 			attest(wellRested(["foo", 1, 2]).out).equals(["foo", 1, 2])
 		})
-		it("spread element", () => {
-			const wellRestedTuple = type(["number", "...", [{ a: "string" }, "[]"]])
-			attest<[number, ...{ a: string }[]]>(wellRestedTuple.infer)
-		})
 		it("spreads array expressions", () => {
-			const greatSpread = type(["0", "...(Date|RegExp)[]"])
+			const greatSpread = type(["0", "...", "(Date|RegExp)[]"])
 			attest<[0, ...(RegExp | Date)[]]>(greatSpread.infer)
 		})
 		it("distributes spread unions", () => {
-			const t = type(["1", "...(Date[] | RegExp[])"])
+			const t = type(["1", "...", "(Date[] | RegExp[])"])
 			attest<[1, ...(Date[] | RegExp[])]>(t.infer)
-			const expected = type(["1", "...Date[]"]).or(["1", "...RegExp[]"])
+			const expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
 			attest(t.json).equals(expected.json)
 		})
 		it("allows array keyword", () => {
 			const types = scope({
 				myArrayKeyword: "boolean[]",
-				myVariadicKeyword: ["string", "...myArrayKeyword"]
+				myVariadicKeyword: ["string", "...", "myArrayKeyword"]
 			}).export()
 			attest<[string, ...boolean[]]>(types.myVariadicKeyword.infer)
 		})
@@ -208,7 +183,8 @@ Value at [1] must be a number (was boolean)`)
 		it("allows multiple fixed spreads", () => {
 			const t = type([
 				"string",
-				"...number[]",
+				"...",
+				"number[]",
 				"...",
 				["boolean", "bigint"],
 				"...",
@@ -216,7 +192,8 @@ Value at [1] must be a number (was boolean)`)
 			])
 			const expected = type([
 				"string",
-				"...number[]",
+				"...",
+				"number[]",
 				"boolean",
 				"bigint",
 				"symbol"
@@ -227,23 +204,11 @@ Value at [1] must be a number (was boolean)`)
 		})
 		it("errors on multiple variadic", () => {
 			attest(() =>
-				// @ts-expect-error
-				type(["...number[]", "...string[]"])
-			).throwsAndHasTypeError(multipleVariadicMesage)
-			attest(() =>
-				// @ts-expect-error
-				type(["...number[]", "...", "string[]"])
-			).throwsAndHasTypeError(multipleVariadicMesage)
-			attest(() =>
-				// @ts-expect-error
-				type(["...", "number[]", "...string[]"])
-			).throwsAndHasTypeError(multipleVariadicMesage)
-			attest(() =>
 				type([
 					"...",
 					"string[]",
-					"...",
 					// @ts-expect-error
+					"...",
 					"number[]"
 				])
 			).throwsAndHasTypeError(multipleVariadicMesage)
@@ -332,14 +297,18 @@ Value at [1] must be a number (was boolean)`)
 		it("kitchen sink", () => {
 			const l = type([
 				{ a: "0" },
-				[{ b: "1" }, "?"],
-				[{ c: "2" }, "?"],
+				{ b: "1" },
+				"?",
+				{ c: "2" },
+				"?",
 				"...",
 				[{ d: "3" }, "[]"]
 			])
 			const r = type([
-				[{ e: "4" }, "?"],
-				[{ f: "5" }, "?"],
+				{ e: "4" },
+				"?",
+				{ f: "5" },
+				"?",
 				"...",
 				[{ g: "6" }, "[]"]
 			])
@@ -347,8 +316,10 @@ Value at [1] must be a number (was boolean)`)
 
 			const expected = type([
 				{ a: "0", e: "4" },
-				[{ b: "1", f: "5" }, "?"],
-				[{ c: "2", g: "6" }, "?"],
+				{ b: "1", f: "5" },
+				"?",
+				{ c: "2", g: "6" },
+				"?",
 				"...",
 				[{ d: "3", g: "6" }, "[]"]
 			])
@@ -357,8 +328,8 @@ Value at [1] must be a number (was boolean)`)
 			attest(result.json).equals(expected.json)
 		})
 		it("prefix and postfix", () => {
-			const l = type([["...", [{ a: "0" }, "[]"]], { b: "0" }, { c: "0" }])
-			const r = type([{ x: "0" }, { y: "0" }, ["...", [{ z: "0" }, "[]"]]])
+			const l = type(["...", [{ a: "0" }, "[]"], { b: "0" }, { c: "0" }])
+			const r = type([{ x: "0" }, { y: "0" }, "...", [{ z: "0" }, "[]"]])
 
 			// currently getting this "Expected" result at a type-level incurs
 			// too high a performance cost for such a niche intersection.
