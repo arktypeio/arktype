@@ -1,6 +1,8 @@
 import { keywords, schema, type Inner, type TypeNode } from "@arktype/schema"
 import {
 	printable,
+	reference,
+	registry,
 	stringAndSymbolicEntriesOf,
 	throwParseError,
 	type Dict,
@@ -61,9 +63,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 	}
 	for (const entry of parsedEntries) {
 		if (entry.kind === "spread") {
-			return throwParseError(
-				"Spread operator may only be used as the first key in an object"
-			)
+			return throwParseError(nonLeadingSpreadError)
 		}
 
 		ctx.path.push(
@@ -92,6 +92,9 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 		optional
 	})
 }
+
+export const nonLeadingSpreadError =
+	"Spread operator may only be used as the first key in an object"
 
 /**
  * Infers the contents of an object literal, ignoring a spread definition
@@ -173,8 +176,6 @@ namespace PreparsedKey {
 
 type ParsedKeyKind = "required" | "optional" | "index" | "spread"
 
-export type OptionalKey<name extends string = string> = `${name}?`
-
 export type IndexKey<def extends string = string> = `[${def}]`
 
 type PreparsedEntry = PreparsedKey & { value: unknown }
@@ -186,12 +187,15 @@ const parseKey = (key: Key): PreparsedKey =>
 	typeof key === "string" && key.at(-1) === "?"
 		? key.at(-2) === Scanner.escapeToken
 			? { inner: `${key.slice(0, -2)}?`, kind: "required" }
-			: { inner: key.slice(0, -1), kind: "optional" }
+			: {
+					inner: key.slice(0, -1),
+					kind: "optional"
+			  }
 		: key === "..."
 		? { inner: "...", kind: "spread" }
 		: { inner: key === "\\..." ? "..." : key, kind: "required" }
 
-type parseKey<k> = k extends OptionalKey<infer inner>
+type parseKey<k> = k extends `${infer inner}?`
 	? inner extends `${infer baseName}${Scanner.EscapeToken}`
 		? PreparsedKey.from<{
 				kind: "required"

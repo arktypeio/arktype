@@ -43,18 +43,27 @@ export const parseTuple = (def: List, ctx: ParseContext) =>
 
 export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 	let sequences: MutableInner<"sequence">[] = [{}]
-	let hasOpenSpread = false
-	for (let i = 0; i < def.length; i++) {
-		ctx.path.push(`${i}`)
-		if (def[i] === "...") {
-			if (hasOpenSpread) {
-				// return throwParseError(consecutiveSpreadMessage)
-			}
-			hasOpenSpread = true
-			continue
+	let i = 0
+	while (i < def.length) {
+		let spread = false
+		let optional = false
+		if (def[i] === "..." && i < def.length - 1) {
+			spread = true
+			i++
 		}
+
+		ctx.path.push(`${i}`)
 		const element = ctx.scope.parse(def[i], ctx)
-		if (hasOpenSpread) {
+		ctx.path.pop()
+		i++
+		if (def[i] === "?") {
+			if (spread) {
+				return throwParseError(spreadOptionalMessage)
+			}
+			optional = true
+			i++
+		}
+		if (spread) {
 			if (!element.extends(keywords.Array)) {
 				return throwParseError(writeNonArraySpreadMessage(element))
 			}
@@ -69,15 +78,9 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			)
 		} else {
 			sequences = sequences.map((base) =>
-				appendElement(
-					base,
-					parsedElementDef.kind === "optional" ? "optional" : "required",
-					element
-				)
+				appendElement(base, optional ? "optional" : "required", element)
 			)
 		}
-		hasOpenSpread = false
-		ctx.path.pop()
 	}
 	return schema(
 		...sequences.map((sequence) => ({
@@ -131,12 +134,6 @@ const appendElement = (
 			return base
 	}
 }
-
-type appendElement<
-	base extends SequenceParseState,
-	kind extends ElementKind,
-	def
-> = {}
 
 const appendSpreadBranch = (
 	base: MutableInner<"sequence">,
@@ -234,7 +231,7 @@ type parseSequence<def extends List, $, args> = parseNextElement<
 
 type PreparsedElement = {
 	head: unknown
-	tail: unknown[]
+	tail: List
 	optional: boolean
 	spread: boolean
 }

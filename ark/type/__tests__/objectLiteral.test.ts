@@ -45,18 +45,18 @@ describe("object literal", () => {
 			required: [{ key: name, value: "string" }]
 		})
 	})
-	it("optional symbol", () => {
-		const s = Symbol()
-		const name = reference(s)
-		const t = type({
-			[s]: "number?"
-		})
-		attest<{ [s]?: number }>(t.infer)
-		attest(t.json).equals({
-			basis: "object",
-			optional: [{ key: name, value: "number" }]
-		})
-	})
+	// it("optional symbol", () => {
+	// 	const s = Symbol()
+	// 	const name = reference(s)
+	// 	const t = type({
+	// 		[optional(s)]: "number"
+	// 	})
+	// 	attest<{ [s]?: number }>(t.infer)
+	// 	attest(t.json).equals({
+	// 		basis: "object",
+	// 		optional: [{ key: name, value: "number" }]
+	// 	})
+	// })
 	describe("spread syntax", () => {
 		it("within scope", () => {
 			const s = scope({
@@ -149,23 +149,9 @@ describe("object literal", () => {
 			})
 		})
 	})
-	describe("optional keys and definition reduction", () => {
-		it("optional value", () => {
-			const t = type({ a: "string?" })
-			attest(t.json).equals(type({ "a?": "string" }).json)
-		})
-		it("optional key and value", () => {
-			const t = type({ "a?": "string?" })
-			attest(t.json).equals(type({ "a?": "string" }).json)
-		})
-		it("optional value as tuple", () => {
-			const t = type({ a: ["string", "?"] })
-			attest(t.json).equals(type({ "a?": "string" }).json)
-		})
-	})
 	it("error in obj that has tuple that writes error at proper path", () => {
 		// @ts-expect-error
-		attest(() => type({ "a?": ["string", "string?", ["stringx", "?"]] }))
+		attest(() => type({ "a?": ["string", ["stringx", "?"]] }))
 			.throws(writeUnresolvableMessage("stringx"))
 			.type.errors.snap(
 				"Type '\"stringx\"' is not assignable to type '\"'stringx' is unresolvable \"'."

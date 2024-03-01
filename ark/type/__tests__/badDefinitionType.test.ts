@@ -42,7 +42,7 @@ describe("definitions", () => {
 	it("any", () => {
 		// doesn't error, so this test is just to ensure it doesn't infinitely recurse
 		const t = type({ bad: {} as any })
-		attest<{}>(t.infer)
+		attest<{ bad: any }>(t.infer)
 	})
 	it("unknown", () => {
 		// @ts-expect-error just results in base completions, so we just check there's an error

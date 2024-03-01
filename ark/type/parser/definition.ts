@@ -79,11 +79,7 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
 export type validateDefinition<def, $, args> = null extends undefined
 	? ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
 	: [def] extends [Terminal]
-	? unknown extends def
-		? // if def is any, never is the only way we can make validation fail
-		  // since any would be assignable to a standard error message
-		  never
-		: def
+	? def
 	: def extends string
 	? validateString<def, $, args>
 	: def extends List
