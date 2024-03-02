@@ -1,11 +1,11 @@
 import { printable } from "@arktype/util"
-import type { Problems, Type } from "arktype"
+import type { ArkErrors, Type } from "arktype"
 import "./demo.css"
 
 type PopulateDemoArgs = {
 	type: Type
 	data: unknown
-	errors: Problems
+	errors: ArkErrors
 }
 
 export const populateDemo = ({ data, type, errors }: PopulateDemoArgs) => {
