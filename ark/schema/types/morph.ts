@@ -8,8 +8,7 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import { BaseNode, type Node } from "../base.js"
-import type { FoldState } from "../constraints/constraint.js"
+import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -27,6 +26,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { is } from "../shared/utils.js"
+import { BaseType } from "./type.js"
 
 export type MorphChildKind = evaluate<"intersection" | BasisKind>
 
@@ -67,7 +67,7 @@ export type MorphDeclaration = declareNode<{
 	childKind: MorphChildKind
 }>
 
-export class MorphNode<t = unknown> extends BaseNode<
+export class MorphNode<t = unknown> extends BaseType<
 	t,
 	MorphDeclaration,
 	typeof MorphNode
@@ -124,7 +124,7 @@ export class MorphNode<t = unknown> extends BaseNode<
 
 	traverseApply: TraverseApply = (data, ctx) => this.in.traverseApply(data, ctx)
 
-	foldIntersection(branches: FoldState<"morph">) {
+	intersectRightwardInner(r: Node<MorphChildKind>): MorphInner | Disjoint {
 		const inTersection = this.in.intersect(r)
 		return inTersection instanceof Disjoint
 			? inTersection

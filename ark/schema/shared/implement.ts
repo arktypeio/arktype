@@ -12,7 +12,6 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { FoldState } from "../constraints/constraint.js"
 import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
@@ -26,7 +25,6 @@ import type {
 	BaseNodeDeclaration,
 	intersectionImplementationResult
 } from "./declare.js"
-import type { Disjoint } from "./disjoint.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 

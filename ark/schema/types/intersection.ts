@@ -11,7 +11,7 @@ import {
 	type listable
 } from "@arktype/util"
 import { BaseNode, type Node, type TypeNode } from "../base.js"
-import type { FoldState } from "../constraints/constraint.js"
+import type { FoldInput } from "../constraints/constraint.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
@@ -38,6 +38,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { instantiateBasis } from "./basis.js"
+import { BaseType } from "./type.js"
 import type { UnionNode } from "./union.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
@@ -99,7 +100,7 @@ const propKeys = morph(
 // 		: this.indexed.find((entry) => entry.key.equals(key))?.value
 // }
 
-export class IntersectionNode<t = unknown> extends BaseNode<
+export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	IntersectionDeclaration,
 	typeof IntersectionNode
@@ -172,7 +173,7 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 			},
 			reduce: (inner, scope) => {
 				const [constraints, base] = splitByKeys(inner, constraintKeys)
-				const foldInput: FoldState<"predicate"> = base
+				const foldInput: FoldInput<"predicate"> = base
 				const flatConstraints = Object.values(constraints).flat()
 				if (flatConstraints.length === 0 && base.basis) {
 					return base.basis
@@ -221,7 +222,7 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 				const foldInput = morph(l.inner, (k, v) => [
 					k,
 					isArray(v) ? [...v] : v
-				]) as FoldState<lastOf<OrderedNodeKinds>>
+				]) as FoldInput<lastOf<OrderedNodeKinds>>
 				// this feels fairly hacky, will need to revisit ways to handle cases
 				// that return a union like certain intersections of sequence nodes
 				const unions: UnionNode[] = []
@@ -245,7 +246,9 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 			}
 		})
 
-	foldIntersection(branches: FoldState<"intersection">) {
+	intersectRightwardInner(
+		r: Node<IntersectionBasisKind>
+	): IntersectionInner | Disjoint {
 		const basis = this.basis?.intersect(r) ?? r
 		// TODO: meta should not be included here?
 		return basis instanceof Disjoint

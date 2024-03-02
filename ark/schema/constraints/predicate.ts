@@ -4,7 +4,7 @@ import type { TraversalContext } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { ArkErrors } from "../shared/errors.js"
 import type { is } from "../shared/utils.js"
-import { BasePrimitiveConstraint, type FoldState } from "./constraint.js"
+import { BasePrimitiveConstraint, type FoldInput } from "./constraint.js"
 
 export interface PredicateInner<
 	predicate extends Predicate<any> = Predicate<any>
@@ -59,10 +59,8 @@ export class PredicateNode extends BasePrimitiveConstraint<
 	compiledNegation = `!${this.compiledCondition}`
 	expectedContext = this.createExpectedContext({ expected: this.description })
 
-	foldIntersection(s: FoldState<"predicate">) {
-		return s.map((into) => {
-			into.predicate = appendUnique(into.predicate, this)
-		})
+	foldIntersection(into: FoldInput<"predicate">): undefined {
+		into.predicate = appendUnique(into.predicate, this)
 	}
 }
 

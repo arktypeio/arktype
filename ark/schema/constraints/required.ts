@@ -10,7 +10,7 @@ import {
 	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { FoldState } from "./constraint.js"
+import type { BaseConstraint, FoldInput } from "./constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface RequiredSchema extends BaseMeta {
@@ -39,11 +39,10 @@ export type RequiredDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class RequiredNode extends BaseNode<
-	object,
-	RequiredDeclaration,
-	typeof RequiredNode
-> {
+export class RequiredNode
+	extends BaseNode<object, RequiredDeclaration, typeof RequiredNode>
+	implements BaseConstraint<"required">
+{
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
@@ -118,26 +117,24 @@ export class RequiredNode extends BaseNode<
 		}
 	}
 
-	foldIntersection(s: FoldState<"required">) {
-		return s.map((into) => {
-			if (into.basis?.domain !== "object") {
-				throwInvalidOperandError("required", "an object", into.basis)
-			}
+	foldIntersection(into: FoldInput<"required">) {
+		if (into.basis?.domain !== "object") {
+			throwInvalidOperandError("required", "an object", into.basis)
+		}
 
-			if (!into.required) {
-				into.required = [this]
-				return
-			}
+		if (!into.required) {
+			into.required = [this]
+			return
+		}
 
-			let matchedExisting = false
-			for (let i = 0; i < into.required.length; i++) {
-				const result = this.intersectSymmetric(into.required[i])
-				if (result === null) continue
-				if (result instanceof Disjoint) return result
-				into.required[i] = result
-				matchedExisting = true
-			}
-			if (!matchedExisting) into.required.push(this)
-		})
+		let matchedExisting = false
+		for (let i = 0; i < into.required.length; i++) {
+			const result = this.intersectSymmetric(into.required[i])
+			if (result === null) continue
+			if (result instanceof Disjoint) return result
+			into.required[i] = result
+			matchedExisting = true
+		}
+		if (!matchedExisting) into.required.push(this)
 	}
 }

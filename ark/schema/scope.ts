@@ -10,7 +10,7 @@ import {
 	type require,
 	type requireKeys
 } from "@arktype/util"
-import { BaseNode, type Node, type TypeNode } from "./base.js"
+import type { Node, TypeNode } from "./base.js"
 import { globalConfig } from "./config.js"
 import type {
 	instantiateAliases,
@@ -36,6 +36,7 @@ import type {
 	TypeKind
 } from "./shared/implement.js"
 import { maybeGetBasisKind } from "./types/basis.js"
+import { BaseType } from "./types/type.js"
 import type {
 	NormalizedUnionSchema,
 	UnionChildKind,
@@ -115,7 +116,7 @@ const assertTypeKind = (input: unknown): TypeKind => {
 		return basisKind
 	}
 	if (typeof input === "object" && input !== null) {
-		if (input instanceof BaseNode && input.isType()) {
+		if (input instanceof BaseType) {
 			return input.kind
 			// otherwise, error at end of function
 		} else if ("morph" in input) {

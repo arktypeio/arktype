@@ -1,5 +1,5 @@
 import { domainOf, throwInternalError, type Domain } from "@arktype/util"
-import type { FoldState } from "../constraints/constraint.js"
+import type { UnknownNode } from "../base.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -71,8 +71,10 @@ export class DomainNode<t = unknown> extends BaseBasis<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	foldIntersection(branches: FoldState<"domain">): Disjoint | undefined {
-		return
+	intersectRightwardInner(r: never) {
+		return throwInternalError(
+			`Unexpected attempt to intersect ${r} from domain`
+		)
 	}
 }
 
