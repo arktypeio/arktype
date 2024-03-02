@@ -4,7 +4,6 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	BasePrimitiveConstraint,
 	getBasisName,
-	type FoldBranch,
 	type FoldState
 } from "./constraint.js"
 
@@ -73,15 +72,13 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		description: this.description
 	})
 
-	fold(into: FoldBranch<"divisor">) {
-		if (into.basis?.domain !== "number") {
-			throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
-		}
-		into.divisor = this.intersectSymmetric(into.divisor)
-	}
-
 	foldIntersection(s: FoldState<"divisor">) {
-		return s.map(this)
+		return s.map((into) => {
+			if (into.basis?.domain !== "number") {
+				throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
+			}
+			into.divisor = this.intersectSymmetric(into.divisor)
+		})
 	}
 }
 

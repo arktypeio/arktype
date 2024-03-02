@@ -2,11 +2,7 @@ import { appendUnique } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { throwInvalidOperandError } from "../shared/implement.js"
-import {
-	BasePrimitiveConstraint,
-	type FoldBranch,
-	type FoldState
-} from "./constraint.js"
+import { BasePrimitiveConstraint, type FoldState } from "./constraint.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -69,14 +65,12 @@ export class PatternNode extends BasePrimitiveConstraint<
 		description: this.description
 	})
 
-	fold(into: FoldBranch<"pattern">) {
-		if (into.basis?.domain !== "string") {
-			throwInvalidOperandError("pattern", "a string", into.basis)
-		}
-		into.pattern = appendUnique(into.pattern, this)
-	}
-
 	foldIntersection(s: FoldState<"pattern">) {
-		return s.map(this)
+		return s.map((into) => {
+			if (into.basis?.domain !== "string") {
+				throwInvalidOperandError("pattern", "a string", into.basis)
+			}
+			into.pattern = appendUnique(into.pattern, this)
+		})
 	}
 }

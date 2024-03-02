@@ -8,7 +8,6 @@ import {
 	type entryOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { FoldBranch } from "../constraints/constraint.js"
 import type {
 	BoundKind,
 	IntersectionChildKind,
@@ -52,8 +51,8 @@ type DisjointKinds = {
 				r: unknown
 		  }
 	union?: {
-		l: readonly FoldBranch<"union">[]
-		r: readonly FoldBranch<"union">[]
+		l: readonly Node<kindRightOf<"union">>[]
+		r: readonly Node<kindRightOf<"union">>[]
 	}
 	indiscriminableMorphs?: {
 		l: Node<"union">

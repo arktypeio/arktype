@@ -16,7 +16,6 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import type { Domain } from "node:domain"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -25,7 +24,7 @@ import type {
 	MinLengthNode,
 	MinNode
 } from "./constraints/bounds.js"
-import type { FoldBranch, FoldState } from "./constraints/constraint.js"
+import type { FoldState } from "./constraints/constraint.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { IndexNode } from "./constraints/index.js"
 import type { OptionalNode } from "./constraints/optional.js"
@@ -551,24 +550,3 @@ export type Node<
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
 
 export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
-
-export type intersectTypeKinds<l extends TypeKind, r extends TypeKind> = [
-	l,
-	r
-] extends [r, l]
-	? l
-	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
-
-type asymmetricIntersectionOf<
-	l extends TypeKind,
-	r extends TypeKind
-> = l extends unknown
-	? r extends kindRightOf<l>
-		? l | reducibleKindOf<l>
-		: never
-	: never
-
-export interface BaseBasis {
-	basisName: string
-	domain: Domain
-}
