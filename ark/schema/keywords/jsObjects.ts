@@ -18,15 +18,18 @@ export namespace JsObjects {
 	export type infer = (typeof JsObjects)["infer"]
 }
 
-export const JsObjects: ScopeNode<JsObjects.resolutions> = ScopeNode.from({
-	Array,
-	Function,
-	Date,
-	Error,
-	Map,
-	RegExp,
-	Set,
-	WeakMap,
-	WeakSet,
-	Promise
-})
+export const JsObjects: ScopeNode<JsObjects.resolutions> = ScopeNode.from(
+	{
+		Array,
+		Function,
+		Date,
+		Error,
+		Map,
+		RegExp,
+		Set,
+		WeakMap,
+		WeakSet,
+		Promise
+	},
+	{ prereduced: true }
+)

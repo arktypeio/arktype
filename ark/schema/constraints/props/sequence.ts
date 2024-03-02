@@ -6,7 +6,7 @@ import {
 	throwParseError,
 	type List
 } from "@arktype/util"
-import { BaseNode, type TypeNode, type TypeSchema } from "../../base.js"
+import type { TypeNode, TypeSchema } from "../../base.js"
 import type { MutableNormalizedSchema } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -17,7 +17,6 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
-import type { IntersectionSchema } from "../../types/intersection.js"
 import type { BaseConstraint, FoldInput } from "../constraint.js"
 import { BasePropConstraint } from "./prop.js"
 
@@ -253,19 +252,11 @@ export class SequenceNode
 						  disjoints.push(candidate.disjoints[0])
 				)
 
-				if (viableBranches.length === 0) {
-					return disjoints[0]
-				}
-
-				return l.$.parse(
-					"union",
-					viableBranches.map(
-						(sequence): IntersectionSchema => ({
-							basis: Array,
-							sequence
-						})
-					)
-				)
+				return viableBranches.length
+					? viableBranches.map((tupleSchema) =>
+							l.$.parse("sequence", tupleSchema)
+					  )
+					: disjoints[0]
 			}
 		})
 

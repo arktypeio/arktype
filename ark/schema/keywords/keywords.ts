@@ -5,11 +5,14 @@ import { JsObjects } from "./jsObjects.js"
 import { TsKeywords } from "./tsKeywords.js"
 import { Validation } from "./validation.js"
 
-export const builtin: ScopeNode<ArkResolutions> = ScopeNode.from({
-	...TsKeywords.resolutions,
-	...JsObjects.resolutions,
-	...Validation.resolutions
-}) as never
+export const builtin: ScopeNode<ArkResolutions> = ScopeNode.from(
+	{
+		...TsKeywords.resolutions,
+		...JsObjects.resolutions,
+		...Validation.resolutions
+	},
+	{ prereduced: true }
+) as never
 
 export const keywords = builtin.resolutions
 

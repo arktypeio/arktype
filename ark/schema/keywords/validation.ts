@@ -63,35 +63,38 @@ export namespace Validation {
 	export type infer = (typeof Validation)["infer"]
 }
 
-export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from({
-	alpha: {
-		basis: "string",
-		pattern: /^[A-Za-z]*$/,
-		description: "only letters"
+export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from(
+	{
+		alpha: {
+			basis: "string",
+			pattern: /^[A-Za-z]*$/,
+			description: "only letters"
+		},
+		alphanumeric: {
+			basis: "string",
+			pattern: /^[A-Za-z\d]*$/,
+			description: "only letters and digits"
+		},
+		lowercase: {
+			basis: "string",
+			pattern: /^[a-z]*$/,
+			description: "only lowercase letters"
+		},
+		uppercase: {
+			basis: "string",
+			pattern: /^[A-Za-z]*$/,
+			description: "only uppercase letters"
+		},
+		creditCard,
+		email,
+		uuid,
+		url,
+		semver,
+		integer: {
+			basis: "number",
+			divisor: 1,
+			description: "an integer"
+		}
 	},
-	alphanumeric: {
-		basis: "string",
-		pattern: /^[A-Za-z\d]*$/,
-		description: "only letters and digits"
-	},
-	lowercase: {
-		basis: "string",
-		pattern: /^[a-z]*$/,
-		description: "only lowercase letters"
-	},
-	uppercase: {
-		basis: "string",
-		pattern: /^[A-Za-z]*$/,
-		description: "only uppercase letters"
-	},
-	creditCard,
-	email,
-	uuid,
-	url,
-	semver,
-	integer: {
-		basis: "number",
-		divisor: 1,
-		description: "an integer"
-	}
-})
+	{ prereduced: true }
+)

@@ -189,7 +189,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	intersectSymmetric: (
 		l: Node<d["kind"]>,
 		r: Node<d["kind"]>
-	) => d["inner"] | ownIntersectionResult<d>
+	) => ownIntersectionResult<d>
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (inner: d["inner"], $: ScopeNode) => Node | Disjoint | undefined
 }

@@ -91,7 +91,10 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]
 >
 
-export type ArkConfig = Partial<NodeConfigsByKind>
+export interface ArkConfig extends Partial<NodeConfigsByKind> {
+	/** @internal */
+	prereduced?: boolean
+}
 
 export type ParsedArkConfig = require<ArkConfig, 2>
 
@@ -100,12 +103,16 @@ const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
 		return globalConfig
 	}
 	const parsedConfig = { ...globalConfig }
-	let kind: keyof ArkConfig
-	for (kind in scopeConfig) {
-		parsedConfig[kind] = {
-			...nodesByKind[kind].implementation.defaults,
-			...scopeConfig[kind]
-		} as never
+	let k: keyof ArkConfig
+	for (k in scopeConfig) {
+		if (k === "prereduced") {
+			parsedConfig.prereduced = scopeConfig.prereduced!
+		} else {
+			parsedConfig[k] = {
+				...nodesByKind[k].implementation.defaults,
+				...scopeConfig[k]
+			} as never
+		}
 	}
 	return parsedConfig
 }
@@ -142,12 +149,14 @@ export class ScopeNode<r extends object = any> {
 	readonly referencesByName: { [name: string]: Node } = {}
 	readonly references: readonly Node[]
 	protected resolved = false
+	protected prereduced: boolean
 
 	constructor(
 		public def: Dict,
 		config: ArkConfig = {}
 	) {
 		this.config = parseConfig(config)
+		this.prereduced = config.prereduced ?? false
 		for (const k in this.def) {
 			;(this.resolutions as BaseResolutions)[k] = this.parseRoot(
 				assertTypeKind(this.def[k]),
@@ -190,7 +199,7 @@ export class ScopeNode<r extends object = any> {
 		return new ScopeNode(aliases, config)
 	}
 
-	static root: ScopeNode<{}> = this.from({})
+	static root: ScopeNode<{}> = this.from({}, { prereduced: true })
 
 	parseUnion<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
@@ -280,7 +289,8 @@ export class ScopeNode<r extends object = any> {
 		const node = parseAttachments(kind, def, {
 			...opts,
 			$: this,
-			definition: def
+			definition: def,
+			prereduced: opts.prereduced || this.prereduced
 		})
 		return node as never
 	}

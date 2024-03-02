@@ -1,26 +1,23 @@
 import {
-	append,
 	conflatenateAll,
 	isArray,
 	isEmptyObject,
 	morph,
+	omit,
 	pick,
 	printable,
-	splitByKeys,
 	type evaluate,
 	type listable
 } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
-import type { FoldInput } from "../constraints/constraint.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
 	type PropsGroupInput
 } from "../constraints/props/props.js"
-import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
+import type { Inner, Prerequisite, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { ScopeNode } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -42,25 +39,52 @@ import { BaseType } from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
-export type IntersectionInner<basis = any> = evaluate<
+export type IntersectionInner = evaluate<
 	BaseMeta & {
 		basis?: Node<IntersectionBasisKind>
-	} & conditionalInnerOf<basis>
+	} & {
+		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
+	}
 >
 
 export type IntersectionSchema<
 	basis extends Schema<IntersectionBasisKind> | undefined = any
-> =
-	| evaluate<
-			BaseMeta & {
-				basis?: basis
-			} & conditionalSchemaOf<
-					basis extends Schema<BasisKind>
-						? instantiateBasis<basis>["infer"]
-						: unknown
-				>
-	  >
-	| IntersectionInner
+> = evaluate<
+	BaseMeta & {
+		basis?: basis
+	} & conditionalSchemaOf<
+			basis extends Schema<BasisKind>
+				? instantiateBasis<basis>["infer"]
+				: unknown
+		>
+>
+
+type IntersectionCore = Omit<IntersectionInner, ConstraintKind>
+
+const intersectCores = (
+	l: IntersectionCore,
+	r: IntersectionCore
+): IntersectionCore | Disjoint => {
+	const result: IntersectionCore = {}
+	const resultBasis = l.basis
+		? r.basis
+			? l.basis.intersect(r.basis)
+			: l.basis
+		: r.basis
+	if (resultBasis) {
+		if (resultBasis instanceof Disjoint) {
+			return resultBasis
+		}
+		result.basis = resultBasis
+	}
+	if (l.onExtraneousKey || r.onExtraneousKey) {
+		result.onExtraneousKey =
+			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
+				? "throw"
+				: "prune"
+	}
+	return result
+}
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
@@ -82,35 +106,12 @@ const propKeys = morph(
 	(i, k) => [k, 1] as const
 )
 
-const reduceIntersection = (inner: IntersectionInner, $: ScopeNode) => {
-	const [constraints, base] = splitByKeys(inner, constraintKeys)
-	const result: FoldInput<"predicate"> = base
-	const flatConstraints = Object.values(constraints).flat()
-	if (flatConstraints.length === 0 && base.basis) {
-		return base.basis
-	}
-	const disjoint = new Disjoint({})
-	// TODO: are these ordered?
-	for (const constraint of flatConstraints) {
-		const possibleDisjoint = constraint.foldIntersection(result)
-		if (possibleDisjoint instanceof Disjoint) {
-			disjoint.add(possibleDisjoint)
-		}
-	}
-	if (!disjoint.isEmpty()) {
-		return disjoint
-	}
-	return $.parse("intersection", result, {
-		prereduced: true
-	})
-}
-
 const intersectionChildKeyParser =
 	<kind extends IntersectionChildKind>(kind: kind) =>
 	(
 		input: listable<Schema<kind>>,
 		ctx: SchemaParseContext
-	): readonly Node<kind>[] | undefined => {
+	): intersectionChildInnerValueOf<kind> | undefined => {
 		if (isArray(input)) {
 			if (input.length === 0) {
 				// Omit empty lists as input
@@ -120,7 +121,8 @@ const intersectionChildKeyParser =
 				.map((schema) => ctx.$.parse(kind, schema as never))
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
-		return [ctx.$.parse(kind, input)] as never
+		const node = ctx.$.parse(kind, input)
+		return node.hasOpenIntersection ? [node] : (node as any)
 	}
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
@@ -215,7 +217,15 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
-			reduce: reduceIntersection,
+			reduce: (inner, $) => {
+				// TODO: temp nodes
+				const rawNode = $.parse("intersection", inner, { prereduced: true })
+				// take advantage of the fact that unknown is the identity for
+				// intersection to leverage the reduction logic built into
+				// the intersectSymmetric method
+				const reduced = $.builtin.unknown.and(rawNode)
+				return reduced
+			},
 			defaults: {
 				description(inner) {
 					const children = Object.values(inner).flat()
@@ -231,17 +241,28 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			},
 			intersectSymmetric: (l, r) => {
-				const inner: MutableInner<"intersection"> = {}
-				for (const node of l.constraints.concat(r.constraints)) {
-					inner[node.kind] = append(inner[node.kind], node) as never
+				const result = intersectCores(l.core, r.core)
+				if (result instanceof Disjoint) {
+					return result
 				}
-				if (l.onExtraneousKey || r.onExtraneousKey) {
-					inner.onExtraneousKey =
-						l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
-							? "throw"
-							: "prune"
+				const flatConstraints = l.constraints.concat(r.constraints)
+				if (flatConstraints.length === 0 && result.basis) {
+					return result.basis
 				}
-				return inner
+				const disjoint = new Disjoint({})
+				// TODO: are these ordered?
+				for (const constraint of flatConstraints) {
+					const possibleDisjoint = constraint.foldIntersection(result)
+					if (possibleDisjoint instanceof Disjoint) {
+						disjoint.add(possibleDisjoint)
+					}
+				}
+				if (!disjoint.isEmpty()) {
+					return disjoint
+				}
+				return l.$.parse("intersection", result, {
+					prereduced: true
+				})
 			}
 		})
 
@@ -257,6 +278,8 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					basis
 			  }
 	}
+
+	protected readonly core: IntersectionCore = omit(this.inner, constraintKeys)
 
 	readonly constraints = this.children.filter(
 		(child): child is Node<ConstraintKind> => child.isConstraint()
@@ -356,7 +379,7 @@ type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
 				ConditionalTerminalIntersectionKey]
 
 type intersectionChildInnerValueOf<k extends IntersectionChildKind> =
-	readonly Node<k>[]
+	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
 
 type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
 	k extends IntersectionChildKind
@@ -366,8 +389,4 @@ type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
 
 export type conditionalSchemaOf<t> = {
 	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>
-}
-
-export type conditionalInnerOf<t> = {
-	[k in conditionalIntersectionKeyOf<t>]?: conditionalInnerValueOfKey<k>
 }
