@@ -52,8 +52,6 @@ export class IndexNode
 			intersectSymmetric: (l, r) => l
 		})
 
-	readonly hasOpenIntersection = true
-
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(
 			(entry) =>

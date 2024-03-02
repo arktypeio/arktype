@@ -1,5 +1,6 @@
 import type { defined, evaluate } from "./generics.js"
 import type { List } from "./lists.js"
+import { morph } from "./morph.js"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -209,3 +210,10 @@ export const stringAndSymbolicEntriesOf = (
 ]
 
 export type Key = string | symbol
+
+export type invert<t extends Record<PropertyKey, PropertyKey>> = {
+	[k in t[keyof t]]: { [k2 in keyof t]: t[k2] extends k ? k2 : never }[keyof t]
+} & unknown
+
+export const invert = <t extends Record<PropertyKey, PropertyKey>>(t: t) =>
+	morph(t as any, (k, v) => [v, k]) as invert<t>

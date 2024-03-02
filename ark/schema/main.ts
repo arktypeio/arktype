@@ -1,6 +1,6 @@
 export * from "./base.js"
 export * from "./config.js"
-export * from "./constraints/bounds.js"
+export * from "./constraints/bounds/range.js"
 export * from "./constraints/divisor.js"
 export * from "./constraints/pattern.js"
 export * from "./constraints/predicate.js"

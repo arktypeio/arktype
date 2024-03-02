@@ -1,10 +1,12 @@
 import { domainOf, printable } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { FoldInput } from "../constraints/constraint.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { BasisKind } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
+import type { UnionNode } from "./union.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 

@@ -52,18 +52,13 @@ export class PatternNode extends BasePrimitiveConstraint<
 		intersectSymmetric: () => null
 	})
 
-	readonly hasOpenIntersection = true
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
 
 	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
 
-	readonly expectedContext = Object.freeze({
-		...this.inner,
-		code: "pattern",
-		description: this.description
-	})
+	readonly expectedContext = this.createExpectedContext(this.inner)
 
 	foldIntersection(into: FoldInput<"pattern">): undefined {
 		if (into.basis?.domain !== "string") {

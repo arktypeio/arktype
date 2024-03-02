@@ -1,4 +1,3 @@
-import type { mutable } from "@arktype/util"
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
 import type { MutableInner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -12,7 +11,6 @@ import type {
 	PrimitiveKind,
 	kindRightOf
 } from "../shared/implement.js"
-import type { IntersectionInner } from "../types/intersection.js"
 import type { UnionNode } from "../types/union.js"
 
 export type FoldInput<kind extends NodeKind> = Omit<
@@ -36,10 +34,6 @@ export abstract class BasePrimitiveConstraint<
 	extends BaseNode<d["prerequisite"], d, subclass>
 	implements BaseConstraint<d["kind"]>
 {
-	abstract foldIntersection(
-		into: FoldInput<d["kind"]>
-	): UnionNode | Disjoint | undefined
-
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string

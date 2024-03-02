@@ -79,8 +79,6 @@ export class RequiredNode
 			}
 		})
 
-	readonly hasOpenIntersection = true
-
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly baseRequiredErrorContext = Object.freeze({
 		code: "required",

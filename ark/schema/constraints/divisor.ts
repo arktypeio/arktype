@@ -25,14 +25,6 @@ export type DivisorDeclaration = declareNode<{
 	expectedContext: DivisorInner
 }>
 
-export const writeIndivisibleMessage = <root extends string>(
-	root: root
-): writeIndivisibleMessage<root> =>
-	`Divisibility operand ${root} must be a number`
-
-export type writeIndivisibleMessage<root extends string> =
-	`Divisibility operand ${root} must be a number`
-
 export class DivisorNode extends BasePrimitiveConstraint<
 	DivisorDeclaration,
 	typeof DivisorNode
@@ -60,17 +52,12 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		}
 	})
 
-	readonly hasOpenIntersection = false
 	traverseAllows = (data: number) => data % this.divisor === 0
 
 	compiledCondition = `${jsData} % ${this.divisor} === 0`
 	compiledNegation = `${jsData} % ${this.divisor} !== 0`
 
-	readonly expectedContext = Object.freeze({
-		...this.inner,
-		code: "divisor",
-		description: this.description
-	})
+	readonly expectedContext = this.createExpectedContext(this.inner)
 
 	foldIntersection(into: FoldInput<"divisor">): undefined {
 		if (into.basis?.domain !== "number") {
@@ -79,6 +66,14 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		into.divisor = this.intersectSymmetric(into.divisor)
 	}
 }
+
+export const writeIndivisibleMessage = <root extends string>(
+	root: root
+): writeIndivisibleMessage<root> =>
+	`Divisibility operand ${root} must be a number`
+
+export type writeIndivisibleMessage<root extends string> =
+	`Divisibility operand ${root} must be a number`
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

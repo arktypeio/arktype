@@ -63,8 +63,6 @@ export class OptionalNode
 			}
 		})
 
-	readonly hasOpenIntersection = true
-
 	serializedKey = compileSerializedValue(this.key)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

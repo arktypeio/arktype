@@ -53,7 +53,6 @@ export class PredicateNode extends BasePrimitiveConstraint<
 		intersectSymmetric: () => null
 	})
 
-	readonly hasOpenIntersection = true
 	traverseAllows = this.predicate
 	compiledCondition = `${compileSerializedValue(this.predicate)}(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`

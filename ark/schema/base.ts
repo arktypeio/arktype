@@ -16,14 +16,9 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import type {
-	AfterNode,
-	BeforeNode,
-	MaxLengthNode,
-	MaxNode,
-	MinLengthNode,
-	MinNode
-} from "./constraints/bounds.js"
+import type { BoundNodesByKind } from "./constraints/bounds/kinds.js"
+import type { ExactLengthNode } from "./constraints/bounds/length.js"
+import type { FoldInput } from "./constraints/constraint.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { IndexNode } from "./constraints/index.js"
 import type { OptionalNode } from "./constraints/optional.js"
@@ -53,6 +48,7 @@ import type {
 	requireDescriptionIfPresent,
 	symmetricIntersectionResult
 } from "./shared/declare.js"
+import type { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -243,6 +239,8 @@ export abstract class BaseNode<
 		}) as never
 	}
 
+	abstract foldIntersection(into: FoldInput<d["kind"]>): Disjoint | undefined
+
 	toJSON() {
 		return this.json
 	}
@@ -355,7 +353,7 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	inner: Inner<kind>
 ) => Inner<kind>
 
-interface NodesByKind<t = any> {
+interface NodesByKind<t = any> extends BoundNodesByKind {
 	union: UnionNode<t>
 	morph: MorphNode<t>
 	intersection: IntersectionNode<t>
@@ -363,12 +361,6 @@ interface NodesByKind<t = any> {
 	proto: ProtoNode<t>
 	domain: DomainNode<t>
 	divisor: DivisorNode
-	min: MinNode
-	max: MaxNode
-	minLength: MinLengthNode
-	maxLength: MaxLengthNode
-	after: AfterNode
-	before: BeforeNode
 	pattern: PatternNode
 	predicate: PredicateNode
 	required: RequiredNode

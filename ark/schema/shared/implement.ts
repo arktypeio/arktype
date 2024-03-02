@@ -12,6 +12,7 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
+import { boundKinds, rangeKinds } from "../constraints/bounds/shared.js"
 import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
@@ -29,17 +30,6 @@ import type {
 export const basisKinds = ["unit", "proto", "domain"] as const
 
 export type BasisKind = (typeof basisKinds)[number]
-
-export const boundKinds = [
-	"min",
-	"max",
-	"minLength",
-	"maxLength",
-	"after",
-	"before"
-] as const
-
-export type BoundKind = (typeof boundKinds)[number]
 
 export const propKinds = ["required", "optional", "index", "sequence"] as const
 

@@ -226,12 +226,12 @@ export class SequenceNode
 				if (l.maxLength && r.minLength > l.maxLength) {
 					state.disjoints = [
 						...state.disjoints,
-						Disjoint.from("bound", l.maxLengthNode!, r.minLengthNode!)
+						Disjoint.from("range", l.maxLengthNode!, r.minLengthNode!)
 					]
 				} else if (r.maxLength && l.minLength > r.maxLength) {
 					state.disjoints = [
 						...state.disjoints,
-						Disjoint.from("bound", l.minLengthNode!, r.maxLengthNode!)
+						Disjoint.from("range", l.minLengthNode!, r.maxLengthNode!)
 					]
 				}
 
@@ -268,8 +268,6 @@ export class SequenceNode
 				)
 			}
 		})
-
-	readonly hasOpenIntersection = false
 
 	readonly prefix = this.inner.prefix ?? []
 	readonly optionals = this.inner.optionals ?? []

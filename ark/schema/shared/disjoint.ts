@@ -8,11 +8,8 @@ import {
 	type entryOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type {
-	BoundKind,
-	IntersectionChildKind,
-	kindRightOf
-} from "./implement.js"
+import type { RangeKind } from "../constraints/bounds/shared.js"
+import type { IntersectionChildKind, kindRightOf } from "./implement.js"
 
 type DisjointKinds = {
 	domain?: {
@@ -37,9 +34,9 @@ type DisjointKinds = {
 				l: false
 				r: true
 		  }
-	bound?: {
-		l: Node<BoundKind>
-		r: Node<BoundKind>
+	range?: {
+		l: Node<RangeKind>
+		r: Node<RangeKind>
 	}
 	assignability?:
 		| {
