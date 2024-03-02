@@ -1,5 +1,4 @@
 import { throwInternalError } from "./errors.js"
-import { CastableBase } from "./records.js"
 
 export const cached = <T>(thunk: () => T) => {
 	let isCached = false

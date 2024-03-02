@@ -1,4 +1,3 @@
-import type { Constraints } from "@arktype/schema"
 import type {
 	BigintLiteral,
 	Completion,

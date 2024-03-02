@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import type {
-	initOf,
 	intersectArrays,
 	intersectParameters
 } from "@arktype/util"

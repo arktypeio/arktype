@@ -12,7 +12,7 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import { boundKinds, rangeKinds } from "../constraints/bounds/shared.js"
+import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
@@ -26,6 +26,11 @@ import type {
 	BaseNodeDeclaration,
 	intersectionImplementationResult
 } from "./declare.js"
+
+export {
+	type BoundKind,
+	type RangeKind
+} from "../constraints/refinements/shared.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 

@@ -5,7 +5,7 @@ import {
 	type evaluate,
 	type mutable
 } from "@arktype/util"
-import type { LimitSchemaValue } from "../constraints/bounds/range.js"
+import type { LimitSchemaValue } from "../constraints/refinements/range.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(o: o) =>
 	// TODO: this cast should not be required, but it seems TS is referencing

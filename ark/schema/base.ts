@@ -16,16 +16,15 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import type { BoundNodesByKind } from "./constraints/bounds/kinds.js"
-import type { ExactLengthNode } from "./constraints/bounds/maxLength.js"
 import type { FoldInput } from "./constraints/constraint.js"
-import type { DivisorNode } from "./constraints/divisor.js"
-import type { IndexNode } from "./constraints/index.js"
-import type { OptionalNode } from "./constraints/optional.js"
-import type { PatternNode } from "./constraints/pattern.js"
 import type { PredicateNode } from "./constraints/predicate.js"
-import type { RequiredNode } from "./constraints/required.js"
-import type { SequenceNode } from "./constraints/sequence.js"
+import type { IndexNode } from "./constraints/props/index.js"
+import type { OptionalNode } from "./constraints/props/optional.js"
+import type { RequiredNode } from "./constraints/props/required.js"
+import type { SequenceNode } from "./constraints/props/sequence.js"
+import type { DivisorNode } from "./constraints/refinements/divisor.js"
+import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
+import type { PatternNode } from "./constraints/refinements/pattern.js"
 import type {
 	Declaration,
 	Inner,

@@ -1,9 +1,9 @@
 import { DynamicBase, conflatenateAll, morph, reference } from "@arktype/util"
-import type { Node } from "../base.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { TraverseAllows, TraverseApply } from "../shared/context.js"
-import type { PropKind } from "../shared/implement.js"
-import type { IntersectionInner } from "../types/intersection.js"
+import type { Node } from "../../base.js"
+import type { NodeCompiler } from "../../shared/compile.js"
+import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
+import type { PropKind } from "../../shared/implement.js"
+import type { IntersectionInner } from "../../types/intersection.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction

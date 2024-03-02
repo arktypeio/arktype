@@ -8,7 +8,8 @@ module.exports = defineConfig({
 		"@typescript-eslint",
 		"import",
 		"only-warn",
-		"prefer-arrow-functions"
+		"prefer-arrow-functions",
+		"unused-imports"
 	],
 	extends: [
 		"eslint:recommended",
@@ -56,6 +57,7 @@ module.exports = defineConfig({
 				ignoreRestSiblings: true
 			}
 		],
+		"unused-imports/no-unused-imports": "warn",
 		"@typescript-eslint/default-param-last": "warn",
 		"@typescript-eslint/no-empty-interface": "off",
 		/**

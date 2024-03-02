@@ -1,27 +1,33 @@
 import type { NodeSubclass } from "./base.js"
 import {
-	BoundNodes,
-	type BoundDeclarations
-} from "./constraints/bounds/kinds.js"
-import { DivisorNode, type DivisorDeclaration } from "./constraints/divisor.js"
-import { IndexNode, type IndexDeclaration } from "./constraints/index.js"
-import {
-	OptionalNode,
-	type OptionalDeclaration
-} from "./constraints/optional.js"
-import { PatternNode, type PatternDeclaration } from "./constraints/pattern.js"
-import {
 	PredicateNode,
 	type PredicateDeclaration
 } from "./constraints/predicate.js"
+import { IndexNode, type IndexDeclaration } from "./constraints/props/index.js"
+import {
+	OptionalNode,
+	type OptionalDeclaration
+} from "./constraints/props/optional.js"
 import {
 	RequiredNode,
 	type RequiredDeclaration
-} from "./constraints/required.js"
+} from "./constraints/props/required.js"
 import {
 	SequenceNode,
 	type SequenceDeclaration
-} from "./constraints/sequence.js"
+} from "./constraints/props/sequence.js"
+import {
+	DivisorNode,
+	type DivisorDeclaration
+} from "./constraints/refinements/divisor.js"
+import {
+	BoundNodes,
+	type BoundDeclarations
+} from "./constraints/refinements/kinds.js"
+import {
+	PatternNode,
+	type PatternDeclaration
+} from "./constraints/refinements/pattern.js"
 import type { NodeKind, TypeKind } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"

@@ -1,6 +1,6 @@
 import { readJson, type LinePosition, type SourcePosition } from "@arktype/fs"
 import { existsSync, readdirSync } from "node:fs"
-import { basename, join } from "node:path"
+import { join } from "node:path"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
 import type {

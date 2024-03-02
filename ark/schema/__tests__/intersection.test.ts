@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { rootNode, schema, type Disjoint } from "@arktype/schema"
+import { rootNode, schema } from "@arktype/schema"
 
 describe("intersections", () => {
 	it("normalizes refinement order", () => {

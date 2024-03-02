@@ -17,7 +17,7 @@ import {
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
 	type PropsGroupInput
-} from "../constraints/props.js"
+} from "../constraints/props/props.js"
 import type { Inner, Prerequisite, Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"

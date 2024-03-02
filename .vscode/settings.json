@@ -17,6 +17,7 @@
 		// These will still be caught when run from the CLI, but I see them too
 		// often I'm in the middle of writing something.
 		{ "rule": "@typescript-eslint/no-unused-vars", "severity": "off" },
+		{ "rule": "unused-imports/no-unused-imports", "severity": "off" },
 		{ "rule": "no-empty", "severity": "off" }
 	],
 	"typescript.preferences.autoImportFileExcludePatterns": [

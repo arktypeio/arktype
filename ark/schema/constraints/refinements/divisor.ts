@@ -1,11 +1,11 @@
 import { throwParseError } from "@arktype/util"
-import { jsData } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { jsData } from "../../shared/compile.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	BasePrimitiveConstraint,
 	getBasisName,
 	type FoldInput
-} from "./constraint.js"
+} from "../constraint.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly divisor: number

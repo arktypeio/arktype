@@ -1,16 +1,15 @@
 import { compileSerializedValue } from "@arktype/util"
-import { BaseNode, type Node, type TypeSchema } from "../base.js"
-import type { Inner } from "../kinds.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { TraverseAllows, TraverseApply } from "../shared/context.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { BaseNode, type Node, type TypeSchema } from "../../base.js"
+import type { NodeCompiler } from "../../shared/compile.js"
+import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import { Disjoint } from "../../shared/disjoint.js"
 import {
 	throwInvalidOperandError,
 	type TypeKind,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { BaseConstraint, FoldInput } from "./constraint.js"
+} from "../../shared/implement.js"
+import type { BaseConstraint, FoldInput } from "../constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface RequiredSchema extends BaseMeta {

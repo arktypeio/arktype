@@ -1,7 +1,7 @@
 import type { domainOf } from "./domain.js"
 import type { andPreserveUnknown, conform } from "./generics.js"
 import type { Hkt } from "./hkt.js"
-import type { List, headOf, lastOf } from "./lists.js"
+import type { List } from "./lists.js"
 import type { requiredKeyOf, valueOf } from "./records.js"
 
 export interface AndPreserveUnknown extends Hkt.Kind {

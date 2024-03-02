@@ -1,5 +1,3 @@
-import { attest } from "@arktype/attest"
-import { type } from "arktype"
 
 // TODO: reenable
 // describe("key traversal", () => {

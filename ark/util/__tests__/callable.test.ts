@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { Callable, type conform, type Hkt } from "@arktype/util"
+import { Callable } from "@arktype/util"
 
 describe("callable", () => {
 	class Sub extends Callable<(name: string) => string> {

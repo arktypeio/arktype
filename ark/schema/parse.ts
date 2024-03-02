@@ -18,7 +18,6 @@ import {
 	type NodeKind,
 	type UnknownNodeImplementation
 } from "./shared/implement.js"
-import type { IntersectionBasisKind } from "./types/intersection.js"
 
 export type SchemaParseOptions = {
 	alias?: string

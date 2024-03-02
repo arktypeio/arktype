@@ -1,8 +1,6 @@
 import { keywords, schema, type Inner, type TypeNode } from "@arktype/schema"
 import {
 	printable,
-	reference,
-	registry,
 	stringAndSymbolicEntriesOf,
 	throwParseError,
 	type Dict,

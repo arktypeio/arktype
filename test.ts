@@ -1,5 +1,3 @@
-import { bench } from "@arktype/attest"
-import { schema } from "@arktype/schema"
 import { type } from "arktype"
 import "./arkConfig.js"
 
