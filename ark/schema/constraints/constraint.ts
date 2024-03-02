@@ -18,13 +18,10 @@ import type {
 	PrimitiveKind,
 	kindRightOf
 } from "../shared/implement.js"
-import type { IntersectionInner } from "../types/intersection.js"
 
-export type FoldBranch<kind extends NodeKind = lastOf<OrderedNodeKinds>> = Pick<
+export type FoldBranch<kind extends NodeKind = lastOf<OrderedNodeKinds>> = Omit<
 	MutableInner<"intersection">,
-	kind extends ConstraintKind
-		? kind | kindRightOf<kind>
-		: keyof IntersectionInner
+	kindRightOf<kind>
 >
 
 export type FoldMappableNode<kind extends NodeKind> = Node & {

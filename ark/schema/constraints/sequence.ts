@@ -19,7 +19,7 @@ import type {
 } from "../shared/implement.js"
 import type { IntersectionSchema } from "../types/intersection.js"
 import type { UnionNode } from "../types/union.js"
-import type { FoldBranch, FoldState } from "./constraint.js"
+import type { FoldState } from "./constraint.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -358,21 +358,21 @@ export class SequenceNode extends BaseNode<
 		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
 	]
 
-	fold(into: FoldBranch<"sequence">) {
-		this.minLengthNode?.fold(into)
+	foldIntersection(s: FoldState<"sequence">) {
+		this.minLengthNode?.foldIntersection(s)
 		const possibleLengthDisjoint =
-			this.maxLengthNode?.fold(into) ??
+			this.maxLengthNode?.foldIntersection(s) ??
 			// even if this sequence doesn't contribute maxLength, if there is
 			// an existing maxLength constraint, check that it is compatible
 			// with the minLength constraint we just added
-			into.maxLength?.foldIntersection(into)
+			s.maxLength?.foldIntersection(s)
 		if (possibleLengthDisjoint) return possibleLengthDisjoint
-		const ownResult = this.intersectSymmetric(into.sequence)
+		const ownResult = this.intersectSymmetric(s.sequence)
 		if (ownResult instanceof Disjoint) {
 			return ownResult
 		}
 		if (ownResult instanceof SequenceNode) {
-			into.sequence = ownResult
+			s.sequence = ownResult
 		} else {
 			return ownResult as UnionNode
 		}

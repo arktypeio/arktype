@@ -1,13 +1,5 @@
-import {
-	domainOf,
-	isArray,
-	isKeyOf,
-	listFrom,
-	morph,
-	printable,
-	type Constructor
-} from "@arktype/util"
-import { BaseNode, type Node, type UnknownNode } from "../base.js"
+import { domainOf, printable, type Constructor } from "@arktype/util"
+import type { Node } from "../base.js"
 import type {
 	AfterNode,
 	BeforeNode,
@@ -29,7 +21,7 @@ import type { Inner } from "../kinds.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { constraintKeys, type BasisKind } from "../shared/implement.js"
+import type { BasisKind } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
 import type { DomainInner } from "./domain.js"
 import type { IntersectionBasisKind } from "./intersection.js"
@@ -85,13 +77,12 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	domain = domainOf(this.unit)
 
 	fold(into: FoldBranch<"unit">) {
-		return Object.values(into)
-			.flat()
-			.every((v) => !(v instanceof BaseNode) || v.allows(this.unit as never))
-			? {}
-			: {}
-		// return r.allows(this.unit)
-		// 	? this
-		// 	: Disjoint.from("assignability", this.unit, r)
+		return r.allows(this.unit)
+			? this
+			: Disjoint.from("assignability", this.unit, r)
+	}
+
+	foldIntersection(s: FoldState<"unit">) {
+		return s.map(this)
 	}
 }

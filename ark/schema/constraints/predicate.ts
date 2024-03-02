@@ -66,6 +66,10 @@ export class PredicateNode extends BasePrimitiveConstraint<
 	fold(into: FoldBranch<"predicate">) {
 		into.predicate = appendUnique(into.predicate, this)
 	}
+
+	foldIntersection(s: FoldState<"predicate">) {
+		return s.map(this)
+	}
 }
 
 export type Predicate<data = unknown> = (

@@ -67,13 +67,21 @@ export class DivisorNode extends BasePrimitiveConstraint<
 	compiledCondition = `${jsData} % ${this.divisor} === 0`
 	compiledNegation = `${jsData} % ${this.divisor} !== 0`
 
-	readonly expectedContext = this.createExpectedContext(this.inner)
+	readonly expectedContext = Object.freeze({
+		...this.inner,
+		code: "divisor",
+		description: this.description
+	})
 
 	fold(into: FoldBranch<"divisor">) {
 		if (into.basis?.domain !== "number") {
 			throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
 		}
 		into.divisor = this.intersectSymmetric(into.divisor)
+	}
+
+	foldIntersection(s: FoldState<"divisor">) {
+		return s.map(this)
 	}
 }
 

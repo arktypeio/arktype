@@ -63,12 +63,20 @@ export class PatternNode extends BasePrimitiveConstraint<
 	compiledCondition = `/${this.source}/${this.flags ?? ""}.test(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
 
-	readonly expectedContext = this.createExpectedContext(this.inner)
+	readonly expectedContext = Object.freeze({
+		...this.inner,
+		code: "pattern",
+		description: this.description
+	})
 
 	fold(into: FoldBranch<"pattern">) {
 		if (into.basis?.domain !== "string") {
 			throwInvalidOperandError("pattern", "a string", into.basis)
 		}
 		into.pattern = appendUnique(into.pattern, this)
+	}
+
+	foldIntersection(s: FoldState<"pattern">) {
+		return s.map(this)
 	}
 }

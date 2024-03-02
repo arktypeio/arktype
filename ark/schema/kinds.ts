@@ -1,4 +1,5 @@
-import type { NodeSubclass } from "./base.js"
+import type { mutable } from "@arktype/util"
+import type { Node, NodeSubclass } from "./base.js"
 import { BoundNodes, type BoundDeclarations } from "./constraints/bounds.js"
 import { DivisorNode, type DivisorDeclaration } from "./constraints/divisor.js"
 import { IndexNode, type IndexDeclaration } from "./constraints/index.js"

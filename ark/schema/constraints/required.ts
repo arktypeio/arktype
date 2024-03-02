@@ -1,5 +1,6 @@
 import { compileSerializedValue } from "@arktype/util"
 import { BaseNode, type Node, type TypeSchema } from "../base.js"
+import type { Inner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -9,7 +10,7 @@ import {
 	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { FoldBranch } from "./constraint.js"
+import type { FoldBranch, FoldState } from "./constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface RequiredSchema extends BaseMeta {
@@ -136,5 +137,9 @@ export class RequiredNode extends BaseNode<
 			matchedExisting = true
 		}
 		if (!matchedExisting) into.required.push(this)
+	}
+
+	foldIntersection(s: FoldState<"required">) {
+		return s.map(this)
 	}
 }

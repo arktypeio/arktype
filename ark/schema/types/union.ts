@@ -1,6 +1,6 @@
 import { isArray } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
-import type { FoldBranch, FoldState } from "../constraints/constraint.js"
+import type { FoldState } from "../constraints/constraint.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -153,7 +153,7 @@ export class UnionNode<t = unknown> extends BaseNode<
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.branches.forEach((b) => b.traverseApply(data, ctx))
 
-	fold(into: FoldBranch<"union">) {
+	foldIntersection(s: FoldState<"union">) {
 		const branches = intersectBranches(this.branches, [r])
 		if (branches instanceof Disjoint) {
 			return branches
