@@ -90,22 +90,15 @@ export type BaseNodeDeclaration = {
 	expectedContext: BaseExpectedContext | null
 }
 
+export type ownIntersectionResult<d extends BaseNodeDeclaration> =
+	| baseIntersectionResult<d>
+	| alternateIntersectionResult<d>
+
 type baseIntersectionResult<d extends BaseNodeDeclaration> = Node<
 	reducibleKindOf<d["kind"]>
 >
 
-type ownIntersectionResult<d extends BaseNodeDeclaration> =
-	| baseIntersectionResult<d>
-	| baseIntersectionAlternateResult<d>
-
-type baseIntersectionAlternateResult<d extends BaseNodeDeclaration> =
+type alternateIntersectionResult<d extends BaseNodeDeclaration> =
 	| (d["hasOpenIntersection"] extends true ? null : never)
 	| (d["disjoinable"] extends true ? Disjoint : never)
-
-export type intersectionImplementationResult<d extends BaseNodeDeclaration> =
-	| ownIntersectionResult<d>
-	| (d["branchable"] extends true ? List<baseIntersectionResult<d>> : never)
-
-export type symmetricIntersectionResult<d extends BaseNodeDeclaration> =
-	| ownIntersectionResult<d>
 	| (d["branchable"] extends true ? List<baseIntersectionResult<d>> : never)

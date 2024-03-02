@@ -43,8 +43,8 @@ import type {
 	BaseMeta,
 	BaseNodeDeclaration,
 	attachmentsOf,
-	requireDescriptionIfPresent,
-	symmetricIntersectionResult
+	ownIntersectionResult,
+	requireDescriptionIfPresent
 } from "./shared/declare.js"
 import {
 	basisKinds,
@@ -272,9 +272,7 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	intersectSymmetric(
-		r: Node<d["kind"]> | undefined
-	): symmetricIntersectionResult<d> {
+	intersectSymmetric(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
 		if (r === undefined) {
 			return this as never
 		}

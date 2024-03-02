@@ -24,7 +24,7 @@ import type {
 	BaseExpectedContext,
 	BaseMeta,
 	BaseNodeDeclaration,
-	intersectionImplementationResult
+	ownIntersectionResult
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 
@@ -189,7 +189,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	intersectSymmetric: (
 		l: Node<d["kind"]>,
 		r: Node<d["kind"]>
-	) => d["inner"] | intersectionImplementationResult<d>
+	) => d["inner"] | ownIntersectionResult<d>
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (inner: d["inner"], $: ScopeNode) => Node | Disjoint | undefined
 }

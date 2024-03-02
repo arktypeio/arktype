@@ -1,6 +1,7 @@
 import {
 	append,
 	conflatenateAll,
+	isArray,
 	isEmptyObject,
 	morph,
 	pick,
@@ -18,6 +19,8 @@ import {
 	type PropsGroupInput
 } from "../constraints/props/props.js"
 import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
+import type { SchemaParseContext } from "../parse.js"
+import type { ScopeNode } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -25,7 +28,6 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
 	constraintKinds,
-	parseOpen,
 	propKinds,
 	type BasisKind,
 	type ConstraintKind,
@@ -40,25 +42,25 @@ import { BaseType } from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
-export type IntersectionInner = evaluate<
+export type IntersectionInner<basis = any> = evaluate<
 	BaseMeta & {
 		basis?: Node<IntersectionBasisKind>
-	} & {
-		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
-	}
+	} & conditionalInnerOf<basis>
 >
 
 export type IntersectionSchema<
 	basis extends Schema<IntersectionBasisKind> | undefined = any
-> = evaluate<
-	BaseMeta & {
-		basis?: basis
-	} & conditionalSchemaOf<
-			basis extends Schema<BasisKind>
-				? instantiateBasis<basis>["infer"]
-				: unknown
-		>
->
+> =
+	| evaluate<
+			BaseMeta & {
+				basis?: basis
+			} & conditionalSchemaOf<
+					basis extends Schema<BasisKind>
+						? instantiateBasis<basis>["infer"]
+						: unknown
+				>
+	  >
+	| IntersectionInner
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
@@ -79,6 +81,47 @@ const propKeys = morph(
 	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
 	(i, k) => [k, 1] as const
 )
+
+const reduceIntersection = (inner: IntersectionInner, $: ScopeNode) => {
+	const [constraints, base] = splitByKeys(inner, constraintKeys)
+	const result: FoldInput<"predicate"> = base
+	const flatConstraints = Object.values(constraints).flat()
+	if (flatConstraints.length === 0 && base.basis) {
+		return base.basis
+	}
+	const disjoint = new Disjoint({})
+	// TODO: are these ordered?
+	for (const constraint of flatConstraints) {
+		const possibleDisjoint = constraint.foldIntersection(result)
+		if (possibleDisjoint instanceof Disjoint) {
+			disjoint.add(possibleDisjoint)
+		}
+	}
+	if (!disjoint.isEmpty()) {
+		return disjoint
+	}
+	return $.parse("intersection", result, {
+		prereduced: true
+	})
+}
+
+const intersectionChildKeyParser =
+	<kind extends IntersectionChildKind>(kind: kind) =>
+	(
+		input: listable<Schema<kind>>,
+		ctx: SchemaParseContext
+	): readonly Node<kind>[] | undefined => {
+		if (isArray(input)) {
+			if (input.length === 0) {
+				// Omit empty lists as input
+				return
+			}
+			return input
+				.map((schema) => ctx.$.parse(kind, schema as never))
+				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
+		}
+		return [ctx.$.parse(kind, input)] as never
+	}
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
 // 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
@@ -114,86 +157,65 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				},
 				divisor: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("divisor", def, ctx)
+					parse: intersectionChildKeyParser("divisor")
 				},
 				max: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("max", def, ctx)
+					parse: intersectionChildKeyParser("max")
 				},
 				min: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("min", def, ctx)
+					parse: intersectionChildKeyParser("min")
 				},
 				maxLength: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("maxLength", def, ctx)
+					parse: intersectionChildKeyParser("maxLength")
 				},
 				minLength: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("minLength", def, ctx)
+					parse: intersectionChildKeyParser("minLength")
 				},
 				length: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("length", def, ctx)
+					parse: intersectionChildKeyParser("length")
 				},
 				before: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("before", def, ctx)
+					parse: intersectionChildKeyParser("before")
 				},
 				after: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("after", def, ctx)
+					parse: intersectionChildKeyParser("after")
 				},
 				pattern: {
 					child: true,
-					parse: (def, ctx) => parseOpen("pattern", def, ctx)
+					parse: intersectionChildKeyParser("pattern")
 				},
 				predicate: {
 					child: true,
-					parse: (def, ctx) => parseOpen("predicate", def, ctx)
+					parse: intersectionChildKeyParser("predicate")
 				},
 				required: {
 					child: true,
-					parse: (def, ctx) => parseOpen("required", def, ctx)
+					parse: intersectionChildKeyParser("required")
 				},
 				optional: {
 					child: true,
-					parse: (def, ctx) => parseOpen("optional", def, ctx)
+					parse: intersectionChildKeyParser("optional")
 				},
 				index: {
 					child: true,
-					parse: (def, ctx) => parseOpen("index", def, ctx)
+					parse: intersectionChildKeyParser("index")
 				},
 				sequence: {
 					child: true,
-					parse: (def, ctx) => ctx.$.parse("sequence", def, ctx)
+					parse: intersectionChildKeyParser("sequence")
 				},
 				onExtraneousKey: {
 					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
-			reduce: (inner, $) => {
-				const [constraints, base] = splitByKeys(inner, constraintKeys)
-				const result: FoldInput<"predicate"> = base
-				const flatConstraints = Object.values(constraints).flat()
-				if (flatConstraints.length === 0 && base.basis) {
-					return base.basis
-				}
-				const disjoint = new Disjoint({})
-				// TODO: are these ordered?
-				for (const constraint of flatConstraints) {
-					const possibleDisjoint = constraint.foldIntersection(result)
-					if (possibleDisjoint instanceof Disjoint) {
-						disjoint.add(possibleDisjoint)
-					}
-				}
-				if (!disjoint.isEmpty()) {
-					return disjoint
-				}
-				return $.parse("intersection", result, {
-					prereduced: true
-				})
-			},
+			reduce: reduceIntersection,
 			defaults: {
 				description(inner) {
 					const children = Object.values(inner).flat()
@@ -211,9 +233,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			intersectSymmetric: (l, r) => {
 				const inner: MutableInner<"intersection"> = {}
 				for (const node of l.constraints.concat(r.constraints)) {
-					inner[node.kind] = node.hasOpenIntersection
-						? append(inner[node.kind], node)
-						: (node as any)
+					inner[node.kind] = append(inner[node.kind], node) as never
 				}
 				if (l.onExtraneousKey || r.onExtraneousKey) {
 					inner.onExtraneousKey =
@@ -336,7 +356,7 @@ type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
 				ConditionalTerminalIntersectionKey]
 
 type intersectionChildInnerValueOf<k extends IntersectionChildKind> =
-	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
+	readonly Node<k>[]
 
 type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
 	k extends IntersectionChildKind
@@ -346,4 +366,8 @@ type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
 
 export type conditionalSchemaOf<t> = {
 	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>
+}
+
+export type conditionalInnerOf<t> = {
+	[k in conditionalIntersectionKeyOf<t>]?: conditionalInnerValueOfKey<k>
 }
