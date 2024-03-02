@@ -1,23 +1,10 @@
-import {
-	AfterNode,
-	BeforeNode,
-	type AfterDeclaration,
-	type BeforeDeclaration
-} from "./date.js"
-import {
-	ExactLengthNode,
-	MaxLengthNode,
-	MinLengthNode,
-	type ExactLengthDeclaration,
-	type MaxLengthDeclaration,
-	type MinLengthDeclaration
-} from "./length.js"
-import {
-	MaxNode,
-	MinNode,
-	type MaxDeclaration,
-	type MinDeclaration
-} from "./numeric.js"
+import { AfterNode, type AfterDeclaration } from "./after.js"
+import { BeforeNode, type BeforeDeclaration } from "./before.js"
+import { ExactLengthNode, type ExactLengthDeclaration } from "./exactLength.js"
+import { MaxNode, type MaxDeclaration } from "./max.js"
+import { MaxLengthNode, type MaxLengthDeclaration } from "./maxLength.js"
+import { MinNode, type MinDeclaration } from "./min.js"
+import { MinLengthNode, type MinLengthDeclaration } from "./minLength.js"
 
 export interface BoundDeclarations {
 	min: MinDeclaration

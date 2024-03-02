@@ -17,7 +17,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BoundNodesByKind } from "./constraints/bounds/kinds.js"
-import type { ExactLengthNode } from "./constraints/bounds/length.js"
+import type { ExactLengthNode } from "./constraints/bounds/maxLength.js"
 import type { FoldInput } from "./constraints/constraint.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { IndexNode } from "./constraints/index.js"

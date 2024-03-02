@@ -203,3 +203,43 @@ export const prerequisiteDescriptionsByOperandKind = {
 	length: "a string or Array",
 	date: "a Date"
 } as const satisfies Record<BoundOperandKind, string>
+
+export type NumericRangeKind = "min" | "max"
+
+export type NumericRangeDeclaration<
+	kind extends NumericRangeKind = NumericRangeKind
+> = declareRange<{
+	kind: kind
+	limit: number
+	prerequisite: number
+}>
+
+export type LengthRangeKind = "minLength" | "maxLength"
+
+export type LengthRangeDeclaration<
+	kind extends LengthRangeKind = LengthRangeKind
+> = declareRange<{
+	kind: kind
+	limit: number
+	prerequisite: LengthBoundableData
+}>
+
+export type LengthBoundableData = string | List
+
+export type DateRangeKind = "before" | "after"
+
+export type DateRangeDeclaration<kind extends DateRangeKind = DateRangeKind> =
+	declareRange<{
+		kind: kind
+		limit: string | number
+		prerequisite: Date
+	}>
+
+export const dateLimitToString = (limit: LimitSchemaValue) =>
+	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
+
+export interface DateBoundExtras {
+	dateLimit: Date
+	numericLimit: number
+	stringLimit: string
+}
