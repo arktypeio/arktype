@@ -232,19 +232,7 @@ export abstract class BaseNode<
 		return { errors: ctx.currentErrors }
 	}
 
-	closedIntersection(
-		fold: (branch: FoldState<d["kind"]>) => Disjoint | undefined
-	) {
-		return (branches: FoldState<d["kind"]>) => {
-			for (const branch of branches) {
-				const result = fold(branch)
-				if (result instanceof Disjoint) {
-				}
-			}
-		}
-	}
-
-	abstract foldIntersection(branches: FoldState<d["kind"]>): Disjoint | void
+	abstract fold(into: FoldBranch<d["kind"]>): Disjoint | void
 
 	private static intersectionCache: Record<string, TypeNode | Disjoint> = {}
 	intersect<other extends TypeNode>(

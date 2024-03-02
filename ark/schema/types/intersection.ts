@@ -7,11 +7,10 @@ import {
 	printable,
 	splitByKeys,
 	type evaluate,
-	type lastOf,
 	type listable
 } from "@arktype/util"
 import { BaseNode, type Node, type TypeNode } from "../base.js"
-import type { FoldState } from "../constraints/constraint.js"
+import type { FoldBranch, FoldState } from "../constraints/constraint.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
@@ -32,7 +31,6 @@ import {
 	type ConstraintKind,
 	type IntersectionChildKind,
 	type OpenNodeKind,
-	type OrderedNodeKinds,
 	type PropKind,
 	type RefinementKind,
 	type nodeImplementationOf
@@ -74,13 +72,6 @@ export type IntersectionDeclaration = declareNode<{
 	disjoinable: true
 	childKind: IntersectionChildKind
 }>
-
-const constraintKeys = morph(constraintKinds, (i, kind) => [kind, 1] as const)
-
-const propKeys = morph(
-	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
-	(i, k) => [k, 1] as const
-)
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
 // 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
@@ -181,7 +172,7 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 				// TODO: deduplicate with intersectSymmetric
 				// TODO: are these ordered?
 				for (const constraint of flatConstraints) {
-					const foldOutput = constraint.foldIntersection(foldInput)
+					const foldOutput = constraint.fold(foldInput)
 					if (foldOutput instanceof Disjoint) {
 						foldOutput.throw()
 					}
@@ -226,7 +217,7 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 				// that return a union like certain intersections of sequence nodes
 				const unions: UnionNode[] = []
 				for (const constraint of r.constraints) {
-					const foldOutput = constraint.foldIntersection(foldInput)
+					const foldOutput = constraint.fold(foldInput)
 					if (foldOutput instanceof Disjoint) return foldOutput
 					if (foldOutput instanceof BaseNode && foldOutput.kind === "union") {
 						unions.push(foldOutput)
@@ -245,7 +236,7 @@ export class IntersectionNode<t = unknown> extends BaseNode<
 			}
 		})
 
-	foldIntersection(s: FoldState<"intersection">) {
+	fold(into: FoldBranch<"intersection">) {
 		const basis = this.basis?.intersect(r) ?? r
 		// TODO: meta should not be included here?
 		return basis instanceof Disjoint

@@ -5,7 +5,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../shared/implement.js"
-import type { FoldState } from "./constraint.js"
+import type { FoldBranch, FoldState } from "./constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
@@ -87,5 +87,5 @@ export class OptionalNode extends BaseNode<
 		}
 	}
 
-	foldIntersection(s: FoldState<"optional">) {}
+	fold(into: FoldBranch<"optional">) {}
 }

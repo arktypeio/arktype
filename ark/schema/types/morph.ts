@@ -9,7 +9,7 @@ import {
 	type listable
 } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
-import type { FoldState } from "../constraints/constraint.js"
+import type { FoldBranch, FoldState } from "../constraints/constraint.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -124,7 +124,7 @@ export class MorphNode<t = unknown> extends BaseNode<
 
 	traverseApply: TraverseApply = (data, ctx) => this.in.traverseApply(data, ctx)
 
-	foldIntersection(s: FoldState<"morph">) {
+	fold(into: FoldBranch<"morph">) {
 		const inTersection = this.in.intersect(r)
 		return inTersection instanceof Disjoint
 			? inTersection

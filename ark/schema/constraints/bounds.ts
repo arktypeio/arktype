@@ -143,7 +143,7 @@ export abstract class BaseBound<
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
 
-	readonly expectedContext = this.createExpectedContext({})
+	readonly expectedContext = this.createExpectedContext(this.inner)
 
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
@@ -249,10 +249,6 @@ export class MinNode extends BaseNumericBound<MinDeclaration, typeof MinNode> {
 		into.min = this.intersectSymmetric(into.min)
 	}
 
-	foldIntersection(s: FoldState<"min">) {
-		return s.map(this)
-	}
-
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.limit
 		: (data: number) => data >= this.limit
@@ -282,10 +278,6 @@ export class MaxNode extends BaseNumericBound<MaxDeclaration, typeof MaxNode> {
 			return Disjoint.from("bound", this, into.min)
 		}
 		into.max = this.intersectSymmetric(into.max)
-	}
-
-	foldIntersection(s: FoldState<"max">) {
-		return s.map(this)
 	}
 }
 
@@ -333,10 +325,6 @@ export class MinLengthNode extends BaseBound<
 		}
 		into.minLength = this.intersectSymmetric(into.minLength)
 	}
-
-	foldIntersection(s: FoldState<"minLength">) {
-		return s.map(this)
-	}
 }
 
 export type MaxLengthDeclaration = LengthBoundDeclaration<"maxLength">
@@ -372,10 +360,6 @@ export class MaxLengthNode extends BaseBound<
 		if (into.minLength?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.minLength)
 		}
-	}
-
-	foldIntersection(s: FoldState<"maxLength">) {
-		return s.map(this)
 	}
 }
 
@@ -430,10 +414,6 @@ export class AfterNode
 		}
 		into.after = this.intersectSymmetric(into.after)
 	}
-
-	foldIntersection(s: FoldState<"after">) {
-		return s.map(this)
-	}
 }
 
 export type BeforeDeclaration = DateBoundDeclaration<"before">
@@ -471,10 +451,6 @@ export class BeforeNode
 		if (into.after?.isStricterThan(this)) {
 			return Disjoint.from("bound", this, into.after)
 		}
-	}
-
-	foldIntersection(s: FoldState<"before">) {
-		return s.map(this)
 	}
 }
 

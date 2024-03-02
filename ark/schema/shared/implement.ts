@@ -13,6 +13,7 @@ import {
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
 import type { FoldState } from "../constraints/constraint.js"
+import type { PropsGroupInput } from "../constraints/props.js"
 import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
@@ -99,6 +100,16 @@ export const primitiveKinds = [
 	...refinementKinds,
 	"predicate"
 ] as const
+
+export const constraintKeys = morph(
+	constraintKinds,
+	(i, kind) => [kind, 1] as const
+)
+
+export const propKeys = morph(
+	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
+	(i, k) => [k, 1] as const
+)
 
 export type PrimitiveKind = (typeof primitiveKinds)[number]
 
