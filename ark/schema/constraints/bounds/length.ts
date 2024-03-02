@@ -4,28 +4,28 @@ import { Disjoint } from "../../shared/disjoint.js"
 import { BasePrimitiveConstraint, type FoldInput } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
-export interface ExactLengthInner extends BaseMeta {
+export interface LengthInner extends BaseMeta {
 	readonly length: number
 }
 
-export type NormalizedExactLengthSchema = ExactLengthInner
+export type NormalizedLengthSchema = LengthInner
 
-export type ExactLengthSchema = NormalizedExactLengthSchema | number
+export type LengthSchema = NormalizedLengthSchema | number
 
-export type ExactLengthDeclaration = declareNode<{
-	kind: "exactLength"
-	schema: ExactLengthSchema
-	normalizedSchema: NormalizedExactLengthSchema
-	inner: ExactLengthInner
+export type LengthDeclaration = declareNode<{
+	kind: "length"
+	schema: LengthSchema
+	normalizedSchema: NormalizedLengthSchema
+	inner: LengthInner
 	composition: "primitive"
 	prerequisite: LengthBoundableData
-	expectedContext: ExactLengthInner
+	expectedContext: LengthInner
 	disjoinable: true
 }>
 
-export class ExactLengthNode extends BasePrimitiveConstraint<
-	ExactLengthDeclaration,
-	typeof ExactLengthNode
+export class LengthNode extends BasePrimitiveConstraint<
+	LengthDeclaration,
+	typeof LengthNode
 > {
 	static implementation = this.implement({
 		collapseKey: "length",
@@ -46,9 +46,7 @@ export class ExactLengthNode extends BasePrimitiveConstraint<
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
-				return inner.length === 1
-					? "an integer"
-					: `a multiple of ${inner.length}`
+				return `exactly length ${inner.length}`
 			}
 		}
 	})
@@ -60,5 +58,5 @@ export class ExactLengthNode extends BasePrimitiveConstraint<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	foldIntersection(into: FoldInput<"exactLength">): undefined {}
+	foldIntersection(into: FoldInput<"length">): undefined {}
 }
