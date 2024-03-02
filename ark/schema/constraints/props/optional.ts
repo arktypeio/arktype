@@ -6,6 +6,7 @@ import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { BaseConstraint, FoldInput } from "../constraint.js"
+import { BasePropConstraint } from "./prop.js"
 import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
@@ -25,12 +26,12 @@ export type OptionalDeclaration = declareNode<{
 	inner: OptionalInner
 	composition: "composite"
 	prerequisite: object
-	open: true
+	hasOpenIntersection: true
 	childKind: TypeKind
 }>
 
 export class OptionalNode
-	extends BaseNode<object, OptionalDeclaration, typeof OptionalNode>
+	extends BasePropConstraint<OptionalDeclaration, typeof OptionalNode>
 	implements BaseConstraint<"optional">
 {
 	static implementation: nodeImplementationOf<OptionalDeclaration> =
@@ -43,6 +44,7 @@ export class OptionalNode
 				}
 			},
 			hasAssociatedError: false,
+			hasOpenIntersection: true,
 			normalize: (schema) => schema,
 			defaults: {
 				description(inner) {

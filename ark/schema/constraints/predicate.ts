@@ -21,7 +21,7 @@ export type PredicateDeclaration = declareNode<{
 	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
 	composition: "primitive"
-	open: true
+	hasOpenIntersection: true
 	expectedContext: {}
 }>
 
@@ -45,6 +45,7 @@ export class PredicateNode extends BasePrimitiveConstraint<
 				return `valid according to ${inner.predicate.name}`
 			}
 		},
+		hasOpenIntersection: true,
 		// TODO: allow changed order to be the same type
 		// as long as the narrows in l and r are individually safe to check
 		// in the order they're specified, checking them in the order

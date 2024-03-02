@@ -18,8 +18,8 @@ import type {
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import type { IntersectionSchema } from "../../types/intersection.js"
-import type { UnionNode } from "../../types/union.js"
 import type { BaseConstraint, FoldInput } from "../constraint.js"
+import { BasePropConstraint } from "./prop.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -108,7 +108,7 @@ export const isSequenceTuple = (
 }
 
 export class SequenceNode
-	extends BaseNode<List, SequenceDeclaration, typeof SequenceNode>
+	extends BasePropConstraint<SequenceDeclaration, typeof SequenceNode>
 	implements BaseConstraint<"sequence">
 {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
@@ -355,9 +355,7 @@ export class SequenceNode
 		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
 	]
 
-	foldIntersection(
-		into: FoldInput<"sequence">
-	): UnionNode | Disjoint | undefined {
+	foldIntersection(into: FoldInput<"sequence">): Disjoint | undefined {
 		this.minLengthNode?.foldIntersection(into)
 		const possibleLengthDisjoint =
 			this.maxLengthNode?.foldIntersection(into) ??
@@ -372,8 +370,6 @@ export class SequenceNode
 		}
 		if (ownResult instanceof SequenceNode) {
 			into.sequence = ownResult
-		} else {
-			return ownResult as UnionNode
 		}
 	}
 }

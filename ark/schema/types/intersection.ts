@@ -1,16 +1,15 @@
 import {
+	append,
 	conflatenateAll,
-	isArray,
 	isEmptyObject,
 	morph,
 	pick,
 	printable,
 	splitByKeys,
 	type evaluate,
-	type lastOf,
 	type listable
 } from "@arktype/util"
-import { BaseNode, type Node, type TypeNode } from "../base.js"
+import { BaseNode, type Node } from "../base.js"
 import type { FoldInput } from "../constraints/constraint.js"
 import {
 	PropsGroup,
@@ -18,7 +17,7 @@ import {
 	type ExtraneousKeyRestriction,
 	type PropsGroupInput
 } from "../constraints/props/props.js"
-import type { Inner, Prerequisite, Schema } from "../kinds.js"
+import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -32,14 +31,12 @@ import {
 	type ConstraintKind,
 	type IntersectionChildKind,
 	type OpenNodeKind,
-	type OrderedNodeKinds,
 	type PropKind,
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { instantiateBasis } from "./basis.js"
 import { BaseType } from "./type.js"
-import type { UnionNode } from "./union.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -135,6 +132,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					child: true,
 					parse: (def, ctx) => ctx.$.parse("minLength", def, ctx)
 				},
+				length: {
+					child: true,
+					parse: (def, ctx) => ctx.$.parse("length", def, ctx)
+				},
 				before: {
 					child: true,
 					parse: (def, ctx) => ctx.$.parse("before", def, ctx)
@@ -171,37 +172,27 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
-			reduce: (inner, scope) => {
+			reduce: (inner, $) => {
 				const [constraints, base] = splitByKeys(inner, constraintKeys)
-				const foldInput: FoldInput<"predicate"> = base
+				const result: FoldInput<"predicate"> = base
 				const flatConstraints = Object.values(constraints).flat()
 				if (flatConstraints.length === 0 && base.basis) {
 					return base.basis
 				}
-				const unions: UnionNode[] = []
-				// TODO: deduplicate with intersectSymmetric
+				const disjoints: Disjoint[] = []
 				// TODO: are these ordered?
 				for (const constraint of flatConstraints) {
-					const foldOutput = constraint.foldIntersection(foldInput)
-					if (foldOutput instanceof Disjoint) {
-						foldOutput.throw()
-					}
-					if (foldOutput instanceof BaseNode && foldOutput.kind === "union") {
-						unions.push(foldOutput)
+					const possibleDisjoint = constraint.foldIntersection(result)
+					if (possibleDisjoint instanceof Disjoint) {
+						disjoints.push(possibleDisjoint)
 					}
 				}
-				const intersection = scope.parse("intersection", foldInput, {
+				if (disjoints.length) {
+					return disjoints
+				}
+				return $.parse("intersection", result, {
 					prereduced: true
 				})
-				if (unions.length === 0) {
-					return intersection
-				}
-				let result: TypeNode | Disjoint = intersection
-				for (const union of unions) {
-					result = result.intersect(union)
-					if (result instanceof Disjoint) return result.throw()
-				}
-				return result
 			},
 			defaults: {
 				description(inner) {
@@ -218,31 +209,19 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			},
 			intersectSymmetric: (l, r) => {
-				// ensure we can safely mutate inner as well as its shallow open intersections
-				const foldInput = morph(l.inner, (k, v) => [
-					k,
-					isArray(v) ? [...v] : v
-				]) as FoldInput<lastOf<OrderedNodeKinds>>
-				// this feels fairly hacky, will need to revisit ways to handle cases
-				// that return a union like certain intersections of sequence nodes
-				const unions: UnionNode[] = []
-				for (const constraint of r.constraints) {
-					const foldOutput = constraint.foldIntersection(foldInput)
-					if (foldOutput instanceof Disjoint) return foldOutput
-					if (foldOutput instanceof BaseNode && foldOutput.kind === "union") {
-						unions.push(foldOutput)
-					}
+				const inner: MutableInner<"intersection"> = {}
+				for (const node of l.constraints.concat(r.constraints)) {
+					inner[node.kind] = node.hasOpenIntersection
+						? append(inner[node.kind], node)
+						: (node as any)
 				}
-				const intersection = l.$.parse("intersection", foldInput)
-				if (unions.length === 0) {
-					return intersection
+				if (l.onExtraneousKey || r.onExtraneousKey) {
+					inner.onExtraneousKey =
+						l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
+							? "throw"
+							: "prune"
 				}
-				let result: TypeNode | Disjoint = intersection
-				for (const union of unions) {
-					result = result.intersect(union)
-					if (result instanceof Disjoint) return result
-				}
-				return result
+				return inner
 			}
 		})
 

@@ -1,6 +1,7 @@
 import {
 	entriesOf,
 	hasDomain,
+	isArray,
 	throwParseError,
 	type Json,
 	type JsonData,
@@ -126,6 +127,9 @@ export function parseAttachments(
 	if (impl.reduce && !ctx.prereduced) {
 		const reduced = impl.reduce(inner, ctx.$)
 		if (reduced) {
+			if (isArray(reduced)) {
+				///hmmmm
+			}
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
 			// already have one.

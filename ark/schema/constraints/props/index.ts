@@ -1,9 +1,10 @@
-import { BaseNode, type TypeNode, type TypeSchema } from "../../base.js"
+import type { TypeNode, TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { BaseConstraint, FoldInput } from "../constraint.js"
+import { BasePropConstraint } from "./prop.js"
 
 export interface IndexSchema extends BaseMeta {
 	readonly key: TypeSchema
@@ -22,17 +23,18 @@ export type IndexDeclaration = declareNode<{
 	inner: IndexInner
 	composition: "composite"
 	prerequisite: object
-	open: true
+	hasOpenIntersection: true
 	childKind: TypeKind
 }>
 
 export class IndexNode
-	extends BaseNode<object, IndexDeclaration, typeof IndexNode>
+	extends BasePropConstraint<IndexDeclaration, typeof IndexNode>
 	implements BaseConstraint<"index">
 {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
+			hasOpenIntersection: true,
 			keys: {
 				key: {
 					child: true,

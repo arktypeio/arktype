@@ -1,7 +1,6 @@
 import type { List, evaluate, merge } from "@arktype/util"
 import type { NarrowedAttachments, Node } from "../base.js"
 import type { reducibleKindOf } from "../kinds.js"
-import type { UnionNode } from "../types/union.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NodeKind } from "./implement.js"
 
@@ -18,7 +17,7 @@ interface BaseDeclarationInput {
 	inner: BaseMeta
 	disjoinable?: true
 	branchable?: true
-	open?: true
+	hasOpenIntersection?: true
 	expectedContext?: object
 	prerequisite?: unknown
 }
@@ -57,7 +56,7 @@ export type declareNode<
 	{
 		disjoinable: false
 		branchable: false
-		open: false
+		hasOpenIntersection: false
 		prerequisite: prerequisiteOf<d>
 		childKind: never
 		expectedContext: null
@@ -86,7 +85,7 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	disjoinable: boolean
 	branchable: boolean
-	open: boolean
+	hasOpenIntersection: boolean
 	childKind: NodeKind
 	expectedContext: BaseExpectedContext | null
 }
@@ -100,7 +99,7 @@ type ownIntersectionResult<d extends BaseNodeDeclaration> =
 	| baseIntersectionAlternateResult<d>
 
 type baseIntersectionAlternateResult<d extends BaseNodeDeclaration> =
-	| (d["open"] extends true ? null : never)
+	| (d["hasOpenIntersection"] extends true ? null : never)
 	| (d["disjoinable"] extends true ? Disjoint : never)
 
 export type intersectionImplementationResult<d extends BaseNodeDeclaration> =
@@ -109,4 +108,4 @@ export type intersectionImplementationResult<d extends BaseNodeDeclaration> =
 
 export type symmetricIntersectionResult<d extends BaseNodeDeclaration> =
 	| ownIntersectionResult<d>
-	| (d["branchable"] extends true ? UnionNode : never)
+	| (d["branchable"] extends true ? List<baseIntersectionResult<d>> : never)

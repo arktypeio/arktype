@@ -19,7 +19,7 @@ export type PatternDeclaration = declareNode<{
 	normalizedSchema: NormalizedPatternSchema
 	inner: PatternInner
 	composition: "primitive"
-	open: true
+	hasOpenIntersection: true
 	prerequisite: string
 	expectedContext: PatternInner
 }>
@@ -43,6 +43,7 @@ export class PatternNode extends BasePrimitiveConstraint<
 					: { source: schema.source }
 				: schema,
 		hasAssociatedError: true,
+		hasOpenIntersection: true,
 		defaults: {
 			description(inner) {
 				return `matched by ${inner.source}`

@@ -1,5 +1,5 @@
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
-import type { MutableInner } from "../kinds.js"
+import type { Declaration, MutableInner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
@@ -11,7 +11,6 @@ import type {
 	PrimitiveKind,
 	kindRightOf
 } from "../shared/implement.js"
-import type { UnionNode } from "../types/union.js"
 
 export type FoldInput<kind extends NodeKind> = Omit<
 	MutableInner<"intersection">,
@@ -24,7 +23,8 @@ export interface BasePrimitiveConstraintDeclaration
 }
 
 export interface BaseConstraint<kind extends ConstraintKind> {
-	foldIntersection(into: FoldInput<kind>): UnionNode | Disjoint | undefined
+	foldIntersection(into: FoldInput<kind>): Disjoint | undefined
+	hasOpenIntersection: Declaration<kind>["hasOpenIntersection"]
 }
 
 export abstract class BasePrimitiveConstraint<
@@ -38,6 +38,11 @@ export abstract class BasePrimitiveConstraint<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly expectedContext: d["expectedContext"]
+	abstract foldIntersection(into: FoldInput<d["kind"]>): Disjoint | undefined
+
+	get hasOpenIntersection() {
+		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]
+	}
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

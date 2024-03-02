@@ -16,7 +16,6 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import type { FoldInput } from "./constraints/constraint.js"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
 import type { OptionalNode } from "./constraints/props/optional.js"
@@ -47,7 +46,6 @@ import type {
 	requireDescriptionIfPresent,
 	symmetricIntersectionResult
 } from "./shared/declare.js"
-import type { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -237,8 +235,6 @@ export abstract class BaseNode<
 			description: this.description
 		}) as never
 	}
-
-	abstract foldIntersection(into: FoldInput<d["kind"]>): Disjoint | undefined
 
 	toJSON() {
 		return this.json

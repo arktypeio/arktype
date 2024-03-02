@@ -1,5 +1,5 @@
 import { compileSerializedValue } from "@arktype/util"
-import { BaseNode, type Node, type TypeSchema } from "../../base.js"
+import type { Node, TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -10,6 +10,7 @@ import {
 	type nodeImplementationOf
 } from "../../shared/implement.js"
 import type { BaseConstraint, FoldInput } from "../constraint.js"
+import { BasePropConstraint } from "./prop.js"
 import { compileKey } from "./shared.js"
 
 export interface RequiredSchema extends BaseMeta {
@@ -33,18 +34,19 @@ export type RequiredDeclaration = declareNode<{
 	}
 	composition: "composite"
 	prerequisite: object
-	open: true
+	hasOpenIntersection: true
 	disjoinable: true
 	childKind: TypeKind
 }>
 
 export class RequiredNode
-	extends BaseNode<object, RequiredDeclaration, typeof RequiredNode>
+	extends BasePropConstraint<RequiredDeclaration, typeof RequiredNode>
 	implements BaseConstraint<"required">
 {
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
+			hasOpenIntersection: true,
 			keys: {
 				key: {},
 				value: {

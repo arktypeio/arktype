@@ -26,6 +26,7 @@ import type {
 	BaseNodeDeclaration,
 	intersectionImplementationResult
 } from "./declare.js"
+import type { Disjoint } from "./disjoint.js"
 
 export {
 	type BoundKind,
@@ -82,7 +83,9 @@ export const nodeKinds = [
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
-	[k in NodeKind]: Declaration<k>["open"] extends true ? k : never
+	[k in NodeKind]: Declaration<k>["hasOpenIntersection"] extends true
+		? k
+		: never
 }[NodeKind]
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
@@ -186,26 +189,30 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	intersectSymmetric: (
 		l: Node<d["kind"]>,
 		r: Node<d["kind"]>
-	) => Node | intersectionImplementationResult<d>
+	) => d["inner"] | intersectionImplementationResult<d>
 	collapseKey?: keyof d["inner"] & string
-	reduce?: (inner: d["inner"], $: ScopeNode) => Node | undefined
+	reduce?: (inner: d["inner"], $: ScopeNode) => Node | Disjoint[] | undefined
 }
 
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
+	hasOpenIntersection: boolean
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
+		hasOpenIntersection: d["hasOpenIntersection"]
 		defaults: nodeDefaultsImplementationFor<d["kind"]>
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
-	}
+	} & (d["hasOpenIntersection"] extends true
+			? { hasOpenIntersection: true }
+			: {})
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,
