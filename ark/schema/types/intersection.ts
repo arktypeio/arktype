@@ -179,16 +179,16 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				if (flatConstraints.length === 0 && base.basis) {
 					return base.basis
 				}
-				const disjoints: Disjoint[] = []
+				const disjoint = new Disjoint({})
 				// TODO: are these ordered?
 				for (const constraint of flatConstraints) {
 					const possibleDisjoint = constraint.foldIntersection(result)
 					if (possibleDisjoint instanceof Disjoint) {
-						disjoints.push(possibleDisjoint)
+						disjoint.add(possibleDisjoint)
 					}
 				}
-				if (disjoints.length) {
-					return disjoints
+				if (!disjoint.isEmpty()) {
+					return disjoint
 				}
 				return $.parse("intersection", result, {
 					prereduced: true

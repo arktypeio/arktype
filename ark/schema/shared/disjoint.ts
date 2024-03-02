@@ -128,6 +128,10 @@ export class Disjoint {
 			.join("\n• ")}`
 	}
 
+	isEmpty() {
+		return this.flat.length === 0
+	}
+
 	throw() {
 		return throwParseError(this.describeReasons())
 	}
@@ -144,6 +148,12 @@ export class Disjoint {
 				] as DisjointSourceEntry
 		)
 		return new Disjoint(fromEntries(invertedEntries))
+	}
+
+	add(input: Disjoint) {
+		entriesOf(input.sources).forEach(([path, disjoints]) =>
+			Object.assign(this.sources[path] ?? {}, disjoints)
+		)
 	}
 
 	withPrefixKey(key: string) {

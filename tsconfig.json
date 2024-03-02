@@ -26,5 +26,5 @@
 			"@arktype/schema/config": ["./ark/schema/config.ts"]
 		}
 	},
-	"exclude": ["out", "node_modules", "./ark/docs"]
+	"exclude": ["**/out", "node_modules", "./ark/docs"]
 }

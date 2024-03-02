@@ -191,7 +191,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		r: Node<d["kind"]>
 	) => d["inner"] | intersectionImplementationResult<d>
 	collapseKey?: keyof d["inner"] & string
-	reduce?: (inner: d["inner"], $: ScopeNode) => Node | Disjoint[] | undefined
+	reduce?: (inner: d["inner"], $: ScopeNode) => Node | Disjoint | undefined
 }
 
 export interface UnknownNodeImplementation

@@ -1,7 +1,6 @@
 import {
 	entriesOf,
 	hasDomain,
-	isArray,
 	throwParseError,
 	type Json,
 	type JsonData,
@@ -13,6 +12,7 @@ import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	defaultValueSerializer,
 	type KeyDefinitions,
@@ -127,8 +127,8 @@ export function parseAttachments(
 	if (impl.reduce && !ctx.prereduced) {
 		const reduced = impl.reduce(inner, ctx.$)
 		if (reduced) {
-			if (isArray(reduced)) {
-				///hmmmm
+			if (reduced instanceof Disjoint) {
+				return reduced.throw()
 			}
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
