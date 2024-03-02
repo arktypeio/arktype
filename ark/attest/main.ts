@@ -9,7 +9,7 @@ export type {
 	TypeRelationship
 } from "./cache/writeAssertionCache.js"
 export { getDefaultAttestConfig, type AttestConfig } from "./config.js"
-export { cleanup, setup, writeAssertionData } from "./fixtures.js"
+export { cleanup, setup, teardown, writeAssertionData } from "./fixtures.js"
 export {
 	findAttestTypeScriptVersions,
 	getPrimaryTsVersionUnderTest

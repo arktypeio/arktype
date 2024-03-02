@@ -41,3 +41,6 @@ export const writeAssertionData = (toPath: string) => {
 export const cleanup = () => {
 	writeSnapshotUpdatesOnExit()
 }
+
+/** alias for cleanup to align with vitest and others */
+export const teardown = cleanup
