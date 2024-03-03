@@ -35,7 +35,7 @@ describe("errors", () => {
 		})
 		attest(t.apply([5]).out).snap([5])
 		attest(t.apply([5, "five"]).errors?.summary).snap(
-			"Item at index 1 must be a number (was string)"
+			"Value at [1] must be a number (was string)"
 		)
 	})
 	it("custom description integrated with error", () => {

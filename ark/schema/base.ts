@@ -46,6 +46,7 @@ import type {
 	ownIntersectionResult,
 	requireDescriptionIfPresent
 } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -276,8 +277,16 @@ export abstract class BaseNode<
 		if (r === undefined) {
 			return this as never
 		}
-		// TODO: check equality
-		return this.impl.intersectSymmetric(this as never, r) as never
+		const result = this.impl.intersectSymmetric(this as never, r)
+		if (result === null || result instanceof Disjoint) return result as never
+
+		// ensure metadata is propagated if the intersection type is equal to
+		// one of its operands
+		return result.equals(this as never)
+			? this
+			: result.equals(r)
+			? r
+			: (result as any)
 	}
 
 	firstReference<narrowed extends Node>(

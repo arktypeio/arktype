@@ -14,6 +14,7 @@ import type { Node, TypeNode } from "./base.js"
 import { globalConfig } from "./config.js"
 import type {
 	instantiateAliases,
+	instantiateSchemaBranch,
 	instantiateSchemaBranches,
 	validateAliases,
 	validateSchemaBranch
@@ -149,20 +150,20 @@ export class ScopeNode<r extends object = any> {
 	readonly referencesByName: { [name: string]: Node } = {}
 	readonly references: readonly Node[]
 	protected resolved = false
-	protected prereduced: boolean
 
 	constructor(
 		public def: Dict,
 		config: ArkConfig = {}
 	) {
 		this.config = parseConfig(config)
-		this.prereduced = config.prereduced ?? false
+		const prereduced = config.prereduced ?? false
 		for (const k in this.def) {
 			;(this.resolutions as BaseResolutions)[k] = this.parseRoot(
 				assertTypeKind(this.def[k]),
 				this.def[k] as never,
 				{
-					alias: k
+					alias: k,
+					prereduced
 				}
 			)
 		}
@@ -184,7 +185,7 @@ export class ScopeNode<r extends object = any> {
 					{ unit: undefined }
 				]
 			},
-			{ reduceTo: this.parse("intersection", {}) }
+			{ reduceTo: this.parse("intersection", {}, { prereduced: true }) }
 		)
 	}
 
@@ -289,8 +290,7 @@ export class ScopeNode<r extends object = any> {
 		const node = parseAttachments(kind, def, {
 			...opts,
 			$: this,
-			definition: def,
-			prereduced: opts.prereduced || this.prereduced
+			definition: def
 		})
 		return node as never
 	}
@@ -349,17 +349,17 @@ export class ScopeNode<r extends object = any> {
 	) as never
 }
 
-export type SchemaParser<r extends object> = {
+export type SchemaParser<$> = {
 	<const branches extends readonly Schema<UnionChildKind>[]>(
 		...branches: {
-			[i in keyof branches]: validateSchemaBranch<branches[i], r>
+			[i in keyof branches]: validateSchemaBranch<branches[i], $>
 		}
 	): instantiateSchemaBranches<branches>
 
 	union<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
 			branches: {
-				[i in keyof branches]: validateSchemaBranch<branches[i], r>
+				[i in keyof branches]: validateSchemaBranch<branches[i], $>
 			}
 		} & NormalizedUnionSchema
 	): instantiateSchemaBranches<branches>
@@ -371,6 +371,10 @@ export type SchemaParser<r extends object> = {
 		: UnionNode<branches[number]> | UnitNode<branches[number]>
 }
 
+export type TypeNodeParser<$> = <const schema extends Schema<UnionChildKind>>(
+	schema: validateSchemaBranch<schema, $>
+) => instantiateSchemaBranch<schema>
+
 export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
 	extends SchemaParseOptions {
 	root?: boolean
@@ -379,6 +383,10 @@ export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
 
 export const scopeNode = ScopeNode.from
 
-export const rootSchema = ScopeNode.root.schema.bind(ScopeNode.root)
+export const rootType: TypeNodeParser<{}> = (schema, opts = {}) =>
+	ScopeNode.root.parseTypeNode(schema as never, {
+		...opts,
+		prereduced: true
+	}) as never
 
 export const rootNode = ScopeNode.root.parse.bind(ScopeNode.root)
