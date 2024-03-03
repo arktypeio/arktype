@@ -11,7 +11,7 @@ export const builtin: ScopeNode<ArkResolutions> = ScopeNode.from(
 		...JsObjects.resolutions,
 		...Validation.resolutions
 	},
-	{ prereduced: true }
+	{ prereducedAliases: true }
 ) as never
 
 export const keywords = builtin.resolutions

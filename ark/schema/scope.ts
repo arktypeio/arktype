@@ -14,7 +14,6 @@ import type { Node, TypeNode } from "./base.js"
 import { globalConfig } from "./config.js"
 import type {
 	instantiateAliases,
-	instantiateSchemaBranch,
 	instantiateSchemaBranches,
 	validateAliases,
 	validateSchemaBranch
@@ -94,7 +93,9 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 
 export interface ArkConfig extends Partial<NodeConfigsByKind> {
 	/** @internal */
-	prereduced?: boolean
+	prereducedAliases?: boolean
+	/** @internal */
+	prereducedSchemas?: boolean
 }
 
 export type ParsedArkConfig = require<ArkConfig, 2>
@@ -106,8 +107,8 @@ const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
 	const parsedConfig = { ...globalConfig }
 	let k: keyof ArkConfig
 	for (k in scopeConfig) {
-		if (k === "prereduced") {
-			parsedConfig.prereduced = scopeConfig.prereduced!
+		if (k === "prereducedAliases" || k === "prereducedSchemas") {
+			parsedConfig[k] = scopeConfig[k]!
 		} else {
 			parsedConfig[k] = {
 				...nodesByKind[k].implementation.defaults,
@@ -150,20 +151,23 @@ export class ScopeNode<r extends object = any> {
 	readonly referencesByName: { [name: string]: Node } = {}
 	readonly references: readonly Node[]
 	protected resolved = false
+	protected prereducedAliases: boolean
+	protected prereducedSchemas: boolean
 
 	constructor(
 		public def: Dict,
 		config: ArkConfig = {}
 	) {
 		this.config = parseConfig(config)
-		const prereduced = config.prereduced ?? false
+		this.prereducedAliases = config.prereducedAliases ?? false
+		this.prereducedSchemas = config.prereducedSchemas ?? false
 		for (const k in this.def) {
 			;(this.resolutions as BaseResolutions)[k] = this.parseRoot(
 				assertTypeKind(this.def[k]),
 				this.def[k] as never,
 				{
 					alias: k,
-					prereduced
+					prereduced: this.prereducedAliases
 				}
 			)
 		}
@@ -200,7 +204,10 @@ export class ScopeNode<r extends object = any> {
 		return new ScopeNode(aliases, config)
 	}
 
-	static root: ScopeNode<{}> = this.from({}, { prereduced: true })
+	static root: ScopeNode<{}> = this.from(
+		{},
+		{ prereducedAliases: true, prereducedSchemas: true }
+	)
 
 	parseUnion<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
@@ -272,7 +279,7 @@ export class ScopeNode<r extends object = any> {
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
-			this.referencesByName[node.name] = node
+			Object.assign(this.referencesByName, node.contributesReferencesByName)
 		}
 		return node
 	}
@@ -290,7 +297,8 @@ export class ScopeNode<r extends object = any> {
 		const node = parseAttachments(kind, def, {
 			...opts,
 			$: this,
-			definition: def
+			definition: def,
+			prereduced: (this.prereducedSchemas || opts.prereduced) ?? false
 		})
 		return node as never
 	}
@@ -371,10 +379,6 @@ export type SchemaParser<$> = {
 		: UnionNode<branches[number]> | UnitNode<branches[number]>
 }
 
-export type TypeNodeParser<$> = <const schema extends Schema<UnionChildKind>>(
-	schema: validateSchemaBranch<schema, $>
-) => instantiateSchemaBranch<schema>
-
 export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
 	extends SchemaParseOptions {
 	root?: boolean
@@ -383,10 +387,6 @@ export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
 
 export const scopeNode = ScopeNode.from
 
-export const rootType: TypeNodeParser<{}> = (schema, opts = {}) =>
-	ScopeNode.root.parseTypeNode(schema as never, {
-		...opts,
-		prereduced: true
-	}) as never
+export const rootSchema = ScopeNode.root.schema.bind(ScopeNode.root)
 
 export const rootNode = ScopeNode.root.parse.bind(ScopeNode.root)

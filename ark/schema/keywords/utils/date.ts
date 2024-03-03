@@ -1,5 +1,5 @@
 import { throwInternalError } from "@arktype/util"
-import { rootType } from "../../scope.js"
+import { rootSchema } from "../../scope.js"
 
 type DayDelimiter = "." | "/" | "-"
 
@@ -99,7 +99,7 @@ export const tryParseDatePattern = (
 	return writeFormattedMustBe(opts.format)
 }
 
-export const parsedDate = rootType({
+export const parsedDate = rootSchema({
 	in: "string",
 	morph: (s: string) => {
 		const result = tryParseDatePattern(s)

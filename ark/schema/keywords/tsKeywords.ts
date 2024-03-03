@@ -41,5 +41,5 @@ export const TsKeywords: ScopeNode<TsKeywords.resolutions> = ScopeNode.from(
 		void: { unit: undefined } as schema.cast<void, "unit">,
 		undefined: { unit: undefined }
 	},
-	{ prereduced: true }
+	{ prereducedAliases: true }
 )

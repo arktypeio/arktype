@@ -3,11 +3,11 @@ import {
 	wellFormedNumberMatcher
 } from "@arktype/util"
 import type { TypeNode } from "../base.js"
-import { ScopeNode, rootType } from "../scope.js"
+import { ScopeNode, rootSchema } from "../scope.js"
 import type { Out } from "../types/morph.js"
 import { parsedDate } from "./utils/date.js"
 
-const number = rootType({
+const number = rootSchema({
 	in: {
 		basis: "string",
 		pattern: wellFormedNumberMatcher,
@@ -16,7 +16,7 @@ const number = rootType({
 	morph: (s: string) => parseFloat(s)
 })
 
-const integer = rootType({
+const integer = rootSchema({
 	in: {
 		basis: "string",
 		pattern: wellFormedIntegerMatcher
@@ -35,7 +35,7 @@ const integer = rootType({
 	}
 })
 
-const url = rootType({
+const url = rootSchema({
 	in: {
 		basis: "string",
 		description: "a valid URL"
@@ -50,7 +50,7 @@ const url = rootType({
 	}
 })
 
-const json = rootType({
+const json = rootSchema({
 	in: {
 		basis: "string",
 		description: "a JSON-parsable string"

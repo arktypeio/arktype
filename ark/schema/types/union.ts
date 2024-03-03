@@ -162,14 +162,14 @@ export class UnionNode<t = unknown> extends BaseType<
 	}
 
 	compile(js: NodeCompiler) {
-		this.branches.forEach((branch) => js.line(js.invoke(branch)))
-	}
-
-	compileAllows(js: NodeCompiler) {
-		this.branches.forEach((branch) =>
-			js.if(`${js.invoke(branch)}`, () => js.return(true))
-		)
-		js.return(false)
+		if (js.traversalKind === "Apply") {
+			this.branches.forEach((branch) => js.line(js.invoke(branch)))
+		} else {
+			this.branches.forEach((branch) =>
+				js.if(`${js.invoke(branch)}`, () => js.return(true))
+			)
+			js.return(false)
+		}
 	}
 }
 

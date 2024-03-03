@@ -31,5 +31,5 @@ export const JsObjects: ScopeNode<JsObjects.resolutions> = ScopeNode.from(
 		WeakSet,
 		Promise
 	},
-	{ prereduced: true }
+	{ prereducedAliases: true }
 )
