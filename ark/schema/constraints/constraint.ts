@@ -1,5 +1,10 @@
 import type { listable } from "@arktype/util"
-import { BaseNode, type Node, type NodeSubclass } from "../base.js"
+import {
+	BaseNode,
+	type ConstraintNode,
+	type Node,
+	type NodeSubclass
+} from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
@@ -25,7 +30,7 @@ export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
-	intersect<r extends Node<ConstraintKind>>(
+	intersect<r extends ConstraintNode>(
 		r: r
 	): listable<Node<this["kind"] | r["kind"]>> | Disjoint | null {
 		return this.intersectInternal(r) as never

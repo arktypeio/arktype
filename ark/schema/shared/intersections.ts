@@ -4,14 +4,9 @@ import {
 	type conform,
 	type evaluate,
 	type intersectArrays,
-	type isAny,
-	type listable
+	type isAny
 } from "@arktype/util"
-import type { Node } from "../base.js"
 import type { MorphAst, Out } from "../types/morph.js"
-import type { intersectTypeKinds } from "../types/type.js"
-import type { Disjoint } from "./disjoint.js"
-import type { ConstraintKind, NodeKind, TypeKind } from "./implement.js"
 
 export type inferIntersection<l, r> = [l] extends [never]
 	? never

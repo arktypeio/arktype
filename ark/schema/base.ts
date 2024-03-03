@@ -255,7 +255,7 @@ export abstract class BaseNode<
 		return includes(basisKinds, this.kind)
 	}
 
-	isConstraint(): this is Node<ConstraintKind> {
+	isConstraint(): this is ConstraintNode {
 		return includes(constraintKinds, this.kind)
 	}
 
@@ -279,14 +279,6 @@ export abstract class BaseNode<
 		string,
 		UnknownNodeIntersectionResult
 	> = {}
-	// intersect<r extends Node<ConstraintKind>>(
-	// 	this: Node<ConstraintKind>,
-	// 	r: r
-	// ): nodeIntersectionResult<d["kind"], r["kind"], this["infer"], r["infer"]>
-	// intersect<r extends Node<TypeKind>>(
-	// 	this: TypeNode,
-	// 	r: r
-	// ): nodeIntersectionResult<d["kind"], r["kind"], this["infer"], r["infer"]>
 	protected intersectInternal(
 		this: UnknownNode,
 		other: Node
@@ -314,29 +306,38 @@ export abstract class BaseNode<
 			return this as never
 		}
 
-		const lImplementation = this.impl.intersections[r.kind]
-		const rImplementation = r.impl.intersections[this.kind]
-		const implementation = lImplementation ?? rImplementation
-		if (!implementation) {
-			return throwError(
-				`Intersection between nodes of kind ${this.kind} and ${r.kind} is undefined. Ensure that both operands are types or both are constraints.`
-			)
-		}
+		const leftmostKind = this.precedence < r.precedence ? this.kind : r.kind
+		const implementation =
+			this.impl.intersections[r.kind] ?? r.impl.intersections[this.kind]
 
 		const rawResult =
-			implementation === lImplementation
+			implementation === undefined
+				? // should be two ConstraintNodes that have no relation
+				  // this could also happen if a user directly intersects a TypeNode and a ConstraintNode,
+				  // but that is not allowed by the external function signature
+				  null
+				: leftmostKind === this.kind
 				? implementation(this, r)
 				: implementation(r, this)
 
-		const instantiatedResult: UnknownNodeIntersectionResult =
+		let instantiatedResult: UnknownNodeIntersectionResult =
 			rawResult === null || rawResult instanceof Disjoint
 				? rawResult
 				: isArray(rawResult)
 				? // arrays represent a constraint union of a branching intersection kind like sequence
-				  // whether the result is an array or not, we treat it as an
-				  // Inner and instantiate it to a node to finalize it.
 				  rawResult.map((inner) => this.$.parse(this.kind, inner as never))
-				: this.$.parse(this.kind, rawResult as never)
+				: rawResult instanceof BaseNode
+				? // unlike parsing, intersection allows different node kinds to be returned,
+				  // so avoid parsing an instantiated Node here
+				  rawResult
+				: this.$.parse(leftmostKind, rawResult as never)
+
+		if (instantiatedResult instanceof BaseNode) {
+			// if the result equals one of the operands, preserve its metadata by
+			// returning the original reference
+			if (this.equals(instantiatedResult)) instantiatedResult = this as never
+			else if (r.equals(instantiatedResult)) instantiatedResult = r as never
+		}
 
 		BaseNode.intersectionCache[lrCacheKey] = instantiatedResult
 		return instantiatedResult
@@ -432,3 +433,6 @@ export type Node<
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
 
 export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
+
+export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
+	Node<kind>

@@ -8,6 +8,8 @@ export interface BaseMeta {
 	readonly description?: string
 }
 
+export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
+
 export type NodeCompositionKind = "primitive" | "composite"
 
 interface BaseDeclarationInput {

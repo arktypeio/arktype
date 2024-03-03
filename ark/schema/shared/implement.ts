@@ -167,15 +167,17 @@ export type UnknownIntersectionMap = {
 	[rKey in NodeKind | "default"]?: (
 		l: UnknownNode,
 		r: UnknownNode
-	) => UnknownNodeIntersectionResult
+	) => UnknownIntersectionImplementationResult
 }
 
 export type UnknownNodeIntersectionResult = listable<Node> | Disjoint | null
 
-/** Finalized node intersection results or a list of Inner values to be parsed as a union */
+/** Dict represents an unknown Inner value to be parsed as a union branch */
 export type UnknownIntersectionImplementationResult =
 	| listable<Dict>
-	| UnknownNodeIntersectionResult
+	| Node
+	| Disjoint
+	| null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
