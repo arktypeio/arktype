@@ -1,7 +1,9 @@
+import type { listable } from "@arktype/util"
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
+import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
 	ConstraintKind,
@@ -29,6 +31,12 @@ export abstract class BasePrimitiveConstraint<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly expectedContext: d["expectedContext"]
+
+	intersect<r extends Node<ConstraintKind>>(
+		r: r
+	): listable<Node<this["kind"] | r["kind"]>> | Disjoint | null {
+		return this.intersectInternal(r) as never
+	}
 
 	get hasOpenIntersection() {
 		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]

@@ -16,7 +16,7 @@ import type {
 	TypeKind,
 	kindRightOf
 } from "../shared/implement.js"
-import type { baseNodeIntersectionResult } from "../shared/intersections.js"
+import type { inferIntersection } from "../shared/intersections.js"
 import { inferred } from "../shared/utils.js"
 import type { IntersectionNode } from "./intersection.js"
 import type { distill, extractIn, extractOut } from "./morph.js"
@@ -74,13 +74,22 @@ export abstract class BaseType<
 		// )
 	}
 
+	intersect<r extends TypeNode>(
+		r: r
+	):
+		| Node<
+				intersectTypeKinds<this["kind"], r["kind"]>,
+				inferIntersection<this["infer"], r["infer"]>
+		  >
+		| Disjoint {
+		return this.intersectInternal(r) as never
+	}
+
 	and<r extends TypeNode>(
 		r: r
-	): baseNodeIntersectionResult<
-		d["kind"],
-		r["kind"],
-		this["infer"],
-		r["infer"]
+	): Node<
+		intersectTypeKinds<this["kind"], r["kind"]>,
+		inferIntersection<this["infer"], r["infer"]>
 	> {
 		const result = this.intersect(r as never)
 		return result instanceof Disjoint ? result.throw() : (result as never)

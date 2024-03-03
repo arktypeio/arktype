@@ -60,14 +60,10 @@ import {
 	type RefinementKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
+	type UnknownNodeIntersectionResult,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
-import type {
-	UnknownNodeIntersectionResult,
-	nodeIntersectionOperand,
-	nodeIntersectionResult
-} from "./shared/intersections.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
@@ -283,10 +279,20 @@ export abstract class BaseNode<
 		string,
 		UnknownNodeIntersectionResult
 	> = {}
-	intersect<r extends nodeIntersectionOperand<d["kind"]>>(
-		r: r
-	): nodeIntersectionResult<d["kind"], r["kind"], this["infer"], r["infer"]>
-	intersect(this: UnknownNode, r: UnknownNode): UnknownNodeIntersectionResult {
+	// intersect<r extends Node<ConstraintKind>>(
+	// 	this: Node<ConstraintKind>,
+	// 	r: r
+	// ): nodeIntersectionResult<d["kind"], r["kind"], this["infer"], r["infer"]>
+	// intersect<r extends Node<TypeKind>>(
+	// 	this: TypeNode,
+	// 	r: r
+	// ): nodeIntersectionResult<d["kind"], r["kind"], this["infer"], r["infer"]>
+	protected intersectInternal(
+		this: UnknownNode,
+		other: Node
+	): UnknownNodeIntersectionResult {
+		// Node works better for subclasses but internally we want to treat it as UnknownNode
+		const r = other as UnknownNode
 		const lrCacheKey = `${this.typeId}&${r.typeId}`
 		if (BaseNode.intersectionCache[lrCacheKey] !== undefined) {
 			return BaseNode.intersectionCache[lrCacheKey]

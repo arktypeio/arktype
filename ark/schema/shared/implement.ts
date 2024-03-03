@@ -28,7 +28,6 @@ import type {
 	BaseNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
-import type { UnknownNodeIntersectionResult } from "./intersections.js"
 
 export {
 	type BoundKind,
@@ -135,7 +134,10 @@ export type AsymmetricConstraintIntersection<
 export type SymmetricConstraintIntersection<kind extends ConstraintKind> = (
 	l: Node<kind>,
 	r: Node<kind>
-) => Inner<kind> | Disjoint | (kind extends OpenNodeKind ? null : never)
+) =>
+	| listable<Inner<kind>>
+	| Disjoint
+	| (kind extends OpenNodeKind ? null : never)
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
@@ -167,6 +169,8 @@ export type UnknownIntersectionMap = {
 		r: UnknownNode
 	) => UnknownNodeIntersectionResult
 }
+
+export type UnknownNodeIntersectionResult = listable<Node> | Disjoint | null
 
 /** Finalized node intersection results or a list of Inner values to be parsed as a union */
 export type UnknownIntersectionImplementationResult =
