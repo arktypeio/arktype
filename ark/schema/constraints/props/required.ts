@@ -119,24 +119,11 @@ export class RequiredNode
 		}
 	}
 
-	reduceIntersection(into: ReducibleIntersectionContext<"required">) {
+	reduceIntersection(
+		into: ReducibleIntersectionContext<"required">
+	): undefined {
 		if (into.basis?.domain !== "object") {
 			throwInvalidOperandError("required", "an object", into.basis)
 		}
-
-		if (!into.required) {
-			into.required = [this]
-			return
-		}
-
-		let matchedExisting = false
-		for (let i = 0; i < into.required.length; i++) {
-			const result = this.intersectSymmetric(into.required[i])
-			if (result === null) continue
-			if (result instanceof Disjoint) return result
-			into.required[i] = result
-			matchedExisting = true
-		}
-		if (!matchedExisting) into.required.push(this)
 	}
 }

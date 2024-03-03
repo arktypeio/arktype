@@ -4,7 +4,11 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
+import {
+	throwInvalidOperandError,
+	type TypeKind,
+	type nodeImplementationOf
+} from "../../shared/implement.js"
 import type {
 	BaseConstraint,
 	ReducibleIntersectionContext
@@ -89,7 +93,11 @@ export class OptionalNode
 		}
 	}
 
-	reduceIntersection(into: ReducibleIntersectionContext<"optional">) {
-		return undefined
+	reduceIntersection(
+		into: ReducibleIntersectionContext<"optional">
+	): undefined {
+		if (into.basis?.domain !== "object") {
+			throwInvalidOperandError("required", "an object", into.basis)
+		}
 	}
 }

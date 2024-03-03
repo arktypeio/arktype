@@ -68,6 +68,5 @@ export class PatternNode extends BasePrimitiveConstraint<
 		if (into.basis?.domain !== "string") {
 			throwInvalidOperandError("pattern", "a string", into.basis)
 		}
-		into.pattern = appendUnique(into.pattern, this)
 	}
 }

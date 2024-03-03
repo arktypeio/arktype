@@ -38,6 +38,5 @@ export class AfterNode
 		if (!into.basis?.extends(this.$.builtin.Date)) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.after = this.intersectSymmetric(into.after)
 	}
 }

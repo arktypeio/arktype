@@ -71,14 +71,6 @@ export class DomainNode<t = unknown> extends BaseBasis<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	reduceIntersection(into: ReducibleIntersectionContext<"predicate">) {
-		const result = into.basis ? this.intersect(into.basis) : this
-		if (result instanceof Disjoint) {
-			return result
-		}
-		into.basis = result
-	}
-
 	intersectRightwardInner(r: never) {
 		return throwInternalError(
 			`Unexpected attempt to intersect ${r} from domain`

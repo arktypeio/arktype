@@ -28,6 +28,5 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 		if (into.min?.isStricterThan(this)) {
 			return Disjoint.from("range", this, into.min)
 		}
-		into.max = this.intersectSymmetric(into.max)
 	}
 }

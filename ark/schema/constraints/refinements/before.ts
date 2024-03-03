@@ -41,7 +41,6 @@ export class BeforeNode
 		if (!into.basis?.extends(this.$.builtin.Date)) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.before = this.intersectSymmetric(into.before)
 		if (into.after?.isStricterThan(this)) {
 			return Disjoint.from("range", this, into.after)
 		}

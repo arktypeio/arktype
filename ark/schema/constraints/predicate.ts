@@ -1,12 +1,9 @@
-import { appendUnique, compileSerializedValue } from "@arktype/util"
+import { compileSerializedValue } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { TraversalContext } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { is } from "../shared/utils.js"
-import {
-	BasePrimitiveConstraint,
-	type ReducibleIntersectionContext
-} from "./constraint.js"
+import { BasePrimitiveConstraint } from "./constraint.js"
 
 export interface PredicateInner<
 	predicate extends Predicate<any> = Predicate<any>
@@ -61,11 +58,7 @@ export class PredicateNode extends BasePrimitiveConstraint<
 	compiledNegation = `!${this.compiledCondition}`
 	expectedContext = this.createExpectedContext({ expected: this.description })
 
-	reduceIntersection(
-		into: ReducibleIntersectionContext<"predicate">
-	): undefined {
-		into.predicate = appendUnique(into.predicate, this)
-	}
+	reduceIntersection(): undefined {}
 }
 
 export type Predicate<data = unknown> = (

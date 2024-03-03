@@ -77,7 +77,5 @@ export class IndexNode
 		}
 	}
 
-	reduceIntersection(into: ReducibleIntersectionContext<"index">) {
-		return undefined
-	}
+	reduceIntersection(into: ReducibleIntersectionContext<"index">): undefined {}
 }

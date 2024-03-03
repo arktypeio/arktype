@@ -41,6 +41,5 @@ export class MinLengthNode extends BaseRange<
 		) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.minLength = this.intersectSymmetric(into.minLength)
 	}
 }

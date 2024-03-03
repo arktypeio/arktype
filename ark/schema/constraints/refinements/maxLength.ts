@@ -38,7 +38,6 @@ export class MaxLengthNode extends BaseRange<
 		) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.maxLength = this.intersectSymmetric(into.maxLength)
 		if (into.minLength?.isStricterThan(this)) {
 			return Disjoint.from("range", this, into.minLength)
 		}

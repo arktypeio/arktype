@@ -16,7 +16,7 @@ import {
 	type ExtraneousKeyRestriction,
 	type PropsGroupInput
 } from "../constraints/props/props.js"
-import type { Inner, Prerequisite, Schema } from "../kinds.js"
+import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -64,7 +64,7 @@ type IntersectionCore = Omit<IntersectionInner, ConstraintKind>
 const intersectCores = (
 	l: IntersectionCore,
 	r: IntersectionCore
-): IntersectionCore | Disjoint => {
+): MutableInner<"intersection"> | Disjoint => {
 	const result: IntersectionCore = {}
 	const resultBasis = l.basis
 		? r.basis
@@ -251,6 +251,14 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 				const disjoint = new Disjoint({})
 				// TODO: are these ordered?
+				for (const constraint of flatConstraints) {
+					if (result[constraint.kind]) {
+					}
+					const possibleDisjoint = constraint.reduceIntersection(result)
+					if (possibleDisjoint instanceof Disjoint) {
+						disjoint.add(possibleDisjoint)
+					}
+				}
 				for (const constraint of flatConstraints) {
 					const possibleDisjoint = constraint.reduceIntersection(result)
 					if (possibleDisjoint instanceof Disjoint) {

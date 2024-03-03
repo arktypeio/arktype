@@ -18,7 +18,6 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 		if (into.basis?.domain !== "number") {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
-		into.min = this.intersectSymmetric(into.min)
 	}
 
 	traverseAllows = this.exclusive

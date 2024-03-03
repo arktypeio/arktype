@@ -334,20 +334,19 @@ export class SequenceNode
 	reduceIntersection(
 		into: ReducibleIntersectionContext<"sequence">
 	): Disjoint | undefined {
-		this.minLengthNode?.reduceIntersection(into)
-		const possibleLengthDisjoint =
-			this.maxLengthNode?.reduceIntersection(into) ??
+		if (this.minLengthNode) {
+			const minLength = this.minLengthNode.intersectSymmetric(into.minLength)
+			if (minLength instanceof Disjoint) return minLength
+			into.minLength = minLength
 			// even if this sequence doesn't contribute maxLength, if there is
 			// an existing maxLength constraint, check that it is compatible
 			// with the minLength constraint we just added
 			into.maxLength?.reduceIntersection(into)
-		if (possibleLengthDisjoint) return possibleLengthDisjoint
-		const ownResult = this.intersectSymmetric(into.sequence)
-		if (ownResult instanceof Disjoint) {
-			return ownResult
 		}
-		if (ownResult instanceof SequenceNode) {
-			into.sequence = ownResult
+		if (this.maxLengthNode) {
+			const maxLength = this.maxLengthNode.intersectSymmetric(into.maxLength)
+			if (maxLength instanceof Disjoint) return maxLength
+			into.maxLength = maxLength
 		}
 	}
 }
