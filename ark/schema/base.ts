@@ -43,10 +43,8 @@ import type {
 	BaseMeta,
 	BaseNodeDeclaration,
 	attachmentsOf,
-	ownIntersectionResult,
 	requireDescriptionIfPresent
 } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -271,26 +269,6 @@ export abstract class BaseNode<
 
 	toString() {
 		return this.description
-	}
-
-	intersectSymmetric(r: Node<d["kind"]> | undefined): ownIntersectionResult<d> {
-		if (r === undefined) {
-			return this as never
-		}
-		const result = this.impl.intersectSymmetric(this as never, r)
-		if (result === null || result instanceof Disjoint) return result as never
-
-		if (isArray(result)) {
-			return result as never
-		}
-
-		// ensure metadata is propagated if the intersection type is equal to
-		// one of its operands
-		return result.equals(this as never)
-			? this
-			: result.equals(r)
-			? r
-			: (result as any)
 	}
 
 	firstReference<narrowed extends Node>(

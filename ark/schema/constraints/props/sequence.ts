@@ -17,10 +17,6 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
-import type {
-	BaseConstraint,
-	ReducibleIntersectionContext
-} from "../constraint.js"
 import { BasePropConstraint } from "./prop.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
@@ -72,8 +68,6 @@ export type SequenceDeclaration = declareNode<{
 	composition: "composite"
 	prerequisite: List
 	childKind: TypeKind
-	disjoinable: true
-	branchable: true
 }>
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
@@ -109,10 +103,10 @@ export const isSequenceTuple = (
 	)
 }
 
-export class SequenceNode
-	extends BasePropConstraint<SequenceDeclaration, typeof SequenceNode>
-	implements BaseConstraint<"sequence">
-{
+export class SequenceNode extends BasePropConstraint<
+	SequenceDeclaration,
+	typeof SequenceNode
+> {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
@@ -216,32 +210,51 @@ export class SequenceNode
 					return `comprised of ${parts.join(" followed by ")}`
 				}
 			},
-			intersectSymmetric: (l, r) => {
-				if (l.maxLength && r.minLength > l.maxLength) {
-					return Disjoint.from("range", l.maxLengthNode!, r.minLengthNode!)
-				} else if (r.maxLength && l.minLength > r.maxLength) {
-					return Disjoint.from("range", l.minLengthNode!, r.maxLengthNode!)
+
+			// reduceIntersection(node: constraintLeftOf<"sequence">) {
+			// 	if (this.minLengthNode) {
+			// 		const minLength = this.minLengthNode.intersectSymmetric(node.minLength)
+			// 		if (minLength instanceof Disjoint) return minLength
+			// 		node.minLength = minLength
+			// 		// even if this sequence doesn't contribute maxLength, if there is
+			// 		// an existing maxLength constraint, check that it is compatible
+			// 		// with the minLength constraint we just added
+			// 		node.maxLength?.reduceIntersection(node)
+			// 	}
+			// 	if (this.maxLengthNode) {
+			// 		const maxLength = this.maxLengthNode.intersectSymmetric(node.maxLength)
+			// 		if (maxLength instanceof Disjoint) return maxLength
+			// 		node.maxLength = maxLength
+			// 	}
+			// }
+			intersections: {
+				sequence: (l, r) => {
+					if (l.maxLength && r.minLength > l.maxLength) {
+						return Disjoint.from("range", l.maxLengthNode!, r.minLengthNode!)
+					} else if (r.maxLength && l.minLength > r.maxLength) {
+						return Disjoint.from("range", l.minLengthNode!, r.maxLengthNode!)
+					}
+
+					const rootState = intersectSequences({
+						l: [...l.tuple],
+						r: [...r.tuple],
+						fixedVariants: [],
+						disjoint: null,
+						result: []
+					})
+
+					if (rootState.fixedVariants.length === 0) {
+						return rootState.disjoint ?? l.$.parse("sequence", rootState.result)
+					}
+
+					const viableBranches = rootState.disjoint
+						? rootState.fixedVariants
+						: [rootState, ...rootState.fixedVariants]
+
+					return viableBranches.map((state) =>
+						l.$.parse("sequence", state.result)
+					)
 				}
-
-				const rootState = intersectSequences({
-					l: [...l.tuple],
-					r: [...r.tuple],
-					fixedVariants: [],
-					disjoint: null,
-					result: []
-				})
-
-				if (rootState.fixedVariants.length === 0) {
-					return rootState.disjoint ?? l.$.parse("sequence", rootState.result)
-				}
-
-				const viableBranches = rootState.disjoint
-					? rootState.fixedVariants
-					: [rootState, ...rootState.fixedVariants]
-
-				return viableBranches.map((state) =>
-					l.$.parse("sequence", state.result)
-				)
 			}
 		})
 
@@ -330,25 +343,6 @@ export class SequenceNode
 			: []),
 		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
 	]
-
-	reduceIntersection(
-		into: ReducibleIntersectionContext<"sequence">
-	): Disjoint | undefined {
-		if (this.minLengthNode) {
-			const minLength = this.minLengthNode.intersectSymmetric(into.minLength)
-			if (minLength instanceof Disjoint) return minLength
-			into.minLength = minLength
-			// even if this sequence doesn't contribute maxLength, if there is
-			// an existing maxLength constraint, check that it is compatible
-			// with the minLength constraint we just added
-			into.maxLength?.reduceIntersection(into)
-		}
-		if (this.maxLengthNode) {
-			const maxLength = this.maxLengthNode.intersectSymmetric(into.maxLength)
-			if (maxLength instanceof Disjoint) return maxLength
-			into.maxLength = maxLength
-		}
-	}
 }
 
 export const postfixFollowingOptionalMessage =

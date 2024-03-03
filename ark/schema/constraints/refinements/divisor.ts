@@ -1,11 +1,6 @@
-import { throwParseError } from "@arktype/util"
 import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import {
-	BasePrimitiveConstraint,
-	getBasisName,
-	type ReducibleIntersectionContext
-} from "../constraint.js"
+import { BasePrimitiveConstraint } from "../constraint.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly divisor: number
@@ -36,12 +31,13 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		},
 		normalize: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,
-		intersectSymmetric: (l, r) =>
-			l.$.parse("divisor", {
+		intersections: {
+			divisor: (l, r) => ({
 				divisor: Math.abs(
 					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
 				)
-			}),
+			})
+		},
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
@@ -59,11 +55,9 @@ export class DivisorNode extends BasePrimitiveConstraint<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	reduceIntersection(into: ReducibleIntersectionContext<"divisor">): undefined {
-		if (into.basis?.domain !== "number") {
-			throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
-		}
-	}
+	// if (node.basis?.domain !== "number") {
+	// 	throwParseError(writeIndivisibleMessage(getBasisName(node.basis)))
+	// }
 }
 
 export const writeIndivisibleMessage = <root extends string>(

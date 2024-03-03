@@ -1,10 +1,7 @@
 import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import {
-	BasePrimitiveConstraint,
-	type ReducibleIntersectionContext
-} from "../constraint.js"
+import { BasePrimitiveConstraint } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
 export interface LengthInner extends BaseMeta {
@@ -23,7 +20,6 @@ export type LengthDeclaration = declareNode<{
 	composition: "primitive"
 	prerequisite: LengthBoundableData
 	expectedContext: LengthInner
-	disjoinable: true
 }>
 
 export class LengthNode extends BasePrimitiveConstraint<
@@ -37,15 +33,17 @@ export class LengthNode extends BasePrimitiveConstraint<
 		},
 		normalize: (schema) =>
 			typeof schema === "number" ? { length: schema } : schema,
-		intersectSymmetric: (l, r) =>
-			new Disjoint({
-				"[length]": {
-					unit: {
-						l: l.$.parse("unit", { unit: l.length }),
-						r: r.$.parse("unit", { unit: r.length })
+		intersections: {
+			length: (l, r) =>
+				new Disjoint({
+					"[length]": {
+						unit: {
+							l: l.$.parse("unit", { unit: l.length }),
+							r: r.$.parse("unit", { unit: r.length })
+						}
 					}
-				}
-			}),
+				})
+		},
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
@@ -60,6 +58,4 @@ export class LengthNode extends BasePrimitiveConstraint<
 	compiledNegation = `${jsData}.length !== ${this.length}`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
-
-	reduceIntersection(into: ReducibleIntersectionContext<"length">): undefined {}
 }

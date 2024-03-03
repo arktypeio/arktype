@@ -1,6 +1,5 @@
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { ReducibleIntersectionContext } from "../constraint.js"
 import {
 	BaseRange,
 	type LengthBoundableData,
@@ -22,6 +21,11 @@ export class MaxLengthNode extends BaseRange<
 						: `at most length ${inner.limit}`
 				},
 				actual: (data) => `${data.length}`
+			},
+			intersections: {
+				maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
+				minLength: (max, min) =>
+					max.isStricterThan(min) ? Disjoint.from("range", max, min) : null
 			}
 		})
 
@@ -29,17 +33,10 @@ export class MaxLengthNode extends BaseRange<
 		? (data: LengthBoundableData) => data.length < this.limit
 		: (data: LengthBoundableData) => data.length <= this.limit
 
-	reduceIntersection(
-		into: ReducibleIntersectionContext<"maxLength">
-	): Disjoint | undefined {
-		if (
-			into.basis?.domain !== "string" &&
-			!into.basis?.extends(this.$.builtin.Array)
-		) {
-			this.throwInvalidBoundOperandError(into.basis)
-		}
-		if (into.minLength?.isStricterThan(this)) {
-			return Disjoint.from("range", this, into.minLength)
-		}
-	}
+	// if (
+	// 	into.basis?.domain !== "string" &&
+	// 	!into.basis?.extends(this.$.builtin.Array)
+	// ) {
+	// 	this.throwInvalidBoundOperandError(into.basis)
+	// }
 }

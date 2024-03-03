@@ -5,7 +5,6 @@ import {
 	type BuiltinObjects,
 	type List,
 	type Primitive,
-	type evaluate,
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
@@ -22,13 +21,13 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult, ArkTypeError } from "../shared/errors.js"
 import {
 	basisKinds,
-	type BasisKind,
+	type TypeIntersection,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { is } from "../shared/utils.js"
-import { BaseType } from "./type.js"
+import { BaseType, type typeKindRightOf } from "./type.js"
 
-export type MorphChildKind = evaluate<"intersection" | BasisKind>
+export type MorphChildKind = typeKindRightOf<"morph">
 
 export const morphChildKinds = [
 	"intersection",
@@ -63,9 +62,18 @@ export type MorphDeclaration = declareNode<{
 	normalizedSchema: MorphSchema
 	inner: MorphInner
 	composition: "composite"
-	disjoinable: true
 	childKind: MorphChildKind
 }>
+
+const intersectRightward: TypeIntersection<"morph"> = (morph, r) => {
+	const inTersection = morph.in.intersect(r)
+	return inTersection instanceof Disjoint
+		? inTersection
+		: {
+				...morph.inner,
+				in: inTersection
+		  }
+}
 
 export class MorphNode<t = unknown> extends BaseType<
 	t,
@@ -97,42 +105,39 @@ export class MorphNode<t = unknown> extends BaseType<
 					return `a morph from ${inner.in} to ${inner.out}`
 				}
 			},
-			intersectSymmetric: (l, r) => {
-				if (l.morph.some((morph, i) => morph !== r.morph[i])) {
-					// TODO: is this always a parse error? what about for union reduction etc.
-					// TODO: check in for union reduction
-					return throwParseError(`Invalid intersection of morphs`)
-				}
-				const inTersection = l.in.intersect(r.in)
-				if (inTersection instanceof Disjoint) {
-					return inTersection
-				}
-				const outTersection = l.out.intersect(r.out)
-				if (outTersection instanceof Disjoint) {
-					return outTersection
-				}
-				return l.$.parse("morph", {
-					morph: l.morph,
-					in: inTersection,
-					out: outTersection
-				})
+			intersections: {
+				morph: (l, r) => {
+					if (l.morph.some((morph, i) => morph !== r.morph[i])) {
+						// TODO: is this always a parse error? what about for union reduction etc.
+						// TODO: check in for union reduction
+						return throwParseError(`Invalid intersection of morphs`)
+					}
+					const inTersection = l.in.intersect(r.in)
+					if (inTersection instanceof Disjoint) {
+						return inTersection
+					}
+					const outTersection = l.out.intersect(r.out)
+					if (outTersection instanceof Disjoint) {
+						return outTersection
+					}
+					return {
+						morph: l.morph,
+						in: inTersection,
+						out: outTersection
+					}
+				},
+				unit: intersectRightward,
+				intersection: intersectRightward,
+				domain: intersectRightward,
+				proto: intersectRightward
 			}
 		})
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.in.traverseAllows(data, ctx)
 
-	traverseApply: TraverseApply = (data, ctx) => this.in.traverseApply(data, ctx)
-
-	intersectRightwardInner(r: Node<MorphChildKind>): MorphInner | Disjoint {
-		const inTersection = this.in.intersect(r)
-		return inTersection instanceof Disjoint
-			? inTersection
-			: {
-					...this.inner,
-					in: inTersection
-			  }
-	}
+	traverseApply: TraverseApply = (data, ctx) =>
+		this.in.traverseApply(data, ctx);
 
 	override get in(): Node<MorphChildKind, extractIn<t>> {
 		return this.inner.in

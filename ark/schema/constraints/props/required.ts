@@ -4,15 +4,7 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import {
-	throwInvalidOperandError,
-	type TypeKind,
-	type nodeImplementationOf
-} from "../../shared/implement.js"
-import type {
-	BaseConstraint,
-	ReducibleIntersectionContext
-} from "../constraint.js"
+import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BasePropConstraint } from "./prop.js"
 import { compileKey } from "./shared.js"
 
@@ -38,14 +30,13 @@ export type RequiredDeclaration = declareNode<{
 	composition: "composite"
 	prerequisite: object
 	hasOpenIntersection: true
-	disjoinable: true
 	childKind: TypeKind
 }>
 
-export class RequiredNode
-	extends BasePropConstraint<RequiredDeclaration, typeof RequiredNode>
-	implements BaseConstraint<"required">
-{
+export class RequiredNode extends BasePropConstraint<
+	RequiredDeclaration,
+	typeof RequiredNode
+> {
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
@@ -67,19 +58,21 @@ export class RequiredNode
 				},
 				actual: () => null
 			},
-			intersectSymmetric: (l, r) => {
-				if (l.key !== r.key) {
-					return null
+			intersections: {
+				required: (l, r) => {
+					if (l.key !== r.key) {
+						return null
+					}
+					const key = l.key
+					const value = l.value.intersect(r.value)
+					if (value instanceof Disjoint) {
+						return value
+					}
+					return {
+						key,
+						value
+					}
 				}
-				const key = l.key
-				const value = l.value.intersect(r.value)
-				if (value instanceof Disjoint) {
-					return value
-				}
-				return l.$.parse("required", {
-					key,
-					value
-				})
 			}
 		})
 
@@ -116,14 +109,6 @@ export class RequiredNode
 		)
 		if (js.traversalKind === "Allows") {
 			js.return(true)
-		}
-	}
-
-	reduceIntersection(
-		into: ReducibleIntersectionContext<"required">
-	): undefined {
-		if (into.basis?.domain !== "object") {
-			throwInvalidOperandError("required", "an object", into.basis)
 		}
 	}
 }

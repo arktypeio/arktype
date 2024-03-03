@@ -46,19 +46,19 @@ export class PredicateNode extends BasePrimitiveConstraint<
 			}
 		},
 		hasOpenIntersection: true,
-		// TODO: allow changed order to be the same type
-		// as long as the narrows in l and r are individually safe to check
-		// in the order they're specified, checking them in the order
-		// resulting from this intersection should also be safe.
-		intersectSymmetric: () => null
+		intersections: {
+			// TODO: allow changed order to be the same type
+			// as long as the narrows in l and r are individually safe to check
+			// in the order they're specified, checking them in the order
+			// resulting from this intersection should also be safe.
+			predicate: () => null
+		}
 	})
 
 	traverseAllows = this.predicate
 	compiledCondition = `${compileSerializedValue(this.predicate)}(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
 	expectedContext = this.createExpectedContext({ expected: this.description })
-
-	reduceIntersection(): undefined {}
 }
 
 export type Predicate<data = unknown> = (

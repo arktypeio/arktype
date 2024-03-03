@@ -1,5 +1,4 @@
-import { domainOf, throwInternalError, type Domain } from "@arktype/util"
-import type { ReducibleIntersectionContext } from "../constraints/constraint.js"
+import { domainOf, type Domain } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -28,7 +27,6 @@ export type DomainDeclaration = declareNode<{
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
 	composition: "primitive"
-	disjoinable: true
 	expectedContext: DomainInner
 }>
 
@@ -53,7 +51,9 @@ export class DomainNode<t = unknown> extends BaseBasis<
 				return domainOf(data)
 			}
 		},
-		intersectSymmetric: (l, r) => Disjoint.from("domain", l, r)
+		intersections: {
+			domain: (l, r) => Disjoint.from("domain", l, r)
+		}
 	})
 
 	basisName = this.domain
@@ -70,12 +70,6 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			: `typeof ${jsData} !== "${this.domain}"`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
-
-	intersectRightwardInner(r: never) {
-		return throwInternalError(
-			`Unexpected attempt to intersect ${r} from domain`
-		)
-	}
 }
 
 const enumerableDomainDescriptions = {

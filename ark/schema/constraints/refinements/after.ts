@@ -1,5 +1,4 @@
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { ReducibleIntersectionContext } from "../constraint.js"
 import {
 	BaseRange,
 	dateLimitToString,
@@ -23,6 +22,9 @@ export class AfterNode
 						: `${limitString} or later`
 				},
 				actual: (data) => data.toLocaleString()
+			},
+			intersections: {
+				after: (l, r) => (l.isStricterThan(r) ? l : r)
 			}
 		})
 
@@ -34,9 +36,7 @@ export class AfterNode
 		? (data: Date) => +data > this.numericLimit
 		: (data: Date) => +data >= this.numericLimit
 
-	reduceIntersection(into: ReducibleIntersectionContext<"after">): undefined {
-		if (!into.basis?.extends(this.$.builtin.Date)) {
-			this.throwInvalidBoundOperandError(into.basis)
-		}
-	}
+	// if (!into.basis?.extends(this.$.builtin.Date)) {
+	// 	this.throwInvalidBoundOperandError(into.basis)
+	// }
 }

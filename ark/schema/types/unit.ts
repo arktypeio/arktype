@@ -1,11 +1,10 @@
 import { domainOf, printable } from "@arktype/util"
-import type { Node } from "../base.js"
-import type { ReducibleIntersectionContext } from "../constraints/constraint.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { BasisKind } from "../shared/implement.js"
+import type { TypeIntersection } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
+import type { typeKindRightOf } from "./type.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 
@@ -19,9 +18,11 @@ export type UnitDeclaration = declareNode<{
 	normalizedSchema: UnitSchema
 	inner: UnitInner
 	composition: "primitive"
-	disjoinable: true
 	expectedContext: UnitInner
 }>
+
+const intersectRightward: TypeIntersection<"unit"> = (unit, r) =>
+	r.allows(unit.unit) ? unit : Disjoint.from("assignability", unit.unit, r)
 
 export class UnitNode<t = unknown> extends BaseBasis<
 	t,
@@ -41,7 +42,12 @@ export class UnitNode<t = unknown> extends BaseBasis<
 				return printable(inner.unit)
 			}
 		},
-		intersectSymmetric: (l, r) => Disjoint.from("unit", l, r)
+		intersections: {
+			unit: (l, r) => Disjoint.from("unit", l, r),
+			intersection: intersectRightward,
+			domain: intersectRightward,
+			proto: intersectRightward
+		}
 	})
 
 	serializedValue: string = (this.json as any).unit
@@ -53,12 +59,4 @@ export class UnitNode<t = unknown> extends BaseBasis<
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
-
-	intersectRightwardInner(
-		r: Node<"intersection" | BasisKind>
-	): UnitInner | Disjoint {
-		return r.allows(this.unit)
-			? this
-			: Disjoint.from("assignability", this.unit, r)
-	}
 }

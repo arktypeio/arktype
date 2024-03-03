@@ -1,48 +1,34 @@
 import { BaseNode, type Node, type NodeSubclass } from "../base.js"
-import type { Declaration, MutableInner } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
 	ConstraintKind,
-	NodeKind,
 	PrimitiveKind,
-	kindRightOf
+	kindLeftOf
 } from "../shared/implement.js"
 
-export type ReducibleIntersectionContext<kind extends NodeKind> = Omit<
-	MutableInner<"intersection">,
-	kindRightOf<kind>
->
+export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
+	kindLeftOf<kind>
+
+export type constraintKindOrLeftOf<kind extends ConstraintKind> =
+	| kind
+	| constraintKindLeftOf<kind>
 
 export interface BasePrimitiveConstraintDeclaration
 	extends BaseNodeDeclaration {
 	kind: PrimitiveKind & ConstraintKind
 }
 
-export interface BaseConstraint<kind extends ConstraintKind> {
-	reduceIntersection(
-		into: ReducibleIntersectionContext<kind>
-	): Disjoint | undefined
-	hasOpenIntersection: Declaration<kind>["hasOpenIntersection"]
-}
-
 export abstract class BasePrimitiveConstraint<
-		d extends BasePrimitiveConstraintDeclaration,
-		subclass extends NodeSubclass<d>
-	>
-	extends BaseNode<d["prerequisite"], d, subclass>
-	implements BaseConstraint<d["kind"]>
-{
+	d extends BasePrimitiveConstraintDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseNode<d["prerequisite"], d, subclass> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly expectedContext: d["expectedContext"]
-	abstract reduceIntersection(
-		into: ReducibleIntersectionContext<d["kind"]>
-	): Disjoint | undefined
 
 	get hasOpenIntersection() {
 		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]

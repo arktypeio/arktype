@@ -1,5 +1,8 @@
 import type { isDisjoint } from "./intersections.js"
-import type { NumberLiteral } from "./numericLiterals.js"
+import type {
+	NumberLiteral,
+	parseNonNegativeInteger
+} from "./numericLiterals.js"
 
 export type pathToString<
 	segments extends string[],
@@ -91,6 +94,10 @@ export type initOf<t extends List> = t extends readonly [...infer init, unknown]
 	: never
 
 export type numericStringKeyOf<t extends List> = Extract<keyof t, NumberLiteral>
+
+export type indexOf<array extends List> = keyof array extends infer k
+	? parseNonNegativeInteger<k & string>
+	: never
 
 export const listFrom = <t>(data: t) =>
 	(Array.isArray(data) ? data : [data]) as t extends List

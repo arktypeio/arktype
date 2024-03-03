@@ -10,7 +10,6 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
-import type { DomainNode } from "./domain.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -30,7 +29,6 @@ export type ProtoDeclaration = declareNode<{
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
 	composition: "primitive"
-	disjoinable: true
 	expectedContext: ProtoInner
 }>
 
@@ -64,12 +62,17 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 				return objectKindOrDomainOf(data)
 			}
 		},
-		intersectSymmetric: (l, r) => {
-			return constructorExtends(l.proto, r.proto)
-				? l
-				: constructorExtends(r.proto, l.proto)
-				? r
-				: Disjoint.from("proto", l, r)
+		intersections: {
+			proto: (l, r) =>
+				constructorExtends(l.proto, r.proto)
+					? l
+					: constructorExtends(r.proto, l.proto)
+					? r
+					: Disjoint.from("proto", l, r),
+			domain: (proto, domain) =>
+				domain.domain === "object"
+					? proto
+					: Disjoint.from("domain", proto.$.builtin.object, domain)
 		}
 	})
 
@@ -82,10 +85,4 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 	compiledNegation = `!(${this.compiledCondition})`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
-
-	intersectRightwardInner(r: DomainNode): ProtoInner | Disjoint {
-		return r.domain === "object"
-			? this
-			: Disjoint.from("domain", this.$.builtin.object, r)
-	}
 }

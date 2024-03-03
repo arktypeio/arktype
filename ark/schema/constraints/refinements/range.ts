@@ -28,12 +28,14 @@ export abstract class BaseRange<
 	subclass extends NodeSubclass<d>
 > extends BasePrimitiveConstraint<d, subclass> {
 	static implementBound<d extends Declaration<RangeKind>>(
-		implementation: Pick<nodeImplementationInputOf<d>, "defaults">
+		implementation: Pick<
+			nodeImplementationInputOf<d>,
+			"defaults" | "intersections"
+		>
 	): nodeImplementationOf<d> {
 		return this.implement({
 			collapseKey: "limit",
 			hasAssociatedError: true,
-			intersectSymmetric: (l, r) => (l.isStricterThan(r as never) ? l : r),
 			keys: {
 				limit: {
 					parse: normalizeLimit
@@ -47,7 +49,8 @@ export abstract class BaseRange<
 				typeof schema === "object"
 					? { ...schema, limit: schema.limit }
 					: { limit: schema as Extract<d["schema"], LimitSchemaValue> },
-			defaults: implementation.defaults as never
+			defaults: implementation.defaults as never,
+			intersections: implementation.intersections
 		}) as never
 	}
 

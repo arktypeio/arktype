@@ -3,10 +3,6 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
-import type {
-	BaseConstraint,
-	ReducibleIntersectionContext
-} from "../constraint.js"
 import { BasePropConstraint } from "./prop.js"
 
 export interface IndexSchema extends BaseMeta {
@@ -30,10 +26,10 @@ export type IndexDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class IndexNode
-	extends BasePropConstraint<IndexDeclaration, typeof IndexNode>
-	implements BaseConstraint<"index">
-{
+export class IndexNode extends BasePropConstraint<
+	IndexDeclaration,
+	typeof IndexNode
+> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
@@ -54,7 +50,9 @@ export class IndexNode
 					return `[${inner.key}]: ${inner.value}`
 				}
 			},
-			intersectSymmetric: (l, r) => l
+			intersections: {
+				index: (l, r) => l
+			}
 		})
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
@@ -76,6 +74,4 @@ export class IndexNode
 			js.return(true)
 		}
 	}
-
-	reduceIntersection(into: ReducibleIntersectionContext<"index">): undefined {}
 }

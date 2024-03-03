@@ -58,10 +58,6 @@ export abstract class BaseType<
 		return { errors: ctx.currentErrors }
 	}
 
-	abstract intersectRightwardInner(
-		r: Node<typeKindRightOf<d["kind"]>>
-	): d["inner"] | Disjoint
-
 	private static intersectionCache: Record<string, TypeNode | Disjoint> = {}
 	intersect<other extends TypeNode>(
 		other: other // TODO: fix
@@ -81,11 +77,9 @@ export abstract class BaseType<
 			this.precedence <= other.precedence ? this : (other as any)
 		const thisIsLeft = l === (this as never)
 		const r: TypeNode = thisIsLeft ? other : (this as any)
-		const innerResult: Inner<TypeKind> | Disjoint =
-			l.kind === r.kind
-				? l.intersectSymmetric(r as never)
-				: l.intersectRightwardInner(r as never)
-
+		const innerResult: Inner<TypeKind> | Disjoint = l.intersectRightwardInner(
+			r as never
+		)
 		const nodeResult: TypeNode | Disjoint =
 			innerResult instanceof Disjoint || innerResult instanceof BaseType
 				? (innerResult as never)
@@ -205,3 +199,7 @@ export type typeKindRightOf<kind extends TypeKind> = Extract<
 	kindRightOf<kind>,
 	TypeKind
 >
+
+export type typeKindOrRightOf<kind extends TypeKind> =
+	| kind
+	| typeKindRightOf<kind>

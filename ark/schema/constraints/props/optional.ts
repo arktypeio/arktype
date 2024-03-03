@@ -1,18 +1,10 @@
 import { compileSerializedValue } from "@arktype/util"
-import { BaseNode, type Node, type TypeSchema } from "../../base.js"
+import type { Node, TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import {
-	throwInvalidOperandError,
-	type TypeKind,
-	type nodeImplementationOf
-} from "../../shared/implement.js"
-import type {
-	BaseConstraint,
-	ReducibleIntersectionContext
-} from "../constraint.js"
+import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BasePropConstraint } from "./prop.js"
 import { compileKey } from "./shared.js"
 
@@ -37,10 +29,10 @@ export type OptionalDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class OptionalNode
-	extends BasePropConstraint<OptionalDeclaration, typeof OptionalNode>
-	implements BaseConstraint<"optional">
-{
+export class OptionalNode extends BasePropConstraint<
+	OptionalDeclaration,
+	typeof OptionalNode
+> {
 	static implementation: nodeImplementationOf<OptionalDeclaration> =
 		this.implement({
 			keys: {
@@ -58,17 +50,19 @@ export class OptionalNode
 					return `${compileKey(inner.key)}?: ${inner.value}`
 				}
 			},
-			intersectSymmetric: (l, r) => {
-				if (l.key !== r.key) {
-					return null
+			intersections: {
+				optional: (l, r) => {
+					if (l.key !== r.key) {
+						return null
+					}
+					const key = l.key
+					const value = l.value.intersect(r.value)
+					return l.$.parse("optional", {
+						key,
+						value:
+							value instanceof Disjoint ? (l.$.builtin.never as never) : value
+					})
 				}
-				const key = l.key
-				const value = l.value.intersect(r.value)
-				return l.$.parse("optional", {
-					key,
-					value:
-						value instanceof Disjoint ? (l.$.builtin.never as never) : value
-				})
 			}
 		})
 
@@ -90,14 +84,6 @@ export class OptionalNode
 		)
 		if (js.traversalKind === "Allows") {
 			js.return(true)
-		}
-	}
-
-	reduceIntersection(
-		into: ReducibleIntersectionContext<"optional">
-	): undefined {
-		if (into.basis?.domain !== "object") {
-			throwInvalidOperandError("required", "an object", into.basis)
 		}
 	}
 }

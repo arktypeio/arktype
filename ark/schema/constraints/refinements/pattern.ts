@@ -1,11 +1,6 @@
-import { appendUnique } from "@arktype/util"
 import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import { throwInvalidOperandError } from "../../shared/implement.js"
-import {
-	BasePrimitiveConstraint,
-	type ReducibleIntersectionContext
-} from "../constraint.js"
+import { BasePrimitiveConstraint } from "../constraint.js"
 
 export interface PatternInner extends BaseMeta {
 	readonly source: string
@@ -47,13 +42,15 @@ export class PatternNode extends BasePrimitiveConstraint<
 				: schema,
 		hasAssociatedError: true,
 		hasOpenIntersection: true,
+		intersections: {
+			// for now, non-equal regex are naively intersected
+			pattern: () => null
+		},
 		defaults: {
 			description(inner) {
 				return `matched by ${inner.source}`
 			}
-		},
-		// for now, non-equal regex are naively intersected
-		intersectSymmetric: () => null
+		}
 	})
 
 	regex = new RegExp(this.source, this.flags)
@@ -64,9 +61,7 @@ export class PatternNode extends BasePrimitiveConstraint<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	reduceIntersection(into: ReducibleIntersectionContext<"pattern">): undefined {
-		if (into.basis?.domain !== "string") {
-			throwInvalidOperandError("pattern", "a string", into.basis)
-		}
-	}
+	// if (into.basis?.domain !== "string") {
+	// 	throwInvalidOperandError("pattern", "a string", into.basis)
+	// }
 }

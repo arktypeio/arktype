@@ -1,6 +1,5 @@
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { ReducibleIntersectionContext } from "../constraint.js"
 import {
 	BaseRange,
 	dateLimitToString,
@@ -24,6 +23,13 @@ export class BeforeNode
 						: `${limitString} or earlier`
 				},
 				actual: (data) => data.toLocaleString()
+			},
+			intersections: {
+				before: (l, r) => (l.isStricterThan(r) ? l : r),
+				after: (before, after) =>
+					before.isStricterThan(after)
+						? Disjoint.from("range", before, after)
+						: null
 			}
 		})
 
@@ -35,14 +41,7 @@ export class BeforeNode
 		? (data: Date) => +data < this.numericLimit
 		: (data: Date) => +data <= this.numericLimit
 
-	reduceIntersection(
-		into: ReducibleIntersectionContext<"before">
-	): Disjoint | undefined {
-		if (!into.basis?.extends(this.$.builtin.Date)) {
-			this.throwInvalidBoundOperandError(into.basis)
-		}
-		if (into.after?.isStricterThan(this)) {
-			return Disjoint.from("range", this, into.after)
-		}
-	}
+	// if (!into.basis?.extends(this.$.builtin.Date)) {
+	// 	this.throwInvalidBoundOperandError(into.basis)
+	// }
 }

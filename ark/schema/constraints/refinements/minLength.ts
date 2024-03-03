@@ -1,5 +1,4 @@
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { ReducibleIntersectionContext } from "../constraint.js"
 import {
 	BaseRange,
 	type LengthBoundableData,
@@ -25,6 +24,9 @@ export class MinLengthNode extends BaseRange<
 						: `at least length ${inner.limit}`
 				},
 				actual: (data) => `${data.length}`
+			},
+			intersections: {
+				minLength: (l, r) => (l.isStricterThan(r) ? l : r)
 			}
 		})
 
@@ -32,14 +34,10 @@ export class MinLengthNode extends BaseRange<
 		? (data: LengthBoundableData) => data.length > this.limit
 		: (data: LengthBoundableData) => data.length >= this.limit
 
-	reduceIntersection(
-		into: ReducibleIntersectionContext<"minLength">
-	): undefined {
-		if (
-			into.basis?.domain !== "string" &&
-			!into.basis?.extends(this.$.builtin.Array)
-		) {
-			this.throwInvalidBoundOperandError(into.basis)
-		}
-	}
+	// if (
+	// 	into.basis?.domain !== "string" &&
+	// 	!into.basis?.extends(this.$.builtin.Array)
+	// ) {
+	// 	this.throwInvalidBoundOperandError(into.basis)
+	// }
 }
