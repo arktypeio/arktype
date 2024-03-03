@@ -1,4 +1,5 @@
 import {
+	append,
 	conflatenateAll,
 	isArray,
 	isEmptyObject,
@@ -6,6 +7,8 @@ import {
 	omit,
 	pick,
 	printable,
+	throwInternalError,
+	type List,
 	type evaluate,
 	type listable
 } from "@arktype/util"
@@ -358,80 +361,88 @@ const maybeCreatePropsGroup = (inner: IntersectionInner) => {
 	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
 }
 
-// const reduceConstraints = (
-// 	l: readonly Node<ConstraintKind>[],
-// 	r: readonly Node<ConstraintKind>[]
-// ) => {
-// 	let result: readonly Node<ConstraintKind>[] | Disjoint = l
-// 	for (const constraint of r) {
-// 		if (result instanceof Disjoint) {
-// 			break
-// 		}
-// 		result = addConstraint(result, constraint)
-// 	}
-// 	return result instanceof Disjoint ? result : result
-// }
+const reduceConstraints = (
+	l: List<Node<ConstraintKind>>,
+	r: List<Node<ConstraintKind>>
+) => {
+	let result: readonly Node<ConstraintKind>[] | Disjoint = l
+	for (const constraint of r) {
+		if (result instanceof Disjoint) {
+			break
+		}
+		result = addConstraint(result, constraint)
+	}
+	return result instanceof Disjoint ? result : result
+}
 
-// const flattenedConstraintCache = new Map<IntersectionInner, ConstraintSet>()
-// const flattenConstraints = (inner: IntersectionInner): ConstraintSet => {
-// 	const cachedResult = flattenedConstraintCache.get(inner)
-// 	if (cachedResult) {
-// 		return cachedResult
-// 	}
-// 	const result = Object.entries(inner).flatMap(([k, v]) =>
-// 		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
-// 	)
-// 	flattenedConstraintCache.set(inner, result)
-// 	return result
-// }
+const flattenedConstraintCache = new Map<
+	IntersectionInner,
+	List<Node<ConstraintKind>>
+>()
+const flattenConstraints = (
+	inner: IntersectionInner
+): List<Node<ConstraintKind>> => {
+	const cachedResult = flattenedConstraintCache.get(inner)
+	if (cachedResult) {
+		return cachedResult
+	}
+	const result = Object.entries(inner).flatMap(([k, v]) =>
+		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
+	)
+	flattenedConstraintCache.set(inner, result)
+	return result
+}
 
-// const unflattenConstraints = (
-// 	constraints: ConstraintSet
-// ): IntersectionInner => {
-// 	const inner: mutable<IntersectionInner> = {}
-// 	for (const constraint of constraints) {
-// 		if (constraint.isBasis()) {
-// 			inner.basis = constraint
-// 		} else if (constraint.hasOpenIntersection) {
-// 			append((inner as any)[constraint.kind], constraint)
-// 		} else {
-// 			if (inner[constraint.kind]) {
-// 				return throwInternalError(
-// 					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
-// 				)
-// 			}
-// 			inner[constraint.kind] = constraint as never
-// 		}
-// 	}
-// 	return inner
-// }
+const unflattenConstraints = (
+	constraints: List<Node<ConstraintKind>>
+): IntersectionInner => {
+	const inner: MutableInner<"intersection"> = {}
+	for (const constraint of constraints) {
+		if (constraint.isBasis()) {
+			inner.basis = constraint
+		} else if (constraint.hasOpenIntersection) {
+			inner[constraint.kind] = append(
+				inner[constraint.kind],
+				constraint
+			) as never
+		} else {
+			if (inner[constraint.kind]) {
+				return throwInternalError(
+					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
+				)
+			}
+			inner[constraint.kind] = constraint as never
+		}
+	}
+	return inner
+}
 
-// export const addConstraint = (
-// 	base: readonly Node<ConstraintKind>[],
-// 	constraint: Node<ConstraintKind>
-// ): Node<ConstraintKind>[] | Disjoint => {
-// 	const result: Node<ConstraintKind>[] = []
-// 	let includesComponent = false
-// 	for (let i = 0; i < base.length; i++) {
-// 		const elementResult = constraint.reduceIntersection(base[i] as never)
-// 		if (elementResult === null) {
-// 			result.push(base[i])
-// 		} else if (elementResult instanceof Disjoint) {
-// 			return elementResult
-// 		} else if (!includesComponent) {
-// 			result.push(elementResult)
-// 			includesComponent = true
-// 		} else if (!result.includes(elementResult)) {
-// 			return throwInternalError(
-// 				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
-// 			)
-// 		}
-// 	}
-// 	if (!includesComponent) {
-// 		result.push(constraint)
-// 	}
-// 	return result
-// }
+export const addConstraint = (
+	base: readonly Node<ConstraintKind>[],
+	constraint: Node<ConstraintKind>
+): Node<ConstraintKind>[] | Disjoint => {
+	const result: Node<ConstraintKind>[] = []
+	let includesComponent = false
+	for (let i = 0; i < base.length; i++) {
+		const elementResult = constraint.reduceIntersection(base[i] as never)
+		if (elementResult === null) {
+			result.push(base[i])
+		} else if (elementResult instanceof Disjoint) {
+			return elementResult
+		} else if (!includesComponent) {
+			result.push(elementResult)
+			includesComponent = true
+		} else if (!result.includes(elementResult)) {
+			return throwInternalError(
+				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
+			)
+		}
+	}
+	if (!includesComponent) {
+		result.push(constraint)
+	}
+	return result
+}
 
 export type ConditionalTerminalIntersectionSchema = {
 	onExtraneousKey?: ExtraneousKeyBehavior

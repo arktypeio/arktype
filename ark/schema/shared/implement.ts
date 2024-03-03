@@ -2,6 +2,7 @@ import {
 	compileSerializedValue,
 	morph,
 	throwParseError,
+	type Dict,
 	type ErrorMessage,
 	type JsonData,
 	type entryOf,
@@ -27,6 +28,7 @@ import type {
 	BaseNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
+import type { UnknownNodeIntersectionResult } from "./intersections.js"
 
 export {
 	type BoundKind,
@@ -160,8 +162,16 @@ export type IntersectionMap<kind extends NodeKind> = kind extends TypeKind
 	: ConstraintIntersectionMap<kind & ConstraintKind>
 
 export type UnknownIntersectionMap = {
-	[rKey in NodeKind | "default"]?: (l: Node, r: Node) => Node | Disjoint | null
+	[rKey in NodeKind | "default"]?: (
+		l: UnknownNode,
+		r: UnknownNode
+	) => UnknownNodeIntersectionResult
 }
+
+/** Finalized node intersection results or a list of Inner values to be parsed as a union */
+export type UnknownIntersectionImplementationResult =
+	| listable<Dict>
+	| UnknownNodeIntersectionResult
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -229,7 +239,6 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["expectedContext"] extends null ? false : true
-	intersections: IntersectionMap<d["kind"]>
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (inner: d["inner"], $: ScopeNode) => Node | Disjoint | undefined
 }
@@ -238,17 +247,20 @@ export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
 	hasOpenIntersection: boolean
+	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
+		intersections: IntersectionMap<d["kind"]>
 		hasOpenIntersection: d["hasOpenIntersection"]
 		defaults: nodeDefaultsImplementationFor<d["kind"]>
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
+		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
 	} & (d["hasOpenIntersection"] extends true
 			? { hasOpenIntersection: true }

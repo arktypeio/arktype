@@ -6,7 +6,7 @@ import {
 	type NodeSubclass,
 	type TypeNode
 } from "../base.js"
-import type { Inner, Schema, reducibleKindOf } from "../kinds.js"
+import type { Schema, reducibleKindOf } from "../kinds.js"
 import { TraversalContext } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -16,7 +16,7 @@ import type {
 	TypeKind,
 	kindRightOf
 } from "../shared/implement.js"
-import type { inferIntersection } from "../shared/intersections.js"
+import type { baseNodeIntersectionResult } from "../shared/intersections.js"
 import { inferred } from "../shared/utils.js"
 import type { IntersectionNode } from "./intersection.js"
 import type { distill, extractIn, extractOut } from "./morph.js"
@@ -58,42 +58,6 @@ export abstract class BaseType<
 		return { errors: ctx.currentErrors }
 	}
 
-	private static intersectionCache: Record<string, TypeNode | Disjoint> = {}
-	intersect<other extends TypeNode>(
-		other: other // TODO: fix
-	): Node<this["kind"] | other["kind"]> | Disjoint
-	intersect(other: Node): Node | Disjoint {
-		const cacheKey = `${this.typeId}&${other.typeId}`
-		if (BaseType.intersectionCache[cacheKey] !== undefined) {
-			return BaseType.intersectionCache[cacheKey]
-		}
-
-		if (this.equals(other)) {
-			// TODO: meta
-			return this as never
-		}
-
-		const l: TypeNode =
-			this.precedence <= other.precedence ? this : (other as any)
-		const thisIsLeft = l === (this as never)
-		const r: TypeNode = thisIsLeft ? other : (this as any)
-		const innerResult: Inner<TypeKind> | Disjoint = l.intersectRightwardInner(
-			r as never
-		)
-		const nodeResult: TypeNode | Disjoint =
-			innerResult instanceof Disjoint || innerResult instanceof BaseType
-				? (innerResult as never)
-				: this.$.parse(l.kind, innerResult)
-
-		BaseType.intersectionCache[cacheKey] = nodeResult
-		BaseType.intersectionCache[`${other.typeId}&${this.typeId}`] =
-			// also cache the result with other's condition as the key.
-			// if it was a Disjoint, it has to be inverted so that l,r
-			// still line up correctly
-			nodeResult instanceof Disjoint ? nodeResult.invert() : nodeResult
-		return nodeResult
-	}
-
 	constrain<constraintKind extends ConstraintKind>(
 		kind: constraintKind,
 		input: Schema<constraintKind>
@@ -110,22 +74,24 @@ export abstract class BaseType<
 		// )
 	}
 
-	and<other extends TypeNode>(
-		other: other
-	): Node<
-		intersectTypeKinds<d["kind"], other["kind"]>,
-		inferIntersection<this["infer"], other["infer"]>
+	and<r extends TypeNode>(
+		r: r
+	): baseNodeIntersectionResult<
+		d["kind"],
+		r["kind"],
+		this["infer"],
+		r["infer"]
 	> {
-		const result = this.intersect(other)
+		const result = this.intersect(r as never)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<other extends TypeNode>(
-		other: other
-	): Node<"union" | d["kind"] | other["kind"], t | other["infer"]> {
+	or<r extends TypeNode>(
+		r: r
+	): Node<"union" | d["kind"] | r["kind"], t | r["infer"]> {
 		return this.$.parseBranches(
 			...this.branches,
-			...(other.branches as any)
+			...(r.branches as any)
 		) as never
 	}
 

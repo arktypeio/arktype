@@ -45,6 +45,7 @@ import type {
 	attachmentsOf,
 	requireDescriptionIfPresent
 } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -62,6 +63,11 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
+import type {
+	UnknownNodeIntersectionResult,
+	nodeIntersectionOperand,
+	nodeIntersectionResult
+} from "./shared/intersections.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
@@ -122,6 +128,8 @@ export abstract class BaseNode<
 	// the correct implementation of the static implementation
 	subclass extends NodeSubclass<d>
 > extends DynamicBase<attachmentsOf<d>> {
+	declare infer: d["prerequisite"]
+
 	protected static implement<self>(
 		this: self,
 		implementation: nodeImplementationInputOf<declarationOf<self>>
@@ -269,6 +277,63 @@ export abstract class BaseNode<
 
 	toString() {
 		return this.description
+	}
+
+	private static intersectionCache: Record<
+		string,
+		UnknownNodeIntersectionResult
+	> = {}
+	intersect<r extends nodeIntersectionOperand<d["kind"]>>(
+		r: r
+	): nodeIntersectionResult<d["kind"], r["kind"], this["infer"], r["infer"]>
+	intersect(this: UnknownNode, r: UnknownNode): UnknownNodeIntersectionResult {
+		const lrCacheKey = `${this.typeId}&${r.typeId}`
+		if (BaseNode.intersectionCache[lrCacheKey] !== undefined) {
+			return BaseNode.intersectionCache[lrCacheKey]
+		}
+		const rlCacheKey = `${r.typeId}&${this.typeId}`
+		if (BaseNode.intersectionCache[rlCacheKey] !== undefined) {
+			// if the cached result was a Disjoint and the operands originally
+			// appeared in the opposite order, we need to invert it to match
+			const rlResult = BaseNode.intersectionCache[rlCacheKey]
+			const lrResult =
+				rlResult instanceof Disjoint ? rlResult.invert() : rlResult
+			// add the lr result to the cache directly to bypass this check in the future
+			BaseNode.intersectionCache[lrCacheKey] = lrResult
+			return lrResult
+		}
+
+		if (this.equals(r as never)) {
+			// TODO: meta
+			return this as never
+		}
+
+		const lImplementation = this.impl.intersections[r.kind]
+		const rImplementation = r.impl.intersections[this.kind]
+		const implementation = lImplementation ?? rImplementation
+		if (!implementation) {
+			return throwError(
+				`Intersection between nodes of kind ${this.kind} and ${r.kind} is undefined. Ensure that both operands are types or both are constraints.`
+			)
+		}
+
+		const rawResult =
+			implementation === lImplementation
+				? implementation(this, r)
+				: implementation(r, this)
+
+		const instantiatedResult: UnknownNodeIntersectionResult =
+			rawResult === null || rawResult instanceof Disjoint
+				? rawResult
+				: isArray(rawResult)
+				? // arrays represent a constraint union of a branching intersection kind like sequence
+				  // whether the result is an array or not, we treat it as an
+				  // Inner and instantiate it to a node to finalize it.
+				  rawResult.map((inner) => this.$.parse(this.kind, inner as never))
+				: this.$.parse(this.kind, rawResult as never)
+
+		BaseNode.intersectionCache[lrCacheKey] = instantiatedResult
+		return instantiatedResult
 	}
 
 	firstReference<narrowed extends Node>(
