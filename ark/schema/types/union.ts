@@ -88,16 +88,15 @@ export class UnionNode<t = unknown> extends BaseType<
 				}
 			},
 			normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
-			reduce: (inner, scope) => {
+			reduce: (inner, $) => {
 				const reducedBranches = reduceBranches(inner)
 				if (reducedBranches.length === 1) {
-					// TODO: description?
 					return reducedBranches[0]
 				}
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return scope.parse(
+				return $.parse(
 					"union",
 					{
 						...inner,

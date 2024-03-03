@@ -155,7 +155,7 @@ export class SequenceNode extends BaseConstraint<
 				}
 				return { variadic: schema }
 			},
-			reduce: (inner, scope) => {
+			reduce: (inner, $) => {
 				if (!inner.postfix && !inner.optionals) {
 					return
 				}
@@ -186,7 +186,7 @@ export class SequenceNode extends BaseConstraint<
 					(inner.postfix && postfix.length < inner.postfix.length) ||
 					(inner.optionals && optionals.length < inner.optionals.length)
 				) {
-					return scope.parse(
+					return $.parse(
 						"sequence",
 						{
 							...inner,
